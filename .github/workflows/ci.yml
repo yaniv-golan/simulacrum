@@ -29,8 +29,8 @@ jobs:
       - run: npm run check
       - name: Run representative browser and simulation smoke tests
         env:
-          TEST_FILTER: verify-five-demos,verify-hybrid-assembly,verify-blueprint-roundtrip,verify-adaptive-workspace,verify-accessibility
-          TEST_SUITE_TIMEOUT_MS: 360000
+          TEST_FILTER: verify-five-demos,verify-adaptive-workspace,verify-accessibility
+          TEST_SUITE_TIMEOUT_MS: 480000
           TEST_AGGREGATE_TIMEOUT_MS: 1200000
         run: npm test
       - run: npm run build

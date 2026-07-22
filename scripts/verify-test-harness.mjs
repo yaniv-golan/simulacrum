@@ -3,7 +3,10 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { assert } from "./lib/assert.mjs";
-import { selectVerificationChecks } from "./lib/test-selection.mjs";
+import {
+  selectVerificationChecks,
+  shardVerificationChecks,
+} from "./lib/test-selection.mjs";
 import {
   assertTestServer,
   readServerMarker,
@@ -54,6 +57,24 @@ assert.throws(
       "verify-core-model,missing-a.mjs,missing-b",
     ),
   /unknown verification suites: missing-a\.mjs, missing-b\.mjs/,
+);
+assert.deepEqual(shardVerificationChecks(["a", "b", "c", "d", "e"], 0, 2), [
+  "a",
+  "c",
+  "e",
+]);
+assert.deepEqual(shardVerificationChecks(["a", "b", "c", "d", "e"], "1", "2"), [
+  "b",
+  "d",
+]);
+assert.deepEqual(shardVerificationChecks(["a", "b"], null, null), ["a", "b"]);
+assert.throws(
+  () => shardVerificationChecks(["a"], 0, 0),
+  /TEST_SHARD_COUNT must be a positive integer/,
+);
+assert.throws(
+  () => shardVerificationChecks(["a"], 2, 2),
+  /TEST_SHARD_INDEX must be an integer/,
 );
 
 const verificationFiles = (await fs.readdir(scriptsDir))

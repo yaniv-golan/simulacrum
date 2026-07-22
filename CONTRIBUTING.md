@@ -13,11 +13,12 @@ GitHub Actions deliberately separates feedback speed from deep qualification:
 - **CI** runs on pull requests and pushes to `main`. It executes the static,
   architecture, contract, coverage, package, and audit gates plus a
   representative browser/simulation smoke set. Tags do not repeat this run.
-- **Deep verification** runs weekly or on demand. It executes all verification
-  suites, a production build, and the live performance baseline. Its optional
-  mutation matrix runs on the weekly schedule and should be requested before a
-  release when critical schema, network, controller, challenge, or failure
-  decisions changed.
+- **Deep verification** runs weekly or on demand. Four deterministic shards
+  execute all verification suites in parallel, followed by production builds
+  and live performance baselines. Its optional mutation matrix runs each
+  decision domain independently on the weekly schedule and should be requested
+  before a release when critical schema, network, controller, challenge, or
+  failure decisions changed.
 - **Release soak** remains manual because its 30-minute lifecycle exercise is
   useful before releases and high-risk resource changes, not on ordinary pull
   requests.

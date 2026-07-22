@@ -1,7 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { startTestServer } from "./lib/test-server.mjs";
-import { selectVerificationChecks } from "./lib/test-selection.mjs";
+import {
+  selectVerificationChecks,
+  shardVerificationChecks,
+} from "./lib/test-selection.mjs";
 import { runVerificationSuite } from "./lib/verification-runner.mjs";
 import {
   VERIFICATION_CHECKS,
@@ -10,9 +13,10 @@ import {
 
 const root = path.resolve(import.meta.dirname, "..");
 const artifactsDir = path.join(root, "artifacts", "test-harness");
-const selectedChecks = selectVerificationChecks(
-  VERIFICATION_CHECKS,
-  process.env.TEST_FILTER,
+const selectedChecks = shardVerificationChecks(
+  selectVerificationChecks(VERIFICATION_CHECKS, process.env.TEST_FILTER),
+  process.env.TEST_SHARD_INDEX,
+  process.env.TEST_SHARD_COUNT,
 );
 
 const suiteTimeoutMs = Number(process.env.TEST_SUITE_TIMEOUT_MS || 180_000);
