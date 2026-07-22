@@ -78,6 +78,33 @@ const cart = decodeBlueprintOrThrow(builtInDemo("cart").blueprint).assembly,
   steeringHingeIds = cart.parts
     .filter((part) => part.type === "hinge")
     .map((part) => part.id),
+  frontGuideIds = new Set(
+    cart.connections
+      .filter(
+        (connection) =>
+          (steeringHingeIds.includes(connection.a) &&
+            connection.portA === "BASE") ||
+          (steeringHingeIds.includes(connection.b) &&
+            connection.portB === "BASE"),
+      )
+      .map((connection) =>
+        steeringHingeIds.includes(connection.a) ? connection.b : connection.a,
+      ),
+  ),
+  frontCornerIds = new Set([
+    ...driveMotorIds.slice(0, steeringHingeIds.length),
+    ...cart.connections
+      .filter(
+        (connection) =>
+          (steeringHingeIds.includes(connection.a) &&
+            connection.portA === "ARM") ||
+          (steeringHingeIds.includes(connection.b) &&
+            connection.portB === "ARM"),
+      )
+      .map((connection) =>
+        steeringHingeIds.includes(connection.a) ? connection.b : connection.a,
+      ),
+  ]),
   steeringHingeId = steeringHingeIds[0],
   steeredWheelIds = drivenWheelIdList.slice(0, steeringHingeIds.length),
   steeredWheelId = steeredWheelIds[0];
@@ -178,6 +205,7 @@ let maximumContacts = 0,
   maximumForceUtilizationRecord = null,
   maximumTorqueUtilization = 0,
   maximumTorqueUtilizationRecord = null,
+  steeringInterferenceContacts = [],
   connectionById = new Map(
     assembly.connections.map((connection) => [connection.id, connection]),
   );
@@ -215,6 +243,15 @@ for (let tick = 1; tick <= 600; tick++) {
   }
   worldAdapter.integrate(dt, { tick });
   runtime.afterIntegration(dt);
+  for (const contact of world.contacts) {
+    const left = contact.bi.userData?.partId,
+      right = contact.bj.userData?.partId;
+    if (
+      (frontGuideIds.has(left) && frontCornerIds.has(right)) ||
+      (frontGuideIds.has(right) && frontCornerIds.has(left))
+    )
+      steeringInterferenceContacts.push({ tick, left, right });
+  }
   for (const [connectionId, loadN] of runtime.loadByConnection) {
     const utilization =
       loadN /
@@ -299,9 +336,18 @@ assert.ok(
   `generic rotary drive and tire contact advanced only ${travelM} m`,
 );
 assert.ok(
+  Math.abs(lateralTravelM) > 3,
+  `full steering command changed the rover's lateral course by only ${lateralTravelM} m`,
+);
+assert.deepEqual(
+  steeringInterferenceContacts,
+  [],
+  `front guide rails physically jammed the steering corner: ${JSON.stringify(steeringInterferenceContacts.slice(0, 8))}`,
+);
+assert.ok(
   finalDrivenStates
     .filter((wheel) => steeredWheelIds.includes(wheel.partId))
-    .every((wheel) => wheel.steeringAngleRad < -0.005),
+    .every((wheel) => wheel.steeringAngleRad < -0.06),
   `the cart's authored left command did not turn both physical tires left: ${JSON.stringify({ lateralTravelM, wheels: finalDrivenStates })}`,
 );
 assert.ok(
@@ -425,5 +471,5 @@ assert.equal(
   "Cannon world retained assembly bodies after dispose",
 );
 console.log(
-  `rounded wheel runtime passed (${assembly.parts.length} bodies, ${travelM.toFixed(2)} m travel, ${maximumDeflectionM.toFixed(4)} m peak tire deflection)`,
+  `rounded wheel runtime passed (${assembly.parts.length} bodies, ${travelM.toFixed(2)} m forward travel, ${Math.abs(lateralTravelM).toFixed(2)} m lateral response, ${maximumDeflectionM.toFixed(4)} m peak tire deflection)`,
 );

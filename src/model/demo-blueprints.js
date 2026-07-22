@@ -329,12 +329,15 @@ function cart() {
       mechanism.config.lengthRangeM = { lower: 0.72, upper: 1.35 };
       return mechanism;
     },
-    suspensionGuide = () => {
+    suspensionGuide = ({ narrowTrack = false } = {}) => {
       const mechanism = structuredClone(
         mechanismComponentDefinition("linear-guide"),
       );
       mechanism.config.referenceCoordinateM = 0.3;
       mechanism.config.travelRangeM = { lower: 0, upper: 0.6 };
+      if (narrowTrack)
+        for (const [railIndex, region] of mechanism.collisionRegions.entries())
+          region.localFramePart.positionM[0] = railIndex === 0 ? -0.1 : 0.1;
       return mechanism;
     },
     chassis = b.add("plate", [0, 1.56, 0]),
@@ -378,10 +381,14 @@ function cart() {
         config: { power: 1 },
       }),
     ),
-    guides = wheels.map((wheel) =>
+    guides = wheels.map((wheel, index) =>
       b.add("linear-guide", [wheel.pos[0], 1.15, wheel.pos[2]], {
         eulerRotation: [Math.PI / 2, 0, 0],
-        mechanism: suspensionGuide(),
+        // The stock guide's wide rail spacing is useful for exposed slides,
+        // but a front outboard rail would intersect the turning knuckle and
+        // hub motor. This ordinary narrow-track variant preserves real
+        // self-collision while giving the steering corner sweep clearance.
+        mechanism: suspensionGuide({ narrowTrack: index < 2 }),
       }),
     ),
     springs = wheels.map((wheel) =>
@@ -403,8 +410,8 @@ function cart() {
         {
           eulerRotation: [-Math.PI / 2, 0, 0],
           mechanism: poweredHingeMechanism({
-            lowerDeg: -28,
-            upperDeg: 28,
+            lowerDeg: -14,
+            upperDeg: 14,
             maximumTorqueNm: 1800,
           }),
         },
