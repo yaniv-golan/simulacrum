@@ -1,0 +1,48 @@
+{
+  "name": "@yaniv-golan/simulacrum-core",
+  "version": "0.1.0",
+  "description": "DOM-free assembly, simulation, scripting, and telemetry contracts for Simulacrum.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yaniv-golan/simulacrum.git",
+    "directory": "packages/core"
+  },
+  "engines": {
+    "node": ">=24.18 <25"
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md",
+    "SEMVER.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "scripts": {
+    "build": "node ../../scripts/build-core-package.mjs",
+    "check": "node ../../scripts/build-core-package.mjs",
+    "update-api": "node ../../scripts/build-core-package.mjs --local",
+    "prepack": "node ../../scripts/build-core-package.mjs"
+  },
+  "dependencies": {
+    "cannon-es": "^0.20.0",
+    "three": "^0.180.0",
+    "typescript": "^5.9.3",
+    "wabt": "^1.0.39"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

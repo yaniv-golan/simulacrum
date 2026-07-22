@@ -1,0 +1,611 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import { parse } from "acorn";
+import * as walk from "acorn-walk";
+import { analyze as analyzeScopes } from "eslint-scope";
+
+const DEFAULT_LAYERS = Object.freeze([
+  "application",
+  "core",
+  "model",
+  "presentation",
+  "scripting",
+  "simulation",
+]);
+
+const DEFAULT_ALLOWED_DEPENDENCIES = Object.freeze({
+  application: new Set(DEFAULT_LAYERS),
+  core: new Set(["core", "model", "scripting", "simulation"]),
+  model: new Set(["model"]),
+  presentation: new Set(["model", "presentation"]),
+  scripting: new Set(["model", "scripting"]),
+  simulation: new Set(["model", "simulation"]),
+});
+
+const DEFAULT_PUBLIC_ENTRYPOINTS = Object.freeze({
+  "@yaniv-golan/simulacrum-core": "core/index.js",
+});
+
+const SCRIPTING_MODEL_CONTRACTS = new Set([
+  "model/control-program-ir.js",
+  "model/controller-bindings.js",
+  "model/controller-policy.js",
+  "model/finite-or.js",
+]);
+
+const DELETED_RUNTIME_IDENTIFIERS = new Set([
+  "FlightTruthAdapter",
+  "poweredBattery",
+  "poweredControllerFor",
+  "poweredScriptControllersFor",
+  "globalCommand",
+  "controlConflicts",
+  "targetControlConflicts",
+  "RoverRuntime",
+  "roverRuntime",
+  "beforeRoverIntegration",
+  "afterRoverIntegration",
+  "onRoverContact",
+  "hasRoverAssembly",
+  "hasArticulatedAssembly",
+  "ArticulatedHumanoidRuntime",
+  "humanoidRuntime",
+  "articulatedRuntime",
+  "createHumanoidRig",
+  "destroyHumanoidRig",
+  "stanceLock",
+  "contactHeight",
+  "FlightRuntime",
+  "RigidBodyAerothermalRuntime",
+  "stepIntegration",
+  "coupleFlightForce",
+  "flightRigidBodyPose",
+  "startGeneralMultibodyRuntime",
+]);
+
+function violation(code, file, node, message) {
+  return {
+    code,
+    file,
+    line: node?.loc?.start?.line || 1,
+    column: (node?.loc?.start?.column || 0) + 1,
+    message,
+  };
+}
+
+async function filesBelow(directory) {
+  const entries = await fs.readdir(directory, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...(await filesBelow(target)));
+    else if (entry.name.endsWith(".js")) files.push(target);
+  }
+  return files;
+}
+
+function staticPropertyName(node) {
+  if (!node) return null;
+  if (!node.computed && node.property?.type === "Identifier")
+    return node.property.name;
+  if (
+    node.property?.type === "Literal" &&
+    typeof node.property.value === "string"
+  )
+    return node.property.value;
+  if (
+    node.property?.type === "TemplateLiteral" &&
+    node.property.expressions.length === 0
+  )
+    return node.property.quasis[0].value.cooked;
+  return null;
+}
+
+function staticModuleSpecifier(node) {
+  if (!node) return null;
+  if (node.type === "Literal" && typeof node.value === "string")
+    return node.value;
+  if (node.type === "TemplateLiteral" && node.expressions.length === 0)
+    return node.quasis[0].value.cooked;
+  return null;
+}
+
+function collectUnresolvedIdentifiers(ast) {
+  const scopeManager = analyzeScopes(ast, {
+      ecmaVersion: 2024,
+      sourceType: "module",
+      impliedStrict: true,
+    }),
+    unresolved = new Map();
+  for (const reference of scopeManager.globalScope?.through || [])
+    unresolved.set(reference.identifier, reference.identifier.name);
+  return unresolved;
+}
+
+function collectAliases(ast, unresolved) {
+  const aliases = new Map();
+
+  function originOf(node) {
+    if (!node) return null;
+    if (node.type === "ChainExpression") return originOf(node.expression);
+    if (node.type === "Identifier") {
+      if (aliases.has(node.name)) return aliases.get(node.name);
+      if (unresolved.has(node)) return `global:${node.name}`;
+      return `local:${node.name}`;
+    }
+    if (node.type === "ThisExpression") return "local:this";
+    if (node.type === "MemberExpression") {
+      const parent = originOf(node.object),
+        property = staticPropertyName(node);
+      return parent && property ? `${parent}.${property}` : null;
+    }
+    return null;
+  }
+
+  function bind(pattern, origin) {
+    if (!pattern || !origin) return false;
+    if (pattern.type === "Identifier") {
+      if (aliases.get(pattern.name) === origin) return false;
+      aliases.set(pattern.name, origin);
+      return true;
+    }
+    if (pattern.type === "AssignmentPattern") return bind(pattern.left, origin);
+    if (pattern.type === "RestElement") return bind(pattern.argument, origin);
+    if (pattern.type === "ObjectPattern") {
+      let changed = false;
+      for (const property of pattern.properties) {
+        if (property.type === "RestElement") continue;
+        const key = property.computed
+          ? property.key.type === "Literal"
+            ? property.key.value
+            : null
+          : property.key.name || property.key.value;
+        if (typeof key === "string")
+          changed = bind(property.value, `${origin}.${key}`) || changed;
+      }
+      return changed;
+    }
+    if (pattern.type === "ArrayPattern") {
+      let changed = false;
+      pattern.elements.forEach((element, index) => {
+        changed = bind(element, `${origin}.${index}`) || changed;
+      });
+      return changed;
+    }
+    return false;
+  }
+
+  const declarations = [],
+    assignments = [];
+  walk.simple(ast, {
+    VariableDeclarator(node) {
+      declarations.push(node);
+    },
+    AssignmentExpression(node) {
+      if (node.operator === "=") assignments.push(node);
+    },
+  });
+
+  for (
+    let pass = 0;
+    pass < declarations.length + assignments.length + 1;
+    pass++
+  ) {
+    let changed = false;
+    for (const node of declarations)
+      changed = bind(node.id, originOf(node.init)) || changed;
+    for (const node of assignments)
+      changed = bind(node.left, originOf(node.right)) || changed;
+    if (!changed) break;
+  }
+
+  return { aliases, originOf };
+}
+
+function parseModule(source, file) {
+  const ast = parse(source, {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      allowHashBang: true,
+      locations: true,
+      ranges: true,
+    }),
+    unresolved = collectUnresolvedIdentifiers(ast),
+    { originOf } = collectAliases(ast, unresolved),
+    imports = [],
+    members = [],
+    calls = [],
+    constructors = [],
+    identifiers = [];
+
+  walk.simple(ast, {
+    ImportDeclaration(node) {
+      imports.push({ node, specifier: node.source.value, dynamic: false });
+    },
+    ExportNamedDeclaration(node) {
+      if (node.source)
+        imports.push({ node, specifier: node.source.value, dynamic: false });
+    },
+    ExportAllDeclaration(node) {
+      imports.push({ node, specifier: node.source.value, dynamic: false });
+    },
+    ImportExpression(node) {
+      imports.push({
+        node,
+        specifier: staticModuleSpecifier(node.source),
+        dynamic: true,
+      });
+    },
+    MemberExpression(node) {
+      members.push({
+        node,
+        origin: originOf(node),
+        property: staticPropertyName(node),
+      });
+    },
+    CallExpression(node) {
+      calls.push({ node, origin: originOf(node.callee) });
+    },
+    NewExpression(node) {
+      constructors.push({ node, origin: originOf(node.callee) });
+    },
+    Identifier(node) {
+      identifiers.push({
+        node,
+        name: node.name,
+        origin: originOf(node),
+        unresolved: unresolved.has(node),
+      });
+    },
+  });
+
+  return { ast, file, imports, members, calls, constructors, identifiers };
+}
+
+function layerOf(sourceRoot, file, layers) {
+  const candidate = path.relative(sourceRoot, file).split(path.sep)[0];
+  return layers.includes(candidate) ? candidate : null;
+}
+
+function referencesBrowserRoot(origin) {
+  return /^(?:global:(?:document|window)|global:globalThis\.(?:document|window))(?:\.|$)/.test(
+    origin || "",
+  );
+}
+
+function referencesBrowserStorage(origin) {
+  return /^(?:global:(?:localStorage|sessionStorage)|global:globalThis\.(?:localStorage|sessionStorage))(?:\.|$)/.test(
+    origin || "",
+  );
+}
+
+function statePath(origin, property) {
+  return new RegExp(`(?:^|:)state\\.${property}(?:\\.|$)`).test(origin || "");
+}
+
+function relative(root, file) {
+  return path.relative(root, file).split(path.sep).join("/");
+}
+
+function collectPolicyViolations({ root, module, layer }) {
+  const file = relative(root, module.file),
+    violations = [],
+    domFree = ["model", "scripting", "simulation"].includes(layer),
+    storageOwner = file === "src/application/browser-storage.js";
+
+  for (const item of module.imports)
+    if (item.dynamic && item.specifier === null)
+      violations.push(
+        violation(
+          "NON_LITERAL_DYNAMIC_IMPORT",
+          file,
+          item.node,
+          "dynamic imports must use a statically analyzable string specifier",
+        ),
+      );
+
+  for (const item of module.members) {
+    const { node, origin, property } = item;
+    if (
+      domFree &&
+      (referencesBrowserRoot(origin) ||
+        [
+          "querySelector",
+          "querySelectorAll",
+          "classList",
+          "textContent",
+        ].includes(property))
+    )
+      violations.push(
+        violation(
+          "FORBIDDEN_PRESENTATION_API",
+          file,
+          node,
+          `${layer} may not access presentation API ${origin || property}`,
+        ),
+      );
+    if (["model", "simulation"].includes(layer) && property === "mesh")
+      violations.push(
+        violation(
+          "FORBIDDEN_RENDER_STATE",
+          file,
+          node,
+          `${layer} may not access mesh state`,
+        ),
+      );
+    if (layer === "simulation" && statePath(origin, "demo"))
+      violations.push(
+        violation(
+          "DEMO_PHYSICS_DISPATCH",
+          file,
+          node,
+          "simulation may not dispatch by demo identity",
+        ),
+      );
+    if (
+      !storageOwner &&
+      (referencesBrowserStorage(origin) || origin === "local:storage.storage")
+    )
+      violations.push(
+        violation(
+          "BROWSER_STORAGE_BYPASS",
+          file,
+          node,
+          "persistent browser storage must be accessed through BrowserStorage",
+        ),
+      );
+    if (statePath(origin, "commands"))
+      violations.push(
+        violation(
+          "PARALLEL_COMMAND_AUTHORITY",
+          file,
+          node,
+          "state.commands is a deleted parallel command authority",
+        ),
+      );
+  }
+
+  for (const item of module.calls) {
+    const { node, origin } = item;
+    if (
+      layer === "simulation" &&
+      /(?:^|\.)(?:world)\.step$/.test(origin || "") &&
+      file !== "src/simulation/cannon-world-adapter.js"
+    )
+      violations.push(
+        violation(
+          "WORLD_STEP_OWNER",
+          file,
+          node,
+          "Cannon integration is owned only by cannon-world-adapter.js",
+        ),
+      );
+    if (
+      layer === "simulation" &&
+      /(?:^|\.)(?:worldAdapter|adapter)\.integrate$/.test(origin || "") &&
+      file !== "src/simulation/systems/rigid-body-system.js"
+    )
+      violations.push(
+        violation(
+          "INTEGRATION_OWNER",
+          file,
+          node,
+          "world integration is owned only by rigid-body-system.js",
+        ),
+      );
+    if (
+      layer === "scripting" &&
+      /(?:^|[.:])(?:eval|setTimeout)$/.test(origin || "")
+    )
+      violations.push(
+        violation(
+          "UNSAFE_SCRIPTING_API",
+          file,
+          node,
+          `scripting may not call ${origin.slice(7)}`,
+        ),
+      );
+    if (layer === "scripting" && /\.createObjectURL$/.test(origin || ""))
+      violations.push(
+        violation(
+          "UNSAFE_SCRIPTING_API",
+          file,
+          node,
+          "scripting may not create object URLs",
+        ),
+      );
+  }
+
+  for (const item of module.constructors)
+    if (
+      layer === "scripting" &&
+      /(?:^|:)(?:Function|Worker|Blob)$/.test(item.origin || "")
+    )
+      violations.push(
+        violation(
+          "UNSAFE_SCRIPTING_API",
+          file,
+          item.node,
+          `scripting may not construct ${item.origin.split(":").at(-1)}`,
+        ),
+      );
+
+  for (const item of module.identifiers) {
+    if (domFree && referencesBrowserRoot(item.origin))
+      violations.push(
+        violation(
+          "FORBIDDEN_PRESENTATION_API",
+          file,
+          item.node,
+          `${layer} may not reference presentation API ${item.origin}`,
+        ),
+      );
+    if (!storageOwner && referencesBrowserStorage(item.origin))
+      violations.push(
+        violation(
+          "BROWSER_STORAGE_BYPASS",
+          file,
+          item.node,
+          "persistent browser storage must be accessed through BrowserStorage",
+        ),
+      );
+    if (layer === "simulation" && statePath(item.origin, "demo"))
+      violations.push(
+        violation(
+          "DEMO_PHYSICS_DISPATCH",
+          file,
+          item.node,
+          "simulation may not dispatch by destructured demo identity",
+        ),
+      );
+    if (DELETED_RUNTIME_IDENTIFIERS.has(item.name))
+      violations.push(
+        violation(
+          "DELETED_RUNTIME_AUTHORITY",
+          file,
+          item.node,
+          `${item.name} is a deleted runtime authority`,
+        ),
+      );
+  }
+
+  if (layer === "model")
+    for (const item of module.imports)
+      if (["three", "cannon-es"].includes(item.specifier))
+        violations.push(
+          violation(
+            "MODEL_ENGINE_DEPENDENCY",
+            file,
+            item.node,
+            `model may not import ${item.specifier}`,
+          ),
+        );
+
+  return violations;
+}
+
+function findCycles(graph, root) {
+  const visited = new Set(),
+    visiting = new Set(),
+    violations = [];
+
+  function visit(file, trail) {
+    if (visiting.has(file)) {
+      const start = trail.indexOf(file),
+        cycle = [...trail.slice(start), file];
+      violations.push({
+        code: "MODULE_CYCLE",
+        file: relative(root, file),
+        line: 1,
+        column: 1,
+        message: `module cycle: ${cycle.map((item) => relative(root, item)).join(" -> ")}`,
+      });
+      return;
+    }
+    if (visited.has(file)) return;
+    visiting.add(file);
+    for (const dependency of graph.get(file) || [])
+      visit(dependency, [...trail, file]);
+    visiting.delete(file);
+    visited.add(file);
+  }
+
+  for (const file of graph.keys()) visit(file, []);
+  return violations;
+}
+
+/**
+ * Parse a source tree and return its complete static/dynamic module graph plus
+ * structural architecture violations. Callers decide whether to report or
+ * throw, which keeps the analyzer reusable by production gates and adversarial
+ * fixtures.
+ */
+export async function analyzeArchitecture({
+  root,
+  sourceRoot = path.join(root, "src"),
+  layers = DEFAULT_LAYERS,
+  allowedDependencies = DEFAULT_ALLOWED_DEPENDENCIES,
+  scriptingModelContracts = SCRIPTING_MODEL_CONTRACTS,
+  publicEntrypoints = DEFAULT_PUBLIC_ENTRYPOINTS,
+} = {}) {
+  const files = await filesBelow(sourceRoot),
+    graph = new Map(files.map((file) => [file, []])),
+    modules = new Map(),
+    violations = [];
+
+  for (const file of files) {
+    const source = await fs.readFile(file, "utf8");
+    let module;
+    try {
+      module = parseModule(source, file);
+      modules.set(file, module);
+    } catch (error) {
+      violations.push({
+        code: "PARSE_ERROR",
+        file: relative(root, file),
+        line: error.loc?.line || 1,
+        column: (error.loc?.column || 0) + 1,
+        message: error.message,
+      });
+      continue;
+    }
+
+    const from = layerOf(sourceRoot, file, layers);
+    violations.push(...collectPolicyViolations({ root, module, layer: from }));
+
+    for (const item of module.imports) {
+      const specifier = item.specifier;
+      if (!specifier) continue;
+      const publicTarget = publicEntrypoints[specifier],
+        local = specifier.startsWith(".");
+      if (!local && !publicTarget) continue;
+      if (local && path.extname(specifier) && path.extname(specifier) !== ".js")
+        continue;
+      const target = publicTarget
+        ? path.resolve(sourceRoot, publicTarget)
+        : path.resolve(path.dirname(file), specifier);
+      if (!graph.has(target)) {
+        violations.push(
+          violation(
+            "MISSING_LOCAL_IMPORT",
+            relative(root, file),
+            item.node,
+            `${publicTarget ? "public" : "local"} import does not exist: ${specifier}`,
+          ),
+        );
+        continue;
+      }
+      graph.get(file).push(target);
+      const to = layerOf(sourceRoot, target, layers);
+      if (from && to && !allowedDependencies[from]?.has(to))
+        violations.push(
+          violation(
+            "LAYER_DIRECTION",
+            relative(root, file),
+            item.node,
+            `${from} may not import ${to}: ${specifier}`,
+          ),
+        );
+      if (
+        from === "scripting" &&
+        to === "model" &&
+        !scriptingModelContracts.has(relative(sourceRoot, target))
+      )
+        violations.push(
+          violation(
+            "SCRIPTING_MODEL_SURFACE",
+            relative(root, file),
+            item.node,
+            `scripting may import only explicit model contracts: ${specifier}`,
+          ),
+        );
+    }
+  }
+
+  violations.push(...findCycles(graph, root));
+  return { files, graph, modules, violations };
+}
+
+export function formatArchitectureViolation(item) {
+  return `${item.file}:${item.line}:${item.column} [${item.code}] ${item.message}`;
+}

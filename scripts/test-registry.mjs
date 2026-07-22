@@ -1,0 +1,122 @@
+/**
+ * Verification suites executed by `npm test`, in intentional run order.
+ *
+ * Every `scripts/verify-*.mjs` file must be listed here or in
+ * `NON_SUITE_VERIFICATION_FILES`. `verify-test-harness.mjs` enforces that
+ * invariant so a newly-added verifier cannot be silently skipped by CI.
+ */
+export const VERIFICATION_CHECKS = Object.freeze([
+  "verify-test-harness.mjs",
+  "verify-strict-current-contract.mjs",
+  "verify-current-contract-baseline.mjs",
+  "verify-browser-errors.mjs",
+  "verify-generated-artifacts.mjs",
+  "verify-wire-formats.mjs",
+  "verify-workspace-state.mjs",
+  "verify-module-graph.mjs",
+  "verify-architecture-fixtures.mjs",
+  "verify-architecture.mjs",
+  "verify-capability-dispatch.mjs",
+  "verify-mechanism-authoring-contracts.mjs",
+  "verify-mechanism-artifacts.mjs",
+  "verify-mechanism-authored-components.mjs",
+  "verify-mechanism-geometry-compiler.mjs",
+  "verify-geometry-covariance.mjs",
+  "verify-elastic-elements.mjs",
+  "verify-guide-actuator-runtime.mjs",
+  "verify-suspension-mechanisms.mjs",
+  "verify-active-stabilization.mjs",
+  "verify-wheel-contact-runtime.mjs",
+  "verify-collision-failure-runtime.mjs",
+  "verify-cannon-solver-transaction.mjs",
+  "verify-physics-stress.mjs",
+  "verify-physics-checkpoints.mjs",
+  "verify-release-coupler.mjs",
+  "verify-environment-proximity.mjs",
+  "verify-mechanism-authoring-browser.mjs",
+  "verify-mechanism-transform-authoring.mjs",
+  "verify-mechanism-accessibility.mjs",
+  "verify-mechanism-sharing-proof.mjs",
+  "verify-core-model.mjs",
+  "verify-core-pack.mjs",
+  "verify-model-contracts.mjs",
+  "verify-simulation-runtime-model.mjs",
+  "verify-physical-assembly-index.mjs",
+  "verify-simulation-integration-boundary.mjs",
+  "verify-power-signal-command-networks.mjs",
+  "verify-material-resources.mjs",
+  "verify-conserved-propulsion.mjs",
+  "verify-controller-sandbox.mjs",
+  "verify-controller-bindings.mjs",
+  "verify-flight-command-transition.mjs",
+  "verify-render-resources.mjs",
+  "verify-bundle-budget.mjs",
+  "verify-rendering-performance.mjs",
+  "verify-port-editor-browser.mjs",
+  "verify-blueprint-transaction.mjs",
+  "verify-blueprint-decoder.mjs",
+  "verify-browser-storage.mjs",
+  "verify-executable-trust.mjs",
+  "verify-share-packages.mjs",
+  "verify-share-exchange-service.mjs",
+  "verify-challenges-failure-quality.mjs",
+  "verify-logic-tooling.mjs",
+  "verify-logic-workbench.mjs",
+  "verify-open-challenges.mjs",
+  "verify-assembly-compiler-characterization.mjs",
+  "verify-assembly-compiler.mjs",
+  "verify-five-demos.mjs",
+  "verify-articulated-runtime.mjs",
+  "verify-articulated-browser.mjs",
+  "verify-component-aerothermal-runtime.mjs",
+  "verify-flight-runtime-budget.mjs",
+  "verify-flight-browser.mjs",
+  "verify-flight-command-browser.mjs",
+  "verify-release-coupler-browser.mjs",
+  "verify-rover-runtime.mjs",
+  "verify-camera-tracker.mjs",
+  "verify-blueprint-roundtrip.mjs",
+  "verify-blueprint-exchange.mjs",
+  "verify-hybrid-assembly.mjs",
+  "verify-multi-controller.mjs",
+  "verify-direct-layout.mjs",
+  "verify-adaptive-workspace.mjs",
+  "verify-accessibility.mjs",
+  "verify-editor-tools.mjs",
+  "verify-failure-analysis.mjs",
+  "verify-direct-surfaces.mjs",
+  "verify-earth-stream.mjs",
+  "verify-earth-stream-collision.mjs",
+  "verify-atmospheric-landmarks.mjs",
+  "verify-wind-field.mjs",
+  "verify-terrain-collision-stream.mjs",
+  "verify-rover-drop.mjs",
+  "verify-hard-impact.mjs",
+]);
+
+/**
+ * Explicit exceptions for workflows that intentionally exercise several
+ * reload/persistence boundaries in one browser. Product performance limits
+ * remain inside their owning suites; these values bound orchestration only.
+ */
+export const VERIFICATION_TIMEOUT_MS = Object.freeze({
+  "verify-blueprint-exchange.mjs": 300_000,
+  "verify-editor-tools.mjs": 300_000,
+});
+
+/**
+ * Verification helpers or manually-run release probes that are intentionally
+ * not independent `npm test` suites.
+ */
+export const NON_SUITE_VERIFICATION_FILES = Object.freeze([
+  "verify-boundary-types.mjs",
+  "verify-challenge-lab.mjs",
+  "verify-performance-budget-live.mjs",
+  "verify-performance-budget.mjs",
+  "verify-model-boundaries.mjs",
+  "verify-release-snapshot.mjs",
+  "verify-release-soak.mjs",
+  "verify-sharing-branches.mjs",
+  "verify-sharing.mjs",
+  "verify-wire-coverage.mjs",
+]);

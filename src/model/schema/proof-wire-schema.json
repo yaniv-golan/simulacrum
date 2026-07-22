@@ -1,0 +1,186 @@
+{
+  "$id": "https://simulacrum.local/schema/proof-wire-schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "proofVersion",
+    "challengeVersion",
+    "challengeId",
+    "assetFingerprint",
+    "score",
+    "solution",
+    "recordedAt",
+    "binding",
+    "terminal",
+    "environment",
+    "controllerPrograms"
+  ],
+  "properties": {
+    "proofVersion": { "const": 1 },
+    "challengeVersion": { "type": "integer", "minimum": 1 },
+    "challengeId": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "assetFingerprint": {
+      "type": "string",
+      "pattern": "^sim-sha256-[0-9a-f]{64}$"
+    },
+    "score": { "type": "number", "minimum": 0 },
+    "solution": { "type": "string", "maxLength": 2000 },
+    "recordedAt": { "type": "string", "format": "date-time" },
+    "binding": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "policyVersion",
+            "rootPartId",
+            "initialComponentId"
+          ],
+          "properties": {
+            "kind": { "const": "component" },
+            "policyVersion": { "const": 1 },
+            "rootPartId": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "initialComponentId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "policyVersion",
+            "rootPartId",
+            "payloadPartId",
+            "initialComponentId"
+          ],
+          "properties": {
+            "kind": { "const": "payload" },
+            "policyVersion": { "const": 1 },
+            "rootPartId": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "payloadPartId": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "initialComponentId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "policyVersion", "inputPartId", "outputPartId"],
+          "properties": {
+            "kind": { "const": "mechanism" },
+            "policyVersion": { "const": 1 },
+            "inputPartId": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "outputPartId": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "terminal": {
+      "type": "object",
+      "required": ["criteria", "metrics"],
+      "properties": {
+        "criteria": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "required": ["id", "met", "current", "target"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+              "met": { "type": "boolean" },
+              "current": { "type": "string", "maxLength": 96 },
+              "target": { "type": "string", "maxLength": 96 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "required": [
+            "massKg",
+            "partCount",
+            "energyUsed",
+            "damage",
+            "worstFatigue",
+            "apexM",
+            "touchedWater",
+            "payloadSecured"
+          ],
+          "properties": {
+            "massKg": { "type": "number", "minimum": 0 },
+            "partCount": { "type": "integer", "minimum": 0 },
+            "energyUsed": { "type": "number", "minimum": 0 },
+            "damage": { "type": "integer", "minimum": 0 },
+            "worstFatigue": { "type": "number", "minimum": 0 },
+            "apexM": { "type": "number", "minimum": 0 },
+            "touchedWater": { "type": "boolean" },
+            "payloadSecured": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "environment": {
+      "type": "object",
+      "required": ["seed", "latitude", "longitude", "timeOfDay", "windEnabled"],
+      "properties": {
+        "seed": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+        "timeOfDay": { "type": "number", "minimum": 0, "maximum": 24 },
+        "windEnabled": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "controllerPrograms": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "required": ["partId", "digest"],
+        "properties": {
+          "partId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "extensions": {
+      "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/extensions"
+    }
+  },
+  "additionalProperties": false
+}

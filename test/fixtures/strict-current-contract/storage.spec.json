@@ -1,0 +1,42 @@
+{
+  "namespace": {
+    "pointerKey": "simulacrum.v1.storage.commit",
+    "manifestPrefix": "simulacrum.v1.storage.manifest.",
+    "generationPrefix": "simulacrum.v1.storage.generation."
+  },
+  "pointer": {
+    "protocolVersion": 1,
+    "manifestId": "00000000000000000000000000000000"
+  },
+  "manifest": {
+    "protocolVersion": 1,
+    "manifestId": "00000000000000000000000000000000",
+    "generationId": "11111111111111111111111111111111",
+    "previousManifestId": null,
+    "createdAt": "2026-07-17T00:00:00.000Z",
+    "roots": {
+      "workspace": null,
+      "subassemblyLibrary": null,
+      "sharePackages": null,
+      "shareSocial": null,
+      "shareOrigins": null,
+      "challengeRecords": null,
+      "challengeBest": null,
+      "discovery": null,
+      "environmentPreferences": null,
+      "executableTrust": null
+    }
+  },
+  "owners": {
+    "workspace": "workspace",
+    "subassemblyLibrary": "subassembly",
+    "sharePackages": "share",
+    "shareSocial": "share",
+    "shareOrigins": "share",
+    "challengeRecords": "challenge",
+    "challengeBest": "challenge",
+    "discovery": "discovery",
+    "environmentPreferences": "preferences",
+    "executableTrust": "trust"
+  }
+}

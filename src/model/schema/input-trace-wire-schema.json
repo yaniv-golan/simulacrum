@@ -1,0 +1,65 @@
+{
+  "$id": "https://simulacrum.local/schema/input-trace-wire-schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "runConfigurationFingerprint",
+    "startTick",
+    "endTick",
+    "inputs"
+  ],
+  "properties": {
+    "format": { "const": "simulacrum-input-trace" },
+    "version": { "const": 1 },
+    "runConfigurationFingerprint": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+    },
+    "startTick": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/tick"
+    },
+    "endTick": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/tick"
+    },
+    "inputs": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "required": [
+          "tick",
+          "sequence",
+          "sourceId",
+          "targetId",
+          "channelId",
+          "value"
+        ],
+        "properties": {
+          "tick": {
+            "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/tick"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "sourceId": {
+            "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+          },
+          "targetId": {
+            "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+          },
+          "channelId": {
+            "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+          },
+          "value": {
+            "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/sampleValue"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,46 @@
+{
+  "format": "simulacrum-share-package",
+  "version": 1,
+  "kind": "subassembly",
+  "fingerprint": "sim-sha256-0000000000000000000000000000000000000000000000000000000000000000",
+  "metadata": {
+    "title": "Reusable beam",
+    "description": "Reviewed specification fixture",
+    "tags": ["structure"],
+    "creator": "Simulacrum",
+    "thumbnail": "",
+    "createdAt": "2026-07-17T00:00:00.000Z",
+    "updatedAt": "2026-07-17T00:00:00.000Z"
+  },
+  "provenance": {
+    "parentFingerprint": null,
+    "rootFingerprint": "sim-sha256-0000000000000000000000000000000000000000000000000000000000000000",
+    "remixDepth": 0,
+    "originalCreator": "Simulacrum"
+  },
+  "dependencies": {
+    "componentTypes": ["beam"],
+    "controllerLanguages": [],
+    "partCount": 1,
+    "connectionCount": 0
+  },
+  "verification": [],
+  "asset": {
+    "format": "simulacrum-subassembly",
+    "version": 1,
+    "name": "Reusable beam",
+    "accent": "#70e0c4",
+    "parts": [
+      {
+        "id": 1,
+        "type": "beam",
+        "pos": [0, 0, 0],
+        "orientation": [0, 0, 0, 1],
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "config": { "mass": 18, "size": [2.4, 0.35, 0.35] }
+      }
+    ],
+    "connections": [],
+    "exposedPorts": []
+  }
+}

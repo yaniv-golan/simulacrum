@@ -1,0 +1,389 @@
+.logic-workbench {
+  width: min(1120px, calc(100vw - 40px));
+  max-height: calc(100vh - 108px);
+  overflow: auto;
+}
+.logic-workbench .visual-logic-workspace {
+  border: 1px solid #294844;
+  background: #061314;
+}
+.controller-binding-editor {
+  margin: 8px 0;
+  border: 1px solid #294844;
+  background: #071617;
+}
+.controller-binding-editor summary,
+.controller-binding-actions,
+.controller-binding-row {
+  display: flex;
+  align-items: center;
+}
+.controller-binding-editor summary {
+  gap: 8px;
+  padding: 8px;
+  color: #c8e7df;
+  font: 700 7px "Space Grotesk";
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+.controller-binding-editor summary small {
+  color: #6f8d88;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.controller-binding-actions {
+  gap: 5px;
+  padding: 0 8px 7px;
+}
+.controller-binding-actions button,
+.controller-binding-row button {
+  border: 1px solid #32544f;
+  background: #102321;
+  color: #a5c5be;
+  font: 600 6px "Space Grotesk";
+  cursor: pointer;
+}
+.controller-binding-list {
+  display: grid;
+  gap: 4px;
+  padding: 0 8px 8px;
+}
+.controller-binding-row {
+  display: grid;
+  grid-template-columns: 8px minmax(90px, 0.55fr) minmax(180px, 1.45fr) auto 24px;
+  gap: 7px;
+  padding: 6px;
+  border: 1px solid #263f3c;
+  background: #0a1b1c;
+}
+.controller-binding-row > i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #70e0c4;
+  box-shadow: 0 0 7px #70e0c4;
+}
+.controller-binding-row.offline > i {
+  background: #df775d;
+  box-shadow: 0 0 7px #df775d;
+}
+.controller-binding-row label {
+  display: grid;
+  gap: 2px;
+  color: #64817b;
+  font: 600 6px "Space Grotesk";
+}
+.controller-binding-row input,
+.controller-binding-row select {
+  min-width: 0;
+  padding: 5px;
+  border: 1px solid #294944;
+  background: #071414;
+  color: #b7d5ce;
+  font: 7px "Space Grotesk";
+}
+.controller-binding-row small,
+.controller-binding-empty {
+  color: #70cbb8;
+  font: 600 6px "Space Grotesk";
+}
+.controller-binding-row.offline small {
+  color: #df8b73;
+}
+.logic-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  padding: 7px;
+  border-bottom: 1px solid #294844;
+}
+.logic-toolbar span,
+.logic-debug h4 {
+  color: #6f8d88;
+  font: 700 6px "Space Grotesk";
+  letter-spacing: 0.14em;
+}
+.logic-toolbar button,
+.logic-debug button {
+  padding: 6px 7px;
+  border: 1px solid #32544f;
+  border-radius: 3px;
+  background: #102321;
+  color: #a5c5be;
+  font: 600 6px "Space Grotesk";
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.logic-toolbar #logic-reset {
+  margin-left: auto;
+  color: #eeb65c;
+}
+.logic-canvas {
+  position: relative;
+  height: 470px;
+  overflow: auto;
+  background-image:
+    linear-gradient(#17302d55 1px, transparent 1px),
+    linear-gradient(90deg, #17302d55 1px, transparent 1px),
+    radial-gradient(circle at 50% 0%, #15322b55, transparent 60%);
+  background-size:
+    20px 20px,
+    20px 20px,
+    100% 100%;
+}
+.logic-wires,
+.logic-nodes {
+  position: absolute;
+  inset: 0;
+  width: 980px;
+  height: 470px;
+}
+.logic-wires {
+  pointer-events: none;
+  overflow: visible;
+}
+.logic-wires path {
+  fill: none;
+  stroke: #6fdac1;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 4px #70e0c477);
+}
+.logic-node {
+  position: absolute;
+  width: 184px;
+  border: 1px solid #365a54;
+  border-radius: 5px;
+  background: #0a1b1ccc;
+  box-shadow: 0 9px 24px #0008;
+}
+.logic-node header {
+  display: grid;
+  grid-template-columns: 8px 1fr auto 18px;
+  gap: 5px;
+  align-items: center;
+  padding: 6px;
+  background: #122b28;
+  cursor: grab;
+}
+.logic-node header > i,
+.logic-sensor-list button > i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #70e0c4;
+  box-shadow: 0 0 7px #70e0c4;
+}
+.logic-node header b {
+  color: #daf1eb;
+  font: 700 7px "Space Grotesk";
+  letter-spacing: 0.08em;
+}
+.logic-node header small {
+  color: #62827c;
+  font-size: 6px;
+}
+.logic-node header button {
+  border: 0;
+  background: transparent;
+  color: #74928d;
+  cursor: pointer;
+}
+.logic-node > div {
+  display: grid;
+  gap: 5px;
+  padding: 7px;
+}
+.logic-node label {
+  display: grid;
+  gap: 3px;
+  color: #62837c;
+  font: 600 6px "Space Grotesk";
+}
+.logic-node select,
+.logic-node input,
+.logic-breakpoint select,
+.logic-breakpoint input {
+  min-width: 0;
+  padding: 5px;
+  border: 1px solid #294944;
+  background: #071414;
+  color: #a9c8c1;
+  font: 7px "Space Grotesk";
+}
+.logic-input {
+  grid-template-columns: 8px 28px 1fr;
+  align-items: center;
+}
+.logic-input i {
+  width: 7px;
+  height: 7px;
+  margin-left: -11px;
+  border: 1px solid #6fdac1;
+  border-radius: 50%;
+  background: #09201d;
+}
+.logic-inline {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+.logic-output-port {
+  position: absolute;
+  top: 48px;
+  right: -5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #70e0c4;
+  box-shadow: 0 0 8px #70e0c4;
+}
+.logic-debug {
+  margin-top: 9px;
+  padding: 9px;
+  border: 1px solid #2b4a46;
+  background: #071617;
+}
+.logic-debug-head,
+.logic-debug-head > div,
+.logic-sensor-list button,
+.logic-breakpoint {
+  display: flex;
+  align-items: center;
+}
+.logic-debug-head {
+  justify-content: space-between;
+}
+.logic-debug-head > div {
+  gap: 6px;
+}
+.logic-debug-head b {
+  color: #7fdcc8;
+  font: 700 7px "Space Grotesk";
+  letter-spacing: 0.08em;
+}
+.breakpoint-hit .logic-debug {
+  border-color: #e8ad54;
+  box-shadow: inset 3px 0 #e8ad54;
+}
+.breakpoint-hit #logic-debug-status {
+  color: #ffc86f;
+}
+.logic-debug-grid {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+.logic-debug section {
+  min-width: 0;
+}
+.logic-sensor-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  max-height: 164px;
+  overflow: auto;
+}
+.logic-sensor-list button {
+  gap: 6px;
+  padding: 5px;
+  text-align: left;
+}
+.logic-sensor-list button > span {
+  display: grid;
+  flex: 1;
+}
+.logic-sensor-list button b,
+.logic-sensor-list button small {
+  font: 600 6px "Space Grotesk";
+}
+.logic-sensor-list button small {
+  color: #64817b;
+}
+.logic-sensor-list button em {
+  color: #90b3ab;
+  font: 600 7px monospace;
+}
+.logic-sensor-list button:not(.active) > i {
+  background: #314945;
+  box-shadow: none;
+}
+.logic-scope {
+  border: 1px solid #263f3c;
+  background: #040d0e;
+}
+.logic-scope svg {
+  display: block;
+  width: 100%;
+  height: 72px;
+}
+.scope-grid path {
+  fill: none;
+  stroke: #1e3432;
+  stroke-width: 0.7;
+}
+.scope-trace {
+  fill: none;
+  stroke-width: 1.8;
+  vector-effect: non-scaling-stroke;
+}
+.logic-scope > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 4px;
+  font: 6px monospace;
+}
+.logic-breakpoint {
+  gap: 4px;
+  margin-top: 5px;
+}
+.logic-breakpoint select:first-child {
+  flex: 1;
+}
+.logic-breakpoint input {
+  width: 58px;
+}
+.logic-variables {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  max-height: 72px;
+  margin-top: 5px;
+  overflow: auto;
+}
+.logic-variables span {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 3px;
+  background: #0c201e;
+  color: #6d8984;
+  font: 6px monospace;
+}
+.logic-variables em {
+  color: #a5c8c0;
+  font-style: normal;
+}
+.logic-workbench.visual-mode textarea,
+.logic-workbench.visual-mode .wasm-api {
+  display: none;
+}
+@media (max-width: 1080px) {
+  .logic-workbench {
+    top: 76px;
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 152px);
+  }
+  .logic-canvas {
+    height: 360px;
+  }
+  .logic-wires,
+  .logic-nodes {
+    height: 360px;
+  }
+  .logic-debug-grid {
+    grid-template-columns: 1fr;
+  }
+}

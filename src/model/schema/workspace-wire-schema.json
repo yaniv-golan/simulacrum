@@ -1,0 +1,88 @@
+{
+  "$id": "https://simulacrum.local/schema/workspace-wire-schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "blueprint",
+    "idSeed",
+    "selectedPartIds",
+    "selectedControllerId",
+    "activeRemoteProfile",
+    "programAcquisitionByController",
+    "remoteControlState",
+    "controllerWindowState"
+  ],
+  "properties": {
+    "format": { "const": "simulacrum-workspace" },
+    "version": { "const": 1 },
+    "blueprint": {
+      "$ref": "https://simulacrum.local/schema/blueprint-wire-schema.json"
+    },
+    "idSeed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "selectedPartIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 300,
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9007199254740991
+      }
+    },
+    "selectedControllerId": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "activeRemoteProfile": {
+      "anyOf": [
+        {
+          "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/identifier"
+        },
+        { "type": "null" }
+      ]
+    },
+    "programAcquisitionByController": {
+      "type": "object",
+      "maxProperties": 300,
+      "propertyNames": { "pattern": "^(?:0|[1-9][0-9]{0,15})$" },
+      "additionalProperties": {
+        "enum": [
+          "LOCAL_AUTHORING",
+          "BUILT_IN",
+          "FILE_IMPORT",
+          "SHARE_IMPORT",
+          "UNKNOWN_UNTRUSTED"
+        ]
+      }
+    },
+    "remoteControlState": {
+      "type": "object",
+      "maxProperties": 64,
+      "propertyNames": {
+        "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/identifier"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "maxProperties": 128,
+        "propertyNames": {
+          "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/identifier"
+        },
+        "additionalProperties": { "type": "number" }
+      }
+    },
+    "controllerWindowState": {
+      "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/controllerWindowState"
+    },
+    "extensions": {
+      "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/extensions"
+    }
+  },
+  "additionalProperties": false
+}

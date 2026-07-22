@@ -1,0 +1,1173 @@
+{
+  "$id": "https://simulacrum.local/schema/mechanism-authored-component-wire-schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "positive": { "type": "number", "exclusiveMinimum": 0 },
+    "nonnegative": { "type": "number", "minimum": 0 },
+    "ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+    "vector3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "number" }
+    },
+    "quaternion": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "type": "number" }
+    },
+    "dimensionalScalingPolicy": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "const": "fixed-authored-size-v1" }
+      },
+      "additionalProperties": false
+    },
+    "frame": {
+      "type": "object",
+      "required": ["positionM", "orientation"],
+      "properties": {
+        "positionM": { "$ref": "#/$defs/vector3" },
+        "orientation": { "$ref": "#/$defs/quaternion" }
+      },
+      "additionalProperties": false
+    },
+    "geometry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "fullSizeM"],
+          "properties": {
+            "kind": { "const": "box-v1" },
+            "fullSizeM": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": { "$ref": "#/$defs/positive" }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "radiusM"],
+          "properties": {
+            "kind": { "const": "sphere-v1" },
+            "radiusM": { "$ref": "#/$defs/positive" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "radiusM", "axialLengthM", "axis"],
+          "properties": {
+            "kind": { "const": "cylinder-v1" },
+            "radiusM": { "$ref": "#/$defs/positive" },
+            "axialLengthM": { "$ref": "#/$defs/positive" },
+            "axis": { "const": "local-positive-z-v1" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "radiusM", "straightLengthM", "axis"],
+          "properties": {
+            "kind": { "const": "capsule-v1" },
+            "radiusM": { "$ref": "#/$defs/positive" },
+            "straightLengthM": { "$ref": "#/$defs/nonnegative" },
+            "axis": { "const": "local-positive-z-v1" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "radiusM", "widthM", "shoulderRadiusM", "axis"],
+          "properties": {
+            "kind": { "const": "rounded-wheel-v1" },
+            "radiusM": { "$ref": "#/$defs/positive" },
+            "widthM": { "$ref": "#/$defs/positive" },
+            "shoulderRadiusM": { "$ref": "#/$defs/positive" },
+            "axis": { "const": "local-positive-z-v1" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "coordinateExponent10",
+            "verticesTicks",
+            "triangleIndices"
+          ],
+          "properties": {
+            "kind": { "const": "closed-triangle-mesh-v1" },
+            "coordinateExponent10": {
+              "type": "integer",
+              "minimum": -12,
+              "maximum": 6
+            },
+            "verticesTicks": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 10000,
+              "items": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "triangleIndices": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 30000,
+              "items": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": { "type": "integer", "minimum": 0 }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "massPropertySource": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "massKg",
+            "comPositionPartM",
+            "inertiaTensorAtComPartKgM2"
+          ],
+          "properties": {
+            "kind": { "const": "explicit-tensor-v1" },
+            "massKg": { "$ref": "#/$defs/positive" },
+            "comPositionPartM": { "$ref": "#/$defs/vector3" },
+            "inertiaTensorAtComPartKgM2": {
+              "type": "object",
+              "required": ["xx", "yy", "zz", "xy", "xz", "yz"],
+              "properties": {
+                "xx": { "$ref": "#/$defs/positive" },
+                "yy": { "$ref": "#/$defs/positive" },
+                "zz": { "$ref": "#/$defs/positive" },
+                "xy": { "type": "number" },
+                "xz": { "type": "number" },
+                "yz": { "type": "number" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "densityKgPerM3", "massSolids"],
+          "properties": {
+            "kind": { "const": "uniform-density-solids-v1" },
+            "densityKgPerM3": { "$ref": "#/$defs/positive" },
+            "massSolids": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 64,
+              "items": {
+                "type": "object",
+                "required": ["id", "localFramePart", "geometry"],
+                "properties": {
+                  "id": {
+                    "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+                  },
+                  "localFramePart": { "$ref": "#/$defs/frame" },
+                  "geometry": { "$ref": "#/$defs/geometry" }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "collisionRegion": {
+      "type": "object",
+      "required": [
+        "key",
+        "localFramePart",
+        "geometry",
+        "materialKey",
+        "contactRole"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+        },
+        "localFramePart": { "$ref": "#/$defs/frame" },
+        "geometry": { "$ref": "#/$defs/geometry" },
+        "materialKey": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+        },
+        "contactRole": {
+          "enum": ["structure", "tire-envelope", "sidewall", "rim"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "impactLaw": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind"],
+          "properties": { "kind": { "const": "perfectly-inelastic-v1" } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "restitutionCoefficient"],
+          "properties": {
+            "kind": { "const": "restitution-v1" },
+            "restitutionCoefficient": { "$ref": "#/$defs/ratio" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "failureLoadLaw": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["kind", "continuousLoad", "impactLoad"],
+          "properties": {
+            "kind": { "const": "generalized-load-v1" },
+            "continuousLoad": {
+              "oneOf": [
+                { "type": "null" },
+                {
+                  "type": "object",
+                  "required": ["breakForceN", "breakTorqueNm", "responseTimeS"],
+                  "properties": {
+                    "breakForceN": {
+                      "oneOf": [
+                        { "type": "null" },
+                        { "$ref": "#/$defs/positive" }
+                      ]
+                    },
+                    "breakTorqueNm": {
+                      "oneOf": [
+                        { "type": "null" },
+                        { "$ref": "#/$defs/positive" }
+                      ]
+                    },
+                    "responseTimeS": { "$ref": "#/$defs/positive" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "impactLoad": {
+              "oneOf": [
+                { "type": "null" },
+                {
+                  "type": "object",
+                  "required": ["breakImpulseNs", "breakAngularImpulseNms"],
+                  "properties": {
+                    "breakImpulseNs": {
+                      "oneOf": [
+                        { "type": "null" },
+                        { "$ref": "#/$defs/positive" }
+                      ]
+                    },
+                    "breakAngularImpulseNms": {
+                      "oneOf": [
+                        { "type": "null" },
+                        { "$ref": "#/$defs/positive" }
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "elasticLaw": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "stiffnessNPerM"],
+          "properties": {
+            "kind": { "const": "linear-v1" },
+            "stiffnessNPerM": { "$ref": "#/$defs/positive" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "points", "interpolation", "extrapolation"],
+          "properties": {
+            "kind": { "const": "piecewise-force-v1" },
+            "points": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 256,
+              "items": {
+                "type": "object",
+                "required": ["displacementM", "forceN"],
+                "properties": {
+                  "displacementM": { "type": "number" },
+                  "forceN": { "type": "number" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "interpolation": { "const": "linear" },
+            "extrapolation": { "const": "reject" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "dampingLaw": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "dampingNsPerM"],
+          "properties": {
+            "kind": { "const": "linear-v1" },
+            "dampingNsPerM": { "$ref": "#/$defs/nonnegative" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "compressionPoints",
+            "reboundPoints",
+            "interpolation",
+            "extrapolation"
+          ],
+          "properties": {
+            "kind": { "const": "piecewise-speed-v1" },
+            "compressionPoints": { "$ref": "#/$defs/speedForcePoints" },
+            "reboundPoints": { "$ref": "#/$defs/speedForcePoints" },
+            "interpolation": { "const": "linear" },
+            "extrapolation": { "const": "reject" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "speedForcePoints": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "required": ["speedMPerS", "forceN"],
+        "properties": {
+          "speedMPerS": { "$ref": "#/$defs/nonnegative" },
+          "forceN": { "$ref": "#/$defs/nonnegative" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "rangeM": {
+      "type": "object",
+      "required": ["lower", "upper"],
+      "properties": {
+        "lower": { "$ref": "#/$defs/nonnegative" },
+        "upper": { "$ref": "#/$defs/positive" }
+      },
+      "additionalProperties": false
+    },
+    "rangeRad": {
+      "type": "object",
+      "required": ["lower", "upper"],
+      "properties": {
+        "lower": { "type": "number" },
+        "upper": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "progressiveStop": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["engageCoordinate", "elasticLaw", "dampingLaw"],
+          "properties": {
+            "engageCoordinate": { "type": "number" },
+            "elasticLaw": { "$ref": "#/$defs/elasticLaw" },
+            "dampingLaw": { "$ref": "#/$defs/dampingLaw" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "guideFriction": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind"],
+          "properties": { "kind": { "const": "none-v1" } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "staticCoefficient",
+            "dynamicCoefficient",
+            "preloadNormalForceN",
+            "sealDragN",
+            "viscousNsPerM",
+            "reengageSpeedMPerS"
+          ],
+          "properties": {
+            "kind": { "const": "coulomb-viscous-v1" },
+            "staticCoefficient": { "$ref": "#/$defs/nonnegative" },
+            "dynamicCoefficient": { "$ref": "#/$defs/nonnegative" },
+            "preloadNormalForceN": { "$ref": "#/$defs/nonnegative" },
+            "sealDragN": { "$ref": "#/$defs/nonnegative" },
+            "viscousNsPerM": { "$ref": "#/$defs/nonnegative" },
+            "reengageSpeedMPerS": { "$ref": "#/$defs/positive" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "axialMassModel": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind"],
+          "properties": { "kind": { "const": "ideal-massless-v1" } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "totalMassKg", "endpointMassFractionA"],
+          "properties": {
+            "kind": { "const": "lumped-endpoints-v1" },
+            "totalMassKg": { "$ref": "#/$defs/positive" },
+            "endpointMassFractionA": { "$ref": "#/$defs/ratio" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "axialCommon": {
+      "type": "object",
+      "required": [
+        "endpointPortA",
+        "endpointPortB",
+        "massModel",
+        "dampingLaw",
+        "lengthRangeM",
+        "lowerHardImpactLaw",
+        "upperHardImpactLaw",
+        "lowerStop",
+        "upperStop",
+        "failureLoadLaw"
+      ],
+      "properties": {
+        "endpointPortA": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+        },
+        "endpointPortB": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+        },
+        "massModel": { "$ref": "#/$defs/axialMassModel" },
+        "dampingLaw": { "$ref": "#/$defs/dampingLaw" },
+        "lengthRangeM": { "$ref": "#/$defs/rangeM" },
+        "lowerHardImpactLaw": { "$ref": "#/$defs/impactLaw" },
+        "upperHardImpactLaw": { "$ref": "#/$defs/impactLaw" },
+        "lowerStop": { "$ref": "#/$defs/progressiveStop" },
+        "upperStop": { "$ref": "#/$defs/progressiveStop" },
+        "failureLoadLaw": { "$ref": "#/$defs/failureLoadLaw" }
+      }
+    },
+    "springConfig": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/axialCommon" },
+        {
+          "type": "object",
+          "required": ["referenceLaw", "elasticLaw"],
+          "properties": {
+            "referenceLaw": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": ["kind", "freeLengthM"],
+                  "properties": {
+                    "kind": { "const": "zero-force-length-v1" },
+                    "freeLengthM": { "$ref": "#/$defs/positive" }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": ["kind", "referenceLengthM", "forceAtReferenceN"],
+                  "properties": {
+                    "kind": { "const": "force-at-reference-v1" },
+                    "referenceLengthM": { "$ref": "#/$defs/positive" },
+                    "forceAtReferenceN": { "type": "number" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "elasticLaw": { "$ref": "#/$defs/elasticLaw" }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "damperConfig": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/axialCommon" }],
+      "unevaluatedProperties": false
+    },
+    "releaseCouplerConfig": {
+      "type": "object",
+      "required": [
+        "endpointPortA",
+        "endpointPortB",
+        "massModel",
+        "latchFrame",
+        "loadLimits",
+        "releaseLaw"
+      ],
+      "properties": {
+        "endpointPortA": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+        },
+        "endpointPortB": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+        },
+        "massModel": { "$ref": "#/$defs/axialMassModel" },
+        "latchFrame": { "$ref": "#/$defs/frame" },
+        "loadLimits": {
+          "type": "object",
+          "required": ["ultimateForceN", "ultimateTorqueNm"],
+          "properties": {
+            "ultimateForceN": { "$ref": "#/$defs/positive" },
+            "ultimateTorqueNm": { "$ref": "#/$defs/positive" }
+          },
+          "additionalProperties": false
+        },
+        "releaseLaw": {
+          "type": "object",
+          "required": [
+            "kind",
+            "commandChannel",
+            "commandThreshold",
+            "actuationEnergyJ",
+            "maximumElectricalPowerW"
+          ],
+          "properties": {
+            "kind": { "const": "electromechanical-latch-v1" },
+            "commandChannel": { "const": "release" },
+            "commandThreshold": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "actuationEnergyJ": { "$ref": "#/$defs/positive" },
+            "maximumElectricalPowerW": { "$ref": "#/$defs/positive" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "linearGuideConfig": {
+      "type": "object",
+      "required": [
+        "frameA",
+        "frameB",
+        "freeAxis",
+        "referenceTransform",
+        "referenceCoordinateM",
+        "travelRangeM",
+        "lowerHardImpactLaw",
+        "upperHardImpactLaw",
+        "lowerStop",
+        "upperStop",
+        "guideFriction",
+        "failureLoadLaw"
+      ],
+      "properties": {
+        "frameA": { "$ref": "#/$defs/frame" },
+        "frameB": { "$ref": "#/$defs/frame" },
+        "freeAxis": { "const": "local-positive-z-v1" },
+        "referenceTransform": { "const": "authored-coincident-v1" },
+        "referenceCoordinateM": { "$ref": "#/$defs/nonnegative" },
+        "travelRangeM": { "$ref": "#/$defs/rangeM" },
+        "lowerHardImpactLaw": { "$ref": "#/$defs/impactLaw" },
+        "upperHardImpactLaw": { "$ref": "#/$defs/impactLaw" },
+        "lowerStop": { "$ref": "#/$defs/progressiveStop" },
+        "upperStop": { "$ref": "#/$defs/progressiveStop" },
+        "guideFriction": { "$ref": "#/$defs/guideFriction" },
+        "failureLoadLaw": { "$ref": "#/$defs/failureLoadLaw" }
+      },
+      "additionalProperties": false
+    },
+    "linearActuatorConfig": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/axialCommon" },
+        {
+          "type": "object",
+          "required": [
+            "positiveDirection",
+            "commandLaw",
+            "forceSpeedEnvelope",
+            "powerLaw",
+            "thermalLimits",
+            "unpoweredLaw"
+          ],
+          "properties": {
+            "positiveDirection": { "const": "increasing-coordinate-v1" },
+            "commandLaw": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": ["kind"],
+                  "properties": { "kind": { "const": "force-command-v1" } },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": ["kind", "velocityGainNsPerM"],
+                  "properties": {
+                    "kind": { "const": "velocity-servo-v1" },
+                    "velocityGainNsPerM": { "$ref": "#/$defs/positive" }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": ["kind", "stiffnessNPerM", "dampingNsPerM"],
+                  "properties": {
+                    "kind": { "const": "position-impedance-v1" },
+                    "stiffnessNPerM": { "$ref": "#/$defs/positive" },
+                    "dampingNsPerM": { "$ref": "#/$defs/nonnegative" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "forceSpeedEnvelope": {
+              "type": "object",
+              "required": ["kind", "points", "interpolation", "extrapolation"],
+              "properties": {
+                "kind": { "const": "piecewise-v1" },
+                "points": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 256,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "absSpeedMPerS",
+                      "maxExtendForceN",
+                      "maxRetractForceN"
+                    ],
+                    "properties": {
+                      "absSpeedMPerS": { "$ref": "#/$defs/nonnegative" },
+                      "maxExtendForceN": { "$ref": "#/$defs/nonnegative" },
+                      "maxRetractForceN": { "$ref": "#/$defs/nonnegative" }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "interpolation": { "const": "linear" },
+                "extrapolation": { "const": "zero-capacity" }
+              },
+              "additionalProperties": false
+            },
+            "powerLaw": {
+              "type": "object",
+              "required": [
+                "maximumMechanicalMotoringPowerW",
+                "electricalMotoringEfficiency",
+                "idlePowerW",
+                "regeneration"
+              ],
+              "properties": {
+                "maximumMechanicalMotoringPowerW": {
+                  "$ref": "#/$defs/positive"
+                },
+                "electricalMotoringEfficiency": { "$ref": "#/$defs/ratio" },
+                "idlePowerW": { "$ref": "#/$defs/nonnegative" },
+                "regeneration": { "const": "unsupported-dissipate-v1" }
+              },
+              "additionalProperties": false
+            },
+            "thermalLimits": {
+              "type": "object",
+              "required": [
+                "thermalMassJPerK",
+                "ambientConductanceWPerK",
+                "derateTemperatureK",
+                "shutdownTemperatureK"
+              ],
+              "properties": {
+                "thermalMassJPerK": { "$ref": "#/$defs/positive" },
+                "ambientConductanceWPerK": { "$ref": "#/$defs/nonnegative" },
+                "derateTemperatureK": { "$ref": "#/$defs/positive" },
+                "shutdownTemperatureK": { "$ref": "#/$defs/positive" }
+              },
+              "additionalProperties": false
+            },
+            "unpoweredLaw": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": ["kind"],
+                  "properties": { "kind": { "const": "free-v1" } },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": ["kind", "dampingNsPerM"],
+                  "properties": {
+                    "kind": { "const": "viscous-drag-v1" },
+                    "dampingNsPerM": { "$ref": "#/$defs/nonnegative" }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "staticForceCapacityN",
+                    "dynamicForceCapacityN",
+                    "reengageSpeedMPerS"
+                  ],
+                  "properties": {
+                    "kind": { "const": "holding-clutch-v1" },
+                    "staticForceCapacityN": { "$ref": "#/$defs/positive" },
+                    "dynamicForceCapacityN": { "$ref": "#/$defs/positive" },
+                    "reengageSpeedMPerS": { "$ref": "#/$defs/positive" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "rotaryConstraintConfig": {
+      "type": "object",
+      "required": [
+        "frameA",
+        "frameB",
+        "freeAxis",
+        "angleRangeRad",
+        "lowerHardImpactLaw",
+        "upperHardImpactLaw",
+        "lowerStop",
+        "upperStop",
+        "friction",
+        "actuation",
+        "failureLoadLaw"
+      ],
+      "properties": {
+        "frameA": { "$ref": "#/$defs/frame" },
+        "frameB": { "$ref": "#/$defs/frame" },
+        "freeAxis": { "const": "local-positive-z-v1" },
+        "angleRangeRad": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/rangeRad" }]
+        },
+        "lowerHardImpactLaw": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/impactLaw" }]
+        },
+        "upperHardImpactLaw": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/impactLaw" }]
+        },
+        "lowerStop": { "$ref": "#/$defs/progressiveStop" },
+        "upperStop": { "$ref": "#/$defs/progressiveStop" },
+        "friction": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["kind"],
+              "properties": { "kind": { "const": "none-v1" } },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": ["kind", "coulombTorqueNm", "viscousNms"],
+              "properties": {
+                "kind": { "const": "coulomb-viscous-v1" },
+                "coulombTorqueNm": { "$ref": "#/$defs/nonnegative" },
+                "viscousNms": { "$ref": "#/$defs/nonnegative" }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "actuation": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "commandRangeRad",
+                "stiffnessNmPerRad",
+                "dampingNmsPerRad",
+                "maximumTorqueNm",
+                "maximumSpeedRadPerS",
+                "powerLaw",
+                "thermalLimits"
+              ],
+              "properties": {
+                "kind": { "const": "position-impedance-v1" },
+                "commandRangeRad": { "$ref": "#/$defs/rangeRad" },
+                "stiffnessNmPerRad": { "$ref": "#/$defs/positive" },
+                "dampingNmsPerRad": { "$ref": "#/$defs/nonnegative" },
+                "maximumTorqueNm": { "$ref": "#/$defs/positive" },
+                "maximumSpeedRadPerS": { "$ref": "#/$defs/positive" },
+                "powerLaw": {
+                  "type": "object",
+                  "required": [
+                    "maximumMechanicalMotoringPowerW",
+                    "electricalMotoringEfficiency",
+                    "idlePowerW",
+                    "regeneration"
+                  ],
+                  "properties": {
+                    "maximumMechanicalMotoringPowerW": {
+                      "$ref": "#/$defs/positive"
+                    },
+                    "electricalMotoringEfficiency": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 1
+                    },
+                    "idlePowerW": { "$ref": "#/$defs/nonnegative" },
+                    "regeneration": {
+                      "const": "unsupported-dissipate-v1"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "thermalLimits": {
+                  "type": "object",
+                  "required": [
+                    "thermalMassJPerK",
+                    "ambientConductanceWPerK",
+                    "derateTemperatureK",
+                    "shutdownTemperatureK"
+                  ],
+                  "properties": {
+                    "thermalMassJPerK": { "$ref": "#/$defs/positive" },
+                    "ambientConductanceWPerK": {
+                      "$ref": "#/$defs/nonnegative"
+                    },
+                    "derateTemperatureK": { "$ref": "#/$defs/positive" },
+                    "shutdownTemperatureK": { "$ref": "#/$defs/positive" }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "failureLoadLaw": { "$ref": "#/$defs/failureLoadLaw" }
+      },
+      "additionalProperties": false
+    },
+    "axleConfig": {
+      "type": "object",
+      "required": [
+        "radiusM",
+        "axialLengthM",
+        "axis",
+        "materialKey",
+        "failureLoadLaw"
+      ],
+      "properties": {
+        "radiusM": { "$ref": "#/$defs/positive" },
+        "axialLengthM": { "$ref": "#/$defs/positive" },
+        "axis": { "const": "local-positive-z-v1" },
+        "materialKey": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+        },
+        "failureLoadLaw": { "$ref": "#/$defs/failureLoadLaw" }
+      },
+      "additionalProperties": false
+    },
+    "wheelConfig": {
+      "type": "object",
+      "required": [
+        "axleFrame",
+        "radiusM",
+        "widthM",
+        "shoulderRadiusM",
+        "semanticRegionKeys",
+        "tireConstitutiveLaw",
+        "rimMaterialKey",
+        "failureLoadLaw"
+      ],
+      "properties": {
+        "axleFrame": { "$ref": "#/$defs/frame" },
+        "radiusM": { "$ref": "#/$defs/positive" },
+        "widthM": { "$ref": "#/$defs/positive" },
+        "shoulderRadiusM": { "$ref": "#/$defs/positive" },
+        "semanticRegionKeys": {
+          "type": "object",
+          "required": ["tireEnvelope", "sidewall", "rim"],
+          "properties": {
+            "tireEnvelope": { "const": "tire-envelope" },
+            "sidewall": { "const": "sidewall" },
+            "rim": { "const": "rim" }
+          },
+          "additionalProperties": false
+        },
+        "tireConstitutiveLaw": {
+          "type": "object",
+          "required": [
+            "kind",
+            "tireMaterialKey",
+            "calibratedNormalLoadRangeN",
+            "creepMatrixByLoad",
+            "interpolation",
+            "outsideCalibration",
+            "rollingResistance",
+            "normalModel",
+            "thermalModel"
+          ],
+          "properties": {
+            "kind": { "const": "memoryless-brush-v1" },
+            "tireMaterialKey": {
+              "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+            },
+            "calibratedNormalLoadRangeN": { "$ref": "#/$defs/rangeM" },
+            "creepMatrixByLoad": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 64,
+              "items": {
+                "type": "object",
+                "required": [
+                  "normalLoadN",
+                  "kLongNsPerM",
+                  "kLatNsPerM",
+                  "kCrossNsPerM"
+                ],
+                "properties": {
+                  "normalLoadN": { "$ref": "#/$defs/nonnegative" },
+                  "kLongNsPerM": { "$ref": "#/$defs/nonnegative" },
+                  "kLatNsPerM": { "$ref": "#/$defs/nonnegative" },
+                  "kCrossNsPerM": { "type": "number" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "interpolation": { "const": "linear" },
+            "outsideCalibration": { "const": "clamp-to-endpoints-v1" },
+            "rollingResistance": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": ["kind"],
+                  "properties": { "kind": { "const": "none-v1" } },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "coefficient",
+                    "regularizationSpeedMPerS"
+                  ],
+                  "properties": {
+                    "kind": { "const": "load-radius-moment-v1" },
+                    "coefficient": { "$ref": "#/$defs/nonnegative" },
+                    "regularizationSpeedMPerS": { "$ref": "#/$defs/positive" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "normalModel": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "kRadialNPerM",
+                    "compressionDampingNsPerM",
+                    "reboundDampingNsPerM",
+                    "maximumDeflectionM",
+                    "rimContactStiffnessNPerM",
+                    "rimContactDampingNsPerM",
+                    "progressiveStop",
+                    "rimColliderRegionKey"
+                  ],
+                  "properties": {
+                    "kind": { "const": "radial-foundation-v1" },
+                    "kRadialNPerM": { "$ref": "#/$defs/positive" },
+                    "compressionDampingNsPerM": {
+                      "$ref": "#/$defs/nonnegative"
+                    },
+                    "reboundDampingNsPerM": { "$ref": "#/$defs/nonnegative" },
+                    "maximumDeflectionM": { "$ref": "#/$defs/positive" },
+                    "rimContactStiffnessNPerM": {
+                      "$ref": "#/$defs/positive"
+                    },
+                    "rimContactDampingNsPerM": {
+                      "$ref": "#/$defs/nonnegative"
+                    },
+                    "progressiveStop": { "$ref": "#/$defs/progressiveStop" },
+                    "rimColliderRegionKey": { "const": "rim" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "thermalModel": {
+              "type": "object",
+              "required": [
+                "kind",
+                "thermalMassJPerK",
+                "ambientConductanceWPerK",
+                "referenceTemperatureK"
+              ],
+              "properties": {
+                "kind": { "const": "lumped-capacity-v1" },
+                "thermalMassJPerK": { "$ref": "#/$defs/positive" },
+                "ambientConductanceWPerK": {
+                  "$ref": "#/$defs/nonnegative"
+                },
+                "referenceTemperatureK": { "$ref": "#/$defs/positive" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "rimMaterialKey": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+        },
+        "failureLoadLaw": { "$ref": "#/$defs/failureLoadLaw" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "componentType",
+    "dimensionalScalingPolicy",
+    "massPropertySource",
+    "collisionRegions",
+    "config"
+  ],
+  "properties": {
+    "format": { "const": "simulacrum-authored-mechanism-component" },
+    "version": { "const": 1 },
+    "componentType": {
+      "enum": [
+        "spring",
+        "damper",
+        "release-coupler",
+        "linear-guide",
+        "linear-actuator",
+        "hinge",
+        "bearing",
+        "axle",
+        "wheel"
+      ]
+    },
+    "dimensionalScalingPolicy": {
+      "$ref": "#/$defs/dimensionalScalingPolicy"
+    },
+    "massPropertySource": { "$ref": "#/$defs/massPropertySource" },
+    "collisionRegions": {
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/collisionRegion" }
+    },
+    "config": { "type": "object" }
+  },
+  "additionalProperties": false,
+  "oneOf": [
+    {
+      "properties": {
+        "componentType": { "const": "spring" },
+        "config": { "$ref": "#/$defs/springConfig" }
+      }
+    },
+    {
+      "properties": {
+        "componentType": { "const": "damper" },
+        "config": { "$ref": "#/$defs/damperConfig" }
+      }
+    },
+    {
+      "properties": {
+        "componentType": { "const": "release-coupler" },
+        "config": { "$ref": "#/$defs/releaseCouplerConfig" }
+      }
+    },
+    {
+      "properties": {
+        "componentType": { "const": "linear-guide" },
+        "config": { "$ref": "#/$defs/linearGuideConfig" }
+      }
+    },
+    {
+      "properties": {
+        "componentType": { "const": "linear-actuator" },
+        "config": { "$ref": "#/$defs/linearActuatorConfig" }
+      }
+    },
+    {
+      "properties": {
+        "componentType": { "const": "hinge" },
+        "config": { "$ref": "#/$defs/rotaryConstraintConfig" }
+      }
+    },
+    {
+      "properties": {
+        "componentType": { "const": "bearing" },
+        "config": { "$ref": "#/$defs/rotaryConstraintConfig" }
+      }
+    },
+    {
+      "properties": {
+        "componentType": { "const": "axle" },
+        "config": { "$ref": "#/$defs/axleConfig" }
+      }
+    },
+    {
+      "properties": {
+        "componentType": { "const": "wheel" },
+        "config": { "$ref": "#/$defs/wheelConfig" }
+      }
+    }
+  ]
+}

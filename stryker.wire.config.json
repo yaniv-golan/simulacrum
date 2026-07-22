@@ -1,0 +1,46 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "ignorePatterns": [
+    "/artifacts",
+    "/coverage",
+    "/dist",
+    "/output",
+    "/packages/core/dist",
+    "/temp"
+  ],
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node scripts/verify-wire-formats.mjs && node scripts/verify-blueprint-decoder.mjs && node scripts/verify-workspace-state.mjs && node scripts/verify-mechanism-artifacts.mjs && node scripts/verify-mechanism-authored-components.mjs"
+  },
+  "mutate": [
+    "src/model/wire-validation.js",
+    "src/model/blueprint-decoder.js",
+    "src/model/workspaces.js",
+    "src/model/component-wire-contract.js",
+    "src/model/mechanism-artifacts.js",
+    "src/model/mechanism-authored-components.js"
+  ],
+  "coverageAnalysis": "off",
+  "mutator": {
+    "excludedMutations": [
+      "StringLiteral",
+      "ArrayDeclaration",
+      "ObjectLiteral",
+      "OptionalChaining",
+      "MethodExpression",
+      "ArrowFunction"
+    ]
+  },
+  "concurrency": 4,
+  "timeoutMS": 10000,
+  "tempDirName": "artifacts/stryker-wire",
+  "reporters": ["clear-text", "json"],
+  "jsonReporter": {
+    "fileName": "artifacts/wire-mutation.json"
+  },
+  "thresholds": {
+    "high": 80,
+    "low": 80,
+    "break": 80
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "$id": "https://simulacrum.local/schema/subassembly-wire-schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "name",
+    "accent",
+    "parts",
+    "connections",
+    "exposedPorts"
+  ],
+  "properties": {
+    "format": { "const": "simulacrum-subassembly" },
+    "version": { "const": 1 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "accent": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+    "parts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 300,
+      "items": {
+        "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/part"
+      }
+    },
+    "connections": {
+      "type": "array",
+      "maxItems": 3000,
+      "items": {
+        "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/connection"
+      }
+    },
+    "exposedPorts": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "role", "partId", "port"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[A-Za-z0-9._:/-]+$"
+          },
+          "label": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "role": {
+            "enum": [
+              "mount",
+              "motion",
+              "power",
+              "signal",
+              "sensor",
+              "command",
+              "resource"
+            ]
+          },
+          "partId": { "type": "integer", "minimum": 1 },
+          "port": { "type": "string", "minLength": 1, "maxLength": 80 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "extensions": {
+      "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/extensions"
+    }
+  },
+  "additionalProperties": false
+}

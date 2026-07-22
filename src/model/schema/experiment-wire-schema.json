@@ -1,0 +1,81 @@
+{
+  "$id": "https://simulacrum.local/schema/experiment-wire-schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "blueprintFingerprint",
+    "blueprint",
+    "runConfiguration",
+    "inputTrace",
+    "checkpoint",
+    "startTick",
+    "endTick",
+    "observations",
+    "manifestDigest"
+  ],
+  "properties": {
+    "format": { "const": "simulacrum-experiment" },
+    "version": { "const": 1 },
+    "blueprintFingerprint": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+    },
+    "blueprint": {
+      "$ref": "https://simulacrum.local/schema/blueprint-wire-schema.json"
+    },
+    "runConfiguration": {
+      "$ref": "https://simulacrum.local/schema/run-configuration-wire-schema.json"
+    },
+    "inputTrace": {
+      "$ref": "https://simulacrum.local/schema/input-trace-wire-schema.json"
+    },
+    "checkpoint": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "$ref": "https://simulacrum.local/schema/checkpoint-wire-schema.json"
+        }
+      ]
+    },
+    "startTick": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/tick"
+    },
+    "endTick": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/tick"
+    },
+    "observations": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "required": ["tick", "channelId", "expected", "tolerance"],
+        "properties": {
+          "tick": {
+            "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/tick"
+          },
+          "channelId": {
+            "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+          },
+          "expected": {
+            "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/sampleValue"
+          },
+          "tolerance": {
+            "type": "object",
+            "required": ["absolute", "relative"],
+            "properties": {
+              "absolute": { "type": "number", "minimum": 0 },
+              "relative": { "type": "number", "minimum": 0 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "manifestDigest": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/sha256"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,50 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "ignorePatterns": [
+    "/artifacts",
+    "/coverage",
+    "/dist",
+    "/output",
+    "/packages/core/dist",
+    "/temp"
+  ],
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node scripts/verify-controller-sandbox.mjs && node scripts/verify-controller-bindings.mjs"
+  },
+  "mutate": [
+    "src/application/command-candidate-reader.js",
+    "src/model/controller-policy.js",
+    "src/model/controller-bindings.js",
+    "src/model/control-program-ir.js",
+    "src/simulation/controller-sensors.js:10-42",
+    "src/simulation/systems/command-receiver-system.js",
+    "src/scripting/controller-runtime-manager.js",
+    "src/scripting/control-ir-wat.js",
+    "src/scripting/typescript-control-compiler.js",
+    "src/scripting/wat-control-compiler.js"
+  ],
+  "coverageAnalysis": "off",
+  "mutator": {
+    "excludedMutations": [
+      "StringLiteral",
+      "ArrayDeclaration",
+      "ObjectLiteral",
+      "OptionalChaining",
+      "MethodExpression",
+      "ArrowFunction"
+    ]
+  },
+  "concurrency": 4,
+  "timeoutMS": 10000,
+  "tempDirName": "artifacts/stryker-controllers",
+  "reporters": ["clear-text", "json"],
+  "jsonReporter": {
+    "fileName": "artifacts/controllers-mutation.json"
+  },
+  "thresholds": {
+    "high": 80,
+    "low": 80,
+    "break": 80
+  }
+}

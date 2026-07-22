@@ -1,0 +1,101 @@
+{
+  "name": "simulacrum-foundry",
+  "version": "0.1.0",
+  "description": "A component-driven Three.js engineering construction sandbox.",
+  "private": true,
+  "workspaces": [
+    "packages/core"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yaniv-golan/simulacrum.git"
+  },
+  "packageManager": "npm@11.16.0",
+  "engines": {
+    "node": ">=24.18 <25"
+  },
+  "type": "module",
+  "exports": {
+    "./core": "./src/core/index.js"
+  },
+  "scripts": {
+    "predev": "npm run core:build",
+    "dev": "vite --host 0.0.0.0",
+    "prebuild": "npm run core:check",
+    "build": "npm run generate:wire-validators && vite build && node scripts/copy-third-party-licenses.mjs app",
+    "generate:wire-validators": "node scripts/generate-wire-validators.mjs",
+    "check:generated": "node scripts/verify-generated-artifacts.mjs",
+    "check:release-snapshot": "node scripts/verify-release-snapshot.mjs",
+    "security:audit": "npm audit --audit-level=moderate",
+    "baseline:capture": "node scripts/capture-release-performance.mjs",
+    "baseline:verify": "node scripts/verify-performance-budget-live.mjs",
+    "release:soak": "node scripts/release-soak.mjs",
+    "pretest": "npm run core:check",
+    "test": "node scripts/test.mjs",
+    "core:build": "node scripts/build-core-package.mjs",
+    "core:check": "node scripts/build-core-package.mjs",
+    "core:update-api": "node scripts/build-core-package.mjs --local",
+    "examples:core": "node examples/core-extensions/run-all.mjs",
+    "lint": "eslint src scripts test eslint.config.js vite.config.js",
+    "check:architecture": "node scripts/verify-module-graph.mjs && node scripts/verify-architecture-fixtures.mjs && node scripts/verify-architecture.mjs && node scripts/report-capability-dispatch.mjs --check",
+    "check:boundaries": "node scripts/verify-boundary-types.mjs",
+    "format": "prettier --write \"src/**/*.js\" \"scripts/**/*.mjs\" \"test/**/*.js\" \"examples/**/*.mjs\" \"packages/core/*.{js,json,md}\" \"*.{js,md,json}\" \"docs/**/*.md\" \".github/**/*.{md,yml}\"",
+    "format:check": "prettier --check \"src/**/*.js\" \"scripts/**/*.mjs\" \"test/**/*.js\" \"examples/**/*.mjs\" \"packages/core/*.{js,json,md}\" \"*.{js,md,json}\" \"docs/**/*.md\" \".github/**/*.{md,yml}\"",
+    "coverage:acquisition-harness": "npm run coverage:executable-trust && npm run coverage:browser-harness && npm run coverage:test-harness",
+    "coverage:executable-trust": "c8 --check-coverage --lines=95 --branches=90 --functions=95 --include='src/model/blueprint-acquisition.js' --include='src/model/executable-program.js' --include='src/application/executable-trust-repository.js' --include='src/application/executable-trust-service.js' node scripts/verify-executable-trust.mjs",
+    "coverage:browser-harness": "c8 --clean --all --exclude='' --check-coverage --lines=95 --branches=90 --functions=95 --include='scripts/lib/browser-test.mjs' node scripts/verify-browser-errors.mjs",
+    "coverage:test-harness": "c8 --clean --all --exclude='' --check-coverage --lines=95 --branches=90 --functions=95 --include='scripts/lib/test-server.mjs' --include='scripts/lib/verification-runner.mjs' env TEST_FILTER=verify-test-harness node scripts/test.mjs",
+    "coverage:model-boundaries": "c8 --all --check-coverage --lines=95 --branches=90 --functions=90 --include='src/model/blueprint-decoder.js' --include='src/application/browser-storage.js' --include='src/application/blueprint-load-transaction.js' node scripts/verify-model-boundaries.mjs",
+    "coverage:wire": "c8 --check-coverage --lines=95 --branches=90 --functions=95 --include='src/model/wire-validation.js' --include='src/model/blueprint-decoder.js' --include='src/model/workspaces.js' --include='src/model/mechanism-artifacts.js' --include='src/model/mechanism-authored-components.js' node scripts/verify-wire-coverage.mjs",
+    "coverage:mechanism-geometry": "c8 --all --check-coverage --lines=95 --branches=90 --functions=95 --include='src/model/mechanism-geometry-compiler.js' node scripts/verify-mechanism-geometry-compiler.mjs",
+    "coverage:networks": "c8 --all --check-coverage --lines=95 --branches=90 --functions=95 --include='src/application/remote-control-read-model.js' --include='src/application/remote-control-state.js' --include='src/simulation/energy-ledger.js' --include='src/simulation/power-network.js' --include='src/simulation/signal-network.js' --include='src/model/actuator-contracts.js' --include='src/simulation/command-bus.js' --include='src/simulation/systems/command-routing-system.js' node scripts/verify-power-signal-command-networks.mjs",
+    "coverage:resources": "c8 --all --check-coverage --lines=95 --branches=90 --functions=95 --include='src/model/material-resource-contracts.js' --include='src/simulation/material-resource-network.js' --include='src/simulation/systems/material-resource-system.js' node scripts/verify-material-resources.mjs",
+    "coverage:propulsion": "c8 --all --check-coverage --lines=95 --branches=90 --functions=95 --include='src/model/dynamic-mass-properties.js' --include='src/model/material-media.js' --include='src/model/pressure-nozzle-contracts.js' --include='src/simulation/systems/pressure-nozzle-system.js' --include='src/simulation/systems/mass-property-commit-system.js' node scripts/verify-conserved-propulsion.mjs",
+    "coverage:bindings": "c8 --all --check-coverage --lines=95 --branches=90 --functions=95 --include='src/application/command-candidate-reader.js' --include='src/model/controller-bindings.js' --include='src/simulation/systems/command-receiver-system.js' node scripts/verify-controller-bindings.mjs",
+    "coverage:controllers": "c8 --all --check-coverage --lines=95 --branches=90 --functions=95 --include='src/model/controller-policy.js' --include='src/model/control-program-ir.js' --include='src/scripting/controller-runtime-manager.js' --include='src/scripting/controller-compilers.js' --include='src/scripting/typescript-control-compiler.js' --include='src/scripting/control-ir-wat.js' --include='src/scripting/wat-control-compiler.js' --include='src/application/controller-runtime-read-model.js' node scripts/verify-controller-sandbox.mjs",
+    "coverage:sharing": "c8 --all --check-coverage --lines=95 --branches=90 --functions=95 --include='src/model/share-packages.js' --include='src/model/share-library.js' --include='src/application/share-exchange-repository.js' --include='src/application/share-exchange-service.js' --include='src/model/subassemblies.js' node scripts/verify-sharing.mjs",
+    "coverage:challenges-failures": "c8 --all --check-coverage --lines=95 --branches=90 --functions=95 --include='src/model/challenge-reference-controls.js' --include='src/model/challenge-evaluators.js' --include='src/model/challenge-score.js' --include='src/model/challenge-lab.js' --include='src/model/failure-event-extractors.js' --include='src/model/failure-analysis.js' node scripts/verify-challenges-failure-quality.mjs",
+    "mutation:acquisition-harness": "stryker run stryker.acquisition-harness.config.json",
+    "mutation:model-boundaries": "stryker run stryker.model-boundaries.config.json",
+    "mutation:wire": "stryker run stryker.wire.config.json",
+    "mutation:networks": "stryker run stryker.networks.config.json",
+    "mutation:propulsion": "stryker run stryker.propulsion.config.json",
+    "mutation:controllers": "stryker run stryker.controllers.config.json",
+    "mutation:sharing": "stryker run stryker.sharing.config.json",
+    "mutation:challenges-failures": "stryker run stryker.challenges-failures.config.json",
+    "mutation": "npm run mutation:acquisition-harness && npm run mutation:model-boundaries && npm run mutation:wire && npm run mutation:networks && npm run mutation:propulsion && npm run mutation:controllers && npm run mutation:sharing && npm run mutation:challenges-failures",
+    "check": "npm run check:release-snapshot && npm run core:check && npm run lint && npm run format:check && npm run check:generated && npm run check:boundaries && npm run check:architecture && npm run examples:core && npm run coverage:acquisition-harness && npm run coverage:model-boundaries && npm run coverage:mechanism-geometry && npm run coverage:networks && npm run coverage:resources && npm run coverage:propulsion && npm run coverage:bindings && npm run coverage:controllers && npm run coverage:sharing && npm run coverage:challenges-failures && node scripts/verify-core-model.mjs && node scripts/verify-model-contracts.mjs && node scripts/verify-simulation-runtime-model.mjs && node scripts/verify-simulation-integration-boundary.mjs && node scripts/verify-power-signal-command-networks.mjs && node scripts/verify-material-resources.mjs && node scripts/verify-conserved-propulsion.mjs && node scripts/verify-controller-sandbox.mjs && node scripts/verify-render-resources.mjs && node scripts/verify-bundle-budget.mjs",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@fontsource-variable/dm-sans": "^5.2.8",
+    "@fontsource-variable/space-grotesk": "^5.2.10",
+    "@yaniv-golan/simulacrum-core": "0.1.0",
+    "cannon-es": "^0.20.0",
+    "three": "^0.180.0",
+    "topojson-client": "^3.1.0",
+    "typescript": "^5.9.3",
+    "wabt": "^1.0.39",
+    "world-atlas": "^2.0.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@microsoft/api-extractor": "^7.58.10",
+    "@stryker-mutator/core": "^9.6.1",
+    "@types/node": "^26.1.1",
+    "acorn": "^8.17.0",
+    "acorn-walk": "^8.3.5",
+    "ajv": "^8.20.0",
+    "c8": "^10.1.3",
+    "eslint": "^10.7.0",
+    "eslint-scope": "^9.1.2",
+    "globals": "^17.7.0",
+    "playwright": "^1.55.0",
+    "prettier": "^3.9.5",
+    "vite": "^7.1.7"
+  },
+  "overrides": {
+    "qs": "6.15.3"
+  }
+}

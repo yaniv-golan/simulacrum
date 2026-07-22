@@ -1,0 +1,50 @@
+{
+  "format": "simulacrum-blueprint",
+  "version": 1,
+  "name": "Specification machine",
+  "created": "2026-07-17T00:00:00.000Z",
+  "parts": [
+    {
+      "id": 1,
+      "type": "beam",
+      "pos": [0, 1, 0],
+      "orientation": [0, 0, 0, 1],
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "config": { "mass": 18, "size": [2.4, 0.35, 0.35] }
+    },
+    {
+      "id": 2,
+      "type": "beam",
+      "pos": [2, 1, 0],
+      "orientation": [0, 0, 0, 1],
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "config": { "mass": 18, "size": [2.4, 0.35, 0.35] }
+    }
+  ],
+  "connections": [
+    {
+      "id": 1,
+      "a": 1,
+      "b": 2,
+      "kind": "mechanical",
+      "portA": "A",
+      "portB": "B",
+      "capacity": {
+        "ultimateForceN": 24000,
+        "ultimateTorqueNm": 6000
+      }
+    }
+  ],
+  "remoteProfiles": {
+    "operator": {
+      "design": {
+        "title": "Operator",
+        "style": "compact-grid",
+        "accent": "#70e0c4"
+      },
+      "controls": [],
+      "actionBindings": {}
+    }
+  },
+  "defaultRemoteProfile": "operator"
+}

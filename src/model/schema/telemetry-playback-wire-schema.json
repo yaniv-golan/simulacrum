@@ -1,0 +1,82 @@
+{
+  "$id": "https://simulacrum.local/schema/telemetry-playback-wire-schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "resumable",
+    "runConfigurationFingerprint",
+    "blueprintFingerprint",
+    "fixedStepS",
+    "startTick",
+    "endTick",
+    "frames"
+  ],
+  "properties": {
+    "format": { "const": "simulacrum-telemetry-playback" },
+    "version": { "const": 1 },
+    "resumable": { "const": false },
+    "runConfigurationFingerprint": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+    },
+    "blueprintFingerprint": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+    },
+    "fixedStepS": { "const": 0.008333333333333333 },
+    "startTick": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/tick"
+    },
+    "endTick": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/tick"
+    },
+    "frames": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "required": [
+          "tick",
+          "timeS",
+          "fixedDtS",
+          "topologyRevision",
+          "stateDigest",
+          "samples",
+          "events"
+        ],
+        "properties": {
+          "tick": {
+            "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/tick"
+          },
+          "timeS": { "type": "number", "minimum": 0 },
+          "fixedDtS": { "const": 0.008333333333333333 },
+          "topologyRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "stateDigest": {
+            "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/sha256"
+          },
+          "samples": {
+            "type": "array",
+            "maxItems": 100000,
+            "items": {
+              "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/telemetrySample"
+            }
+          },
+          "events": {
+            "type": "array",
+            "maxItems": 100000,
+            "items": {
+              "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/telemetryEvent"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

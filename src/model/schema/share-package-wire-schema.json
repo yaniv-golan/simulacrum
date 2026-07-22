@@ -1,0 +1,137 @@
+{
+  "$id": "https://simulacrum.local/schema/share-package-wire-schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "kind",
+    "fingerprint",
+    "metadata",
+    "provenance",
+    "dependencies",
+    "verification",
+    "asset"
+  ],
+  "properties": {
+    "format": { "const": "simulacrum-share-package" },
+    "version": { "const": 1 },
+    "kind": { "enum": ["blueprint", "subassembly"] },
+    "fingerprint": { "type": "string", "pattern": "^sim-sha256-[0-9a-f]{64}$" },
+    "metadata": {
+      "type": "object",
+      "required": [
+        "title",
+        "description",
+        "tags",
+        "creator",
+        "thumbnail",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "description": { "type": "string", "maxLength": 500 },
+        "tags": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 24,
+            "pattern": "^[a-z0-9](?:[a-z0-9 -]*[a-z0-9])?$"
+          }
+        },
+        "creator": { "type": "string", "maxLength": 48 },
+        "thumbnail": {
+          "type": "string",
+          "maxLength": 90000,
+          "pattern": "^(?:$|data:image/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+)$"
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "extensions": {
+          "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/extensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "parentFingerprint",
+        "rootFingerprint",
+        "remixDepth",
+        "originalCreator"
+      ],
+      "properties": {
+        "parentFingerprint": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "string",
+              "pattern": "^sim-sha256-[0-9a-f]{64}$"
+            }
+          ]
+        },
+        "rootFingerprint": {
+          "type": "string",
+          "pattern": "^sim-sha256-[0-9a-f]{64}$"
+        },
+        "remixDepth": { "type": "integer", "minimum": 0, "maximum": 99 },
+        "originalCreator": { "type": "string", "maxLength": 48 },
+        "extensions": {
+          "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/extensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "dependencies": {
+      "type": "object",
+      "required": [
+        "componentTypes",
+        "controllerLanguages",
+        "partCount",
+        "connectionCount"
+      ],
+      "properties": {
+        "componentTypes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "controllerLanguages": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["visual", "typescript", "wat"] }
+        },
+        "partCount": { "type": "integer", "minimum": 1 },
+        "connectionCount": { "type": "integer", "minimum": 0 },
+        "extensions": {
+          "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/extensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "verification": {
+      "type": "array",
+      "maxItems": 20,
+      "items": { "type": "object" }
+    },
+    "asset": {
+      "oneOf": [
+        {
+          "$ref": "https://simulacrum.local/schema/blueprint-wire-schema.json"
+        },
+        {
+          "$ref": "https://simulacrum.local/schema/subassembly-wire-schema.json"
+        }
+      ]
+    },
+    "extensions": {
+      "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/extensions"
+    }
+  },
+  "additionalProperties": false
+}

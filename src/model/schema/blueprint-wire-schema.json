@@ -1,0 +1,50 @@
+{
+  "$id": "https://simulacrum.local/schema/blueprint-wire-schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "name",
+    "parts",
+    "connections",
+    "remoteProfiles",
+    "defaultRemoteProfile"
+  ],
+  "properties": {
+    "format": { "const": "simulacrum-blueprint" },
+    "version": { "const": 1 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "created": { "type": "string", "format": "date-time" },
+    "demo": { "type": ["string", "null"], "maxLength": 64 },
+    "parts": {
+      "type": "array",
+      "maxItems": 300,
+      "items": {
+        "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/part"
+      }
+    },
+    "connections": {
+      "type": "array",
+      "maxItems": 3000,
+      "items": {
+        "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/connection"
+      }
+    },
+    "remoteProfiles": {
+      "type": "object",
+      "maxProperties": 64,
+      "propertyNames": {
+        "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/identifier"
+      },
+      "additionalProperties": {
+        "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/remoteProfile"
+      }
+    },
+    "defaultRemoteProfile": { "type": ["string", "null"], "maxLength": 64 },
+    "extensions": {
+      "$ref": "https://simulacrum.local/schema/common-wire-defs.json#/$defs/extensions"
+    }
+  },
+  "additionalProperties": false
+}

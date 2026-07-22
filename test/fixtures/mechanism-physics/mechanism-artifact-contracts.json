@@ -1,0 +1,338 @@
+{
+  "fixtureVersion": 1,
+  "run": {
+    "seed": "mechanism-artifact-fixture-seed",
+    "durationTicks": 4,
+    "identityKinds": [
+      "build",
+      "engine",
+      "transaction",
+      "solverProfile",
+      "catalog",
+      "materials",
+      "environment"
+    ]
+  },
+  "inputRecords": [
+    {
+      "tick": 0,
+      "sequence": 0,
+      "sourceId": "operator",
+      "targetId": "motor/front",
+      "channelId": "throttle",
+      "value": 0
+    },
+    {
+      "tick": 0,
+      "sequence": 1,
+      "sourceId": "operator",
+      "targetId": "motor/front",
+      "channelId": "throttle",
+      "value": 0.5
+    },
+    {
+      "tick": 4,
+      "sequence": 2,
+      "sourceId": "operator",
+      "targetId": "motor/front",
+      "channelId": "throttle",
+      "value": 0
+    }
+  ],
+  "stateOwnerPayloads": {
+    "session": { "tick": 2, "mode": "paused" },
+    "input-command-bus": { "cursor": 2, "nextSequence": 2 },
+    "run-graph": { "revision": 1 },
+    "compiled-topology": { "revision": 1 },
+    "physics-world": { "bodies": [] },
+    "solver-contact": { "warmStarts": [] },
+    "tire-carcass": { "tires": [] },
+    "body-registry": { "bindings": [] },
+    "structure-failure": { "queuedChanges": [] },
+    "energy-power-signal": { "sources": [] },
+    "release-couplers": { "version": 1, "states": [] },
+    "material-resources": { "version": 1, "stores": [] },
+    "thermal-ablation": { "version": 1, "parts": [] },
+    "articulated-drive": { "groups": [] },
+    "sensors": { "previousSnapshot": null },
+    "controllers": { "instances": [] },
+    "terrain-environment": { "activeTileKeys": [] },
+    "telemetry-event-ids": { "nextEventId": 1 }
+  },
+  "observations": [
+    {
+      "tick": 0,
+      "channelId": "body/chassis/pose",
+      "expected": [0, 1, 0],
+      "tolerance": { "absolute": 1e-10, "relative": 1e-10 }
+    },
+    {
+      "tick": 4,
+      "channelId": "solver/iterations",
+      "expected": 8,
+      "tolerance": { "absolute": 0, "relative": 0 }
+    }
+  ],
+  "playback": {
+    "frames": [
+      {
+        "tick": 0,
+        "samples": [
+          {
+            "channelId": "body/chassis/pose",
+            "ownerId": "body/chassis",
+            "value": [0, 1, 0],
+            "unit": "m",
+            "frame": "world",
+            "phase": "committed-tick-v1",
+            "validity": "valid",
+            "saturation": false,
+            "sourceDescriptorIds": ["body/chassis"]
+          }
+        ],
+        "events": []
+      },
+      {
+        "tick": 4,
+        "samples": [
+          {
+            "channelId": "solver/iterations",
+            "ownerId": "solver",
+            "value": 8,
+            "unit": "1",
+            "frame": "frame:solver",
+            "phase": "committed-tick-v1",
+            "validity": "valid",
+            "saturation": false,
+            "sourceDescriptorIds": ["solver/transaction"]
+          }
+        ],
+        "events": [
+          {
+            "eventId": "event/0001",
+            "code": "solver/converged",
+            "ownerId": "solver",
+            "predecessorIds": [],
+            "phase": "committed-tick-v1",
+            "sourceDescriptorIds": ["solver/transaction"],
+            "payload": { "iterations": 8 }
+          }
+        ]
+      }
+    ]
+  },
+  "negativeCases": [
+    {
+      "id": "artifact-cross-decode",
+      "artifact": "inputTrace",
+      "decoder": "checkpoint",
+      "path": ["version"],
+      "value": 1,
+      "expected": "UNSUPPORTED_WIRE_FORMAT"
+    },
+    {
+      "id": "input-range-reversed",
+      "artifact": "inputTrace",
+      "path": ["startTick"],
+      "value": 5,
+      "expected": "INVALID_TICK_RANGE"
+    },
+    {
+      "id": "input-out-of-order",
+      "artifact": "inputTrace",
+      "operation": "reverse",
+      "path": ["inputs"],
+      "expected": "NONCANONICAL_INPUT_ORDER"
+    },
+    {
+      "id": "input-duplicate-sequence",
+      "artifact": "inputTrace",
+      "path": ["inputs", 1, "sequence"],
+      "value": 0,
+      "expected": "NONCANONICAL_INPUT_ORDER"
+    },
+    {
+      "id": "input-globally-duplicate-sequence",
+      "artifact": "inputTrace",
+      "path": ["inputs", 2, "sequence"],
+      "value": 1,
+      "expected": "DUPLICATE_INPUT_SEQUENCE"
+    },
+    {
+      "id": "input-before-range",
+      "artifact": "inputTrace",
+      "path": ["startTick"],
+      "value": 1,
+      "expected": "INPUT_OUTSIDE_TRACE_RANGE"
+    },
+    {
+      "id": "input-outside-range",
+      "artifact": "inputTrace",
+      "path": ["inputs", 2, "tick"],
+      "value": 5,
+      "expected": "INPUT_OUTSIDE_TRACE_RANGE"
+    },
+    {
+      "id": "checkpoint-owner-order",
+      "artifact": "checkpoint",
+      "operation": "swap-first-two",
+      "path": ["stateOwners"],
+      "expected": "INVALID_CHECKPOINT_OWNER_SET"
+    },
+    {
+      "id": "checkpoint-owner-json-invalid",
+      "artifact": "checkpoint",
+      "path": ["stateOwners", 0, "payloadJson"],
+      "value": "{",
+      "expected": "INVALID_CHECKPOINT_OWNER_JSON"
+    },
+    {
+      "id": "checkpoint-owner-json-noncanonical",
+      "artifact": "checkpoint",
+      "path": ["stateOwners", 0, "payloadJson"],
+      "value": "{ \"mode\": \"paused\", \"tick\": 2 }",
+      "expected": "NONCANONICAL_CHECKPOINT_OWNER_JSON"
+    },
+    {
+      "id": "checkpoint-owner-length",
+      "artifact": "checkpoint",
+      "path": ["stateOwners", 0, "payloadByteLength"],
+      "value": 0,
+      "expected": "CHECKPOINT_OWNER_BYTE_LENGTH_MISMATCH"
+    },
+    {
+      "id": "checkpoint-owner-digest",
+      "artifact": "checkpoint",
+      "path": ["stateOwners", 0, "payloadSha256"],
+      "value": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "expected": "CHECKPOINT_OWNER_DIGEST_MISMATCH"
+    },
+    {
+      "id": "checkpoint-state-digest",
+      "artifact": "checkpoint",
+      "path": ["stateDigest"],
+      "value": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "expected": "CHECKPOINT_STATE_DIGEST_MISMATCH"
+    },
+    {
+      "id": "experiment-blueprint-fingerprint",
+      "artifact": "experiment",
+      "path": ["blueprintFingerprint"],
+      "value": "sim-sha256-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "expected": "EXPERIMENT_BLUEPRINT_FINGERPRINT_MISMATCH"
+    },
+    {
+      "id": "experiment-run-fingerprint",
+      "artifact": "experiment",
+      "path": ["inputTrace", "runConfigurationFingerprint"],
+      "value": "sim-sha256-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "expected": "EXPERIMENT_RUN_FINGERPRINT_MISMATCH"
+    },
+    {
+      "id": "experiment-trace-range",
+      "artifact": "experiment",
+      "path": ["startTick"],
+      "value": 1,
+      "expected": "EXPERIMENT_TRACE_RANGE_MISMATCH"
+    },
+    {
+      "id": "experiment-checkpoint-run",
+      "artifact": "experiment",
+      "path": ["checkpoint", "runConfigurationFingerprint"],
+      "value": "sim-sha256-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "expected": "EXPERIMENT_CHECKPOINT_RUN_MISMATCH"
+    },
+    {
+      "id": "experiment-checkpoint-blueprint",
+      "artifact": "experiment",
+      "path": ["checkpoint", "blueprintFingerprint"],
+      "value": "sim-sha256-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "expected": "EXPERIMENT_CHECKPOINT_BLUEPRINT_MISMATCH"
+    },
+    {
+      "id": "experiment-checkpoint-range",
+      "artifact": "experiment",
+      "path": ["checkpoint", "committedTick"],
+      "value": 5,
+      "recompute": "checkpoint-state-digest",
+      "expected": "EXPERIMENT_CHECKPOINT_OUTSIDE_RANGE"
+    },
+    {
+      "id": "experiment-observation-order",
+      "artifact": "experiment",
+      "operation": "reverse",
+      "path": ["observations"],
+      "expected": "NONCANONICAL_OBSERVATION_ORDER"
+    },
+    {
+      "id": "experiment-observation-range",
+      "artifact": "experiment",
+      "path": ["observations", 1, "tick"],
+      "value": 5,
+      "expected": "OBSERVATION_OUTSIDE_EXPERIMENT_RANGE"
+    },
+    {
+      "id": "experiment-manifest-digest",
+      "artifact": "experiment",
+      "path": ["manifestDigest"],
+      "value": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "expected": "EXPERIMENT_MANIFEST_DIGEST_MISMATCH"
+    },
+    {
+      "id": "playback-cannot-resume",
+      "artifact": "telemetryPlayback",
+      "path": ["resumable"],
+      "value": true,
+      "expected": "WIRE_SCHEMA_VIOLATION"
+    },
+    {
+      "id": "playback-declared-range",
+      "artifact": "telemetryPlayback",
+      "path": ["endTick"],
+      "value": 3,
+      "expected": "PLAYBACK_FRAME_RANGE_MISMATCH"
+    },
+    {
+      "id": "playback-frame-order",
+      "artifact": "telemetryPlayback",
+      "operation": "reverse",
+      "path": ["frames"],
+      "expected": "PLAYBACK_FRAME_RANGE_MISMATCH"
+    },
+    {
+      "id": "playback-time",
+      "artifact": "telemetryPlayback",
+      "path": ["frames", 1, "timeS"],
+      "value": 99,
+      "expected": "PLAYBACK_TIME_MISMATCH"
+    },
+    {
+      "id": "playback-sample-order",
+      "artifact": "telemetryPlayback",
+      "operation": "duplicate-first",
+      "path": ["frames", 0, "samples"],
+      "expected": "NONCANONICAL_PLAYBACK_SAMPLE_ORDER"
+    },
+    {
+      "id": "playback-event-order",
+      "artifact": "telemetryPlayback",
+      "operation": "duplicate-first",
+      "path": ["frames", 1, "events"],
+      "expected": "NONCANONICAL_PLAYBACK_EVENT_ORDER"
+    },
+    {
+      "id": "playback-event-json-invalid",
+      "artifact": "telemetryPlayback",
+      "path": ["frames", 1, "events", 0, "payloadJson"],
+      "value": "{",
+      "expected": "INVALID_PLAYBACK_EVENT_JSON"
+    },
+    {
+      "id": "playback-event-json-noncanonical",
+      "artifact": "telemetryPlayback",
+      "path": ["frames", 1, "events", 0, "payloadJson"],
+      "value": "{ \"iterations\": 8 }",
+      "expected": "NONCANONICAL_PLAYBACK_EVENT_JSON"
+    }
+  ]
+}

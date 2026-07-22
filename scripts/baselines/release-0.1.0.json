@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "release": "0.1.0",
+  "measurement": {
+    "viewport": { "width": 1024, "height": 720 },
+    "warmupRuns": 5,
+    "minimumMeasuredRuns": 5,
+    "cycleCount": 20
+  },
+  "budgets": {
+    "startupMedianMs": 12000,
+    "frameMedianMs": 350,
+    "fixedStep1000MedianMs": 550,
+    "drawCallsPerMeasuredRunMedian": 6000,
+    "heapSlopeBytesPerCycle": 1e-9,
+    "bufferSlopePerCycle": 12,
+    "programSlopePerCycle": 1e-9,
+    "textureSlopePerCycle": 0.1,
+    "workerSlopePerCycle": 1e-9,
+    "blobUrlSlopePerCycle": 0.1,
+    "bundles": {
+      "mainBytes": 2750000,
+      "typescriptCompilerBytes": 3600000,
+      "wabtRuntimeBytes": 810000
+    }
+  }
+}

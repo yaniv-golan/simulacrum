@@ -1,0 +1,400 @@
+@media (max-width: 1000px) {
+  .catalog,
+  .inspector {
+    width: 240px;
+  }
+  .bottom-bar {
+    left: 258px;
+    right: 258px;
+  }
+  .build-readout {
+    display: none;
+  }
+  .welcome {
+    grid-template-columns: 1fr;
+  }
+  .welcome-art {
+    opacity: 0.2;
+    position: absolute;
+    inset: 0;
+  }
+  .welcome-card {
+    justify-self: center;
+  }
+  .tutorial {
+    left: 250px;
+  }
+}
+
+@media (max-width: 1300px) {
+  header {
+    padding: 0 9px;
+  }
+  .mark {
+    gap: 6px;
+  }
+  .mark small {
+    display: none;
+  }
+  .mode-switch button {
+    padding: 0 9px;
+    font-size: 8px;
+  }
+  .mode-switch button i {
+    margin-right: 3px;
+  }
+  .header-actions {
+    gap: 3px;
+  }
+  .header-actions button {
+    padding: 9px 6px;
+    font-size: 7px;
+    letter-spacing: 0.06em;
+  }
+}
+
+/* Progressive disclosure keeps the build surface primary. */
+.tools-menu-wrap {
+  position: relative;
+}
+.tools-menu {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 9px);
+  right: 0;
+  width: 246px;
+  padding: 9px;
+  border: 1px solid #3d5e59;
+  border-radius: 7px;
+  background: rgba(7, 22, 23, 0.97);
+  box-shadow: 0 18px 55px #020a0acc;
+  backdrop-filter: blur(18px);
+}
+.tools-menu > small {
+  display: block;
+  padding: 5px 7px 8px;
+  color: #668985;
+  font: 700 7px "Space Grotesk";
+  letter-spacing: 0.18em;
+}
+.header-actions .tools-menu button {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  width: 100%;
+  padding: 9px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #8ce8d2;
+  text-align: left;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+.header-actions .tools-menu button:hover {
+  background: #15322f;
+}
+.tools-menu button span {
+  display: grid;
+  gap: 2px;
+  color: #d9f3ed;
+  font: 700 8px "Space Grotesk";
+  letter-spacing: 0.08em;
+}
+.tools-menu button em {
+  color: #6e918c;
+  font: 500 8px "DM Sans";
+  letter-spacing: 0;
+}
+.shell.focus-workspace .catalog,
+.shell.focus-workspace .inspector {
+  opacity: 0;
+  pointer-events: none;
+}
+.shell.focus-workspace .catalog {
+  transform: translateX(calc(-100% - 24px));
+}
+.shell.focus-workspace .inspector {
+  transform: translateX(calc(100% + 24px));
+}
+.shell.focus-workspace .bottom-bar {
+  left: 18px;
+  right: 18px;
+}
+.shell.focus-workspace .camera-tools {
+  right: 18px;
+}
+.shell.focus-workspace .remote-console {
+  right: 18px;
+  width: min(380px, calc(100vw - 36px));
+}
+.catalog,
+.inspector,
+.bottom-bar,
+.camera-tools {
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease,
+    left 180ms ease,
+    right 180ms ease;
+}
+.panel-collapse {
+  position: absolute;
+  top: 50%;
+  z-index: 12;
+  width: 28px;
+  height: 58px;
+  transform: translateY(-50%);
+  border: 1px solid #4e7772;
+  background: #102527;
+  color: var(--mint);
+  font: 500 23px/1 "Space Grotesk";
+  cursor: pointer;
+  box-shadow: 0 8px 24px #00100db8;
+}
+.panel-collapse-left {
+  right: 5px;
+  border-radius: 5px 0 0 5px;
+}
+.panel-collapse-right {
+  left: 5px;
+  border-radius: 0 5px 5px 0;
+}
+.catalog.panel-collapsed {
+  transition: none;
+  transform: translateX(calc(-100% + 40px));
+}
+.inspector.panel-collapsed {
+  transition: none;
+  transform: translateX(calc(100% - 40px));
+}
+.catalog.panel-collapsed > :not(.panel-collapse),
+.inspector.panel-collapsed > :not(.panel-collapse) {
+  opacity: 0;
+  pointer-events: none;
+}
+.catalog > :not(.panel-collapse),
+.inspector > :not(.panel-collapse) {
+  transition: opacity 120ms ease;
+}
+.panel-collapse:hover,
+.panel-collapse:focus-visible {
+  color: #071615;
+  background: var(--mint);
+  outline: none;
+}
+
+@media (max-width: 1200px) {
+  .catalog,
+  .inspector {
+    width: 240px;
+  }
+  .catalog {
+    left: 10px;
+  }
+  .inspector {
+    right: 10px;
+  }
+  .bottom-bar {
+    left: 258px;
+    right: 258px;
+  }
+  .camera-tools {
+    right: 258px;
+  }
+}
+
+/*
+ * A laptop window often shares the screen with notes, documentation, or a
+ * debugger. In that range the library and inspector become mutually exclusive
+ * drawers while the controls keep their full-size hit targets.
+ */
+@media (max-width: 1080px) {
+  .shell.compact-workspace header {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    height: 56px;
+  }
+  .shell.compact-workspace .catalog,
+  .shell.compact-workspace .inspector {
+    z-index: 9;
+    top: 76px;
+    bottom: 116px;
+    width: min(280px, calc(100vw - 72px));
+  }
+  .shell.compact-workspace .catalog {
+    left: 8px;
+  }
+  .shell.compact-workspace .inspector {
+    right: 8px;
+  }
+  .shell.compact-workspace .bottom-bar,
+  .shell.compact-workspace.focus-workspace .bottom-bar {
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    height: 60px;
+  }
+  .shell.compact-workspace .bottom-bar .tool-group button {
+    padding-inline: 8px;
+  }
+  .shell.compact-workspace .bottom-bar .tool-group kbd,
+  .shell.compact-workspace .build-readout {
+    display: none;
+  }
+  .shell.compact-workspace .bottom-bar .run {
+    flex: 0 0 auto;
+    min-width: 112px;
+    padding-inline: 11px;
+  }
+  .shell.compact-workspace .camera-tools,
+  .shell.compact-workspace.focus-workspace .camera-tools {
+    right: auto;
+    bottom: 76px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .shell.compact-workspace .mission {
+    top: 76px;
+    width: min(280px, calc(100vw - 96px));
+    padding: 8px 12px 10px;
+  }
+  .shell.compact-workspace .mission span {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .shell.compact-workspace .drive-hud {
+    z-index: 10;
+    bottom: 124px;
+    left: 52px;
+    width: min(330px, calc(100vw - 104px));
+  }
+  .shell.compact-workspace .drive-hud.compact-auto-collapsed {
+    width: min(280px, calc(100vw - 104px));
+  }
+  .shell.compact-workspace .controller-launcher {
+    bottom: 76px;
+    left: 8px;
+  }
+  .shell.compact-workspace .remote-console,
+  .shell.compact-workspace.focus-workspace .remote-console {
+    z-index: 15;
+    top: 76px;
+    right: 8px;
+    bottom: 76px;
+    width: min(370px, calc(100vw - 72px));
+  }
+  .shell.compact-workspace:has(.remote-console:not(.hidden)) .inspector,
+  .shell.compact-workspace:has(.environment-panel:not(.hidden)) .inspector {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(calc(100% + 24px));
+  }
+  .shell.compact-workspace:has(.remote-console:not(.hidden)) .drive-hud {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-24px);
+  }
+  .shell.compact-workspace .tutorial {
+    top: 86px;
+    left: 52px;
+    width: min(300px, calc(100vw - 104px));
+  }
+  .shell.compact-workspace .connection-banner {
+    bottom: 124px;
+    width: calc(100vw - 96px);
+    min-width: 0;
+  }
+  .shell.compact-workspace .modal-card {
+    width: min(420px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .shell.compact-workspace .mark small {
+    display: none;
+  }
+  .shell.compact-workspace .camera-tools button span {
+    display: none;
+  }
+  .shell.compact-workspace #focus-view,
+  .shell.compact-workspace #explode-view {
+    min-width: 38px;
+    padding-inline: 4px;
+  }
+  .shell.compact-workspace .mode-switch button {
+    padding-inline: 7px;
+  }
+  .shell.compact-workspace .bottom-bar .tool-group button {
+    gap: 4px;
+    padding-inline: 6px;
+  }
+  .shell.compact-workspace .bottom-bar .tool-group span {
+    font-size: 7px;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell.compact-workspace .mark > div {
+    display: none;
+  }
+  .shell.compact-workspace .header-actions > button,
+  .shell.compact-workspace .tools-menu-wrap > #tools-btn {
+    width: 34px;
+    overflow: hidden;
+    padding-inline: 8px;
+    white-space: nowrap;
+  }
+  .shell.compact-workspace .header-actions > button span,
+  .shell.compact-workspace .tools-menu-wrap > #tools-btn span {
+    display: none;
+  }
+}
+
+/* Large displays trade a little empty margin for calmer, more legible tools. */
+@media (min-width: 1600px) {
+  .catalog,
+  .inspector {
+    width: 320px;
+  }
+  .catalog {
+    left: 24px;
+  }
+  .inspector {
+    right: 24px;
+    padding: 20px;
+  }
+  .bottom-bar {
+    right: 362px;
+    left: 362px;
+  }
+  .camera-tools {
+    right: 362px;
+  }
+  .drive-hud {
+    left: 362px;
+    width: 320px;
+  }
+  .drive-hud.graphic-controller {
+    width: 350px;
+  }
+  .remote-console {
+    right: 362px;
+    width: 400px;
+  }
+  .mission {
+    width: 390px;
+  }
+  .part-card {
+    min-height: 64px;
+    padding: 10px;
+  }
+  .component-desc {
+    font-size: 11px;
+  }
+}

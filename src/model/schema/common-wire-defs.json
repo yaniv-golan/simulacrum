@@ -1,0 +1,356 @@
+{
+  "$id": "https://simulacrum.local/schema/common-wire-defs.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "identifier": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{1,64}$" },
+    "vector3": {
+      "type": "array",
+      "prefixItems": [
+        { "type": "number" },
+        { "type": "number" },
+        { "type": "number" }
+      ],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "quaternion": {
+      "type": "array",
+      "prefixItems": [
+        { "type": "number" },
+        { "type": "number" },
+        { "type": "number" },
+        { "type": "number" }
+      ],
+      "items": false,
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "scale3": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 },
+        "y": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 },
+        "z": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 }
+      },
+      "additionalProperties": false
+    },
+    "extensions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)+$"
+      },
+      "additionalProperties": true,
+      "maxProperties": 64
+    },
+    "capacity": {
+      "type": "object",
+      "required": ["ultimateForceN", "ultimateTorqueNm"],
+      "properties": {
+        "ultimateForceN": { "type": "number", "exclusiveMinimum": 0 },
+        "ultimateTorqueNm": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "scriptSources": {
+      "type": "object",
+      "required": ["visual", "typescript", "wat"],
+      "properties": {
+        "visual": { "type": "object" },
+        "typescript": { "type": "string", "maxLength": 32768 },
+        "wat": { "type": "string", "maxLength": 32768 }
+      },
+      "additionalProperties": false
+    },
+    "controllerBinding": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "id",
+            "direction",
+            "endpointPartId",
+            "endpointPortId",
+            "reading"
+          ],
+          "properties": {
+            "id": { "$ref": "#/$defs/identifier" },
+            "direction": { "const": "input" },
+            "endpointPartId": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "endpointPortId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "reading": { "$ref": "#/$defs/identifier" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "id",
+            "direction",
+            "endpointPartId",
+            "endpointPortId",
+            "channel"
+          ],
+          "properties": {
+            "id": { "$ref": "#/$defs/identifier" },
+            "direction": { "const": "output" },
+            "endpointPartId": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "endpointPortId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "channel": { "$ref": "#/$defs/identifier" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "controllerBindings": {
+      "type": "array",
+      "maxItems": 128,
+      "items": { "$ref": "#/$defs/controllerBinding" }
+    },
+    "part": {
+      "type": "object",
+      "required": ["id", "type", "pos", "orientation", "scale", "config"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "type": {
+          "enum": [
+            "beam",
+            "plate",
+            "cargo",
+            "nosecone",
+            "heatshield",
+            "fin",
+            "axle",
+            "bearing",
+            "gear12",
+            "gear24",
+            "motor",
+            "hinge",
+            "lever",
+            "spring",
+            "damper",
+            "linear-guide",
+            "linear-actuator",
+            "wheel",
+            "computer",
+            "receiver",
+            "navsensor",
+            "rangesensor",
+            "sensor",
+            "imu",
+            "contactsensor",
+            "thermalprobe",
+            "pressureprobe",
+            "loadcell",
+            "gyro",
+            "battery",
+            "powerbus",
+            "propellanttank",
+            "headlight",
+            "rocket",
+            "rcs"
+          ]
+        },
+        "pos": { "$ref": "#/$defs/vector3" },
+        "orientation": { "$ref": "#/$defs/quaternion" },
+        "scale": { "$ref": "#/$defs/scale3" },
+        "config": { "type": "object" },
+        "mechanism": { "type": "object" },
+        "storedEnergyWh": { "type": "number", "minimum": 0 },
+        "customColor": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 16777215
+        },
+        "rigRole": { "type": ["string", "null"], "maxLength": 64 },
+        "rigVisualRotation": { "$ref": "#/$defs/vector3" },
+        "scriptLanguage": { "enum": ["visual", "typescript", "wat"] },
+        "scriptSources": { "$ref": "#/$defs/scriptSources" },
+        "controllerBindings": { "$ref": "#/$defs/controllerBindings" },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      },
+      "additionalProperties": false
+    },
+    "connection": {
+      "type": "object",
+      "required": ["id", "a", "b", "kind", "portA", "portB"],
+      "properties": {
+        "id": {
+          "type": ["integer", "string"],
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "a": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "b": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "kind": {
+          "enum": ["mechanical", "mesh", "power", "signal", "resource"]
+        },
+        "portA": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "portB": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "capacity": { "$ref": "#/$defs/capacity" },
+        "anchorA": { "$ref": "#/$defs/vector3" },
+        "anchorB": { "$ref": "#/$defs/vector3" },
+        "releaseCouplerPartId": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "toothStiffness": { "type": "number", "minimum": 0 },
+            "meshDamping": { "type": "number", "minimum": 0 },
+            "bearingDamping": { "type": "number", "minimum": 0 },
+            "torqueRating": { "type": "number", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      },
+      "additionalProperties": false
+    },
+    "remoteControl": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "channel",
+        "type",
+        "targetId",
+        "defaultValue",
+        "hotkey"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "channel": { "$ref": "#/$defs/identifier" },
+        "type": { "enum": ["range", "toggle", "hold", "pulse"] },
+        "targetId": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "defaultValue": { "type": "number" },
+        "hotkey": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9]{0,31}$"
+            },
+            { "type": "null" }
+          ]
+        },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "step": { "type": "number", "exclusiveMinimum": 0 },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      },
+      "additionalProperties": false
+    },
+    "remoteProfile": {
+      "type": "object",
+      "required": ["design", "controls", "actionBindings"],
+      "properties": {
+        "design": {
+          "type": "object",
+          "required": ["title", "style", "accent"],
+          "properties": {
+            "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+            "style": { "enum": ["drive-pad", "compact-grid"] },
+            "accent": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "extensions": { "$ref": "#/$defs/extensions" }
+          },
+          "additionalProperties": false
+        },
+        "controls": {
+          "type": "array",
+          "maxItems": 128,
+          "items": { "$ref": "#/$defs/remoteControl" }
+        },
+        "actionBindings": {
+          "type": "object",
+          "properties": {
+            "forward": { "$ref": "#/$defs/remoteMomentaryActionBinding" },
+            "reverse": { "$ref": "#/$defs/remoteMomentaryActionBinding" },
+            "left": { "$ref": "#/$defs/remoteMomentaryActionBinding" },
+            "right": { "$ref": "#/$defs/remoteMomentaryActionBinding" },
+            "brake": { "$ref": "#/$defs/remoteMomentaryActionBinding" },
+            "lights": { "$ref": "#/$defs/remoteToggleActionBinding" }
+          },
+          "additionalProperties": false
+        },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      },
+      "additionalProperties": false
+    },
+    "remoteMomentaryActionBinding": {
+      "type": "object",
+      "required": ["controlId", "pressedValue", "releasedValue"],
+      "properties": {
+        "controlId": { "$ref": "#/$defs/identifier" },
+        "pressedValue": { "type": "number" },
+        "releasedValue": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "remoteToggleActionBinding": {
+      "type": "object",
+      "required": ["controlId"],
+      "properties": {
+        "controlId": { "$ref": "#/$defs/identifier" }
+      },
+      "additionalProperties": false
+    },
+    "controllerWindowState": {
+      "type": "object",
+      "required": [
+        "visible",
+        "collapsed",
+        "pinned",
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "properties": {
+        "visible": { "type": "boolean" },
+        "collapsed": { "type": "boolean" },
+        "pinned": { "type": "boolean" },
+        "x": { "type": "number", "minimum": -32768, "maximum": 32768 },
+        "y": { "type": "number", "minimum": -32768, "maximum": 32768 },
+        "width": { "type": "number", "minimum": 120, "maximum": 2048 },
+        "height": { "type": "number", "minimum": 120, "maximum": 2048 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

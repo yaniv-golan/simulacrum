@@ -1,0 +1,811 @@
+{
+  "schemaVersion": 1,
+  "fixedStepS": 0.008333333333333333,
+  "coordinateContract": {
+    "handedness": "right-handed",
+    "worldUp": "+Y",
+    "canonicalMechanicalAxis": "+Z",
+    "orientation": "unit-quaternion-local-to-parent",
+    "publicSamplePhase": "committed-tick-v1"
+  },
+  "artifacts": [
+    { "kind": "blueprint", "format": "simulacrum-blueprint", "version": 1 },
+    { "kind": "workspace", "format": "simulacrum-workspace", "version": 1 },
+    {
+      "kind": "subassembly",
+      "format": "simulacrum-subassembly",
+      "version": 1
+    },
+    {
+      "kind": "share-package",
+      "format": "simulacrum-share-package",
+      "version": 1
+    },
+    { "kind": "proof", "format": "simulacrum-proof", "version": 1 },
+    {
+      "kind": "run-configuration",
+      "format": "simulacrum-run-configuration",
+      "version": 1
+    },
+    {
+      "kind": "input-trace",
+      "format": "simulacrum-input-trace",
+      "version": 1
+    },
+    {
+      "kind": "checkpoint",
+      "format": "simulacrum-checkpoint",
+      "version": 1
+    },
+    {
+      "kind": "experiment",
+      "format": "simulacrum-experiment",
+      "version": 1
+    },
+    {
+      "kind": "telemetry-playback",
+      "format": "simulacrum-telemetry-playback",
+      "version": 1,
+      "resumable": false
+    }
+  ],
+  "useCases": [
+    {
+      "id": "U1",
+      "authoredData": [
+        "attachment-frames",
+        "elastic-law",
+        "damping-law",
+        "limits",
+        "mass-model"
+      ],
+      "compiler": [
+        "body-descriptors",
+        "elastic-element-descriptor",
+        "provenance"
+      ],
+      "runtimeConsumers": ["constraint-solver", "structure", "thermal"],
+      "telemetry": [
+        "elastic-length",
+        "elastic-force",
+        "elastic-energy",
+        "solver-health"
+      ],
+      "persistenceShare": ["blueprint", "subassembly", "share-package"],
+      "challengeProof": [
+        "period",
+        "equilibrium",
+        "energy-envelope",
+        "no-undeclared-force"
+      ],
+      "fixtures": ["F1", "F2", "F3"]
+    },
+    {
+      "id": "U2",
+      "authoredData": [
+        "links",
+        "joint-frames",
+        "guide",
+        "spring",
+        "damper",
+        "stops",
+        "wheel"
+      ],
+      "compiler": [
+        "bodies",
+        "constraints",
+        "elastic-elements",
+        "collision-policy"
+      ],
+      "runtimeConsumers": ["constraint-solver", "contact-solver", "structure"],
+      "telemetry": [
+        "corner-travel",
+        "joint-reactions",
+        "body-motion",
+        "contact-load"
+      ],
+      "persistenceShare": ["blueprint", "subassembly", "share-package"],
+      "challengeProof": [
+        "bounded-travel",
+        "clearance",
+        "ride-response",
+        "survival"
+      ],
+      "fixtures": ["F4", "F6", "F7"]
+    },
+    {
+      "id": "U3",
+      "authoredData": [
+        "rounded-wheel-geometry",
+        "axle-frame",
+        "tire-law",
+        "rim-material",
+        "drivetrain"
+      ],
+      "compiler": [
+        "contact-regions",
+        "tire-descriptor",
+        "inertia",
+        "material-pairs"
+      ],
+      "runtimeConsumers": [
+        "collision-detection",
+        "contact-solver",
+        "tire-solver",
+        "drivetrain"
+      ],
+      "telemetry": [
+        "contact-point",
+        "contact-normal",
+        "normal-load",
+        "slip",
+        "wheel-spin"
+      ],
+      "persistenceShare": ["blueprint", "run-configuration", "experiment"],
+      "challengeProof": [
+        "obstacle-envelope",
+        "no-box-contact",
+        "no-hidden-lift"
+      ],
+      "fixtures": ["F9", "F10", "F11", "F12"]
+    },
+    {
+      "id": "U4",
+      "authoredData": ["ordinary-mechanism-primitives", "arbitrary-topology"],
+      "compiler": [
+        "generic-bodies",
+        "generic-constraints",
+        "generic-actuators"
+      ],
+      "runtimeConsumers": ["constraint-solver", "contact-solver", "failure"],
+      "telemetry": ["coordinates", "reactions", "contacts", "energy"],
+      "persistenceShare": ["blueprint", "subassembly", "share-package"],
+      "challengeProof": ["pose", "load", "contact", "energy", "survival"],
+      "fixtures": ["F2", "F4", "F7", "F13"]
+    },
+    {
+      "id": "U5",
+      "authoredData": [
+        "sensors",
+        "controller-program",
+        "power",
+        "signals",
+        "actuators"
+      ],
+      "compiler": ["sensor-channels", "actuator-contracts", "network-bindings"],
+      "runtimeConsumers": [
+        "previous-tick-sensors",
+        "controllers",
+        "networks",
+        "actuators",
+        "thermal"
+      ],
+      "telemetry": [
+        "attitude",
+        "acceleration",
+        "travel",
+        "command",
+        "actual-force",
+        "power",
+        "faults"
+      ],
+      "persistenceShare": ["blueprint", "workspace", "experiment"],
+      "challengeProof": [
+        "bounded-error-envelope",
+        "power-loss",
+        "sensor-loss",
+        "saturation"
+      ],
+      "fixtures": ["F5", "F8", "F15"]
+    },
+    {
+      "id": "U6",
+      "authoredData": ["explicit-si-parameters", "expanded-presets"],
+      "compiler": ["field-provenance", "diagnostics", "topology-digest"],
+      "runtimeConsumers": ["deterministic-session", "telemetry-query"],
+      "telemetry": [
+        "units",
+        "frames",
+        "force-decomposition",
+        "energy-ledger",
+        "residuals"
+      ],
+      "persistenceShare": ["workspace", "experiment", "telemetry-playback"],
+      "challengeProof": [
+        "fingerprints",
+        "observations",
+        "tolerances",
+        "evidence-digest"
+      ],
+      "fixtures": ["F1", "F14", "F15", "F17"]
+    },
+    {
+      "id": "U7",
+      "authoredData": [
+        "selected-parts",
+        "selected-connections",
+        "exposed-ports"
+      ],
+      "compiler": ["stable-id-remap", "ordinary-descriptor-compilation"],
+      "runtimeConsumers": ["same-runtime-as-hand-built"],
+      "telemetry": [
+        "asset-identity",
+        "compile-diagnostics",
+        "equivalence-digest"
+      ],
+      "persistenceShare": ["subassembly", "share-package", "blueprint"],
+      "challengeProof": [
+        "compiled-topology-equivalence",
+        "observation-equivalence"
+      ],
+      "fixtures": ["F7", "F14", "F16"]
+    },
+    {
+      "id": "U8",
+      "authoredData": [
+        "weak-links",
+        "stops",
+        "thermal-limits",
+        "materials",
+        "collision-exclusions"
+      ],
+      "compiler": ["validated-descriptors", "source-linked-rejections"],
+      "runtimeConsumers": ["solver", "structure", "thermal", "topology-update"],
+      "telemetry": [
+        "residuals",
+        "overload",
+        "heat",
+        "failure-cause",
+        "topology"
+      ],
+      "persistenceShare": ["blueprint", "checkpoint", "proof"],
+      "challengeProof": [
+        "invalid-design-rejection",
+        "deterministic-physical-failure"
+      ],
+      "fixtures": ["F3", "F5", "F12", "F13", "F15"]
+    },
+    {
+      "id": "U9",
+      "authoredData": ["blueprint", "run-configuration", "input-trace"],
+      "compiler": ["engine-identity", "runtime-identity", "topology-digest"],
+      "runtimeConsumers": ["fixed-step-session", "checkpoint-restore"],
+      "telemetry": ["canonical-observations", "state-digest", "events"],
+      "persistenceShare": ["experiment", "checkpoint", "telemetry-playback"],
+      "challengeProof": [
+        "design-fingerprint",
+        "terminal-tick",
+        "predicate-result",
+        "tolerance"
+      ],
+      "fixtures": ["F15", "F16"]
+    }
+  ],
+  "userTasks": [
+    {
+      "id": "T1",
+      "commands": ["mechanism.insert-asset"],
+      "pointerPath": "library placement",
+      "keyboardPath": "library search and transform fields",
+      "screenReaderPath": "ordinary asset summary and exposed ports",
+      "textStateAssertions": [
+        "expanded-parts",
+        "expanded-connections",
+        "no-runtime-preset-id"
+      ]
+    },
+    {
+      "id": "T2",
+      "commands": ["part.insert", "connection.create"],
+      "pointerPath": "place primitives and connect ports",
+      "keyboardPath": "catalog search and port browser",
+      "screenReaderPath": "purpose frame axis and connection result",
+      "textStateAssertions": ["part-ids", "port-ids", "frames", "diagnostics"]
+    },
+    {
+      "id": "T3",
+      "commands": ["selection.set-exact", "selection.cycle-hit", "port.select"],
+      "pointerPath": "pick object or outliner entry",
+      "keyboardPath": "outliner traversal and hit cycling",
+      "screenReaderPath": "stable entity and endpoint names",
+      "textStateAssertions": [
+        "selected-kind",
+        "selected-id",
+        "world-frame",
+        "local-frame"
+      ]
+    },
+    {
+      "id": "T4",
+      "commands": [
+        "physics-field.set-si",
+        "physics-curve.replace",
+        "preset.expand"
+      ],
+      "pointerPath": "inspector and curve editor",
+      "keyboardPath": "exact value and table entry",
+      "screenReaderPath": "unit bounds value and associated errors",
+      "textStateAssertions": [
+        "si-values",
+        "display-unit",
+        "curve-points",
+        "history-state"
+      ]
+    },
+    {
+      "id": "T5",
+      "commands": ["diagnostic.focus-source", "diagnostic.explain"],
+      "pointerPath": "diagnostic marker and list",
+      "keyboardPath": "diagnostic navigation and jump",
+      "screenReaderPath": "severity cause provenance and remedy",
+      "textStateAssertions": [
+        "diagnostic-code",
+        "source-path",
+        "descriptor-ids",
+        "residual"
+      ]
+    },
+    {
+      "id": "T6",
+      "commands": [
+        "simulation.run",
+        "simulation.pause",
+        "simulation.reset",
+        "simulation.step-fixed"
+      ],
+      "pointerPath": "transport controls",
+      "keyboardPath": "transport shortcuts and focused buttons",
+      "screenReaderPath": "mode and committed tick announcements",
+      "textStateAssertions": [
+        "mode",
+        "tick",
+        "time",
+        "fixed-dt",
+        "state-digest"
+      ]
+    },
+    {
+      "id": "T7",
+      "commands": ["telemetry.channel-toggle", "telemetry.sample-focus"],
+      "pointerPath": "overlay and plot selection",
+      "keyboardPath": "channel search and data table",
+      "screenReaderPath": "channel unit frame tick validity",
+      "textStateAssertions": [
+        "channel-id",
+        "owner-id",
+        "sample-phase",
+        "validity"
+      ]
+    },
+    {
+      "id": "T8",
+      "commands": ["experiment.compare"],
+      "pointerPath": "duplicate tune and compare",
+      "keyboardPath": "numeric edit and comparison navigation",
+      "screenReaderPath": "fingerprints and metric deltas",
+      "textStateAssertions": [
+        "run-ids",
+        "fingerprints",
+        "parameter-delta",
+        "tolerance-result"
+      ]
+    },
+    {
+      "id": "T9",
+      "commands": [
+        "selection.mirror",
+        "selection.duplicate",
+        "selection.multi-edit"
+      ],
+      "pointerPath": "group transform commands",
+      "keyboardPath": "selection expansion and command palette",
+      "screenReaderPath": "scope plane conflicts and remap",
+      "textStateAssertions": [
+        "id-map",
+        "frame-map",
+        "connection-map",
+        "handedness"
+      ]
+    },
+    {
+      "id": "T10",
+      "commands": [
+        "subassembly.save",
+        "subassembly.expose-port",
+        "subassembly.instantiate"
+      ],
+      "pointerPath": "save dialog and exposed ports",
+      "keyboardPath": "outliner dialog and port ordering",
+      "screenReaderPath": "asset summary roles and acquisition",
+      "textStateAssertions": [
+        "subassembly-identity",
+        "source-fingerprint",
+        "exposed-ports",
+        "id-map"
+      ]
+    },
+    {
+      "id": "T11",
+      "commands": ["share.export", "share.import"],
+      "pointerPath": "manifest review and transfer",
+      "keyboardPath": "review confirmation without drop zone",
+      "screenReaderPath": "format origin trust program and errors",
+      "textStateAssertions": [
+        "asset-fingerprint",
+        "validation",
+        "acquisition",
+        "review-state"
+      ]
+    },
+    {
+      "id": "T12",
+      "commands": [
+        "controller.bind-channel",
+        "controller.compile",
+        "controller.run"
+      ],
+      "pointerPath": "wire sensors power signals and actuators",
+      "keyboardPath": "port browser editor target picker and run",
+      "screenReaderPath": "snapshot compatibility route watchdog and conflicts",
+      "textStateAssertions": [
+        "bindings",
+        "sensor-snapshot-tick",
+        "commands",
+        "actual-actuator-state",
+        "faults"
+      ]
+    },
+    {
+      "id": "T13",
+      "commands": [
+        "experiment.open",
+        "experiment.run-from-start",
+        "experiment.resume",
+        "experiment.verify"
+      ],
+      "pointerPath": "artifact tree and run actions",
+      "keyboardPath": "artifact navigation and exact run action",
+      "screenReaderPath": "identities resumable status result and tolerance",
+      "textStateAssertions": [
+        "artifact-manifest",
+        "engine-identity",
+        "start-tick",
+        "terminal-tick",
+        "digest-match"
+      ]
+    },
+    {
+      "id": "T14",
+      "commands": [
+        "failure.focus",
+        "failure.causal-chain",
+        "simulation.rewind-to-start",
+        "simulation.rerun"
+      ],
+      "pointerPath": "failure event inspect edit and rerun",
+      "keyboardPath": "last failure causal chain undo reset rerun",
+      "screenReaderPath": "cause source tick topology and recovery",
+      "textStateAssertions": [
+        "failure-event",
+        "topology-revision",
+        "energy-ledger",
+        "rerun-identity"
+      ]
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "F1",
+      "environment": "vacuum-zero-gravity-no-contact",
+      "inputs": ["initial-displacement", "zero-velocity"],
+      "execution": "multiple-periods-plus-dt-refinement",
+      "observations": [
+        "analytic-period",
+        "equilibrium",
+        "energy",
+        "no-transverse-wrench"
+      ],
+      "suite": "verify-elastic-elements"
+    },
+    {
+      "id": "F2",
+      "environment": "zero-gravity-asymmetric-bodies",
+      "inputs": ["offset-frames", "initial-extension", "optional-impulse"],
+      "execution": "multiple-oscillations",
+      "observations": [
+        "paired-wrenches",
+        "torque",
+        "momentum",
+        "frame-covariance"
+      ],
+      "suite": "verify-elastic-elements"
+    },
+    {
+      "id": "F3",
+      "environment": "vacuum-bounded-travel",
+      "inputs": ["piecewise-region-states", "stop-impact"],
+      "execution": "all-regions-and-transitions",
+      "observations": [
+        "continuity",
+        "monotonicity",
+        "finite-impulse",
+        "dissipation"
+      ],
+      "suite": "verify-elastic-elements"
+    },
+    {
+      "id": "F4",
+      "environment": "guide-gravity-and-zero-gravity",
+      "inputs": ["static-load", "lateral-impulse", "axial-drive", "friction"],
+      "execution": "hold-impact-reversal-at-120hz",
+      "observations": [
+        "five-rows",
+        "free-coordinate",
+        "same-iterate-friction",
+        "residuals",
+        "singular-rejection"
+      ],
+      "suite": "verify-guide-actuator-runtime"
+    },
+    {
+      "id": "F5",
+      "environment": "loaded-powered-guide",
+      "inputs": ["force", "velocity", "position", "disable", "power-loss"],
+      "execution": "tick-boundary-command-transitions",
+      "observations": [
+        "force-speed",
+        "energy",
+        "saturation",
+        "thermal",
+        "unpowered-law"
+      ],
+      "suite": "verify-guide-actuator-runtime"
+    },
+    {
+      "id": "F6",
+      "environment": "flat-plane-and-bump",
+      "inputs": ["settle", "prescribed-speed"],
+      "execution": "settle-traverse-recover",
+      "observations": [
+        "frequencies",
+        "travel",
+        "tire-load",
+        "body-acceleration",
+        "bottom-out"
+      ],
+      "suite": "verify-suspension-mechanisms"
+    },
+    {
+      "id": "F7",
+      "environment": "deterministic-course",
+      "inputs": ["topology-family-protocol"],
+      "execution": "same-session-path",
+      "observations": [
+        "compiled-topology",
+        "kinematics",
+        "clearance",
+        "contact-continuity",
+        "no-name-dispatch"
+      ],
+      "suite": "verify-suspension-mechanisms"
+    },
+    {
+      "id": "F8",
+      "environment": "flat-bump-and-sine-disturbance",
+      "inputs": ["controller", "disturbance", "sensor-loss", "power-loss"],
+      "execution": "previous-tick-sensing-at-120hz",
+      "observations": [
+        "error-envelope",
+        "body-motion",
+        "travel",
+        "force",
+        "power",
+        "faults"
+      ],
+      "suite": "verify-active-stabilization"
+    },
+    {
+      "id": "F9",
+      "environment": "curb-rock-thin-obstacle-and-gap",
+      "inputs": ["normal-load", "torque", "speed", "angle"],
+      "execution": "dimensionless-parameter-sweep",
+      "observations": [
+        "contact-geometry",
+        "climb-boundary",
+        "no-box-contact",
+        "no-tunneling"
+      ],
+      "suite": "verify-wheel-contact-runtime"
+    },
+    {
+      "id": "F10",
+      "environment": "sidewall-and-axle-normal-sweep",
+      "inputs": ["lateral-drop", "roll", "zero-longitudinal-tangent"],
+      "execution": "orientation-sweep-at-120hz",
+      "observations": [
+        "stable-basis",
+        "sidewall-law",
+        "finite-state",
+        "no-drive-traction"
+      ],
+      "suite": "verify-wheel-contact-runtime"
+    },
+    {
+      "id": "F11",
+      "environment": "flat-explicit-material-pairs",
+      "inputs": [
+        "free-roll",
+        "drive",
+        "brake",
+        "lateral-slip",
+        "combined-slip"
+      ],
+      "execution": "settle-ramp-and-transients",
+      "observations": [
+        "force-slip",
+        "friction-coupling",
+        "rolling-resistance",
+        "passivity",
+        "convergence"
+      ],
+      "suite": "verify-wheel-contact-runtime"
+    },
+    {
+      "id": "F12",
+      "environment": "flat-and-curb-finite-carcass-travel",
+      "inputs": ["drop", "load", "drive", "bottom-out"],
+      "execution": "complementarity-transitions",
+      "observations": [
+        "massless-coordinate",
+        "no-double-impulse",
+        "rim-load",
+        "energy"
+      ],
+      "suite": "verify-wheel-contact-runtime"
+    },
+    {
+      "id": "F13",
+      "environment": "closed-mechanism-with-weak-link",
+      "inputs": ["static-overload", "dynamic-overload"],
+      "execution": "committed-stage-failure-and-continuation",
+      "observations": [
+        "collision-policy",
+        "failure-tick",
+        "atomic-removal",
+        "post-detach-conservation"
+      ],
+      "suite": "verify-physics-failure"
+    },
+    {
+      "id": "F14",
+      "environment": "scaled-rotated-mirrored-fixtures",
+      "inputs": ["dimensionally-similar-protocols"],
+      "execution": "scale-aware-fixed-step",
+      "observations": [
+        "scaling-laws",
+        "inertia",
+        "frame-covariance",
+        "stable-remap"
+      ],
+      "suite": "verify-assembly-compiler"
+    },
+    {
+      "id": "F15",
+      "environment": "passive-active-failure-flight-and-terrain",
+      "inputs": [
+        "seeded-controller",
+        "external-input-trace",
+        "checkpoint-splits"
+      ],
+      "execution": "uninterrupted-versus-restored-per-tick",
+      "observations": [
+        "state-digest",
+        "telemetry",
+        "events",
+        "topology",
+        "queues",
+        "warm-state"
+      ],
+      "suite": "verify-physics-checkpoints"
+    },
+    {
+      "id": "F16",
+      "environment": "five-builtins-and-hybrids",
+      "inputs": ["existing-deterministic-inputs"],
+      "execution": "existing-session-and-browser-hooks",
+      "observations": [
+        "no-privileged-route",
+        "simultaneous-subsystems",
+        "visible-text-agreement"
+      ],
+      "suite": "verify-five-demos"
+    },
+    {
+      "id": "F17",
+      "environment": "dense-constraints-contacts-and-large-assembly",
+      "inputs": ["deterministic-impulses", "deterministic-commands"],
+      "execution": "fixed-budgets-repeated-seeds-and-soak",
+      "observations": [
+        "convergence",
+        "finite-state",
+        "order-stability",
+        "performance",
+        "cleanup"
+      ],
+      "suite": "verify-physics-solver-stress"
+    }
+  ],
+  "contractGroups": [
+    {
+      "id": "architecture-wire",
+      "promise": "strict reproducible contracts",
+      "owners": ["architecture", "wire"],
+      "tests": ["npm-run-check", "npm-test", "wire-mutation"],
+      "exitGate": "zero-unclassified-dispatch"
+    },
+    {
+      "id": "solver-state",
+      "promise": "complete contracts and one solver",
+      "owners": ["model-contracts", "simulation-engine"],
+      "tests": ["F1", "F4", "F11", "F15", "wire-negative", "wire-mutation"],
+      "exitGate": "one-solver-complete-state-owners"
+    },
+    {
+      "id": "geometry-compiler",
+      "promise": "canonical-geometry-and-compilation",
+      "owners": ["model-compiler"],
+      "tests": ["F2", "F9", "F14"],
+      "exitGate": "descriptor-only-runtime-physics"
+    },
+    {
+      "id": "constraints-actuation",
+      "promise": "generic-constraints-and-actuation",
+      "owners": ["simulation-constraints", "simulation-actuation"],
+      "tests": ["F1", "F2", "F3", "F4", "F5"],
+      "exitGate": "analytic-convergence-energy"
+    },
+    {
+      "id": "wheel-contact",
+      "promise": "rounded-wheel-and-tire-contact",
+      "owners": ["simulation-contact", "simulation-tire"],
+      "tests": ["F9", "F10", "F11", "F12", "F13"],
+      "exitGate": "physical-obstacle-and-slip-envelopes"
+    },
+    {
+      "id": "mechanisms",
+      "promise": "passive-and-active-mechanisms",
+      "owners": ["compiler", "controllers", "actuators"],
+      "tests": ["F6", "F7", "F8", "F15", "F16"],
+      "exitGate": "ordinary-topologies-and-bounded-control"
+    },
+    {
+      "id": "authoring-sharing",
+      "promise": "usable-accessible-reusable-and-provable",
+      "owners": ["application", "presentation", "artifact-model"],
+      "tests": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7",
+        "T8",
+        "T9",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14"
+      ],
+      "exitGate": "all-input-paths-and-artifacts-proven"
+    },
+    {
+      "id": "release-quality",
+      "promise": "release quality",
+      "owners": ["release"],
+      "tests": ["full-gate", "mutation", "baseline", "soak"],
+      "exitGate": "no-alternate-authorities-or-temporary-paths"
+    }
+  ]
+}

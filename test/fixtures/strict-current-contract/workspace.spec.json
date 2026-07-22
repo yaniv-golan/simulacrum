@@ -1,0 +1,28 @@
+{
+  "format": "simulacrum-workspace",
+  "version": 1,
+  "blueprint": {
+    "format": "simulacrum-blueprint",
+    "version": 1,
+    "name": "Workspace machine",
+    "parts": [],
+    "connections": [],
+    "remoteProfiles": {},
+    "defaultRemoteProfile": null
+  },
+  "idSeed": 1,
+  "selectedPartIds": [],
+  "selectedControllerId": null,
+  "activeRemoteProfile": null,
+  "programAcquisitionByController": {},
+  "remoteControlState": {},
+  "controllerWindowState": {
+    "visible": true,
+    "collapsed": false,
+    "pinned": false,
+    "x": 24,
+    "y": 24,
+    "width": 360,
+    "height": 520
+  }
+}

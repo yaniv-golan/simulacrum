@@ -1,0 +1,150 @@
+.mechanism-lab {
+  pointer-events: auto;
+  position: absolute;
+  z-index: 16;
+  inset: 74px 24px 76px auto;
+  width: min(720px, calc(100vw - 48px));
+  padding: 16px;
+  overflow: auto;
+}
+.mechanism-lab header,
+.mechanism-lab-actions,
+.mechanism-lab dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mechanism-lab header {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+.mechanism-lab header h2,
+.mechanism-lab header small,
+.mechanism-lab h3 {
+  margin: 0;
+}
+.mechanism-lab header > button {
+  border: 0;
+  background: transparent;
+  color: #aac4bf;
+  font-size: 22px;
+}
+.mechanism-lab section {
+  border-bottom: 1px solid var(--line);
+  padding: 12px 0;
+}
+.mechanism-lab h3 {
+  margin-bottom: 8px;
+  color: #8bd7c7;
+  font: 600 9px "Space Grotesk";
+  letter-spacing: 0.1em;
+}
+.mechanism-lab-live {
+  padding: 7px;
+  background: #102a26;
+  color: #b5f3e5;
+  font-size: 9px;
+}
+.mechanism-lab-actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.mechanism-lab button,
+.mechanism-lab input {
+  border: 1px solid #35615a;
+  background: #0b211e;
+  color: #d8eee9;
+  padding: 6px 8px;
+}
+.mechanism-lab button:focus-visible,
+.mechanism-lab input:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 2px;
+}
+.mechanism-lab label,
+.mechanism-lab p,
+.mechanism-lab dt,
+.mechanism-lab dd,
+.mechanism-lab td,
+.mechanism-lab th {
+  font-size: 8px;
+  line-height: 1.45;
+}
+.mechanism-lab label input {
+  width: 100%;
+  margin-top: 5px;
+  box-sizing: border-box;
+}
+.mechanism-lab dl {
+  margin: 8px 0 0;
+}
+.mechanism-lab dl div {
+  border-bottom: 1px solid #1d3b37;
+  padding: 4px 0;
+}
+.mechanism-lab dd {
+  margin: 0;
+  max-width: 70%;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+.mechanism-lab table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+}
+.mechanism-lab th,
+.mechanism-lab td {
+  border: 1px solid #264943;
+  padding: 5px;
+  text-align: left;
+  vertical-align: top;
+}
+.mechanism-lab th small {
+  display: block;
+  color: #76918e;
+}
+.mechanism-lab code {
+  overflow-wrap: anywhere;
+}
+.mechanism-lab li.error {
+  border-left: 3px solid #ff5e6b;
+}
+.mechanism-lab li.warning {
+  border-left: 3px solid #ffc65d;
+}
+.mechanism-lab li {
+  padding: 7px;
+  margin-bottom: 7px;
+}
+.mechanism-ok {
+  color: var(--mint);
+}
+#mechanism-plots {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+#mechanism-plots figure {
+  margin: 7px 0 0;
+  border: 1px solid #264943;
+  padding: 5px;
+}
+#mechanism-plots svg {
+  width: 100%;
+  height: 72px;
+}
+#mechanism-plots polyline {
+  fill: none;
+  stroke: var(--mint);
+  stroke-width: 1.2;
+}
+@media (max-width: 760px) {
+  .mechanism-lab {
+    inset: 62px 8px 108px;
+    width: auto;
+  }
+  #mechanism-plots {
+    grid-template-columns: 1fr;
+  }
+}

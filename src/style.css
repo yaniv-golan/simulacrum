@@ -1,0 +1,39 @@
+@import "./styles/direct-controls.css";
+@import "./styles/engineering-tools.css";
+@import "./styles/failure-lab.css";
+@import "./styles/mechanism-lab.css";
+@import "./styles/learning-challenges.css";
+@import "./styles/logic-workbench.css";
+@import "./styles/remote-camera.css";
+@import "./styles/workshop-shell.css";
+@import "./styles/responsive-disclosure.css";
+@import "./styles/blueprint-exchange.css";
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 700;
+  src: url("@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2")
+    format("woff2-variations");
+}
+
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 1000;
+  src: url("@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2")
+    format("woff2-variations");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

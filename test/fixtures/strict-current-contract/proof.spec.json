@@ -1,0 +1,43 @@
+{
+  "proofVersion": 1,
+  "challengeVersion": 1,
+  "challengeId": "power-transfer",
+  "assetFingerprint": "sim-sha256-0000000000000000000000000000000000000000000000000000000000000000",
+  "score": 100,
+  "solution": "A powered, mechanically connected reduction stage.",
+  "recordedAt": "2026-07-17T00:00:00.000Z",
+  "binding": {
+    "kind": "mechanism",
+    "policyVersion": 1,
+    "inputPartId": 1,
+    "outputPartId": 2
+  },
+  "terminal": {
+    "criteria": [
+      {
+        "id": "ratio",
+        "met": true,
+        "current": "2.0",
+        "target": "2.0"
+      }
+    ],
+    "metrics": {
+      "massKg": 24,
+      "partCount": 2,
+      "energyUsed": 1200,
+      "damage": 0,
+      "worstFatigue": 0,
+      "apexM": 0,
+      "touchedWater": false,
+      "payloadSecured": false
+    }
+  },
+  "environment": {
+    "seed": "specification-world",
+    "latitude": 32.18,
+    "longitude": 34.91,
+    "timeOfDay": 14,
+    "windEnabled": true
+  },
+  "controllerPrograms": []
+}

@@ -1,0 +1,59 @@
+{
+  "fingerprint": {
+    "domain": "simulacrum-asset-v1",
+    "separator": "\\u0000",
+    "wirePattern": "^sim-sha256-[0-9a-f]{64}$",
+    "contentViewIncludes": [
+      "parts",
+      "connections",
+      "controllerPrograms",
+      "remoteProfiles",
+      "defaultRemoteProfile",
+      "physicalCapacities",
+      "portableBehaviorExtensions"
+    ],
+    "contentViewExcludes": [
+      "name",
+      "created",
+      "demo",
+      "accent",
+      "packageMetadata",
+      "provenance",
+      "dependencies",
+      "workspaceState",
+      "acquisition",
+      "trust"
+    ]
+  },
+  "physicalConnectionCapacity": {
+    "ultimateForceN": 24000,
+    "ultimateTorqueNm": 6000
+  },
+  "portDescriptor": {
+    "id": "A",
+    "kind": "mechanical",
+    "behavior": "fixed",
+    "direction": "bidirectional",
+    "multiplicity": "one"
+  },
+  "decoderResults": {
+    "success": {
+      "ok": true,
+      "item": {},
+      "warnings": [],
+      "errors": []
+    },
+    "failure": {
+      "ok": false,
+      "item": null,
+      "warnings": [],
+      "errors": [
+        {
+          "code": "INVALID_SHARE_PACKAGE",
+          "path": [],
+          "message": "Invalid share package"
+        }
+      ]
+    }
+  }
+}

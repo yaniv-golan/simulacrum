@@ -1,0 +1,53 @@
+name: Deep verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      mutation:
+        description: Run the mutation-testing matrix as well
+        required: true
+        type: boolean
+        default: false
+  schedule:
+    - cron: "17 3 * * 1"
+
+concurrency:
+  group: deep-verification
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.18.0
+          cache: npm
+      - run: npm ci
+      - run: npm run security:audit
+      - run: npx playwright install --with-deps chromium
+      - name: Run the full verification matrix
+        env:
+          TEST_SUITE_TIMEOUT_MS: 360000
+          TEST_AGGREGATE_TIMEOUT_MS: 3600000
+        run: npm test
+      - run: npm run build
+      - run: npm run baseline:verify
+
+  mutation:
+    if: github.event_name == 'schedule' || inputs.mutation == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.18.0
+          cache: npm
+      - run: npm ci
+      - run: npm run mutation

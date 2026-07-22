@@ -1,0 +1,117 @@
+{
+  "$id": "https://simulacrum.local/schema/run-configuration-wire-schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "fixedStepS",
+    "determinismTier",
+    "seed",
+    "durationTicks",
+    "identities",
+    "budgets",
+    "environment"
+  ],
+  "properties": {
+    "format": { "const": "simulacrum-run-configuration" },
+    "version": { "const": 1 },
+    "fixedStepS": { "const": 0.008333333333333333 },
+    "determinismTier": {
+      "enum": ["same-build-bit-exact", "cross-platform-toleranced"]
+    },
+    "seed": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "durationTicks": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    "identities": {
+      "type": "object",
+      "required": [
+        "build",
+        "engine",
+        "transaction",
+        "solverProfile",
+        "catalog",
+        "materials",
+        "environment"
+      ],
+      "properties": {
+        "build": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/artifactIdentity"
+        },
+        "engine": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/artifactIdentity"
+        },
+        "transaction": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/artifactIdentity"
+        },
+        "solverProfile": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/artifactIdentity"
+        },
+        "catalog": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/artifactIdentity"
+        },
+        "materials": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/artifactIdentity"
+        },
+        "environment": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/artifactIdentity"
+        }
+      },
+      "additionalProperties": false
+    },
+    "budgets": {
+      "type": "object",
+      "required": [
+        "maxBodies",
+        "maxConstraints",
+        "maxContactCandidates",
+        "maxStepMs",
+        "maxMemoryBytes"
+      ],
+      "properties": {
+        "maxBodies": { "type": "integer", "minimum": 1, "maximum": 100000 },
+        "maxConstraints": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "maxContactCandidates": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "maxStepMs": { "type": "number", "exclusiveMinimum": 0 },
+        "maxMemoryBytes": {
+          "type": "integer",
+          "minimum": 1048576,
+          "maximum": 100000000000
+        }
+      },
+      "additionalProperties": false
+    },
+    "environment": {
+      "type": "object",
+      "required": [
+        "gravityMPerS2",
+        "terrainFingerprint",
+        "materialMapFingerprint"
+      ],
+      "properties": {
+        "gravityMPerS2": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/vector3"
+        },
+        "terrainFingerprint": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+        },
+        "materialMapFingerprint": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

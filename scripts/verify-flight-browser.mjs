@@ -1,0 +1,144 @@
+import { assert, assertNoErrors, conclude } from "./lib/assert.mjs";
+import { createBrowserTest } from "./lib/browser-test.mjs";
+
+const { browser, page, errors, baseUrl } = await createBrowserTest({
+    viewport: { width: 1440, height: 900 },
+  }),
+  pitchCommand = Number(process.env.SIM_PITCH ?? 0.25);
+await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+await page.click("#sandbox-start");
+await page.click("#demos-btn");
+await page.click('[data-demo="drone"]');
+await page.click("#tools-btn");
+await page.click("#wasm-btn");
+await page.waitForFunction(() =>
+  document
+    .querySelector("#script-trust-status")
+    ?.textContent.includes("AUDITED BUILT-IN"),
+);
+const visibleSource = await page.locator("#wasm-source").inputValue();
+await page.click("#close-wasm");
+await page.locator('.direct-range[data-index="0"]').evaluate((input) => {
+  input.value = "0.72";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+});
+await page.locator('.direct-range[data-index="2"]').evaluate((input, value) => {
+  input.value = String(value);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}, pitchCommand);
+await page.click('[data-mode="test"]');
+await page.waitForFunction(
+  () => JSON.parse(window.render_game_to_text()).running,
+);
+const samples = await page.evaluate(() => {
+  const observations = [];
+  for (let index = 1; index <= 20; index++) {
+    window.advanceTime(250);
+    const drone = JSON.parse(window.render_game_to_text()).demo.drone;
+    const architecture = JSON.parse(window.render_game_to_text()).architecture
+        .session.systems,
+      controller = architecture.controllers?.runtimes?.find(
+        (runtime) => runtime.language === "typescript",
+      );
+    observations.push({
+      timeS: index / 4,
+      altitudeM: drone.altitude,
+      attitudeDeg: drone.attitudeDeg,
+      angularRateRadS: drone.angularRateRadS,
+      motorThrustsN: drone.motorThrustsN,
+      controllerCommands: controller?.commands || {},
+      propulsion: (architecture.propulsion?.engines || []).map((record) => ({
+        partId: record.partId,
+        commandSource: record.commandSource,
+        allocationId: record.allocationId,
+        deliveredMassFlowKgS: record.deliveredMassFlowKgS,
+        thrustN: record.thrustN,
+        detached: record.detached,
+      })),
+    });
+  }
+  return observations;
+});
+const state = JSON.parse(
+  await page.evaluate(() => window.render_game_to_text()),
+);
+await page.screenshot({
+  path: "artifacts/flight-runtime/drone-controlled-flight.png",
+  fullPage: true,
+});
+console.log(
+  JSON.stringify(
+    {
+      drone: state.demo.drone,
+      samples,
+      flightStatus: state.mission,
+      visibleSource,
+      errors,
+    },
+    null,
+    2,
+  ),
+);
+
+await conclude(browser, () => {
+  for (const removedField of [
+    "launched",
+    "flightStarted",
+    "multirotor",
+    "status",
+    "statusDetail",
+  ])
+    assert.equal(
+      removedField in state.architecture.session.systems.flight,
+      false,
+      `completed physical telemetry restored presentation field ${removedField}`,
+    );
+  assert.equal(
+    state.architecture.session?.systems.flight?.active,
+    true,
+    "flight runtime did not publish telemetry",
+  );
+  assert.equal(
+    state.demo.drone?.stabilizerReady,
+    true,
+    "drone control topology is offline",
+  );
+  assert.ok(
+    state.demo.drone.altitude > 1,
+    "drone did not produce physical lift",
+  );
+  assert.ok(
+    samples.some(
+      ({ controllerCommands }) =>
+        Math.abs(
+          Number(controllerCommands["engine.0.throttle"] || 0) -
+            Number(controllerCommands["engine.2.throttle"] || 0),
+        ) > 0.005,
+    ),
+    "pitch receiver did not produce distinct endpoint engine commands",
+  );
+  assert.ok(
+    samples.some(({ propulsion }) =>
+      propulsion.every(
+        (record) =>
+          record.commandSource === "script" &&
+          typeof record.allocationId === "string",
+      ),
+    ),
+    "drone forces were not traced through controller-owned material allocations",
+  );
+  assert.ok(
+    Object.values(state.demo.drone.attitudeDeg).every(Number.isFinite),
+    "drone attitude became non-finite",
+  );
+  assert.ok(
+    Math.abs(state.demo.drone.attitudeDeg.roll) < 8,
+    `drone lost roll balance: ${state.demo.drone.attitudeDeg.roll}°`,
+  );
+  assert.match(
+    visibleSource,
+    /engine\.0\.throttle/,
+    "drone controller source was not visible and editable",
+  );
+  assertNoErrors(errors, "flight browser runtime");
+});

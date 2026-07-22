@@ -1,0 +1,180 @@
+import { TYPES } from "../model/component-catalog.js";
+
+const ARTICULATED_ROLES_BY_TYPE = Object.freeze({
+  plate: ["pelvis", "torso", "footL", "footR"],
+  beam: [
+    "torso",
+    "thighL",
+    "thighR",
+    "shinL",
+    "shinR",
+    "upperArmL",
+    "upperArmR",
+    "forearmL",
+    "forearmR",
+  ],
+  sensor: ["head"],
+  hinge: [
+    "hipL",
+    "hipR",
+    "kneeL",
+    "kneeR",
+    "ankleL",
+    "ankleR",
+    "shoulderL",
+    "shoulderR",
+    "elbowL",
+    "elbowR",
+  ],
+});
+
+export function articulatedRolesForType(type) {
+  return ARTICULATED_ROLES_BY_TYPE[type] || [];
+}
+
+/**
+ * @typedef {[string, string, number, number, number, string]} PropertySpec
+ * @param {{type:string,config:Record<string,number|boolean|string>}} part
+ * @returns {PropertySpec[]}
+ */
+export function componentInspectorProperties(part) {
+  const type = TYPES[part.type];
+  /** @type {PropertySpec[]} */
+  const output = [];
+  if ("rpm" in type)
+    output.push(["RPM", "rpm", Number(part.config.rpm) || 0, 0, 600, "rpm"]);
+  if ("power" in type)
+    output.push([
+      "POWER",
+      "power",
+      Number(part.config.power) || 0,
+      0,
+      100,
+      "%",
+    ]);
+  if ("direction" in type)
+    output.push([
+      "DIRECTION",
+      "direction",
+      Number(part.config.direction) || 1,
+      -1,
+      1,
+      "",
+    ]);
+  if ("angle" in type)
+    output.push([
+      "REST ANGLE",
+      "angle",
+      Number(part.config.angle) || 0,
+      -90,
+      90,
+      "°",
+    ]);
+  if ("capacityWh" in type)
+    output.push([
+      "CAPACITY",
+      "capacityWh",
+      Number(part.config.capacityWh),
+      0,
+      200,
+      "Wh",
+    ]);
+  return output;
+}
+
+const AUTHORABLE_MECHANISM_ROOTS = new Set([
+  "actuation",
+  "angleRangeRad",
+  "commandLaw",
+  "dampingLaw",
+  "elasticLaw",
+  "forceSpeedEnvelope",
+  "friction",
+  "guideFriction",
+  "lengthRangeM",
+  "lowerStop",
+  "powerLaw",
+  "referenceCoordinateM",
+  "referenceLaw",
+  "thermalLimits",
+  "tireConstitutiveLaw",
+  "travelRangeM",
+  "unpoweredLaw",
+  "upperStop",
+]);
+
+function mechanismUnit(path) {
+  const key = String(path.at(-1));
+  if (/temperaturek$/i.test(key)) return "K";
+  if (/massjperk$/i.test(key)) return "J/K";
+  if (/wperk$/i.test(key)) return "W/K";
+  if (/nmsperrad$/i.test(key)) return "N·m·s/rad";
+  if (/nmperrad$/i.test(key)) return "N·m/rad";
+  if (/nms$/i.test(key)) return "N·m·s";
+  if (/nm$/i.test(key)) return "N·m";
+  if (/nsperm$/i.test(key)) return "N·s/m";
+  if (/nperm$/i.test(key)) return "N/m";
+  if (/mspers$/i.test(key)) return "m/s";
+  if (/radpers$/i.test(key)) return "rad/s";
+  if (/rad$/i.test(key)) return "rad";
+  if (/force[n]?$/i.test(key) || /loadn$/i.test(key)) return "N";
+  if (/powerw$/i.test(key) || /watts$/i.test(key)) return "W";
+  if (/masskg$/i.test(key)) return "kg";
+  if (/m$/i.test(key)) return "m";
+  return "ratio";
+}
+
+function mechanismLabel(path) {
+  return path
+    .map((segment) =>
+      typeof segment === "number"
+        ? `POINT ${segment + 1}`
+        : segment
+            .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+            .replaceAll("_", " ")
+            .toUpperCase(),
+    )
+    .join(" · ");
+}
+
+/** Exact, SI-valued mechanism fields safe to edit independently. */
+export function mechanismInspectorProperties(part) {
+  const config = part?.mechanism?.config;
+  if (!config || typeof config !== "object") return [];
+  const fields = [];
+  const visit = (value, path) => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      if (!AUTHORABLE_MECHANISM_ROOTS.has(String(path[0]))) return;
+      fields.push({
+        path,
+        pathKey: path.join("/"),
+        label: mechanismLabel(path),
+        unit: mechanismUnit(path),
+        value,
+        curvePoint: path.some((segment) => typeof segment === "number"),
+      });
+      return;
+    }
+    if (Array.isArray(value))
+      value.forEach((child, index) => visit(child, [...path, index]));
+    else if (value && typeof value === "object")
+      for (const [key, child] of Object.entries(value))
+        visit(child, [...path, key]);
+  };
+  for (const [key, value] of Object.entries(config)) visit(value, [key]);
+  return fields;
+}
+
+export function mechanismDisplayField(field, displayUnits) {
+  if (displayUnits !== "engineering")
+    return { value: field.value, unit: field.unit, factor: 1 };
+  const conversions = {
+      m: [1000, "mm"],
+      N: [0.001, "kN"],
+      "N/m": [0.001, "kN/m"],
+      "N·m": [0.001, "kN·m"],
+      W: [0.001, "kW"],
+    },
+    [factor, unit] = conversions[field.unit] || [1, field.unit];
+  return { value: field.value * factor, unit, factor };
+}

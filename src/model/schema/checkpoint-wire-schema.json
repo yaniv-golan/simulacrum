@@ -1,0 +1,89 @@
+{
+  "$id": "https://simulacrum.local/schema/checkpoint-wire-schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "runConfigurationFingerprint",
+    "blueprintFingerprint",
+    "compiledTopologyFingerprint",
+    "committedTick",
+    "committed",
+    "stateOwners",
+    "stateDigest"
+  ],
+  "properties": {
+    "format": { "const": "simulacrum-checkpoint" },
+    "version": { "const": 1 },
+    "runConfigurationFingerprint": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+    },
+    "blueprintFingerprint": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+    },
+    "compiledTopologyFingerprint": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+    },
+    "committedTick": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/tick"
+    },
+    "committed": { "const": true },
+    "stateOwners": {
+      "type": "array",
+      "minItems": 18,
+      "maxItems": 18,
+      "items": {
+        "type": "object",
+        "required": [
+          "ownerId",
+          "ownerVersion",
+          "payloadJson",
+          "payloadByteLength",
+          "payloadSha256"
+        ],
+        "properties": {
+          "ownerId": {
+            "enum": [
+              "session",
+              "input-command-bus",
+              "run-graph",
+              "compiled-topology",
+              "physics-world",
+              "solver-contact",
+              "tire-carcass",
+              "body-registry",
+              "structure-failure",
+              "energy-power-signal",
+              "release-couplers",
+              "material-resources",
+              "thermal-ablation",
+              "articulated-drive",
+              "sensors",
+              "controllers",
+              "terrain-environment",
+              "telemetry-event-ids"
+            ]
+          },
+          "ownerVersion": {
+            "const": 1
+          },
+          "payloadJson": { "type": "string", "maxLength": 2000000 },
+          "payloadByteLength": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000000
+          },
+          "payloadSha256": {
+            "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/sha256"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "stateDigest": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/sha256"
+    }
+  },
+  "additionalProperties": false
+}

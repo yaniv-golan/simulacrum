@@ -1,0 +1,13 @@
+node_modules/
+dist/
+output/
+artifacts/
+coverage/
+.coverage*/
+docs/internal/
+.release-private/
+progress.md
+.playwright-cli/
+packages/core/.api-types/
+packages/core/temp/
+.DS_Store

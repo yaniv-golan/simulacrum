@@ -1,0 +1,173 @@
+{
+  "fixtureVersion": 1,
+  "componentTypes": [
+    "spring",
+    "damper",
+    "release-coupler",
+    "linear-guide",
+    "linear-actuator",
+    "hinge",
+    "bearing",
+    "axle",
+    "wheel"
+  ],
+  "negativeCases": [
+    {
+      "id": "reject-undeclared-scaling-policy",
+      "componentType": "axle",
+      "path": ["dimensionalScalingPolicy", "kind"],
+      "value": "uniform-similarity-v1",
+      "expected": "WIRE_SCHEMA_VIOLATION"
+    },
+    {
+      "id": "reject-unsupported-spring-key",
+      "componentType": "spring",
+      "path": ["config", "stiffness"],
+      "value": 100,
+      "expected": "WIRE_SCHEMA_VIOLATION"
+    },
+    {
+      "id": "reject-hidden-wheel-suspension",
+      "componentType": "wheel",
+      "path": ["config", "suspensionTravelM"],
+      "value": 0.2,
+      "expected": "WIRE_SCHEMA_VIOLATION"
+    },
+    {
+      "id": "reject-instance-orientation-in-reusable-definition",
+      "componentType": "axle",
+      "path": ["orientation"],
+      "value": [0, 0, 0, 1],
+      "expected": "WIRE_SCHEMA_VIOLATION"
+    },
+    {
+      "id": "non-unit-orientation",
+      "componentType": "hinge",
+      "path": ["config", "frameA", "orientation"],
+      "value": [0, 0, 0, 2],
+      "expected": "NON_UNIT_COMPONENT_QUATERNION"
+    },
+    {
+      "id": "noncanonical-orientation-sign",
+      "componentType": "hinge",
+      "path": ["config", "frameA", "orientation"],
+      "value": [0, 0, 0, -1],
+      "expected": "NONCANONICAL_COMPONENT_QUATERNION"
+    },
+    {
+      "id": "indefinite-inertia",
+      "componentType": "spring",
+      "path": ["massPropertySource", "inertiaTensorAtComPartKgM2", "xy"],
+      "value": 2,
+      "expected": "NON_POSITIVE_DEFINITE_INERTIA"
+    },
+    {
+      "id": "unrealizable-inertia",
+      "componentType": "spring",
+      "path": ["massPropertySource", "inertiaTensorAtComPartKgM2", "zz"],
+      "value": 3,
+      "expected": "PHYSICALLY_UNREALIZABLE_INERTIA"
+    },
+    {
+      "id": "invalid-length-range",
+      "componentType": "spring",
+      "path": ["config", "lengthRangeM", "upper"],
+      "value": 0.1,
+      "expected": "INVALID_AUTHORED_RANGE"
+    },
+    {
+      "id": "nonmonotonic-elastic-coordinate",
+      "componentType": "spring",
+      "path": ["config", "elasticLaw", "points", 1, "displacementM"],
+      "value": -0.2,
+      "expected": "NON_MONOTONIC_AUTHORED_CURVE"
+    },
+    {
+      "id": "nonpassive-elastic-force",
+      "componentType": "spring",
+      "path": ["config", "elasticLaw", "points", 1, "forceN"],
+      "value": -201,
+      "expected": "NON_PASSIVE_ELASTIC_CURVE"
+    },
+    {
+      "id": "coincident-spring-endpoints",
+      "componentType": "spring",
+      "path": ["config", "endpointPortB"],
+      "value": "END_A",
+      "expected": "COINCIDENT_MECHANISM_ENDPOINTS"
+    },
+    {
+      "id": "guide-friction-order",
+      "componentType": "linear-guide",
+      "path": ["config", "guideFriction", "dynamicCoefficient"],
+      "value": 0.4,
+      "expected": "INVALID_GUIDE_FRICTION_ORDER"
+    },
+    {
+      "id": "actuator-clutch-order",
+      "componentType": "linear-actuator",
+      "path": ["config", "unpoweredLaw", "dynamicForceCapacityN"],
+      "value": 1200,
+      "expected": "INVALID_CLUTCH_CAPACITY_ORDER"
+    },
+    {
+      "id": "actuator-thermal-order",
+      "componentType": "linear-actuator",
+      "path": ["config", "thermalLimits", "derateTemperatureK"],
+      "value": 500,
+      "expected": "INVALID_THERMAL_LIMIT_ORDER"
+    },
+    {
+      "id": "nonpassive-tire-matrix",
+      "componentType": "wheel",
+      "path": [
+        "config",
+        "tireConstitutiveLaw",
+        "creepMatrixByLoad",
+        0,
+        "kCrossNsPerM"
+      ],
+      "value": 2000,
+      "expected": "NON_PASSIVE_TIRE_CREEP_MATRIX"
+    },
+    {
+      "id": "missing-wheel-region",
+      "componentType": "wheel",
+      "operation": "remove-last",
+      "path": ["collisionRegions"],
+      "expected": "MISSING_WHEEL_SEMANTIC_REGION"
+    },
+    {
+      "id": "rectangular-wheel-envelope",
+      "componentType": "wheel",
+      "path": ["collisionRegions", 0, "geometry"],
+      "value": { "kind": "box-v1", "fullSizeM": [0.6, 0.6, 0.2] },
+      "expected": "INVALID_WHEEL_ENVELOPE_GEOMETRY"
+    },
+    {
+      "id": "wheel-envelope-dimension-mismatch",
+      "componentType": "wheel",
+      "path": ["collisionRegions", 0, "geometry", "radiusM"],
+      "value": 0.31,
+      "expected": "INVALID_WHEEL_ENVELOPE_GEOMETRY"
+    },
+    {
+      "id": "wheel-shoulder-does-not-fit",
+      "componentType": "wheel",
+      "path": ["config", "shoulderRadiusM"],
+      "value": 0.11,
+      "expected": "INVALID_WHEEL_ENVELOPE_GEOMETRY"
+    },
+    {
+      "id": "empty-failure-law",
+      "componentType": "axle",
+      "path": ["config", "failureLoadLaw"],
+      "value": {
+        "kind": "generalized-load-v1",
+        "continuousLoad": null,
+        "impactLoad": null
+      },
+      "expected": "EMPTY_FAILURE_LOAD_LAW"
+    }
+  ]
+}
