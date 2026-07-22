@@ -28,9 +28,20 @@ separate from derived forces and completed telemetry. Checkpoint v1 accepts
 only owner-version-1 records and persists that mutable state under
 `thermal-ablation`; it does not persist physical grouping or read models.
 
+## Availability
+
+`@yaniv-golan/simulacrum-core` is not published to npm yet. Use it from a
+Simulacrum source checkout:
+
 ```sh
-npm install @yaniv-golan/simulacrum-core
+npm ci
+npm run core:build
 ```
+
+The root workspace resolves the package name to this package, so examples and
+the game exercise the same public facade that will eventually be published.
+
+## Minimal session
 
 ```js
 import {

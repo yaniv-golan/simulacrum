@@ -34,14 +34,21 @@ named input binding in **Named Physical I/O**. The binding records one exact
 component ID, port, and reading. The API browser labels every bound reading
 with its unit and source part ID.
 
-| Component       | Readings                                     | Physical source                          |
-| --------------- | -------------------------------------------- | ---------------------------------------- |
-| Rotation Sensor | RPM                                          | Mechanically attached shaft              |
-| 6-axis IMU      | roll, pitch, yaw; angular rate; acceleration | Component pose and motion                |
-| Contact Switch  | contact, contact force, water contact        | Solver contacts and support force        |
-| Thermal Probe   | temperature, heat flux                       | Component thermal state                  |
-| Air Data Probe  | static pressure, dynamic pressure, density   | Local altitude and relative airflow      |
-| Load Cell       | load and rated-load ratio                    | Loads on the cell's physical connections |
+| Component         | Readings                                                    | Physical source                          |
+| ----------------- | ----------------------------------------------------------- | ---------------------------------------- |
+| Command Receiver  | remote command                                              | Powered remote and signal route          |
+| Navigation Sensor | altitude, speed, X/Z position, X/Z velocity, X/Z wind       | Component pose and local environment     |
+| Range Sensor      | detection, surface range, range rate, XYZ relative velocity | Finite conical environment-body query    |
+| Rotation Sensor   | RPM                                                         | Mechanically attached shaft              |
+| 6-axis IMU        | roll, pitch, yaw; XYZ angular rate; XYZ acceleration        | Component pose and motion                |
+| Contact Switch    | contact, contact force, water contact                       | Solver contacts and support force        |
+| Thermal Probe     | temperature, heat flux                                      | Component thermal state                  |
+| Air Data Probe    | static pressure, dynamic pressure, density                  | Local altitude and relative airflow      |
+| Load Cell         | load and rated-load ratio                                   | Loads on the cell's physical connections |
+
+The API browser exposes the exact binding keys and units defined by the core
+sensor contract; the labels above are a player-facing summary rather than a
+second identifier list.
 
 The IMU follows the same right-handed, Y-up frame used by assembly transforms:
 positive yaw rotates about +Y, positive pitch about +X, and positive roll about

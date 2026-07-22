@@ -46,11 +46,12 @@ inputs, history labels, and gizmo/wire refresh.
 
 `analyzeAssembly()` is DOM-free and deterministic:
 
-- center of mass is the component-mass-weighted position;
-- center of buoyancy is the solid-displacement-volume-weighted position, using
-  the same material density table imported by `RoverRuntime`;
-- nominal thrust sums every Vector Thruster's neutral local +Y force after its
-  stored rotation, using the flight runtime's `power × 240 N` rating; and
+- center of mass is the compiled-body-mass-weighted position, including each
+  body's authored center-of-mass offset;
+- center of buoyancy is the compiled solid-displacement-volume-weighted center;
+- nominal thrust sums every compiled `pressure-nozzle-v1` capability at maximum
+  authored mass flow and sea-level ambient pressure, using each part's stored
+  orientation, nozzle axis, and pressure-nozzle performance law; and
 - interference applies a 15-axis separating-axis test to oriented component
   collision proxies, excluding directly connected mechanical interfaces.
 

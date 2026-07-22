@@ -2,6 +2,14 @@
 
 An interactive Three.js mechanical construction workshop. Components are real selectable objects with named ports, editable behavior, visible connections, and mechanism-specific simulation.
 
+## Choose your path
+
+- **Play for the first time:** follow [Install and play](#install-and-play--beginner-friendly-guide), then [Recommended first session](#recommended-first-session).
+- **Look up controls:** jump to [Controls](#controls) or use the in-game **Learn** panel.
+- **Understand a feature or contract:** use the [documentation map](docs/README.md).
+- **Contribute:** start with [CONTRIBUTING.md](CONTRIBUTING.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
+- **Review project policy:** see the [changelog](CHANGELOG.md), [security policy](SECURITY.md), [code of conduct](CODE_OF_CONDUCT.md), and [MIT license](LICENSE).
+
 ## Install and play — beginner-friendly guide
 
 Simulacrum runs locally on your computer. It does not need Steam, a game launcher, an account, or a server. Installation takes roughly five minutes and only needs to be done once.
@@ -29,7 +37,7 @@ Simulacrum 0.1.0 uses Node.js 24.18 LTS. Install the **LTS** download offered by
 
 The easiest method does not require Git or developer tools:
 
-1. Sign in to GitHub and open `https://github.com/yaniv-golan/simulacrum`.
+1. Open the [Simulacrum repository on GitHub](https://github.com/yaniv-golan/simulacrum). Sign in only if GitHub asks you to confirm access.
 2. Press the green **Code** button.
 3. Choose **Download ZIP**.
 4. Open the downloaded ZIP file and extract it.
@@ -57,7 +65,7 @@ Command Prompt is recommended because some Windows PowerShell configurations blo
 
 ### Step 4: Install the game’s required software
 
-Copy the following command, paste it into PowerShell or Terminal, and press Enter:
+Copy the following command, paste it into Command Prompt on Windows or Terminal on macOS, and press Enter:
 
 ```bash
 npm install
@@ -77,13 +85,13 @@ When the window displays a line beginning with **Local**, open the shown address
 
 [http://localhost:5173](http://localhost:5173)
 
-`localhost` means the game is running only on your own computer. Keep the PowerShell or Terminal window open while playing.
+`localhost` means the game is running only on your own computer. Keep Command Prompt or Terminal open while playing.
 
 ### Starting the game next time
 
 You do not need to reinstall anything:
 
-1. Open PowerShell or Terminal in the `simulacrum` folder using Step 3.
+1. Open Command Prompt or Terminal in the `simulacrum` folder using Step 3.
 2. Run `npm run dev`.
 3. Open [http://localhost:5173](http://localhost:5173).
 
@@ -137,11 +145,12 @@ The optimized files are placed in `dist/`. Normal players should use `npm run de
 
 Choose **Start Guided Build**. The six-step tutorial teaches the actual interaction model, including adding a real power source:
 
-1. Choose a component from the library and place it on the workbench.
-2. Select a component in the 3D scene.
-3. Adjust RPM, power, direction, angle, stiffness, or capacity in the inspector.
-4. Click a named port and then another component to create a connection.
-5. Start simulation and observe the resulting mechanism.
+1. Place a Powered Motor.
+2. Place a 12T Pinion Gear.
+3. Connect the motor's `SHAFT` port to the pinion.
+4. Place a Power Cell and connect its `POWER` port to the motor.
+5. Place a 24T Spur Gear and connect its `MESH` port to the pinion.
+6. Start simulation and observe the resulting mechanism.
 
 The included gearbox uses a 12-tooth pinion driving a 24-tooth gear. The output rotates in the opposite direction at half speed, with twice the ideal torque.
 
@@ -300,14 +309,17 @@ The controller must have electrical power. Its program can command only the exac
 
 ## Development and architecture
 
-The reusable DOM-free engine is also a separately versioned package,
-`@yaniv-golan/simulacrum-core`, with generated declarations and a compatibility
-report. Its API is documented in [docs/CORE_API.md](docs/CORE_API.md), and the
+The reusable DOM-free engine is built as the separately versioned workspace
+package `@yaniv-golan/simulacrum-core`, with generated declarations and a
+compatibility report. It is not published to npm yet; use it from this source
+checkout. Its API is documented in [docs/CORE_API.md](docs/CORE_API.md), and the
 [executable extension guide](docs/core-extensions.md) covers custom components,
 ports, systems, sensors, challenges, controller programs, and telemetry
-consumers. [ARCHITECTURE.md](ARCHITECTURE.md) defines ownership and dependency
-rules. Contributors should read [CONTRIBUTING.md](CONTRIBUTING.md). Run
-`npm run check`, `npm test`, and `npm run build` before submitting changes.
+consumers. The [documentation map](docs/README.md) links the complete player,
+contributor, and API guide set. [ARCHITECTURE.md](ARCHITECTURE.md) defines
+ownership and dependency rules. Contributors should read
+[CONTRIBUTING.md](CONTRIBUTING.md). Run `npm run check`, `npm test`, and
+`npm run build` before submitting changes.
 Critical decision logic also has an aggregate mutation gate (`npm run mutation`).
 Before a release, run the isolated 30-minute load/start/stop gate with
 `npm run release:soak`; it checks precise heap, renderer summaries, raw WebGL

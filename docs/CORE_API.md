@@ -1,10 +1,20 @@
 # Reusable core API
 
-Install and import the separately versioned DOM-free facade:
+## Availability and workspace setup
+
+`@yaniv-golan/simulacrum-core` is a separately versioned DOM-free workspace
+package. It is not published to npm yet. Clone the Simulacrum repository and
+build it from the source checkout:
 
 ```sh
-npm install @yaniv-golan/simulacrum-core
+npm ci
+npm run core:build
 ```
+
+The workspace resolves the package name to the same public facade used by the
+game and by the eventual published artifact.
+
+## Assembly and simulation quick start
 
 ```js
 import {
@@ -89,6 +99,8 @@ session.dispose();
 mechanisms.dispose();
 ```
 
+## Physical systems and resources
+
 Material-resource ports require an exact non-empty `mediumId` match and
 opposite-compatible directions. `MaterialResourceNetwork` owns finite store
 state and follows live structural partitioning. Pressure-nozzle demand debits
@@ -114,12 +126,16 @@ order without vehicle modes, launch latches, implicit stabilization, or mission
 status. Checkpoint v1 stores mutable owner state and derives physical grouping,
 forces, impacts, and read models after restore.
 
+## Blueprint boundary
+
 Blueprint input is the exact `simulacrum-blueprint` v1 contract. Parts contain
 resolved behavior configuration, computers own their programs, batteries use
 `config.capacityWh` plus `storedEnergyWh`, and every connection names explicit
 compatible ports. Workspace v1 is a separate local document; selection, active
 remote state, UI geometry, executable acquisition, and trust never enter a
 portable blueprint. Unsupported formats are rejected rather than migrated.
+
+## Controller tooling
 
 Controller tooling is engine- and renderer-neutral as well:
 
@@ -160,6 +176,8 @@ completed step and trace storage is bounded; none of these contracts creates
 DOM or Three.js objects. See
 [Controller programming and debugging](CONTROLLER_PROGRAMMING.md).
 
+## Environment bodies and sensing
+
 Queryable world objects use the same strict, engine-neutral boundary:
 
 ```js
@@ -186,6 +204,8 @@ velocity, power, physical mounting, and directed signal routing. Controllers
 read only the preceding completed snapshot; rendering may mirror registered
 poses but never supplies target coordinates to simulation.
 
+## Failure analysis and replay
+
 Failure analysis is also engine- and renderer-neutral:
 
 ```js
@@ -199,6 +219,8 @@ if (created[0]) replay.pinFailure(created[0].timeS);
 const report = failures.report();
 const recordedFrame = replay.frame(0);
 ```
+
+## Challenges
 
 Open construction objectives use the same engine-neutral telemetry contract:
 
@@ -226,6 +248,8 @@ a fixed-capacity ring. It is a read model only and cannot advance or mutate a
 simulation. See
 [Failure analysis, exact stepping, and replay](FAILURE_ANALYSIS.md).
 
+## Assembly compilation
+
 `compileAssembly()` is deterministic and engine-neutral: it resolves blueprint
 parts and port-to-port connections into bodies, constraints, networks, and
 diagnostics. `MultibodyRuntime` is the current Cannon adapter for that output.
@@ -233,12 +257,16 @@ This separation allows other solvers, headless tools, and renderers to reuse the
 same physical topology. See [General multi-body assembly compiler](ASSEMBLY_COMPILER.md)
 for the strict connection and capacity contract.
 
+## Reusable assemblies and engineering analysis
+
 `createSubassemblyTemplate()` extracts one connected selection into a versioned,
 ID-independent mini-blueprint. `instantiateSubassembly()` returns fresh part IDs,
 fresh connection IDs, and the next available ID without mutating the source.
 `analyzeAssembly()` derives center of mass, material-displacement center of
 buoyancy, nominal component thrust, and oriented-box interference without a
 renderer or physics engine. See [Reusable assemblies and engineering editor](EDITOR_TOOLS.md).
+
+## Portable sharing
 
 Portable design sharing is content-addressed and renderer-neutral:
 
@@ -265,6 +293,8 @@ pathful warnings.
 ratings, and import origins. Browser file, link, thumbnail, and clipboard
 transports intentionally remain outside the core. See
 [Blueprint Exchange](BLUEPRINT_SHARING.md).
+
+## Compatibility and release policy
 
 Stable contracts cover assemblies, blueprint normalization, bounded history,
 fixed-step systems, command arbitration, immutable telemetry, atmosphere

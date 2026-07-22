@@ -77,10 +77,14 @@ multiple valid solutions.
 
 ## Reusable contract
 
-The evaluator is DOM-free and exported from `simulacrum-foundry/core`:
+The evaluator is DOM-free and exported from the source-checkout workspace
+package `@yaniv-golan/simulacrum-core`:
 
 ```js
-import { ChallengeRun, challengeReliability } from "simulacrum-foundry/core";
+import {
+  ChallengeRun,
+  challengeReliability,
+} from "@yaniv-golan/simulacrum-core";
 
 const run = new ChallengeRun(contract, assembly.snapshot());
 const result = run.step(session.telemetry(), 1 / 120);

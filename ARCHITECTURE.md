@@ -1,5 +1,7 @@
 # Architecture
 
+## Layer boundaries
+
 Simulacrum is a vanilla ES-module application with explicit dependency
 direction. The browser entry point only starts the application; reusable
 contracts are exported through the separately versioned
@@ -16,6 +18,8 @@ private substitute API.
 | `application`  | construction, workflows, event wiring                        | every layer                  |
 | `core`         | stable DOM-free reuse facade                                 | model, simulation, scripting |
 
+## Fixed-step runtime and boundary policy
+
 Every run uses one 1/120-second `SimulationSession`: sensors → controllers →
 networks → actuators → environment → integration → structures → thermal →
 telemetry. Controllers read the previous completed sensor snapshot.
@@ -30,6 +34,8 @@ share boundaries call `structuredClone()` directly. The remaining named clone
 helpers express real policy: null-preserving browser storage or detachment into
 the compiled-assembly ownership domain.
 
+## Resources and mass ownership
+
 Power, signal, and material resources are separate compiled graphs.
 `MaterialResourceNetwork` is the sole mutable owner of finite store quantity
 and resource topology. It follows live structural revisions and reprojects
@@ -40,6 +46,8 @@ reachable same-medium stores, and apply only force backed by that tick's
 allocation identity. Thermal and material changes contribute to one
 post-thermal mass-property transaction; the current tick integrates with its
 starting mass and the committed result becomes authoritative on the next tick.
+
+## Physical identity and flight
 
 Physical grouping has one derived authority: `PhysicalAssemblyIndex`. It
 reconstructs connected physical components from compiled topology, live
@@ -60,6 +68,8 @@ physics and thermal completion and projects only resolved kinematics, forces,
 materials, impacts, and physical identity. It cannot command an actuator or
 invent launch, vehicle-mode, mission-status, or stabilization state.
 
+## Checkpoints and physical release
+
 Checkpoint v1 persists the sole mutable flight-domain state under the strict
 version-1 `thermal-ablation` owner. Aerodynamic forces, completed flight read
 models, and physical-component identity are re-derived. Every checkpoint owner
@@ -75,6 +85,8 @@ impulse. Its strict mutable latch state is checkpointed under the
 `release-couplers` owner. `PhysicalAssemblyIndex` then derives the resulting
 lineage from the authoritative topology change like any other structural split.
 
+## Demos and remote controls
+
 Built-in demos are ordinary strict version-1 blueprints. New systems implement `initialize`, `step`, and `dispose`, keep quantities in SI units, and publish telemetry. `npm run check` rejects layer violations, cycles, coordinator growth, DOM access from simulation, demo-based physics dispatch, lint errors, and formatting drift.
 
 Model-specific controllers use serializable `controllerLayouts` and strict
@@ -84,6 +96,8 @@ such as forward, reverse, steering, brake, and lights, but never own commands,
 targets, power rules, or simulation behavior. Profile names do not select
 behavior. Unknown or unskinned profiles fall back to the generic instrument
 grid.
+
+## Reusable editor and visual descriptors
 
 Reusable subassemblies and engineering analysis are model contracts. Catalog
 rendering, marquee projection, arrangement controls, and Three.js diagnostic
@@ -96,6 +110,8 @@ electronics/sensor, propulsion, and explicitly generic builders live in
 separate presentation modules. Builders consume only their descriptor and
 render services; unknown kinds fail closed, and generic geometry is never an
 implicit fallback.
+
+## Failure analysis and challenges
 
 Failure analysis follows the same boundary. The DOM-free `FailureRecorder`
 derives causal events from completed telemetry and assembly snapshots, while
@@ -121,6 +137,8 @@ extractors are separate pure model owners, and each returned criterion or
 failure carries immutable channel, unit, frame, tick, validity, and provenance
 evidence.
 
+## Controller authoring
+
 Controller authoring also shares one contract. A serializable visual graph is
 validated and compiled to the same restricted TypeScript `tick(api, dt)` entry
 point as handwritten code; it receives no privileged access to simulation.
@@ -134,6 +152,8 @@ Command Receivers turn remote commands into next-step sensor inputs.
 DOM-free history of deterministic runtime inputs and outputs for watches,
 oscilloscopes, breakpoints, and exact stepping. Presentation owns the graph
 canvas and debugger panels. See [Controller programming and debugging](docs/CONTROLLER_PROGRAMMING.md).
+
+## Sharing and application composition
 
 Blueprint Exchange follows a feature-composition boundary. The DOM-free
 `ShareExchangeService` owns catalog, trust, deduplication, validation, and remix
@@ -151,6 +171,8 @@ policy from returning. Blueprint v1 is decoded by one strict, total boundary;
 workspace v1 owns selection, executable acquisition, active-remote values, and
 window state. Unsupported formats are rejected before model or editor
 mutation instead of being inferred or normalized.
+
+## Environment composition
 
 Earth environment ownership follows the same rule. The deterministic wind field
 is a DOM-free simulation contract that reuses the standard-atmosphere density

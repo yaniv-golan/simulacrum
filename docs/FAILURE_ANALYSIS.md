@@ -70,8 +70,8 @@ also remains subject to the user's autoplay and volume policies.
 
 ## Reuse boundary
 
-The DOM-free `FailureEvent`, `FailureRecorder`, and `ReplayBuffer` are exported from
-`simulacrum-foundry/core`. Three.js effects and the report/replay controls stay
-in `src/presentation`; live stepping coordination stays in `src/application`.
-Architecture checks reject DOM, Three.js, demo dispatch, or physics advancement
-inside the analysis model.
+The DOM-free `FailureEvent`, `FailureRecorder`, and `ReplayBuffer` are exported
+from the source-checkout workspace package `@yaniv-golan/simulacrum-core`.
+Three.js effects and the report/replay controls stay in `src/presentation`; live
+stepping coordination stays in `src/application`. Architecture checks reject
+DOM, Three.js, demo dispatch, or physics advancement inside the analysis model.

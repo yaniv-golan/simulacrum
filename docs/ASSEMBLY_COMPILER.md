@@ -79,16 +79,19 @@ example, an unsupported output gear is not silently pinned to the world.
 ## Planned evolution
 
 The engine-neutral output uses explicit `kind` and `parameters` fields rather
-than Cannon classes. Compatible additions include bearings, prismatic joints,
-ball joints, universal joints, rack-and-pinion, belts/chains, differentials,
-hydraulics, ropes, docking joints, and deformable connection models.
+than Cannon classes. Bearings and linear guides are current components;
+linear-guide descriptors execute as prismatic constraints. Compatible future
+additions include ball joints, universal joints, rack-and-pinion, belts/chains,
+differentials, hydraulics, ropes, docking joints, and deformable connection
+models.
 
-The Cannon adapter implements fixed, revolute, spring, linkage, shaft, gear,
-wheel-suspension, and role-assisted articulated behavior. Wheels, articulated
-machines, propulsion, aerodynamics, thermal response, ablation, structural
-failure, fluids, and terrain contact share the descriptor-compiled bodies, body
-registry, and single fixed world step. Aggregate vehicle telemetry is derived
-from those bodies and never owns or integrates a second pose.
+The Cannon adapter currently implements fixed, revolute, prismatic/linear-guide,
+spring, linkage, shaft/bearing, gear, wheel-suspension, and role-assisted
+articulated behavior. Wheels, articulated machines, propulsion, aerodynamics,
+thermal response, ablation, structural failure, fluids, and terrain contact
+share the descriptor-compiled bodies, body registry, and single fixed world
+step. Aggregate vehicle telemetry is derived from those bodies and never owns
+or integrates a second pose.
 
 ## Current physical coverage
 
