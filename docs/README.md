@@ -12,6 +12,7 @@ source checkout and strict version-1 contracts.
 | Select, arrange, reuse, and analyze parts | [Editor tools](EDITOR_TOOLS.md)                     |
 | Build and debug controller programs       | [Controller programming](CONTROLLER_PROGRAMMING.md) |
 | Attempt outcome-based engineering tasks   | [Challenge Lab](CHALLENGE_LAB.md)                   |
+| Deploy and test a machine on the reserve  | [Workshop Test Reserve](TEST_GROUND.md)             |
 | Share machines and reusable parts         | [Blueprint Exchange](BLUEPRINT_SHARING.md)          |
 | Diagnose failures and inspect replay      | [Failure analysis](FAILURE_ANALYSIS.md)             |
 

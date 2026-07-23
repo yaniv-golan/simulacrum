@@ -20,7 +20,9 @@ laws, bounded soft-surface sinkage, and rolling-resistance multipliers.
 `TestSiteTelemetrySystem` projects canonical proving-ground districts,
 surfaces, terrain, fluids, and zones from completed physical poses, while
 `TestCourseSystem` evaluates immutable route contracts without dispatching on
-demo or machine type.
+demo or machine type. The repository's
+[`docs/TEST_GROUND.md`](../../docs/TEST_GROUND.md) describes the host workflow
+and evidence contract that use these systems.
 
 Powered two-flange release couplers compile into load-rated constraints and
 exact actuator endpoints. `ReleaseCouplerSystem` consumes resolved power and

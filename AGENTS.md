@@ -73,6 +73,7 @@ coordinator growth.
    ```bash
    TEST_FILTER=verify-rover-runtime npm test
    TEST_FILTER=verify-five-demos,verify-hybrid-assembly npm test
+   TEST_FILTER=verify-test-site-contract,verify-course-evaluators,verify-testing-playground-user-loop npm test
    ```
 
 5. For visual or interaction changes, exercise the complete input-to-state
@@ -91,6 +92,7 @@ coordinator growth.
 | Model, blueprint, import, or storage                     | Model-boundary, blueprint, and storage suites plus round-trip fixtures          |
 | Power, signal, actuator, or controller                   | Network and controller suites plus multi-controller or relevant machine runtime |
 | Physics, mechanisms, terrain, fluids, flight, or failure | Owning runtime suite plus five demos and hybrid assembly where applicable       |
+| Test Reserve, material contacts, deployment, or courses  | Test-site contract/authority, evaluator/records, and visible user-loop suites   |
 | Editor, camera, controls, panels, or responsive UI       | Owning browser suite plus accessibility/adaptive-workspace checks               |
 | Rendering, resources, or performance                     | Render-resource and bundle checks; run the live baseline for systemic changes   |
 | Public core export or extension contract                 | `npm run core:check`, `npm run examples:core`, and core-pack verification       |
@@ -108,7 +110,8 @@ Run `npm run mutation` when changing critical schema, network, controller,
 challenge, or failure decision logic. Run `npm run baseline:verify` for systemic
 performance/lifecycle changes. Run the 30-minute `npm run release:soak` before a
 release or after high-risk resource-lifecycle work; it is not an ordinary edit
-loop.
+loop. Run `npm run mutation:test-site` when changing reserve geometry,
+materials, deployment, route evaluation, or course evidence.
 
 ## Generated and public artifacts
 

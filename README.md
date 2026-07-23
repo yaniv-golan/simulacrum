@@ -19,7 +19,7 @@ Simulacrum runs locally on your computer. It does not need Steam, a game launche
 - A Windows or macOS computer.
 - A modern browser such as Chrome, Edge, Firefox, or Safari.
 - An internet connection for the first installation.
-- Access to the Simulacrum GitHub repository.
+- About 1 GB of free disk space for the source and installed dependencies.
 
 ### Step 1: Install Node.js
 
@@ -37,11 +37,10 @@ Simulacrum 0.1.0 uses Node.js 24.18 LTS. Install the **LTS** download offered by
 
 The easiest method does not require Git or developer tools:
 
-1. Open the [Simulacrum repository on GitHub](https://github.com/yaniv-golan/simulacrum). Sign in only if GitHub asks you to confirm access.
-2. Press the green **Code** button.
-3. Choose **Download ZIP**.
-4. Open the downloaded ZIP file and extract it.
-5. Move the extracted `simulacrum` folder somewhere easy to find, such as Documents.
+1. Open the public [Simulacrum repository on GitHub](https://github.com/yaniv-golan/simulacrum). No GitHub account is required.
+2. For the latest stable version, open [Releases](https://github.com/yaniv-golan/simulacrum/releases), choose the newest release, and download **Source code (zip)** under **Assets**. To try the newest unreleased changes instead, use the repository's green **Code** button and choose **Download ZIP**.
+3. Open the downloaded ZIP file and extract it.
+4. Move the extracted `simulacrum` folder somewhere easy to find, such as Documents.
 
 Do not run commands while the project is still inside the ZIP file.
 
@@ -212,6 +211,9 @@ cannot change grip, forces, controller commands, or machine state. **Retry exact
 start** restores the captured deployment and records compatible personal best
 and reliability evidence against the exact site, material, route, and
 deployment fingerprints.
+
+See [Workshop Test Reserve](docs/TEST_GROUND.md) for the map, staging workflow,
+trial objectives, exact retry behavior, and evidence rules.
 
 ## Buildable remote controls
 
@@ -422,4 +424,13 @@ Blueprint version 1 stores the strict endpoint-binding manifest, selected langua
 
 ## Current scope
 
-Simulacrum 0.1.0 includes powered command networks, articulated joint dynamics, suspension, fatigue and connection failure, conserved propellant mass flow, physical release/staging, missile aerothermodynamics, reusable subassemblies, engineering overlays, failure post-mortems, bounded telemetry replay, open-ended payload challenges, complete blueprint persistence, and sandboxed TypeScript/WebAssembly control. Future depth should include collision-driven tooth contact, deformable structures, pressure-fed plumbing, and a larger orbital world.
+The current source checkout includes powered command networks, articulated
+joint dynamics, suspension, fatigue and connection failure, conserved
+propellant mass flow, physical release/staging, missile aerothermodynamics,
+reusable subassemblies, engineering overlays, failure post-mortems, bounded
+telemetry replay, open-ended payload challenges, the Workshop Test Reserve,
+complete blueprint persistence, and sandboxed TypeScript/WebAssembly control.
+See the [changelog](CHANGELOG.md) for the exact contents of released version
+0.1.0 and the unreleased changes on `main`. Future depth should include
+collision-driven tooth contact, deformable structures, pressure-fed plumbing,
+and a larger orbital world.

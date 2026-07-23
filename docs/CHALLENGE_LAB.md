@@ -13,7 +13,8 @@ Those trials reuse the same evidence discipline and local record store, but
 they evaluate ordered site gates, zones, support materials, fluid visits,
 airborne/grounded state, speed bands, integrity, and controlled finishes on the
 ordinary continuous environment. They are not a third physics or controller
-mode.
+mode. The complete map, deployment, retry, and trial workflow is documented in
+[Workshop Test Reserve](TEST_GROUND.md).
 
 ## Open contracts
 

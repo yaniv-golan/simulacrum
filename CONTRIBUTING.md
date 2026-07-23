@@ -15,10 +15,12 @@ GitHub Actions deliberately separates feedback speed from deep qualification:
   representative browser/simulation smoke set. Tags do not repeat this run.
 - **Deep verification** runs weekly or on demand. Four deterministic shards
   execute all verification suites in parallel, followed by production builds
-  and live performance baselines. Its optional mutation matrix runs each
-  decision domain independently on the weekly schedule and should be requested
-  before a release when critical schema, network, controller, challenge, or
-  failure decisions changed.
+  and live performance baselines. Its optional mutation matrix runs the eight
+  general decision domains independently on the weekly schedule and should be
+  requested before a release when critical schema, network, controller,
+  challenge, or failure decisions changed. Test-site and course changes use the
+  dedicated local `npm run mutation:test-site` gate; it is part of the
+  aggregate `npm run mutation` command but not the hosted matrix.
 - **Release soak** remains manual because its 30-minute lifecycle exercise is
   useful before releases and high-risk resource changes, not on ordinary pull
   requests.
@@ -31,6 +33,7 @@ The test harness accepts exact comma-separated suite names:
 ```bash
 TEST_FILTER=verify-rover-runtime npm test
 TEST_FILTER=verify-five-demos,verify-hybrid-assembly npm test
+TEST_FILTER=verify-test-site-contract,verify-course-evaluators,verify-testing-playground-user-loop npm test
 ```
 
 Keep model and simulation modules free of DOM, CSS, cameras, and meshes. Put reusable domain behavior behind `src/core/index.js`. Add deterministic contract tests for physics/model changes and browser assertions for visible behavior. Blueprint input is strict v1: reject missing, unsupported, future, or guessed fields instead of adding compatibility branches. Update architecture, wire schemas, generated validators, and API documentation together when a contract changes.

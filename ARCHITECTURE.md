@@ -6,8 +6,9 @@ Simulacrum is a vanilla ES-module application with explicit dependency
 direction. The browser entry point only starts the application; reusable
 contracts are exported through the separately versioned
 `@yaniv-golan/simulacrum-core` package. The game resolves that package to the
-same source facade used to build the published artifact, so it cannot develop a
-private substitute API.
+same source facade used to build the packed, publishable artifact, so it cannot
+develop a private substitute API. The package is currently consumed from the
+source workspace and has not yet been published to npm.
 
 | Layer          | Owns                                                         | May depend on                |
 | -------------- | ------------------------------------------------------------ | ---------------------------- |
@@ -205,4 +206,6 @@ staging clear volume, applies one undoable rigid assembly transform, captures
 the exact baseline, and binds the deployment to run identity. Course evaluators
 consume immutable completed telemetry and site gates after physics. They can
 record outcomes and proof evidence but cannot issue commands or change forces,
-contacts, damage, or integration.
+contacts, damage, or integration. See
+[Workshop Test Reserve](docs/TEST_GROUND.md) for the player workflow and
+evidence contract.

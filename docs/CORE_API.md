@@ -12,7 +12,7 @@ npm run core:build
 ```
 
 The workspace resolves the package name to the same public facade used by the
-game and by the eventual published artifact.
+game and by the package produced with `npm pack` before a future npm release.
 
 ## Assembly and simulation quick start
 
@@ -122,7 +122,9 @@ bounded soft-surface sinkage, rolling-resistance multipliers, and validity.
 fluid, and zone state from completed physical poses. `TestCourseSystem`
 evaluates ordinary completed telemetry against immutable route contracts; it
 does not dispatch on demo identity, vehicle class, wheel count, or rotor count.
-Commands stay addressed to exact endpoint parts.
+Commands stay addressed to exact endpoint parts. See
+[Workshop Test Reserve](TEST_GROUND.md) for the host workflow and evidence
+rules built around these two systems.
 
 Powered `release-coupler` components compile two authored flange connections
 into a load-rated latch and explicit actuator. The actuator consumes resolved
