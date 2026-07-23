@@ -126,6 +126,7 @@ export class RigidBodySystem {
         const bodyId = registry.bodyIdForEngineBody(body);
         if (!bodyId) continue;
         const otherBody = body === contact.bi ? contact.bj : contact.bi,
+          otherShape = body === contact.bi ? contact.sj : contact.si,
           point = body.position.vadd(offset),
           otherOffset = body === contact.bi ? contact.rj : contact.ri,
           otherPoint = otherBody.position.vadd(otherOffset),
@@ -148,6 +149,20 @@ export class RigidBodySystem {
           otherBodyId:
             registry.bodyIdForEngineBody(otherBody) ||
             otherBody.userData?.externalBodyId ||
+            null,
+          otherMaterialKey:
+            (typeof otherBody.userData?.contactMaterialAt === "function"
+              ? contact.surfaceMaterialKey
+              : null) ||
+            otherShape?.userData?.materialKey ||
+            otherBody.userData?.materialKey ||
+            otherShape?.material?.name ||
+            null,
+          otherShapeId:
+            (typeof otherBody.userData?.contactMaterialAt === "function"
+              ? contact.surfaceShapeId
+              : null) ||
+            otherShape?.userData?.shapeId ||
             null,
           surface:
             body === contact.bi

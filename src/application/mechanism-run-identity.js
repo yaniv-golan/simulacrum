@@ -3,10 +3,34 @@ import {
   fingerprintRunConfigurationValue,
 } from "../model/mechanism-artifact-identity.js";
 import { deepFreeze, stableStringify } from "../model/primitives.js";
+import { CONTACT_MATERIAL_PAIRS } from "../model/contact-material-pairs.js";
 import { sha256Hex } from "../model/sha256.js";
 import { CANNON_SOLVER_TRANSACTION_ID } from "../simulation/cannon-solver-transaction.js";
 
 const encoder = new TextEncoder();
+
+export function fingerprintTestSiteDefinition(testSite) {
+  return `sim-sha256-${sha256Hex(
+    `simulacrum-test-site-v1\0${stableStringify(testSite)}`,
+  )}`;
+}
+
+export function fingerprintContactMaterialMap() {
+  return `sim-sha256-${sha256Hex(
+    stableStringify({
+      model: "explicit-material-pair-v1",
+      pairs: [...CONTACT_MATERIAL_PAIRS].sort((left, right) =>
+        stableStringify(left.materials).localeCompare(
+          stableStringify(right.materials),
+        ),
+      ),
+    }),
+  )}`;
+}
+
+export function fingerprintTestDeployment(deployment) {
+  return `sim-sha256-${sha256Hex(stableStringify(deployment))}`;
+}
 
 function identity(id, version, value) {
   const bytes = stableStringify(value);
@@ -35,18 +59,20 @@ export function createWorkshopRunConfiguration({
   compiled,
   environment,
 }) {
-  const topologyFingerprint = compiledTopologyFingerprint(compiled),
+  const { testSite, deployment, ...environmentState } = environment,
+    topologyFingerprint = compiledTopologyFingerprint(compiled),
     blueprintFingerprint = fingerprintExperimentBlueprint(blueprint),
+    testSiteFingerprint = fingerprintTestSiteDefinition(testSite),
     terrainFingerprint = `sim-sha256-${sha256Hex(
       stableStringify({
         seed: "earth-coordinate-terrain-v1",
-        latitude: environment.latitude,
-        longitude: environment.longitude,
+        latitude: environmentState.latitude,
+        longitude: environmentState.longitude,
+        testSiteFingerprint,
       }),
     )}`,
-    materialMapFingerprint = `sim-sha256-${sha256Hex(
-      stableStringify({ model: "explicit-material-pair-v1" }),
-    )}`,
+    materialMapFingerprint = fingerprintContactMaterialMap(),
+    deploymentFingerprint = fingerprintTestDeployment(deployment),
     configuration = deepFreeze({
       format: "simulacrum-run-configuration",
       version: 1,
@@ -72,8 +98,10 @@ export function createWorkshopRunConfiguration({
         catalog: identity("component/catalog", "4", blueprint.parts),
         materials: identity("material/pairs", "1", materialMapFingerprint),
         environment: identity("earth/environment", "1", {
-          ...environment,
+          ...environmentState,
           terrainFingerprint,
+          testSiteFingerprint,
+          deployment,
         }),
       },
       budgets: {
@@ -95,5 +123,16 @@ export function createWorkshopRunConfiguration({
       fingerprintRunConfigurationValue(configuration),
     blueprintFingerprint,
     compiledTopologyFingerprint: topologyFingerprint,
+    testSiteFingerprint,
+    materialMapFingerprint,
+    deploymentFingerprint,
+    deployment: structuredClone(deployment),
+    environment: deepFreeze({
+      seed: "earth-coordinate-terrain-v1",
+      latitude: environmentState.latitude,
+      longitude: environmentState.longitude,
+      timeOfDay: environmentState.timeOfDay,
+      windEnabled: environmentState.windEnabled,
+    }),
   });
 }

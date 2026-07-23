@@ -13,7 +13,7 @@ import { runtimeControlsFromProfiles } from "./remote-control-state.js";
  *   programAcquisition?:string, programTrust?:unknown,
  * }} HistoryPart
  * @typedef {{
- *   id:number, type:string, pos:Vector3Tuple, rotation:Vector3Tuple,
+ *   id:number, type:string, pos:Vector3Tuple, orientation:[number,number,number,number],
  *   scale:Vector3Tuple, config:Record<string,unknown>, energy:number,
  *   customColor?:unknown, rigRole?:string|null,
  *   rigVisualRotation?:Vector3Tuple|null, scriptLanguage?:string|null,
@@ -168,7 +168,7 @@ export function createBuildHistoryFeature({
         if (["footL", "footR"].includes(saved.rigRole))
           parts.prepareAtlasFoot(part);
         part.mesh.position.set(...saved.pos);
-        part.mesh.rotation.set(...saved.rotation);
+        part.mesh.quaternion.set(...saved.orientation);
         part.mesh.scale.set(...saved.scale);
         part.mesh.userData.partId = part.id;
         part.mesh.traverse((object) => (object.userData.partId = part.id));

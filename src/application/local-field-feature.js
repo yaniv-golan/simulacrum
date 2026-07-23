@@ -1,6 +1,10 @@
 import * as THREE from "three";
-import * as CANNON from "cannon-es";
 import { mesh } from "../presentation/mesh-primitives.js";
+import {
+  createTestSiteSurfacePresentation,
+  createTestSiteTerrainGeometry,
+} from "../presentation/test-site-surface-presentation.js";
+import { createTestSiteFixtureFeature } from "./test-site-fixture-feature.js";
 
 /** Composes the authored field's visual surface and matching static colliders. */
 export function createLocalFieldFeature({
@@ -12,6 +16,7 @@ export function createLocalFieldFeature({
   pondAt,
   pondSpecs,
   fieldSurfaceY,
+  testSite,
 }) {
   let waterNormalTextureRef, surfaceMesh;
   const environment = new THREE.Group();
@@ -61,12 +66,6 @@ export function createLocalFieldFeature({
       87031,
       true,
     ),
-    meadowTexture = terrainTexture(
-      "#66834a",
-      ["#93a865", "#3f6738", "#b6a661"],
-      92041,
-      true,
-    ),
     soilTexture = terrainTexture(
       "#715238",
       ["#9c7650", "#443123", "#b18a62", "#5c432d"],
@@ -76,6 +75,35 @@ export function createLocalFieldFeature({
       "#3d3a2d",
       ["#665844", "#24271f", "#78694d"],
       77213,
+    ),
+    asphaltTexture = terrainTexture(
+      "#303637",
+      ["#4a5050", "#202526", "#69706f"],
+      48131,
+      true,
+    ),
+    concreteTexture = terrainTexture(
+      "#777e7a",
+      ["#9ca29d", "#5e6662", "#b8b7aa"],
+      44031,
+      true,
+    ),
+    gravelTexture = terrainTexture(
+      "#74736d",
+      ["#a09d91", "#4b4b47", "#c1b8a2", "#626966"],
+      31415,
+    ),
+    sandTexture = terrainTexture(
+      "#c2a66f",
+      ["#e0ca94", "#9d8153", "#d3b77a"],
+      27183,
+      true,
+    ),
+    polymerTexture = terrainTexture(
+      "#c5d5d8",
+      ["#eff8f8", "#8fa8ad", "#b1c5c9"],
+      16180,
+      true,
     ),
     waterNormalCanvas = document.createElement("canvas");
   waterNormalCanvas.width = waterNormalCanvas.height = 256;
@@ -106,11 +134,6 @@ export function createLocalFieldFeature({
       roughness: 0.96,
       metalness: 0,
     }),
-    meadowMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      map: meadowTexture,
-      roughness: 1,
-    }),
     soilMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       map: soilTexture,
@@ -129,9 +152,38 @@ export function createLocalFieldFeature({
       (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.92 }),
     ),
     concreteMaterial = new THREE.MeshStandardMaterial({
-      color: 0x6e7470,
+      color: 0xffffff,
+      map: concreteTexture,
       roughness: 0.88,
       metalness: 0.08,
+    }),
+    asphaltMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      map: asphaltTexture,
+      roughness: 0.9,
+    }),
+    wetAsphaltMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x81969b,
+      map: asphaltTexture,
+      roughness: 0.24,
+      clearcoat: 0.72,
+      clearcoatRoughness: 0.19,
+    }),
+    gravelMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      map: gravelTexture,
+      roughness: 1,
+    }),
+    sandMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      map: sandTexture,
+      roughness: 1,
+    }),
+    lowGripMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      map: polymerTexture,
+      roughness: 0.16,
+      clearcoat: 0.58,
     }),
     columnMaterial = new THREE.MeshStandardMaterial({
       color: 0x43565a,
@@ -156,41 +208,44 @@ export function createLocalFieldFeature({
       side: THREE.DoubleSide,
       depthWrite: false,
     });
-  const fieldGeometry = new THREE.PlaneGeometry(160, 160, 128, 128),
-    fieldPositions = fieldGeometry.attributes.position;
-  for (let i = 0; i < fieldPositions.count; i++) {
-    const x = fieldPositions.getX(i),
-      worldZ = -fieldPositions.getY(i);
-    fieldPositions.setZ(i, terrainHeightAt(x, worldZ) - fieldSurfaceY);
-  }
-  fieldPositions.needsUpdate = true;
-  fieldGeometry.computeVertexNormals();
+  const materialEntries = /** @type {Array<[string, THREE.Material]>} */ ([
+      ["short-grass", grassMaterial],
+      ["dry-asphalt", asphaltMaterial],
+      ["wet-asphalt", wetAsphaltMaterial],
+      ["weathered-concrete", concreteMaterial],
+      ["compacted-soil", soilMaterial],
+      ["loose-gravel", gravelMaterial],
+      ["dry-sand", sandMaterial],
+      ["saturated-mud", wetSoilMaterial],
+      ["low-grip-polymer", lowGripMaterial],
+    ]),
+    materialsByKey = new Map(materialEntries),
+    [fieldCenterX, fieldCenterZ] = testSite.footprint.centerM;
+  const fieldGeometry = createTestSiteTerrainGeometry({
+    testSite,
+    terrainHeightAt,
+    baseHeightM: fieldSurfaceY,
+  });
   const field = mesh(
     fieldGeometry,
     grassMaterial,
-    [0, fieldSurfaceY, 0],
+    [fieldCenterX, fieldSurfaceY, fieldCenterZ],
     [-Math.PI / 2, 0, 0],
     environment,
   );
   field.castShadow = false;
   field.receiveShadow = true;
   surfaceMesh = field;
-  const performanceFieldGeometry = new THREE.PlaneGeometry(160, 160, 16, 16),
-    performancePositions = performanceFieldGeometry.attributes.position;
-  for (let index = 0; index < performancePositions.count; index++) {
-    const x = performancePositions.getX(index),
-      worldZ = -performancePositions.getY(index);
-    performancePositions.setZ(
-      index,
-      terrainHeightAt(x, worldZ) - fieldSurfaceY,
-    );
-  }
-  performancePositions.needsUpdate = true;
-  performanceFieldGeometry.computeVertexNormals();
+  const performanceFieldGeometry = createTestSiteTerrainGeometry({
+    testSite,
+    terrainHeightAt,
+    baseHeightM: fieldSurfaceY,
+    targetElementSizeM: 10,
+  });
   const performanceField = mesh(
     performanceFieldGeometry,
     grassMaterial,
-    [0, fieldSurfaceY, 0],
+    [fieldCenterX, fieldSurfaceY, fieldCenterZ],
     [-Math.PI / 2, 0, 0],
     environment,
   );
@@ -198,18 +253,12 @@ export function createLocalFieldFeature({
   performanceField.castShadow = false;
   performanceField.receiveShadow = true;
   performanceField.visible = false;
-  function groundPatch(x, z, radiusX, radiusZ, material, y = 0.008) {
-    const patch = mesh(
-      new THREE.CircleGeometry(1, 64),
-      material,
-      [x, fieldSurfaceY + y, z],
-      [-Math.PI / 2, 0, 0],
-      environment,
-    );
-    patch.scale.set(radiusX, radiusZ, 1);
-    patch.castShadow = false;
-    return patch;
-  }
+  const surfaceRegions = createTestSiteSurfacePresentation({
+    parent: environment,
+    testSite,
+    terrainHeightAt,
+    materialsByKey,
+  });
   function basinOverlay(pond) {
     const radialSegments = 14,
       angularSegments = 72,
@@ -250,9 +299,7 @@ export function createLocalFieldFeature({
     bed.castShadow = false;
     return bed;
   }
-  // Distinct nearby biomes: dry service ground, meadow, and two real basins.
-  groundPatch(-35, -31, 14, 10, soilMaterial);
-  groundPatch(-2, -50, 13, 8, meadowMaterial);
+  // Both water meshes and their terrain beds consume the same fluid regions.
   for (const pond of pondSpecs) {
     basinOverlay(pond);
     const water = mesh(
@@ -288,125 +335,35 @@ export function createLocalFieldFeature({
     environment.add(shore);
   }
 
-  // Dense vegetation and landmarks can be suppressed as a presentation-only
-  // LOD when a very large assembly needs the render budget. Terrain, soils,
-  // water, and every physics collider remain authoritative and visible.
-  const detailEnvironment = new THREE.Group();
-  detailEnvironment.name = "fieldDetailEnvironment";
-  environment.add(detailEnvironment);
+  // Physical fixtures stay recognizable at every presentation LOD. Only
+  // decorative scatter is expendable when distance or assembly size needs the
+  // render budget; colliders, terrain, soils, water, and landmarks remain.
+  const fixtureEnvironment = new THREE.Group(),
+    scatterEnvironment = new THREE.Group();
+  fixtureEnvironment.name = "testSiteFixtureEnvironment";
+  scatterEnvironment.name = "fieldScatterEnvironment";
+  environment.add(fixtureEnvironment, scatterEnvironment);
 
-  // Low terrain forms break up the horizon while keeping the workshop clear.
-  for (const [x, z, sx, sy, sz] of [
-    [-50, -42, 13, 4.2, 10],
-    [-40, 39, 10, 3.2, 14],
-    [45, 35, 14, 4.8, 11],
-    [55, -25, 11, 3.5, 9],
-    [8, 58, 18, 4.5, 10],
-  ]) {
-    const hill = mesh(
-      new THREE.SphereGeometry(1, 32, 16),
-      meadowMaterial,
-      [x, fieldSurfaceY - sy * 0.62, z],
-      [],
-      detailEnvironment,
-    );
-    hill.scale.set(sx, sy, sz);
-  }
+  createTestSiteFixtureFeature({
+    parent: fixtureEnvironment,
+    world,
+    groundMaterial,
+    testSite,
+    terrainHeightAt,
+    materials: {
+      bark: barkMaterial,
+      leaves: leafMaterials,
+      stone: concreteMaterial,
+      signPost: columnMaterial,
+      signFace: lowGripMaterial,
+    },
+  });
 
   let seed = 19790317;
   const random = () => {
     seed = (seed * 1664525 + 1013904223) >>> 0;
     return seed / 4294967296;
   };
-  function addTree(x, z, scale = 1) {
-    const tree = new THREE.Group();
-    const groundY = terrainHeightAt(x, z);
-    tree.position.set(x, groundY, z);
-    tree.rotation.y = random() * Math.PI * 2;
-    detailEnvironment.add(tree);
-    mesh(
-      new THREE.CylinderGeometry(0.18 * scale, 0.28 * scale, 2.8 * scale, 9),
-      barkMaterial,
-      [0, 1.4 * scale, 0],
-      [],
-      tree,
-    );
-    const trunkBody = new CANNON.Body({
-      type: CANNON.Body.STATIC,
-      material: groundMaterial,
-      shape: new CANNON.Cylinder(0.18 * scale, 0.28 * scale, 2.8 * scale, 9),
-      position: new CANNON.Vec3(x, groundY + 1.4 * scale, z),
-    });
-    Object.assign(trunkBody, {
-      userData: {
-        externalBodyId: `environment:tree:${x}:${z}`,
-        surface: "tree trunk",
-        materialKey: "wood-bark",
-      },
-    });
-    world.addBody(trunkBody);
-    for (const [angle, height, length] of [
-      [0.35, 2.15, 1.25],
-      [2.5, 2.45, 1.05],
-      [4.4, 2.7, 0.92],
-    ]) {
-      const branch = mesh(
-        new THREE.CylinderGeometry(
-          0.07 * scale,
-          0.12 * scale,
-          length * scale,
-          7,
-        ),
-        barkMaterial,
-        [
-          Math.cos(angle) * length * scale * 0.3,
-          height * scale,
-          Math.sin(angle) * length * scale * 0.3,
-        ],
-        [Math.sin(angle) * 0.75, 0, Math.cos(angle) * 0.75],
-        tree,
-      );
-      branch.castShadow = true;
-    }
-    for (const [ox, oy, oz, size, materialIndex] of [
-      [0, 3.25, 0, 1.35, 0],
-      [-0.65, 2.85, 0.15, 0.9, 1],
-      [0.58, 3.0, -0.2, 1.02, 2],
-      [0.1, 3.7, 0.25, 0.82, 1],
-      [-0.22, 3.42, -0.62, 0.68, 2],
-      [0.72, 3.38, 0.46, 0.62, 0],
-    ]) {
-      const crown = mesh(
-        new THREE.IcosahedronGeometry(size * scale, 2),
-        leafMaterials[materialIndex],
-        [ox * scale, oy * scale, oz * scale],
-        [random() * 0.25, random() * Math.PI, random() * 0.2],
-        tree,
-      );
-      crown.scale.set(
-        0.8 + random() * 0.3,
-        0.78 + random() * 0.42,
-        0.8 + random() * 0.32,
-      );
-    }
-  }
-  for (const [cx, cz, count, spreadX, spreadZ] of [
-    [-47, -25, 15, 13, 22],
-    [-28, -53, 10, 20, 10],
-    [51, -29, 8, 9, 16],
-  ]) {
-    let planted = 0,
-      attempts = 0;
-    while (planted < count && attempts++ < count * 20) {
-      const x = cx + (random() - 0.5) * spreadX,
-        z = cz + (random() - 0.5) * spreadZ;
-      if (pondAt(x, z, 1.12) || (Math.abs(x) < 24 && Math.abs(z) < 24))
-        continue;
-      addTree(x, z, 0.75 + random() * 0.55);
-      planted++;
-    }
-  }
-
   // Crossed tapered blades catch light from multiple angles and vary in both
   // species color and height, without carpeting water or engineered surfaces.
   const bladeGeometry = new THREE.BufferGeometry();
@@ -461,99 +418,47 @@ export function createLocalFieldFeature({
   blades.instanceMatrix.needsUpdate = true;
   if (blades.instanceColor) blades.instanceColor.needsUpdate = true;
   blades.receiveShadow = true;
-  detailEnvironment.add(blades);
+  scatterEnvironment.add(blades);
 
-  // Twelve utility columns sit on visible concrete footings outside the slab.
-  const columnPositions = [
-    [-26, -18],
-    [-26, 0],
-    [-26, 18],
-    [26, -18],
-    [26, 0],
-    [26, 18],
-    [-18, -26],
-    [8, -27],
-    [18, -26],
-    [-18, 26],
-    [0, 26],
-    [18, 26],
-  ];
-  for (const [x, z] of columnPositions) {
-    const height = 4.6 + random() * 2.1;
-    mesh(
-      new THREE.CylinderGeometry(0.72, 0.88, 0.22, 12),
-      concreteMaterial,
-      [x, fieldSurfaceY + 0.11, z],
-      [],
-      detailEnvironment,
-    );
-    mesh(
-      new THREE.CylinderGeometry(0.3, 0.48, height, 10),
-      columnMaterial,
-      [x, fieldSurfaceY + 0.22 + height / 2, z],
-      [],
-      detailEnvironment,
-    );
-    const columnBody = new CANNON.Body({
-      type: CANNON.Body.STATIC,
-      material: groundMaterial,
-      shape: new CANNON.Cylinder(0.3, 0.48, height, 10),
-      position: new CANNON.Vec3(x, fieldSurfaceY + 0.22 + height / 2, z),
-    });
-    Object.assign(columnBody, {
-      userData: {
-        externalBodyId: `environment:utility-column:${x}:${z}`,
-        surface: "weathered concrete column",
-        materialKey: "weathered-concrete",
-      },
-    });
-    world.addBody(columnBody);
-  }
+  let performanceMode = false,
+    detailLod = "near";
+  const applyDetailLod = () => {
+      const visibleCount = performanceMode
+        ? 0
+        : detailLod === "near"
+          ? grassPlaced
+          : detailLod === "mid"
+            ? Math.min(grassPlaced, 760)
+            : 0;
+      blades.count = visibleCount;
+      scatterEnvironment.visible = visibleCount > 0;
+    },
+    updateDetailLod = (distanceM) => {
+      const next = distanceM > 140 ? "far" : distanceM > 40 ? "mid" : "near";
+      if (next === detailLod) return;
+      detailLod = next;
+      applyDetailLod();
+    };
+  applyDetailLod();
 
-  // A few rocks help the soil and pond banks read as actual terrain.
-  for (let i = 0; i < 38; i++) {
-    const nearPond = i < 16,
-      angle = random() * Math.PI * 2,
-      bankRadius = 1.03 + random() * 0.16,
-      x = nearPond
-        ? pondSpecs[0].x + Math.cos(angle) * pondSpecs[0].rx * bankRadius
-        : -35 + (random() - 0.5) * 23,
-      z = nearPond
-        ? pondSpecs[0].z + Math.sin(angle) * pondSpecs[0].rz * bankRadius
-        : -31 + (random() - 0.5) * 18,
-      radius = 0.22 + random() * 0.34,
-      rock = mesh(
-        new THREE.DodecahedronGeometry(radius, 0),
-        concreteMaterial,
-        [x, terrainHeightAt(x, z) + radius * 0.42, z],
-        [random(), random(), random()],
-        detailEnvironment,
-      );
-    rock.scale.y = 0.55 + random() * 0.45;
-    const rockBody = new CANNON.Body({
-      type: CANNON.Body.STATIC,
-      material: groundMaterial,
-      shape: new CANNON.Sphere(radius * 0.78),
-      position: new CANNON.Vec3(x, terrainHeightAt(x, z) + radius * 0.42, z),
-    });
-    Object.assign(rockBody, {
-      userData: {
-        externalBodyId: `environment:rock:${i}`,
-        surface: "weathered stone",
-        materialKey: "weathered-stone",
-      },
-    });
-    world.addBody(rockBody);
-  }
   return {
     root: environment,
-    detailRoot: detailEnvironment,
+    detailRoot: scatterEnvironment,
+    fixtureRoot: fixtureEnvironment,
     surfaceMesh,
     waterNormalTexture: waterNormalTextureRef,
+    updateDetailLod,
+    detailLodSnapshot: () => ({
+      level: performanceMode ? "performance" : detailLod,
+      grassBladesVisible: blades.count,
+      fixtureVisualsVisible: fixtureEnvironment.visible,
+      surfaceRegionsVisible: surfaceRegions.visible,
+    }),
     setPerformanceMode(enabled) {
+      performanceMode = Boolean(enabled);
       field.visible = !enabled;
-      performanceField.visible = Boolean(enabled);
-      detailEnvironment.visible = !enabled;
+      performanceField.visible = performanceMode;
+      applyDetailLod();
     },
   };
 }

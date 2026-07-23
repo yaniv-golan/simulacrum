@@ -10,6 +10,7 @@ export function createWorkshopHeaderTemplate() {
       <button data-mode="test" aria-pressed="false"><i>3</i> SIMULATE</button>
     </div>
     <div class="header-actions">
+      <button id="test-reserve-btn" title="Open the Workshop Test Reserve" aria-label="Test Reserve"><i>⌖</i><span>TEST GROUND</span></button>
       <button id="demos-btn" title="Load a demonstration" aria-label="Demos"><i>▦</i><span>DEMOS</span></button>
       <button id="challenges-btn" title="Open engineering challenges" aria-label="Challenges"><i>⚑</i><span>CHALLENGES</span></button>
       <button id="remote-btn" title="Open the Field Remote" aria-label="Remote"><i>⌁</i><span>REMOTE</span></button>

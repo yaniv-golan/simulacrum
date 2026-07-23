@@ -15,6 +15,7 @@ export function installWorkshopRuntimeSubsystem({
   machine,
   assembly,
   controller,
+  testingPlayground,
   view,
 }) {
   installWorkshopRuntimeLoop({
@@ -68,6 +69,7 @@ export function installWorkshopRuntimeSubsystem({
       signalOutputCount: controller.signalOutputCount,
       trace: controller.trace,
     },
+    testingPlayground,
     view: view.debug,
   });
 

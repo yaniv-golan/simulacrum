@@ -22,12 +22,12 @@ const GOLDEN_DIGESTS = Object.freeze({
     bytes: 39_102,
   },
   "demo:cart": {
-    sha256: "31cbea93d8449a595acd05b4db2ca026abe2d6a2d596d4c6cdbbd2b47a0b0a7b",
-    bytes: 266_490,
+    sha256: "a39b92c123885ae675c864f00f3aa71149398e9814e62e372256cdbfb11b9ca2",
+    bytes: 266_644,
   },
   "covariance:transformed-cart": {
-    sha256: "2d4fc21a479f9280d301a618cc15159e57edf5825c323dc39cc74a62af909e61",
-    bytes: 273_742,
+    sha256: "2eb6f0276528160ea7b6989f730d48a1d61506dd332265dc54cfd91a7ce5bb97",
+    bytes: 273_896,
   },
   "demo:humanoid": {
     sha256: "554568e0714c07becddd81013bc1859cb0e9c334cbe097c10cc0f1997fe5147d",
@@ -62,8 +62,8 @@ const GOLDEN_DIGESTS = Object.freeze({
     bytes: 142_222,
   },
   "hybrid:wheeled-rocket": {
-    sha256: "5055ca67a69b378761f5bbe35b7092e5155971cd9fa5be2486175337e14513d9",
-    bytes: 311_173,
+    sha256: "b1d67af2a9615f6742ac30d4f142979f6da301b32f233ad15d6d4fcee3fc8127",
+    bytes: 311_327,
   },
   "diagnostic:dangling-connection": {
     sha256: "5d4b06c761532366be24fee6af43330fee9525e4bff894d4deb04e72ee9b3118",

@@ -1,10 +1,12 @@
 import { applyEditorAction } from "../model/application-state.js";
 import { installLocalDataSettings } from "../presentation/local-data-settings.js";
+import { createTestingPlaygroundComposition } from "./testing-playground-composition.js";
 import { installWorkshopUseCaseSubsystem } from "./workshop-use-case-subsystem.js";
 
 /** Maps feature facades into learning, tutorial, and workshop command use cases. */
 export function createWorkshopExperienceComposition({
   shell,
+  stage,
   keys,
   content,
   editor,
@@ -20,7 +22,15 @@ export function createWorkshopExperienceComposition({
     history = persistence.buildHistoryFeature,
     controls = assembly.controls,
     trust = run.tools.trust;
-
+  const testingPlayground = createTestingPlaygroundComposition({
+    shell,
+    stage,
+    assembly,
+    persistence,
+    editor,
+    run,
+    actions,
+  });
   const experience = installWorkshopUseCaseSubsystem({
     state,
     storage: shell.storage,
@@ -85,5 +95,5 @@ export function createWorkshopExperienceComposition({
     reset: () => shell.storage.resetNamespace(),
     notify: shell.notify,
   });
-  return experience;
+  return Object.freeze({ ...experience, testingPlayground });
 }

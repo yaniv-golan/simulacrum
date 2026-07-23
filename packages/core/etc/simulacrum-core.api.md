@@ -3842,6 +3842,8 @@ export class MultibodyRuntime {
         inWater: boolean;
         bottomContact: boolean;
         wheelContacts: number;
+        supportMaterialKeys: any[];
+        supportMaterialLaws: any[];
         submergedFraction: number;
         displacedVolumeM3: any;
         buoyancyN: any;
@@ -3874,12 +3876,16 @@ export class MultibodyRuntime {
             lateralSlipMPerS: any;
             frictionEllipseUtilization: any;
             rollingResistanceTorqueNm: any;
+            surfaceSinkageM: any;
+            surfaceRollingResistanceMultiplier: any;
             rimLoadN: any;
             dissipatedEnergyJ: any;
             temperatureK: any;
             contactRoles: any;
             contactRegionKeys: any;
             contactMaterialKeys: any;
+            supportMaterialKeys: any;
+            supportMaterialLaws: any;
             manifoldPointCount: any;
             angularSpeed: any;
             spinDelta: number;
@@ -4972,6 +4978,30 @@ export function targetTypesForChannel(channel: string, catalog?: Record<string, 
 
 // @public (undocumented)
 export class TelemetrySystem {
+    // (undocumented)
+    phase: string;
+    // (undocumented)
+    step(context: any): void;
+}
+
+// @public
+export class TestCourseSystem {
+    // (undocumented)
+    dispose(): void;
+    // (undocumented)
+    initialize(context: any): void;
+    // (undocumented)
+    phase: string;
+    // (undocumented)
+    run: any;
+    // (undocumented)
+    step(context: any): void;
+}
+
+// @public
+export class TestSiteTelemetrySystem {
+    // (undocumented)
+    initialize(context: any): void;
     // (undocumented)
     phase: string;
     // (undocumented)

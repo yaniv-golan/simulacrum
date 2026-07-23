@@ -13,7 +13,6 @@ import { createEnvironmentPresentationModel } from "./environment-presentation-m
 import { createLocalFieldFeature } from "./local-field-feature.js";
 import { BrowserEnvironmentPreferencesRepository } from "./local-settings-repositories.js";
 import { standardAtmosphere } from "../simulation/environment/atmosphere.js";
-
 /** Composes visible world, camera, Earth streaming, and environment controls. */
 export function createWorldPresentationSubsystem({
   state,
@@ -48,6 +47,8 @@ export function createWorldPresentationSubsystem({
       surfaceMesh: fieldSurface,
       waterNormalTexture,
       setPerformanceMode,
+      updateDetailLod,
+      detailLodSnapshot,
     } = createLocalFieldFeature({
       scene: scene.world,
       world: physics.world,
@@ -57,6 +58,7 @@ export function createWorldPresentationSubsystem({
       pondAt: earth.pondAt,
       pondSpecs: earth.pondSpecs,
       fieldSurfaceY: earth.fieldSurfaceY,
+      testSite: earth.testSite,
     }),
     cameraController = createCameraInteractionController({
       scene: {
@@ -99,7 +101,7 @@ export function createWorldPresentationSubsystem({
       surfaceSample: earth.surfaceSample,
       coordinateHash: earth.coordinateHash,
       generatedPoolAt: earth.generatedPoolAt,
-      localTerrainBounds: { minX: -80, maxX: 80, minZ: -80, maxZ: 80 },
+      localTerrainBounds: earth.localTerrainBounds,
       streamRadius: 3,
       collisionRadius: 1,
     });
@@ -184,9 +186,10 @@ export function createWorldPresentationSubsystem({
     });
   syncEnvironmentBodies();
   environment.setTimeOfDay(state.timeOfDay, false);
-
   const updateEnvironment = () => {
     syncEnvironmentBodies();
+    const focus = state.running ? scene.machine.position : scene.cameraTarget;
+    updateDetailLod(scene.camera.position.distanceTo(focus));
     environment.update();
   };
 
@@ -195,6 +198,7 @@ export function createWorldPresentationSubsystem({
     fieldSurface,
     waterNormalTexture,
     setPerformanceMode,
+    detailLodSnapshot,
     cameraController,
     horizonEnvironment,
     streamer,

@@ -292,7 +292,10 @@ export function buildHeadlight({ g, accent, visualDescriptor }) {
     target = new THREE.Object3D();
   light.position.set(0, 0, -0.2);
   target.position.set(0, -0.45, -11.5);
-  light.castShadow = true;
+  // Shadow render targets are allocated only while the lamp is physically on.
+  // Idle headlights otherwise retain two 1024² GPU textures per blueprint
+  // reload despite producing no light.
+  light.castShadow = false;
   light.shadow.mapSize.set(1024, 1024);
   light.shadow.camera.near = 0.25;
   light.shadow.camera.far = 30;

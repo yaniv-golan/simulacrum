@@ -23,6 +23,8 @@ import {
   SignalSystem,
   StructureSystem,
   TelemetrySystem,
+  TestCourseSystem,
+  TestSiteTelemetrySystem,
   ThermalSystem,
 } from "../simulation/systems/index.js";
 import { PhysicalAssemblySystem } from "../simulation/systems/physical-assembly-system.js";
@@ -53,6 +55,8 @@ export function createProductionSimulationSystems() {
     new ThermalSystem(),
     new MassPropertyCommitSystem(),
     new PhysicalAssemblySystem(),
+    new TestSiteTelemetrySystem(),
+    new TestCourseSystem(),
     new MobilityTelemetrySystem(),
     new PhysicalFlightTelemetrySystem(),
     new TelemetrySystem(),
@@ -81,6 +85,8 @@ export function captureProductionSystemTelemetry(context) {
     propulsion: telemetry.propulsion || null,
     massProperties: telemetry.massProperties || null,
     physicalAssembly: telemetry.physicalAssembly || null,
+    testSite: telemetry.testSite || null,
+    testCourse: telemetry.testCourse || null,
     environmentBodies: telemetry.environmentBodies || null,
     structures: telemetry.structures,
     integration: telemetry.integration,

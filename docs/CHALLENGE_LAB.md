@@ -8,6 +8,13 @@ The Challenge Lab contains two complementary kinds of work:
   safety limits without prescribing a machine. Start with only the payload or
   bring the machine already on the plate.
 
+The nearby Workshop Test Reserve also offers ten guided proving-ground trials.
+Those trials reuse the same evidence discipline and local record store, but
+they evaluate ordered site gates, zones, support materials, fluid visits,
+airborne/grounded state, speed bands, integrity, and controlled finishes on the
+ordinary continuous environment. They are not a third physics or controller
+mode.
+
 ## Open contracts
 
 | Contract    | Physical objective                                      | Example approaches                          |
@@ -74,6 +81,14 @@ runs divided by total attempts, and the record also retains the distinct
 physical solution classes that have completed the contract. This makes a robust
 repeatable design more valuable than one lucky test while explicitly recognizing
 multiple valid solutions.
+
+Test Reserve records additionally bind the immutable site definition, contact
+material map, route definition, and exact stopped-build deployment. A site,
+material-law, route, or placement change creates a different compatibility
+identity, so old and new best times are not compared as equivalent. Portable
+successful evidence uses the existing challenge-proof envelope with terminal
+criteria and environment/controller provenance; missing binding or deployment
+evidence fails closed.
 
 ## Reusable contract
 

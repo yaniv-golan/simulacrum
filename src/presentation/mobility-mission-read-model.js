@@ -4,6 +4,7 @@
  *   onField:boolean, edgeDistance:number, brake:boolean, submergedFraction:number,
  *   buoyancyN:number, weightN:number, wheelContacts:number, waterDepth:number,
  *   lights:boolean, motorPartIds?:number[],
+ *   supportMaterialKeys?:string[], supportMaterialLaws?:Array<{materialKey:string,longitudinalFrictionCoefficient:number,rollingResistanceMultiplier?:number,maximumSinkageM?:number}>,
  *   pose:{position:{y:number}}, velocity:{y:number},
  *   driveForce:{availableMotorPowerW?:number},
  * }} MobilityMissionTelemetry
@@ -26,7 +27,15 @@ export function mobilityMissionReadModel(telemetry) {
       progressPercent: 0,
     });
 
-  const falling = !telemetry.grounded && !telemetry.inWater,
+  const supportLaw = telemetry.supportMaterialLaws?.[0],
+    supportLabel = supportLaw?.materialKey
+      ?.split("-")
+      .map((word) => word[0].toUpperCase() + word.slice(1))
+      .join(" "),
+    supportDescription = supportLaw
+      ? `${supportLabel} μlong ${supportLaw.longitudinalFrictionCoefficient.toFixed(2)} · rolling ×${supportLaw.rollingResistanceMultiplier.toFixed(1)}${supportLaw.maximumSinkageM ? ` · soft ${Math.round(supportLaw.maximumSinkageM * 100)} cm max` : ""}`
+      : "No tire support contact",
+    falling = !telemetry.grounded && !telemetry.inWater,
     name = falling
       ? "ROVER FALLING"
       : telemetry.bottomContact && telemetry.inWater
@@ -49,7 +58,7 @@ export function mobilityMissionReadModel(telemetry) {
       : telemetry.inWater
         ? `${Math.round(telemetry.submergedFraction * 100)}% displaced volume submerged · buoyancy ${(telemetry.buoyancyN / 1000).toFixed(2)} kN / weight ${(telemetry.weightN / 1000).toFixed(2)} kN · ${telemetry.bottomContact ? `${telemetry.wheelContacts} tire contacts` : `water depth ${telemetry.waterDepth.toFixed(1)} m`}`
         : telemetry.onField
-          ? `Grass traction 58% · ${telemetry.signedSpeed < -0.1 ? "reverse" : "forward"} ${Math.abs(telemetry.signedSpeed).toFixed(1)} m/s · lights ${telemetry.lights ? "ON" : "OFF"}`
+          ? `${supportDescription} · ${telemetry.signedSpeed < -0.1 ? "reverse" : "forward"} ${Math.abs(telemetry.signedSpeed).toFixed(1)} m/s · lights ${telemetry.lights ? "ON" : "OFF"}`
           : `${telemetry.signedSpeed < -0.1 ? "Reverse" : "Forward"} ${Math.abs(telemetry.signedSpeed).toFixed(1)} m/s · edge ${Math.max(0, telemetry.edgeDistance).toFixed(1)} m · lights ${telemetry.lights ? "ON" : "OFF"}`;
   return Object.freeze({ name, description, progressPercent: null });
 }

@@ -15,6 +15,13 @@ never select behavior. Environment-body descriptors, deterministic registries,
 proximity measurement, and compiled range sensors apply to any sensed world
 object without mission-specific physics.
 
+`MobilityTelemetrySystem` also publishes exact support-material identities and
+laws, bounded soft-surface sinkage, and rolling-resistance multipliers.
+`TestSiteTelemetrySystem` projects canonical proving-ground districts,
+surfaces, terrain, fluids, and zones from completed physical poses, while
+`TestCourseSystem` evaluates immutable route contracts without dispatching on
+demo or machine type.
+
 Powered two-flange release couplers compile into load-rated constraints and
 exact actuator endpoints. `ReleaseCouplerSystem` consumes resolved power and
 commands, spends the authored latch energy, and opens only its flanges plus

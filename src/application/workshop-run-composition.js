@@ -10,6 +10,8 @@ import {
 import { createSimulationPlaybackController } from "./simulation-playback-controller.js";
 import { createWorkshopSimulationSubsystem } from "./workshop-simulation-subsystem.js";
 import { createRunMechanismLab } from "./mechanism-lab-feature.js";
+import { createTestCourseRecordFeature } from "./test-course-records.js";
+import { createWorkshopRunPresentationPort } from "./workshop-run-presentation-port.js";
 
 /** Owns one run session: challenges, playback, failure, controllers, and physics. */
 export function createWorkshopRunComposition({
@@ -48,12 +50,23 @@ export function createWorkshopRunComposition({
       onStart: (id, startMode) => simulation.startChallenge(id, startMode),
       onRetry: () => simulation.retryChallenge(),
     }),
+    testCourseRecords = createTestCourseRecordFeature({
+      state,
+      storage: shell.storage,
+      keys: definitions.storageKeys,
+      testSite: stage.earth.testSite,
+      getRunIdentity: () => runtime.runIdentity,
+      getMachine: machineView,
+      getParts: () => state.parts,
+      notify: shell.notify,
+    }),
     playback = createSimulationPlaybackController({
       state,
       getSession: () => runtime.session,
       onTelemetry: (telemetry, completedDt, { forceRecord, present }) => {
         runtime.telemetry = telemetry;
         simulation?.updateChallenge(completedDt, telemetry);
+        testCourseRecords.ingest(telemetry);
         failure?.record(telemetry, { force: forceRecord });
         mechanismLab?.recordTelemetry(telemetry);
         if (!present) return;
@@ -195,8 +208,13 @@ export function createWorkshopRunComposition({
       groundBody: stage.groundBody,
       fieldBody: stage.fieldBody,
       surfaceHeightAt: stage.earth.surfaceHeightAt,
+      surfaceSampleAt: stage.earth.surfaceSampleAt,
       terrainHeightAt: stage.earth.terrainHeightAt,
       pondAt: stage.earth.pondAt,
+      testSite: stage.earth.testSite,
+      testingPlaygroundDeployment: () => state.testDeployment,
+      testCourseSelection: () =>
+        state.activeTestRouteId ? { routeId: state.activeTestRouteId } : null,
       terrainSize: stage.terrainSize,
       environmentBodyRegistry: stage.environmentBodyRegistry,
       environmentOrigin: () => ({
@@ -217,46 +235,19 @@ export function createWorkshopRunComposition({
           ? stage.footMaterial
           : stage.debrisMaterial,
     },
-    presentation: {
+    presentation: createWorkshopRunPresentationPort({
+      shell,
+      state,
+      runtime,
+      stage,
+      assembly,
+      editor,
       aerothermal,
       failure,
-      notify: shell.notify,
-      render: actions.render,
-      tutorialEvent: actions.tutorialEvent,
-      setExploded: editor.exploded.set,
-      setEditorTestMode: () =>
-        actions.applyEditorAction(state.editor, {
-          type: "set-mode",
-          mode: "test",
-        }),
-      workspaceFocused: () => shell.chrome.focused,
-      focusWorkspace: (focused) => shell.chrome.toggleFocus(focused),
-      hasWheels: assembly.capabilities.hasWheels,
-      hasArticulation: assembly.capabilities.hasArticulation,
-      hasPoweredFlight: assembly.capabilities.hasPoweredFlight,
-      setWiresVisible: (visible) => {
-        stage.wires.visible = visible;
-      },
-      setMission: (name, description) => {
-        shell.query("#mission-name").textContent = name;
-        shell.query("#mission-desc").textContent = description;
-      },
-      clearSelection: () => presentation.showSelection(null),
-      resetDriveInput: direct.resetDriveInput,
-      resetMachineFrame: () => {
-        stage.machine.position.set(0, 0, 0);
-        stage.machine.rotation.set(0, 0, 0);
-        stage.wires.position.set(0, 0, 0);
-        stage.wires.rotation.set(0, 0, 0);
-      },
-      attachPartToMachine: (part) => {
-        if (part.mesh.parent !== stage.machine) stage.machine.attach(part.mesh);
-      },
-      syncLargeAssembly: (parts) =>
-        stage.largeAssemblyBatcher.sync(parts, { enabled: true }),
-      drawWires: presentation.drawConnections,
-      resetCameraTarget: () => stage.cameraTarget.set(0, 1.2, 0),
-    },
+      direct,
+      testCourseRecords,
+      actions,
+    }),
   });
 
   return Object.freeze({
@@ -267,5 +258,7 @@ export function createWorkshopRunComposition({
     challengePanel,
     tools,
     mechanismLab,
+    testCourseRecords,
+    runIdentity: () => runtime.runIdentity,
   });
 }

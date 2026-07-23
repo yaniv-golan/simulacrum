@@ -26,4 +26,6 @@ export { ReleaseCouplerSystem } from "./release-coupler-system.js";
 export { EnvironmentBodySystem } from "./environment-body-system.js";
 export { PhysicalFlightTelemetrySystem } from "./physical-flight-telemetry-system.js";
 export { MobilityTelemetrySystem } from "./mobility-telemetry-system.js";
+export { TestSiteTelemetrySystem } from "./test-site-telemetry-system.js";
+export { TestCourseSystem } from "./test-course-system.js";
 export { ThermalSystem } from "./thermal-system.js";

@@ -89,6 +89,15 @@ export function createDirectControlFeature({
     for (const { part, bulb, light } of lampPresentations()) {
       const enabled = active.has(part.id);
       light.power = enabled ? Number(light.userData.lumens || 0) : 0;
+      if (!enabled && light.shadow?.map) {
+        light.shadow.map.dispose();
+        light.shadow.map = null;
+        if (light.shadow.mapPass) {
+          light.shadow.mapPass.dispose();
+          light.shadow.mapPass = null;
+        }
+      }
+      light.castShadow = enabled;
       if (bulb?.material) bulb.material.emissiveIntensity = enabled ? 4 : 0.08;
     }
   }

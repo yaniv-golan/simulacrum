@@ -44,6 +44,7 @@ function proofTrust(item, localChallengeRecords) {
       proof.terminal,
       proof.environment,
       proof.controllerPrograms,
+      proof.extensions || null,
     ]);
   const local = new Set(
     verificationForAsset(

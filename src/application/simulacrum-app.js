@@ -262,6 +262,7 @@ const editorInputComposition = installWorkshopInputComposition({
 });
 experienceComposition = createWorkshopExperienceComposition({
   shell,
+  stage: stageFoundation,
   keys: STORAGE_KEYS,
   content: { topics: LEARN_TOPICS, discoverySteps: DISCOVERY_STEPS },
   editor: editorPresentationComposition,
@@ -273,7 +274,7 @@ experienceComposition = createWorkshopExperienceComposition({
     setTime: editorStageComposition.environment.setTime,
     setWind: editorStageComposition.environment.setWind,
   },
-  actions: { setMode },
+  actions: { render: renderUI, setMode },
 });
 installWorkshopRuntimeComposition({
   target: window,
@@ -292,6 +293,7 @@ installWorkshopRuntimeComposition({
   assembly: assemblyFeatureSubsystem,
   controllers: controllerSubsystem,
   playback: runComposition.playback,
+  testingPlayground: experienceComposition.testingPlayground,
   view: { renderUi: renderUI },
   environment: {},
 });

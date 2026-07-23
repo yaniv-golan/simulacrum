@@ -182,8 +182,27 @@ and physical-altitude cloud layers are deterministic presentation objects in
 returned root. Architecture guards prevent either policy from being copied back
 into the startup coordinator.
 
-The authored workshop field is composed by `local-field-feature.js`. It owns the
-deterministic visual terrain and matching static-world registration behind an
-explicit dependency contract; it does not read game state, demo identity, UI
-panels, or the coordinator. The coordinator receives only the environment root,
-raycast surface, and animated water-normal texture.
+The immutable `test-site-definition-v1` instance in
+`testing-playground-content.js` is the single authored authority for the local
+Workshop Test Reserve. The DOM-free surface field projects its height,
+material, district, fluid, feature, zone, and route queries. Simulation compiles
+that same field into one bounded Y-up Cannon Heightfield, then resolves every
+terrain contact's material and pair law from the canonical completed contact
+point before solving. This supports sphere, box, convex, and cylinder contacts
+without a tire-only lookup or coincident surface colliders. Stable fixture
+colliders and completed support/fluid telemetry use the same material identity;
+the construction plate remains a separate physical body.
+
+`local-field-feature.js` and the dedicated surface/fixture presentation
+features render projections of that contract; they do not register physics or
+read demo identity. Physical fixture visuals and engineered surface regions
+remain at every detail level. Only non-authoritative scatter and derived
+contact effects may reduce with distance, reduced motion, or large-assembly
+performance mode.
+
+The stopped-build Test Ground workflow is application-owned: it validates a
+staging clear volume, applies one undoable rigid assembly transform, captures
+the exact baseline, and binds the deployment to run identity. Course evaluators
+consume immutable completed telemetry and site gates after physics. They can
+record outcomes and proof evidence but cannot issue commands or change forces,
+contacts, damage, or integration.

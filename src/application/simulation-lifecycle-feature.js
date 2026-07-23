@@ -62,8 +62,11 @@ export { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
  *   groundMaterial:import("cannon-es").Material,
  *   groundBody:import("cannon-es").Body, fieldBody:import("cannon-es").Body,
  *   surfaceHeightAt:(x:number,z:number)=>number,
+ *   surfaceSampleAt:(x:number,z:number)=>object,
  *   terrainHeightAt:(x:number,z:number)=>number,
  *   pondAt:(x:number,z:number,margin?:number)=>object|null,
+ *   testSite:object, testingPlaygroundDeployment:()=>object|null,
+ *   testCourseSelection:()=>{routeId:string,targetPartId?:number}|null,
  *   terrainSize:number, environmentBodyRegistry:object,
  *   environmentOrigin:()=>VectorReading, karmanLineM:number,
  *   latitude:number, longitude:number,
@@ -97,6 +100,8 @@ export { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
  *   attachPartToMachine:(part:SimulationPart)=>void,
  *   syncLargeAssembly:(parts:SimulationPart[])=>void, drawWires:()=>void,
  *   resetCameraTarget:()=>void,
+ *   clearTestSiteEffects:()=>void,
+ *   beginTestCourseAttempt:()=>void, finishTestCourseAttempt:()=>void,
  * }} SimulationPresentationPort
  */
 
@@ -199,6 +204,7 @@ export function createSimulationLifecycleFeature({
       await controllers.compile(controller);
     if (run.exploded || run.explodeAmount > 0.001)
       presentation.setExploded(false, true);
+    presentation.beginTestCourseAttempt();
     run.running = true;
     run.simulationPaused = false;
     run.timeScale = 1;
@@ -206,6 +212,7 @@ export function createSimulationLifecycleFeature({
     runtime.workspaceFocusBefore = presentation.workspaceFocused();
     if (!runtime.workspaceFocusBefore) presentation.focusWorkspace(true);
     run.elapsed = 0;
+    presentation.clearTestSiteEffects();
     presentation.failure.beginRun();
     for (const part of run.parts) {
       part.startPos = [...part.pos];
@@ -292,6 +299,9 @@ export function createSimulationLifecycleFeature({
       physicalFlightTelemetry: runtime.physicalFlightTelemetry,
       physicalAssemblyIndex: runtime.physicalAssemblyIndex,
       multibodyRuntime: runtime.multibodyRuntime,
+      testSite: physics.testSite,
+      testCourseSelection: physics.testCourseSelection,
+      surfaceSampleAt: physics.surfaceSampleAt,
       compiledAssembly: runtime.multibodyRuntime.compiled,
       environmentBodyRegistry: physics.environmentBodyRegistry,
       environmentOrigin: physics.environmentOrigin,
@@ -322,6 +332,8 @@ export function createSimulationLifecycleFeature({
     presentation.focusWorkspace(runtime.workspaceFocusBefore);
     run.simulationPaused = false;
     presentation.failure.endRun();
+    presentation.clearTestSiteEffects();
+    presentation.finishTestCourseAttempt();
     controllers.stopAll("SIMULATION STOPPED");
     runtime.session?.dispose();
     runtime.session = null;

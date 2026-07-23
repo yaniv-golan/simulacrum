@@ -1,3 +1,5 @@
+import { canonicalizeQuaternion } from "../model/primitives.js";
+
 /**
  * Captures editor state without retaining meshes or mutable collection
  * references. Runtime failure/trust state is intentionally excluded.
@@ -29,11 +31,12 @@ export function captureBuildHistorySnapshot({
       id: part.id,
       type: part.type,
       pos: [...part.pos],
-      rotation: [
-        part.mesh.rotation.x,
-        part.mesh.rotation.y,
-        part.mesh.rotation.z,
-      ],
+      orientation: canonicalizeQuaternion([
+        part.mesh.quaternion.x,
+        part.mesh.quaternion.y,
+        part.mesh.quaternion.z,
+        part.mesh.quaternion.w,
+      ]),
       scale: [part.mesh.scale.x, part.mesh.scale.y, part.mesh.scale.z],
       ...(part.mechanism
         ? { mechanism: structuredClone(part.mechanism) }

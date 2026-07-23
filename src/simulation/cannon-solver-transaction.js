@@ -22,6 +22,53 @@ function stableBodyKey(body) {
   return `${typeof identity}:${String(identity)}`;
 }
 
+function resolveSurfaceLaw(body, otherBody, offset) {
+  const resolver = body.userData?.contactMaterialAt;
+  if (typeof resolver !== "function") return null;
+  const point = new CANNON.Vec3();
+  body.position.vadd(offset, point);
+  return resolver(point.x, point.z, otherBody.material?.name || null);
+}
+
+function resolvedLawForEquation(equation) {
+  return (
+    resolveSurfaceLaw(equation.bi, equation.bj, equation.ri) ||
+    resolveSurfaceLaw(equation.bj, equation.bi, equation.rj)
+  );
+}
+
+function applyResolvedSurfaceLaws(world, dt) {
+  for (const contact of world.contacts) {
+    const law = resolvedLawForEquation(contact);
+    if (!law) continue;
+    contact.surfaceMaterialKey = law.materialKey;
+    contact.surfaceShapeId = law.shapeId;
+    contact.restitution = law.restitution;
+    contact.setSpookParams(
+      law.contactEquationStiffness,
+      law.contactEquationRelaxation,
+      dt,
+    );
+  }
+  const gravityMagnitude = (world.frictionGravity || world.gravity).length();
+  for (const equation of world.frictionEquations) {
+    const law = resolvedLawForEquation(equation);
+    if (!law) continue;
+    const inverseMass = equation.bi.invMass + equation.bj.invMass,
+      slipForce = inverseMass
+        ? law.friction * gravityMagnitude * (1 / inverseMass)
+        : 0;
+    equation.surfaceMaterialKey = law.materialKey;
+    equation.minForce = -slipForce;
+    equation.maxForce = slipForce;
+    equation.setSpookParams(
+      law.frictionEquationStiffness,
+      law.frictionEquationRelaxation,
+      dt,
+    );
+  }
+}
+
 function stableBodyRanks(state, bodies) {
   if (
     state.bodies.length !== bodies.length ||
@@ -192,12 +239,17 @@ export class CannonSolverTransaction {
       world.frictionEquations,
       this.frictionEquationPool,
     );
+    applyResolvedSurfaceLaws(world, dt);
     for (const equation of world.frictionEquations)
       solver.addEquation(equation);
     for (const contact of world.contacts) {
       const bodyA = contact.bi,
         bodyB = contact.bj;
-      if (bodyA.material?.restitution >= 0 && bodyB.material?.restitution >= 0)
+      if (
+        !contact.surfaceMaterialKey &&
+        bodyA.material?.restitution >= 0 &&
+        bodyB.material?.restitution >= 0
+      )
         contact.restitution =
           bodyA.material.restitution * bodyB.material.restitution;
       solver.addEquation(contact);

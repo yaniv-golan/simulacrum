@@ -26,12 +26,12 @@ export function installDebugReadModelFeature({
   machine,
   assembly,
   controller,
+  testingPlayground,
   view,
 }) {
   function controllerTelemetry() {
     return telemetry().systems?.controllers || controller.runtimeTelemetry();
   }
-
   function sensorRpm(sensorId) {
     const controllers = telemetry().systems?.sensors?.controllers;
     if (!controllers) return 0;
@@ -41,7 +41,6 @@ export function installDebugReadModelFeature({
     }
     return 0;
   }
-
   function environmentReadModel() {
     const frame = telemetry(),
       focus = state.running ? machine.root.position : editor.cameraTarget;
@@ -52,6 +51,8 @@ export function installDebugReadModelFeature({
         northM: state.earthOriginNorthM,
       },
       localToGlobal: environment.localToGlobal,
+      localSurfaceSample: environment.localSurfaceSample,
+      detailLod: environment.detailLod,
       chunks: environment.chunks(),
       timeOfDay: state.timeOfDay,
       sunElevationDeg: state.sunElevationDeg || 0,
@@ -222,6 +223,7 @@ export function installDebugReadModelFeature({
     () => ({
       coordinateSystem: "meters, Y up, 0.25m move snap, 15deg rotation snap",
       environment: environmentReadModel(),
+      testingPlayground: testingPlayground.snapshot(),
       ...editorReadModel(),
       demo: machineReadModel(),
       ...assemblyReadModel(),

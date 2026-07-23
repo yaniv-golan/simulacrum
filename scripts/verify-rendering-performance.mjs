@@ -186,6 +186,8 @@ const frameSamples = await page.evaluate(
 const renderSample = await page.evaluate(() => ({
   draws: window.__simulacrumWebGLMetrics.draws,
   app: window.simulacrum_performance(),
+  reserveLod: JSON.parse(window.render_game_to_text()).environment.testSite
+    .presentationLod,
   renderer: (() => {
     const canvas = document.querySelector("canvas"),
       gl = canvas?.getContext("webgl2") || canvas?.getContext("webgl"),
@@ -259,6 +261,12 @@ await conclude(browser, () => {
     true,
     "large assemblies did not activate complexity-based shadow LOD",
   );
+  assert.deepEqual(renderSample.reserveLod, {
+    level: "performance",
+    grassBladesVisible: 0,
+    fixtureVisualsVisible: true,
+    surfaceRegionsVisible: true,
+  });
   assert.ok(
     renderSample.draws <= 50_760 * 0.7,
     `300-part draw calls missed the 30% reduction (${renderSample.draws})`,

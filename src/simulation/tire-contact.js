@@ -8,6 +8,11 @@ const NORMAL_TRACKER_INSTALLED = Symbol("simulacrumNormalTrackerInstalled");
 const clamp = (value, lower, upper) => Math.max(lower, Math.min(upper, value));
 
 function contactMaterialKey(contact, body) {
+  if (
+    contact.surfaceMaterialKey &&
+    typeof body.userData?.contactMaterialAt === "function"
+  )
+    return contact.surfaceMaterialKey;
   const shape = [contact.si, contact.sj].find((candidate) =>
     body.shapes.includes(candidate),
   );
@@ -299,6 +304,51 @@ function radialContactResponse({
   };
 }
 
+export function surfaceFoundationResponse({
+  normalModel,
+  pair,
+  deflectionM,
+  normalRateMPerS,
+  manifoldShare,
+  dt,
+}) {
+  const tireStiffness = normalModel.kRadialNPerM,
+    groundStiffness = pair.foundationStiffnessNPerM;
+  if (!groundStiffness)
+    return {
+      ...radialContactResponse({
+        normalModel,
+        deflectionM,
+        normalRateMPerS,
+        manifoldShare,
+        dt,
+      }),
+      surfaceSinkageM: 0,
+      contactStiffnessNPerM: tireStiffness,
+    };
+  const groundShare = tireStiffness / (tireStiffness + groundStiffness),
+    surfaceSinkageM = Math.min(
+      pair.maximumSinkageM,
+      Math.max(0, deflectionM) * groundShare,
+    ),
+    tireDeflectionM = Math.max(0, deflectionM - surfaceSinkageM),
+    tireRateMPerS = normalRateMPerS * (1 - groundShare),
+    groundAtLimit = surfaceSinkageM >= pair.maximumSinkageM - EPSILON;
+  return {
+    ...radialContactResponse({
+      normalModel,
+      deflectionM: tireDeflectionM,
+      normalRateMPerS: tireRateMPerS,
+      manifoldShare,
+      dt,
+    }),
+    surfaceSinkageM,
+    contactStiffnessNPerM: groundAtLimit
+      ? tireStiffness
+      : (tireStiffness * groundStiffness) / (tireStiffness + groundStiffness),
+  };
+}
+
 /**
  * Adds tire tangential rows to Cannon's current contact island. The rows are
  * created during Constraint.update(), after narrowphase and before the single
@@ -328,6 +378,8 @@ export class TireContactConstraint extends CANNON.Constraint {
       carcassDeflectionRateMPerS: 0,
       rimLoadN: 0,
       rollingResistanceTorqueNm: 0,
+      surfaceSinkageM: 0,
+      surfaceRollingResistanceMultiplier: 1,
       dissipatedEnergyJ: 0,
       temperatureK: referenceTemperatureK,
       frictionEllipseUtilization: 0,
@@ -335,6 +387,8 @@ export class TireContactConstraint extends CANNON.Constraint {
       contactRoles: Object.freeze([]),
       contactRegionKeys: Object.freeze([]),
       contactMaterialKeys: Object.freeze([]),
+      supportMaterialKeys: Object.freeze([]),
+      supportMaterialLaws: Object.freeze([]),
     };
     this.solvedContactRows = [];
   }
@@ -360,11 +414,15 @@ export class TireContactConstraint extends CANNON.Constraint {
         carcassDeflectionRateMPerS: 0,
         rimLoadN: 0,
         rollingResistanceTorqueNm: 0,
+        surfaceSinkageM: 0,
+        surfaceRollingResistanceMultiplier: 1,
         frictionEllipseUtilization: 0,
         manifoldPointCount: contacts.length,
         contactRoles: Object.freeze([]),
         contactRegionKeys: Object.freeze([]),
         contactMaterialKeys: Object.freeze([]),
+        supportMaterialKeys: Object.freeze([]),
+        supportMaterialLaws: Object.freeze([]),
       };
     if (!contacts.length) {
       this.state = next;
@@ -377,6 +435,7 @@ export class TireContactConstraint extends CANNON.Constraint {
       contactRoles = new Set(),
       contactRegionKeys = new Set(),
       contactMaterialKeys = new Set(),
+      supportMaterialLaws = new Map(),
       tractionContacts = [];
     axle.normalize();
     for (const contact of contacts) {
@@ -402,6 +461,18 @@ export class TireContactConstraint extends CANNON.Constraint {
           },
         );
       const pair = contactMaterialPair(law.tireMaterialKey, otherMaterialKey);
+      supportMaterialLaws.set(
+        otherMaterialKey,
+        Object.freeze({
+          materialKey: otherMaterialKey,
+          longitudinalFrictionCoefficient: pair.longitudinalFrictionCoefficient,
+          lateralFrictionCoefficient: pair.lateralFrictionCoefficient,
+          restitutionCoefficient: pair.restitutionCoefficient,
+          foundationStiffnessNPerM: pair.foundationStiffnessNPerM,
+          maximumSinkageM: pair.maximumSinkageM,
+          rollingResistanceMultiplier: pair.rollingResistanceMultiplier,
+        }),
+      );
       contact.restitution = pair.restitutionCoefficient;
       disableGenericFriction(this.world, wheel, other);
       trackCurrentNormalImpulse(contact);
@@ -448,17 +519,25 @@ export class TireContactConstraint extends CANNON.Constraint {
         normalRateMPerS = relativeVelocity.dot(normal),
         deflectionM = Math.max(0, -contactGap(contact)),
         normalModel = law.normalModel,
-        radial = radialContactResponse({
+        radial = surfaceFoundationResponse({
           normalModel,
+          pair,
           deflectionM,
           normalRateMPerS,
           manifoldShare,
           dt: this.fixedDt,
         }),
-        { atRim, boundedDeflectionM, rimLoadN, normalLoadN, relaxation } =
-          radial;
+        {
+          atRim,
+          boundedDeflectionM,
+          rimLoadN,
+          normalLoadN,
+          relaxation,
+          surfaceSinkageM,
+          contactStiffnessNPerM,
+        } = radial;
       contact.setSpookParams(
-        (normalModel.kRadialNPerM +
+        (contactStiffnessNPerM +
           (atRim ? normalModel.rimContactStiffnessNPerM : 0)) *
           manifoldShare,
         relaxation,
@@ -538,6 +617,11 @@ export class TireContactConstraint extends CANNON.Constraint {
       if (Math.abs(normalRateMPerS) > Math.abs(next.carcassDeflectionRateMPerS))
         next.carcassDeflectionRateMPerS = -normalRateMPerS;
       next.rimLoadN += rimLoadN;
+      next.surfaceSinkageM = Math.max(next.surfaceSinkageM, surfaceSinkageM);
+      next.surfaceRollingResistanceMultiplier = Math.max(
+        next.surfaceRollingResistanceMultiplier,
+        pair.rollingResistanceMultiplier,
+      );
       next.frictionEllipseUtilization = Math.max(
         next.frictionEllipseUtilization,
         brush.frictionEllipseUtilization,
@@ -554,6 +638,14 @@ export class TireContactConstraint extends CANNON.Constraint {
     next.contactRoles = Object.freeze([...contactRoles].sort());
     next.contactRegionKeys = Object.freeze([...contactRegionKeys].sort());
     next.contactMaterialKeys = Object.freeze([...contactMaterialKeys].sort());
+    next.supportMaterialKeys = Object.freeze(
+      [...supportMaterialLaws.keys()].sort(),
+    );
+    next.supportMaterialLaws = Object.freeze(
+      [...supportMaterialLaws.values()].sort((left, right) =>
+        left.materialKey.localeCompare(right.materialKey),
+      ),
+    );
     const rolling = law.rollingResistance;
     if (
       rolling.kind === "load-radius-moment-v1" &&
@@ -562,6 +654,7 @@ export class TireContactConstraint extends CANNON.Constraint {
       const angularSpeed = wheel.angularVelocity.dot(axle),
         torqueNm =
           -rolling.coefficient *
+          next.surfaceRollingResistanceMultiplier *
           next.normalLoadN *
           descriptor.radiusM *
           Math.tanh(

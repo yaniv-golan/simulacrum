@@ -48,6 +48,8 @@ import {
   ReleaseCouplerSystem,
   RigidBodySystem,
   SimulationSession,
+  TestCourseSystem,
+  TestSiteTelemetrySystem,
   ThermalSystem,
   PowerSystem,
   ReplayBuffer,
@@ -114,8 +116,13 @@ completed network and telemetry snapshots. The canonical
 `PhysicalAssemblyIndex` and `MobilityTelemetrySystem` publish one record for
 each physical component with authored rolling contact while retaining frame
 identity, members, split lineage, contacts, solved tire forces, steering,
-braking, power, fluid interaction, and validity. Commands stay addressed to
-exact endpoint parts.
+braking, power, fluid interaction, exact support-material identities and laws,
+bounded soft-surface sinkage, rolling-resistance multipliers, and validity.
+`TestSiteTelemetrySystem` projects canonical district, surface, terrain,
+fluid, and zone state from completed physical poses. `TestCourseSystem`
+evaluates ordinary completed telemetry against immutable route contracts; it
+does not dispatch on demo identity, vehicle class, wheel count, or rotor count.
+Commands stay addressed to exact endpoint parts.
 
 Powered `release-coupler` components compile two authored flange connections
 into a load-rated latch and explicit actuator. The actuator consumes resolved

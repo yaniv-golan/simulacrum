@@ -30,6 +30,7 @@ import { CameraTracker } from "./camera-tracker.js";
 
 /** @type {{ yaw: number, pitch: number, distance: number }} */
 const DEFAULT_VIEW = Object.freeze({ yaw: 0.72, pitch: 0.47, distance: 18 });
+const CAMERA_DISTANCE_LIMITS_M = Object.freeze({ minimum: 2.5, maximum: 650 });
 
 /**
  * Owns camera navigation, projection, tracking, and camera-specific controls.
@@ -104,8 +105,8 @@ export function createCameraInteractionController({
     const previousDistance = distance;
     const nextDistance = THREE.MathUtils.clamp(
       previousDistance * Math.exp(delta * 0.00135),
-      2.5,
-      80,
+      CAMERA_DISTANCE_LIMITS_M.minimum,
+      CAMERA_DISTANCE_LIMITS_M.maximum,
     );
     if (anchor) {
       const anchorWeight = THREE.MathUtils.clamp(

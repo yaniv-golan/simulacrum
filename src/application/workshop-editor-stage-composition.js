@@ -12,7 +12,6 @@ import {
   globalToGeodetic,
   KARMAN_LINE_M,
   LAND_POLYGONS,
-  POND_SPECS,
 } from "../simulation/environment/earth.js";
 import { sampleWindVelocity } from "../simulation/environment/wind-field.js";
 import { createWorkshopEditorPresentationSubsystem } from "./workshop-editor-presentation-subsystem.js";
@@ -58,7 +57,10 @@ export function createWorkshopEditorStageComposition({
       earth: {
         terrainHeightAt: stage.earth.terrainHeightAt,
         pondAt: stage.earth.pondAt,
-        pondSpecs: POND_SPECS,
+        pondSpecs: stage.earth.pondSpecs(),
+        testSite: stage.earth.testSite,
+        localTerrainBounds: stage.earth.localTerrainBounds,
+        surfaceSampleAt: stage.earth.surfaceSampleAt,
         fieldSurfaceY: FIELD_SURFACE_Y,
         chunkSize: EARTH_CHUNK_SIZE_M,
         seaLevelY: EARTH_SEA_LEVEL_Y,
@@ -146,6 +148,7 @@ export function createWorkshopEditorStageComposition({
         world: stage.scene,
         machine: stage.machine,
         wires: stage.wires,
+        effects: stage.effects,
         cameraTarget: stage.cameraTarget,
       },
       presentAerothermal: (telemetry) => aerothermal.present(telemetry),

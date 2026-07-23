@@ -1,9 +1,12 @@
 import * as CANNON from "cannon-es";
 import { CannonWorldAdapter } from "../simulation/cannon-world-adapter.js";
-import { createYUpHeightfieldCandidateFilter } from "../simulation/heightfield-broadphase.js";
+import {
+  createTestSiteCollisionBody,
+  installTestSiteContactMaterials,
+} from "../simulation/environment/test-site-collision.js";
 
 /** Builds the shared Cannon world and static workshop terrain contract. */
-export function createWorkshopPhysicsWorld({ terrainHeightAt }) {
+export function createWorkshopPhysicsWorld({ surfaceSampleAt, footprint }) {
   const world = new CANNON.World({
       gravity: new CANNON.Vec3(0, -9.80665, 0),
     }),
@@ -17,10 +20,12 @@ export function createWorkshopPhysicsWorld({ terrainHeightAt }) {
       material: groundMaterial,
       position: new CANNON.Vec3(0, -0.25, 0),
     }),
-    fieldBody = new CANNON.Body({
-      type: CANNON.Body.STATIC,
-      material: groundMaterial,
-    });
+    testSiteCollision = createTestSiteCollisionBody({
+      sampleAt: surfaceSampleAt,
+      footprint,
+      fallbackMaterial: groundMaterial,
+    }),
+    fieldBody = testSiteCollision.body;
   // Y-up SAP rejects disjoint world AABBs before exact narrowphase.
   const broadphase = new CANNON.SAPBroadphase(world);
   broadphase.axisIndex = 1;
@@ -34,39 +39,6 @@ export function createWorkshopPhysicsWorld({ terrainHeightAt }) {
       materialKey: "workshop-steel",
     },
   });
-  Object.assign(fieldBody, {
-    userData: {
-      externalBodyId: "environment:terrain",
-      surface: "streamed terrain",
-      materialKey: "compacted-soil",
-    },
-  });
-
-  const terrainSegments = 128,
-    terrainSize = 160,
-    elementSize = terrainSize / terrainSegments,
-    terrainHeights = [];
-  for (let ix = 0; ix <= terrainSegments; ix++) {
-    const row = [],
-      x = -terrainSize / 2 + ix * elementSize;
-    for (let iz = 0; iz <= terrainSegments; iz++) {
-      // Heightfield local +Y maps to world -Z after the body rotation.
-      const z = terrainSize / 2 - iz * elementSize;
-      row.push(terrainHeightAt(x, z));
-    }
-    terrainHeights.push(row);
-  }
-  fieldBody.addShape(new CANNON.Heightfield(terrainHeights, { elementSize }));
-  fieldBody.position.set(-terrainSize / 2, 0, terrainSize / 2);
-  fieldBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-  const fieldRuntimeBody = /** @type {any} */ (fieldBody);
-  fieldRuntimeBody.userData.broadphaseCandidateFilter =
-    createYUpHeightfieldCandidateFilter({
-      heights: terrainHeights,
-      elementSize,
-      originX: -terrainSize / 2,
-      originZ: terrainSize / 2,
-    });
   world.addBody(groundBody);
   world.addBody(fieldBody);
   world.addContactMaterial(
@@ -86,6 +58,12 @@ export function createWorkshopPhysicsWorld({ terrainHeightAt }) {
       contactEquationRelaxation: 3,
     }),
   );
+  installTestSiteContactMaterials({
+    world,
+    materialsByKey: testSiteCollision.materialsByKey,
+    footMaterial,
+    debrisMaterial,
+  });
 
   return Object.freeze({
     world,
@@ -95,6 +73,9 @@ export function createWorkshopPhysicsWorld({ terrainHeightAt }) {
     debrisMaterial,
     groundBody,
     fieldBody,
-    terrainSize,
+    terrainSize: testSiteCollision.width,
+    terrainDepth: testSiteCollision.depth,
+    terrainElementSize: testSiteCollision.elementSize,
+    surfaceMaterials: testSiteCollision.materialsByKey,
   });
 }

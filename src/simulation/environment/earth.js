@@ -1,5 +1,6 @@
 import { feature as topojsonFeature } from "topojson-client";
 import landTopology from "world-atlas/land-110m.json" with { type: "json" };
+import { createSurfaceField } from "./surface-field.js";
 
 export const EARTH_RADIUS_M = 6_371_000;
 export const BUILD_SITE_LAT_DEG = 32.1953977;
@@ -254,15 +255,31 @@ export function earthSurfaceSample(eastM, northM) {
 export function createEarthEnvironmentModel({
   originEastM = 0,
   originNorthM = 0,
+  testSiteDefinition = null,
 } = {}) {
-  const localToGlobalSurface = (x, z) => ({
-    eastM: originEastM + x,
-    northM: originNorthM + z,
-  });
+  const surfaceField = testSiteDefinition
+      ? createSurfaceField(testSiteDefinition)
+      : null,
+    pondSpecs = testSiteDefinition
+      ? testSiteDefinition.fluidRegions.map((fluid) => ({
+          id: fluid.id,
+          x: fluid.shape.centerM[0],
+          z: fluid.shape.centerM[1],
+          rx: fluid.shape.sizeM[0] / 2,
+          rz: fluid.shape.sizeM[1] / 2,
+          depth: fluid.bedDepthM,
+          waterY: fluid.waterHeightM,
+        }))
+      : POND_SPECS,
+    localToGlobalSurface = (x, z) => ({
+      eastM: originEastM + x,
+      northM: originNorthM + z,
+    });
 
   const pondAt = (x, z, margin = 1) => {
+    if (surfaceField?.contains(x, z)) return surfaceField.fluidAt(x, z, margin);
     let nearest = null;
-    for (const pond of POND_SPECS) {
+    for (const pond of pondSpecs) {
       const nx = (x - pond.x) / pond.rx,
         nz = (z - pond.z) / pond.rz,
         normalizedRadius = Math.hypot(nx, nz);
@@ -292,8 +309,10 @@ export function createEarthEnvironmentModel({
   };
 
   const terrainHeightAt = (x, z) => {
+    if (surfaceField?.contains(x, z))
+      return surfaceField.sample({ x, z }).heightM;
     let height = FIELD_SURFACE_Y;
-    for (const pond of POND_SPECS) {
+    for (const pond of pondSpecs) {
       const radius = Math.hypot((x - pond.x) / pond.rx, (z - pond.z) / pond.rz);
       if (radius >= 1) continue;
       const t = clamp(radius, 0, 1),
@@ -308,7 +327,9 @@ export function createEarthEnvironmentModel({
 
   const surfaceHeightAt = (x, z) => {
     if (Math.abs(x) <= 22 && Math.abs(z) <= 22) return 0;
-    if (Math.abs(x) <= 80 && Math.abs(z) <= 80) return terrainHeightAt(x, z);
+    if (surfaceField?.contains(x, z)) return terrainHeightAt(x, z);
+    if (!surfaceField && Math.abs(x) <= 80 && Math.abs(z) <= 80)
+      return terrainHeightAt(x, z);
     const global = localToGlobalSurface(x, z);
     return earthSurfaceSample(global.eastM, global.northM).elevation;
   };
@@ -316,7 +337,10 @@ export function createEarthEnvironmentModel({
   return {
     localToGlobalSurface,
     pondAt,
+    pondSpecs,
     terrainHeightAt,
     surfaceHeightAt,
+    surfaceSampleAt: (x, z) => surfaceField?.sample({ x, z }) || null,
+    surfaceField,
   };
 }

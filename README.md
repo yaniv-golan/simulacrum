@@ -194,6 +194,25 @@ setting, and script. Scores compare elapsed time, mass, complexity, energy use,
 and damage; persistent reliability records both repeatability and distinct
 successful solution classes. See [docs/CHALLENGE_LAB.md](docs/CHALLENGE_LAB.md).
 
+## Workshop Test Reserve
+
+Choose **Test Ground** while simulation is stopped to open a compact map of the
+480 m x 360 m proving ground surrounding the construction plate. You can start
+from the board, place the complete assembly on one of five clearance-checked
+staging pads, run a free test, or select one of ten guided trials. Deployment is
+one undoable rigid transform of the current build; it does not repair,
+stabilize, or replace the machine.
+
+The trials cover side-by-side surface sampling, braking, suspension, measured
+hills, trail navigation, shallow and deep water, runway operations, helipad
+precision, and a mixed-district relay. Route gates observe immutable completed
+telemetry. They may require real contacted materials, fluid entry, grounded or
+airborne state, speed limits, intact structure, and a controlled finish, but
+cannot change grip, forces, controller commands, or machine state. **Retry exact
+start** restores the captured deployment and records compatible personal best
+and reliability evidence against the exact site, material, route, and
+deployment fingerprints.
+
 ## Buildable remote controls
 
 Open **Remote** in the header to create and operate a command console. Commands are not global magic: a target component must have a blue signal connection to a Logic Controller, and that controller must have an orange power connection to a charged Power Cell.
@@ -231,9 +250,29 @@ the exact connected actuators.
 
 ## Field workshop environment
 
-The 44 m construction plate is a raised steel slab on a concrete foundation inside a continuous physical field. Twelve utility columns stand on individual concrete footings outside the slab. The surrounding landscape contains a dry service clearing, a dense-blade meadow, two reflective ponds with wet banks and rocks, three tree clusters, and five low hills.
+The 44 m construction plate is the central landmark of one continuous physical
+field. Around it, the Workshop Test Reserve contains nine districts: apron,
+handling ground, equal-length surface lanes, durability strip, terrain park,
+water park, trail and grove, airfield, and an open experiment lawn. Its 18
+authored surface regions, 20 height features, shallow ford, 3.2 m pool, 240 m
+runway, helipad, trees, rocks, logs, curbs, and signs all derive from one strict
+site definition used by collision, rendering, telemetry, the map, and trials.
 
-The environment is more than scenery. The field is a lower rigid collision surface, and tree trunks and utility columns have static collision bodies. A rover driven off the construction plate drops under gravity, lands on the field, and continues at a reduced 58% grass-traction model rather than falling through a decorative backdrop.
+Dry and wet asphalt, concrete, compacted soil, grass, gravel, sand, mud, and
+low-grip polymer have explicit physical material identities. Tires report the
+actual contacted surface and solve load-sensitive traction, combined slip, and
+material-specific rolling resistance. Feet, skids, landing legs, and loose
+parts use the same support-material authority. Soft ground adds bounded,
+load-dependent foundation compliance and sinkage rather than acting as a renamed
+low-friction plane. Water depth, buoyancy, drag, and bed contact agree with the
+rendered basins.
+
+Dust, spray, skid marks, wet tracks, and shallow ruts are bounded presentation
+effects derived from completed contact telemetry and are cleared on reset.
+Grass scatter reduces independently at distance or for large assemblies, while
+physical fixtures, engineered surface regions, water, terrain, and colliders
+remain present. The reserve map uses both labels and patterns so material
+meaning does not depend on color alone.
 
 ## Earth-scale deterministic world
 
@@ -248,7 +287,7 @@ Only a 7×7 visual neighborhood is kept in memory, with physical heightfield col
 Open **Demos** in the header and follow the numbered complexity ladder. Loading a structure also opens its matching remote. Every stage remains an ordinary editable assembly rather than a locked showcase.
 
 - **1 · Powered Gearbox:** battery, powered motor, controller, mounted 12T input gear, meshed 24T output gear, and rotation sensor. It demonstrates electrical enablement, shaft alignment, opposite rotation, and exact 2:1 reduction.
-- **2 · Suspension Rover:** powered dynamic chassis, four suspended wheels, motor, steering hinge, battery, controller, power network, command link, and two functional headlights. Each 1,600-lumen headlight uses inverse-square attenuation, a dipped soft-edged beam, dynamic shadow casting, and real 110 W combined battery draw. Its tire constraint provides longitudinal traction and lateral grip only while the wheels are supported; the finite 44 m construction plate has a real collision edge, so the rover drops onto the lower field and transitions to reduced grass traction. Its visible controls are an ordinary pinned control surface generated from the editable Cart remote.
+- **2 · Suspension Rover:** powered dynamic chassis, four suspended wheels, motor, steering hinge, battery, controller, power network, command link, and two functional headlights. Each 1,600-lumen headlight uses inverse-square attenuation, a dipped soft-edged beam, dynamic shadow casting, and real 110 W combined battery draw. Its tire constraint provides longitudinal traction and lateral grip only while the wheels are supported; crossing the finite plate edge or a reserve-material boundary resolves the exact contacted surface law and publishes that provenance. Its visible controls are an ordinary pinned control surface generated from the editable Cart remote.
 - **3 · Quad Drone:** crossed frame, flight deck, four vector thrusters, three attitude gimbals, battery, controller, and flight-control network.
 - **4 · Atlas Humanoid:** a 13-body physical robot with feet, shins, thighs, pelvis, torso, head, upper arms, and forearms; ten powered hip, knee, ankle, shoulder, and elbow hinges; a battery, motor, controller, 6-axis IMU, and balance gyro.
 - **5 · Orbital Missile:** pressure-nozzle main engine, independent main/RCS propellant stores, two load-rated structural stages, a powered two-flange release coupler, one declared breakaway signal umbilical, ceramic aero nose, four stabilizing fins, battery, flight computer, and mission-control link supporting arm, launch, throttle, stage, and abort. The editable TypeScript program turns the ordinary Stage receiver's rising edge into the coupler's exact release command.

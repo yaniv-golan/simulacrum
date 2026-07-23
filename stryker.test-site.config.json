@@ -1,0 +1,43 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "ignorePatterns": [
+    "/artifacts",
+    "/coverage",
+    "/dist",
+    "/output",
+    "/packages/core/dist",
+    "/temp"
+  ],
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node scripts/verify-test-site-contract.mjs && node scripts/verify-course-evaluators.mjs"
+  },
+  "mutate": [
+    "src/model/test-site.js",
+    "src/model/test-course-evaluator.js",
+    "src/simulation/environment/surface-field.js"
+  ],
+  "coverageAnalysis": "off",
+  "mutator": {
+    "excludedMutations": [
+      "StringLiteral",
+      "ArrayDeclaration",
+      "ObjectLiteral",
+      "OptionalChaining",
+      "MethodExpression",
+      "ArrowFunction"
+    ]
+  },
+  "concurrency": 4,
+  "timeoutMS": 10000,
+  "tempDirName": "artifacts/stryker-test-site",
+  "reporters": ["clear-text", "json"],
+  "jsonReporter": {
+    "fileName": "artifacts/test-site-mutation.json"
+  },
+  "thresholds": {
+    "high": 80,
+    "low": 80,
+    "break": 80
+  }
+}

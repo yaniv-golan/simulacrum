@@ -407,6 +407,8 @@ export class BodyRegistry {
           "relativeVelocity",
         ]),
         otherBodyId: contact?.otherBodyId ?? null,
+        otherMaterialKey: contact?.otherMaterialKey ?? null,
+        otherShapeId: contact?.otherShapeId ?? null,
         surface: contact?.surface ?? null,
       });
     this.#bodies.set(

@@ -11,6 +11,194 @@
   padding: 18px;
   border-radius: 8px;
 }
+
+.test-reserve-browser {
+  pointer-events: auto;
+  position: absolute;
+  z-index: 12;
+  top: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(920px, calc(100vw - 56px));
+  max-height: calc(100vh - 132px);
+  overflow: auto;
+  padding: 18px;
+  border-radius: 8px;
+}
+
+.test-reserve-browser > p {
+  margin: 7px 0 14px;
+  color: #91aaa5;
+  font-size: 9px;
+}
+
+.test-reserve-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 14px;
+}
+
+.test-reserve-map {
+  height: clamp(280px, 46vh, 380px);
+  border: 1px solid #31514c;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #142523;
+}
+
+.test-reserve-map svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.test-reserve-map text {
+  fill: #ecfaf5;
+  paint-order: stroke;
+  stroke: #10201f;
+  stroke-width: 1.6px;
+  font: 700 5px "Space Grotesk";
+  letter-spacing: 0.06em;
+}
+
+.test-reserve-map .staging-pad {
+  fill: #f1b655;
+  stroke: #10201f;
+  stroke-width: 1.2px;
+}
+
+.test-route-zone {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 2px;
+}
+
+.test-route-zone.active {
+  stroke: #f1b655;
+  stroke-dasharray: 5 3;
+}
+
+#test-reserve-machine circle {
+  fill: #76e3cd;
+  stroke: #10201f;
+  stroke-width: 1.5px;
+}
+
+#test-reserve-machine path {
+  fill: none;
+  stroke: #10201f;
+  stroke-width: 1.5px;
+}
+
+.test-reserve-layout aside {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#test-reserve-status {
+  min-height: 34px;
+  padding: 9px;
+  border: 1px solid #31514c;
+  color: #76e3cd;
+  background: #0a1919;
+  font: 700 8px "Space Grotesk";
+  letter-spacing: 0.08em;
+}
+
+.test-reserve-layout aside > button,
+.test-reserve-pads button,
+.test-reserve-routes button {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid #42615c;
+  color: #d9ebe7;
+  background: #132a29;
+  font: 700 8px "Space Grotesk";
+  letter-spacing: 0.06em;
+}
+
+.test-reserve-layout aside > button.primary {
+  border-color: #f1b655;
+  color: #10201f;
+  background: #f1b655;
+}
+
+.test-reserve-layout aside > small {
+  margin-top: 7px;
+  color: #77948f;
+  font: 700 7px "Space Grotesk";
+  letter-spacing: 0.1em;
+}
+
+.test-reserve-pads {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.test-reserve-routes {
+  display: grid;
+  gap: 5px;
+  max-height: 190px;
+  overflow-y: auto;
+  padding-right: 3px;
+}
+
+.test-reserve-routes button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  text-align: left;
+}
+
+.test-reserve-routes button small {
+  color: #77948f;
+  font-size: 6px;
+}
+
+.test-reserve-routes button.active {
+  border-color: #f1b655;
+  color: #f1b655;
+}
+
+.test-reserve-pads button:disabled,
+.test-reserve-routes button:disabled {
+  opacity: 0.36;
+}
+
+.test-reserve-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 12px;
+}
+
+.test-reserve-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #94aaa6;
+  font: 600 7px "Space Grotesk";
+}
+
+.test-reserve-legend i {
+  width: 9px;
+  height: 9px;
+  border: 1px solid #a7bbb6;
+  border-radius: 2px;
+}
+
+@media (max-width: 760px) {
+  .test-reserve-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .test-reserve-map {
+    min-height: 230px;
+  }
+}
 .challenge-browser > p {
   color: #88a6a1;
   font-size: 9px;

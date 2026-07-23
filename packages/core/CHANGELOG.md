@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Adds `TestSiteTelemetrySystem` and `TestCourseSystem` to the DOM-free
+  fixed-step surface for canonical proving-ground state and type-independent
+  guided-trial evaluation.
+- Extends mobility telemetry with exact support-material identities and laws,
+  soft-surface sinkage, and rolling-resistance multipliers.
+
 ## 0.1.0 - 2026-07-22
 
 - Introduces the DOM-free Simulacrum Core facade for strict blueprints,

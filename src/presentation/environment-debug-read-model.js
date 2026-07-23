@@ -9,7 +9,9 @@ import { CLOUD_LAYERS } from "./atmospheric-landmarks.js";
  * @typedef {{
  *   focus:{x:number,z:number}, origin:{eastM:number,northM:number},
  *   localToGlobal:(x:number,z:number)=>{eastM:number,northM:number},
+ *   localSurfaceSample?:(x:number,z:number)=>{heightM:number,materialKey:string,districtId:string|null,featureIds:string[]}|null,
  *   chunks:EnvironmentChunk[], timeOfDay:number, sunElevationDeg:number,
+ *   detailLod?:()=>{level:string,grassBladesVisible:number,fixtureVisualsVisible:boolean,surfaceRegionsVisible:boolean},
  *   spaceBlend:number, skyColor:string, windEnabled:boolean, elapsed:number,
  *   starOpacity:number, moonOpacity:number, earthOpacity:number,
  *   meteorite:EnvironmentVector,
@@ -18,6 +20,7 @@ import { CLOUD_LAYERS } from "./atmospheric-landmarks.js";
  *     earthRadiusM:number, fieldSurfaceY:number, karmanLineM:number,
  *     moonDistanceM:number,
  *     pondSpecs:Array<{id:string,x:number,z:number,rx:number,rz:number,depth:number,waterY:number}>,
+ *     testSite:{id:string,footprint:{centerM:number[],sizeM:number[]},districts:object[],surfaceRegions:object[],heightFeatures:object[],fluidRegions:object[],clearVolumes:object[],staticFixtures:Array<{kind:string,collision:boolean}>},
  *     globalToGeodetic:(eastM:number,northM:number)=>{latitude:number,longitude:number},
  *     surfaceSample:(eastM:number,northM:number)=>{biome:string,elevation:number},
  *     sampleWind:(position:EnvironmentVector, options:{enabled:boolean,elapsedSeconds:number})=>EnvironmentVector,
@@ -40,7 +43,8 @@ export function buildEnvironmentDebugReadModel(input) {
   const environment = input.environment,
     global = input.localToGlobal(input.focus.x, input.focus.z),
     geodetic = environment.globalToGeodetic(global.eastM, global.northM),
-    surface = environment.surfaceSample(global.eastM, global.northM),
+    globalSurface = environment.surfaceSample(global.eastM, global.northM),
+    localSurface = input.localSurfaceSample?.(input.focus.x, input.focus.z),
     windOptions = {
       enabled: input.windEnabled,
       elapsedSeconds: input.elapsed,
@@ -76,8 +80,10 @@ export function buildEnvironmentDebugReadModel(input) {
         east: +input.origin.eastM.toFixed(1),
         north: +input.origin.northM.toFixed(1),
       },
-      currentBiome: surface.biome,
-      currentElevationM: +surface.elevation.toFixed(2),
+      currentBiome: localSurface?.materialKey || globalSurface.biome,
+      currentElevationM: +(
+        localSurface?.heightM ?? globalSurface.elevation
+      ).toFixed(2),
       chunkSizeM: environment.chunkSizeM,
       activeChunks: input.chunks.length,
       collisionChunks: input.chunks.filter((chunk) =>
@@ -117,11 +123,38 @@ export function buildEnvironmentDebugReadModel(input) {
       renderShellDistanceM: 340,
     },
     meteorite: { ...input.meteorite, radiusM: 12 },
+    testSite: {
+      id: environment.testSite.id,
+      footprintM: {
+        width: environment.testSite.footprint.sizeM[0],
+        depth: environment.testSite.footprint.sizeM[1],
+      },
+      districts: environment.testSite.districts.map(({ id, label }) => ({
+        id,
+        label,
+      })),
+      surfaceRegionCount: environment.testSite.surfaceRegions.length,
+      heightFeatureCount: environment.testSite.heightFeatures.length,
+      fluidRegionCount: environment.testSite.fluidRegions.length,
+      clearVolumeCount: environment.testSite.clearVolumes.length,
+      activeSurface: localSurface
+        ? {
+            materialKey: localSurface.materialKey,
+            districtId: localSurface.districtId,
+            featureIds: [...localSurface.featureIds],
+          }
+        : null,
+      presentationLod: input.detailLod?.() || null,
+    },
     features: {
-      columns: 12,
-      trees: 33,
-      ponds: 2,
-      hills: 5,
+      columns: 0,
+      trees: environment.testSite.staticFixtures.filter(
+        ({ kind }) => kind === "tree-trunk",
+      ).length,
+      ponds: environment.testSite.fluidRegions.length,
+      hills: environment.testSite.heightFeatures.filter(
+        ({ amplitudeM }) => amplitudeM > 0.5,
+      ).length,
       mountainTerrain: {
         innerRadiusM: 9000,
         outerRadiusM: 23000,
@@ -134,7 +167,12 @@ export function buildEnvironmentDebugReadModel(input) {
         clusters: layer.clusters,
       })),
       grassBlades: 2200,
-      collidableRocks: 38,
+      collidableRocks: environment.testSite.staticFixtures.filter(
+        ({ kind }) => kind === "rock",
+      ).length,
+      solidFixtures: environment.testSite.staticFixtures.filter(
+        ({ collision }) => collision,
+      ).length,
     },
     ponds: environment.pondSpecs.map((pond) => ({
       id: pond.id,

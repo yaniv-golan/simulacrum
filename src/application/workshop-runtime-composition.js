@@ -18,6 +18,7 @@ export function installWorkshopRuntimeComposition({
   assembly,
   controllers,
   playback,
+  testingPlayground,
   view,
   environment,
 }) {
@@ -50,6 +51,8 @@ export function installWorkshopRuntimeComposition({
     },
     environment: {
       localToGlobal: stage.earth.localToGlobal,
+      localSurfaceSample: stage.earth.surfaceSampleAt,
+      detailLod: world.detailLodSnapshot,
       chunks: () => [...streamer.chunks.values()],
       skyColor: () => `#${stage.scene.background.getHexString()}`,
       starOpacity: () => stage.starMaterial.opacity,
@@ -100,6 +103,7 @@ export function installWorkshopRuntimeComposition({
         }),
       runtimeCount: () => controllers.runtimeManager.ids().length,
     },
+    testingPlayground,
     view: {
       debug: {
         learningOpen: () =>

@@ -145,6 +145,7 @@ await fs.writeFile(
         module: "NodeNext",
         moduleResolution: "NodeNext",
         target: "ES2022",
+        types: [],
         strict: true,
         noEmit: true,
         skipLibCheck: false,

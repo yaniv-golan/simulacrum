@@ -111,6 +111,8 @@ export function createWorkshopState({
       windEnabled: environment.windEnabled,
       earthOriginEastM: 0,
       earthOriginNorthM: 0,
+      testDeployment: null,
+      activeTestRouteId: null,
       spaceBlend: 0,
     });
   return Object.freeze({ storage, state, newControllerSources });

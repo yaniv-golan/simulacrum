@@ -4,12 +4,12 @@ import {
   createWorkshopPlatform,
   createWorkshopScene,
 } from "../presentation/workshop-scene.js";
-import { createEarthEnvironmentModel } from "../simulation/environment/earth.js";
 import {
   createEarthEnvironmentBodyRegistry,
   NEAR_SPACE_BODY_ID,
 } from "../simulation/environment/earth-environment-bodies.js";
 import { createWorkshopPhysicsWorld } from "./workshop-physics-world.js";
+import { createTestingPlaygroundEnvironment } from "./testing-playground-environment.js";
 
 /** Constructs the engine-backed stage and exposes environment queries as ports. */
 export function createWorkshopStageFoundation({
@@ -37,21 +37,10 @@ export function createWorkshopStageFoundation({
     }),
     platform = createWorkshopPlatform({ scene: sceneGraph.scene });
 
-  let earthModel = createEarthEnvironmentModel();
-  const earth = Object.freeze({
-      localToGlobal: (x, z) => earthModel.localToGlobalSurface(x, z),
-      pondAt: (x, z, margin = 1) => earthModel.pondAt(x, z, margin),
-      terrainHeightAt: (x, z) => earthModel.terrainHeightAt(x, z),
-      surfaceHeightAt: (x, z) => earthModel.surfaceHeightAt(x, z),
-      rebuild: (east, north) => {
-        earthModel = createEarthEnvironmentModel({
-          originEastM: east,
-          originNorthM: north,
-        });
-      },
-    }),
+  const earth = createTestingPlaygroundEnvironment(),
     physics = createWorkshopPhysicsWorld({
-      terrainHeightAt: earth.terrainHeightAt,
+      surfaceSampleAt: earth.surfaceSampleAt,
+      footprint: earth.testSite.footprint,
     }),
     largeAssemblyBatcher = new LargeAssemblyBatcher({
       machine: platform.machine,

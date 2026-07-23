@@ -8,6 +8,7 @@ import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
 import {
   passiveBrushForces,
   radialContactResponse,
+  surfaceFoundationResponse,
 } from "../src/simulation/tire-contact.js";
 import { fixtureMobilityTelemetry } from "./lib/mobility-fixture.mjs";
 
@@ -65,6 +66,16 @@ for (const environmentMaterial of [
 assert.throws(
   () => contactMaterialPair("tire-rubber", "unregistered-surface"),
   (error) => error.code === "UNKNOWN_CONTACT_MATERIAL_PAIR",
+);
+const asphaltPair = contactMaterialPair("tire-rubber", "dry-asphalt"),
+  sandPair = contactMaterialPair("tire-rubber", "dry-sand"),
+  mudPair = contactMaterialPair("tire-rubber", "saturated-mud");
+assert.ok(sandPair.foundationStiffnessNPerM > 0);
+assert.ok(mudPair.maximumSinkageM > sandPair.maximumSinkageM);
+assert.ok(
+  mudPair.rollingResistanceMultiplier > sandPair.rollingResistanceMultiplier &&
+    sandPair.rollingResistanceMultiplier >
+      asphaltPair.rollingResistanceMultiplier,
 );
 assert.throws(
   () => contactMaterialPair("tire-rubber", null),
@@ -164,6 +175,25 @@ assert.equal(
   "massless carcass exceeded its authored travel",
 );
 assert.ok(beyondRim.rimLoadN > 0, "rim bottom-out did not carry excess load");
+const hardFoundation = surfaceFoundationResponse({
+    normalModel,
+    pair: asphaltPair,
+    deflectionM: normalModel.maximumDeflectionM * 0.5,
+    normalRateMPerS: 0,
+    manifoldShare: 1,
+    dt: 1 / 120,
+  }),
+  softFoundation = surfaceFoundationResponse({
+    normalModel,
+    pair: sandPair,
+    deflectionM: normalModel.maximumDeflectionM * 0.5,
+    normalRateMPerS: 0,
+    manifoldShare: 1,
+    dt: 1 / 120,
+  });
+assert.equal(hardFoundation.surfaceSinkageM, 0);
+assert.ok(softFoundation.surfaceSinkageM > 0);
+assert.ok(softFoundation.normalLoadN < hardFoundation.normalLoadN);
 for (const deflectionRatio of [0, 0.25, 0.5, 1, 1.25, 2])
   for (const normalRateMPerS of [-2, 0, 2]) {
     const response = radialContactResponse({
@@ -304,7 +334,8 @@ function obstacleProbe({
     maximumFrictionState = null,
     maximumPositiveEnergyGainJ = 0,
     contactRegionKeys = new Set(),
-    contactMaterialKeys = new Set();
+    contactMaterialKeys = new Set(),
+    supportMaterialKeys = new Set();
   const initialEnergyJ =
     0.5 * body.mass * body.velocity.lengthSquared() +
     0.5 * body.inertia.z * body.angularVelocity.z ** 2 +
@@ -327,6 +358,7 @@ function obstacleProbe({
     maximumRimLoadN = Math.max(maximumRimLoadN, state.rimLoadN);
     for (const key of state.contactRegionKeys) contactRegionKeys.add(key);
     for (const key of state.contactMaterialKeys) contactMaterialKeys.add(key);
+    for (const key of state.supportMaterialKeys) supportMaterialKeys.add(key);
     if (state.frictionEllipseUtilization > maximumFrictionUtilization) {
       maximumFrictionUtilization = state.frictionEllipseUtilization;
       maximumFrictionState = {
@@ -360,6 +392,7 @@ function obstacleProbe({
     maximumPositiveEnergyGainJ,
     contactRegionKeys: [...contactRegionKeys].sort(),
     contactMaterialKeys: [...contactMaterialKeys].sort(),
+    supportMaterialKeys: [...supportMaterialKeys].sort(),
   };
   runtime.dispose();
   return result;
@@ -407,7 +440,8 @@ function sidewallProbe(angleDeg = 0) {
     maximumTangentialForceN = 0,
     observedSidewall = false,
     contactRegionKeys = new Set(),
-    contactMaterialKeys = new Set();
+    contactMaterialKeys = new Set(),
+    supportMaterialKeys = new Set();
   for (let tick = 1; tick <= 240; tick++) {
     adapter.integrate(1 / 120, { tick });
     runtime.afterIntegration(1 / 120);
@@ -421,6 +455,7 @@ function sidewallProbe(angleDeg = 0) {
     observedSidewall ||= state.contactRoles.includes("sidewall");
     for (const key of state.contactRegionKeys) contactRegionKeys.add(key);
     for (const key of state.contactMaterialKeys) contactMaterialKeys.add(key);
+    for (const key of state.supportMaterialKeys) supportMaterialKeys.add(key);
   }
   const result = {
     angleDeg,
@@ -429,6 +464,7 @@ function sidewallProbe(angleDeg = 0) {
     observedSidewall,
     contactRegionKeys: [...contactRegionKeys].sort(),
     contactMaterialKeys: [...contactMaterialKeys].sort(),
+    supportMaterialKeys: [...supportMaterialKeys].sort(),
   };
   runtime.dispose();
   return result;
@@ -444,7 +480,7 @@ const smallCurb = obstacleProbe({ heightM: radiusM * 0.25 }),
   speedSweep = [1.5, 2.4, 4].map((speedMPerS) =>
     obstacleProbe({ heightM: radiusM * 0.2, speedMPerS }),
   ),
-  obliqueCurbSweep = [10, 25, 40].map((angleDeg) =>
+  obliqueCurbSweep = [5, 10, 25, 40].map((angleDeg) =>
     obstacleProbe({
       heightM: radiusM * 0.2,
       approachAngleRad: (angleDeg * Math.PI) / 180,
@@ -512,6 +548,11 @@ for (const result of obstacleSweep) {
     ["tire-rubber"],
     `obstacle contact bypassed its authored material region: ${JSON.stringify(result)}`,
   );
+  assert.deepEqual(
+    result.supportMaterialKeys,
+    ["workshop-steel"],
+    `wheel telemetry lost the contacted support material: ${JSON.stringify(result)}`,
+  );
   assert.ok(
     result.contactRegionKeys.includes("tire-envelope"),
     `obstacle contact bypassed the authored tire envelope: ${JSON.stringify(result)}`,
@@ -561,6 +602,7 @@ for (const result of sidewallSweep) {
     `sidewall orientation lost its authored semantic region: ${JSON.stringify(result)}`,
   );
   assert.deepEqual(result.contactMaterialKeys, ["tire-rubber"]);
+  assert.deepEqual(result.supportMaterialKeys, ["workshop-steel"]);
   assert.ok(
     result.maximumTangentialForceN <= result.maximumNormalLoadN,
     `near-degenerate sidewall basis exceeded normal loading: ${JSON.stringify(result)}`,

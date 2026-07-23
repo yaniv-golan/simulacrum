@@ -1,6 +1,7 @@
 import { InputTraceRecorder } from "../simulation/input-trace-recorder.js";
 import { createCheckpointCoordinatorLoader } from "./checkpoint-coordinator-loader.js";
 import { createWorkshopRunConfiguration } from "./mechanism-run-identity.js";
+import { deploymentForBlueprint } from "./testing-playground-deployment.js";
 
 /** Owns trace, identity, and checkpoint handles for exactly one active run. */
 export function createRunEvidenceLifecycle({
@@ -16,6 +17,10 @@ export function createRunEvidenceLifecycle({
     inputTraceRecorder,
     commit(compiled) {
       runtime.runBlueprint = assembly.serialize("Mechanism experiment");
+      const deployment = deploymentForBlueprint(
+        physics.testingPlaygroundDeployment(),
+        runtime.runBlueprint,
+      );
       runtime.runIdentity = createWorkshopRunConfiguration({
         blueprint: runtime.runBlueprint,
         compiled,
@@ -24,6 +29,8 @@ export function createRunEvidenceLifecycle({
           longitude: physics.longitude,
           timeOfDay: run.timeOfDay,
           windEnabled: run.windEnabled,
+          testSite: physics.testSite,
+          deployment,
         },
       });
       runtime.checkpointCoordinator = null;

@@ -148,6 +148,7 @@ function roundedWheelShape({ radiusM, widthM, shoulderRadiusM }) {
   // the collision surface. The obstacle, sidewall and platform-edge sweeps
   // guard these behaviors.
   const circumferenceSegments = 32,
+    phaseOffsetRad = Math.PI / circumferenceSegments,
     shoulderAngles = [0, Math.PI / 6, Math.PI / 2],
     halfWidth = widthM / 2,
     shoulder = Math.min(shoulderRadiusM, halfWidth * 0.95, radiusM * 0.95),
@@ -179,7 +180,7 @@ function roundedWheelShape({ radiusM, widthM, shoulderRadiusM }) {
     })),
     vertices = collisionRings.flatMap((ring) =>
       Array.from({ length: ring.segments }, (_, index) => {
-        const angle = (index / ring.segments) * Math.PI * 2;
+        const angle = (index / ring.segments) * Math.PI * 2 + phaseOffsetRad;
         return new CANNON.Vec3(
           ring.radius * Math.cos(angle),
           ring.radius * Math.sin(angle),
@@ -1056,12 +1057,17 @@ export class MultibodyRuntime {
               tireState?.frictionEllipseUtilization || 0,
             rollingResistanceTorqueNm:
               tireState?.rollingResistanceTorqueNm || 0,
+            surfaceSinkageM: tireState?.surfaceSinkageM || 0,
+            surfaceRollingResistanceMultiplier:
+              tireState?.surfaceRollingResistanceMultiplier || 1,
             rimLoadN: tireState?.rimLoadN || 0,
             dissipatedEnergyJ: tireState?.dissipatedEnergyJ || 0,
             temperatureK: tireState?.temperatureK || 293.15,
             contactRoles: tireState?.contactRoles || [],
             contactRegionKeys: tireState?.contactRegionKeys || [],
             contactMaterialKeys: tireState?.contactMaterialKeys || [],
+            supportMaterialKeys: tireState?.supportMaterialKeys || [],
+            supportMaterialLaws: tireState?.supportMaterialLaws || [],
             manifoldPointCount: tireState?.manifoldPointCount || 0,
             angularSpeed,
             spinDelta: angularSpeed * dt,
@@ -1247,6 +1253,18 @@ export class MultibodyRuntime {
       inWater,
       bottomContact: inWater && grounded,
       wheelContacts: wheelStates.filter((wheel) => wheel.touching).length,
+      supportMaterialKeys: [
+        ...new Set(wheelStates.flatMap((wheel) => wheel.supportMaterialKeys)),
+      ].sort(),
+      supportMaterialLaws: [
+        ...new Map(
+          wheelStates
+            .flatMap((wheel) => wheel.supportMaterialLaws)
+            .map((law) => [law.materialKey, law]),
+        ).values(),
+      ].sort((left, right) =>
+        left.materialKey.localeCompare(right.materialKey),
+      ),
       submergedFraction:
         submergedVolumeM3 / Math.max(Number.EPSILON, displacedVolumeM3),
       displacedVolumeM3,

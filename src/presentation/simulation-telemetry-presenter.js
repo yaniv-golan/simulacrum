@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { presentMechanismTelemetry } from "./mechanism-pose-presenter.js";
 import { selectMobilityAssembly } from "./machine-telemetry-projection.js";
 import { mobilityMissionReadModel } from "./mobility-mission-read-model.js";
+import { testCourseMissionReadModel } from "./test-course-mission-read-model.js";
+import { createTestSiteContactEffects } from "./test-site-contact-effects.js";
 
 export { buildMachineDebugReadModel } from "./machine-debug-read-model.js";
 
@@ -26,6 +28,7 @@ export { buildMachineDebugReadModel } from "./machine-debug-read-model.js";
  * @typedef {{
  *   mechanisms?: object, articulated?: ArticulatedTelemetry, mobility?:{assemblies:MobilityAssemblyTelemetry[]},
  *   aerothermal?: object, flight?: FlightTelemetry,
+ *   testCourse?: object,
  *   structures?: {health:number,newlyFailed:unknown[]},
  * }} PresentedSystems
  * @typedef {{ time:number, systems?: PresentedSystems }} PresentedSnapshot
@@ -39,7 +42,7 @@ export { buildMachineDebugReadModel } from "./machine-debug-read-model.js";
  *     connectionValid: (connection: PresentedConnection) => boolean,
  *     mobilityTargetPartIds:()=>ReadonlyArray<number>,
  *   },
- *   scene: { world: THREE.Scene, machine: THREE.Group, wires: THREE.Group, cameraTarget: THREE.Vector3 },
+ *   scene: { world: THREE.Scene, machine: THREE.Group, wires: THREE.Group, effects: THREE.Group, cameraTarget: THREE.Vector3 },
  *   view: {
  *     query: (selector:string) => Element | null, renderInspector:()=>void,
  *     setLights:(on:boolean)=>void, updateDriveHud:()=>void,
@@ -49,6 +52,11 @@ export { buildMachineDebugReadModel } from "./machine-debug-read-model.js";
  * }} ports
  */
 export function createSimulationTelemetryPresenter({ model, scene, view }) {
+  const contactEffects = createTestSiteContactEffects({
+    parent: scene.effects,
+    partById: (partId) =>
+      model.parts().find((candidate) => candidate.id === partId),
+  });
   /** @returns {HTMLElement} */
   const required = (selector) => {
     const element = view.query(selector);
@@ -162,6 +170,14 @@ export function createSimulationTelemetryPresenter({ model, scene, view }) {
         `${status.progressPercent}%`;
   }
 
+  function presentTestCourse(course) {
+    const status = testCourseMissionReadModel(course);
+    if (!status) return;
+    required("#mission-name").textContent = status.name;
+    required("#mission-desc").textContent = status.description;
+    required(".mission-progress i").style.width = `${status.progressPercent}%`;
+  }
+
   function presentArticulated(telemetry) {
     if (!telemetry) return;
     for (const pose of telemetry.poses) {
@@ -230,8 +246,10 @@ export function createSimulationTelemetryPresenter({ model, scene, view }) {
     presentMechanisms(systems.mechanisms);
     presentArticulated(systems.articulated);
     presentMobility(systems.mobility);
+    contactEffects.present(snapshot);
     if (systems.aerothermal) view.presentAerothermal(systems.aerothermal);
     presentFlight(systems.flight);
+    presentTestCourse(systems.testCourse);
     const structures = systems.structures;
     if (!structures) return;
     required("#health-readout").textContent = `${structures.health}%`;
@@ -248,5 +266,10 @@ export function createSimulationTelemetryPresenter({ model, scene, view }) {
     }
   }
 
-  return Object.freeze({ present, presentSensorReadout });
+  return Object.freeze({
+    present,
+    presentSensorReadout,
+    clearContactEffects: contactEffects.clear,
+    contactEffectsSnapshot: contactEffects.snapshot,
+  });
 }
