@@ -113,9 +113,9 @@ effects are never solver inputs.
 Relevant focused verification includes:
 
 ```bash
-TEST_FILTER=verify-test-site-contract,verify-test-site-physics-authority,verify-course-evaluators,verify-test-course-records npm test
-TEST_FILTER=verify-test-site-rope npm test
-TEST_FILTER=verify-testing-playground-browser,verify-testing-playground-user-loop,verify-test-site-lifecycle-browser npm test
+npm run test:focused -- verify-test-site-contract verify-test-site-physics-authority verify-course-evaluators verify-test-course-records
+npm run test:focused -- verify-test-site-rope
+npm run test:focused -- verify-testing-playground-browser verify-testing-playground-user-loop verify-test-site-lifecycle-browser
 npm run mutation:test-site
 ```
 

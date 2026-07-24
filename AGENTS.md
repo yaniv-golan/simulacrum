@@ -67,14 +67,21 @@ coordinator growth.
 2. Make the smallest coherent change at the owning layer.
 3. Add or update a deterministic contract test for model/physics behavior and
    a browser assertion for visible behavior.
-4. Run focused verification while iterating. The harness accepts exact suite
-   names, for example:
+4. Run focused verification while iterating. Use direct `node` execution for a
+   known pure verifier, or pass exact suite names positionally to the guarded
+   focused harness:
 
    ```bash
-   TEST_FILTER=verify-rover-runtime npm test
-   TEST_FILTER=verify-five-demos,verify-hybrid-assembly npm test
-   TEST_FILTER=verify-test-site-contract,verify-course-evaluators,verify-testing-playground-user-loop npm test
+   node scripts/verify-flexible-line-runtime.mjs
+   npm run test:focused -- verify-rover-runtime
+   npm run test:focused -- verify-five-demos verify-hybrid-assembly
+   npm run test:focused -- verify-test-site-contract verify-course-evaluators verify-testing-playground-user-loop
    ```
+
+   `test:focused` rejects empty, unknown, inherited-filter, and sharded runs. It
+   skips unconditional harness Core setup only; suite-owned builds still run.
+   Read [docs/TESTING.md](docs/TESTING.md) before changing the harness or using
+   its timing reports. Focused success never replaces the completion gates.
 
 5. For visual or interaction changes, exercise the complete input-to-state
    flow, inspect screenshots at laptop and wide-monitor layouts, compare them

@@ -22,12 +22,13 @@ and current player workflows.
 
 ## Contributors
 
-| Need                                         | Start here                                |
-| -------------------------------------------- | ----------------------------------------- |
-| Setup, focused tests, and pull-request gates | [Contributing](../CONTRIBUTING.md)        |
-| Layer ownership and dependency direction     | [Architecture](../ARCHITECTURE.md)        |
-| Blueprint-to-physics compilation             | [Assembly compiler](ASSEMBLY_COMPILER.md) |
-| Coding-agent operating rules                 | [AGENTS.md](../AGENTS.md)                 |
+| Need                                     | Start here                                |
+| ---------------------------------------- | ----------------------------------------- |
+| Setup and pull-request gates             | [Contributing](../CONTRIBUTING.md)        |
+| Focused, full, and timed verification    | [Testing and verification](TESTING.md)    |
+| Layer ownership and dependency direction | [Architecture](../ARCHITECTURE.md)        |
+| Blueprint-to-physics compilation         | [Assembly compiler](ASSEMBLY_COMPILER.md) |
+| Coding-agent operating rules             | [AGENTS.md](../AGENTS.md)                 |
 
 Executable code and tests take precedence when documentation disagrees with the
 checkout. Fix the owning guide in the same change as a contract update.

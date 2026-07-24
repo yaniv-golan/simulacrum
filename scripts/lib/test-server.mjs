@@ -55,10 +55,16 @@ export async function readServerMarker(baseUrl) {
   return payload.marker;
 }
 
-async function waitForMarker(baseUrl, marker, child, timeoutMs) {
+function abortReason(signal, fallback) {
+  return signal?.reason instanceof Error ? signal.reason : new Error(fallback);
+}
+
+async function waitForMarker(baseUrl, marker, child, timeoutMs, signal) {
   const deadline = Date.now() + timeoutMs;
   let lastError = null;
   while (Date.now() < deadline) {
+    if (signal?.aborted)
+      throw abortReason(signal, "test server startup aborted");
     if (child.exitCode != null)
       throw new Error(`Vite exited before becoming ready (${child.exitCode})`);
     try {
@@ -74,7 +80,7 @@ async function waitForMarker(baseUrl, marker, child, timeoutMs) {
 }
 
 /**
- * @param {{root: string, artifactsDir?: string, startupTimeoutMs?: number, viteConfigPath?: string, mode?: "development" | "preview"}} options
+ * @param {{root: string, artifactsDir?: string, startupTimeoutMs?: number, viteConfigPath?: string, mode?: "development" | "preview", skipLifecycleHooks?:boolean, signal?:AbortSignal}} options
  */
 export async function startTestServer({
   root,
@@ -82,6 +88,8 @@ export async function startTestServer({
   startupTimeoutMs = 60_000,
   viteConfigPath,
   mode = "development",
+  skipLifecycleHooks = false,
+  signal,
 }) {
   if (!root) throw new TypeError("startTestServer requires an absolute root");
   const port = await freePort();
@@ -106,6 +114,7 @@ export async function startTestServer({
       detached: process.platform !== "win32",
       env: {
         ...process.env,
+        ...(skipLifecycleHooks ? { npm_config_ignore_scripts: "true" } : {}),
         SIMULACRUM_TEST_MARKER: marker,
         SIMULACRUM_TEST_ROOT: root,
       },
@@ -130,7 +139,7 @@ export async function startTestServer({
   }
 
   try {
-    await waitForMarker(baseUrl, marker, child, startupTimeoutMs);
+    await waitForMarker(baseUrl, marker, child, startupTimeoutMs, signal);
   } catch (error) {
     await stop();
     throw error;

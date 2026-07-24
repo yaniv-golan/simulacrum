@@ -28,12 +28,19 @@ GitHub Actions deliberately separates feedback speed from deep qualification:
 Run the focused suites related to a change while iterating; the local
 definition of done remains stricter than the automatic smoke workflow.
 
-The test harness accepts exact comma-separated suite names:
+For local iteration, pass one or more exact registered suite names to the
+cross-platform focused command:
 
 ```bash
-TEST_FILTER=verify-rover-runtime npm test
-TEST_FILTER=verify-five-demos,verify-hybrid-assembly npm test
-TEST_FILTER=verify-test-site-contract,verify-course-evaluators,verify-testing-playground-user-loop npm test
+npm run test:focused -- verify-rover-runtime
+npm run test:focused -- verify-five-demos verify-hybrid-assembly
+npm run test:focused -- verify-test-site-contract verify-course-evaluators verify-testing-playground-user-loop
 ```
+
+Known pure Node verifiers may be run directly for the shortest edit loop. The
+focused command skips unconditional harness setup, but it does not suppress a
+build owned by a selected suite and it does not replace the full completion
+gates. See [Testing and verification](docs/TESTING.md) for timing reports,
+guardrails, legacy `TEST_FILTER` automation, and harness maintenance.
 
 Keep model and simulation modules free of DOM, CSS, cameras, and meshes. Put reusable domain behavior behind `src/core/index.js`. Add deterministic contract tests for physics/model changes and browser assertions for visible behavior. Blueprint input is strict v1: reject missing, unsupported, future, or guessed fields instead of adding compatibility branches. Update architecture, wire schemas, generated validators, and API documentation together when a contract changes.

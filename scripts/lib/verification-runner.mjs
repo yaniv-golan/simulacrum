@@ -3,9 +3,35 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { terminateProcessTree } from "./test-server.mjs";
 
+const elapsed = (startedAt) =>
+  Math.round((performance.now() - startedAt) * 10) / 10;
+
+function waitForExit(child, timeoutMs) {
+  if (!child || child.exitCode != null || child.signalCode != null)
+    return Promise.resolve(true);
+  return Promise.race([
+    new Promise((resolve) => child.once("exit", () => resolve(true))),
+    new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs)),
+  ]);
+}
+
+async function stopVerificationProcess(child, graceMs) {
+  if (!child || child.exitCode != null || child.signalCode != null) return;
+  await terminateProcessTree(child, "SIGTERM");
+  if (await waitForExit(child, graceMs)) return;
+  await terminateProcessTree(child, "SIGKILL");
+  if (!(await waitForExit(child, graceMs)))
+    throw new Error(`verification process ${child.pid} survived SIGKILL`);
+}
+
+function attachTiming(error, timing) {
+  if (error && typeof error === "object") error.verificationTiming = timing;
+  return error;
+}
+
 /**
  * Run one verification script with bounded lifetime and durable output.
- * @param {{file: string, root: string, server: {baseUrl: string, marker: string}, artifactsDir: string, timeoutMs: number}} options
+ * @param {{file: string, root: string, server: {baseUrl: string, marker: string}, artifactsDir: string, timeoutMs: number, signal?:AbortSignal, terminationGraceMs?:number}} options
  */
 export async function runVerificationSuite({
   file,
@@ -13,8 +39,25 @@ export async function runVerificationSuite({
   server,
   artifactsDir,
   timeoutMs,
+  signal,
+  terminationGraceMs = 1_000,
 }) {
-  const output = [];
+  const startedAt = performance.now(),
+    suite = path.basename(file, ".mjs"),
+    output = [];
+  if (signal?.aborted) {
+    const timing = Object.freeze({
+      suite,
+      status: "aborted",
+      elapsedMs: elapsed(startedAt),
+    });
+    throw attachTiming(
+      signal.reason instanceof Error
+        ? signal.reason
+        : new Error("verification suite aborted"),
+      timing,
+    );
+  }
   const child = spawn(process.execPath, [path.resolve(root, file)], {
     cwd: root,
     detached: process.platform !== "win32",
@@ -22,7 +65,7 @@ export async function runVerificationSuite({
       ...process.env,
       TEST_BASE_URL: server.baseUrl,
       TEST_BUILD_MARKER: server.marker,
-      TEST_SUITE_NAME: path.basename(file, ".mjs"),
+      TEST_SUITE_NAME: suite,
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -34,27 +77,67 @@ export async function runVerificationSuite({
   child.stdout.on("data", consume);
   child.stderr.on("data", consume);
 
-  let timedOut = false;
-  const timeout = setTimeout(async () => {
-    timedOut = true;
-    await terminateProcessTree(child);
-  }, timeoutMs);
+  const exited = new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.once("exit", (code, exitSignal) =>
+      resolve({ type: "exit", code, signal: exitSignal }),
+    );
+  });
+  let timeoutId, abortHandler;
+  const timedOut = new Promise((resolve) => {
+      timeoutId = setTimeout(() => resolve({ type: "timeout" }), timeoutMs);
+    }),
+    aborted = signal
+      ? new Promise((resolve) => {
+          abortHandler = () =>
+            resolve({ type: "abort", reason: signal.reason });
+          signal.addEventListener("abort", abortHandler, { once: true });
+        })
+      : new Promise(() => {});
+  let failure = null,
+    status;
   try {
-    const result = await new Promise((resolve) =>
-      child.once("exit", (code, signal) => resolve({ code, signal })),
-    );
-    await fs.mkdir(artifactsDir, { recursive: true });
-    await fs.writeFile(
-      path.join(artifactsDir, `${path.basename(file, ".mjs")}.log`),
-      output.join(""),
-    );
-    if (timedOut) throw new Error(`${file} timed out after ${timeoutMs} ms`);
-    if (result.code !== 0)
-      throw new Error(
+    const result = await Promise.race([exited, timedOut, aborted]);
+    if (result.type === "timeout") {
+      status = "timed-out";
+      await stopVerificationProcess(child, terminationGraceMs);
+      failure = new Error(`${file} timed out after ${timeoutMs} ms`);
+    } else if (result.type === "abort") {
+      status = "aborted";
+      await stopVerificationProcess(child, terminationGraceMs);
+      failure =
+        result.reason instanceof Error
+          ? result.reason
+          : new Error("verification suite aborted");
+    } else if (result.code !== 0) {
+      status = "failed";
+      failure = new Error(
         `${file} failed with ${result.code ?? result.signal ?? "unknown"}`,
       );
+    } else status = "passed";
+  } catch (error) {
+    status = "failed";
+    failure = error;
   } finally {
-    clearTimeout(timeout);
-    await terminateProcessTree(child);
+    clearTimeout(timeoutId);
+    if (abortHandler) signal.removeEventListener("abort", abortHandler);
+    try {
+      await stopVerificationProcess(child, terminationGraceMs);
+    } catch (error) {
+      status = "termination-failed";
+      failure ||= error;
+    }
+    await fs.mkdir(artifactsDir, { recursive: true });
+    await fs.writeFile(
+      path.join(artifactsDir, `${suite}.log`),
+      output.join(""),
+    );
   }
+  const timing = Object.freeze({
+    suite,
+    status,
+    elapsedMs: elapsed(startedAt),
+  });
+  if (failure) throw attachTiming(failure, timing);
+  return timing;
 }
