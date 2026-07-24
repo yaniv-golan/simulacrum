@@ -364,12 +364,12 @@
   border-radius: 3px;
   color: #75cdbb;
   background: #0c211f;
-  font: 600 6px "Space Grotesk";
+  font: 600 9px "Space Grotesk";
   letter-spacing: 0.12em;
 }
 .challenge-hud > small {
   color: #e2ae5b;
-  font: 600 6px "Space Grotesk";
+  font: 600 9px "Space Grotesk";
   letter-spacing: 0.18em;
 }
 .challenge-hud > b {
@@ -381,7 +381,7 @@
 .challenge-hud > span {
   margin-top: 3px;
   color: #91aaa5;
-  font-size: 8px;
+  font-size: 10px;
 }
 .challenge-meter {
   height: 4px;
@@ -423,7 +423,7 @@
 .challenge-criteria b,
 .challenge-criteria em {
   display: block;
-  font: 600 6px "Space Grotesk";
+  font: 600 9px "Space Grotesk";
   letter-spacing: 0.08em;
 }
 .challenge-criteria b {
@@ -438,7 +438,7 @@
   display: flex;
   justify-content: space-between;
   color: #78958f;
-  font: 600 7px "Space Grotesk";
+  font: 600 9px "Space Grotesk";
   letter-spacing: 0.1em;
 }
 .challenge-readout em {
@@ -454,7 +454,7 @@
   gap: 3px 10px;
   margin-top: 7px;
   color: #66817c;
-  font: 600 6px "Space Grotesk";
+  font: 600 9px "Space Grotesk";
   letter-spacing: 0.07em;
 }
 #challenge-retry {
@@ -465,7 +465,7 @@
   border-radius: 3px;
   background: #112827;
   color: #9bb7b1;
-  font: 600 7px "Space Grotesk";
+  font: 600 9px "Space Grotesk";
   letter-spacing: 0.1em;
   cursor: pointer;
 }

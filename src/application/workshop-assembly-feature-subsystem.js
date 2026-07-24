@@ -168,6 +168,9 @@ function createEditorStatePort(state) {
     get selectedIds() {
       return state.editor.selectedIds;
     },
+    get selectedEntity() {
+      return state.editor.selectedEntity;
+    },
     get lastTransformOperation() {
       return state.editor.lastTransformOperation;
     },

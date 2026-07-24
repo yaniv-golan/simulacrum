@@ -30,6 +30,7 @@ assert.deepEqual(Object.keys(VERIFICATION_TIMEOUT_MS), [
   "verify-blueprint-exchange.mjs",
   "verify-editor-tools.mjs",
   "verify-testing-playground-browser.mjs",
+  "verify-ui-baseline-fixtures.mjs",
 ]);
 assert.ok(
   Object.entries(VERIFICATION_TIMEOUT_MS).every(

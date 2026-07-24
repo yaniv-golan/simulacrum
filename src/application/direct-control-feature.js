@@ -21,7 +21,7 @@ import {
  * }} DirectWorkspace
  * @typedef {{
  *   query: (selector: string) => Element | null,
- *   queryAll: (selector: string) => Element[], compact: () => boolean,
+ *   queryAll: (selector: string) => Element[],
  *   controlOnline: (control: DirectControl) => boolean,
  *   sendCommand: (control: DirectControl, value: number) => void,
  *   renderRemote: () => void,
@@ -51,12 +51,14 @@ export function createDirectControlFeature({
   controlTemplates,
 }) {
   const driveKeys = {
-    forward: false,
-    reverse: false,
-    left: false,
-    right: false,
-    brake: false,
-  };
+      forward: false,
+      reverse: false,
+      left: false,
+      right: false,
+      brake: false,
+    },
+    surfaceReleases = new Set(),
+    surfaceTimers = new Set();
   const required = (selector) => {
     const element = view.query(selector);
     if (!element) throw new Error(`Missing direct-control element ${selector}`);
@@ -151,8 +153,16 @@ export function createDirectControlFeature({
   }
 
   function resetDriveInput() {
+    releaseSurfaceInputs();
     for (const key of Object.keys(driveKeys)) driveKeys[key] = false;
     applyDriveInput();
+  }
+
+  function releaseSurfaceInputs() {
+    for (const release of [...surfaceReleases]) release();
+    surfaceReleases.clear();
+    for (const timer of surfaceTimers) clearTimeout(timer);
+    surfaceTimers.clear();
   }
 
   function persistSurfaces() {
@@ -160,6 +170,7 @@ export function createDirectControlFeature({
   }
 
   function renderSurface() {
+    releaseSurfaceInputs();
     const controls = workspace.remoteControls[workspace.remoteProfile] || [];
     const host = required(".direct-surface-controls");
     const layout = workspace.controllerLayouts[workspace.remoteProfile];
@@ -172,7 +183,6 @@ export function createDirectControlFeature({
       $: view.query,
       layout,
       graphic: Boolean(graphic),
-      compact: view.compact(),
       running: workspace.running,
     });
     host.innerHTML =
@@ -205,12 +215,22 @@ export function createDirectControlFeature({
         if (button.dataset.pilotAction)
           setDriveInput(button.dataset.pilotAction, false);
         button.classList.remove("pressed");
+        surfaceReleases.delete(release);
       };
-      button.onpointerdown = (event) => {
+      const press = (event) => {
         event.preventDefault();
         if (!button.dataset.pilotAction) return;
         setDriveInput(button.dataset.pilotAction, true);
         button.classList.add("pressed");
+        surfaceReleases.add(release);
+      };
+      button.onpointerdown = press;
+      button.onkeydown = (event) => {
+        if (!["Enter", " "].includes(event.key) || event.repeat) return;
+        press(event);
+      };
+      button.onkeyup = (event) => {
+        if (["Enter", " "].includes(event.key)) release();
       };
       button.onpointerup =
         button.onpointerleave =
@@ -245,16 +265,36 @@ export function createDirectControlFeature({
     for (const element of view.queryAll(".direct-hold")) {
       const button = /** @type {HTMLElement} */ (element);
       const control = controls[+button.dataset.index];
-      button.onpointerdown = (event) => {
+      const press = (event) => {
         event.preventDefault();
         view.sendCommand(control, 1);
         button.classList.add("active");
+        surfaceReleases.add(release);
       };
-      button.onpointerup = button.onpointerleave = () => {
+      const release = () => {
         if (control.type === "hold") view.sendCommand(control, 0);
-        else setTimeout(() => view.sendCommand(control, 0), 180);
+        else {
+          const timer = setTimeout(() => {
+            surfaceTimers.delete(timer);
+            view.sendCommand(control, 0);
+          }, 180);
+          surfaceTimers.add(timer);
+        }
         button.classList.remove("active");
+        surfaceReleases.delete(release);
       };
+      button.onpointerdown = press;
+      button.onkeydown = (event) => {
+        if (!["Enter", " "].includes(event.key) || event.repeat) return;
+        press(event);
+      };
+      button.onkeyup = (event) => {
+        if (["Enter", " "].includes(event.key)) release();
+      };
+      button.onpointerup =
+        button.onpointerleave =
+        button.onpointercancel =
+          release;
     }
   }
 
@@ -275,7 +315,6 @@ export function createDirectControlFeature({
       $: view.query,
       layout: workspace.controllerLayouts[workspace.remoteProfile],
       graphic: hud.classList.contains("graphic-controller"),
-      compact: view.compact(),
       running: workspace.running,
     });
     const labels = {
@@ -344,6 +383,7 @@ export function createDirectControlFeature({
     ensureControls,
     persistSurfaces,
     renderSurface,
+    releaseHeldInputs: releaseSurfaceInputs,
     resetDriveInput,
     setDriveInput,
     supportsAction(name) {

@@ -12,7 +12,7 @@ try {
   await resetBrowserStorageForTest(page);
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.click("#sandbox-start");
-  await page.click("#clear-build");
+  await page.keyboard.press("Shift+Delete");
 
   const preset = page.locator('.part-card[data-type="builtin-subassembly-0"]');
   await preset.focus();
@@ -95,6 +95,7 @@ try {
   assert.equal(state.selectedEntity.kind, "connection");
   assert.equal(state.selectedEntity.connectionId, firstConnection.id);
 
+  await page.click('.panel-collapse[aria-label="Expand component library"]');
   await page.click('[data-cat="motion"]');
   await page.locator('.part-card[data-type="spring"]').focus();
   await page.keyboard.press("Enter");

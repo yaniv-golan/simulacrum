@@ -362,6 +362,7 @@ header {
 }
 .assembly-outliner p,
 .assembly-outliner summary,
+.assembly-outliner .outliner-summary,
 .assembly-outliner button span {
   color: #76918e;
   font-size: 8px;

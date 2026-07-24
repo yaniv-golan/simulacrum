@@ -15,7 +15,7 @@ try {
   );
   await page.click("#sandbox-start");
   await page.locator(".welcome").waitFor({ state: "hidden" });
-  await page.click("#clear-build");
+  await page.keyboard.press("Shift+Delete");
   await page.click('.part-card[data-type="builtin-subassembly-1"]');
   await page.fill("#placement-x", "3");
   await page.fill("#placement-y", "1");

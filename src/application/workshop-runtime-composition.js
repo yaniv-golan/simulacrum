@@ -1,5 +1,5 @@
 import { installWorkshopRuntimeSubsystem } from "./workshop-runtime-subsystem.js";
-
+import { buildPresentationDebugReadModel } from "../presentation/presentation-debug-read-model.js";
 /** Maps completed feature facades into the frame-loop and debug read-model ports. */
 export function installWorkshopRuntimeComposition({
   target,
@@ -116,6 +116,11 @@ export function installWorkshopRuntimeComposition({
         controllerStatus: () =>
           shell.query("#wasm-status")?.textContent || null,
         mission: () => shell.query("#mission-name").textContent,
+        presentation: () =>
+          buildPresentationDebugReadModel({
+            state: shell.state,
+            keyboard: input.keyboard.snapshot,
+          }),
       },
       renderUi: view.renderUi,
       renderRemote: assembly.controls.renderRemote,

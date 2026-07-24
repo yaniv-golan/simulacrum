@@ -7,6 +7,46 @@
   padding: 16px;
   overflow: auto;
 }
+.shell.mechanism-lab-open .catalog,
+.shell.mechanism-lab-open .mission,
+.shell.mechanism-lab-open .drive-hud,
+.shell.mechanism-lab-open .controller-launcher,
+.shell.mechanism-lab-open .challenge-hud,
+.shell.mechanism-lab-open .bottom-bar,
+.shell.mechanism-lab-open .camera-tools {
+  visibility: hidden;
+  pointer-events: none;
+}
+.shell.mechanism-lab-open .mechanism-lab {
+  inset: 92px 24px 24px 348px;
+  width: auto;
+}
+.shell.mechanism-lab-open .inspector {
+  inset: 92px auto 24px 24px;
+  width: 286px;
+  overflow: hidden;
+}
+.shell.mechanism-lab-open .inspector-content,
+.shell.mechanism-lab-open .inspector-empty,
+.shell.mechanism-lab-open .inspector .panel-collapse {
+  display: none !important;
+}
+.shell.mechanism-lab-open .assembly-outliner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 0;
+  margin: 0;
+}
+.shell.mechanism-lab-open #assembly-outliner-list {
+  min-height: 0;
+  overflow-y: auto;
+}
+.shell.mechanism-lab-open .assembly-outliner p,
+.shell.mechanism-lab-open .assembly-outliner button,
+.shell.mechanism-lab-open .assembly-outliner button span {
+  font-size: 9px;
+}
 .mechanism-lab header,
 .mechanism-lab-actions,
 .mechanism-lab dl div {
@@ -14,9 +54,16 @@
   justify-content: space-between;
   gap: 8px;
 }
-.mechanism-lab header {
+.mechanism-lab > header {
+  position: static;
+  height: auto;
   align-items: center;
+  padding: 0 0 10px;
+  border: 0;
   border-bottom: 1px solid var(--line);
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
 }
 .mechanism-lab header h2,
 .mechanism-lab header small,
@@ -36,14 +83,14 @@
 .mechanism-lab h3 {
   margin-bottom: 8px;
   color: #8bd7c7;
-  font: 600 9px "Space Grotesk";
+  font: 600 11px "Space Grotesk";
   letter-spacing: 0.1em;
 }
 .mechanism-lab-live {
   padding: 7px;
   background: #102a26;
   color: #b5f3e5;
-  font-size: 9px;
+  font-size: 11px;
 }
 .mechanism-lab-actions {
   flex-wrap: wrap;
@@ -51,6 +98,7 @@
 }
 .mechanism-lab button,
 .mechanism-lab input {
+  min-height: 34px;
   border: 1px solid #35615a;
   background: #0b211e;
   color: #d8eee9;
@@ -67,7 +115,7 @@
 .mechanism-lab dd,
 .mechanism-lab td,
 .mechanism-lab th {
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1.45;
 }
 .mechanism-lab label input {
@@ -146,5 +194,15 @@
   }
   #mechanism-plots {
     grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 1080px) {
+  .shell.mechanism-lab-open .inspector {
+    inset: 76px auto 8px 8px;
+    width: 236px;
+    padding: 12px;
+  }
+  .shell.mechanism-lab-open .mechanism-lab {
+    inset: 76px 8px 8px 268px;
   }
 }

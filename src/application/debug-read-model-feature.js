@@ -67,7 +67,6 @@ export function installDebugReadModelFeature({
       environment: ENVIRONMENT_DEBUG_CONTRACT,
     });
   }
-
   function editorReadModel() {
     const frame = telemetry(),
       activeSession = session(),
@@ -229,6 +228,7 @@ export function installDebugReadModelFeature({
       ...assemblyReadModel(),
       ...controllerReadModel(),
       mission: view.mission(),
+      presentation: view.presentation(),
     }),
     target,
   );

@@ -250,27 +250,40 @@ export function createEditorConnectionFeature({ workspace, history, view }) {
     return true;
   }
 
-  function connect(leftId, rightId, requestedKind = "auto") {
+  function connect(
+    leftId,
+    rightId,
+    requestedKind = "auto",
+    requestedTargetPort = null,
+  ) {
     const existing = workspace.connections();
+    if (leftId === rightId) {
+      view.notify("A component cannot connect a port to itself");
+      return false;
+    }
+    const left = workspace.parts().find((part) => part.id === leftId);
+    const right = workspace.parts().find((part) => part.id === rightId);
+    if (!left || !right) return false;
     if (
-      leftId === rightId ||
       existing.some(
         (connection) =>
           (connection.a === leftId && connection.b === rightId) ||
           (connection.a === rightId && connection.b === leftId),
       )
-    )
+    ) {
+      view.notify(
+        `${partName(left)} and ${partName(right)} already share a connection`,
+      );
       return false;
-    const left = workspace.parts().find((part) => part.id === leftId);
-    const right = workspace.parts().find((part) => part.id === rightId);
-    if (!left || !right) return false;
+    }
     const historySnapshot = history.suspended() ? null : history.capture();
     const sourcePort = workspace.connectPort();
     let kind = requestedKind;
-    let targetPort = null;
+    let targetPort = requestedTargetPort;
     if (kind === "auto") {
       if (
         sourcePort &&
+        !targetPort &&
         !compatibleTargetPorts(left, sourcePort, right, TYPES, existing).length
       ) {
         view.notify(
@@ -278,7 +291,7 @@ export function createEditorConnectionFeature({ workspace, history, view }) {
         );
         return false;
       }
-      targetPort = selectCompatibleTargetPort(
+      targetPort ||= selectCompatibleTargetPort(
         left,
         sourcePort,
         right,

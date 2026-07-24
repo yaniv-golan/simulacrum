@@ -170,7 +170,7 @@
 }
 .catalog.panel-collapsed > :not(.panel-collapse),
 .inspector.panel-collapsed > :not(.panel-collapse) {
-  opacity: 0;
+  display: none;
   pointer-events: none;
 }
 .catalog > :not(.panel-collapse),
@@ -209,7 +209,7 @@
  * debugger. In that range the library and inspector become mutually exclusive
  * drawers while the controls keep their full-size hit targets.
  */
-@media (max-width: 1080px) {
+@media (max-width: 1400px) {
   .shell.compact-workspace header {
     top: 8px;
     left: 8px;
@@ -272,7 +272,7 @@
     left: 52px;
     width: min(330px, calc(100vw - 104px));
   }
-  .shell.compact-workspace .drive-hud.compact-auto-collapsed {
+  .shell.compact-workspace .drive-hud.build-auto-collapsed {
     width: min(280px, calc(100vw - 104px));
   }
   .shell.compact-workspace .controller-launcher {

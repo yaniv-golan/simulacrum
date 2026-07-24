@@ -159,11 +159,12 @@ export function createControllerEditorFeature({
       void runtime.trust()?.refresh(controller);
     }
     render();
-    for (const button of view.queryAll("[data-script-language]"))
-      button.classList.toggle(
-        "active",
-        button.dataset.scriptLanguage === language,
-      );
+    for (const button of view.queryAll("[data-script-language]")) {
+      const active = button.dataset.scriptLanguage === language;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", String(active));
+      button.tabIndex = active ? 0 : -1;
+    }
   }
 
   return { bind, open, render, save, setLanguage };

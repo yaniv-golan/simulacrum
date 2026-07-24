@@ -92,7 +92,11 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-multi-controller.mjs",
   "verify-direct-layout.mjs",
   "verify-adaptive-workspace.mjs",
+  "verify-rendered-visibility.mjs",
+  "verify-ui-baseline-fixtures.mjs",
   "verify-accessibility.mjs",
+  "verify-keyboard-workflows.mjs",
+  "verify-keyboard-authoring-journey.mjs",
   "verify-editor-tools.mjs",
   "verify-failure-analysis.mjs",
   "verify-direct-surfaces.mjs",
@@ -117,6 +121,7 @@ export const VERIFICATION_TIMEOUT_MS = Object.freeze({
   "verify-blueprint-exchange.mjs": 300_000,
   "verify-editor-tools.mjs": 300_000,
   "verify-testing-playground-browser.mjs": 420_000,
+  "verify-ui-baseline-fixtures.mjs": 300_000,
 });
 
 /**

@@ -48,7 +48,6 @@ export function createWorkshopAssemblyComposition({
       controls: {
         query: shell.query,
         queryAll: shell.queryAll,
-        compact: () => shell.chrome.compact,
         openAdvanced: () => {
           state.remoteEdit = true;
           shell.query(".remote-console").classList.remove("hidden");

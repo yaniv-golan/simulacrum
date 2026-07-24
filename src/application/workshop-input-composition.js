@@ -1,5 +1,7 @@
 import { applyEditorAction } from "../model/application-state.js";
+import { installKeyboardCommandSurface } from "../presentation/keyboard-command-surface.js";
 import { installEditorInputSubsystem } from "./editor-input-subsystem.js";
+import { validateWorkshopShortcut } from "./keyboard-action-registry.js";
 
 /** Connects pointer/keyboard commands to editor, simulation, and remote facades. */
 export function installWorkshopInputComposition({
@@ -17,7 +19,7 @@ export function installWorkshopInputComposition({
     assemblyEditor = assembly.editor,
     direct = assembly.controls.directControl,
     history = persistence.buildHistoryFeature;
-  return installEditorInputSubsystem({
+  const input = installEditorInputSubsystem({
     state: shell.state,
     target: stage.renderer.domElement,
     camera: editor.world.cameraController,
@@ -54,11 +56,14 @@ export function installWorkshopInputComposition({
       setInput: direct.setDriveInput,
       toggleLights: direct.toggleLights,
       supports: direct.supportsAction,
+      releaseAll: direct.releaseHeldInputs,
     },
     remote: {
       send: assembly.controls.sendCommand,
       render: assembly.controls.renderRemote,
       persist: assembly.controls.persistRemotes,
+      notify: shell.notify,
+      releaseAll: assembly.controls.releaseHeldInputs,
     },
     simulation: {
       reset: actions.resetSimulation,
@@ -71,7 +76,6 @@ export function installWorkshopInputComposition({
     view: {
       query: shell.query,
       queryAll: shell.queryAll,
-      activeElementTag: () => document.activeElement?.tagName || "",
       render: actions.render,
       notify: shell.notify,
     },
@@ -80,6 +84,19 @@ export function installWorkshopInputComposition({
       setMode: actions.setMode,
       tutorialEvent: actions.tutorialEvent,
       keyboardTarget: target,
+      documentTarget: document,
     },
   });
+  installKeyboardCommandSurface({
+    registry: input.keyboard.actionRegistry,
+    activeContext: () => (shell.state.running ? "operation" : "workshop"),
+    validateBinding: (event, actionId, slot) =>
+      validateWorkshopShortcut({
+        event,
+        actionId,
+        slot,
+        registry: input.keyboard.actionRegistry,
+      }),
+  });
+  return input;
 }

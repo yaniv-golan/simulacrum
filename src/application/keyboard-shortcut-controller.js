@@ -1,41 +1,47 @@
+import {
+  createKeyboardActionRegistry,
+  resolveRegisteredKeyboardAction,
+  validateMachineShortcut,
+} from "./keyboard-action-registry.js";
+import { createMachineKeyboardCommands } from "./machine-keyboard-commands.js";
+
 /**
+ * @typedef {{ id?:string, label?:string, hotkey?:string|null, type:string, value:number, step?:number, min?:number, max?:number }} ControlBinding
  * @typedef {{
  *   running:()=>boolean,
  *   captureIndex:()=>number|null, setCaptureIndex:(index:number|null)=>void,
  *   profile:()=>string, controls:(profile:string)=>ControlBinding[],
- *   activeElementTag:()=>string,
+ *   focusContext:()=>"text-entry"|"widget"|"canvas",
+ *   widgetOwnsKey:(event:KeyboardEvent)=>boolean,
  * }} ShortcutModelPort
- * @typedef {{ hotkey?:string|null, type:string, value:number, step?:number, min?:number, max?:number }} ControlBinding
- * @typedef {{ setInput:(action:string,pressed:boolean)=>boolean, toggleLights:()=>void, supports:(action:string)=>boolean }} DriveShortcutPort
- * @typedef {{ send:(control:ControlBinding,value:number)=>void, render:()=>void, persist:()=>void }} RemoteShortcutPort
- * @typedef {{
- *   undo:()=>void, redo:()=>void, resetSimulation:()=>void,
- *   selectAll:()=>void, duplicate:()=>void, clear:()=>void, remove:()=>void,
- *   mirror:()=>void, cancel:()=>void, setTool:(tool:string)=>void,
- *   toggleExploded:()=>void,
- * }} EditorShortcutPort
- * @typedef {{
- *   togglePause:()=>void, cycleSpeed:(direction:number)=>void, step:()=>void,
- * }} SimulationShortcutPort
- * @typedef {{
- *   clearTool:()=>void, navigate:(event:KeyboardEvent)=>void,
- *   releaseSpace:(event:KeyboardEvent)=>void,
- * }} CameraShortcutPort
+ * @typedef {{ setInput:(action:string,pressed:boolean)=>boolean, toggleLights:()=>void, supports:(action:string)=>boolean, releaseAll:()=>void }} DriveShortcutPort
+ * @typedef {{ send:(control:ControlBinding,value:number)=>void, render:()=>void, persist:()=>void, releaseAll:()=>void }} RemoteShortcutPort
  */
 
 /**
- * Installs the global keyboard command surface. Each target crosses a small
- * capability port; this controller has no access to the application state.
+ * Installs the single application-owned keyboard command boundary. Presentation
+ * classifies focused widgets; this router resolves one action and translates it
+ * through existing editor, camera, simulation, and machine command ports.
  *
  * @param {{
- *   target:Window, model:ShortcutModelPort, drive:DriveShortcutPort,
- *   remote:RemoteShortcutPort, editor:EditorShortcutPort,
- *   simulation:SimulationShortcutPort, camera:CameraShortcutPort,
+ *   target:Window, documentTarget?:Document, model:ShortcutModelPort,
+ *   drive:DriveShortcutPort,
+ *   remote:RemoteShortcutPort & {notify:(message:string)=>void},
+ *   editor:{
+ *     undo:()=>void, redo:()=>void, resetSimulation:()=>void,
+ *     selectAll:()=>void, duplicate:()=>void, clear:()=>void, remove:()=>void,
+ *     mirror:()=>void, cancel:()=>void, setTool:(tool:string)=>void,
+ *     setMode:(mode:string)=>void, toggleExploded:()=>void,
+ *   },
+ *   simulation:{togglePause:()=>void, cycleSpeed:(direction:number)=>void, step:()=>void},
+ *   camera:{clearTool:()=>void, navigate:(event:KeyboardEvent)=>void, releaseHeld:()=>void},
  *   openLearning:()=>void, toggleWorkspaceFocus:()=>void,
+ *   actionRegistry?:ReturnType<typeof createKeyboardActionRegistry>,
  * }} ports
  */
 export function installKeyboardShortcuts({
   target,
+  documentTarget = document,
   model,
   drive,
   remote,
@@ -44,61 +50,27 @@ export function installKeyboardShortcuts({
   camera,
   openLearning,
   toggleWorkspaceFocus,
+  actionRegistry = createKeyboardActionRegistry(),
 }) {
-  /** @param {KeyboardEvent} event @param {boolean} pressed */
-  function handleDrive(event, pressed) {
-    if (!model.running()) return false;
-    const actions = Object.freeze({
-      KeyW: "forward",
-      KeyS: "reverse",
-      KeyA: "left",
-      KeyD: "right",
-      Space: "brake",
-    });
-    if (event.code === "KeyL") {
-      if (!drive.supports("lights")) return false;
-      if (pressed && !event.repeat) drive.toggleLights();
-      event.preventDefault();
-      return true;
-    }
-    const action = actions[event.code];
-    if (!action || !drive.supports(action)) return false;
-    event.preventDefault();
-    drive.setInput(action, pressed);
-    return true;
+  let disposed = false,
+    lastResolution = Object.freeze({ status: "unbound", actionId: null });
+
+  function record(status, actionId = null, detail = null) {
+    lastResolution = Object.freeze({ status, actionId, detail });
+    return status === "handled";
   }
 
-  /** @param {KeyboardEvent} event @param {boolean} pressed */
-  function handleRemote(event, pressed) {
-    const control = model
-      .controls(model.profile())
-      .find((candidate) => candidate.hotkey === event.code);
-    if (!control) return false;
-    event.preventDefault();
-    if (control.type === "range" && pressed) {
-      const delta = (control.step || 0.05) * (event.shiftKey ? -1 : 1),
-        minimum = Number(control.min ?? -1),
-        maximum = Number(control.max ?? 1),
-        value = Math.min(
-          maximum,
-          Math.max(minimum, Number(control.value) + delta),
-        );
-      remote.send(control, value);
-    } else if (control.type === "toggle" && pressed && !event.repeat) {
-      remote.send(control, event.shiftKey ? 0 : control.value ? 0 : 1);
-    } else if (control.type === "hold") {
-      remote.send(control, pressed && !event.shiftKey ? 1 : 0);
-    } else if (
-      control.type === "pulse" &&
-      pressed &&
-      !event.repeat &&
-      !event.shiftKey
-    ) {
-      remote.send(control, 1);
-      setTimeout(() => remote.send(control, 0), 120);
-    }
-    remote.render();
-    return true;
+  const machineCommands = createMachineKeyboardCommands({
+    model,
+    drive,
+    remote,
+    record,
+  });
+
+  function releaseAll(reason = "release") {
+    machineCommands.releaseAll();
+    camera.releaseHeld();
+    record("handled", "input.release-all", reason);
   }
 
   /** @param {KeyboardEvent} event */
@@ -108,125 +80,141 @@ export function installKeyboardShortcuts({
     event.preventDefault();
     event.stopPropagation();
     const controls = model.controls(model.profile()),
-      control = controls[index];
-    if (control) {
-      for (const candidate of controls)
-        if (candidate !== control && candidate.hotkey === event.code)
-          candidate.hotkey = null;
-      control.hotkey = ["Escape", "Backspace", "Delete"].includes(event.code)
-        ? null
-        : event.code;
-      remote.persist();
+      control = controls[index],
+      validation = validateMachineShortcut(event);
+    if (!control) {
+      model.setCaptureIndex(null);
+      remote.render();
+      return record("unavailable", "remote.capture", "Missing control");
     }
+    if (validation.status === "unavailable") {
+      remote.notify(validation.reason || "That shortcut is unavailable");
+      return record("unavailable", "remote.capture", validation.reason);
+    }
+    if (validation.status === "clear") control.hotkey = null;
+    else {
+      const conflict = controls.find(
+        (candidate) =>
+          candidate !== control && candidate.hotkey === validation.code,
+      );
+      if (conflict) {
+        const reason = `${event.key || validation.code} is already assigned to ${conflict.label || conflict.id || "another control"}`;
+        remote.notify(reason);
+        return record("conflicting", "remote.capture", reason);
+      }
+      control.hotkey = validation.code;
+    }
+    remote.persist();
     model.setCaptureIndex(null);
     remote.render();
-    return true;
+    return record("handled", "remote.capture");
   }
+
+  const actionExecutors = Object.freeze({
+    "help.open": openLearning,
+    "workspace.toggle-focus": toggleWorkspaceFocus,
+    "history.undo": editor.undo,
+    "history.redo": editor.redo,
+    "simulation.reset": () => {
+      releaseAll("simulation-reset");
+      editor.resetSimulation();
+    },
+    "simulation.pause": simulation.togglePause,
+    "simulation.speed-down": () => simulation.cycleSpeed(-1),
+    "simulation.speed-up": () => simulation.cycleSpeed(1),
+    "simulation.step": simulation.step,
+    "selection.all": editor.selectAll,
+    "selection.duplicate": editor.duplicate,
+    "selection.clear-build": editor.clear,
+    "selection.remove": editor.remove,
+    "selection.mirror": editor.mirror,
+    "mode.build": () => editor.setMode("build"),
+    "mode.connect": () => editor.setMode("wire"),
+    "mode.simulate": () => editor.setMode("test"),
+    "editor.cancel": () => {
+      editor.cancel();
+      camera.clearTool();
+    },
+    "tool.select": () => editor.setTool("select"),
+    "tool.move": () => editor.setTool("move"),
+    "tool.rotate": () => editor.setTool("rotate"),
+    "view.explode": editor.toggleExploded,
+  });
 
   /** @param {KeyboardEvent} event */
   function onKeydown(event) {
+    if (disposed || event.defaultPrevented) return;
     if (captureBinding(event)) return;
-    if (["INPUT", "TEXTAREA", "SELECT"].includes(model.activeElementTag()))
-      return;
-    if (event.code === "F1" || (event.code === "Slash" && event.shiftKey)) {
-      event.preventDefault();
-      openLearning();
-      return;
-    }
-    if (event.code === "KeyH" && !event.repeat) {
-      event.preventDefault();
-      toggleWorkspaceFocus();
-      return;
-    }
-    if ((event.ctrlKey || event.metaKey) && event.code === "KeyZ") {
-      event.preventDefault();
-      event.shiftKey ? editor.redo() : editor.undo();
-      return;
-    }
-    if ((event.ctrlKey || event.metaKey) && event.code === "KeyY") {
-      event.preventDefault();
-      editor.redo();
+    const focusContext = model.focusContext();
+    if (
+      focusContext === "text-entry" ||
+      (focusContext === "widget" && model.widgetOwnsKey(event))
+    ) {
+      record("unavailable", null, "focused-widget");
       return;
     }
     if (
-      (event.ctrlKey || event.metaKey) &&
-      event.code === "KeyR" &&
-      model.running()
-    ) {
+      focusContext === "canvas" &&
+      (machineCommands.handleRemote(event, true) ||
+        machineCommands.handleDrive(event, true))
+    )
+      return;
+    const context = model.running() ? "operation" : "workshop",
+      resolved = resolveRegisteredKeyboardAction({
+        event,
+        context,
+        registry: actionRegistry,
+      });
+    if (resolved.status === "handled" && resolved.actionId) {
+      if (event.repeat && !resolved.repeat) return;
       event.preventDefault();
-      editor.resetSimulation();
+      actionExecutors[resolved.actionId]?.();
+      record("handled", resolved.actionId);
       return;
     }
-    if (event.code === "KeyK" && model.running() && !event.repeat) {
-      event.preventDefault();
-      simulation.togglePause();
-      return;
-    }
-    if (event.code === "BracketLeft" && model.running()) {
-      event.preventDefault();
-      simulation.cycleSpeed(-1);
-      return;
-    }
-    if (event.code === "BracketRight" && model.running()) {
-      event.preventDefault();
-      simulation.cycleSpeed(1);
-      return;
-    }
-    if ((event.ctrlKey || event.metaKey) && event.code === "KeyA") {
-      event.preventDefault();
-      editor.selectAll();
-      return;
-    }
-    if ((event.ctrlKey || event.metaKey) && event.code === "KeyD") {
-      event.preventDefault();
-      editor.duplicate();
-      return;
-    }
-    if (
-      event.shiftKey &&
-      (event.code === "Delete" || event.code === "Backspace")
-    ) {
-      event.preventDefault();
-      editor.clear();
-      return;
-    }
-    if (event.code === "Delete" || event.code === "Backspace") {
-      event.preventDefault();
-      editor.remove();
-      return;
-    }
-    if (event.shiftKey && event.code === "KeyM" && !event.repeat) {
-      event.preventDefault();
-      editor.mirror();
-      return;
-    }
-    if (handleDrive(event, true) || handleRemote(event, true)) return;
-    const key = event.key.toLowerCase();
-    if (event.key === "Escape") {
-      editor.cancel();
-      camera.clearTool();
-    }
-    if (key === "v") editor.setTool("select");
-    if (key === "g") editor.setTool("move");
-    if (key === "r" && !model.running()) editor.setTool("rotate");
-    if (key === "x" && !event.repeat) editor.toggleExploded();
-    if (event.code === "Period" && !event.repeat) simulation.step();
-    camera.navigate(event);
+    if (focusContext === "canvas") camera.navigate(event);
+    record("unbound");
   }
 
   /** @param {KeyboardEvent} event */
   function onKeyup(event) {
-    if (handleDrive(event, false)) return;
-    camera.releaseSpace(event);
-    handleRemote(event, false);
+    if (disposed) return;
+    machineCommands.handleRelease(event);
+    if (event.code === "Space") camera.releaseHeld();
   }
 
+  const onBlur = () => releaseAll("window-blur"),
+    onVisibilityChange = () => {
+      if (documentTarget.visibilityState !== "visible")
+        releaseAll("visibility-loss");
+    };
   target.addEventListener("keydown", onKeydown);
   target.addEventListener("keyup", onKeyup);
+  target.addEventListener("blur", onBlur);
+  documentTarget.addEventListener("visibilitychange", onVisibilityChange);
   return Object.freeze({
+    actionRegistry,
+    releaseAll,
+    snapshot() {
+      return {
+        focusContext: model.focusContext(),
+        captureActive: model.captureIndex() !== null,
+        heldActions: machineCommands.heldActionIds(),
+        lastResolution,
+        bindings: actionRegistry.snapshot(),
+      };
+    },
     dispose() {
+      if (disposed) return;
+      releaseAll("dispose");
+      disposed = true;
       target.removeEventListener("keydown", onKeydown);
       target.removeEventListener("keyup", onKeyup);
+      target.removeEventListener("blur", onBlur);
+      documentTarget.removeEventListener(
+        "visibilitychange",
+        onVisibilityChange,
+      );
     },
   });
 }

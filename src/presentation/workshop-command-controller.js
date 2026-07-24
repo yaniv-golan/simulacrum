@@ -1,16 +1,10 @@
+import { createPrimarySurfaceController } from "./primary-surface-controller.js";
+
 /**
  * @typedef {{ query:(selector:string)=>Element|null, queryAll:(selector:string)=>Element[] }} WorkshopCommandView
- * @typedef {{
- *   running:()=>boolean, setMode:(mode:string)=>void, stop:()=>void,
- *   pause:()=>void, cycleSpeed:(direction:number)=>void, reset:()=>void,
- *   undo:()=>void, redo:()=>void, clear:()=>void, clearSelection:()=>void,
- *   removeSelection:()=>void, duplicateSelection:()=>void, mirrorSelection:()=>void,
- * }} WorkshopCommandPort
+ * @typedef {{ running:()=>boolean, setMode:(mode:string)=>void, stop:()=>void, pause:()=>void, cycleSpeed:(direction:number)=>void, reset:()=>void, undo:()=>void, redo:()=>void, clear:()=>void, clearSelection:()=>void, removeSelection:()=>void, duplicateSelection:()=>void, mirrorSelection:()=>void }} WorkshopCommandPort
  * @typedef {{ render:(category?:string)=>void }} CatalogCommandPort
- * @typedef {{
- *   render:()=>void, setProfile:(profile:string)=>void, toggleEdit:()=>void,
- *   addAuxiliary:()=>void, toggleDirectSurface:()=>void,
- * }} RemoteCommandPort
+ * @typedef {{ render:()=>void, releaseHeld:()=>void, setProfile:(profile:string)=>void, toggleEdit:()=>void, addAuxiliary:()=>void, toggleDirectSurface:()=>void }} RemoteCommandPort
  * @typedef {{
  *   setTime:(value:string)=>void, setWind:(enabled:boolean)=>void,
  * }} EnvironmentCommandPort
@@ -23,7 +17,6 @@
  *   compile:()=>void, trust:()=>void, stop:()=>void, invalidate:()=>void,
  * }} ScriptCommandPort
  */
-
 /**
  * Owns static workshop command bindings. It changes only presentation-local
  * visibility; all model mutations are emitted through typed command ports.
@@ -86,13 +79,26 @@ export function installWorkshopCommandController({
   required("#delete-part").onclick = () => workshop.removeSelection();
   required("#duplicate-part").onclick = () => workshop.duplicateSelection();
   required("#mirror-selection").onclick = () => workshop.mirrorSelection();
-
-  required("#remote-btn").onclick = () => {
-    required(".remote-console").classList.toggle("hidden");
-    remote.render();
+  const remoteButton = required("#remote-btn"),
+    remotePanel = required(".remote-console"),
+    primarySurfaces = createPrimarySurfaceController({
+      query: view.query,
+      releaseHeld: remote.releaseHeld,
+    });
+  remoteButton.onclick = () => {
+    const opening = remotePanel.classList.contains("hidden");
+    remotePanel.classList.toggle("hidden", !opening);
+    if (opening) {
+      primarySurfaces.hideOthers(".remote-console");
+      remote.render();
+      queueMicrotask(() => required("#close-remote").focus());
+    } else remote.releaseHeld();
   };
-  required("#close-remote").onclick = () =>
-    required(".remote-console").classList.add("hidden");
+  required("#close-remote").onclick = () => {
+    remote.releaseHeld();
+    remotePanel.classList.add("hidden");
+    remoteButton.focus();
+  };
   required("#remote-profile").onchange = (event) =>
     remote.setProfile(
       /** @type {HTMLSelectElement} */ (event.currentTarget).value,
@@ -100,14 +106,16 @@ export function installWorkshopCommandController({
   required("#edit-remote").onclick = () => remote.toggleEdit();
   required("#add-command").onclick = () => remote.addAuxiliary();
   required("#toggle-direct-panel").onclick = () => remote.toggleDirectSurface();
-
-  required("#environment-btn").onclick = () => {
-    required(".environment-panel").classList.toggle("hidden");
-    required(".remote-console").classList.add("hidden");
-    required(".demo-browser").classList.add("hidden");
-  };
-  required("#close-environment").onclick = () =>
+  required("#environment-btn").onclick = () =>
+    primarySurfaces.toggle({
+      selector: ".environment-panel",
+      closeSelector: "#close-environment",
+      openerSelector: "#tools-btn",
+    });
+  required("#close-environment").onclick = () => {
     required(".environment-panel").classList.add("hidden");
+    required("#tools-btn").focus();
+  };
   required("#time-of-day").oninput = (event) =>
     environment.setTime(
       /** @type {HTMLInputElement} */ (event.currentTarget).value,
@@ -120,44 +128,54 @@ export function installWorkshopCommandController({
     const button = /** @type {HTMLButtonElement} */ (preset);
     button.onclick = () => environment.setTime(button.dataset.time || "14");
   }
-
-  required("#demos-btn").onclick = () => {
-    required(".demo-browser").classList.toggle("hidden");
+  required("#demos-btn").onclick = () =>
+    primarySurfaces.toggle({
+      selector: ".demo-browser",
+      closeSelector: "#close-demos",
+      openerSelector: "#demos-btn",
+    });
+  required("#challenges-btn").onclick = () =>
+    primarySurfaces.toggle({
+      selector: ".challenge-browser",
+      closeSelector: "#close-challenges",
+      openerSelector: "#challenges-btn",
+      prepare: browser.renderChallenges,
+    });
+  required("#close-challenges").onclick = () => {
     required(".challenge-browser").classList.add("hidden");
-    required(".environment-panel").classList.add("hidden");
+    required("#challenges-btn").focus();
   };
-  required("#challenges-btn").onclick = () => {
-    browser.renderChallenges();
-    required(".challenge-browser").classList.toggle("hidden");
+  required("#close-demos").onclick = () => {
     required(".demo-browser").classList.add("hidden");
-    required(".environment-panel").classList.add("hidden");
+    required("#demos-btn").focus();
   };
-  required("#close-challenges").onclick = () =>
-    required(".challenge-browser").classList.add("hidden");
-  required("#close-demos").onclick = () =>
-    required(".demo-browser").classList.add("hidden");
   for (const demo of view.queryAll("[data-demo]")) {
     const button = /** @type {HTMLButtonElement} */ (demo);
     button.onclick = () => {
       browser.resetChallenge();
       browser.loadDemo(button.dataset.demo || "gearbox");
-      required(".demo-browser").classList.add("hidden");
+      primarySurfaces.hideOthers(".remote-console");
       required(".remote-console").classList.remove("hidden");
       remote.render();
+      queueMicrotask(() => required("#close-remote").focus());
     };
   }
   required("#blueprint-btn").onclick = () => browser.openBlueprints();
-
   required("#wasm-btn").onclick = () => {
-    if (required(".wasm-console").classList.contains("hidden")) script.open();
-    else {
+    if (required(".wasm-console").classList.contains("hidden")) {
+      primarySurfaces.hideOthers(".wasm-console");
+      script.open();
+      queueMicrotask(() => required("#close-wasm").focus());
+    } else {
       script.save();
       required(".wasm-console").classList.add("hidden");
+      required("#tools-btn").focus();
     }
   };
   required("#close-wasm").onclick = () => {
     script.save();
     required(".wasm-console").classList.add("hidden");
+    required("#tools-btn").focus();
   };
   for (const language of view.queryAll("[data-script-language]")) {
     const button = /** @type {HTMLButtonElement} */ (language);
@@ -168,6 +186,5 @@ export function installWorkshopCommandController({
   required("#trust-program").onclick = () => script.trust();
   required("#stop-wasm").onclick = () => script.stop();
   required("#wasm-source").addEventListener("input", () => script.invalidate());
-
   return Object.freeze({});
 }

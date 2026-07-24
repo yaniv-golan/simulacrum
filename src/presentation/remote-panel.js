@@ -22,6 +22,14 @@ export function createRemotePanel({
 }) {
   let editorModule = null,
     editorLoad = null;
+  const heldReleases = new Set(),
+    releaseTimers = new Set();
+  function releaseHeldControls() {
+    for (const release of [...heldReleases]) release();
+    heldReleases.clear();
+    for (const timer of releaseTimers) clearTimeout(timer);
+    releaseTimers.clear();
+  }
   function ensureEditorModule() {
     editorLoad ||= import("./remote-panel-editor.js").then((module) => {
       editorModule = module;
@@ -82,6 +90,7 @@ export function createRemotePanel({
       `${active} CHANNEL${active === 1 ? "" : "S"} ACTIVE`;
   }
   function renderRemote() {
+    releaseHeldControls();
     if (state.remoteEdit && !editorModule) void ensureEditorModule();
     const controls = state.remoteControls[state.remoteProfile] || [],
       profile = state.remoteProfiles[state.remoteProfile],
@@ -155,20 +164,35 @@ export function createRemotePanel({
     );
     $$(".command-hold").forEach((el) => {
       const c = controls[+el.dataset.index];
-      el.onpointerdown = () => {
+      const press = (event) => {
+        event.preventDefault();
         sendCommand(c, 1);
         el.classList.add("on");
+        heldReleases.add(release);
       };
-      el.onpointerup = el.onpointerleave = () => {
+      const release = () => {
         if (c.type === "hold") {
           sendCommand(c, 0);
           el.classList.remove("on");
-        } else
-          setTimeout(() => {
+        } else {
+          const timer = setTimeout(() => {
+            releaseTimers.delete(timer);
             sendCommand(c, 0);
             el.classList.remove("on");
           }, 180);
+          releaseTimers.add(timer);
+        }
+        heldReleases.delete(release);
       };
+      el.onpointerdown = press;
+      el.onkeydown = (event) => {
+        if (!["Enter", " "].includes(event.key) || event.repeat) return;
+        press(event);
+      };
+      el.onkeyup = (event) => {
+        if (["Enter", " "].includes(event.key)) release();
+      };
+      el.onpointerup = el.onpointerleave = el.onpointercancel = release;
     });
     $$(".command-target").forEach(
       (el) =>
@@ -205,6 +229,7 @@ export function createRemotePanel({
     controlOnline,
     esc: escapeHtml,
     persistRemotes,
+    releaseHeldControls,
     renderRemote,
     sendCommand,
   };

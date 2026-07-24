@@ -1,0 +1,104 @@
+.keyboard-command-card {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.keyboard-command-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.keyboard-command-tools label {
+  margin: 8px 0;
+}
+
+.keyboard-command-tools select,
+.keyboard-command-tools button {
+  min-height: 40px;
+  border: 1px solid #3a625d;
+  background: #102827;
+  color: #d9efea;
+}
+
+#keyboard-command-status {
+  min-height: 18px;
+  color: #83dbc7;
+}
+
+.keyboard-command-list {
+  max-height: min(56vh, 560px);
+  overflow-y: auto;
+  border-top: 1px solid #31514e;
+}
+
+.keyboard-command-list h3 {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 10px 4px 6px;
+  background: #0d2022;
+  color: #78cbbb;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.keyboard-command-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  min-height: 50px;
+  border-top: 1px solid #213c39;
+}
+
+.keyboard-command-row > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.keyboard-command-row b {
+  font-size: 12px;
+}
+
+.keyboard-command-row small {
+  color: #6f918c;
+  font-size: 10px;
+}
+
+.keyboard-command-row > div:last-child {
+  display: flex;
+  gap: 6px;
+}
+
+.keyboard-binding {
+  min-width: 82px;
+  min-height: 34px;
+  border: 1px solid #4d8078;
+  background: #153330;
+  color: #dff9f3;
+  font: 600 11px "Space Grotesk";
+}
+
+.keyboard-binding.unbound {
+  border-style: dashed;
+  color: #78928e;
+}
+
+.keyboard-binding:focus-visible {
+  outline: 2px solid #7ff5d8;
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .keyboard-command-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .keyboard-command-row {
+    grid-template-columns: 1fr;
+    padding: 8px 0;
+  }
+}

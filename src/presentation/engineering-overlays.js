@@ -39,7 +39,7 @@ export function installEngineeringOverlays({
   const $ = (selector) => root.querySelector(selector);
   $("#environment-btn").insertAdjacentHTML(
     "afterend",
-    '<button id="engineering-btn">⌖ <span>ENGINEERING<em>Mass, buoyancy & clearance</em></span></button>',
+    '<button id="engineering-btn" role="menuitem">⌖ <span>ENGINEERING<em>Mass, buoyancy & clearance</em></span></button>',
   );
   catalog.insertAdjacentHTML(
     "afterend",

@@ -1,10 +1,12 @@
 import { assert, assertNoErrors, closeBrowser } from "./lib/assert.mjs";
 import { createBrowserTest } from "./lib/browser-test.mjs";
 import { resetBrowserStorageForTest } from "./lib/browser-storage-fixture.mjs";
+import { installRenderedVisibilityContract } from "./lib/rendered-visibility.mjs";
 
 const { browser, page, errors, baseUrl } = await createBrowserTest({
   viewport: { width: 1440, height: 900 },
 });
+await installRenderedVisibilityContract(page);
 
 const textState = async () =>
   JSON.parse(await page.evaluate(() => window.render_game_to_text()));
@@ -22,7 +24,7 @@ try {
   await resetBrowserStorageForTest(page);
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.click("#sandbox-start");
-  await page.click("#clear-build");
+  await page.keyboard.press("Shift+Delete");
 
   const preset = page.locator('.part-card[data-type="builtin-subassembly-0"]');
   await preset.focus();
@@ -144,7 +146,7 @@ try {
 
   await page.locator("#tools-btn").focus();
   await page.keyboard.press("Enter");
-  const labTool = page.getByRole("button", { name: /MECHANISM LAB/i });
+  const labTool = page.getByRole("menuitem", { name: /MECHANISM LAB/i });
   await labTool.focus();
   await page.keyboard.press("Enter");
   const lab = page.locator(".mechanism-lab");
@@ -195,26 +197,16 @@ try {
   );
 
   const unnamedControls = await lab.evaluate((root) => {
-    const visible = (element) => {
-        const style = getComputedStyle(element),
-          bounds = element.getBoundingClientRect();
-        return (
-          style.display !== "none" &&
-          style.visibility !== "hidden" &&
-          bounds.width > 0 &&
-          bounds.height > 0
-        );
-      },
-      name = (element) =>
-        element.getAttribute("aria-label")?.trim() ||
-        element.getAttribute("aria-labelledby")?.trim() ||
-        [...(element.labels || [])]
-          .map((label) => label.textContent?.trim())
-          .filter(Boolean)
-          .join(" ") ||
-        (element.tagName === "BUTTON" ? element.textContent?.trim() : "");
+    const name = (element) =>
+      element.getAttribute("aria-label")?.trim() ||
+      element.getAttribute("aria-labelledby")?.trim() ||
+      [...(element.labels || [])]
+        .map((label) => label.textContent?.trim())
+        .filter(Boolean)
+        .join(" ") ||
+      (element.tagName === "BUTTON" ? element.textContent?.trim() : "");
     return [...root.querySelectorAll("button, input, select, textarea")]
-      .filter(visible)
+      .filter((element) => window.__simulacrumTestVisibility(element).rendered)
       .filter((element) => !name(element))
       .map((element) => element.id || element.outerHTML.slice(0, 100));
   });

@@ -43,7 +43,7 @@ try {
   await resetBrowserStorageForTest(page);
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.click("#sandbox-start");
-  await page.click("#clear-build");
+  await page.keyboard.press("Shift+Delete");
 
   await page.click('.part-card[data-type="builtin-subassembly-0"]');
   await placeCurrentPending([0.75, 1.2, -0.25]);
@@ -99,7 +99,7 @@ try {
       `saved asset retained obsolete field ${obsolete}`,
     );
 
-  await page.click("#clear-build");
+  await page.keyboard.press("Shift+Delete");
   await page.click('.part-card[data-type="subassembly-0"]');
   await placeCurrentPending([-1.5, 1.1, 0.5]);
   const restoredAssembly = await textState();
@@ -228,6 +228,9 @@ try {
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).running,
   );
+  if (await page.locator("#close-remote").isVisible())
+    await page.click("#close-remote");
+  await page.locator("canvas").click({ position: { x: 320, y: 240 } });
   await page.evaluate(() =>
     window.dispatchEvent(
       new KeyboardEvent("keydown", { key: "w", code: "KeyW" }),

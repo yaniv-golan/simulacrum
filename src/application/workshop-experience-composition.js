@@ -65,6 +65,7 @@ export function createWorkshopExperienceComposition({
     },
     remote: {
       render: controls.renderRemote,
+      releaseHeld: controls.releaseHeldInputs,
       persist: controls.persistRemotes,
       persistDirectSurface: controls.directControl.persistSurfaces,
     },
@@ -83,7 +84,6 @@ export function createWorkshopExperienceComposition({
     view: {
       query: shell.query,
       queryAll: shell.queryAll,
-      show: (selector) => shell.query(selector).classList.remove("hidden"),
       hidden: (selector) => shell.query(selector).classList.contains("hidden"),
       click: (selector) => shell.query(selector).click(),
       notify: shell.notify,

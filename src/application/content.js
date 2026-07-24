@@ -723,7 +723,7 @@ export const LEARN_TOPICS = [
       "Option/Alt-drag orbits; Space-drag pans; pinch or scroll zooms toward the pointer.",
       "The visible Orbit and Pan modes also turn an ordinary drag into the chosen camera gesture.",
       "Double-click a part or press F to frame the current selection.",
-      "Use 1, 3, and 7 for front, side, and top views; Home resets the workshop.",
+      "Use Numpad 1, 3, and 7 for front, side, and top views; Home resets the workshop.",
       "Shift+F follows a moving selected component during simulation.",
     ],
     shortcuts: [
@@ -731,7 +731,7 @@ export const LEARN_TOPICS = [
       "SPACE + DRAG PAN",
       "PINCH / WHEEL ZOOM",
       "F FOCUS",
-      "1 / 3 / 7 VIEWS",
+      "NUMPAD 1 / 3 / 7 VIEWS",
     ],
     action: "camera",
     actionLabel: "SHOW CAMERA CHEAT SHEET",

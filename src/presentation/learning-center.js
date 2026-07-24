@@ -19,7 +19,7 @@ export { installTutorialController } from "./tutorial-controller.js";
  *     openCamera: () => void, openScript: () => void,
  *     openBlueprints: () => void, openChallenges: () => void,
  *     openDemos: () => void, openEnvironment: () => void,
- *     notify: (message: string) => void
+ *     releaseHeld: () => void, notify: (message: string) => void
  *   }
  * }} options
  */
@@ -33,8 +33,10 @@ export function installLearningCenter({
 }) {
   const $ = (selector) => root.querySelector(selector),
     $$ = (selector) => Array.from(root.querySelectorAll(selector));
+  let learnOpener = null;
 
   function closeSecondaryPanels() {
+    actions.releaseHeld();
     for (const selector of [
       ".learn-center",
       ".demo-browser",
@@ -95,7 +97,7 @@ export function installLearningCenter({
     $(".learn-categories").innerHTML = categories
       .map(
         (category) =>
-          `<button class="${ui.learnCategory === category ? "active" : ""}" data-learn-category="${category}" role="tab" aria-selected="${ui.learnCategory === category}">${category}</button>`,
+          `<button class="${ui.learnCategory === category ? "active" : ""}" data-learn-category="${category}" role="tab" aria-selected="${ui.learnCategory === category}" tabindex="${ui.learnCategory === category ? "0" : "-1"}">${category}</button>`,
       )
       .join("");
     $(".learn-topics").setAttribute("role", "tablist");
@@ -104,7 +106,7 @@ export function installLearningCenter({
       ? visible
           .map(
             (topic) =>
-              `<button class="${ui.learnTopic === topic.id ? "active" : ""}" data-learn-topic="${topic.id}" role="tab" aria-selected="${ui.learnTopic === topic.id}"><i aria-hidden="true">${topic.icon}</i><span><b>${topic.title}</b><small>${topic.summary}</small></span></button>`,
+              `<button class="${ui.learnTopic === topic.id ? "active" : ""}" data-learn-topic="${topic.id}" role="tab" aria-selected="${ui.learnTopic === topic.id}" tabindex="${ui.learnTopic === topic.id ? "0" : "-1"}"><i aria-hidden="true">${topic.icon}</i><span><b>${topic.title}</b><small>${topic.summary}</small></span></button>`,
           )
           .join("")
       : '<div class="learn-empty">No capability matches that search.</div>';
@@ -134,6 +136,7 @@ export function installLearningCenter({
   }
 
   function open(topicId = ui.learnTopic) {
+    learnOpener = root.activeElement;
     if (topics.some((topic) => topic.id === topicId)) {
       ui.learnTopic = topicId;
       ui.learnCategory = "ALL";
@@ -143,6 +146,14 @@ export function installLearningCenter({
     $(".discovery-coach").classList.add("hidden");
     $(".learn-center").classList.remove("hidden");
     render();
+    queueMicrotask(() => $("#close-learn")?.focus());
+  }
+
+  function close() {
+    $(".learn-center").classList.add("hidden");
+    const target = learnOpener?.isConnected ? learnOpener : $("#tutorial-btn");
+    learnOpener = null;
+    queueMicrotask(() => target?.focus());
   }
 
   function renderCoach() {
@@ -173,7 +184,7 @@ export function installLearningCenter({
     }
   }
 
-  $("#close-learn").onclick = () => $(".learn-center").classList.add("hidden");
+  $("#close-learn").onclick = close;
   $("#learn-search").oninput = render;
   $("#close-coach").onclick = () =>
     $(".discovery-coach").classList.add("hidden");

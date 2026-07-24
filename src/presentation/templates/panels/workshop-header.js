@@ -4,7 +4,7 @@ export function createWorkshopHeaderTemplate() {
       <span class="mark-icon">S</span>
       <div><b>SIMULACRUM</b><small>MECHANICAL FOUNDRY</small></div>
     </div>
-    <div class="mode-switch" aria-label="Workshop mode">
+    <div class="mode-switch" role="toolbar" aria-label="Workshop mode">
       <button data-mode="build" class="active" aria-pressed="true"><i>1</i> BUILD</button>
       <button data-mode="wire" aria-pressed="false"><i>2</i> CONNECT</button>
       <button data-mode="test" aria-pressed="false"><i>3</i> SIMULATE</button>
@@ -22,6 +22,7 @@ export function createWorkshopHeaderTemplate() {
           <button id="wasm-btn" role="menuitem">{ } <span>SCRIPT<em>Program controllers</em></span></button>
           <button id="blueprint-btn" role="menuitem">▱ <span>BLUEPRINTS<em>Save & reuse machines</em></span></button>
           <button id="settings-btn" role="menuitem">⚙ <span>LOCAL DATA<em>Storage & recovery</em></span></button>
+          <button id="keyboard-commands-btn" role="menuitem">⌨ <span>KEYBOARD<em>Commands & session bindings</em></span></button>
           <button id="workspace-focus" role="menuitem">▣ <span>CANVAS FOCUS<em>Hide side panels · H</em></span></button>
           <button id="tutorial-btn" role="menuitem" title="Open searchable in-game help (?)">? <span>LEARN<em>Guides & shortcuts</em></span></button>
         </div>

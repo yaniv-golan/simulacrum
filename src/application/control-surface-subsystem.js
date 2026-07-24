@@ -35,17 +35,22 @@ export function createControlSurfaceSubsystem({
       syncRemoteProfileDefinitions(state);
       persistRemoteState();
     },
-    { controlOnline, persistRemotes, renderRemote, sendCommand } =
-      createRemotePanel({
-        state,
-        $: view.query,
-        $$: view.queryAll,
-        readControlBinding: workspace.readControlBinding,
-        renderDirectSurface,
-        persistRemoteDefinitions,
-        persistRemoteState,
-        nextControlId: nextRemoteControlId,
-      });
+    {
+      controlOnline,
+      persistRemotes,
+      releaseHeldControls,
+      renderRemote,
+      sendCommand,
+    } = createRemotePanel({
+      state,
+      $: view.query,
+      $$: view.queryAll,
+      readControlBinding: workspace.readControlBinding,
+      renderDirectSurface,
+      persistRemoteDefinitions,
+      persistRemoteState,
+      nextControlId: nextRemoteControlId,
+    });
 
   const templateProfiles = remoteProfilesFromTemplates(controlTemplates),
     templateRuntimeControls = runtimeControlsFromProfiles(templateProfiles);
@@ -55,7 +60,6 @@ export function createControlSurfaceSubsystem({
     view: {
       query: view.query,
       queryAll: view.queryAll,
-      compact: view.compact,
       controlOnline,
       sendCommand,
       renderRemote,
@@ -71,7 +75,6 @@ export function createControlSurfaceSubsystem({
     },
     controlTemplates: templateRuntimeControls,
   });
-
   const persistControllerLayouts = () => {
     state.controllerLayouts = normalizeControllerLayouts(
       state.controllerLayouts,
@@ -103,6 +106,10 @@ export function createControlSurfaceSubsystem({
     updateDriveHud,
     persistDirectSurfaces,
     persistRemotes,
+    releaseHeldInputs() {
+      releaseHeldControls();
+      directControl.releaseHeldInputs();
+    },
     setWorkspacePersistence(callback) {
       persistWorkspace = typeof callback === "function" ? callback : () => {};
     },

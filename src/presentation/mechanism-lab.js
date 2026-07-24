@@ -47,14 +47,13 @@ export function installMechanismLab({
   const $ = (selector) => root.querySelector(selector);
   $("#failure-report-tool").insertAdjacentHTML(
     "afterend",
-    '<button id="mechanism-lab-tool">⌁ <span>MECHANISM LAB<em>Diagnostics, telemetry & proof</em></span></button>',
+    '<button id="mechanism-lab-tool" role="menuitem">⌁ <span>MECHANISM LAB<em>Diagnostics, telemetry & proof</em></span></button>',
   );
-  root
-    .querySelector(".shell")
-    .insertAdjacentHTML(
-      "beforeend",
-      `<section class="mechanism-lab glass hidden" aria-labelledby="mechanism-lab-title"><header><div><small>PHYSICAL DESIGN WORKBENCH</small><h2 id="mechanism-lab-title">Mechanism Lab</h2></div><button id="close-mechanism-lab" aria-label="Close Mechanism Lab">×</button></header><div class="mechanism-lab-live" role="status" aria-live="polite"></div><section aria-labelledby="mechanism-transport-title"><h3 id="mechanism-transport-title">DETERMINISTIC TRANSPORT</h3><div class="mechanism-lab-actions"><button data-lab-command="run">RUN / STOP</button><button data-lab-command="pause">PAUSE / RESUME</button><button data-lab-command="step">STEP 1/120 S</button><button data-lab-command="reset">RUN FROM START</button></div><div id="mechanism-session-state"></div></section><section aria-labelledby="mechanism-diagnostics-title"><h3 id="mechanism-diagnostics-title">COMPILER DIAGNOSTICS</h3><div id="mechanism-diagnostics"></div></section><section aria-labelledby="mechanism-channels-title"><h3 id="mechanism-channels-title">CANONICAL CHANNELS</h3><label>SEARCH CHANNELS <input id="mechanism-channel-search" type="search" value="force contact travel energy" aria-describedby="mechanism-channel-help"></label><p id="mechanism-channel-help">Space-separated terms select force, contact, travel, and energy channels. Clear to inspect every numeric channel.</p><div id="mechanism-channel-table"></div><div id="mechanism-plots"></div></section><section aria-labelledby="mechanism-compare-title"><h3 id="mechanism-compare-title">RUN A/B COMPARISON</h3><div class="mechanism-lab-actions"><button id="mechanism-pin-run">PIN CURRENT AS RUN A</button><button id="mechanism-compare-run">COMPARE CURRENT AS RUN B</button></div><div id="mechanism-comparison"></div></section><section aria-labelledby="mechanism-proof-title"><h3 id="mechanism-proof-title">CHECKPOINT AND EXPERIMENT PROOF</h3><div class="mechanism-lab-actions"><button id="mechanism-capture-proof">CAPTURE COMMITTED CHECKPOINT</button><button id="mechanism-restore-proof" disabled>RESTORE CHECKPOINT</button><button id="mechanism-copy-proof" disabled>COPY EXPERIMENT JSON</button></div><div id="mechanism-proof"></div></section></section>`,
-    );
+  const shell = root.querySelector(".shell");
+  shell.insertAdjacentHTML(
+    "beforeend",
+    `<section class="mechanism-lab glass hidden" aria-labelledby="mechanism-lab-title"><header><div><small>PHYSICAL DESIGN WORKBENCH</small><h2 id="mechanism-lab-title">Mechanism Lab</h2></div><button id="close-mechanism-lab" aria-label="Close Mechanism Lab">×</button></header><div class="mechanism-lab-live" role="status" aria-live="polite"></div><section aria-labelledby="mechanism-transport-title"><h3 id="mechanism-transport-title">DETERMINISTIC TRANSPORT</h3><div class="mechanism-lab-actions"><button data-lab-command="run">RUN / STOP</button><button data-lab-command="pause">PAUSE / RESUME</button><button data-lab-command="step">STEP 1/120 S</button><button data-lab-command="reset">RUN FROM START</button></div><div id="mechanism-session-state"></div></section><section aria-labelledby="mechanism-diagnostics-title"><h3 id="mechanism-diagnostics-title">COMPILER DIAGNOSTICS</h3><div id="mechanism-diagnostics"></div></section><section aria-labelledby="mechanism-channels-title"><h3 id="mechanism-channels-title">CANONICAL CHANNELS</h3><label>SEARCH CHANNELS <input id="mechanism-channel-search" type="search" value="force contact travel energy" aria-describedby="mechanism-channel-help"></label><p id="mechanism-channel-help">Space-separated terms select force, contact, travel, and energy channels. Clear to inspect every numeric channel.</p><div id="mechanism-channel-table"></div><div id="mechanism-plots"></div></section><section aria-labelledby="mechanism-compare-title"><h3 id="mechanism-compare-title">RUN A/B COMPARISON</h3><div class="mechanism-lab-actions"><button id="mechanism-pin-run">PIN CURRENT AS RUN A</button><button id="mechanism-compare-run">COMPARE CURRENT AS RUN B</button></div><div id="mechanism-comparison"></div></section><section aria-labelledby="mechanism-proof-title"><h3 id="mechanism-proof-title">CHECKPOINT AND EXPERIMENT PROOF</h3><div class="mechanism-lab-actions"><button id="mechanism-capture-proof">CAPTURE COMMITTED CHECKPOINT</button><button id="mechanism-restore-proof" disabled>RESTORE CHECKPOINT</button><button id="mechanism-copy-proof" disabled>COPY EXPERIMENT JSON</button></div><div id="mechanism-proof"></div></section></section>`,
+  );
   const panel = $(".mechanism-lab"),
     histories = new Map();
   let channels = [],
@@ -98,7 +97,7 @@ export function installMechanismLab({
     panel.querySelectorAll("[data-diagnostic-part]").forEach((button) => {
       button.onclick = () => {
         selectPart(Number(button.dataset.diagnosticPart));
-        panel.classList.add("hidden");
+        close();
         notify(`Selected source part #${button.dataset.diagnosticPart}`);
       };
     });
@@ -213,15 +212,19 @@ export function installMechanismLab({
 
   function open() {
     panel.classList.remove("hidden");
+    shell.classList.add("mechanism-lab-open");
     refresh();
     $("#close-mechanism-lab").focus();
   }
 
-  $("#mechanism-lab-tool").onclick = open;
-  $("#close-mechanism-lab").onclick = () => {
+  function close() {
     panel.classList.add("hidden");
-    $("#mechanism-lab-tool").focus();
-  };
+    shell.classList.remove("mechanism-lab-open");
+    $("#tools-btn").focus();
+  }
+
+  $("#mechanism-lab-tool").onclick = open;
+  $("#close-mechanism-lab").onclick = close;
   $("#mechanism-channel-search").oninput = renderChannels;
   panel.querySelectorAll("[data-lab-command]").forEach((button) => {
     button.onclick = () => {

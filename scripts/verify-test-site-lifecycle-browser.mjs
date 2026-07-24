@@ -113,6 +113,7 @@ async function traverseLodAndRebase() {
   await click("#view-home");
   await page.waitForTimeout(300);
 
+  await page.locator("canvas").focus();
   await walkCameraBatched("w", "KeyW");
   await page.waitForTimeout(1_500);
   const far = await state();

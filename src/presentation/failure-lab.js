@@ -42,7 +42,7 @@ export function installFailureLab({
   );
   $("#blueprint-btn").insertAdjacentHTML(
     "afterend",
-    '<button id="failure-report-tool" disabled>⚠ <span>FAILURE REPORT<em>Loads, causes & replay</em></span></button>',
+    '<button id="failure-report-tool" role="menuitem" disabled>⚠ <span>FAILURE REPORT<em>Loads, causes & replay</em></span></button>',
   );
   root
     .querySelector(".shell")

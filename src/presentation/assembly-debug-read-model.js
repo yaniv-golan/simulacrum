@@ -34,6 +34,7 @@ export function buildAssemblyDebugReadModel(input) {
         +part.mesh.position.y.toFixed(2),
         +part.mesh.position.z.toFixed(2),
       ],
+      displayYawDeg: +((part.mesh.rotation.y * 180) / Math.PI).toFixed(1),
       settings: {
         rpm: part.config?.rpm,
         teeth: part.config?.teeth,

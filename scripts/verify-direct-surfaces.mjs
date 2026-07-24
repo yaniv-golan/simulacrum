@@ -23,10 +23,13 @@ if (!(await page.locator("#collapse-controller").isVisible()))
 const initial = await page.evaluate(() =>
   JSON.parse(window.render_game_to_text()),
 );
-await click("#collapse-controller");
-const collapsed = await page
+const buildAutoCollapsed = await page
   .locator(".drive-hud")
   .evaluate((element) => element.classList.contains("collapsed"));
+await click("#collapse-controller");
+const buildExpanded = await page
+  .locator(".drive-hud")
+  .evaluate((element) => !element.classList.contains("collapsed"));
 await click("#collapse-controller");
 await click("#controller-mode");
 const genericMode = await page.locator(".direct-range").count();
@@ -35,6 +38,7 @@ if (await page.locator("#close-controller").isVisible())
   await click("#close-controller");
 const launcherVisible = await page.locator("#controller-launcher").isVisible();
 await click("#controller-launcher");
+await click("#collapse-controller");
 await click("#design-direct-surface");
 await page.locator("#controller-title").fill("Trail Rover");
 await page.locator("#controller-title").dispatchEvent("input");
@@ -113,11 +117,13 @@ const sustainedPress = await page.evaluate(() => ({
     .classList.contains("pressed"),
   selectedText: window.getSelection()?.toString() || "",
 }));
+await forwardControl.dispatchEvent("pointerup");
 if (!process.env.NO_LIGHTS) await click('[data-pilot-toggle="lights"]');
 await click("#run-btn");
 await page.waitForFunction(
   () => JSON.parse(window.render_game_to_text()).running,
 );
+await forwardControl.dispatchEvent("pointerdown");
 await page.evaluate(
   (duration) => window.advanceTime(duration),
   process.env.NO_LIGHTS ? 250 : 2000,
@@ -127,6 +133,17 @@ const driven = await page.evaluate(() =>
   JSON.parse(window.render_game_to_text()),
 );
 await forwardControl.dispatchEvent("pointerup");
+await forwardControl.focus();
+await page.keyboard.down("Space");
+const keyboardPressed = await page.evaluate(
+  () =>
+    JSON.parse(window.render_game_to_text()).demo.mobility.driveKeys.forward,
+);
+await page.keyboard.up("Space");
+const keyboardReleased = await page.evaluate(
+  () =>
+    !JSON.parse(window.render_game_to_text()).demo.mobility.driveKeys.forward,
+);
 if (!process.env.NO_LIGHTS) await click('[data-pilot-toggle="lights"]');
 const overlap = await page.evaluate(() => {
   const panel = document.querySelector(".drive-hud").getBoundingClientRect();
@@ -160,13 +177,15 @@ console.log(
   JSON.stringify(
     {
       initial: initial.directSurface,
-      collapsed,
+      buildAutoCollapsed,
+      buildExpanded,
       genericMode,
       launcherVisible,
       afterAdd: afterAdd.directSurface,
       afterUnpin: afterUnpin.directSurface,
       nativeGestureGuard,
       sustainedPress,
+      keyboardPress: { keyboardPressed, keyboardReleased },
       unboundBinding,
       unboundStatus,
       unboundTextStatus,
@@ -189,9 +208,9 @@ console.log(
 );
 await conclude(browser, () => {
   assert.equal(
-    collapsed,
+    buildAutoCollapsed && buildExpanded,
     true,
-    "controller did not collapse to its status bar",
+    "build-mode controller did not collapse by default and expand on demand",
   );
   assert.ok(genericMode > 0, "generic controller mode did not render controls");
   assert.equal(
@@ -226,6 +245,11 @@ await conclude(browser, () => {
     remoteSelectionPrevented: true,
   });
   assert.equal(sustainedPress.pressed, true, "long press released the command");
+  assert.equal(
+    keyboardPressed && keyboardReleased,
+    true,
+    "focused keyboard press/release did not match the direct pointer control",
+  );
   assert.match(
     unboundBinding,
     /UNBOUND — CHOOSE A TARGET/,

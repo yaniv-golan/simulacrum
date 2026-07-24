@@ -120,3 +120,39 @@ export function installAccessibleDialogs({ root = document } = {}) {
     },
   };
 }
+
+const DISCLOSURE_CLOSE_SELECTORS = Object.freeze([
+  [".remote-console", "#close-remote"],
+  [".demo-browser", "#close-demos"],
+  [".challenge-browser", "#close-challenges"],
+  [".environment-panel", "#close-environment"],
+  [".learn-center", "#close-learn"],
+  [".wasm-console", "#close-wasm"],
+  ["#test-reserve-browser", "#close-test-reserve"],
+  [".mechanism-lab", "#close-mechanism-lab"],
+  [".failure-lab", "#close-failure-lab"],
+  [".engineering-panel", "#close-engineering"],
+  [".local-data-panel", "#close-local-data"],
+]);
+
+/** Gives non-modal drawers one consistent Escape/back contract. */
+export function installAccessibleDisclosures({ root = document } = {}) {
+  function onKeydown(event) {
+    if (event.key !== "Escape" || !(event.target instanceof Element)) return;
+    const entry = DISCLOSURE_CLOSE_SELECTORS.find(([selector]) =>
+      event.target.closest(selector),
+    );
+    if (!entry) return;
+    const close = root.querySelector(entry[1]);
+    if (!(close instanceof HTMLElement)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    close.click();
+  }
+  root.addEventListener("keydown", onKeydown);
+  return Object.freeze({
+    dispose() {
+      root.removeEventListener("keydown", onKeydown);
+    },
+  });
+}

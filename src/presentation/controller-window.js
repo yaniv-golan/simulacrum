@@ -9,18 +9,18 @@ export function updateControllerWindowChrome({
   $,
   layout,
   graphic,
-  compact = false,
   running = false,
 }) {
   const modeButton = $("#controller-mode"),
     collapseButton = $("#collapse-controller"),
     controller = $(".drive-hud"),
-    compactCollapsed =
-      compact && !running && !controller.classList.contains("compact-expanded"),
-    collapsed = !!layout?.collapsed || compactCollapsed;
+    buildCollapsed =
+      !running && !controller.classList.contains("build-expanded"),
+    collapsed = !!layout?.collapsed || buildCollapsed;
+  if (running) controller.classList.remove("build-expanded");
   controller.classList.toggle("graphic-controller", graphic);
   controller.classList.toggle("collapsed", collapsed);
-  controller.classList.toggle("compact-auto-collapsed", compactCollapsed);
+  controller.classList.toggle("build-auto-collapsed", buildCollapsed);
   controller.style.setProperty(
     "--controller-accent",
     layout?.accent || "#70e0c4",
@@ -72,10 +72,9 @@ export function installControllerWindow({
   };
   $("#collapse-controller").onclick = () => {
     const controller = $(".drive-hud"),
-      compactBuild =
-        $(".shell").classList.contains("compact-workspace") && !state.running;
-    if (compactBuild) {
-      controller.classList.toggle("compact-expanded");
+      buildMode = !state.running;
+    if (buildMode) {
+      controller.classList.toggle("build-expanded");
       render();
       return;
     }

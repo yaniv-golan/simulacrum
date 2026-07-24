@@ -88,6 +88,7 @@ try {
     9,
     "select-all did not prepare a complete reusable assembly",
   );
+  await page.click('.panel-collapse[aria-label="Expand component library"]');
   await page.click("#library-add");
   assert.equal(
     await page.locator("#creator-selection-count").textContent(),
@@ -127,7 +128,7 @@ try {
     "saved assembly is not discoverable in My Parts",
   );
 
-  await page.click("#clear-build");
+  await page.keyboard.press("Shift+Delete");
   assert.equal(
     (await textState()).parts.length,
     0,
@@ -188,7 +189,7 @@ try {
     1,
     "built-in mechanisms polluted the local authored library",
   );
-  await page.click("#clear-build");
+  await page.keyboard.press("Shift+Delete");
   assert.equal(
     (await textState()).parts.length,
     0,

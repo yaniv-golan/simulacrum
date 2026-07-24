@@ -9,11 +9,11 @@ export function createComponentLibraryTemplate() {
     </div>
     <label class="search">⌕ <input aria-label="Search parts" placeholder="Search parts" /></label>
     <div class="tabs" role="tablist" aria-label="Component categories">
-      <button class="active" data-cat="all" role="tab" aria-selected="true">ALL</button>
-      <button data-cat="structure" role="tab" aria-selected="false">STRUCTURE</button>
-      <button data-cat="motion" role="tab" aria-selected="false">MECHANICAL</button>
-      <button data-cat="smart" role="tab" aria-selected="false">SMART</button>
-      <button data-cat="saved" role="tab" aria-selected="false">MY PARTS</button>
+      <button class="active" data-cat="all" role="tab" aria-selected="true" tabindex="0">ALL</button>
+      <button data-cat="structure" role="tab" aria-selected="false" tabindex="-1">STRUCTURE</button>
+      <button data-cat="motion" role="tab" aria-selected="false" tabindex="-1">MECHANICAL</button>
+      <button data-cat="smart" role="tab" aria-selected="false" tabindex="-1">SMART</button>
+      <button data-cat="saved" role="tab" aria-selected="false" tabindex="-1">MY PARTS</button>
     </div>
     <div class="part-grid" role="tabpanel"></div>
   </aside>`;

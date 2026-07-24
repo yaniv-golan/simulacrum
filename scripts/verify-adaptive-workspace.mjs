@@ -4,6 +4,7 @@ import {
   createBrowserTest,
   createInstrumentedPage,
 } from "./lib/browser-test.mjs";
+import { installRenderedVisibilityContract } from "./lib/rendered-visibility.mjs";
 
 const { browser, baseUrl } = await createBrowserTest({ page: false });
 fs.mkdirSync("artifacts", { recursive: true });
@@ -13,6 +14,7 @@ const activate = (page, selector) =>
 
 async function openCart(viewport) {
   const { page, errors } = await createInstrumentedPage(browser, { viewport });
+  await installRenderedVisibilityContract(page);
   await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
   await activate(page, "#sandbox-start");
   await activate(page, "#demos-btn");
@@ -41,7 +43,9 @@ async function layoutSnapshot(page) {
       visibleBottomChildren = [
         ...document.querySelector(".bottom-bar").children,
       ]
-        .filter((element) => getComputedStyle(element).display !== "none")
+        .filter(
+          (element) => window.__simulacrumTestVisibility(element).rendered,
+        )
         .map((element) => ({
           id: element.id,
           className: element.className,
@@ -73,9 +77,9 @@ async function layoutSnapshot(page) {
         collapsed: document
           .querySelector(".drive-hud")
           .classList.contains("collapsed"),
-        bodyVisible:
-          getComputedStyle(document.querySelector(".controller-body"))
-            .display !== "none",
+        bodyVisible: window.__simulacrumTestVisibility(
+          document.querySelector(".controller-body"),
+        ).rendered,
       },
       headerActionsVisible: [
         "#demos-btn",
@@ -83,14 +87,31 @@ async function layoutSnapshot(page) {
         "#remote-btn",
         "#tools-btn",
       ].every((selector) => {
-        const bounds = document.querySelector(selector).getBoundingClientRect();
-        return bounds.width > 0 && bounds.right <= innerWidth;
+        const element = document.querySelector(selector),
+          result = window.__simulacrumTestVisibility(element);
+        return result.rendered && result.area.useful;
       }),
     };
   });
 }
 
 try {
+  const laptopSession = await openCart({ width: 1280, height: 720 }),
+    laptop = await layoutSnapshot(laptopSession.page);
+  assert.equal(
+    laptop.compact,
+    true,
+    "laptop workspace left both dense side rails competing with the canvas",
+  );
+  assert.equal(
+    [laptop.catalog.collapsed, laptop.inspector.collapsed].filter(Boolean)
+      .length,
+    1,
+    "laptop workspace did not keep exactly one contextual rail open",
+  );
+  assertNoErrors(laptopSession.errors, "laptop adaptive workspace");
+  await laptopSession.page.close();
+
   const narrowSession = await openCart({ width: 860, height: 720 }),
     narrow = await layoutSnapshot(narrowSession.page);
 
@@ -164,7 +185,11 @@ try {
 
   await activate(narrowSession.page, "#tools-btn");
   assert.equal(
-    await narrowSession.page.locator(".tools-menu").isVisible(),
+    await narrowSession.page
+      .locator(".tools-menu")
+      .evaluate(
+        (element) => window.__simulacrumTestVisibility(element).rendered,
+      ),
     true,
     "compact header hides the secondary tools menu",
   );
@@ -234,9 +259,9 @@ try {
         .querySelector(".shell")
         .classList.contains("focus-workspace"),
       controller: rect(".drive-hud"),
-      controllerBodyVisible:
-        getComputedStyle(document.querySelector(".controller-body")).display !==
-        "none",
+      controllerBodyVisible: window.__simulacrumTestVisibility(
+        document.querySelector(".controller-body"),
+      ).rendered,
       camera: rect(".camera-tools"),
       safeFrame: state.camera.tracking?.safeFrame || null,
     };
@@ -285,9 +310,16 @@ try {
   );
   assert.equal(
     large.controller.bodyVisible,
-    true,
-    "large display unnecessarily minimized the model controller",
+    false,
+    "large build workspace did not keep operation controls progressively disclosed",
   );
+  await activate(largeSession.page, "#collapse-controller");
+  assert.equal(
+    (await layoutSnapshot(largeSession.page)).controller.bodyVisible,
+    true,
+    "large build workspace cannot expand the model controller on demand",
+  );
+  await activate(largeSession.page, "#collapse-controller");
   assert.ok(
     large.bottomChildren.every(
       (child) =>

@@ -25,7 +25,7 @@ await page.waitForFunction(
 );
 await click("#sandbox-start");
 await page.waitForFunction(() => Boolean(window.render_game_to_text));
-await click("#clear-build");
+await page.keyboard.press("Shift+Delete");
 assert.equal(
   (await state()).parts.length,
   0,
@@ -46,6 +46,9 @@ assert.equal(
 );
 const authoredPartId = snapshot.parts[0].id;
 
+await page
+  .locator('.panel-collapse[aria-label="Expand component library"]')
+  .click();
 await click('.part-card[data-type="beam"]');
 await page.fill("#placement-x", "100");
 await page.fill("#placement-y", "1");

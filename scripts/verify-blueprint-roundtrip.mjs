@@ -5,6 +5,12 @@ import { assert, assertNoErrors, conclude } from "./lib/assert.mjs";
 import { createBrowserTest } from "./lib/browser-test.mjs";
 import { resetBrowserStorageForTest } from "./lib/browser-storage-fixture.mjs";
 
+const withoutPresentation = (state) => {
+  const applicationState = { ...state };
+  delete applicationState.presentation;
+  return applicationState;
+};
+
 const alternativeAsset = structuredClone(builtInDemo("cart").blueprint);
 alternativeAsset.parts[0].pos[0] += 2;
 const alternativePackage = await createSharePackage({
@@ -63,8 +69,8 @@ const state = JSON.parse(
 
 await page.click("#tools-btn");
 await page.click("#blueprint-btn");
-const stableState = JSON.parse(
-    await page.evaluate(() => window.render_game_to_text()),
+const stableState = withoutPresentation(
+    JSON.parse(await page.evaluate(() => window.render_game_to_text())),
   ),
   stablePointer = await page.evaluate(() =>
     localStorage.getItem("simulacrum.v1.storage.commit"),
@@ -92,7 +98,9 @@ for (const malformed of [
 ]) {
   await importPayload(malformed);
   rejectedImports.push({
-    state: JSON.parse(await page.evaluate(() => window.render_game_to_text())),
+    state: withoutPresentation(
+      JSON.parse(await page.evaluate(() => window.render_game_to_text())),
+    ),
     pointer: await page.evaluate(() =>
       localStorage.getItem("simulacrum.v1.storage.commit"),
     ),
@@ -104,8 +112,8 @@ const alternativeCard = page.locator(
   `.exchange-item[data-fingerprint="${alternativePackage.fingerprint}"]`,
 );
 await alternativeCard.waitFor();
-const beforePersistenceFailure = JSON.parse(
-    await page.evaluate(() => window.render_game_to_text()),
+const beforePersistenceFailure = withoutPresentation(
+    JSON.parse(await page.evaluate(() => window.render_game_to_text())),
   ),
   pointerBeforePersistenceFailure = await page.evaluate(() =>
     localStorage.getItem("simulacrum.v1.storage.commit"),
@@ -128,7 +136,9 @@ await page.evaluate(() => {
 await alternativeCard.locator("[data-load-share]").click();
 await page.evaluate(() => window.__restoreStorageSetItem());
 const persistenceRejected = {
-  state: JSON.parse(await page.evaluate(() => window.render_game_to_text())),
+  state: withoutPresentation(
+    JSON.parse(await page.evaluate(() => window.render_game_to_text())),
+  ),
   pointer: await page.evaluate(() =>
     localStorage.getItem("simulacrum.v1.storage.commit"),
   ),
@@ -136,6 +146,7 @@ const persistenceRejected = {
 
 await alternativeCard.locator("[data-delete-share]").click();
 await page.click("#close-blueprints");
+await page.click("#collapse-controller");
 await page.click("#edit-direct-surface");
 const throttle = page.locator('.command-range[data-index="0"]'),
   brake = page.locator(".command-hold").first(),

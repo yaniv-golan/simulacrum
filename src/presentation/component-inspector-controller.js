@@ -59,6 +59,7 @@ import {
  *   prepareFoot: (part: InspectorPart) => void,
  *   openController: (part: InspectorPart) => void,
  *   beginConnection: (partId: number, port: string) => void,
+ *   completeConnection: (partId: number, port: string) => boolean,
  *   selectPart: (partId: number) => void,
  *   selectConnection: (connectionId: string, partId: number) => void,
  *   setMode: (mode: string) => void, notify: (message: string) => void,
@@ -89,9 +90,9 @@ export function createComponentInspectorController({ model, view, actions }) {
     view: {
       list: () => required("#assembly-outliner-list"),
       queryAll: (selector) =>
-        view
-          .queryAll(selector)
-          .map((element) => /** @type {HTMLElement} */ (element)),
+        Array.from(
+          required("#assembly-outliner-list").querySelectorAll(selector),
+        ).map((element) => /** @type {HTMLElement} */ (element)),
     },
     actions: {
       selectPart: actions.selectPart,
@@ -103,6 +104,11 @@ export function createComponentInspectorController({ model, view, actions }) {
   function armPort(partId, port) {
     const part = model.parts().find((candidate) => candidate.id === partId);
     if (!part) return;
+    if (model.connectFrom() && model.connectFrom() !== partId) {
+      actions.completeConnection(partId, port);
+      render();
+      return;
+    }
     actions.beginConnection(partId, port);
     actions.setMode("wire");
     required(".connection-banner b").textContent =
@@ -273,6 +279,12 @@ export function createComponentInspectorController({ model, view, actions }) {
 
   /** @param {InspectorPart} part */
   function bind(part) {
+    const recordEdit = (input, label) => {
+      if (!input.dataset.historyRecorded) {
+        input.dataset.historyRecorded = "true";
+        actions.recordHistory(label);
+      }
+    };
     const displayUnitSelect = /** @type {HTMLSelectElement|null} */ (
       view.query("#mechanism-display-units")
     );
@@ -284,12 +296,9 @@ export function createComponentInspectorController({ model, view, actions }) {
       };
     for (const element of view.queryAll("[data-mechanism-path]")) {
       const input = /** @type {HTMLInputElement} */ (element);
-      input.onfocus = () => {
-        if (input.dataset.historyRecorded) return;
-        input.dataset.historyRecorded = "true";
-        actions.recordHistory(`edit ${TYPES[part.type].name} mechanism`);
-      };
+      input.onblur = () => delete input.dataset.historyRecorded;
       input.onchange = () => {
+        recordEdit(input, `edit ${TYPES[part.type].name} mechanism`);
         const value = Number(input.value) / Number(input.dataset.siFactor || 1),
           path = (input.dataset.mechanismPath || "")
             .split("/")
@@ -320,15 +329,11 @@ export function createComponentInspectorController({ model, view, actions }) {
         );
       };
     }
-    for (const element of view.queryAll("[data-prop]"))
-      element.addEventListener("pointerdown", () =>
-        actions.recordHistory(`tune ${TYPES[part.type].name}`),
-      );
     for (const element of view.queryAll("[data-connection-capacity]")) {
       const input = /** @type {HTMLInputElement} */ (element);
-      input.onpointerdown = () =>
-        actions.recordHistory("tune attachment rating");
+      input.onblur = () => delete input.dataset.historyRecorded;
       input.oninput = () => {
+        recordEdit(input, "tune attachment rating");
         const connection = model.connections()[+input.dataset.connectionIndex];
         if (!connection) return;
         if (input.dataset.connectionCapacity === "force")
@@ -373,9 +378,9 @@ export function createComponentInspectorController({ model, view, actions }) {
     view.bindArranger();
     for (const element of view.queryAll("[data-scale-axis]")) {
       const input = /** @type {HTMLInputElement} */ (element);
-      input.onpointerdown = () =>
-        actions.recordHistory(`scale ${TYPES[part.type].name}`);
+      input.onblur = () => delete input.dataset.historyRecorded;
       input.oninput = () => {
+        recordEdit(input, `scale ${TYPES[part.type].name}`);
         const axis = input.dataset.scaleAxis;
         if (!axis || !["x", "y", "z"].includes(axis)) return;
         part.mesh.scale[axis] = +input.value;
@@ -386,7 +391,9 @@ export function createComponentInspectorController({ model, view, actions }) {
     }
     for (const element of view.queryAll("[data-prop]")) {
       const input = /** @type {HTMLInputElement} */ (element);
+      input.onblur = () => delete input.dataset.historyRecorded;
       input.oninput = () => {
+        recordEdit(input, `tune ${TYPES[part.type].name}`);
         const key = input.dataset.prop;
         if (!key) return;
         const nextValue = +input.value;

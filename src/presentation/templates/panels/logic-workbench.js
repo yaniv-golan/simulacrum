@@ -12,9 +12,9 @@ export function createLogicWorkbenchTemplate(defaultWatSource) {
       <div class="controller-binding-list"></div>
     </details>
     <div class="script-language" role="tablist" aria-label="Program language">
-      <button data-script-language="visual" role="tab" aria-selected="false">VISUAL LOGIC</button>
-      <button data-script-language="typescript" role="tab" aria-selected="false">TYPESCRIPT</button>
-      <button class="active" data-script-language="wat" role="tab" aria-selected="true">WEBASSEMBLY · WAT</button>
+      <button data-script-language="visual" role="tab" aria-selected="false" tabindex="-1">VISUAL LOGIC</button>
+      <button data-script-language="typescript" role="tab" aria-selected="false" tabindex="-1">TYPESCRIPT</button>
+      <button class="active" data-script-language="wat" role="tab" aria-selected="true" tabindex="0">WEBASSEMBLY · WAT</button>
     </div>
     <p id="script-help">Every mode runs through the same restricted controller and physical signal network. <button data-open-learn="scripting">HOW DOES SAFE SCRIPTING WORK?</button></p>
     <div class="visual-logic-workspace hidden">

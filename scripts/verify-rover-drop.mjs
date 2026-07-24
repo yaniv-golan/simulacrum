@@ -17,6 +17,7 @@ await page.waitForFunction(
   () => JSON.parse(window.render_game_to_text()).running,
 );
 await page.waitForTimeout(200);
+await page.locator("canvas").focus();
 await page.evaluate(() =>
   window.dispatchEvent(
     new KeyboardEvent("keydown", { key: "w", code: "KeyW" }),

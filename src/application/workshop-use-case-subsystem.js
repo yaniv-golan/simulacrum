@@ -42,21 +42,16 @@ export function installWorkshopUseCaseSubsystem({
         beginTutorial: () => tutorial?.begin(),
         enterBuild: () => actions.setMode("build"),
         loadDemo: demos.load,
-        openRemote: () => {
-          view.show(".remote-console");
-          remote.render();
-        },
+        openRemote: () => view.click("#remote-btn"),
         openCamera: () => {
           if (view.hidden(".camera-help-card")) view.click("#camera-help");
         },
-        openScript: () => view.show(".wasm-console"),
+        openScript: () => view.click("#wasm-btn"),
         openBlueprints: blueprints.open,
-        openChallenges: () => {
-          challenges.renderBrowser();
-          view.show(".challenge-browser");
-        },
-        openDemos: () => view.show(".demo-browser"),
-        openEnvironment: () => view.show(".environment-panel"),
+        openChallenges: () => view.click("#challenges-btn"),
+        openDemos: () => view.click("#demos-btn"),
+        openEnvironment: () => view.click("#environment-btn"),
+        releaseHeld: remote.releaseHeld,
         notify: view.notify,
       },
     }),
@@ -102,6 +97,7 @@ export function installWorkshopUseCaseSubsystem({
     },
     remote: {
       render: remote.render,
+      releaseHeld: remote.releaseHeld,
       setProfile: (profile) => {
         state.remoteProfile = profile;
         state.remoteEdit = false;

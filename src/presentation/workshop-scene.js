@@ -28,6 +28,12 @@ export function createWorkshopScene({
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
+  renderer.domElement.tabIndex = 0;
+  renderer.domElement.setAttribute("role", "region");
+  renderer.domElement.setAttribute(
+    "aria-label",
+    "3D construction workspace. Use the visible workshop controls or keyboard shortcuts to edit and inspect the machine.",
+  );
   stage?.append(renderer.domElement);
 
   const hemisphere = new THREE.HemisphereLight(0xeaf9ff, 0x32483e, 2.4),

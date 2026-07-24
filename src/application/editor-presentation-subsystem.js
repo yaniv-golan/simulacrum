@@ -7,7 +7,6 @@ import {
   configureAuthoredMechanism,
   configureComponentPart,
 } from "./component-authoring-commands.js";
-
 /** Composes editor selection, connection, arrangement, and Inspector ownership. */
 export function createEditorPresentationSubsystem({
   state,
@@ -27,7 +26,6 @@ export function createEditorPresentationSubsystem({
     renderInspector = () => inspector.render(),
     drawConnections = () => connection.draw(),
     updateSelection = () => selection.update();
-
   selection = createEditorSelectionFeature({
     workspace: {
       parts: () => state.parts,
@@ -58,7 +56,6 @@ export function createEditorPresentationSubsystem({
       notify: actions.notify,
     },
   });
-
   connection = createEditorConnectionFeature({
     workspace: {
       parts: () => state.parts,
@@ -127,6 +124,24 @@ export function createEditorPresentationSubsystem({
       prepareFoot: actions.prepareFoot,
       openController: actions.openController,
       beginConnection: actions.beginConnection,
+      completeConnection: (partId, targetPort) => {
+        const sourceId = state.editor.connectFrom;
+        if (!sourceId) return false;
+        const connected = connection.connect(
+          sourceId,
+          partId,
+          "auto",
+          targetPort,
+        );
+        if (!connected) return false;
+        applyEditorAction(state.editor, { type: "cancel-connection" });
+        view.query(".connection-banner")?.classList.add("hidden");
+        selection.clearEffect("previewLine");
+        actions.setMode("build");
+        actions.notify("Physical connection created");
+        actions.tutorialEvent("connected");
+        return true;
+      },
       selectPart: (partId) => {
         actions.select(partId, [partId]);
         showSelection(state.parts.find((part) => part.id === partId) || null);

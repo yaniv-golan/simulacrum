@@ -18,6 +18,7 @@ import { createAssemblyTransformCommands } from "./assembly-transform-commands.j
  * @typedef {{
  *   parts: EditorPart[], connections: EditorLink[], running: boolean,
  *   selectedId: number | null, selectedIds: Set<number>,
+ *   selectedEntity: {kind?:string,connectionId?:string}|null,
  *   scriptControllerId: number | null, demo: string | null,
  *   activeChallenge: string | null, challengeStatus: string, lastTransformOperation:object|null,
  *   challengeStartMode: string | null,
@@ -166,6 +167,26 @@ export function createAssemblyEditorFeature({
   }
 
   function removeSelection() {
+    if (
+      !workspace.running &&
+      workspace.selectedEntity?.kind === "connection" &&
+      workspace.selectedEntity.connectionId
+    ) {
+      const connectionId = workspace.selectedEntity.connectionId,
+        retained = workspace.connections.filter(
+          (connection) => connection.id !== connectionId,
+        );
+      if (retained.length === workspace.connections.length) return;
+      history.record("delete connection");
+      workspace.connections = retained;
+      view.syncAssembly();
+      view.select([], null);
+      view.showSelection(null);
+      view.drawConnections();
+      view.render();
+      view.notify(`Deleted connection ${connectionId}`);
+      return;
+    }
     const ids = new Set(
       workspace.selectedIds.size
         ? workspace.selectedIds

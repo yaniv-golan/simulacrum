@@ -15,7 +15,7 @@ export function installWorkspaceChrome({
     shell = $(".shell"),
     catalog = $(".catalog"),
     inspector = $(".inspector"),
-    compactQuery = globalThis.matchMedia("(max-width: 1080px)");
+    compactQuery = globalThis.matchMedia("(max-width: 1400px)");
   let focused = false,
     compact = false,
     lastSelectionState = null;
@@ -115,9 +115,22 @@ export function installWorkspaceChrome({
     setPrimaryPanel(hasSelection ? "inspector" : "catalog");
   }
 
-  function closeToolsMenu() {
+  function menuItems() {
+    return [...menu.querySelectorAll('[role="menuitem"]')].filter(
+      (item) => !item.disabled && !item.hidden,
+    );
+  }
+
+  function closeToolsMenu({ restoreFocus = false } = {}) {
     menu.classList.add("hidden");
     toolsButton.setAttribute("aria-expanded", "false");
+    if (restoreFocus) toolsButton.focus();
+  }
+
+  function openToolsMenu() {
+    menu.classList.remove("hidden");
+    toolsButton.setAttribute("aria-expanded", "true");
+    queueMicrotask(() => menuItems()[0]?.focus());
   }
 
   function positionSelectionLabel() {
@@ -143,12 +156,47 @@ export function installWorkspaceChrome({
   toolsButton.addEventListener("click", (event) => {
     event.stopPropagation();
     const opening = menu.classList.contains("hidden");
-    menu.classList.toggle("hidden", !opening);
-    toolsButton.setAttribute("aria-expanded", String(opening));
+    if (opening) openToolsMenu();
+    else closeToolsMenu({ restoreFocus: true });
+  });
+  toolsButton.addEventListener("keydown", (event) => {
+    if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    openToolsMenu();
+    queueMicrotask(() =>
+      (event.key === "ArrowUp" ? menuItems().at(-1) : menuItems()[0])?.focus(),
+    );
   });
   menu.addEventListener("click", (event) => {
     if (event.target instanceof Element && event.target.closest("button"))
       closeToolsMenu();
+  });
+  menu.addEventListener("keydown", (event) => {
+    const item =
+      event.target instanceof Element &&
+      event.target.closest('[role="menuitem"]');
+    if (!item) return;
+    const items = menuItems(),
+      current = items.indexOf(item);
+    let next;
+    if (event.key === "ArrowDown") next = items[(current + 1) % items.length];
+    else if (event.key === "ArrowUp")
+      next = items[(current - 1 + items.length) % items.length];
+    else if (event.key === "Home") next = items[0];
+    else if (event.key === "End") next = items.at(-1);
+    else if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      closeToolsMenu({ restoreFocus: true });
+      return;
+    } else if (event.key === "Tab") {
+      closeToolsMenu();
+      return;
+    } else return;
+    event.preventDefault();
+    event.stopPropagation();
+    next?.focus();
   });
   focusButton.addEventListener("click", () => toggleFocus());
   root.addEventListener("click", (event) => {

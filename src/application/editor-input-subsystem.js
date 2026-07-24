@@ -1,6 +1,6 @@
 import { createMarqueeCommitHandler } from "../presentation/marquee-selector.js";
 import { installWorkshopPointerController } from "../presentation/workshop-pointer-controller.js";
-import { installKeyboardShortcuts } from "./keyboard-shortcut-controller.js";
+import { installEditorKeyboardCommands } from "./editor-keyboard-composition.js";
 import {
   bindExactPlacementForm,
   createPendingPlacementCommand,
@@ -122,41 +122,18 @@ export function installEditorInputSubsystem({
     cancelPlacement: cancelConnection,
   });
 
-  installKeyboardShortcuts({
-    target: actions.keyboardTarget,
-    model: {
-      running: () => state.running,
-      captureIndex: () => state.capturingHotkey,
-      setCaptureIndex: (index) => {
-        state.capturingHotkey = index;
-      },
-      profile: () => state.remoteProfile,
-      controls: (profile) => state.remoteControls[profile] || [],
-      activeElementTag: view.activeElementTag,
-    },
+  const keyboard = installEditorKeyboardCommands({
+    state,
+    camera,
+    editor,
     drive,
     remote,
-    editor: {
-      undo: editor.undo,
-      redo: editor.redo,
-      resetSimulation: simulation.reset,
-      selectAll: editor.selectAll,
-      duplicate: editor.duplicate,
-      clear: editor.clearBuildPlate,
-      remove: editor.remove,
-      mirror: editor.mirror,
-      cancel: cancelConnection,
-      setTool,
-      toggleExploded: editor.toggleExploded,
-    },
     simulation,
-    camera: {
-      clearTool: camera.clearCameraTool,
-      navigate: camera.handleNavigationKey,
-      releaseSpace: camera.releaseSpace,
-    },
-    openLearning: learning.open,
-    toggleWorkspaceFocus: workspace.toggleFocus,
+    learning,
+    workspace,
+    actions,
+    setTool,
+    cancelConnection,
   });
 
   view.query("#cancel-connect").onclick = cancelConnection;
@@ -165,5 +142,11 @@ export function installEditorInputSubsystem({
   view.query("#rotate-tool").onclick = () => setTool("rotate");
   view.query("#explode-view").onclick = editor.toggleExploded;
 
-  return Object.freeze({ ...pointer, cancelConnection, placePending, setTool });
+  return Object.freeze({
+    ...pointer,
+    cancelConnection,
+    keyboard,
+    placePending,
+    setTool,
+  });
 }

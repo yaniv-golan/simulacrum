@@ -378,9 +378,9 @@ export function createCameraInteractionController({
       else if (event.shiftKey) toggleFollow();
       else frameSelection();
     }
-    if (event.code === "Digit1" && !event.repeat) setAxisView("front");
-    if (event.code === "Digit3" && !event.repeat) setAxisView("side");
-    if (event.code === "Digit7" && !event.repeat) setAxisView("top");
+    if (event.code === "Numpad1" && !event.repeat) setAxisView("front");
+    if (event.code === "Numpad3" && !event.repeat) setAxisView("side");
+    if (event.code === "Numpad7" && !event.repeat) setAxisView("top");
     if (event.key === "+" || event.key === "=") zoom(-115);
     if (event.key === "-" || event.key === "_") zoom(115);
     if (event.key === "Home") reset();
@@ -480,8 +480,8 @@ export function createCameraInteractionController({
       distance += delta;
     },
     pointOnHorizontalPlane,
-    releaseSpace(event) {
-      if (event.code === "Space") spaceHeld = false;
+    releaseHeld() {
+      spaceHeld = false;
     },
     reset,
     setCameraTool,

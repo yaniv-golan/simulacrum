@@ -1,11 +1,13 @@
 import fs from "node:fs/promises";
 import { assert, assertNoErrors, conclude } from "./lib/assert.mjs";
 import { createBrowserTest } from "./lib/browser-test.mjs";
+import { installRenderedVisibilityContract } from "./lib/rendered-visibility.mjs";
 
 await fs.mkdir("artifacts", { recursive: true });
 const { browser, page, errors, baseUrl } = await createBrowserTest({
   viewport: { width: 860, height: 720 },
 });
+await installRenderedVisibilityContract(page);
 await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
 
 function contrastRatio(foreground, background) {
@@ -93,26 +95,16 @@ await page.click("#sandbox-start");
 await page.locator(".catalog").waitFor();
 
 const unnamedControls = await page.evaluate(() => {
-  const visible = (element) => {
-      const style = getComputedStyle(element),
-        bounds = element.getBoundingClientRect();
-      return (
-        style.display !== "none" &&
-        style.visibility !== "hidden" &&
-        bounds.width > 0 &&
-        bounds.height > 0
-      );
-    },
-    label = (element) =>
-      element.getAttribute("aria-label")?.trim() ||
-      element.getAttribute("aria-labelledby")?.trim() ||
-      [...(element.labels || [])]
-        .map((item) => item.textContent?.trim())
-        .filter(Boolean)
-        .join(" ") ||
-      (element.tagName === "BUTTON" ? element.textContent?.trim() : "");
+  const label = (element) =>
+    element.getAttribute("aria-label")?.trim() ||
+    element.getAttribute("aria-labelledby")?.trim() ||
+    [...(element.labels || [])]
+      .map((item) => item.textContent?.trim())
+      .filter(Boolean)
+      .join(" ") ||
+    (element.tagName === "BUTTON" ? element.textContent?.trim() : "");
   return [...document.querySelectorAll("button, input, select, textarea")]
-    .filter(visible)
+    .filter((element) => window.__simulacrumTestVisibility(element).rendered)
     .filter((element) => !label(element))
     .map((element) => element.id || element.outerHTML.slice(0, 100));
 });
@@ -186,16 +178,9 @@ const focusBoundary = await page
       ...dialog.querySelectorAll(
         "button:not([disabled]), input:not([disabled]):not([type=hidden]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])",
       ),
-    ].filter((element) => {
-      const closedDetails = element.closest("details:not([open])");
-      return (
-        !element.hidden &&
-        element.getAttribute("aria-hidden") !== "true" &&
-        !element.closest(".hidden") &&
-        element.getClientRects().length > 0 &&
-        (!closedDetails || Boolean(element.closest("summary")))
-      );
-    });
+    ].filter(
+      (element) => window.__simulacrumTestVisibility(element).keyboardFocusable,
+    );
     focusables.at(-1).focus();
     return {
       first: focusables[0].id,

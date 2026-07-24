@@ -1,6 +1,10 @@
 import { HistoryStore } from "../model/history-store.js";
-import { installAccessibleDialogs } from "../presentation/accessibility-controller.js";
+import {
+  installAccessibleDialogs,
+  installAccessibleDisclosures,
+} from "../presentation/accessibility-controller.js";
 import { installCameraControlGuide } from "../presentation/camera-control-guide.js";
+import { installCompositeKeyboardNavigation } from "../presentation/composite-keyboard-controller.js";
 import { createWorkshopTemplate } from "../presentation/ui-template.js";
 import { installWorkspaceChrome } from "../presentation/workspace-chrome.js";
 import { applyUIAction } from "../model/application-state.js";
@@ -17,6 +21,8 @@ export function createWorkshopShellSubsystem({
 
   root.innerHTML = createWorkshopTemplate(definitions.defaultWatSource);
   installAccessibleDialogs();
+  installAccessibleDisclosures();
+  installCompositeKeyboardNavigation();
   installCameraControlGuide();
 
   const inspectorHelp = query(".inspector-empty p"),
