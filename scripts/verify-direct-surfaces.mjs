@@ -133,6 +133,23 @@ const driven = await page.evaluate(() =>
   JSON.parse(window.render_game_to_text()),
 );
 await forwardControl.dispatchEvent("pointerup");
+await page.locator("canvas").focus();
+await page.evaluate(() => {
+  window.dispatchEvent(
+    new KeyboardEvent("keydown", { key: "w", code: "KeyW" }),
+  );
+  window.dispatchEvent(
+    new KeyboardEvent("keydown", { key: "a", code: "KeyA" }),
+  );
+});
+await page.evaluate(() => window.advanceTime(1200));
+await page.evaluate(() => {
+  window.dispatchEvent(new KeyboardEvent("keyup", { key: "a", code: "KeyA" }));
+  window.dispatchEvent(new KeyboardEvent("keyup", { key: "w", code: "KeyW" }));
+});
+const steeredLeft = await page.evaluate(() =>
+  JSON.parse(window.render_game_to_text()),
+);
 await forwardControl.focus();
 await page.keyboard.down("Space");
 const keyboardPressed = await page.evaluate(
@@ -196,6 +213,11 @@ console.log(
         lighting: driven.demo.mobility?.lighting,
         componentActuators:
           driven.architecture?.session?.systems?.componentActuators,
+      },
+      steeredLeft: {
+        before: driven.demo.position,
+        after: steeredLeft.demo.position,
+        steering: steeredLeft.demo.mobility?.steering,
       },
       overlap,
       droneBefore: droneBefore.directSurface,
@@ -273,6 +295,10 @@ await conclude(browser, () => {
   assert.ok(
     (driven.demo.mobility?.signedSpeed || 0) > 0.1,
     "forward direct throttle moved the rover backward or not at all",
+  );
+  assert.ok(
+    steeredLeft.demo.position.x < driven.demo.position.x - 0.2,
+    `A/left moved the rover toward signed vehicle-right: ${JSON.stringify({ before: driven.demo.position, after: steeredLeft.demo.position })}`,
   );
   assert.notEqual(
     driven.mission,

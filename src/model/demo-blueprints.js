@@ -592,8 +592,8 @@ function cart() {
     actionBindings: {
       forward: { controlId: "cart-1", pressedValue: 1, releasedValue: 0 },
       reverse: { controlId: "cart-1", pressedValue: -1, releasedValue: 0 },
-      left: { controlId: "cart-2", pressedValue: -1, releasedValue: 0 },
-      right: { controlId: "cart-2", pressedValue: 1, releasedValue: 0 },
+      left: { controlId: "cart-2", pressedValue: 1, releasedValue: 0 },
+      right: { controlId: "cart-2", pressedValue: -1, releasedValue: 0 },
       brake: { controlId: "cart-3", pressedValue: 1, releasedValue: 0 },
       lights: { controlId: "cart-4" },
     },

@@ -205,6 +205,7 @@ let maximumContacts = 0,
   maximumForceUtilizationRecord = null,
   maximumTorqueUtilization = 0,
   maximumTorqueUtilizationRecord = null,
+  maximumMinimumLeftSteeringAngleRad = 0,
   steeringInterferenceContacts = [],
   connectionById = new Map(
     assembly.connections.map((connection) => [connection.id, connection]),
@@ -218,7 +219,11 @@ for (let tick = 1; tick <= 600; tick++) {
       tick <= 120 ? 0 : tick <= 144 ? 1 : 0.65,
     );
   for (const hingeId of steeringHingeIds)
-    commandBus.writeRemote(hingeId, "joint_target", tick <= 180 ? 0 : -1);
+    commandBus.writeRemote(
+      hingeId,
+      "joint_target",
+      tick <= 180 ? 0 : tick <= 480 ? 1 : 0,
+    );
   powerNetwork.resolve(runGraph, dt);
   const actuatorTelemetry = runtime.stepActuators(context, dt);
   if (tick <= 120) {
@@ -294,6 +299,15 @@ for (let tick = 1; tick <= 600; tick++) {
     drivenStates = telemetry.wheelStates.filter((state) =>
       drivenWheelIds.has(state.partId),
     );
+  if (tick > 240 && tick <= 480)
+    maximumMinimumLeftSteeringAngleRad = Math.max(
+      maximumMinimumLeftSteeringAngleRad,
+      Math.min(
+        ...drivenStates
+          .filter((wheel) => steeredWheelIds.includes(wheel.partId))
+          .map((wheel) => wheel.steeringAngleRad),
+      ),
+    );
   maximumContacts = Math.max(
     maximumContacts,
     drivenStates.filter((state) => state.touching).length,
@@ -336,8 +350,8 @@ assert.ok(
   `generic rotary drive and tire contact advanced only ${travelM} m`,
 );
 assert.ok(
-  Math.abs(lateralTravelM) > 3,
-  `full steering command changed the rover's lateral course by only ${lateralTravelM} m`,
+  lateralTravelM < -3,
+  `the authored left command moved the rover toward signed vehicle-right: ${lateralTravelM} m`,
 );
 assert.deepEqual(
   steeringInterferenceContacts,
@@ -345,10 +359,8 @@ assert.deepEqual(
   `front guide rails physically jammed the steering corner: ${JSON.stringify(steeringInterferenceContacts.slice(0, 8))}`,
 );
 assert.ok(
-  finalDrivenStates
-    .filter((wheel) => steeredWheelIds.includes(wheel.partId))
-    .every((wheel) => wheel.steeringAngleRad < -0.06),
-  `the cart's authored left command did not turn both physical tires left: ${JSON.stringify({ lateralTravelM, wheels: finalDrivenStates })}`,
+  maximumMinimumLeftSteeringAngleRad > 0.06,
+  `the cart's authored left command did not turn both physical tires left: ${JSON.stringify({ lateralTravelM, maximumMinimumLeftSteeringAngleRad })}`,
 );
 assert.ok(
   maximumContacts === drivenWheelIds.size,
@@ -471,5 +483,5 @@ assert.equal(
   "Cannon world retained assembly bodies after dispose",
 );
 console.log(
-  `rounded wheel runtime passed (${assembly.parts.length} bodies, ${travelM.toFixed(2)} m forward travel, ${Math.abs(lateralTravelM).toFixed(2)} m lateral response, ${maximumDeflectionM.toFixed(4)} m peak tire deflection)`,
+  `rounded wheel runtime passed (${assembly.parts.length} bodies, ${travelM.toFixed(2)} m forward travel, ${lateralTravelM.toFixed(2)} m signed left response, ${maximumDeflectionM.toFixed(4)} m peak tire deflection)`,
 );

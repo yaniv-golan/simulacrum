@@ -42,6 +42,9 @@
 
 ### Fixed
 
+- Corrected the Suspension Rover's semantic left/right steering bindings and
+  added signed trajectory coverage for both deterministic and browser input
+  paths.
 - Restored responsive steering in the Suspension Rover by giving its front
   linear guides physical clearance from the steering knuckles and hub motors,
   with a stable steering range and deterministic collision/turn-response
