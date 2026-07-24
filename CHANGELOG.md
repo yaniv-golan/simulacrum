@@ -56,6 +56,14 @@
 
 ### Fixed
 
+- Prevented a one-ended Rope attached to a wheel-like component from starting
+  inside the wheel or build plate and injecting launch energy. The endpoint now
+  follows its exact anchor: an axis attachment does not wind Rope, while an
+  off-axis attachment produces ordinary centerline motion, force, torque, and
+  contact.
+- Updated transitive PostCSS from 8.5.17 to 8.5.23 and Nano ID from 3.3.15 to
+  3.3.16, resolving GHSA-r28c-9q8g-f849; the supported-runtime npm audit now
+  reports zero vulnerabilities.
 - Corrected the Suspension Rover's semantic left/right steering bindings and
   added signed trajectory coverage for both deterministic and browser input
   paths.
