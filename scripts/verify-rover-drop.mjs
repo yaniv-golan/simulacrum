@@ -25,59 +25,81 @@ await page.evaluate(() =>
 );
 
 const samples = [];
-let previousSurface = "platform";
-// Prove the keyboard path, then continue at a controlled cruise speed for the
-// plate-to-field landing. The separate hard-impact suite owns destructive
-// obstacle-speed impacts.
-for (let step = 0; step < 48; step++) {
-  if (step > 0)
-    await page.evaluate(
-      (powered) => {
-        window.dispatchEvent(
-          new KeyboardEvent(powered ? "keydown" : "keyup", {
-            key: "w",
-            code: "KeyW",
-          }),
-        );
-      },
-      step % 3 === 1,
-    );
-  await page.evaluate(() => window.advanceTime(250));
+let landedAtS = null,
+  failureIds = [];
+// Exercise the player-visible contract: hold full forward input beyond the
+// finite platform edge, then brake only after every wheel is supported by field
+// terrain. Sampling continues through the complete landing instead of accepting
+// the first on-field wheel as proof that the rover survived.
+for (let step = 0; step < 60; step++) {
+  const advanceMs = 250;
+  await page.evaluate(
+    (milliseconds) => window.advanceTime(milliseconds),
+    advanceMs,
+  );
   const state = await page.evaluate(() =>
     JSON.parse(window.render_game_to_text()),
   );
   const physics = state.demo.mobility?.physics;
-  if (physics?.surface !== previousSurface || step % 4 === 0) {
-    samples.push({
-      timeS: state.simulationTime,
-      mission: state.mission,
-      position: state.demo.position,
-      speed: state.demo.mobility?.signedSpeed,
-      throttle: state.directSurface?.controls?.find(
-        (control) => control.channel === "throttle",
-      )?.value,
-      wheelDrive: state.architecture?.session?.systems?.wheels,
-      physics,
-      tireDeflectionM: state.parts
-        .filter((part) => part.type === "wheel")
-        .map((part) => part.tireDeflectionM),
-      failed: state.connections.filter((connection) => connection.failed),
-      detached: state.parts
-        .filter((part) => part.aerothermal?.detached)
-        .map((part) => ({ id: part.id, type: part.type })),
-    });
-  }
-  previousSurface = physics?.surface;
-  if (physics?.onField) break;
-  if (step === 0)
+  samples.push({
+    timeS: state.simulationTime,
+    mission: state.mission,
+    position: state.demo.position,
+    speed: state.demo.mobility?.signedSpeed,
+    physics,
+    tireDeflectionM: state.parts
+      .filter((part) => part.type === "wheel")
+      .map((part) => part.tireDeflectionM),
+    failed: state.connections.filter((connection) => connection.failed),
+    maximumConnection: state.connections
+      .map((connection) => ({
+        id: connection.id,
+        a: connection.a,
+        b: connection.b,
+        stress: connection.stress || 0,
+        forceUtilization: connection.forceUtilization || 0,
+        torqueUtilization: connection.torqueUtilization || 0,
+        peakLoadN: connection.peakLoadN || 0,
+        peakTorqueNm: connection.peakTorqueNm || 0,
+        fatigue: connection.fatigue || 0,
+      }))
+      .sort((left, right) => right.stress - left.stress)[0],
+    maximumFatigue: Math.max(
+      0,
+      ...state.connections.map((connection) => connection.fatigue || 0),
+    ),
+    detached: state.parts
+      .filter((part) => part.aerothermal?.detached)
+      .map((part) => ({ id: part.id, type: part.type })),
+  });
+  failureIds = state.connections
+    .filter((connection) => connection.failed)
+    .map((connection) => connection.id);
+  if (
+    landedAtS == null &&
+    physics?.onField &&
+    !physics.onPlatform &&
+    physics.wheelContacts === 4
+  ) {
+    landedAtS = state.simulationTime;
     await page.evaluate(() =>
-      window.dispatchEvent(
+      [
         new KeyboardEvent("keyup", { key: "w", code: "KeyW" }),
-      ),
+        new KeyboardEvent("keydown", { key: " ", code: "Space" }),
+      ].forEach((event) => window.dispatchEvent(event)),
     );
+  }
+  if (
+    failureIds.length > 0 ||
+    (landedAtS != null && state.simulationTime - landedAtS >= 3)
+  )
+    break;
 }
 await page.evaluate(() =>
-  window.dispatchEvent(new KeyboardEvent("keyup", { key: "w", code: "KeyW" })),
+  [
+    new KeyboardEvent("keyup", { key: "w", code: "KeyW" }),
+    new KeyboardEvent("keyup", { key: " ", code: "Space" }),
+  ].forEach((event) => window.dispatchEvent(event)),
 );
 for (const selector of ["#close-remote", "#close-inspect"]) {
   const element = page.locator(selector);
@@ -97,7 +119,31 @@ for (const selector of ["#close-remote", "#close-inspect"]) {
 }
 await page.waitForTimeout(200);
 await page.screenshot({ path: "artifacts/rover-drop-fixed.png" });
-console.log(JSON.stringify({ samples, errors }, null, 2));
+console.log(
+  JSON.stringify(
+    {
+      sampleCount: samples.length,
+      landedAtS,
+      finalPosition: samples.at(-1)?.position,
+      maximumStress: Math.max(
+        0,
+        ...samples.map((sample) => sample.maximumConnection?.stress || 0),
+      ),
+      maximumFatigue: Math.max(
+        0,
+        ...samples.map((sample) => sample.maximumFatigue),
+      ),
+      maximumTireDeflectionM: Math.max(
+        0,
+        ...samples.flatMap((sample) => sample.tireDeflectionM),
+      ),
+      failureIds,
+      errors,
+    },
+    null,
+    2,
+  ),
+);
 await conclude(browser, () => {
   assert.ok(samples.length >= 4, "rover drop produced insufficient telemetry");
   assert.ok(
@@ -105,12 +151,36 @@ await conclude(browser, () => {
     "rover never reached field terrain",
   );
   assert.ok(
+    samples.some(
+      (sample) =>
+        sample.physics?.onField &&
+        !sample.physics.onPlatform &&
+        sample.physics.wheelContacts === 4,
+    ),
+    "rover never completed four-wheel field contact beyond the egress",
+  );
+  assert.ok(
     samples.some((sample) => sample.speed > 1),
     "forward keyboard input never produced positive forward speed",
   );
   assert.ok(
-    samples.every((sample) => sample.failed.length === 0),
-    "normal plate exit broke attachments",
+    failureIds.length === 0 &&
+      samples.every((sample) => sample.failed.length === 0),
+    `ordinary platform drop broke attachments: ${failureIds.join(", ")}`,
+  );
+  assert.ok(
+    samples.every((sample) => sample.detached.length === 0),
+    "ordinary platform drop detached parts",
+  );
+  assert.equal(
+    Math.max(0, ...samples.map((sample) => sample.maximumFatigue)),
+    0,
+    "ordinary platform drop accumulated structural fatigue",
+  );
+  assert.ok(
+    Math.max(0, ...samples.flatMap((sample) => sample.tireDeflectionM)) <=
+      0.145 + 1e-9,
+    "ordinary platform drop exceeded the authored Wheel carcass stroke",
   );
   assertNoErrors(errors, "rover drop");
 });
