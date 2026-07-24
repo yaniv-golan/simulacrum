@@ -24,7 +24,9 @@ import { createAssemblyTransformCommands } from "./assembly-transform-commands.j
  *   challengeStartMode: string | null,
  * }} AssemblyWorkspace
  * @typedef {{
- *   suspended: boolean, record: (label: string) => void,
+ *   suspended: boolean,
+ *   state: (snapshot?:object) => object|void,
+ *   record: (label: string, snapshot?: object) => void,
  * }} AssemblyHistoryPort
  * @typedef {{
  *   stopAll: (message: string) => void, stopOne: (message: string, id: number) => void,
@@ -56,6 +58,7 @@ import { createAssemblyTransformCommands } from "./assembly-transform-commands.j
  *   workspace: AssemblyWorkspace, history: AssemblyHistoryPort,
  *   controllers: AssemblyControllerPort, simulation: AssemblySimulationPort,
  *   view: AssemblyViewPort, context: AssemblyContextPort,
+ *   catalog?: Record<string, unknown>, workspaceSnapshot?: () => object,
  *   getNextId: () => number, setNextId: (value: number) => void,
  * }} ports
  */
@@ -66,9 +69,13 @@ export function createAssemblyEditorFeature({
   simulation,
   view,
   context,
+  catalog = TYPES,
+  workspaceSnapshot = () => ({ parts: [], connections: [] }),
   getNextId,
   setNextId,
 }) {
+  let duplicateIntentProvider = () => null,
+    duplicateCommitted = () => {};
   function add(type, pos = [0, 1, 0], authored = {}, customColor = null) {
     if (!history.suspended) history.record(`add ${TYPES[type]?.name || type}`);
     const authoredFields = authoredComponentFields(type, authored),
@@ -219,7 +226,9 @@ export function createAssemblyEditorFeature({
     view.showSelection(null);
     view.drawConnections();
     view.render();
-    view.notify(`Deleted ${ids.size} component${ids.size === 1 ? "" : "s"}`);
+    view.notify(
+      `Deleted ${ids.size} component${ids.size === 1 ? "" : "s"} · Undo is available`,
+    );
   }
 
   function clearBuildPlate() {
@@ -265,6 +274,12 @@ export function createAssemblyEditorFeature({
     history,
     view,
     clonePart,
+    placement: {
+      catalog,
+      snapshot: workspaceSnapshot,
+      intent: () => duplicateIntentProvider(),
+      committed: () => duplicateCommitted(),
+    },
   });
 
   return Object.freeze({
@@ -272,6 +287,13 @@ export function createAssemblyEditorFeature({
     clear,
     clearBuildPlate,
     clonePart,
+    /** @param {{ intent?:()=>object|null, committed?:()=>void }} [options] */
+    configureDuplicatePlacement({ intent, committed } = {}) {
+      duplicateIntentProvider =
+        typeof intent === "function" ? intent : () => null;
+      duplicateCommitted =
+        typeof committed === "function" ? committed : () => {};
+    },
     duplicate: transforms.duplicate,
     mirror: transforms.mirror,
     removeSelection,

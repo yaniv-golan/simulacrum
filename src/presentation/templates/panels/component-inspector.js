@@ -22,9 +22,9 @@ export function createComponentInspectorTemplate() {
       <div id="load-monitor"></div>
       <div class="ports"><h4>CONNECTION PORTS</h4><div id="port-list"></div></div>
       <div class="inspector-actions">
-        <button id="duplicate-part">DUPLICATE</button>
-        <button id="mirror-selection">MIRROR X</button>
-        <button class="danger" id="delete-part">DELETE</button>
+        <button id="duplicate-part" data-shortcut-action="selection.duplicate">DUPLICATE <kbd data-shortcut-hint>C</kbd></button>
+        <button id="mirror-selection" title="Reflect selection across the world X plane (Shift+M)">X-AXIS MIRROR</button>
+        <button class="danger" id="delete-part" data-shortcut-action="selection.remove">DELETE <kbd data-shortcut-hint>X</kbd></button>
       </div>
     </div>
   </aside>`;

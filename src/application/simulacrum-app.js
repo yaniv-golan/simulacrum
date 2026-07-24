@@ -62,7 +62,8 @@ const simulationRuntime = createSimulationRuntimeState(),
     },
     view: { render: renderUI },
   });
-const captureBuildState = () => buildHistoryFeature.capture(),
+const historyState = (value) =>
+    value ? buildHistoryFeature.restore(value) : buildHistoryFeature.capture(),
   refreshHistoryUI = () => buildHistoryFeature.refresh(),
   recordHistory = (label, snapshot = null) =>
     buildHistoryFeature.record(label, snapshot);
@@ -98,7 +99,7 @@ const editorStageComposition = createWorkshopEditorStageComposition({
     keys: STORAGE_KEYS,
     runtime: simulationRuntime,
     controller: { open: controllerSubsystem.open },
-    history: { capture: captureBuildState, record: recordHistory },
+    history: { capture: historyState, record: recordHistory },
     assembly: {
       sync: syncAssemblyModel,
       currentConnections,
@@ -126,10 +127,9 @@ const assemblyFeatureSubsystem = createWorkshopAssemblyComposition({
   model: assemblyModel,
   definitions: {
     catalog: TYPES,
-    keys: STORAGE_KEYS,
     controlTemplates: CONTROL_TEMPLATES,
   },
-  history: { record: recordHistory },
+  history: { state: historyState, record: recordHistory },
   controllers: controllerSubsystem,
   presentation: editorStageComposition,
   simulation: { destroyFlight: destroyComponentFlightPhysics },
@@ -191,7 +191,7 @@ const buildPersistenceSubsystem = createWorkshopBuildComposition({
   controllers: controllerSubsystem,
   stage: stageFoundation,
   history: {
-    capture: captureBuildState,
+    capture: historyState,
     record: recordHistory,
     refresh: refreshHistoryUI,
   },

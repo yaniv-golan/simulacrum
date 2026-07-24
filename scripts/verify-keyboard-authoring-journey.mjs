@@ -88,7 +88,8 @@ assert.equal(
   "the selected assembly tree lost its one Tab entry",
 );
 await tabTo('[role="treeitem"][tabindex="0"]', 40, "Shift+Tab");
-await page.keyboard.press("ControlOrMeta+D");
+await tabTo("canvas", 40, "Shift+Tab");
+await page.keyboard.press("KeyC");
 await page.waitForFunction(
   () => JSON.parse(window.render_game_to_text()).parts.length === 2,
 );
@@ -136,7 +137,8 @@ assert.equal(
   `keyboard undo did not restore yaw: ${JSON.stringify(undoState)}`,
 );
 await tabTo(`[data-outliner-part="${duplicateId}"]`);
-await page.keyboard.press("Delete");
+await tabTo("canvas", 40, "Shift+Tab");
+await page.keyboard.press("KeyX");
 await page.waitForFunction(
   (id) =>
     !JSON.parse(window.render_game_to_text()).parts.some(

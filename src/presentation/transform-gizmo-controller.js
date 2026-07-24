@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { TransformControls } from "three/addons/controls/TransformControls.js";
+import { AUTHORING_TRANSLATION_SNAP_M } from "../model/authoring-space-policy.js";
 
 /** Owns snapped single- and multi-part transform-gizmo interaction. */
 export function createTransformGizmoController({
@@ -15,7 +16,7 @@ export function createTransformGizmoController({
     transform = new TransformControls(camera, element);
   groupPivot.name = "groupTransformPivot";
   machine.add(groupPivot);
-  transform.setTranslationSnap(0.25);
+  transform.setTranslationSnap(AUTHORING_TRANSLATION_SNAP_M);
   transform.setRotationSnap(THREE.MathUtils.degToRad(15));
   transform.setSize(0.78);
   scene.add(transform.getHelper());

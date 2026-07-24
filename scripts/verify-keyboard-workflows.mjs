@@ -27,6 +27,68 @@ await page.locator("#sandbox-start").focus();
 await page.keyboard.press("Space");
 await page.locator(".catalog").waitFor();
 
+const editingBindings = await page.evaluate(() => {
+  const state = JSON.parse(window.render_game_to_text()),
+    bindings = state.presentation.keyboard.bindings;
+  return {
+    duplicate: bindings.find(({ id }) => id === "selection.duplicate"),
+    remove: bindings.find(({ id }) => id === "selection.remove"),
+    explode: bindings.find(({ id }) => id === "view.explode"),
+    aria: {
+      duplicate: document
+        .querySelector("#duplicate-part")
+        ?.getAttribute("aria-keyshortcuts"),
+      remove: document
+        .querySelector("#delete-part")
+        ?.getAttribute("aria-keyshortcuts"),
+      explode: document
+        .querySelector("#explode-view")
+        ?.getAttribute("aria-keyshortcuts"),
+    },
+  };
+});
+assert.deepEqual(editingBindings.duplicate.bindings, ["KeyC", "Primary+KeyD"]);
+assert.deepEqual(editingBindings.remove.bindings, [
+  "KeyX",
+  "Delete",
+  "Backspace",
+]);
+assert.deepEqual(editingBindings.explode.bindings, ["Shift+KeyX"]);
+assert.match(editingBindings.aria.duplicate, /^C (Control|Meta)\+D$/);
+assert.equal(editingBindings.aria.remove, "X Delete Backspace");
+assert.equal(editingBindings.aria.explode, "Shift+X");
+
+const expandLibraryForTextEntry = page.locator(
+  '.panel-collapse[aria-label="Expand component library"]',
+);
+if (await expandLibraryForTextEntry.count())
+  await expandLibraryForTextEntry.click();
+await page.locator(".search input").focus();
+assert.equal(
+  await page.evaluate(
+    () =>
+      JSON.parse(window.render_game_to_text()).presentation.focusOwner.context,
+  ),
+  "text-entry",
+  "part search did not own printable keyboard input",
+);
+await page.waitForTimeout(100);
+const partCountBeforeTextEntry = await page.evaluate(
+  () => JSON.parse(window.render_game_to_text()).parts.length,
+);
+await page.keyboard.press("KeyC");
+await page.keyboard.press("KeyX");
+await page.waitForTimeout(50);
+assert.equal(
+  await page.evaluate(
+    () => JSON.parse(window.render_game_to_text()).parts.length,
+  ),
+  partCountBeforeTextEntry,
+  "bare C duplicated while text entry owned the key",
+);
+assert.equal(await page.locator(".search input").inputValue(), "cx");
+await page.locator(".search input").fill("");
+
 await page.locator('[data-mode="build"]').focus();
 await page.keyboard.press("ArrowRight");
 assert.equal(
@@ -70,6 +132,66 @@ assert.equal(
   ),
   "canvas",
   "text state did not project the canvas keyboard context",
+);
+
+const selectedForFastEdit = await page.evaluate(() => {
+  const state = JSON.parse(window.render_game_to_text());
+  return state.selectedPart || state.parts[0].id;
+});
+const expandInspectorForFastEdit = page.locator(
+  '.panel-collapse[aria-label="Expand inspector"]',
+);
+if (await expandInspectorForFastEdit.count())
+  await expandInspectorForFastEdit.click();
+await page.locator(`[data-outliner-part="${selectedForFastEdit}"]`).click();
+await page.locator("canvas").focus();
+await page.keyboard.press("Digit1");
+const fastEditStartCount = await page.evaluate(
+  () => JSON.parse(window.render_game_to_text()).parts.length,
+);
+await page.keyboard.press("KeyC");
+await page.waitForFunction(
+  (count) =>
+    JSON.parse(window.render_game_to_text()).parts.length === count + 1,
+  fastEditStartCount,
+);
+await page.evaluate(() =>
+  window.dispatchEvent(
+    new KeyboardEvent("keydown", {
+      code: "KeyC",
+      key: "c",
+      bubbles: true,
+      repeat: true,
+    }),
+  ),
+);
+assert.equal(
+  await page.evaluate(
+    () => JSON.parse(window.render_game_to_text()).parts.length,
+  ),
+  fastEditStartCount + 1,
+  "a repeated KeyC event created another duplicate",
+);
+await page.keyboard.press("KeyX");
+await page.waitForFunction(
+  (count) => JSON.parse(window.render_game_to_text()).parts.length === count,
+  fastEditStartCount,
+);
+await page.keyboard.press("Shift+KeyX");
+assert.equal(
+  await page.evaluate(
+    () => JSON.parse(window.render_game_to_text()).explodedView.active,
+  ),
+  true,
+  "Shift+X did not activate Exploded View",
+);
+await page.keyboard.press("Shift+KeyX");
+assert.equal(
+  await page.evaluate(
+    () => JSON.parse(window.render_game_to_text()).explodedView.active,
+  ),
+  false,
+  "Shift+X did not collapse Exploded View",
 );
 
 await page.locator("#tools-btn").focus();
@@ -123,8 +245,46 @@ assert.equal(
   "keyboard-command-surface",
   "command surface was not projected as the active modal",
 );
-await page.keyboard.press("Tab");
-await page.keyboard.type("Pause or resume");
+const commandSearch = page.locator("#keyboard-command-search");
+await commandSearch.fill("Duplicate selection");
+await page
+  .locator(
+    '[data-keyboard-action="selection.duplicate"][data-keyboard-slot="0"]',
+  )
+  .click();
+await page.keyboard.press("Delete");
+assert.match(
+  await page.locator("#keyboard-command-status").innerText(),
+  /binding cleared/i,
+  "duplicate primary binding could not be cleared",
+);
+assert.match(
+  await page.locator("#duplicate-part").getAttribute("aria-keyshortcuts"),
+  /^(Control|Meta)\+D$/,
+  "duplicate aria-keyshortcuts did not remove the cleared C binding",
+);
+await commandSearch.fill("Delete selection");
+await page
+  .locator('[data-keyboard-action="selection.remove"][data-keyboard-slot="0"]')
+  .click();
+await page.keyboard.press("Backspace");
+assert.equal(
+  await page.locator("#delete-part").getAttribute("aria-keyshortcuts"),
+  "Delete Backspace",
+  "delete aria-keyshortcuts did not remove the cleared X binding",
+);
+await page.locator("#reset-keyboard-commands").click();
+assert.equal(
+  await page.locator("#duplicate-part").getAttribute("aria-keyshortcuts"),
+  editingBindings.aria.duplicate,
+  "reset did not restore duplicate aria-keyshortcuts",
+);
+assert.equal(
+  await page.locator("#delete-part").getAttribute("aria-keyshortcuts"),
+  editingBindings.aria.remove,
+  "reset did not restore delete aria-keyshortcuts",
+);
+await commandSearch.fill("Pause or resume");
 await page.locator("#keyboard-command-context").selectOption("operation");
 assert.equal(
   await page.locator("#keyboard-command-context").inputValue(),
@@ -270,6 +430,7 @@ if (await expandInspector.count()) {
   await expandInspector.focus();
   await page.keyboard.press("Enter");
 }
+await page.locator("canvas").focus();
 await page.keyboard.press("Digit2");
 await page.waitForFunction(
   () => JSON.parse(window.render_game_to_text()).mode === "wire",

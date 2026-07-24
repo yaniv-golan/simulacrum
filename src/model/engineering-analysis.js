@@ -2,6 +2,7 @@ import { compileAssembly } from "./assembly-compiler.js";
 import { geometryDescriptorForPart } from "./geometry-descriptors.js";
 import { canonicalQuaternion, rotateVectorByQuaternion } from "./primitives.js";
 import { pressureNozzlePerformance } from "./pressure-nozzle-contracts.js";
+import { orientedBoundsFor, orientedBoundsOverlap } from "./oriented-bounds.js";
 
 const add = (a, b) => a.map((value, axis) => value + b[axis]);
 const scale = (vector, scalar) => vector.map((value) => value * scalar);
@@ -37,49 +38,6 @@ function worldPoint(part, localPoint) {
     canonicalQuaternion(part.orientation),
   );
   return part.pos.map((value, axis) => value + offset[axis]);
-}
-
-function obbFor(part, geometry) {
-  const matrix = orientationMatrix(part);
-  return {
-    id: part.id,
-    center: worldPoint(part, geometry.renderDetailAnchors.center),
-    half: geometry.dimensions.map((value) => Math.max(0.01, value / 2)),
-    axes: [0, 1, 2].map((column) => matrix.map((row) => row[column])),
-  };
-}
-
-function projectionRadius(box, axis) {
-  return box.axes.reduce(
-    (sum, basis, index) =>
-      sum +
-      box.half[index] *
-        Math.abs(basis.reduce((dot, value, i) => dot + value * axis[i], 0)),
-    0,
-  );
-}
-
-function overlaps(a, b, tolerance = 0.025) {
-  const delta = b.center.map((value, axis) => value - a.center[axis]),
-    axes = [...a.axes, ...b.axes];
-  for (const left of a.axes)
-    for (const right of b.axes) {
-      const cross = [
-        left[1] * right[2] - left[2] * right[1],
-        left[2] * right[0] - left[0] * right[2],
-        left[0] * right[1] - left[1] * right[0],
-      ];
-      if (length(cross) > 1e-7) axes.push(normalize(cross));
-    }
-  return axes.every((axis) => {
-    const distance = Math.abs(
-      delta.reduce((dot, value, i) => dot + value * axis[i], 0),
-    );
-    return (
-      distance + tolerance <
-      projectionRadius(a, axis) + projectionRadius(b, axis)
-    );
-  });
 }
 
 export function displacedVolumeForPart(part, catalog) {
@@ -164,14 +122,14 @@ export function analyzeAssembly(snapshot, catalog) {
         .map((connection) => [connection.a, connection.b].sort().join(":")),
     ),
     boxes = compiled.bodies.map((body) =>
-      obbFor(partById.get(body.partId), body.geometry),
+      orientedBoundsFor(partById.get(body.partId), body.geometry),
     ),
     interferences = [];
   for (let a = 0; a < boxes.length; a++)
     for (let b = a + 1; b < boxes.length; b++) {
       if (connectedPairs.has([boxes[a].id, boxes[b].id].sort().join(":")))
         continue;
-      if (overlaps(boxes[a], boxes[b]))
+      if (orientedBoundsOverlap(boxes[a], boxes[b]))
         interferences.push({ a: boxes[a].id, b: boxes[b].id });
     }
   return {

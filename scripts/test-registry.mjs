@@ -34,6 +34,7 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-release-coupler.mjs",
   "verify-environment-proximity.mjs",
   "verify-mechanism-authoring-browser.mjs",
+  "verify-duplicate-placement.mjs",
   "verify-mechanism-transform-authoring.mjs",
   "verify-mechanism-accessibility.mjs",
   "verify-mechanism-sharing-proof.mjs",

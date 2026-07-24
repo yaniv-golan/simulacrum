@@ -32,6 +32,7 @@ export function createWorkshopAssemblyComposition({
       set suspended(value) {
         shell.history.suspended = value;
       },
+      state: history.state,
       record: history.record,
     },
     controller: {

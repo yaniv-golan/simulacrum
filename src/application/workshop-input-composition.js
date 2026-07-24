@@ -87,6 +87,13 @@ export function installWorkshopInputComposition({
       documentTarget: document,
     },
   });
+  assemblyEditor.configureDuplicatePlacement({
+    intent: () => ({
+      camera: editor.world.cameraController.duplicatePlacementIntent(),
+      hoveredFace: input.duplicatePlacementHover(),
+    }),
+    committed: () => input.setTool("move"),
+  });
   installKeyboardCommandSurface({
     registry: input.keyboard.actionRegistry,
     activeContext: () => (shell.state.running ? "operation" : "workshop"),

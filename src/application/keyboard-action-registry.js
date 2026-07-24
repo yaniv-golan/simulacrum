@@ -37,7 +37,7 @@ export const KEYBOARD_ACTION_DEFINITIONS = Object.freeze([
     "selection.duplicate",
     "Duplicate selection",
     "Editing",
-    ["Primary+KeyD"],
+    ["KeyC", "Primary+KeyD"],
     ["workshop"],
   ),
   action(
@@ -51,7 +51,7 @@ export const KEYBOARD_ACTION_DEFINITIONS = Object.freeze([
     "selection.remove",
     "Delete selection",
     "Editing",
-    ["Delete", "Backspace"],
+    ["KeyX", "Delete", "Backspace"],
     ["workshop"],
   ),
   action(
@@ -92,7 +92,7 @@ export const KEYBOARD_ACTION_DEFINITIONS = Object.freeze([
   action("tool.select", "Select tool", "Tools", ["KeyV"], ["workshop"]),
   action("tool.move", "Move tool", "Tools", ["KeyG"], ["workshop"]),
   action("tool.rotate", "Rotate tool", "Tools", ["KeyR"], ["workshop"]),
-  action("view.explode", "Exploded view", "View", ["KeyX"], ["workshop"]),
+  action("view.explode", "Exploded view", "View", ["Shift+KeyX"], ["workshop"]),
   action(
     "simulation.reset",
     "Reset simulation",
@@ -219,14 +219,18 @@ export function createKeyboardActionRegistry() {
 
   function resolve({ event, context }) {
     const definition = actions(context).find((candidate) =>
-      candidate.bindings.some((binding) =>
-        keyboardBindingMatches(event, binding),
+        candidate.bindings.some((binding) =>
+          keyboardBindingMatches(event, binding),
+        ),
       ),
-    );
+      binding = definition?.bindings.find((candidate) =>
+        keyboardBindingMatches(event, candidate),
+      );
     return definition
       ? {
           status: "handled",
           actionId: definition.id,
+          binding,
           repeat: definition.repeat,
         }
       : { status: "unbound" };

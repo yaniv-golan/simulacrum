@@ -33,6 +33,15 @@
 
 ### Changed
 
+- Adopted `C` for duplicate and `X` for selected-component deletion while
+  retaining `Ctrl/Cmd+D`, `Delete`, and `Backspace` aliases; Exploded View moves
+  to `Shift+X`. Duplicate now places the complete selected group in the first
+  deterministic snapped clear position from the hovered face or toward the
+  camera, enforces the board edge for board-authored selections while
+  preserving intentional Test Reserve coordinates, preserves internal
+  connections and controller bindings, enters Move, reports bounded placement
+  evidence, and rolls back atomically if cloning fails. Visible hints and
+  `aria-keyshortcuts` follow live remaps.
 - Assigned number-row 1, 2, and 3 exclusively to Build, Connect, and Simulate,
   and moved front, side, and top camera views to Numpad 1, 3, and 7.
 - Reduced workshop clutter with mutually exclusive component-library and

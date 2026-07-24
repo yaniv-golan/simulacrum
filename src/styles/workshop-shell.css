@@ -574,6 +574,11 @@ header {
   font: 600 8px "Space Grotesk";
   cursor: pointer;
 }
+.inspector-actions kbd {
+  margin-left: 4px;
+  color: #a8d8cf;
+  font: inherit;
+}
 .inspector-actions .danger {
   color: #d8897e;
 }

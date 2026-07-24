@@ -4,6 +4,7 @@ import {
   selectionPivot,
   translateSelectionTo,
 } from "../model/selection-transforms.js";
+import { AUTHORING_TRANSLATION_SNAP_M } from "../model/authoring-space-policy.js";
 
 /** Renders and wires precise position, primary alignment, and distribution. */
 export function createSelectionArranger({
@@ -59,7 +60,7 @@ export function createSelectionArranger({
         selection.length === 1
           ? (selection[0].mesh.rotation.y * 180) / Math.PI
           : null;
-    return `<details class="selection-arrange" ${selection.length > 1 || arrangementExpanded ? "open" : ""}><summary>ARRANGE ${selection.length > 1 ? `${selection.length} COMPONENTS` : "POSITION & ROTATION"}</summary><p>${selection.length > 1 ? "Align uses the mint primary component. Distribute keeps the outer components fixed." : "Enter an exact component position and snapped yaw."}</p><div class="numeric-transform">${axes.map((axis, index) => `<label>${axis}<input type="number" step="0.25" data-pivot-axis="${index}" value="${pivot[index].toFixed(2)}"></label>`).join("")}${yaw === null ? "" : `<label>YAW°<input type="number" step="15" data-selection-yaw value="${yaw.toFixed(0)}"></label>`}</div>${selection.length > 1 ? `<div class="arrange-actions"><span>ALIGN PRIMARY</span>${axes.map((axis, index) => `<button data-align-axis="${index}">${axis}</button>`).join("")}<span>EQUAL SPACING</span>${axes.map((axis, index) => `<button data-distribute-axis="${index}" ${selection.length < 3 ? "disabled" : ""}>${axis}</button>`).join("")}</div>` : ""}</details>`;
+    return `<details class="selection-arrange" ${selection.length > 1 || arrangementExpanded ? "open" : ""}><summary>ARRANGE ${selection.length > 1 ? `${selection.length} COMPONENTS` : "POSITION & ROTATION"}</summary><p>${selection.length > 1 ? "Align uses the mint primary component. Distribute keeps the outer components fixed." : "Enter an exact component position and snapped yaw."}</p><div class="numeric-transform">${axes.map((axis, index) => `<label>${axis}<input type="number" step="${AUTHORING_TRANSLATION_SNAP_M}" data-pivot-axis="${index}" value="${pivot[index].toFixed(2)}"></label>`).join("")}${yaw === null ? "" : `<label>YAW°<input type="number" step="15" data-selection-yaw value="${yaw.toFixed(0)}"></label>`}</div>${selection.length > 1 ? `<div class="arrange-actions"><span>ALIGN PRIMARY</span>${axes.map((axis, index) => `<button data-align-axis="${index}">${axis}</button>`).join("")}<span>EQUAL SPACING</span>${axes.map((axis, index) => `<button data-distribute-axis="${index}" ${selection.length < 3 ? "disabled" : ""}>${axis}</button>`).join("")}</div>` : ""}</details>`;
   }
 
   function bind() {

@@ -130,6 +130,11 @@ export function createWorkshopAssemblyFeatureSubsystem({
         resetChallenge: actions.resetChallenge,
         assemblyReplaced: actions.assemblyReplaced,
       },
+      catalog,
+      workspaceSnapshot: () => ({
+        parts: workspace.editorSnapshot(),
+        connections: structuredClone(state.connections),
+      }),
       getNextId: identity.get,
       setNextId: identity.set,
     });

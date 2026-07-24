@@ -1,5 +1,7 @@
 import * as THREE from "three";
+import { partIdForCameraHit } from "./camera-authoring-intent.js";
 import { DirectManipulator } from "./direct-manipulator.js";
+import { createDuplicatePlacementHoverIntent } from "./duplicate-placement-hover-intent.js";
 import { MarqueeSelector } from "./marquee-selector.js";
 
 /**
@@ -21,6 +23,21 @@ export function installWorkshopPointerController({
   view,
 }) {
   let hovered = null;
+  const duplicateHover = createDuplicatePlacementHoverIntent({
+    selectedIds: model.selectedIds,
+  });
+
+  function rememberHit(hit, id) {
+    hovered = model.parts().find((part) => part.id === id) || null;
+    duplicateHover.remember(hit, hovered?.id ?? null);
+    view.showHover(hovered);
+  }
+
+  function clearHoverIntent() {
+    duplicateHover.clear();
+    hovered = null;
+    view.showHover(null);
+  }
 
   const directManipulator = new DirectManipulator({
     element: target,
@@ -67,11 +84,12 @@ export function installWorkshopPointerController({
 
     const hit = camera.intersectMachine(event.clientX, event.clientY);
     if (hit) {
-      const id = camera.hitPartIdAt(event.clientX, event.clientY),
+      const id = partIdForCameraHit(hit),
         additive = event.ctrlKey || event.metaKey || event.shiftKey,
         selectedIds = model.selectedIds(),
         preserveGroup =
           !additive && selectedIds.size > 1 && selectedIds.has(id);
+      rememberHit(hit, id);
       if (preserveGroup) editor.preserveGroupSelection(id, selectedIds);
       else editor.selectPart(id, additive);
       directManipulator.begin(event, {
@@ -106,12 +124,13 @@ export function installWorkshopPointerController({
   }
 
   function pointerMove(event) {
+    duplicateHover.enter();
     if (directManipulator.update(event)) return;
     if (marqueeSelector.update(event)) return;
     if (camera.movePointer(event)) return;
-    const id = camera.hitPartIdAt(event.clientX, event.clientY);
-    hovered = model.parts().find((part) => part.id === id) || null;
-    view.showHover(hovered);
+    const hit = camera.intersectMachine(event.clientX, event.clientY),
+      id = partIdForCameraHit(hit);
+    rememberHit(hit, id);
     target.style.cursor =
       model.cameraTool() === "pan"
         ? "grab"
@@ -175,16 +194,25 @@ export function installWorkshopPointerController({
 
   target.addEventListener("pointerdown", pointerDown);
   target.addEventListener("pointermove", pointerMove);
+  target.addEventListener("pointerenter", duplicateHover.enter);
+  target.addEventListener("pointerleave", clearHoverIntent);
+  target.addEventListener("blur", clearHoverIntent);
   target.addEventListener("dblclick", doubleClick);
   window.addEventListener("pointerup", finishPointer);
   window.addEventListener("pointercancel", cancelPointer);
 
   return {
     directManipulator,
+    duplicatePlacementHover() {
+      return duplicateHover.current();
+    },
     marqueeSelector,
     dispose() {
       target.removeEventListener("pointerdown", pointerDown);
       target.removeEventListener("pointermove", pointerMove);
+      target.removeEventListener("pointerenter", duplicateHover.enter);
+      target.removeEventListener("pointerleave", clearHoverIntent);
+      target.removeEventListener("blur", clearHoverIntent);
       target.removeEventListener("dblclick", doubleClick);
       window.removeEventListener("pointerup", finishPointer);
       window.removeEventListener("pointercancel", cancelPointer);
