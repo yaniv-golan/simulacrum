@@ -1,5 +1,9 @@
 import * as THREE from "three";
 import { CameraTracker } from "./camera-tracker.js";
+import {
+  partIdForCameraHit,
+  placementIntentForCamera,
+} from "./camera-authoring-intent.js";
 
 /**
  * @typedef {{ id: number, type: string, mesh: THREE.Object3D }} CameraPart
@@ -458,16 +462,13 @@ export function createCameraInteractionController({
     beginPointer,
     bindControls,
     clearCameraTool,
+    duplicatePlacementIntent: () => placementIntentForCamera(camera, target),
     endPointer,
     frameSelection,
     handleNavigationKey,
     hitPartIdAt(clientX, clientY) {
       const hit = intersect(machine.children, clientX, clientY)[0];
-      return (
-        hit?.object.userData.partIds?.[hit.instanceId] ??
-        hit?.object.userData.partId ??
-        null
-      );
+      return partIdForCameraHit(hit);
     },
     intersectFloor(clientX, clientY) {
       return intersect([floor], clientX, clientY, false)[0] || null;

@@ -171,6 +171,13 @@ export function installKeyboardShortcuts({
         registry: actionRegistry,
       });
     if (resolved.status === "handled" && resolved.actionId) {
+      if (
+        focusContext !== "canvas" &&
+        ["KeyC", "KeyX", "Shift+KeyX"].includes(resolved.binding)
+      ) {
+        record("unavailable", resolved.actionId, "canvas-focus-required");
+        return;
+      }
       if (event.repeat && !resolved.repeat) return;
       event.preventDefault();
       actionExecutors[resolved.actionId]?.();

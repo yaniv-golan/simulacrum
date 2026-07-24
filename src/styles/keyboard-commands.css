@@ -70,6 +70,8 @@
 
 .keyboard-command-row > div:last-child {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
 }
 
@@ -100,5 +102,9 @@
   .keyboard-command-row {
     grid-template-columns: 1fr;
     padding: 8px 0;
+  }
+
+  .keyboard-command-row > div:last-child {
+    justify-content: flex-start;
   }
 }

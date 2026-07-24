@@ -38,8 +38,8 @@ let directControlFeature = null,
   idSeq = 1,
   uiComposition,
   experienceComposition;
-const renderUI = () => uiComposition?.render();
-const ropeBridge = {};
+const renderUI = () => uiComposition?.render(),
+  ropeBridge = {};
 const shell = createWorkshopShellSubsystem({
     root: document.querySelector("#app"),
     definitions: {
@@ -52,16 +52,12 @@ const shell = createWorkshopShellSubsystem({
       requestAnimationFrame(() => directControlFeature?.renderSurface()),
   }),
   { queryAll: $$, state } = shell;
-function partHasPower(part) {
-  return assemblyWorkspace?.powered(part) || false;
-}
+const partHasPower = (part) => assemblyWorkspace?.powered(part) || false;
 const simulationRuntime = createSimulationRuntimeState(),
   controllerSubsystem = createWorkshopControllerComposition({
     shell,
     runtime: simulationRuntime,
-    definitions: {
-      channels: CONTROLLER_CHANNELS,
-    },
+    definitions: { channels: CONTROLLER_CHANNELS },
     power: { isPowered: partHasPower },
     environment: {
       sampleWind: (position, time) =>
@@ -69,7 +65,10 @@ const simulationRuntime = createSimulationRuntimeState(),
     },
     view: { render: renderUI },
   });
-const captureBuildState = () => buildHistoryFeature.capture(),
+const buildHistoryState = (snapshot) =>
+    snapshot === undefined
+      ? buildHistoryFeature.capture()
+      : buildHistoryFeature.restore(snapshot),
   refreshHistoryUI = () => buildHistoryFeature.refresh(),
   recordHistory = (label, snapshot = null) =>
     buildHistoryFeature.record(label, snapshot);
@@ -105,7 +104,7 @@ const editorStageComposition = createWorkshopEditorStageComposition({
     keys: STORAGE_KEYS,
     runtime: simulationRuntime,
     controller: { open: controllerSubsystem.open },
-    history: { capture: captureBuildState, record: recordHistory },
+    history: { capture: buildHistoryState, record: recordHistory },
     assembly: {
       sync: syncAssemblyModel,
       currentConnections,
@@ -132,12 +131,12 @@ assemblyFeatureSubsystem = createWorkshopAssemblyComposition({
   shell,
   runtime: simulationRuntime,
   model: assemblyModel,
-  definitions: {
-    catalog: TYPES,
-    keys: STORAGE_KEYS,
-    controlTemplates: CONTROL_TEMPLATES,
+  definitions: { catalog: TYPES, controlTemplates: CONTROL_TEMPLATES },
+  history: {
+    capture: buildHistoryState,
+    restore: buildHistoryState,
+    record: recordHistory,
   },
-  history: { record: recordHistory, capture: captureBuildState },
   controllers: controllerSubsystem,
   presentation: editorStageComposition,
   simulation: { destroyFlight: destroyComponentFlightPhysics },
@@ -191,7 +190,7 @@ const buildPersistenceSubsystem = createWorkshopBuildComposition({
   controllers: controllerSubsystem,
   stage: stageFoundation,
   history: {
-    capture: captureBuildState,
+    capture: buildHistoryState,
     record: recordHistory,
     refresh: refreshHistoryUI,
   },

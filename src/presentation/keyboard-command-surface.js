@@ -1,12 +1,33 @@
 import { escapeHtml } from "./html.js";
 
-function displayBinding(binding) {
+const ACTION_ELEMENT_SELECTORS = Object.freeze({
+  "selection.duplicate": '[data-shortcut-action="selection.duplicate"]',
+  "selection.remove": '[data-shortcut-action="selection.remove"]',
+  "view.explode": '[data-shortcut-action="view.explode"]',
+});
+
+function primaryModifier() {
+  return /Mac|iPhone|iPad/.test(navigator.platform) ? "Meta" : "Control";
+}
+
+export function displayBinding(binding) {
   if (!binding) return "UNBOUND";
-  const primary = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl";
+  const primary = primaryModifier() === "Meta" ? "⌘" : "Ctrl";
   return binding
     .replace("Primary", primary)
     .replace("Shift", "⇧")
     .replace("Alt", /Mac/.test(navigator.platform) ? "⌥" : "Alt")
+    .replace(/Key([A-Z])/, "$1")
+    .replace(/Digit([0-9])/, "$1")
+    .replace("BracketLeft", "[")
+    .replace("BracketRight", "]")
+    .replace("Period", ".")
+    .replace("Slash", "/");
+}
+
+export function ariaBinding(binding) {
+  return binding
+    .replace("Primary", primaryModifier())
     .replace(/Key([A-Z])/, "$1")
     .replace(/Digit([0-9])/, "$1")
     .replace("BracketLeft", "[")
@@ -76,8 +97,37 @@ export function installKeyboardCommandSurface({
         ? displayBinding(binding)
         : slot === 0
           ? "UNBOUND"
-          : "+ SECONDARY";
-    return `<button type="button" class="keyboard-binding${binding ? "" : " unbound"}" data-keyboard-action="${escapeHtml(action.id)}" data-keyboard-slot="${slot}" title="${escapeHtml(binding || "No physical-key binding")}" aria-label="${escapeHtml(`${action.label}, ${slot ? "secondary" : "primary"} binding: ${label}`)}">${escapeHtml(label)}</button>`;
+          : "+ ADD";
+    return `<button type="button" class="keyboard-binding${binding ? "" : " unbound"}" data-keyboard-action="${escapeHtml(action.id)}" data-keyboard-slot="${slot}" title="${escapeHtml(binding ? displayBinding(binding) : "Add physical-key binding")}" aria-label="${escapeHtml(`${action.label}, ${binding ? (slot === 0 ? "primary" : `alias ${slot}`) : "add binding"}: ${label}`)}">${escapeHtml(label)}</button>`;
+  }
+
+  function bindingButtons(action) {
+    if (!action.bindings.length) return bindingButton(action, 0);
+    return `${action.bindings
+      .map((_, slot) => bindingButton(action, slot))
+      .join("")}${bindingButton(action, action.bindings.length)}`;
+  }
+
+  function syncActionElements() {
+    for (const [actionId, selector] of Object.entries(
+      ACTION_ELEMENT_SELECTORS,
+    )) {
+      const action = registry.actions().find((entry) => entry.id === actionId),
+        elements = root.querySelectorAll(selector),
+        labels = action?.bindings.map(displayBinding) || [],
+        aria = action?.bindings.map(ariaBinding).join(" ") || "";
+      elements.forEach((element) => {
+        if (!(element instanceof HTMLElement)) return;
+        if (aria && !element.matches(":disabled"))
+          element.setAttribute("aria-keyshortcuts", aria);
+        else element.removeAttribute("aria-keyshortcuts");
+        element.title = labels.length
+          ? `${action.label} (${labels.join(" or ")})`
+          : `${action?.label || actionId} (unbound)`;
+        const hint = element.querySelector("[data-shortcut-hint]");
+        if (hint) hint.textContent = labels[0] || "—";
+      });
+    }
   }
 
   function render({ restoreAction = null, restoreSlot = 0 } = {}) {
@@ -95,13 +145,14 @@ export function installKeyboardCommandSurface({
               `<section><h3>${escapeHtml(group)}</h3>${entries
                 .map(
                   (action) =>
-                    `<div class="keyboard-command-row"><div><b>${escapeHtml(action.label)}</b><small>${escapeHtml(action.contexts.join(" · "))}</small></div><div>${bindingButton(action, 0)}${bindingButton(action, 1)}</div></div>`,
+                    `<div class="keyboard-command-row"><div><b>${escapeHtml(action.label)}</b><small>${escapeHtml(action.contexts.join(" · "))}</small></div><div>${bindingButtons(action)}</div></div>`,
                 )
                 .join("")}</section>`,
           )
           .join("")
       : '<p class="keyboard-command-empty">No registered commands match.</p>';
     capture = null;
+    syncActionElements();
     if (restoreAction)
       queueMicrotask(() => {
         const target = list.querySelector(
@@ -174,5 +225,5 @@ export function installKeyboardCommandSurface({
     reset.focus();
   });
   render();
-  return Object.freeze({ render });
+  return Object.freeze({ render, syncActionElements });
 }

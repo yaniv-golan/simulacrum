@@ -29,7 +29,7 @@ export function createWorkshopToolbarTemplate() {
     <button id="view-side" title="Side view (Numpad 3)">N3</button>
     <button id="view-top" title="Top view (Numpad 7)">N7</button>
     <button id="view-home" title="Reset workshop view (Home)">⌂</button>
-    <button id="explode-view" title="Temporarily separate parts and reveal connections (X)">⤢<span>EXPLODE</span></button>
+    <button id="explode-view" data-shortcut-action="view.explode" title="Temporarily separate parts and reveal connections (Shift+X)">⤢<span>EXPLODE<kbd data-shortcut-hint>⇧X</kbd></span></button>
     <button id="camera-help" title="Camera controls" aria-expanded="false">?</button>
     <div class="camera-help-card hidden"></div>
   </div>`;

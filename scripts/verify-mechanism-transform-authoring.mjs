@@ -39,6 +39,15 @@ try {
   assert.equal(Object.keys(operation.partIdMap).length, originalParts);
   assert.equal(operation.connectionMap.length, originalConnections);
   assert.deepEqual(operation.conflicts, []);
+  assert.ok(
+    ["toward-camera", "camera-right-fallback", "positive-x-fallback"].includes(
+      operation.placement.strategy,
+    ),
+    `button duplicate used unexpected placement intent ${operation.placement.strategy}`,
+  );
+  assert.equal(operation.placement.snapM, 0.25);
+  assert.equal(operation.placement.offsetWorldM[1], 0);
+  assert.deepEqual(operation.rejectedCandidates, []);
   assert.deepEqual(
     [...state.selectedParts].sort((left, right) => left - right),
     Object.values(operation.partIdMap).sort((left, right) => left - right),
@@ -51,12 +60,14 @@ try {
   for (const [sourceId, targetId] of Object.entries(operation.partIdMap)) {
     const source = duplicatedPartById.get(Number(sourceId)),
       target = duplicatedPartById.get(targetId);
-    assert.equal(target.position[0], source.position[0] + 2);
-    assert.equal(target.position[1], source.position[1]);
-    assert.equal(target.position[2], source.position[2]);
+    for (let axis = 0; axis < 3; axis++)
+      assert.equal(
+        target.position[axis],
+        source.position[axis] + operation.placement.offsetWorldM[axis],
+      );
   }
 
-  const mirror = page.getByRole("button", { name: "MIRROR X" });
+  const mirror = page.getByRole("button", { name: "X-AXIS MIRROR" });
   await mirror.focus();
   await page.keyboard.press("Enter");
   state = await textState();
