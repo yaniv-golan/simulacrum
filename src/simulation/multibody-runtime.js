@@ -14,6 +14,7 @@ import {
   springResponse,
   stopResponse,
 } from "./two-frame-mechanisms.js";
+import { constraintReactionWrench } from "./constraint-reaction-wrench.js";
 import { TireContactConstraint } from "./tire-contact.js";
 
 class CollisionExclusionConstraint extends CANNON.Constraint {
@@ -430,24 +431,6 @@ function mean(values, fallback = 0) {
 // conversion at this engine boundary so model/runtime contracts remain SI.
 function solverImpulseLimit(rate, dt) {
   return Math.abs(rate) * dt;
-}
-
-function solvedConstraintReaction(constraint) {
-  let forceSquared = 0,
-    torqueSquared = 0;
-  for (const equation of constraint.equations) {
-    if (!equation.enabled) continue;
-    const reaction = Number(equation.multiplier || 0),
-      rotational =
-        equation instanceof CANNON.RotationalEquation ||
-        equation instanceof CANNON.RotationalMotorEquation;
-    if (rotational) torqueSquared += reaction * reaction;
-    else forceSquared += reaction * reaction;
-  }
-  return {
-    forceN: Math.sqrt(forceSquared),
-    torqueNm: Math.sqrt(torqueSquared),
-  };
 }
 
 function activeFixedCluster(constraintEntries, seed) {
@@ -2000,7 +1983,7 @@ export class MultibodyRuntime {
       entry.transverseM = state.transverseM;
       entry.reactionForceN =
         entry.kind === "axial-actuator-v1"
-          ? solvedConstraintReaction(entry.constraint).forceN
+          ? constraintReactionWrench(entry.constraint).forceN
           : Math.hypot(
               ...entry.constraint.transverseEquations.map(
                 (equation) => equation.multiplier || 0,
@@ -2019,7 +2002,7 @@ export class MultibodyRuntime {
     }
     for (const entry of this.constraintEntries) {
       if (entry.active === false || !entry.constraint) continue;
-      const reaction = solvedConstraintReaction(entry.constraint);
+      const reaction = constraintReactionWrench(entry.constraint);
       if (entry.descriptor.kind === "revolute")
         entry.reactionTorque = reaction.torqueNm;
       for (const id of entry.descriptor.sourceConnectionIds || []) {

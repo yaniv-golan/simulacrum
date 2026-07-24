@@ -423,7 +423,9 @@ const definitions = {
           kRadialNPerM: 180_000,
           compressionDampingNsPerM: 4_000,
           reboundDampingNsPerM: 4_000,
-          maximumDeflectionM: 0.12,
+          // The 0.65 m tire and 0.50 m rim leave 0.15 m of radial carcass.
+          // Preserve 5 mm of numerical clearance before the rim response.
+          maximumDeflectionM: 0.145,
           rimContactStiffnessNPerM: 3_600_000,
           rimContactDampingNsPerM: 16_000,
           progressiveStop: null,

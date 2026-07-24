@@ -64,6 +64,10 @@
 - Updated transitive PostCSS from 8.5.17 to 8.5.23 and Nano ID from 3.3.15 to
   3.3.16, resolving GHSA-r28c-9q8g-f849; the supported-runtime npm audit now
   reports zero vulnerabilities.
+- Prevented the Suspension Rover from shedding wheels during an ordinary
+  workshop-platform drop by matching Wheel carcass travel to its authored
+  tire/rim geometry, calibrating joint-reaction loads, and covering the
+  complete four-wheel landing rather than the first field contact.
 - Corrected the Suspension Rover's semantic left/right steering bindings and
   added signed trajectory coverage for both deterministic and browser input
   paths.
