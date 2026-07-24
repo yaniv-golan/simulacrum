@@ -27,7 +27,31 @@ export function testSiteSupportContact(partId, contact) {
   };
 }
 
-function componentKinematics(component, runtime, bodyRegistry) {
+function componentBodies(component, bodyRegistry) {
+  const bodies = [
+    ...(component.physicalEntityIds || [])
+      .map((bodyId) => bodyRegistry.body(bodyId))
+      .filter(Boolean),
+    ...(component.bodyPartIds || []).flatMap((partId) =>
+      bodyRegistry.bodiesForPart(partId),
+    ),
+  ];
+  return [...new Map(bodies.map((body) => [body.bodyId, body])).values()];
+}
+
+function bodyMass(body) {
+  return Math.max(
+    0.001,
+    Number(body.massProperties?.massKg) ||
+      (body.descriptors || []).reduce(
+        (sum, descriptor) => sum + Number(descriptor.massKg || 0),
+        0,
+      ) ||
+      0.001,
+  );
+}
+
+function componentKinematics(component, bodyRegistry) {
   let mass = 0,
     x = 0,
     y = 0,
@@ -37,18 +61,17 @@ function componentKinematics(component, runtime, bodyRegistry) {
     vz = 0,
     grounded = false,
     supportContacts = [];
-  for (const partId of component.bodyPartIds) {
-    const body = runtime.bodyByPart.get(partId);
-    if (!body) continue;
-    const bodyMass = Math.max(0.001, Number(body.mass) || 0.001);
-    mass += bodyMass;
-    x += body.position.x * bodyMass;
-    y += body.position.y * bodyMass;
-    z += body.position.z * bodyMass;
-    vx += body.velocity.x * bodyMass;
-    vy += body.velocity.y * bodyMass;
-    vz += body.velocity.z * bodyMass;
-    for (const contact of bodyRegistry.bodyForPart(partId)?.contacts || []) {
+  for (const body of componentBodies(component, bodyRegistry)) {
+    const massKg = bodyMass(body),
+      partId = body.partIds[0];
+    mass += massKg;
+    x += body.pose.position.x * massKg;
+    y += body.pose.position.y * massKg;
+    z += body.pose.position.z * massKg;
+    vx += body.velocity.x * massKg;
+    vy += body.velocity.y * massKg;
+    vz += body.velocity.z * massKg;
+    for (const contact of body.contacts || []) {
       const projection = testSiteSupportContact(partId, contact);
       grounded ||= Boolean(projection);
       if (projection) supportContacts.push(projection);
@@ -77,11 +100,7 @@ function project(context) {
     components: index
       .snapshot()
       .components.map((component) => {
-        const kinematics = componentKinematics(
-          component,
-          runtime,
-          context.bodyRegistry,
-        );
+        const kinematics = componentKinematics(component, context.bodyRegistry);
         if (!kinematics) return null;
         const { position } = kinematics;
         const sample = sampleAt(position.x, position.z);

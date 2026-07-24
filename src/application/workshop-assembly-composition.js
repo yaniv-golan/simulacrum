@@ -33,6 +33,7 @@ export function createWorkshopAssemblyComposition({
         shell.history.suspended = value;
       },
       record: history.record,
+      capture: history.capture,
     },
     controller: {
       stopAll: controllers.stopAll,

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Adds the `flexible-line-v1` compiler/runtime contract, one-to-many physical
+  entity ownership, tension-only constraints, strict Rope materials, completed
+  telemetry, failure evidence, and exact checkpoint state.
 - Adds `TestSiteTelemetrySystem` and `TestCourseSystem` to the DOM-free
   fixed-step surface for canonical proving-ground state and type-independent
   guided-trial evaluation.

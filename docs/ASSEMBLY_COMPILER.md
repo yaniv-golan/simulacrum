@@ -13,7 +13,7 @@ This is the boundary between persistent blueprints and transient physics:
 AssemblyModel snapshot
   -> strict explicit endpoint validation
   -> physical topology compiler
-  -> engine-neutral compiled assembly
+  -> engine-neutral rigid and flexible compiled assembly
   -> Cannon runtime adapter
   -> immutable poses, loads, and diagnostics
 ```
@@ -42,6 +42,9 @@ Connection medium and physical behavior are deliberately separate:
 - a hinge connected to two bodies produces one limited revolute joint;
 - a spring connected to two bodies produces one spring-damper force element;
 - a lever pivot produces a revolute joint and its link produces a linkage.
+- a `flexible-line-v1` component produces plural distributed physical entities,
+  tension-only internal edges, and exactly two explicit free or point-attached
+  boundaries; it never produces a rigid proxy body.
 
 Ambiguous or incomplete mechanisms remain in the compiled result with a
 diagnostic. They do not gain hidden supports or demo-specific behavior. For
@@ -75,6 +78,12 @@ example, an unsupported output gear is not silently pinned to the world.
 12. A mass-changing part may use fixed attachments but compilation rejects
     non-fixed constraints whose local-frame remapping is not yet supported.
     Valid-looking assemblies never defer that topology failure until runtime.
+13. Flexible-line discretization is deterministic and recorded as
+    `flexible-line-discretization-v1`; one Rope is bounded to 64 axial elements
+    (65 nodes) and an assembly to 512 flexible entities.
+14. One authored part may own multiple physical entities. After an internal
+    edge fails, those entities may belong to separate derived physical
+    components while preserving the same source-part provenance.
 
 ## Planned evolution
 
@@ -82,12 +91,14 @@ The engine-neutral output uses explicit `kind` and `parameters` fields rather
 than Cannon classes. Bearings and linear guides are current components;
 linear-guide descriptors execute as prismatic constraints. Compatible future
 additions include ball joints, universal joints, rack-and-pinion, belts/chains,
-differentials, hydraulics, ropes, docking joints, and deformable connection
+differentials, hydraulics, docking joints, and deformable connection
 models.
 
 The Cannon adapter currently implements fixed, revolute, prismatic/linear-guide,
 spring, linkage, shaft/bearing, gear, wheel-suspension, and role-assisted
-articulated behavior. Wheels, articulated machines, propulsion, aerodynamics,
+articulated behavior. `FlexibleLineRuntime` adds unilateral distributed Rope
+constraints and contact inside the same world and integration transaction.
+Wheels, articulated machines, Rope, propulsion, aerodynamics,
 thermal response, ablation, structural failure, fluids, and terrain contact
 share the descriptor-compiled bodies, body registry, and single fixed world
 step. Aggregate vehicle telemetry is derived from those bodies and never owns
@@ -97,7 +108,8 @@ or integrates a second pose.
 
 The compiler and shared runtime now own arbitrary-topology diagnostics;
 gearbox, lever, spring, wheel suspension, and tire forces; explicit articulated
-hinges; flight and aerodynamic forces; thermal response; ablation; and
+hinges; distributed flexible lines; flight and aerodynamic forces; thermal
+response; ablation; and
 detachment. Rover, fixed-humanoid, and standalone-flight body owners no longer
 exist. New mechanisms must extend the same descriptor, compiler, and shared
 runtime contracts rather than add a model-specific body owner.

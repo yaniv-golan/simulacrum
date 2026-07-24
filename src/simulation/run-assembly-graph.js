@@ -255,12 +255,16 @@ export class RunAssemblyGraph {
   /** Applies one atomic graph mutation and advances graphRevision once. */
   applyStructuralEvent({
     failedConnectionIds = [],
+    failedInternalEdgeIds = [],
     detachedPartIds = [],
     reason = "structural event",
     mode = "structural",
     time = 0,
   } = {}) {
     const failures = [...new Set(failedConnectionIds)],
+      internalFailures = [...new Set(failedInternalEdgeIds)].map((id) =>
+        canonicalId(id),
+      ),
       detachments = [...new Set(detachedPartIds)];
     for (const id of failures) this.#requireConnection(id);
     for (const id of detachments) this.#requirePart(id);
@@ -269,7 +273,7 @@ export class RunAssemblyGraph {
       for (const connection of this.#connections.values())
         if (connection.a === partId || connection.b === partId)
           allFailures.add(connection.id);
-    let changed = false;
+    let changed = internalFailures.length > 0;
     for (const id of allFailures) {
       const current = this.#connections.get(id);
       if (current.failed) continue;
@@ -296,6 +300,7 @@ export class RunAssemblyGraph {
         changed: false,
         graphRevision: this.#graphRevision,
         failedConnectionIds: [],
+        failedInternalEdgeIds: [],
         detachedPartIds: [],
       });
     this.#revision++;
@@ -305,6 +310,7 @@ export class RunAssemblyGraph {
       type: "structural",
       graphRevision: this.#graphRevision,
       failedConnectionIds: [...allFailures],
+      failedInternalEdgeIds: internalFailures,
       detachedPartIds: detachments,
       reason: String(reason),
       mode: String(mode),

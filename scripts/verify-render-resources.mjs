@@ -84,6 +84,32 @@ disposeObject3D(beam);
 disposeObject3D(secondBeam);
 assert.ok(sharedRenderResourceStats().primitiveGeometries >= 1);
 
+const rope = componentMesh("rope"),
+  ropeVisual = rope.userData.flexibleLineVisual;
+assert.ok(ropeVisual, "Rope must declare a bounded flexible-line visual");
+assert.equal(ropeVisual.maximumEdgeCount, 64);
+assert.equal(ropeVisual.runtime.isInstancedMesh, true);
+assert.equal(ropeVisual.runtime.count, 0);
+assert.equal(ropeVisual.runtime.frustumCulled, false);
+assert.equal(
+  ropeVisual.runtime.geometry.parameters.height,
+  1,
+  "runtime segments must scale one reusable unit tube",
+);
+let ropeRuntimeGeometryDisposals = 0,
+  ropeRuntimeMeshDisposals = 0;
+ropeVisual.runtime.geometry.addEventListener(
+  "dispose",
+  () => ropeRuntimeGeometryDisposals++,
+);
+ropeVisual.runtime.addEventListener(
+  "dispose",
+  () => ropeRuntimeMeshDisposals++,
+);
+disposeObject3D(rope);
+assert.equal(ropeRuntimeGeometryDisposals, 1);
+assert.equal(ropeRuntimeMeshDisposals, 1);
+
 const machine = new THREE.Group(),
   parts = Array.from({ length: 129 }, (_, index) => {
     const part = {

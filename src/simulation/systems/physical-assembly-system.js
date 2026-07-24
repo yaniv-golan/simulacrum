@@ -2,7 +2,8 @@ import { DomainValidationError } from "../../model/primitives.js";
 
 function refreshIndex(context) {
   const index = context.services.physicalAssemblyIndex,
-    runtime = context.services.multibodyRuntime;
+    runtime = context.services.multibodyRuntime,
+    flexible = context.services.flexibleLineRuntime;
   if (!runtime?.compiled) return null;
   if (!index)
     throw new DomainValidationError(
@@ -11,8 +12,13 @@ function refreshIndex(context) {
     );
   return index.refresh({
     runGraph: context.runGraph,
-    constraintEntries: runtime.constraintEntries || [],
-    topologyRevision: runtime.topologyRevision || 0,
+    constraintEntries: [
+      ...(runtime.constraintEntries || []),
+      ...(flexible?.edgeEntries || []),
+      ...(flexible?.attachmentEntries || []),
+    ],
+    topologyRevision:
+      (runtime.topologyRevision || 0) + (flexible?.topologyRevision || 0),
   });
 }
 

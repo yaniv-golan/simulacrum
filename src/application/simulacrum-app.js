@@ -27,12 +27,19 @@ import {
   createWorkshopExperienceComposition,
   createWorkshopUiComposition,
   createWorkshopModeController,
+  connectSelectedWithRope as connectRope,
 } from "./editor-features.js";
 import "../style.css";
 let directControlFeature = null,
   buildHistoryFeature,
   assemblyWorkspace = null,
-  simulationWorkshop;
+  simulationWorkshop,
+  assemblyFeatureSubsystem,
+  idSeq = 1,
+  uiComposition,
+  experienceComposition;
+const renderUI = () => uiComposition?.render();
+const ropeBridge = {};
 const shell = createWorkshopShellSubsystem({
     root: document.querySelector("#app"),
     definitions: {
@@ -80,12 +87,12 @@ const syncAssemblyModel = () => assemblyWorkspace.sync(),
     assemblyWorkspace?.currentPart(id) ||
     state.parts.find((part) => part.id === id) ||
     null;
-let idSeq = 1,
-  uiComposition,
-  experienceComposition;
 const setExplodedView = (...args) =>
     editorStageComposition.editor.exploded.set(...args),
   tutorialEvent = (event) => experienceComposition?.tutorial.accept(event),
+  isHumanoidLayoutForPresentation = () =>
+    assemblyCapabilities.hasHumanoidLayout(),
+  updateDriveHUD = () => directControlFeature?.updateHud(),
   setMode = createWorkshopModeController({
     state,
     queryAll: $$,
@@ -110,6 +117,7 @@ const editorStageComposition = createWorkshopEditorStageComposition({
       setMode,
       tutorialEvent,
       humanoidLayout: isHumanoidLayoutForPresentation,
+      connectWithRope: connectRope(ropeBridge),
     },
     view: {
       refreshEngineering: () => uiComposition?.engineering.refresh(),
@@ -120,7 +128,7 @@ const editorStageComposition = createWorkshopEditorStageComposition({
   stageFoundation = editorStageComposition.stage,
   editorPresentationComposition = editorStageComposition.editor,
   aerothermalVisuals = editorStageComposition.aerothermal;
-const assemblyFeatureSubsystem = createWorkshopAssemblyComposition({
+assemblyFeatureSubsystem = createWorkshopAssemblyComposition({
   shell,
   runtime: simulationRuntime,
   model: assemblyModel,
@@ -129,7 +137,7 @@ const assemblyFeatureSubsystem = createWorkshopAssemblyComposition({
     keys: STORAGE_KEYS,
     controlTemplates: CONTROL_TEMPLATES,
   },
-  history: { record: recordHistory },
+  history: { record: recordHistory, capture: captureBuildState },
   controllers: controllerSubsystem,
   presentation: editorStageComposition,
   simulation: { destroyFlight: destroyComponentFlightPhysics },
@@ -154,16 +162,8 @@ const {
   prepareFoot: atlasFootPart,
 } = assemblyFeatureSubsystem;
 assemblyWorkspace = resolvedAssemblyWorkspace;
+ropeBridge.editor = assemblyFeatureSubsystem.editor;
 directControlFeature = resolvedControlSurfaceSubsystem.directControl;
-function isHumanoidLayoutForPresentation() {
-  return assemblyCapabilities.hasHumanoidLayout();
-}
-function updateDriveHUD() {
-  directControlFeature?.updateHud();
-}
-function renderUI() {
-  uiComposition?.render();
-}
 uiComposition = createWorkshopUiComposition({
   shell,
   state,

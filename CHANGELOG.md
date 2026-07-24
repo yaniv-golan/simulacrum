@@ -4,6 +4,11 @@
 
 ### Added
 
+- Added Rope as an ordinary player-authored `flexible-line-v1` component with
+  zero-, one-, and two-ended attachment, distributed mass and contact,
+  tension-only response, sag, endpoint/internal failure, deterministic split
+  checkpoints, completed telemetry/replay, exact picked anchors, atomic
+  two-part rigging, strict portable reuse, and a DOM-free Core surface.
 - Added the full 480 m x 360 m Workshop Test Reserve as one connected campus
   around the construction board and operations building. Its closed road
   network joins nine physical districts with 22 authored surface regions, 11

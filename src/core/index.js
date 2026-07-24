@@ -133,6 +133,9 @@ export { RunAssemblyGraph } from "../simulation/run-assembly-graph.js";
 export { PhysicalAssemblyIndex } from "../simulation/physical-assembly-index.js";
 export { BodyRegistry } from "../simulation/body-registry.js";
 export { CannonWorldAdapter } from "../simulation/cannon-world-adapter.js";
+export { CannonMaterialAdapter } from "../simulation/cannon-material-adapter.js";
+export { FlexibleLineRuntime } from "../simulation/flexible-line-runtime.js";
+export { TensionOnlyDistanceConstraint } from "../simulation/tension-only-distance-constraint.js";
 export {
   CANNON_SOLVER_TRANSACTION_ID,
   CannonSolverTransaction,
@@ -168,6 +171,12 @@ export {
 export { deriveDynamicMassProperties } from "../model/dynamic-mass-properties.js";
 export { wheelDriveMotorIds } from "../simulation/wheel-drive-topology.js";
 export { compileAssembly } from "../model/assembly-compiler.js";
+export {
+  FLEXIBLE_LINE_MATERIALS,
+  expandFlexibleLineMaterial,
+  flexibleLineMaterial,
+  validateFlexibleLineConfig,
+} from "../model/flexible-line-materials.js";
 export {
   MultibodyRuntime,
   startMultibodyRuntime,

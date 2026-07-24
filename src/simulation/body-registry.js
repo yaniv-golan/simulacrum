@@ -1,4 +1,5 @@
 import { geometryDescriptorForPart } from "../model/geometry-descriptors.js";
+import { componentDefinition } from "../model/component-contracts.js";
 import {
   canonicalId,
   deepFreeze,
@@ -94,12 +95,14 @@ export class BodyRegistry {
   constructor(snapshot = {}, catalog) {
     for (const part of snapshot.parts || []) {
       const bodyId = `part:${String(part.id)}`,
-        descriptor = geometryDescriptorForPart(part, catalog);
+        descriptor = componentDefinition(part, catalog)?.flexibleLine
+          ? { kind: "flexible-line-source-v1", sourcePartId: part.id }
+          : geometryDescriptorForPart(part, catalog);
       this.#bodies.set(
         bodyId,
         deepFreeze(initialBody(bodyId, [part.id], [descriptor])),
       );
-      this.#bodyByPart.set(part.id, bodyId);
+      this.#bodyByPart.set(part.id, new Set([bodyId]));
     }
     loadTransactions.set(this, (id, loads) => this.#recordLoads(id, loads));
   }
@@ -135,7 +138,7 @@ export class BodyRegistry {
     const descriptors = [];
     for (const partId of ids) {
       canonicalId(partId);
-      const previousBodyId = this.#bodyByPart.get(partId);
+      const previousBodyId = this.#singleBodyIdForPart(partId);
       if (!previousBodyId)
         throw new DomainValidationError(
           "UNKNOWN_BODY_PART",
@@ -146,7 +149,7 @@ export class BodyRegistry {
       descriptors.push(previousBody.descriptors[index]);
     }
     for (const partId of ids) {
-      const previousBodyId = this.#bodyByPart.get(partId),
+      const previousBodyId = this.#singleBodyIdForPart(partId),
         previousBody = this.#bodies.get(previousBodyId),
         index = previousBody.partIds.indexOf(partId),
         nextPartIds = previousBody.partIds.filter(
@@ -181,16 +184,87 @@ export class BodyRegistry {
         quaternion: quaternion(pose.quaternion, ["body", id, "quaternion"]),
       };
     this.#bodies.set(id, deepFreeze(body));
-    for (const partId of ids) this.#bodyByPart.set(partId, id);
+    for (const partId of ids) this.#bodyByPart.set(partId, new Set([id]));
     if (engineBody) this.#engineBodies.set(id, engineBody);
     this.#revision++;
     return this.body(id);
   }
 
+  registerPhysicalEntities(partId, entities) {
+    const canonicalPartId = canonicalId(partId),
+      currentIds = this.#bodyByPart.get(canonicalPartId);
+    if (!currentIds)
+      throw new DomainValidationError(
+        "UNKNOWN_BODY_PART",
+        `Part ${String(canonicalPartId)} is not registered`,
+      );
+    if (!Array.isArray(entities) || !entities.length)
+      throw new DomainValidationError(
+        "EMPTY_PHYSICAL_ENTITY_SET",
+        `Part ${String(canonicalPartId)} requires at least one physical entity`,
+      );
+    for (const bodyId of currentIds) {
+      const previous = this.#bodies.get(bodyId);
+      if (
+        previous &&
+        (previous.partIds.length !== 1 ||
+          previous.partIds[0] !== canonicalPartId)
+      )
+        throw new DomainValidationError(
+          "PHYSICAL_ENTITY_PART_ALREADY_GROUPED",
+          `Part ${String(canonicalPartId)} is already grouped with another part`,
+        );
+      this.#bodies.delete(bodyId);
+      this.#engineBodies.delete(bodyId);
+    }
+    const nextIds = new Set();
+    for (const [index, entity] of entities.entries()) {
+      const id = canonicalId(entity?.bodyId);
+      if (this.#bodies.has(id) || nextIds.has(id))
+        throw new DomainValidationError(
+          "DUPLICATE_PHYSICAL_ENTITY",
+          `Physical entity ${String(id)} is already registered`,
+        );
+      const record = initialBody(
+        id,
+        [canonicalPartId],
+        [
+          structuredClone(
+            entity.descriptor || {
+              kind: "physical-entity-v1",
+              sourcePartId: canonicalPartId,
+              entityIndex: index,
+            },
+          ),
+        ],
+      );
+      record.bound = true;
+      record.constraintIds = [...new Set(entity.constraintIds || [])];
+      record.massProperties = entity.massProperties
+        ? structuredClone(entity.massProperties)
+        : null;
+      if (entity.pose)
+        record.pose = {
+          position: vector(entity.pose.position, ["body", id, "position"]),
+          quaternion: quaternion(entity.pose.quaternion, [
+            "body",
+            id,
+            "quaternion",
+          ]),
+        };
+      this.#bodies.set(id, deepFreeze(record));
+      if (entity.engineBody) this.#engineBodies.set(id, entity.engineBody);
+      nextIds.add(id);
+    }
+    this.#bodyByPart.set(canonicalPartId, nextIds);
+    this.#revision++;
+    return this.bodiesForPart(canonicalPartId);
+  }
+
   registerConstraint(constraintId, partId, options = {}) {
     const id = canonicalId(constraintId),
       canonicalPartId = canonicalId(partId),
-      previousBodyId = this.#bodyByPart.get(canonicalPartId);
+      previousBodyId = this.#singleBodyIdForPart(canonicalPartId);
     if (!previousBodyId)
       throw new DomainValidationError(
         "UNKNOWN_CONSTRAINT_PART",
@@ -258,8 +332,17 @@ export class BodyRegistry {
   }
 
   bodyForPart(partId) {
-    const bodyId = this.#bodyByPart.get(partId);
-    return bodyId ? this.body(bodyId) : null;
+    const bodyIds = this.#bodyByPart.get(partId);
+    if (!bodyIds || bodyIds.size !== 1) return null;
+    return this.body(bodyIds.values().next().value);
+  }
+
+  bodiesForPart(partId) {
+    return Object.freeze(
+      [...(this.#bodyByPart.get(partId) || [])]
+        .map((bodyId) => this.body(bodyId))
+        .filter(Boolean),
+    );
   }
 
   constraint(id) {
@@ -527,8 +610,8 @@ export class BodyRegistry {
       tick: this.#tick,
       bodies: Object.freeze([...this.#bodies.values()]),
       bodyByPart: Object.freeze(
-        [...this.#bodyByPart].map(([partId, bodyId]) =>
-          Object.freeze({ partId, bodyId }),
+        [...this.#bodyByPart].flatMap(([partId, bodyIds]) =>
+          [...bodyIds].map((bodyId) => Object.freeze({ partId, bodyId })),
         ),
       ),
       constraints: Object.freeze([...this.#constraints.values()]),
@@ -556,9 +639,7 @@ export class BodyRegistry {
     const bodies = new Map(
         (state.bodies || []).map((body) => [body.bodyId, body]),
       ),
-      bodyByPart = new Map(
-        (state.bodyByPart || []).map(({ partId, bodyId }) => [partId, bodyId]),
-      ),
+      bodyByPart = new Map(),
       constraints = new Map(
         (state.constraints || []).map((constraint) => [
           constraint.constraintId,
@@ -571,6 +652,20 @@ export class BodyRegistry {
           constraintId,
         ]),
       );
+    for (const { partId, bodyId } of state.bodyByPart || []) {
+      const ids = bodyByPart.get(partId) || new Set();
+      ids.add(bodyId);
+      bodyByPart.set(partId, ids);
+    }
+    const samePartBindings =
+      bodyByPart.size === this.#bodyByPart.size &&
+      [...this.#bodyByPart].every(([partId, expected]) => {
+        const actual = bodyByPart.get(partId);
+        return (
+          actual?.size === expected.size &&
+          [...expected].every((bodyId) => actual.has(bodyId))
+        );
+      });
     if (
       bodies.size !== this.#bodies.size ||
       [...this.#bodies.keys()].some((bodyId) => !bodies.has(bodyId)) ||
@@ -578,8 +673,7 @@ export class BodyRegistry {
       [...this.#constraints.keys()].some(
         (constraintId) => !constraints.has(constraintId),
       ) ||
-      bodyByPart.size !== this.#bodyByPart.size ||
-      [...this.#bodyByPart.keys()].some((partId) => !bodyByPart.has(partId)) ||
+      !samePartBindings ||
       constraintByPart.size !== this.#constraintByPart.size ||
       [...this.#constraintByPart.keys()].some(
         (partId) => !constraintByPart.has(partId),
@@ -611,6 +705,11 @@ export class BodyRegistry {
     this.#snapshotRevision = -1;
     this.#snapshotTick = -1;
     this.#snapshot = null;
+  }
+
+  #singleBodyIdForPart(partId) {
+    const bodyIds = this.#bodyByPart.get(partId);
+    return bodyIds?.size === 1 ? bodyIds.values().next().value : null;
   }
 
   #requireBody(id) {

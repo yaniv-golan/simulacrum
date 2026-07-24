@@ -6,9 +6,9 @@ import { analyzeCapabilityDispatch } from "./lib/capability-dispatch-analyzer.mj
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const REVIEWED_CAPABILITY_DISPATCH_BASELINE = Object.freeze({
-  commit: "release-0.1.0",
-  sites: 206,
-  sha256: "1bd53ebe8187052bb17a705aa3856f5d38e6c928ce77159479961c07de83457e",
+  commit: "unreleased-flexible-line-v1",
+  sites: 220,
+  sha256: "b7fc1b8dc9e4e0710a9a1fb2efbe6dc45357be98122cfc3a30d5734e3ed43636",
 });
 
 const POLICIES = Object.freeze([
@@ -51,7 +51,7 @@ const POLICIES = Object.freeze([
       "Authoritative geometry, mass, topology, and coordinate routing must consume canonical capability descriptors.",
   },
   {
-    pattern: /^src\/model\/failure-analysis\.js$/,
+    pattern: /^src\/model\/(?:failure-analysis|failure-event-extractors)\.js$/,
     family: "failure-read-model",
     disposition: "KEEP",
     owner: "model/failure-analysis",
@@ -131,7 +131,7 @@ const POLICIES = Object.freeze([
   },
   {
     pattern:
-      /^src\/application\/(?:assembly-editor-feature|assembly-transform-commands|assembly-workspace|blueprint-loading-feature|build-history-feature|build-history-snapshot|command-candidate-reader|component-authoring-commands|controller-binding-editor-adapter|controller-editor-feature|controller-lifecycle-feature|controller-sensor-capture|debug-read-model-feature|editor-presentation-subsystem|editor-selection-feature|executable-trust-feature|keyboard-shortcut-controller|pending-placement-command|remote-control-read-model|remote-control-state|simulation-lifecycle-feature|workspace-persistence)\.js$/,
+      /^src\/application\/(?:assembly-editor-feature|assembly-transform-commands|assembly-workspace|blueprint-loading-feature|build-history-feature|build-history-snapshot|command-candidate-reader|component-authoring-commands|controller-binding-editor-adapter|controller-editor-feature|controller-lifecycle-feature|controller-sensor-capture|debug-read-model-feature|editor-keyboard-composition|editor-presentation-subsystem|editor-selection-feature|executable-trust-feature|flexible-line-debug-read-model|keyboard-shortcut-controller|pending-placement-command|remote-control-read-model|remote-control-state|simulation-lifecycle-feature|two-ended-component-authoring|workspace-persistence)\.js$/,
     family: "application-boundary-and-read-model",
     disposition: "KEEP",
     owner: "application/use-cases",

@@ -63,6 +63,14 @@ const PROPERTY_SCHEMAS = Object.freeze({
   },
   capacityKg: { type: "number", exclusiveMinimum: 0 },
   initialUsableMassKg: { type: "number", minimum: 0 },
+  lengthM: { type: "number", exclusiveMinimum: 0 },
+  diameterM: { type: "number", exclusiveMinimum: 0 },
+  linearDensityKgPerM: { type: "number", exclusiveMinimum: 0 },
+  axialStiffnessNPerM: { type: "number", exclusiveMinimum: 0 },
+  axialDampingNsPerM: { type: "number", minimum: 0 },
+  ultimateTensionN: { type: "number", exclusiveMinimum: 0 },
+  targetElementLengthM: { type: "number", exclusiveMinimum: 0 },
+  materialKey: { $ref: "#/$defs/identifier" },
 });
 
 export function componentConfigKeys(type) {

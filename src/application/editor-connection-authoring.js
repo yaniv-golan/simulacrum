@@ -7,6 +7,7 @@ function authoringTransform(part) {
   return {
     ...part,
     pos: part.mesh.position.toArray(),
+    orientation: part.mesh.quaternion.toArray(),
     rotation: [
       part.mesh.rotation.x,
       part.mesh.rotation.y,
@@ -23,6 +24,7 @@ export function createEditorConnection({
   sourcePort,
   targetPort,
   index,
+  targetAnchorLocalM = null,
 }) {
   const physical = kind === "mechanical" || kind === "mesh",
     capacity =
@@ -37,6 +39,9 @@ export function createEditorConnection({
       kind,
       portA: sourcePort,
       portB: targetPort,
+      ...(Array.isArray(targetAnchorLocalM)
+        ? { anchorB: [...targetAnchorLocalM] }
+        : {}),
     },
     authoringTransform(left),
     authoringTransform(right),

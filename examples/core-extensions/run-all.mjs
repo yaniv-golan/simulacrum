@@ -4,6 +4,7 @@ import { challengeExample } from "./challenge.mjs";
 import { componentExample } from "./component.mjs";
 import { controllerProgramExample } from "./controller-program.mjs";
 import { environmentBodyExample } from "./environment-body.mjs";
+import { flexibleLineExample } from "./flexible-line.mjs";
 import { portBehaviorExample } from "./port-behavior.mjs";
 import { sensorAdapterExample } from "./sensor-adapter.mjs";
 import { simulationSystemExample } from "./simulation-system.mjs";
@@ -29,6 +30,14 @@ assert.deepEqual(environmentBodyExample(), {
   relativeVelocityMps: { x: 0, y: -2, z: 0 },
 });
 
+const flexibleLine = flexibleLineExample();
+assert.equal(flexibleLine.kind, "flexible-line-v1");
+assert.equal(flexibleLine.rigidProxyBodies, 0);
+assert.ok(flexibleLine.physicalEntities > 2);
+assert.equal(flexibleLine.internalEdges, flexibleLine.physicalEntities - 1);
+assert.deepEqual(flexibleLine.endpointStates, ["free-v1", "free-v1"]);
+assert.equal(flexibleLine.discretization, "flexible-line-discretization-v1");
+
 const controller = await controllerProgramExample();
 assert.equal(controller.version, CONTROL_IR_VERSION);
 assert.equal(controller.entry, "tick");
@@ -43,4 +52,4 @@ assert.deepEqual(telemetryConsumerExample(), {
   label: "ASCENDING",
 });
 
-console.log("all eight public core extension examples passed");
+console.log("all nine public core extension examples passed");

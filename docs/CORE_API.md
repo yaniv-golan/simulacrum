@@ -31,6 +31,10 @@ import {
   createSubassemblyTemplate,
   EnvironmentBodyRegistry,
   EnvironmentBodySystem,
+  FlexibleLineRuntime,
+  FlexibleLineStructureSystem,
+  FlexibleLineSystem,
+  FlexibleLineTelemetrySystem,
   FailureEvent,
   FailureRecorder,
   instantiateSubassembly,
@@ -71,6 +75,12 @@ const compiled = compileAssembly(assembly.snapshot(), TYPES);
 const materials = new MaterialResourceNetwork(compiled);
 const mechanisms = new MultibodyRuntime({ world, material, catalog: TYPES });
 mechanisms.start(assembly.snapshot());
+const flexibleLines = new FlexibleLineRuntime({
+  world,
+  materialForKey,
+  multibodyRuntime: mechanisms,
+});
+flexibleLines.start(compiled);
 const nozzleDemand = new PressureNozzleDemandSystem();
 
 const session = new SimulationSession({
@@ -80,8 +90,11 @@ const session = new SimulationSession({
     nozzleDemand,
     new ReleaseCouplerSystem(),
     new MechanismSystem(),
+    new FlexibleLineSystem(),
     new PressureNozzleForceSystem(),
     new RigidBodySystem(),
+    new FlexibleLineStructureSystem(),
+    new FlexibleLineTelemetrySystem(),
     new MaterialResourceCommitSystem(),
     new MassPropertyCommitSystem(),
   ],
@@ -91,6 +104,7 @@ session.start(assembly.snapshot(), {
   world,
   worldAdapter: mechanisms.worldAdapter,
   multibodyRuntime: mechanisms,
+  flexibleLineRuntime: flexibleLines,
   compiledAssembly: compiled,
   pressureNozzleDemandSystem: nozzleDemand,
 });
@@ -98,10 +112,23 @@ session.step(1 / 60);
 session.stepFixed(); // exactly one 1/120-second phase-ordered tick
 const telemetry = session.telemetry();
 session.dispose();
+flexibleLines.dispose();
 mechanisms.dispose();
 ```
 
 ## Physical systems and resources
+
+`flexible-line-v1` is the general distributed-line contract behind the stock
+Rope. Compilation emits plural mass/contact entities, unilateral internal
+edges, explicit two-end boundaries, and stable discretization identity without
+a rigid proxy. `FlexibleLineRuntime` uses the host's Cannon world and ordinary
+target bodies; `FlexibleLineSystem`, `FlexibleLineStructureSystem`, and
+`FlexibleLineTelemetrySystem` preserve the single integration and completed
+telemetry order. `BodyRegistry` and `PhysicalAssemblyIndex` support plural
+ownership and split lineage. Checkpoint owner `flexible-line-runtime` restores
+entity motion, edge/attachment state, dissipation, and topology exactly. See
+[Rope](ROPE.md) and the executable
+[`flexible-line.mjs`](../examples/core-extensions/flexible-line.mjs).
 
 Material-resource ports require an exact non-empty `mediumId` match and
 opposite-compatible directions. `MaterialResourceNetwork` owns finite store

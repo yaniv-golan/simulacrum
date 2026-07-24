@@ -64,6 +64,8 @@ export class StructureSystem {
     const runtime = context.services.multibodyRuntime,
       connections = context.runGraph.connections(),
       compiledLoads = runtime?.loadByConnection || new Map(),
+      flexibleLoads =
+        context.services.flexibleLineRuntime?.loadByConnection || new Map(),
       compiledTorques = runtime?.torqueByConnection || new Map(),
       failures = [],
       evaluations = [],
@@ -72,7 +74,11 @@ export class StructureSystem {
 
     for (const connection of connections) {
       if (!PHYSICAL_KINDS.has(connection.kind) || connection.failed) continue;
-      const load = Math.max(0, Number(compiledLoads.get(connection.id) || 0)),
+      const load = Math.max(
+          0,
+          Number(compiledLoads.get(connection.id) || 0),
+          Number(flexibleLoads.get(connection.id) || 0),
+        ),
         torque = Math.max(0, Number(compiledTorques.get(connection.id) || 0)),
         forceUtilization =
           load / Math.max(1, Number(connection.capacity.ultimateForceN)),
@@ -142,6 +148,12 @@ export class StructureSystem {
     let detachedConstraints = pendingConnections
       ? runtime?.applyConnectionFailures(pendingConnections) || []
       : [];
+    if (pendingConnections)
+      detachedConstraints.push(
+        ...(context.services.flexibleLineRuntime?.applyConnectionFailures(
+          pendingConnections,
+        ) || []),
+      );
     const separatedPartIds = detachedConstraints.length
       ? this.#separatedParts(context, runtime)
       : [];

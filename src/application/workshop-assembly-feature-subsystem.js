@@ -100,6 +100,8 @@ export function createWorkshopAssemblyFeatureSubsystem({
           runtime.terrainCollisionStream = null;
         },
         disposeMultibody: () => {
+          runtime.flexibleLineRuntime?.dispose();
+          runtime.flexibleLineRuntime = null;
           runtime.multibodyRuntime?.dispose();
           runtime.multibodyRuntime = null;
         },

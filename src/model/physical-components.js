@@ -63,9 +63,10 @@ export function physicalComponents(telemetry) {
     const componentParts = partIds
         .map((id) => partsById.get(id))
         .filter(Boolean),
-      componentBodies = [
-        ...new Set(bodyPartIds.map((id) => bodyByPart.get(id)).filter(Boolean)),
-      ]
+      componentBodyIds = indexed.physicalEntityIds
+        ? indexed.physicalEntityIds
+        : bodyPartIds.map((id) => bodyByPart.get(id)).filter(Boolean),
+      componentBodies = [...new Set(componentBodyIds)]
         .map((id) => bodiesById.get(id))
         .filter(Boolean);
     if (!componentBodies.length) continue;

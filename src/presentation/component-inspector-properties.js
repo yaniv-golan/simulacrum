@@ -33,7 +33,7 @@ export function articulatedRolesForType(type) {
 }
 
 /**
- * @typedef {[string, string, number, number, number, string]} PropertySpec
+ * @typedef {[string, string, number, number, number, string, number?]} PropertySpec
  * @param {{type:string,config:Record<string,number|boolean|string>}} part
  * @returns {PropertySpec[]}
  */
@@ -79,6 +79,73 @@ export function componentInspectorProperties(part) {
       200,
       "Wh",
     ]);
+  if (type.flexibleLine) {
+    output.push(
+      [
+        "CUT LENGTH",
+        "lengthM",
+        Number(part.config.lengthM),
+        0.5,
+        16,
+        " m",
+        0.05,
+      ],
+      [
+        "DIAMETER",
+        "diameterM",
+        Number(part.config.diameterM),
+        0.005,
+        0.1,
+        " m",
+        0.001,
+      ],
+      [
+        "LINEAR DENSITY",
+        "linearDensityKgPerM",
+        Number(part.config.linearDensityKgPerM),
+        0.05,
+        5,
+        " kg/m",
+        0.005,
+      ],
+      [
+        "AXIAL STIFFNESS",
+        "axialStiffnessNPerM",
+        Number(part.config.axialStiffnessNPerM),
+        1_000,
+        1_000_000,
+        " N/m",
+        1_000,
+      ],
+      [
+        "AXIAL DAMPING",
+        "axialDampingNsPerM",
+        Number(part.config.axialDampingNsPerM),
+        0,
+        1_000,
+        " N·s/m",
+        1,
+      ],
+      [
+        "BREAK LOAD",
+        "ultimateTensionN",
+        Number(part.config.ultimateTensionN),
+        100,
+        100_000,
+        " N",
+        100,
+      ],
+      [
+        "ELEMENT LENGTH",
+        "targetElementLengthM",
+        Number(part.config.targetElementLengthM),
+        0.1,
+        1,
+        " m",
+        0.05,
+      ],
+    );
+  }
   return output;
 }
 

@@ -34,6 +34,7 @@ export class RuntimeCheckpointCoordinator {
   constructor({
     session,
     multibodyRuntime,
+    flexibleLineRuntime = null,
     worldAdapter,
     sensorBank = null,
     controllerManager = null,
@@ -44,6 +45,7 @@ export class RuntimeCheckpointCoordinator {
   }) {
     this.session = session;
     this.multibodyRuntime = multibodyRuntime;
+    this.flexibleLineRuntime = flexibleLineRuntime;
     this.worldAdapter = worldAdapter;
     this.sensorBank = sensorBank;
     this.controllerManager = controllerManager;
@@ -136,6 +138,9 @@ export class RuntimeCheckpointCoordinator {
     return {
       runGraph: context.runGraph.exportState(),
       physics: this.multibodyRuntime.exportState(),
+      flexibleLines: this.flexibleLineRuntime?.exportState() ?? {
+        kind: "no-flexible-line-runtime-v1",
+      },
       bodyRegistry: context.bodyRegistry.exportState(),
       structure: this.#structureSystem()?.exportState() ?? null,
       aerothermal: this.aerothermalAblationOwner?.exportState() ?? null,
@@ -156,6 +161,8 @@ export class RuntimeCheckpointCoordinator {
   #applyMutableState(context, state) {
     context.runGraph.importState(state.runGraph);
     this.multibodyRuntime.importState(state.physics);
+    if (this.flexibleLineRuntime && state.flexibleLines?.version === 1)
+      this.flexibleLineRuntime.importState(state.flexibleLines);
     context.bodyRegistry.importState(state.bodyRegistry);
     if (state.structure) this.#structureSystem()?.importState(state.structure);
     if (state.aerothermal)
@@ -204,9 +211,20 @@ export class RuntimeCheckpointCoordinator {
           contactRegionIds: this.multibodyRuntime.compiled.contactRegions
             .map((region) => region.id)
             .sort(),
+          flexibleEntityIds: (
+            this.multibodyRuntime.compiled.flexibleLines || []
+          )
+            .flatMap((line) => line.entities.map((entity) => entity.id))
+            .sort(),
+          flexibleEdgeIds: (this.multibodyRuntime.compiled.flexibleLines || [])
+            .flatMap((line) => line.internalEdges.map((edge) => edge.id))
+            .sort(),
           transactionId: CANNON_SOLVER_TRANSACTION_ID,
         },
         "physics-world": physics,
+        "flexible-line-runtime": this.flexibleLineRuntime?.exportState() ?? {
+          kind: "no-flexible-line-runtime-v1",
+        },
         "solver-contact": {
           statePolicy: physics.solverStatePolicy,
           constraintIds: physics.entries.map((entry) => entry.id),
@@ -310,6 +328,16 @@ export class RuntimeCheckpointCoordinator {
         .sort(),
       currentContactRegions = this.multibodyRuntime.compiled.contactRegions
         .map((region) => region.id)
+        .sort(),
+      currentFlexibleEntities = (
+        this.multibodyRuntime.compiled.flexibleLines || []
+      )
+        .flatMap((line) => line.entities.map((entity) => entity.id))
+        .sort(),
+      currentFlexibleEdges = (
+        this.multibodyRuntime.compiled.flexibleLines || []
+      )
+        .flatMap((line) => line.internalEdges.map((edge) => edge.id))
         .sort();
     if (
       !context ||
@@ -318,7 +346,11 @@ export class RuntimeCheckpointCoordinator {
       stableStringify(compiled.constraintIds) !==
         stableStringify(currentConstraints) ||
       stableStringify(compiled.contactRegionIds) !==
-        stableStringify(currentContactRegions)
+        stableStringify(currentContactRegions) ||
+      stableStringify(compiled.flexibleEntityIds || []) !==
+        stableStringify(currentFlexibleEntities) ||
+      stableStringify(compiled.flexibleEdgeIds || []) !==
+        stableStringify(currentFlexibleEdges)
     )
       throw new DomainValidationError(
         "CHECKPOINT_COMPILED_TOPOLOGY_MISMATCH",
@@ -330,6 +362,9 @@ export class RuntimeCheckpointCoordinator {
       target = {
         runGraph: payloads.get("run-graph"),
         physics,
+        flexibleLines: this.flexibleLineRuntime
+          ? payloads.get("flexible-line-runtime")
+          : null,
         bodyRegistry: payloads.get("body-registry"),
         structure: payloads.get("structure-failure"),
         aerothermal: this.aerothermalAblationOwner

@@ -2,6 +2,7 @@ import { compileAssembly } from "./assembly-compiler.js";
 import { geometryDescriptorForPart } from "./geometry-descriptors.js";
 import { canonicalQuaternion, rotateVectorByQuaternion } from "./primitives.js";
 import { pressureNozzlePerformance } from "./pressure-nozzle-contracts.js";
+import { componentDefinition } from "./component-contracts.js";
 
 const add = (a, b) => a.map((value, axis) => value + b[axis]);
 const scale = (vector, scalar) => vector.map((value) => value * scalar);
@@ -83,6 +84,11 @@ function overlaps(a, b, tolerance = 0.025) {
 }
 
 export function displacedVolumeForPart(part, catalog) {
+  if (componentDefinition(part, catalog)?.flexibleLine) {
+    const config = part.config || {},
+      radiusM = Number(config.diameterM) / 2;
+    return Math.PI * radiusM * radiusM * Number(config.lengthM);
+  }
   return geometryDescriptorForPart(part, catalog).displacementM3;
 }
 
@@ -91,29 +97,48 @@ export function analyzeAssembly(snapshot, catalog) {
     connections = snapshot?.connections || [],
     partById = new Map(parts.map((part) => [part.id, part])),
     compiled = compileAssembly(snapshot, catalog),
-    totalMass = compiled.bodies.reduce((sum, body) => sum + body.mass, 0),
-    centerOfMass = compiled.bodies
+    flexibleMassPoints = (compiled.flexibleLines || []).flatMap((line) =>
+      line.entities.map((entity) => ({
+        mass: entity.massKg,
+        center: entity.positionWorldM,
+      })),
+    ),
+    rigidMassPoints = compiled.bodies.map((body) => {
+      const part = partById.get(body.partId);
+      return {
+        mass: body.mass,
+        center: worldPoint(part, body.massProperties.comPositionPartM),
+      };
+    }),
+    massPoints = [...rigidMassPoints, ...flexibleMassPoints],
+    totalMass = massPoints.reduce((sum, point) => sum + point.mass, 0),
+    centerOfMass = massPoints
       .reduce(
-        (sum, body) => {
-          const part = partById.get(body.partId),
-            center = worldPoint(part, body.massProperties.comPositionPartM);
-          return add(sum, scale(center, body.mass));
-        },
+        (sum, point) => add(sum, scale(point.center, point.mass)),
         [0, 0, 0],
       )
       .map((value) => value / Math.max(0.001, totalMass)),
-    displacedVolumeM3 = compiled.bodies.reduce(
-      (sum, body) => sum + body.geometry.displacementM3,
+    flexibleVolumes = (compiled.flexibleLines || []).map((line) => ({
+      volume: Math.PI * (line.diameterM / 2) ** 2 * line.lengthM,
+      center: line.entities
+        .reduce((sum, entity) => add(sum, entity.positionWorldM), [0, 0, 0])
+        .map((value) => value / line.entities.length),
+    })),
+    rigidVolumes = compiled.bodies.map((body) => {
+      const part = partById.get(body.partId);
+      return {
+        volume: body.geometry.displacementM3,
+        center: worldPoint(part, body.geometry.renderDetailAnchors.center),
+      };
+    }),
+    volumePoints = [...rigidVolumes, ...flexibleVolumes],
+    displacedVolumeM3 = volumePoints.reduce(
+      (sum, point) => sum + point.volume,
       0,
     ),
-    centerOfBuoyancy = compiled.bodies
+    centerOfBuoyancy = volumePoints
       .reduce(
-        (sum, body) => {
-          const part = partById.get(body.partId),
-            volume = body.geometry.displacementM3,
-            center = worldPoint(part, body.geometry.renderDetailAnchors.center);
-          return add(sum, scale(center, volume));
-        },
+        (sum, point) => add(sum, scale(point.center, point.volume)),
         [0, 0, 0],
       )
       .map((value) => value / Math.max(0.000001, displacedVolumeM3)),

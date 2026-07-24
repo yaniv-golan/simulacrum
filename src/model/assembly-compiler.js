@@ -3,6 +3,7 @@ import {
   createCompilationContext,
 } from "./assembly-compiler-context.js";
 import { compileForceElements } from "./assembly-compiler-force-elements.js";
+import { compileFlexibleLines } from "./assembly-compiler-flexible-lines.js";
 import { compileBodies } from "./assembly-compiler-bodies.js";
 import { compilePhysicalConstraints } from "./assembly-compiler-constraints.js";
 import { compileTopology } from "./assembly-compiler-topology.js";
@@ -19,6 +20,7 @@ export function compileAssembly(snapshot, catalog = {}) {
   const context = createCompilationContext(snapshot, catalog);
   compileConnectionNetworks(context);
   compileForceElements(context);
+  compileFlexibleLines(context);
   compileBodies(context);
   compilePhysicalConstraints(context);
   compileTopology(context);

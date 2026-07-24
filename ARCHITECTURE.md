@@ -51,8 +51,13 @@ starting mass and the committed result becomes authoritative on the next tick.
 ## Physical identity and flight
 
 Physical grouping has one derived authority: `PhysicalAssemblyIndex`. It
-reconstructs connected physical components from compiled topology, live
-constraints, and structural events; it is never checkpointed as mutable state.
+reconstructs connected physical components from compiled rigid bodies,
+flexible-line entities and internal edges, live constraints, and structural
+events; it is never checkpointed as mutable state. `BodyRegistry` owns the
+corresponding one-part-to-many-physical-entities mapping. An internal Rope
+break may place entities from one authored part into multiple derived
+components without creating a second Rope registry or changing source-part
+identity.
 `MobilityTelemetrySystem` selects every indexed component that contains an
 authored rolling-contact region and publishes one `systems.mobility.assemblies`
 record per component. Each record retains the component frame, members,
@@ -60,6 +65,15 @@ lineage, wheel contacts, solved forces, motor power, steering, braking, fluids,
 and validity. Structural splits receive new lineage-aware identities; commands
 remain addressed to authored endpoint parts and resolve through
 `componentForPart()` instead of following a guessed vehicle or demo ID.
+
+`FlexibleLineRuntime` shares the production Cannon world and fixed integration
+transaction with `MultibodyRuntime`. Its actuator-phase system prepares axial
+damping, its structure-phase system resolves internal failure and ordinary
+attachment loads, and its completed structure telemetry is the only solved
+centreline read model. Presentation owns only a bounded instanced-tube mirror.
+The dedicated checkpoint owner persists flexible entity, edge, attachment, and
+topology state; replay stores the immutable completed telemetry instead.
+
 Flight-related work is split by ownership. `AerodynamicSystem` applies
 per-part atmosphere, wind, altitude-dependent gravity correction, drag, and
 authored-surface lift while publishing explicit force and heat-input records.

@@ -4,6 +4,7 @@ import {
   createTestSiteCollisionBody,
   installTestSiteContactMaterials,
 } from "../simulation/environment/test-site-collision.js";
+import { CannonMaterialAdapter } from "../simulation/cannon-material-adapter.js";
 
 /** Builds the shared Cannon world and static workshop terrain contract. */
 export function createWorkshopPhysicsWorld({ surfaceSampleAt, footprint }) {
@@ -25,7 +26,15 @@ export function createWorkshopPhysicsWorld({ surfaceSampleAt, footprint }) {
       footprint,
       fallbackMaterial: groundMaterial,
     }),
-    fieldBody = testSiteCollision.body;
+    fieldBody = testSiteCollision.body,
+    ropeMaterial = new CANNON.Material("nylon-rope"),
+    materialAdapter = new CannonMaterialAdapter(world, [
+      ["workshop-steel", groundMaterial],
+      ["generic-ground", groundMaterial],
+      ["generic-structure", debrisMaterial],
+      ["nylon-rope", ropeMaterial],
+      ...testSiteCollision.materialsByKey,
+    ]).install();
   // Y-up SAP rejects disjoint world AABBs before exact narrowphase.
   const broadphase = new CANNON.SAPBroadphase(world);
   broadphase.axisIndex = 1;
@@ -71,6 +80,9 @@ export function createWorkshopPhysicsWorld({ surfaceSampleAt, footprint }) {
     groundMaterial,
     footMaterial,
     debrisMaterial,
+    ropeMaterial,
+    materialForKey: (materialKey) =>
+      materialAdapter.materialForKey(materialKey),
     groundBody,
     fieldBody,
     terrainSize: testSiteCollision.width,

@@ -14,6 +14,8 @@ import {
 import { projectMachineTelemetry } from "../presentation/machine-telemetry-projection.js";
 import { pendingPlacementReadModel } from "./pending-placement-read-model.js";
 import { remoteActionTargetPartIds } from "../model/remote-actions.js";
+import { flexibleLineDebugReadModel } from "./flexible-line-debug-read-model.js";
+import { sensorRpmFromTelemetry as sensorRpm } from "../presentation/sensor-rpm-read-model.js";
 /** Installs the stable automation/debug read models from explicit subsystem ports. */
 export function installDebugReadModelFeature({
   target,
@@ -31,15 +33,6 @@ export function installDebugReadModelFeature({
 }) {
   function controllerTelemetry() {
     return telemetry().systems?.controllers || controller.runtimeTelemetry();
-  }
-  function sensorRpm(sensorId) {
-    const controllers = telemetry().systems?.sensors?.controllers;
-    if (!controllers) return 0;
-    for (const readings of Object.values(controllers)) {
-      const value = readings?.[`rotation_rpm_${sensorId}`];
-      if (Number.isFinite(value)) return value;
-    }
-    return 0;
   }
   function environmentReadModel() {
     const frame = telemetry(),
@@ -171,7 +164,8 @@ export function installDebugReadModelFeature({
     return buildAssemblyDebugReadModel({
       parts: state.parts.map((part) => ({
         ...part,
-        measuredRpm: part.type === "sensor" ? sensorRpm(part.id) : undefined,
+        measuredRpm:
+          part.type === "sensor" ? sensorRpm(telemetry(), part.id) : undefined,
         runtimeEnergy:
           part.type === "battery"
             ? assembly.currentPart(part.id)?.energyWh
@@ -227,6 +221,12 @@ export function installDebugReadModelFeature({
       demo: machineReadModel(),
       ...assemblyReadModel(),
       ...controllerReadModel(),
+      flexibleLines: flexibleLineDebugReadModel({
+        parts: state.parts,
+        connections: assembly.currentConnections(),
+        telemetry: telemetry(),
+        running: state.running,
+      }),
       mission: view.mission(),
       presentation: view.presentation(),
     }),

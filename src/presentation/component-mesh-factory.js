@@ -34,6 +34,7 @@ import {
   buildRcsCluster,
 } from "./component-visual-builders/propulsion-builders.js";
 import { buildGenericGeometry } from "./component-visual-builders/generic-builder.js";
+import { buildFlexibleLine } from "./component-visual-builders/flexible-line-builder.js";
 
 export { gearShape };
 
@@ -63,6 +64,7 @@ const VISUAL_BUILDERS = Object.freeze({
   rcs: buildRcsCluster,
   rocket: buildPressureNozzle,
   generic: buildGenericGeometry,
+  "flexible-line": buildFlexibleLine,
 });
 
 export function componentMesh(type, customColor) {

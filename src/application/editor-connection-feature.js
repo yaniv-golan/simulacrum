@@ -255,6 +255,7 @@ export function createEditorConnectionFeature({ workspace, history, view }) {
     rightId,
     requestedKind = "auto",
     requestedTargetPort = null,
+    targetAnchorLocalM = null,
   ) {
     const existing = workspace.connections();
     if (leftId === rightId) {
@@ -264,18 +265,6 @@ export function createEditorConnectionFeature({ workspace, history, view }) {
     const left = workspace.parts().find((part) => part.id === leftId);
     const right = workspace.parts().find((part) => part.id === rightId);
     if (!left || !right) return false;
-    if (
-      existing.some(
-        (connection) =>
-          (connection.a === leftId && connection.b === rightId) ||
-          (connection.a === rightId && connection.b === leftId),
-      )
-    ) {
-      view.notify(
-        `${partName(left)} and ${partName(right)} already share a connection`,
-      );
-      return false;
-    }
     const historySnapshot = history.suspended() ? null : history.capture();
     const sourcePort = workspace.connectPort();
     let kind = requestedKind;
@@ -327,6 +316,7 @@ export function createEditorConnectionFeature({ workspace, history, view }) {
       sourcePort,
       targetPort,
       index: existing.length,
+      targetAnchorLocalM,
     });
     try {
       validatePortConnection(

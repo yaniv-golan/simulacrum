@@ -20,6 +20,11 @@ export { RigidBodySystem } from "./rigid-body-system.js";
 export { TelemetrySystem } from "./telemetry-system.js";
 export { ArticulatedConstraintSystem } from "./articulated-constraint-system.js";
 export { FluidSystem } from "./fluid-system.js";
+export {
+  FlexibleLineSystem,
+  FlexibleLineStructureSystem,
+  FlexibleLineTelemetrySystem,
+} from "./flexible-line-system.js";
 export { RollingContactSystem } from "./rolling-contact-system.js";
 export { ComponentActuatorSystem } from "./component-actuator-system.js";
 export { ReleaseCouplerSystem } from "./release-coupler-system.js";

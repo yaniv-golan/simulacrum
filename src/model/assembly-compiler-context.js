@@ -61,6 +61,8 @@ export function createCompilationContext(snapshot, catalog) {
   /** @type {Array<{id: string, kind: string, sourcePartId: any, constraintId: string, law: any}>} */
   const forceElements = [];
   /** @type {any[]} */
+  const flexibleLines = [];
+  /** @type {any[]} */
   const actuators = [];
   /** @type {Array<{
    * id: string, kind: string, sourcePartId: any, bodyId: string,
@@ -79,11 +81,13 @@ export function createCompilationContext(snapshot, catalog) {
     constraints,
     networks,
     forceElements,
+    flexibleLines,
     actuators,
     contactRegions,
     collisionExclusions: /** @type {any[]} */ ([]),
     consumedConnections: new Set(),
     forceElementParts: new Set(),
+    flexibleLineParts: new Set(),
     endpointPointMasses: new Map(),
     geometryFor(part) {
       if (!geometryByPart.has(part.id))

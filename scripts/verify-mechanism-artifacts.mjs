@@ -229,8 +229,8 @@ for (const contract of contracts) {
   );
 }
 
-assert.equal(CHECKPOINT_STATE_OWNER_IDS.length, 18);
-assert.equal(new Set(CHECKPOINT_STATE_OWNER_IDS).size, 18);
+assert.equal(CHECKPOINT_STATE_OWNER_IDS.length, 19);
+assert.equal(new Set(CHECKPOINT_STATE_OWNER_IDS).size, 19);
 assert.equal(decodeExperiment({ ...experiment, checkpoint: null }).ok, false);
 const noCheckpointExperiment = { ...experiment, checkpoint: null };
 noCheckpointExperiment.manifestDigest = experimentManifestDigest(

@@ -7,6 +7,9 @@ import {
   ControllerSystem,
   EnvironmentBodySystem,
   FluidSystem,
+  FlexibleLineSystem,
+  FlexibleLineStructureSystem,
+  FlexibleLineTelemetrySystem,
   MechanismSystem,
   MassPropertyCommitSystem,
   MaterialResourceCommitSystem,
@@ -30,7 +33,8 @@ import {
 import { PhysicalAssemblySystem } from "../simulation/systems/physical-assembly-system.js";
 
 /** Creates the single ordered production fixed-step pipeline. */
-export function createProductionSimulationSystems() {
+export function createProductionSimulationSystems(compiledAssembly = null) {
+  const flexibleLines = Boolean(compiledAssembly?.flexibleLines?.length);
   return [
     new SensorSystem(),
     new ControllerSystem(),
@@ -45,12 +49,15 @@ export function createProductionSimulationSystems() {
     new ComponentActuatorSystem(),
     new ReleaseCouplerSystem(),
     new RollingContactSystem(),
+    ...(flexibleLines ? [new FlexibleLineSystem()] : []),
     new EnvironmentBodySystem(),
     new FluidSystem(),
     new PressureNozzleForceSystem(),
     new AerodynamicSystem(),
     new RigidBodySystem(),
+    ...(flexibleLines ? [new FlexibleLineStructureSystem()] : []),
     new StructureSystem(),
+    ...(flexibleLines ? [new FlexibleLineTelemetrySystem()] : []),
     new MaterialResourceCommitSystem(),
     new ThermalSystem(),
     new MassPropertyCommitSystem(),
@@ -91,5 +98,6 @@ export function captureProductionSystemTelemetry(context) {
     structures: telemetry.structures,
     integration: telemetry.integration,
     fluids: telemetry.fluids,
+    flexibleLines: telemetry.flexibleLines || null,
   };
 }

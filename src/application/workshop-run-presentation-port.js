@@ -46,6 +46,13 @@ export function createWorkshopRunPresentationPort({
     },
     attachPartToMachine: (part) => {
       if (part.mesh.parent !== stage.machine) stage.machine.attach(part.mesh);
+      const flexible = part.mesh.userData?.flexibleLineVisual;
+      if (flexible) {
+        flexible.preview.visible = true;
+        flexible.runtime.visible = false;
+        flexible.runtime.count = 0;
+        part.flexibleLineTelemetry = null;
+      }
     },
     syncLargeAssembly: (parts) =>
       stage.largeAssemblyBatcher.sync(parts, { enabled: true }),

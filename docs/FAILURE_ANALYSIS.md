@@ -41,6 +41,14 @@ transitions and records immutable `FailureEvent` values containing:
 - source channel, unit, reference frame, completed tick, validity, and
   provenance.
 
+An overloaded Rope termination is an ordinary failed connection with its
+authored capacity. An internal Rope break is a compiled-edge failure. Its event
+adds source Rope ID, exact internal edge and world location, material and
+failure-law identity, peak tension and rating, predecessor connections, active
+elements, and surviving fragment IDs. Only one governing internal edge per
+Rope may break in a tick; ties use stable compiled identity. The fragments keep
+simulating and the replay frame retains the same solved centreline and event.
+
 `FailureRecorder.report()` keeps the first physical failure as the primary root
 cause while retaining the later cascade as an immutable timeline. Unknown or
 non-physical transition kinds fail closed; deliberate commanded release is

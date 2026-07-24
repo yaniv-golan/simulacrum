@@ -204,6 +204,7 @@ export function createWorkshopRunComposition({
       worldAdapter: stage.worldAdapter,
       catalog,
       debrisMaterial: stage.debrisMaterial,
+      materialForKey: stage.materialForKey,
       groundMaterial: stage.groundMaterial,
       groundBody: stage.groundBody,
       fieldBody: stage.fieldBody,

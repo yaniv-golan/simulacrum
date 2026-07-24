@@ -16,6 +16,7 @@ export function createSimulationRuntimeState() {
     physicalFlightTelemetry: null,
     physicalAssemblyIndex: null,
     multibodyRuntime: null,
+    flexibleLineRuntime: null,
     terrainCollisionStream: null,
     checkpointCoordinator: null,
     prepareCheckpointCoordinator: null,

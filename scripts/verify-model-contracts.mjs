@@ -322,6 +322,7 @@ for (const [type, definition] of Object.entries(TYPES)) {
 const canonicalPortBehaviors = new Set([
     "fixed",
     "structural-surface",
+    "flexible-termination",
     "rotary-coupling",
     "revolute-support",
     "rotary-actuator-output",
@@ -357,6 +358,7 @@ for (const descriptor of catalogDescriptors) {
 const kindForBehavior = {
     fixed: "mechanical",
     "structural-surface": "mechanical",
+    "flexible-termination": "mechanical",
     "rotary-coupling": "mechanical",
     "revolute-support": "mechanical",
     "rotary-actuator-output": "mechanical",
@@ -371,6 +373,10 @@ const kindForBehavior = {
     "fixed:structural-surface",
     "structural-surface:fixed",
     "structural-surface:structural-surface",
+    "flexible-termination:fixed",
+    "fixed:flexible-termination",
+    "flexible-termination:structural-surface",
+    "structural-surface:flexible-termination",
     "rotary-coupling:rotary-coupling",
     "revolute-support:rotary-coupling",
     "rotary-coupling:revolute-support",
@@ -427,6 +433,26 @@ for (const leftBehavior of canonicalPortBehaviors)
       `unreviewed compatibility result for ${leftBehavior}:${rightBehavior}`,
     );
   }
+assert.equal(
+  portsCompatible(
+    { id: 1, type: "rope" },
+    "END_A",
+    { id: 2, type: "wheel" },
+    "AXLE",
+  ),
+  false,
+  "a Rope termination connected to an internal rotary shaft port",
+);
+assert.equal(
+  portsCompatible(
+    { id: 1, type: "rope" },
+    "END_A",
+    { id: 2, type: "wheel" },
+    "SURFACE",
+  ),
+  true,
+  "the wheel exposes no ordinary surface attachment for Rope",
+);
 for (const leftDirection of canonicalDirections)
   for (const rightDirection of canonicalDirections) {
     const directionCatalog = Object.fromEntries(
@@ -629,13 +655,15 @@ assert.throws(
 );
 
 for (const type of Object.keys(TYPES)) {
-  const descriptor = geometryDescriptorForType(type),
+  const flexible = Boolean(TYPES[type].flexibleLine),
+    descriptor = flexible ? null : geometryDescriptorForType(type),
     visualDescriptor = componentVisualDescriptor(type),
     renderObject = componentMesh(type);
-  assert.ok(Object.isFrozen(descriptor), `${type} descriptor is mutable`);
+  if (descriptor)
+    assert.ok(Object.isFrozen(descriptor), `${type} descriptor is mutable`);
   assert.ok(
     Object.isFrozen(visualDescriptor) &&
-      Object.isFrozen(visualDescriptor.geometry),
+      (flexible || Object.isFrozen(visualDescriptor.geometry)),
     `${type} visual descriptor is mutable`,
   );
   assert.equal(
@@ -648,19 +676,20 @@ for (const type of Object.keys(TYPES)) {
     "object3d-tree-v1",
     `${type} did not declare render-resource ownership`,
   );
-  assert.ok(
-    descriptor.collisionPrimitives.length > 0 &&
-      descriptor.dimensions.every(Number.isFinite) &&
-      descriptor.massKg > 0 &&
-      descriptor.displacementM3 > 0,
-    `${type} descriptor is physically incomplete`,
-  );
+  if (descriptor)
+    assert.ok(
+      descriptor.collisionPrimitives.length > 0 &&
+        descriptor.dimensions.every(Number.isFinite) &&
+        descriptor.massKg > 0 &&
+        descriptor.displacementM3 > 0,
+      `${type} descriptor is physically incomplete`,
+    );
   assert.equal(
     stableStringify(renderObject.userData.geometryDescriptor),
     stableStringify(descriptor),
     `${type} presentation did not consume the canonical descriptor`,
   );
-  if (TYPES[type].mechanism) {
+  if (TYPES[type].mechanism && descriptor) {
     renderObject.updateMatrixWorld(true);
     const renderedSize = new THREE.Box3()
       .setFromObject(renderObject)

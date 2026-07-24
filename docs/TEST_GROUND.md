@@ -49,6 +49,15 @@ complete the facility. Water interaction follows ordinary buoyancy, drag, and
 bed contact. Tire, track, foot, skid, landing-leg, and loose-part support comes
 from the actual completed contact point and material law.
 
+Rope uses the same authority. Its distributed contact elements have explicit
+reviewed pairs against every reserve support material and other Rope elements.
+Completed contact samples retain exact point, normal, force, other body, and
+canonical material provenance; `TestSiteTelemetrySystem` derives Rope-only
+physical components through `BodyRegistry` like any rigid assembly. Rope
+currently does not model aerodynamic drag or fluid drag/buoyancy, so wind or
+submersion changes its completed validity to `unsupported-envelope` and names
+the missing effect instead of silently claiming a valid test.
+
 The canonical terrain collider samples the shared height query at 2 m. Large
 support and obstruction comes from that terrain or explicit fixtures. Surface
 aggregate, grass blades, stains, and other sub-contact detail may be visual,
@@ -105,6 +114,7 @@ Relevant focused verification includes:
 
 ```bash
 TEST_FILTER=verify-test-site-contract,verify-test-site-physics-authority,verify-course-evaluators,verify-test-course-records npm test
+TEST_FILTER=verify-test-site-rope npm test
 TEST_FILTER=verify-testing-playground-browser,verify-testing-playground-user-loop,verify-test-site-lifecycle-browser npm test
 npm run mutation:test-site
 ```

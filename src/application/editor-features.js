@@ -25,3 +25,4 @@ export { installWorkshopInputComposition } from "./workshop-input-composition.js
 export { createWorkshopRunComposition } from "./workshop-run-composition.js";
 export { createWorkshopUiComposition } from "./workshop-ui-composition.js";
 export { createWorkshopModeController } from "./workshop-mode-controller.js";
+export { connectSelectedWithRope } from "./component-authoring-commands.js";

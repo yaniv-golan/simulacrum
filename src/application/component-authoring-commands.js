@@ -1,12 +1,33 @@
 import { resolveComponentConfig } from "../model/component-resolver.js";
+import { TYPES } from "../model/component-catalog.js";
 import { decodeMechanismAuthoredComponentOrThrow } from "../model/mechanism-authored-components.js";
 import { errorMessage } from "../model/primitives.js";
+import { expandFlexibleLineMaterial } from "../model/flexible-line-materials.js";
+
+/** Binds the stock Rope action to an editor bridge initialized by composition. */
+export function connectSelectedWithRope(bridge) {
+  return (partIds, extraSlackM) =>
+    Boolean(
+      bridge.editor?.addTwoEndedComponent({
+        type: "rope",
+        endpointPorts: ["END_A", "END_B"],
+        targets: partIds.map((partId) => ({ partId })),
+        extraSlackM,
+      }),
+    );
+}
 
 export function configureComponentPart(part, patch) {
-  part.config = resolveComponentConfig(part.type, {
+  let next = resolveComponentConfig(part.type, {
     ...part.config,
     ...patch,
   });
+  if (
+    TYPES[part.type]?.flexibleLine?.kind === "flexible-line-v1" &&
+    (Object.hasOwn(patch, "diameterM") || Object.hasOwn(patch, "materialKey"))
+  )
+    next = expandFlexibleLineMaterial(next);
+  part.config = next;
   if (part.type === "battery" && Object.hasOwn(patch, "capacityWh"))
     part.storedEnergyWh = Math.min(
       Number(part.storedEnergyWh),

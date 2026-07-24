@@ -9,6 +9,7 @@ const CATALOG_CONTRACT_KEYS = new Set([
   "desc",
   "ports",
   "mechanism",
+  "flexibleLine",
   "actuator",
   "flight",
   "controlContract",

@@ -12,6 +12,7 @@ import {
   bindBreakawayUmbilicalEditor,
   breakawayUmbilicalMarkup,
 } from "./breakaway-umbilical-editor.js";
+import * as ropeInspector from "./flexible-line-inspector.js";
 
 /**
  * @typedef {{
@@ -60,6 +61,7 @@ import {
  *   openController: (part: InspectorPart) => void,
  *   beginConnection: (partId: number, port: string) => void,
  *   completeConnection: (partId: number, port: string) => boolean,
+ *   connectWithRope: (partIds:number[], extraSlackM:number) => boolean,
  *   selectPart: (partId: number) => void,
  *   selectConnection: (connectionId: string, partId: number) => void,
  *   setMode: (mode: string) => void, notify: (message: string) => void,
@@ -212,16 +214,17 @@ export function createComponentInspectorController({ model, view, actions }) {
       ),
       mechanismEditor = part.mechanism
         ? `<section class="mechanism-editor" aria-labelledby="mechanism-editor-title"><h4 id="mechanism-editor-title">MECHANISM PARAMETERS · AUTHORITATIVE SI</h4><label>DISPLAY UNITS<select id="mechanism-display-units"><option value="si" ${displayUnits === "si" ? "selected" : ""}>SI base units</option><option value="engineering" ${displayUnits === "engineering" ? "selected" : ""}>Engineering units</option></select></label><p class="component-contract-note">Edits are converted to SI and validated as one strict authored component before they can change the assembly.</p>${scalarMechanismFields.length ? `<table><caption>Scalar physical laws and limits</caption><thead><tr><th>FIELD</th><th>VALUE</th><th>UNIT</th></tr></thead><tbody>${mechanismRows(scalarMechanismFields)}</tbody></table>` : ""}${curveMechanismFields.length ? `<table><caption>Curve and envelope points</caption><thead><tr><th>POINT FIELD</th><th>VALUE</th><th>UNIT</th></tr></thead><tbody>${mechanismRows(curveMechanismFields)}</tbody></table>` : ""}<p id="mechanism-error" class="mechanism-error" role="status" aria-live="polite"></p></section>`
-        : "";
+        : "",
+      twoEndedWorkflow = ropeInspector.twoEndedRopeWorkflow(selection);
     required("#property-list").innerHTML =
-      `<div class="component-desc">${type.desc}<span>${Number(part.mechanism?.massPropertySource?.massKg ?? type.mass ?? 0)} kg · #${String(part.id).padStart(3, "0")}${liveMeasurement}${misaligned ? "<br><strong>Mechanical ports are out of alignment. Reconnect to snap them.</strong>" : part.type === "motor" && !powered ? "<br><strong>Requires a POWER connection to a charged Power Cell.</strong>" : ""}</span></div>` +
+      `<div class="component-desc">${type.desc}<span>${Number(part.mechanism?.massPropertySource?.massKg ?? type.mass ?? 0)} kg · #${String(part.id).padStart(3, "0")}${ropeInspector.flexibleLineMaterialMarkup(part)}${liveMeasurement}${misaligned ? "<br><strong>Mechanical ports are out of alignment. Reconnect to snap them.</strong>" : part.type === "motor" && !powered ? "<br><strong>Requires a POWER connection to a charged Power Cell.</strong>" : ""}</span></div>` +
       componentInspectorProperties(part)
         .map(
-          ([label, key, value, min, max, unit]) =>
-            `<label class="property"><span>${label}<b data-value="${key}">${value}${unit}</b></span><input type="range" min="${min}" max="${max}" step="1" value="${value}" data-prop="${key}" data-unit="${unit}"></label>`,
+          ([label, key, value, min, max, unit, step = 1]) =>
+            `<label class="property"><span>${label}<b data-value="${key}">${value}${unit}</b></span><input type="range" min="${min}" max="${max}" step="${step}" value="${value}" data-prop="${key}" data-unit="${unit}"></label>`,
         )
         .join("") +
-      `${mechanismEditor}${controllerProgramEditor}${view.arrangerMarkup(selection)}<div class="component-construction"><h4>BLUEPRINT CONSTRUCTION</h4>${articulatedRoleEditor}${part.mechanism ? '<p class="component-contract-note">Mechanism scale is identity; edit the explicit physical law above.</p>' : ["x", "y", "z"].map((axis) => `<label class="property"><span>SCALE ${axis.toUpperCase()}<b>${part.mesh.scale[axis].toFixed(2)}×</b></span><input data-scale-axis="${axis}" type="range" min="0.2" max="2.5" step="0.05" value="${part.mesh.scale[axis]}"></label>`).join("")}</div>`;
+      `${ropeInspector.flexibleLineReadout(part)}${mechanismEditor}${twoEndedWorkflow}${controllerProgramEditor}${view.arrangerMarkup(selection)}<div class="component-construction"><h4>BLUEPRINT CONSTRUCTION</h4>${articulatedRoleEditor}${part.mechanism ? '<p class="component-contract-note">Mechanism scale is identity; edit the explicit physical law above.</p>' : ["x", "y", "z"].map((axis) => `<label class="property"><span>SCALE ${axis.toUpperCase()}<b>${part.mesh.scale[axis].toFixed(2)}×</b></span><input data-scale-axis="${axis}" type="range" min="0.2" max="2.5" step="0.05" value="${part.mesh.scale[axis]}"></label>`).join("")}</div>`;
 
     const structuralConnections = related.filter((connection) =>
       ["mechanical", "mesh"].includes(connection.kind),
@@ -375,6 +378,12 @@ export function createComponentInspectorController({ model, view, actions }) {
     );
     if (programController)
       programController.onclick = () => actions.openController(part);
+    ropeInspector.bindTwoEndedRopeWorkflow({
+      query: view.query,
+      selectedParts: model.selectedParts,
+      connect: actions.connectWithRope,
+      notify: actions.notify,
+    });
     view.bindArranger();
     for (const element of view.queryAll("[data-scale-axis]")) {
       const input = /** @type {HTMLInputElement} */ (element);

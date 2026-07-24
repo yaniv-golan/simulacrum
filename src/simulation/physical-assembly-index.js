@@ -17,6 +17,7 @@ function identity(prefix, value) {
 function compiledTopology(compiledAssembly = {}) {
   const bodies = compiledAssembly.bodies || [],
     constraints = compiledAssembly.constraints || [],
+    flexibleLines = compiledAssembly.flexibleLines || [],
     partIds = bodies.map((body) => body.partId),
     duplicatePartId = partIds.find(
       (partId, index) => partIds.indexOf(partId) !== index,
@@ -26,6 +27,87 @@ function compiledTopology(compiledAssembly = {}) {
       "DUPLICATE_PHYSICAL_INDEX_PART",
       `Compiled physical index contains duplicate part ${String(duplicatePartId)}`,
     );
+  if (flexibleLines.length) {
+    const bodyIdByPart = new Map(bodies.map((body) => [body.partId, body.id])),
+      entities = [
+        ...bodies.map((body) => ({
+          id: body.id,
+          sourcePartId: body.partId,
+          rigidPartId: body.partId,
+        })),
+        ...flexibleLines.flatMap((line) =>
+          line.entities.map((entity) => ({
+            id: entity.id,
+            sourcePartId: line.sourcePartId,
+            rigidPartId: null,
+          })),
+        ),
+      ],
+      entityIds = entities.map((entity) => entity.id),
+      duplicateEntityId = entityIds.find(
+        (id, index) => entityIds.indexOf(id) !== index,
+      );
+    if (duplicateEntityId != null)
+      throw new DomainValidationError(
+        "DUPLICATE_PHYSICAL_ENTITY_ID",
+        `Compiled physical index contains duplicate entity ${String(duplicateEntityId)}`,
+      );
+    const entityIdSet = new Set(entityIds),
+      rigidEdges = constraints
+        .filter(
+          (constraint) =>
+            constraint.kind !== "measurement" &&
+            bodyIdByPart.has(constraint.a) &&
+            bodyIdByPart.has(constraint.b),
+        )
+        .map((constraint) => ({
+          id: constraint.id,
+          a: bodyIdByPart.get(constraint.a),
+          b: bodyIdByPart.get(constraint.b),
+          sourcePartId: constraint.sourcePartId ?? null,
+          sourceConnectionIds: sortedUnique(
+            constraint.sourceConnectionIds || [],
+          ),
+        })),
+      flexibleEdges = flexibleLines.flatMap((line) => [
+        ...line.internalEdges.map((edge) => ({
+          id: edge.id,
+          a: edge.entityAId,
+          b: edge.entityBId,
+          sourcePartId: line.sourcePartId,
+          sourceConnectionIds: [],
+          internal: true,
+        })),
+        ...(line.attachments || [])
+          .filter((attachment) => attachment.kind === "point-attachment-v1")
+          .map((attachment) => ({
+            id: attachment.id,
+            a:
+              attachment.endpointIndex === 0
+                ? line.entities[0].id
+                : line.entities.at(-1).id,
+            b: attachment.targetBodyId,
+            sourcePartId: line.sourcePartId,
+            sourceConnectionIds: [attachment.sourceConnectionId],
+          })),
+      ]),
+      edges = [...rigidEdges, ...flexibleEdges]
+        .filter((edge) => entityIdSet.has(edge.a) && entityIdSet.has(edge.b))
+        .sort((left, right) => compareId(left.id, right.id));
+    return {
+      partIds: sortedUnique(entityIds),
+      bodyIdByPart,
+      edges,
+      flexible: true,
+      entityById: new Map(entities.map((entity) => [entity.id, entity])),
+      identity: identity("compiled-physical", {
+        entities: [...entities].sort((left, right) =>
+          compareId(left.id, right.id),
+        ),
+        edges,
+      }),
+    };
+  }
   const partIdSet = new Set(partIds),
     edges = constraints
       .filter(
@@ -55,7 +137,12 @@ function compiledTopology(compiledAssembly = {}) {
   };
 }
 
-function connectedComponents(partIds, edges, activeConstraintIds) {
+function connectedComponents(
+  partIds,
+  edges,
+  activeConstraintIds,
+  topology = null,
+) {
   const adjacency = new Map(partIds.map((partId) => [partId, new Set()]));
   for (const edge of edges) {
     if (!activeConstraintIds.has(edge.id)) continue;
@@ -88,9 +175,18 @@ function connectedComponents(partIds, edges, activeConstraintIds) {
         )
         .map((edge) => edge.id),
       componentEdges = edges.filter((edge) => constraintIds.includes(edge.id)),
-      bodyPartIds = sortedUnique(members),
+      physicalEntityIds = sortedUnique(members),
+      bodyPartIds = topology?.flexible
+        ? sortedUnique(
+            members
+              .map((id) => topology.entityById.get(id)?.rigidPartId)
+              .filter((id) => id != null),
+          )
+        : physicalEntityIds,
       partIdsWithSupports = sortedUnique([
-        ...bodyPartIds,
+        ...(topology?.flexible
+          ? members.map((id) => topology.entityById.get(id)?.sourcePartId)
+          : bodyPartIds),
         ...componentEdges
           .map((edge) => edge.sourcePartId)
           .filter((partId) => partId != null),
@@ -99,16 +195,21 @@ function connectedComponents(partIds, edges, activeConstraintIds) {
       partIds: partIdsWithSupports,
       bodyPartIds,
       constraintIds: sortedUnique(constraintIds),
+      ...(topology?.flexible ? { physicalEntityIds } : {}),
     });
   }
-  return components.sort((left, right) =>
-    compareId(left.partIds[0], right.partIds[0]),
+  return components.sort(
+    (left, right) =>
+      compareId(left.partIds[0], right.partIds[0]) ||
+      compareId(left.physicalEntityIds?.[0], right.physicalEntityIds?.[0]),
   );
 }
 
 function sameComponent(left, right) {
   return (
     stableStringify(left.partIds) === stableStringify(right.partIds) &&
+    stableStringify(left.physicalEntityIds || []) ===
+      stableStringify(right.physicalEntityIds || []) &&
     stableStringify(left.constraintIds) === stableStringify(right.constraintIds)
   );
 }
@@ -141,7 +242,10 @@ function advanceLineage(previous, components, eventId) {
       splitFromIds = sortedUnique(
         parents
           .filter(
-            (candidate) => candidate.partIds.length > component.partIds.length,
+            (candidate) =>
+              (candidate.physicalEntityIds?.length ||
+                candidate.partIds.length) >
+              (component.physicalEntityIds?.length || component.partIds.length),
           )
           .map((candidate) => candidate.id),
       );
@@ -161,9 +265,11 @@ function advanceLineage(previous, components, eventId) {
 
 function deactivateForEvent(active, edges, event) {
   const failed = new Set(event.failedConnectionIds || []),
+    failedInternal = new Set(event.failedInternalEdgeIds || []),
     detached = new Set(event.detachedPartIds || []);
   for (const edge of edges)
     if (
+      failedInternal.has(edge.id) ||
       edge.sourceConnectionIds.some((id) => failed.has(id)) ||
       (edge.sourcePartId != null && detached.has(edge.sourcePartId))
     )
@@ -230,6 +336,7 @@ export class PhysicalAssemblyIndex {
       this.#topology.partIds,
       this.#topology.edges,
       replayActive,
+      this.#topology,
     ).map(initialRecord);
     for (const event of runGraph.events()) {
       const before = stableStringify(sortedUnique(replayActive));
@@ -241,6 +348,7 @@ export class PhysicalAssemblyIndex {
           this.#topology.partIds,
           this.#topology.edges,
           replayActive,
+          this.#topology,
         ),
         `structural:${Number(event.graphRevision)}`,
       );
@@ -254,6 +362,7 @@ export class PhysicalAssemblyIndex {
           this.#topology.partIds,
           this.#topology.edges,
           currentActive,
+          this.#topology,
         ),
         `topology:${Number(topologyRevision)}`,
       );
@@ -267,12 +376,17 @@ export class PhysicalAssemblyIndex {
           id: record.id,
           partIds: record.partIds,
           bodyPartIds: record.bodyPartIds,
-          compiledBodyIds: record.bodyPartIds.map((partId) =>
-            this.#topology.bodyIdByPart.get(partId),
-          ),
+          compiledBodyIds: this.#topology.flexible
+            ? record.physicalEntityIds
+            : record.bodyPartIds.map((partId) =>
+                this.#topology.bodyIdByPart.get(partId),
+              ),
+          ...(this.#topology.flexible
+            ? { physicalEntityIds: record.physicalEntityIds }
+            : {}),
           // A component's stable first compiled body is its declared local
           // frame. Consumers never guess a frame from mass or component type.
-          framePartId: record.bodyPartIds[0],
+          framePartId: record.bodyPartIds[0] ?? null,
           constraintIds: record.constraintIds,
           sourceConnectionIds: sortedUnique(
             edges.flatMap((edge) => edge.sourceConnectionIds),
@@ -285,11 +399,14 @@ export class PhysicalAssemblyIndex {
           },
         });
       });
-    this.#componentByPart = new Map(
-      components.flatMap((component) =>
-        component.supportPartIds.map((partId) => [partId, component]),
-      ),
-    );
+    const componentsByPart = new Map();
+    for (const component of components)
+      for (const partId of component.supportPartIds) {
+        const records = componentsByPart.get(partId) || [];
+        records.push(component);
+        componentsByPart.set(partId, records);
+      }
+    this.#componentByPart = componentsByPart;
     this.#snapshot = deepFreeze({
       schemaVersion: 1,
       compiledIdentity: this.#topology.identity,
@@ -312,6 +429,11 @@ export class PhysicalAssemblyIndex {
   }
 
   componentForPart(partId) {
-    return this.#componentByPart.get(partId) || null;
+    const components = this.#componentByPart.get(partId) || [];
+    return components.length === 1 ? components[0] : null;
+  }
+
+  componentsForPart(partId) {
+    return Object.freeze([...(this.#componentByPart.get(partId) || [])]);
   }
 }

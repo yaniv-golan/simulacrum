@@ -19,6 +19,7 @@ import {
 import { scoreChallengeResult } from "../src/model/challenge-score.js";
 import {
   extractConnectionFailure,
+  extractFlexibleLineFailure,
   FailureEvent,
   observeConnectionFailure,
 } from "../src/model/failure-event-extractors.js";
@@ -1345,6 +1346,7 @@ assert.equal(result.criteria.at(-1).current, "BOUND COMPONENT LOST");
 const catalog = {
   beam: { name: "Test Beam" },
   plate: { name: "Test Plate" },
+  rope: { name: "Rope" },
 };
 
 function snapshot({
@@ -1547,6 +1549,77 @@ assert.match(
     .value,
   /125% utilized/,
 );
+
+const flexibleTopologyEvent = {
+    id: "rope-break:7:11",
+    kind: "flexible-internal-break-v1",
+    tick: 240,
+    sourcePartId: 7,
+    internalEdgeId: "rope:7:edge:11",
+    tensionN: 420,
+    ratingN: 350,
+    strain: 0.08,
+    impulseNs: 3.5,
+    materialKey: "nylon-rope",
+    failureLaw: "maximum-tension-v1",
+    predecessorIds: ["rope:7:edge:10"],
+    survivingFragments: ["rope:7:fragment:0", "rope:7:fragment:1"],
+    activeElementIds: ["rope:7:edge:10", "rope:7:edge:12"],
+    worldPosition: { x: 1, y: 2, z: 3 },
+  },
+  flexibleFailureSnapshot = snapshot({
+    time: 2,
+    connection: { failed: false },
+  });
+flexibleFailureSnapshot.tick = 240;
+flexibleFailureSnapshot.run.parts.push({
+  id: 7,
+  type: "rope",
+  orientation: [0, 0, 0, 1],
+});
+flexibleFailureSnapshot.systems.flexibleLines = {
+  topologyEvents: [
+    { id: "ignored-event", kind: "flexible-attachment-release-v1" },
+    flexibleTopologyEvent,
+  ],
+};
+assert.equal(
+  extractFlexibleLineFailure({
+    snapshot: flexibleFailureSnapshot,
+    topologyEvent: { kind: "flexible-attachment-release-v1" },
+    catalog,
+    eventId: "failure-ignored",
+  }),
+  null,
+);
+const directFlexibleFailure = extractFlexibleLineFailure({
+  snapshot: flexibleFailureSnapshot,
+  topologyEvent: flexibleTopologyEvent,
+  catalog,
+  eventId: "failure-flexible-direct",
+});
+assert.equal(directFlexibleFailure instanceof FailureEvent, true);
+assert.equal(directFlexibleFailure.partA.name, "Rope");
+assert.equal(directFlexibleFailure.partB.name, "Rope material");
+assert.equal(directFlexibleFailure.mode, "tension");
+assert.equal(directFlexibleFailure.load.utilization, 1.2);
+assert.deepEqual(directFlexibleFailure.worldPosition, { x: 1, y: 2, z: 3 });
+assert.deepEqual(directFlexibleFailure.evidence.provenance, {
+  sourcePartId: 7,
+  internalEdgeId: "rope:7:edge:11",
+  tick: 240,
+  strain: 0.08,
+  impulseNs: 3.5,
+  materialKey: "nylon-rope",
+  failureLaw: "maximum-tension-v1",
+  predecessorIds: ["rope:7:edge:10"],
+  survivingFragments: ["rope:7:fragment:0", "rope:7:fragment:1"],
+  activeElementIds: ["rope:7:edge:10", "rope:7:edge:12"],
+});
+const flexibleRecorder = new FailureRecorder({ catalog });
+assert.equal(flexibleRecorder.ingest(flexibleFailureSnapshot).length, 1);
+assert.equal(flexibleRecorder.ingest(flexibleFailureSnapshot).length, 0);
+assert.equal(flexibleRecorder.report().primary.mode, "tension");
 
 assert.equal(
   firstFailure({

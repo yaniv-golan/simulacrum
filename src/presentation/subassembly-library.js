@@ -147,6 +147,11 @@ export function createSubassemblyLibrary({
         : type.startsWith(localPrefix)
           ? state.custom[Number(type.slice(localPrefix.length))]
           : null,
+      flexibleLineHeight = catalog[type]?.flexibleLine
+        ? Number(catalog[type].lengthM || 0) / 2 +
+          Number(catalog[type].diameterM || 0) / 2 +
+          0.12
+        : null,
       placement = subassembly
         ? {
             subassembly,
@@ -159,11 +164,12 @@ export function createSubassemblyLibrary({
             returnTool,
             position: [
               0,
-              catalog[type].teeth
-                ? 1.35
-                : catalog[type].radius
-                  ? 0.65
-                  : catalog[type].size?.[1] / 2 + 0.12 || 0.6,
+              flexibleLineHeight ??
+                (catalog[type].teeth
+                  ? 1.35
+                  : catalog[type].radius
+                    ? 0.65
+                    : catalog[type].size?.[1] / 2 + 0.12 || 0.6),
               0,
             ],
           };

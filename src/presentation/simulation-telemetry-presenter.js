@@ -4,6 +4,8 @@ import { selectMobilityAssembly } from "./machine-telemetry-projection.js";
 import { mobilityMissionReadModel } from "./mobility-mission-read-model.js";
 import { testCourseMissionReadModel } from "./test-course-mission-read-model.js";
 import { createTestSiteContactEffects } from "./test-site-contact-effects.js";
+import { createFlexibleLineTelemetryPresenter } from "./flexible-line-telemetry-presenter.js";
+import { createSensorReadoutPresenter } from "./sensor-readout-presenter.js";
 
 export { buildMachineDebugReadModel } from "./machine-debug-read-model.js";
 
@@ -29,7 +31,7 @@ export { buildMachineDebugReadModel } from "./machine-debug-read-model.js";
  *   mechanisms?: object, articulated?: ArticulatedTelemetry, mobility?:{assemblies:MobilityAssemblyTelemetry[]},
  *   aerothermal?: object, flight?: FlightTelemetry,
  *   testCourse?: object,
- *   structures?: {health:number,newlyFailed:unknown[]},
+ *   structures?: {health:number,newlyFailed:unknown[]}, flexibleLines?: {lines:Array<object>},
  * }} PresentedSystems
  * @typedef {{ time:number, systems?: PresentedSystems }} PresentedSnapshot
  */
@@ -232,18 +234,16 @@ export function createSimulationTelemetryPresenter({ model, scene, view }) {
     scene.wires.quaternion.copy(scene.machine.quaternion);
   }
 
-  function presentSensorReadout() {
-    const sensor = model
-      .parts()
-      .find((part) => part.id === model.selectedId() && part.type === "sensor");
-    const readout = view.query("#sensor-live-rpm");
-    if (sensor && readout)
-      readout.textContent = `MEASURED SHAFT SPEED · ${(sensor.sensorValueRpm || 0).toFixed(1)} RPM`;
-  }
+  const presentSensorReadout = createSensorReadoutPresenter(model, view);
+
+  const presentFlexibleLines = createFlexibleLineTelemetryPresenter({
+    parts: model.parts,
+  });
 
   function present(snapshot = model.latest()) {
     const systems = snapshot.systems || {};
     presentMechanisms(systems.mechanisms);
+    presentFlexibleLines(systems.flexibleLines);
     presentArticulated(systems.articulated);
     presentMobility(systems.mobility);
     contactEffects.present(snapshot);

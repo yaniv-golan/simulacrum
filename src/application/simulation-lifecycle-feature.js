@@ -1,5 +1,6 @@
 import { SimulationSession } from "../simulation/simulation-session.js";
 import { startMultibodyRuntime } from "../simulation/multibody-runtime.js";
+import { FlexibleLineRuntime } from "../simulation/flexible-line-runtime.js";
 import { fingerprintAsset } from "../model/portable-asset-identity.js";
 import { createPhysicalFlightServices } from "../simulation/physical-flight-services.js";
 import { PhysicalAssemblyIndex } from "../simulation/physical-assembly-index.js";
@@ -43,6 +44,7 @@ export { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
  *   physicalFlightTelemetry:object|null,
  *   physicalAssemblyIndex:PhysicalAssemblyIndex|null,
  *   multibodyRuntime:ReturnType<typeof startMultibodyRuntime>|null,
+ *   flexibleLineRuntime:FlexibleLineRuntime|null,
  *   terrainCollisionStream:TerrainCollisionStream|null, workspaceFocusBefore:boolean, checkpointCoordinator:object|null,
  *   prepareCheckpointCoordinator:(()=>Promise<object>)|null, inputTraceRecorder:object|null, runIdentity:object|null, runBlueprint:object|null,
  * }} SimulationRuntimePort
@@ -72,6 +74,7 @@ export { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
  *   latitude:number, longitude:number,
  *   windAt:(position:VectorReading,time:number)=>VectorReading,
  *   materialForPart:(part:SimulationPart)=>import("cannon-es").Material,
+ *   materialForKey:(materialKey:string)=>import("cannon-es").Material,
  * }} SimulationPhysicsPort
  * @typedef {{
  *   isPowered:(part:SimulationPart)=>boolean, resetSensors:()=>void,
@@ -246,6 +249,8 @@ export function createSimulationLifecycleFeature({
       );
     }
     assembly.sync();
+    runtime.flexibleLineRuntime?.dispose();
+    runtime.flexibleLineRuntime = null;
     runtime.multibodyRuntime?.dispose();
     runtime.multibodyRuntime = startMultibodyRuntime(assembly.snapshot(), {
       world: physics.world,
@@ -260,6 +265,11 @@ export function createSimulationLifecycleFeature({
       fieldBody: physics.fieldBody,
       materialForPart: physics.materialForPart,
     });
+    runtime.flexibleLineRuntime = new FlexibleLineRuntime({
+      world: physics.world,
+      materialForKey: physics.materialForKey,
+      multibodyRuntime: runtime.multibodyRuntime,
+    }).start(runtime.multibodyRuntime.compiled);
     if (runtime.multibodyRuntime) {
       presentation.setWiresVisible(false);
       runtime.terrainCollisionStream?.dispose();
@@ -283,7 +293,9 @@ export function createSimulationLifecycleFeature({
       run,
     });
     runtime.session = new SimulationSession({
-      systems: createProductionSimulationSystems(),
+      systems: createProductionSimulationSystems(
+        runtime.multibodyRuntime.compiled,
+      ),
     }).start(assembly.snapshot(), {
       world: physics.world,
       worldAdapter: physics.worldAdapter,
@@ -299,12 +311,15 @@ export function createSimulationLifecycleFeature({
       physicalFlightTelemetry: runtime.physicalFlightTelemetry,
       physicalAssemblyIndex: runtime.physicalAssemblyIndex,
       multibodyRuntime: runtime.multibodyRuntime,
+      flexibleLineRuntime: runtime.flexibleLineRuntime,
       testSite: physics.testSite,
       testCourseSelection: physics.testCourseSelection,
       surfaceSampleAt: physics.surfaceSampleAt,
       compiledAssembly: runtime.multibodyRuntime.compiled,
       environmentBodyRegistry: physics.environmentBodyRegistry,
       environmentOrigin: physics.environmentOrigin,
+      windEnabled: run.windEnabled,
+      pondAt: physics.pondAt,
       captureTelemetry: captureProductionSystemTelemetry,
       connectionValid: assembly.connectionValid,
       partMass: (part) => physics.catalog[part.type]?.mass || 0,
@@ -342,6 +357,8 @@ export function createSimulationLifecycleFeature({
     destroyFlightPhysics();
     runtime.terrainCollisionStream?.dispose();
     runtime.terrainCollisionStream = null;
+    runtime.flexibleLineRuntime?.dispose();
+    runtime.flexibleLineRuntime = null;
     runtime.multibodyRuntime?.dispose();
     runtime.multibodyRuntime = null;
     presentation.setWiresVisible(true);

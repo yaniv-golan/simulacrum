@@ -10,6 +10,7 @@ import { isPhysicalConnectionKind } from "./connection-contracts.js";
 import { decodeMechanismAuthoredComponentOrThrow } from "./mechanism-authored-components.js";
 import { isMechanismComponentType } from "./mechanism-component-definitions.js";
 import { materialStoreContract } from "./material-resource-contracts.js";
+import { validateFlexibleLineConfig } from "./flexible-line-materials.js";
 import { portDefinition, validatePortConnection } from "./ports.js";
 
 function connectionIdentity(connection) {
@@ -88,6 +89,8 @@ function normalizePart(part, path = ["part"]) {
         { path: [...path, "mechanism"] },
       );
     normalized.config = resolveComponentConfig(part.type, part.config || {});
+    if (TYPES[part.type]?.flexibleLine)
+      validateFlexibleLineConfig(normalized.config, [...path, "config"]);
     materialStoreContract(normalized, TYPES);
   }
   return normalized;

@@ -15,6 +15,7 @@ import {
 import { validateWireInput, wireResult } from "./wire-validation.js";
 import { WIRE_LIMITS } from "./wire-limits.js";
 import { controllerBindingManifest } from "./controller-bindings.js";
+import { validateFlexibleLineConfig } from "./flexible-line-materials.js";
 
 const encoder = new TextEncoder();
 
@@ -74,6 +75,8 @@ function validatePart(part, index) {
         [...path, "storedEnergyWh"],
       );
   }
+  if (TYPES[part.type]?.flexibleLine)
+    validateFlexibleLineConfig(part.config, [...path, "config"]);
   validateController(part, path);
 }
 

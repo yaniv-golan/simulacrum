@@ -60,8 +60,13 @@ function diagnosticRecord(context, item) {
  */
 export function finalizeCompilation(context) {
   const diagnosticRecords = context.diagnostics.map((item) =>
-    diagnosticRecord(context, item),
-  );
+      diagnosticRecord(context, item),
+    ),
+    hasFlexibleLines = context.flexibleLines.length > 0,
+    flexibleMassKg = context.flexibleLines.reduce(
+      (sum, line) => sum + line.totalMassKg,
+      0,
+    );
   return Object.freeze({
     version: 1,
     sourceRevision: context.snapshot?.revision || 0,
@@ -70,6 +75,7 @@ export function finalizeCompilation(context) {
     constraints: context.constraints,
     collisionExclusions: context.collisionExclusions,
     forceElements: context.forceElements,
+    ...(hasFlexibleLines ? { flexibleLines: context.flexibleLines } : {}),
     actuators: context.actuators,
     contactRegions: context.contactRegions,
     networks: context.networks,
@@ -80,12 +86,23 @@ export function finalizeCompilation(context) {
       constraintCount: context.constraints.length,
       collisionExclusionCount: context.collisionExclusions.length,
       forceElementPartCount: context.forceElementParts.size,
+      ...(hasFlexibleLines
+        ? {
+            flexibleLinePartCount: context.flexibleLineParts.size,
+            flexibleEntityCount: context.flexibleLines.reduce(
+              (sum, line) => sum + line.entities.length,
+              0,
+            ),
+          }
+        : {}),
       errorCount: diagnosticRecords.filter((item) => item.severity === "error")
         .length,
       warningCount: diagnosticRecords.filter(
         (item) => item.severity === "warning",
       ).length,
-      totalMass: context.bodies.reduce((sum, body) => sum + body.mass, 0),
+      totalMass:
+        context.bodies.reduce((sum, body) => sum + body.mass, 0) +
+        flexibleMassKg,
     }),
   });
 }

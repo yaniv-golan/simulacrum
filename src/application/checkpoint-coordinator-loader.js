@@ -13,6 +13,7 @@ export function createCheckpointCoordinatorLoader({
     runtime.checkpointCoordinator ||= new RuntimeCheckpointCoordinator({
       session: activeSession,
       multibodyRuntime: runtime.multibodyRuntime,
+      flexibleLineRuntime: runtime.flexibleLineRuntime,
       worldAdapter: physics.worldAdapter,
       sensorBank: controllers.sensorBank,
       controllerManager: controllers.runtimeManager,

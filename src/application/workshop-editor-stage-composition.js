@@ -104,6 +104,7 @@ export function createWorkshopEditorStageComposition({
             partId,
             port,
           }),
+        connectWithRope: actions.connectWithRope,
         setMode: actions.setMode,
         tutorialEvent: actions.tutorialEvent,
         setCameraTool: (tool) =>

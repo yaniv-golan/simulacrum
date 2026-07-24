@@ -3,6 +3,7 @@ import { authoredComponentFields } from "../model/component-authoring.js";
 import { TYPES } from "../model/component-catalog.js";
 import { disposeObject3D } from "../presentation/render-resources.js";
 import { createAssemblyTransformCommands } from "./assembly-transform-commands.js";
+import { createTwoEndedComponentAuthoring } from "./two-ended-component-authoring.js";
 
 /**
  * @typedef {{
@@ -24,7 +25,7 @@ import { createAssemblyTransformCommands } from "./assembly-transform-commands.j
  *   challengeStartMode: string | null,
  * }} AssemblyWorkspace
  * @typedef {{
- *   suspended: boolean, record: (label: string) => void,
+ *   suspended: boolean, capture: () => object, record: (label: string, snapshot?:object) => void,
  * }} AssemblyHistoryPort
  * @typedef {{
  *   stopAll: (message: string) => void, stopOne: (message: string, id: number) => void,
@@ -109,6 +110,15 @@ export function createAssemblyEditorFeature({
     view.render();
     return part;
   }
+
+  const addTwoEndedComponent = createTwoEndedComponentAuthoring({
+    workspace,
+    history,
+    view,
+    getNextId,
+    setNextId,
+    add,
+  });
 
   function clear() {
     controllers.stopAll("IDLE");
@@ -269,6 +279,7 @@ export function createAssemblyEditorFeature({
 
   return Object.freeze({
     add,
+    addTwoEndedComponent,
     clear,
     clearBuildPlate,
     clonePart,

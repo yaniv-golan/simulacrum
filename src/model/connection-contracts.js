@@ -96,11 +96,15 @@ export function completeConnectionContract(
     portDefinition(left, result.portA, catalog).behavior ===
     "structural-surface"
   )
-    result.anchorA = localAttachmentAnchor(left, right, result.portB, catalog);
+    result.anchorA = Array.isArray(result.anchorA)
+      ? structuredClone(result.anchorA)
+      : localAttachmentAnchor(left, right, result.portB, catalog);
   if (
     portDefinition(right, result.portB, catalog).behavior ===
     "structural-surface"
   )
-    result.anchorB = localAttachmentAnchor(right, left, result.portA, catalog);
+    result.anchorB = Array.isArray(result.anchorB)
+      ? structuredClone(result.anchorB)
+      : localAttachmentAnchor(right, left, result.portA, catalog);
   return result;
 }

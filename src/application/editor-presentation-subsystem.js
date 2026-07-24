@@ -17,10 +17,7 @@ export function createEditorPresentationSubsystem({
   view,
   actions,
 }) {
-  let selection;
-  let connection;
-  let arranger;
-  let inspector;
+  let selection, connection, arranger, inspector;
 
   const showSelection = (part) => selection.showSelection(part),
     renderInspector = () => inspector.render(),
@@ -142,6 +139,7 @@ export function createEditorPresentationSubsystem({
         actions.tutorialEvent("connected");
         return true;
       },
+      connectWithRope: actions.connectWithRope,
       selectPart: (partId) => {
         actions.select(partId, [partId]);
         showSelection(state.parts.find((part) => part.id === partId) || null);

@@ -29,7 +29,11 @@ function compileContactRegions(context, part, geometry) {
 
 export function compileBodies(context) {
   for (const part of context.parts) {
-    if (context.forceElementParts.has(part.id)) continue;
+    if (
+      context.forceElementParts.has(part.id) ||
+      context.flexibleLineParts.has(part.id)
+    )
+      continue;
     const definition = componentDefinition(part, context.catalog) || {},
       geometry = context.geometryFor(part),
       massProperties = composePointMasses(

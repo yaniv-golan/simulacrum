@@ -127,6 +127,10 @@ const COMPATIBLE_BEHAVIOR_PAIRS = new Set([
   "fixed:structural-surface",
   "structural-surface:fixed",
   "structural-surface:structural-surface",
+  "flexible-termination:fixed",
+  "fixed:flexible-termination",
+  "flexible-termination:structural-surface",
+  "structural-surface:flexible-termination",
   "rotary-coupling:rotary-coupling",
   "revolute-support:rotary-coupling",
   "rotary-coupling:revolute-support",
@@ -237,6 +241,25 @@ export function validatePortConnection(
           target: portDefinition(targetPart, targetPort, catalog),
         },
       },
+    );
+  if (
+    candidate &&
+    connections.some(
+      (connection) =>
+        !connection.failed &&
+        ((connection.a === candidate.a &&
+          connection.b === candidate.b &&
+          connection.portA === candidate.portA &&
+          connection.portB === candidate.portB) ||
+          (connection.a === candidate.b &&
+            connection.b === candidate.a &&
+            connection.portA === candidate.portB &&
+            connection.portB === candidate.portA)),
+    )
+  )
+    throw new DomainValidationError(
+      "DUPLICATE_ENDPOINT_CONNECTION",
+      "These exact component endpoints are already connected",
     );
   for (const [part, port, endpoint] of [
     [sourcePart, sourcePort, "A"],

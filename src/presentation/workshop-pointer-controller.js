@@ -73,7 +73,13 @@ export function installWorkshopPointerController({
         preserveGroup =
           !additive && selectedIds.size > 1 && selectedIds.has(id);
       if (preserveGroup) editor.preserveGroupSelection(id, selectedIds);
-      else editor.selectPart(id, additive);
+      else {
+        const targetPart = model.parts().find((part) => part.id === id),
+          targetAnchorLocalM = targetPart
+            ? targetPart.mesh.worldToLocal(hit.point.clone()).toArray()
+            : null;
+        editor.selectPart(id, additive, { targetAnchorLocalM });
+      }
       directManipulator.begin(event, {
         enabled:
           ["select", "move"].includes(model.tool()) &&

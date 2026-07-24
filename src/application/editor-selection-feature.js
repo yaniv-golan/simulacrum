@@ -29,7 +29,7 @@ import * as THREE from "three";
  *   positionLabel: () => void,
  * }} SelectionViewPort
  * @typedef {{
- *   connect: (fromId: number, toId: number) => boolean,
+ *   connect: (fromId: number, toId: number, kind?:string, targetPort?:string|null, targetAnchorLocalM?:number[]|null) => boolean,
  *   setMode: (mode: string) => void,
  *   renderInspector: () => void,
  *   tutorialEvent: (event: string) => void,
@@ -202,7 +202,7 @@ export function createEditorSelectionFeature({
     scene.effects.add(hoverBox);
   }
 
-  function select(id, additive = false) {
+  function select(id, additive = false, { targetAnchorLocalM = null } = {}) {
     const connectFrom = workspace.connectFrom();
     if (connectFrom) additive = false;
     if (additive) {
@@ -219,7 +219,13 @@ export function createEditorSelectionFeature({
         null,
     );
     if (connectFrom && id !== connectFrom) {
-      const connected = actions.connect(connectFrom, id);
+      const connected = actions.connect(
+        connectFrom,
+        id,
+        "auto",
+        null,
+        targetAnchorLocalM,
+      );
       workspace.cancelConnection();
       view.query(".connection-banner")?.classList.add("hidden");
       clearEffect("previewLine");

@@ -20,13 +20,35 @@ const SUPPORT_RESPONSE = Object.freeze({
   "weathered-concrete": [null, 0, 0.95],
   "wood-bark": [null, 0, 1.3],
   "weathered-stone": [null, 0, 1.2],
+  "painted-steel": [null, 0, 1],
+});
+
+const ROPE_FRICTION = Object.freeze({
+  "workshop-steel": 0.34,
+  "workshop-aluminum": 0.3,
+  "tire-rubber": 0.64,
+  "compacted-soil": 0.48,
+  "dry-asphalt": 0.55,
+  "wet-asphalt": 0.34,
+  "short-grass": 0.42,
+  "loose-gravel": 0.39,
+  "dry-sand": 0.36,
+  "saturated-mud": 0.25,
+  "low-grip-polymer": 0.14,
+  "natural-terrain": 0.44,
+  "generic-ground": 0.46,
+  "generic-structure": 0.32,
+  "weathered-concrete": 0.5,
+  "wood-bark": 0.58,
+  "weathered-stone": 0.47,
+  "painted-steel": 0.3,
 });
 
 const freezePair = (pair) => {
-  const supportMaterial = pair.materials.find(
-      (material) => material !== "tire-rubber",
+  const supportMaterial = pair.materials.find((material) =>
+      Object.hasOwn(SUPPORT_RESPONSE, material),
     ),
-    response = SUPPORT_RESPONSE[supportMaterial || "tire-rubber"];
+    response = SUPPORT_RESPONSE[supportMaterial || "generic-structure"];
   if (!response)
     throw new Error(`Missing tire support response for ${supportMaterial}`);
   return Object.freeze({
@@ -155,6 +177,18 @@ const pairs = new Map(
       materials: ["tire-rubber", "weathered-stone"],
       longitudinalFrictionCoefficient: 0.8,
       lateralFrictionCoefficient: 0.72,
+      restitutionCoefficient: 0.01,
+    },
+    ...Object.entries(ROPE_FRICTION).map(([material, friction]) => ({
+      materials: ["nylon-rope", material],
+      longitudinalFrictionCoefficient: friction,
+      lateralFrictionCoefficient: friction,
+      restitutionCoefficient: 0.01,
+    })),
+    {
+      materials: ["nylon-rope", "nylon-rope"],
+      longitudinalFrictionCoefficient: 0.5,
+      lateralFrictionCoefficient: 0.5,
       restitutionCoefficient: 0.01,
     },
   ].map((pair) => [pairKey(...pair.materials), freezePair(pair)]),

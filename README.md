@@ -158,7 +158,7 @@ The included gearbox uses a 12-tooth pinion driving a 24-tooth gear. The output 
 - **Structure:** alloy beams and mounting plates.
 - **Mechanical:** axles, 12T and 24T gears, powered motors, hinge joints,
   levers, springs, dampers, linear guides, power-limited linear actuators,
-  powered release couplers, and rounded wheels.
+  powered release couplers, rounded wheels, and distributed Rope.
 - **Smart:** logic controllers, rotation sensors, batteries, and vector thrusters.
 - **My Parts:** select one component or a connected multi-part mechanism, press **+**, give the assembly a name and accent, and reuse it from the persistent personal library. Relative transforms, tuning, controller programs, and every internal connection are retained. Saved assemblies remain available after reloading the browser and can be removed from their library card.
 
@@ -320,6 +320,7 @@ The mission display reports forward distance, gait phase, COM offset, planted fe
 
 ## Engineering simulation tier
 
+- **Rope and flexible load paths:** Rope is an ordinary authored component with two independently free or attached ends. Deterministic distributed masses, circular contact elements, and unilateral axial constraints produce gravity sag, slack-without-push, tension, endpoint reactions, off-axis torque, frictional contact, internal break location, and physical fragments in the same 1/120-second Cannon transaction as rigid bodies. Completed telemetry, replay, checkpoints, Failure Lab, and `render_game_to_text()` share the same solved centreline and loads. See [Rope](docs/ROPE.md) for authoring, wheel attachment, validity, and release limits.
 - **Articulated constraints:** hinge joints integrate angular velocity and position using commanded target angle, available motor torque, inertia, viscous damping, configurable lower/upper stops, and inelastic limit reaction. The Atlas demo additionally uses native rigid-body hinge and lock constraints, ground contacts, and joint motors. Live reaction torque is calculated for every joint.
 - **Mechanisms, suspension, and wheel contact:** springs, dampers, stops, guides, joints, power-limited actuators, axles, bearings, and wheels are ordinary authored parts and connections compiled into physical bodies and constraints. Wheels use rounded rotating collision geometry with distinct tire-envelope, sidewall, and rim contact regions—not ray casts or rectangular proxies. Normal impulse from the coupled contact solve bounds longitudinal and lateral tire force; carcass deflection, combined slip, rolling resistance, dissipation, and temperature evolve from the authored tire and material laws. Suspension motion emerges from its constructed topology, so a wheel climbs a small obstacle only when geometry, friction, torque, load, speed, and available travel permit it. Bottoming, rim contact, excessive obstacles, or hard chassis impacts can overload and fail ordinary structural connections; no hidden vehicle rig supplies lift or stabilization.
 - **Physical release and staging:** a Release Coupler is an ordinary two-flange mechanism with authored frames, force/torque limits, a powered exact command endpoint, and finite latch energy. A valid command opens its constraint and only the network routes explicitly marked as breakaway umbilicals. The bare latch supplies no separation impulse; stages move apart only because their physical forces and stored energy do. Intentional release remains structural telemetry but is not mislabeled as a failure post-mortem.
@@ -420,6 +421,7 @@ Blueprint version 1 stores the strict endpoint-binding manifest, selected langua
 - Choose **Move** (`G`) or **Rotate** (`R`) to attach a direct 3D gizmo to the selected component. Movement snaps to 0.25 m and rotation to 15° increments.
 - Click any neutral area of the workbench to clear the selection.
 - Click a connection port and then another component to connect them.
+- Rope has named `END_A` and `END_B` ports. While stopped, `Alt+A`/`Alt+B` starts the ordinary attachment workflow for that end and `Alt+Shift+A`/`Alt+Shift+B` detaches it. Multi-select exactly two components to create a two-ended Rope as one undoable Inspector action.
 - While connecting, a source banner remains on screen and a dashed live cable follows the cursor toward the hovered target. `Esc` or the banner's Cancel button exits connection mode.
 - `Esc` cancels placement or connection.
 - `Ctrl+Shift+F` toggles fullscreen. Plain `F` is reserved for the standard frame-selection camera action.
@@ -429,7 +431,8 @@ Blueprint version 1 stores the strict endpoint-binding manifest, selected langua
 The current source checkout includes powered command networks, articulated
 joint dynamics, suspension, fatigue and connection failure, conserved
 propellant mass flow, physical release/staging, missile aerothermodynamics,
-reusable subassemblies, engineering overlays, failure post-mortems, bounded
+distributed Rope physics and authoring, reusable subassemblies, engineering
+overlays, failure post-mortems, bounded
 telemetry replay, open-ended payload challenges, the Workshop Test Reserve,
 complete blueprint persistence, and sandboxed TypeScript/WebAssembly control.
 See the [changelog](CHANGELOG.md) for the exact contents of released version

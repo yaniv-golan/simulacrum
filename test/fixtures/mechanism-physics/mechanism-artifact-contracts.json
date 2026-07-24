@@ -45,6 +45,7 @@
     "run-graph": { "revision": 1 },
     "compiled-topology": { "revision": 1 },
     "physics-world": { "bodies": [] },
+    "flexible-line-runtime": { "version": 1, "lines": [] },
     "solver-contact": { "warmStarts": [] },
     "tire-carcass": { "tires": [] },
     "body-registry": { "bindings": [] },

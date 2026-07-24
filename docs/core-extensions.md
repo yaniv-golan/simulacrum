@@ -30,6 +30,15 @@ and catalog membership before a connection is authored. New physical media
 require a reviewed core contract rather than arbitrary executable callbacks in
 blueprint data.
 
+## Flexible line
+
+[`flexible-line.mjs`](../examples/core-extensions/flexible-line.mjs) compiles an
+ordinary free-ended Rope through `flexible-line-v1`. The result owns plural
+distributed physical entities, internal tension-only edges, two explicit free
+boundaries, and a stable discretization identity without inventing a rigid
+proxy body. Hosts that run it create `FlexibleLineRuntime` in the same Cannon
+world and fixed-step session as their rigid-body runtime.
+
 ## Simulation system
 
 [`simulation-system.mjs`](../examples/core-extensions/simulation-system.mjs)

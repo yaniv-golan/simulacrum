@@ -50,6 +50,7 @@ export function installWorkshopInputComposition({
       remove: assemblyEditor.removeSelection,
       mirror: assemblyEditor.mirror,
       toggleExploded: editor.exploded.toggle,
+      beginConnection: editor.beginConnection,
     },
     history: { record: history.record },
     drive: {

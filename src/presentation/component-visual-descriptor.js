@@ -21,13 +21,15 @@ function finiteColor(value, label) {
  */
 export function componentVisualDescriptor(type, customColor) {
   const catalogEntry = TYPES[type],
-    kind = catalogEntry?.mechanism
-      ? "mechanism"
-      : catalogEntry?.teeth
-        ? "gear"
-        : GENERIC_VISUAL_TYPES.has(type)
-          ? "generic"
-          : type;
+    kind = catalogEntry?.flexibleLine
+      ? "flexible-line"
+      : catalogEntry?.mechanism
+        ? "mechanism"
+        : catalogEntry?.teeth
+          ? "gear"
+          : GENERIC_VISUAL_TYPES.has(type)
+            ? "generic"
+            : type;
   if (!catalogEntry)
     throw new Error(`Unknown component type "${String(type)}"`);
   const authoredColor = finiteColor(
@@ -43,7 +45,11 @@ export function componentVisualDescriptor(type, customColor) {
     radius: Number(catalogEntry.radius || 0),
     lumens: Number(catalogEntry.lumens || 0),
     powerWatts: Number(catalogEntry.powerWatts || 0),
-    geometry: geometryDescriptorForType(type),
+    lengthM: Number(catalogEntry.lengthM || 0),
+    diameterM: Number(catalogEntry.diameterM || 0),
+    geometry: catalogEntry.flexibleLine
+      ? null
+      : geometryDescriptorForType(type),
   });
 }
 

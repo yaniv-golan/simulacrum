@@ -158,6 +158,7 @@ function causalChain(mode, event) {
       thermal: "Material temperature or ablation crossed its limit",
       fatigue: "Repeated cyclic loading accumulated damage",
       overload: "Applied force exceeded the attachment capacity",
+      tension: "Rope tension exceeded the governing material limit",
     }[mode],
     chain = [{ label: "INITIATING EVENT", value: modeCause }];
   if (event.load.peakN > 0)
@@ -328,6 +329,81 @@ export function extractConnectionFailure({
     event.detachedPartIds.length / 2,
   );
   event.causalChain = causalChain(mode, event);
+  return new FailureEvent(event);
+}
+
+function flexibleLineExtractionContext(snapshot, topologyEvent, catalog) {
+  const part = (snapshot?.run?.parts || []).find(
+      (candidate) => candidate.id === topologyEvent.sourcePartId,
+    ),
+    name = catalog[part?.type]?.name || part?.type || "Flexible line",
+    ratedN = Math.max(0, finite(topologyEvent.ratingN)),
+    peakN = Math.max(0, finite(topologyEvent.tensionN));
+  return { part, name, ratedN, peakN };
+}
+
+export function extractFlexibleLineFailure({
+  snapshot,
+  topologyEvent,
+  catalog,
+  eventId,
+}) {
+  if (topologyEvent?.kind !== "flexible-internal-break-v1") return null;
+  const { part, name, ratedN, peakN } = flexibleLineExtractionContext(
+      snapshot,
+      topologyEvent,
+      catalog,
+    ),
+    event = {
+      id: eventId,
+      timeS: finite(snapshot?.time),
+      connectionId: null,
+      partA: displayPart(catalog, part, topologyEvent.sourcePartId),
+      partB: { id: null, type: "material", name: `${name} material` },
+      mode: "tension",
+      reason: `Internal Rope element ${topologyEvent.internalEdgeId} exceeded its material tension limit`,
+      load: {
+        peakN,
+        ratedN,
+        peakTorqueNm: 0,
+        ratedTorqueNm: 0,
+        utilization: ratedN ? peakN / ratedN : 0,
+      },
+      fatigue: 0,
+      worldPosition: {
+        x: finite(topologyEvent.worldPosition?.x),
+        y: finite(topologyEvent.worldPosition?.y),
+        z: finite(topologyEvent.worldPosition?.z),
+      },
+      detachedPartIds: [],
+      environment: {
+        surface: null,
+        inWater: false,
+        impactSpeedMps: 0,
+        mach: 0,
+        temperatureC: 0,
+      },
+      evidence: extractionEvidence(snapshot, {
+        channelId: `flexible-line:${topologyEvent.sourcePartId}:${topologyEvent.internalEdgeId}`,
+        unit: "N,ratio",
+        frame: "world-and-line-element",
+        validity: "valid",
+        provenance: {
+          sourcePartId: topologyEvent.sourcePartId,
+          internalEdgeId: topologyEvent.internalEdgeId,
+          tick: topologyEvent.tick,
+          strain: finite(topologyEvent.strain),
+          impulseNs: finite(topologyEvent.impulseNs),
+          materialKey: topologyEvent.materialKey,
+          failureLaw: topologyEvent.failureLaw,
+          predecessorIds: topologyEvent.predecessorIds || [],
+          survivingFragments: topologyEvent.survivingFragments || [],
+          activeElementIds: topologyEvent.activeElementIds || [],
+        },
+      }),
+    };
+  event.severity = Math.max(1, event.load.utilization);
+  event.causalChain = causalChain("tension", event);
   return new FailureEvent(event);
 }
 

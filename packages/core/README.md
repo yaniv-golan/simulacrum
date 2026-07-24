@@ -30,6 +30,14 @@ commands, spends the authored latch energy, and opens only its flanges plus
 explicitly declared breakaway routes. It adds no hidden separation impulse;
 checkpoint v1 restores its private state through the `release-couplers` owner.
 
+`flexible-line-v1` components compile into deterministic distributed entities
+and unilateral internal edges, not rigid proxy bodies. `FlexibleLineRuntime`
+shares the host Cannon world and fixed integration transaction; the flexible
+line actuator, structure, and telemetry systems preserve phase order. Plural
+entity ownership and split lineage remain in `BodyRegistry` and
+`PhysicalAssemblyIndex`, while completed telemetry and checkpoints expose the
+same centreline, loads, contacts, failure, and restore truth to every consumer.
+
 The public fixed-step surface uses narrow `AerodynamicSystem`, `ThermalSystem`,
 and `PhysicalFlightTelemetrySystem` phases. They consume explicit host services, preserve the
 single integration transaction, and keep mutable temperature/ablation state

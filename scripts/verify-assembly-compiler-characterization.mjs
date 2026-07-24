@@ -22,12 +22,12 @@ const GOLDEN_DIGESTS = Object.freeze({
     bytes: 39_102,
   },
   "demo:cart": {
-    sha256: "a39b92c123885ae675c864f00f3aa71149398e9814e62e372256cdbfb11b9ca2",
-    bytes: 266_644,
+    sha256: "95930a61ea63f694d9b3f78d9eecda517d9fc8ce5fc2cfe11ae2b01273cfd489",
+    bytes: 267_316,
   },
   "covariance:transformed-cart": {
-    sha256: "2eb6f0276528160ea7b6989f730d48a1d61506dd332265dc54cfd91a7ce5bb97",
-    bytes: 273_896,
+    sha256: "c2c369e2e97241692285f6615d5756e13adc14358a6c4c933ac0492434ed2480",
+    bytes: 274_568,
   },
   "demo:humanoid": {
     sha256: "554568e0714c07becddd81013bc1859cb0e9c334cbe097c10cc0f1997fe5147d",
@@ -42,28 +42,28 @@ const GOLDEN_DIGESTS = Object.freeze({
     bytes: 711_271,
   },
   "mechanism:Rigid axle suspension": {
-    sha256: "d9ed1610a8b391f33f3a46ee68755802468aac3c3709cc6ba0140de5b83a4840",
-    bytes: 67_061,
+    sha256: "4552926de507cfc0442dc7f0eb7e3792d458ec2ed0cfd6191e2b9e4e05189256",
+    bytes: 67_397,
   },
   "mechanism:Trailing arm suspension": {
-    sha256: "db701e1b3737c6e4faf699775b60cf1aa7f169632d7138be55578e1f9b092c54",
-    bytes: 49_959,
+    sha256: "f25feb019920caaa6b3a433ddc58c9852515acff52b7bb519d222ecd4f090478",
+    bytes: 50_127,
   },
   "mechanism:Double wishbone corner": {
-    sha256: "7ba5109c1cd252f7f9eb4f05779d8157488c323785a7a9d5ca6fe9649f7b7711",
-    bytes: 84_862,
+    sha256: "63eff8ed0ca1817c2a4dff3a0c42d02ba37b1d1f223a08b0e5b1811a47055cca",
+    bytes: 85_030,
   },
   "mechanism:Rocker-bogie suspension": {
-    sha256: "5dfa17fbcf2a1d02f76dac470e9ac36aef2cdba5abe7d77ce191b5e0d485670a",
-    bytes: 118_775,
+    sha256: "e92aecd0fa36f2a06498549253097533cd6ffe82f1f083edf2499807a55b5263",
+    bytes: 119_279,
   },
   "mechanism:Active leveling suspension": {
-    sha256: "9714b3b5fb7a19627d2a194ef6c339e5082e24700a9934da1b949ddcb15b0ff9",
-    bytes: 142_222,
+    sha256: "a3a90bb2fbc317292840beff22003fa6f99a30d1056adfaa7fdbec2f7bfd67c4",
+    bytes: 142_894,
   },
   "hybrid:wheeled-rocket": {
-    sha256: "b1d67af2a9615f6742ac30d4f142979f6da301b32f233ad15d6d4fcee3fc8127",
-    bytes: 311_327,
+    sha256: "20d6b1b86a285b535ca3da20624cfe35599ec2068ec0bfd3ad54fe95701b5e90",
+    bytes: 311_999,
   },
   "diagnostic:dangling-connection": {
     sha256: "5d4b06c761532366be24fee6af43330fee9525e4bff894d4deb04e72ee9b3118",

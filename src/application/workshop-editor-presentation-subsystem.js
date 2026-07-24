@@ -76,6 +76,7 @@ export function createWorkshopEditorPresentationSubsystem({
       prepareFoot: actions.prepareFoot,
       openController: actions.openController,
       beginConnection: actions.beginConnection,
+      connectWithRope: actions.connectWithRope,
       setMode: actions.setMode,
       render: view.render,
       tutorialEvent: actions.tutorialEvent,
@@ -130,6 +131,7 @@ export function createWorkshopEditorPresentationSubsystem({
     transform,
     groupPivot,
     editorPresentation,
+    beginConnection: actions.beginConnection,
     world,
     exploded,
   });

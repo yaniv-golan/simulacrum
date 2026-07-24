@@ -4,6 +4,8 @@
 
 ```ts
 
+import * as CANNON from 'cannon-es';
+
 // @public (undocumented)
 export function acceptsActuatorChannel(part: any, channel: string, catalog?: Record<string, any>): boolean;
 
@@ -273,8 +275,8 @@ export function alignSelection(parts: any, primaryId: any, axis: any): Map<any, 
 
 // @public (undocumented)
 export function analyzeAssembly(snapshot: any, catalog: any): {
-    totalMass: number;
-    centerOfMass: number[];
+    totalMass: any;
+    centerOfMass: any;
     displacedVolumeM3: number;
     centerOfBuoyancy: number[];
     thrust: {
@@ -362,6 +364,8 @@ export class BodyRegistry {
     // (undocumented)
     beginTick(tick?: number): void;
     // (undocumented)
+    bodiesForPart(partId: any): readonly any[];
+    // (undocumented)
     body(id: any): any;
     // (undocumented)
     bodyForPart(partId: any): any;
@@ -395,6 +399,8 @@ export class BodyRegistry {
     // (undocumented)
     registerConstraint(constraintId: any, partId: any, options?: {}): any;
     // (undocumented)
+    registerPhysicalEntities(partId: any, entities: any): readonly any[];
+    // (undocumented)
     removeConstraint(constraintId: any): boolean;
     // (undocumented)
     get revision(): number;
@@ -416,6 +422,21 @@ export class BodyRegistry {
 
 // @public (undocumented)
 export const CANNON_SOLVER_TRANSACTION_ID: "simulacrum-owned-cannon-solver-transaction-v1";
+
+// @public
+export class CannonMaterialAdapter {
+    constructor(world: any, entries?: any[]);
+    // (undocumented)
+    install(): this;
+    // (undocumented)
+    materialForKey(materialKey: any): any;
+    // (undocumented)
+    materials: Map<any, any>;
+    // (undocumented)
+    register(materialKey: any, material?: CANNON.Material): CANNON.Material;
+    // (undocumented)
+    world: any;
+}
 
 // @public
 export class CannonSolverTransaction {
@@ -1017,6 +1038,99 @@ export function compatibleTargetPorts(sourcePart: any, sourcePort: any, targetPa
 
 // @public
 export function compileAssembly(snapshot: any, catalog?: {}): Readonly<{
+    actuators: any[];
+    contactRegions: {
+        id: string;
+        kind: string;
+        sourcePartId: any;
+        bodyId: string;
+        regionId: any;
+        localAxleAxis: number[];
+        radiusM: any;
+        widthM: any;
+        shoulderRadiusM: any;
+        semanticRegions: any;
+        tireConstitutiveLaw: any;
+    }[];
+    networks: {
+        power: any[];
+        signal: any[];
+        resource: any[];
+    };
+    diagnostics: readonly Readonly<{
+        sourceProvenance: Readonly<{
+            owner: "assembly-compiler";
+            authoredPath: readonly any[];
+        }>;
+        involvedDescriptorIds: readonly string[];
+        residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
+        remedy: any;
+        severity: string;
+        code: string;
+        connectionId: any;
+        message: string;
+        partId?: undefined;
+        axisWorldA?: undefined;
+        axisWorldB?: undefined;
+    } | {
+        sourceProvenance: Readonly<{
+            owner: "assembly-compiler";
+            authoredPath: readonly any[];
+        }>;
+        involvedDescriptorIds: readonly string[];
+        residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
+        remedy: any;
+        severity: string;
+        code: string;
+        partId: any;
+        message: string;
+        connectionId?: undefined;
+        axisWorldA?: undefined;
+        axisWorldB?: undefined;
+    } | {
+        sourceProvenance: Readonly<{
+            owner: "assembly-compiler";
+            authoredPath: readonly any[];
+        }>;
+        involvedDescriptorIds: readonly string[];
+        residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
+        remedy: any;
+        severity: string;
+        code: string;
+        partId: any;
+        connectionId: any;
+        message: string;
+        axisWorldA?: undefined;
+        axisWorldB?: undefined;
+    } | {
+        sourceProvenance: Readonly<{
+            owner: "assembly-compiler";
+            authoredPath: readonly any[];
+        }>;
+        involvedDescriptorIds: readonly string[];
+        residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
+        remedy: any;
+        severity: string;
+        code: string;
+        connectionId: any;
+        message: string;
+        axisWorldA: number[];
+        axisWorldB: number[];
+        partId?: undefined;
+    }>[];
+    stats: Readonly<{
+        errorCount: number;
+        warningCount: number;
+        totalMass: any;
+        flexibleLinePartCount?: number;
+        flexibleEntityCount?: any;
+        partCount: any;
+        bodyCount: number;
+        constraintCount: number;
+        collisionExclusionCount: number;
+        forceElementPartCount: number;
+    }>;
+    flexibleLines?: any[];
     version: 1;
     sourceRevision: any;
     parts: any;
@@ -1259,96 +1373,6 @@ export function compileAssembly(snapshot: any, catalog?: {}): Readonly<{
         constraintId: string;
         law: any;
     }[];
-    actuators: any[];
-    contactRegions: {
-        id: string;
-        kind: string;
-        sourcePartId: any;
-        bodyId: string;
-        regionId: any;
-        localAxleAxis: number[];
-        radiusM: any;
-        widthM: any;
-        shoulderRadiusM: any;
-        semanticRegions: any;
-        tireConstitutiveLaw: any;
-    }[];
-    networks: {
-        power: any[];
-        signal: any[];
-        resource: any[];
-    };
-    diagnostics: readonly Readonly<{
-        sourceProvenance: Readonly<{
-            owner: "assembly-compiler";
-            authoredPath: readonly any[];
-        }>;
-        involvedDescriptorIds: readonly string[];
-        residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
-        remedy: any;
-        severity: string;
-        code: string;
-        connectionId: any;
-        message: string;
-        partId?: undefined;
-        axisWorldA?: undefined;
-        axisWorldB?: undefined;
-    } | {
-        sourceProvenance: Readonly<{
-            owner: "assembly-compiler";
-            authoredPath: readonly any[];
-        }>;
-        involvedDescriptorIds: readonly string[];
-        residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
-        remedy: any;
-        severity: string;
-        code: string;
-        partId: any;
-        message: string;
-        connectionId?: undefined;
-        axisWorldA?: undefined;
-        axisWorldB?: undefined;
-    } | {
-        sourceProvenance: Readonly<{
-            owner: "assembly-compiler";
-            authoredPath: readonly any[];
-        }>;
-        involvedDescriptorIds: readonly string[];
-        residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
-        remedy: any;
-        severity: string;
-        code: string;
-        partId: any;
-        connectionId: any;
-        message: string;
-        axisWorldA?: undefined;
-        axisWorldB?: undefined;
-    } | {
-        sourceProvenance: Readonly<{
-            owner: "assembly-compiler";
-            authoredPath: readonly any[];
-        }>;
-        involvedDescriptorIds: readonly string[];
-        residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
-        remedy: any;
-        severity: string;
-        code: string;
-        connectionId: any;
-        message: string;
-        axisWorldA: number[];
-        axisWorldB: number[];
-        partId?: undefined;
-    }>[];
-    stats: Readonly<{
-        partCount: any;
-        bodyCount: number;
-        constraintCount: number;
-        collisionExclusionCount: number;
-        forceElementPartCount: number;
-        errorCount: number;
-        warningCount: number;
-        totalMass: number;
-    }>;
 }>;
 
 // @public (undocumented)
@@ -1869,6 +1893,9 @@ export class EnvironmentBodySystem {
 // @public
 export function errorMessage(error: any): string;
 
+// @public (undocumented)
+export function expandFlexibleLineMaterial(config: any): any;
+
 // @public
 export class FailureEvent {
     constructor(data: any);
@@ -1962,6 +1989,153 @@ export function finiteVector3(value: unknown, input?: {
     path?: Array<string | number>;
     fallback?: number[];
 }): number[];
+
+// @public (undocumented)
+export const FLEXIBLE_LINE_MATERIALS: Readonly<{
+    "nylon-rope": Readonly<{
+        id: "nylon-rope";
+        name: "Braided nylon";
+        densityKgPerM3: 1140;
+        packingFactor: 0.62;
+        referenceDiameterM: 0.04;
+        axialStiffnessNPerM: 120000;
+        axialDampingNsPerM: 90;
+        ultimateStressPa: 48000000;
+        contactMaterialKey: "nylon-rope";
+        failureLaw: "maximum-tension-v1";
+    }>;
+}>;
+
+// @public (undocumented)
+export function flexibleLineMaterial(id: any): any;
+
+// @public
+export class FlexibleLineRuntime {
+    constructor(input: {
+        world: any;
+        material?: any;
+        materialForKey?: any;
+        multibodyRuntime: any;
+        fixedDt?: number;
+    });
+    // (undocumented)
+    afterIntegration(tick: any, environment?: {}): {
+        version: number;
+        lines: any[];
+        topologyEvents: any[];
+    };
+    // (undocumented)
+    applyConnectionFailures(connections: any): any[];
+    // (undocumented)
+    attachmentEntries: any[];
+    // (undocumented)
+    beforeIntegration(dt: any): void;
+    // (undocumented)
+    bodyByEntityId: Map<any, any>;
+    // (undocumented)
+    compiledLines: any[];
+    // (undocumented)
+    contactDissipationByPart: Map<any, any>;
+    // (undocumented)
+    dispose(): void;
+    // (undocumented)
+    edgeEntries: any[];
+    // (undocumented)
+    exportState(): {
+        version: number;
+        entities: {
+            entityId: any;
+            position: {
+                x: any;
+                y: any;
+                z: any;
+            };
+            quaternion: {
+                x: any;
+                y: any;
+                z: any;
+                w: any;
+            };
+            velocity: {
+                x: any;
+                y: any;
+                z: any;
+            };
+            angularVelocity: {
+                x: any;
+                y: any;
+                z: any;
+            };
+        }[];
+        edges: {
+            id: any;
+            active: any;
+            dampingWorkJ: any;
+        }[];
+        attachments: {
+            id: any;
+            active: any;
+            lastReactionN: any;
+        }[];
+        topologyRevision: number;
+        lastDissipationTick: number;
+        contactDissipationByPart: [any, any][];
+    };
+    // (undocumented)
+    fixedDt: number;
+    // (undocumented)
+    importState(state: any): void;
+    // (undocumented)
+    lastDissipationTick: number;
+    // (undocumented)
+    lastTelemetry: {
+        version: number;
+        lines: any[];
+        topologyEvents: any[];
+    };
+    // (undocumented)
+    loadByConnection: Map<any, any>;
+    // (undocumented)
+    material: any;
+    // (undocumented)
+    materialForKey: any;
+    // (undocumented)
+    multibodyRuntime: any;
+    // (undocumented)
+    registerBodyEntities(registry: any): void;
+    // (undocumented)
+    start(compiledAssembly: any): this;
+    // (undocumented)
+    topologyRevision: number;
+    // (undocumented)
+    world: any;
+}
+
+// @public
+export class FlexibleLineStructureSystem {
+    // (undocumented)
+    phase: string;
+    // (undocumented)
+    step(context: any): void;
+}
+
+// @public
+export class FlexibleLineSystem {
+    // (undocumented)
+    initialize(context: any): void;
+    // (undocumented)
+    phase: string;
+    // (undocumented)
+    step(context: any, dt: any): void;
+}
+
+// @public
+export class FlexibleLineTelemetrySystem {
+    // (undocumented)
+    phase: string;
+    // (undocumented)
+    step(context: any): void;
+}
 
 // @public (undocumented)
 export namespace FLIGHT_MATERIALS {
@@ -2617,6 +2791,36 @@ export function materialStoreContract(part: any, catalog?: {
         }>[];
         mechanism: any;
     };
+    rope: {
+        name: string;
+        cat: string;
+        icon: string;
+        color: number;
+        desc: string;
+        ports: Readonly<{
+            localFramePart?: any;
+            id: any;
+            kind: any;
+            behavior: any;
+            direction: any;
+            multiplicity: any;
+        }>[];
+        flexibleLine: {
+            kind: string;
+            endpointPortA: string;
+            endpointPortB: string;
+            initialAxisPart: number[];
+            maximumElementCount: number;
+        };
+        lengthM: number;
+        diameterM: number;
+        linearDensityKgPerM: number;
+        axialStiffnessNPerM: number;
+        axialDampingNsPerM: number;
+        ultimateTensionN: number;
+        targetElementLengthM: number;
+        materialKey: string;
+    };
     damper: {
         name: string;
         cat: string;
@@ -3248,6 +3452,99 @@ export class MultibodyRuntime {
     }[];
     // (undocumented)
     compiled: Readonly<{
+        actuators: any[];
+        contactRegions: {
+            id: string;
+            kind: string;
+            sourcePartId: any;
+            bodyId: string;
+            regionId: any;
+            localAxleAxis: number[];
+            radiusM: any;
+            widthM: any;
+            shoulderRadiusM: any;
+            semanticRegions: any;
+            tireConstitutiveLaw: any;
+        }[];
+        networks: {
+            power: any[];
+            signal: any[];
+            resource: any[];
+        };
+        diagnostics: readonly Readonly<{
+            sourceProvenance: Readonly<{
+                owner: "assembly-compiler";
+                authoredPath: readonly any[];
+            }>;
+            involvedDescriptorIds: readonly string[];
+            residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
+            remedy: any;
+            severity: string;
+            code: string;
+            connectionId: any;
+            message: string;
+            partId?: undefined;
+            axisWorldA?: undefined;
+            axisWorldB?: undefined;
+        } | {
+            sourceProvenance: Readonly<{
+                owner: "assembly-compiler";
+                authoredPath: readonly any[];
+            }>;
+            involvedDescriptorIds: readonly string[];
+            residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
+            remedy: any;
+            severity: string;
+            code: string;
+            partId: any;
+            message: string;
+            connectionId?: undefined;
+            axisWorldA?: undefined;
+            axisWorldB?: undefined;
+        } | {
+            sourceProvenance: Readonly<{
+                owner: "assembly-compiler";
+                authoredPath: readonly any[];
+            }>;
+            involvedDescriptorIds: readonly string[];
+            residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
+            remedy: any;
+            severity: string;
+            code: string;
+            partId: any;
+            connectionId: any;
+            message: string;
+            axisWorldA?: undefined;
+            axisWorldB?: undefined;
+        } | {
+            sourceProvenance: Readonly<{
+                owner: "assembly-compiler";
+                authoredPath: readonly any[];
+            }>;
+            involvedDescriptorIds: readonly string[];
+            residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
+            remedy: any;
+            severity: string;
+            code: string;
+            connectionId: any;
+            message: string;
+            axisWorldA: number[];
+            axisWorldB: number[];
+            partId?: undefined;
+        }>[];
+        stats: Readonly<{
+            errorCount: number;
+            warningCount: number;
+            totalMass: any;
+            flexibleLinePartCount?: number;
+            flexibleEntityCount?: any;
+            partCount: any;
+            bodyCount: number;
+            constraintCount: number;
+            collisionExclusionCount: number;
+            forceElementPartCount: number;
+        }>;
+        flexibleLines?: any[];
         version: 1;
         sourceRevision: any;
         parts: any;
@@ -3490,96 +3787,6 @@ export class MultibodyRuntime {
             constraintId: string;
             law: any;
         }[];
-        actuators: any[];
-        contactRegions: {
-            id: string;
-            kind: string;
-            sourcePartId: any;
-            bodyId: string;
-            regionId: any;
-            localAxleAxis: number[];
-            radiusM: any;
-            widthM: any;
-            shoulderRadiusM: any;
-            semanticRegions: any;
-            tireConstitutiveLaw: any;
-        }[];
-        networks: {
-            power: any[];
-            signal: any[];
-            resource: any[];
-        };
-        diagnostics: readonly Readonly<{
-            sourceProvenance: Readonly<{
-                owner: "assembly-compiler";
-                authoredPath: readonly any[];
-            }>;
-            involvedDescriptorIds: readonly string[];
-            residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
-            remedy: any;
-            severity: string;
-            code: string;
-            connectionId: any;
-            message: string;
-            partId?: undefined;
-            axisWorldA?: undefined;
-            axisWorldB?: undefined;
-        } | {
-            sourceProvenance: Readonly<{
-                owner: "assembly-compiler";
-                authoredPath: readonly any[];
-            }>;
-            involvedDescriptorIds: readonly string[];
-            residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
-            remedy: any;
-            severity: string;
-            code: string;
-            partId: any;
-            message: string;
-            connectionId?: undefined;
-            axisWorldA?: undefined;
-            axisWorldB?: undefined;
-        } | {
-            sourceProvenance: Readonly<{
-                owner: "assembly-compiler";
-                authoredPath: readonly any[];
-            }>;
-            involvedDescriptorIds: readonly string[];
-            residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
-            remedy: any;
-            severity: string;
-            code: string;
-            partId: any;
-            connectionId: any;
-            message: string;
-            axisWorldA?: undefined;
-            axisWorldB?: undefined;
-        } | {
-            sourceProvenance: Readonly<{
-                owner: "assembly-compiler";
-                authoredPath: readonly any[];
-            }>;
-            involvedDescriptorIds: readonly string[];
-            residualDetail: "Compilation stopped before solver rows were created." | "Topology compiled with this unresolved design warning.";
-            remedy: any;
-            severity: string;
-            code: string;
-            connectionId: any;
-            message: string;
-            axisWorldA: number[];
-            axisWorldB: number[];
-            partId?: undefined;
-        }>[];
-        stats: Readonly<{
-            partCount: any;
-            bodyCount: number;
-            constraintCount: number;
-            collisionExclusionCount: number;
-            forceElementPartCount: number;
-            errorCount: number;
-            warningCount: number;
-            totalMass: number;
-        }>;
     }>;
     // (undocumented)
     constraintEntries: any[];
@@ -3944,14 +4151,16 @@ export class MultibodyRuntime {
         active: boolean;
         activeMotors: number;
         compiled: Readonly<{
+            errorCount: number;
+            warningCount: number;
+            totalMass: any;
+            flexibleLinePartCount?: number;
+            flexibleEntityCount?: any;
             partCount: any;
             bodyCount: number;
             constraintCount: number;
             collisionExclusionCount: number;
             forceElementPartCount: number;
-            errorCount: number;
-            warningCount: number;
-            totalMass: number;
         }>;
         diagnostics: readonly Readonly<{
             sourceProvenance: Readonly<{
@@ -4172,6 +4381,8 @@ export class PhysicalAssemblyIndex {
     constructor(compiledAssembly: any);
     // (undocumented)
     componentForPart(partId: any): any;
+    // (undocumented)
+    componentsForPart(partId: any): readonly any[];
     // (undocumented)
     refresh(input?: {
         runGraph?: {
@@ -4527,6 +4738,7 @@ export class RunAssemblyGraph {
     applyLoad(connectionId: any, options?: {}): any;
     applyStructuralEvent(input?: {
         failedConnectionIds?: any[];
+        failedInternalEdgeIds?: any[];
         detachedPartIds?: any[];
         reason?: string;
         mode?: string;
@@ -4594,6 +4806,7 @@ export class RuntimeCheckpointCoordinator {
     constructor(input: {
         session: any;
         multibodyRuntime: any;
+        flexibleLineRuntime?: any;
         worldAdapter: any;
         sensorBank?: any;
         controllerManager?: any;
@@ -4614,6 +4827,8 @@ export class RuntimeCheckpointCoordinator {
     }): any;
     // (undocumented)
     controllerManager: any;
+    // (undocumented)
+    flexibleLineRuntime: any;
     // (undocumented)
     inputCursor: any;
     // (undocumented)
@@ -4985,6 +5200,25 @@ export class TelemetrySystem {
 }
 
 // @public
+export class TensionOnlyDistanceConstraint extends CANNON.DistanceConstraint {
+    constructor(bodyA: any, bodyB: any, input: {
+        restLengthM: any;
+        maximumTensionN: any;
+        stiffnessNPerM?: number;
+        relaxation?: number;
+        timeStepS?: number;
+    });
+    // (undocumented)
+    extensionM(): number;
+    // (undocumented)
+    maximumTensionN: any;
+    // (undocumented)
+    restLengthM: any;
+    // (undocumented)
+    tensionN(): number;
+}
+
+// @public
 export class TestCourseSystem {
     // (undocumented)
     dispose(): void;
@@ -5286,6 +5520,36 @@ export const TYPES: {
             multiplicity: any;
         }>[];
         mechanism: any;
+    };
+    rope: {
+        name: string;
+        cat: string;
+        icon: string;
+        color: number;
+        desc: string;
+        ports: Readonly<{
+            localFramePart?: any;
+            id: any;
+            kind: any;
+            behavior: any;
+            direction: any;
+            multiplicity: any;
+        }>[];
+        flexibleLine: {
+            kind: string;
+            endpointPortA: string;
+            endpointPortB: string;
+            initialAxisPart: number[];
+            maximumElementCount: number;
+        };
+        lengthM: number;
+        diameterM: number;
+        linearDensityKgPerM: number;
+        axialStiffnessNPerM: number;
+        axialDampingNsPerM: number;
+        ultimateTensionN: number;
+        targetElementLengthM: number;
+        materialKey: string;
     };
     damper: {
         name: string;
@@ -5836,6 +6100,9 @@ export function validateControlIR(input: any): any;
 
 // @public (undocumented)
 export function validateControllerBindingManifest(input: any): readonly any[];
+
+// @public (undocumented)
+export function validateFlexibleLineConfig(config: any, path?: string[]): any;
 
 // @public (undocumented)
 export function validatePortConnection(sourcePart: any, sourcePort: any, targetPart: any, targetPort: any, connections?: any[], catalog?: Record<string, any>, candidate?: any): boolean;

@@ -8,6 +8,7 @@ export const CHECKPOINT_STATE_OWNER_IDS = Object.freeze([
   "run-graph",
   "compiled-topology",
   "physics-world",
+  "flexible-line-runtime",
   "solver-contact",
   "tire-carcass",
   "body-registry",

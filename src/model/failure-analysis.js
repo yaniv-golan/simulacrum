@@ -3,6 +3,7 @@ import { finiteOr as finite } from "./finite-or.js";
 import {
   enrichFailureDetachments,
   extractConnectionFailure,
+  extractFlexibleLineFailure,
   extractThermalFailure,
   FailureEvent,
   observeConnectionFailure,
@@ -18,6 +19,7 @@ export class FailureRecorder {
   #peaks;
   #seenFailures;
   #seenThermalParts;
+  #seenFlexibleFailures;
 
   constructor({ catalog = {} } = {}) {
     this.#catalog = catalog;
@@ -30,6 +32,7 @@ export class FailureRecorder {
     this.#seenFailures = new Set();
     this.#peaks = new Map();
     this.#seenThermalParts = new Set();
+    this.#seenFlexibleFailures = new Set();
   }
 
   /** @returns {FailureEvent[]} */
@@ -58,6 +61,8 @@ export class FailureRecorder {
       createdIds.push(extracted.id);
     }
 
+    this.#extractFlexible(snapshot, createdIds);
+
     this.#events = enrichFailureDetachments(this.#events, snapshot);
     if (!createdIds.length) this.#extractThermal(snapshot, createdIds);
     return createdIds.map((id) => {
@@ -84,6 +89,23 @@ export class FailureRecorder {
     this.#seenThermalParts.add(thermalPart.id);
     this.#events.push(extracted);
     createdIds.push(extracted.id);
+  }
+
+  #extractFlexible(snapshot, createdIds) {
+    for (const topologyEvent of snapshot?.systems?.flexibleLines
+      ?.topologyEvents || []) {
+      if (this.#seenFlexibleFailures.has(topologyEvent.id)) continue;
+      const extracted = extractFlexibleLineFailure({
+        snapshot,
+        topologyEvent,
+        catalog: this.#catalog,
+        eventId: `failure-${this.#events.length + 1}`,
+      });
+      if (!extracted) continue;
+      this.#seenFlexibleFailures.add(topologyEvent.id);
+      this.#events.push(extracted);
+      createdIds.push(extracted.id);
+    }
   }
 
   /** @returns {{status:string,eventCount:number,primary:FailureEvent|null,timeline:FailureEvent[]}} */
