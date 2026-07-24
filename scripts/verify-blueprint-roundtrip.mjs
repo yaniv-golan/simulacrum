@@ -163,6 +163,7 @@ const interactionDownload = await interactionDownloadPromise,
 
 await page.reload({ waitUntil: "domcontentloaded" });
 await page.waitForFunction(() => {
+  if (typeof window.render_game_to_text !== "function") return false;
   const text = JSON.parse(window.render_game_to_text());
   return text.parts.length > 0 && text.remote?.profile === "cart";
 });
@@ -185,6 +186,9 @@ await Promise.all([
   page.waitForNavigation({ waitUntil: "domcontentloaded" }),
   page.click("#confirm-local-reset-button"),
 ]);
+await page.waitForFunction(
+  () => typeof window.render_game_to_text === "function",
+);
 const resetWorkspace = await page.evaluate(async () => {
     const { BrowserStorage } =
         await import("/src/application/browser-storage.js"),

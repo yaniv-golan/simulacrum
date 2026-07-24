@@ -1,4 +1,4 @@
-import { testSiteShapeWeight } from "../../model/test-site-shapes.js";
+import { testSiteShapeContains } from "../../model/test-site-shapes.js";
 import { supportMaterialResponse } from "../../model/contact-material-pairs.js";
 
 export function testSiteSupportContact(partId, contact) {
@@ -106,7 +106,7 @@ function project(context) {
           ].sort(),
           zoneIds: testSite.zones
             .filter(({ shape }) =>
-              testSiteShapeWeight(shape, position.x, position.z),
+              testSiteShapeContains(shape, position.x, position.z),
             )
             .map(({ id }) => id),
         };

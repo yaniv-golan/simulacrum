@@ -1,5 +1,8 @@
 import { deepFreeze, DomainValidationError } from "./primitives.js";
-import { testSiteShapeWeight } from "./test-site-shapes.js";
+import {
+  testSiteShapeBounds,
+  testSiteShapeContains,
+} from "./test-site-shapes.js";
 
 function localSegment(shape, start, end) {
   const cosine = Math.cos(shape.rotationRad),
@@ -66,9 +69,37 @@ function ellipseEntry(shape, start, end) {
 }
 
 export function sweptTestSiteShapeEntry(shape, start, end) {
-  return shape.kind === "rectangle"
-    ? rectangleEntry(shape, start, end)
-    : ellipseEntry(shape, start, end);
+  if (shape.kind === "rectangle") return rectangleEntry(shape, start, end);
+  if (shape.kind === "ellipse") return ellipseEntry(shape, start, end);
+  if (testSiteShapeContains(shape, start.x, start.z)) return 0;
+  const bounds = testSiteShapeBounds(shape),
+    span = Math.max(
+      0.25,
+      Math.min(bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ) / 4,
+    ),
+    distance = Math.hypot(end.x - start.x, end.z - start.z),
+    steps = Math.min(512, Math.max(8, Math.ceil(distance / span)));
+  let previous = 0;
+  for (let index = 1; index <= steps; index++) {
+    const amount = index / steps,
+      x = start.x + (end.x - start.x) * amount,
+      z = start.z + (end.z - start.z) * amount;
+    if (!testSiteShapeContains(shape, x, z)) {
+      previous = amount;
+      continue;
+    }
+    let outside = previous,
+      inside = amount;
+    for (let iteration = 0; iteration < 30; iteration++) {
+      const middle = (outside + inside) / 2,
+        middleX = start.x + (end.x - start.x) * middle,
+        middleZ = start.z + (end.z - start.z) * middle;
+      if (testSiteShapeContains(shape, middleX, middleZ)) inside = middle;
+      else outside = middle;
+    }
+    return inside;
+  }
+  return null;
 }
 
 function telemetryComponent(telemetry, targetPartId) {
@@ -209,7 +240,7 @@ export class TestCourseRun {
     this.previousPosition = { x: end.x, z: end.z };
     if (this.passedGateIds.length === this.gates.length) {
       const finishGate = this.gates.at(-1),
-        inFinish = Boolean(testSiteShapeWeight(finishGate.shape, end.x, end.z)),
+        inFinish = testSiteShapeContains(finishGate.shape, end.x, end.z),
         controlled =
           inFinish &&
           (!this.route.finish.grounded || component.grounded) &&

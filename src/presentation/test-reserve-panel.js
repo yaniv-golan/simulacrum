@@ -1,3 +1,9 @@
+import { testSiteShapeWorldPoint } from "../model/test-site-shapes.js";
+import {
+  testSiteHeightFeatureExtrema,
+  testSiteHeightFeatureShape,
+} from "../model/test-site-terrain.js";
+
 const MATERIAL_COLORS = Object.freeze({
   "short-grass": "#738e50",
   "dry-asphalt": "#3b4546",
@@ -31,6 +37,34 @@ const title = (value) =>
     .join(" ");
 
 function shapeElement(shape, attributes) {
+  if (shape.kind === "polygon") {
+    const path = shape.ringsM
+      .map(
+        (ring) =>
+          ring
+            .map((point, index) => {
+              const world = testSiteShapeWorldPoint(shape, point);
+              return `${index ? "L" : "M"}${world.x} ${-world.z}`;
+            })
+            .join(" ") + " Z",
+      )
+      .join(" ");
+    return `<path d="${path}" fill-rule="evenodd" ${attributes}/>`;
+  }
+  if (shape.kind === "corridor-network") {
+    const strokeAttributes = attributes.replaceAll("fill=", "stroke=");
+    return shape.pathsM
+      .map((path) => {
+        const data = path
+          .map((point, index) => {
+            const world = testSiteShapeWorldPoint(shape, point);
+            return `${index ? "L" : "M"}${world.x} ${-world.z}`;
+          })
+          .join(" ");
+        return `<path d="${data}" fill="none" stroke-width="${shape.widthM}" stroke-linecap="${shape.cap}" stroke-linejoin="${shape.join}" ${strokeAttributes}/>`;
+      })
+      .join("");
+  }
   const [x, z] = shape.centerM,
     [width, depth] = shape.sizeM;
   return shape.kind === "ellipse"
@@ -43,8 +77,10 @@ function shapeSvg(region) {
     [x, z] = shape.centerM,
     color = MATERIAL_COLORS[region.materialKey] || "#6f7b68",
     transform = `rotate(${(-shape.rotationRad * 180) / Math.PI} ${x} ${-z})`,
-    patternId = `test-pattern-${region.materialKey}`;
-  return `<g data-map-material="${region.materialKey}">${shapeElement(shape, `fill="${color}" transform="${transform}"`)}${MATERIAL_PATTERNS[region.materialKey] ? shapeElement(shape, `fill="url(#${patternId})" transform="${transform}"`) : ""}</g>`;
+    patternId = `test-pattern-${region.materialKey}`,
+    complex = shape.kind === "polygon" || shape.kind === "corridor-network",
+    transformAttribute = complex ? "" : ` transform="${transform}"`;
+  return `<g data-map-material="${region.materialKey}">${shapeElement(shape, `fill="${color}"${transformAttribute}`)}${MATERIAL_PATTERNS[region.materialKey] ? shapeElement(shape, `fill="url(#${patternId})"${transformAttribute}`) : ""}</g>`;
 }
 
 function patternDefinitions() {
@@ -61,9 +97,14 @@ function patternDefinitions() {
 function zoneSvg(zone) {
   const { shape } = zone,
     [x, z] = shape.centerM,
-    [width, depth] = shape.sizeM,
     transform = `rotate(${(-shape.rotationRad * 180) / Math.PI} ${x} ${-z})`,
     attributes = `class="test-route-zone" data-test-zone="${zone.id}" transform="${transform}"`;
+  if (shape.kind === "polygon" || shape.kind === "corridor-network")
+    return shapeElement(
+      shape,
+      attributes.replace(` transform="${transform}"`, ""),
+    );
+  const [width, depth] = shape.sizeM;
   return shape.kind === "ellipse"
     ? `<ellipse cx="${x}" cy="${-z}" rx="${width / 2}" ry="${depth / 2}" ${attributes}/>`
     : `<rect x="${x - width / 2}" y="${-z - depth / 2}" width="${width}" height="${depth}" ${attributes}/>`;
@@ -74,7 +115,10 @@ function districtLabels(testSite) {
     .map((district) => {
       const shapes = [
         ...testSite.surfaceRegions,
-        ...testSite.heightFeatures,
+        ...testSite.heightFeatures.map((feature) => ({
+          ...feature,
+          shape: testSiteHeightFeatureShape(feature),
+        })),
         ...testSite.fluidRegions,
       ].filter((entry) => entry.districtId === district.id);
       if (!shapes.length) return "";
@@ -95,7 +139,19 @@ function mapMarkup(testSite) {
     ${patternDefinitions()}
     <rect x="${-width / 2}" y="${-depth / 2}" width="${width}" height="${depth}" fill="#607b45"/>
     <rect x="${-width / 2}" y="${-depth / 2}" width="${width}" height="${depth}" fill="url(#test-pattern-short-grass)"/>
-    ${testSite.heightFeatures.map((feature) => shapeSvg({ ...feature, materialKey: feature.amplitudeM < 0 ? "saturated-mud" : "short-grass" })).join("")}
+    ${testSite.heightFeatures
+      .map((feature) => {
+        const extrema = testSiteHeightFeatureExtrema(feature);
+        return shapeSvg({
+          ...feature,
+          shape: testSiteHeightFeatureShape(feature),
+          materialKey:
+            Math.abs(extrema.minimumM) > extrema.maximumM
+              ? "saturated-mud"
+              : "short-grass",
+        });
+      })
+      .join("")}
     ${testSite.surfaceRegions.map(shapeSvg).join("")}
     ${testSite.fluidRegions.map((fluid) => `${shapeElement(fluid.shape, 'fill="#2b7d8c"')}${shapeElement(fluid.shape, 'fill="url(#test-pattern-water)"')}`).join("")}
     ${testSite.zones.map(zoneSvg).join("")}

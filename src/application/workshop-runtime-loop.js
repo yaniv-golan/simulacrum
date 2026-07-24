@@ -19,6 +19,7 @@
  * @param {{
  *   target:Window, simulation:RuntimeSimulationPort,
  *   presentation:RuntimePresentationPort, diagnostics:()=>object,
+ *   environmentCapture?:(presetId:string)=>object,
  *   now?:()=>number,
  * }} ports
  */
@@ -27,6 +28,7 @@ export function installWorkshopRuntimeLoop({
   simulation,
   presentation,
   diagnostics,
+  environmentCapture,
   now = () => performance.now(),
 }) {
   let previous = now(),
@@ -80,6 +82,11 @@ export function installWorkshopRuntimeLoop({
       value: advanceTime,
     },
   });
+  if (environmentCapture)
+    Object.defineProperty(target, "simulacrum_environment_capture", {
+      configurable: true,
+      value: environmentCapture,
+    });
   frameId = target.requestAnimationFrame(frame);
 
   return Object.freeze({
@@ -90,6 +97,11 @@ export function installWorkshopRuntimeLoop({
       delete (
         /** @type {Window & {simulacrum_performance?:()=>object}} */ (target)
           .simulacrum_performance
+      );
+      delete (
+        /** @type {Window & {simulacrum_environment_capture?:(presetId:string)=>object}} */ (
+          target
+        ).simulacrum_environment_capture
       );
       delete (
         /** @type {Window & {advanceTime?:(milliseconds:number)=>void}} */ (

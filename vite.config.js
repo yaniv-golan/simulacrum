@@ -51,6 +51,12 @@ export default defineConfig({
           if (id.includes("/node_modules/typescript/"))
             return "typescript-compiler";
           if (id.includes("/node_modules/wabt/")) return "wabt-runtime";
+          if (
+            id.includes("/src/application/local-field-feature.js") ||
+            id.includes("/src/application/test-site-fixture-feature.js") ||
+            id.includes("/src/presentation/test-site-")
+          )
+            return "test-site-presentation";
           return undefined;
         },
       },

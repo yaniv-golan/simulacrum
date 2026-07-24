@@ -20,6 +20,9 @@ const { browser, page, baseUrl } = await createBrowserTest({
   };
 
 await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+await page.waitForFunction(
+  () => !document.querySelector("#sandbox-start")?.disabled,
+);
 await click("#sandbox-start");
 await page.waitForFunction(() => Boolean(window.render_game_to_text));
 await click("#clear-build");

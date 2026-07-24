@@ -76,11 +76,17 @@ await page.locator(".welcome").waitFor({ state: "detached" });
 for (const demo of demoKinds) {
   await page.click("#demos-btn");
   await page.click(`[data-demo="${demo}"]`);
+  await page.waitForFunction((expected) => {
+    if (typeof window.render_game_to_text !== "function") return false;
+    return JSON.parse(window.render_game_to_text()).demo?.kind === expected;
+  }, demo);
   await page
     .locator('[data-mode="test"]')
     .evaluate((element) => element.click());
   await page.waitForFunction(
-    () => JSON.parse(window.render_game_to_text()).running,
+    () =>
+      typeof window.render_game_to_text === "function" &&
+      JSON.parse(window.render_game_to_text()).running,
   );
   if (demo === "gearbox")
     await page.locator('.direct-range[data-index="0"]').evaluate((input) => {

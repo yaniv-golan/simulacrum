@@ -116,6 +116,7 @@ export const VERIFICATION_CHECKS = Object.freeze([
 export const VERIFICATION_TIMEOUT_MS = Object.freeze({
   "verify-blueprint-exchange.mjs": 300_000,
   "verify-editor-tools.mjs": 300_000,
+  "verify-testing-playground-browser.mjs": 420_000,
 });
 
 /**
@@ -127,6 +128,8 @@ export const NON_SUITE_VERIFICATION_FILES = Object.freeze([
   "verify-challenge-lab.mjs",
   "verify-performance-budget-live.mjs",
   "verify-performance-budget.mjs",
+  "verify-test-site-resolution-spike.mjs",
+  "verify-test-site-fixture-spike.mjs",
   "verify-model-boundaries.mjs",
   "verify-release-snapshot.mjs",
   "verify-release-soak.mjs",

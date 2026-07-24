@@ -22,7 +22,7 @@ const environment = createTestingPlaygroundEnvironment(),
         pos: [0, 0, 0],
         orientation: [0, 0, 0, 1],
         scale: { x: 1, y: 1, z: 1 },
-        config: { linearDamping: 0.02, angularDamping: 0.05 },
+        config: { linearDamping: 0.2, angularDamping: 0.2 },
       },
     ],
     connections: [],
@@ -154,12 +154,23 @@ function telemetryFrame(scenario, tick) {
   };
 }
 
-function forceTowardVelocity(body, targetVelocity, accelerationLimit = 24) {
+function forceTowardVelocity(
+  body,
+  targetVelocity,
+  accelerationLimit = 24,
+  axis = "x",
+) {
   const acceleration = Math.max(
     -accelerationLimit,
-    Math.min(accelerationLimit, (targetVelocity - body.velocity.x) * 6),
+    Math.min(accelerationLimit, (targetVelocity - body.velocity[axis]) * 6),
   );
-  body.applyForce(new CANNON.Vec3(body.mass * acceleration, 0, 0));
+  body.applyForce(
+    new CANNON.Vec3(
+      axis === "x" ? body.mass * acceleration : 0,
+      0,
+      axis === "z" ? body.mass * acceleration : 0,
+    ),
+  );
 }
 
 function stepScenario(scenario, applyForces = () => {}) {
@@ -189,12 +200,13 @@ function finishScenario(scenario, label) {
   );
 }
 
-function straightGroundJourney({ label, source, routeId, startX, stopX, z }) {
-  const groundY = environment.terrainHeightAt(startX, z),
+function straightGroundJourney({ label, source, routeId, start, stop, axis }) {
+  const groundY = environment.terrainHeightAt(start.x, start.z),
     scenario = createScenario(source, {
-      x: startX,
+      x: start.x,
       y: groundY + 1,
-      z,
+      z: start.z,
+      yawRad: axis === "z" ? 0 : Math.PI / 2,
     });
   for (let tick = 0; tick < 45; tick++) stepScenario(scenario);
   const run = new TestCourseRun({
@@ -204,15 +216,15 @@ function straightGroundJourney({ label, source, routeId, startX, stopX, z }) {
   });
   let result = run.step(telemetryFrame(scenario, 1));
   for (let tick = 2; tick <= 2_000 && result.status === "running"; tick++) {
-    const { x } = componentState(scenario).position,
-      stopping = x >= stopX;
+    const position = componentState(scenario).position,
+      stopping = position[axis] >= stop;
     stepScenario(scenario, () => {
       for (const body of scenario.runtime.bodyByPart.values()) {
         if (stopping) {
           body.velocity.x = 0;
           body.velocity.z = 0;
           body.angularVelocity.set(0, 0, 0);
-        } else forceTowardVelocity(body, 12);
+        } else forceTowardVelocity(body, 12, 24, axis);
       }
     });
     result = run.step(telemetryFrame(scenario, tick));
@@ -226,24 +238,24 @@ const wheeled = straightGroundJourney({
     label: "wheeled cart",
     source: cart,
     routeId: "suspension-shakedown",
-    startX: -170,
-    stopX: -64.5,
-    z: -46,
+    start: { x: -175, z: -80 },
+    stop: 27,
+    axis: "z",
   }),
   articulated = straightGroundJourney({
     label: "articulated humanoid",
     source: humanoid,
     routeId: "suspension-shakedown",
-    startX: -170,
-    stopX: -64.5,
-    z: -46,
+    start: { x: -175, z: -80 },
+    stop: 27,
+    axis: "z",
   });
 
-const fordY = environment.terrainHeightAt(-90, -108),
+const fordY = environment.terrainHeightAt(-205, -94),
   amphibiousScenario = createScenario(singleBeam, {
-    x: -90,
+    x: -205,
     y: fordY + 1.2,
-    z: -108,
+    z: -94,
     yawRad: 0,
   });
 for (const body of amphibiousScenario.runtime.bodyByPart.values())
@@ -256,7 +268,7 @@ const amphibiousRun = new TestCourseRun({
 let amphibious = amphibiousRun.step(telemetryFrame(amphibiousScenario, 1));
 for (let tick = 2; tick <= 2_000 && amphibious.status === "running"; tick++) {
   const state = componentState(amphibiousScenario),
-    stopping = state.position.x >= -51;
+    stopping = state.position.x >= -163;
   stepScenario(amphibiousScenario, () => {
     for (const body of amphibiousScenario.runtime.bodyByPart.values()) {
       if (stopping) {
@@ -278,11 +290,11 @@ assert.equal(
 );
 finishScenario(amphibiousScenario, "amphibious ford");
 
-const helipadY = environment.terrainHeightAt(178, 124),
+const helipadY = environment.terrainHeightAt(104, -43),
   flyingScenario = createScenario(drone, {
-    x: 138,
+    x: 104,
     y: helipadY + 5,
-    z: 124,
+    z: -90,
     yawRad: 0,
   }),
   flyingRun = new TestCourseRun({
@@ -293,8 +305,8 @@ const helipadY = environment.terrainHeightAt(178, 124),
 let flying = flyingRun.step(telemetryFrame(flyingScenario, 1));
 for (let tick = 2; tick <= 10_000 && flying.status === "running"; tick++) {
   const state = componentState(flyingScenario),
-    landing = state.position.x >= 148,
-    stopping = state.position.x >= 171 && state.grounded,
+    landing = state.position.z >= -72,
+    stopping = state.position.z >= -43 && state.grounded,
     targetY = landing ? helipadY - 0.05 : helipadY + 5;
   stepScenario(flyingScenario, () => {
     for (const body of flyingScenario.runtime.bodyByPart.values()) {
@@ -307,13 +319,13 @@ for (let tick = 2; tick <= 10_000 && flying.status === "running"; tick++) {
         ),
         lateralAcceleration = Math.max(
           -10,
-          Math.min(10, (124 - body.position.z) * 4 - body.velocity.z * 3),
+          Math.min(10, (104 - body.position.x) * 4 - body.velocity.x * 3),
         );
       body.applyForce(
         new CANNON.Vec3(
-          0,
-          body.mass * verticalAcceleration,
           body.mass * lateralAcceleration,
+          body.mass * verticalAcceleration,
+          0,
         ),
       );
       if (stopping) {
@@ -321,9 +333,9 @@ for (let tick = 2; tick <= 10_000 && flying.status === "running"; tick++) {
         body.velocity.z = 0;
         body.angularVelocity.set(0, 0, 0);
       } else if (landing) {
-        body.velocity.x = 1;
-        body.velocity.y = -0.2;
-      } else forceTowardVelocity(body, 6, 12);
+        body.velocity.z = 0.35;
+        if (!state.grounded) body.velocity.y = -0.6;
+      } else forceTowardVelocity(body, 6, 12, "z");
     }
   });
   flying = flyingRun.step(telemetryFrame(flyingScenario, tick));

@@ -6,6 +6,9 @@ const { browser, page, errors, baseUrl } = await createBrowserTest(),
   state = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
 
 await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+await page.waitForFunction(
+  () => !document.querySelector("#sandbox-start")?.disabled,
+);
 await click("#sandbox-start");
 await click("#demos-btn");
 await click('[data-demo="cart"]');

@@ -1,6 +1,7 @@
 import { feature as topojsonFeature } from "topojson-client";
 import landTopology from "world-atlas/land-110m.json" with { type: "json" };
 import { createSurfaceField } from "./surface-field.js";
+import { testSiteShapeBounds } from "../../model/test-site-shapes.js";
 
 export const EARTH_RADIUS_M = 6_371_000;
 export const BUILD_SITE_LAT_DEG = 32.1953977;
@@ -261,15 +262,19 @@ export function createEarthEnvironmentModel({
       ? createSurfaceField(testSiteDefinition)
       : null,
     pondSpecs = testSiteDefinition
-      ? testSiteDefinition.fluidRegions.map((fluid) => ({
-          id: fluid.id,
-          x: fluid.shape.centerM[0],
-          z: fluid.shape.centerM[1],
-          rx: fluid.shape.sizeM[0] / 2,
-          rz: fluid.shape.sizeM[1] / 2,
-          depth: fluid.bedDepthM,
-          waterY: fluid.waterHeightM,
-        }))
+      ? testSiteDefinition.fluidRegions.map((fluid) => {
+          const bounds = testSiteShapeBounds(fluid.shape);
+          return {
+            id: fluid.id,
+            shape: fluid.shape,
+            x: fluid.shape.centerM[0],
+            z: fluid.shape.centerM[1],
+            rx: (bounds.maxX - bounds.minX) / 2,
+            rz: (bounds.maxZ - bounds.minZ) / 2,
+            depth: fluid.depthProfile.maximumDepthM,
+            waterY: fluid.waterHeightM,
+          };
+        })
       : POND_SPECS,
     localToGlobalSurface = (x, z) => ({
       eastM: originEastM + x,

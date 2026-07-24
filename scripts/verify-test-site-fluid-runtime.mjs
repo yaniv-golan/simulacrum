@@ -39,19 +39,19 @@ function fluidFixture(x, z, y, speedMps = 0) {
   return runtime.applyFluidForces();
 }
 
-const deep = environment.pondAt(-14, -108),
-  shallow = environment.pondAt(-67, -108),
-  deepState = fluidFixture(-14, -108, deep.waterY, 0.4),
-  shallowState = fluidFixture(-67, -108, shallow.waterY, 0.2),
-  dryState = fluidFixture(96, -85, 0, 4);
+const deep = environment.pondAt(-140, -125),
+  shallow = environment.pondAt(-181, -94),
+  deepState = fluidFixture(-140, -125, deep.waterY, 0.4),
+  shallowState = fluidFixture(-181, -94, shallow.waterY, 0.2),
+  dryState = fluidFixture(104, -112, 0, 4);
 
 assert.equal(deep.id, "deep-pool");
 assert.equal(shallow.id, "shallow-ford");
 assert.equal(deep.depth, 3.2);
 assert.equal(shallow.depth, 0.6);
-assert.equal(environment.terrainHeightAt(-14, -108), deep.waterY - deep.depth);
+assert.equal(environment.terrainHeightAt(-140, -125), deep.waterY - deep.depth);
 assert.equal(
-  environment.terrainHeightAt(-67, -108),
+  environment.terrainHeightAt(-181, -94),
   shallow.waterY - shallow.depth,
 );
 assert.equal(deepState.inWater, true);

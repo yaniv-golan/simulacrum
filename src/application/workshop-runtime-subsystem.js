@@ -50,6 +50,7 @@ export function installWorkshopRuntimeSubsystem({
       reducedComponentShadows: assembly.reducedShadows(),
       largeAssemblyBatch: presentation.batchSnapshot(),
     }),
+    environmentCapture: presentation.environmentCapture,
   });
 
   installDebugReadModelFeature({

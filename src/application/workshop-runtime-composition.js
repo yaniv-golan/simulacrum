@@ -48,6 +48,7 @@ export function installWorkshopRuntimeComposition({
       renderer: stage.renderer,
       camera: stage.camera,
       batchSnapshot: () => stage.largeAssemblyBatcher.snapshot(),
+      environmentCapture: world.applyCapturePreset,
     },
     environment: {
       localToGlobal: stage.earth.localToGlobal,

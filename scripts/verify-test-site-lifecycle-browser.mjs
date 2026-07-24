@@ -57,6 +57,9 @@ const largeParts = Array.from({ length: 129 }, (_, index) => ({
   };
 
 await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+await page.waitForFunction(
+  () => !document.querySelector("#sandbox-start")?.disabled,
+);
 await click("#sandbox-start");
 await page.waitForFunction(
   () =>
@@ -149,8 +152,22 @@ async function loadLargeAssembly() {
   assert.deepEqual(snapshot.environment.testSite.presentationLod, {
     level: "performance",
     grassBladesVisible: 0,
+    shrubsVisible: 0,
     fixtureVisualsVisible: true,
     surfaceRegionsVisible: true,
+    surfaces: {
+      level: "performance",
+      shouldersVisible: true,
+      markingsVisible: true,
+      wearVisible: false,
+      navigationLightsVisible: true,
+    },
+    water: {
+      level: "performance",
+      poolsVisible: 2,
+      wetBanksVisible: true,
+      edgeGlintsVisible: false,
+    },
   });
 }
 

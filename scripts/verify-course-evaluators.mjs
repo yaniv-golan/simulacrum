@@ -5,9 +5,9 @@ import {
   TestCourseRun,
 } from "../src/model/test-course-evaluator.js";
 
-const close = (actual, expected) =>
+const close = (actual, expected, tolerance = 1e-10) =>
   assert.ok(
-    Math.abs(actual - expected) < 1e-10,
+    Math.abs(actual - expected) < tolerance,
     `${actual} did not equal ${expected}`,
   );
 
@@ -62,6 +62,80 @@ close(
   sweptTestSiteShapeEntry(rotatedEllipse, { x: 0, z: -3 }, { x: 0, z: 3 }),
   1 / 6,
 );
+const rotate = ([x, z], angle) => ({
+    x: x * Math.cos(angle) - z * Math.sin(angle),
+    z: x * Math.sin(angle) + z * Math.cos(angle),
+  }),
+  obliqueAngle = Math.PI / 6,
+  obliqueRectangle = { ...rectangle, rotationRad: obliqueAngle },
+  obliqueEllipse = { ...ellipse, rotationRad: obliqueAngle };
+close(
+  sweptTestSiteShapeEntry(
+    obliqueRectangle,
+    rotate([-3, 0.4], obliqueAngle),
+    rotate([3, 0.4], obliqueAngle),
+  ),
+  1 / 6,
+);
+close(
+  sweptTestSiteShapeEntry(
+    obliqueEllipse,
+    rotate([-3, 0], obliqueAngle),
+    rotate([3, 0], obliqueAngle),
+  ),
+  1 / 6,
+);
+close(
+  sweptTestSiteShapeEntry(rectangle, { x: -4, z: -2 }, { x: 4, z: 2 }),
+  1 / 4,
+);
+close(sweptTestSiteShapeEntry(rectangle, { x: -3, z: 0 }, { x: -2, z: 0 }), 1);
+close(sweptTestSiteShapeEntry(ellipse, { x: -3, z: 0 }, { x: -2, z: 0 }), 1);
+assert.equal(
+  sweptTestSiteShapeEntry(rectangle, { x: 0.5, z: 0.5 }, { x: 0.5, z: 0.5 }),
+  0,
+);
+const polygonGate = {
+    kind: "polygon",
+    centerM: [0, 0],
+    ringsM: [
+      [
+        [-2, -1],
+        [2, -1],
+        [2, 1],
+        [-2, 1],
+      ],
+    ],
+    rotationRad: 0,
+  },
+  corridorGate = {
+    kind: "corridor-network",
+    centerM: [0, 0],
+    pathsM: [
+      [
+        [-2, 0],
+        [2, 0],
+      ],
+    ],
+    widthM: 2,
+    cap: "round",
+    join: "round",
+    rotationRad: 0,
+  };
+close(
+  sweptTestSiteShapeEntry(polygonGate, { x: -4, z: 0 }, { x: 4, z: 0 }),
+  1 / 4,
+  1e-8,
+);
+close(
+  sweptTestSiteShapeEntry(corridorGate, { x: 0, z: -4 }, { x: 0, z: 4 }),
+  3 / 8,
+  1e-8,
+);
+assert.equal(
+  sweptTestSiteShapeEntry(polygonGate, { x: -4, z: 3 }, { x: 4, z: 3 }),
+  null,
+);
 
 const frame = (
   tick,
@@ -102,15 +176,15 @@ const swept = new TestCourseRun({
   routeId: "suspension-shakedown",
   targetPartId: 1,
 });
-swept.step(frame(1, -170, -46));
-const highSpeed = swept.step(frame(2, -50, -46));
+swept.step(frame(1, -175, -80));
+const highSpeed = swept.step(frame(2, -175, 35));
 assert.equal(highSpeed.status, "running");
 assert.deepEqual(highSpeed.passedGateIds, [
   "durability-entry",
   "durability-mid",
   "durability-finish",
 ]);
-assert.equal(swept.step(frame(92, -63, -46)).status, "complete");
+assert.equal(swept.step(frame(92, -175, 27)).status, "complete");
 assert.throws(
   () =>
     new TestCourseRun({
@@ -162,8 +236,8 @@ const reverse = new TestCourseRun({
   testSite: WORKSHOP_TEST_SITE,
   routeId: "suspension-shakedown",
 });
-reverse.step(frame(1, -50, -46));
-const reverseResult = reverse.step(frame(2, -170, -46));
+reverse.step(frame(1, -175, 35));
+const reverseResult = reverse.step(frame(2, -175, -80));
 assert.equal(reverseResult.status, "failed");
 assert.equal(reverseResult.failureReason, "out-of-order:durability-finish");
 
@@ -172,11 +246,11 @@ const mismatch = new TestCourseRun({
   routeId: "suspension-shakedown",
 });
 assert.equal(
-  mismatch.step(frame(1, -170, -46, { siteId: "different-site" })).status,
+  mismatch.step(frame(1, -175, -80, { siteId: "different-site" })).status,
   "failed",
 );
 assert.throws(
-  () => mismatch.step(frame(1, -170, -46)),
+  () => mismatch.step(frame(1, -175, -80)),
   (error) => error.code === "NON_MONOTONIC_TEST_COURSE_TICK",
 );
 
@@ -186,9 +260,9 @@ const replay = () => {
     routeId: "suspension-shakedown",
   });
   return [
-    run.step(frame(1, -170, -46)),
-    run.step(frame(2, -110, -46)),
-    run.step(frame(3, -63, -46)),
+    run.step(frame(1, -175, -80)),
+    run.step(frame(2, -175, -20)),
+    run.step(frame(3, -175, 27)),
   ];
 };
 assert.deepEqual(replay(), replay(), "course replay was not deterministic");
@@ -197,13 +271,13 @@ const damaged = new TestCourseRun({
   testSite: WORKSHOP_TEST_SITE,
   routeId: "suspension-shakedown",
 });
-assert.equal(damaged.step(frame(1, -170, -46, { damage: 1 })).status, "failed");
+assert.equal(damaged.step(frame(1, -175, -80, { damage: 1 })).status, "failed");
 assert.equal(damaged.snapshot().failureReason, "damage-limit-exceeded");
 const detachedDamage = new TestCourseRun({
   testSite: WORKSHOP_TEST_SITE,
   routeId: "suspension-shakedown",
 });
-const detachedFrame = frame(1, -170, -46);
+const detachedFrame = frame(1, -175, -80);
 detachedFrame.systems.structures = {
   failedCount: 0,
   detachedPartIds: [88],
@@ -214,20 +288,20 @@ const braking = new TestCourseRun({
   testSite: WORKSHOP_TEST_SITE,
   routeId: "brake-lab",
 });
-braking.step(frame(1, -40, 24, { speedMps: 5 }));
+braking.step(frame(1, -120, 68, { speedMps: 5 }));
 assert.equal(
-  braking.step(frame(2, -54, 24, { speedMps: 5 })).status,
+  braking.step(frame(2, -132, 68, { speedMps: 5 })).status,
   "running",
 );
-braking.step(frame(3, -82, 24));
-assert.equal(braking.step(frame(123, -82, 24)).status, "complete");
+braking.step(frame(3, -165, 82));
+assert.equal(braking.step(frame(123, -165, 82)).status, "complete");
 const slowEntry = new TestCourseRun({
   testSite: WORKSHOP_TEST_SITE,
   routeId: "brake-lab",
 });
-slowEntry.step(frame(1, -40, 24, { speedMps: 2 }));
+slowEntry.step(frame(1, -120, 68, { speedMps: 2 }));
 assert.equal(
-  slowEntry.step(frame(2, -54, 24, { speedMps: 2 })).failureReason,
+  slowEntry.step(frame(2, -132, 68, { speedMps: 2 })).failureReason,
   "gate-condition:handling-entry",
 );
 
@@ -235,14 +309,14 @@ const surface = new TestCourseRun({
   testSite: WORKSHOP_TEST_SITE,
   routeId: "surface-sampler",
 });
-surface.step(frame(1, 80, -85, { materialKey: "dry-asphalt" }));
-surface.step(frame(2, 96, -85, { materialKey: "dry-asphalt" }));
-surface.step(frame(3, 96, -33, { materialKey: "short-grass" }));
-surface.step(frame(4, 96, -20, { materialKey: "loose-gravel" }));
-surface.step(frame(5, 96, 6, { materialKey: "saturated-mud" }));
-surface.step(frame(6, 145, 6, { materialKey: "saturated-mud" }));
+surface.step(frame(1, -100, 82, { materialKey: "dry-asphalt" }));
+surface.step(frame(2, -92, 82, { materialKey: "dry-asphalt" }));
+surface.step(frame(3, -48, 82, { materialKey: "short-grass" }));
+surface.step(frame(4, -37, 82, { materialKey: "loose-gravel" }));
+surface.step(frame(5, -15, 82, { materialKey: "saturated-mud" }));
+surface.step(frame(6, 2, 82, { materialKey: "saturated-mud" }));
 assert.equal(
-  surface.step(frame(96, 145, 6, { materialKey: "saturated-mud" })).status,
+  surface.step(frame(96, 2, 82, { materialKey: "saturated-mud" })).status,
   "complete",
 );
 
@@ -250,24 +324,24 @@ const ford = new TestCourseRun({
   testSite: WORKSHOP_TEST_SITE,
   routeId: "ford-crossing",
 });
-ford.step(frame(1, -90, -108));
-ford.step(frame(2, -82, -108));
-ford.step(frame(3, -67, -108, { fluidId: "shallow-ford" }));
-ford.step(frame(4, -48, -108));
-assert.equal(ford.step(frame(94, -50, -108)).status, "complete");
+ford.step(frame(1, -205, -94));
+ford.step(frame(2, -199, -94));
+ford.step(frame(3, -181, -94, { fluidId: "shallow-ford" }));
+ford.step(frame(4, -163, -94));
+assert.equal(ford.step(frame(94, -163, -94)).status, "complete");
 
 const runway = new TestCourseRun({
   testSite: WORKSHOP_TEST_SITE,
   routeId: "runway-circuit",
 });
-runway.step(frame(1, -112, 154, { speedMps: 4 }));
-runway.step(frame(2, -105, 154, { speedMps: 5 }));
-runway.step(frame(3, -55, 154, { grounded: false, speedMps: 28 }));
-runway.step(frame(4, 23, 154, { grounded: false, speedMps: 30 }));
-runway.step(frame(5, 60, 154, { grounded: true, speedMps: 22 }));
-runway.step(frame(6, 110, 154, { speedMps: 3 }));
+runway.step(frame(1, 192, -140, { speedMps: 4 }));
+runway.step(frame(2, 192, -132, { speedMps: 5 }));
+runway.step(frame(3, 192, -72, { grounded: false, speedMps: 28 }));
+runway.step(frame(4, 192, 15, { grounded: false, speedMps: 30 }));
+runway.step(frame(5, 192, 48, { grounded: true, speedMps: 22 }));
+runway.step(frame(6, 192, 100, { speedMps: 3 }));
 assert.equal(
-  runway.step(frame(66, 108, 154, { speedMps: 0 })).status,
+  runway.step(frame(66, 192, 100, { speedMps: 0 })).status,
   "complete",
 );
 
@@ -275,11 +349,11 @@ const landing = new TestCourseRun({
   testSite: WORKSHOP_TEST_SITE,
   routeId: "helipad-precision",
 });
-assert.equal(landing.step(frame(1, 178, 124)).status, "running");
+assert.equal(landing.step(frame(1, 104, -90)).status, "running");
 assert.equal(landing.snapshot().nextGateId, "helipad-approach");
-landing.step(frame(2, 145, 124, { grounded: false, speedMps: 4 }));
-landing.step(frame(3, 160, 124, { grounded: false, speedMps: 2 }));
-const touchdown = landing.step(frame(184, 178, 124, { speedMps: 0.5 }));
+landing.step(frame(2, 104, -75, { grounded: false, speedMps: 4 }));
+landing.step(frame(3, 104, -60, { grounded: false, speedMps: 2 }));
+const touchdown = landing.step(frame(184, 104, -43, { speedMps: 0.5 }));
 assert.equal(touchdown.status, "complete");
 
 const boundarySite = {

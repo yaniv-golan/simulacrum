@@ -65,8 +65,13 @@ export function createEnvironmentPresentation({
     scene.world.background.copy(environmentSky);
     scene.world.fog.color.copy(environmentSky);
     const relativeAirDensity = atmosphere.densityAt(altitude) / 1.225;
-    scene.world.fog.density = 0.000045 * relativeAirDensity * (1 - spaceBlend);
-    scene.sun.position.copy(solarDirection).multiplyScalar(75);
+    scene.world.fog.density = 0.000085 * relativeAirDensity * (1 - spaceBlend);
+    scene.sun.position
+      .copy(solarDirection)
+      .multiplyScalar(75)
+      .add(scene.cameraTarget);
+    scene.sun.target.position.copy(scene.cameraTarget);
+    scene.sun.target.updateMatrixWorld();
     scene.sun.intensity = THREE.MathUtils.lerp(
       0.12 + daylight * 4.25,
       4.6,
@@ -76,7 +81,7 @@ export function createEnvironmentPresentation({
       .set(0xffa25f)
       .lerp(new THREE.Color(0xfff1cf), smoothstep(0, 28, elevationDeg));
     scene.hemisphere.intensity = THREE.MathUtils.lerp(
-      0.42 + daylight * 1.92,
+      0.9 + daylight * 1.44,
       0.08,
       spaceBlend,
     );
@@ -90,18 +95,18 @@ export function createEnvironmentPresentation({
       .set(0x7894c2)
       .lerp(new THREE.Color(0xffe1bb), daylight);
     scene.ambientFill.intensity = THREE.MathUtils.lerp(
-      0.5 - daylight * 0.22,
+      0.9 - daylight * 0.62,
       0.04,
       spaceBlend,
     );
     scene.moonLight.position.copy(solarDirection).multiplyScalar(-65);
     scene.moonLight.intensity = THREE.MathUtils.lerp(
-      (1 - daylight) * 0.72,
+      (1 - daylight) * 1.4,
       0.12,
       spaceBlend,
     );
     scene.renderer.toneMappingExposure = THREE.MathUtils.lerp(
-      1 + daylight * 0.16,
+      1.12 + daylight * 0.04,
       1.08,
       spaceBlend,
     );

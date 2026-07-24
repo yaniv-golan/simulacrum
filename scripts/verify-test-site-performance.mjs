@@ -39,11 +39,11 @@ for (const method of [
     `Cannon omitted required ${method} reserve contact support`,
   );
 
-assert.equal(physics.terrainElementSize, 2.5);
+assert.equal(physics.terrainElementSize, 2);
 assert.equal(physics.fieldBody.shapes.length, 1);
 assert.equal(physics.fieldBody.shapes[0].type, CANNON.Shape.types.HEIGHTFIELD);
-assert.equal(triangleCount, 55_296);
-assert.equal(physics.fieldBody.userData.vertexCount, 27_985);
+assert.equal(triangleCount, 86_400);
+assert.equal(physics.fieldBody.userData.vertexCount, 43_621);
 assert.ok(
   compileMs < 1_000,
   `full-reserve collision compilation exceeded 1 s (${compileMs.toFixed(1)} ms)`,
@@ -67,22 +67,22 @@ assert.equal(
 );
 
 const probes = [
-  [96, -85],
-  [96, -72],
-  [96, -59],
-  [96, -46],
-  [96, -33],
-  [96, -20],
-  [96, -7],
-  [96, 6],
-  [96, 19],
-  [-82, 24],
-  [-110, -46],
-  [22, 90],
-  [72, 91],
-  [128, 91],
-  [-170, 84],
-  [190, -70],
+  [-92, 108],
+  [-70, 108],
+  [65, 95],
+  [108, 95],
+  [150, 95],
+  [72, 60],
+  [116, 58],
+  [154, 70],
+  [-175, -62],
+  [-175, -20],
+  [-165, 82],
+  [-140, -125],
+  [-181, -94],
+  [192, -18],
+  [104, -43],
+  [-30, -135],
 ].map(([x, z], index) => {
   const body = new CANNON.Body({
     mass: 18 + index,

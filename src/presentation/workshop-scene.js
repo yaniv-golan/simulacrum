@@ -44,6 +44,6 @@ export function createWorkshopScene({
     bottom: -30,
   });
   moonLight.position.set(30, 45, -35);
-  scene.add(hemisphere, ambientFill, sun, moonLight);
+  scene.add(hemisphere, ambientFill, sun, sun.target, moonLight);
   return { scene, camera, renderer, hemisphere, ambientFill, sun, moonLight };
 }

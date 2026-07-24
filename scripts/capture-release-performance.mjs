@@ -377,9 +377,12 @@ try {
   }
 
   // Startup pages share a browser process, so create them only after the
-  // steady-state render, simulation, and resource measurements. Otherwise
-  // teardown from ten complete application contexts contaminates the render
-  // benchmark even after those contexts have closed.
+  // steady-state render, simulation, and resource measurements, then close
+  // that continuously-rendering page. Leaving it alive makes startup measure
+  // GPU/CPU contention from a second application instance instead of the
+  // release's own cold-page readiness. Teardown cannot contaminate the earlier
+  // benchmarks because every one of them is already complete.
+  await page.close();
   const startupSamples = [];
   console.log("Baseline stage: startup warmups and samples");
   for (let index = 0; index < warmupRuns + measuredRuns; index++) {

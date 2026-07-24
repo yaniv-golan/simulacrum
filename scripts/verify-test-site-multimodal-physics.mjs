@@ -113,11 +113,11 @@ function dispose(scenario) {
   assert.equal(scenario.physics.world.bodies.length, 2);
 }
 
-const runwayY = environment.terrainHeightAt(-108, 154),
-  runway = createScenario({ x: -108, y: runwayY + 0.6, z: 154 });
+const runwayY = environment.terrainHeightAt(192, -100),
+  runway = createScenario({ x: 192, y: runwayY + 0.6, z: -100 });
 step(runway, 90);
 assert.equal(fieldContact(runway)?.surfaceMaterialKey, "dry-asphalt");
-runway.body.velocity.x = 5;
+runway.body.velocity.z = 5;
 const takeoff = step(runway, 240, ({ body }) =>
   body.applyForce(new CANNON.Vec3(0, body.mass * 14, 0)),
 );
@@ -131,13 +131,13 @@ const touchdown = step(runway, 720),
   );
 assert.ok(touchdownSample, "airborne fixture did not touch down on the runway");
 assert.ok(
-  touchdown.at(-1).x > -108,
+  touchdown.at(-1).z > -100,
   "runway touchdown did not continue into a physical rollout",
 );
 dispose(runway);
 
-const helipadY = environment.terrainHeightAt(178, 124),
-  hold = createScenario({ x: 178, y: helipadY + 6, z: 124 }),
+const helipadY = environment.terrainHeightAt(104, -43),
+  hold = createScenario({ x: 104, y: helipadY + 6, z: -43 }),
   holdWorldCheckpoint = hold.physics.worldAdapter.exportState(),
   holdRuntimeCheckpoint = hold.runtime.exportState(),
   holdStartY = hold.body.position.y;
@@ -160,11 +160,11 @@ assert.ok(
 );
 dispose(hold);
 
-const deep = environment.pondAt(-14, -108),
+const deep = environment.pondAt(-140, -125),
   floating = createScenario({
-    x: -14,
+    x: -140,
     y: deep.waterY + 0.05,
-    z: -108,
+    z: -125,
   }),
   floatingSamples = step(floating, 1_200),
   floatingTail = floatingSamples.slice(-120),
@@ -185,11 +185,11 @@ assert.ok(
 );
 dispose(floating);
 
-const shallow = environment.pondAt(-67, -108),
+const shallow = environment.pondAt(-181, -94),
   ford = createScenario({
-    x: -67,
+    x: -181,
     y: shallow.waterY - shallow.depth + 0.3,
-    z: -108,
+    z: -94,
   });
 ford.body.velocity.x = 2;
 const fordSamples = step(ford, 720, ({ body }) => {
@@ -202,24 +202,24 @@ assert.ok(
 dispose(ford);
 
 const waterExit = createScenario({
-  x: -67,
+  x: -181,
   y: shallow.waterY,
-  z: -108,
+  z: -94,
 });
 waterExit.body.velocity.x = 5;
 const exitSamples = step(waterExit, 720, ({ body }) => {
   body.applyForce(new CANNON.Vec3(body.mass * 20, 0, 0));
 });
 assert.ok(
-  exitSamples.some((sample) => !sample.inWater && sample.x > -55),
+  exitSamples.some((sample) => !sample.inWater && sample.x > -165),
   `ford fixture did not make a deterministic water exit: ${JSON.stringify(exitSamples.at(-1))}`,
 );
 dispose(waterExit);
 
 const bottoming = createScenario({
-    x: -14,
+    x: -140,
     y: deep.waterY - 0.2,
-    z: -108,
+    z: -125,
   }),
   bottomingSamples = step(bottoming, 600, ({ body }) =>
     body.applyForce(new CANNON.Vec3(0, -3_200, 0)),
@@ -236,7 +236,7 @@ assert.ok(
 dispose(bottoming);
 
 function rolloverJourney() {
-  const scenario = createScenario({ x: -14, y: deep.waterY, z: -108 });
+  const scenario = createScenario({ x: -140, y: deep.waterY, z: -125 });
   scenario.body.angularVelocity.z = 2.4;
   step(scenario, 600);
   const result = pose(scenario);

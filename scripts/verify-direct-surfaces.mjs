@@ -6,6 +6,9 @@ const { browser, page, errors, baseUrl } = await createBrowserTest({
   }),
   click = (selector) => page.locator(selector).dispatchEvent("click");
 await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+await page.waitForFunction(
+  () => !document.querySelector("#sandbox-start")?.disabled,
+);
 await click("#sandbox-start");
 await click("#demos-btn");
 await click('[data-demo="cart"]');

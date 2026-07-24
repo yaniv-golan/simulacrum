@@ -66,6 +66,7 @@ export function createCameraInteractionController({
   let dollyMode = false;
   let spaceHeld = false;
   let followSelection = false;
+  let presetId = null;
   let last = { x: 0, y: 0 };
 
   function selectedPart() {
@@ -102,6 +103,7 @@ export function createCameraInteractionController({
   }
 
   function zoom(delta, anchor = null) {
+    presetId = null;
     const previousDistance = distance;
     const nextDistance = THREE.MathUtils.clamp(
       previousDistance * Math.exp(delta * 0.00135),
@@ -120,6 +122,7 @@ export function createCameraInteractionController({
   }
 
   function reset() {
+    presetId = null;
     followSelection = false;
     target.set(0, 1.2, 0);
     yaw = DEFAULT_VIEW.yaw;
@@ -128,6 +131,7 @@ export function createCameraInteractionController({
   }
 
   function frameSelection() {
+    presetId = null;
     const selected = selectedPart();
     const object = selected?.mesh || machine;
     if (!selected && !assembly.parts().length) {
@@ -169,6 +173,7 @@ export function createCameraInteractionController({
   }
 
   function setAxisView(axis) {
+    presetId = null;
     followSelection = false;
     if (axis === "front") {
       yaw = Math.PI;
@@ -218,6 +223,7 @@ export function createCameraInteractionController({
     const cameraGesture =
       event.button === 0 && (editor.tool() || event.altKey || spaceHeld);
     if (!alternateButton && !cameraGesture) return false;
+    presetId = null;
     dragging = true;
     panMode = alternateButton
       ? event.button === 1 || event.shiftKey
@@ -353,6 +359,8 @@ export function createCameraInteractionController({
     const right = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
     const viewForward = camera.getWorldDirection(new THREE.Vector3());
     const step = Math.max(0.25, distance * 0.035) * (event.shiftKey ? 3 : 1);
+    if (/^(?:Arrow(?:Left|Right|Up|Down)|Key[ADWQSE])$/.test(event.code))
+      presetId = null;
     viewForward.y = 0;
     viewForward.normalize();
     if (event.code === "Space") {
@@ -425,6 +433,9 @@ export function createCameraInteractionController({
 
   function snapshot() {
     return {
+      presetId,
+      fovDeg: camera.fov,
+      position: camera.position,
       distance,
       renderedDistance: tracker.smoothedDistance,
       yaw,
@@ -437,6 +448,12 @@ export function createCameraInteractionController({
   }
 
   return Object.freeze({
+    applyPreset(preset) {
+      ({ distance, yaw, pitch } = tracker.snapPreset(preset));
+      followSelection = false;
+      presetId = preset.id;
+      return snapshot();
+    },
     anchorAt,
     beginPointer,
     bindControls,

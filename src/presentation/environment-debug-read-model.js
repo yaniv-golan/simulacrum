@@ -1,4 +1,6 @@
 import { CLOUD_LAYERS } from "./atmospheric-landmarks.js";
+import { testSiteHeightFeatureExtrema } from "../model/test-site-terrain.js";
+import { compileTestSiteVegetation } from "../model/test-site-vegetation.js";
 
 /**
  * @typedef {{ x:number,y:number,z:number }} EnvironmentVector
@@ -20,7 +22,7 @@ import { CLOUD_LAYERS } from "./atmospheric-landmarks.js";
  *     earthRadiusM:number, fieldSurfaceY:number, karmanLineM:number,
  *     moonDistanceM:number,
  *     pondSpecs:Array<{id:string,x:number,z:number,rx:number,rz:number,depth:number,waterY:number}>,
- *     testSite:{id:string,footprint:{centerM:number[],sizeM:number[]},districts:object[],surfaceRegions:object[],heightFeatures:object[],fluidRegions:object[],clearVolumes:object[],staticFixtures:Array<{kind:string,collision:boolean}>},
+ *     testSite:{id:string,footprint:{centerM:number[],sizeM:number[]},districts:object[],surfaceRegions:object[],heightFeatures:object[],fluidRegions:object[],clearVolumes:object[],staticFixtures:Array<{presentation:{key:string},collisionGeometry:{kind:string}}>},
  *     globalToGeodetic:(eastM:number,northM:number)=>{latitude:number,longitude:number},
  *     surfaceSample:(eastM:number,northM:number)=>{biome:string,elevation:number},
  *     sampleWind:(position:EnvironmentVector, options:{enabled:boolean,elapsedSeconds:number})=>EnvironmentVector,
@@ -41,6 +43,7 @@ function windReading(velocity) {
 /** @param {EnvironmentDebugInput} input */
 export function buildEnvironmentDebugReadModel(input) {
   const environment = input.environment,
+    testSiteVegetation = compileTestSiteVegetation(environment.testSite),
     global = input.localToGlobal(input.focus.x, input.focus.z),
     geodetic = environment.globalToGeodetic(global.eastM, global.northM),
     globalSurface = environment.surfaceSample(global.eastM, global.northM),
@@ -148,12 +151,11 @@ export function buildEnvironmentDebugReadModel(input) {
     },
     features: {
       columns: 0,
-      trees: environment.testSite.staticFixtures.filter(
-        ({ kind }) => kind === "tree-trunk",
-      ).length,
+      trees: testSiteVegetation.filter(({ kind }) => kind === "tree-stand")
+        .length,
       ponds: environment.testSite.fluidRegions.length,
       hills: environment.testSite.heightFeatures.filter(
-        ({ amplitudeM }) => amplitudeM > 0.5,
+        (feature) => testSiteHeightFeatureExtrema(feature).maximumM > 0.5,
       ).length,
       mountainTerrain: {
         innerRadiusM: 9000,
@@ -166,13 +168,17 @@ export function buildEnvironmentDebugReadModel(input) {
         topM: layer.topM,
         clusters: layer.clusters,
       })),
-      grassBlades: 2200,
+      grassBlades: testSiteVegetation.filter(
+        ({ kind }) => kind === "grass-field",
+      ).length,
       collidableRocks: environment.testSite.staticFixtures.filter(
-        ({ kind }) => kind === "rock",
+        ({ presentation }) => presentation.key === "rock",
       ).length,
-      solidFixtures: environment.testSite.staticFixtures.filter(
-        ({ collision }) => collision,
-      ).length,
+      solidFixtures:
+        environment.testSite.staticFixtures.filter(
+          ({ collisionGeometry }) => collisionGeometry.kind !== "none",
+        ).length +
+        testSiteVegetation.filter(({ collidable }) => collidable).length,
     },
     ponds: environment.pondSpecs.map((pond) => ({
       id: pond.id,

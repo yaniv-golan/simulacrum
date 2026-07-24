@@ -10,17 +10,21 @@ import {
   MOON_DISTANCE_M,
 } from "../simulation/environment/earth.js";
 import { sampleWindVelocity } from "../simulation/environment/wind-field.js";
+import { testSiteShapeBounds } from "../model/test-site-shapes.js";
 import { WORKSHOP_TEST_SITE } from "./testing-playground-content.js";
 
-const pondSpecs = WORKSHOP_TEST_SITE.fluidRegions.map((fluid) => ({
-  id: fluid.id,
-  x: fluid.shape.centerM[0],
-  z: fluid.shape.centerM[1],
-  rx: fluid.shape.sizeM[0] / 2,
-  rz: fluid.shape.sizeM[1] / 2,
-  depth: fluid.bedDepthM,
-  waterY: fluid.waterHeightM,
-}));
+const pondSpecs = WORKSHOP_TEST_SITE.fluidRegions.map((fluid) => {
+  const bounds = testSiteShapeBounds(fluid.shape);
+  return {
+    id: fluid.id,
+    x: fluid.shape.centerM[0],
+    z: fluid.shape.centerM[1],
+    rx: (bounds.maxX - bounds.minX) / 2,
+    rz: (bounds.maxZ - bounds.minZ) / 2,
+    depth: fluid.depthProfile.maximumDepthM,
+    waterY: fluid.waterHeightM,
+  };
+});
 
 /** Stable environment constants and pure samplers exposed to debug clients. */
 export const ENVIRONMENT_DEBUG_CONTRACT = Object.freeze({

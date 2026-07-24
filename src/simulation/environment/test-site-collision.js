@@ -1,6 +1,7 @@
 import * as CANNON from "cannon-es";
 import { createYUpHeightfieldCandidateFilter } from "../heightfield-broadphase.js";
 import { supportMaterialResponse } from "../../model/contact-material-pairs.js";
+import { TEST_SITE_TERRAIN_ELEMENT_SIZE_M } from "../../model/test-site-terrain.js";
 
 const PARTICIPANT_SURFACE_FRICTION = Object.freeze({
   "short-grass": 0.62,
@@ -69,7 +70,7 @@ export function createTestSiteCollisionBody({
   sampleAt,
   footprint,
   fallbackMaterial,
-  targetElementSizeM = 2.5,
+  targetElementSizeM = TEST_SITE_TERRAIN_ELEMENT_SIZE_M,
 }) {
   const [centerX, centerZ] = footprint.centerM,
     [width, depth] = footprint.sizeM,
@@ -83,39 +84,34 @@ export function createTestSiteCollisionBody({
       "Test-site footprint must resolve to square terrain cells",
     );
 
-  const samples = [],
-    heights = [];
+  const samples = [];
   for (let ix = 0; ix <= segmentsX; ix++) {
     const sampleRow = [],
-      heightRow = [],
       x = minimumX + ix * elementSize;
-    for (let iz = 0; iz <= segmentsZ; iz++) {
+    for (let iz = 0; iz <= segmentsZ; iz++)
       sampleRow.push(sampleAt(x, minimumZ + iz * elementSize));
-      heightRow.push(
-        sampleAt(x, minimumZ + (segmentsZ - iz) * elementSize).heightM,
-      );
-    }
     samples.push(sampleRow);
-    heights.push(heightRow);
   }
+  const heights = samples.map((row) =>
+    [...row].reverse().map(({ heightM }) => heightM),
+  );
 
   const triangleCounts = {},
-    point = (ix, iz) => [
-      minimumX + ix * elementSize,
-      samples[ix][iz].heightM,
-      minimumZ + iz * elementSize,
-    ],
     triangleMaterial = (vertices) => {
-      const x = vertices.reduce((sum, vertex) => sum + vertex[0], 0) / 3,
-        z = vertices.reduce((sum, vertex) => sum + vertex[2], 0) / 3;
-      return sampleAt(x, z).materialKey;
+      const counts = new Map();
+      for (const { materialKey } of vertices)
+        counts.set(materialKey, (counts.get(materialKey) || 0) + 1);
+      return [...counts].sort(
+        ([leftKey, leftCount], [rightKey, rightCount]) =>
+          rightCount - leftCount || leftKey.localeCompare(rightKey, "en"),
+      )[0][0];
     };
   for (let ix = 0; ix < segmentsX; ix++)
     for (let iz = 0; iz < segmentsZ; iz++) {
-      const a = point(ix, iz),
-        b = point(ix + 1, iz),
-        c = point(ix, iz + 1),
-        d = point(ix + 1, iz + 1),
+      const a = samples[ix][iz],
+        b = samples[ix + 1][iz],
+        c = samples[ix][iz + 1],
+        d = samples[ix + 1][iz + 1],
         first = [a, c, b],
         second = [b, c, d];
       for (const triangle of [first, second]) {

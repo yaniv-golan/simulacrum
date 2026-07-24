@@ -183,16 +183,24 @@ and physical-altitude cloud layers are deterministic presentation objects in
 returned root. Architecture guards prevent either policy from being copied back
 into the startup coordinator.
 
-The immutable `test-site-definition-v1` instance in
+The immutable `test-site-definition-v2` instance in
 `testing-playground-content.js` is the single authored authority for the local
-Workshop Test Reserve. The DOM-free surface field projects its height,
-material, district, fluid, feature, zone, and route queries. Simulation compiles
-that same field into one bounded Y-up Cannon Heightfield, then resolves every
-terrain contact's material and pair law from the canonical completed contact
-point before solving. This supports sphere, box, convex, and cylinder contacts
-without a tire-only lookup or coincident surface colliders. Stable fixture
-colliders and completed support/fluid telemetry use the same material identity;
-the construction plate remains a separate physical body.
+Workshop Test Reserve. Its strict rectangle, ellipse, polygon-with-holes, and
+corridor-network shapes share DOM-free containment, signed-distance, and bounds
+kernels. The surface field composes tagged mound, grade-ramp,
+corridor-profile, and ripple-train features with material, district, fluid,
+zone, and route queries. Simulation samples that field at 2 m into one bounded
+Y-up Cannon Heightfield, then resolves every terrain contact's material and
+pair law from the canonical completed contact point before solving. This
+supports sphere, box, convex, and cylinder contacts without a tire-only lookup
+or coincident surface colliders.
+
+Static fixtures declare exact box, cylinder, or compound child geometry.
+Model-owned seeded vegetation compiles immutable poses and sizes used by both
+physics and presentation; collision-sized trunks join stable, spatially
+partitioned fixture bodies while grass and shrubs stay below contact scale.
+Child shape, fixture, district, and material provenance survive grouping. The
+construction plate remains a separate physical body.
 
 `local-field-feature.js` and the dedicated surface/fixture presentation
 features render projections of that contract; they do not register physics or

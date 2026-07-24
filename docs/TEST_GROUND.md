@@ -25,23 +25,34 @@ Pads and trials are disabled while simulation is running.
 
 ## Physical site
 
-The reserve has nine districts: the workshop apron, handling ground, surface
-lanes, ride and durability strip, terrain park, water park, trail and grove,
-airfield, and open experiment lawn. The map uses labels and patterns as well as
-color to distinguish materials.
+The reserve is one connected campus. A closed perimeter/service-road network
+joins the board and operations building to nine districts: workshop apron,
+handling ground, surface lanes, ride and durability field, terrain park, water
+park, trail and grove, airfield, and open experiment lawn. The map uses labels
+and patterns as well as color to distinguish materials.
 
 Dry and wet asphalt, weathered concrete, compacted soil, short grass, loose
 gravel, dry sand, saturated mud, and low-grip polymer are physical contact
-materials rather than visual labels. The same immutable site definition owns
-surface regions, terrain height, water depth, fixtures, zones, staging pads,
-and routes. Collision, mobility telemetry, the map, and trial evaluation query
-that shared authority.
+materials rather than visual labels. The same immutable
+`test-site-definition-v2` owns rectangle, ellipse, polygon-with-hole, and
+corridor shapes; surface regions; terrain profiles; water depth; explicit
+fixture geometry; seeded vegetation; zones; staging pads; and routes.
+Collision, mobility telemetry, the map, presentation, and trial evaluation
+query that shared authority. Version 1 is not accepted or inferred.
 
-The field includes graded and rolling hills, ditches, a berm, a washboard
-strip, a shallow ford, a 3.2 m pool, a 240 m runway, a helipad, and collidable
-trees, rocks, logs, curbs, and signs. Water interaction follows ordinary
-buoyancy, drag, and bed contact. Tire, foot, skid, landing-leg, and loose-part
-support comes from the actual completed contact point and material law.
+The field includes exact 10/20/30 degree grades, rolling hills, cut ditches, a
+berm, cross-axle terrain, a concrete washboard, a soil rock garden, a gravel
+step lane, a shallow ford, and an irregular 3.2 m pond with a dry island. Its
+bridge has a physical deck, rails, and bed-to-deck supports. A 254 m runway,
+helipad, dense collidable woodland, logs, curbs, handling markers, and signs
+complete the facility. Water interaction follows ordinary buoyancy, drag, and
+bed contact. Tire, track, foot, skid, landing-leg, and loose-part support comes
+from the actual completed contact point and material law.
+
+The canonical terrain collider samples the shared height query at 2 m. Large
+support and obstruction comes from that terrain or explicit fixtures. Surface
+aggregate, grass blades, stains, and other sub-contact detail may be visual,
+but presentation cannot invent a road, bank, island, grade, or obstacle.
 
 ## Guided trials
 

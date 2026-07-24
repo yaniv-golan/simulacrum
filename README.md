@@ -252,13 +252,15 @@ the exact connected actuators.
 
 ## Field workshop environment
 
-The 44 m construction plate is the central landmark of one continuous physical
-field. Around it, the Workshop Test Reserve contains nine districts: apron,
-handling ground, equal-length surface lanes, durability strip, terrain park,
-water park, trail and grove, airfield, and an open experiment lawn. Its 18
-authored surface regions, 20 height features, shallow ford, 3.2 m pool, 240 m
-runway, helipad, trees, rocks, logs, curbs, and signs all derive from one strict
-site definition used by collision, rendering, telemetry, the map, and trials.
+The 44 m construction plate and adjacent operations building anchor one
+continuous physical campus. A closed perimeter/service-road network connects
+the apron, handling ground, nine equal-length surface lanes, three-lane
+durability field, terrain park, water park, dense trail grove, airfield, and
+open experiment lawn. Its 22 surface regions, 11 measurable terrain features,
+irregular 3.2 m pond with a dry island, shallow ford, physical bridge, 254 m
+runway, helipad, seeded trees, rocks, logs, steps, curbs, markers, and signs all
+derive from one strict `test-site-definition-v2` used by collision, rendering,
+telemetry, the map, and trials.
 
 Dry and wet asphalt, concrete, compacted soil, grass, gravel, sand, mud, and
 low-grip polymer have explicit physical material identities. Tires report the

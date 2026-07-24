@@ -24,6 +24,38 @@ export class CameraTracker {
     this.smoothedTarget.z -= deltaZ;
   }
 
+  snap(target, distance) {
+    this.target.copy(target);
+    this.smoothedTarget.copy(target);
+    this.smoothedDistance = distance;
+  }
+
+  snapPreset(preset) {
+    const desiredPosition = new THREE.Vector3(...preset.positionM),
+      desiredTarget = new THREE.Vector3(...preset.targetM),
+      offset = desiredPosition.clone().sub(desiredTarget);
+    offset.y -= 1.5;
+    const distance = offset.length(),
+      yaw = Math.atan2(offset.x, offset.z),
+      pitch = Math.asin(
+        THREE.MathUtils.clamp(offset.y / Math.max(distance, 1e-6), -1, 1),
+      );
+    this.camera.fov = preset.fovDeg;
+    this.camera.updateProjectionMatrix();
+    this.snap(desiredTarget, distance);
+    this.update({
+      dt: 1,
+      yaw,
+      pitch,
+      distance,
+      tracking: null,
+      safeFrame: null,
+      followSelection: false,
+      selectionPosition: null,
+    });
+    return { distance, yaw, pitch };
+  }
+
   update({
     dt,
     yaw,

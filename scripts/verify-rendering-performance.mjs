@@ -264,8 +264,22 @@ await conclude(browser, () => {
   assert.deepEqual(renderSample.reserveLod, {
     level: "performance",
     grassBladesVisible: 0,
+    shrubsVisible: 0,
     fixtureVisualsVisible: true,
     surfaceRegionsVisible: true,
+    surfaces: {
+      level: "performance",
+      shouldersVisible: true,
+      markingsVisible: true,
+      wearVisible: false,
+      navigationLightsVisible: true,
+    },
+    water: {
+      level: "performance",
+      poolsVisible: 2,
+      wetBanksVisible: true,
+      edgeGlintsVisible: false,
+    },
   });
   assert.ok(
     renderSample.draws <= 50_760 * 0.7,

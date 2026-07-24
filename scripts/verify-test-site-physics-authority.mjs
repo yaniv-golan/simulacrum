@@ -27,30 +27,33 @@ terrainMesh.updateMatrixWorld(true);
 
 assert.equal(geometry.userData.authority, "test-site-surface-field");
 assert.equal(geometry.userData.elementSizeM, physics.terrainElementSize);
-assert.equal(geometry.userData.segmentsX, 192);
-assert.equal(geometry.userData.segmentsZ, 144);
+assert.equal(geometry.userData.segmentsX, 240);
+assert.equal(geometry.userData.segmentsZ, 180);
+assert.equal(geometry.userData.denseTileCount, 48);
+assert.equal(geometry.userData.tileCount, 108);
+assert.equal(geometry.userData.triangleCount, 41_400);
 
 const probes = [
-    [96.2, -90.2],
-    [96.2, -79.8],
-    [96.2, -25.1],
-    [96.2, 12.4],
-    [22.3, 89.7],
-    [38.1, 96.4],
-    [71.4, 90.8],
-    [126.8, 88.35],
-    [65.1, 56.8],
-    [116.2, 54.7],
-    [154.3, 63.9],
-    [-170.3, 84.1],
-    [-132.6, 111.7],
-    [-151.8, -46.2],
-    [-14.2, -108.2],
-    [-66.8, -108.1],
-    [-108.3, 153.8],
-    [177.9, 124.1],
-    [-176.4, 61.8],
-    [190.2, -70.4],
+    [-91.8, 108.3],
+    [-69.8, 108.3],
+    [65.2, 95.3],
+    [108.2, 95.3],
+    [150.2, 95.3],
+    [72.2, 60.3],
+    [116.2, 58.3],
+    [154.2, 70.3],
+    [-174.8, -61.7],
+    [-174.8, -19.7],
+    [-164.8, 82.3],
+    [-139.8, -124.7],
+    [-104.8, -124.7],
+    [-159.8, -124.7],
+    [192.2, -17.7],
+    [104.2, -42.7],
+    [-29.8, -134.7],
+    [0.2, 60.3],
+    [-223.8, 80.3],
+    [104.2, -111.7],
   ],
   renderRay = new THREE.Raycaster(),
   collisionResult = new CANNON.RaycastResult(),
@@ -174,11 +177,11 @@ function stepProbe(body, ticks) {
 
 const laneProbe = dynamicProbe({
     id: "test-site-authority:surface-seam",
-    position: [96, environment.terrainHeightAt(96, -94.5) + 0.29, -94.5],
-    velocity: [0, 0, 12],
+    position: [-100, environment.terrainHeightAt(-100, 108) + 0.29, 108],
+    velocity: [12, 0, 0],
   }),
   laneResult = stepProbe(laneProbe, 240);
-assert.ok(laneProbe.position.z > -81, "seam probe snagged before crossing");
+assert.ok(laneProbe.position.x > -87, "seam probe snagged before crossing");
 assert.ok(laneResult.materials.has("short-grass"));
 assert.ok(laneResult.materials.has("dry-asphalt"));
 assert.ok(

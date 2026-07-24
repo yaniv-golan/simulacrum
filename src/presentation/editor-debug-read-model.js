@@ -3,6 +3,7 @@ import { challengeReliability } from "../model/challenge-lab.js";
 /**
  * @typedef {{ x:number,y:number,z:number }} EditorDebugVector
  * @typedef {{
+ *   presetId:string|null, fovDeg:number, position:EditorDebugVector,
  *   distance:number, renderedDistance:number, yaw:number, pitch:number,
  *   followSelection:boolean, target:EditorDebugVector, trackingError:number,
  *   tracking:{active:boolean,subjects:number,boundsRadius:number,fitDistance:number,safeFrame:object},
@@ -69,6 +70,13 @@ export function buildEditorDebugReadModel(input) {
     selectedParts: [...input.selectedParts],
     selectedEntity: structuredClone(input.selectedEntity),
     camera: {
+      presetId: input.camera.presetId,
+      fovDeg: +input.camera.fovDeg.toFixed(1),
+      position: {
+        x: +input.camera.position.x.toFixed(1),
+        y: +input.camera.position.y.toFixed(1),
+        z: +input.camera.position.z.toFixed(1),
+      },
       target: {
         x: +input.cameraTarget.x.toFixed(1),
         y: +input.cameraTarget.y.toFixed(1),
