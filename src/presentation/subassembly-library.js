@@ -49,6 +49,14 @@ export function createSubassemblyLibrary({
     part.scriptSources = saved.scriptSources
       ? structuredClone(saved.scriptSources)
       : part.scriptSources;
+    part.controllerBindings = saved.controllerBindings
+      ? structuredClone(saved.controllerBindings)
+      : saved.type === "computer"
+        ? []
+        : null;
+    part.extensions = saved.extensions
+      ? structuredClone(saved.extensions)
+      : undefined;
     if (saved.scriptSources) {
       part.programAcquisition = acquisition;
       part.programTrust = null;

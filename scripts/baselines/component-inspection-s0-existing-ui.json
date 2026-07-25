@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "classification": "existing-ui-baseline",
+  "release": "0.1.0",
+  "fixture": "f2-gearbox-build",
+  "viewports": [
+    { "id": "laptop", "width": 1280, "height": 720 },
+    { "id": "wide", "width": 1600, "height": 900 }
+  ],
+  "keyboardRoute": [
+    "first-launch guided start",
+    "component Outliner tree",
+    "selected component",
+    "component ports",
+    "canvas"
+  ],
+  "tasks": [
+    { "id": "identify", "minimumCurrentSteps": 1 },
+    { "id": "diagnose", "minimumCurrentSteps": 2 },
+    { "id": "connect", "minimumCurrentSteps": 3 },
+    { "id": "disconnect", "minimumCurrentSteps": 3 },
+    { "id": "configure", "minimumCurrentSteps": 2 },
+    { "id": "transform", "minimumCurrentSteps": 2 },
+    { "id": "duplicate", "minimumCurrentSteps": 1 },
+    { "id": "delete-undo", "minimumCurrentSteps": 2 },
+    { "id": "isolate-substitute", "minimumCurrentSteps": 3 },
+    { "id": "simulation-observation", "minimumCurrentSteps": 2 }
+  ]
+}

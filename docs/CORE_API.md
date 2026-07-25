@@ -21,6 +21,7 @@ import {
   AerodynamicSystem,
   AssemblyModel,
   analyzeAssembly,
+  analyzeComponentPreflight,
   ChallengeRun,
   challengeReliability,
   compileAssembly,
@@ -28,6 +29,7 @@ import {
   controllerBindingManifest,
   ControllerSensorBank,
   ControllerTraceBuffer,
+  ComponentRelationshipIndex,
   createSubassemblyTemplate,
   EnvironmentBodyRegistry,
   EnvironmentBodySystem,
@@ -37,6 +39,7 @@ import {
   FlexibleLineTelemetrySystem,
   FailureEvent,
   FailureRecorder,
+  fingerprintComponentInspectionAssembly,
   instantiateSubassembly,
   MassPropertyCommitSystem,
   MechanismSystem,
@@ -57,11 +60,20 @@ import {
   ThermalSystem,
   PowerSystem,
   ReplayBuffer,
+  decodeAuthoredAssemblyContentOrThrow,
   measureEnvironmentProximity,
   TYPES,
 } from "@yaniv-golan/simulacrum-core";
 
 const assembly = AssemblyModel.fromBlueprint(blueprint);
+const authored = decodeAuthoredAssemblyContentOrThrow(assembly.snapshot());
+const authoredFingerprint = await fingerprintComponentInspectionAssembly(
+  assembly.snapshot(),
+);
+const relationships = new ComponentRelationshipIndex(authored);
+const selectedPreflight = analyzeComponentPreflight(authored, {
+  selectedPartIds: [authored.parts[0]?.id].filter(Number.isSafeInteger),
+});
 const reusable = createSubassemblyTemplate(assembly.snapshot(), selectedIds, {
   name: "Drive module",
   origin: [0, 0, 0],

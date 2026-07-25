@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { TYPES } from "../model/component-catalog.js";
-import { connectionUsesPort, portPresentation } from "../model/ports.js";
 import {
   articulatedRolesForType,
   componentInspectorProperties,
@@ -33,16 +32,13 @@ import * as ropeInspector from "./flexible-line-inspector.js";
  *   capacity?: {ultimateForceN:number, ultimateTorqueNm:number}, lastLoadN?: number,
  *   peakLoadN?: number, lastTorqueNm?: number, peakTorqueNm?: number, aeroLoadN?: number,
  * }} InspectorConnection
- * @typedef {{ stateOfCharge?: number }} RuntimePart
  * @typedef {{
  *   parts: () => InspectorPart[], connections: () => InspectorConnection[],
- *   currentConnections: () => InspectorConnection[],
  *   selectedId: () => number | null, selectedParts: () => InspectorPart[],
  *   selectedEntity: () => object | null,
  *   connectFrom: () => number | null, connectPort: () => string | null,
- *   running: () => boolean, currentPart: (id: number) => RuntimePart | InspectorPart | null,
- *   powered: (part: InspectorPart) => boolean,
- *   connectionValid: (connection: InspectorConnection) => boolean,
+ *   running: () => boolean,
+ *   inspection: () => object,
  * }} InspectorModelPort
  * @typedef {{
  *   query: (selector: string) => Element | null,
@@ -78,11 +74,6 @@ export function createComponentInspectorController({ model, view, actions }) {
     if (!element) throw new Error(`Missing inspector element ${selector}`);
     return element;
   };
-  const storedBatteryCharge = (part) => {
-    const capacityWh = Number(part.config.capacityWh);
-    return capacityWh > 0 ? Number(part.storedEnergyWh) / capacityWh : 0;
-  };
-
   const outliner = createAssemblyOutlinerController({
     model: {
       parts: model.parts,
@@ -124,6 +115,7 @@ export function createComponentInspectorController({ model, view, actions }) {
 
   function render() {
     outliner.render();
+    const inspection = model.inspection();
     const part =
       model.parts().find((candidate) => candidate.id === model.selectedId()) ||
       null;
@@ -132,58 +124,21 @@ export function createComponentInspectorController({ model, view, actions }) {
     view.syncSelection(Boolean(part));
     if (!part) return;
 
-    const runtimePart = model.currentPart(part.id) || part;
     const selection = model.selectedParts();
     const type = TYPES[part.type];
-    const powered = part.type !== "motor" || model.powered(part);
-    const batteryChargePercent = (() => {
-      if (part.type !== "battery") return 0;
-      if (model.running())
-        return Number(
-          "stateOfCharge" in runtimePart ? runtimePart.stateOfCharge : 0,
-        );
-      return storedBatteryCharge(part);
-    })();
-    const related = model
-      .currentConnections()
-      .filter(
-        (connection) => connection.a === part.id || connection.b === part.id,
+    const powered = inspection.observation?.specialized?.powered !== false,
+      misaligned = inspection.relationships.connections.some(
+        (connection) => connection.validity === "misaligned",
       );
-    const misaligned = related.some(
-      (connection) => !model.connectionValid(connection),
-    );
-    required(".inspect-title small").textContent =
-      selection.length > 1
-        ? "MULTI-SELECTION · PRIMARY SHOWN"
-        : "SELECTED COMPONENT";
-    required("#inspect-name").textContent =
-      selection.length > 1 ? `${selection.length} COMPONENTS` : type.name;
+    /** @type {HTMLElement} */ (
+      required(".inspector-content")
+    ).dataset.inspectionVersion = String(inspection.version);
+    required(".inspect-title small").textContent = inspection.header.subtitle;
+    required("#inspect-name").textContent = inspection.header.name;
     required(".part-badge").textContent = type.icon;
     const status = required(".status");
-    status.textContent = misaligned
-      ? "● MISALIGNED"
-      : part.type === "motor"
-        ? powered
-          ? "● POWERED"
-          : "● NO POWER"
-        : part.type === "battery"
-          ? `● ${Math.round(batteryChargePercent * 100)}% CHARGE`
-          : "● READY";
-    if (selection.length > 1)
-      status.textContent = `● ${selection.reduce(
-        (sum, selected) =>
-          sum +
-          Number(
-            selected.mechanism?.massPropertySource?.massKg ??
-              TYPES[selected.type].mass ??
-              0,
-          ),
-        0,
-      )} KG GROUP`;
-    status.classList.toggle(
-      "warning",
-      misaligned || (part.type === "motor" && !powered),
-    );
+    status.textContent = inspection.status.label;
+    status.classList.toggle("warning", inspection.status.warning);
 
     const articulatedRoles = articulatedRolesForType(part.type);
     const articulatedRoleEditor = articulatedRoles.length
@@ -191,11 +146,11 @@ export function createComponentInspectorController({ model, view, actions }) {
       : "";
     const controllerProgramEditor =
       part.type === "computer"
-        ? `<button id="program-controller" class="program-controller"><span>{ }</span><b>PROGRAM THIS CONTROLLER</b><small>${model.powered(part) ? "POWERED" : "CONNECT POWER FIRST"} · ${model.connections().filter((connection) => connection.kind === "signal" && (connection.a === part.id || connection.b === part.id)).length} SIGNAL OUTPUTS</small></button>`
+        ? `<button id="program-controller" class="program-controller"><span>{ }</span><b>PROGRAM THIS CONTROLLER</b><small>${inspection.observation.specialized.powered ? "POWERED" : "CONNECT POWER FIRST"} · ${inspection.observation.specialized.signalConnectionCount} SIGNAL OUTPUTS</small></button>`
         : "";
     const liveMeasurement =
       part.type === "sensor"
-        ? `<br><strong id="sensor-live-rpm">MEASURED SHAFT SPEED · ${(part.sensorValueRpm || 0).toFixed(1)} RPM</strong>`
+        ? `<br><strong id="sensor-live-rpm">MEASURED SHAFT SPEED · ${inspection.observation.specialized.measuredRpm.toFixed(1)} RPM</strong>`
         : "";
     const mechanismFields = mechanismInspectorProperties(part),
       mechanismRows = (fields) =>
@@ -226,35 +181,31 @@ export function createComponentInspectorController({ model, view, actions }) {
         .join("") +
       `${ropeInspector.flexibleLineReadout(part)}${mechanismEditor}${twoEndedWorkflow}${controllerProgramEditor}${view.arrangerMarkup(selection)}<div class="component-construction"><h4>BLUEPRINT CONSTRUCTION</h4>${articulatedRoleEditor}${part.mechanism ? '<p class="component-contract-note">Mechanism scale is identity; edit the explicit physical law above.</p>' : ["x", "y", "z"].map((axis) => `<label class="property"><span>SCALE ${axis.toUpperCase()}<b>${part.mesh.scale[axis].toFixed(2)}×</b></span><input data-scale-axis="${axis}" type="range" min="0.2" max="2.5" step="0.05" value="${part.mesh.scale[axis]}"></label>`).join("")}</div>`;
 
-    const structuralConnections = related.filter((connection) =>
-      ["mechanical", "mesh"].includes(connection.kind),
+    const structuralConnections = inspection.relationships.connections.filter(
+      (connection) => ["mechanical", "mesh"].includes(connection.kind),
     );
     const structuralMonitor = structuralConnections.length
         ? `<div class="attachment-monitor"><h4>ATTACHMENT LOAD PATHS</h4>${structuralConnections
             .map((connection) => {
               const index = model
                 .connections()
-                .findIndex((candidate) => candidate.id === connection.id);
-              const otherId =
-                connection.a === part.id ? connection.b : connection.a;
+                .findIndex(
+                  (candidate) => candidate.id === connection.connectionId,
+                );
+              const otherId = connection.counterpartPartId;
               const other = model
                 .parts()
                 .find((candidate) => candidate.id === otherId);
-              const load =
-                connection.lastLoadN ||
-                connection.peakLoadN ||
-                connection.aeroLoadN ||
-                0;
-              const forceRating = connection.capacity.ultimateForceN,
-                torque =
-                  connection.lastTorqueNm || connection.peakTorqueNm || 0,
-                torqueRating = connection.capacity.ultimateTorqueNm,
-                utilization = THREE.MathUtils.clamp(
-                  Math.max(load / forceRating, torque / torqueRating),
-                  0,
-                  2,
-                );
-              return `<div class="attachment-rating ${connection.failed ? "failed" : utilization > 0.8 ? "warning" : ""}"><span><b>${other ? TYPES[other.type].name : "Missing component"}</b><em>${(load / 1000).toFixed(1)} / ${(forceRating / 1000).toFixed(1)} kN · ${torque.toFixed(0)} / ${torqueRating.toFixed(0)} Nm</em></span><i><u style="width:${Math.min(100, utilization * 100)}%"></u></i><label>FORCE<input data-connection-capacity="force" data-connection-index="${index}" type="range" min="100" max="100000" step="100" value="${forceRating}" ${model.running() ? "disabled" : ""}></label><label>TORQUE<input data-connection-capacity="torque" data-connection-index="${index}" type="range" min="10" max="50000" step="10" value="${torqueRating}" ${model.running() ? "disabled" : ""}></label></div>`;
+              const {
+                  failed,
+                  forceN,
+                  forceRatingN,
+                  torqueNm,
+                  torqueRatingNm,
+                  utilization,
+                } = connection.observation,
+                boundedUtilization = THREE.MathUtils.clamp(utilization, 0, 2);
+              return `<div class="attachment-rating ${failed ? "failed" : boundedUtilization > 0.8 ? "warning" : ""}"><span><b>${other ? TYPES[other.type].name : "Missing component"}</b><em>${(forceN / 1000).toFixed(1)} / ${(forceRatingN / 1000).toFixed(1)} kN · ${torqueNm.toFixed(0)} / ${torqueRatingNm.toFixed(0)} Nm</em></span><i><u style="width:${Math.min(100, boundedUtilization * 100)}%"></u></i><label>FORCE<input data-connection-capacity="force" data-connection-index="${index}" type="range" min="100" max="100000" step="100" value="${forceRatingN}" ${model.running() ? "disabled" : ""}></label><label>TORQUE<input data-connection-capacity="torque" data-connection-index="${index}" type="range" min="10" max="50000" step="10" value="${torqueRatingNm}" ${model.running() ? "disabled" : ""}></label></div>`;
             })
             .join("")}</div>`
         : "",
@@ -265,15 +216,13 @@ export function createComponentInspectorController({ model, view, actions }) {
         running: model.running(),
       });
     required("#load-monitor").innerHTML = structuralMonitor + breakawayEditor;
-    required("#port-list").innerHTML = type.ports
-      .map((descriptor, index) => {
-        const port = descriptor.id,
-          presentation = portPresentation(part, port);
+    required("#port-list").innerHTML = inspection.ports
+      .map((portRead, index) => {
+        const port = portRead.portId,
+          presentation = portRead;
         const armed =
           model.connectFrom() === part.id && model.connectPort() === port;
-        const connected = related.some((connection) =>
-          connectionUsesPort(connection, part, port),
-        );
+        const connected = portRead.status === "connected";
         return `<button class="port ${armed ? "armed" : ""}" data-port="${port}" title="${presentation.description}"><i>${index % 2 ? "◆" : "●"}</i><span>${port}<small>${presentation.medium}</small></span><strong>${armed ? "SELECTED" : connected ? "CONNECTED" : "AVAILABLE"}</strong><em>${armed ? "Choose a compatible target component." : presentation.description}</em></button>`;
       })
       .join("");
@@ -409,8 +358,7 @@ export function createComponentInspectorController({ model, view, actions }) {
         actions.configurePart(part, { [key]: nextValue });
         actions.syncAssembly();
         if (key === "capacityWh" && part.type === "battery")
-          required(".status").textContent =
-            `● ${Math.round(storedBatteryCharge(part) * 100)}% CHARGE`;
+          required(".status").textContent = model.inspection().status.label;
         const value = view.query(`[data-value="${key}"]`);
         if (value) value.textContent = input.value + (input.dataset.unit || "");
       };

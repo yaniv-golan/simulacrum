@@ -130,9 +130,9 @@ export function installDebugReadModelFeature({
       selectedEntity: state.editor.selectedEntity,
       cameraTarget: editor.cameraTarget,
       camera: editor.camera(),
+      componentInspection: editor.inspection(),
     });
   }
-
   function machineReadModel() {
     const frame = telemetry(),
       wheelCapable = machine.hasWheels(),

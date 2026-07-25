@@ -4,6 +4,11 @@
 
 ### Added
 
+- Added the component-inspection foundation: deterministic S0 question,
+  scenario, task, viewport, and 300-part/3,000-connection baselines; a versioned
+  immutable selected-component read model; strict authored-content projection
+  and fingerprints; bounded direct relationships and authored-only preflight;
+  current-data observation adapters; and portable/live performance gates.
 - Added Rope as an ordinary player-authored `flexible-line-v1` component with
   zero-, one-, and two-ended attachment, distributed mass and contact,
   tension-only response, sag, endpoint/internal failure, deterministic split
@@ -38,6 +43,12 @@
 
 ### Changed
 
+- Routed existing Inspector identity, status, ports, power, charge,
+  misalignment, structural-load, controller, sensor, and selection-scope facts
+  through the application inspection boundary and the shared text debug model
+  without changing their visible labels. Portable optional authored fields now
+  survive blueprint load, editor sync, duplicate/mirror, Undo/Redo, workspace
+  persistence, My Parts, and share exchange.
 - Adopted `C` for duplicate and `X` for selected-component deletion while
   retaining `Ctrl/Cmd+D`, `Delete`, and `Backspace` aliases; Exploded View moves
   to `Shift+X`. Duplicate now places the complete selected group in the first

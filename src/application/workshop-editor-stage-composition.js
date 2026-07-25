@@ -23,6 +23,7 @@ export function createWorkshopEditorStageComposition({
   catalog,
   keys,
   runtime,
+  model,
   controller,
   history,
   assembly,
@@ -80,7 +81,13 @@ export function createWorkshopEditorStageComposition({
         capture: history.capture,
         record: history.record,
       },
-      assembly,
+      assembly: {
+        ...assembly,
+        snapshot: () => model.snapshot(),
+        revision: () => model.revision,
+        evidenceRevision: () =>
+          state.running ? Number(runtime.telemetry?.tick || 0) : model.revision,
+      },
       view: {
         query: shell.query,
         queryAll: shell.queryAll,

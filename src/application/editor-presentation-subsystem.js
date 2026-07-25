@@ -7,6 +7,7 @@ import {
   configureAuthoredMechanism,
   configureComponentPart,
 } from "./component-authoring-commands.js";
+import { createEditorComponentInspection as composeInspection } from "./editor-component-inspection-composition.js";
 /** Composes editor selection, connection, arrangement, and Inspector ownership. */
 export function createEditorPresentationSubsystem({
   state,
@@ -17,7 +18,7 @@ export function createEditorPresentationSubsystem({
   view,
   actions,
 }) {
-  let selection, connection, arranger, inspector;
+  let selection, connection, arranger, inspector, inspection;
 
   const showSelection = (part) => selection.showSelection(part),
     renderInspector = () => inspector.render(),
@@ -89,20 +90,19 @@ export function createEditorPresentationSubsystem({
     toast: actions.notify,
   });
 
+  inspection = composeInspection({ state, assembly, connection, catalog });
+
   inspector = createComponentInspectorController({
     model: {
       parts: () => state.parts,
       connections: () => state.connections,
-      currentConnections: assembly.currentConnections,
       selectedId: () => state.editor.selected,
       selectedEntity: () => state.editor.selectedEntity,
       selectedParts: selection.selectedParts,
       connectFrom: () => state.editor.connectFrom,
       connectPort: () => state.editor.connectPort,
       running: () => state.running,
-      currentPart: assembly.currentPart,
-      powered: assembly.powered,
-      connectionValid: connection.valid,
+      inspection: inspection.read,
     },
     view: {
       query: view.query,
@@ -174,5 +174,6 @@ export function createEditorPresentationSubsystem({
     drawConnections,
     isMechanicallyAnchored: connection.isMechanicallyAnchored,
     renderInspector,
+    inspection: inspection.read,
   });
 }

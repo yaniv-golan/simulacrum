@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "scenarioIds": [
+    "no-selection",
+    "ordinary-beam",
+    "powered-motor",
+    "unpowered-motor",
+    "misaligned-mechanical-connection",
+    "valid-controller-bindings",
+    "invalid-controller-bindings",
+    "two-part-multi-selection",
+    "six-part-multi-selection",
+    "dense-outliner-navigation",
+    "solid-interference",
+    "loaded-connection-near-rating",
+    "loaded-connection-over-rating",
+    "rope-free-connected-loaded-failed-unsupported",
+    "invalid-authored-mechanism"
+  ],
+  "taskIds": [
+    "identify",
+    "diagnose",
+    "connect",
+    "disconnect",
+    "configure",
+    "transform",
+    "duplicate",
+    "delete-undo",
+    "isolate-substitute",
+    "simulation-observation"
+  ],
+  "rawRelationshipInputSha256": "f9020dff79b297d49c7c7d442a95c125716e4169c76c8b959eb2b386bfea8d5c",
+  "maximumShippingInputSha256": "bd4b372d290027fce9a4ba891bccd7eb460ecd77336a99f76c1fc1e87e5e1aea"
+}

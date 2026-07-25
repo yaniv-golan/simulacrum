@@ -18,7 +18,7 @@ import { challengeReliability } from "../model/challenge-lab.js";
  *   challenge:null|{id:string,status:string,progress:number,holdSeconds:number,score:number,best:number,startMode:string|null,contract:unknown,records:object[]},
  *   learning:{centerOpen:boolean,topic:string,category:string,coachOpen:boolean,coachStep:number,topicsAvailable:number},
  *   tutorialStep:number, selectedPart:number|null, selectedParts:number[], selectedEntity:object|null,
- *   cameraTarget:EditorDebugVector, camera:CameraDebugSnapshot,
+ *   cameraTarget:EditorDebugVector, camera:CameraDebugSnapshot, componentInspection:object,
  * }} EditorDebugInput
  */
 
@@ -69,6 +69,7 @@ export function buildEditorDebugReadModel(input) {
     selectedPart: input.selectedPart,
     selectedParts: [...input.selectedParts],
     selectedEntity: structuredClone(input.selectedEntity),
+    componentInspection: structuredClone(input.componentInspection),
     camera: {
       presetId: input.camera.presetId,
       fovDeg: +input.camera.fovDeg.toFixed(1),

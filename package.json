@@ -30,6 +30,7 @@
     "security:audit": "npm audit --audit-level=moderate",
     "baseline:capture": "node scripts/capture-release-performance.mjs",
     "baseline:verify": "node scripts/verify-performance-budget-live.mjs",
+    "baseline:component-inspection:foundation:verify": "node scripts/verify-component-inspection-performance-live.mjs --profile=foundation",
     "release:soak": "node scripts/release-soak.mjs",
     "pretest": "npm run core:check",
     "test": "node scripts/test.mjs",

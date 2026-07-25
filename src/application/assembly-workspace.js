@@ -1,11 +1,14 @@
 import { AssemblyModel } from "../model/assembly-model.js";
 import { canonicalizeQuaternion } from "../model/primitives.js";
+import {
+  projectPortableAuthoredConnection,
+  projectPortableAuthoredPart,
+} from "../model/authored-assembly-content.js";
 import { PowerNetwork } from "../simulation/power-network.js";
 import { RunAssemblyGraph } from "../simulation/run-assembly-graph.js";
 import { SignalNetwork } from "../simulation/signal-network.js";
 import { routedControllerIdsForPart } from "./controller-route-read-model.js";
 import { readRemoteControlBinding } from "./remote-control-read-model.js";
-import { isMechanismComponentType } from "../model/mechanism-component-definitions.js";
 
 /**
  * Bridges mutable editor objects to the persistent AssemblyModel and immutable
@@ -25,44 +28,29 @@ export function createAssemblyWorkspace({
   let reducedShadows = false;
 
   function editorSnapshot() {
-    return editor.parts().map((part) => ({
-      id: part.id,
-      type: part.type,
-      pos: [...(part.pos || [0, 0, 0])],
-      orientation: canonicalizeQuaternion(
-        part.mesh
-          ? [
-              part.mesh.quaternion.x,
-              part.mesh.quaternion.y,
-              part.mesh.quaternion.z,
-              part.mesh.quaternion.w,
-            ]
-          : part.orientation,
-      ),
-      scale: part.mesh
-        ? {
-            x: part.mesh.scale.x,
-            y: part.mesh.scale.y,
-            z: part.mesh.scale.z,
-          }
-        : structuredClone(part.scale || { x: 1, y: 1, z: 1 }),
-      ...(isMechanismComponentType(part.type)
-        ? { mechanism: structuredClone(part.mechanism) }
-        : { config: structuredClone(part.config || {}) }),
-      ...(part.type === "battery"
-        ? { storedEnergyWh: part.storedEnergyWh }
-        : {}),
-      customColor: part.customColor ?? null,
-      rigRole: part.rigRole || null,
-      scriptLanguage: part.scriptLanguage || null,
-      scriptSources: part.scriptSources
-        ? structuredClone(part.scriptSources)
-        : null,
-      controllerBindings:
-        part.type === "computer"
-          ? structuredClone(part.controllerBindings || [])
-          : null,
-    }));
+    return editor.parts().map((part) =>
+      projectPortableAuthoredPart({
+        ...part,
+        pos: [...(part.pos || [0, 0, 0])],
+        orientation: canonicalizeQuaternion(
+          part.mesh
+            ? [
+                part.mesh.quaternion.x,
+                part.mesh.quaternion.y,
+                part.mesh.quaternion.z,
+                part.mesh.quaternion.w,
+              ]
+            : part.orientation,
+        ),
+        scale: part.mesh
+          ? {
+              x: part.mesh.scale.x,
+              y: part.mesh.scale.y,
+              z: part.mesh.scale.z,
+            }
+          : structuredClone(part.scale || { x: 1, y: 1, z: 1 }),
+      }),
+    );
   }
 
   function sync() {
@@ -92,7 +80,7 @@ export function createAssemblyWorkspace({
     model.replace(
       AssemblyModel.fromRuntime(
         editorSnapshot(),
-        editor.connections(),
+        editor.connections().map(projectPortableAuthoredConnection),
       ).snapshot(),
     );
     return model;

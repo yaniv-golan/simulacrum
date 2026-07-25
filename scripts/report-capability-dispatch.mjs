@@ -6,9 +6,9 @@ import { analyzeCapabilityDispatch } from "./lib/capability-dispatch-analyzer.mj
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const REVIEWED_CAPABILITY_DISPATCH_BASELINE = Object.freeze({
-  commit: "unreleased-rover-egress-reliability-2026-07-24",
-  sites: 220,
-  sha256: "a6439b7f1e61da5f36a853628a45ea13db9fe86d5f908a8ec79f1c487c1f49c1",
+  commit: "unreleased-component-inspection-foundation-and-rover-egress-2026-07-25",
+  sites: 223,
+  sha256: "1f1cf5513ca05bd944878fdd5442ea2745106405a9c544739e8621c10865876b",
 });
 
 const POLICIES = Object.freeze([
@@ -71,7 +71,7 @@ const POLICIES = Object.freeze([
   },
   {
     pattern:
-      /^src\/model\/(?:component-contracts|sensor-contracts|visual-logic)\.js$/,
+      /^src\/model\/(?:component-contracts|component-preflight|sensor-contracts|visual-logic)\.js$/,
     family: "declared-model-adapters",
     disposition: "KEEP",
     owner: "model/catalog-adapters",
@@ -131,7 +131,7 @@ const POLICIES = Object.freeze([
   },
   {
     pattern:
-      /^src\/application\/(?:assembly-editor-feature|assembly-transform-commands|assembly-workspace|blueprint-loading-feature|build-history-feature|build-history-snapshot|command-candidate-reader|component-authoring-commands|controller-binding-editor-adapter|controller-editor-feature|controller-lifecycle-feature|controller-sensor-capture|debug-read-model-feature|editor-keyboard-composition|editor-presentation-subsystem|editor-selection-feature|executable-trust-feature|flexible-line-debug-read-model|keyboard-shortcut-controller|pending-placement-command|remote-control-read-model|remote-control-state|simulation-lifecycle-feature|two-ended-component-authoring|workspace-persistence)\.js$/,
+      /^src\/application\/(?:assembly-editor-feature|assembly-transform-commands|assembly-workspace|blueprint-loading-feature|build-history-feature|build-history-snapshot|command-candidate-reader|component-authoring-commands|component-inspection-feature|component-inspection-observation-adapters|controller-binding-editor-adapter|controller-editor-feature|controller-lifecycle-feature|controller-sensor-capture|debug-read-model-feature|editor-keyboard-composition|editor-presentation-subsystem|editor-selection-feature|executable-trust-feature|flexible-line-debug-read-model|keyboard-shortcut-controller|pending-placement-command|remote-control-read-model|remote-control-state|simulation-lifecycle-feature|two-ended-component-authoring|workspace-persistence)\.js$/,
     family: "application-boundary-and-read-model",
     disposition: "KEEP",
     owner: "application/use-cases",

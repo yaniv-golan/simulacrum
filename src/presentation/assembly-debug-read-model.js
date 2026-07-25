@@ -4,7 +4,8 @@
  *   ablatedMass:number,consumed:boolean,
  * }} DebugThermalState
  * @typedef {{
- *   id:number,type:string,rigRole?:string|null,pos:number[],
+ *   id:number,type:string,rigRole?:string|null,rigVisualRotation?:number[]|null,
+ *   controllerBindings?:object[]|null,extensions?:Record<string,unknown>,pos:number[],
  *   mesh:import("three").Object3D, config:Record<string,number>, mechanism?:Record<string,any>, phase?:number,
  *   jointAngle?:number,reactionTorque?:number,tireDeflectionM?:number,
  *   storedEnergyWh?:number,runtimeEnergy?:number,
@@ -23,6 +24,17 @@ export function buildAssemblyDebugReadModel(input) {
       id: part.id,
       type: part.type,
       rigRole: part.rigRole || undefined,
+      authored: {
+        rigVisualRotation: part.rigVisualRotation
+          ? structuredClone(part.rigVisualRotation)
+          : undefined,
+        controllerBindings: part.controllerBindings
+          ? structuredClone(part.controllerBindings)
+          : undefined,
+        extensions: part.extensions
+          ? structuredClone(part.extensions)
+          : undefined,
+      },
       scale: {
         x: +part.mesh.scale.x.toFixed(2),
         y: +part.mesh.scale.y.toFixed(2),

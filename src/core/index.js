@@ -61,6 +61,25 @@ export {
   normalizeBlueprint,
 } from "../model/blueprints.js";
 export {
+  AUTHORED_ASSEMBLY_CONTENT_VERSION,
+  decodeAuthoredAssemblyContentOrThrow,
+  projectPortableAuthoredConnection,
+  projectPortableAuthoredPart,
+} from "../model/authored-assembly-content.js";
+export {
+  COMPONENT_INSPECTION_FINGERPRINT_VERSION,
+  componentInspectionAssemblyFingerprintBytes,
+  fingerprintComponentInspectionAssembly,
+} from "../model/component-inspection-fingerprint.js";
+export {
+  COMPONENT_RELATIONSHIP_INDEX_VERSION,
+  ComponentRelationshipIndex,
+} from "../model/component-relationships.js";
+export {
+  COMPONENT_PREFLIGHT_VERSION,
+  analyzeComponentPreflight,
+} from "../model/component-preflight.js";
+export {
   decodeBlueprint,
   decodeBlueprintOrThrow,
 } from "../model/blueprint-decoder.js";

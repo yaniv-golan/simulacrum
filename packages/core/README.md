@@ -7,6 +7,11 @@ challenge evaluation, failure/replay analysis, and immutable telemetry. Runtime
 power and signal availability is evaluated only from completed telemetry, never
 inferred from a demo or editor state.
 
+The component-inspection foundation exposes strict authored-content projection,
+canonical authored fingerprints, immutable direct relationship indexes, and
+authored-only preflight records. Resolved network paths remain owned by the
+simulation networks rather than being reconstructed by consumers.
+
 The canonical `PhysicalAssemblyIndex`, per-component
 `MobilityTelemetrySystem`, and semantic remote-action contracts preserve
 authored frame/member identity and structural lineage. Exact remote targets

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { CONTROL_IR_VERSION } from "@yaniv-golan/simulacrum-core";
 import { challengeExample } from "./challenge.mjs";
 import { componentExample } from "./component.mjs";
+import { componentInspectionExample } from "./component-inspection.mjs";
 import { controllerProgramExample } from "./controller-program.mjs";
 import { environmentBodyExample } from "./environment-body.mjs";
 import { flexibleLineExample } from "./flexible-line.mjs";
@@ -18,6 +19,11 @@ assert.equal(component.topology.bodies[0].mass, 12);
 const ports = portBehaviorExample();
 assert.equal(ports.source.direction, "source");
 assert.equal(ports.sink.direction, "sink");
+
+const inspection = await componentInspectionExample();
+assert.match(inspection.fingerprint, /^sim-sha256-[0-9a-f]{64}$/);
+assert.equal(inspection.motor.connections[0].counterpartPartId, 1);
+assert.equal(inspection.preflight.status, "passed");
 
 assert.deepEqual(simulationSystemExample(), { doseRateMsvH: 0.004 });
 assert.equal(sensorAdapterExample(), 0.004);
@@ -52,4 +58,4 @@ assert.deepEqual(telemetryConsumerExample(), {
   label: "ASCENDING",
 });
 
-console.log("all nine public core extension examples passed");
+console.log("all ten public core extension examples passed");

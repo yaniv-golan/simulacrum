@@ -77,6 +77,7 @@ export function installWorkshopRuntimeComposition({
       challengeContract: () => challenge?.snapshot() || null,
       learningTopicCount,
       camera: () => cameraController.snapshot(),
+      inspection: editor.editorPresentation.inspection,
     },
     machine: {
       root: stage.machine,
@@ -98,10 +99,7 @@ export function installWorkshopRuntimeComposition({
       controlBinding: assembly.workspace.controlBinding,
       controlOnline: assembly.controls.controlOnline,
       signalOutputCount: controllers.outputCount,
-      trace: (id) =>
-        controllers.trace.snapshot(id, {
-          includeTraces: false,
-        }),
+      trace: (id) => controllers.trace.snapshot(id, { includeTraces: false }),
       runtimeCount: () => controllers.runtimeManager.ids().length,
     },
     testingPlayground,

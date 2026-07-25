@@ -21,6 +21,10 @@ import {
   sameWorkspaceIdentity,
 } from "./lib/workspace-identity.mjs";
 import {
+  nodeSatisfiesComponentInspectionReleaseRange,
+  validateComponentInspectionLiveWorkspace,
+} from "./lib/component-inspection-live-workspace.mjs";
+import {
   NON_SUITE_VERIFICATION_FILES,
   VERIFICATION_CHECKS,
   VERIFICATION_TIMEOUT_MS,
@@ -38,6 +42,7 @@ assert.deepEqual(Object.keys(VERIFICATION_TIMEOUT_MS), [
   "verify-failure-analysis.mjs",
   "verify-testing-playground-browser.mjs",
   "verify-ui-baseline-fixtures.mjs",
+  "verify-component-authored-carriers-browser.mjs",
 ]);
 assert.ok(
   Object.entries(VERIFICATION_TIMEOUT_MS).every(
@@ -469,6 +474,98 @@ assert.equal(
     head: "0".repeat(40),
   }),
   false,
+);
+
+const cleanCandidate = "1".repeat(40),
+  liveGit =
+    (overrides = {}) =>
+    (args) => {
+      const key = args.join(" ");
+      return (
+        overrides[key] ??
+        {
+          "rev-parse HEAD": cleanCandidate,
+          "status --porcelain=v1 --untracked-files=all": "",
+          "worktree list --porcelain": "worktree /fixture/worktree\n",
+        }[key]
+      );
+    },
+  liveOptions = {
+    profile: "foundation",
+    candidate: cleanCandidate,
+    root: "/fixture/worktree",
+    nodeVersion: "v24.18.0",
+    realpath: (value) => value,
+  };
+assert.equal(nodeSatisfiesComponentInspectionReleaseRange("v24.18.0"), true);
+assert.equal(nodeSatisfiesComponentInspectionReleaseRange("v25.0.0"), false);
+assert.equal(
+  validateComponentInspectionLiveWorkspace({
+    ...liveOptions,
+    git: liveGit(),
+  }).authoritative,
+  true,
+);
+assert.throws(
+  () =>
+    validateComponentInspectionLiveWorkspace({
+      ...liveOptions,
+      candidate: "short",
+      git: liveGit(),
+    }),
+  /40-hex commit/,
+);
+assert.throws(
+  () =>
+    validateComponentInspectionLiveWorkspace({
+      ...liveOptions,
+      git: liveGit({ "rev-parse HEAD": "2".repeat(40) }),
+    }),
+  /does not match/,
+);
+assert.throws(
+  () =>
+    validateComponentInspectionLiveWorkspace({
+      ...liveOptions,
+      git: liveGit({
+        "status --porcelain=v1 --untracked-files=all": " M source.js",
+      }),
+    }),
+  /clean worktree/,
+);
+assert.throws(
+  () =>
+    validateComponentInspectionLiveWorkspace({
+      ...liveOptions,
+      git: liveGit({ "worktree list --porcelain": "worktree /elsewhere\n" }),
+    }),
+  /registered Git worktree/,
+);
+assert.throws(
+  () =>
+    validateComponentInspectionLiveWorkspace({
+      ...liveOptions,
+      nodeVersion: "v25.2.1",
+      git: liveGit(),
+    }),
+  /Node >=24\.18 <25/,
+);
+assert.deepEqual(
+  validateComponentInspectionLiveWorkspace({
+    ...liveOptions,
+    candidate: null,
+    allowDirty: true,
+    nodeVersion: "v25.2.1",
+    git: liveGit({
+      "rev-parse HEAD": "2".repeat(40),
+      "status --porcelain=v1 --untracked-files=all": " M source.js",
+    }),
+  }),
+  {
+    authoritative: false,
+    candidate: null,
+    head: "2".repeat(40),
+  },
 );
 
 const coordinatorArtifacts = await fs.mkdtemp(

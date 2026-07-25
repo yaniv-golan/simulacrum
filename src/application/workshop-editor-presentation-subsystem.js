@@ -59,6 +59,9 @@ export function createWorkshopEditorPresentationSubsystem({
     },
     assembly: {
       sync: assembly.sync,
+      snapshot: assembly.snapshot,
+      revision: assembly.revision,
+      evidenceRevision: assembly.evidenceRevision,
       currentConnections: assembly.currentConnections,
       currentPart: assembly.currentPart,
       powered: assembly.powered,

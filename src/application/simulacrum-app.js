@@ -103,6 +103,7 @@ const editorStageComposition = createWorkshopEditorStageComposition({
     catalog: TYPES,
     keys: STORAGE_KEYS,
     runtime: simulationRuntime,
+    model: assemblyModel,
     controller: { open: controllerSubsystem.open },
     history: { capture: buildHistoryState, record: recordHistory },
     assembly: {

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Adds strict authored-assembly projection and fingerprint contracts plus
+  immutable direct component-relationship and authored-preflight inspection
+  APIs. These additive APIs are queued for the next minor `0.x` release; the
+  source workspace remains `0.1.0` until that release transaction.
 - Adds the `flexible-line-v1` compiler/runtime contract, one-to-many physical
   entity ownership, tension-only constraints, strict Rope materials, completed
   telemetry, failure evidence, and exact checkpoint state.

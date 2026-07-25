@@ -9,7 +9,7 @@ import { runtimeControlsFromProfiles } from "./remote-control-state.js";
  *   config:Record<string,unknown>, storedEnergyWh?:number, customColor?:unknown,
  *   rigRole?:string|null, rigVisualRotation?:Vector3Tuple|null,
  *   scriptLanguage?:string|null, scriptSources?:Record<string,unknown>|null,
- *   controllerBindings?:unknown[]|null,
+ *   controllerBindings?:unknown[]|null, extensions?:Record<string,unknown>,
  *   programAcquisition?:string, programTrust?:unknown,
  * }} HistoryPart
  * @typedef {{
@@ -18,6 +18,7 @@ import { runtimeControlsFromProfiles } from "./remote-control-state.js";
  *   customColor?:unknown, rigRole?:string|null,
  *   rigVisualRotation?:Vector3Tuple|null, scriptLanguage?:string|null,
  *   scriptSources?:Record<string,unknown>|null, controllerBindings?:unknown[]|null,
+ *   extensions?:Record<string,unknown>,
  * }} SavedHistoryPart
  * @typedef {{
  *   demo:string|null, mode:string, remoteProfile:string,
@@ -160,6 +161,9 @@ export function createBuildHistoryFeature({
           : part.type === "computer"
             ? []
             : null;
+        part.extensions = saved.extensions
+          ? structuredClone(saved.extensions)
+          : undefined;
         if (part.type === "computer") {
           part.programAcquisition =
             saved.programAcquisition || BlueprintAcquisition.UNKNOWN_UNTRUSTED;

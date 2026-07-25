@@ -21,6 +21,26 @@ collision shape, render dimensions, mass, displacement, aerodynamic surface,
 and port frames. Passing the same catalog to `compileAssembly()` keeps analysis
 and simulation topology consistent.
 
+The public inspection foundation uses the same strict portable field allowlist.
+`decodeAuthoredAssemblyContentOrThrow()` rejects unknown editor snapshot fields,
+`fingerprintComponentInspectionAssembly()` produces canonical authored identity,
+and `ComponentRelationshipIndex` exposes bounded direct counterparts and
+controller-binding references without importing presentation or reconstructing
+resolved simulation routes. `analyzeComponentPreflight()` reports authored
+checks and keeps runtime outcome explicitly `not-checked`.
+
+The ownership boundary is intentional:
+
+| Contract                                                                                                 | Ownership                       |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| Authored decoder/projectors, fingerprint bytes/hash, direct relationship index, and authored preflight   | Reusable, DOM-free Core API     |
+| Selected inspection view model, existing-data observation adapters, and selected-context command catalog | Application-private composition |
+| Inspector markup, focus, editable controls, and action event binding                                     | Presentation-only               |
+
+Application and presentation records are not exported from Core. Resolved
+power/signal reachability and physical outcomes remain owner-supplied evidence;
+the direct relationship index never upgrades adjacency into a causal claim.
+
 ## Port behavior
 
 [`port-behavior.mjs`](../examples/core-extensions/port-behavior.mjs) declares a

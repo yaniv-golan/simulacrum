@@ -62,6 +62,39 @@ When comparing before and after timings, use the same supported toolchain and
 recorded workspace inputs. Do not establish performance policy from a dirty
 tree that changed during the run.
 
+### Component-inspection foundation profile
+
+The S1 inspection foundation has a separate portable scale suite and a named
+release-baseline profile. The ordinary cross-platform suite validates the
+300-part/3,000-connection inputs, projector and cache behavior, and the active
+16 ms relationship/preflight and 4 ms selection-projection limits:
+
+```bash
+npm run test:focused -- verify-component-inspection-foundation-scale
+```
+
+During development, a dirty-tree capture is diagnostic only:
+
+```bash
+node scripts/verify-component-inspection-performance-live.mjs --profile=foundation --allow-dirty
+```
+
+The authoritative gate is verify-only: run it from a clean registered worktree
+whose `HEAD` is the exact candidate. The caller creates and later removes any
+temporary worktree; the command never prepares or cleans one:
+
+```bash
+npm run baseline:component-inspection:foundation:verify -- --candidate=<40-hex-commit>
+```
+
+It rejects a dirty tree, a mismatched candidate, an unregistered path, mutated
+capture identity, a Node runtime outside `>=24.18 <25`, and every
+non-authoritative artifact in release mode. S0
+comparison screenshots/text state can be refreshed separately with
+`node scripts/capture-component-inspection-s0.mjs` under the focused test
+server; they are labeled `existing-ui-baseline` and are not future release
+budgets.
+
 ## Completion and release gates
 
 Focused success is not completion. Before completing a substantial change, run

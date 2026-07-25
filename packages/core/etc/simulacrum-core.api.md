@@ -297,6 +297,13 @@ export function analyzeAssembly(snapshot: any, catalog: any): {
 };
 
 // @public
+export function analyzeComponentPreflight(snapshot: any, input?: {
+    selectedPartIds?: number[];
+    catalog?: Record<string, any>;
+    relationshipIndex?: ComponentRelationshipIndex | null;
+}): any;
+
+// @public
 export class ArticulatedConstraintSystem {
     // (undocumented)
     dispose(context: any): void;
@@ -342,6 +349,9 @@ export class AssemblyModel {
     // (undocumented)
     updatePart(id: any, update: any): any;
 }
+
+// @public (undocumented)
+export const AUTHORED_ASSEMBLY_CONTENT_VERSION: 1;
 
 // @public
 export function batteryEnergyReadModel(part: any): Readonly<{
@@ -1399,6 +1409,15 @@ export function completeConnectionContract(connection: any, left: any, right: an
     catalog?: Record<string, any>;
 }): any;
 
+// @public (undocumented)
+export const COMPONENT_INSPECTION_FINGERPRINT_VERSION: 1;
+
+// @public (undocumented)
+export const COMPONENT_PREFLIGHT_VERSION: 1;
+
+// @public (undocumented)
+export const COMPONENT_RELATIONSHIP_INDEX_VERSION: 1;
+
 // @public
 export class ComponentActuatorSystem {
     // (undocumented)
@@ -1409,6 +1428,20 @@ export class ComponentActuatorSystem {
 
 // @public (undocumented)
 export function componentDefaults(type: any, catalog?: any): any;
+
+// @public
+export function componentInspectionAssemblyFingerprintBytes(input: any): Uint8Array<ArrayBuffer>;
+
+// @public
+export class ComponentRelationshipIndex {
+    constructor(snapshot?: {});
+    // (undocumented)
+    cycleConnectionIds(): any;
+    // (undocumented)
+    forPart(partId: any): any;
+    // (undocumented)
+    snapshot(): any;
+}
 
 // @public (undocumented)
 export const CONNECTION_CAPACITIES: Readonly<{
@@ -1715,6 +1748,9 @@ export function createTelemetrySnapshot(input?: {
 }>;
 
 // @public
+export function decodeAuthoredAssemblyContentOrThrow(input: any): any;
+
+// @public
 export function decodeBlueprint(input: any): {
     ok: boolean;
     value: any;
@@ -1970,6 +2006,9 @@ export class FailureRecorder {
 
 // @public
 export function fingerprintAsset(kind: any, asset: any): Promise<string>;
+
+// @public
+export function fingerprintComponentInspectionAssembly(input: any): Promise<string>;
 
 // @public (undocumented)
 export function finiteNumber(value: any, input?: {
@@ -4590,6 +4629,20 @@ export function pressureNozzlePerformance(contract: any, deliveredMassFlowKgS: a
 
 // @public (undocumented)
 export function projectedBoxArea(size: any, direction: any): number;
+
+// @public
+export function projectPortableAuthoredConnection(connection: any): {
+    [k: string]: any;
+};
+
+// @public
+export function projectPortableAuthoredPart(part: any): {
+    id: any;
+    type: any;
+    pos: any[];
+    orientation: number[];
+    scale: any;
+};
 
 // @public
 export function rangeSensorContract(part: any, definition: any, catalog: any): any;

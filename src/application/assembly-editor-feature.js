@@ -12,7 +12,7 @@ import { createTwoEndedComponentAuthoring } from "./two-ended-component-authorin
  *   phase: number, storedEnergyWh?: number, customColor: number | null,
  *   rigRole?: string | null, rigVisualRotation?: number[] | null,
  *   scriptLanguage?: string | null, scriptSources?: Record<string, unknown> | null,
- *   controllerBindings?: object[],
+ *   controllerBindings?: object[], extensions?: Record<string, unknown>,
  *   programAcquisition?: string | null, programTrust?: object | null,
  * }} EditorPart
  * @typedef {{ id:string, a:number, b:number, kind:string, portA:string, portB:string, releaseCouplerPartId?:number, stress?:number, fatigue?:number, failed?:boolean }} EditorLink
@@ -170,6 +170,9 @@ export function createAssemblyEditorFeature({
       : source.type === "computer"
         ? []
         : null;
+    clone.extensions = source.extensions
+      ? structuredClone(source.extensions)
+      : undefined;
     if (source.type === "computer") {
       clone.programAcquisition = BlueprintAcquisition.LOCAL_AUTHORING;
       clone.programTrust = null;

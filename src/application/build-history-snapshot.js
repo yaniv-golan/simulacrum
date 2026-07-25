@@ -1,4 +1,8 @@
 import { canonicalizeQuaternion } from "../model/primitives.js";
+import {
+  projectPortableAuthoredConnection,
+  projectPortableAuthoredPart,
+} from "../model/authored-assembly-content.js";
 
 /**
  * Captures editor state without retaining meshes or mutable collection
@@ -27,37 +31,29 @@ export function captureBuildHistorySnapshot({
     directSurfaces: structuredClone(store.directSurfaces),
     controllerLayouts: structuredClone(store.controllerLayouts),
     controllerWindowState: structuredClone(store.controllerWindowState),
-    parts: store.parts.map((part) => ({
-      id: part.id,
-      type: part.type,
-      pos: [...part.pos],
-      orientation: canonicalizeQuaternion([
-        part.mesh.quaternion.x,
-        part.mesh.quaternion.y,
-        part.mesh.quaternion.z,
-        part.mesh.quaternion.w,
-      ]),
-      scale: [part.mesh.scale.x, part.mesh.scale.y, part.mesh.scale.z],
-      ...(part.mechanism
-        ? { mechanism: structuredClone(part.mechanism) }
-        : { config: structuredClone(part.config) }),
-      storedEnergyWh: part.storedEnergyWh,
-      customColor: part.customColor,
-      rigRole: part.rigRole || null,
-      rigVisualRotation: part.rigVisualRotation
-        ? [...part.rigVisualRotation]
-        : null,
-      scriptLanguage: part.scriptLanguage,
-      scriptSources: part.scriptSources
-        ? structuredClone(part.scriptSources)
-        : null,
-      controllerBindings:
-        part.type === "computer"
-          ? structuredClone(part.controllerBindings || [])
-          : null,
-      programAcquisition:
-        part.type === "computer" ? part.programAcquisition : undefined,
-    })),
-    connections: structuredClone(store.connections),
+    parts: store.parts.map((part) => {
+      const projected = projectPortableAuthoredPart({
+        ...part,
+        pos: [...part.pos],
+        orientation: canonicalizeQuaternion([
+          part.mesh.quaternion.x,
+          part.mesh.quaternion.y,
+          part.mesh.quaternion.z,
+          part.mesh.quaternion.w,
+        ]),
+        scale: {
+          x: part.mesh.scale.x,
+          y: part.mesh.scale.y,
+          z: part.mesh.scale.z,
+        },
+      });
+      return {
+        ...projected,
+        scale: [projected.scale.x, projected.scale.y, projected.scale.z],
+        programAcquisition:
+          part.type === "computer" ? part.programAcquisition : undefined,
+      };
+    }),
+    connections: store.connections.map(projectPortableAuthoredConnection),
   };
 }

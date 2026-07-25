@@ -9,6 +9,12 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-test-harness.mjs",
   "verify-strict-current-contract.mjs",
   "verify-current-contract-baseline.mjs",
+  "verify-component-inspection-s0.mjs",
+  "verify-component-inspection-contracts.mjs",
+  "verify-component-authored-carriers.mjs",
+  "verify-component-relationship-analysis.mjs",
+  "verify-component-preflight.mjs",
+  "verify-component-inspection-foundation-scale.mjs",
   "verify-browser-errors.mjs",
   "verify-generated-artifacts.mjs",
   "verify-wire-formats.mjs",
@@ -104,6 +110,8 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-multi-controller.mjs",
   "verify-direct-layout.mjs",
   "verify-adaptive-workspace.mjs",
+  "verify-component-authored-carriers-browser.mjs",
+  "verify-component-inspection-browser.mjs",
   "verify-rendered-visibility.mjs",
   "verify-ui-baseline-fixtures.mjs",
   "verify-accessibility.mjs",
@@ -135,6 +143,7 @@ export const VERIFICATION_TIMEOUT_MS = Object.freeze({
   "verify-failure-analysis.mjs": 300_000,
   "verify-testing-playground-browser.mjs": 420_000,
   "verify-ui-baseline-fixtures.mjs": 300_000,
+  "verify-component-authored-carriers-browser.mjs": 300_000,
 });
 
 /**
@@ -144,6 +153,8 @@ export const VERIFICATION_TIMEOUT_MS = Object.freeze({
 export const NON_SUITE_VERIFICATION_FILES = Object.freeze([
   "verify-boundary-types.mjs",
   "verify-challenge-lab.mjs",
+  "verify-component-inspection-performance-live.mjs",
+  "verify-component-inspection-performance.mjs",
   "verify-performance-budget-live.mjs",
   "verify-performance-budget.mjs",
   "verify-test-site-resolution-spike.mjs",
