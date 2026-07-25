@@ -56,6 +56,18 @@ export class CameraTracker {
     return { distance, yaw, pitch };
   }
 
+  restoreSnapshot(viewState) {
+    return {
+      ...this.snapPreset({
+        positionM: viewState.position.toArray(),
+        targetM: viewState.target.toArray(),
+        fovDeg: viewState.fovDeg,
+      }),
+      followSelection: viewState.followSelection,
+      presetId: viewState.presetId,
+    };
+  }
+
   update({
     dt,
     yaw,

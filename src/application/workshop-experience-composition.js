@@ -48,9 +48,7 @@ export function createWorkshopExperienceComposition({
         persistence.subassemblyLibrary.render(category),
       undo: history.undo,
       redo: history.redo,
-      removeSelection: assembly.editor.removeSelection,
-      duplicateSelection: assembly.editor.duplicate,
-      mirrorSelection: assembly.editor.mirror,
+      executeSelectedCommand: presentation.executeSelectedCommand,
     },
     simulation: {
       stop: run.simulation.stop,

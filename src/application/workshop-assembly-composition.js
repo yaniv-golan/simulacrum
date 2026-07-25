@@ -66,6 +66,8 @@ export function createWorkshopAssemblyComposition({
         shell.query("#mission-desc").textContent = description;
       },
       hideDriveHud: () => shell.query(".drive-hud").classList.add("hidden"),
+      showAllComponents: (options) =>
+        presentation.editor.selectionVisibility.showAll(options),
       notify: shell.notify,
     },
     actions: {

@@ -3,6 +3,7 @@ import { escapeHtml } from "./html.js";
 const ACTION_ELEMENT_SELECTORS = Object.freeze({
   "selection.duplicate": '[data-shortcut-action="selection.duplicate"]',
   "selection.remove": '[data-shortcut-action="selection.remove"]',
+  "selection.frame": '[data-shortcut-action="selection.frame"]',
   "view.explode": '[data-shortcut-action="view.explode"]',
 });
 

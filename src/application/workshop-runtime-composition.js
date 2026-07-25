@@ -118,6 +118,7 @@ export function installWorkshopRuntimeComposition({
           buildPresentationDebugReadModel({
             state: shell.state,
             keyboard: input.keyboard.snapshot,
+            selectionVisibility: editor.selectionVisibility.snapshot,
           }),
       },
       renderUi: view.renderUi,

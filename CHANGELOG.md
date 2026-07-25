@@ -9,6 +9,11 @@
   immutable selected-component read model; strict authored-content projection
   and fingerprints; bounded direct relationships and authored-only preflight;
   current-data observation adapters; and portable/live performance gates.
+- Added a selected-context Inspector action model with exact selection scope,
+  external-connection and controller-binding impact, explicit multi-selection
+  primary choice, complete-selection `F` framing, and transient **Isolate** /
+  **Show All** views that restore the prior camera without changing authored or
+  simulated machine state.
 - Added Rope as an ordinary player-authored `flexible-line-v1` component with
   zero-, one-, and two-ended attachment, distributed mass and contact,
   tension-only response, sag, endpoint/internal failure, deterministic split
@@ -64,8 +69,15 @@
   inspector drawers at laptop widths, compact Direct Control disclosure outside
   Simulate, larger challenge diagnostics, and a focused Mechanism Lab workspace
   with its own exact assembly outliner.
+- Split the Inspector's entity tree and selected-component details into bounded
+  scroll regions, keeping identity, action impact, Frame, and Isolate visible
+  at laptop widths while retaining the exact keyboard-navigable entity tree.
 
 ### Fixed
+
+- Removed controller bindings that target deleted components as part of the
+  same undoable selection deletion; Undo restores both the component and the
+  exact binding manifest.
 
 - Prevented a one-ended Rope attached to a wheel-like component from starting
   inside the wheel or build plate and injecting launch energy. The endpoint now

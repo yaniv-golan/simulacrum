@@ -36,7 +36,9 @@ export function createComponentInspectionFeature({
       primaryPartId = selection.primaryPartId(),
       running = runtime.running(),
       evidenceRevision = runtime.evidenceRevision(),
-      key = `${revision}|${selectedPartIds.join(",")}|${String(primaryPartId)}|${running ? 1 : 0}|${evidenceRevision}`;
+      commandRevision = commandCatalog.revision?.() || 0,
+      isolationActive = runtime.isolationActive?.() || false,
+      key = `${revision}|${selectedPartIds.join(",")}|${String(primaryPartId)}|${running ? 1 : 0}|${evidenceRevision}|${commandRevision}|${isolationActive ? 1 : 0}`;
     if (cacheKey === key && cached) return cached;
     if (authoredRevision !== revision || !relationshipIndex) {
       authoredRevision = revision;
@@ -57,6 +59,9 @@ export function createComponentInspectionFeature({
       selectedParts = selectedPartIds
         .map((partId) => partById.get(partId))
         .filter(Boolean),
+      selectedPartIdSet = new Set(selectedPartIds),
+      externalConnectionIds = new Set(),
+      externalControllerBindingIds = new Set(),
       directRelationships = (authoredRelationships?.connections || []).map(
         (relationship) =>
           projectCurrentConnectionObservation({
@@ -93,6 +98,26 @@ export function createComponentInspectionFeature({
           ),
         0,
       );
+    for (const selectedPartId of selectedPartIds) {
+      const relationships = relationshipIndex.forPart(selectedPartId);
+      for (const connection of relationships?.connections || [])
+        if (!selectedPartIdSet.has(connection.counterpartPartId))
+          externalConnectionIds.add(connection.connectionId);
+      for (const binding of relationships?.controllerBindings || []) {
+        const controllerSelected = selectedPartIdSet.has(
+            binding.controllerPartId,
+          ),
+          endpointSelected = selectedPartIdSet.has(binding.endpointPartId);
+        if (controllerSelected !== endpointSelected)
+          externalControllerBindingIds.add(
+            `${String(binding.controllerPartId)}:${binding.bindingId}`,
+          );
+      }
+    }
+    const selectionImpact = {
+      externalConnectionCount: externalConnectionIds.size,
+      externalControllerBindingCount: externalControllerBindingIds.size,
+    };
     let status = {
       kind: "none",
       label: "",
@@ -150,16 +175,16 @@ export function createComponentInspectionFeature({
       },
       header: primary
         ? {
-            name:
-              selectedPartIds.length > 1
-                ? `${selectedPartIds.length} COMPONENTS`
-                : catalog[primary.type]?.name || primary.type,
-            subtitle:
-              selectedPartIds.length > 1
-                ? "MULTI-SELECTION · PRIMARY SHOWN"
-                : "SELECTED COMPONENT",
+            name: `${catalog[primary.type]?.name || primary.type} #${primary.id}`,
+            subtitle: `${selectedPartIds.length} COMPONENT${selectedPartIds.length === 1 ? "" : "S"} SELECTED`,
             type: primary.type,
             partId: primary.id,
+            primaryLabel: `Primary component: ${catalog[primary.type]?.name || primary.type} #${primary.id}`,
+            options: selectedParts.map((part) => ({
+              partId: part.id,
+              type: part.type,
+              label: `${catalog[part.type]?.name || part.type} #${part.id}`,
+            })),
           }
         : null,
       status,
@@ -200,7 +225,12 @@ export function createComponentInspectionFeature({
         : [],
       preflight,
       observation,
-      commands: commandCatalog.describe({ selectedPartIds, running }),
+      commands: commandCatalog.describe({
+        selectedPartIds,
+        running,
+        impact: selectionImpact,
+        isolationActive,
+      }),
     };
     cacheKey = key;
     cached = immutableClone(value);

@@ -1,7 +1,9 @@
-import { createExplodedViewController } from "../presentation/exploded-view-controller.js";
 import { createTransformGizmoController } from "../presentation/transform-gizmo-controller.js";
+import { createEditorExplodedView } from "./editor-exploded-view-composition.js";
 import { createEditorPresentationSubsystem } from "./editor-presentation-subsystem.js";
+import { createEditorSelectionVisibility } from "./editor-selection-visibility-composition.js";
 import { createWorldPresentationSubsystem } from "./world-presentation-subsystem.js";
+import { createSelectedContextCommandCatalog } from "./component-action-catalog.js";
 
 /** Composes editor visuals, transforms, world interaction, and exploded view. */
 export function createWorkshopEditorPresentationSubsystem({
@@ -20,7 +22,9 @@ export function createWorkshopEditorPresentationSubsystem({
   actions,
 }) {
   let editorPresentation;
-  const transformGizmo = createTransformGizmoController({
+  const visibility = { current: null },
+    commandCatalog = createSelectedContextCommandCatalog(),
+    transformGizmo = createTransformGizmoController({
       camera: scene.camera,
       element: scene.renderer.domElement,
       scene: scene.world,
@@ -85,6 +89,11 @@ export function createWorkshopEditorPresentationSubsystem({
       tutorialEvent: actions.tutorialEvent,
       notify: view.notify,
     },
+    commandCatalog,
+    isolation: {
+      active: () => visibility.current?.active() || false,
+      selectionChanged: () => visibility.current?.selectionChanged(),
+    },
   });
 
   const world = createWorldPresentationSubsystem({
@@ -97,37 +106,31 @@ export function createWorkshopEditorPresentationSubsystem({
       assembly: {
         parts: () => state.parts,
         selectedId: () => state.editor.selected,
+        selectedIds: () => state.editor.selectedIds,
         partName: (type) => catalog[type]?.name || type,
       },
       telemetry,
       editor: { setCameraTool: actions.setCameraTool },
       view: { query: view.query, notify: view.notify },
     }),
-    exploded = createExplodedViewController({
-      model: {
-        state: createExplodedStatePort(state),
-        running: () => state.running,
-        parts: () => state.parts,
-        connections: () => state.connections,
-        selectedId: () => state.editor.selected,
-        humanoidLayout: capabilities.humanoidLayout,
-      },
-      view: {
-        cameraTarget: scene.cameraTarget,
-        offsetCameraDistance: world.cameraController.offsetDistance,
-        transform,
-        query: view.query,
-      },
-      actions: {
-        connectionValid: editorPresentation.connectionValid,
-        drawConnections: editorPresentation.drawConnections,
-        updateSelection: editorPresentation.updateSelection,
-        updateHover: editorPresentation.selection.updateHover,
-        showSelection: editorPresentation.showSelection,
-        updateDriveHud: view.updateDriveHud,
-        notify: view.notify,
-      },
+    selectionVisibility = createEditorSelectionVisibility({
+      state,
+      scene,
+      camera: world.cameraController,
+      editorPresentation,
+      view,
+    }),
+    exploded = createEditorExplodedView({
+      state,
+      capabilities,
+      scene,
+      world,
+      transform,
+      view,
+      editorPresentation,
+      explodedState: createExplodedStatePort(state),
     });
+  visibility.current = selectionVisibility;
 
   return Object.freeze({
     transformGizmo,
@@ -137,6 +140,7 @@ export function createWorkshopEditorPresentationSubsystem({
     beginConnection: actions.beginConnection,
     world,
     exploded,
+    selectionVisibility,
   });
 }
 

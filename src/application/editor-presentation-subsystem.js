@@ -1,12 +1,8 @@
 import { createComponentInspectorController } from "../presentation/component-inspector-controller.js";
 import { createSelectionArranger } from "../presentation/selection-arranger.js";
 import { createEditorConnectionFeature } from "./editor-connection-feature.js";
+import { createEditorInspectorActions } from "./editor-inspector-actions.js";
 import { createEditorSelectionFeature } from "./editor-selection-feature.js";
-import { applyEditorAction } from "../model/application-state.js";
-import {
-  configureAuthoredMechanism,
-  configureComponentPart,
-} from "./component-authoring-commands.js";
 import { createEditorComponentInspection as composeInspection } from "./editor-component-inspection-composition.js";
 /** Composes editor selection, connection, arrangement, and Inspector ownership. */
 export function createEditorPresentationSubsystem({
@@ -17,6 +13,8 @@ export function createEditorPresentationSubsystem({
   assembly,
   view,
   actions,
+  commandCatalog,
+  isolation,
 }) {
   let selection, connection, arranger, inspector, inspection;
 
@@ -33,7 +31,10 @@ export function createEditorPresentationSubsystem({
       connectFrom: () => state.editor.connectFrom,
       exploded: () => state.exploded,
       explodeAmount: () => state.explodeAmount,
-      select: actions.select,
+      select: (...args) => {
+        actions.select(...args);
+        isolation.selectionChanged?.();
+      },
       cancelConnection: actions.cancelConnection,
     },
     scene: {
@@ -90,7 +91,14 @@ export function createEditorPresentationSubsystem({
     toast: actions.notify,
   });
 
-  inspection = composeInspection({ state, assembly, connection, catalog });
+  inspection = composeInspection({
+    state,
+    assembly,
+    connection,
+    catalog,
+    commandCatalog,
+    isolation,
+  });
 
   inspector = createComponentInspectorController({
     model: {
@@ -98,6 +106,7 @@ export function createEditorPresentationSubsystem({
       connections: () => state.connections,
       selectedId: () => state.editor.selected,
       selectedEntity: () => state.editor.selectedEntity,
+      primaryPartId: () => state.editor.selected,
       selectedParts: selection.selectedParts,
       connectFrom: () => state.editor.connectFrom,
       connectPort: () => state.editor.connectPort,
@@ -111,51 +120,20 @@ export function createEditorPresentationSubsystem({
       arrangerMarkup: arranger.markup,
       bindArranger: arranger.bind,
     },
-    actions: {
-      recordHistory: history.record,
-      configurePart: configureComponentPart,
-      configureMechanism: configureAuthoredMechanism,
-      syncAssembly: assembly.sync,
+    actions: createEditorInspectorActions({
+      state,
+      catalog,
+      history,
+      assembly,
+      view,
+      actions,
+      selection,
+      connection,
+      showSelection,
+      renderInspector,
       drawConnections,
       updateSelection,
-      prepareFoot: actions.prepareFoot,
-      openController: actions.openController,
-      beginConnection: actions.beginConnection,
-      completeConnection: (partId, targetPort) => {
-        const sourceId = state.editor.connectFrom;
-        if (!sourceId) return false;
-        const connected = connection.connect(
-          sourceId,
-          partId,
-          "auto",
-          targetPort,
-        );
-        if (!connected) return false;
-        applyEditorAction(state.editor, { type: "cancel-connection" });
-        view.query(".connection-banner")?.classList.add("hidden");
-        selection.clearEffect("previewLine");
-        actions.setMode("build");
-        actions.notify("Physical connection created");
-        actions.tutorialEvent("connected");
-        return true;
-      },
-      connectWithRope: actions.connectWithRope,
-      selectPart: (partId) => {
-        actions.select(partId, [partId]);
-        showSelection(state.parts.find((part) => part.id === partId) || null);
-        renderInspector();
-      },
-      selectConnection: (connectionId, partId) => {
-        applyEditorAction(state.editor, {
-          type: "select-connection",
-          connectionId,
-          partId,
-        });
-        showSelection(state.parts.find((part) => part.id === partId) || null);
-      },
-      setMode: actions.setMode,
-      notify: actions.notify,
-    },
+    }),
   });
 
   return Object.freeze({
@@ -175,5 +153,22 @@ export function createEditorPresentationSubsystem({
     isMechanicallyAnchored: connection.isMechanicallyAnchored,
     renderInspector,
     inspection: inspection.read,
+    bindSelectedCommands: commandCatalog.bind,
+    setSelectedCommandKeyboardRegistry: commandCatalog.setKeyboardRegistry,
+    executeSelectedCommand(commandId) {
+      const command = inspection
+        .read()
+        .commands.find((candidate) => candidate.id === commandId);
+      if (!command)
+        throw new Error(`Unknown selected-context command ${commandId}`);
+      if (command.availability !== "available") {
+        actions.notify(
+          command.disabledReason || `${command.label} is unavailable`,
+        );
+        return false;
+      }
+      commandCatalog.execute(commandId);
+      return true;
+    },
   });
 }

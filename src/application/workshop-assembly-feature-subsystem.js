@@ -126,6 +126,7 @@ export function createWorkshopAssemblyFeatureSubsystem({
         setMode: actions.setMode,
         setMission: view.setMission,
         hideDriveHud: view.hideDriveHud,
+        showAllComponents: view.showAllComponents,
         notify: view.notify,
       },
       context: {

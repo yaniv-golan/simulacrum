@@ -41,7 +41,7 @@ export function installWorkshopInputComposition({
       showSelection: presentation.showSelection,
       showHover: presentation.showHover,
       clearEffect: presentation.clearEffect,
-      renderInspector: presentation.renderInspector,
+      presentation: editor,
       undo: history.undo,
       redo: history.redo,
       selectAll: assemblyEditor.selectAll,

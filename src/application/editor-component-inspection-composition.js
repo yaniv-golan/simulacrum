@@ -6,6 +6,8 @@ export function createEditorComponentInspection({
   assembly,
   connection,
   catalog,
+  commandCatalog,
+  isolation,
 }) {
   return createComponentInspectionFeature({
     assembly: {
@@ -34,7 +36,9 @@ export function createEditorComponentInspection({
           .find((entry) => entry.id === connectionId);
         return candidate ? connection.valid(candidate) : null;
       },
+      isolationActive: () => isolation?.active() || false,
     },
     catalog,
+    commandCatalog,
   });
 }

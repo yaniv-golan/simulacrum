@@ -1,8 +1,9 @@
 import { createPrimarySurfaceController } from "./primary-surface-controller.js";
+import { bindSelectedCommandButtons } from "./selected-command-button-bindings.js";
 
 /**
  * @typedef {{ query:(selector:string)=>Element|null, queryAll:(selector:string)=>Element[] }} WorkshopCommandView
- * @typedef {{ running:()=>boolean, setMode:(mode:string)=>void, stop:()=>void, pause:()=>void, cycleSpeed:(direction:number)=>void, reset:()=>void, undo:()=>void, redo:()=>void, clear:()=>void, clearSelection:()=>void, removeSelection:()=>void, duplicateSelection:()=>void, mirrorSelection:()=>void }} WorkshopCommandPort
+ * @typedef {{ running:()=>boolean, setMode:(mode:string)=>void, stop:()=>void, pause:()=>void, cycleSpeed:(direction:number)=>void, reset:()=>void, undo:()=>void, redo:()=>void, clear:()=>void, clearSelection:()=>void, executeSelectedCommand:(commandId:string)=>void }} WorkshopCommandPort
  * @typedef {{ render:(category?:string)=>void }} CatalogCommandPort
  * @typedef {{ render:()=>void, releaseHeld:()=>void, setProfile:(profile:string)=>void, toggleEdit:()=>void, addAuxiliary:()=>void, toggleDirectSurface:()=>void }} RemoteCommandPort
  * @typedef {{
@@ -76,9 +77,7 @@ export function installWorkshopCommandController({
   required("#redo-tool").onclick = () => workshop.redo();
   required("#clear-build").onclick = () => workshop.clear();
   required("#close-inspect").onclick = () => workshop.clearSelection();
-  required("#delete-part").onclick = () => workshop.removeSelection();
-  required("#duplicate-part").onclick = () => workshop.duplicateSelection();
-  required("#mirror-selection").onclick = () => workshop.mirrorSelection();
+  bindSelectedCommandButtons(required, workshop.executeSelectedCommand);
   const remoteButton = required("#remote-btn"),
     remotePanel = required(".remote-console"),
     primarySurfaces = createPrimarySurfaceController({

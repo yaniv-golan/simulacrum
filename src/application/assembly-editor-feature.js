@@ -46,6 +46,7 @@ import { createTwoEndedComponentAuthoring } from "./two-ended-component-authorin
  *   syncAssembly: () => void, drawConnections: () => void, render: () => void,
  *   setMode: (mode: string) => void, setMission: (title: string, description: string) => void,
  *   hideDriveHud: () => void, notify: (message: string) => void,
+ *   showAllComponents: (options?:object) => void,
  * }} AssemblyViewPort
  * @typedef {{
  *   resetChallenge: () => void, assemblyReplaced: () => void,
@@ -129,6 +130,7 @@ export function createAssemblyEditorFeature({
   });
 
   function clear() {
+    view.showAllComponents({ restoreCamera: false, silent: true });
     controllers.stopAll("IDLE");
     workspace.scriptControllerId = null;
     simulation.destroyFlight();
@@ -222,6 +224,11 @@ export function createAssemblyEditorFeature({
     )
       workspace.scriptControllerId = null;
     history.record(`delete ${ids.size} component${ids.size === 1 ? "" : "s"}`);
+    for (const controller of workspace.parts)
+      if (controller.type === "computer" && !ids.has(controller.id))
+        controller.controllerBindings = (
+          controller.controllerBindings || []
+        ).filter((binding) => !ids.has(binding.endpointPartId));
     for (let index = workspace.parts.length - 1; index >= 0; index--)
       if (ids.has(workspace.parts[index].id)) {
         disposeObject3D(workspace.parts[index].mesh);

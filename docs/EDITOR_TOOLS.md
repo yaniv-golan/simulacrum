@@ -42,6 +42,15 @@ component's chosen coordinate. Distribution sorts centers on an axis, preserves
 the two endpoints, and equalizes the intervals between them. Presentation owns
 inputs, history labels, and gizmo/wire refresh.
 
+The Inspector makes that scope explicit. Its header identifies every selection's
+primary component and, for a multi-selection, lets the player change the primary
+without changing membership. The selected-context command catalog reports the
+exact selected IDs plus external connection and controller-binding impact.
+`F`/Frame derives one camera bound from the complete selected set. Isolate/Show
+All is a transient presentation filter: it snapshots mesh/wire visibility and
+the camera, never enters authored state or history, and is cleared before a
+selected-context edit, a changed selection, or a simulation transition.
+
 ## Engineering analysis
 
 `analyzeAssembly()` is DOM-free and deterministic:
@@ -68,3 +77,7 @@ alignment/distribution, mass, displacement, and thrust math.
 `scripts/verify-editor-tools.mjs` exercises save, clear, place, marquee, exact
 position, alignment, distribution, overlay toggles, missile thrust, responsive
 drawer priority, persistence, screenshots, and console health in Chromium.
+`scripts/verify-component-selection-actions.mjs` pins command scope, live
+bindings, framing, and transient visibility. The component-selection browser
+suites pin focus recovery, text/DOM parity, authored-state invariance, exact
+controller-binding deletion impact, cleanup, and Undo.

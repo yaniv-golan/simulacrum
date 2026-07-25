@@ -67,7 +67,7 @@ async function importFixture(blueprint) {
   await page.waitForTimeout(100);
   assert.equal(
     await page.locator("#inspect-name").textContent(),
-    "Steel Axle",
+    "Steel Axle #2",
     "fixture did not leave the axle selected",
   );
 }

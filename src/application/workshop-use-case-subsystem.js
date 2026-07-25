@@ -91,9 +91,7 @@ export function installWorkshopUseCaseSubsystem({
       redo: editor.redo,
       clear: editor.clearBuildPlate,
       clearSelection: editor.clearSelection,
-      removeSelection: editor.removeSelection,
-      duplicateSelection: editor.duplicateSelection,
-      mirrorSelection: editor.mirrorSelection,
+      executeSelectedCommand: editor.executeSelectedCommand,
     },
     remote: {
       render: remote.render,

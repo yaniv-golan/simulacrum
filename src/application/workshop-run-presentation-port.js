@@ -19,11 +19,16 @@ export function createWorkshopRunPresentationPort({
     render: actions.render,
     tutorialEvent: actions.tutorialEvent,
     setExploded: editor.exploded.set,
-    setEditorTestMode: () =>
+    setEditorTestMode: () => {
+      editor.selectionVisibility.showAll({
+        restoreCamera: false,
+        silent: true,
+      });
       actions.applyEditorAction(state.editor, {
         type: "set-mode",
         mode: "test",
-      }),
+      });
+    },
     workspaceFocused: () => shell.chrome.focused,
     focusWorkspace: (focused) => shell.chrome.toggleFocus(focused),
     hasWheels: assembly.capabilities.hasWheels,

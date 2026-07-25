@@ -62,6 +62,13 @@ export const KEYBOARD_ACTION_DEFINITIONS = Object.freeze([
     ["workshop"],
   ),
   action(
+    "selection.frame",
+    "Frame selection",
+    "View",
+    ["KeyF"],
+    ["workshop", "operation"],
+  ),
+  action(
     "rope.attach-a",
     "Attach Rope end A",
     "Rope",
@@ -225,6 +232,7 @@ export function keyboardBindingMatches(event, binding) {
 /** Session-scoped mutable bindings for workshop and camera actions. */
 export function createKeyboardActionRegistry() {
   const overrides = new Map();
+  let revision = 0;
 
   function bindingsFor(actionId) {
     const definition = KEYBOARD_ACTION_DEFINITIONS.find(
@@ -284,12 +292,14 @@ export function createKeyboardActionRegistry() {
     while (current.length <= slot) current.push(null);
     current[slot] = binding;
     overrides.set(actionId, current.filter(Boolean));
+    revision += 1;
   }
 
   function clearBinding(actionId, slot) {
     const current = bindingsFor(actionId);
     current.splice(slot, 1);
     overrides.set(actionId, current);
+    revision += 1;
   }
 
   return Object.freeze({
@@ -299,7 +309,9 @@ export function createKeyboardActionRegistry() {
     conflictFor,
     reset() {
       overrides.clear();
+      revision += 1;
     },
+    revision: () => revision,
     resolve,
     setBinding,
     snapshot() {

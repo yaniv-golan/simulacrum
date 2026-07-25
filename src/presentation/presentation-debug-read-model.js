@@ -26,6 +26,11 @@ export function buildPresentationDebugReadModel({
   root = document,
   state,
   keyboard,
+  selectionVisibility = () => ({
+    active: false,
+    isolatedPartIds: [],
+    hiddenPartIds: [],
+  }),
 }) {
   const $ = (selector) => root.querySelector(selector),
     visible = (selector) => rendered($(selector)),
@@ -99,5 +104,6 @@ export function buildPresentationDebugReadModel({
       directControl: surfaces.directControl,
     },
     keyboard: keyboard(),
+    selectionVisibility: selectionVisibility(),
   };
 }

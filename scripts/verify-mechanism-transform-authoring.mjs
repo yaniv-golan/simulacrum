@@ -67,7 +67,14 @@ try {
       );
   }
 
-  const mirror = page.getByRole("button", { name: "X-AXIS MIRROR" });
+  const mirror = page.locator("#mirror-selection");
+  assert.match(
+    await mirror.getAttribute("aria-label"),
+    new RegExp(
+      `Mirror ${state.selectedParts.length} components\\. Selection scope has`,
+    ),
+    "mirror action did not expose its exact multi-selection scope",
+  );
   await mirror.focus();
   await page.keyboard.press("Enter");
   state = await textState();

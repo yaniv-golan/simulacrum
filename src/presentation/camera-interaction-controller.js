@@ -4,6 +4,7 @@ import {
   partIdForCameraHit,
   placementIntentForCamera,
 } from "./camera-authoring-intent.js";
+import { selectionCameraFrame } from "./selection-camera-frame.js";
 
 /**
  * @typedef {{ id: number, type: string, mesh: THREE.Object3D }} CameraPart
@@ -18,6 +19,7 @@ import {
  * @typedef {{
  *   parts: () => CameraPart[],
  *   selectedId: () => number | null,
+ *   selectedIds: () => Set<number>,
  *   running: () => boolean,
  *   focusedEnvironmentObject: () => THREE.Object3D | null,
  *   partName: (type: string) => string,
@@ -136,28 +138,27 @@ export function createCameraInteractionController({
 
   function frameSelection() {
     presetId = null;
-    const selected = selectedPart();
-    const object = selected?.mesh || machine;
-    if (!selected && !assembly.parts().length) {
+    const frame = selectionCameraFrame({
+      parts: assembly.parts(),
+      selectedIds: assembly.selectedIds(),
+      machine,
+      camera,
+      partName: assembly.partName,
+    });
+    if (!frame) {
       reset();
       return;
     }
-    const bounds = new THREE.Box3().setFromObject(object);
-    const sphere = bounds.getBoundingSphere(new THREE.Sphere());
-    if (!Number.isFinite(sphere.radius)) return;
     followSelection = false;
-    target.copy(sphere.center);
-    distance = THREE.MathUtils.clamp(
-      (sphere.radius / Math.sin(THREE.MathUtils.degToRad(camera.fov * 0.5))) *
-        1.35,
-      selected ? 4 : 7,
-      70,
-    );
-    view.notify(
-      selected
-        ? `Framed ${assembly.partName(selected.type)}`
-        : "Framed complete machine",
-    );
+    target.copy(frame.target);
+    distance = frame.distance;
+    view.notify(frame.message);
+  }
+
+  function restoreSnapshot(viewState) {
+    if (!viewState) return;
+    ({ distance, yaw, pitch, followSelection, presetId } =
+      tracker.restoreSnapshot(viewState));
   }
 
   function toggleFollow() {
@@ -439,13 +440,13 @@ export function createCameraInteractionController({
     return {
       presetId,
       fovDeg: camera.fov,
-      position: camera.position,
+      position: camera.position.clone(),
       distance,
       renderedDistance: tracker.smoothedDistance,
       yaw,
       pitch,
       followSelection,
-      target: tracker.smoothedTarget,
+      target: tracker.smoothedTarget.clone(),
       trackingError: tracker.smoothedTarget.distanceTo(target),
       tracking: tracker.telemetry,
     };
@@ -485,6 +486,7 @@ export function createCameraInteractionController({
       spaceHeld = false;
     },
     reset,
+    restoreSnapshot,
     setCameraTool,
     shiftSmoothedTarget(deltaX, deltaZ) {
       tracker.smoothedTarget.x -= deltaX;

@@ -151,9 +151,10 @@ export function createAssemblyOutlinerController({ model, view, actions }) {
                 selectedEntity.partId === part.id) ||
               (selectedEntity?.kind === "parts" &&
                 selectedEntity.partIds?.includes(part.id)),
+            primary = model.primaryPartId() === part.id,
             expanded = !collapsedParts.has(part.id),
             partKey = `part:${part.id}`;
-          return `<li role="none"><button type="button" role="treeitem" aria-level="1" aria-expanded="${expanded}" data-outliner-key="${partKey}" data-outliner-part="${part.id}" ${selected ? 'aria-current="true"' : ""}><b>${escapeMarkup(type?.name || part.type)}</b><span>part #${part.id} · ${type.ports.length} ports</span></button><ul role="group" ${expanded ? "" : "hidden"}>${type.ports.map((port) => `<li role="none"><button type="button" role="treeitem" aria-level="2" data-outliner-key="port:${part.id}:${escapeMarkup(port.id)}" data-outliner-port-part="${part.id}" data-outliner-port="${escapeMarkup(port.id)}" ${selectedEntity?.kind === "port" && selectedEntity.partId === part.id && selectedEntity.port === port.id ? 'aria-current="true"' : ""}><b>${escapeMarkup(port.id)}</b><span>${escapeMarkup(port.kind)} port</span></button></li>`).join("")}</ul></li>`;
+          return `<li role="none"><button type="button" role="treeitem" aria-level="1" aria-expanded="${expanded}" aria-selected="${selected}" data-outliner-key="${partKey}" data-outliner-part="${part.id}" ${primary ? 'aria-current="true"' : ""}><b>${escapeMarkup(type?.name || part.type)}</b><span>part #${part.id} · ${type.ports.length} ports${primary ? " · PRIMARY" : ""}</span></button><ul role="group" ${expanded ? "" : "hidden"}>${type.ports.map((port) => `<li role="none"><button type="button" role="treeitem" aria-level="2" data-outliner-key="port:${part.id}:${escapeMarkup(port.id)}" data-outliner-port-part="${part.id}" data-outliner-port="${escapeMarkup(port.id)}" ${selectedEntity?.kind === "port" && selectedEntity.partId === part.id && selectedEntity.port === port.id ? 'aria-current="true"' : ""}><b>${escapeMarkup(port.id)}</b><span>${escapeMarkup(port.kind)} port</span></button></li>`).join("")}</ul></li>`;
         })
         .join(""),
       connectionRows = model

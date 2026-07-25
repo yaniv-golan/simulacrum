@@ -160,7 +160,7 @@ export function createEditorSelectionFeature({
     const labelTitle = queryRequired(".selection-label b");
     labelTitle.textContent =
       selection.length > 1
-        ? `${selection.length} COMPONENTS`
+        ? `${selection.length} COMPONENTS · PRIMARY ${view.partName(part.type).toUpperCase()} #${part.id}`
         : view.partName(part.type).toUpperCase();
     label.classList.remove("hidden");
     view.positionLabel();

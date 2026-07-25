@@ -12,6 +12,7 @@ import {
   breakawayUmbilicalMarkup,
 } from "./breakaway-umbilical-editor.js";
 import * as ropeInspector from "./flexible-line-inspector.js";
+import { replaceSelectOptions } from "./select-options.js";
 
 /**
  * @typedef {{
@@ -35,6 +36,7 @@ import * as ropeInspector from "./flexible-line-inspector.js";
  * @typedef {{
  *   parts: () => InspectorPart[], connections: () => InspectorConnection[],
  *   selectedId: () => number | null, selectedParts: () => InspectorPart[],
+ *   primaryPartId: () => number | null,
  *   selectedEntity: () => object | null,
  *   connectFrom: () => number | null, connectPort: () => string | null,
  *   running: () => boolean,
@@ -59,6 +61,7 @@ import * as ropeInspector from "./flexible-line-inspector.js";
  *   completeConnection: (partId: number, port: string) => boolean,
  *   connectWithRope: (partIds:number[], extraSlackM:number) => boolean,
  *   selectPart: (partId: number) => void,
+ *   setPrimaryPart: (partId: number) => void,
  *   selectConnection: (connectionId: string, partId: number) => void,
  *   setMode: (mode: string) => void, notify: (message: string) => void,
  * }} InspectorActionPort
@@ -79,6 +82,7 @@ export function createComponentInspectorController({ model, view, actions }) {
       parts: model.parts,
       connections: model.connections,
       selectedEntity: model.selectedEntity,
+      primaryPartId: model.primaryPartId,
     },
     view: {
       list: () => required("#assembly-outliner-list"),
@@ -139,6 +143,49 @@ export function createComponentInspectorController({ model, view, actions }) {
     const status = required(".status");
     status.textContent = inspection.status.label;
     status.classList.toggle("warning", inspection.status.warning);
+    const primaryControl = /** @type {HTMLLabelElement} */ (
+        required(".primary-selection-control")
+      ),
+      primarySelect = /** @type {HTMLSelectElement} */ (
+        required("#primary-selection")
+      ),
+      impact = inspection.commands[0]?.scope?.impact || {
+        externalConnectionCount: 0,
+        externalControllerBindingCount: 0,
+        description:
+          "0 external connections and 0 cross-selection controller bindings",
+      };
+    primaryControl.classList.toggle("hidden", selection.length < 2);
+    replaceSelectOptions(
+      primarySelect,
+      inspection.header.options,
+      inspection.selection.primaryPartId,
+      "partId",
+    );
+    primarySelect.setAttribute("aria-label", inspection.header.primaryLabel);
+    required("#selection-impact").textContent =
+      `ACTION SCOPE · ${selection.length} COMPONENT${selection.length === 1 ? "" : "S"} · ${impact.description.toUpperCase()}`;
+
+    for (const [commandId, selector] of [
+      ["selection.duplicate", "#duplicate-part"],
+      ["selection.mirror-x", "#mirror-selection"],
+      ["selection.remove", "#delete-part"],
+      ["selection.frame", "#frame-selection"],
+      ["selection.isolate", "#isolate-selection"],
+      ["selection.show-all", "#show-all-components"],
+    ]) {
+      const command = inspection.commands.find(
+          (candidate) => candidate.id === commandId,
+        ),
+        button = /** @type {HTMLButtonElement} */ (required(selector));
+      if (!command) continue;
+      button.classList.toggle("hidden", !command.visible);
+      button.disabled = command.availability !== "available";
+      button.setAttribute("aria-label", command.accessibleLabel);
+      button.title = command.disabledReason || command.accessibleLabel;
+      const label = button.querySelector(".action-label");
+      if (label) label.textContent = command.label.toUpperCase();
+    }
 
     const articulatedRoles = articulatedRolesForType(part.type);
     const articulatedRoleEditor = articulatedRoles.length
@@ -240,6 +287,12 @@ export function createComponentInspectorController({ model, view, actions }) {
     const displayUnitSelect = /** @type {HTMLSelectElement|null} */ (
       view.query("#mechanism-display-units")
     );
+    const primarySelect = /** @type {HTMLSelectElement|null} */ (
+      view.query("#primary-selection")
+    );
+    if (primarySelect)
+      primarySelect.onchange = () =>
+        actions.setPrimaryPart(Number(primarySelect.value));
     if (displayUnitSelect)
       displayUnitSelect.onchange = () => {
         displayUnits = displayUnitSelect.value;

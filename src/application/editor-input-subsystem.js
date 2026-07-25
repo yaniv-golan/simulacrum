@@ -24,6 +24,19 @@ export function installEditorInputSubsystem({
   view,
   actions,
 }) {
+  const selectedContext = editor.presentation.editorPresentation,
+    editSelected = (action) => () => {
+      editor.presentation.selectionVisibility.showAll({ silent: true });
+      action();
+    };
+  selectedContext.bindSelectedCommands({
+    "selection.duplicate": editSelected(editor.duplicate),
+    "selection.mirror-x": editSelected(editor.mirror),
+    "selection.remove": editSelected(editor.remove),
+    "selection.frame": camera.frameSelection,
+    "selection.isolate": editor.presentation.selectionVisibility.isolate,
+    "selection.show-all": editor.presentation.selectionVisibility.showAll,
+  });
   const setTool = (tool) => {
       if (
         (tool === "move" || tool === "rotate") &&
@@ -90,14 +103,14 @@ export function installEditorInputSubsystem({
             id,
           });
           editor.showSelection(state.parts.find((part) => part.id === id));
-          editor.renderInspector();
+          selectedContext.renderInspector();
         },
         selectPart: editor.selectPart,
         selectedParts: editor.selectedParts,
         commitMarquee: createMarqueeCommitHandler({
           state,
           showSelection: editor.showSelection,
-          renderInspector: editor.renderInspector,
+          renderInspector: selectedContext.renderInspector,
           toast: view.notify,
         }),
         placePending,
@@ -135,6 +148,8 @@ export function installEditorInputSubsystem({
     setTool,
     cancelConnection,
   });
+  selectedContext.setSelectedCommandKeyboardRegistry(keyboard.actionRegistry);
+  selectedContext.renderInspector();
 
   view.query("#cancel-connect").onclick = cancelConnection;
   view.query("#select-tool").onclick = () => setTool("select");

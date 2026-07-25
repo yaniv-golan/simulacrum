@@ -65,6 +65,7 @@ export function createWorldPresentationSubsystem({
       assembly: {
         parts: assembly.parts,
         selectedId: assembly.selectedId,
+        selectedIds: assembly.selectedIds,
         running: () => state.running,
         focusedEnvironmentObject: () =>
           focusedEnvironmentObject({

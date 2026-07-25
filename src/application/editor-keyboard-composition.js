@@ -47,10 +47,21 @@ export function installEditorKeyboardCommands({
       redo: editor.redo,
       resetSimulation: simulation.reset,
       selectAll: editor.selectAll,
-      duplicate: editor.duplicate,
+      duplicate: () =>
+        editor.presentation.editorPresentation.executeSelectedCommand(
+          "selection.duplicate",
+        ),
       clear: editor.clearBuildPlate,
-      remove: editor.remove,
-      mirror: editor.mirror,
+      remove: () =>
+        editor.presentation.editorPresentation.executeSelectedCommand(
+          "selection.remove",
+        ),
+      mirror: () =>
+        editor.presentation.editorPresentation.executeSelectedCommand(
+          "selection.mirror-x",
+        ),
+      executeSelectedCommand:
+        editor.presentation.editorPresentation.executeSelectedCommand,
       attachRopeEnd: (port) => {
         const part = selectedFlexiblePart();
         if (!part) return;

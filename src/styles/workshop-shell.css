@@ -189,9 +189,12 @@ header {
 .inspector {
   right: 18px;
   padding: 18px;
+  display: flex;
+  flex-direction: column;
 }
 .inspector-content {
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
   padding-bottom: 64px;
@@ -345,13 +348,17 @@ header {
   font-size: 8px;
 }
 .inspector-empty {
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
   place-content: center;
   text-align: center;
   padding: 22px;
 }
 .assembly-outliner {
+  flex: 0 1 38%;
+  min-height: 92px;
+  overflow-y: auto;
   border-bottom: 1px solid var(--line);
   padding: 0 0 12px;
   margin-bottom: 12px;
@@ -396,6 +403,10 @@ header {
 .assembly-outliner button[aria-current="true"] {
   border-color: var(--mint);
   background: #17342f;
+}
+.assembly-outliner button[aria-selected="true"]:not([aria-current="true"]) {
+  border-color: #856b3c;
+  background: #2b2417;
 }
 .orbit-icon {
   font-size: 55px;
@@ -460,6 +471,60 @@ header {
   color: #718c89;
   font-size: 20px;
   cursor: pointer;
+}
+.selection-context {
+  padding: 10px 0 2px;
+  border-bottom: 1px solid var(--line);
+}
+.primary-selection-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  color: #78928e;
+  font: 600 7px "Space Grotesk";
+  letter-spacing: 0.1em;
+}
+.primary-selection-control select {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #34524f;
+  border-radius: 3px;
+  background: #0b1c1e;
+  color: #d6e8e5;
+  padding: 6px;
+  font: 600 8px "Space Grotesk";
+}
+#selection-impact {
+  margin: 7px 0;
+  color: #6f8f8a;
+  font: 600 7px/1.45 "Space Grotesk";
+  letter-spacing: 0.05em;
+}
+.selection-view-actions {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 7px;
+}
+.selection-view-actions button {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #304a48;
+  background: #102426;
+  color: #9ab7b2;
+  padding: 7px 5px;
+  font: 600 7px "Space Grotesk";
+  cursor: pointer;
+}
+.selection-view-actions button:disabled,
+.inspector-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.selection-view-actions kbd {
+  margin-left: 3px;
+  color: #a8d8cf;
+  font: inherit;
 }
 .status-row {
   display: flex;
