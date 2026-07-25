@@ -811,6 +811,50 @@ assert.doesNotMatch(
   /\b(?:document|window)\b|querySelector|classList|textContent|state\.|from\s+["']cannon-es|new\s+(?:World|SimulationSession)/,
   "transform gizmo controller crossed into DOM, global state, or simulation",
 );
+const transformGizmoOperationSource = await fs.readFile(
+  path.join(root, "src", "presentation", "transform-gizmo-operation.js"),
+  "utf8",
+);
+assert.ok(
+  transformGizmoOperationSource.trim().split(/\r?\n/).length <= 140,
+  "transform gizmo operation exceeded bounded transaction ownership",
+);
+assert.doesNotMatch(
+  transformGizmoOperationSource,
+  /\b(?:document|window)\b|querySelector|classList|textContent|state\.|from\s+["']cannon-es|new\s+(?:World|SimulationSession)/,
+  "transform gizmo operation crossed into DOM, global state, or simulation",
+);
+const transformControlsDomAdapterSource = await fs.readFile(
+  path.join(root, "src", "presentation", "transform-controls-dom-adapter.js"),
+  "utf8",
+);
+assert.ok(
+  transformControlsDomAdapterSource.trim().split(/\r?\n/).length <= 90,
+  "transform controls DOM adapter exceeded bounded lifecycle ownership",
+);
+assert.doesNotMatch(
+  transformControlsDomAdapterSource,
+  /\b(?:document|window)\b|querySelector|classList|textContent|state\.|from\s+["']cannon-es|new\s+(?:World|SimulationSession)/,
+  "transform controls DOM adapter crossed into globals, state, or simulation",
+);
+const transformGizmoTargetProjectionSource = await fs.readFile(
+  path.join(
+    root,
+    "src",
+    "presentation",
+    "transform-gizmo-target-projection.js",
+  ),
+  "utf8",
+);
+assert.ok(
+  transformGizmoTargetProjectionSource.trim().split(/\r?\n/).length <= 80,
+  "transform gizmo target projection exceeded bounded read ownership",
+);
+assert.doesNotMatch(
+  transformGizmoTargetProjectionSource,
+  /\b(?:document|window)\b|querySelector|classList|textContent|state\.|from\s+["']cannon-es|new\s+(?:World|SimulationSession)/,
+  "transform gizmo target projection crossed into DOM, state, or simulation",
+);
 assert.ok(
   editorSelectionSource.trim().split(/\r?\n/).length <= 260,
   "editor selection feature exceeded bounded ownership",

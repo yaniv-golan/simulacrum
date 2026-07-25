@@ -103,7 +103,7 @@ export { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
  *   attachPartToMachine:(part:SimulationPart)=>void,
  *   syncLargeAssembly:(parts:SimulationPart[])=>void, drawWires:()=>void,
  *   resetCameraTarget:()=>void,
- *   clearTestSiteEffects:()=>void,
+ *   clearTestSiteEffects:()=>void, commitPendingEditorTransform:(reason?:string)=>boolean,
  *   beginTestCourseAttempt:()=>void, finishTestCourseAttempt:()=>void,
  * }} SimulationPresentationPort
  */
@@ -162,8 +162,8 @@ export function createSimulationLifecycleFeature({
     );
     presentation.aerothermal.prepare();
   }
-
   async function start(preserveBaseline = false) {
+    presentation.commitPendingEditorTransform("simulation-start");
     if (!preserveBaseline) runtime.baseline = assembly.captureBuild();
     if (!run.parts.length) return presentation.notify("Add a component first");
     if (run.activeChallenge) {

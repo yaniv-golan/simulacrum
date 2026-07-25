@@ -15,6 +15,7 @@ export function createWorkshopRunPresentationPort({
   return {
     aerothermal,
     failure,
+    commitPendingEditorTransform: editor.transformGizmo.finish,
     notify: shell.notify,
     render: actions.render,
     tutorialEvent: actions.tutorialEvent,

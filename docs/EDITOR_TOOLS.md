@@ -42,6 +42,13 @@ component's chosen coordinate. Distribution sorts centers on an axis, preserves
 the two endpoints, and equalizes the intervals between them. Presentation owns
 inputs, history labels, and gizmo/wire refresh.
 
+Exact positions use the authored **Workshop frame** in metres, with the
+workshop-board center as origin: positive X is east, positive Y is up, and
+positive Z is north. The workbench is therefore the XZ plane. The displayed
+position is the arithmetic selection pivot, not clearance above the workbench or
+terrain. Yaw is rotation about Workshop Y. Axis letters, direction words, and
+accessible names remain present so color is never the only cue.
+
 The Inspector makes that scope explicit. Its header identifies every selection's
 primary component and, for a multi-selection, lets the player change the primary
 without changing membership. The selected-context command catalog reports the

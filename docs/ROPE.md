@@ -68,7 +68,7 @@ selected local point:
 A one-ended Rope initially leaves its attachment toward the Rope's authored
 placement. This preserves the visible build instead of spawning the line along
 a hidden fixed direction through the target. The ordinary placement height also
-keeps a new free Rope's complete straight centerline above the build plate.
+keeps a new free Rope's complete straight centerline above the workbench.
 
 A powered winch is therefore a future ordinary assembly/component that owns
 drum inertia, bearing, motor, power, capacity, and paid-out-length control. A

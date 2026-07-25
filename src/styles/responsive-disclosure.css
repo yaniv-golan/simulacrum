@@ -376,6 +376,13 @@
   .camera-tools {
     right: 362px;
   }
+  .workshop-axis-indicator {
+    left: 362px;
+  }
+  .shell:has(.catalog.panel-collapsed) .workshop-axis-indicator,
+  .shell.focus-workspace .workshop-axis-indicator {
+    left: 82px;
+  }
   .drive-hud {
     left: 362px;
     width: 320px;

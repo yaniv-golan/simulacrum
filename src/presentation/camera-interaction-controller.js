@@ -5,6 +5,7 @@ import {
   placementIntentForCamera,
 } from "./camera-authoring-intent.js";
 import { selectionCameraFrame } from "./selection-camera-frame.js";
+import { createCameraViewIdentity } from "./camera-view-identity.js";
 
 /**
  * @typedef {{ id: number, type: string, mesh: THREE.Object3D }} CameraPart
@@ -63,6 +64,7 @@ export function createCameraInteractionController({
     target,
     initialDistance: DEFAULT_VIEW.distance,
   });
+  const identity = createCameraViewIdentity();
 
   let yaw = DEFAULT_VIEW.yaw;
   let pitch = DEFAULT_VIEW.pitch;
@@ -72,14 +74,11 @@ export function createCameraInteractionController({
   let dollyMode = false;
   let spaceHeld = false;
   let followSelection = false;
-  let presetId = null;
   let last = { x: 0, y: 0 };
-
   function selectedPart() {
     const selectedId = assembly.selectedId();
     return assembly.parts().find((part) => part.id === selectedId) || null;
   }
-
   function setPointer(clientX, clientY) {
     const rect = element.getBoundingClientRect();
     pointer.set(
@@ -88,7 +87,6 @@ export function createCameraInteractionController({
     );
     ray.setFromCamera(pointer, camera);
   }
-
   function intersect(objects, clientX, clientY, recursive = true) {
     setPointer(clientX, clientY);
     return ray.intersectObjects(objects, recursive);
@@ -109,7 +107,7 @@ export function createCameraInteractionController({
   }
 
   function zoom(delta, anchor = null) {
-    presetId = null;
+    identity.clearPreset();
     const previousDistance = distance;
     const nextDistance = THREE.MathUtils.clamp(
       previousDistance * Math.exp(delta * 0.00135),
@@ -128,7 +126,7 @@ export function createCameraInteractionController({
   }
 
   function reset() {
-    presetId = null;
+    identity.reset();
     followSelection = false;
     target.set(0, 1.2, 0);
     yaw = DEFAULT_VIEW.yaw;
@@ -137,7 +135,7 @@ export function createCameraInteractionController({
   }
 
   function frameSelection() {
-    presetId = null;
+    identity.clearPreset();
     const frame = selectionCameraFrame({
       parts: assembly.parts(),
       selectedIds: assembly.selectedIds(),
@@ -157,8 +155,9 @@ export function createCameraInteractionController({
 
   function restoreSnapshot(viewState) {
     if (!viewState) return;
-    ({ distance, yaw, pitch, followSelection, presetId } =
+    ({ distance, yaw, pitch, followSelection } =
       tracker.restoreSnapshot(viewState));
+    identity.restore(viewState);
   }
 
   function toggleFollow() {
@@ -178,7 +177,7 @@ export function createCameraInteractionController({
   }
 
   function setAxisView(axis) {
-    presetId = null;
+    identity.clearPreset();
     followSelection = false;
     if (axis === "front") {
       yaw = Math.PI;
@@ -191,6 +190,7 @@ export function createCameraInteractionController({
       pitch = 1.52;
     }
     frameSelection();
+    identity.setAxisView(axis);
     view.notify(
       `${axis.toUpperCase()} view · ${assembly.selectedId() ? "selection" : "machine"} framed`,
     );
@@ -228,7 +228,7 @@ export function createCameraInteractionController({
     const cameraGesture =
       event.button === 0 && (editor.tool() || event.altKey || spaceHeld);
     if (!alternateButton && !cameraGesture) return false;
-    presetId = null;
+    identity.clearPreset();
     dragging = true;
     panMode = alternateButton
       ? event.button === 1 || event.shiftKey
@@ -258,6 +258,7 @@ export function createCameraInteractionController({
         .addScaledVector(right, -dx * scale)
         .addScaledVector(screenUp, dy * scale);
     } else {
+      if (dx || dy) identity.clearAxis();
       yaw -= dx * 0.006;
       pitch = THREE.MathUtils.clamp(pitch + dy * 0.005, 0.08, 1.52);
     }
@@ -365,7 +366,8 @@ export function createCameraInteractionController({
     const viewForward = camera.getWorldDirection(new THREE.Vector3());
     const step = Math.max(0.25, distance * 0.035) * (event.shiftKey ? 3 : 1);
     if (/^(?:Arrow(?:Left|Right|Up|Down)|Key[ADWQSE])$/.test(event.code))
-      presetId = null;
+      identity.clearPreset();
+    if (/^Arrow(?:Left|Right|Up|Down)$/.test(event.code)) identity.clearAxis();
     viewForward.y = 0;
     viewForward.normalize();
     if (event.code === "Space") {
@@ -438,7 +440,7 @@ export function createCameraInteractionController({
 
   function snapshot() {
     return {
-      presetId,
+      ...identity.snapshot(),
       fovDeg: camera.fov,
       position: camera.position.clone(),
       distance,
@@ -456,7 +458,7 @@ export function createCameraInteractionController({
     applyPreset(preset) {
       ({ distance, yaw, pitch } = tracker.snapPreset(preset));
       followSelection = false;
-      presetId = preset.id;
+      identity.setPreset(preset.id);
       return snapshot();
     },
     anchorAt,

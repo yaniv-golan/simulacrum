@@ -3,14 +3,14 @@ import { challengeReliability } from "../model/challenge-lab.js";
 /**
  * @typedef {{ x:number,y:number,z:number }} EditorDebugVector
  * @typedef {{
- *   presetId:string|null, fovDeg:number, position:EditorDebugVector,
+ *   presetId:string|null, axisViewId:string|null, fovDeg:number, position:EditorDebugVector,
  *   distance:number, renderedDistance:number, yaw:number, pitch:number,
  *   followSelection:boolean, target:EditorDebugVector, trackingError:number,
  *   tracking:{active:boolean,subjects:number,boundsRadius:number,fitDistance:number,safeFrame:object},
  * }} CameraDebugSnapshot
  * @typedef {{
  *   mode:string, tool:string, cameraTool:string|null,
- *   directManipulation:object|null, pendingPlacement:object|null, lastPlacement:object|null, lastTransformOperation:object|null, marqueeSelection:object|null,
+ *   directManipulation:object|null, pendingPlacement:object|null, lastPlacement:object|null, lastTransformOperation:object|null, transformGizmo:object, marqueeSelection:object|null,
  *   exploded:{active:boolean,amount:number,centerLift:number,displayedParts?:object[]},
  *   running:boolean, simulationPaused:boolean, timeScale:number,
  *   simulationTime:number, architecture:{assemblyRevision:number,fixedStepHz:number,session:unknown},
@@ -32,6 +32,7 @@ export function buildEditorDebugReadModel(input) {
     pendingPlacement: structuredClone(input.pendingPlacement),
     lastPlacement: structuredClone(input.lastPlacement),
     lastTransformOperation: structuredClone(input.lastTransformOperation),
+    transformGizmo: structuredClone(input.transformGizmo),
     marqueeSelection: input.marqueeSelection,
     explodedView: {
       active: input.exploded.active,
@@ -72,6 +73,7 @@ export function buildEditorDebugReadModel(input) {
     componentInspection: structuredClone(input.componentInspection),
     camera: {
       presetId: input.camera.presetId,
+      axisViewId: input.camera.axisViewId,
       fovDeg: +input.camera.fovDeg.toFixed(1),
       position: {
         x: +input.camera.position.x.toFixed(1),

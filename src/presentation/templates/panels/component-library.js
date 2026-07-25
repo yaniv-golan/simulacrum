@@ -3,7 +3,7 @@ export function createComponentLibraryTemplate() {
     <div class="catalog-head">
       <div><small>WORKSHOP</small><h2>Component library</h2></div>
       <div class="catalog-actions">
-        <button id="clear-build" title="Clear build plate (Shift+Delete)">CLEAR</button>
+        <button id="clear-build" title="Clear workbench (Shift+Delete)" aria-label="Clear workbench">CLEAR</button>
         <button id="library-add" title="Create component" aria-label="Save selection to My Parts">＋</button>
       </div>
     </div>

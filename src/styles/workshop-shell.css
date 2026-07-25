@@ -1202,6 +1202,31 @@ header {
   font: 600 7px "Space Grotesk";
   letter-spacing: 0.08em;
 }
+.coordinate-context {
+  margin: 8px 0 6px;
+  color: #a7c4be;
+  font: 650 7px "Space Grotesk";
+  letter-spacing: 0.1em;
+}
+.numeric-transform label span {
+  display: block;
+  min-height: 18px;
+}
+.numeric-transform label b {
+  color: var(--axis-color);
+}
+.numeric-transform .axis-x {
+  --axis-color: #e06b65;
+}
+.numeric-transform .axis-y {
+  --axis-color: #72c58a;
+}
+.numeric-transform .axis-z {
+  --axis-color: #669cf0;
+}
+.numeric-transform .selection-yaw {
+  grid-column: 1 / -1;
+}
 .numeric-transform input {
   display: block;
   width: 100%;
@@ -1230,6 +1255,7 @@ header {
   background: #102728;
   color: #9fe5d5;
   cursor: pointer;
+  font-size: 7px;
 }
 @keyframes spin {
   to {
