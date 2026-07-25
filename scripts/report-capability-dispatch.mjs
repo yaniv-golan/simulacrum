@@ -8,8 +8,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const REVIEWED_CAPABILITY_DISPATCH_BASELINE = Object.freeze({
   commit:
     "unreleased-component-inspection-foundation-and-rover-egress-2026-07-25",
-  sites: 223,
-  sha256: "1f1cf5513ca05bd944878fdd5442ea2745106405a9c544739e8621c10865876b",
+  sites: 225,
+  sha256: "f295256172592846e0e7eb8d6618b5857e3348cb5285596f160888dd10d10a9e",
 });
 
 const POLICIES = Object.freeze([

@@ -17,7 +17,8 @@
 - Added the full 480 m x 360 m Workshop Test Reserve as one connected campus
   around the construction board and operations building. Its closed road
   network joins nine physical districts with 22 authored surface regions, 11
-  measurable terrain features, a shallow ford, an irregular deep pond and dry
+  measurable terrain features, a four-sided workshop apron transition, a
+  shallow ford, an irregular deep pond and dry
   island, a physical bridge, dense collidable woodland, a 254 m runway, a
   helipad, staging pads, and ten machine-independent guided trials.
 - Made the strict immutable `test-site-definition-v2` the single authority for
@@ -67,6 +68,11 @@
 
 ### Fixed
 
+- Replaced the workshop build plate's 0.65 m vertical perimeter ledge with four
+  authored, continuously graded concrete apron ramps. Tire contacts also now
+  zero Cannon friction rows that were already queued before the authored brush
+  law took ownership, preventing driven wheels from locking after they reach
+  the triangulated Test Reserve terrain.
 - Prevented a one-ended Rope attached to a wheel-like component from starting
   inside the wheel or build plate and injecting launch energy. The endpoint now
   follows its exact anchor: an axis attachment does not wind Rope, while an

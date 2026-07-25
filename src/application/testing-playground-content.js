@@ -156,7 +156,19 @@ const rectangle = (centerM, sizeM, rotationRad = 0) => ({
           child(box([0.7, 3.2, 0.7]), [-width * 0.32, -1.6, z]),
         ]),
       ];
-    else children = [child(box(sizeM), [0, height / 2, 0])];
+    else if (kind === "apron-ramp") {
+      const thicknessM = 0.2,
+        angleRad = -Math.atan(height / depth),
+        rampDepthM = depth / Math.cos(angleRad) + 0.01,
+        centerOffsetY = height / 2 - (thicknessM / 2) * Math.cos(angleRad);
+      children = [
+        child(
+          box([width, thicknessM, rampDepthM]),
+          [0, centerOffsetY, 0],
+          [angleRad, 0, 0],
+        ),
+      ];
+    } else children = [child(box(sizeM), [0, height / 2, 0])];
     return {
       id,
       districtId,
@@ -604,6 +616,22 @@ export const WORKSHOP_TEST_SITE = createTestSiteDefinition({
     },
   ],
   staticFixtures: [
+    ...[
+      { side: "south", positionM: [0, 0, -33.984], headingRad: 0 },
+      { side: "north", positionM: [0, 0, 33.984], headingRad: Math.PI },
+      { side: "east", positionM: [33.984, 0, 0], headingRad: -Math.PI / 2 },
+      { side: "west", positionM: [-33.984, 0, 0], headingRad: Math.PI / 2 },
+    ].map(({ side, positionM, headingRad }) =>
+      fixture(
+        `workshop-apron-ramp-${side}`,
+        "apron",
+        "apron-ramp",
+        positionM,
+        [44, -FIELD_SURFACE_Y, 24],
+        "weathered-concrete",
+        headingRad,
+      ),
+    ),
     fixture(
       "operations-building",
       "apron",
