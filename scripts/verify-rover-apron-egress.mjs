@@ -18,7 +18,7 @@ const environment = createTestingPlaygroundEnvironment(),
   fieldEntryZ = -48,
   verificationTicksAfterFieldEntry = 240;
 
-function scenario(throttle) {
+function scenario({ id, throttle, steering, steeringTicks = maximumTicks }) {
   const assembly = structuredClone(source);
   for (const part of assembly.parts) part.pos[2] -= 16;
   const physics = createWorkshopPhysicsWorld({
@@ -73,7 +73,11 @@ function scenario(throttle) {
     for (const motorId of motorIds)
       commandBus.writeRemote(motorId, "throttle", throttle);
     for (const hingeId of steeringHingeIds)
-      commandBus.writeRemote(hingeId, "joint_target", 0);
+      commandBus.writeRemote(
+        hingeId,
+        "joint_target",
+        tick <= steeringTicks ? steering : 0,
+      );
     powerNetwork.resolve(runGraph, dt);
     runtime.stepActuators(context, dt);
     physics.worldAdapter.integrate(dt, { tick });
@@ -123,7 +127,9 @@ function scenario(throttle) {
       partIds,
     }),
     result = {
+      id,
       throttle,
+      steering,
       completedAtS: completedTick * dt,
       fieldEntryAtS: fieldEntryTick == null ? null : fieldEntryTick * dt,
       finalPosition: { ...runtime.bodyByPart.get(chassisId).position },
@@ -139,32 +145,49 @@ function scenario(throttle) {
   return result;
 }
 
-const results = [0.25, 1].map(scenario);
+const results = [
+  { id: "slow-straight", throttle: 0.25, steering: 0 },
+  { id: "fast-straight", throttle: 1, steering: 0 },
+  { id: "steer-left", throttle: 0.65, steering: 1, steeringTicks: 120 },
+  { id: "steer-right", throttle: 0.65, steering: -1, steeringTicks: 120 },
+].map(scenario);
 console.log(JSON.stringify(results, null, 2));
 for (const result of results) {
   assert.ok(
     result.fieldEntryAtS != null,
-    `${result.throttle} throttle rover did not reach the Test Reserve field`,
+    `${result.id} rover did not reach the Test Reserve field`,
   );
   assert.ok(
     result.finalPosition.z < fieldEntryZ - 1,
-    `${result.throttle} throttle rover stopped at the apron-field seam`,
+    `${result.id} rover stopped at the apron-field seam`,
   );
   assert.ok(
     result.finalSpeedMPerS > 0.5,
-    `${result.throttle} throttle rover locked after reaching the heightfield`,
-  );
-  assert.ok(
-    Math.abs(result.finalPosition.x) < 2,
-    `${result.throttle} throttle rover did not hold a straight egress path`,
+    `${result.id} rover locked after reaching the heightfield`,
   );
   assert.ok(
     result.maximumAirborneS <= 0.25,
-    `${result.throttle} throttle rover stayed airborne for ${result.maximumAirborneS.toFixed(2)} s`,
+    `${result.id} rover stayed airborne for ${result.maximumAirborneS.toFixed(2)} s`,
   );
   assert.ok(
     result.allMotorsActive,
-    `${result.throttle} throttle did not keep all four drive motors active`,
+    `${result.id} did not keep all four drive motors active`,
   );
+  if (result.steering === 0)
+    assert.ok(
+      Math.abs(result.finalPosition.x) < 2,
+      `${result.id} rover did not hold a straight egress path`,
+    );
+  else {
+    assert.ok(
+      Math.abs(result.finalPosition.x) < 20,
+      `${result.id} rover left the authored south ramp lane`,
+    );
+    assert.equal(
+      Math.sign(result.finalPosition.x),
+      -Math.sign(result.steering),
+      `${result.id} rover steered in the wrong direction`,
+    );
+  }
 }
-console.log("rover apron egress passed at slow and fast throttle");
+console.log("rover apron egress passed straight and with left/right steering");

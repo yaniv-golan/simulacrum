@@ -80,11 +80,12 @@
   same undoable selection deletion; Undo restores both the component and the
   exact binding manifest.
 
-- Replaced the workshop build plate's 0.65 m vertical perimeter ledge with four
-  authored, continuously graded concrete apron ramps. Tire contacts also now
-  zero Cannon friction rows that were already queued before the authored brush
-  law took ownership, preventing driven wheels from locking after they reach
-  the triangulated Test Reserve terrain.
+- Added one authored, continuously graded concrete ramp on the workshop's south
+  side for routine Test Reserve access while preserving the north, east, and
+  west ledges for deliberate drop testing. Tire contacts also now zero Cannon
+  friction rows that were already queued before the authored brush law took
+  ownership, preventing driven wheels from locking after they reach the
+  triangulated Test Reserve terrain.
 - Prevented a one-ended Rope attached to a wheel-like component from starting
   inside the wheel or build plate and injecting launch energy. The endpoint now
   follows its exact anchor: an axis attachment does not wind Rope, while an
