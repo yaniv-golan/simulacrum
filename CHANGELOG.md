@@ -66,8 +66,9 @@
   reports zero vulnerabilities.
 - Prevented the Suspension Rover from shedding wheels during an ordinary
   workshop-platform drop by matching Wheel carcass travel to its authored
-  tire/rim geometry, calibrating joint-reaction loads, and covering the
-  complete four-wheel landing rather than the first field contact.
+  tire/rim geometry, resolving every joint-reaction row at its actual anchor
+  (including spring/damper travel limits), and covering the complete four-wheel
+  landing rather than the first field contact.
 - Corrected the Suspension Rover's semantic left/right steering bindings and
   added signed trajectory coverage for both deterministic and browser input
   paths.

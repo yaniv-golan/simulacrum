@@ -75,6 +75,85 @@ function exactWrenchProbe() {
   );
 }
 
+function axialAnchorProbe() {
+  const bodyA = new CANNON.Body({ mass: 1 }),
+    bodyB = new CANNON.Body({ mass: 1 }),
+    localAnchorA = new CANNON.Vec3(1, 2, 3),
+    localAnchorB = new CANNON.Vec3(-1, -2, -3),
+    equationAnchorA = new CANNON.Vec3(2, -1, 4),
+    equationAnchorB = new CANNON.Vec3(-4, 3, 1),
+    forceA = new CANNON.Vec3(4, -5, 6),
+    forceB = new CANNON.Vec3(-3, 7, 2),
+    momentA = equationAnchorA.cross(forceA),
+    momentB = equationAnchorB.cross(forceB),
+    constraint = {
+      bodyA,
+      bodyB,
+      localAnchorA,
+      localAnchorB,
+      equations: [
+        {
+          enabled: true,
+          multiplier: 11,
+          ri: equationAnchorA,
+          rj: equationAnchorB,
+          jacobianElementA: { spatial: forceA, rotational: momentA },
+          jacobianElementB: { spatial: forceB, rotational: momentB },
+        },
+      ],
+    };
+  for (const side of ["A", "B"]) {
+    const wrench = constraintReactionWrench(constraint, side);
+    near(wrench.torqueNm, 0, 1e-12, `axial ${side} row force moment`);
+  }
+
+  // Custom equations can omit ri/rj. Their constraint-level local anchor must
+  // still prevent an offset axial force from becoming a fictional torque.
+  delete constraint.equations[0].ri;
+  delete constraint.equations[0].rj;
+  constraint.equations[0].jacobianElementA.rotational =
+    localAnchorA.cross(forceA);
+  constraint.equations[0].jacobianElementB.rotational =
+    localAnchorB.cross(forceB);
+  for (const side of ["A", "B"]) {
+    const wrench = constraintReactionWrench(constraint, side);
+    near(wrench.torqueNm, 0, 1e-12, `axial ${side} local-anchor fallback`);
+  }
+
+  const anchorless = constraintReactionWrench({
+    bodyA,
+    equations: [
+      {
+        enabled: true,
+        multiplier: 2,
+        jacobianElementA: {
+          spatial: new CANNON.Vec3(1, 0, 0),
+          rotational: new CANNON.Vec3(0, 3, 4),
+        },
+      },
+    ],
+  });
+  assert.deepEqual(anchorless.force, { x: 2, y: 0, z: 0 });
+  assert.deepEqual(anchorless.moment, { x: 0, y: 6, z: 8 });
+
+  assert.doesNotThrow(() =>
+    constraintReactionWrench({
+      bodyA: {},
+      localAnchorA,
+      equations: [
+        {
+          enabled: true,
+          multiplier: 1,
+          jacobianElementA: {
+            spatial: new CANNON.Vec3(1, 0, 0),
+            rotational: new CANNON.Vec3(0, 0, 0),
+          },
+        },
+      ],
+    }),
+  );
+}
+
 function hingeProbe({ force = null, torque = null }) {
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
     shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.4, 0.3)),
@@ -126,6 +205,7 @@ const freeTorqueProbe = hingeProbe({ torque: new CANNON.Vec3(60, 0, 0) });
 near(freeTorqueProbe.wrench.torqueNm, 0, 0.05, "free-axis torque reaction");
 
 exactWrenchProbe();
+axialAnchorProbe();
 
 console.log(
   `constraint reaction wrench passed (${forceProbe.wrench.forceN.toFixed(2)} N force, ${torqueProbe.wrench.torqueNm.toFixed(2)} Nm constrained torque)`,
