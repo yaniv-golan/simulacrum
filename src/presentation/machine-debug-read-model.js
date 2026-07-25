@@ -104,7 +104,7 @@ function distributedPropulsionDiagnostics(flight, systems = {}) {
       : !controllerReady
         ? "powered running controller required"
         : !scriptRouted
-          ? "engine commands are not controller-routed"
+          ? "propulsor commands are not controller-routed"
           : "closed-loop attitude control online",
     commands: {
       collective:

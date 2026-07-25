@@ -8,6 +8,7 @@ import { CommandBus } from "../src/simulation/command-bus.js";
 import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
 import { PowerNetwork } from "../src/simulation/power-network.js";
 import { RunAssemblyGraph } from "../src/simulation/run-assembly-graph.js";
+import { MotorEnergySettlementSystem } from "../src/simulation/systems/motor-energy-settlement-system.js";
 
 const DT = 1 / 120;
 
@@ -230,8 +231,16 @@ function runWheelFleet() {
     }),
     runGraph = new RunAssemblyGraph(assembly),
     powerNetwork = new PowerNetwork(TYPES),
+    motorEnergySettlement = new MotorEnergySettlementSystem(),
     commandBus = new CommandBus(),
-    context = { runGraph, powerNetwork, commandBus, services: {} },
+    context = {
+      runGraph,
+      powerNetwork,
+      commandBus,
+      clock: { tick: 0 },
+      telemetry: {},
+      services: { multibodyRuntime: runtime, worldAdapter: adapter },
+    },
     motorIds = assembly.parts
       .filter((part) => part.type === "motor")
       .map((part) => part.id),
@@ -243,6 +252,8 @@ function runWheelFleet() {
   let maximumContacts = 0,
     maximumActiveMotors = 0;
   for (let tick = 1; tick <= 360; tick++) {
+    context.clock.tick = tick;
+    context.telemetry = {};
     commandBus.clearTick();
     const throttle = tick <= 120 ? 0 : tick <= 300 ? 0.45 : 0;
     for (const motorId of motorIds)
@@ -251,6 +262,7 @@ function runWheelFleet() {
     powerNetwork.resolve(runGraph, DT);
     const telemetry = runtime.stepActuators(context, DT);
     adapter.integrate(DT, { tick });
+    motorEnergySettlement.step(context, DT);
     runtime.afterIntegration(DT);
     stepMs.push(performance.now() - started);
     maximumContacts = Math.max(maximumContacts, world.contacts.length);

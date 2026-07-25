@@ -112,6 +112,8 @@ for (const demo of demoKinds) {
       targetThrottle: record.targetThrottle,
       deliveredMassKg: record.deliveredMassKg,
       allocationId: record.allocationId,
+      motorPartId: record.motorPartId,
+      powerSourceIds: record.powerSourceIds,
     })),
     articulated:
       state.architecture.session?.systems.articulated?.active || false,
@@ -188,16 +190,18 @@ await conclude(browser, () => {
   assert.equal(
     results.drone.propulsion.length,
     4,
-    "drone did not publish one local command record per engine",
+    "drone did not publish one local command record per rotor",
   );
   assert.ok(
     results.drone.propulsion.every(
       (record) =>
-        record.kind === "pressure-nozzle-state-v1" &&
+        record.kind === "shaft-rotor-aerodynamics-v1" &&
         record.commandSource === "script" &&
-        typeof record.allocationId === "string",
+        typeof record.allocationId === "string" &&
+        record.motorPartId != null &&
+        record.powerSourceIds.length > 0,
     ),
-    "drone nozzle allocation did not originate from its visible controller",
+    "drone rotor authority did not originate from its routed controller, motor, and power source",
   );
   assert.deepEqual(
     results.mission.propulsion.map((record) => record.kind),

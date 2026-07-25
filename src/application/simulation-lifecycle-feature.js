@@ -38,10 +38,7 @@ export { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
  * @typedef {{
  *   baseline:unknown, session:SimulationSession|null,
  *   telemetry:ReturnType<typeof import("../simulation/telemetry.js").createTelemetrySnapshot>,
- *   physicalFlightModel:object|null,
- *   aerodynamicForceOwner:object|null,
- *   aerothermalAblationOwner:object|null,
- *   physicalFlightTelemetry:object|null,
+ *   physicalFlightModel:object|null, aerodynamicForceOwner:object|null, rotorForceOwner:object|null, heatInputCollector:object|null, aerothermalAblationOwner:object|null, physicalFlightTelemetry:object|null,
  *   physicalAssemblyIndex:PhysicalAssemblyIndex|null,
  *   multibodyRuntime:ReturnType<typeof startMultibodyRuntime>|null,
  *   flexibleLineRuntime:FlexibleLineRuntime|null,
@@ -130,17 +127,18 @@ export function createSimulationLifecycleFeature({
   presentation,
 }) {
   let runEvidence = null;
-
   function destroyFlightPhysics() {
     runtime.physicalFlightModel?.dispose();
     runtime.physicalFlightModel = null;
-    runtime.aerodynamicForceOwner = null;
+    runtime.aerodynamicForceOwner =
+      runtime.rotorForceOwner =
+      runtime.heatInputCollector =
+        null;
     runtime.aerothermalAblationOwner = null;
     runtime.physicalFlightTelemetry = null;
     runtime.physicalAssemblyIndex = null;
     presentation.aerothermal.dispose();
   }
-
   function createFlightPhysics() {
     destroyFlightPhysics();
     for (const part of run.parts) {
@@ -307,6 +305,8 @@ export function createSimulationLifecycleFeature({
       controllerTelemetry: controllers.telemetry,
       resolveChallengeBinding: challenges.resolveBinding,
       aerodynamicForceOwner: runtime.aerodynamicForceOwner,
+      rotorForceOwner: runtime.rotorForceOwner,
+      heatInputCollector: runtime.heatInputCollector,
       aerothermalAblationOwner: runtime.aerothermalAblationOwner,
       physicalFlightTelemetry: runtime.physicalFlightTelemetry,
       physicalAssemblyIndex: runtime.physicalAssemblyIndex,

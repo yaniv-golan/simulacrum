@@ -150,6 +150,16 @@ nozzle exit state, ambient pressure, compiled axis, and application point. A
 single post-thermal transaction commits material and ablative mass changes for
 the next integration tick. Checkpoint v1 restores that complete transaction.
 
+Electric rotary drives reserve their current power allocation on the motor
+constraint row before the one Cannon solve. `MotorEnergySettlementSystem`
+then debits the exact positive row work once, after integration, and publishes
+electrical work, mechanical work, absorbed work, conversion loss, and rejected
+heat. Fixed-pitch `rotor` components are ordinary one-port shaft loads:
+`rotorAerodynamicPerformance()` derives thrust and opposing torque from shaft
+speed, atmosphere, inflow, authored geometry, handedness, and a closed profile
+registry. `RotorPropulsionSystem` applies those forces before integration;
+there is no demo or vehicle-mode dispatch.
+
 Immutable `FailureEvent` records and source-addressed challenge criteria use
 completed network and telemetry snapshots. The canonical
 `PhysicalAssemblyIndex` and `MobilityTelemetrySystem` publish one record for
@@ -179,7 +189,10 @@ forces, impacts, and read models after restore.
 Blueprint input is the exact `simulacrum-blueprint` v1 contract. Parts contain
 resolved behavior configuration, computers own their programs, batteries use
 `config.capacityWh` plus `storedEnergyWh`, and every connection names explicit
-compatible ports. Workspace v1 is a separate local document; selection, active
+compatible ports. Rotor v1 configuration requires identity scale, positive
+hub/blade dimensions, two through eight blades, fixed pitch from 2° through
+35°, handedness `-1` or `1`, a known profile, and rated speed no greater than
+maximum speed. Workspace v1 is a separate local document; selection, active
 remote state, UI geometry, executable acquisition, and trust never enter a
 portable blueprint. Unsupported formats are rejected rather than migrated.
 

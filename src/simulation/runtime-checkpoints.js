@@ -86,6 +86,12 @@ export class RuntimeCheckpointCoordinator {
     );
   }
 
+  #motorEnergySettlementSystem() {
+    return this.session.systems.find(
+      (system) => system.checkpointOwner === "motor-energy-settlement",
+    );
+  }
+
   #materialResourceExport(context) {
     return {
       version: 1,
@@ -155,6 +161,12 @@ export class RuntimeCheckpointCoordinator {
       terrain: this.terrainState?.exportState?.() ?? null,
       session: this.session.exportState(),
       worldAdapter: this.worldAdapter.exportState(),
+      motorEnergySettlement:
+        this.#motorEnergySettlementSystem()?.exportState() ?? {
+          version: 1,
+          lastSettledTick: 0,
+          totals: [],
+        },
     };
   }
 
@@ -181,6 +193,10 @@ export class RuntimeCheckpointCoordinator {
     if (state.terrain) this.terrainState?.importState?.(state.terrain);
     this.session.importState(state.session);
     this.worldAdapter.importState(state.worldAdapter);
+    if (state.motorEnergySettlement)
+      this.#motorEnergySettlementSystem()?.importState(
+        state.motorEnergySettlement,
+      );
     this.session.resynchronizeAfterCheckpointRestore();
   }
 
@@ -250,6 +266,12 @@ export class RuntimeCheckpointCoordinator {
           graphRevision: runGraph.graphRevision,
           power: context.powerNetwork?.telemetry?.() ?? null,
           signals: context.signalNetwork?.telemetry?.() ?? null,
+          motorEnergySettlement:
+            this.#motorEnergySettlementSystem()?.exportState() ?? {
+              version: 1,
+              lastSettledTick: 0,
+              totals: [],
+            },
         },
         "release-couplers": this.#releaseCouplerSystem()?.exportState(
           context,
@@ -388,6 +410,8 @@ export class RuntimeCheckpointCoordinator {
         terrain: this.terrainState ? payloads.get("terrain-environment") : null,
         session: payloads.get("session"),
         worldAdapter: physics.worldAdapter,
+        motorEnergySettlement: payloads.get("energy-power-signal")
+          .motorEnergySettlement,
       };
     if (target.aerothermal)
       this.aerothermalAblationOwner.validateState(target.aerothermal);

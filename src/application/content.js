@@ -25,10 +25,8 @@ export const DRONE_TS_SOURCE = `type InputBinding =
   | 'imu.roll' | 'imu.pitch' | 'imu.yaw'
   | 'imu.rate_x' | 'imu.rate_y' | 'imu.rate_z';
 type OutputBinding =
-  | 'engine.0.throttle' | 'engine.1.throttle'
-  | 'engine.2.throttle' | 'engine.3.throttle'
-  | 'gimbal.0.target' | 'gimbal.1.target'
-  | 'gimbal.2.target' | 'gimbal.3.target';
+  | 'motor.0.throttle' | 'motor.1.throttle'
+  | 'motor.2.throttle' | 'motor.3.throttle';
 
 interface ControlAPI {
   read(binding: InputBinding): number;
@@ -47,12 +45,12 @@ function clampSigned(value: number): number {
   return Math.max(-1, Math.min(1, value));
 }
 
-const attitudeProportionalPerDeg = 0.012;
-const angularDampingPerRadS = 0.65;
-const mixerAuthority = 0.25;
+const attitudeProportionalPerDeg = 0.02;
+const angularDampingPerRadS = 1.1;
+const mixerAuthority = 0.35;
 
 // This is ordinary player-editable controller code. It reads only bound
-// receivers and sensors and writes each physical engine/gimbal independently.
+// receivers and sensors and writes each physical shaft motor independently.
 function tick(api: ControlAPI, dt: number): void {
   const altitude = api.read('nav.altitude');
   const holdEnabled = api.read('pilot.altitude_hold');
@@ -64,7 +62,7 @@ function tick(api: ControlAPI, dt: number): void {
   let base = clamp01(api.read('pilot.collective'));
   if (holdEnabled > 0.5) {
     base = clamp01(
-      0.52 + (holdAltitude - altitude) * 0.04 - verticalSpeed * 0.08,
+      0.63 + (holdAltitude - altitude) * 0.04 - verticalSpeed * 0.08,
     );
   }
 
@@ -83,14 +81,10 @@ function tick(api: ControlAPI, dt: number): void {
     api.read('pilot.yaw') - api.read('imu.rate_y') * 0.35,
   );
 
-  api.write('engine.0.throttle', clamp01(base + pitchMix - rollMix));
-  api.write('engine.1.throttle', clamp01(base + pitchMix + rollMix));
-  api.write('engine.2.throttle', clamp01(base - pitchMix - rollMix));
-  api.write('engine.3.throttle', clamp01(base - pitchMix + rollMix));
-  api.write('gimbal.0.target', yawMix);
-  api.write('gimbal.1.target', -yawMix);
-  api.write('gimbal.2.target', -yawMix);
-  api.write('gimbal.3.target', yawMix);
+  api.write('motor.0.throttle', clamp01(base + pitchMix - rollMix + yawMix * 0.08));
+  api.write('motor.1.throttle', clamp01(base + pitchMix + rollMix - yawMix * 0.08));
+  api.write('motor.2.throttle', clamp01(base - pitchMix - rollMix - yawMix * 0.08));
+  api.write('motor.3.throttle', clamp01(base - pitchMix + rollMix + yawMix * 0.08));
 
   previousAltitude = altitude;
   holdWasEnabled = holdEnabled;

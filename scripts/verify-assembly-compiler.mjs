@@ -9,6 +9,8 @@ import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
 import { PowerNetwork } from "../src/simulation/power-network.js";
 import { RunAssemblyGraph } from "../src/simulation/run-assembly-graph.js";
 import { mechanismComponentDefinition } from "../src/model/mechanism-component-definitions.js";
+import { MotorEnergySettlementSystem } from "../src/simulation/systems/motor-energy-settlement-system.js";
+import { HeatInputCollector } from "../src/simulation/heat-input-collector.js";
 
 const TEST_CAPACITY = {
   ultimateForceN: 24_000,
@@ -54,10 +56,10 @@ const expectedBuiltInTopology = {
       resource: 0,
     },
     drone: {
-      constraints: { fixed: 18, revolute: 4 },
+      constraints: { fixed: 17, revolute: 4 },
       power: 12,
-      signal: 15,
-      resource: 4,
+      signal: 11,
+      resource: 0,
     },
     mission: {
       constraints: { fixed: 30 },
@@ -577,6 +579,8 @@ const runtime = new MultibodyRuntime({
   output = runtimeGearbox.parts.find((part) => part.type === "gear24"),
   runGraph = new RunAssemblyGraph(runtimeGearbox),
   powerNetwork = new PowerNetwork(TYPES),
+  motorEnergySettlement = new MotorEnergySettlementSystem(),
+  heatInputCollector = new HeatInputCollector(),
   commandBus = new CommandBus(),
   initialBatteryJ = runGraph.part(battery.id).energyJ;
 runtime.start(runtimeGearbox);
@@ -585,13 +589,22 @@ const context = {
   runGraph,
   powerNetwork,
   commandBus,
-  services: {},
+  clock: { tick: 0 },
+  telemetry: {},
+  services: {
+    multibodyRuntime: runtime,
+    worldAdapter: runtime.worldAdapter,
+    heatInputCollector,
+  },
 };
 let telemetry = null;
 for (let step = 0; step < 1_440; step++) {
+  context.clock.tick = step + 1;
+  context.telemetry = {};
   powerNetwork.resolve(runGraph, 1 / 120);
   runtime.stepActuators(context, 1 / 120);
   runtime.worldAdapter.integrate(1 / 120, { tick: step + 1 });
+  motorEnergySettlement.step(context, 1 / 120);
   telemetry = runtime.afterIntegration(1 / 120);
 }
 
@@ -624,6 +637,38 @@ assert.ok(
 assert.ok(
   telemetry.connectionTorques["demo-gearbox-11"] > 0,
   "powered gear contact produced no physical reaction torque",
+);
+const motorEntry = runtime.constraintEntries.find(
+    (entry) => entry.descriptor.motorId === motor.id,
+  ),
+  motorConnectionId = motorEntry.descriptor.sourceConnectionIds[0],
+  ratedStallTorqueNm =
+    (motorEntry.descriptor.driveLaw.maximumElectricalPowerW /
+      motorEntry.descriptor.driveLaw.noLoadSpeedRadPerS) *
+    2.2;
+commandBus.clearTick();
+commandBus.writeRemote(motor.id, "throttle", 0.0001);
+context.clock.tick++;
+context.telemetry = {};
+powerNetwork.resolve(runGraph, 1 / 120);
+const lowCommandTelemetry = runtime.stepActuators(context, 1 / 120);
+assert.ok(
+  lowCommandTelemetry.connectionTorques[motorConnectionId] <=
+    ratedStallTorqueNm * (1 + 1e-12),
+  "near-zero throttle increased motor torque beyond the rated stall torque",
+);
+runtime.worldAdapter.integrate(1 / 120, { tick: context.clock.tick });
+motorEnergySettlement.step(context, 1 / 120);
+runtime.afterIntegration(1 / 120);
+assert.ok(
+  heatInputCollector
+    .recordsForTick(context.clock.tick)
+    .some(
+      (record) =>
+        record.partId === motor.id &&
+        record.source === "motor-energy-settlement",
+    ),
+  "settled motor loss did not enter the shared current-tick heat collector",
 );
 const fixedConnection = gearbox.connections.find(
     (connection) => connection.id === "demo-gearbox-4",

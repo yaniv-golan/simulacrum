@@ -12,7 +12,8 @@ import {
   rotateVectorByQuaternion,
 } from "./primitives.js";
 import { portIds } from "./ports.js";
-import { componentPorts } from "./component-contracts.js";
+import { componentDefinition, componentPorts } from "./component-contracts.js";
+import { validateRotorConfig } from "./rotor-aerodynamics-contracts.js";
 
 const axisFor = (type) =>
   ["axle", "wheel"].includes(type)
@@ -91,12 +92,113 @@ function specializedPortFrames(type, config, catalog) {
     frames.RIGHT = frame([1.05, 0, 0], [1, 0, 0], [1, 0, 0]);
   } else if (type === "sensor") {
     frames.SHAFT = frame([0, 0, -0.14], [0, 0, -1], [0, 0, 1]);
+  } else if (type === "rotor") {
+    frames.SHAFT = frame(
+      [0, 0, -config.hubThicknessM / 2],
+      [0, 0, -1],
+      [0, 0, 1],
+    );
   } else if (type === "propellanttank") {
     const halfHeight = finiteVector3(config.size || [1.2, 2.4, 1.2])[1] / 2;
     frames.MOUNT = frame([0, halfHeight, 0], [0, 1, 0]);
     frames.OUTLET = frame([0, -halfHeight, 0], [0, -1, 0]);
   }
   return frames;
+}
+
+function rotorDescriptorForPart(part, catalog) {
+  const config = validateRotorConfig(
+      resolveComponentConfig(part, undefined, catalog),
+      part.scale,
+      part.id,
+    ),
+    hubMassKg = config.mass * 0.4,
+    bladeMassKg = config.mass - hubMassKg,
+    axialInertia =
+      (hubMassKg * config.hubRadiusM ** 2) / 2 +
+      (bladeMassKg *
+        (config.radiusM ** 2 +
+          config.radiusM * config.hubRadiusM +
+          config.hubRadiusM ** 2)) /
+        3,
+    transverseInertia =
+      (hubMassKg * (3 * config.hubRadiusM ** 2 + config.hubThicknessM ** 2)) /
+        12 +
+      axialInertia / 2,
+    collision = {
+      kind: "cylinder",
+      radius: config.hubRadiusM,
+      length: config.hubThicknessM,
+      axis: [0, 0, 1],
+    },
+    portFrames = specializedPortFrames("rotor", config, catalog),
+    diameterM = config.radiusM * 2,
+    boundsPartM = {
+      minimumM: [-config.radiusM, -config.radiusM, -config.hubThicknessM / 2],
+      maximumM: [config.radiusM, config.radiusM, config.hubThicknessM / 2],
+    };
+  return deepFreeze({
+    schemaVersion: 1,
+    type: "rotor",
+    collisionPrimitives: [collision],
+    portFrames,
+    dimensions: [diameterM, diameterM, config.hubThicknessM],
+    massKg: config.mass,
+    massProperties: completeMassProperties({
+      sourceKind: "fixed-pitch-rotor-mass-v1",
+      massEvaluationPolicy: "hub-and-radial-blades-v1",
+      massKg: config.mass,
+      volumeM3:
+        Math.PI * config.hubRadiusM ** 2 * config.hubThicknessM +
+        config.bladeCount *
+          (config.radiusM - config.hubRadiusM) *
+          config.bladeChordM *
+          0.018,
+      comPositionPartM: [0, 0, 0],
+      inertiaTensorAtComPartKgM2: {
+        xx: transverseInertia,
+        yy: transverseInertia,
+        zz: axialInertia,
+        xy: 0,
+        xz: 0,
+        yz: 0,
+      },
+      contributingSolidIds: ["hub", "radial-blades"],
+    }),
+    displacementM3: Math.PI * config.hubRadiusM ** 2 * config.hubThicknessM,
+    boundsPartM,
+    aerodynamicSurfaces: [
+      {
+        areaM2: Math.PI * config.hubRadiusM ** 2,
+        dragCoefficient: FLIGHT_MATERIALS.default.cd,
+        liftSlope: 0,
+        projection: "rotor-hub-only-v1",
+      },
+    ],
+    renderDetailAnchors: {
+      center: [0, 0, 0],
+      axis: [0, 0, 1],
+      ports: { SHAFT: [...portFrames.SHAFT.position] },
+    },
+    aerothermal: {
+      material: structuredClone(FLIGHT_MATERIALS.default),
+      noseRadiusM: Math.max(0.025, config.hubRadiusM),
+      surfaceAreaM2:
+        2 * Math.PI * config.hubRadiusM ** 2 +
+        2 * Math.PI * config.hubRadiusM * config.hubThicknessM,
+      projection: "rotor-hub-only-v1",
+    },
+    rotor: {
+      radiusM: config.radiusM,
+      bladeCount: config.bladeCount,
+      bladeChordM: config.bladeChordM,
+      hubRadiusM: config.hubRadiusM,
+      hubThicknessM: config.hubThicknessM,
+      handedness: config.handedness,
+      bladeContactModel: "unsupported-v1",
+      selectionBounds: structuredClone(boundsPartM),
+    },
+  });
 }
 
 function volumeOf(collision) {
@@ -292,6 +394,11 @@ function mechanismDescriptorForPart(part, catalog) {
 export function geometryDescriptorForPart(part, catalog = TYPES) {
   if (isMechanismComponentType(part?.type))
     return mechanismDescriptorForPart(part, catalog);
+  if (
+    componentDefinition(part, catalog)?.flight?.propulsion?.kind ===
+    "shaft-rotor-aerodynamics-v1"
+  )
+    return rotorDescriptorForPart(part, catalog);
   const type = part?.type,
     config = resolveComponentConfig(part, undefined, catalog),
     scale = finiteScale3(part?.scale),
@@ -303,7 +410,7 @@ export function geometryDescriptorForPart(part, catalog = TYPES) {
     value.axis = finiteVector3(value.axis);
   }
   const material = FLIGHT_MATERIALS[type] || FLIGHT_MATERIALS.default,
-    massKg = Number(part?.mass ?? catalog[type]?.mass ?? 1),
+    massKg = Number(config.mass),
     dimensions =
       collision.kind === "box"
         ? [...collision.size]

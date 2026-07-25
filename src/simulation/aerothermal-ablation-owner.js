@@ -14,12 +14,18 @@ function physicalConnection(connection) {
 export class AerothermalAblationOwner {
   #model;
   #aerodynamics;
+  #heatInputCollector;
   #thermalByPart = new Map();
   #telemetry = null;
 
-  constructor({ physicalFlightModel, aerodynamicForceOwner }) {
+  constructor({
+    physicalFlightModel,
+    aerodynamicForceOwner,
+    heatInputCollector = null,
+  }) {
     this.#model = physicalFlightModel;
     this.#aerodynamics = aerodynamicForceOwner;
+    this.#heatInputCollector = heatInputCollector;
     for (const part of physicalFlightModel.parts)
       this.#thermalByPart.set(
         part.id,
@@ -36,12 +42,33 @@ export class AerothermalAblationOwner {
 
   step(context, dt) {
     if (!this.active()) return;
-    const heatByPart = new Map(
-        this.#aerodynamics
-          .heatRecords()
-          .map((record) => [record.partId, record]),
+    const heatInputs = this.#heatInputCollector?.recordsForTick(
+        context.clock.tick,
       ),
-      thermalFailures = new Set(),
+      heatByPart = new Map();
+    for (const input of heatInputs || []) {
+      const merged = heatByPart.get(input.partId) || {
+        incidentHeatFluxWPerM2: 0,
+        surfaceAreaM2: 0,
+        atmosphereTemperatureK: 0,
+        directHeatPowerW: 0,
+      };
+      merged.incidentHeatFluxWPerM2 += input.incidentHeatFluxWPerM2;
+      merged.surfaceAreaM2 = Math.max(
+        merged.surfaceAreaM2,
+        input.surfaceAreaM2,
+      );
+      merged.atmosphereTemperatureK = Math.max(
+        merged.atmosphereTemperatureK,
+        input.atmosphereTemperatureK,
+      );
+      merged.directHeatPowerW += input.directHeatPowerW;
+      heatByPart.set(input.partId, merged);
+    }
+    if (!heatInputs)
+      for (const record of this.#aerodynamics.heatRecords())
+        heatByPart.set(record.partId, record);
+    const thermalFailures = new Set(),
       consumedParts = new Set();
     for (const part of this.#model.parts) {
       const thermal = this.#thermalByPart.get(part.id),
@@ -183,6 +210,7 @@ export class AerothermalAblationOwner {
   dispose() {
     this.#model = null;
     this.#aerodynamics = null;
+    this.#heatInputCollector = null;
     this.#thermalByPart.clear();
     this.#telemetry = null;
   }

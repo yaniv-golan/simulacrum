@@ -4,7 +4,9 @@ import { createBrowserTest } from "./lib/browser-test.mjs";
 const { browser, page, errors, baseUrl } = await createBrowserTest({
     viewport: { width: 1440, height: 900 },
   }),
-  pitchCommand = Number(process.env.SIM_PITCH ?? 0.25);
+  pitchCommand = Number(process.env.SIM_PITCH ?? 0.25),
+  sampleCount = Number(process.env.SIM_SAMPLES ?? 20),
+  sampleStepMs = Number(process.env.SIM_STEP_MS ?? 250);
 await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
 await page.click("#sandbox-start");
 await page.click("#demos-btn");
@@ -30,35 +32,41 @@ await page.click('[data-mode="test"]');
 await page.waitForFunction(
   () => JSON.parse(window.render_game_to_text()).running,
 );
-const samples = await page.evaluate(() => {
-  const observations = [];
-  for (let index = 1; index <= 20; index++) {
-    window.advanceTime(250);
-    const drone = JSON.parse(window.render_game_to_text()).demo.drone;
-    const architecture = JSON.parse(window.render_game_to_text()).architecture
-        .session.systems,
-      controller = architecture.controllers?.runtimes?.find(
-        (runtime) => runtime.language === "typescript",
-      );
-    observations.push({
-      timeS: index / 4,
-      altitudeM: drone.altitude,
-      attitudeDeg: drone.attitudeDeg,
-      angularRateRadS: drone.angularRateRadS,
-      motorThrustsN: drone.motorThrustsN,
-      controllerCommands: controller?.commands || {},
-      propulsion: (architecture.propulsion?.engines || []).map((record) => ({
-        partId: record.partId,
-        commandSource: record.commandSource,
-        allocationId: record.allocationId,
-        deliveredMassFlowKgS: record.deliveredMassFlowKgS,
-        thrustN: record.thrustN,
-        detached: record.detached,
-      })),
-    });
-  }
-  return observations;
-});
+const samples = await page.evaluate(
+  ({ sampleCount, sampleStepMs }) => {
+    const observations = [];
+    for (let index = 1; index <= sampleCount; index++) {
+      window.advanceTime(sampleStepMs);
+      const drone = JSON.parse(window.render_game_to_text()).demo.drone;
+      const architecture = JSON.parse(window.render_game_to_text()).architecture
+          .session.systems,
+        controller = architecture.controllers?.runtimes?.find(
+          (runtime) => runtime.language === "typescript",
+        );
+      observations.push({
+        timeS: (index * sampleStepMs) / 1000,
+        altitudeM: drone.altitude,
+        attitudeDeg: drone.attitudeDeg,
+        angularRateRadS: drone.angularRateRadS,
+        motorThrustsN: drone.motorThrustsN,
+        controllerCommands: controller?.commands || {},
+        propulsion: (architecture.propulsion?.engines || []).map((record) => ({
+          partId: record.partId,
+          motorPartId: record.motorPartId,
+          powerSourceIds: record.powerSourceIds,
+          commandSource: record.commandSource,
+          allocationId: record.allocationId,
+          rpm: record.rpm,
+          reactionTorqueNm: record.reactionTorqueNm,
+          thrustN: record.thrustN,
+          tipMach: record.tipMach,
+        })),
+      });
+    }
+    return observations;
+  },
+  { sampleCount, sampleStepMs },
+);
 const state = JSON.parse(
   await page.evaluate(() => window.render_game_to_text()),
 );
@@ -111,8 +119,8 @@ await conclude(browser, () => {
     samples.some(
       ({ controllerCommands }) =>
         Math.abs(
-          Number(controllerCommands["engine.0.throttle"] || 0) -
-            Number(controllerCommands["engine.2.throttle"] || 0),
+          Number(controllerCommands["motor.0.throttle"] || 0) -
+            Number(controllerCommands["motor.2.throttle"] || 0),
         ) > 0.005,
     ),
     "pitch receiver did not produce distinct endpoint engine commands",
@@ -122,10 +130,14 @@ await conclude(browser, () => {
       propulsion.every(
         (record) =>
           record.commandSource === "script" &&
-          typeof record.allocationId === "string",
+          typeof record.allocationId === "string" &&
+          Number.isFinite(record.motorPartId) &&
+          record.powerSourceIds.length === 1 &&
+          Number.isFinite(record.rpm) &&
+          Number.isFinite(record.reactionTorqueNm),
       ),
     ),
-    "drone forces were not traced through controller-owned material allocations",
+    "drone forces were not traced through controller-owned electrical allocations and physical shafts",
   );
   assert.ok(
     Object.values(state.demo.drone.attitudeDeg).every(Number.isFinite),
@@ -137,7 +149,7 @@ await conclude(browser, () => {
   );
   assert.match(
     visibleSource,
-    /engine\.0\.throttle/,
+    /motor\.0\.throttle/,
     "drone controller source was not visible and editable",
   );
   assertNoErrors(errors, "flight browser runtime");

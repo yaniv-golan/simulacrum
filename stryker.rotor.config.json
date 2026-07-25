@@ -1,0 +1,46 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "ignorePatterns": [
+    "/artifacts",
+    "/coverage",
+    "/dist",
+    "/output",
+    "/packages/core/dist",
+    "/temp"
+  ],
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node scripts/verify-rotor-aerodynamics.mjs"
+  },
+  "mutate": [
+    "src/model/rotor-aerodynamics-contracts.js",
+    "src/simulation/rotor-force-owner.js",
+    "src/simulation/systems/rotor-propulsion-system.js",
+    "src/simulation/systems/structure-system.js:73-93",
+    "src/simulation/systems/structure-system.js:154-162",
+    "src/simulation/systems/structure-system.js:191-209"
+  ],
+  "coverageAnalysis": "off",
+  "mutator": {
+    "excludedMutations": [
+      "StringLiteral",
+      "ArrayDeclaration",
+      "ObjectLiteral",
+      "OptionalChaining",
+      "MethodExpression",
+      "ArrowFunction"
+    ]
+  },
+  "concurrency": 4,
+  "timeoutMS": 10000,
+  "tempDirName": "artifacts/stryker-rotor",
+  "reporters": ["clear-text", "json"],
+  "jsonReporter": {
+    "fileName": "artifacts/rotor-mutation.json"
+  },
+  "thresholds": {
+    "high": 80,
+    "low": 80,
+    "break": 80
+  }
+}

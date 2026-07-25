@@ -12,6 +12,8 @@ export function createSimulationRuntimeState() {
     telemetry: createTelemetrySnapshot(),
     physicalFlightModel: null,
     aerodynamicForceOwner: null,
+    rotorForceOwner: null,
+    heatInputCollector: null,
     aerothermalAblationOwner: null,
     physicalFlightTelemetry: null,
     physicalAssemblyIndex: null,

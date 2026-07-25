@@ -14,6 +14,9 @@
   guided-trial evaluation.
 - Extends mobility telemetry with exact support-material identities and laws,
   soft-surface sinkage, and rolling-resistance multipliers.
+- Adds strict fixed-pitch rotor model/compiler/runtime contracts and exact
+  solver-row motor-energy settlement with checkpointed work, loss, heat, and
+  completed propulsion provenance.
 
 ## 0.1.0 - 2026-07-22
 

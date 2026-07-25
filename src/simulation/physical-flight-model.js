@@ -78,9 +78,7 @@ export class PhysicalFlightModel {
   }
 
   flightCapable() {
-    return this.parts.some(
-      (part) => part.propulsion?.kind === "pressure-nozzle-v1",
-    );
+    return this.parts.some((part) => part.propulsion);
   }
 
   refresh(context) {

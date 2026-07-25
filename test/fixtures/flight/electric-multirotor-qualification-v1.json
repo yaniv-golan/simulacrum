@@ -1,0 +1,188 @@
+{
+  "format": "simulacrum-electric-multirotor-qualification",
+  "version": 1,
+  "fixedStepS": 0.008333333333333333,
+  "blueprintFingerprint": "sim-sha256-94d8aee5478fd79fff259fd45c6461018bd2a2e9ec313b1ddae8f17ae7f5f492",
+  "identities": {
+    "solverTransaction": "simulacrum-owned-cannon-solver-transaction-v2-motor-energy",
+    "rotorProfile": "utility-fixed-pitch-v1"
+  },
+  "dynamometer": {
+    "airDensityKgM3": 1.225,
+    "ambientWindMps": [0, 0, 0],
+    "command": 1,
+    "maximumSpinupTicks": 600,
+    "qualifyingTicks": 36000,
+    "bands": {
+      "totalBusPowerW": { "minimum": 190000, "maximum": 205000 },
+      "totalPositiveMotorWorkW": { "minimum": 180000, "maximum": 190000 },
+      "perRotorTorqueNm": { "minimum": 180, "maximum": 230 },
+      "perRotorAbsoluteRpm": { "minimum": 2100, "maximum": 2250 },
+      "perRotorThrustN": { "minimum": 1900, "maximum": 2150 },
+      "perRotorTipMach": { "minimum": 0.61, "maximum": 0.67 },
+      "remainingBatteryWh": { "minimum": 2500, "maximum": 5000 }
+    }
+  },
+  "mission": {
+    "totalTicks": 43200,
+    "takeoffDeadlineTick": 1200,
+    "continuousAirborneTicks": 36000,
+    "airborneAltitudeM": { "minimum": 1, "maximum": 20 },
+    "absoluteRollDeg": { "minimum": 0, "maximum": 15 },
+    "absolutePitchDeg": { "minimum": 0, "maximum": 15 },
+    "absoluteAngularRateRadS": { "minimum": 0, "maximum": 2 },
+    "allowedGroundContactsWhileAirborne": { "minimum": 0, "maximum": 0 },
+    "minimumBatteryReserveRatioAtAirborneLimit": 0.15,
+    "landingDeadlineTick": 43200,
+    "windSchedule": [
+      { "startTick": 0, "endTick": 14400, "velocityMps": [0, 0, 0] },
+      { "startTick": 14400, "endTick": 28800, "velocityMps": [3, 0, 1] },
+      { "startTick": 28800, "endTick": 43200, "velocityMps": [0, 0, 0] }
+    ],
+    "commandSchedule": [
+      {
+        "startTick": 0,
+        "endTick": 480,
+        "collective": 0.72,
+        "altitudeHold": 0,
+        "yaw": 0,
+        "pitch": 0,
+        "roll": 0
+      },
+      {
+        "startTick": 480,
+        "endTick": 14400,
+        "collective": 0.63,
+        "altitudeHold": 1,
+        "yaw": 0,
+        "pitch": 0,
+        "roll": 0
+      },
+      {
+        "startTick": 14400,
+        "endTick": 18000,
+        "collective": 0.63,
+        "altitudeHold": 1,
+        "yaw": 0,
+        "pitch": 0.15,
+        "roll": 0
+      },
+      {
+        "startTick": 18000,
+        "endTick": 21600,
+        "collective": 0.63,
+        "altitudeHold": 1,
+        "yaw": 0,
+        "pitch": -0.15,
+        "roll": 0
+      },
+      {
+        "startTick": 21600,
+        "endTick": 25200,
+        "collective": 0.63,
+        "altitudeHold": 1,
+        "yaw": 0.1,
+        "pitch": 0,
+        "roll": 0.1
+      },
+      {
+        "startTick": 25200,
+        "endTick": 37200,
+        "collective": 0.63,
+        "altitudeHold": 1,
+        "yaw": 0,
+        "pitch": 0,
+        "roll": 0
+      },
+      {
+        "startTick": 37200,
+        "endTick": 37800,
+        "collective": 0.58,
+        "altitudeHold": 0,
+        "yaw": 0,
+        "pitch": 0,
+        "roll": 0
+      },
+      {
+        "startTick": 37800,
+        "endTick": 38400,
+        "collective": 0.56,
+        "altitudeHold": 0,
+        "yaw": 0,
+        "pitch": 0,
+        "roll": 0
+      },
+      {
+        "startTick": 38400,
+        "endTick": 39000,
+        "collective": 0.54,
+        "altitudeHold": 0,
+        "yaw": 0,
+        "pitch": 0,
+        "roll": 0
+      },
+      {
+        "startTick": 39000,
+        "endTick": 39600,
+        "collective": 0.52,
+        "altitudeHold": 0,
+        "yaw": 0,
+        "pitch": 0,
+        "roll": 0
+      },
+      {
+        "startTick": 39600,
+        "endTick": 40200,
+        "collective": 0.5,
+        "altitudeHold": 0,
+        "yaw": 0,
+        "pitch": 0,
+        "roll": 0
+      },
+      {
+        "startTick": 40200,
+        "endTick": 40800,
+        "collective": 0.48,
+        "altitudeHold": 0,
+        "yaw": 0,
+        "pitch": 0,
+        "roll": 0
+      },
+      {
+        "startTick": 40800,
+        "endTick": 41400,
+        "collective": 0.46,
+        "altitudeHold": 0,
+        "yaw": 0,
+        "pitch": 0,
+        "roll": 0
+      },
+      {
+        "startTick": 41400,
+        "endTick": 43200,
+        "collective": 0.42,
+        "altitudeHold": 0,
+        "yaw": 0,
+        "pitch": 0,
+        "roll": 0
+      }
+    ]
+  },
+  "tolerances": {
+    "energyClosureJ": 0.001,
+    "forceN": 0.01,
+    "torqueNm": 0.001,
+    "rpm": 0.01,
+    "refinementRelative": 0.02
+  },
+  "samplingCadenceTicks": 120,
+  "timeoutMs": 180000,
+  "failureReasons": [
+    "ground-contact-during-airborne-window",
+    "battery-reserve-below-limit",
+    "rotor-envelope-exceeded",
+    "structural-detachment",
+    "non-finite-state",
+    "acceptance-band-violation"
+  ]
+}

@@ -39,14 +39,10 @@ const DEMO_SOURCES = Object.freeze({
 });
 const EXPECTED_OUTPUTS = Object.freeze({
   drone: Object.freeze([
-    "engine.0.throttle",
-    "engine.1.throttle",
-    "engine.2.throttle",
-    "engine.3.throttle",
-    "gimbal.0.target",
-    "gimbal.1.target",
-    "gimbal.2.target",
-    "gimbal.3.target",
+    "motor.0.throttle",
+    "motor.1.throttle",
+    "motor.2.throttle",
+    "motor.3.throttle",
   ]),
   mission: Object.freeze([
     "coupler.release",
@@ -186,12 +182,14 @@ function assertTopology(record, expected) {
     compiledResourceEdges = record.compiled.networks.resource;
   assert.equal(partsByType.receiver?.length || 0, expected.receivers);
   assert.equal(partsByType.propellanttank?.length || 0, expected.tanks);
+  assert.equal(partsByType.motor?.length || 0, expected.motors || 0);
+  assert.equal(partsByType.rotor?.length || 0, expected.rotors || 0);
   assert.deepEqual(outputIds, [...EXPECTED_OUTPUTS[record.kind]].sort());
-  assert.equal(resourceEdges.length, expected.engines);
-  assert.equal(compiledResourceEdges.length, expected.engines);
+  assert.equal(resourceEdges.length, expected.resourceEdges);
+  assert.equal(compiledResourceEdges.length, expected.resourceEdges);
   assert.deepEqual(
     new Set(resourceEdges.map((connection) => connection.a)),
-    new Set(partsByType.propellanttank.map((part) => part.id)),
+    new Set((partsByType.propellanttank || []).map((part) => part.id)),
   );
   assert.ok(
     resourceEdges.every(
@@ -339,8 +337,20 @@ async function sourceFilesMatching(pattern) {
 
 const drone = machine("drone"),
   mission = machine("mission");
-assertTopology(drone, { receivers: 5, engines: 4, tanks: 1 });
-assertTopology(mission, { receivers: 8, engines: 5, tanks: 2 });
+assertTopology(drone, {
+  receivers: 5,
+  motors: 4,
+  rotors: 4,
+  tanks: 0,
+  resourceEdges: 0,
+});
+assertTopology(mission, {
+  receivers: 8,
+  motors: 0,
+  rotors: 0,
+  tanks: 2,
+  resourceEdges: 5,
+});
 
 const droneRuntime = await prepareTypeScriptController(
     drone.controller.scriptSources.typescript,
@@ -361,14 +371,10 @@ const droneRuntime = await prepareTypeScriptController(
     "imu.rate_z": 0,
   });
 for (const [bindingId, expected] of Object.entries({
-  "engine.0.throttle": 0.618,
-  "engine.1.throttle": 0.594,
-  "engine.2.throttle": 0.606,
-  "engine.3.throttle": 0.582,
-  "gimbal.0.target": 0.2,
-  "gimbal.1.target": -0.2,
-  "gimbal.2.target": -0.2,
-  "gimbal.3.target": 0.2,
+  "motor.0.throttle": 0.658,
+  "motor.1.throttle": 0.57,
+  "motor.2.throttle": 0.598,
+  "motor.3.throttle": 0.574,
 }))
   close(droneOutputs[bindingId], expected, `drone program ${bindingId}`);
 

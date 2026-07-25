@@ -69,7 +69,28 @@ export class StructureSystem {
       compiledTorques = runtime?.torqueByConnection || new Map(),
       failures = [],
       evaluations = [],
-      bodyLoads = new Map();
+      bodyLoads = new Map(),
+      propulsion = context.telemetry.propulsion,
+      failureInputs =
+        propulsion?.tick === context.clock.tick
+          ? (propulsion.engines || [])
+              .filter((record) => record.failureInput)
+              .flatMap((record) => {
+                const constraint = (runtime?.constraintEntries || []).find(
+                  (entry) =>
+                    entry.active !== false &&
+                    entry.descriptor.id === record.shaftConstraintId,
+                );
+                return (constraint?.descriptor.sourceConnectionIds || []).map(
+                  (connectionId) => ({
+                    connectionId,
+                    partId: record.partId,
+                    input: record.failureInput,
+                    validity: record.validity,
+                  }),
+                );
+              })
+          : [];
     let worstFatigue = 0;
 
     for (const connection of connections) {
@@ -130,6 +151,15 @@ export class StructureSystem {
         failures.push(connection.id);
       worstFatigue = Math.max(worstFatigue, updated.fatigue || 0);
     }
+    for (const input of failureInputs) {
+      const connection = context.runGraph.connection(input.connectionId);
+      if (
+        connection &&
+        !connection.failed &&
+        PHYSICAL_KINDS.has(connection.kind)
+      )
+        failures.push(connection.id);
+    }
     for (const [bodyId, loads] of bodyLoads)
       recordBodyLoads(context.bodyRegistry, bodyId, loads);
 
@@ -159,13 +189,22 @@ export class StructureSystem {
       : [];
     let structuralEvent = null;
     if (newlyFailed.length || separatedPartIds.length) {
+      const operatingEnvelopeFailure = failureInputs.some((input) =>
+        newlyFailedSet.has(input.connectionId),
+      );
       structuralEvent = context.runGraph.applyStructuralEvent({
         failedConnectionIds: newlyFailed,
         detachedPartIds: separatedPartIds,
-        reason: separatedPartIds.length
-          ? "measured attachment overload separated a physical component"
-          : "measured attachment load exceeded structural capacity",
-        mode: newlyFailed.length ? "stress" : "detachment",
+        reason: operatingEnvelopeFailure
+          ? "rotor operating envelope exceeded structural limits"
+          : separatedPartIds.length
+            ? "measured attachment overload separated a physical component"
+            : "measured attachment load exceeded structural capacity",
+        mode: operatingEnvelopeFailure
+          ? "operating-envelope"
+          : newlyFailed.length
+            ? "stress"
+            : "detachment",
         time: context.time,
       });
     }
@@ -200,6 +239,7 @@ export class StructureSystem {
       failedCount: runtimeConnections.filter((connection) => connection.failed)
         .length,
       detachedConstraints,
+      failureInputs,
     };
   }
 
