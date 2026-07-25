@@ -200,6 +200,7 @@ export class PowerNetwork {
     const record = this.#consumers.get(partId);
     return record
       ? immutableClone({
+          allocationId: `power-allocation:${this.#graphRevision}:${String(partId)}`,
           requestedW: record.requestedW,
           allocatedW: record.allocatedW,
           deliveredW: record.deliveredW,

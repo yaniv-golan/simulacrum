@@ -29,6 +29,7 @@ import {
   buildThermalProbe,
 } from "./component-visual-builders/electronics-builders.js";
 import {
+  buildFixedPitchRotor,
   buildPressureNozzle,
   buildPropellantTank,
   buildRcsCluster,
@@ -63,6 +64,7 @@ const VISUAL_BUILDERS = Object.freeze({
   battery: buildBattery,
   rcs: buildRcsCluster,
   rocket: buildPressureNozzle,
+  rotor: buildFixedPitchRotor,
   generic: buildGenericGeometry,
   "flexible-line": buildFlexibleLine,
 });

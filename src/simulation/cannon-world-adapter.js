@@ -27,6 +27,7 @@ export class CannonWorldAdapter {
   }
 
   beginSession() {
+    this.transaction.beginSession?.();
     this.#session++;
     this.#tick = 0;
     this.#integratedTick = -1;
@@ -42,6 +43,7 @@ export class CannonWorldAdapter {
         "Cannon integration tick cannot move backwards",
       );
     this.#tick = next;
+    this.transaction.beginTick?.(next);
   }
 
   integrate(fixedDt, { tick = null } = {}) {
@@ -73,6 +75,7 @@ export class CannonWorldAdapter {
   }
 
   exportState() {
+    this.transaction.assertMotorEnergySettled?.();
     const vector = (value) => ({ x: value.x, y: value.y, z: value.z }),
       quaternion = (value) => ({
         x: value.x,

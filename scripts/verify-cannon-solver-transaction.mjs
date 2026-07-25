@@ -65,6 +65,83 @@ function run() {
 
 assert.deepEqual(run(), run(), "owned solver transaction is nondeterministic");
 
+function budgetedMotorRun() {
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
+    support = new CANNON.Body({ type: CANNON.Body.STATIC }),
+    rotor = new CANNON.Body({
+      mass: 2,
+      shape: new CANNON.Cylinder(0.5, 0.5, 0.2, 16),
+    }),
+    hinge = new CANNON.HingeConstraint(support, rotor, {
+      pivotA: new CANNON.Vec3(0, 0, 0),
+      pivotB: new CANNON.Vec3(0, 0, 0),
+      axisA: new CANNON.Vec3(0, 1, 0),
+      axisB: new CANNON.Vec3(0, 1, 0),
+    }),
+    transaction = new CannonSolverTransaction(world),
+    adapter = new CannonWorldAdapter(world, transaction),
+    dt = 1 / 120;
+  world.addBody(support);
+  world.addBody(rotor);
+  support.userData = { externalBodyId: "motor-support" };
+  rotor.userData = { externalBodyId: "motor-rotor" };
+  world.addConstraint(hinge);
+  hinge.enableMotor();
+  hinge.setMotorSpeed(1_000);
+  hinge.motorEquation.minForce = -100;
+  hinge.motorEquation.maxForce = 100;
+  adapter.beginSession();
+  transaction.registerMotorEnergyBudget({
+    tick: 1,
+    equation: hinge.motorEquation,
+    partId: "motor",
+    constraintId: "shaft",
+    mode: "motoring",
+    allocatedBusW: 120,
+    mechanicalBudgetJ: 1,
+    electricalEfficiency: 0.9,
+    torqueImpulseLimitNms: 100,
+  });
+  adapter.integrate(dt, { tick: 1 });
+  assert.throws(
+    () => adapter.exportState(),
+    /must settle|not settled/i,
+    "checkpoint accepted an unsettled motor row",
+  );
+  const pending = transaction.motorEnergyRecordsForTick(1),
+    [record] = pending.records;
+  assert.ok(record.positiveMechanicalWorkJ <= 1 + 1e-9, record);
+  assert.ok(record.positiveMechanicalWorkJ >= 1 - 1e-8, record);
+  assert.ok(record.saturated, record);
+  assert.ok(record.acceptedImpulseNms > 0, record);
+  assert.ok(Number.isFinite(record.generalizedInverseMass), record);
+  transaction.acknowledgeMotorEnergySettlement({
+    tick: 1,
+    recordDigest: pending.recordDigest,
+  });
+  assert.throws(
+    () =>
+      transaction.acknowledgeMotorEnergySettlement({
+        tick: 1,
+        recordDigest: pending.recordDigest,
+      }),
+    /acknowledgement/i,
+    "motor records were acknowledged twice",
+  );
+  adapter.exportState();
+  return {
+    angularVelocity: rotor.angularVelocity.y,
+    record,
+    digest: pending.recordDigest,
+  };
+}
+
+assert.deepEqual(
+  budgetedMotorRun(),
+  budgetedMotorRun(),
+  "energy-budgeted motor row is nondeterministic",
+);
+
 const heightfieldCandidate = createYUpHeightfieldCandidateFilter({
     heights: [
       [0, 0],

@@ -24,6 +24,7 @@ export class AerodynamicForceOwner {
   #model;
   #windAt;
   #terrainCollisionStream;
+  #heatInputCollector;
   #stateByPart = new Map();
   #heatRecords = Object.freeze([]);
   #tick = 0;
@@ -40,10 +41,16 @@ export class AerodynamicForceOwner {
     gravityCorrection: new CANNON.Vec3(),
   };
 
-  constructor({ physicalFlightModel, windAt, terrainCollisionStream = null }) {
+  constructor({
+    physicalFlightModel,
+    windAt,
+    terrainCollisionStream = null,
+    heatInputCollector = null,
+  }) {
     this.#model = physicalFlightModel;
     this.#windAt = windAt;
     this.#terrainCollisionStream = terrainCollisionStream;
+    this.#heatInputCollector = heatInputCollector;
     for (const part of physicalFlightModel.parts)
       this.#stateByPart.set(part.id, {
         aeroForce: new CANNON.Vec3(),
@@ -98,13 +105,31 @@ export class AerodynamicForceOwner {
       }
     }
 
+    for (const heat of heatByPart.values())
+      this.#heatInputCollector?.submit({
+        tick: context.clock.tick,
+        partId: heat.partId,
+        source: "body-aerodynamics",
+        incidentHeatFluxWPerM2: heat.incidentHeatFluxWPerM2,
+        surfaceAreaM2: heat.surfaceAreaM2,
+        atmosphereTemperatureK: heat.atmosphereTemperatureK,
+      });
     for (const propulsion of context.telemetry.propulsion?.engines || []) {
       const heat = heatByPart.get(propulsion.partId);
-      if (heat)
+      if (heat) {
         heat.directHeatPowerW = Math.max(
           0,
           Number(propulsion.thermalLossW || 0),
         );
+        if (heat.directHeatPowerW)
+          this.#heatInputCollector?.submit({
+            tick: context.clock.tick,
+            partId: propulsion.partId,
+            source: `propulsion:${propulsion.kind}`,
+            atmosphereTemperatureK: heat.atmosphereTemperatureK,
+            directHeatPowerW: heat.directHeatPowerW,
+          });
+      }
     }
     this.#heatRecords = Object.freeze(
       [...heatByPart.values()].map((record) => Object.freeze({ ...record })),
@@ -133,11 +158,14 @@ export class AerodynamicForceOwner {
       body.velocity.z - wind.z,
     );
     const speed = vectorLength(scratch.relativeVelocity),
-      surfaceAreaM2 =
-        2 *
-        (part.size.x * part.size.y +
-          part.size.x * part.size.z +
-          part.size.y * part.size.z),
+      surfaceAreaM2 = Math.max(
+        0.001,
+        Number(part.aerothermal.surfaceAreaM2) ||
+          2 *
+            (part.size.x * part.size.y +
+              part.size.x * part.size.z +
+              part.size.y * part.size.z),
+      ),
       heat = {
         tick: context.clock.tick,
         partId: part.id,
@@ -158,9 +186,15 @@ export class AerodynamicForceOwner {
         partQuaternion,
         scratch.direction,
       );
-      const area = Math.max(
+      const explicitArea = Math.max(
+          0,
+          ...part.aerodynamics.surfaces
+            .filter((surface) => surface.projection)
+            .map((surface) => Number(surface.areaM2) || 0),
+        ),
+        area = Math.max(
           0.001,
-          projectedBoxArea(part.size, scratch.localDirection),
+          explicitArea || projectedBoxArea(part.size, scratch.localDirection),
         ),
         material = part.aerothermal.material,
         mach = speed / atmosphere.speedOfSound,
@@ -280,6 +314,7 @@ export class AerodynamicForceOwner {
     this.#model = null;
     this.#windAt = null;
     this.#terrainCollisionStream = null;
+    this.#heatInputCollector = null;
     this.#stateByPart.clear();
     this.#heatRecords = Object.freeze([]);
     this.#tick = 0;

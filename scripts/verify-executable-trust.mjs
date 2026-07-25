@@ -283,7 +283,7 @@ assert.deepEqual(
   [
     "32708f394b310c688935a96e6eacbfaa65035fbe87a40727379745298e144e50",
     "b9fa2d33f2ba41f72f7f7dd89577dc27f7bdc4ce68d9154f24669d511c13e3b4",
-    "d1b9f91fd40b37cd2f64a28a4506546d40023fea755a24b22e1e4706c88fcfd8",
+    "064838bfd5761174ad7e5e84a4ca9fe46e20072908cf817546f3405084797772",
     "ef4fd5b60c9d5950f17534607b5f3fba79bf7c2294c7d876acaeda497fbaa448",
   ],
   "audited built-in list retained a stale policy or source digest",

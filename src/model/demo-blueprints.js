@@ -831,16 +831,22 @@ function drone(sources = {}) {
         eulerRotation: [0, -Math.atan2(z, x), 0],
       }),
     ),
-    battery = b.add("battery", [0, 1.9, 0]),
+    battery = b.add("battery", [0, 1.9, 0], {
+      config: {
+        mass: 95,
+        size: [1.2, 0.7, 0.85],
+        capacityWh: 21_000,
+        maxOutputWatts: 240_000,
+        dischargeEfficiency: 0.96,
+      },
+      storedEnergyWh: 21_000,
+    }),
     controller = b.add("computer", [0, 2.45, 0], {
       scriptLanguage: "typescript",
       scriptSources: controllerSources(sources.droneTypescript || ""),
     }),
     imu = b.add("imu", [0, 2.82, 0]),
     navigation = b.add("navsensor", [0.62, 2.42, 0]),
-    tank = b.add("propellanttank", [0, 2.25, 0], {
-      config: { capacityKg: 80, initialUsableMassKg: 80 },
-    }),
     receivers = {
       collective: b.add("receiver", [-0.85, 1.82, -0.5]),
       yaw: b.add("receiver", [-0.43, 1.82, -0.5]),
@@ -848,10 +854,31 @@ function drone(sources = {}) {
       roll: b.add("receiver", [0.43, 1.82, -0.5]),
       altitudeHold: b.add("receiver", [0.85, 1.82, -0.5]),
     },
-    gimbals = positions.map(([x, , z]) => b.add("hinge", [x, 1.68, z])),
-    thrusters = positions.map((position) =>
-      b.add("rocket", position, {
-        config: { maximumMassFlowKgS: 2.4, exitAreaM2: 0.006 },
+    handedness = [1, -1, -1, 1],
+    motors = positions.map(([x, , z], index) =>
+      b.add("motor", [x, 1.95, z], {
+        eulerRotation: [-Math.PI / 2, 0, 0],
+        config: {
+          mass: 24,
+          rpm: 2_400,
+          power: 50,
+          direction: handedness[index],
+          electricalEfficiency: 0.92,
+        },
+      }),
+    ),
+    rotors = positions.map(([x, , z], index) =>
+      b.add("rotor", [x, 2.83, z], {
+        eulerRotation: [-Math.PI / 2, 0, 0],
+        config: {
+          radiusM: 0.95,
+          bladeChordM: 0.13,
+          fixedPitchDeg: 15,
+          // Cannon's revolute coordinate is opposite the authored motor drive
+          // sign, so blade twist mirrors the drive sign to make positive local
+          // rotor-axis thrust at the commanded forward rotation.
+          handedness: -handedness[index],
+        },
       }),
     );
   controller.controllerBindings = [
@@ -883,28 +910,20 @@ function drone(sources = {}) {
       endpointPortId: "SIGNAL",
       reading,
     })),
-    ...thrusters.map((engine, index) => ({
-      id: `engine.${index}.throttle`,
+    ...motors.map((motor, index) => ({
+      id: `motor.${index}.throttle`,
       direction: "output",
-      endpointPartId: engine.id,
-      endpointPortId: "SIGNAL",
-      channel: "throttle",
-    })),
-    ...gimbals.map((gimbal, index) => ({
-      id: `gimbal.${index}.target`,
-      direction: "output",
-      endpointPartId: gimbal.id,
+      endpointPartId: motor.id,
       endpointPortId: "CONTROL",
-      channel: "joint_target",
+      channel: "throttle",
     })),
   ];
   for (const powered of [imu, navigation, ...Object.values(receivers)])
     b.power(battery, powered);
-  for (const gimbal of gimbals) b.power(battery, gimbal);
-  b.wireController(battery, controller, [...thrusters, ...gimbals]);
+  for (const motor of motors) b.power(battery, motor);
+  b.wireController(battery, controller, motors);
   for (const sensor of [imu, navigation, ...Object.values(receivers)])
     b.sensor(sensor, controller);
-  for (const thruster of thrusters) b.resource(tank, thruster);
   for (const arm of arms)
     b.connect(deck, arm, "mechanical", {
       portA: "TOP",
@@ -916,7 +935,6 @@ function drone(sources = {}) {
     controller,
     imu,
     navigation,
-    tank,
     ...Object.values(receivers),
   ])
     b.connect(deck, part, "mechanical", {
@@ -924,15 +942,15 @@ function drone(sources = {}) {
       portB: "MOUNT",
       capacity: REINFORCED_CAPACITY,
     });
-  for (let index = 0; index < gimbals.length; index++) {
-    b.connect(arms[index], gimbals[index], "mechanical", {
+  for (let index = 0; index < motors.length; index++) {
+    b.connect(arms[index], motors[index], "mechanical", {
       portA: "B",
-      portB: "BASE",
+      portB: "MOUNT",
       capacity: REINFORCED_CAPACITY,
     });
-    b.connect(gimbals[index], thrusters[index], "mechanical", {
-      portA: "ARM",
-      portB: "MOUNT",
+    b.connect(motors[index], rotors[index], "mechanical", {
+      portA: "SHAFT",
+      portB: "SHAFT",
       capacity: REINFORCED_CAPACITY,
     });
   }
@@ -940,7 +958,7 @@ function drone(sources = {}) {
     name: "Quad Drone",
     title: "QUAD DRONE",
     description:
-      "Four vectoring engines and a powered IMU close the attitude-control loop.",
+      "Four independently powered fixed-pitch rotors and a powered IMU close the attitude-control loop.",
     selectedType: "computer",
     autorunScript: true,
     controls: [

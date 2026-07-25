@@ -159,7 +159,7 @@ The included gearbox uses a 12-tooth pinion driving a 24-tooth gear. The output 
 - **Mechanical:** axles, 12T and 24T gears, powered motors, hinge joints,
   levers, springs, dampers, linear guides, power-limited linear actuators,
   powered release couplers, rounded wheels, and distributed Rope.
-- **Smart:** logic controllers, rotation sensors, batteries, and vector thrusters.
+- **Smart:** logic controllers, rotation sensors, batteries, electric motors, fixed-pitch rotors, and pressure nozzles.
 - **My Parts:** select one component or a connected multi-part mechanism, press **+**, give the assembly a name and accent, and reuse it from the persistent personal library. Relative transforms, tuning, controller programs, and every internal connection are retained. Saved assemblies remain available after reloading the browser and can be removed from their library card.
 
 Connections are classified and drawn by function: orange for power, mint for mechanical links, gold for meshed gears, and blue for signals. Gear meshes automatically use tooth-count ratios.
@@ -293,7 +293,7 @@ Open **Demos** in the header and follow the numbered complexity ladder. Loading 
 
 - **1 · Powered Gearbox:** battery, powered motor, controller, mounted 12T input gear, meshed 24T output gear, and rotation sensor. It demonstrates electrical enablement, shaft alignment, opposite rotation, and exact 2:1 reduction.
 - **2 · Suspension Rover:** powered dynamic chassis, four suspended wheels, motor, steering hinge, battery, controller, power network, command link, and two functional headlights. Each 1,600-lumen headlight uses inverse-square attenuation, a dipped soft-edged beam, dynamic shadow casting, and real 110 W combined battery draw. Its tire constraint provides longitudinal traction and lateral grip only while the wheels are supported; crossing the finite plate edge or a reserve-material boundary resolves the exact contacted surface law and publishes that provenance. Its visible controls are an ordinary pinned control surface generated from the editable Cart remote.
-- **3 · Quad Drone:** crossed frame, flight deck, four vector thrusters, three attitude gimbals, battery, controller, and flight-control network.
+- **3 · Quad Drone:** crossed frame, flight deck, four independently powered shaft motors and fixed-pitch rotors, battery, controller, and flight-control network.
 - **4 · Atlas Humanoid:** a 13-body physical robot with feet, shins, thighs, pelvis, torso, head, upper arms, and forearms; ten powered hip, knee, ankle, shoulder, and elbow hinges; a battery, motor, controller, 6-axis IMU, and balance gyro.
 - **5 · Orbital Missile:** pressure-nozzle main engine, independent main/RCS propellant stores, two load-rated structural stages, a powered two-flange release coupler, one declared breakaway signal umbilical, ceramic aero nose, four stabilizing fins, battery, flight computer, and mission-control link supporting arm, launch, throttle, stage, and abort. The editable TypeScript program turns the ordinary Stage receiver's rising edge into the coupler's exact release command.
 

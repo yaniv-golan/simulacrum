@@ -188,6 +188,12 @@ export {
   pressureNozzlePerformance,
 } from "../model/pressure-nozzle-contracts.js";
 export { deriveDynamicMassProperties } from "../model/dynamic-mass-properties.js";
+export {
+  ROTOR_AERODYNAMIC_PROFILES,
+  rotorAerodynamicContract,
+  rotorAerodynamicPerformance,
+  validateRotorConfig,
+} from "../model/rotor-aerodynamics-contracts.js";
 export { wheelDriveMotorIds } from "../simulation/wheel-drive-topology.js";
 export { compileAssembly } from "../model/assembly-compiler.js";
 export {

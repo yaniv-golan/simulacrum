@@ -90,3 +90,29 @@ export function buildPressureNozzle({ g, accent }) {
     );
   }
 }
+
+export function buildFixedPitchRotor({ g, accent, geometryDescriptor }) {
+  const rotor = geometryDescriptor.rotor,
+    hubThicknessM = rotor.hubThicknessM,
+    hubRadiusM = rotor.hubRadiusM,
+    bladeSpanM = rotor.radiusM - hubRadiusM,
+    bladeCenterM = hubRadiusM + bladeSpanM / 2;
+  mesh(
+    new THREE.CylinderGeometry(hubRadiusM, hubRadiusM, hubThicknessM, 28),
+    mats.steel,
+    [0, 0, 0],
+    [Math.PI / 2, 0, 0],
+    g,
+  );
+  for (let index = 0; index < rotor.bladeCount; index++) {
+    const angle = (index / rotor.bladeCount) * Math.PI * 2,
+      blade = mesh(
+        new THREE.BoxGeometry(bladeSpanM, rotor.bladeChordM, 0.018),
+        accent,
+        [Math.cos(angle) * bladeCenterM, Math.sin(angle) * bladeCenterM, 0],
+        [0, 0, angle],
+        g,
+      );
+    blade.rotateX((rotor.handedness * 4 * Math.PI) / 180);
+  }
+}

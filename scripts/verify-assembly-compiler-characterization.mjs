@@ -18,24 +18,24 @@ import { instantiateSubassembly } from "../src/model/subassemblies.js";
 
 const GOLDEN_DIGESTS = Object.freeze({
   "demo:gearbox": {
-    sha256: "c441eb560e7469ac04f28b25cebceab9b443e7944343bca044c7f322f245c3f5",
-    bytes: 39_102,
+    sha256: "6a28e51aa933917542d96cf7f12df61905badd01e8b3c5784de8f7f6a3bdd51e",
+    bytes: 39_130,
   },
   "demo:cart": {
-    sha256: "b118b8487e6da69a8c907145e8a4e360baaf620f3f2658082a92bdf7d9db27ef",
-    bytes: 267_324,
+    sha256: "2878972d78daf53cc6efd7507dd74ba7d085659b19ff84f516a53f812086c127",
+    bytes: 267_436,
   },
   "covariance:transformed-cart": {
-    sha256: "12ae03e21ecd4146e028b08c73b94f481f1ce389ba74dced43ae32766cd7b742",
-    bytes: 274_576,
+    sha256: "43d93a2ea39d6f389b03b753016c6205c47db86d480424a0364a9151c8dd62ee",
+    bytes: 274_688,
   },
   "demo:humanoid": {
     sha256: "554568e0714c07becddd81013bc1859cb0e9c334cbe097c10cc0f1997fe5147d",
     bytes: 194_905,
   },
   "demo:drone": {
-    sha256: "84d019b7ed1a1c997dd543b8ca70e8ea5cf15501808be53b373a90c7d062787d",
-    bytes: 238_073,
+    sha256: "8536c70c45bc612dccbc218939f8a67f52f56f4005112711404f10c818dc8591",
+    bytes: 191_644,
   },
   "demo:mission": {
     sha256: "72506dd44c86648a1ebf19c777bd25d209e177f462689713430972a02fda2d6e",
@@ -58,12 +58,12 @@ const GOLDEN_DIGESTS = Object.freeze({
     bytes: 119_285,
   },
   "mechanism:Active leveling suspension": {
-    sha256: "e57221f8bb828ad0854a68603c0c4985061c8cb5738c684e189d656971d6df83",
-    bytes: 142_902,
+    sha256: "7e984ee6fdf011629032be7f75f549c6643221da3a1efe17fcdcf542215e53c8",
+    bytes: 143_014,
   },
   "hybrid:wheeled-rocket": {
-    sha256: "749bdb771254d8bd691033b4e1a0013c5b01bb142445df7d7ad30b03d7231ec4",
-    bytes: 312_007,
+    sha256: "2e379d7567a533d197cc9f5cf572b9510da2e335b7d2c15facf9c187aecc4a7e",
+    bytes: 312_119,
   },
   "diagnostic:dangling-connection": {
     sha256: "5d4b06c761532366be24fee6af43330fee9525e4bff894d4deb04e72ee9b3118",

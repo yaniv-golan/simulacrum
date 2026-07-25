@@ -81,7 +81,12 @@ export class PhysicalFlightTelemetryProjector {
   #project(context, dt, collectImpact = false) {
     const measurement = this.#model.primary(context);
     if (!measurement?.root) return null;
-    const prior = this.#previousFrame(context),
+    const rootQuaternion = writePartToWorldQuaternion(
+        measurement.root,
+        this.#bodyPartQuaternion,
+        this.#inverseMassFrameQuaternion,
+      ),
+      prior = this.#previousFrame(context),
       atmosphere = standardAtmosphere(Math.max(0, measurement.com.y)),
       wind = this.#windAt(plainVector(measurement.com), context.time),
       velocity = plainVector(measurement.velocity),
@@ -94,11 +99,9 @@ export class PhysicalFlightTelemetryProjector {
     );
     const speed = vectorLength(this.#scratch.relativeVelocity),
       dynamicPressure = 0.5 * atmosphere.density * speed ** 2,
-      propulsionRecords = (
-        context.telemetry.propulsion?.engines ||
-        context.previousTelemetry?.systems?.propulsion?.engines ||
-        []
-      ).filter((record) => measurement.group.partIdSet.has(record.partId)),
+      propulsionRecords = (context.telemetry.propulsion?.engines || []).filter(
+        (record) => measurement.group.partIdSet.has(record.partId),
+      ),
       dragN = measurement.group.parts.reduce(
         (sum, part) =>
           sum +
@@ -147,7 +150,7 @@ export class PhysicalFlightTelemetryProjector {
       );
       addScaled(this.#scratch.moment, this.#scratch.forceMoment, 1);
     }
-    rotateVector(this.#scratch.rootUp, measurement.root.quaternion, {
+    rotateVector(this.#scratch.rootUp, rootQuaternion, {
       x: 0,
       y: 1,
       z: 0,
@@ -172,7 +175,7 @@ export class PhysicalFlightTelemetryProjector {
       active: true,
       pose: Object.freeze({
         position: Object.freeze(plainVector(measurement.com)),
-        quaternion: Object.freeze(plainQuaternion(measurement.root.quaternion)),
+        quaternion: Object.freeze(plainQuaternion(rootQuaternion)),
       }),
       velocity: Object.freeze(velocity),
       angularVelocity: Object.freeze(
@@ -234,9 +237,7 @@ export class PhysicalFlightTelemetryProjector {
           Object.freeze({
             id: group.id,
             partIds: group.partIds,
-            flightCapable: group.parts.some(
-              (part) => part.propulsion?.kind === "pressure-nozzle-v1",
-            ),
+            flightCapable: group.parts.some((part) => part.propulsion),
           }),
         ),
       ),
