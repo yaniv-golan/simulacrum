@@ -616,21 +616,13 @@ export const WORKSHOP_TEST_SITE = createTestSiteDefinition({
     },
   ],
   staticFixtures: [
-    ...[
-      { side: "south", positionM: [0, 0, -33.984], headingRad: 0 },
-      { side: "north", positionM: [0, 0, 33.984], headingRad: Math.PI },
-      { side: "east", positionM: [33.984, 0, 0], headingRad: -Math.PI / 2 },
-      { side: "west", positionM: [-33.984, 0, 0], headingRad: Math.PI / 2 },
-    ].map(({ side, positionM, headingRad }) =>
-      fixture(
-        `workshop-apron-ramp-${side}`,
-        "apron",
-        "apron-ramp",
-        positionM,
-        [44, -FIELD_SURFACE_Y, 24],
-        "weathered-concrete",
-        headingRad,
-      ),
+    fixture(
+      "workshop-apron-ramp-south",
+      "apron",
+      "apron-ramp",
+      [0, 0, -33.984],
+      [44, -FIELD_SURFACE_Y, 24],
+      "weathered-concrete",
     ),
     fixture(
       "operations-building",

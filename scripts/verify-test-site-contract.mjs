@@ -55,7 +55,7 @@ const mutableSite = () => structuredClone(WORKSHOP_TEST_SITE),
 assert.equal(WORKSHOP_TEST_SITE.schemaVersion, TEST_SITE_SCHEMA_VERSION);
 assert.deepEqual(WORKSHOP_TEST_SITE.footprint.sizeM, [480, 360]);
 assert.equal(WORKSHOP_TEST_SITE.districts.length, 9);
-assert.equal(WORKSHOP_TEST_SITE.staticFixtures.length, 86);
+assert.equal(WORKSHOP_TEST_SITE.staticFixtures.length, 83);
 assert.equal(WORKSHOP_TEST_SITE.vegetationRules.length, 3);
 assert.equal(WORKSHOP_TEST_SITE.clearVolumes.length, 4);
 assert.ok(Object.isFrozen(WORKSHOP_TEST_SITE));
@@ -570,7 +570,11 @@ const apronRamps = WORKSHOP_TEST_SITE.staticFixtures.filter(({ id }) =>
       localZ * Math.sin(angle)
     );
   };
-assert.equal(apronRamps.length, 4);
+assert.deepEqual(
+  apronRamps.map(({ id }) => id),
+  ["workshop-apron-ramp-south"],
+  "routine workshop access must use one south ramp and preserve three raw edges",
+);
 for (const ramp of apronRamps) {
   const children = ramp.collisionGeometry.children;
   assert.equal(ramp.materialKey, "weathered-concrete");
@@ -580,14 +584,14 @@ for (const ramp of apronRamps) {
   close(rampTopY(first, first.geometry.sizeM[2] / 2), -FIELD_SURFACE_Y, 0.001);
   close(rampTopY(last, -last.geometry.sizeM[2] / 2), 0, 0.001);
 }
-assert.equal(fixtureBodies.length, 34);
+assert.equal(fixtureBodies.length, 33);
 assert.equal(new Set(fixtureBodyIds).size, fixtureBodies.length);
 assert.deepEqual(
   fixtureBodyIds,
   repeatedFixtureBodies.map(({ userData }) => userData.externalBodyId),
   "fixture compound-body identities are not deterministic",
 );
-assert.equal(fixtureShapeIds.length, 375);
+assert.equal(fixtureShapeIds.length, 372);
 assert.equal(new Set(fixtureShapeIds).size, fixtureShapeIds.length);
 assert.ok(fixtureShapeIds.includes("fixture:operations-building:0"));
 assert.ok(fixtureShapeIds.includes("fixture:airfield-sign:1"));
