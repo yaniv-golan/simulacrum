@@ -104,6 +104,7 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-flight-command-browser.mjs",
   "verify-release-coupler-browser.mjs",
   "verify-rover-runtime.mjs",
+  "verify-rover-apron-egress.mjs",
   "verify-camera-tracker.mjs",
   "verify-blueprint-roundtrip.mjs",
   "verify-blueprint-exchange.mjs",

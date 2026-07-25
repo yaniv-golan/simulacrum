@@ -327,6 +327,19 @@ function addBridge(group, fixture, materials) {
       );
 }
 
+function addApronRamp(group, fixture, materials) {
+  for (const child of fixture.collisionGeometry.children) {
+    const ramp = mesh(
+      new THREE.BoxGeometry(...child.geometry.sizeM),
+      materials.stone,
+      child.offsetM,
+      child.rotationEulerRad,
+      group,
+    );
+    ramp.receiveShadow = true;
+  }
+}
+
 /** Builds varied visuals inside each canonical fixture's collision envelope. */
 export function addTestSiteFixtureVisual({
   fixture,
@@ -346,6 +359,7 @@ export function addTestSiteFixtureVisual({
   else if (key === "rock") addRock(group, fixture, materials);
   else if (key === "building") addBuilding(group, fixture, materials);
   else if (key === "bridge") addBridge(group, fixture, materials);
+  else if (key === "apron-ramp") addApronRamp(group, fixture, materials);
   else if (key === "log") {
     mesh(
       new THREE.CylinderGeometry(depth / 2, depth / 2, width, 14),

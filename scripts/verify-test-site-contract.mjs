@@ -1,5 +1,6 @@
 import { assert } from "./lib/assert.mjs";
 import { WORKSHOP_TEST_SITE } from "../src/application/testing-playground-content.js";
+import { FIELD_SURFACE_Y } from "../src/simulation/environment/earth.js";
 import {
   createTestSiteDefinition,
   TEST_SITE_SCHEMA_VERSION,
@@ -54,7 +55,7 @@ const mutableSite = () => structuredClone(WORKSHOP_TEST_SITE),
 assert.equal(WORKSHOP_TEST_SITE.schemaVersion, TEST_SITE_SCHEMA_VERSION);
 assert.deepEqual(WORKSHOP_TEST_SITE.footprint.sizeM, [480, 360]);
 assert.equal(WORKSHOP_TEST_SITE.districts.length, 9);
-assert.equal(WORKSHOP_TEST_SITE.staticFixtures.length, 82);
+assert.equal(WORKSHOP_TEST_SITE.staticFixtures.length, 86);
 assert.equal(WORKSHOP_TEST_SITE.vegetationRules.length, 3);
 assert.equal(WORKSHOP_TEST_SITE.clearVolumes.length, 4);
 assert.ok(Object.isFrozen(WORKSHOP_TEST_SITE));
@@ -557,14 +558,36 @@ assert.equal(
   ).length,
   14,
 );
-assert.equal(fixtureBodies.length, 32);
+const apronRamps = WORKSHOP_TEST_SITE.staticFixtures.filter(({ id }) =>
+    id.startsWith("workshop-apron-ramp-"),
+  ),
+  rampTopY = (child, localZ) => {
+    const angle = child.rotationEulerRad[0],
+      thicknessM = child.geometry.sizeM[1];
+    return (
+      child.offsetM[1] +
+      (thicknessM / 2) * Math.cos(angle) -
+      localZ * Math.sin(angle)
+    );
+  };
+assert.equal(apronRamps.length, 4);
+for (const ramp of apronRamps) {
+  const children = ramp.collisionGeometry.children;
+  assert.equal(ramp.materialKey, "weathered-concrete");
+  assert.equal(children.length, 1);
+  const first = children[0],
+    last = children.at(-1);
+  close(rampTopY(first, first.geometry.sizeM[2] / 2), -FIELD_SURFACE_Y, 0.001);
+  close(rampTopY(last, -last.geometry.sizeM[2] / 2), 0, 0.001);
+}
+assert.equal(fixtureBodies.length, 34);
 assert.equal(new Set(fixtureBodyIds).size, fixtureBodies.length);
 assert.deepEqual(
   fixtureBodyIds,
   repeatedFixtureBodies.map(({ userData }) => userData.externalBodyId),
   "fixture compound-body identities are not deterministic",
 );
-assert.equal(fixtureShapeIds.length, 371);
+assert.equal(fixtureShapeIds.length, 375);
 assert.equal(new Set(fixtureShapeIds).size, fixtureShapeIds.length);
 assert.ok(fixtureShapeIds.includes("fixture:operations-building:0"));
 assert.ok(fixtureShapeIds.includes("fixture:airfield-sign:1"));

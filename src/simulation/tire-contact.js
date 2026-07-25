@@ -77,13 +77,49 @@ function contactGap(contact) {
   return contact.ni.dot(pointB.vsub(pointA));
 }
 
+/** Removes only the clipped point's nonphysical rolling-tangent lever arm. */
+function limitHeightfieldAxleMoment(contact, wheel, axle, maximumShiftM) {
+  const wheelIsA = contact.bi === wheel,
+    supportBody = wheelIsA ? contact.bj : contact.bi;
+  if (!supportBody.shapes.some((shape) => shape instanceof CANNON.Heightfield))
+    return;
+  const wheelOffset = wheelIsA ? contact.ri : contact.rj,
+    supportOffset = wheelIsA ? contact.rj : contact.ri,
+    supportNormal = contact.ni.scale(wheelIsA ? -1 : 1),
+    radialNormal = supportNormal.clone();
+  radialNormal.vsub(axle.scale(supportNormal.dot(axle)), radialNormal);
+  if (radialNormal.lengthSquared() <= EPSILON) return;
+  radialNormal.normalize();
+  const correctedOffset = radialNormal.scale(wheelOffset.dot(radialNormal));
+  correctedOffset.vadd(axle.scale(wheelOffset.dot(axle)), correctedOffset);
+  const shift = correctedOffset.vsub(wheelOffset),
+    shiftLengthM = shift.length();
+  if (shiftLengthM > maximumShiftM)
+    shift.scale(maximumShiftM / shiftLengthM, shift);
+  wheelOffset.vadd(shift, wheelOffset);
+  supportOffset.vadd(shift, supportOffset);
+}
+
 function disableGenericFriction(world, wheel, other) {
+  const triangulatedSupport = other.shapes.some(
+    (shape) => shape instanceof CANNON.Heightfield,
+  );
   for (const equation of world.frictionEquations || [])
     if (
       (equation.bi === wheel && equation.bj === other) ||
       (equation.bi === other && equation.bj === wheel)
-    )
+    ) {
+      // The solver transaction queues contact friction before constraint
+      // updates run. `enabled = false` alone is therefore too late for the
+      // current step. A heightfield can queue several rows for one tire, so
+      // zero those already-queued bounds before the authored brush rows are
+      // added. Solid obstacle contacts retain their validated curb response.
       equation.enabled = false;
+      if (triangulatedSupport) {
+        equation.minForce = 0;
+        equation.maxForce = 0;
+      }
+    }
 }
 
 function interpolateCreep(law, normalLoadN) {
@@ -429,16 +465,31 @@ export class TireContactConstraint extends CANNON.Constraint {
       return;
     }
     const axle = partVectorToWorld(
-        wheel,
-        new CANNON.Vec3(...descriptor.localAxleAxis),
+      wheel,
+      new CANNON.Vec3(...descriptor.localAxleAxis),
+    );
+    axle.normalize();
+    const maximumDeflectionM = law.normalModel.maximumDeflectionM,
+      // Chord geometry bounds the longitudinal reach of a circular contact
+      // patch compressed by the authored maximum radial deflection.
+      maximumContactPatchHalfLengthM = Math.sqrt(
+        Math.max(
+          0,
+          2 * descriptor.radiusM * maximumDeflectionM - maximumDeflectionM ** 2,
+        ),
       ),
       contactRoles = new Set(),
       contactRegionKeys = new Set(),
       contactMaterialKeys = new Set(),
       supportMaterialLaws = new Map(),
       tractionContacts = [];
-    axle.normalize();
     for (const contact of contacts) {
+      limitHeightfieldAxleMoment(
+        contact,
+        wheel,
+        axle,
+        maximumContactPatchHalfLengthM,
+      );
       const wheelIsA = contact.bi === wheel,
         other = wheelIsA ? contact.bj : contact.bi,
         wheelPoint = worldPoint(wheel, wheelIsA ? contact.ri : contact.rj),
