@@ -15,6 +15,7 @@ import {
 } from "./test-site-fixture-geometry.js";
 import { testSiteHeightFeatureShape } from "./test-site-terrain.js";
 import { compileTestSiteVegetation } from "./test-site-vegetation.js";
+import { WORKSHOP_AXIS_CONVENTION } from "./workshop-axis-convention.js";
 
 export const TEST_SITE_SCHEMA_VERSION = "test-site-definition-v2";
 
@@ -1124,8 +1125,8 @@ export function createTestSiteDefinition(value) {
     ]);
 
   if (
-    coordinateFrame.units !== "m" ||
-    coordinateFrame.axes !== "x-east-y-up-z-north"
+    coordinateFrame.units !== WORKSHOP_AXIS_CONVENTION.units ||
+    coordinateFrame.axes !== WORKSHOP_AXIS_CONVENTION.id
   )
     throw new DomainValidationError(
       "INVALID_TEST_SITE_COORDINATE_FRAME",

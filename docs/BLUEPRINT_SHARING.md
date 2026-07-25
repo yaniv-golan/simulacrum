@@ -75,7 +75,7 @@ content fingerprint and is deduplicated rather than presented as a distinct
 self-remix.
 
 Remix attribution is an editor draft, not a global mode. Loading another demo,
-loading an unrelated machine, or clearing the build plate clears that draft, so
+loading an unrelated machine, or clearing the workbench clears that draft, so
 an unrelated design cannot accidentally inherit another creator's lineage.
 
 ## Storage and privacy

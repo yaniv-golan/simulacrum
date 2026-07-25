@@ -12,6 +12,7 @@ export function installEditorInputSubsystem({
   camera,
   scene,
   transform,
+  gizmo,
   catalog,
   model,
   editor,
@@ -45,6 +46,7 @@ export function installEditorInputSubsystem({
         view.notify("Collapse Exploded View before editing transforms");
         return;
       }
+      gizmo.finish("tool-change");
       camera.clearCameraTool();
       actions.applyEditorAction(state.editor, { type: "set-tool", tool });
       view
@@ -84,6 +86,7 @@ export function installEditorInputSubsystem({
       camera,
       scene,
       transform,
+      gizmo,
       model: {
         running: () => state.running,
         transformDragging: model.transformDragging,

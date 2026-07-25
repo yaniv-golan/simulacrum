@@ -32,6 +32,7 @@ import * as THREE from "three";
  *   connect: (fromId: number, toId: number, kind?:string, targetPort?:string|null, targetAnchorLocalM?:number[]|null) => boolean,
  *   setMode: (mode: string) => void,
  *   renderInspector: () => void,
+ *   finishTransform: () => void,
  *   tutorialEvent: (event: string) => void,
  *   notify: (message: string) => void,
  * }} SelectionActionPort
@@ -203,6 +204,7 @@ export function createEditorSelectionFeature({
   }
 
   function select(id, additive = false, { targetAnchorLocalM = null } = {}) {
+    actions.finishTransform();
     const connectFrom = workspace.connectFrom();
     if (connectFrom) additive = false;
     if (additive) {

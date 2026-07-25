@@ -17,6 +17,7 @@ export function installWorkshopPointerController({
   camera,
   scene,
   transform,
+  gizmo,
   model,
   editor,
   history,
@@ -24,13 +25,11 @@ export function installWorkshopPointerController({
 }) {
   let hovered = null;
   const duplicateHover = createDuplicatePlacementHoverIntent(model.selectedIds);
-
   function rememberHit(hit, id) {
     hovered = model.parts().find((part) => part.id === id) || null;
     duplicateHover.remember(hit, hovered?.id ?? null);
     view.showHover(hovered);
   }
-
   function clearHoverIntent() {
     duplicateHover.clear();
     hovered = null;
@@ -185,6 +184,7 @@ export function installWorkshopPointerController({
   }
 
   function cancelPointer(event) {
+    gizmo.cancelPointer(event.pointerId);
     directManipulator.finish(event);
     marqueeSelector.cancel();
     camera.endPointer();

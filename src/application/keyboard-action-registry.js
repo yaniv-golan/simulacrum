@@ -42,7 +42,7 @@ export const KEYBOARD_ACTION_DEFINITIONS = Object.freeze([
   ),
   action(
     "selection.clear-build",
-    "Clear build plate",
+    "Clear workbench",
     "Editing",
     ["Shift+Delete", "Shift+Backspace"],
     ["workshop"],

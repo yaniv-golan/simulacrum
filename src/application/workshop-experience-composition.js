@@ -40,6 +40,7 @@ export function createWorkshopExperienceComposition({
       clearMachine: assembly.editor.clear,
       clearBuildPlate: assembly.editor.clearBuildPlate,
       clearSelection: () => {
+        editor.transformGizmo.finish("selection-loss");
         applyEditorAction(state.editor, { type: "select", id: null });
         presentation.showSelection(null);
         presentation.renderInspector();

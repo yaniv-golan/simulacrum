@@ -26,9 +26,8 @@ export function installWorkshopInputComposition({
     scene: { camera: stage.camera, effects: stage.effects },
     transform: editor.transform,
     catalog,
-    model: {
-      transformDragging: editor.transformGizmo.dragging,
-    },
+    model: { transformDragging: editor.transformGizmo.dragging },
+    gizmo: editor.transformGizmo,
     editor: {
       selectPart: presentation.selectPart,
       selectedParts: presentation.selectedParts,

@@ -42,7 +42,7 @@ export function installWorkshopRuntimeComposition({
       updateExploded: editor.exploded.update,
       updateEnvironment: world.updateEnvironment,
       waterTexture: () => world.waterNormalTexture,
-      updateCamera: cameraController.update,
+      updateCamera: world.updateCamera,
       updateBatch: () => stage.largeAssemblyBatcher.update(),
       render: () => stage.renderer.render(stage.scene, stage.camera),
       renderer: stage.renderer,
@@ -77,6 +77,7 @@ export function installWorkshopRuntimeComposition({
       challengeContract: () => challenge?.snapshot() || null,
       learningTopicCount,
       camera: () => cameraController.snapshot(),
+      transformGizmo: editor.transformGizmo.operation,
       inspection: editor.editorPresentation.inspection,
     },
     machine: {

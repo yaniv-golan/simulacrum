@@ -254,15 +254,15 @@ export function createAssemblyEditorFeature({
 
   function clearBuildPlate() {
     if (workspace.running) {
-      view.notify("Stop simulation before clearing the build plate");
+      view.notify("Stop simulation before clearing the workbench");
       return;
     }
     if (!workspace.parts.length) {
-      view.notify("Build plate is already clear");
+      view.notify("Workbench is already clear");
       return;
     }
     const partCount = workspace.parts.length;
-    history.record("clear build plate");
+    history.record("clear workbench");
     workspace.activeChallenge = null;
     workspace.challengeStatus = "idle";
     workspace.challengeStartMode = null;
@@ -272,7 +272,7 @@ export function createAssemblyEditorFeature({
     clear();
     view.setMode("build");
     view.setMission(
-      "BUILD PLATE CLEAR",
+      "WORKBENCH CLEAR",
       "Choose components from the library or load a saved blueprint.",
     );
     view.notify(`Cleared ${partCount} components · Undo is available`);

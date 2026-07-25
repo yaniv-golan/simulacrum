@@ -51,6 +51,7 @@ export function createEditorPresentationSubsystem({
       connect: (...args) => connection.connect(...args),
       setMode: actions.setMode,
       renderInspector,
+      finishTransform: actions.finishTransform,
       tutorialEvent: actions.tutorialEvent,
       notify: actions.notify,
     },
