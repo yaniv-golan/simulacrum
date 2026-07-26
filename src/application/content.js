@@ -36,6 +36,8 @@ interface ControlAPI {
 let holdAltitude = 0;
 let previousAltitude = 0;
 let holdWasEnabled = 0;
+let pitchIntegral = 0;
+let rollIntegral = 0;
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
@@ -45,7 +47,17 @@ function clampSigned(value: number): number {
   return Math.max(-1, Math.min(1, value));
 }
 
+function maximum4(a: number, b: number, c: number, d: number): number {
+  return Math.max(Math.max(a, b), Math.max(c, d));
+}
+
+function minimum4(a: number, b: number, c: number, d: number): number {
+  return Math.min(Math.min(a, b), Math.min(c, d));
+}
+
 const attitudeProportionalPerDeg = 0.02;
+const attitudeIntegralPerDegS = 0.018;
+const attitudeIntegralLimit = 0.65;
 const angularDampingPerRadS = 1.1;
 const mixerAuthority = 0.35;
 
@@ -70,21 +82,97 @@ function tick(api: ControlAPI, dt: number): void {
     api.read('pilot.pitch') * 20 - api.read('imu.pitch');
   const rollError = api.read('pilot.roll') * 20 - api.read('imu.roll');
   const pitchMix = clampSigned(
-    pitchError * attitudeProportionalPerDeg -
+    pitchError * attitudeProportionalPerDeg +
+      pitchIntegral -
       api.read('imu.rate_x') * angularDampingPerRadS,
   ) * mixerAuthority;
   const rollMix = clampSigned(
-    rollError * attitudeProportionalPerDeg -
+    rollError * attitudeProportionalPerDeg +
+      rollIntegral -
       api.read('imu.rate_z') * angularDampingPerRadS,
   ) * mixerAuthority;
   const yawMix = clampSigned(
     api.read('pilot.yaw') - api.read('imu.rate_y') * 0.35,
   );
 
-  api.write('motor.0.throttle', clamp01(base + pitchMix - rollMix + yawMix * 0.08));
-  api.write('motor.1.throttle', clamp01(base + pitchMix + rollMix - yawMix * 0.08));
-  api.write('motor.2.throttle', clamp01(base - pitchMix - rollMix - yawMix * 0.08));
-  api.write('motor.3.throttle', clamp01(base - pitchMix + rollMix + yawMix * 0.08));
+  let attitude0 = pitchMix - rollMix;
+  let attitude1 = pitchMix + rollMix;
+  let attitude2 = -pitchMix - rollMix;
+  let attitude3 = -pitchMix + rollMix;
+  const attitudeSpan =
+    maximum4(attitude0, attitude1, attitude2, attitude3) -
+    minimum4(attitude0, attitude1, attitude2, attitude3);
+  if (attitudeSpan > 1) {
+    const attitudeScale = 1 / attitudeSpan;
+    attitude0 *= attitudeScale;
+    attitude1 *= attitudeScale;
+    attitude2 *= attitudeScale;
+    attitude3 *= attitudeScale;
+  }
+
+  const positiveYawMaximum = Math.max(attitude0, attitude3);
+  const positiveYawMinimum = Math.min(attitude0, attitude3);
+  const negativeYawMaximum = Math.max(attitude1, attitude2);
+  const negativeYawMinimum = Math.min(attitude1, attitude2);
+  let yawCorrection = yawMix * 0.08;
+  if (yawCorrection > 0) {
+    yawCorrection = Math.min(
+      yawCorrection,
+      Math.max(0, (1 - positiveYawMaximum + negativeYawMinimum) * 0.5),
+    );
+  } else if (yawCorrection < 0) {
+    yawCorrection = -Math.min(
+      -yawCorrection,
+      Math.max(0, (1 - negativeYawMaximum + positiveYawMinimum) * 0.5),
+    );
+  }
+
+  let correction0 = attitude0 + yawCorrection;
+  let correction1 = attitude1 - yawCorrection;
+  let correction2 = attitude2 - yawCorrection;
+  let correction3 = attitude3 + yawCorrection;
+  const minimumCorrection = minimum4(
+    correction0,
+    correction1,
+    correction2,
+    correction3,
+  );
+  if (minimumCorrection < -base) {
+    const correctionScale = base / -minimumCorrection;
+    correction0 *= correctionScale;
+    correction1 *= correctionScale;
+    correction2 *= correctionScale;
+    correction3 *= correctionScale;
+  }
+  base = Math.min(
+    base,
+    1 - maximum4(correction0, correction1, correction2, correction3),
+  );
+
+  api.write('motor.0.throttle', clamp01(base + correction0));
+  api.write('motor.1.throttle', clamp01(base + correction1));
+  api.write('motor.2.throttle', clamp01(base + correction2));
+  api.write('motor.3.throttle', clamp01(base + correction3));
+
+  if (base > 0.15) {
+    pitchIntegral = Math.max(
+      -attitudeIntegralLimit,
+      Math.min(
+        attitudeIntegralLimit,
+        pitchIntegral + pitchError * attitudeIntegralPerDegS * dt,
+      ),
+    );
+    rollIntegral = Math.max(
+      -attitudeIntegralLimit,
+      Math.min(
+        attitudeIntegralLimit,
+        rollIntegral + rollError * attitudeIntegralPerDegS * dt,
+      ),
+    );
+  } else {
+    pitchIntegral *= Math.max(0, 1 - dt * 4);
+    rollIntegral *= Math.max(0, 1 - dt * 4);
+  }
 
   previousAltitude = altitude;
   holdWasEnabled = holdEnabled;

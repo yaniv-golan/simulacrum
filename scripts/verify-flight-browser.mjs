@@ -74,11 +74,62 @@ await page.screenshot({
   path: "artifacts/flight-runtime/drone-controlled-flight.png",
   fullPage: true,
 });
+
+await page.locator("#run-btn").evaluate((element) => element.click());
+await page.waitForFunction(
+  () => !JSON.parse(window.render_game_to_text()).running,
+);
+await page.click("#demos-btn");
+await page.click('[data-demo="drone"]');
+await page.locator('.direct-range[data-index="0"]').evaluate((input) => {
+  input.value = "1";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+});
+await page.click('[data-mode="test"]');
+await page.waitForFunction(
+  () => JSON.parse(window.render_game_to_text()).running,
+);
+const maxCollectiveSamples = await page.evaluate(() => {
+  const observations = [];
+  for (let index = 1; index <= 14; index++) {
+    window.advanceTime(500);
+    const state = JSON.parse(window.render_game_to_text()),
+      systems = state.architecture.session.systems;
+    observations.push({
+      timeS: index * 0.5,
+      altitudeM: state.demo.drone.altitude,
+      verticalSpeedMps: systems.flight.velocity.y,
+      attitudeDeg: state.demo.drone.attitudeDeg,
+      propulsion: (systems.propulsion?.engines || []).map((record) => ({
+        rpm: record.rpm,
+        thrustN: record.thrustN,
+        valid: record.valid,
+        validity: record.validity,
+      })),
+      failedCount: systems.structures?.failedCount || 0,
+      failedConnections: state.connections
+        .filter((connection) => connection.failed)
+        .map((connection) => connection.id),
+    });
+  }
+  return observations;
+});
+const maxCollectiveState = JSON.parse(
+  await page.evaluate(() => window.render_game_to_text()),
+);
+await page.screenshot({
+  path: "artifacts/flight-runtime/drone-max-collective-stable.png",
+  fullPage: true,
+});
 console.log(
   JSON.stringify(
     {
       drone: state.demo.drone,
       samples,
+      maxCollective: {
+        drone: maxCollectiveState.demo.drone,
+        samples: maxCollectiveSamples,
+      },
       flightStatus: state.mission,
       visibleSource,
       errors,
@@ -146,6 +197,50 @@ await conclude(browser, () => {
   assert.ok(
     Math.abs(state.demo.drone.attitudeDeg.roll) < 8,
     `drone lost roll balance: ${state.demo.drone.attitudeDeg.roll}°`,
+  );
+  assert.ok(
+    maxCollectiveSamples.some(({ altitudeM }) => altitudeM > 1),
+    "maximum collective did not produce physical lift",
+  );
+  assert.ok(
+    maxCollectiveSamples.every(({ attitudeDeg }) =>
+      Object.values(attitudeDeg).every(Number.isFinite),
+    ),
+    "maximum collective produced a non-finite attitude",
+  );
+  assert.ok(
+    Math.max(
+      ...maxCollectiveSamples.map(({ attitudeDeg }) =>
+        Math.abs(attitudeDeg.pitch),
+      ),
+    ) < 15,
+    `maximum collective lost pitch control: ${JSON.stringify(maxCollectiveSamples.map(({ timeS, attitudeDeg }) => ({ timeS, pitch: attitudeDeg.pitch })))}`,
+  );
+  assert.ok(
+    Math.max(
+      ...maxCollectiveSamples.map(({ attitudeDeg }) =>
+        Math.abs(attitudeDeg.roll),
+      ),
+    ) < 15,
+    `maximum collective lost roll control: ${JSON.stringify(maxCollectiveSamples.map(({ timeS, attitudeDeg }) => ({ timeS, roll: attitudeDeg.roll })))}`,
+  );
+  assert.ok(
+    maxCollectiveSamples.every(({ propulsion }) =>
+      propulsion.every(
+        (record) =>
+          record.valid !== false &&
+          Number.isFinite(record.rpm) &&
+          Number.isFinite(record.thrustN),
+      ),
+    ),
+    "maximum collective invalidated a rotor",
+  );
+  assert.ok(
+    maxCollectiveSamples.every(
+      ({ failedCount, failedConnections }) =>
+        failedCount === 0 && failedConnections.length === 0,
+    ),
+    "maximum collective caused structural failure",
   );
   assert.match(
     visibleSource,

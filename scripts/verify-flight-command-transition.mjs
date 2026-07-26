@@ -378,6 +378,65 @@ for (const [bindingId, expected] of Object.entries({
 }))
   close(droneOutputs[bindingId], expected, `drone program ${bindingId}`);
 
+const maxCollectiveInputs = {
+    "pilot.collective": 1,
+    "pilot.yaw": 0,
+    "pilot.pitch": 0,
+    "pilot.roll": 0,
+    "pilot.altitude_hold": 0,
+    "nav.altitude": 20,
+    "imu.roll": 0,
+    "imu.pitch": -10,
+    "imu.yaw": 0,
+    "imu.rate_x": 0,
+    "imu.rate_y": 0,
+    "imu.rate_z": 0,
+  },
+  maxCollectiveOutputs = outputRecord(droneRuntime, maxCollectiveInputs);
+for (const [bindingId, expected] of Object.entries({
+  "motor.0.throttle": 1,
+  "motor.1.throttle": 1,
+  "motor.2.throttle": 0.86,
+  "motor.3.throttle": 0.86,
+}))
+  close(
+    maxCollectiveOutputs[bindingId],
+    expected,
+    `drone max-collective desaturation ${bindingId}`,
+  );
+const zeroCollectiveOutputs = outputRecord(droneRuntime, {
+  ...maxCollectiveInputs,
+  "pilot.collective": 0,
+});
+assert.ok(
+  Object.values(zeroCollectiveOutputs).every((value) => value === 0),
+  "attitude desaturation created motor authority at zero collective",
+);
+const integralRuntime = droneRuntime.instantiate();
+let initialIntegralOutputs = null,
+  settledIntegralOutputs = null;
+for (let tick = 0; tick < 240; tick++) {
+  const outputs = Object.fromEntries(
+    integralRuntime.tick(DT, maxCollectiveInputs),
+  );
+  if (tick === 0) initialIntegralOutputs = outputs;
+  settledIntegralOutputs = outputs;
+}
+assert.ok(
+  settledIntegralOutputs["motor.0.throttle"] -
+    settledIntegralOutputs["motor.2.throttle"] >
+    initialIntegralOutputs["motor.0.throttle"] -
+      initialIntegralOutputs["motor.2.throttle"] +
+      0.2,
+  "bounded integral trim did not reject a persistent pitch disturbance",
+);
+assert.ok(
+  Object.values(settledIntegralOutputs).every(
+    (value) => value >= 0 && value <= 1,
+  ),
+  "integral trim escaped the motor command envelope",
+);
+
 const missionRuntime = await prepareTypeScriptController(
     mission.controller.scriptSources.typescript,
     mission.manifest,

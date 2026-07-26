@@ -34,8 +34,8 @@ const GOLDEN_DIGESTS = Object.freeze({
     bytes: 194_905,
   },
   "demo:drone": {
-    sha256: "8536c70c45bc612dccbc218939f8a67f52f56f4005112711404f10c818dc8591",
-    bytes: 191_644,
+    sha256: "3bfac2c96666b6b5d6cf7697c0cae1766afc0cdfff422d59f2d40e6531336c33",
+    bytes: 194_308,
   },
   "demo:mission": {
     sha256: "72506dd44c86648a1ebf19c777bd25d209e177f462689713430972a02fda2d6e",
