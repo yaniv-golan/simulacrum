@@ -105,6 +105,7 @@ export {
   geometryDescriptorForPart,
   geometryDescriptorForType,
 } from "../model/geometry-descriptors.js";
+export * from "../model/component-geometry-contract.js";
 export { HistoryStore } from "../model/history-store.js";
 export {
   alignSelection,

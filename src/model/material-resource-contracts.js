@@ -4,6 +4,7 @@ import { geometryDescriptorForPart } from "./geometry-descriptors.js";
 import { materialMedium } from "./material-media.js";
 import { DomainValidationError, immutableClone } from "./primitives.js";
 import { portDefinition } from "./ports.js";
+import { boundsDimensions } from "./component-geometry-contract.js";
 
 const finitePositive = (value, field, partId) => {
   const number = Number(value);
@@ -42,7 +43,7 @@ function normalizedAxis(value, partId) {
 }
 
 function storageBox(descriptor, geometry, storageAxisPart, partId) {
-  const dimensions = geometry?.dimensions,
+  const dimensions = boundsDimensions(geometry?.bodyBoundsPartM),
     sizeFraction = descriptor.storageSolid?.sizeFraction,
     centerFraction = descriptor.storageSolid?.centerFraction;
   if (
@@ -114,7 +115,8 @@ function validateOutletAlignment(
   storageSolid,
   partId,
 ) {
-  const portPosition = geometry?.portFrames?.[outletPortId]?.position;
+  const portPosition =
+    geometry?.portFrames?.[outletPortId]?.framePart?.positionM;
   if (!Array.isArray(portPosition) || portPosition.length !== 3)
     throw new DomainValidationError(
       "INVALID_MATERIAL_STORE_OUTLET_GEOMETRY",
@@ -197,7 +199,8 @@ export function materialStoreContract(part, catalog = TYPES, geometry = null) {
         details: { initialUsableMassKg, capacityKg },
       },
     );
-  const compiledGeometry = geometry || geometryDescriptorForPart(part, catalog),
+  const compiledGeometry =
+      geometry || geometryDescriptorForPart(part, /** @type {any} */ (catalog)),
     storageAxisPart = normalizedAxis(descriptor.storageAxisPart, part.id),
     storageSolid = storageBox(
       descriptor,

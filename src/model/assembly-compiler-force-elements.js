@@ -6,6 +6,7 @@ import {
   PHYSICAL_CONNECTION_KINDS,
   worldPoint,
 } from "./assembly-compiler-shared.js";
+import { validateConnectionFrameInvariant } from "./connection-frame-invariants.js";
 
 function physicalEdgesFor(context, connector) {
   return context.connections.filter(
@@ -48,11 +49,8 @@ function resolveAttachments(context, connector, orderedEdges, neighbors) {
       resolvedFrame = structuralAnchor
         ? {
             ...frame,
-            position: compiledVector(structuralAnchor),
-            localFramePart: {
-              ...(frame.localFramePart || {
-                orientation: [0, 0, 0, 1],
-              }),
+            framePart: {
+              ...frame.framePart,
               positionM: compiledVector(structuralAnchor),
             },
           }
@@ -82,7 +80,7 @@ function compileEndpointPointMasses(
       sourceConnectionId: edge.id,
       endpointPort: connectorPort(edge),
       massKg: massModel.totalMassKg * fractions[index],
-      positionPartM: compiledVector(frame.position),
+      positionPartM: compiledVector(frame.framePart.positionM),
     });
     context.endpointPointMasses.set(neighbor.id, points);
   }
@@ -95,8 +93,14 @@ function forceElementBase(connector, orderedEdges, neighbors, attachments) {
     sourceConnectionIds: orderedEdges.map((edge) => edge.id),
     a: neighbors[0],
     b: neighbors[1],
-    anchorA: worldPoint(attachments[0].neighbor, attachments[0].frame.position),
-    anchorB: worldPoint(attachments[1].neighbor, attachments[1].frame.position),
+    anchorA: worldPoint(
+      attachments[0].neighbor,
+      attachments[0].frame.framePart.positionM,
+    ),
+    anchorB: worldPoint(
+      attachments[1].neighbor,
+      attachments[1].frame.framePart.positionM,
+    ),
     breakForce: Math.min(
       ...orderedEdges.map((edge) => edge.capacity.ultimateForceN),
     ),
@@ -255,6 +259,23 @@ function compileConnector(context, connector) {
       message: `${connector.type} #${connector.id} cannot join a body to itself.`,
     });
     return;
+  }
+  for (const edge of orderedEdges) {
+    const partA = context.partById.get(edge.a),
+      partB = context.partById.get(edge.b),
+      invariant = validateConnectionFrameInvariant({
+        connection: edge,
+        partA,
+        partB,
+        portA: compiledPortDefinition(partA, edge.portA, context.catalog),
+        portB: compiledPortDefinition(partB, edge.portB, context.catalog),
+        geometryA: context.geometryFor(partA),
+        geometryB: context.geometryFor(partB),
+      });
+    if (!invariant.ok) {
+      context.diagnostics.push(invariant.diagnostic);
+      return;
+    }
   }
   const attachments = resolveAttachments(
     context,

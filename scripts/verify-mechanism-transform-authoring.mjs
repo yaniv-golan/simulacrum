@@ -108,11 +108,8 @@ try {
   assert.ok(
     Object.values(operation.portFrameMappings).every((mappings) =>
       mappings.every(
-        ({ sourcePort, targetPort, coordinateSign, normalSign }) =>
-          sourcePort &&
-          targetPort &&
-          [-1, 1].includes(coordinateSign) &&
-          [-1, 1].includes(normalSign),
+        ({ sourcePort, targetPort, coordinateSign }) =>
+          sourcePort && targetPort && [-1, 1].includes(coordinateSign),
       ),
     ),
     "mirror did not expose its frame/axis mapping",

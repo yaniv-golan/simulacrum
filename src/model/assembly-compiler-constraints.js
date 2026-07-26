@@ -9,8 +9,10 @@ import {
   isLinkageEndpoint,
   isPivotEndpoint,
   PHYSICAL_CONNECTION_KINDS,
+  worldMechanismFrame,
   worldPortFrame,
 } from "./assembly-compiler-shared.js";
+import { validateConnectionFrameInvariant } from "./connection-frame-invariants.js";
 
 function gearEndpoint(context, part) {
   const definition = componentDefinition(part, context.catalog),
@@ -199,15 +201,18 @@ function rotaryDescriptor(
     velocityDefinition = velocityActuator
       ? componentDefinition(velocityActuator, context.catalog) || {}
       : null,
-    frame = worldPortFrame(
-      coordinate.coordinateOwner || rotor || a,
-      coordinate.coordinateConfig?.frameB
-        ? { localFramePart: coordinate.coordinateConfig.frameB }
-        : coordinate.ownerPort,
+    frameOwner = coordinate.coordinateOwner || rotor || a,
+    attachmentFrame = worldPortFrame(
+      frameOwner,
+      context.geometryFor(frameOwner),
+      coordinate.ownerPort.id,
       coordinate.coordinateOwner === a
         ? connection.anchorA
         : connection.anchorB,
-    );
+    ),
+    coordinateFrame = coordinate.coordinateConfig?.frameB
+      ? worldMechanismFrame(frameOwner, coordinate.coordinateConfig.frameB)
+      : attachmentFrame;
   return {
     id: constraintId("shaft", connection),
     kind: "revolute",
@@ -215,9 +220,12 @@ function rotaryDescriptor(
     sourceConnectionIds: [connection.id],
     a: a.id,
     b: b.id,
-    anchor: frame.positionWorld,
+    // The physical attachment owns translational coincidence. A mechanism
+    // frame may define the angular coordinate's axis, but its internal origin
+    // is not a second attachment location.
+    anchor: attachmentFrame.positionWorld,
     axis: axisFor(rotor || positionActuator || a, context.catalog),
-    axisWorld: frame.axisWorld,
+    axisWorld: coordinateFrame.axisWorld,
     limits: rotaryLimits(coordinate.mechanismConfig),
     damping: rotaryDamping(coordinate.mechanismConfig, support),
     maxTorque:
@@ -237,12 +245,6 @@ function rotaryDescriptor(
 
 function compileRotary(context, connection, a, b, leftPort, rightPort) {
   const participants = rotaryParticipants(a, b, leftPort, rightPort),
-    endpointFrameA = worldPortFrame(a, leftPort, connection.anchorA),
-    endpointFrameB = worldPortFrame(b, rightPort, connection.anchorB),
-    endpointAxisDot = endpointFrameA.axisWorld.reduce(
-      (sum, value, axis) => sum + value * endpointFrameB.axisWorld[axis],
-      0,
-    ),
     descriptor = rotaryDescriptor(
       context,
       connection,
@@ -252,17 +254,6 @@ function compileRotary(context, connection, a, b, leftPort, rightPort) {
       rightPort,
       participants,
     );
-  if (Math.abs(endpointAxisDot) < 1 - 1e-8) {
-    context.diagnostics.push({
-      severity: "error",
-      code: "ROTARY_PORT_AXES_MISALIGNED",
-      connectionId: connection.id,
-      message: `Rotary connection ${connection.id} axes must be parallel or antiparallel in world space.`,
-      axisWorldA: endpointFrameA.axisWorld,
-      axisWorldB: endpointFrameB.axisWorld,
-    });
-    return;
-  }
   context.constraints.push(descriptor);
   const { positionActuator } = participants,
     actuation = positionActuator?.mechanism?.config.actuation;
@@ -285,13 +276,15 @@ function compileLinearGuide(context, connection, a, b, leftPort, rightPort) {
     movingBody = coordinateOwner === a ? b : a,
     frameA = worldPortFrame(
       coordinateOwner,
-      ownerPort,
+      context.geometryFor(coordinateOwner),
+      ownerPort.id,
       coordinateOwner === a ? connection.anchorA : connection.anchorB,
     ),
     movingPort = coordinateOwner === a ? rightPort : leftPort,
     frameB = worldPortFrame(
       movingBody,
-      movingPort,
+      context.geometryFor(movingBody),
+      movingPort.id,
       coordinateOwner === a ? connection.anchorB : connection.anchorA,
     ),
     mechanismConfig = coordinateOwner.mechanism.config,
@@ -377,23 +370,30 @@ function compileConnectionConstraint(context, connection) {
     context.forceElementParts.has(b.id)
   )
     return;
-  const leftPort =
-      connection.kind === "mesh"
-        ? null
-        : compiledPortDefinition(
-            a,
-            endpointPort(connection, "a"),
-            context.catalog,
-          ),
-    rightPort =
-      connection.kind === "mesh"
-        ? null
-        : compiledPortDefinition(
-            b,
-            endpointPort(connection, "b"),
-            context.catalog,
-          ),
+  const leftPort = compiledPortDefinition(
+      a,
+      endpointPort(connection, "a"),
+      context.catalog,
+    ),
+    rightPort = compiledPortDefinition(
+      b,
+      endpointPort(connection, "b"),
+      context.catalog,
+    ),
     family = constraintFamily(context, connection, a, b, leftPort, rightPort);
+  const invariant = validateConnectionFrameInvariant({
+    connection,
+    partA: a,
+    partB: b,
+    portA: leftPort,
+    portB: rightPort,
+    geometryA: context.geometryFor(a),
+    geometryB: context.geometryFor(b),
+  });
+  if (!invariant.ok) {
+    context.diagnostics.push(invariant.diagnostic);
+    return;
+  }
   PHYSICAL_CONSTRAINT_COMPILERS.get(family)(
     context,
     connection,

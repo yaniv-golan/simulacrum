@@ -26,11 +26,10 @@ function cross(left, right) {
 
 /** Builds one DOM-free oriented bound from canonical authored geometry. */
 export function orientedBoundsFor(part, geometry) {
-  const bounds = geometry.boundsPartM || {
-      minimumM: geometry.dimensions.map((value) => -value / 2),
-      maximumM: geometry.dimensions.map((value) => value / 2),
-    },
-    localCenter = [0, 1, 2].map(
+  const bounds = geometry.selectionBoundsPartM;
+  if (!bounds)
+    throw new Error(`Component ${part.type} has no canonical selection bounds`);
+  const localCenter = [0, 1, 2].map(
       (axis) => (bounds.minimumM[axis] + bounds.maximumM[axis]) / 2,
     ),
     half = [0, 1, 2].map((axis) =>

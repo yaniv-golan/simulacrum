@@ -16,6 +16,14 @@ import {
 } from "./two-frame-mechanisms.js";
 import { constraintReactionWrench } from "./constraint-reaction-wrench.js";
 import { TireContactConstraint } from "./tire-contact.js";
+import {
+  boundsCenter,
+  boundsDimensions,
+  deformedBodyBoundsPartM,
+  primaryGeometryAxisPart,
+  projectBoundsToWorld,
+} from "../model/component-geometry-contract.js";
+import { geometryDescriptorForPart } from "../model/geometry-descriptors.js";
 
 class CollisionExclusionConstraint extends CANNON.Constraint {
   update() {}
@@ -41,6 +49,13 @@ function cannonVector(value) {
 
 function cannonQuaternion(orientation) {
   return new CANNON.Quaternion(...orientation);
+}
+
+function quaternionFromPositiveZ(axis) {
+  const quaternion = new CANNON.Quaternion();
+  quaternion.setFromVectors(new CANNON.Vec3(0, 0, 1), axis);
+  quaternion.normalize();
+  return quaternion;
 }
 
 function quaternionFromPrincipalAxes(axes) {
@@ -257,32 +272,30 @@ function roundedWheelShape({ radiusM, widthM, shoulderRadiusM }) {
 }
 
 function primitiveOrientationPart(descriptor) {
-  if (descriptor.kind === "cylinder") {
+  const geometry = descriptor.geometry,
+    axial = [
+      "cylinder-v1",
+      "elliptic-cylinder-v1",
+      "capsule-v1",
+      "cone-v1",
+    ].includes(geometry.kind);
+  if (axial) {
     const axisOrientation = new CANNON.Quaternion();
     // Cannon.Cylinder is authored around local Y. The rounded-wheel hull above
     // is authored around the canonical mechanism +Z axle and therefore must
     // not inherit the cylinder adapter's Y-to-Z correction.
-    if (!descriptor.roundedWheel) {
-      if (descriptor.axis[0] === 1)
-        axisOrientation.setFromEuler(0, 0, Math.PI / 2);
-      else if (descriptor.axis[2] === 1)
-        axisOrientation.setFromEuler(Math.PI / 2, 0, 0);
-    }
-    return Array.isArray(descriptor.orientation)
-      ? cannonQuaternion(descriptor.orientation).mult(
-          axisOrientation,
-          new CANNON.Quaternion(),
-        )
-      : axisOrientation;
+    axisOrientation.setFromEuler(Math.PI / 2, 0, 0);
+    return cannonQuaternion(descriptor.framePart.orientation).mult(
+      axisOrientation,
+      new CANNON.Quaternion(),
+    );
   }
-  return Array.isArray(descriptor.orientation)
-    ? cannonQuaternion(descriptor.orientation)
-    : new CANNON.Quaternion();
+  return cannonQuaternion(descriptor.framePart.orientation);
 }
 
 function shapeFrame(descriptor, frame) {
   const orientationPart = primitiveOrientationPart(descriptor),
-    offsetPart = cannonVector(descriptor.position || [0, 0, 0]).vsub(
+    offsetPart = cannonVector(descriptor.framePart.positionM).vsub(
       frame.comPart,
     );
   return {
@@ -295,24 +308,48 @@ function shapeFrame(descriptor, frame) {
 }
 
 function shapeAndOrientation(descriptor, frame) {
+  const geometry = descriptor.geometry;
   let shape;
-  if (descriptor.kind === "cylinder")
-    shape = descriptor.roundedWheel
-      ? roundedWheelShape(descriptor.roundedWheel)
-      : new CANNON.Cylinder(
-          descriptor.radius,
-          descriptor.radius,
-          descriptor.length,
-          20,
-        );
-  else
+  if (geometry.kind === "rounded-wheel-v1") shape = roundedWheelShape(geometry);
+  else if (geometry.kind === "cylinder-v1")
+    shape = new CANNON.Cylinder(
+      geometry.radiusM,
+      geometry.radiusM,
+      geometry.axialLengthM,
+      20,
+    );
+  else if (geometry.kind === "elliptic-cylinder-v1")
+    shape = new CANNON.Cylinder(
+      Math.max(geometry.radiusXM, geometry.radiusYM),
+      Math.max(geometry.radiusXM, geometry.radiusYM),
+      geometry.axialLengthM,
+      20,
+    );
+  else if (geometry.kind === "capsule-v1")
+    shape = new CANNON.Cylinder(
+      geometry.radiusM,
+      geometry.radiusM,
+      geometry.cylinderLengthM + geometry.radiusM * 2,
+      20,
+    );
+  else if (geometry.kind === "cone-v1")
+    shape = new CANNON.Cylinder(
+      geometry.endRadiusM,
+      geometry.startRadiusM,
+      geometry.axialLengthM,
+      20,
+    );
+  else if (geometry.kind === "sphere-v1")
+    shape = new CANNON.Sphere(geometry.radiusM);
+  else if (geometry.kind === "box-v1")
     shape = new CANNON.Box(
       new CANNON.Vec3(
-        descriptor.size[0] * 0.5,
-        descriptor.size[1] * 0.5,
-        descriptor.size[2] * 0.5,
+        geometry.fullSizeM[0] * 0.5,
+        geometry.fullSizeM[1] * 0.5,
+        geometry.fullSizeM[2] * 0.5,
       ),
     );
+  else throw new Error(`Unsupported collision primitive ${geometry.kind}`);
   const runtimeShape = /** @type {any} */ (shape);
   runtimeShape.userData = {
     semanticKey: descriptor.semanticKey || null,
@@ -321,9 +358,7 @@ function shapeAndOrientation(descriptor, frame) {
     semanticRegions: descriptor.semanticRegions
       ? structuredClone(descriptor.semanticRegions)
       : Object.freeze([]),
-    geometryKind: descriptor.roundedWheel
-      ? "rounded-wheel-v1"
-      : descriptor.kind,
+    geometryKind: geometry.kind,
   };
   return { shape, ...shapeFrame(descriptor, frame) };
 }
@@ -498,6 +533,7 @@ export class MultibodyRuntime {
     this.fieldBody = fieldBody;
     this.materialForPart = materialForPart;
     this.compiled = null;
+    this.geometryByPart = new Map();
     this.bodyByPart = new Map();
     this.constraintEntries = [];
     this.collisionExclusionConstraints = [];
@@ -514,6 +550,15 @@ export class MultibodyRuntime {
   start(snapshot) {
     this.dispose();
     this.compiled = compileAssembly(snapshot, this.catalog);
+    for (const part of this.compiled.parts) {
+      const bodyGeometry = this.compiled.bodies.find(
+        (body) => body.partId === part.id,
+      )?.geometry;
+      this.geometryByPart.set(
+        part.id,
+        bodyGeometry || geometryDescriptorForPart(part, this.catalog),
+      );
+    }
     for (const descriptor of this.compiled.bodies) {
       const part = this.part(descriptor.partId),
         frame = physicsFrame(descriptor),
@@ -996,7 +1041,7 @@ export class MultibodyRuntime {
     return samples;
   }
 
-  mobilityTelemetryFor(component, context = null, dt = 0) {
+  mobilityTelemetryFor(component, context = null, _dt = 0) {
     if (!component?.id)
       throw new DomainValidationError(
         "MOBILITY_COMPONENT_REQUIRED",
@@ -1053,7 +1098,6 @@ export class MultibodyRuntime {
             supportMaterialLaws: tireState?.supportMaterialLaws || [],
             manifoldPointCount: tireState?.manifoldPointCount || 0,
             angularSpeed,
-            spinDelta: angularSpeed * dt,
             groundY: this.surfaceHeightAt(body.position.x, body.position.z),
             inPond: Boolean(this.pondAt(body.position.x, body.position.z)),
             onPlatform: contacts.some(
@@ -1292,11 +1336,14 @@ export class MultibodyRuntime {
         )?.geometry,
         frame = partFrame(body),
         buoyancyCenter = frame.quaternion
-          .vmult(cannonVector(descriptor.renderDetailAnchors.center))
+          .vmult(cannonVector(boundsCenter(descriptor.collisionBoundsPartM)))
           .vadd(frame.position),
         pond = this.pondAt(buoyancyCenter.x, buoyancyCenter.z),
         volume = descriptor.displacementM3,
-        halfHeight = Math.max(0.03, (descriptor?.dimensions?.[1] || 0.2) / 2);
+        halfHeight = Math.max(
+          0.03,
+          (boundsDimensions(descriptor?.collisionBoundsPartM)[1] || 0.2) / 2,
+        );
       displacedVolumeM3 += volume;
       byPart[String(part.id)] = {
         volumeM3: volume,
@@ -2020,7 +2067,7 @@ export class MultibodyRuntime {
       const descriptor = this.compiled.bodies.find(
           (candidate) => candidate.partId === partId,
         ),
-        axis = cannonVector(descriptor.geometry.renderDetailAnchors.axis);
+        axis = cannonVector(primaryGeometryAxisPart(descriptor.geometry));
       this.phaseByPart.set(
         partId,
         (this.phaseByPart.get(partId) || 0) +
@@ -2071,7 +2118,7 @@ export class MultibodyRuntime {
           (candidate) => candidate.partId === partId,
         ),
         frame = partFrame(body),
-        axis = cannonVector(descriptor.geometry.renderDetailAnchors.axis),
+        axis = cannonVector(primaryGeometryAxisPart(descriptor.geometry)),
         speed = signedAngleVelocity(body, axis),
         phase = this.phaseByPart.get(partId) || 0,
         contacts = (this.world.contacts || []).filter(
@@ -2137,14 +2184,38 @@ export class MultibodyRuntime {
           entry.localAnchorA,
           entry.localAnchorB,
         ),
-        referenceLengthM =
-          entry.descriptor.mechanism.referenceLaw?.freeLengthM ||
-          entry.descriptor.mechanism.referenceLaw?.referenceLengthM ||
-          state.coordinateM;
+        geometry = this.geometryByPart.get(entry.descriptor.sourcePartId),
+        coordinate = geometry.deformationContract.coordinates[0],
+        endpointFrameA =
+          geometry.portFrames[entry.descriptor.mechanism.endpointPortA]
+            .framePart,
+        endpointFrameB =
+          geometry.portFrames[entry.descriptor.mechanism.endpointPortB]
+            .framePart,
+        referencePortDistanceM = Math.hypot(
+          ...endpointFrameB.positionM.map(
+            (value, axis) => value - endpointFrameA.positionM[axis],
+          ),
+        ),
+        referenceBodyLengthM =
+          referencePortDistanceM / coordinate.referenceValue,
+        axialScale = state.coordinateM / Math.max(0.01, referenceBodyLengthM),
+        orientation = quaternionFromPositiveZ(state.axis),
+        position = state.pointA.vadd(state.pointB).scale(0.5),
+        deformationValues = { [coordinate.telemetryField]: axialScale };
       poses.push({
         id: entry.descriptor.sourcePartId,
-        position: plainVector(state.pointA.vadd(state.pointB).scale(0.5)),
-        axialScale: state.coordinateM / Math.max(0.01, referenceLengthM),
+        position: plainVector(position),
+        quaternion: plainQuaternion(orientation),
+        [coordinate.telemetryField]: axialScale,
+        deformationOutOfRange:
+          axialScale < coordinate.allowedRange.minimum ||
+          axialScale > coordinate.allowedRange.maximum,
+        deformedBodyBoundsWorldM: projectBoundsToWorld(
+          deformedBodyBoundsPartM(geometry, deformationValues),
+          [position.x, position.y, position.z],
+          [orientation.x, orientation.y, orientation.z, orientation.w],
+        ),
       });
     }
     const twoFrameMechanisms = this.constraintEntries
@@ -2480,6 +2551,7 @@ export class MultibodyRuntime {
     this.constraintEntries.length = 0;
     this.collisionExclusionConstraints.length = 0;
     this.bodyByPart.clear();
+    this.geometryByPart.clear();
     this.phaseByPart.clear();
     this.loadByConnection.clear();
     this.torqueByConnection.clear();

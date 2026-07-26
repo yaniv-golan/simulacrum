@@ -6,6 +6,7 @@ import {
 } from "../model/ports.js";
 import { disposeObject3D } from "../presentation/render-resources.js";
 import { createEditorConnection } from "./editor-connection-authoring.js";
+import { geometryDescriptorForPart } from "../model/geometry-descriptors.js";
 
 /** Creates the atomic generic part-plus-two-connections authoring transaction. */
 export function createTwoEndedComponentAuthoring({
@@ -19,9 +20,14 @@ export function createTwoEndedComponentAuthoring({
   const targetWorldPoint = (part, port, anchorLocalM = null) => {
     const local = Array.isArray(anchorLocalM)
       ? anchorLocalM
-      : TYPES[part.type].ports.find((candidate) => candidate.id === port)
-          ?.localFramePart?.positionM || [0, 0, 0];
-    return part.mesh.localToWorld(new THREE.Vector3(...local));
+      : geometryDescriptorForPart(part).portFrames[port]?.framePart.positionM;
+    if (!local)
+      throw new Error(
+        `Port ${part.type}.${port} has no canonical spatial frame`,
+      );
+    return new THREE.Vector3(...local)
+      .applyQuaternion(new THREE.Quaternion(...part.orientation))
+      .add(new THREE.Vector3(...part.pos));
   };
 
   return function addTwoEndedComponent({
@@ -103,6 +109,7 @@ export function createTwoEndedComponentAuthoring({
           ).normalize(),
           direction.normalize(),
         );
+      part.orientation = part.mesh.quaternion.toArray();
       part.pos = part.mesh.position.toArray();
       for (let index = 0; index < 2; index++) {
         const candidate = createEditorConnection({

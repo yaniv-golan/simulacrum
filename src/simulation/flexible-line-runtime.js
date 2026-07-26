@@ -1,5 +1,6 @@
 import * as CANNON from "cannon-es";
 import { flexibleLineMaterial } from "../model/flexible-line-materials.js";
+import { flexibleRuntimeBoundsWorldM } from "../model/component-geometry-contract.js";
 import { DomainValidationError } from "../model/primitives.js";
 import { TensionOnlyDistanceConstraint } from "./tension-only-distance-constraint.js";
 
@@ -432,6 +433,10 @@ export class FlexibleLineRuntime {
           id: line.id,
           sourcePartId: line.sourcePartId,
           centerline,
+          runtimeBoundsWorldM: flexibleRuntimeBoundsWorldM(
+            centerline,
+            line.diameterM / 2,
+          ),
           totalLengthM: totalLength(centerline),
           unstretchedLengthM: line.lengthM,
           endToEndDistanceM,

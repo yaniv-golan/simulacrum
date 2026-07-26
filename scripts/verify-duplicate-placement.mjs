@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { TYPES } from "../src/model/component-catalog.js";
 import { planDuplicatePlacement } from "../src/model/duplicate-placement.js";
 import { AUTHORING_WORKSPACE_BOUNDS_WORLD_M } from "../src/model/authoring-space-policy.js";
+import { componentDefaults } from "../src/model/component-resolver.js";
 
 const part = (id, pos, overrides = {}) => ({
   id,
@@ -113,7 +114,7 @@ assert.deepEqual(externallyPlaced.offsetWorldM, [2.5, 0, 0]);
 const flexibleLine = plan([
   part(1, [0, 2, 0], {
     type: "rope",
-    config: { lengthM: 4, diameterM: 0.04 },
+    config: componentDefaults("rope"),
   }),
 ]);
 assert.equal(flexibleLine.status, "placed");

@@ -15,7 +15,7 @@
     {
       "id": 2,
       "type": "beam",
-      "pos": [2, 1, 0],
+      "pos": [2.4, 1, 0],
       "orientation": [0, 0, 0, 1],
       "scale": { "x": 1, "y": 1, "z": 1 },
       "config": { "mass": 18, "size": [2.4, 0.35, 0.35] }
@@ -27,8 +27,8 @@
       "a": 1,
       "b": 2,
       "kind": "mechanical",
-      "portA": "A",
-      "portB": "B",
+      "portA": "B",
+      "portB": "A",
       "capacity": {
         "ultimateForceN": 24000,
         "ultimateTorqueNm": 6000

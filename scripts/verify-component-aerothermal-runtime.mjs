@@ -11,6 +11,7 @@ import { MassPropertyCommitSystem } from "../src/simulation/systems/mass-propert
 import { PhysicalFlightTelemetrySystem } from "../src/simulation/systems/physical-flight-telemetry-system.js";
 import { RigidBodySystem } from "../src/simulation/systems/rigid-body-system.js";
 import { ThermalSystem } from "../src/simulation/systems/thermal-system.js";
+import { boundsDimensions } from "../src/model/component-geometry-contract.js";
 
 const assembly = {
     revision: 1,
@@ -20,7 +21,7 @@ const assembly = {
         type: "heatshield",
         pos: [0, 1000, 0],
         orientation: [0, 0, 0, 1],
-        scale: { x: 2, y: 0.5, z: 1.5 },
+        scale: { x: 2, y: 0.5, z: 2 },
         config: {},
       },
     ],
@@ -64,12 +65,15 @@ session.start(assembly, {
   physicalAssemblyIndex,
 });
 
+const descriptorDimensions = boundsDimensions(
+  descriptor.geometry.collisionBoundsPartM,
+);
 assert.deepEqual(
   flightServices.physicalFlightModel.parts[0].size,
   {
-    x: descriptor.geometry.dimensions[0],
-    y: descriptor.geometry.dimensions[1],
-    z: descriptor.geometry.dimensions[2],
+    x: descriptorDimensions[0],
+    y: descriptorDimensions[1],
+    z: descriptorDimensions[2],
   },
   "aerodynamics reintroduced dimensions outside the geometry descriptor",
 );

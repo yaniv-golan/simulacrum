@@ -146,6 +146,11 @@ for (const file of await filesBelow(
     /from\s+["'][^"']*(?:model|simulation|application)[^"']*["']|\b(?:document|window)\b/,
     `${path.relative(root, file)} crossed the descriptor-only visual-builder boundary`,
   );
+  assert.doesNotMatch(
+    source,
+    /projectCanonicalComponentGeometry|canonicalPhysicalRoot|canonicalFeatureRoot|mechanismDeformationRoot|canonicalGeometryRole/,
+    `${path.relative(root, file)} attempted to own or mutate canonical physical geometry`,
+  );
 }
 
 const assemblyModelSource = await fs.readFile(

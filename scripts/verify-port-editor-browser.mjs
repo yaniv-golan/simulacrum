@@ -7,39 +7,43 @@ import { createSharePackage } from "../src/model/share-packages.js";
 const { browser, page, errors, baseUrl } = await createBrowserTest();
 await fs.mkdir("artifacts", { recursive: true });
 
-const fixture = (connection) => ({
-  format: "simulacrum-blueprint",
-  version: 1,
-  name: "Endpoint port fixture",
-  parts: [
-    {
-      id: 1,
-      type: "wheel",
-      pos: [-1.05, 0.8, 0],
-      orientation: [0, 0, 0, 1],
-      scale: { x: 1, y: 1, z: 1 },
-      ...authoredComponentFields("wheel"),
-    },
-    {
-      id: 2,
-      type: "axle",
-      pos: [0, 0.8, 0],
-      orientation: [0, 0, 0, 1],
-      scale: { x: 1, y: 1, z: 1 },
-      ...authoredComponentFields("axle"),
-    },
-  ],
-  connections: [
-    {
-      id: "wheel-axle",
-      kind: "mechanical",
-      capacity: { ultimateForceN: 24000, ultimateTorqueNm: 6000 },
-      ...connection,
-    },
-  ],
-  remoteProfiles: {},
-  defaultRemoteProfile: null,
-});
+const fixture = (connection) => {
+  const axlePort = connection.a === 2 ? connection.portA : connection.portB,
+    wheelZ = axlePort === "LEFT" ? -1 : 1;
+  return {
+    format: "simulacrum-blueprint",
+    version: 1,
+    name: "Endpoint port fixture",
+    parts: [
+      {
+        id: 1,
+        type: "wheel",
+        pos: [0, 0.8, wheelZ],
+        orientation: [0, 0, 0, 1],
+        scale: { x: 1, y: 1, z: 1 },
+        ...authoredComponentFields("wheel"),
+      },
+      {
+        id: 2,
+        type: "axle",
+        pos: [0, 0.8, 0],
+        orientation: [0, 0, 0, 1],
+        scale: { x: 1, y: 1, z: 1 },
+        ...authoredComponentFields("axle"),
+      },
+    ],
+    connections: [
+      {
+        id: "wheel-axle",
+        kind: "mechanical",
+        capacity: { ultimateForceN: 24000, ultimateTorqueNm: 6000 },
+        ...connection,
+      },
+    ],
+    remoteProfiles: {},
+    defaultRemoteProfile: null,
+  };
+};
 
 async function importFixture(blueprint) {
   const modal = page.locator("#blueprint-modal");

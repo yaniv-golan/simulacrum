@@ -1,14 +1,7 @@
 import { mechanismComponentDefinition } from "./mechanism-component-definitions.js";
+import { COMPONENT_GEOMETRY_DEFINITIONS } from "./component-geometry-definitions.js";
 
-const port = (
-  id,
-  kind,
-  behavior,
-  direction,
-  multiplicity,
-  localFramePart = null,
-  metadata = {},
-) =>
+const port = (id, kind, behavior, direction, multiplicity, metadata = {}) =>
   Object.freeze({
     id,
     kind,
@@ -16,15 +9,6 @@ const port = (
     direction,
     multiplicity,
     ...metadata,
-    ...(localFramePart
-      ? { localFramePart: Object.freeze(localFramePart) }
-      : {}),
-  });
-
-const mechanismFrame = (positionM, orientation = [0, 0, 0, 1]) =>
-  Object.freeze({
-    positionM: Object.freeze(positionM),
-    orientation: Object.freeze(orientation),
   });
 
 export const TYPES = {
@@ -125,30 +109,9 @@ export const TYPES = {
     color: 0xabb8bc,
     desc: "Transfers rotation",
     ports: [
-      port(
-        "LEFT",
-        "mechanical",
-        "rotary-coupling",
-        "bidirectional",
-        "one",
-        mechanismFrame([0, 0, -1], [0, 1, 0, 0]),
-      ),
-      port(
-        "RIGHT",
-        "mechanical",
-        "rotary-coupling",
-        "bidirectional",
-        "one",
-        mechanismFrame([0, 0, 1]),
-      ),
-      port(
-        "JOURNAL",
-        "mechanical",
-        "rotary-coupling",
-        "bidirectional",
-        "many",
-        mechanismFrame([0, 0, 0]),
-      ),
+      port("LEFT", "mechanical", "rotary-coupling", "bidirectional", "one"),
+      port("RIGHT", "mechanical", "rotary-coupling", "bidirectional", "one"),
+      port("JOURNAL", "mechanical", "rotary-coupling", "bidirectional", "many"),
     ],
     mechanism: mechanismComponentDefinition("axle"),
   },
@@ -159,22 +122,8 @@ export const TYPES = {
     color: 0x718b91,
     desc: "Supports a rotating shaft while carrying radial load",
     ports: [
-      port(
-        "MOUNT",
-        "mechanical",
-        "fixed",
-        "bidirectional",
-        "one",
-        mechanismFrame([0, 0, -0.17], [0, 1, 0, 0]),
-      ),
-      port(
-        "SHAFT",
-        "mechanical",
-        "revolute-support",
-        "bidirectional",
-        "one",
-        mechanismFrame([0, 0, 0]),
-      ),
+      port("MOUNT", "mechanical", "fixed", "bidirectional", "one"),
+      port("SHAFT", "mechanical", "revolute-support", "bidirectional", "one"),
     ],
     mechanism: mechanismComponentDefinition("bearing"),
   },
@@ -255,21 +204,13 @@ export const TYPES = {
     ports: [
       port("POWER", "power", "electrical-network", "sink", "one"),
       port("CONTROL", "signal", "signal-network", "sink", "one"),
-      port(
-        "BASE",
-        "mechanical",
-        "fixed",
-        "bidirectional",
-        "one",
-        mechanismFrame([0, 0, -0.175], [0, 1, 0, 0]),
-      ),
+      port("BASE", "mechanical", "fixed", "bidirectional", "one"),
       port(
         "ARM",
         "mechanical",
         "rotary-position-actuator-output",
         "bidirectional",
         "one",
-        mechanismFrame([0, 0, 0.175]),
       ),
     ],
     mechanism: mechanismComponentDefinition("hinge"),
@@ -301,22 +242,8 @@ export const TYPES = {
     color: 0x63bfa3,
     desc: "Elastic force element",
     ports: [
-      port(
-        "END_A",
-        "mechanical",
-        "fixed",
-        "bidirectional",
-        "one",
-        mechanismFrame([0, 0, -0.55], [0, 1, 0, 0]),
-      ),
-      port(
-        "END_B",
-        "mechanical",
-        "fixed",
-        "bidirectional",
-        "one",
-        mechanismFrame([0, 0, 0.55]),
-      ),
+      port("END_A", "mechanical", "fixed", "bidirectional", "one"),
+      port("END_B", "mechanical", "fixed", "bidirectional", "one"),
     ],
     mechanism: mechanismComponentDefinition("spring"),
   },
@@ -333,7 +260,6 @@ export const TYPES = {
         "flexible-termination",
         "bidirectional",
         "one",
-        mechanismFrame([0, 2, 0]),
       ),
       port(
         "END_B",
@@ -341,7 +267,6 @@ export const TYPES = {
         "flexible-termination",
         "bidirectional",
         "one",
-        mechanismFrame([0, -2, 0]),
       ),
     ],
     flexibleLine: {
@@ -367,22 +292,8 @@ export const TYPES = {
     color: 0x668aa0,
     desc: "Velocity-dependent axial force element",
     ports: [
-      port(
-        "END_A",
-        "mechanical",
-        "fixed",
-        "bidirectional",
-        "one",
-        mechanismFrame([0, 0, -0.5], [0, 1, 0, 0]),
-      ),
-      port(
-        "END_B",
-        "mechanical",
-        "fixed",
-        "bidirectional",
-        "one",
-        mechanismFrame([0, 0, 0.5]),
-      ),
+      port("END_A", "mechanical", "fixed", "bidirectional", "one"),
+      port("END_B", "mechanical", "fixed", "bidirectional", "one"),
     ],
     mechanism: mechanismComponentDefinition("damper"),
   },
@@ -395,22 +306,8 @@ export const TYPES = {
     ports: [
       port("POWER", "power", "electrical-network", "sink", "one"),
       port("CONTROL", "signal", "signal-network", "sink", "one"),
-      port(
-        "FLANGE_A",
-        "mechanical",
-        "fixed",
-        "bidirectional",
-        "one",
-        mechanismFrame([0, 0, -0.1], [0, 1, 0, 0]),
-      ),
-      port(
-        "FLANGE_B",
-        "mechanical",
-        "fixed",
-        "bidirectional",
-        "one",
-        mechanismFrame([0, 0, 0.1]),
-      ),
+      port("FLANGE_A", "mechanical", "fixed", "bidirectional", "one"),
+      port("FLANGE_B", "mechanical", "fixed", "bidirectional", "one"),
     ],
     mechanism: mechanismComponentDefinition("release-coupler"),
     controlContract: "release-coupler-v1",
@@ -427,21 +324,13 @@ export const TYPES = {
     color: 0x7c8f9b,
     desc: "Constrains relative motion to one authored axis",
     ports: [
-      port(
-        "BASE",
-        "mechanical",
-        "fixed",
-        "bidirectional",
-        "one",
-        mechanismFrame([0, 0, -0.5], [0, 1, 0, 0]),
-      ),
+      port("BASE", "mechanical", "fixed", "bidirectional", "one"),
       port(
         "SLIDER",
         "mechanical",
         "linear-guide-output",
         "bidirectional",
         "one",
-        mechanismFrame([0, 0, 0.5]),
       ),
     ],
     mechanism: mechanismComponentDefinition("linear-guide"),
@@ -455,21 +344,13 @@ export const TYPES = {
     ports: [
       port("POWER", "power", "electrical-network", "sink", "one"),
       port("CONTROL", "signal", "signal-network", "sink", "one"),
-      port(
-        "BASE",
-        "mechanical",
-        "fixed",
-        "bidirectional",
-        "one",
-        mechanismFrame([0, 0, -0.55], [0, 1, 0, 0]),
-      ),
+      port("BASE", "mechanical", "fixed", "bidirectional", "one"),
       port(
         "ROD",
         "mechanical",
         "linear-position-actuator-output",
         "bidirectional",
         "one",
-        mechanismFrame([0, 0, 0.55]),
       ),
     ],
     mechanism: mechanismComponentDefinition("linear-actuator"),
@@ -487,21 +368,13 @@ export const TYPES = {
     color: 0x273237,
     desc: "Rounded rolling contact; suspension is built from mechanisms",
     ports: [
-      port(
-        "AXLE",
-        "mechanical",
-        "rotary-coupling",
-        "bidirectional",
-        "one",
-        mechanismFrame([0, 0, 0]),
-      ),
+      port("AXLE", "mechanical", "rotary-coupling", "bidirectional", "one"),
       port(
         "SURFACE",
         "mechanical",
         "structural-surface",
         "bidirectional",
         "many",
-        mechanismFrame([0, 0.65, 0]),
       ),
     ],
     mechanism: mechanismComponentDefinition("wheel"),
@@ -785,7 +658,7 @@ export const TYPES = {
     initialUsableMassKg: 900,
     ports: [
       port("MOUNT", "mechanical", "fixed", "bidirectional", "one"),
-      port("OUTLET", "resource", "material-resource", "source", "many", null, {
+      port("OUTLET", "resource", "material-resource", "source", "many", {
         mediumId: "hydrogen-peroxide-90-v1",
       }),
     ],
@@ -859,15 +732,9 @@ export const TYPES = {
     ports: [
       port("MOUNT", "mechanical", "fixed", "bidirectional", "one"),
       port("SIGNAL", "signal", "signal-network", "sink", "one"),
-      port(
-        "PROPELLANT",
-        "resource",
-        "material-resource",
-        "sink",
-        "many",
-        null,
-        { mediumId: "hydrogen-peroxide-90-v1" },
-      ),
+      port("PROPELLANT", "resource", "material-resource", "sink", "many", {
+        mediumId: "hydrogen-peroxide-90-v1",
+      }),
     ],
     maximumMassFlowKgS: 24,
     exitAreaM2: 0.06,
@@ -918,15 +785,9 @@ export const TYPES = {
     ports: [
       port("MOUNT", "mechanical", "fixed", "bidirectional", "one"),
       port("SIGNAL", "signal", "signal-network", "sink", "one"),
-      port(
-        "PROPELLANT",
-        "resource",
-        "material-resource",
-        "sink",
-        "many",
-        null,
-        { mediumId: "hydrogen-peroxide-90-v1" },
-      ),
+      port("PROPELLANT", "resource", "material-resource", "sink", "many", {
+        mediumId: "hydrogen-peroxide-90-v1",
+      }),
     ],
     maximumMassFlowKgS: 1.8,
     exitAreaM2: 0.0045,
@@ -967,6 +828,14 @@ export const TYPES = {
     controlContract: "pressure-nozzle-v1",
   },
 };
+
+for (const [type, definition] of Object.entries(TYPES)) {
+  const geometryContract = COMPONENT_GEOMETRY_DEFINITIONS[type];
+  if (!geometryContract)
+    throw new Error(`Missing canonical geometry contract for ${type}`);
+  definition.geometryContract = geometryContract;
+}
+
 export const FLIGHT_MATERIALS = {
   beam: { heatLimit: 660, specificHeat: 900, emissivity: 0.28, cd: 0.72 },
   plate: { heatLimit: 660, specificHeat: 900, emissivity: 0.28, cd: 0.82 },

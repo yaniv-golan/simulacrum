@@ -4,10 +4,11 @@ import { TYPES } from "../model/component-catalog.js";
 import { disposeObject3D } from "../presentation/render-resources.js";
 import { createAssemblyTransformCommands } from "./assembly-transform-commands.js";
 import { createTwoEndedComponentAuthoring } from "./two-ended-component-authoring.js";
+import { replaceComponentMesh } from "./component-mesh-replacement.js";
 
 /**
  * @typedef {{
- *   id: number, type: string, pos: number[], rot: number,
+ *   id: number, type: string, pos: number[], orientation: number[], scale: {x:number,y:number,z:number}, rot: number,
  *   config: Record<string, number | boolean | string>, mesh: import("three").Object3D,
  *   phase: number, storedEnergyWh?: number, customColor: number | null,
  *   rigRole?: string | null, rigVisualRotation?: number[] | null,
@@ -38,7 +39,7 @@ import { createTwoEndedComponentAuthoring } from "./two-ended-component-authorin
  *   disposeMultibody: () => void, clearRuntimeTelemetry: () => void,
  * }} AssemblySimulationPort
  * @typedef {{
- *   machine: import("three").Group, createMesh: (type: string, color: number | null) => import("three").Object3D,
+ *   machine: import("three").Group, createMesh: (part: object, color: number | null) => import("three").Object3D,
  *   newControllerSources: () => Record<string, unknown>,
  *   prepareFoot: (part: EditorPart) => EditorPart, resetExploded: () => void,
  *   select: (ids: Iterable<number>, primary: number | null) => void,
@@ -79,7 +80,13 @@ export function createAssemblyEditorFeature({
 }) {
   let duplicateIntentProvider = () => null,
     duplicateCommitted = () => {};
-  function add(type, pos = [0, 1, 0], authored = {}, customColor = null) {
+  function add(
+    type,
+    pos = [0, 1, 0],
+    authored = {},
+    customColor = null,
+    geometryPose = {},
+  ) {
     if (!history.suspended) history.record(`add ${TYPES[type]?.name || type}`);
     const authoredFields = authoredComponentFields(type, authored),
       normalizedConfig = authoredFields.config;
@@ -89,9 +96,18 @@ export function createAssemblyEditorFeature({
       id,
       type,
       pos: [...pos],
+      orientation: geometryPose.orientation
+        ? [...geometryPose.orientation]
+        : [0, 0, 0, 1],
+      scale: Array.isArray(geometryPose.scale)
+        ? {
+            x: geometryPose.scale[0],
+            y: geometryPose.scale[1],
+            z: geometryPose.scale[2],
+          }
+        : { x: 1, y: 1, z: 1, ...(geometryPose.scale || {}) },
       rot: 0,
       ...authoredFields,
-      mesh: view.createMesh(type, customColor),
       phase: 0,
       ...(type === "battery"
         ? {
@@ -108,7 +124,10 @@ export function createAssemblyEditorFeature({
         type === "computer" ? BlueprintAcquisition.LOCAL_AUTHORING : null,
       programTrust: null,
     });
+    part.mesh = view.createMesh(part, customColor);
     part.mesh.position.set(...pos);
+    part.mesh.quaternion.set(...part.orientation);
+    part.mesh.scale.set(1, 1, 1);
     part.mesh.userData.partId = part.id;
     part.mesh.traverse((object) => (object.userData.partId = part.id));
     view.machine.add(part.mesh);
@@ -157,6 +176,12 @@ export function createAssemblyEditorFeature({
       position,
       structuredClone(source.mechanism || source.config),
       source.customColor,
+      {
+        orientation: orientation
+          ? [orientation.x, orientation.y, orientation.z, orientation.w]
+          : source.orientation,
+        scale: source.scale,
+      },
     );
     if (source.type === "battery") clone.storedEnergyWh = source.storedEnergyWh;
     clone.rigRole = source.rigRole;
@@ -181,8 +206,6 @@ export function createAssemblyEditorFeature({
     }
     if (["footL", "footR"].includes(source.rigRole || ""))
       view.prepareFoot(clone);
-    clone.mesh.quaternion.copy(orientation || source.mesh.quaternion);
-    clone.mesh.scale.copy(source.mesh.scale);
     clone.pos = [...position];
     clone.rot = clone.mesh.rotation.y;
     clone.mesh.traverse((object) => (object.userData.partId = clone.id));
@@ -290,6 +313,14 @@ export function createAssemblyEditorFeature({
     view.notify(`Selected all ${workspace.parts.length} components`);
   }
 
+  function rebuildGeometry(part) {
+    return replaceComponentMesh({
+      part,
+      createMesh: view.createMesh,
+      fallbackParent: view.machine,
+    });
+  }
+
   const transforms = createAssemblyTransformCommands({
     workspace,
     history,
@@ -318,6 +349,7 @@ export function createAssemblyEditorFeature({
     },
     duplicate: transforms.duplicate,
     mirror: transforms.mirror,
+    rebuildGeometry,
     removeSelection,
     selectAll,
   });

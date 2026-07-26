@@ -35,17 +35,8 @@ export function captureBuildHistorySnapshot({
       const projected = projectPortableAuthoredPart({
         ...part,
         pos: [...part.pos],
-        orientation: canonicalizeQuaternion([
-          part.mesh.quaternion.x,
-          part.mesh.quaternion.y,
-          part.mesh.quaternion.z,
-          part.mesh.quaternion.w,
-        ]),
-        scale: {
-          x: part.mesh.scale.x,
-          y: part.mesh.scale.y,
-          z: part.mesh.scale.z,
-        },
+        orientation: canonicalizeQuaternion(part.orientation),
+        scale: { ...part.scale },
       });
       return {
         ...projected,

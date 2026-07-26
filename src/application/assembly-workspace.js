@@ -32,23 +32,8 @@ export function createAssemblyWorkspace({
       projectPortableAuthoredPart({
         ...part,
         pos: [...(part.pos || [0, 0, 0])],
-        orientation: canonicalizeQuaternion(
-          part.mesh
-            ? [
-                part.mesh.quaternion.x,
-                part.mesh.quaternion.y,
-                part.mesh.quaternion.z,
-                part.mesh.quaternion.w,
-              ]
-            : part.orientation,
-        ),
-        scale: part.mesh
-          ? {
-              x: part.mesh.scale.x,
-              y: part.mesh.scale.y,
-              z: part.mesh.scale.z,
-            }
-          : structuredClone(part.scale || { x: 1, y: 1, z: 1 }),
+        orientation: canonicalizeQuaternion(part.orientation),
+        scale: structuredClone(part.scale || { x: 1, y: 1, z: 1 }),
       }),
     );
   }

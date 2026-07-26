@@ -256,7 +256,7 @@ const prepared = await remixFixture.service.prepareRemix(
 assert.equal(prepared.ok, true);
 remixFixture.service.beginRemix(prepared.provenance);
 const modified = structuredClone(blueprint);
-modified.parts[0].pos[0] += 0.5;
+for (const part of modified.parts) part.pos[0] += 0.5;
 const remixed = await remixFixture.service.createPackage({
   kind: "blueprint",
   asset: modified,

@@ -5,7 +5,8 @@ import { runtimeControlsFromProfiles } from "./remote-control-state.js";
 /**
  * @typedef {[number,number,number]} Vector3Tuple
  * @typedef {{
- *   id:number, type:string, pos:Vector3Tuple, mesh:import("three").Object3D,
+ *   id:number, type:string, pos:Vector3Tuple, orientation:[number,number,number,number],
+ *   scale:{x:number,y:number,z:number}, mesh:import("three").Object3D,
  *   config:Record<string,unknown>, storedEnergyWh?:number, customColor?:unknown,
  *   rigRole?:string|null, rigVisualRotation?:Vector3Tuple|null,
  *   scriptLanguage?:string|null, scriptSources?:Record<string,unknown>|null,
@@ -51,7 +52,7 @@ import { runtimeControlsFromProfiles } from "./remote-control-state.js";
  * @typedef {{
  *   nextId:()=>number, setNextId:(id:number)=>void, stopSimulation:()=>void,
  *   clear:()=>void, setMode:(mode:string)=>void,
- *   add:(type:string,pos:Vector3Tuple,config:Record<string,unknown>,color?:unknown)=>HistoryPart,
+ *   add:(type:string,pos:Vector3Tuple,config:Record<string,unknown>,color?:unknown,geometryPose?:{orientation?:number[],scale?:number[]|{x:number,y:number,z:number}})=>HistoryPart,
  *   prepareAtlasFoot:(part:HistoryPart)=>void,
  *   select:(ids:Set<number>,primary:number|null)=>void,
  *   sync:()=>void, showSelection:(part:HistoryPart|undefined)=>void,
@@ -146,6 +147,7 @@ export function createBuildHistoryFeature({
           saved.pos,
           saved.mechanism || saved.config,
           saved.customColor,
+          { orientation: saved.orientation, scale: saved.scale },
         );
         part.id = saved.id;
         part.pos = /** @type {Vector3Tuple} */ ([...saved.pos]);
@@ -172,8 +174,6 @@ export function createBuildHistoryFeature({
         if (["footL", "footR"].includes(saved.rigRole))
           parts.prepareAtlasFoot(part);
         part.mesh.position.set(...saved.pos);
-        part.mesh.quaternion.set(...saved.orientation);
-        part.mesh.scale.set(...saved.scale);
         part.mesh.userData.partId = part.id;
         part.mesh.traverse((object) => (object.userData.partId = part.id));
       }

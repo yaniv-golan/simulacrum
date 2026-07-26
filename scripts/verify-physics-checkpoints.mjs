@@ -59,9 +59,9 @@ const FAILURE_STRONG = {
     revision: 4,
     parts: [
       [-1.25, 0],
-      [-0.65, 0.8],
-      [-0.65, -0.8],
-      [1.2, 0],
+      [-0.65, 0.2],
+      [-0.25, 0],
+      [1.15, 0],
     ].map(([x, y], index) => ({
       id: index + 1,
       type: "beam",
@@ -70,10 +70,10 @@ const FAILURE_STRONG = {
       config: { linearDamping: 0, angularDamping: 0 },
     })),
     connections: [
-      ["loop-12", 1, 2, [0.3, 0.25, 0], [-0.3, -0.25, 0]],
-      ["loop-23", 2, 3, [0.2, -0.3, 0], [-0.2, 0.3, 0]],
-      ["loop-31", 3, 1, [-0.25, 0.2, 0], [0.25, -0.2, 0]],
-      ["weak-link", 1, 4, [1.1, 0, 0], [-1.1, 0, 0]],
+      ["loop-12", 1, 2, [0.3, 0.1, 0], [-0.3, -0.1, 0]],
+      ["loop-23", 2, 3, [0.2, -0.1, 0], [-0.2, 0.1, 0]],
+      ["loop-31", 3, 1, [-0.25, 0, 0], [0.75, 0, 0]],
+      ["weak-link", 1, 4, [1.2, 0, 0], [-1.2, 0, 0]],
     ].map(([id, a, b, anchorA, anchorB]) => ({
       id,
       a,
@@ -577,7 +577,7 @@ for (let tick = 1; tick <= 80; tick++) {
   } else if (tick > 10)
     failureExpected.set(tick, observedState(failureUninterrupted));
 }
-assert.equal(failureTick, 13, "failure checkpoint fixture changed transition");
+assert.equal(failureTick, 14, "failure checkpoint fixture changed transition");
 const failureRestored = createFailureRuntime();
 failureRestored.coordinator.restore(failureCheckpoint, IDENTITIES);
 assert.equal(observedState(failureRestored), failureCheckpointState);
@@ -597,7 +597,7 @@ assert.deepEqual(
     detached: event.detachedPartIds,
     tick: Math.round(event.time / DT),
   })),
-  [{ failed: ["weak-link"], detached: [4], tick: 13 }],
+  [{ failed: ["weak-link"], detached: [4], tick: 14 }],
 );
 failureUninterrupted.dispose();
 failureRestored.dispose();

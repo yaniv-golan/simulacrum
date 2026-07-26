@@ -12,6 +12,15 @@ canonical authored fingerprints, immutable direct relationship indexes, and
 authored-only preflight records. Resolved network paths remain owned by the
 simulation networks rather than being reconstructed by consumers.
 
+Component geometry resolves through the strict, immutable
+`GeometryDescriptorV2` contract. Collision primitives, rendered physical-body
+primitives, port frames, physical-interface features, and their explicitly
+named bounds all come from one model-owned catalog definition. Alternate
+catalogs must register a complete geometry contract; missing geometry and
+geometrically invalid connections fail closed instead of receiving a centered
+port or generic visual fallback. Presentation may add classified decoration,
+but decoration is never physical evidence.
+
 The canonical `PhysicalAssemblyIndex`, per-component
 `MobilityTelemetrySystem`, and semantic remote-action contracts preserve
 authored frame/member identity and structural lineage. Exact remote targets

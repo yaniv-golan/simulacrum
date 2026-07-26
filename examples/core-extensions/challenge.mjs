@@ -1,4 +1,4 @@
-import { ChallengeRun } from "@yaniv-golan/simulacrum-core";
+import { ChallengeRun, componentDefaults } from "@yaniv-golan/simulacrum-core";
 
 export function challengeExample() {
   const machine = {
@@ -6,20 +6,26 @@ export function challengeExample() {
         {
           id: 0,
           type: "motor",
+          pos: [0, 0, -0.92],
           orientation: [0, 0, 0, 1],
-          config: { mass: 3 },
+          scale: { x: 1, y: 1, z: 1 },
+          config: { ...componentDefaults("motor"), mass: 3 },
         },
         {
           id: 1,
           type: "gear12",
+          pos: [0, 0, 0],
           orientation: [0, 0, 0, 1],
-          config: { mass: 2 },
+          scale: { x: 1, y: 1, z: 1 },
+          config: { ...componentDefaults("gear12"), mass: 2 },
         },
         {
           id: 2,
           type: "gear24",
+          pos: [1.355, 0, 0],
           orientation: [0, 0, 0, 1],
-          config: { mass: 4 },
+          scale: { x: 1, y: 1, z: 1 },
+          config: { ...componentDefaults("gear24"), mass: 4 },
         },
       ],
       connections: [

@@ -197,14 +197,14 @@ export function createBlueprintLoadingFeature(dependencies) {
     for (const saved of editor.parts) {
       const part = {
         ...structuredClone(saved),
-        mesh: componentMesh(saved.type, saved.customColor),
+        mesh: componentMesh(saved, saved.customColor),
         phase: 0,
       };
       parts.push(part);
       part.mesh.position.set(...saved.pos);
       part.mesh.quaternion.set(...saved.orientation);
       if (["footL", "footR"].includes(part.rigRole)) atlasFootPart(part);
-      part.mesh.scale.set(saved.scale.x, saved.scale.y, saved.scale.z);
+      part.mesh.scale.set(1, 1, 1);
       part.rot = part.mesh.rotation.y;
       part.mesh.userData.partId = part.id;
       part.mesh.traverse((object) => (object.userData.partId = part.id));

@@ -128,13 +128,49 @@ assert.match(
 
 await fs.writeFile(
   path.join(fixtureRoot, "type-smoke.mts"),
-  `import { AssemblyModel, SimulationSession } from "@yaniv-golan/simulacrum-core";
+  `import {
+  AssemblyModel,
+  COMPONENT_GEOMETRY_SCHEMA_VERSION,
+  geometryDescriptorForType,
+  SimulationSession,
+  validateGeometryDescriptorOrThrow,
+  type BodyPrimitiveV1,
+  type GeometryDescriptorV2,
+  type GeometryBoundsV1,
+  type PhysicalFeatureV1,
+  type PortFrameV2,
+} from "@yaniv-golan/simulacrum-core";
 const model = new AssemblyModel();
 const revision: number = model.revision;
 const session = new SimulationSession();
 const steps: number = session.stepFixed();
+const descriptor: GeometryDescriptorV2 = geometryDescriptorForType("beam");
+const validated: GeometryDescriptorV2 = validateGeometryDescriptorOrThrow(descriptor);
+const frame: PortFrameV2 | undefined = descriptor.portFrames.A;
+const primitive: BodyPrimitiveV1 | undefined = descriptor.bodyPrimitives[0];
+const geometryClass: GeometryDescriptorV2["geometryClass"] = descriptor.geometryClass;
+const feature: PhysicalFeatureV1 | undefined = descriptor.physicalFeatures[0];
+const selectionBounds: GeometryBoundsV1 | null = descriptor.selectionBoundsPartM;
+const collisionBounds: GeometryBoundsV1 | null = descriptor.collisionBoundsPartM;
+if (primitive?.geometry.kind === "box-v1") {
+  const width: number = primitive.geometry.fullSizeM[0];
+  void width;
+}
+const schemaVersion: 2 = COMPONENT_GEOMETRY_SCHEMA_VERSION;
+// @ts-expect-error descriptor v2 removed the ambiguous dimensions alias
+descriptor.dimensions;
+// @ts-expect-error primitive kinds are a closed union
+const invalidPrimitiveKind: BodyPrimitiveV1["geometry"]["kind"] = "mesh-v1";
 void revision;
 void steps;
+void validated;
+void frame;
+void geometryClass;
+void feature;
+void selectionBounds;
+void collisionBounds;
+void schemaVersion;
+void invalidPrimitiveKind;
 `,
 );
 await fs.writeFile(

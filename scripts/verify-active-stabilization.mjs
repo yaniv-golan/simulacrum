@@ -291,12 +291,37 @@ async function run(mode, scenario = null) {
   });
   const chassisId = snapshot.parts.find((part) => part.type === "plate").id,
     chassisBody = runtime.bodyByPart.get(chassisId),
-    negativeHubs = snapshot.parts
-      .filter((part) => part.type === "motor" && part.pos[2] < 0)
-      .map((part) => runtime.bodyByPart.get(part.id)),
-    positiveHubs = snapshot.parts
-      .filter((part) => part.type === "motor" && part.pos[2] > 0)
-      .map((part) => runtime.bodyByPart.get(part.id)),
+    partById = new Map(snapshot.parts.map((part) => [part.id, part])),
+    hubsByWheelSide = snapshot.parts
+      .filter((part) => part.type === "motor")
+      .map((part) => {
+        const wheelConnection = snapshot.connections.find(
+            (connection) =>
+              connection.kind === "mechanical" &&
+              ((connection.a === part.id &&
+                connection.portA === "SHAFT" &&
+                connection.portB === "AXLE") ||
+                (connection.b === part.id &&
+                  connection.portB === "SHAFT" &&
+                  connection.portA === "AXLE")),
+          ),
+          wheelId =
+            wheelConnection?.a === part.id
+              ? wheelConnection.b
+              : wheelConnection?.a,
+          wheel = partById.get(wheelId);
+        assert.ok(wheel, `motor ${part.id} has no authored wheel connection`);
+        return {
+          body: runtime.bodyByPart.get(part.id),
+          side: Math.sign(wheel.pos[2]),
+        };
+      }),
+    negativeHubs = hubsByWheelSide
+      .filter(({ side }) => side < 0)
+      .map(({ body }) => body),
+    positiveHubs = hubsByWheelSide
+      .filter(({ side }) => side > 0)
+      .map(({ body }) => body),
     rolls = [],
     pitches = [],
     travelDifferentials = [],

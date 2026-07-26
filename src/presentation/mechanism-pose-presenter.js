@@ -12,16 +12,30 @@ export function applyMechanismPose(part, pose) {
     );
   if (Number.isFinite(pose.phase)) {
     part.phase = pose.phase;
-    if (!pose.quaternion) part.mesh.rotation.z = pose.phase;
   }
-  if (Number.isFinite(pose.jointAngle)) part.mesh.rotation.z = pose.jointAngle;
-  if (Number.isFinite(pose.axialScale)) {
-    const deformationRoot = part.mesh.userData?.mechanismDeformationRoot;
-    if (!deformationRoot)
-      throw new Error("Mechanism mesh has no deformation presentation root");
-    deformationRoot.scale.z = pose.axialScale;
+  if (Number.isFinite(pose.jointAngle)) part.jointAngle = pose.jointAngle;
+  const descriptor = part.mesh.userData?.geometryDescriptor,
+    deformationRoots = part.mesh.userData?.mechanismDeformationRoots || {};
+  for (const coordinate of descriptor?.deformationContract?.coordinates || []) {
+    const value = pose[coordinate.telemetryField],
+      root = deformationRoots[coordinate.id];
+    if (!Number.isFinite(value)) continue;
+    if (!root)
+      throw new Error(
+        `Mechanism mesh has no deformation root for ${coordinate.id}`,
+      );
+    if (coordinate.projection !== "anchor-local-z-scale-v1")
+      throw new Error(
+        `Unknown mechanism deformation projection ${coordinate.projection}`,
+      );
+    root.position.set(0, 0, 0);
+    root.quaternion.identity();
+    root.scale.set(1, 1, value);
   }
-  if (Number.isFinite(pose.spinDelta)) part.mesh.rotation.x += pose.spinDelta;
+  if (pose.deformedBodyBoundsWorldM)
+    part.deformedBodyBoundsWorldM = structuredClone(
+      pose.deformedBodyBoundsWorldM,
+    );
 }
 
 export function presentMechanismTelemetry({

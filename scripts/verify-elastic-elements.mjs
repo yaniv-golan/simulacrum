@@ -10,6 +10,7 @@ import {
   springResponse,
   stopResponse,
 } from "../src/simulation/two-frame-mechanisms.js";
+import { posePartForPortMatch } from "../src/model/component-geometry-contract.js";
 
 const CAPACITY = { ultimateForceN: 24_000, ultimateTorqueNm: 6_000 };
 
@@ -34,7 +35,7 @@ function springAssembly({ stiffnessNPerM = 240, dampingNsPerM = 0 } = {}) {
         id: 2,
         type: "spring",
         pos: [0, 0, 0],
-        orientation: [0, 0, 0, 1],
+        orientation: [0, Math.SQRT1_2, 0, Math.SQRT1_2],
         mechanism: mechanism("spring", (definition) => {
           definition.config.referenceLaw.freeLengthM = 2;
           definition.config.elasticLaw.stiffnessNPerM = stiffnessNPerM;
@@ -129,6 +130,7 @@ function runOscillator(dt, { dampingNsPerM = 0, periods = 20 } = {}) {
     finalCenterOfMassX =
       (bodyA.mass * bodyA.position.x + bodyB.mass * bodyB.position.x) /
       (bodyA.mass + bodyB.mass),
+    springPose = runtime.telemetry().poses.find(({ id }) => id === 2),
     report = {
       analyticPeriodS,
       measuredPeriodS,
@@ -139,6 +141,25 @@ function runOscillator(dt, { dampingNsPerM = 0, periods = 20 } = {}) {
       centerOfMassDriftM: Math.abs(finalCenterOfMassX - initialCenterOfMassX),
       dampingWorkJ: entry.dampingWorkJ,
     };
+  assert.ok(springPose, "spring emitted no absolute mechanism pose");
+  assert.ok(
+    springPose.deformedBodyBoundsWorldM.minimumM.every(
+      (value, axis) =>
+        Number.isFinite(value) &&
+        value <= springPose.deformedBodyBoundsWorldM.maximumM[axis],
+    ),
+    "spring emitted invalid runtime-deformed world bounds",
+  );
+  assert.ok(
+    Math.abs(
+      springPose.quaternion.x ** 2 +
+        springPose.quaternion.y ** 2 +
+        springPose.quaternion.z ** 2 +
+        springPose.quaternion.w ** 2 -
+        1,
+    ) <= 1e-12,
+    "spring runtime pose did not publish an absolute unit quaternion",
+  );
   runtime.dispose();
   return report;
 }
@@ -172,6 +193,24 @@ for (const part of [offCenterSnapshot.parts[0], offCenterSnapshot.parts[2]]) {
 }
 offCenterSnapshot.connections[0].portA = "MOUNT";
 offCenterSnapshot.connections[1].portB = "MOUNT";
+delete offCenterSnapshot.connections[0].anchorA;
+delete offCenterSnapshot.connections[1].anchorB;
+offCenterSnapshot.parts[0].pos = [
+  ...posePartForPortMatch({
+    movingPart: offCenterSnapshot.parts[0],
+    movingPortId: "MOUNT",
+    targetPart: offCenterSnapshot.parts[1],
+    targetPortId: "END_A",
+  }).positionM,
+];
+offCenterSnapshot.parts[2].pos = [
+  ...posePartForPortMatch({
+    movingPart: offCenterSnapshot.parts[2],
+    movingPortId: "MOUNT",
+    targetPart: offCenterSnapshot.parts[1],
+    targetPortId: "END_B",
+  }).positionM,
+];
 offCenterRuntime.start(offCenterSnapshot);
 offCenterRuntime.bodyByPart.get(3).position.x += 0.2;
 offCenterRuntime.stepActuators({ services: {} }, 1 / 120);

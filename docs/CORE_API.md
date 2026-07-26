@@ -26,6 +26,7 @@ import {
   challengeReliability,
   compileAssembly,
   compileVisualProgram,
+  COMPONENT_GEOMETRY_SCHEMA_VERSION,
   controllerBindingManifest,
   ControllerSensorBank,
   ControllerTraceBuffer,
@@ -40,6 +41,7 @@ import {
   FailureEvent,
   FailureRecorder,
   fingerprintComponentInspectionAssembly,
+  geometryDescriptorForPart,
   instantiateSubassembly,
   MassPropertyCommitSystem,
   MechanismSystem,
@@ -63,6 +65,8 @@ import {
   decodeAuthoredAssemblyContentOrThrow,
   measureEnvironmentProximity,
   TYPES,
+  validateComponentGeometryDefinitionOrThrow,
+  validateGeometryDescriptorOrThrow,
 } from "@yaniv-golan/simulacrum-core";
 
 const assembly = AssemblyModel.fromBlueprint(blueprint);
@@ -304,6 +308,23 @@ diagnostics. `MultibodyRuntime` is the current Cannon adapter for that output.
 This separation allows other solvers, headless tools, and renderers to reuse the
 same physical topology. See [General multi-body assembly compiler](ASSEMBLY_COMPILER.md)
 for the strict connection and capacity contract.
+
+Component geometry has one DOM-free authority. Every catalog entry supplies a
+strict data-only `geometryContract`; `geometryDescriptorForPart()` resolves it
+to immutable `GeometryDescriptorV2` using the authored part transform and
+scale. The descriptor separately names collision, body, feature, selection,
+and overall physical bounds, classifies every port, and contains frames only
+for spatial ports. Physical features are anchored to those canonical frames,
+so a host renderer cannot independently place a shaft or attachment surface.
+
+`validateComponentGeometryDefinitionOrThrow()` and
+`validateGeometryDescriptorOrThrow()` reject unknown fields, primitive kinds,
+missing frames, invalid quaternions, and inconsistent bounds. Alternate
+catalogs have no fallback geometry. Compiled spatial connections also fail with
+stable diagnostics when their authored endpoint frames violate the applicable
+fixed, rotary, guide, gear, or flexible-line invariant. Descriptor v2 is a
+public API cutover queued for Core `0.2.0`, but it remains derived data and does
+not change any portable wire envelope.
 
 ## Reusable assemblies and engineering analysis
 

@@ -23,6 +23,20 @@ export function createEditorInspectorActions({
     recordHistory: history.record,
     configurePart: configureComponentPart,
     configureMechanism: configureAuthoredMechanism,
+    scalePart: (part, axis, value) => {
+      const previous = { ...part.scale };
+      part.scale = { ...part.scale, [axis]: Number(value) };
+      try {
+        assembly.rebuildGeometry(part);
+        return true;
+      } catch (error) {
+        part.scale = previous;
+        actions.notify(
+          `Scale rejected: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        return false;
+      }
+    },
     syncAssembly: assembly.sync,
     drawConnections,
     updateSelection,

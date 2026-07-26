@@ -302,7 +302,6 @@ for (const [type, definition] of Object.entries(TYPES)) {
       "direction",
       "id",
       "kind",
-      ...(descriptor.localFramePart ? ["localFramePart"] : []),
       ...(descriptor.mediumId ? ["mediumId"] : []),
       "multiplicity",
     ].sort();
@@ -311,10 +310,6 @@ for (const [type, definition] of Object.entries(TYPES)) {
       expectedKeys,
       `${type}.${descriptor.id} has an incomplete port contract`,
     );
-    if (descriptor.localFramePart) {
-      assert.equal(descriptor.localFramePart.positionM.length, 3);
-      assert.equal(descriptor.localFramePart.orientation.length, 4);
-    }
     assert.ok(!ids.has(descriptor.id), `${type} repeats port ${descriptor.id}`);
     ids.add(descriptor.id);
   }
@@ -512,7 +507,8 @@ const surfaceConnection = completeConnectionContract(
   },
   { capacity: CONNECTION_CAPACITIES.standard },
 );
-assert.deepEqual(surfaceConnection.anchorA, [1, 0.5, 0]);
+assert.deepEqual(surfaceConnection.anchorA, [0.5, 0.295, -0.25]);
+assert.deepEqual(surfaceConnection.anchorB, [-0.5, -0.205, -0.25]);
 const rotatedSurfaceConnection = completeConnectionContract(
   {
     id: "rotated-surface-a",
@@ -538,7 +534,7 @@ const rotatedSurfaceConnection = completeConnectionContract(
 );
 assert.deepEqual(
   rotatedSurfaceConnection.anchorA,
-  [-1, 0, 0],
+  [-0.5, 0.045, -0.25],
   "derived inverse quaternion was treated as noncanonical wire data",
 );
 expectDomainError(
@@ -656,14 +652,13 @@ assert.throws(
 
 for (const type of Object.keys(TYPES)) {
   const flexible = Boolean(TYPES[type].flexibleLine),
-    descriptor = flexible ? null : geometryDescriptorForType(type),
+    descriptor = geometryDescriptorForType(type),
     visualDescriptor = componentVisualDescriptor(type),
     renderObject = componentMesh(type);
-  if (descriptor)
-    assert.ok(Object.isFrozen(descriptor), `${type} descriptor is mutable`);
+  assert.ok(Object.isFrozen(descriptor), `${type} descriptor is mutable`);
   assert.ok(
     Object.isFrozen(visualDescriptor) &&
-      (flexible || Object.isFrozen(visualDescriptor.geometry)),
+      Object.isFrozen(visualDescriptor.geometry),
     `${type} visual descriptor is mutable`,
   );
   assert.equal(
@@ -676,10 +671,10 @@ for (const type of Object.keys(TYPES)) {
     "object3d-tree-v1",
     `${type} did not declare render-resource ownership`,
   );
-  if (descriptor)
+  if (!flexible)
     assert.ok(
       descriptor.collisionPrimitives.length > 0 &&
-        descriptor.dimensions.every(Number.isFinite) &&
+        descriptor.bodyBoundsPartM.minimumM.every(Number.isFinite) &&
         descriptor.massKg > 0 &&
         descriptor.displacementM3 > 0,
       `${type} descriptor is physically incomplete`,
@@ -689,7 +684,7 @@ for (const type of Object.keys(TYPES)) {
     stableStringify(descriptor),
     `${type} presentation did not consume the canonical descriptor`,
   );
-  if (TYPES[type].mechanism && descriptor) {
+  if (TYPES[type].mechanism) {
     renderObject.updateMatrixWorld(true);
     const renderedSize = new THREE.Box3()
       .setFromObject(renderObject)
@@ -697,7 +692,11 @@ for (const type of Object.keys(TYPES)) {
       .toArray();
     for (let axis = 0; axis < 3; axis++)
       assert.ok(
-        Math.abs(renderedSize[axis] - descriptor.dimensions[axis]) <= 1e-6,
+        Math.abs(
+          renderedSize[axis] -
+            (descriptor.bodyBoundsPartM.maximumM[axis] -
+              descriptor.bodyBoundsPartM.minimumM[axis]),
+        ) <= 1e-6,
         `${type} rendered extent ${axis} diverged from canonical collision geometry`,
       );
   }
@@ -713,19 +712,22 @@ const motorGeometry = geometryDescriptorForType("motor"),
   axleGeometry = geometryDescriptorForType("axle"),
   gearGeometry = geometryDescriptorForType("gear12"),
   wheelGeometry = geometryDescriptorForType("wheel");
-assert.deepEqual(motorGeometry.portFrames.SHAFT.position, [0, 0, 0.82]);
-assert.deepEqual(axleGeometry.portFrames.LEFT.position, [0, 0, -1]);
-assert.equal(gearGeometry.collisionPrimitives[0].radius, 0.48);
-assert.equal(gearGeometry.collisionPrimitives[0].length, 0.22);
-assert.equal(wheelGeometry.collisionPrimitives[0].radius, 0.65);
-assert.equal(wheelGeometry.collisionPrimitives[0].length, 0.42);
+assert.deepEqual(
+  motorGeometry.portFrames.SHAFT.framePart.positionM,
+  [0, 0, 0.92],
+);
+assert.deepEqual(axleGeometry.portFrames.LEFT.framePart.positionM, [0, 0, -1]);
+assert.equal(gearGeometry.collisionPrimitives[0].geometry.radiusM, 0.48);
+assert.equal(gearGeometry.collisionPrimitives[0].geometry.axialLengthM, 0.22);
+assert.equal(wheelGeometry.collisionPrimitives[0].geometry.radiusM, 0.65);
+assert.equal(wheelGeometry.collisionPrimitives[0].geometry.widthM, 0.42);
 const scaledBeam = geometryDescriptorForPart({
   id: 20,
   type: "beam",
   scale: { x: 2, y: 0.5, z: 1 },
 });
 assert.deepEqual(
-  scaledBeam.collisionPrimitives[0].size,
+  scaledBeam.collisionPrimitives[0].geometry.fullSizeM,
   [4.8, 0.175, 0.35],
   "component scaling was not applied by the geometry authority",
 );
@@ -748,7 +750,7 @@ assert.equal(
   "compiler retained a second collision-dimension authority",
 );
 assert.deepEqual(
-  compiled.bodies[0].geometry.collisionPrimitives[0].size,
+  compiled.bodies[0].geometry.collisionPrimitives[0].geometry.fullSizeM,
   [4.8, 0.175, 0.35],
 );
 

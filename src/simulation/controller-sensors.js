@@ -1,4 +1,5 @@
 import { geometryDescriptorForPart } from "../model/geometry-descriptors.js";
+import { primaryGeometryAxisPart } from "../model/component-geometry-contract.js";
 import { portDefinition } from "../model/ports.js";
 import { sensorDefinitionsForPart } from "../model/sensor-contracts.js";
 import { componentHasControlContract } from "../model/component-contracts.js";
@@ -177,7 +178,7 @@ function valuesForSensor(sensor, context) {
       ? shaftBody(sensor, partsById, connections, indexes)
       : null,
     shaftAxis = shaft?.part
-      ? geometryDescriptorForPart(shaft.part).renderDetailAnchors.axis
+      ? primaryGeometryAxisPart(geometryDescriptorForPart(shaft.part))
       : [0, 0, 1],
     worldAxis = rotateVector(
       shaftAxis,

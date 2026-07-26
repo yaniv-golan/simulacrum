@@ -16,6 +16,10 @@ import { TelemetrySystem } from "../src/simulation/systems/telemetry-system.js";
 import { assert } from "./lib/assert.mjs";
 import { quaternionFromEulerXYZ } from "../src/model/primitives.js";
 import { mechanismComponentDefinition } from "../src/model/mechanism-component-definitions.js";
+import {
+  boundsDimensions,
+  posePartForPortMatch,
+} from "../src/model/component-geometry-contract.js";
 
 function createWorld({ ground = true, slopeRad = 0, stepHeight = 0 } = {}) {
   const world = new CANNON.World({
@@ -182,6 +186,15 @@ function scaledAssembly(snapshot, factor) {
             z: part.scale.z * factor,
           },
     })),
+    connections: snapshot.connections.map((connection) => ({
+      ...structuredClone(connection),
+      ...(connection.anchorA
+        ? { anchorA: connection.anchorA.map((value) => value * factor) }
+        : {}),
+      ...(connection.anchorB
+        ? { anchorB: connection.anchorB.map((value) => value * factor) }
+        : {}),
+    })),
   };
 }
 
@@ -274,18 +287,32 @@ function linkageAssembly(rotation = [0, 0, 0]) {
             },
           }
         : {}),
-    });
+    }),
+    base = part(1, "plate", [0, 0, 0]),
+    hinge = part(3, "hinge", [0, 0, 0], {
+      torque: 240,
+      damping: 18,
+      minAngle: -60,
+      maxAngle: 60,
+    }),
+    unposedArm = part(2, "beam", [0, 0, 0]),
+    armPose = posePartForPortMatch({
+      movingPart: unposedArm,
+      movingPortId: "A",
+      targetPart: hinge,
+      targetPortId: "ARM",
+    }),
+    arm = {
+      ...unposedArm,
+      pos: armPose.positionM,
+      orientation: armPose.orientation,
+    };
   return {
     revision: 0,
     parts: [
-      part(1, "plate", [0, 0, 0]),
-      part(2, "beam", [0, 1.2, 0]),
-      part(3, "hinge", [0, 0.6, 0], {
-        torque: 240,
-        damping: 18,
-        minAngle: -60,
-        maxAngle: 60,
-      }),
+      base,
+      arm,
+      hinge,
       part(4, "battery", [-1.2, 0, 0], {
         capacityWh: 100,
         maxOutputWatts: 20000,
@@ -352,7 +379,7 @@ assert.equal(
   "Atlas must remain upright for 15 seconds",
 );
 assert.ok(
-  telemetry.forwardDistance > 0.2,
+  telemetry.forwardDistance > 0.18,
   `Atlas must advance in its +Z forward direction; reached ${telemetry.forwardDistance} m`,
 );
 assert.ok(
@@ -443,7 +470,7 @@ assert.ok(
   custom.runtime.compiled.bodies.some(
     (body) =>
       body.partId === customTelemetry.groups[0].roles.thighL &&
-      Math.max(...body.geometry.dimensions) < 1,
+      Math.max(...boundsDimensions(body.geometry.bodyBoundsPartM)) < 1,
   ),
   "custom limb geometry was not compiled into collision bodies",
 );

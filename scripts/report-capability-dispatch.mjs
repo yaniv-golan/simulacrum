@@ -6,9 +6,9 @@ import { analyzeCapabilityDispatch } from "./lib/capability-dispatch-analyzer.mj
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const REVIEWED_CAPABILITY_DISPATCH_BASELINE = Object.freeze({
-  commit: "unreleased-workshop-axis-presentation-2026-07-25",
-  sites: 229,
-  sha256: "2000acfd5fd9bc64e9ef2fd9f0045390a4d9822e3be8dd2800d25b51fbba714d",
+  commit: "unreleased-canonical-component-geometry-v2-2026-07-25",
+  sites: 236,
+  sha256: "89abf3a0ef58cf9fffdc68911437ed3c5f809f65d91c25d75a44c43b4856f4ba",
 });
 
 const POLICIES = Object.freeze([
@@ -71,7 +71,7 @@ const POLICIES = Object.freeze([
   },
   {
     pattern:
-      /^src\/model\/(?:component-contracts|component-preflight|sensor-contracts|visual-logic)\.js$/,
+      /^src\/model\/(?:component-contracts|component-geometry-contract|component-preflight|sensor-contracts|visual-logic)\.js$/,
     family: "declared-model-adapters",
     disposition: "KEEP",
     owner: "model/catalog-adapters",

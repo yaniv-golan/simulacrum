@@ -6,6 +6,7 @@ import {
 import { BlueprintAcquisition } from "./blueprint-acquisition.js";
 import { mechanismComponentDefinition } from "./mechanism-component-definitions.js";
 import { quaternionFromEulerXYZ } from "./primitives.js";
+import { posePartForPortMatch } from "./component-geometry-contract.js";
 import { DEFAULT_VISUAL_PROGRAM } from "./visual-logic.js";
 import {
   createLocalSubassemblyRecord,
@@ -85,6 +86,17 @@ class MechanismAssetBuilder {
     );
     this.connections.push(connection);
     return connection;
+  }
+
+  matchPorts(movingPart, movingPortId, targetPart, targetPortId) {
+    const pose = posePartForPortMatch({
+      movingPart,
+      movingPortId,
+      targetPart,
+      targetPortId,
+    });
+    movingPart.pos = [...pose.positionM];
+    return movingPart;
   }
 
   build() {
@@ -170,6 +182,8 @@ function addWheelStation(builder, carrier, position, axlePort = "RIGHT") {
       position[1],
       position[2] + (axlePort === "RIGHT" ? 1 : -1),
     ]);
+  builder.matchPorts(bearing, "SHAFT", axle, "JOURNAL");
+  builder.matchPorts(wheel, "AXLE", axle, axlePort);
   builder.connect(carrier, "SURFACE", bearing, "MOUNT");
   builder.connect(bearing, "SHAFT", axle, "JOURNAL");
   builder.connect(axle, axlePort, wheel, "AXLE");
@@ -207,6 +221,7 @@ function addActiveCorner(builder, chassis, battery, controller, x, z) {
       euler: [Math.PI / 2, 0, 0],
       authored: tunedDamper(),
     });
+  builder.matchPorts(hub, "SHAFT", wheel, "AXLE");
   builder.connect(chassis, "TOP", actuator, "BASE");
   builder.connect(actuator, "ROD", hub, "MOUNT");
   builder.connect(chassis, "TOP", spring, "END_A");
@@ -250,6 +265,7 @@ function trailingArmAsset() {
     chassis = builder.add("plate", [-0.8, 1.5, 0]),
     pivot = builder.add("hinge", [-0.85, 1, 0]),
     arm = builder.add("beam", [0, 0.75, 0]);
+  builder.matchPorts(arm, "A", pivot, "ARM");
   builder.connect(chassis, "TOP", pivot, "BASE");
   builder.connect(pivot, "ARM", arm, "A");
   addWheelStation(builder, arm, [0.9, 0.65, 0]);
@@ -272,6 +288,10 @@ function doubleWishboneAsset() {
     hub = builder.add("beam", [0.85, 1, 0], {
       euler: [0, 0, Math.PI / 2],
     });
+  builder.matchPorts(upperArm, "A", upperInner, "ARM");
+  builder.matchPorts(upperOuter, "BASE", upperArm, "B");
+  builder.matchPorts(lowerArm, "A", lowerInner, "ARM");
+  builder.matchPorts(lowerOuter, "BASE", lowerArm, "B");
   builder.connect(chassis, "TOP", upperInner, "BASE");
   builder.connect(upperInner, "ARM", upperArm, "A");
   builder.connect(upperArm, "B", upperOuter, "BASE");
@@ -295,6 +315,8 @@ function rockerBogieAsset() {
     rocker = builder.add("beam", [0, 0.95, 0]),
     bogiePivot = builder.add("hinge", [0.45, 0.9, 0]),
     bogie = builder.add("beam", [1.1, 0.75, 0]);
+  builder.matchPorts(rocker, "A", rockerPivot, "ARM");
+  builder.matchPorts(bogie, "A", bogiePivot, "ARM");
   builder.connect(chassis, "TOP", rockerPivot, "BASE");
   builder.connect(rockerPivot, "ARM", rocker, "A");
   builder.connect(rocker, "SURFACE", bogiePivot, "BASE");

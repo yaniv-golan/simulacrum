@@ -69,6 +69,7 @@ export function createWorkshopEditorPresentationSubsystem({
       currentConnections: assembly.currentConnections,
       currentPart: assembly.currentPart,
       powered: assembly.powered,
+      rebuildGeometry: assembly.rebuildGeometry,
     },
     view: {
       query: view.query,
@@ -131,7 +132,6 @@ export function createWorkshopEditorPresentationSubsystem({
       explodedState: createExplodedStatePort(state),
     });
   visibility.current = selectionVisibility;
-
   return Object.freeze({
     transformGizmo,
     transform,

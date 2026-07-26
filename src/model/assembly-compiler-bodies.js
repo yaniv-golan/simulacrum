@@ -8,7 +8,7 @@ import {
 } from "./assembly-compiler-shared.js";
 
 function compileContactRegions(context, part, geometry) {
-  for (const region of geometry.collisionRegions || [])
+  for (const region of geometry.collisionPrimitives)
     if (region.contactRole === "tire-envelope")
       context.contactRegions.push({
         id: `contact:${part.id}:${region.semanticKey}`,
@@ -20,7 +20,7 @@ function compileContactRegions(context, part, geometry) {
         radiusM: part.mechanism.config.radiusM,
         widthM: part.mechanism.config.widthM,
         shoulderRadiusM: part.mechanism.config.shoulderRadiusM,
-        semanticRegions: cloneCompiledValue(geometry.collisionRegions),
+        semanticRegions: cloneCompiledValue(region.semanticRegions),
         tireConstitutiveLaw: cloneCompiledValue(
           part.mechanism.config.tireConstitutiveLaw,
         ),

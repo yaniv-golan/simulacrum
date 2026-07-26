@@ -16,10 +16,23 @@ npm run examples:core
 ## Component
 
 [`component.mjs`](../examples/core-extensions/component.mjs) adds a Ballast Pod
-through a consumer-owned catalog. The shared descriptor compiler derives its
-collision shape, render dimensions, mass, displacement, aerodynamic surface,
-and port frames. Passing the same catalog to `compileAssembly()` keeps analysis
-and simulation topology consistent.
+through a consumer-owned catalog. Its required `geometryContract` is a
+data-only definition for the body and collision primitives, canonical port
+frames, scale policy, and any anchored physical features. The shared resolver
+validates that definition and produces immutable `GeometryDescriptorV2`
+instances with separate collision, body, feature, selection, and overall
+physical bounds. Passing the same catalog to `compileAssembly()` keeps editor
+placement, analysis, connection validation, simulation topology, and any host
+renderer on the same geometry authority.
+
+There is no generic fallback for an alternate catalog entry. Call
+`validateComponentGeometryDefinitionOrThrow()` when registering one and
+`validateGeometryDescriptorOrThrow()` at an untrusted descriptor boundary.
+Spatial mechanical connections must satisfy the canonical port-frame rule;
+asset authors migrate the authored part transform or explicit permitted anchor,
+not a renderer offset. Network-only ports remain intentionally frameless.
+Descriptor v2 is queued for Core `0.2.0` and is not serialized into portable
+wire envelopes.
 
 The public inspection foundation uses the same strict portable field allowlist.
 `decodeAuthoredAssemblyContentOrThrow()` rejects unknown editor snapshot fields,

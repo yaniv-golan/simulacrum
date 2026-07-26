@@ -13,17 +13,10 @@ export function createChallengeMachineView(
       id: part.id,
       type: part.type,
       pos: Array.isArray(part.pos) ? [...part.pos] : [0, 0, 0],
-      orientation: canonicalizeQuaternion(
-        part.mesh
-          ? [
-              part.mesh.quaternion.x,
-              part.mesh.quaternion.y,
-              part.mesh.quaternion.z,
-              part.mesh.quaternion.w,
-            ]
-          : part.orientation,
-      ),
-      scale: Array.isArray(part.scale) ? [...part.scale] : [1, 1, 1],
+      orientation: canonicalizeQuaternion(part.orientation),
+      scale: Array.isArray(part.scale)
+        ? [...part.scale]
+        : [part.scale?.x ?? 1, part.scale?.y ?? 1, part.scale?.z ?? 1],
       rigRole: part.rigRole || null,
       mass:
         part.mechanism?.massPropertySource?.massKg ??

@@ -1,5 +1,4 @@
 import { geometryDescriptorForPart } from "./geometry-descriptors.js";
-import { componentDefinition } from "./component-contracts.js";
 import {
   AUTHORING_TRANSLATION_SNAP_M,
   AUTHORING_WORKSPACE_BOUNDS_WORLD_M,
@@ -91,27 +90,6 @@ function insideBounds(bounds, limit) {
   });
 }
 
-function placementGeometryForPart(part, catalog) {
-  const definition = componentDefinition(part, catalog),
-    flexibleLine = definition?.flexibleLine;
-  if (!flexibleLine) return geometryDescriptorForPart(part, catalog);
-  const lengthM = Number(part.config?.lengthM ?? definition.lengthM),
-    diameterM = Number(part.config?.diameterM ?? definition.diameterM),
-    axis = flexibleLine.initialAxisPart;
-  if (
-    !(lengthM > 0) ||
-    !(diameterM > 0) ||
-    !finiteVector(axis) ||
-    Math.hypot(...axis) <= 1e-7
-  )
-    throw new Error(`Flexible-line component ${part.id} has invalid geometry`);
-  const magnitude = Math.hypot(...axis),
-    dimensions = axis.map(
-      (value) => (Math.abs(value) / magnitude) * lengthM + diameterM,
-    );
-  return { dimensions };
-}
-
 /**
  * Finds the first deterministic snapped, non-overlapping duplicate transform.
  * The result contains no meshes, camera objects, or mutable application state.
@@ -141,7 +119,7 @@ export function planDuplicatePlacement({
   let allBounds;
   try {
     allBounds = parts.map((part) =>
-      orientedBoundsFor(part, placementGeometryForPart(part, catalog)),
+      orientedBoundsFor(part, geometryDescriptorForPart(part, catalog)),
     );
   } catch (error) {
     return {

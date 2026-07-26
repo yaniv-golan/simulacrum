@@ -63,7 +63,7 @@ import {
 
 const demoExpectations = {
   gearbox: [9, 14],
-  cart: [35, 67],
+  cart: [33, 65],
   drone: [23, 53],
   humanoid: [28, 54],
   mission: [32, 66],

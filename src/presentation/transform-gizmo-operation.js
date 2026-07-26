@@ -71,6 +71,7 @@ export function createTransformGizmoOperation({
           .copy(groupPivot.quaternion)
           .multiply(entry.quaternion);
         entry.part.pos = entry.part.mesh.position.toArray();
+        entry.part.orientation = entry.part.mesh.quaternion.toArray();
         entry.part.rot = entry.part.mesh.rotation.y;
       }
       view.updateSelection();
@@ -80,6 +81,7 @@ export function createTransformGizmoOperation({
         .find((candidate) => candidate.id === model.selectedId());
       if (!part) return false;
       part.pos = part.mesh.position.toArray();
+      part.orientation = part.mesh.quaternion.toArray();
       part.rot = part.mesh.rotation.y;
       view.showSelection(part);
     }

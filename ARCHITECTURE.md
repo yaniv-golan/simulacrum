@@ -112,19 +112,28 @@ targets, power rules, or simulation behavior. Profile names do not select
 behavior. Unknown or unskinned profiles fall back to the generic instrument
 grid.
 
-## Reusable editor and visual descriptors
+## Canonical component geometry and presentation
 
 Reusable subassemblies and engineering analysis are model contracts. Catalog
 rendering, marquee projection, arrangement controls, and Three.js diagnostic
 geometry are presentation controllers. The application coordinator supplies
 callbacks and state ownership but does not contain those workflows.
 
-Component visuals resolve through an immutable, engine-neutral visual
-descriptor and a closed visual-kind registry. Structural, mechanism,
-electronics/sensor, propulsion, and explicitly generic builders live in
-separate presentation modules. Builders consume only their descriptor and
-render services; unknown kinds fail closed, and generic geometry is never an
-implicit fallback.
+Every catalog component provides one model-owned geometry definition. Its
+immutable `GeometryDescriptorV2` projection is the authority for collision and
+rendered physical-body primitives, spatial port frames, physical-interface
+features, scale, provenance, and each specifically named bounds domain. The
+compiler, editor, analysis, runtime, and presentation consume those same facts;
+unknown geometry, missing spatial frames, and invalid connection geometry fail
+closed. Mechanism deformation and flexible-line solved geometry are absolute
+runtime read models and never overwrite authored/reference descriptor bounds.
+
+Presentation projects canonical body and feature records without inventing a
+shaft, hub, outlet, attachment face, or other physical interface. It may add
+explicitly classified decorative trim, lights, labels, or effects using
+read-only canonical anchors and bounds. Decorations cannot define collision,
+connection, selection, telemetry, or analysis evidence and cannot be a fallback
+for an unknown physical kind.
 
 ## Failure analysis and challenges
 

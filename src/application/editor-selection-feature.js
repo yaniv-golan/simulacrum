@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 /**
  * @typedef {{
- *   id: number, type: string, mesh: THREE.Object3D,
+ *   id: number, type: string, mesh: THREE.Object3D, scale:{x:number,y:number,z:number},
  *   config: Record<string, number | boolean | string>, energy?: number,
  *   rigRole?: string | null, rigVisualRotation?: number[] | null,
  *   sensorValueRpm?: number,

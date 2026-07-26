@@ -12,7 +12,10 @@ import { simulationSystemExample } from "./simulation-system.mjs";
 import { telemetryConsumerExample } from "./telemetry-consumer.mjs";
 
 const component = componentExample();
-assert.deepEqual(component.descriptor.dimensions, [0.8, 0.5, 0.8]);
+assert.deepEqual(component.descriptor.bodyBoundsPartM, {
+  minimumM: [-0.4, -0.25, -0.4],
+  maximumM: [0.4, 0.25, 0.4],
+});
 assert.deepEqual(Object.keys(component.descriptor.portFrames), ["MOUNT"]);
 assert.equal(component.topology.bodies[0].mass, 12);
 

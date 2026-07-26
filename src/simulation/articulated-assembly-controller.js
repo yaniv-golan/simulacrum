@@ -1,4 +1,5 @@
 import * as CANNON from "cannon-es";
+import { boundsDimensions } from "../model/component-geometry-contract.js";
 
 const clamp = (value, minimum, maximum) =>
   Math.max(minimum, Math.min(maximum, value));
@@ -910,7 +911,8 @@ export class ArticulatedAssemblyController {
               descriptor = this.runtime.compiled.bodies.find(
                 (candidate) => candidate.partId === id,
               ),
-              height = descriptor?.geometry?.dimensions?.[1] || 0;
+              height =
+                boundsDimensions(descriptor?.geometry?.bodyBoundsPartM)[1] || 0;
             return (body?.pose.position.y || 0) - height / 2;
           }),
         );
@@ -1009,7 +1011,9 @@ export class ArticulatedAssemblyController {
         const descriptor = this.runtime.compiled.bodies.find(
             (candidate) => candidate.partId === partId,
           ),
-          halfLength = (descriptor?.geometry?.dimensions?.[2] || 0) / 2,
+          halfLength =
+            (boundsDimensions(descriptor?.geometry?.bodyBoundsPartM)[2] || 0) /
+            2,
           orientation = new CANNON.Quaternion(
             body.pose.quaternion.x,
             body.pose.quaternion.y,

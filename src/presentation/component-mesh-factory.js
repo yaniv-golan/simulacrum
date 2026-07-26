@@ -1,94 +1,53 @@
 import * as THREE from "three";
 import { componentVisualDescriptor } from "./component-visual-descriptor.js";
-import {
-  buildBeam,
-  buildCargo,
-  buildFin,
-  buildHeatShield,
-  buildNosecone,
-  buildPlate,
-} from "./component-visual-builders/structural-builders.js";
-import {
-  buildCanonicalMechanism,
-  buildLever,
-  buildSpurGear,
-  gearShape,
-} from "./component-visual-builders/mechanism-builders.js";
-import {
-  buildBattery,
-  buildContactSensor,
-  buildGyroscope,
-  buildHeadlight,
-  buildInertialSensor,
-  buildLoadCell,
-  buildLogicComputer,
-  buildMotor,
-  buildPressureProbe,
-  buildRangeSensor,
-  buildRotationSensor,
-  buildThermalProbe,
-} from "./component-visual-builders/electronics-builders.js";
-import {
-  buildPressureNozzle,
-  buildPropellantTank,
-  buildRcsCluster,
-} from "./component-visual-builders/propulsion-builders.js";
-import { buildGenericGeometry } from "./component-visual-builders/generic-builder.js";
-import { buildFlexibleLine } from "./component-visual-builders/flexible-line-builder.js";
+import { projectCanonicalComponentGeometry } from "./canonical-component-geometry-projector.js";
+import { buildDecoration } from "./component-visual-builders/decoration-builders.js";
+import { mats } from "./mesh-primitives.js";
 
-export { gearShape };
+function appearanceResolver(accent) {
+  return ({ materialKey }) => {
+    if (materialKey === "tire-rubber") return mats.rubber;
+    if (materialKey === "steel" || materialKey === "workshop-aluminum")
+      return mats.steel;
+    if (materialKey === "copper" || materialKey === "brass") return mats.brass;
+    return accent;
+  };
+}
 
-const VISUAL_BUILDERS = Object.freeze({
-  beam: buildBeam,
-  plate: buildPlate,
-  cargo: buildCargo,
-  nosecone: buildNosecone,
-  heatshield: buildHeatShield,
-  fin: buildFin,
-  mechanism: buildCanonicalMechanism,
-  lever: buildLever,
-  gear: buildSpurGear,
-  motor: buildMotor,
-  gyro: buildGyroscope,
-  imu: buildInertialSensor,
-  computer: buildLogicComputer,
-  rangesensor: buildRangeSensor,
-  sensor: buildRotationSensor,
-  contactsensor: buildContactSensor,
-  thermalprobe: buildThermalProbe,
-  pressureprobe: buildPressureProbe,
-  loadcell: buildLoadCell,
-  headlight: buildHeadlight,
-  propellanttank: buildPropellantTank,
-  battery: buildBattery,
-  rcs: buildRcsCluster,
-  rocket: buildPressureNozzle,
-  generic: buildGenericGeometry,
-  "flexible-line": buildFlexibleLine,
-});
-
-export function componentMesh(type, customColor) {
-  const visualDescriptor = componentVisualDescriptor(type, customColor),
-    vertexColors = visualDescriptor.kind === "beam",
+/**
+ * Builds either an authored component instance or an explicit catalog preview.
+ * Authored callers pass the complete part so scale/config/mechanism geometry is
+ * resolved once in the model and never reapplied to the rendered root.
+ */
+export function componentMesh(partOrType, customColor) {
+  const visualDescriptor = componentVisualDescriptor(partOrType, customColor),
     g = new THREE.Group(),
     accent = new THREE.MeshStandardMaterial({
-      color: vertexColors ? 0xffffff : visualDescriptor.color,
-      vertexColors,
+      color: visualDescriptor.color,
       metalness: 0.7,
       roughness: 0.24,
+    });
+  projectCanonicalComponentGeometry({
+    g,
+    geometryDescriptor: visualDescriptor.geometry,
+    appearanceResolver: appearanceResolver(accent),
+    detailPolicy: {
+      radialSegments: 28,
+      flexibleRadialSegments: 8,
+    },
+  });
+  buildDecoration({
+    g,
+    visualDescriptor,
+    decorationContext: Object.freeze({
+      portFrames: visualDescriptor.geometry.portFrames,
+      bodyBoundsPartM: visualDescriptor.geometry.bodyBoundsPartM,
+      featureBoundsPartM: visualDescriptor.geometry.featureBoundsPartM,
     }),
-    builder = VISUAL_BUILDERS[visualDescriptor.kind];
-  if (!builder)
-    throw new Error(`No visual builder for ${visualDescriptor.kind}`);
-  const root =
-    builder({
-      g,
-      accent,
-      visualDescriptor,
-      geometryDescriptor: visualDescriptor.geometry,
-    }) || g;
-  root.userData.geometryDescriptor = visualDescriptor.geometry;
-  root.userData.visualDescriptor = visualDescriptor;
-  root.userData.renderResourceOwnership = "object3d-tree-v1";
-  return root;
+  });
+  g.scale.set(1, 1, 1);
+  g.userData.geometryDescriptor = visualDescriptor.geometry;
+  g.userData.visualDescriptor = visualDescriptor;
+  g.userData.renderResourceOwnership = "object3d-tree-v1";
+  return g;
 }

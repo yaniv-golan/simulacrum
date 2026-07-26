@@ -95,7 +95,7 @@ assert.equal(
   "display metadata changed engineering identity",
 );
 const moved = structuredClone(blueprint);
-moved.parts[0].pos[0] += 0.25;
+for (const part of moved.parts) part.pos[0] += 0.25;
 assert.notEqual(await fingerprintAsset("blueprint", moved), fingerprint);
 const retuned = structuredClone(blueprint);
 const battery = retuned.parts.find((part) => part.type === "battery");
@@ -123,7 +123,7 @@ if (controller) {
 }
 
 const tampered = structuredClone(shared);
-tampered.asset.parts[0].pos[0] += 1;
+for (const part of tampered.asset.parts) part.pos[0] += 1;
 const tamperedResult = await decodeSharePackage(tampered);
 assert.equal(tamperedResult.ok, false);
 assert.equal(tamperedResult.errors[0].code, "ASSET_FINGERPRINT_MISMATCH");

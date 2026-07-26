@@ -3,7 +3,8 @@ import { createBrowserTest } from "./lib/browser-test.mjs";
 import { componentDefaults } from "../src/model/component-resolver.js";
 import { createSharePackage } from "../src/model/share-packages.js";
 
-const largeParts = Array.from({ length: 129 }, (_, index) => ({
+const MAX_STABLE_GEOMETRIES = 270,
+  largeParts = Array.from({ length: 129 }, (_, index) => ({
     id: index + 1,
     type: "beam",
     pos: [
@@ -39,6 +40,26 @@ const largeParts = Array.from({ length: 129 }, (_, index) => ({
   click = (selector) => page.locator(selector).dispatchEvent("click"),
   state = () => page.evaluate(() => JSON.parse(window.render_game_to_text())),
   resources = () => page.evaluate(() => window.simulacrum_performance()),
+  stableResources = async () => {
+    let previous = null,
+      repeats = 0,
+      latest = null;
+    for (let attempt = 0; attempt < 60; attempt++) {
+      latest = await resources();
+      const signature = [
+        latest.renderer.geometries,
+        latest.renderer.textures,
+        latest.renderer.programs,
+      ].join(":");
+      repeats = signature === previous ? repeats + 1 : 0;
+      previous = signature;
+      if (repeats >= 3) return latest;
+      await page.waitForTimeout(200);
+    }
+    throw new Error(
+      `renderer resources did not settle: ${JSON.stringify(latest?.renderer)}`,
+    );
+  },
   walkCamera = (key, code, count) =>
     page.evaluate(
       ({ key, code, count }) => {
@@ -103,7 +124,11 @@ async function runRetryStop() {
 async function traverseLodAndRebase() {
   await click("#view-top");
   for (let index = 0; index < 20; index++) await click("#zoom-out");
-  await page.waitForTimeout(300);
+  await page.waitForFunction(
+    () =>
+      JSON.parse(window.render_game_to_text()).environment.testSite
+        .presentationLod.level === "far",
+  );
   const farLod = await state();
   assert.ok(
     farLod.camera.distance >= 180,
@@ -179,23 +204,23 @@ async function exerciseLifecycle() {
   await loadLargeAssembly();
   await loadCart();
   await click("#view-home");
-  await page.waitForTimeout(500);
-  return { earth, resources: await resources() };
+  return { earth, resources: await stableResources() };
 }
 
 await exerciseLifecycle();
-const baseline = await resources(),
+const baseline = await stableResources(),
   samples = [];
 for (let cycle = 0; cycle < 2; cycle++) samples.push(await exerciseLifecycle());
 
 console.log(
   JSON.stringify({
-    baseline: baseline.renderer,
+    baseline: { renderer: baseline.renderer, shared: baseline.shared },
     samples: samples.map((sample) => ({
       farOffset: sample.earth.farOffset,
       returnedOffset: sample.earth.returned.globalOffsetM,
       activeChunks: sample.earth.returned.activeChunks,
       renderer: sample.resources.renderer,
+      shared: sample.resources.shared,
     })),
   }),
 );
@@ -204,7 +229,16 @@ await conclude(browser, () => {
   for (const sample of samples) {
     assert.equal(sample.earth.returned.activeChunks, 49);
     assert.notDeepEqual(sample.earth.farOffset, { east: 0, north: 0 });
-    for (const key of ["geometries", "textures", "programs"])
+    assert.ok(
+      sample.resources.renderer.geometries <= MAX_STABLE_GEOMETRIES,
+      "renderer geometries exceeded the bounded 49-chunk geography envelope",
+    );
+    assert.deepEqual(
+      sample.resources.shared,
+      baseline.shared,
+      "shared component geometry cache grew after warm-up",
+    );
+    for (const key of ["textures", "programs"])
       assert.ok(
         sample.resources.renderer[key] <= baseline.renderer[key] + 2,
         `renderer ${key} grew after a combined reserve lifecycle`,

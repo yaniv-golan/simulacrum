@@ -67,8 +67,8 @@ function gimbalFrame(localAxis) {
 }
 
 function oppositeSurfacePoint(geometry, localAxis, partId) {
-  const minimum = geometry?.boundsPartM?.minimumM,
-    maximum = geometry?.boundsPartM?.maximumM;
+  const minimum = geometry?.bodyBoundsPartM?.minimumM,
+    maximum = geometry?.bodyBoundsPartM?.maximumM;
   if (
     !Array.isArray(minimum) ||
     minimum.length !== 3 ||

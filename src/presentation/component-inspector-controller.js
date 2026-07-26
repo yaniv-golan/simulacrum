@@ -16,7 +16,7 @@ import { replaceSelectOptions } from "./select-options.js";
 
 /**
  * @typedef {{
- *   id: number, type: string, mesh: THREE.Object3D,
+ *   id: number, type: string, mesh: THREE.Object3D, scale: {x:number,y:number,z:number},
  *   config: Record<string, number | boolean | string>, storedEnergyWh?: number,
  *   mechanism?: {
  *     massPropertySource?: { massKg?: number },
@@ -52,7 +52,7 @@ import { replaceSelectOptions } from "./select-options.js";
  * @typedef {{
  *   recordHistory: (label: string) => void,
  *   configurePart: (part: InspectorPart, patch: Record<string, number | boolean | string>) => void,
- *   configureMechanism: (part: InspectorPart, path: Array<string|number>, value: number) => {ok:boolean,code?:string,message?:string,path?:Array<string|number>},
+ *   configureMechanism: (part: InspectorPart, path: Array<string|number>, value: number) => {ok:boolean,code?:string,message?:string,path?:Array<string|number>}, scalePart: (part: InspectorPart, axis: string, value: number) => boolean,
  *   syncAssembly: () => void,
  *   drawConnections: () => void, updateSelection: () => void,
  *   prepareFoot: (part: InspectorPart) => void,
@@ -226,7 +226,7 @@ export function createComponentInspectorController({ model, view, actions }) {
             `<label class="property"><span>${label}<b data-value="${key}">${value}${unit}</b></span><input type="range" min="${min}" max="${max}" step="${step}" value="${value}" data-prop="${key}" data-unit="${unit}"></label>`,
         )
         .join("") +
-      `${ropeInspector.flexibleLineReadout(part)}${mechanismEditor}${twoEndedWorkflow}${controllerProgramEditor}${view.arrangerMarkup(selection)}<div class="component-construction"><h4>BLUEPRINT CONSTRUCTION</h4>${articulatedRoleEditor}${part.mechanism ? '<p class="component-contract-note">Mechanism scale is identity; edit the explicit physical law above.</p>' : ["x", "y", "z"].map((axis) => `<label class="property"><span>SCALE ${axis.toUpperCase()}<b>${part.mesh.scale[axis].toFixed(2)}×</b></span><input data-scale-axis="${axis}" type="range" min="0.2" max="2.5" step="0.05" value="${part.mesh.scale[axis]}"></label>`).join("")}</div>`;
+      `${ropeInspector.flexibleLineReadout(part)}${mechanismEditor}${twoEndedWorkflow}${controllerProgramEditor}${view.arrangerMarkup(selection)}<div class="component-construction"><h4>BLUEPRINT CONSTRUCTION</h4>${articulatedRoleEditor}${part.mechanism ? '<p class="component-contract-note">Mechanism scale is identity; edit the explicit physical law above.</p>' : ["x", "y", "z"].map((axis) => `<label class="property"><span>SCALE ${axis.toUpperCase()}<b>${part.scale[axis].toFixed(2)}×</b></span><input data-scale-axis="${axis}" type="range" min="0.2" max="2.5" step="0.05" value="${part.scale[axis]}"></label>`).join("")}</div>`;
 
     const structuralConnections = inspection.relationships.connections.filter(
       (connection) => ["mechanical", "mesh"].includes(connection.kind),
@@ -394,7 +394,7 @@ export function createComponentInspectorController({ model, view, actions }) {
         recordEdit(input, `scale ${TYPES[part.type].name}`);
         const axis = input.dataset.scaleAxis;
         if (!axis || !["x", "y", "z"].includes(axis)) return;
-        part.mesh.scale[axis] = +input.value;
+        if (!actions.scalePart(part, axis, +input.value)) return;
         actions.syncAssembly();
         actions.drawConnections();
         actions.updateSelection();

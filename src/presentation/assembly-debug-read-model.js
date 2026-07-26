@@ -6,6 +6,7 @@
  * @typedef {{
  *   id:number,type:string,rigRole?:string|null,rigVisualRotation?:number[]|null,
  *   controllerBindings?:object[]|null,extensions?:Record<string,unknown>,pos:number[],
+ *   scale:{x:number,y:number,z:number},
  *   mesh:import("three").Object3D, config:Record<string,number>, mechanism?:Record<string,any>, phase?:number,
  *   jointAngle?:number,reactionTorque?:number,tireDeflectionM?:number,
  *   storedEnergyWh?:number,runtimeEnergy?:number,
@@ -36,9 +37,9 @@ export function buildAssemblyDebugReadModel(input) {
           : undefined,
       },
       scale: {
-        x: +part.mesh.scale.x.toFixed(2),
-        y: +part.mesh.scale.y.toFixed(2),
-        z: +part.mesh.scale.z.toFixed(2),
+        x: +part.scale.x.toFixed(2),
+        y: +part.scale.y.toFixed(2),
+        z: +part.scale.z.toFixed(2),
       },
       position: part.pos.map((value) => +value.toFixed(2)),
       displayPosition: [

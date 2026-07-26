@@ -9,8 +9,8 @@ function physicalAssemblyBounds(parts) {
   for (const part of parts) {
     const descriptor = geometryDescriptorForPart(part),
       partBounds = new THREE.Box3(
-        new THREE.Vector3(...descriptor.boundsPartM.minimumM),
-        new THREE.Vector3(...descriptor.boundsPartM.maximumM),
+        new THREE.Vector3(...descriptor.selectionBoundsPartM.minimumM),
+        new THREE.Vector3(...descriptor.selectionBoundsPartM.maximumM),
       ),
       transform = new THREE.Matrix4().compose(
         new THREE.Vector3(...part.pos),

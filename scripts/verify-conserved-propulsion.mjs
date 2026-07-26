@@ -298,7 +298,7 @@ near(dot(arbitrary.localAxis, arbitrary.gimbalAxisZ), 0);
 near(dot(arbitrary.gimbalAxisX, arbitrary.gimbalAxisZ), 0);
 assert.ok(
   arbitrary.applicationPointPartM.some((value, axis) => {
-    const bounds = arbitraryCompiled.bodies[0].geometry.boundsPartM;
+    const bounds = arbitraryCompiled.bodies[0].geometry.bodyBoundsPartM;
     return (
       Math.abs(value - bounds.minimumM[axis]) <= 1e-12 ||
       Math.abs(value - bounds.maximumM[axis]) <= 1e-12
@@ -578,6 +578,10 @@ const unsupportedCatalog = structuredClone(TYPES);
 unsupportedCatalog.propellanttank.ports.find(
   (port) => port.id === "MOUNT",
 ).behavior = "rotary-coupling";
+unsupportedCatalog.propellanttank.geometryContract.portFrames.MOUNT = {
+  position: { kind: "constant-v1", value: [0, 0, 0] },
+  orientation: [0, 1, 0, 0],
+};
 const unsupportedTank = part(10, "propellanttank", [0, 0, 0]),
   bearing = {
     id: 11,

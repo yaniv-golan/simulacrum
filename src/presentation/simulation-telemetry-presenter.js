@@ -15,7 +15,7 @@ export { buildMachineDebugReadModel } from "./machine-debug-read-model.js";
  * @typedef {{
  *   pose: { position: {x:number,y:number,z:number}, quaternion: {x:number,y:number,z:number,w:number}, visualOffsetY:number },
  *   poseMode: string, signedSpeed:number, velocity:{y:number}, detachedParts?: Array<{id:number,position:{x:number,y:number,z:number},quaternion:{x:number,y:number,z:number,w:number}}>,
- *   wheelStates:Array<{partId:number,carcassDeflectionM:number,carcassDeflectionRateMPerS:number,spinDelta:number}>,
+ *   wheelStates:Array<{partId:number,carcassDeflectionM:number,carcassDeflectionRateMPerS:number}>,
  *   memberPartIds:number[], motorPartIds?:number[], activeLuminairePartIds?:number[], driveForce:{availableMotorPowerW?:number},
  *   weightN:number, steer:number, grounded:boolean, inWater:boolean, bottomContact:boolean,
  *   onField:boolean, edgeDistance:number, brake:boolean, submergedFraction:number,
@@ -140,8 +140,6 @@ export function createSimulationTelemetryPresenter({ model, scene, view }) {
       if (!wheel || wheel.flightDetached) continue;
       wheel.tireDeflectionM = wheelState.carcassDeflectionM;
       wheel.tireDeflectionRateMPerS = wheelState.carcassDeflectionRateMPerS;
-      if (telemetry.poseMode === "per-part") continue;
-      wheel.mesh.rotation.x += wheelState.spinDelta;
     }
   }
 
