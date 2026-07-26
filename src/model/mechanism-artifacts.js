@@ -1,6 +1,7 @@
 import { decodeBlueprintOrThrow } from "./blueprint-decoder.js";
 import {
   CHECKPOINT_STATE_OWNER_IDS,
+  CHECKPOINT_STATE_OWNER_VERSIONS,
   checkpointStateDigest,
   experimentManifestDigest,
   fingerprintExperimentBlueprint,
@@ -24,6 +25,7 @@ import { WIRE_LIMITS } from "./wire-limits.js";
 
 export {
   CHECKPOINT_STATE_OWNER_IDS,
+  CHECKPOINT_STATE_OWNER_VERSIONS,
   checkpointStateDigest,
   experimentManifestDigest,
   fingerprintExperimentBlueprint,
@@ -129,6 +131,15 @@ function validateCheckpoint(wire) {
         "Checkpoint must contain every state owner exactly once in canonical order",
         ["stateOwners", index, "ownerId"],
         { actual: owner.ownerId, expected: expectedOwnerId },
+      );
+    const expectedOwnerVersion =
+      CHECKPOINT_STATE_OWNER_VERSIONS[expectedOwnerId];
+    if (owner.ownerVersion !== expectedOwnerVersion)
+      fail(
+        "INVALID_CHECKPOINT_OWNER_VERSION",
+        "Checkpoint owner version must match the current owner contract",
+        ["stateOwners", index, "ownerVersion"],
+        { actual: owner.ownerVersion, expected: expectedOwnerVersion },
       );
     let payload;
     try {

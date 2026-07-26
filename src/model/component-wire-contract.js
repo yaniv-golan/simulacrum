@@ -3,7 +3,7 @@ import { componentDefaults } from "./component-resolver.js";
 import { isMechanismComponentType } from "./mechanism-component-definitions.js";
 
 const PROPERTY_SCHEMAS = Object.freeze({
-  mass: { type: "number", minimum: 0 },
+  mass: { type: "number", exclusiveMinimum: 0 },
   size: { $ref: "#/$defs/vector3" },
   gasVolumeSizeM: { $ref: "#/$defs/vector3" },
   payload: { type: "boolean" },
@@ -109,6 +109,16 @@ const PROPERTY_SCHEMAS = Object.freeze({
   ultimateTensionN: { type: "number", exclusiveMinimum: 0 },
   targetElementLengthM: { type: "number", exclusiveMinimum: 0 },
   materialKey: { $ref: "#/$defs/identifier" },
+  hubRadiusM: { type: "number", exclusiveMinimum: 0 },
+  hubThicknessM: { type: "number", exclusiveMinimum: 0 },
+  radiusM: { type: "number", exclusiveMinimum: 0 },
+  bladeCount: { type: "integer", minimum: 2, maximum: 8 },
+  bladeChordM: { type: "number", exclusiveMinimum: 0 },
+  fixedPitchDeg: { type: "number", minimum: 2, maximum: 35 },
+  handedness: { type: "integer", enum: [-1, 1] },
+  profileId: { $ref: "#/$defs/identifier" },
+  ratedRpm: { type: "number", exclusiveMinimum: 0 },
+  maximumRpm: { type: "number", exclusiveMinimum: 0 },
 });
 
 export function componentConfigKeys(type) {

@@ -21,6 +21,15 @@ const WIDGET_SELECTOR = [
   "[role='treeitem']",
 ].join(",");
 
+const BLOCKING_SURFACE_SELECTOR = [
+  '[role="dialog"][aria-modal="true"]',
+  '[role="menu"]',
+].join(",");
+
+function isExposed(element) {
+  return !element.closest('[hidden], [aria-hidden="true"], [inert], .hidden');
+}
+
 /**
  * Presentation-owned classification used by the application keyboard router.
  * Focused native and composite controls retain their browser/APG key behavior.
@@ -72,6 +81,28 @@ export function focusedWidgetOwnsKeyboardEvent(root, event) {
     "Home",
     "End",
   ].includes(event.key);
+}
+
+/**
+ * Resolves command ownership independently from the element holding DOM focus.
+ * Ordinary focused controls do not suppress machine-operation keys; semantic
+ * modal surfaces, menus, text entry, and capture mode do.
+ *
+ * @param {Document} root
+ * @param {{running?:boolean,captureActive?:boolean}} [state]
+ * @returns {"hotkey-capture"|"text-entry"|"blocking-surface"|"operation"|"workshop"}
+ */
+export function activeKeyboardInputContext(
+  root = document,
+  { running = false, captureActive = false } = {},
+) {
+  if (captureActive) return "hotkey-capture";
+  if (activeKeyboardFocusContext(root) === "text-entry") return "text-entry";
+  if (
+    Array.from(root.querySelectorAll(BLOCKING_SURFACE_SELECTOR)).some(isExposed)
+  )
+    return "blocking-surface";
+  return running ? "operation" : "workshop";
 }
 
 /** @param {Document} root */

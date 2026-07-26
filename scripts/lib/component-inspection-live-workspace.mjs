@@ -15,8 +15,10 @@ export function validateComponentInspectionLiveWorkspace({
   git,
   realpath = fs.realpathSync,
 }) {
-  if (profile !== "foundation")
-    throw new Error("S1 live verification requires --profile=foundation");
+  if (!["foundation", "routes"].includes(profile))
+    throw new Error(
+      "Component inspection live verification requires --profile=foundation|routes",
+    );
   if (!allowDirty && !/^[0-9a-f]{40}$/.test(candidate || ""))
     throw new Error("Live verification requires --candidate=<40-hex commit>");
 

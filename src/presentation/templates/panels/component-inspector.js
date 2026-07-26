@@ -32,7 +32,7 @@ export function createComponentInspectorTemplate() {
       <div class="status-row"><span>STATUS</span><b class="status">● READY</b></div>
       <div id="property-list"></div>
       <div id="load-monitor"></div>
-      <div class="ports"><h4>CONNECTION PORTS</h4><div id="port-list"></div></div>
+      <div class="ports"><h4>CONNECTION PORTS</h4><div id="port-list"></div><div id="configured-chain-list"></div></div>
       <div class="inspector-actions">
         <button id="duplicate-part" data-shortcut-action="selection.duplicate"><span class="action-label">DUPLICATE COMPONENT</span> <kbd data-shortcut-hint>C</kbd></button>
         <button id="mirror-selection"><span class="action-label">MIRROR COMPONENT</span></button>

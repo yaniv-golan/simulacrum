@@ -3,6 +3,10 @@ import { immutableClone } from "../model/primitives.js";
 import { isSensorPart } from "../model/sensor-contracts.js";
 import { componentHasControlContract } from "../model/component-contracts.js";
 import { powerContract } from "../model/actuator-contracts.js";
+import {
+  createRouteEvidenceIndex,
+  routeWitnessFromIndex,
+} from "./route-evidence-index.js";
 
 const stableId = (value) => `${typeof value}:${String(value)}`;
 const compareId = (left, right) =>
@@ -33,6 +37,7 @@ function directedEndpoints(connection, byId, catalog) {
     ["sink", "bidirectional"].includes(rightPort.direction)
   )
     directions.push({
+      connectionId: connection.id,
       sourceId: left.id,
       sourcePortId: connection.portA,
       targetId: right.id,
@@ -43,6 +48,7 @@ function directedEndpoints(connection, byId, catalog) {
     ["sink", "bidirectional"].includes(leftPort.direction)
   )
     directions.push({
+      connectionId: connection.id,
       sourceId: right.id,
       sourcePortId: connection.portB,
       targetId: left.id,
@@ -92,6 +98,7 @@ export class SignalNetwork {
   #sensorEndpointsByController = new Map();
   #controllersBySensor = new Map();
   #graphRevision = -1;
+  #evidenceIndex = null;
 
   constructor(catalog = {}) {
     this.#catalog = catalog;
@@ -195,7 +202,58 @@ export class SignalNetwork {
             .set(sensor.id, reachable.get(controller.id));
         }
     }
+    const evidenceEdges = [...outgoing.values()].flat().map((edge) => ({
+      connectionId: edge.connectionId,
+      from: { partId: edge.sourceId, portId: edge.sourcePortId },
+      to: { partId: edge.targetId, portId: edge.targetPortId },
+    }));
+    this.#evidenceIndex = createRouteEvidenceIndex({
+      medium: "signal",
+      runGraph,
+      edges: evidenceEdges,
+      sourcePartIds: [
+        ...controllers.map((controller) => controller.id),
+        ...this.#controllersBySensor.keys(),
+      ],
+      targetPartIds: [
+        ...this.#routesByTarget.keys(),
+        ...this.#sensorsByController.keys(),
+      ],
+      terminalPartIds: controllers.map((controller) => controller.id),
+      blockingConnectionIds: connections
+        .filter(
+          (connection) => connection.kind === "signal" && connection.failed,
+        )
+        .map((connection) => connection.id),
+      blockerEvidence: "known",
+      resultFacts: {
+        routes: [...this.#routesByTarget]
+          .sort(([left], [right]) => compareId(left, right))
+          .map(([targetId, controllerIds]) => ({
+            targetId,
+            controllerIds: [...controllerIds].sort(compareId),
+          })),
+        controllerSensors: [...this.#sensorsByController]
+          .sort(([left], [right]) => compareId(left, right))
+          .map(([controllerId, sensorIds]) => ({
+            controllerId,
+            sensorIds: [...sensorIds].sort(compareId),
+          })),
+      },
+    });
     return this;
+  }
+
+  evidenceIndex() {
+    return this.#evidenceIndex;
+  }
+
+  routeWitness(query, expectedNetworkResultDigest) {
+    return routeWitnessFromIndex(
+      this.#evidenceIndex,
+      query,
+      expectedNetworkResultDigest,
+    );
   }
 
   controllersForTarget(targetId) {

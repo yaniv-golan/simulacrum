@@ -17,6 +17,10 @@ export {
   displacedVolumeForPart,
 } from "../model/engineering-analysis.js";
 export { FailureRecorder, ReplayBuffer } from "../model/failure-analysis.js";
+export {
+  CHECKPOINT_STATE_OWNER_IDS,
+  CHECKPOINT_STATE_OWNER_VERSIONS,
+} from "../model/mechanism-artifact-identity.js";
 export { FailureEvent } from "../model/failure-event-extractors.js";
 export { ControllerTraceBuffer } from "../model/controller-debugger.js";
 export { SENSOR_PART_DEFINITIONS } from "../model/sensor-contracts.js";
@@ -202,6 +206,12 @@ export {
   pressureNozzlePerformance,
 } from "../model/pressure-nozzle-contracts.js";
 export { deriveDynamicMassProperties } from "../model/dynamic-mass-properties.js";
+export {
+  ROTOR_AERODYNAMIC_PROFILES,
+  rotorAerodynamicContract,
+  rotorAerodynamicPerformance,
+  validateRotorConfig,
+} from "../model/rotor-aerodynamics-contracts.js";
 export { wheelDriveMotorIds } from "../simulation/wheel-drive-topology.js";
 export { compileAssembly } from "../model/assembly-compiler.js";
 export {

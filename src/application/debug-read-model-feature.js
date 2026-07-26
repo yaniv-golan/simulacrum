@@ -16,6 +16,7 @@ import { pendingPlacementReadModel } from "./pending-placement-read-model.js";
 import { remoteActionTargetPartIds } from "../model/remote-actions.js";
 import { flexibleLineDebugReadModel } from "./flexible-line-debug-read-model.js";
 import { sensorRpmFromTelemetry as sensorRpm } from "../presentation/sensor-rpm-read-model.js";
+import * as workshopAxes from "../presentation/workshop-axis-presentation.js";
 /** Installs the stable automation/debug read models from explicit subsystem ports. */
 export function installDebugReadModelFeature({
   target,
@@ -74,6 +75,7 @@ export function installDebugReadModelFeature({
       lastTransformOperation: structuredClone(
         state.editor.lastTransformOperation,
       ),
+      transformGizmo: editor.transformGizmo(),
       marqueeSelection: editor.marqueeSelection(),
       exploded: {
         active: state.exploded,
@@ -182,7 +184,6 @@ export function installDebugReadModelFeature({
       })),
     });
   }
-
   function controllerReadModel() {
     const active = controller.active() || null,
       runtime = controllerTelemetry(),
@@ -209,11 +210,11 @@ export function installDebugReadModelFeature({
       debug: controller.trace(active?.id),
     });
   }
-
   installJsonTextReadModel(
     "render_game_to_text",
     () => ({
-      coordinateSystem: "meters, Y up, 0.25m move snap, 15deg rotation snap",
+      coordinateSystem: workshopAxes.workshopCoordinateSystemSummary(),
+      coordinateFrames: workshopAxes.workshopCoordinateFrames(),
       environment: environmentReadModel(),
       testingPlayground: testingPlayground.snapshot(),
       ...editorReadModel(),

@@ -25,6 +25,15 @@ export const CHECKPOINT_STATE_OWNER_IDS = Object.freeze([
   "telemetry-event-ids",
 ]);
 
+export const CHECKPOINT_STATE_OWNER_VERSIONS = Object.freeze(
+  Object.fromEntries(
+    CHECKPOINT_STATE_OWNER_IDS.map((ownerId) => [
+      ownerId,
+      ownerId === "material-resources" ? 2 : 1,
+    ]),
+  ),
+);
+
 export function mechanismArtifactFingerprint(kind, value) {
   return `sim-sha256-${sha256Hex(
     `simulacrum-mechanism-artifact-v1\0${kind}\0${stableStringify(value)}`,
@@ -50,7 +59,7 @@ export function checkpointStateDigest(input) {
     committed: input.committed,
     stateOwners: input.stateOwners,
   };
-  return sha256Hex(`simulacrum-checkpoint-state-v1\0${stableStringify(view)}`);
+  return sha256Hex(`simulacrum-checkpoint-state-v2\0${stableStringify(view)}`);
 }
 
 export function experimentManifestDigest(input) {

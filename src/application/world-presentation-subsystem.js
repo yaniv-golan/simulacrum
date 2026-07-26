@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { createEarthStreamer } from "../earth-stream.js";
 import { createAtmosphericLandmarks } from "../presentation/atmospheric-landmarks.js";
 import { createCameraInteractionController } from "../presentation/camera-interaction-controller.js";
+import { createWorkshopOrientationIndicator } from "../presentation/workshop-orientation-indicator.js";
 import {
   focusedEnvironmentObject,
   syncEnvironmentBodyObjects,
@@ -100,6 +101,10 @@ export function createWorldPresentationSubsystem({
       collisionRadius: 1,
     });
   cameraController.bindControls();
+  const orientationIndicator = createWorkshopOrientationIndicator({
+    root: view.query(".workshop-axis-indicator"),
+    camera: scene.camera,
+  });
 
   const streaming = createEarthStreamingController({
       streamer,
@@ -155,6 +160,10 @@ export function createWorldPresentationSubsystem({
     updateDetailLod(scene.camera.position.distanceTo(focus));
     worldEnvironment.update();
   };
+  const updateCamera = (dt) => {
+    cameraController.update(dt);
+    orientationIndicator.update();
+  };
 
   return Object.freeze({
     fieldEnvironment,
@@ -164,6 +173,7 @@ export function createWorldPresentationSubsystem({
     detailLodSnapshot,
     applyCapturePreset: worldEnvironment.applyCapturePreset,
     cameraController,
+    updateCamera,
     horizonEnvironment,
     streamer,
     updateEarth: streaming.update,

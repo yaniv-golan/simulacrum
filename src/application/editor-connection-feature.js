@@ -11,7 +11,9 @@ import {
   validatePortConnection,
 } from "../model/ports.js";
 import { createEditorConnection } from "./editor-connection-authoring.js";
+import { createEditorConnectionAssessment } from "./editor-connection-assessment.js";
 import { canonicalizeQuaternion } from "../model/primitives.js";
+import { createRelationshipTraceController } from "../presentation/relationship-trace-controller.js";
 
 /**
  * @typedef {{
@@ -73,6 +75,13 @@ import { canonicalizeQuaternion } from "../model/primitives.js";
  * }} ports
  */
 export function createEditorConnectionFeature({ workspace, history, view }) {
+  const assessTarget = createEditorConnectionAssessment({
+      workspace,
+      catalog: TYPES,
+    }),
+    relationshipTrace = createRelationshipTraceController({
+      wires: view.wires,
+    });
   const coordinateBehaviors = new Set([
     "rotary-coupling",
     "revolute-support",
@@ -351,6 +360,7 @@ export function createEditorConnectionFeature({ workspace, history, view }) {
   }
 
   function draw() {
+    relationshipTrace.clear();
     while (view.wires.children.length) {
       const child = view.wires.children[0];
       view.wires.remove(child);
@@ -398,9 +408,20 @@ export function createEditorConnectionFeature({ workspace, history, view }) {
           opacity: isValid ? 0.9 : 1,
         }),
       );
+      tube.userData.connectionId = connection.id;
+      tube.userData.connectionKind = connection.kind;
       view.wires.add(tube);
     }
   }
 
-  return Object.freeze({ connect, draw, isMechanicallyAnchored, valid });
+  return Object.freeze({
+    assessTarget,
+    clearRelationshipTrace: relationshipTrace.clear,
+    connect,
+    draw,
+    isMechanicallyAnchored,
+    showRelationshipTrace: relationshipTrace.show,
+    showRelationshipTraceSegments: relationshipTrace.showSegments,
+    valid,
+  });
 }

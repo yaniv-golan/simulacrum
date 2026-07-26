@@ -11,6 +11,13 @@
   immutable direct component-relationship and authored-preflight inspection
   APIs. These additive APIs are queued for the next minor `0.x` release; the
   source workspace remains `0.1.0` until that release transaction.
+- Adds deterministic endpoint-aware power, signal, and resource route evidence,
+  bounded live session tokens, and digest-matched owner queries without making
+  path witnesses into flow or controller-causality claims.
+- Advances the existing `material-resources` checkpoint owner to version 2 for
+  atomic allocation sequence/last-tick state and advances the checkpoint-state
+  digest domain. Pre-cutover owner-v1 checkpoints are intentionally rejected by
+  the strict current decoder; the top-level checkpoint remains version 1.
 - Adds the `flexible-line-v1` compiler/runtime contract, one-to-many physical
   entity ownership, tension-only constraints, strict Rope materials, completed
   telemetry, failure evidence, and exact checkpoint state.
@@ -19,6 +26,9 @@
   guided-trial evaluation.
 - Extends mobility telemetry with exact support-material identities and laws,
   soft-surface sinkage, and rolling-resistance multipliers.
+- Adds strict fixed-pitch rotor model/compiler/runtime contracts and exact
+  solver-row motor-energy settlement with checkpointed work, loss, heat, and
+  completed propulsion provenance.
 
 ## 0.1.0 - 2026-07-22
 

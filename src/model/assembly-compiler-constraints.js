@@ -148,6 +148,17 @@ function compileDriveLaw(velocityActuator, velocityDefinition) {
     ),
     maximumElectricalPowerW:
       Number(velocityActuator.config?.power ?? velocityDefinition.power) * 1000,
+    electricalEfficiency: Math.max(
+      0.01,
+      Math.min(
+        1,
+        Number(
+          velocityActuator.config?.electricalEfficiency ??
+            velocityDefinition.electricalEfficiency ??
+            0.92,
+        ),
+      ),
+    ),
   };
 }
 

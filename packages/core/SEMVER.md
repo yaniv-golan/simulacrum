@@ -22,3 +22,9 @@ telemetry, and checkpoint exports are an unreleased `0.x` minor-version feature.
 They extend the current version-1 envelopes in place and do not add a legacy or
 compatibility reader. The package remains `0.1.0` in the source workspace until
 an actual Core release transaction chooses and publishes the next minor.
+
+Endpoint-aware route evidence and `SimulationSession.routeEvidence()` are also
+queued for that unreleased next minor. The same transaction cuts the strict
+`material-resources` checkpoint owner from version 1 to version 2 and the state
+digest domain to `simulacrum-checkpoint-state-v2`; there is no compatibility
+reader, while the 19-owner set and checkpoint envelope version stay unchanged.

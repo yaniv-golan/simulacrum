@@ -36,10 +36,14 @@ The ownership boundary is intentional:
 | Authored decoder/projectors, fingerprint bytes/hash, direct relationship index, and authored preflight   | Reusable, DOM-free Core API     |
 | Selected inspection view model, existing-data observation adapters, and selected-context command catalog | Application-private composition |
 | Inspector markup, focus, editable controls, and action event binding                                     | Presentation-only               |
+| Network route index/digest and bounded owner witness                                                     | Reusable, DOM-free Core API     |
+| Live opaque-token archive, route overlay, and progressive port actions                                   | Session/presentation private    |
 
 Application and presentation records are not exported from Core. Resolved
 power/signal reachability and physical outcomes remain owner-supplied evidence;
 the direct relationship index never upgrades adjacency into a causal claim.
+See [`route-evidence.mjs`](../examples/core-extensions/route-evidence.mjs) for
+the digest-matched owner query. Do not reconstruct routes from raw connections.
 
 ## Port behavior
 

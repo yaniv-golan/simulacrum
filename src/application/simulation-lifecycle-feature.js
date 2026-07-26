@@ -1,4 +1,3 @@
-import { SimulationSession } from "../simulation/simulation-session.js";
 import { startMultibodyRuntime } from "../simulation/multibody-runtime.js";
 import { FlexibleLineRuntime } from "../simulation/flexible-line-runtime.js";
 import { fingerprintAsset } from "../model/portable-asset-identity.js";
@@ -7,10 +6,7 @@ import { PhysicalAssemblyIndex } from "../simulation/physical-assembly-index.js"
 import { TerrainCollisionStream } from "../simulation/environment/terrain-collision-stream.js";
 import { WATER_DENSITY } from "../simulation/environment/earth.js";
 import { createRunEvidenceLifecycle } from "./run-evidence-lifecycle.js";
-import {
-  captureProductionSystemTelemetry,
-  createProductionSimulationSystems,
-} from "./simulation-system-composition.js";
+import { startProductionSimulationSession } from "./production-simulation-session.js";
 
 export { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
 
@@ -36,12 +32,9 @@ export { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
  *   timeOfDay:number, windEnabled:boolean,
  * }} SimulationRunPort
  * @typedef {{
- *   baseline:unknown, session:SimulationSession|null,
+ *   baseline:unknown, session:import("../simulation/simulation-session.js").SimulationSession|null,
  *   telemetry:ReturnType<typeof import("../simulation/telemetry.js").createTelemetrySnapshot>,
- *   physicalFlightModel:object|null,
- *   aerodynamicForceOwner:object|null,
- *   aerothermalAblationOwner:object|null,
- *   physicalFlightTelemetry:object|null,
+ *   physicalFlightModel:object|null, aerodynamicForceOwner:object|null, rotorForceOwner:object|null, heatInputCollector:object|null, aerothermalAblationOwner:object|null, physicalFlightTelemetry:object|null,
  *   physicalAssemblyIndex:PhysicalAssemblyIndex|null,
  *   multibodyRuntime:ReturnType<typeof startMultibodyRuntime>|null,
  *   flexibleLineRuntime:FlexibleLineRuntime|null,
@@ -103,7 +96,7 @@ export { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
  *   attachPartToMachine:(part:SimulationPart)=>void,
  *   syncLargeAssembly:(parts:SimulationPart[])=>void, drawWires:()=>void,
  *   resetCameraTarget:()=>void,
- *   clearTestSiteEffects:()=>void,
+ *   clearTestSiteEffects:()=>void, commitPendingEditorTransform:(reason?:string)=>boolean,
  *   beginTestCourseAttempt:()=>void, finishTestCourseAttempt:()=>void,
  * }} SimulationPresentationPort
  */
@@ -130,17 +123,18 @@ export function createSimulationLifecycleFeature({
   presentation,
 }) {
   let runEvidence = null;
-
   function destroyFlightPhysics() {
     runtime.physicalFlightModel?.dispose();
     runtime.physicalFlightModel = null;
-    runtime.aerodynamicForceOwner = null;
+    runtime.aerodynamicForceOwner =
+      runtime.rotorForceOwner =
+      runtime.heatInputCollector =
+        null;
     runtime.aerothermalAblationOwner = null;
     runtime.physicalFlightTelemetry = null;
     runtime.physicalAssemblyIndex = null;
     presentation.aerothermal.dispose();
   }
-
   function createFlightPhysics() {
     destroyFlightPhysics();
     for (const part of run.parts) {
@@ -162,8 +156,8 @@ export function createSimulationLifecycleFeature({
     );
     presentation.aerothermal.prepare();
   }
-
   async function start(preserveBaseline = false) {
+    presentation.commitPendingEditorTransform("simulation-start");
     if (!preserveBaseline) runtime.baseline = assembly.captureBuild();
     if (!run.parts.length) return presentation.notify("Add a component first");
     if (run.activeChallenge) {
@@ -292,40 +286,25 @@ export function createSimulationLifecycleFeature({
       controllers,
       run,
     });
-    runtime.session = new SimulationSession({
-      systems: createProductionSimulationSystems(
-        runtime.multibodyRuntime.compiled,
-      ),
-    }).start(assembly.snapshot(), {
-      world: physics.world,
-      worldAdapter: physics.worldAdapter,
-      catalog: physics.catalog,
-      readSensors: controllers.captureSensors,
-      tickControllers: controllers.tick,
-      readCommandCandidates: controllers.readCommandCandidates,
-      inputTraceRecorder: runEvidence.inputTraceRecorder,
-      controllerTelemetry: controllers.telemetry,
-      resolveChallengeBinding: challenges.resolveBinding,
-      aerodynamicForceOwner: runtime.aerodynamicForceOwner,
-      aerothermalAblationOwner: runtime.aerothermalAblationOwner,
-      physicalFlightTelemetry: runtime.physicalFlightTelemetry,
-      physicalAssemblyIndex: runtime.physicalAssemblyIndex,
-      multibodyRuntime: runtime.multibodyRuntime,
-      flexibleLineRuntime: runtime.flexibleLineRuntime,
-      testSite: physics.testSite,
-      testCourseSelection: physics.testCourseSelection,
-      surfaceSampleAt: physics.surfaceSampleAt,
-      compiledAssembly: runtime.multibodyRuntime.compiled,
-      environmentBodyRegistry: physics.environmentBodyRegistry,
-      environmentOrigin: physics.environmentOrigin,
-      windEnabled: run.windEnabled,
-      pondAt: physics.pondAt,
-      captureTelemetry: captureProductionSystemTelemetry,
-      connectionValid: assembly.connectionValid,
-      partMass: (part) => physics.catalog[part.type]?.mass || 0,
-    });
-    runtime.telemetry = runtime.session.telemetry();
-    runEvidence.commit(runtime.multibodyRuntime.compiled);
+    runEvidence.prepare(runtime.multibodyRuntime.compiled);
+    try {
+      runtime.session = startProductionSimulationSession({
+        compiled: runtime.multibodyRuntime.compiled,
+        snapshot: assembly.snapshot(),
+        runtime,
+        physics,
+        controllers,
+        challenges,
+        assembly,
+        run,
+        runEvidence,
+      });
+      runtime.telemetry = runtime.session.telemetry();
+    } catch (error) {
+      runtime.session = null;
+      runEvidence = null;
+      throw error;
+    }
     presentation.clearSelection();
     presentation.render();
     presentation.notify(

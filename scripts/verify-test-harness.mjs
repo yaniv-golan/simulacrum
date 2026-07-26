@@ -37,12 +37,16 @@ assert.deepEqual(selectVerificationChecks(VERIFICATION_CHECKS, ""), [
   ...VERIFICATION_CHECKS,
 ]);
 assert.deepEqual(Object.keys(VERIFICATION_TIMEOUT_MS), [
+  "verify-mechanism-sharing-proof.mjs",
+  "verify-blueprint-roundtrip.mjs",
   "verify-blueprint-exchange.mjs",
   "verify-editor-tools.mjs",
+  "verify-transform-gizmo-lifecycle-browser.mjs",
   "verify-failure-analysis.mjs",
   "verify-testing-playground-browser.mjs",
   "verify-ui-baseline-fixtures.mjs",
   "verify-component-authored-carriers-browser.mjs",
+  "verify-keyboard-workflows.mjs",
 ]);
 assert.ok(
   Object.entries(VERIFICATION_TIMEOUT_MS).every(
@@ -505,6 +509,23 @@ assert.equal(
     git: liveGit(),
   }).authoritative,
   true,
+);
+assert.equal(
+  validateComponentInspectionLiveWorkspace({
+    ...liveOptions,
+    profile: "routes",
+    git: liveGit(),
+  }).authoritative,
+  true,
+);
+assert.throws(
+  () =>
+    validateComponentInspectionLiveWorkspace({
+      ...liveOptions,
+      profile: "observation",
+      git: liveGit(),
+    }),
+  /foundation\|routes/,
 );
 assert.throws(
   () =>

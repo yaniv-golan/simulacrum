@@ -195,20 +195,7 @@ export function createAssemblyEditorFeature({
       workspace.selectedEntity?.kind === "connection" &&
       workspace.selectedEntity.connectionId
     ) {
-      const connectionId = workspace.selectedEntity.connectionId,
-        retained = workspace.connections.filter(
-          (connection) => connection.id !== connectionId,
-        );
-      if (retained.length === workspace.connections.length) return;
-      history.record("delete connection");
-      workspace.connections = retained;
-      view.syncAssembly();
-      view.select([], null);
-      view.showSelection(null);
-      view.drawConnections();
-      view.render();
-      view.notify(`Deleted connection ${connectionId}`);
-      return;
+      return disconnectConnection(workspace.selectedEntity.connectionId);
     }
     const ids = new Set(
       workspace.selectedIds.size
@@ -252,17 +239,49 @@ export function createAssemblyEditorFeature({
     );
   }
 
+  function disconnectConnection(connectionId) {
+    if (workspace.running) return false;
+    const connection = workspace.connections.find(
+      (candidate) => candidate.id === connectionId,
+    );
+    if (!connection) return false;
+    history.record("delete connection");
+    workspace.connections = workspace.connections.filter(
+      (candidate) => candidate.id !== connectionId,
+    );
+    view.syncAssembly();
+    if (
+      workspace.selectedEntity?.kind === "connection" &&
+      workspace.selectedEntity.connectionId === connectionId
+    ) {
+      const selectedPart = workspace.parts.find(
+        (part) => part.id === workspace.selectedId,
+      );
+      view.select(
+        selectedPart ? [selectedPart.id] : [],
+        selectedPart?.id ?? null,
+      );
+      view.showSelection(selectedPart || null);
+    }
+    view.drawConnections();
+    view.render();
+    view.notify(
+      `Disconnected #${connection.a}:${connection.portA || "?"} from #${connection.b}:${connection.portB || "?"}`,
+    );
+    return true;
+  }
+
   function clearBuildPlate() {
     if (workspace.running) {
-      view.notify("Stop simulation before clearing the build plate");
+      view.notify("Stop simulation before clearing the workbench");
       return;
     }
     if (!workspace.parts.length) {
-      view.notify("Build plate is already clear");
+      view.notify("Workbench is already clear");
       return;
     }
     const partCount = workspace.parts.length;
-    history.record("clear build plate");
+    history.record("clear workbench");
     workspace.activeChallenge = null;
     workspace.challengeStatus = "idle";
     workspace.challengeStartMode = null;
@@ -272,7 +291,7 @@ export function createAssemblyEditorFeature({
     clear();
     view.setMode("build");
     view.setMission(
-      "BUILD PLATE CLEAR",
+      "WORKBENCH CLEAR",
       "Choose components from the library or load a saved blueprint.",
     );
     view.notify(`Cleared ${partCount} components · Undo is available`);
@@ -317,6 +336,7 @@ export function createAssemblyEditorFeature({
         typeof committed === "function" ? committed : () => {};
     },
     duplicate: transforms.duplicate,
+    disconnectConnection,
     mirror: transforms.mirror,
     removeSelection,
     selectAll,

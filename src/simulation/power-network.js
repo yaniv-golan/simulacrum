@@ -4,6 +4,10 @@ import {
   powerContract,
   sourcePowerContract,
 } from "../model/actuator-contracts.js";
+import {
+  createRouteEvidenceIndex,
+  routeWitnessFromIndex,
+} from "./route-evidence-index.js";
 
 const stableId = (value) => `${typeof value}:${String(value)}`;
 const compareId = (left, right) =>
@@ -56,6 +60,23 @@ function powerComponents(parts, connections, catalog) {
   return { byId, components };
 }
 
+function powerEvidenceEdges(connections, byId, catalog) {
+  return connections
+    .filter((connection) => validPowerConnection(connection, byId, catalog))
+    .flatMap((connection) => [
+      {
+        connectionId: connection.id,
+        from: { partId: connection.a, portId: connection.portA },
+        to: { partId: connection.b, portId: connection.portB },
+      },
+      {
+        connectionId: connection.id,
+        from: { partId: connection.b, portId: connection.portB },
+        to: { partId: connection.a, portId: connection.portA },
+      },
+    ]);
+}
+
 /**
  * One fixed-tick electrical allocation over the authoritative run graph.
  * Allocation is deterministic and pro rata under shortage. Actual energy is
@@ -69,6 +90,7 @@ export class PowerNetwork {
   #sources = new Map();
   #powered = new Set();
   #graphRevision = -1;
+  #evidenceIndex = null;
 
   constructor(catalog = {}) {
     this.#catalog = catalog;
@@ -83,7 +105,12 @@ export class PowerNetwork {
     this.#graphRevision = runGraph.graphRevision;
     const parts = runGraph.parts(),
       connections = runGraph.connections(),
-      { byId, components } = powerComponents(parts, connections, this.#catalog);
+      { byId, components } = powerComponents(parts, connections, this.#catalog),
+      declaredSourcePartIds = parts
+        .filter(
+          (part) => !part.detached && sourcePowerContract(part, this.#catalog),
+        )
+        .map((part) => part.id);
 
     for (const ids of components) {
       const sources = ids
@@ -189,7 +216,45 @@ export class PowerNetwork {
     for (const record of this.#consumers.values())
       if (record.baselineW > 0)
         this.drawPower(record.id, record.baselineW, this.#fixedDt);
+    this.#evidenceIndex = createRouteEvidenceIndex({
+      medium: "power",
+      runGraph,
+      edges: powerEvidenceEdges(connections, byId, this.#catalog),
+      sourcePartIds: declaredSourcePartIds,
+      targetPartIds: [...this.#consumers.keys()],
+      blockingConnectionIds: connections
+        .filter(
+          (connection) => connection.kind === "power" && connection.failed,
+        )
+        .map((connection) => connection.id),
+      blockerEvidence: "known",
+      resultFacts: {
+        poweredPartIds: [...this.#powered].sort(compareId),
+        declaredSources: declaredSourcePartIds.sort(compareId),
+        availableSources: [...this.#sources.keys()].sort(compareId),
+        consumers: [...this.#consumers.values()]
+          .sort((left, right) => compareId(left.id, right.id))
+          .map(({ id, requestedW, allocatedW, minimumW }) => ({
+            id,
+            requestedW,
+            allocatedW,
+            minimumW,
+          })),
+      },
+    });
     return this;
+  }
+
+  evidenceIndex() {
+    return this.#evidenceIndex;
+  }
+
+  routeWitness(query, expectedNetworkResultDigest) {
+    return routeWitnessFromIndex(
+      this.#evidenceIndex,
+      query,
+      expectedNetworkResultDigest,
+    );
   }
 
   isPowered(partId) {
@@ -200,6 +265,7 @@ export class PowerNetwork {
     const record = this.#consumers.get(partId);
     return record
       ? immutableClone({
+          allocationId: `power-allocation:${this.#graphRevision}:${String(partId)}`,
           requestedW: record.requestedW,
           allocatedW: record.allocatedW,
           deliveredW: record.deliveredW,

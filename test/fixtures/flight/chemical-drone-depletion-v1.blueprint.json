@@ -1,0 +1,1511 @@
+{
+  "format": "simulacrum-blueprint",
+  "version": 1,
+  "name": "Chemical drone depletion predecessor",
+  "created": "1970-01-01T00:00:00.000Z",
+  "parts": [
+    {
+      "id": 1,
+      "type": "plate",
+      "pos": [0, 1.35, 0],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 22,
+        "size": [2.4, 0.18, 2.4]
+      }
+    },
+    {
+      "id": 2,
+      "type": "beam",
+      "pos": [-0.675, 1.45, -0.675],
+      "orientation": [0, 0.9238795325112867, 0, 0.38268343236508984],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 18,
+        "size": [2.4, 0.35, 0.35]
+      }
+    },
+    {
+      "id": 3,
+      "type": "beam",
+      "pos": [0.675, 1.45, -0.675],
+      "orientation": [0, 0.3826834323650898, 0, 0.9238795325112867],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 18,
+        "size": [2.4, 0.35, 0.35]
+      }
+    },
+    {
+      "id": 4,
+      "type": "beam",
+      "pos": [-0.675, 1.45, 0.675],
+      "orientation": [0, -0.9238795325112867, 0, 0.38268343236508984],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 18,
+        "size": [2.4, 0.35, 0.35]
+      }
+    },
+    {
+      "id": 5,
+      "type": "beam",
+      "pos": [0.675, 1.45, 0.675],
+      "orientation": [0, -0.3826834323650898, 0, 0.9238795325112867],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 18,
+        "size": [2.4, 0.35, 0.35]
+      }
+    },
+    {
+      "id": 6,
+      "type": "battery",
+      "pos": [0, 1.9, 0],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 24,
+        "size": [0.75, 1, 0.55],
+        "capacityWh": 100,
+        "maxOutputWatts": 50000,
+        "dischargeEfficiency": 0.96
+      },
+      "storedEnergyWh": 100
+    },
+    {
+      "id": 7,
+      "type": "computer",
+      "pos": [0, 2.45, 0],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 8,
+        "size": [0.8, 0.32, 0.9],
+        "channel": "A",
+        "electricalEfficiency": 0.92
+      },
+      "scriptLanguage": "typescript",
+      "scriptSources": {
+        "visual": {
+          "version": 1,
+          "name": "New controller",
+          "nodes": [],
+          "links": []
+        },
+        "typescript": "type InputBinding =\n  | 'pilot.collective' | 'pilot.yaw' | 'pilot.pitch' | 'pilot.roll'\n  | 'pilot.altitude_hold' | 'nav.altitude'\n  | 'imu.roll' | 'imu.pitch' | 'imu.yaw'\n  | 'imu.rate_x' | 'imu.rate_y' | 'imu.rate_z';\ntype OutputBinding =\n  | 'engine.0.throttle' | 'engine.1.throttle'\n  | 'engine.2.throttle' | 'engine.3.throttle'\n  | 'gimbal.0.target' | 'gimbal.1.target'\n  | 'gimbal.2.target' | 'gimbal.3.target';\n\ninterface ControlAPI {\n  read(binding: InputBinding): number;\n  write(binding: OutputBinding, value: number): void;\n}\n\nlet holdAltitude = 0;\nlet previousAltitude = 0;\nlet holdWasEnabled = 0;\n\nfunction clamp01(value: number): number {\n  return Math.max(0, Math.min(1, value));\n}\n\nfunction clampSigned(value: number): number {\n  return Math.max(-1, Math.min(1, value));\n}\n\nconst attitudeProportionalPerDeg = 0.012;\nconst angularDampingPerRadS = 0.65;\nconst mixerAuthority = 0.25;\n\n// This is ordinary player-editable controller code. It reads only bound\n// receivers and sensors and writes each physical engine/gimbal independently.\nfunction tick(api: ControlAPI, dt: number): void {\n  const altitude = api.read('nav.altitude');\n  const holdEnabled = api.read('pilot.altitude_hold');\n  if (holdEnabled > 0.5 && holdWasEnabled <= 0.5) {\n    holdAltitude = altitude;\n  }\n\n  const verticalSpeed = dt > 0 ? (altitude - previousAltitude) / dt : 0;\n  let base = clamp01(api.read('pilot.collective'));\n  if (holdEnabled > 0.5) {\n    base = clamp01(\n      0.52 + (holdAltitude - altitude) * 0.04 - verticalSpeed * 0.08,\n    );\n  }\n\n  const pitchError =\n    api.read('pilot.pitch') * 20 - api.read('imu.pitch');\n  const rollError = api.read('pilot.roll') * 20 - api.read('imu.roll');\n  const pitchMix = clampSigned(\n    pitchError * attitudeProportionalPerDeg -\n      api.read('imu.rate_x') * angularDampingPerRadS,\n  ) * mixerAuthority;\n  const rollMix = clampSigned(\n    rollError * attitudeProportionalPerDeg -\n      api.read('imu.rate_z') * angularDampingPerRadS,\n  ) * mixerAuthority;\n  const yawMix = clampSigned(\n    api.read('pilot.yaw') - api.read('imu.rate_y') * 0.35,\n  );\n\n  api.write('engine.0.throttle', clamp01(base + pitchMix - rollMix));\n  api.write('engine.1.throttle', clamp01(base + pitchMix + rollMix));\n  api.write('engine.2.throttle', clamp01(base - pitchMix - rollMix));\n  api.write('engine.3.throttle', clamp01(base - pitchMix + rollMix));\n  api.write('gimbal.0.target', yawMix);\n  api.write('gimbal.1.target', -yawMix);\n  api.write('gimbal.2.target', -yawMix);\n  api.write('gimbal.3.target', yawMix);\n\n  previousAltitude = altitude;\n  holdWasEnabled = holdEnabled;\n}",
+        "wat": ""
+      },
+      "controllerBindings": [
+        {
+          "id": "pilot.collective",
+          "direction": "input",
+          "endpointPartId": 11,
+          "endpointPortId": "SIGNAL",
+          "reading": "command"
+        },
+        {
+          "id": "pilot.yaw",
+          "direction": "input",
+          "endpointPartId": 12,
+          "endpointPortId": "SIGNAL",
+          "reading": "command"
+        },
+        {
+          "id": "pilot.pitch",
+          "direction": "input",
+          "endpointPartId": 13,
+          "endpointPortId": "SIGNAL",
+          "reading": "command"
+        },
+        {
+          "id": "pilot.roll",
+          "direction": "input",
+          "endpointPartId": 14,
+          "endpointPortId": "SIGNAL",
+          "reading": "command"
+        },
+        {
+          "id": "pilot.altitude_hold",
+          "direction": "input",
+          "endpointPartId": 15,
+          "endpointPortId": "SIGNAL",
+          "reading": "command"
+        },
+        {
+          "id": "nav.altitude",
+          "direction": "input",
+          "endpointPartId": 9,
+          "endpointPortId": "SIGNAL",
+          "reading": "altitude"
+        },
+        {
+          "id": "imu.roll",
+          "direction": "input",
+          "endpointPartId": 8,
+          "endpointPortId": "SIGNAL",
+          "reading": "imu_roll_deg"
+        },
+        {
+          "id": "imu.pitch",
+          "direction": "input",
+          "endpointPartId": 8,
+          "endpointPortId": "SIGNAL",
+          "reading": "imu_pitch_deg"
+        },
+        {
+          "id": "imu.yaw",
+          "direction": "input",
+          "endpointPartId": 8,
+          "endpointPortId": "SIGNAL",
+          "reading": "imu_yaw_deg"
+        },
+        {
+          "id": "imu.rate_x",
+          "direction": "input",
+          "endpointPartId": 8,
+          "endpointPortId": "SIGNAL",
+          "reading": "imu_rate_x"
+        },
+        {
+          "id": "imu.rate_y",
+          "direction": "input",
+          "endpointPartId": 8,
+          "endpointPortId": "SIGNAL",
+          "reading": "imu_rate_y"
+        },
+        {
+          "id": "imu.rate_z",
+          "direction": "input",
+          "endpointPartId": 8,
+          "endpointPortId": "SIGNAL",
+          "reading": "imu_rate_z"
+        },
+        {
+          "id": "engine.0.throttle",
+          "direction": "output",
+          "endpointPartId": 20,
+          "endpointPortId": "SIGNAL",
+          "channel": "throttle"
+        },
+        {
+          "id": "engine.1.throttle",
+          "direction": "output",
+          "endpointPartId": 21,
+          "endpointPortId": "SIGNAL",
+          "channel": "throttle"
+        },
+        {
+          "id": "engine.2.throttle",
+          "direction": "output",
+          "endpointPartId": 22,
+          "endpointPortId": "SIGNAL",
+          "channel": "throttle"
+        },
+        {
+          "id": "engine.3.throttle",
+          "direction": "output",
+          "endpointPartId": 23,
+          "endpointPortId": "SIGNAL",
+          "channel": "throttle"
+        },
+        {
+          "id": "gimbal.0.target",
+          "direction": "output",
+          "endpointPartId": 16,
+          "endpointPortId": "CONTROL",
+          "channel": "joint_target"
+        },
+        {
+          "id": "gimbal.1.target",
+          "direction": "output",
+          "endpointPartId": 17,
+          "endpointPortId": "CONTROL",
+          "channel": "joint_target"
+        },
+        {
+          "id": "gimbal.2.target",
+          "direction": "output",
+          "endpointPartId": 18,
+          "endpointPortId": "CONTROL",
+          "channel": "joint_target"
+        },
+        {
+          "id": "gimbal.3.target",
+          "direction": "output",
+          "endpointPartId": 19,
+          "endpointPortId": "CONTROL",
+          "channel": "joint_target"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "imu",
+      "pos": [0, 2.82, 0],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 2,
+        "size": [0.5, 0.18, 0.5],
+        "channel": "IMU",
+        "readings": [
+          "imu_roll_deg",
+          "imu_pitch_deg",
+          "imu_yaw_deg",
+          "imu_rate_x",
+          "imu_rate_y",
+          "imu_rate_z",
+          "imu_accel_x",
+          "imu_accel_y",
+          "imu_accel_z"
+        ],
+        "electricalEfficiency": 0.92
+      }
+    },
+    {
+      "id": 9,
+      "type": "navsensor",
+      "pos": [0.62, 2.42, 0],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 3.5,
+        "size": [0.55, 0.2, 0.55],
+        "readings": [
+          "altitude",
+          "speed",
+          "position_x",
+          "position_z",
+          "velocity_x",
+          "velocity_z",
+          "wind_x",
+          "wind_z"
+        ],
+        "electricalEfficiency": 0.92
+      }
+    },
+    {
+      "id": 10,
+      "type": "propellanttank",
+      "pos": [0, 2.25, 0],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 68,
+        "size": [1.2, 2.4, 1.2],
+        "capacityKg": 80,
+        "initialUsableMassKg": 80
+      }
+    },
+    {
+      "id": 11,
+      "type": "receiver",
+      "pos": [-0.85, 1.82, -0.5],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 2.5,
+        "size": [0.5, 0.22, 0.5],
+        "channel": "command",
+        "readings": ["command"],
+        "electricalEfficiency": 0.92
+      }
+    },
+    {
+      "id": 12,
+      "type": "receiver",
+      "pos": [-0.43, 1.82, -0.5],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 2.5,
+        "size": [0.5, 0.22, 0.5],
+        "channel": "command",
+        "readings": ["command"],
+        "electricalEfficiency": 0.92
+      }
+    },
+    {
+      "id": 13,
+      "type": "receiver",
+      "pos": [0, 1.82, -0.5],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 2.5,
+        "size": [0.5, 0.22, 0.5],
+        "channel": "command",
+        "readings": ["command"],
+        "electricalEfficiency": 0.92
+      }
+    },
+    {
+      "id": 14,
+      "type": "receiver",
+      "pos": [0.43, 1.82, -0.5],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 2.5,
+        "size": [0.5, 0.22, 0.5],
+        "channel": "command",
+        "readings": ["command"],
+        "electricalEfficiency": 0.92
+      }
+    },
+    {
+      "id": 15,
+      "type": "receiver",
+      "pos": [0.85, 1.82, -0.5],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 2.5,
+        "size": [0.5, 0.22, 0.5],
+        "channel": "command",
+        "readings": ["command"],
+        "electricalEfficiency": 0.92
+      }
+    },
+    {
+      "id": 16,
+      "type": "hinge",
+      "pos": [-1.35, 1.68, -1.35],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "mechanism": {
+        "format": "simulacrum-authored-mechanism-component",
+        "version": 1,
+        "componentType": "hinge",
+        "dimensionalScalingPolicy": {
+          "kind": "fixed-authored-size-v1"
+        },
+        "massPropertySource": {
+          "kind": "explicit-tensor-v1",
+          "massKg": 9,
+          "comPositionPartM": [0, 0, 0],
+          "inertiaTensorAtComPartKgM2": {
+            "xx": 0.05430000000000001,
+            "yy": 0.10110000000000001,
+            "zz": 0.10680000000000002,
+            "xy": 0,
+            "xz": 0,
+            "yz": 0
+          }
+        },
+        "collisionRegions": [
+          {
+            "key": "housing",
+            "localFramePart": {
+              "positionM": [0, 0, 0],
+              "orientation": [0, 0, 0, 1]
+            },
+            "geometry": {
+              "kind": "box-v1",
+              "fullSizeM": [0.32, 0.2, 0.18]
+            },
+            "materialKey": "workshop-steel",
+            "contactRole": "structure"
+          }
+        ],
+        "config": {
+          "frameA": {
+            "positionM": [0, 0, 0],
+            "orientation": [0, 0, 0, 1]
+          },
+          "frameB": {
+            "positionM": [0, 0, 0],
+            "orientation": [0, 0, 0, 1]
+          },
+          "freeAxis": "local-positive-z-v1",
+          "angleRangeRad": {
+            "lower": -1.5707963267948966,
+            "upper": 1.5707963267948966
+          },
+          "lowerHardImpactLaw": {
+            "kind": "perfectly-inelastic-v1"
+          },
+          "upperHardImpactLaw": {
+            "kind": "perfectly-inelastic-v1"
+          },
+          "lowerStop": null,
+          "upperStop": null,
+          "friction": {
+            "kind": "coulomb-viscous-v1",
+            "coulombTorqueNm": 0,
+            "viscousNms": 8
+          },
+          "actuation": {
+            "kind": "position-impedance-v1",
+            "commandRangeRad": {
+              "lower": -1.5707963267948966,
+              "upper": 1.5707963267948966
+            },
+            "stiffnessNmPerRad": 600,
+            "dampingNmsPerRad": 48,
+            "maximumTorqueNm": 120,
+            "maximumSpeedRadPerS": 4,
+            "powerLaw": {
+              "maximumMechanicalMotoringPowerW": 480,
+              "electricalMotoringEfficiency": 0.92,
+              "idlePowerW": 4,
+              "regeneration": "unsupported-dissipate-v1"
+            },
+            "thermalLimits": {
+              "thermalMassJPerK": 3000,
+              "ambientConductanceWPerK": 10,
+              "derateTemperatureK": 390,
+              "shutdownTemperatureK": 430
+            }
+          },
+          "failureLoadLaw": null
+        }
+      }
+    },
+    {
+      "id": 17,
+      "type": "hinge",
+      "pos": [1.35, 1.68, -1.35],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "mechanism": {
+        "format": "simulacrum-authored-mechanism-component",
+        "version": 1,
+        "componentType": "hinge",
+        "dimensionalScalingPolicy": {
+          "kind": "fixed-authored-size-v1"
+        },
+        "massPropertySource": {
+          "kind": "explicit-tensor-v1",
+          "massKg": 9,
+          "comPositionPartM": [0, 0, 0],
+          "inertiaTensorAtComPartKgM2": {
+            "xx": 0.05430000000000001,
+            "yy": 0.10110000000000001,
+            "zz": 0.10680000000000002,
+            "xy": 0,
+            "xz": 0,
+            "yz": 0
+          }
+        },
+        "collisionRegions": [
+          {
+            "key": "housing",
+            "localFramePart": {
+              "positionM": [0, 0, 0],
+              "orientation": [0, 0, 0, 1]
+            },
+            "geometry": {
+              "kind": "box-v1",
+              "fullSizeM": [0.32, 0.2, 0.18]
+            },
+            "materialKey": "workshop-steel",
+            "contactRole": "structure"
+          }
+        ],
+        "config": {
+          "frameA": {
+            "positionM": [0, 0, 0],
+            "orientation": [0, 0, 0, 1]
+          },
+          "frameB": {
+            "positionM": [0, 0, 0],
+            "orientation": [0, 0, 0, 1]
+          },
+          "freeAxis": "local-positive-z-v1",
+          "angleRangeRad": {
+            "lower": -1.5707963267948966,
+            "upper": 1.5707963267948966
+          },
+          "lowerHardImpactLaw": {
+            "kind": "perfectly-inelastic-v1"
+          },
+          "upperHardImpactLaw": {
+            "kind": "perfectly-inelastic-v1"
+          },
+          "lowerStop": null,
+          "upperStop": null,
+          "friction": {
+            "kind": "coulomb-viscous-v1",
+            "coulombTorqueNm": 0,
+            "viscousNms": 8
+          },
+          "actuation": {
+            "kind": "position-impedance-v1",
+            "commandRangeRad": {
+              "lower": -1.5707963267948966,
+              "upper": 1.5707963267948966
+            },
+            "stiffnessNmPerRad": 600,
+            "dampingNmsPerRad": 48,
+            "maximumTorqueNm": 120,
+            "maximumSpeedRadPerS": 4,
+            "powerLaw": {
+              "maximumMechanicalMotoringPowerW": 480,
+              "electricalMotoringEfficiency": 0.92,
+              "idlePowerW": 4,
+              "regeneration": "unsupported-dissipate-v1"
+            },
+            "thermalLimits": {
+              "thermalMassJPerK": 3000,
+              "ambientConductanceWPerK": 10,
+              "derateTemperatureK": 390,
+              "shutdownTemperatureK": 430
+            }
+          },
+          "failureLoadLaw": null
+        }
+      }
+    },
+    {
+      "id": 18,
+      "type": "hinge",
+      "pos": [-1.35, 1.68, 1.35],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "mechanism": {
+        "format": "simulacrum-authored-mechanism-component",
+        "version": 1,
+        "componentType": "hinge",
+        "dimensionalScalingPolicy": {
+          "kind": "fixed-authored-size-v1"
+        },
+        "massPropertySource": {
+          "kind": "explicit-tensor-v1",
+          "massKg": 9,
+          "comPositionPartM": [0, 0, 0],
+          "inertiaTensorAtComPartKgM2": {
+            "xx": 0.05430000000000001,
+            "yy": 0.10110000000000001,
+            "zz": 0.10680000000000002,
+            "xy": 0,
+            "xz": 0,
+            "yz": 0
+          }
+        },
+        "collisionRegions": [
+          {
+            "key": "housing",
+            "localFramePart": {
+              "positionM": [0, 0, 0],
+              "orientation": [0, 0, 0, 1]
+            },
+            "geometry": {
+              "kind": "box-v1",
+              "fullSizeM": [0.32, 0.2, 0.18]
+            },
+            "materialKey": "workshop-steel",
+            "contactRole": "structure"
+          }
+        ],
+        "config": {
+          "frameA": {
+            "positionM": [0, 0, 0],
+            "orientation": [0, 0, 0, 1]
+          },
+          "frameB": {
+            "positionM": [0, 0, 0],
+            "orientation": [0, 0, 0, 1]
+          },
+          "freeAxis": "local-positive-z-v1",
+          "angleRangeRad": {
+            "lower": -1.5707963267948966,
+            "upper": 1.5707963267948966
+          },
+          "lowerHardImpactLaw": {
+            "kind": "perfectly-inelastic-v1"
+          },
+          "upperHardImpactLaw": {
+            "kind": "perfectly-inelastic-v1"
+          },
+          "lowerStop": null,
+          "upperStop": null,
+          "friction": {
+            "kind": "coulomb-viscous-v1",
+            "coulombTorqueNm": 0,
+            "viscousNms": 8
+          },
+          "actuation": {
+            "kind": "position-impedance-v1",
+            "commandRangeRad": {
+              "lower": -1.5707963267948966,
+              "upper": 1.5707963267948966
+            },
+            "stiffnessNmPerRad": 600,
+            "dampingNmsPerRad": 48,
+            "maximumTorqueNm": 120,
+            "maximumSpeedRadPerS": 4,
+            "powerLaw": {
+              "maximumMechanicalMotoringPowerW": 480,
+              "electricalMotoringEfficiency": 0.92,
+              "idlePowerW": 4,
+              "regeneration": "unsupported-dissipate-v1"
+            },
+            "thermalLimits": {
+              "thermalMassJPerK": 3000,
+              "ambientConductanceWPerK": 10,
+              "derateTemperatureK": 390,
+              "shutdownTemperatureK": 430
+            }
+          },
+          "failureLoadLaw": null
+        }
+      }
+    },
+    {
+      "id": 19,
+      "type": "hinge",
+      "pos": [1.35, 1.68, 1.35],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "mechanism": {
+        "format": "simulacrum-authored-mechanism-component",
+        "version": 1,
+        "componentType": "hinge",
+        "dimensionalScalingPolicy": {
+          "kind": "fixed-authored-size-v1"
+        },
+        "massPropertySource": {
+          "kind": "explicit-tensor-v1",
+          "massKg": 9,
+          "comPositionPartM": [0, 0, 0],
+          "inertiaTensorAtComPartKgM2": {
+            "xx": 0.05430000000000001,
+            "yy": 0.10110000000000001,
+            "zz": 0.10680000000000002,
+            "xy": 0,
+            "xz": 0,
+            "yz": 0
+          }
+        },
+        "collisionRegions": [
+          {
+            "key": "housing",
+            "localFramePart": {
+              "positionM": [0, 0, 0],
+              "orientation": [0, 0, 0, 1]
+            },
+            "geometry": {
+              "kind": "box-v1",
+              "fullSizeM": [0.32, 0.2, 0.18]
+            },
+            "materialKey": "workshop-steel",
+            "contactRole": "structure"
+          }
+        ],
+        "config": {
+          "frameA": {
+            "positionM": [0, 0, 0],
+            "orientation": [0, 0, 0, 1]
+          },
+          "frameB": {
+            "positionM": [0, 0, 0],
+            "orientation": [0, 0, 0, 1]
+          },
+          "freeAxis": "local-positive-z-v1",
+          "angleRangeRad": {
+            "lower": -1.5707963267948966,
+            "upper": 1.5707963267948966
+          },
+          "lowerHardImpactLaw": {
+            "kind": "perfectly-inelastic-v1"
+          },
+          "upperHardImpactLaw": {
+            "kind": "perfectly-inelastic-v1"
+          },
+          "lowerStop": null,
+          "upperStop": null,
+          "friction": {
+            "kind": "coulomb-viscous-v1",
+            "coulombTorqueNm": 0,
+            "viscousNms": 8
+          },
+          "actuation": {
+            "kind": "position-impedance-v1",
+            "commandRangeRad": {
+              "lower": -1.5707963267948966,
+              "upper": 1.5707963267948966
+            },
+            "stiffnessNmPerRad": 600,
+            "dampingNmsPerRad": 48,
+            "maximumTorqueNm": 120,
+            "maximumSpeedRadPerS": 4,
+            "powerLaw": {
+              "maximumMechanicalMotoringPowerW": 480,
+              "electricalMotoringEfficiency": 0.92,
+              "idlePowerW": 4,
+              "regeneration": "unsupported-dissipate-v1"
+            },
+            "thermalLimits": {
+              "thermalMassJPerK": 3000,
+              "ambientConductanceWPerK": 10,
+              "derateTemperatureK": 390,
+              "shutdownTemperatureK": 430
+            }
+          },
+          "failureLoadLaw": null
+        }
+      }
+    },
+    {
+      "id": 20,
+      "type": "rocket",
+      "pos": [-1.35, 0.95, -1.35],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 55,
+        "size": [0.8, 1.15, 0.8],
+        "maximumMassFlowKgS": 2.4,
+        "exitAreaM2": 0.006,
+        "throttleTimeConstantS": 0.18,
+        "minimumStableThrottle": 0.15,
+        "thermalLossFraction": 0.1
+      }
+    },
+    {
+      "id": 21,
+      "type": "rocket",
+      "pos": [1.35, 0.95, -1.35],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 55,
+        "size": [0.8, 1.15, 0.8],
+        "maximumMassFlowKgS": 2.4,
+        "exitAreaM2": 0.006,
+        "throttleTimeConstantS": 0.18,
+        "minimumStableThrottle": 0.15,
+        "thermalLossFraction": 0.1
+      }
+    },
+    {
+      "id": 22,
+      "type": "rocket",
+      "pos": [-1.35, 0.95, 1.35],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 55,
+        "size": [0.8, 1.15, 0.8],
+        "maximumMassFlowKgS": 2.4,
+        "exitAreaM2": 0.006,
+        "throttleTimeConstantS": 0.18,
+        "minimumStableThrottle": 0.15,
+        "thermalLossFraction": 0.1
+      }
+    },
+    {
+      "id": 23,
+      "type": "rocket",
+      "pos": [1.35, 0.95, 1.35],
+      "orientation": [0, 0, 0, 1],
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "config": {
+        "mass": 55,
+        "size": [0.8, 1.15, 0.8],
+        "maximumMassFlowKgS": 2.4,
+        "exitAreaM2": 0.006,
+        "throttleTimeConstantS": 0.18,
+        "minimumStableThrottle": 0.15,
+        "thermalLossFraction": 0.1
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "demo-drone-1",
+      "a": 6,
+      "b": 8,
+      "kind": "power",
+      "portA": "POWER",
+      "portB": "POWER"
+    },
+    {
+      "id": "demo-drone-2",
+      "a": 6,
+      "b": 9,
+      "kind": "power",
+      "portA": "POWER",
+      "portB": "POWER"
+    },
+    {
+      "id": "demo-drone-3",
+      "a": 6,
+      "b": 11,
+      "kind": "power",
+      "portA": "POWER",
+      "portB": "POWER"
+    },
+    {
+      "id": "demo-drone-4",
+      "a": 6,
+      "b": 12,
+      "kind": "power",
+      "portA": "POWER",
+      "portB": "POWER"
+    },
+    {
+      "id": "demo-drone-5",
+      "a": 6,
+      "b": 13,
+      "kind": "power",
+      "portA": "POWER",
+      "portB": "POWER"
+    },
+    {
+      "id": "demo-drone-6",
+      "a": 6,
+      "b": 14,
+      "kind": "power",
+      "portA": "POWER",
+      "portB": "POWER"
+    },
+    {
+      "id": "demo-drone-7",
+      "a": 6,
+      "b": 15,
+      "kind": "power",
+      "portA": "POWER",
+      "portB": "POWER"
+    },
+    {
+      "id": "demo-drone-8",
+      "a": 6,
+      "b": 16,
+      "kind": "power",
+      "portA": "POWER",
+      "portB": "POWER"
+    },
+    {
+      "id": "demo-drone-9",
+      "a": 6,
+      "b": 17,
+      "kind": "power",
+      "portA": "POWER",
+      "portB": "POWER"
+    },
+    {
+      "id": "demo-drone-10",
+      "a": 6,
+      "b": 18,
+      "kind": "power",
+      "portA": "POWER",
+      "portB": "POWER"
+    },
+    {
+      "id": "demo-drone-11",
+      "a": 6,
+      "b": 19,
+      "kind": "power",
+      "portA": "POWER",
+      "portB": "POWER"
+    },
+    {
+      "id": "demo-drone-12",
+      "a": 6,
+      "b": 7,
+      "kind": "power",
+      "portA": "POWER",
+      "portB": "POWER"
+    },
+    {
+      "id": "demo-drone-13",
+      "a": 7,
+      "b": 20,
+      "kind": "signal",
+      "portA": "OUT",
+      "portB": "SIGNAL"
+    },
+    {
+      "id": "demo-drone-14",
+      "a": 7,
+      "b": 21,
+      "kind": "signal",
+      "portA": "OUT",
+      "portB": "SIGNAL"
+    },
+    {
+      "id": "demo-drone-15",
+      "a": 7,
+      "b": 22,
+      "kind": "signal",
+      "portA": "OUT",
+      "portB": "SIGNAL"
+    },
+    {
+      "id": "demo-drone-16",
+      "a": 7,
+      "b": 23,
+      "kind": "signal",
+      "portA": "OUT",
+      "portB": "SIGNAL"
+    },
+    {
+      "id": "demo-drone-17",
+      "a": 7,
+      "b": 16,
+      "kind": "signal",
+      "portA": "OUT",
+      "portB": "CONTROL"
+    },
+    {
+      "id": "demo-drone-18",
+      "a": 7,
+      "b": 17,
+      "kind": "signal",
+      "portA": "OUT",
+      "portB": "CONTROL"
+    },
+    {
+      "id": "demo-drone-19",
+      "a": 7,
+      "b": 18,
+      "kind": "signal",
+      "portA": "OUT",
+      "portB": "CONTROL"
+    },
+    {
+      "id": "demo-drone-20",
+      "a": 7,
+      "b": 19,
+      "kind": "signal",
+      "portA": "OUT",
+      "portB": "CONTROL"
+    },
+    {
+      "id": "demo-drone-21",
+      "a": 8,
+      "b": 7,
+      "kind": "signal",
+      "portA": "SIGNAL",
+      "portB": "IN A"
+    },
+    {
+      "id": "demo-drone-22",
+      "a": 9,
+      "b": 7,
+      "kind": "signal",
+      "portA": "SIGNAL",
+      "portB": "IN A"
+    },
+    {
+      "id": "demo-drone-23",
+      "a": 11,
+      "b": 7,
+      "kind": "signal",
+      "portA": "SIGNAL",
+      "portB": "IN A"
+    },
+    {
+      "id": "demo-drone-24",
+      "a": 12,
+      "b": 7,
+      "kind": "signal",
+      "portA": "SIGNAL",
+      "portB": "IN A"
+    },
+    {
+      "id": "demo-drone-25",
+      "a": 13,
+      "b": 7,
+      "kind": "signal",
+      "portA": "SIGNAL",
+      "portB": "IN A"
+    },
+    {
+      "id": "demo-drone-26",
+      "a": 14,
+      "b": 7,
+      "kind": "signal",
+      "portA": "SIGNAL",
+      "portB": "IN A"
+    },
+    {
+      "id": "demo-drone-27",
+      "a": 15,
+      "b": 7,
+      "kind": "signal",
+      "portA": "SIGNAL",
+      "portB": "IN A"
+    },
+    {
+      "id": "demo-drone-28",
+      "a": 10,
+      "b": 20,
+      "kind": "resource",
+      "portA": "OUTLET",
+      "portB": "PROPELLANT",
+      "transport": { "kind": "finite-allocation-v1" }
+    },
+    {
+      "id": "demo-drone-29",
+      "a": 10,
+      "b": 21,
+      "kind": "resource",
+      "portA": "OUTLET",
+      "portB": "PROPELLANT",
+      "transport": { "kind": "finite-allocation-v1" }
+    },
+    {
+      "id": "demo-drone-30",
+      "a": 10,
+      "b": 22,
+      "kind": "resource",
+      "portA": "OUTLET",
+      "portB": "PROPELLANT",
+      "transport": { "kind": "finite-allocation-v1" }
+    },
+    {
+      "id": "demo-drone-31",
+      "a": 10,
+      "b": 23,
+      "kind": "resource",
+      "portA": "OUTLET",
+      "portB": "PROPELLANT",
+      "transport": { "kind": "finite-allocation-v1" }
+    },
+    {
+      "id": "demo-drone-32",
+      "a": 1,
+      "b": 2,
+      "kind": "mechanical",
+      "portA": "TOP",
+      "portB": "A",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      },
+      "anchorA": [-0.675, 0.1, -0.675]
+    },
+    {
+      "id": "demo-drone-33",
+      "a": 1,
+      "b": 3,
+      "kind": "mechanical",
+      "portA": "TOP",
+      "portB": "A",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      },
+      "anchorA": [0.675, 0.1, -0.675]
+    },
+    {
+      "id": "demo-drone-34",
+      "a": 1,
+      "b": 4,
+      "kind": "mechanical",
+      "portA": "TOP",
+      "portB": "A",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      },
+      "anchorA": [-0.675, 0.1, 0.675]
+    },
+    {
+      "id": "demo-drone-35",
+      "a": 1,
+      "b": 5,
+      "kind": "mechanical",
+      "portA": "TOP",
+      "portB": "A",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      },
+      "anchorA": [0.675, 0.1, 0.675]
+    },
+    {
+      "id": "demo-drone-36",
+      "a": 1,
+      "b": 6,
+      "kind": "mechanical",
+      "portA": "TOP",
+      "portB": "MOUNT",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      },
+      "anchorA": [0, 0.55, 0]
+    },
+    {
+      "id": "demo-drone-37",
+      "a": 1,
+      "b": 7,
+      "kind": "mechanical",
+      "portA": "TOP",
+      "portB": "MOUNT",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      },
+      "anchorA": [0, 1.1, 0]
+    },
+    {
+      "id": "demo-drone-38",
+      "a": 1,
+      "b": 8,
+      "kind": "mechanical",
+      "portA": "TOP",
+      "portB": "MOUNT",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      },
+      "anchorA": [0, 1.47, 0]
+    },
+    {
+      "id": "demo-drone-39",
+      "a": 1,
+      "b": 9,
+      "kind": "mechanical",
+      "portA": "TOP",
+      "portB": "MOUNT",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      },
+      "anchorA": [0.62, 1.07, 0]
+    },
+    {
+      "id": "demo-drone-40",
+      "a": 1,
+      "b": 10,
+      "kind": "mechanical",
+      "portA": "TOP",
+      "portB": "MOUNT",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      },
+      "anchorA": [0, 0.9, 0]
+    },
+    {
+      "id": "demo-drone-41",
+      "a": 1,
+      "b": 11,
+      "kind": "mechanical",
+      "portA": "TOP",
+      "portB": "MOUNT",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      },
+      "anchorA": [-0.85, 0.47, -0.5]
+    },
+    {
+      "id": "demo-drone-42",
+      "a": 1,
+      "b": 12,
+      "kind": "mechanical",
+      "portA": "TOP",
+      "portB": "MOUNT",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      },
+      "anchorA": [-0.43, 0.47, -0.5]
+    },
+    {
+      "id": "demo-drone-43",
+      "a": 1,
+      "b": 13,
+      "kind": "mechanical",
+      "portA": "TOP",
+      "portB": "MOUNT",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      },
+      "anchorA": [0, 0.47, -0.5]
+    },
+    {
+      "id": "demo-drone-44",
+      "a": 1,
+      "b": 14,
+      "kind": "mechanical",
+      "portA": "TOP",
+      "portB": "MOUNT",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      },
+      "anchorA": [0.43, 0.47, -0.5]
+    },
+    {
+      "id": "demo-drone-45",
+      "a": 1,
+      "b": 15,
+      "kind": "mechanical",
+      "portA": "TOP",
+      "portB": "MOUNT",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      },
+      "anchorA": [0.85, 0.47, -0.5]
+    },
+    {
+      "id": "demo-drone-46",
+      "a": 2,
+      "b": 16,
+      "kind": "mechanical",
+      "portA": "B",
+      "portB": "BASE",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      }
+    },
+    {
+      "id": "demo-drone-47",
+      "a": 16,
+      "b": 20,
+      "kind": "mechanical",
+      "portA": "ARM",
+      "portB": "MOUNT",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      }
+    },
+    {
+      "id": "demo-drone-48",
+      "a": 3,
+      "b": 17,
+      "kind": "mechanical",
+      "portA": "B",
+      "portB": "BASE",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      }
+    },
+    {
+      "id": "demo-drone-49",
+      "a": 17,
+      "b": 21,
+      "kind": "mechanical",
+      "portA": "ARM",
+      "portB": "MOUNT",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      }
+    },
+    {
+      "id": "demo-drone-50",
+      "a": 4,
+      "b": 18,
+      "kind": "mechanical",
+      "portA": "B",
+      "portB": "BASE",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      }
+    },
+    {
+      "id": "demo-drone-51",
+      "a": 18,
+      "b": 22,
+      "kind": "mechanical",
+      "portA": "ARM",
+      "portB": "MOUNT",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      }
+    },
+    {
+      "id": "demo-drone-52",
+      "a": 5,
+      "b": 19,
+      "kind": "mechanical",
+      "portA": "B",
+      "portB": "BASE",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      }
+    },
+    {
+      "id": "demo-drone-53",
+      "a": 19,
+      "b": 23,
+      "kind": "mechanical",
+      "portA": "ARM",
+      "portB": "MOUNT",
+      "capacity": {
+        "ultimateForceN": 48000,
+        "ultimateTorqueNm": 14000
+      }
+    }
+  ],
+  "remoteProfiles": {
+    "drone": {
+      "design": {
+        "title": "QUAD DRONE",
+        "style": "compact-grid",
+        "accent": "#70e0c4"
+      },
+      "controls": [
+        {
+          "id": "drone-1",
+          "label": "Collective thrust",
+          "channel": "command",
+          "type": "range",
+          "defaultValue": 0,
+          "hotkey": null,
+          "targetId": 11,
+          "min": 0,
+          "max": 1,
+          "step": 0.02
+        },
+        {
+          "id": "drone-2",
+          "label": "Yaw",
+          "channel": "command",
+          "type": "range",
+          "defaultValue": 0,
+          "hotkey": null,
+          "targetId": 12,
+          "min": -1,
+          "max": 1,
+          "step": 0.05
+        },
+        {
+          "id": "drone-3",
+          "label": "Pitch",
+          "channel": "command",
+          "type": "range",
+          "defaultValue": 0,
+          "hotkey": null,
+          "targetId": 13,
+          "min": -1,
+          "max": 1,
+          "step": 0.05
+        },
+        {
+          "id": "drone-4",
+          "label": "Roll",
+          "channel": "command",
+          "type": "range",
+          "defaultValue": 0,
+          "hotkey": null,
+          "targetId": 14,
+          "min": -1,
+          "max": 1,
+          "step": 0.05
+        },
+        {
+          "id": "drone-5",
+          "label": "Altitude hold",
+          "channel": "command",
+          "type": "toggle",
+          "defaultValue": 0,
+          "hotkey": null,
+          "targetId": 15
+        }
+      ],
+      "actionBindings": {}
+    }
+  },
+  "defaultRemoteProfile": "drone"
+}

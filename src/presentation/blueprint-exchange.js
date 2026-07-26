@@ -26,6 +26,8 @@ export function installBlueprintExchange({
     notify(`${prefix} — ${result?.error?.message || "Unknown error"}`);
     return true;
   };
+  const closeCurrentModal = () =>
+    root.querySelector("#blueprint-modal")?.classList.add("hidden");
 
   function view() {
     return getView({ query: search.value, filter });
@@ -76,12 +78,12 @@ export function installBlueprintExchange({
       button.dataset.deleteShare;
     if (button.dataset.loadShare) {
       const result = await actions.load(fingerprint);
-      if (!failure(result)) modal.classList.add("hidden");
+      if (!failure(result)) closeCurrentModal();
     } else if (button.dataset.remixShare) {
       const result = await actions.remix(fingerprint);
       if (!failure(result)) {
         $("#blueprint-name").value = result.title;
-        modal.classList.add("hidden");
+        closeCurrentModal();
         notify("Remix loaded · attribution will be preserved when shared");
       }
     } else if (button.dataset.installShare) {

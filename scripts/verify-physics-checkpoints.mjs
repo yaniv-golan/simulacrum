@@ -37,6 +37,7 @@ import { SignalSystem } from "../src/simulation/systems/signal-system.js";
 import { StructureSystem } from "../src/simulation/systems/structure-system.js";
 import { TelemetrySystem } from "../src/simulation/systems/telemetry-system.js";
 import { ThermalSystem } from "../src/simulation/systems/thermal-system.js";
+import { MotorEnergySettlementSystem } from "../src/simulation/systems/motor-energy-settlement-system.js";
 
 const DT = 1 / 120,
   SPLIT_TICK = 144,
@@ -139,6 +140,7 @@ function createRuntime() {
         new MechanismSystem(),
         new RollingContactSystem(),
         new RigidBodySystem(),
+        new MotorEnergySettlementSystem(),
         structureSystem,
         new PhysicalAssemblySystem(),
         new TelemetrySystem(),
@@ -382,6 +384,7 @@ async function createActiveRuntime() {
         new MechanismSystem(),
         new RollingContactSystem(),
         new RigidBodySystem(),
+        new MotorEnergySettlementSystem(),
         structureSystem,
         new PhysicalAssemblySystem(),
         new TelemetrySystem(),
@@ -656,6 +659,7 @@ function createHybridTerrainRuntime() {
         new RollingContactSystem(),
         new AerodynamicSystem(),
         new RigidBodySystem(),
+        new MotorEnergySettlementSystem(),
         structureSystem,
         new ThermalSystem(),
         new PhysicalAssemblySystem(),

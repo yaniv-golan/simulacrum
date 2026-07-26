@@ -1,5 +1,7 @@
 import { TYPES } from "./component-catalog.js";
 import { deepFreeze, immutableClone, stableStringify } from "./primitives.js";
+import { validateRotorConfig } from "./rotor-aerodynamics-contracts.js";
+import { componentDefinition } from "./component-contracts.js";
 
 const CATALOG_CONTRACT_KEYS = new Set([
   "name",
@@ -67,8 +69,14 @@ export function resolveComponentConfig(
 
 /** Expands compact domain config into the one current wire shape. */
 export function resolveWireComponentConfig(part, catalog = CURRENT_CATALOG) {
-  return immutableClone({
+  const config = immutableClone({
     ...structuredClone(componentDefaults(part?.type, catalog)),
     ...structuredClone(part?.config || {}),
   });
+  if (
+    componentDefinition(part, catalog)?.flight?.propulsion?.kind ===
+    "shaft-rotor-aerodynamics-v1"
+  )
+    validateRotorConfig(config, part.scale, part.id);
+  return config;
 }

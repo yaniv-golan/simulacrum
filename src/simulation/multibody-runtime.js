@@ -1515,6 +1515,41 @@ export class MultibodyRuntime {
     };
   }
 
+  rotaryStateForPart(partId) {
+    const candidates = this.constraintEntries.filter(
+      (entry) =>
+        entry.active !== false &&
+        entry.descriptor.kind === "revolute" &&
+        entry.descriptor.rotorId === partId,
+    );
+    if (candidates.length !== 1)
+      return Object.freeze({
+        valid: false,
+        reason: candidates.length ? "ambiguous-shaft" : "missing-shaft",
+        candidateCount: candidates.length,
+      });
+    const entry = candidates[0],
+      rotorIsB = entry.descriptor.b === partId,
+      body = this.bodyByPart.get(partId),
+      localAxis = rotorIsB ? entry.axisB : entry.axisA,
+      worldAxis = body.quaternion.vmult(localAxis);
+    worldAxis.normalize();
+    return Object.freeze({
+      valid: true,
+      reason: "resolved",
+      constraintId: entry.descriptor.id,
+      motorId: entry.descriptor.motorId ?? null,
+      rotorPartId: partId,
+      statorPartId: rotorIsB ? entry.descriptor.a : entry.descriptor.b,
+      worldAxis: Object.freeze(plainVector(worldAxis)),
+      relativeAngularSpeedRadS: rotorIsB
+        ? entry.velocity || 0
+        : -(entry.velocity || 0),
+      absoluteAngularSpeedRadS: body.angularVelocity.dot(worldAxis),
+      reactionTorqueNm: entry.reactionTorque || 0,
+    });
+  }
+
   bodyPose(partId) {
     const body = this.bodyByPart.get(partId);
     if (!body) return null;
@@ -1836,7 +1871,12 @@ export class MultibodyRuntime {
               ),
               stallTorque = Math.max(
                 1,
-                (powerW / Math.max(1, Math.abs(targetSpeed))) * 2.2,
+                (powerW /
+                  Math.max(
+                    1,
+                    Math.abs(descriptor.driveLaw.noLoadSpeedRadPerS),
+                  )) *
+                  2.2,
               ),
               speedError = targetSpeed - entry.velocity;
             targetTorque = clamp(
@@ -1844,30 +1884,30 @@ export class MultibodyRuntime {
               -stallTorque * allocationRatio,
               stallTorque * allocationRatio,
             );
-            const electricalDemandW = brake
-                ? 0
-                : Math.min(
-                    powerW,
-                    Math.max(
-                      powerW * 0.03 * Math.abs(throttle),
-                      Math.abs(targetTorque * entry.velocity) / 0.85,
-                    ),
-                  ),
-              deliveredW = context.powerNetwork.drawPower(
-                motor.id,
-                electricalDemandW,
-                dt,
-              ),
-              deliveryRatio = electricalDemandW
-                ? deliveredW / electricalDemandW
-                : 1;
-            this.motorElectricalWByPart.set(motor.id, deliveredW);
-            targetTorque *= deliveryRatio;
+            this.motorElectricalWByPart.set(motor.id, 0);
             constraint.enableMotor();
             constraint.setMotorSpeed(targetSpeed);
             const torqueImpulseNms = solverImpulseLimit(targetTorque, dt);
             constraint.motorEquation.maxForce = torqueImpulseNms;
             constraint.motorEquation.minForce = -torqueImpulseNms;
+            this.worldAdapter.transaction.registerMotorEnergyBudget({
+              tick: context.clock.tick,
+              equation: constraint.motorEquation,
+              partId: motor.id,
+              constraintId: descriptor.id,
+              mode: brake
+                ? "brake"
+                : throttle < 0
+                  ? "reverse-motoring"
+                  : "motoring",
+              allocatedBusW: brake ? 0 : allocation.allocatedW,
+              mechanicalBudgetJ:
+                (brake ? 0 : allocation.allocatedW) *
+                dt *
+                descriptor.driveLaw.electricalEfficiency,
+              electricalEfficiency: descriptor.driveLaw.electricalEfficiency,
+              torqueImpulseLimitNms: torqueImpulseNms,
+            });
             activeMotors++;
           }
         } else constraint.disableMotor();
@@ -2107,6 +2147,15 @@ export class MultibodyRuntime {
           signedAngleVelocity(body, axis) * dt,
       );
     }
+    this.lastTelemetry = this.telemetry(this.lastTelemetry?.activeMotors || 0);
+    return this.lastTelemetry;
+  }
+
+  recordSettledMotorElectricalPower(partId, deliveredW) {
+    this.motorElectricalWByPart.set(
+      partId,
+      Math.max(0, Number(deliveredW) || 0),
+    );
     this.lastTelemetry = this.telemetry(this.lastTelemetry?.activeMotors || 0);
     return this.lastTelemetry;
   }

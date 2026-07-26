@@ -449,7 +449,7 @@ export class BodyRegistry {
 }
 
 // @public (undocumented)
-export const CANNON_SOLVER_TRANSACTION_ID: "simulacrum-owned-cannon-solver-transaction-v1";
+export const CANNON_SOLVER_TRANSACTION_ID: "simulacrum-owned-cannon-solver-transaction-v2-motor-energy";
 
 // @public
 export class CannonMaterialAdapter {
@@ -470,13 +470,38 @@ export class CannonMaterialAdapter {
 export class CannonSolverTransaction {
     constructor(world: any);
     // (undocumented)
+    acknowledgeMotorEnergySettlement(input: {
+        tick: any;
+        recordDigest: any;
+    }): void;
+    // (undocumented)
+    assertMotorEnergySettled(): void;
+    // (undocumented)
+    beginSession(): void;
+    // (undocumented)
+    beginTick(tick: any): void;
+    // (undocumented)
     bodyPairsA: any[];
     // (undocumented)
     bodyPairsB: any[];
     // (undocumented)
     frictionEquationPool: any[];
     // (undocumented)
+    motorEnergyRecordsForTick(tick: any): any;
+    // (undocumented)
     oldContacts: any[];
+    // (undocumented)
+    registerMotorEnergyBudget(input: {
+        tick: any;
+        equation: any;
+        partId: any;
+        constraintId: any;
+        mode: any;
+        allocatedBusW: any;
+        mechanicalBudgetJ: any;
+        electricalEfficiency: any;
+        torqueImpulseLimitNms: any;
+    }): void;
     // (undocumented)
     step(dt: any): void;
     // (undocumented)
@@ -492,7 +517,7 @@ export class CannonWorldAdapter {
         tick: number;
         integratedTick: number;
         integrationCount: number;
-        transactionId: "simulacrum-owned-cannon-solver-transaction-v1";
+        transactionId: "simulacrum-owned-cannon-solver-transaction-v2-motor-energy";
     }>;
     // (undocumented)
     beginTick(tick?: number): void;
@@ -503,7 +528,7 @@ export class CannonWorldAdapter {
         tick: number;
         integratedTick: number;
         integrationCount: number;
-        transactionId: "simulacrum-owned-cannon-solver-transaction-v1";
+        transactionId: "simulacrum-owned-cannon-solver-transaction-v2-motor-energy";
     };
     // (undocumented)
     importState(state: any): void;
@@ -515,7 +540,7 @@ export class CannonWorldAdapter {
         tick: number;
         integratedTick: number;
         integrationCount: number;
-        transactionId: "simulacrum-owned-cannon-solver-transaction-v1";
+        transactionId: "simulacrum-owned-cannon-solver-transaction-v2-motor-energy";
     }>;
     // (undocumented)
     telemetry(): Readonly<{
@@ -523,7 +548,7 @@ export class CannonWorldAdapter {
         tick: number;
         integratedTick: number;
         integrationCount: number;
-        transactionId: "simulacrum-owned-cannon-solver-transaction-v1";
+        transactionId: "simulacrum-owned-cannon-solver-transaction-v2-motor-energy";
     }>;
     // (undocumented)
     transaction: CannonSolverTransaction;
@@ -991,6 +1016,14 @@ export class ChallengeRun {
     // (undocumented)
     verificationEligible: boolean;
 }
+
+// @public (undocumented)
+export const CHECKPOINT_STATE_OWNER_IDS: readonly string[];
+
+// @public (undocumented)
+export const CHECKPOINT_STATE_OWNER_VERSIONS: Readonly<{
+    [k: string]: number;
+}>;
 
 // @public (undocumented)
 export function clampActuatorCommand(part: any, channel: string, value: unknown, catalog?: Record<string, any>): any;
@@ -2608,6 +2641,10 @@ export class MaterialResourceNetwork {
         dt?: number;
     }): any;
     // (undocumented)
+    allocationEvidenceIndex(): any;
+    // (undocumented)
+    evidenceIndex(): any;
+    // (undocumented)
     exportState(): any;
     // (undocumented)
     importState(state: any, runGraph: any): void;
@@ -2615,6 +2652,8 @@ export class MaterialResourceNetwork {
     remainingMass(partId: any): any;
     // (undocumented)
     resolve(runGraph: any): this;
+    // (undocumented)
+    routeWitness(input: any, expectedNetworkResultDigest: any): any;
     // (undocumented)
     stores(): any;
     // (undocumented)
@@ -2839,6 +2878,38 @@ export function materialStoreContract(part: any, catalog?: {
             configField: string;
             minimumW: number;
             baselineW: number;
+        };
+    };
+    rotor: {
+        name: string;
+        cat: string;
+        icon: string;
+        mass: number;
+        color: number;
+        desc: string;
+        hubRadiusM: number;
+        hubThicknessM: number;
+        radiusM: number;
+        bladeCount: number;
+        bladeChordM: number;
+        fixedPitchDeg: number;
+        handedness: number;
+        profileId: string;
+        ratedRpm: number;
+        maximumRpm: number;
+        ports: Readonly<{
+            localFramePart?: any;
+            id: any;
+            kind: any;
+            behavior: any;
+            direction: any;
+            multiplicity: any;
+        }>[];
+        flight: {
+            propulsion: {
+                kind: string;
+                localAxis: number[];
+            };
         };
     };
     hinge: {
@@ -3663,6 +3734,28 @@ export class MobilityTelemetrySystem {
 }
 
 // @public
+export class MotorEnergySettlementSystem {
+    // (undocumented)
+    checkpointOwner: string;
+    // (undocumented)
+    dispose(): void;
+    // (undocumented)
+    exportState(): any;
+    // (undocumented)
+    importState(state: any): void;
+    // (undocumented)
+    lastSettledTick: number;
+    // (undocumented)
+    phase: string;
+    // (undocumented)
+    step(context: any, dt: any): void;
+    // (undocumented)
+    telemetry(): any;
+    // (undocumented)
+    totals: Map<any, any>;
+}
+
+// @public
 export class MultibodyRuntime {
     constructor(input: {
         world: any;
@@ -4412,6 +4505,29 @@ export class MultibodyRuntime {
         };
     };
     // (undocumented)
+    recordSettledMotorElectricalPower(partId: any, deliveredW: any): any;
+    // (undocumented)
+    rotaryStateForPart(partId: any): Readonly<{
+        valid: false;
+        reason: "ambiguous-shaft" | "missing-shaft";
+        candidateCount: number;
+    }> | Readonly<{
+        valid: true;
+        reason: "resolved";
+        constraintId: any;
+        motorId: any;
+        rotorPartId: any;
+        statorPartId: any;
+        worldAxis: Readonly<{
+            x: any;
+            y: any;
+            z: any;
+        }>;
+        relativeAngularSpeedRadS: any;
+        absoluteAngularSpeedRadS: any;
+        reactionTorqueNm: any;
+    }>;
+    // (undocumented)
     setTirePneumaticGasState(partId: any, state: any, carcassHeatJ?: number, ambientPressurePa?: any): boolean;
     // (undocumented)
     start(snapshot: any): any;
@@ -4975,9 +5091,13 @@ export class PowerNetwork {
     allocationFor(partId: any): any;
     drawPower(partId: any, requestedW: any, dt?: number): number;
     // (undocumented)
+    evidenceIndex(): any;
+    // (undocumented)
     isPowered(partId: any): boolean;
     // (undocumented)
     resolve(runGraph: any, fixedDt?: number): this;
+    // (undocumented)
+    routeWitness(query: any, expectedNetworkResultDigest: any): any;
     // (undocumented)
     sourceIdsFor(partId: any): readonly any[];
     // (undocumented)
@@ -5240,6 +5360,29 @@ export class RollingContactSystem {
     phase: string;
     // (undocumented)
     step(context: any, dt: any): void;
+}
+
+// @public (undocumented)
+export const ROTOR_AERODYNAMIC_PROFILES: any;
+
+// @public (undocumented)
+export function rotorAerodynamicContract(part: any, definition: any, geometry: any): any;
+
+// @public (undocumented)
+export function rotorAerodynamicPerformance(contract: any, input: {
+    airDensityKgM3: any;
+    axialInflowMps?: number;
+    angularSpeedRadS: any;
+}): any;
+
+// @public
+export class RotorPropulsionSystem {
+    // (undocumented)
+    dispose(context: any): void;
+    // (undocumented)
+    phase: string;
+    // (undocumented)
+    step(context: any): void;
 }
 
 // @public
@@ -5518,11 +5661,15 @@ export class SignalNetwork {
     // (undocumented)
     controllersForTarget(targetId: any): readonly any[];
     // (undocumented)
+    evidenceIndex(): any;
+    // (undocumented)
     hasRoute(controllerId: any, targetId: any, targetPortId?: any): boolean;
     // (undocumented)
     hasSensorRoute(controllerId: any, sensorId: any, sensorPortId?: any): boolean;
     // (undocumented)
     resolve(runGraph: any, powerNetwork: any): this;
+    // (undocumented)
+    routeWitness(query: any, expectedNetworkResultDigest: any): any;
     // (undocumented)
     sensorsForController(controllerId: any): readonly any[];
     // (undocumented)
@@ -5618,17 +5765,7 @@ export class SimulationSession {
         };
         completedSensorSnapshot: any;
         telemetry: any;
-        previousTelemetry: Readonly<{
-            schemaVersion: 1;
-            tick: number;
-            time: number;
-            assemblyRevision: any;
-            runRevision: any;
-            graphRevision: any;
-            run: any;
-            bodies: any;
-            systems: any;
-        }>;
+        previousTelemetry: any;
     };
     // (undocumented)
     fixedDt: number;
@@ -5637,6 +5774,8 @@ export class SimulationSession {
     // (undocumented)
     maxSubsteps: number;
     resynchronizeAfterCheckpointRestore(): void;
+    // (undocumented)
+    routeEvidence(token: any, query: any, expectedIdentity: any): any;
     // (undocumented)
     start(snapshot: any, services?: {}): this;
     // (undocumented)
@@ -6005,6 +6144,38 @@ export const TYPES: {
             configField: string;
             minimumW: number;
             baselineW: number;
+        };
+    };
+    rotor: {
+        name: string;
+        cat: string;
+        icon: string;
+        mass: number;
+        color: number;
+        desc: string;
+        hubRadiusM: number;
+        hubThicknessM: number;
+        radiusM: number;
+        bladeCount: number;
+        bladeChordM: number;
+        fixedPitchDeg: number;
+        handedness: number;
+        profileId: string;
+        ratedRpm: number;
+        maximumRpm: number;
+        ports: Readonly<{
+            localFramePart?: any;
+            id: any;
+            kind: any;
+            behavior: any;
+            direction: any;
+            multiplicity: any;
+        }>[];
+        flight: {
+            propulsion: {
+                kind: string;
+                localAxis: number[];
+            };
         };
     };
     hinge: {
@@ -6809,6 +6980,13 @@ export function validatePortConnection(sourcePart: any, sourcePort: any, targetP
 
 // @public
 export function validateRemoteActionBindings(profile: any, profilePath?: any[]): boolean;
+
+// @public (undocumented)
+export function validateRotorConfig(config: any, scale?: {
+    x: number;
+    y: number;
+    z: number;
+}, partId?: any): any;
 
 // @public (undocumented)
 export const VISUAL_PROGRAM_VERSION: 1;

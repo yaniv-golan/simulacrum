@@ -12,6 +12,13 @@ import {
   createRawRelationshipStressFixture,
   fixtureDigest,
 } from "./lib/component-inspection-fixtures.mjs";
+import {
+  createRouteEvidenceIndex,
+  routeEvidenceByteLength,
+  routeWitnessFromIndex,
+} from "../src/simulation/route-evidence-index.js";
+import { sha256Hex } from "../src/model/sha256.js";
+import { stableStringify } from "../src/model/primitives.js";
 
 const root = path.resolve(import.meta.dirname, ".."),
   valueArgument = (name) =>
@@ -22,13 +29,15 @@ const root = path.resolve(import.meta.dirname, ".."),
   output = path.resolve(
     root,
     valueArgument("output") ||
-      "artifacts/component-inspection-performance-foundation-current.json",
+      `artifacts/component-inspection-performance-${profile || "foundation"}-current.json`,
   ),
   allowDirty = process.argv.includes("--allow-dirty"),
   candidate = valueArgument("candidate") || null;
 
-if (profile !== "foundation")
-  throw new Error("S1 capture requires --profile=foundation");
+if (!["foundation", "routes"].includes(profile))
+  throw new Error(
+    "Component inspection capture requires --profile=foundation|routes",
+  );
 if (!allowDirty && !/^[0-9a-f]{40}$/.test(candidate || ""))
   throw new Error("Authoritative capture requires --candidate=<40-hex commit>");
 
@@ -94,6 +103,61 @@ for (let index = 0; index < warmupRuns + measuredRuns; index++) {
   if (index >= warmupRuns) selectionProjectionMs.push(elapsed);
 }
 
+const routeFixture = (() => {
+    const edgeCount = 299,
+      parts = Array.from({ length: edgeCount + 1 }, (_, id) => ({
+        id,
+        detached: false,
+      })),
+      connections = Array.from({ length: edgeCount }, (_, id) => ({
+        id: `route-${String(id).padStart(3, "0")}`,
+        a: id,
+        b: id + 1,
+        kind: "power",
+        portA: "OUT",
+        portB: "IN",
+        failed: false,
+      })),
+      runGraph = {
+        graphRevision: 0,
+        parts: () => parts,
+        connections: () => connections,
+      },
+      edges = connections.map((connection) => ({
+        connectionId: connection.id,
+        from: { partId: connection.a, portId: "OUT" },
+        to: { partId: connection.b, portId: "IN" },
+      })),
+      index = createRouteEvidenceIndex({
+        medium: "power",
+        runGraph,
+        edges,
+        sourcePartIds: [0],
+        targetPartIds: [edgeCount],
+      }),
+      query = {
+        version: 1,
+        kind: "power",
+        source: { partId: 0, portId: "OUT" },
+        target: { partId: edgeCount, portId: "IN" },
+      };
+    return { edgeCount, index, query };
+  })(),
+  routeMaterializationMs = [];
+if (profile === "routes")
+  for (let index = 0; index < warmupRuns + measuredRuns; index++) {
+    const started = performance.now(),
+      witness = routeWitnessFromIndex(
+        routeFixture.index,
+        routeFixture.query,
+        routeFixture.index.networkResultDigest,
+      ),
+      elapsed = performance.now() - started;
+    if (witness.status !== "resolved" || witness.totalHopCount !== 299)
+      throw new Error("Routes performance fixture did not resolve 299 hops");
+    if (index >= warmupRuns) routeMaterializationMs.push(elapsed);
+  }
+
 const result = {
   schemaVersion: 1,
   profile,
@@ -113,6 +177,19 @@ const result = {
       parts: shipping.parts.length,
       connections: shipping.connections.length,
     },
+    ...(profile === "routes"
+      ? {
+          routeChain: {
+            digest: sha256Hex(
+              stableStringify({
+                edgeCount: routeFixture.edgeCount,
+                indexDigest: routeFixture.index.indexDigest,
+              }),
+            ),
+            hops: routeFixture.edgeCount,
+          },
+        }
+      : {}),
   },
   environment: {
     node: process.version,
@@ -124,10 +201,27 @@ const result = {
     warmupRuns,
     measuredRuns,
   },
-  raw: { rebuildMs, selectionProjectionMs },
+  raw: {
+    rebuildMs,
+    selectionProjectionMs,
+    ...(profile === "routes" ? { routeMaterializationMs } : {}),
+  },
   summary: {
     relationshipPreflightRebuildP95Ms: percentile(rebuildMs, 0.95),
     selectionProjectionP95Ms: percentile(selectionProjectionMs, 0.95),
+    ...(profile === "routes"
+      ? {
+          routeMaterializationP95Ms: percentile(routeMaterializationMs, 0.95),
+          routeIndexBytes: routeEvidenceByteLength(routeFixture.index),
+          routeResponseBytes: routeEvidenceByteLength(
+            routeWitnessFromIndex(
+              routeFixture.index,
+              routeFixture.query,
+              routeFixture.index.networkResultDigest,
+            ),
+          ),
+        }
+      : {}),
   },
   errors: [],
 };

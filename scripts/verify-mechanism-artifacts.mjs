@@ -9,6 +9,7 @@ import {
 } from "../src/model/generated/mechanism-artifact-wire-validators.js";
 import {
   CHECKPOINT_STATE_OWNER_IDS,
+  CHECKPOINT_STATE_OWNER_VERSIONS,
   checkpointStateDigest,
   decodeCheckpoint,
   decodeCheckpointOrThrow,
@@ -93,7 +94,7 @@ const runConfiguration = {
     const payloadJson = stableStringify(fixture.stateOwnerPayloads[ownerId]);
     return {
       ownerId,
-      ownerVersion: 1,
+      ownerVersion: CHECKPOINT_STATE_OWNER_VERSIONS[ownerId],
       payloadJson,
       payloadByteLength: new TextEncoder().encode(payloadJson).byteLength,
       payloadSha256: sha256Hex(payloadJson),

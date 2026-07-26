@@ -1,11 +1,13 @@
 import {
   CHECKPOINT_STATE_OWNER_IDS,
+  CHECKPOINT_STATE_OWNER_VERSIONS,
   checkpointStateDigest,
 } from "../model/mechanism-artifact-identity.js";
 import { decodeCheckpointOrThrow } from "../model/mechanism-artifacts.js";
 import { DomainValidationError, stableStringify } from "../model/primitives.js";
 import { sha256Hex } from "../model/sha256.js";
 import { CANNON_SOLVER_TRANSACTION_ID } from "./cannon-solver-transaction.js";
+import { stripRouteEvidenceCapabilities } from "./telemetry.js";
 
 const encoder = new TextEncoder();
 
@@ -13,7 +15,7 @@ function ownerRecord(ownerId, payload) {
   const payloadJson = stableStringify(payload);
   return {
     ownerId,
-    ownerVersion: 1,
+    ownerVersion: CHECKPOINT_STATE_OWNER_VERSIONS[ownerId],
     payloadJson,
     payloadByteLength: encoder.encode(payloadJson).byteLength,
     payloadSha256: sha256Hex(payloadJson),
@@ -86,9 +88,15 @@ export class RuntimeCheckpointCoordinator {
     );
   }
 
+  #motorEnergySettlementSystem() {
+    return this.session.systems.find(
+      (system) => system.checkpointOwner === "motor-energy-settlement",
+    );
+  }
+
   #materialResourceExport(context) {
     return {
-      version: 1,
+      version: 2,
       network: context.materialResourceNetwork
         ? context.materialResourceNetwork.exportState()
         : { kind: "no-material-resource-network-v1" },
@@ -99,10 +107,10 @@ export class RuntimeCheckpointCoordinator {
   }
 
   #materialResourceImport(context, state) {
-    if (state?.version !== 1 || !state.network || !state.propulsion)
+    if (state?.version !== 2 || !state.network || !state.propulsion)
       throw new DomainValidationError(
         "INVALID_MATERIAL_RESOURCE_OWNER_CHECKPOINT",
-        "Material-resource owner checkpoint must use version 1",
+        "Material-resource owner checkpoint must use version 2",
       );
     if (context.materialResourceNetwork)
       context.materialResourceNetwork.importState(
@@ -158,6 +166,12 @@ export class RuntimeCheckpointCoordinator {
       terrain: this.terrainState?.exportState?.() ?? null,
       session: this.session.exportState(),
       worldAdapter: this.worldAdapter.exportState(),
+      motorEnergySettlement:
+        this.#motorEnergySettlementSystem()?.exportState() ?? {
+          version: 1,
+          lastSettledTick: 0,
+          totals: [],
+        },
     };
   }
 
@@ -186,6 +200,10 @@ export class RuntimeCheckpointCoordinator {
     if (state.terrain) this.terrainState?.importState?.(state.terrain);
     this.session.importState(state.session);
     this.worldAdapter.importState(state.worldAdapter);
+    if (state.motorEnergySettlement)
+      this.#motorEnergySettlementSystem()?.importState(
+        state.motorEnergySettlement,
+      );
     this.session.resynchronizeAfterCheckpointRestore();
   }
 
@@ -255,6 +273,12 @@ export class RuntimeCheckpointCoordinator {
           graphRevision: runGraph.graphRevision,
           power: context.powerNetwork?.telemetry?.() ?? null,
           signals: context.signalNetwork?.telemetry?.() ?? null,
+          motorEnergySettlement:
+            this.#motorEnergySettlementSystem()?.exportState() ?? {
+              version: 1,
+              lastSettledTick: 0,
+              totals: [],
+            },
         },
         "release-couplers": this.#releaseCouplerSystem()?.exportState(
           context,
@@ -282,8 +306,10 @@ export class RuntimeCheckpointCoordinator {
         "terrain-environment": this.#terrainExport(),
         "telemetry-event-ids": {
           tick: context.clock.tick,
-          telemetry: context.telemetry,
-          previousTelemetry: context.previousTelemetry,
+          telemetry: stripRouteEvidenceCapabilities(context.telemetry),
+          previousTelemetry: stripRouteEvidenceCapabilities(
+            context.previousTelemetry,
+          ),
           runEventCount: context.runGraph.events().length,
         },
       },
@@ -399,6 +425,8 @@ export class RuntimeCheckpointCoordinator {
         terrain: this.terrainState ? payloads.get("terrain-environment") : null,
         session: payloads.get("session"),
         worldAdapter: physics.worldAdapter,
+        motorEnergySettlement: payloads.get("energy-power-signal")
+          .motorEnergySettlement,
       };
     if (target.aerothermal)
       this.aerothermalAblationOwner.validateState(target.aerothermal);

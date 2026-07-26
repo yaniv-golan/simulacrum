@@ -18,24 +18,24 @@ import { instantiateSubassembly } from "../src/model/subassemblies.js";
 
 const GOLDEN_DIGESTS = Object.freeze({
   "demo:gearbox": {
-    sha256: "425d9c813af23de9e284b06aed121900c197dd8d778d953b3642b8fbe41f0c1e",
-    bytes: 39_255,
+    sha256: "3072238421922066407f16c9d0affba08b0340c6bd79d4fd0fe35809d2f9e8fe",
+    bytes: 39_283,
   },
   "demo:cart": {
-    sha256: "1ca46b5fbabd67226af2fe58aaa463df7993dc004e0390be22b457c57f65e68a",
-    bytes: 279_947,
+    sha256: "3aa516a32ef9ca0cfd4429ca5e0949eb4924c7f4b9ece20b5b208b6f9731f6a9",
+    bytes: 280_059,
   },
   "covariance:transformed-cart": {
-    sha256: "5f16a4f0c2ecc1ca94b663e6cf3bff3d672ffcdafddceb3b21455f628c519fe6",
-    bytes: 287_199,
+    sha256: "028bae135c35001b3c35bc1d54b61f864fda9270ef733f6cac9203e515fae3be",
+    bytes: 287_311,
   },
   "demo:humanoid": {
     sha256: "489237569350df5ba5db83deacdf2a43996539ac69f1a254128ec587274de915",
     bytes: 195_381,
   },
   "demo:drone": {
-    sha256: "4d8143ef29cac57331db05121a13cf3df225ce030ce5bc1ca5a2fadff0115011",
-    bytes: 238_640,
+    sha256: "019647bef275b0943ca233cfb304b42047a5a96ea0b3494d2fed64d677eaa8c0",
+    bytes: 194_682,
   },
   "demo:mission": {
     sha256: "5001fad2aa63588626a52c085129dab71976e52782915245d2e387ae6da30c94",
@@ -58,16 +58,16 @@ const GOLDEN_DIGESTS = Object.freeze({
     bytes: 128_646,
   },
   "mechanism:Active leveling suspension": {
-    sha256: "3825927141b26ff6e10fb2ca962f6dc3467b705861f4d02fb497b5fc1ef641ba",
-    bytes: 155_287,
+    sha256: "305bfc09eba7c59b6b9d95fecd2f2360a644dff53982ee80304a0293ef31ba11",
+    bytes: 155_399,
   },
   "mechanism:Four-wheel central tire inflation system": {
     sha256: "88dc5f322016e43c344a8c5316d1a6f6b5ef2bca1c206894f5d017e16bc7ae49",
     bytes: 304_970,
   },
   "hybrid:wheeled-rocket": {
-    sha256: "3b3f661e79a38ce041720628ac782a8637de40233430eb5b5c4290d4d083bd67",
-    bytes: 324_708,
+    sha256: "96c56dd59abc71bede4f2182cc46eb6e22a8888f93a24976dfa652db6734a805",
+    bytes: 324_820,
   },
   "diagnostic:dangling-connection": {
     sha256: "de301b3736f8dbbcace9087dc4d80b618e4d3fa623f397ada750136ce4c02f48",

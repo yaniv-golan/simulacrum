@@ -229,14 +229,14 @@
   color: #c0d9d4 !important;
   text-shadow: none !important;
 }
-.port.armed {
+.port-row.armed {
   background: #163a36 !important;
   border-color: #75f0d2 !important;
   box-shadow:
     0 0 0 1px #75f0d255,
     0 0 18px #70e0c433 !important;
 }
-.port.armed em {
+.port-row.armed em {
   color: #8ff7df !important;
 }
 .camera-tools {
@@ -264,6 +264,22 @@
 .camera-tools button span {
   font: 600 7px "Space Grotesk";
   margin-left: 4px;
+}
+#view-front,
+#view-side,
+#view-top {
+  min-width: 48px;
+  padding: 0 5px;
+  font: 650 7px "Space Grotesk";
+  letter-spacing: 0.04em;
+}
+#view-front kbd,
+#view-side kbd,
+#view-top kbd {
+  display: block;
+  margin-top: 1px;
+  color: #718e89;
+  font: 600 6px "Space Grotesk";
 }
 #explode-view {
   min-width: 78px;
@@ -387,6 +403,105 @@
   font: 600 10px "Space Grotesk";
   letter-spacing: 0.08em;
   margin-top: 2px;
+}
+.workshop-axis-indicator {
+  pointer-events: none;
+  position: absolute;
+  z-index: 6;
+  left: 322px;
+  bottom: 92px;
+  width: 82px;
+  padding: 6px;
+  border: 1px solid #36555299;
+  border-radius: 5px;
+  background: #081718b8;
+  backdrop-filter: blur(8px);
+}
+.shell:has(.catalog.panel-collapsed) .workshop-axis-indicator,
+.shell.focus-workspace .workshop-axis-indicator {
+  left: 66px;
+}
+.workshop-axis-indicator small {
+  display: block;
+  color: #8ba7a2;
+  font: 650 6px "Space Grotesk";
+  letter-spacing: 0.14em;
+  text-align: center;
+}
+.workshop-axis-indicator svg {
+  display: block;
+  width: 70px;
+  height: 70px;
+  overflow: visible;
+}
+.workshop-axis-indicator line {
+  stroke: currentColor;
+  stroke-width: 1.7;
+}
+.workshop-axis-indicator circle {
+  fill: currentColor;
+}
+.workshop-axis-indicator text {
+  fill: currentColor;
+  font: 700 6px "Space Grotesk";
+  text-anchor: middle;
+}
+.workshop-axis-indicator [data-workshop-axis="x"] {
+  color: #e06b65;
+}
+.workshop-axis-indicator [data-workshop-axis="y"] {
+  color: #72c58a;
+}
+.workshop-axis-indicator [data-workshop-axis="z"] {
+  color: #669cf0;
+}
+.workshop-axis-indicator .axis-origin {
+  fill: #d9ece8;
+}
+.gizmo-drag-readout {
+  pointer-events: none;
+  position: absolute;
+  z-index: 9;
+  left: 50%;
+  top: 222px;
+  transform: translateX(-50%);
+  min-width: 154px;
+  padding: 7px 10px;
+  border: 1px solid var(--drag-axis-color, #79efd3);
+  border-radius: 4px;
+  background: #081819e8;
+  box-shadow: 0 0 22px #07100fcc;
+  text-align: center;
+}
+.gizmo-drag-readout[data-axis="x"] {
+  --drag-axis-color: #e06b65;
+}
+.gizmo-drag-readout[data-axis="y"] {
+  --drag-axis-color: #72c58a;
+}
+.gizmo-drag-readout[data-axis="z"] {
+  --drag-axis-color: #669cf0;
+}
+.gizmo-drag-readout b,
+.gizmo-drag-readout span {
+  display: block;
+}
+.gizmo-drag-readout b {
+  color: var(--drag-axis-color);
+  font: 700 8px "Space Grotesk";
+  letter-spacing: 0.08em;
+}
+.gizmo-drag-readout span {
+  margin-top: 3px;
+  color: #dcebe8;
+  font: 600 9px "Space Grotesk";
+}
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
 }
 .selection-marquee {
   pointer-events: none;

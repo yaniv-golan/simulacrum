@@ -79,7 +79,7 @@ export function createRemotePanel({
     syncControlWidgets(control);
   }
   function renderRemoteStatus() {
-    const controls = state.remoteControls[state.remoteProfile],
+    const controls = state.remoteControls[state.remoteProfile] || [],
       online = controls.filter(controlOnline).length,
       active = controls.filter((c) => Number(c.value) !== 0).length;
     $(".uplink").classList.toggle("online", online > 0);

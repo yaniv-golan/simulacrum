@@ -246,6 +246,33 @@ export const TYPES = {
       baselineW: 0,
     },
   },
+  rotor: {
+    name: "Fixed-Pitch Rotor",
+    cat: "motion",
+    icon: "✣",
+    mass: 18,
+    color: 0x4f8990,
+    desc: "Shaft-driven fixed-pitch aerodynamic rotor",
+    hubRadiusM: 0.16,
+    hubThicknessM: 0.12,
+    radiusM: 0.9,
+    bladeCount: 2,
+    bladeChordM: 0.12,
+    fixedPitchDeg: 14,
+    handedness: 1,
+    profileId: "utility-fixed-pitch-v1",
+    ratedRpm: 1_800,
+    maximumRpm: 2_400,
+    ports: [
+      port("SHAFT", "mechanical", "rotary-coupling", "bidirectional", "one"),
+    ],
+    flight: {
+      propulsion: {
+        kind: "shaft-rotor-aerodynamics-v1",
+        localAxis: [0, 0, 1],
+      },
+    },
+  },
   hinge: {
     name: "Hinge Joint",
     cat: "motion",

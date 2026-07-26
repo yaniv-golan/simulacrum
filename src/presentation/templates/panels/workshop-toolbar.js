@@ -25,9 +25,9 @@ export function createWorkshopToolbarTemplate() {
     <button id="zoom-in" title="Zoom toward the view center">＋</button>
     <button id="zoom-out" title="Zoom away from the view center">−</button>
     <button id="focus-view" title="Frame selected component or complete machine (F)">◎<span>FOCUS</span></button>
-    <button id="view-front" title="Front view (Numpad 1)">N1</button>
-    <button id="view-side" title="Side view (Numpad 3)">N3</button>
-    <button id="view-top" title="Top view (Numpad 7)">N7</button>
+    <button id="view-front" title="Front view, primarily the XY Workshop plane (Numpad 1)" aria-label="Front view, primarily the XY Workshop plane, Numpad 1">FRONT<kbd>N1</kbd></button>
+    <button id="view-side" title="Side view, primarily the ZY Workshop plane (Numpad 3)" aria-label="Side view, primarily the ZY Workshop plane, Numpad 3">SIDE<kbd>N3</kbd></button>
+    <button id="view-top" title="Top view, primarily the XZ Workshop plane (Numpad 7)" aria-label="Top view, primarily the XZ Workshop plane, Numpad 7">TOP<kbd>N7</kbd></button>
     <button id="view-home" title="Reset workshop view (Home)">⌂</button>
     <button id="explode-view" data-shortcut-action="view.explode" title="Temporarily separate parts and reveal connections (Shift+X)">⤢<span>EXPLODE<kbd data-shortcut-hint>⇧X</kbd></span></button>
     <button id="camera-help" title="Camera controls" aria-expanded="false">?</button>

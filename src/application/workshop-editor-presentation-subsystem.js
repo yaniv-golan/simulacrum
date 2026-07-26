@@ -1,10 +1,9 @@
-import { createTransformGizmoController } from "../presentation/transform-gizmo-controller.js";
+import { createWorkshopTransformGizmo } from "./workshop-transform-gizmo-composition.js";
 import { createEditorExplodedView } from "./editor-exploded-view-composition.js";
 import { createEditorPresentationSubsystem } from "./editor-presentation-subsystem.js";
 import { createEditorSelectionVisibility } from "./editor-selection-visibility-composition.js";
 import { createWorldPresentationSubsystem } from "./world-presentation-subsystem.js";
 import { createSelectedContextCommandCatalog } from "./component-action-catalog.js";
-
 /** Composes editor visuals, transforms, world interaction, and exploded view. */
 export function createWorkshopEditorPresentationSubsystem({
   state,
@@ -24,7 +23,7 @@ export function createWorkshopEditorPresentationSubsystem({
   let editorPresentation;
   const visibility = { current: null },
     commandCatalog = createSelectedContextCommandCatalog(),
-    transformGizmo = createTransformGizmoController({
+    transformGizmo = createWorkshopTransformGizmo({
       camera: scene.camera,
       element: scene.renderer.domElement,
       scene: scene.world,
@@ -35,10 +34,12 @@ export function createWorkshopEditorPresentationSubsystem({
         selectedIds: () => state.editor.selectedIds,
       },
       actions: {
+        appendCapturedHistory: history.record,
+        captureHistorySnapshot: history.capture,
         syncAssembly: assembly.sync,
-        recordHistory: history.record,
       },
       view: {
+        query: view.query,
         showSelection: (part) => editorPresentation?.showSelection(part),
         updateSelection: () => editorPresentation?.updateSelection(),
         drawConnections: () => editorPresentation?.drawConnections(),
@@ -46,7 +47,6 @@ export function createWorkshopEditorPresentationSubsystem({
       },
     }),
     { transform, groupPivot } = transformGizmo;
-
   editorPresentation = createEditorPresentationSubsystem({
     state,
     catalog,
@@ -61,15 +61,7 @@ export function createWorkshopEditorPresentationSubsystem({
       groupPivot,
       wires: scene.wires,
     },
-    assembly: {
-      sync: assembly.sync,
-      snapshot: assembly.snapshot,
-      revision: assembly.revision,
-      evidenceRevision: assembly.evidenceRevision,
-      currentConnections: assembly.currentConnections,
-      currentPart: assembly.currentPart,
-      powered: assembly.powered,
-    },
+    assembly,
     view: {
       query: view.query,
       queryAll: view.queryAll,
@@ -86,6 +78,7 @@ export function createWorkshopEditorPresentationSubsystem({
       connectWithRope: actions.connectWithRope,
       setMode: actions.setMode,
       render: view.render,
+      finishTransform: transformGizmo.finish,
       tutorialEvent: actions.tutorialEvent,
       notify: view.notify,
     },
@@ -95,7 +88,6 @@ export function createWorkshopEditorPresentationSubsystem({
       selectionChanged: () => visibility.current?.selectionChanged(),
     },
   });
-
   const world = createWorldPresentationSubsystem({
       state,
       storage,

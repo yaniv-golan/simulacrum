@@ -14,6 +14,8 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-component-selection-actions.mjs",
   "verify-component-authored-carriers.mjs",
   "verify-component-relationship-analysis.mjs",
+  "verify-component-route-evidence.mjs",
+  "verify-component-route-evidence-scale.mjs",
   "verify-component-preflight.mjs",
   "verify-component-inspection-foundation-scale.mjs",
   "verify-browser-errors.mjs",
@@ -63,6 +65,7 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-core-pack.mjs",
   "verify-model-contracts.mjs",
   "verify-test-site-contract.mjs",
+  "verify-workshop-axis-contract.mjs",
   "verify-test-site-physics-authority.mjs",
   "verify-test-site-contact-archetypes.mjs",
   "verify-test-site-rope.mjs",
@@ -80,6 +83,10 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-power-signal-command-networks.mjs",
   "verify-material-resources.mjs",
   "verify-conserved-propulsion.mjs",
+  "verify-drone-depletion-root-cause.mjs",
+  "verify-electric-multirotor-qualification-contract.mjs",
+  "verify-electric-multirotor-endurance.mjs",
+  "verify-rotor-aerodynamics.mjs",
   "verify-controller-sandbox.mjs",
   "verify-controller-bindings.mjs",
   "verify-flight-command-transition.mjs",
@@ -109,7 +116,12 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-release-coupler-browser.mjs",
   "verify-rover-runtime.mjs",
   "verify-rover-apron-egress.mjs",
+  "verify-rover-raw-edge.mjs",
   "verify-camera-tracker.mjs",
+  "verify-camera-interaction-controller.mjs",
+  "verify-transform-gizmo-lifecycle.mjs",
+  "verify-transform-gizmo-lifecycle-browser.mjs",
+  "verify-workshop-axis-presentation-browser.mjs",
   "verify-blueprint-roundtrip.mjs",
   "verify-blueprint-exchange.mjs",
   "verify-hybrid-assembly.mjs",
@@ -123,6 +135,7 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-ui-baseline-fixtures.mjs",
   "verify-accessibility.mjs",
   "verify-keyboard-workflows.mjs",
+  "verify-operation-input-context.mjs",
   "verify-keyboard-authoring-journey.mjs",
   "verify-editor-tools.mjs",
   "verify-failure-analysis.mjs",
@@ -141,16 +154,21 @@ export const VERIFICATION_CHECKS = Object.freeze([
 
 /**
  * Explicit exceptions for workflows that intentionally exercise several
- * reload/persistence boundaries in one browser. Product performance limits
- * remain inside their owning suites; these values bound orchestration only.
+ * application lifecycles or reload/persistence boundaries in one browser.
+ * Product performance limits remain inside their owning suites; these values
+ * bound orchestration only.
  */
 export const VERIFICATION_TIMEOUT_MS = Object.freeze({
+  "verify-mechanism-sharing-proof.mjs": 300_000,
+  "verify-blueprint-roundtrip.mjs": 300_000,
   "verify-blueprint-exchange.mjs": 300_000,
   "verify-editor-tools.mjs": 300_000,
+  "verify-transform-gizmo-lifecycle-browser.mjs": 300_000,
   "verify-failure-analysis.mjs": 300_000,
   "verify-testing-playground-browser.mjs": 420_000,
   "verify-ui-baseline-fixtures.mjs": 300_000,
   "verify-component-authored-carriers-browser.mjs": 300_000,
+  "verify-keyboard-workflows.mjs": 300_000,
 });
 
 /**

@@ -154,7 +154,11 @@ state and follows live structural partitioning. Pressure-nozzle demand debits
 only reachable same-medium stores; force is derived from the delivered flow,
 nozzle exit state, ambient pressure, compiled axis, and application point. A
 single post-thermal transaction commits material and ablative mass changes for
-the next integration tick. Checkpoint v2 restores that complete transaction.
+the next integration tick. Allocation v2 permits exactly one atomic commit per
+network and fixed tick, persists its sequence and last committed tick, and
+rejects duplicate or stale direct calls. Checkpoint v2 restores that complete
+transaction and requires owner version 2 for `material-resources`; every other
+pre-existing owner remains version 1.
 
 Compressible dry-air ports use the distinct `compressible-gas` behavior and
 `dry-air-v1` medium. `PneumaticNetwork` owns each tire chamber's conserved gas
@@ -167,6 +171,27 @@ state is checkpointed under `pneumatic-gas`, projected into completed mobility
 telemetry and pressure-sensor readings, and included in the next-tick wheel
 mass property. `MaterialResourceNetwork.allocate()` remains exclusively the
 finite one-way store allocator.
+
+`PowerNetwork`, `SignalNetwork`, and `MaterialResourceNetwork` retain bounded,
+immutable route indexes during their authoritative resolve/allocation work.
+Call `evidenceIndex()` to obtain the result digest, then pass that digest with a
+version-1 query to `routeWitness()`. A witness proves endpoint reachability;
+power paths do not claim which edge carried watts, and resource paths report an
+authoritative debit separately from the non-flow route. Live callers use
+`SimulationSession.routeEvidence(token, query, expectedIdentity)` with the
+opaque token and exact identity from completed telemetry. Tokens are
+session-local capabilities and are stripped from checkpoints and portable
+playback.
+
+Electric rotary drives reserve their current power allocation on the motor
+constraint row before the one Cannon solve. `MotorEnergySettlementSystem`
+then debits the exact positive row work once, after integration, and publishes
+electrical work, mechanical work, absorbed work, conversion loss, and rejected
+heat. Fixed-pitch `rotor` components are ordinary one-port shaft loads:
+`rotorAerodynamicPerformance()` derives thrust and opposing torque from shaft
+speed, atmosphere, inflow, authored geometry, handedness, and a closed profile
+registry. `RotorPropulsionSystem` applies those forces before integration;
+there is no demo or vehicle-mode dispatch.
 
 Immutable `FailureEvent` records and source-addressed challenge criteria use
 completed network and telemetry snapshots. The canonical
@@ -197,7 +222,10 @@ forces, impacts, and read models after restore.
 Blueprint input is the exact `simulacrum-blueprint` v1 contract. Parts contain
 resolved behavior configuration, computers own their programs, batteries use
 `config.capacityWh` plus `storedEnergyWh`, and every connection names explicit
-compatible ports. Workspace v1 is a separate local document; selection, active
+compatible ports. Rotor v1 configuration requires identity scale, positive
+hub/blade dimensions, two through eight blades, fixed pitch from 2° through
+35°, handedness `-1` or `1`, a known profile, and rated speed no greater than
+maximum speed. Workspace v1 is a separate local document; selection, active
 remote state, UI geometry, executable acquisition, and trust never enter a
 portable blueprint. Unsupported formats are rejected rather than migrated.
 

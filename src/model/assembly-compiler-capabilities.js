@@ -6,6 +6,7 @@ import {
   componentPneumaticContract,
   componentPorts,
 } from "./component-contracts.js";
+import { rotorAerodynamicContract } from "./rotor-aerodynamics-contracts.js";
 import { rangeSensorContract } from "./range-sensor-contracts.js";
 
 const ACTUATOR_CAPABILITY_COMPILERS = new Map([
@@ -13,6 +14,24 @@ const ACTUATOR_CAPABILITY_COMPILERS = new Map([
   ["linear-actuator-v1", ({ kind }) => ({ kind })],
   ["luminaire-v1", (descriptor) => cloneCompiledValue(descriptor)],
 ]);
+
+const PROPULSION_CAPABILITY_COMPILERS = new Map([
+  ["pressure-nozzle-v1", pressureNozzleContract],
+  ["shaft-rotor-aerodynamics-v1", rotorAerodynamicContract],
+]);
+
+function compilePropulsion(part, definition, geometry, catalog) {
+  const descriptor = definition.flight?.propulsion;
+  if (!descriptor) return null;
+  const compiler = PROPULSION_CAPABILITY_COMPILERS.get(descriptor.kind);
+  if (!compiler)
+    throw new DomainValidationError(
+      "UNKNOWN_COMPILED_CAPABILITY",
+      `Unknown propulsion capability kind ${String(descriptor.kind)}.`,
+      { path: ["parts", part.id, "propulsion", "kind"] },
+    );
+  return compiler(part, definition, geometry, catalog);
+}
 
 function compileRegistered(registry, descriptor, family, context) {
   if (!descriptor) return null;
@@ -194,7 +213,7 @@ export function compilePartCapabilities(part, definition, geometry, catalog) {
           bindings: cloneCompiledValue(part.controllerBindings),
         }
       : null,
-    propulsion: pressureNozzleContract(part, definition, geometry, catalog),
+    propulsion: compilePropulsion(part, definition, geometry, catalog),
     materialStore: materialStoreContract(part, catalog, geometry),
     materialPorts: componentPorts(part, catalog)
       .filter(
