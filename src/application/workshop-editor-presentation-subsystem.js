@@ -61,15 +61,7 @@ export function createWorkshopEditorPresentationSubsystem({
       groupPivot,
       wires: scene.wires,
     },
-    assembly: {
-      sync: assembly.sync,
-      snapshot: assembly.snapshot,
-      revision: assembly.revision,
-      evidenceRevision: assembly.evidenceRevision,
-      currentConnections: assembly.currentConnections,
-      currentPart: assembly.currentPart,
-      powered: assembly.powered,
-    },
+    assembly,
     view: {
       query: view.query,
       queryAll: view.queryAll,

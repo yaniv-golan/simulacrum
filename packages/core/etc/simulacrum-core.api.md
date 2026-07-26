@@ -1000,6 +1000,14 @@ export class ChallengeRun {
 }
 
 // @public (undocumented)
+export const CHECKPOINT_STATE_OWNER_IDS: readonly string[];
+
+// @public (undocumented)
+export const CHECKPOINT_STATE_OWNER_VERSIONS: Readonly<{
+    [k: string]: number;
+}>;
+
+// @public (undocumented)
 export function clampActuatorCommand(part: any, channel: string, value: unknown, catalog?: Record<string, any>): any;
 
 // @public (undocumented)
@@ -2566,6 +2574,10 @@ export class MaterialResourceNetwork {
         dt?: number;
     }): any;
     // (undocumented)
+    allocationEvidenceIndex(): any;
+    // (undocumented)
+    evidenceIndex(): any;
+    // (undocumented)
     exportState(): any;
     // (undocumented)
     importState(state: any, runGraph: any): void;
@@ -2573,6 +2585,8 @@ export class MaterialResourceNetwork {
     remainingMass(partId: any): any;
     // (undocumented)
     resolve(runGraph: any): this;
+    // (undocumented)
+    routeWitness(input: any, expectedNetworkResultDigest: any): any;
     // (undocumented)
     stores(): any;
     // (undocumented)
@@ -4617,9 +4631,13 @@ export class PowerNetwork {
     allocationFor(partId: any): any;
     drawPower(partId: any, requestedW: any, dt?: number): number;
     // (undocumented)
+    evidenceIndex(): any;
+    // (undocumented)
     isPowered(partId: any): boolean;
     // (undocumented)
     resolve(runGraph: any, fixedDt?: number): this;
+    // (undocumented)
+    routeWitness(query: any, expectedNetworkResultDigest: any): any;
     // (undocumented)
     sourceIdsFor(partId: any): readonly any[];
     // (undocumented)
@@ -5178,11 +5196,15 @@ export class SignalNetwork {
     // (undocumented)
     controllersForTarget(targetId: any): readonly any[];
     // (undocumented)
+    evidenceIndex(): any;
+    // (undocumented)
     hasRoute(controllerId: any, targetId: any, targetPortId?: any): boolean;
     // (undocumented)
     hasSensorRoute(controllerId: any, sensorId: any, sensorPortId?: any): boolean;
     // (undocumented)
     resolve(runGraph: any, powerNetwork: any): this;
+    // (undocumented)
+    routeWitness(query: any, expectedNetworkResultDigest: any): any;
     // (undocumented)
     sensorsForController(controllerId: any): readonly any[];
     // (undocumented)
@@ -5278,17 +5300,7 @@ export class SimulationSession {
         };
         completedSensorSnapshot: any;
         telemetry: any;
-        previousTelemetry: Readonly<{
-            schemaVersion: 1;
-            tick: number;
-            time: number;
-            assemblyRevision: any;
-            runRevision: any;
-            graphRevision: any;
-            run: any;
-            bodies: any;
-            systems: any;
-        }>;
+        previousTelemetry: any;
     };
     // (undocumented)
     fixedDt: number;
@@ -5297,6 +5309,8 @@ export class SimulationSession {
     // (undocumented)
     maxSubsteps: number;
     resynchronizeAfterCheckpointRestore(): void;
+    // (undocumented)
+    routeEvidence(token: any, query: any, expectedIdentity: any): any;
     // (undocumented)
     start(snapshot: any, services?: {}): this;
     // (undocumented)

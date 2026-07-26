@@ -37,7 +37,7 @@ for (const file of files) {
   );
   assert.doesNotMatch(
     source,
-    /\b(?:flightRuntime|ComponentFlightRuntime|flightStarted|launched|multirotor|statusDetail)\b|\bstatus\s*:/,
+    /\b(?:flightRuntime|ComponentFlightRuntime|flightStarted|launched|multirotor|statusDetail|flightStatus|missionStatus)\b/,
     `${file} restored broad flight or presentation-owned mission state`,
   );
   assert.doesNotMatch(

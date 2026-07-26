@@ -6,9 +6,10 @@ import { analyzeCapabilityDispatch } from "./lib/capability-dispatch-analyzer.mj
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const REVIEWED_CAPABILITY_DISPATCH_BASELINE = Object.freeze({
-  commit: "unreleased-electric-multirotor-and-workshop-axis-2026-07-26",
-  sites: 242,
-  sha256: "2c973c0a87a7f3aa3b610b3e49be3f2376f9108f4fe55472596cc01e92f9c1e6",
+  commit:
+    "unreleased-component-selection-s3-electric-multirotor-and-workshop-axis-2026-07-26",
+  sites: 246,
+  sha256: "9b84785d2112f7b13a09af1aabcfc130d9d009bb759047b6b15c7bb9dfd4019a",
 });
 
 const POLICIES = Object.freeze([
@@ -131,7 +132,7 @@ const POLICIES = Object.freeze([
   },
   {
     pattern:
-      /^src\/application\/(?:assembly-editor-feature|assembly-transform-commands|assembly-workspace|blueprint-loading-feature|build-history-feature|build-history-snapshot|command-candidate-reader|component-authoring-commands|component-inspection-feature|component-inspection-observation-adapters|controller-binding-editor-adapter|controller-editor-feature|controller-lifecycle-feature|controller-sensor-capture|debug-read-model-feature|editor-inspector-actions|editor-keyboard-composition|editor-presentation-subsystem|editor-selection-feature|executable-trust-feature|flexible-line-debug-read-model|keyboard-shortcut-controller|pending-placement-command|remote-control-read-model|remote-control-state|simulation-lifecycle-feature|two-ended-component-authoring|workspace-persistence)\.js$/,
+      /^src\/application\/(?:assembly-editor-feature|assembly-transform-commands|assembly-workspace|authored-route-evidence-accessor|blueprint-loading-feature|build-history-feature|build-history-snapshot|command-candidate-reader|component-authoring-commands|component-inspection-feature|component-inspection-observation-adapters|controller-binding-editor-adapter|controller-editor-feature|controller-lifecycle-feature|controller-sensor-capture|debug-read-model-feature|editor-inspector-actions|editor-keyboard-composition|editor-presentation-subsystem|editor-selection-feature|executable-trust-feature|flexible-line-debug-read-model|keyboard-shortcut-controller|pending-placement-command|production-simulation-session|remote-control-read-model|remote-control-state|simulation-lifecycle-feature|two-ended-component-authoring|workspace-persistence)\.js$/,
     family: "application-boundary-and-read-model",
     disposition: "KEEP",
     owner: "application/use-cases",

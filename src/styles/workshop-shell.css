@@ -578,7 +578,14 @@ header {
   letter-spacing: 0.14em;
   color: #78928e;
 }
-.port {
+.port-row {
+  margin: 6px 0;
+  border: 1px solid #294341;
+  background: #0c1d1f;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.port-control {
   width: 100%;
   display: grid;
   grid-template-columns: 24px 1fr auto;
@@ -586,41 +593,180 @@ header {
   text-align: left;
   align-items: center;
   padding: 9px;
-  border: 1px solid #294341;
-  background: #0c1d1f;
+  border: 0;
+  background: transparent;
   color: #bcd0cc;
-  margin: 6px 0;
-  border-radius: 4px;
   cursor: pointer;
 }
-.port i {
+.port-control i {
   color: var(--mint);
   font-style: normal;
 }
-.port span {
+.port-control span {
   font: 600 9px "Space Grotesk";
 }
-.port span small {
+.port-control span small {
   display: block;
   margin-top: 2px;
   color: #62847e;
   font: 600 6px "Space Grotesk";
   letter-spacing: 0.08em;
 }
-.port > strong {
+.port-control > strong {
   color: #73958f;
   font: 600 6px "Space Grotesk";
   letter-spacing: 0.06em;
 }
-.port em {
+.port-control em {
   grid-column: 2 / 4;
   font: normal 7px "DM Sans";
   color: #60817c;
   line-height: 1.35;
 }
-.port.armed {
+.port-row.armed,
+.port-row.active {
   border-color: var(--mint);
   box-shadow: 0 0 15px #70e0c433;
+}
+.port-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0 9px 9px 33px;
+}
+.port-actions[hidden] {
+  display: none;
+}
+.port-actions button {
+  min-height: 30px;
+  border: 1px solid #36524f;
+  background: #102426;
+  color: #a8c9c3;
+  font: 600 7px "Space Grotesk";
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.port-actions button.danger {
+  color: #ffaaa4;
+  border-color: #6d3c3c;
+}
+.port-route-target {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+  color: #78928e;
+  font: 600 7px "Space Grotesk";
+}
+.port-route-target select {
+  width: 100%;
+  min-width: 0;
+  background: #081719;
+  color: #c7dcd8;
+  border: 1px solid #36524f;
+  padding: 6px;
+  font: 500 8px "DM Sans";
+}
+.port-assessment-status {
+  margin: 0 9px 7px 33px;
+  color: #e5bb72;
+  font: 500 7px "DM Sans";
+  line-height: 1.35;
+}
+.port-assessment-status:empty {
+  display: none;
+}
+.port-inline-status {
+  grid-column: 1 / -1;
+  min-height: 1em;
+  margin: 2px 0 0;
+  color: #8ff7df;
+  font: 500 7px "DM Sans";
+}
+.configured-chain {
+  margin: 10px 0 0;
+  border: 1px solid #294642;
+  background: #09191b;
+  color: #9db9b4;
+}
+.configured-chain summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px;
+  color: #b9d3ce;
+  font: 650 8px "Space Grotesk";
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+.configured-chain > :not(summary) {
+  margin: 0 9px 9px;
+}
+.configured-chain > p,
+.configured-chain-status {
+  color: #78928e;
+  font: 500 7px/1.45 "DM Sans";
+}
+.configured-chain label {
+  display: grid;
+  gap: 4px;
+  color: #78928e;
+  font: 600 7px "Space Grotesk";
+}
+.configured-chain select,
+.configured-chain > button {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #36524f;
+  background: #102426;
+  color: #c7dcd8;
+  padding: 7px;
+  font: 500 8px "DM Sans";
+}
+.configured-chain > button {
+  cursor: pointer;
+  font-family: "Space Grotesk";
+  font-weight: 650;
+}
+.configured-chain-result:empty {
+  display: none;
+}
+.configured-chain-result > p {
+  margin: 0 0 7px;
+  color: #8ff7df;
+  font: 500 7px/1.4 "DM Sans";
+}
+.configured-chain-result ol {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.configured-chain-result li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  padding: 7px;
+  border-left: 2px solid #5e7773;
+  background: #0d2022;
+  font: 500 7px "DM Sans";
+}
+.configured-chain-result li.chain-input {
+  border-left-color: #70e0c4;
+}
+.configured-chain-result li.chain-output {
+  border-left-color: #ffc866;
+}
+.configured-chain-result li.chain-boundary {
+  border-left-color: #8b9f9c;
+}
+.configured-chain-result li strong {
+  color: #aec7c2;
+  text-align: right;
+}
+.configured-chain-result li small {
+  grid-column: 1 / -1;
+  color: #63817c;
 }
 .inspector-actions {
   position: absolute;

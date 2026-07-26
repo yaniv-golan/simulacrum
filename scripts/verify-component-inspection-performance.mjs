@@ -16,17 +16,19 @@ const root = path.resolve(import.meta.dirname, ".."),
   artifactPath = path.resolve(
     root,
     valueArgument("artifact") ||
-      "artifacts/component-inspection-performance-foundation-current.json",
+      `artifacts/component-inspection-performance-${profile || "foundation"}-current.json`,
   ),
   baselinePath = path.resolve(
     root,
     valueArgument("baseline") ||
-      "scripts/baselines/component-inspection-foundation-release-0.1.0.json",
+      `scripts/baselines/component-inspection-${profile || "foundation"}-release-0.1.0.json`,
   ),
   releaseMode = process.argv.includes("--release");
 
-if (profile !== "foundation")
-  throw new Error("S1 verifier requires --profile=foundation");
+if (!["foundation", "routes"].includes(profile))
+  throw new Error(
+    "Component inspection verifier requires --profile=foundation|routes",
+  );
 const artifact = JSON.parse(await fs.readFile(artifactPath, "utf8")),
   baseline = JSON.parse(await fs.readFile(baselinePath, "utf8")),
   currentIdentity = await captureWorkspaceIdentity(root, ["node_modules"]);
@@ -56,7 +58,11 @@ assert.ok(
     artifact.environment.measuredRuns % 2 === 1,
   "measured runs must be an odd release-contract sample count",
 );
-for (const series of ["rebuildMs", "selectionProjectionMs"])
+for (const series of [
+  "rebuildMs",
+  "selectionProjectionMs",
+  ...(profile === "routes" ? ["routeMaterializationMs"] : []),
+])
   assert.equal(
     artifact.raw[series].length,
     artifact.environment.measuredRuns,

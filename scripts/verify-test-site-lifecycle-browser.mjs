@@ -146,6 +146,7 @@ async function loadLargeAssembly() {
     .locator(`.exchange-item[data-fingerprint="${largePackage.fingerprint}"]`)
     .locator("[data-load-share]")
     .click();
+  await page.locator("#blueprint-modal").waitFor({ state: "hidden" });
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).parts.length === 129,
   );

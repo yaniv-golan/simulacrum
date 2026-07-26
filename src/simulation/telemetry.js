@@ -1,6 +1,41 @@
 import { deepFreeze } from "../model/primitives.js";
 import { registerOwnedImmutable } from "../model/owned-immutable-value.js";
 
+const ROUTE_SLOT_NAMES = Object.freeze([
+  "power",
+  "signal",
+  "resourceReachability",
+  "resourceAllocation",
+]);
+
+export function unsupportedRouteEvidenceDescriptor(source = null) {
+  return deepFreeze({
+    version: 1,
+    token: null,
+    slots: Object.fromEntries(
+      ROUTE_SLOT_NAMES.map((name) => [
+        name,
+        {
+          status: "unsupported",
+          ...(source?.slots?.[name]?.identity
+            ? { identity: structuredClone(source.slots[name].identity) }
+            : {}),
+        },
+      ]),
+    ),
+  });
+}
+
+/** Clones telemetry without retaining a session-local evidence capability. */
+export function stripRouteEvidenceCapabilities(telemetry) {
+  if (!telemetry || typeof telemetry !== "object") return telemetry;
+  const clone = structuredClone(telemetry),
+    source = clone.systems?.routeEvidence || null;
+  if (clone.systems)
+    clone.systems.routeEvidence = unsupportedRouteEvidenceDescriptor(source);
+  return deepFreeze(clone);
+}
+
 function telemetrySnapshot(
   {
     time = 0,

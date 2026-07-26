@@ -195,20 +195,7 @@ export function createAssemblyEditorFeature({
       workspace.selectedEntity?.kind === "connection" &&
       workspace.selectedEntity.connectionId
     ) {
-      const connectionId = workspace.selectedEntity.connectionId,
-        retained = workspace.connections.filter(
-          (connection) => connection.id !== connectionId,
-        );
-      if (retained.length === workspace.connections.length) return;
-      history.record("delete connection");
-      workspace.connections = retained;
-      view.syncAssembly();
-      view.select([], null);
-      view.showSelection(null);
-      view.drawConnections();
-      view.render();
-      view.notify(`Deleted connection ${connectionId}`);
-      return;
+      return disconnectConnection(workspace.selectedEntity.connectionId);
     }
     const ids = new Set(
       workspace.selectedIds.size
@@ -250,6 +237,38 @@ export function createAssemblyEditorFeature({
     view.notify(
       `Deleted ${ids.size} component${ids.size === 1 ? "" : "s"} · Undo is available`,
     );
+  }
+
+  function disconnectConnection(connectionId) {
+    if (workspace.running) return false;
+    const connection = workspace.connections.find(
+      (candidate) => candidate.id === connectionId,
+    );
+    if (!connection) return false;
+    history.record("delete connection");
+    workspace.connections = workspace.connections.filter(
+      (candidate) => candidate.id !== connectionId,
+    );
+    view.syncAssembly();
+    if (
+      workspace.selectedEntity?.kind === "connection" &&
+      workspace.selectedEntity.connectionId === connectionId
+    ) {
+      const selectedPart = workspace.parts.find(
+        (part) => part.id === workspace.selectedId,
+      );
+      view.select(
+        selectedPart ? [selectedPart.id] : [],
+        selectedPart?.id ?? null,
+      );
+      view.showSelection(selectedPart || null);
+    }
+    view.drawConnections();
+    view.render();
+    view.notify(
+      `Disconnected #${connection.a}:${connection.portA || "?"} from #${connection.b}:${connection.portB || "?"}`,
+    );
+    return true;
   }
 
   function clearBuildPlate() {
@@ -317,6 +336,7 @@ export function createAssemblyEditorFeature({
         typeof committed === "function" ? committed : () => {};
     },
     duplicate: transforms.duplicate,
+    disconnectConnection,
     mirror: transforms.mirror,
     removeSelection,
     selectAll,

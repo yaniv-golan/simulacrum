@@ -1,4 +1,5 @@
 import {
+  activeKeyboardInputContext,
   activeKeyboardFocusContext,
   focusedWidgetOwnsKeyboardEvent,
 } from "../presentation/keyboard-focus-context.js";
@@ -37,6 +38,11 @@ export function installEditorKeyboardCommands({
       profile: () => state.remoteProfile,
       controls: (profile) => state.remoteControls[profile] || [],
       focusContext: () => activeKeyboardFocusContext(actions.documentTarget),
+      inputContext: () =>
+        activeKeyboardInputContext(actions.documentTarget, {
+          running: state.running,
+          captureActive: state.capturingHotkey !== null,
+        }),
       widgetOwnsKey: (event) =>
         focusedWidgetOwnsKeyboardEvent(actions.documentTarget, event),
     },
@@ -77,12 +83,7 @@ export function installEditorKeyboardCommands({
             (candidate.b === part.id && candidate.portB === port),
         );
         if (!connection) return;
-        actions.applyEditorAction(state.editor, {
-          type: "select-connection",
-          connectionId: connection.id,
-          partId: part.id,
-        });
-        editor.remove();
+        editor.disconnectConnection(connection.id);
       },
       cancel: cancelConnection,
       setTool,

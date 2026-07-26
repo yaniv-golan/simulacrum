@@ -15,7 +15,7 @@ export function createRunEvidenceLifecycle({
   runtime.inputTraceRecorder = inputTraceRecorder;
   return Object.freeze({
     inputTraceRecorder,
-    commit(compiled) {
+    prepare(compiled) {
       runtime.runBlueprint = assembly.serialize("Mechanism experiment");
       const deployment = deploymentForBlueprint(
         physics.testingPlaygroundDeployment(),
@@ -34,6 +34,11 @@ export function createRunEvidenceLifecycle({
         },
       });
       runtime.checkpointCoordinator = null;
+      runtime.prepareCheckpointCoordinator = null;
+    },
+    activate() {
+      if (!runtime.runIdentity)
+        throw new Error("Run evidence must be prepared before activation");
       runtime.prepareCheckpointCoordinator = createCheckpointCoordinatorLoader({
         runtime,
         physics,

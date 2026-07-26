@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "profile": "routes",
+  "release": "0.1.0",
+  "measurement": {
+    "nodeRange": ">=24.18 <25",
+    "warmupRuns": 20,
+    "minimumMeasuredRuns": 101
+  },
+  "fixtures": {
+    "rawRelationship": {
+      "digest": "f9020dff79b297d49c7c7d442a95c125716e4169c76c8b959eb2b386bfea8d5c",
+      "parts": 300,
+      "connections": 3000
+    },
+    "maximumShipping": {
+      "digest": "bd4b372d290027fce9a4ba891bccd7eb460ecd77336a99f76c1fc1e87e5e1aea",
+      "parts": 300,
+      "connections": 3000
+    },
+    "routeChain": {
+      "digest": "3ec28460e6a68a8c4bc08279a2612b8e56e4bb94071f2073141c123bd488173d",
+      "hops": 299
+    }
+  },
+  "budgets": {
+    "relationshipPreflightRebuildP95Ms": 16,
+    "selectionProjectionP95Ms": 4,
+    "routeMaterializationP95Ms": 4,
+    "routeIndexBytes": 524288,
+    "routeResponseBytes": 98304
+  }
+}

@@ -421,12 +421,16 @@ Blueprint version 1 stores the strict endpoint-binding manifest, selected langua
 - Press `1`, `3`, or `7` for front, side, or top views. The `+`, `−`, and Home buttons zoom and reset the workshop view. The `?` button in the camera dock displays the complete control guide.
 - Choose **Explode** or press `Shift+X` to temporarily spread every component away from the assembly center. The thicker color-coded power, signal, shaft, and gear connections remain attached to their endpoints. Parts remain selectable, but transform editing is locked until **Collapse** restores every exact position. Wiring or starting simulation also collapses the view automatically.
 - Pointer shortcuts: `Option`/`Alt`+drag or secondary-button drag orbits; `Space`+drag or middle-button drag pans; pinch or the wheel zooms toward the pointer.
-- Keyboard shortcuts: `C` duplicates, `X` deletes, `F` frames the complete selection, `Shift+X` toggles Exploded View, and `O`/`P` activate Orbit/Pan. Arrow keys orbit; `WASD` moves across the ground plane; `Q`/`E` move down/up; `+`/`−` zoom; `Home` resets the camera. Printable canvas commands do not fire while a text field or focused widget owns the key; the Keyboard & commands surface shows, remaps, clears, and resets every active alias.
+- Keyboard shortcuts: `C` duplicates, `X` deletes, `F` frames the complete selection, `Shift+X` toggles Exploded View, and `O`/`P` activate Orbit/Pan. Arrow keys orbit; `WASD` moves across the ground plane; `Q`/`E` move down/up; `+`/`−` zoom; `Home` resets the camera. Printable editor and camera commands require canvas focus. While Simulate is running, machine commands remain active when an ordinary button has focus, but text entry, hotkey capture, menus, dialogs, and native widget keys take precedence. The Keyboard & commands surface shows, remaps, clears, and resets every active alias.
 - Choose **Move** (`G`) or **Rotate** (`R`) to attach a direct 3D gizmo to the selected component. Movement snaps to 0.25 m and rotation to 15° increments.
 - Click any neutral area of the workbench to clear the selection.
-- Click a connection port and then another component to connect them.
+- Click a connection port to reveal its focused actions. An available port can
+  start connection mode; a connected port names the exact counterpart and can
+  select it, frame it, trace an owner-produced path, or disconnect that one
+  connection as one undoable edit. Network traces distinguish authored paths
+  from live tick evidence and never claim that a displayed path carried flow.
 - Rope has named `END_A` and `END_B` ports. While stopped, `Alt+A`/`Alt+B` starts the ordinary attachment workflow for that end and `Alt+Shift+A`/`Alt+Shift+B` detaches it. Multi-select exactly two components to create a two-ended Rope as one undoable Inspector action.
-- While connecting, a source banner remains on screen and a dashed live cable follows the cursor toward the hovered target. `Esc` or the banner's Cancel button exits connection mode.
+- While connecting, a source banner remains on screen and a dashed live cable follows the cursor toward the hovered target. Incompatible target ports keep their exact reason visible and leave the source armed for another choice. `Esc` or the banner's Cancel button exits connection mode.
 - `Esc` cancels placement or connection.
 - `Ctrl+Shift+F` toggles fullscreen. Plain `F` is reserved for the standard frame-selection camera action.
 

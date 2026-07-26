@@ -27,6 +27,7 @@ import {
   createWorkshopExperienceComposition,
   createWorkshopUiComposition,
   createWorkshopModeController,
+  createWorkshopCoordinatorPorts,
   connectSelectedWithRope as connectRope,
 } from "./editor-features.js";
 import "../style.css";
@@ -54,6 +55,14 @@ const shell = createWorkshopShellSubsystem({
   { queryAll: $$, state } = shell;
 const partHasPower = (part) => assemblyWorkspace?.powered(part) || false;
 const simulationRuntime = createSimulationRuntimeState(),
+  coordinator = createWorkshopCoordinatorPorts({
+    state,
+    runtime: simulationRuntime,
+    workspace: () => assemblyWorkspace,
+    editor: () => assemblyFeatureSubsystem?.editor,
+    simulation: () => simulationWorkshop,
+    history: () => buildHistoryFeature,
+  }),
   controllerSubsystem = createWorkshopControllerComposition({
     shell,
     runtime: simulationRuntime,
@@ -65,27 +74,7 @@ const simulationRuntime = createSimulationRuntimeState(),
     },
     view: { render: renderUI },
   });
-const buildHistoryState = (snapshot) =>
-    snapshot === undefined
-      ? buildHistoryFeature.capture()
-      : buildHistoryFeature.restore(snapshot),
-  refreshHistoryUI = () => buildHistoryFeature.refresh(),
-  recordHistory = (label, snapshot = null) =>
-    buildHistoryFeature.record(label, snapshot);
-const assemblyModel = new AssemblyModel(),
-  startSimulation = (preserveBaseline = false) =>
-    simulationWorkshop.start(preserveBaseline),
-  stopSimulation = () => simulationWorkshop.stop(),
-  resetSimulation = () => simulationWorkshop.reset(),
-  destroyComponentFlightPhysics = () =>
-    simulationWorkshop?.destroyFlightPhysics();
-const syncAssemblyModel = () => assemblyWorkspace.sync(),
-  currentConnections = () =>
-    assemblyWorkspace?.currentConnections() || state.connections,
-  currentPart = (id) =>
-    assemblyWorkspace?.currentPart(id) ||
-    state.parts.find((part) => part.id === id) ||
-    null;
+const assemblyModel = new AssemblyModel();
 const setExplodedView = (...args) =>
     editorStageComposition.editor.exploded.set(...args),
   tutorialEvent = (event) => experienceComposition?.tutorial.accept(event),
@@ -95,7 +84,10 @@ const setExplodedView = (...args) =>
   setMode = createWorkshopModeController({
     state,
     queryAll: $$,
-    simulation: { start: startSimulation, stop: stopSimulation },
+    simulation: {
+      start: coordinator.startSimulation,
+      stop: coordinator.stopSimulation,
+    },
     clearExploded: () => setExplodedView(false, true),
   });
 const editorStageComposition = createWorkshopEditorStageComposition({
@@ -105,12 +97,20 @@ const editorStageComposition = createWorkshopEditorStageComposition({
     runtime: simulationRuntime,
     model: assemblyModel,
     controller: { open: controllerSubsystem.open },
-    history: { capture: buildHistoryState, record: recordHistory },
+    history: {
+      capture: coordinator.buildHistoryState,
+      record: coordinator.recordHistory,
+    },
     assembly: {
-      sync: syncAssemblyModel,
-      currentConnections,
-      currentPart,
+      sync: coordinator.syncAssemblyModel,
+      currentConnections: coordinator.currentConnections,
+      currentPart: coordinator.currentPart,
+      configuredControlChainOptions: coordinator.configuredControlChainOptions,
+      routeTargetOptions: coordinator.routeTargetOptions,
       powered: partHasPower,
+      disconnectConnection: coordinator.disconnectConnection,
+      traceComponentRoute: coordinator.traceComponentRoute,
+      traceConfiguredControlChain: coordinator.traceConfiguredControlChain,
     },
     actions: {
       prepareFoot: (part) => atlasFootPart(part),
@@ -134,13 +134,13 @@ assemblyFeatureSubsystem = createWorkshopAssemblyComposition({
   model: assemblyModel,
   definitions: { catalog: TYPES, controlTemplates: CONTROL_TEMPLATES },
   history: {
-    capture: buildHistoryState,
-    restore: buildHistoryState,
-    record: recordHistory,
+    capture: coordinator.buildHistoryState,
+    restore: coordinator.buildHistoryState,
+    record: coordinator.recordHistory,
   },
   controllers: controllerSubsystem,
   presentation: editorStageComposition,
-  simulation: { destroyFlight: destroyComponentFlightPhysics },
+  simulation: { destroyFlight: coordinator.destroyComponentFlightPhysics },
   identity: {
     get: () => idSeq,
     set: (value) => {
@@ -191,9 +191,9 @@ const buildPersistenceSubsystem = createWorkshopBuildComposition({
   controllers: controllerSubsystem,
   stage: stageFoundation,
   history: {
-    capture: buildHistoryState,
-    record: recordHistory,
-    refresh: refreshHistoryUI,
+    capture: coordinator.buildHistoryState,
+    record: coordinator.recordHistory,
+    refresh: coordinator.refreshHistoryUI,
   },
   identity: {
     get: () => idSeq,
@@ -201,7 +201,7 @@ const buildPersistenceSubsystem = createWorkshopBuildComposition({
       idSeq = value;
     },
   },
-  actions: { stopSimulation },
+  actions: { stopSimulation: coordinator.stopSimulation },
   view: { render: renderUI },
 });
 buildHistoryFeature = buildPersistenceSubsystem.buildHistoryFeature;
@@ -253,7 +253,7 @@ const editorInputComposition = installWorkshopInputComposition({
   persistence: buildPersistenceSubsystem,
   playback: runComposition.playback,
   actions: {
-    resetSimulation,
+    resetSimulation: coordinator.resetSimulation,
     openLearningCenter: () => experienceComposition.openLearningCenter(),
     render: renderUI,
     setMode,

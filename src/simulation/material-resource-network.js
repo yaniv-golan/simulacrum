@@ -1,8 +1,37 @@
 import { DomainValidationError, immutableClone } from "../model/primitives.js";
+import {
+  createRouteEvidenceIndex,
+  routeWitnessFromIndex,
+  validateRouteEvidenceQuery,
+} from "./route-evidence-index.js";
 
 const stableId = (value) => `${typeof value}:${String(value)}`;
 const compareId = (left, right) =>
   stableId(left).localeCompare(stableId(right), "en");
+
+const canSource = (direction) =>
+    direction === "source" || direction === "bidirectional",
+  canSink = (direction) =>
+    direction === "sink" || direction === "bidirectional";
+
+function evidenceEdges(edges) {
+  return edges.flatMap((edge) => {
+    const result = [];
+    if (canSource(edge.directions[0]) && canSink(edge.directions[1]))
+      result.push({
+        connectionId: edge.id,
+        from: { partId: edge.a, portId: edge.portA },
+        to: { partId: edge.b, portId: edge.portB },
+      });
+    if (canSource(edge.directions[1]) && canSink(edge.directions[0]))
+      result.push({
+        connectionId: edge.id,
+        from: { partId: edge.b, portId: edge.portB },
+        to: { partId: edge.a, portId: edge.portA },
+      });
+    return result;
+  });
+}
 
 function resourceDescriptors(compiled) {
   return (compiled?.bodies || [])
@@ -32,11 +61,16 @@ function resourceNodes(compiled) {
  */
 export class MaterialResourceNetwork {
   #compiled;
+  #runGraph = null;
   #stores = new Map();
   #components = [];
   #componentByConsumerMedium = new Map();
   #graphRevision = -1;
   #lastAllocation = [];
+  #reachabilityEvidenceIndex = null;
+  #allocationEvidenceIndex = null;
+  #lastCommittedAllocationTick = null;
+  #nextAllocationSequence = 0;
 
   constructor(compiled) {
     this.#compiled = compiled;
@@ -58,6 +92,7 @@ export class MaterialResourceNetwork {
 
   resolve(runGraph) {
     if (this.#graphRevision === runGraph.graphRevision) return this;
+    this.#runGraph = runGraph;
     const activeParts = new Map(
         runGraph
           .parts()
@@ -143,7 +178,121 @@ export class MaterialResourceNetwork {
       ),
     );
     this.#graphRevision = runGraph.graphRevision;
+    const routes = evidenceEdges(activeEdges);
+    this.#reachabilityEvidenceIndex = createRouteEvidenceIndex({
+      medium: "resource",
+      runGraph,
+      edges: routes,
+      sourcePartIds: [...this.#stores.keys()],
+      targetPartIds: routes.map((edge) => edge.to.partId),
+      blockingConnectionIds: runGraph
+        .connections()
+        .filter(
+          (connection) =>
+            connection.kind === "resource" &&
+            connection.failed &&
+            compiledEdges.has(connection.id),
+        )
+        .map((connection) => connection.id),
+      blockerEvidence: "known",
+      resultFacts: {
+        components: this.#components,
+        stores: [...this.#stores.values()]
+          .sort((left, right) => compareId(left.partId, right.partId))
+          .map(({ partId, mediumId, remainingMassKg }) => ({
+            partId,
+            mediumId,
+            remainingMassKg,
+          })),
+      },
+    });
     return this;
+  }
+
+  evidenceIndex() {
+    return this.#reachabilityEvidenceIndex;
+  }
+
+  allocationEvidenceIndex() {
+    return this.#allocationEvidenceIndex;
+  }
+
+  routeWitness(input, expectedNetworkResultDigest) {
+    const query = validateRouteEvidenceQuery(input);
+    if (query.kind !== "resource-allocation")
+      return routeWitnessFromIndex(
+        this.#reachabilityEvidenceIndex,
+        query,
+        expectedNetworkResultDigest,
+      );
+    const allocation = this.#lastAllocation.find(
+        (entry) => entry.allocationId === query.allocationId,
+      ),
+      debit = allocation?.storeDebits.find(
+        (entry) => entry.storePartId === query.storePartId,
+      ),
+      index = this.#allocationEvidenceIndex,
+      target = index?.edges.find(
+        (edge) => edge.to.partId === query.consumerPartId,
+      )?.to;
+    if (
+      !allocation ||
+      !debit ||
+      allocation.consumerPartId !== query.consumerPartId ||
+      allocation.mediumId !== query.resourceKey ||
+      !target
+    )
+      return immutableClone({
+        version: 1,
+        kind: "network-route-witness-v1",
+        medium: "resource",
+        status: "invalid",
+        runtimeTopologyFingerprint: index?.runtimeTopologyFingerprint ?? null,
+        networkGraphRevision: index?.graphRevision ?? null,
+        networkResultDigest: index?.networkResultDigest ?? null,
+        indexDigest: index?.indexDigest ?? null,
+        source: null,
+        target: null,
+        resourceKey: query.resourceKey,
+        allocation: null,
+        controllerPortSelection: null,
+        hops: [],
+        alternativeWitnessCount: 0,
+        cycleConnectionIds: [],
+        blockingConnectionIds: [],
+        blockerEvidence: "unknown",
+        totalHopCount: null,
+        truncated: {
+          hops: false,
+          alternatives: false,
+          cycles: false,
+          blockers: false,
+        },
+      });
+    const store = this.#stores.get(query.storePartId),
+      internalQuery = {
+        version: 1,
+        kind: "resource-reachability",
+        source: { partId: query.storePartId, portId: store.outletPortId },
+        target,
+        resourceKey: query.resourceKey,
+      },
+      witness = routeWitnessFromIndex(
+        index,
+        internalQuery,
+        expectedNetworkResultDigest,
+      );
+    return immutableClone({
+      ...witness,
+      resourceKey: query.resourceKey,
+      allocation: {
+        allocationId: query.allocationId,
+        storePartId: query.storePartId,
+        consumerPartId: query.consumerPartId,
+        massKg: debit.massKg,
+        unit: "kg",
+      },
+    });
   }
 
   remainingMass(partId) {
@@ -185,7 +334,6 @@ export class MaterialResourceNetwork {
       );
     const allocationKey = (request) =>
         `${stableId(request.consumerPartId)}\0${request.mediumId}`,
-      transactionId = `material-allocation:${tick}:${this.#graphRevision}`,
       ordered = requests
         .map((request, index) => {
           const requestedMassKg = Number(request.requestedMassKg);
@@ -216,6 +364,43 @@ export class MaterialResourceNetwork {
       throw new DomainValidationError(
         "DUPLICATE_MATERIAL_REQUEST",
         "A consumer may submit only one request per medium in a fixed tick",
+      );
+    if (tick === this.#lastCommittedAllocationTick)
+      throw new DomainValidationError(
+        "DUPLICATE_MATERIAL_ALLOCATION_TICK",
+        "Material allocation may commit only once per fixed tick",
+        { details: { tick } },
+      );
+    if (
+      this.#lastCommittedAllocationTick !== null &&
+      tick < this.#lastCommittedAllocationTick
+    )
+      throw new DomainValidationError(
+        "STALE_MATERIAL_ALLOCATION_TICK",
+        "Material allocation cannot commit an earlier fixed tick",
+        {
+          details: {
+            tick,
+            lastCommittedAllocationTick: this.#lastCommittedAllocationTick,
+          },
+        },
+      );
+    if (this.#nextAllocationSequence === Number.MAX_SAFE_INTEGER)
+      throw new DomainValidationError(
+        "MATERIAL_ALLOCATION_SEQUENCE_EXHAUSTED",
+        "Material allocation sequence is exhausted",
+      );
+    const allocationSequence = this.#nextAllocationSequence,
+      transactionId = `material-allocation-v2:${allocationSequence}:${tick}:${this.#graphRevision}`,
+      stagedStores = new Map(
+        [...this.#stores].map(([partId, store]) => [
+          partId,
+          {
+            ...store,
+            storageSolid: structuredClone(store.storageSolid),
+            storageAxisPart: [...store.storageAxisPart],
+          },
+        ]),
       );
     const allocationByConsumer = new Map(),
       requestsByComponent = new Map();
@@ -251,7 +436,7 @@ export class MaterialResourceNetwork {
       left.component.id.localeCompare(right.component.id),
     )) {
       const stores = component.storePartIds
-          .map((id) => this.#stores.get(id))
+          .map((id) => stagedStores.get(id))
           .filter(
             (store) =>
               store?.mediumId === component.mediumId &&
@@ -336,9 +521,70 @@ export class MaterialResourceNetwork {
         });
       }
     }
-    this.#lastAllocation = ordered.map((request) =>
+    const committedAllocation = ordered.map((request) =>
       allocationByConsumer.get(allocationKey(request)),
     );
+    const allocationEvidenceIndex = this.#runGraph
+      ? createRouteEvidenceIndex({
+          medium: "resource",
+          runGraph: this.#runGraph,
+          graphRevision: this.#graphRevision,
+          edges:
+            this.#reachabilityEvidenceIndex?.status === "available"
+              ? this.#reachabilityEvidenceIndex.edges
+              : [],
+          sourcePartIds: [...this.#stores.keys()],
+          targetPartIds:
+            this.#reachabilityEvidenceIndex?.status === "available"
+              ? this.#reachabilityEvidenceIndex.targetPartIds
+              : [],
+          blockingConnectionIds:
+            this.#reachabilityEvidenceIndex?.blockingConnectionIds || [],
+          blockerEvidence:
+            this.#reachabilityEvidenceIndex?.blockerEvidence || "unknown",
+          resultFacts: {
+            transactionId,
+            tick,
+            allocations: committedAllocation,
+          },
+        })
+      : null;
+    for (const [partId, stagedStore] of stagedStores)
+      this.#stores.get(partId).remainingMassKg = stagedStore.remainingMassKg;
+    this.#lastAllocation = committedAllocation;
+    this.#allocationEvidenceIndex = allocationEvidenceIndex;
+    this.#lastCommittedAllocationTick = tick;
+    this.#nextAllocationSequence = allocationSequence + 1;
+    this.#reachabilityEvidenceIndex = this.#runGraph
+      ? createRouteEvidenceIndex({
+          medium: "resource",
+          runGraph: this.#runGraph,
+          graphRevision: this.#graphRevision,
+          edges:
+            this.#reachabilityEvidenceIndex?.status === "available"
+              ? this.#reachabilityEvidenceIndex.edges
+              : [],
+          sourcePartIds: [...this.#stores.keys()],
+          targetPartIds:
+            this.#reachabilityEvidenceIndex?.status === "available"
+              ? this.#reachabilityEvidenceIndex.targetPartIds
+              : [],
+          blockingConnectionIds:
+            this.#reachabilityEvidenceIndex?.blockingConnectionIds || [],
+          blockerEvidence:
+            this.#reachabilityEvidenceIndex?.blockerEvidence || "unknown",
+          resultFacts: {
+            components: this.#components,
+            stores: [...this.#stores.values()]
+              .sort((left, right) => compareId(left.partId, right.partId))
+              .map(({ partId, mediumId, remainingMassKg }) => ({
+                partId,
+                mediumId,
+                remainingMassKg,
+              })),
+          },
+        })
+      : null;
     return immutableClone(this.#lastAllocation);
   }
 
@@ -359,8 +605,10 @@ export class MaterialResourceNetwork {
 
   exportState() {
     return immutableClone({
-      version: 1,
+      version: 2,
       graphRevision: this.#graphRevision,
+      lastCommittedAllocationTick: this.#lastCommittedAllocationTick,
+      nextAllocationSequence: this.#nextAllocationSequence,
       stores: [...this.#stores.values()]
         .sort((left, right) => compareId(left.partId, right.partId))
         .map(({ partId, mediumId, capacityKg, remainingMassKg }) => ({
@@ -373,10 +621,20 @@ export class MaterialResourceNetwork {
   }
 
   importState(state, runGraph) {
-    if (state?.version !== 1 || !Array.isArray(state.stores))
+    if (
+      state?.version !== 2 ||
+      !Array.isArray(state.stores) ||
+      !Number.isSafeInteger(state.nextAllocationSequence) ||
+      state.nextAllocationSequence < 0 ||
+      !(
+        state.lastCommittedAllocationTick === null ||
+        (Number.isSafeInteger(state.lastCommittedAllocationTick) &&
+          state.lastCommittedAllocationTick >= 0)
+      )
+    )
       throw new DomainValidationError(
         "INVALID_MATERIAL_RESOURCE_CHECKPOINT",
-        "Material resource checkpoint must use version 1",
+        "Material resource checkpoint must use version 2 with valid allocation counters",
       );
     const records = new Map(
       state.stores.map((record) => [record.partId, record]),
@@ -408,6 +666,9 @@ export class MaterialResourceNetwork {
     this.#graphRevision = -1;
     this.#componentByConsumerMedium.clear();
     this.#lastAllocation = [];
+    this.#allocationEvidenceIndex = null;
+    this.#lastCommittedAllocationTick = state.lastCommittedAllocationTick;
+    this.#nextAllocationSequence = state.nextAllocationSequence;
     this.resolve(runGraph);
   }
 }

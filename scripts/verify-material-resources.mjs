@@ -90,8 +90,32 @@ assert.equal(
   "hydrogen-peroxide-90-v1",
 );
 
+const unresolvedResources = new MaterialResourceNetwork(compiled);
+assert.equal(unresolvedResources.evidenceIndex(), null);
+assert.equal(unresolvedResources.allocationEvidenceIndex(), null);
+const inertResources = new MaterialResourceNetwork({ bodies: [] });
+assert.deepEqual(inertResources.allocate([], { tick: 0, dt: 1 / 120 }), []);
+assert.equal(inertResources.evidenceIndex(), null);
+assert.equal(inertResources.allocationEvidenceIndex(), null);
 const runGraph = new RunAssemblyGraph(model.snapshot()),
-  resources = new MaterialResourceNetwork(compiled).resolve(runGraph);
+  resources = unresolvedResources.resolve(runGraph),
+  resourceEvidence = resources.evidenceIndex();
+assert.equal(resourceEvidence.status, "available");
+assert.equal(resources.evidenceIndex(), resourceEvidence);
+assert.equal(Object.isFrozen(resourceEvidence), true);
+assert.equal(
+  resources.routeWitness(
+    {
+      version: 1,
+      kind: "resource-reachability",
+      source: { partId: tank.id, portId: "OUTLET" },
+      target: { partId: engine.id, portId: "PROPELLANT" },
+      resourceKey: "hydrogen-peroxide-90-v1",
+    },
+    resourceEvidence.networkResultDigest,
+  ).status,
+  "resolved",
+);
 assert.equal(resources.remainingMass(tank.id), 900);
 assert.equal(resources.remainingMass("missing-store"), null);
 assert.deepEqual(resources.stores(), resources.telemetry().stores);
@@ -111,6 +135,117 @@ assert.throws(() => connectedTelemetry.components.push({}), TypeError);
 const checkpoint = resources.exportState();
 resources.importState(checkpoint, runGraph);
 assert.deepEqual(resources.exportState(), checkpoint);
+
+const atomicResources = new MaterialResourceNetwork(compiled).resolve(
+  new RunAssemblyGraph(model.snapshot()),
+);
+assert.throws(
+  () =>
+    atomicResources.allocate(
+      [
+        {
+          consumerPartId: engine.id,
+          mediumId: "bad medium",
+          requestedMassKg: 1,
+        },
+      ],
+      { tick: 0, dt: 1 / 120 },
+    ),
+  (error) => error?.code === "INVALID_MATERIAL_REQUEST",
+);
+assert.deepEqual(atomicResources.allocate([], { tick: 0, dt: 1 / 120 }), []);
+assert.equal(atomicResources.exportState().nextAllocationSequence, 1);
+assert.throws(
+  () => atomicResources.allocate([], { tick: 0, dt: 1 / 120 }),
+  (error) => error?.code === "DUPLICATE_MATERIAL_ALLOCATION_TICK",
+);
+const atomicAllocation = atomicResources.allocate(
+  [
+    {
+      consumerPartId: engine.id,
+      mediumId: "hydrogen-peroxide-90-v1",
+      requestedMassKg: 1,
+    },
+  ],
+  { tick: 2, dt: 1 / 120 },
+)[0];
+assert.match(atomicAllocation.transactionId, /^material-allocation-v2:1:2:0$/);
+const allocationEvidence = atomicResources.allocationEvidenceIndex(),
+  allocationQuery = {
+    version: 1,
+    kind: "resource-allocation",
+    allocationId: atomicAllocation.allocationId,
+    storePartId: tank.id,
+    consumerPartId: engine.id,
+    resourceKey: "hydrogen-peroxide-90-v1",
+  },
+  allocationWitness = atomicResources.routeWitness(
+    allocationQuery,
+    allocationEvidence.networkResultDigest,
+  );
+assert.equal(allocationEvidence.status, "available");
+assert.equal(atomicResources.allocationEvidenceIndex(), allocationEvidence);
+assert.equal(Object.isFrozen(allocationEvidence), true);
+assert.equal(allocationWitness.status, "resolved");
+assert.equal(
+  allocationWitness.allocation.allocationId,
+  atomicAllocation.allocationId,
+);
+assert.equal(allocationWitness.allocation.massKg, 1);
+assert.equal(
+  atomicResources.routeWitness(
+    { ...allocationQuery, consumerPartId: 99 },
+    allocationEvidence.networkResultDigest,
+  ).status,
+  "invalid",
+);
+for (const invalidAllocationQuery of [
+  { ...allocationQuery, allocationId: "missing-allocation" },
+  { ...allocationQuery, storePartId: 99 },
+  { ...allocationQuery, resourceKey: "water-v1" },
+])
+  assert.equal(
+    atomicResources.routeWitness(
+      invalidAllocationQuery,
+      allocationEvidence.networkResultDigest,
+    ).status,
+    "invalid",
+  );
+assert.throws(
+  () => atomicResources.allocate([], { tick: 1, dt: 1 / 120 }),
+  (error) => error?.code === "STALE_MATERIAL_ALLOCATION_TICK",
+);
+const atomicCheckpoint = atomicResources.exportState(),
+  restoredAtomicResources = new MaterialResourceNetwork(compiled).resolve(
+    new RunAssemblyGraph(model.snapshot()),
+  );
+restoredAtomicResources.importState(
+  atomicCheckpoint,
+  new RunAssemblyGraph(model.snapshot()),
+);
+assert.throws(
+  () => restoredAtomicResources.allocate([], { tick: 2, dt: 1 / 120 }),
+  (error) => error?.code === "DUPLICATE_MATERIAL_ALLOCATION_TICK",
+);
+assert.deepEqual(
+  restoredAtomicResources.allocate([], { tick: 3, dt: 1 / 120 }),
+  [],
+);
+const exhaustedResources = new MaterialResourceNetwork(compiled).resolve(
+  new RunAssemblyGraph(model.snapshot()),
+);
+exhaustedResources.importState(
+  {
+    ...checkpoint,
+    lastCommittedAllocationTick: null,
+    nextAllocationSequence: Number.MAX_SAFE_INTEGER,
+  },
+  new RunAssemblyGraph(model.snapshot()),
+);
+assert.throws(
+  () => exhaustedResources.allocate([], { tick: 0, dt: 1 / 120 }),
+  (error) => error?.code === "MATERIAL_ALLOCATION_SEQUENCE_EXHAUSTED",
+);
 
 for (const invalidRequests of [null, {}])
   assert.throws(
@@ -397,7 +532,7 @@ assert.equal(
 
 assert.throws(
   () => resources.importState(null, runGraph),
-  /must use version 1/,
+  /must use version 2/,
 );
 assert.throws(
   () => resources.importState({ ...checkpoint, stores: [] }, runGraph),

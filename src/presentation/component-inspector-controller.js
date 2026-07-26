@@ -13,6 +13,7 @@ import {
 } from "./breakaway-umbilical-editor.js";
 import * as ropeInspector from "./flexible-line-inspector.js";
 import { replaceSelectOptions } from "./select-options.js";
+import { createComponentInspectorPortController } from "./component-inspector-port-controller.js";
 
 /**
  * @typedef {{
@@ -40,7 +41,8 @@ import { replaceSelectOptions } from "./select-options.js";
  *   selectedEntity: () => object | null,
  *   connectFrom: () => number | null, connectPort: () => string | null,
  *   running: () => boolean,
- *   inspection: () => object,
+ *   inspection: () => any, setRouteEvidence: (evidence: object) => void,
+ *   clearRouteEvidence: () => void,
  * }} InspectorModelPort
  * @typedef {{
  *   query: (selector: string) => Element | null,
@@ -61,6 +63,9 @@ import { replaceSelectOptions } from "./select-options.js";
  *   completeConnection: (partId: number, port: string) => boolean,
  *   connectWithRope: (partIds:number[], extraSlackM:number) => boolean,
  *   selectPart: (partId: number) => void,
+ *   framePart: (partId: number) => void, disconnectConnection: (id: string) => boolean,
+ *   traceComponentRoute: (query: object) => Promise<any>, traceConfiguredControlChain: (query: object) => Promise<any>,
+ *   showRelationshipTrace: (ids: string[]) => void, clearRelationshipTrace: () => void, showRelationshipTraceSegments: (segments: {input:string[],output:string[]}) => void,
  *   setPrimaryPart: (partId: number) => void,
  *   selectConnection: (connectionId: string, partId: number) => void,
  *   setMode: (mode: string) => void, notify: (message: string) => void,
@@ -96,6 +101,13 @@ export function createComponentInspectorController({ model, view, actions }) {
       selectPort: armPort,
       selectConnection: actions.selectConnection,
     },
+  });
+  const portController = createComponentInspectorPortController({
+    model,
+    view,
+    actions,
+    armPort,
+    render,
   });
 
   function armPort(partId, port) {
@@ -263,21 +275,16 @@ export function createComponentInspectorController({ model, view, actions }) {
         running: model.running(),
       });
     required("#load-monitor").innerHTML = structuralMonitor + breakawayEditor;
-    required("#port-list").innerHTML = inspection.ports
-      .map((portRead, index) => {
-        const port = portRead.portId,
-          presentation = portRead;
-        const armed =
-          model.connectFrom() === part.id && model.connectPort() === port;
-        const connected = portRead.status === "connected";
-        return `<button class="port ${armed ? "armed" : ""}" data-port="${port}" title="${presentation.description}"><i>${index % 2 ? "◆" : "●"}</i><span>${port}<small>${presentation.medium}</small></span><strong>${armed ? "SELECTED" : connected ? "CONNECTED" : "AVAILABLE"}</strong><em>${armed ? "Choose a compatible target component." : presentation.description}</em></button>`;
-      })
-      .join("");
-    bind(part);
+    required("#port-list").innerHTML = portController.markup(part, inspection);
+    required("#configured-chain-list").innerHTML = portController.chainMarkup(
+      part,
+      inspection,
+    );
+    bind(part, inspection);
   }
 
-  /** @param {InspectorPart} part */
-  function bind(part) {
+  /** @param {InspectorPart} part @param {any} inspection */
+  function bind(part, inspection) {
     const recordEdit = (input, label) => {
       if (!input.dataset.historyRecorded) {
         input.dataset.historyRecorded = "true";
@@ -416,14 +423,7 @@ export function createComponentInspectorController({ model, view, actions }) {
         if (value) value.textContent = input.value + (input.dataset.unit || "");
       };
     }
-    for (const element of view.queryAll(".port")) {
-      const button = /** @type {HTMLButtonElement} */ (element);
-      button.onclick = () => {
-        const port = button.dataset.port;
-        if (!port) return;
-        armPort(part.id, port);
-      };
-    }
+    portController.bind(part, inspection);
   }
 
   return Object.freeze({ render });

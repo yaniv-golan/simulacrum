@@ -305,6 +305,40 @@ const topology = {
   graph = new RunAssemblyGraph(topology),
   power = new PowerNetwork(TYPES).resolve(graph, 1),
   signals = new SignalNetwork(TYPES).resolve(graph, power);
+assert.equal(new PowerNetwork(TYPES).evidenceIndex(), null);
+assert.equal(new SignalNetwork(TYPES).evidenceIndex(), null);
+const powerEvidence = power.evidenceIndex(),
+  signalEvidence = signals.evidenceIndex();
+assert.equal(powerEvidence.status, "available");
+assert.equal(signalEvidence.status, "available");
+assert.equal(power.evidenceIndex(), powerEvidence);
+assert.equal(signals.evidenceIndex(), signalEvidence);
+assert.equal(Object.isFrozen(powerEvidence), true);
+assert.equal(Object.isFrozen(signalEvidence), true);
+assert.equal(
+  power.routeWitness(
+    {
+      version: 1,
+      kind: "power",
+      source: { partId: 1, portId: "POWER" },
+      target: { partId: 4, portId: "POWER" },
+    },
+    powerEvidence.networkResultDigest,
+  ).status,
+  "resolved",
+);
+assert.equal(
+  signals.routeWitness(
+    {
+      version: 1,
+      kind: "signal",
+      source: { partId: 3, portId: "OUT" },
+      target: { partId: 4, portId: "CONTROL" },
+    },
+    signalEvidence.networkResultDigest,
+  ).status,
+  "resolved",
+);
 assert(power.isPowered(3), "transitive controller power was not resolved");
 assert(power.isPowered(4), "transitive motor power was not resolved");
 assert.deepEqual(power.sourceIdsFor(4), [1]);
@@ -398,6 +432,13 @@ assert.deepEqual(
 graph.failConnection("p-motor", { time: 1 });
 power.resolve(graph, 1);
 signals.resolve(graph, power);
+const failedPowerEvidence = power.evidenceIndex();
+assert.deepEqual(failedPowerEvidence.blockingConnectionIds, ["p-motor"]);
+assert.equal(failedPowerEvidence.blockerEvidence, "known");
+assert.notEqual(
+  failedPowerEvidence.networkResultDigest,
+  powerEvidence.networkResultDigest,
+);
 assert.equal(
   power.isPowered(4),
   false,
@@ -407,6 +448,19 @@ assert.deepEqual(
   signals.controllersForTarget(4),
   [],
   "signal route stayed online to an unpowered actuator",
+);
+assert.equal(
+  signals.routeWitness(
+    {
+      version: 1,
+      kind: "signal",
+      source: { partId: 3, portId: "OUT" },
+      target: { partId: 4, portId: "CONTROL" },
+    },
+    signals.evidenceIndex().networkResultDigest,
+  ).status,
+  "invalid",
+  "signal evidence contradicted runtime target availability",
 );
 
 const shortageGraph = new RunAssemblyGraph({
@@ -1259,6 +1313,9 @@ assert.deepEqual(invalidSignals.controllersForTarget(3), []);
 assert.deepEqual(invalidSignals.controllersForTarget(4), []);
 assert.deepEqual(invalidSignals.controllersForTarget(5), []);
 assert.deepEqual(invalidSignals.sensorsForController(2), []);
+assert.deepEqual(invalidSignals.evidenceIndex().blockingConnectionIds, [
+  "failed",
+]);
 
 const edgeCandidates = {
     remote: [

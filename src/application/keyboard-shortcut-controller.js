@@ -12,6 +12,7 @@ import { createMachineKeyboardCommands } from "./machine-keyboard-commands.js";
  *   captureIndex:()=>number|null, setCaptureIndex:(index:number|null)=>void,
  *   profile:()=>string, controls:(profile:string)=>ControlBinding[],
  *   focusContext:()=>"text-entry"|"widget"|"canvas",
+ *   inputContext:()=>"hotkey-capture"|"text-entry"|"blocking-surface"|"operation"|"workshop",
  *   widgetOwnsKey:(event:KeyboardEvent)=>boolean,
  * }} ShortcutModelPort
  * @typedef {{ setInput:(action:string,pressed:boolean)=>boolean, toggleLights:()=>void, supports:(action:string)=>boolean, releaseAll:()=>void }} DriveShortcutPort
@@ -152,16 +153,17 @@ export function installKeyboardShortcuts({
   function onKeydown(event) {
     if (disposed || event.defaultPrevented) return;
     if (captureBinding(event)) return;
-    const focusContext = model.focusContext();
+    const focusContext = model.focusContext(),
+      inputContext = model.inputContext();
     if (
-      focusContext === "text-entry" ||
+      ["text-entry", "blocking-surface"].includes(inputContext) ||
       (focusContext === "widget" && model.widgetOwnsKey(event))
     ) {
-      record("unavailable", null, "focused-widget");
+      record("unavailable", null, inputContext);
       return;
     }
     if (
-      focusContext === "canvas" &&
+      inputContext === "operation" &&
       (machineCommands.handleRemote(event, true) ||
         machineCommands.handleDrive(event, true))
     )
@@ -175,7 +177,10 @@ export function installKeyboardShortcuts({
     if (resolved.status === "handled" && resolved.actionId) {
       if (
         focusContext !== "canvas" &&
-        ["KeyC", "KeyX", "Shift+KeyX"].includes(resolved.binding)
+        event.key.length === 1 &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey
       ) {
         record("unavailable", resolved.actionId, "canvas-focus-required");
         return;
@@ -212,6 +217,7 @@ export function installKeyboardShortcuts({
     snapshot() {
       return {
         focusContext: model.focusContext(),
+        inputContext: model.inputContext(),
         captureActive: model.captureIndex() !== null,
         heldActions: machineCommands.heldActionIds(),
         lastResolution,

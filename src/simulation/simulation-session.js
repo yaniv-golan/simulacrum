@@ -3,7 +3,10 @@ import { createSimulationContext } from "./simulation-context.js";
 import {
   createTelemetrySnapshot,
   publishTelemetrySnapshot,
+  stripRouteEvidenceCapabilities,
+  unsupportedRouteEvidenceDescriptor,
 } from "./telemetry.js";
+import { RouteEvidenceArchive } from "./route-evidence-archive.js";
 
 function checkpointValue(value) {
   return value instanceof Map
@@ -43,6 +46,7 @@ export const SIMULATION_PHASES = Object.freeze([
 
 export class SimulationSession {
   #initializedSystems = [];
+  #routeEvidenceArchive = null;
 
   constructor({ fixedDt = 1 / 120, maxSubsteps = 12, systems = [] } = {}) {
     if (!Number.isFinite(fixedDt) || fixedDt <= 0)
@@ -88,10 +92,12 @@ export class SimulationSession {
 
   start(snapshot, services = {}) {
     this.dispose();
+    this.#routeEvidenceArchive = new RouteEvidenceArchive();
     services.worldAdapter?.beginSession?.();
     this.context = createSimulationContext(snapshot, services, {
       fixedDt: this.fixedDt,
     });
+    this.context.routeEvidenceArchive = this.#routeEvidenceArchive;
     this.accumulator = 0;
     this.time = 0;
     this.#initializedSystems = [];
@@ -105,12 +111,15 @@ export class SimulationSession {
       this.context.telemetry = publishTelemetrySnapshot(this.context, {
         ...this.context.telemetry.systems,
         ...(this.context.initialSystemTelemetry || {}),
+        routeEvidence: unsupportedRouteEvidenceDescriptor(),
       });
       delete this.context.initialSystemTelemetry;
       this.context.previousTelemetry = this.context.telemetry;
     } catch (initializeError) {
       const context = this.context,
         cleanupErrors = this.#disposeSystems(context);
+      this.#routeEvidenceArchive?.dispose();
+      this.#routeEvidenceArchive = null;
       this.#clear();
       throw new AggregateError(
         [initializeError, ...cleanupErrors],
@@ -173,6 +182,41 @@ export class SimulationSession {
     return this.context?.telemetry || createTelemetrySnapshot();
   }
 
+  routeEvidence(token, query, expectedIdentity) {
+    if (this.#routeEvidenceArchive)
+      return this.#routeEvidenceArchive.routeEvidence(
+        token,
+        query,
+        expectedIdentity,
+      );
+    return deepFreeze({
+      version: 1,
+      medium: query?.kind?.startsWith?.("resource")
+        ? "resource"
+        : query?.kind || "power",
+      identity: null,
+      evidenceToken: null,
+      status: "unsupported",
+      source: query?.source || null,
+      target: query?.target || null,
+      resourceKey: query?.resourceKey || null,
+      allocation: null,
+      controllerPortSelection: null,
+      hops: [],
+      alternativeWitnessCount: 0,
+      cycleConnectionIds: [],
+      blockingConnectionIds: [],
+      blockerEvidence: "unknown",
+      totalHopCount: null,
+      truncated: {
+        hops: false,
+        alternatives: false,
+        cycles: false,
+        blockers: false,
+      },
+    });
+  }
+
   exportState() {
     if (!this.context)
       throw new DomainValidationError(
@@ -190,8 +234,10 @@ export class SimulationSession {
       sensors: checkpointValue(this.context.sensors),
       commandValues: checkpointValue(this.context.commands),
       completedSensorSnapshot: this.context.completedSensorSnapshot ?? null,
-      telemetry: this.context.telemetry,
-      previousTelemetry: this.context.previousTelemetry,
+      telemetry: stripRouteEvidenceCapabilities(this.context.telemetry),
+      previousTelemetry: stripRouteEvidenceCapabilities(
+        this.context.previousTelemetry,
+      ),
     });
   }
 
@@ -201,6 +247,7 @@ export class SimulationSession {
         "INVALID_SESSION_CHECKPOINT",
         "Simulation session checkpoint is not valid for this session",
       );
+    this.#routeEvidenceArchive?.invalidateForCheckpointImport();
     if (
       state.fixedDt !== this.fixedDt ||
       state.maxSubsteps !== this.maxSubsteps
@@ -220,9 +267,9 @@ export class SimulationSession {
       this.context.completedSensorSnapshot = Object.freeze(
         structuredClone(state.completedSensorSnapshot),
       );
-    this.context.telemetry = deepFreeze(structuredClone(state.telemetry));
-    this.context.previousTelemetry = deepFreeze(
-      structuredClone(state.previousTelemetry),
+    this.context.telemetry = stripRouteEvidenceCapabilities(state.telemetry);
+    this.context.previousTelemetry = stripRouteEvidenceCapabilities(
+      state.previousTelemetry,
     );
   }
 
@@ -244,6 +291,8 @@ export class SimulationSession {
     }
     const context = this.context,
       errors = this.#disposeSystems(context);
+    this.#routeEvidenceArchive?.dispose();
+    this.#routeEvidenceArchive = null;
     this.#clear();
     if (errors.length)
       throw new AggregateError(
