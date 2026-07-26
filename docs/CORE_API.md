@@ -47,6 +47,9 @@ import {
   MaterialResourceNetwork,
   MaterialResourceCommitSystem,
   MaterialResourceSystem,
+  PneumaticCommitSystem,
+  PneumaticNetwork,
+  PneumaticSystem,
   MultibodyRuntime,
   PressureNozzleDemandSystem,
   PressureNozzleForceSystem,
@@ -85,6 +88,7 @@ const instance = instantiateSubassembly(reusable, {
 const analysis = analyzeAssembly(assembly.snapshot(), TYPES);
 const compiled = compileAssembly(assembly.snapshot(), TYPES);
 const materials = new MaterialResourceNetwork(compiled);
+const pneumatics = new PneumaticNetwork(compiled);
 const mechanisms = new MultibodyRuntime({ world, material, catalog: TYPES });
 mechanisms.start(assembly.snapshot());
 const flexibleLines = new FlexibleLineRuntime({
@@ -102,12 +106,14 @@ const session = new SimulationSession({
     nozzleDemand,
     new ReleaseCouplerSystem(),
     new MechanismSystem(),
+    new PneumaticSystem(),
     new FlexibleLineSystem(),
     new PressureNozzleForceSystem(),
     new RigidBodySystem(),
     new FlexibleLineStructureSystem(),
     new FlexibleLineTelemetrySystem(),
     new MaterialResourceCommitSystem(),
+    new PneumaticCommitSystem(),
     new MassPropertyCommitSystem(),
   ],
 });
@@ -148,7 +154,19 @@ state and follows live structural partitioning. Pressure-nozzle demand debits
 only reachable same-medium stores; force is derived from the delivered flow,
 nozzle exit state, ambient pressure, compiled axis, and application point. A
 single post-thermal transaction commits material and ablative mass changes for
-the next integration tick. Checkpoint v1 restores that complete transaction.
+the next integration tick. Checkpoint v2 restores that complete transaction.
+
+Compressible dry-air ports use the distinct `compressible-gas` behavior and
+`dry-air-v1` medium. `PneumaticNetwork` owns each tire chamber's conserved gas
+mass, internal energy, and volume; the fixed-step `PneumaticSystem` resolves
+powered compressor and three-way-valve transactions before contact, while
+`PneumaticCommitSystem` commits pressure-volume work and gas/carcass heat after
+integration. The public pure helpers expose the same ideal-gas, chamber-volume,
+pressure-support, and choked/subsonic-orifice laws used by production. Gas
+state is checkpointed under `pneumatic-gas`, projected into completed mobility
+telemetry and pressure-sensor readings, and included in the next-tick wheel
+mass property. `MaterialResourceNetwork.allocate()` remains exclusively the
+finite one-way store allocator.
 
 Immutable `FailureEvent` records and source-addressed challenge criteria use
 completed network and telemetry snapshots. The canonical
@@ -171,7 +189,7 @@ power and authored actuation energy, opens only declared routes, and adds no
 hidden separation impulse. `AerodynamicSystem`, `ThermalSystem`, and
 `PhysicalFlightTelemetrySystem` consume narrow host services in fixed-step
 order without vehicle modes, launch latches, implicit stabilization, or mission
-status. Checkpoint v1 stores mutable owner state and derives physical grouping,
+status. Checkpoint v2 stores mutable owner state and derives physical grouping,
 forces, impacts, and read models after restore.
 
 ## Blueprint boundary

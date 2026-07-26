@@ -21,6 +21,17 @@ export const CONNECTION_CAPACITIES = Object.freeze({
   }),
 });
 
+export const DEFAULT_RESOURCE_TRANSPORTS = Object.freeze({
+  "material-resource": Object.freeze({ kind: "finite-allocation-v1" }),
+  "compressible-gas": Object.freeze({
+    kind: "compressible-gas-v1",
+    effectiveOrificeAreaM2: 0.00002,
+    dischargeCoefficient: 0.72,
+    lineVolumePolicy: Object.freeze({ kind: "zero-storage-line-v1" }),
+    maximumAbsolutePressurePa: 1_000_000,
+  }),
+});
+
 export function isPhysicalConnectionKind(kind) {
   return kind === "mechanical" || kind === "mesh";
 }
@@ -77,8 +88,33 @@ export function completeConnectionContract(
     delete result.capacity;
     delete result.anchorA;
     delete result.anchorB;
+    if (result.kind === "resource" && result.transport == null) {
+      const leftBehavior = portDefinition(left, result.portA, catalog).behavior,
+        rightBehavior = portDefinition(right, result.portB, catalog).behavior;
+      if (
+        leftBehavior !== rightBehavior ||
+        !DEFAULT_RESOURCE_TRANSPORTS[leftBehavior]
+      )
+        throw new DomainValidationError(
+          "UNSUPPORTED_RESOURCE_TRANSPORT",
+          "Resource endpoints require one supported shared transport behavior",
+        );
+      result.transport = structuredClone(
+        DEFAULT_RESOURCE_TRANSPORTS[leftBehavior],
+      );
+    }
+    if (result.kind !== "resource" && result.transport != null)
+      throw new DomainValidationError(
+        "RESOURCE_TRANSPORT_FORBIDDEN",
+        "Only resource connections may declare transport",
+      );
     return result;
   }
+  if (result.transport != null)
+    throw new DomainValidationError(
+      "RESOURCE_TRANSPORT_FORBIDDEN",
+      "Physical connections may not declare resource transport",
+    );
   const resolvedCapacity = capacity || result.capacity;
   if (
     !resolvedCapacity ||

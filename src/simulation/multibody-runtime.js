@@ -34,6 +34,22 @@ const plainQuaternion = (value) => ({
   z: value.z,
   w: value.w,
 });
+const frameValuesEqual = (left, right, tolerance = 1e-12) =>
+  Array.isArray(left) &&
+  Array.isArray(right) &&
+  left.length === right.length &&
+  left.every((value, index) => Math.abs(value - right[index]) <= tolerance);
+
+function massFrameIsInvariant(body, properties) {
+  const current = body.userData?.massProperties;
+  return Boolean(
+    current &&
+    frameValuesEqual(current.comPositionPartM, properties.comPositionPartM) &&
+    current.principalAxesPart.every((axis, index) =>
+      frameValuesEqual(axis, properties.principalAxesPart[index]),
+    ),
+  );
+}
 
 function cannonVector(value) {
   return new CANNON.Vec3(value[0], value[1], value[2]);
@@ -651,7 +667,14 @@ export class MultibodyRuntime {
         );
       byPart.set(record.partId, { body, descriptor, properties });
     }
-    const affectedPartIds = new Set(byPart.keys()),
+    const frameInvariantPartIds = new Set(
+        [...byPart]
+          .filter(([, { body, properties }]) =>
+            massFrameIsInvariant(body, properties),
+          )
+          .map(([partId]) => partId),
+      ),
+      affectedPartIds = new Set(byPart.keys()),
       affectedEntries = this.constraintEntries.filter(
         (entry) =>
           entry.constraint &&
@@ -659,13 +682,20 @@ export class MultibodyRuntime {
             affectedPartIds.has(entry.descriptor.b)),
       );
     for (const entry of affectedEntries)
-      if (entry.descriptor.kind !== "fixed")
+      if (
+        entry.descriptor.kind !== "fixed" &&
+        [entry.descriptor.a, entry.descriptor.b]
+          .filter((partId) => affectedPartIds.has(partId))
+          .some((partId) => !frameInvariantPartIds.has(partId))
+      )
         throw new DomainValidationError(
           "DYNAMIC_MASS_CONSTRAINT_UNSUPPORTED",
           `Dynamic mass part participates in unsupported ${entry.descriptor.kind} constraint ${String(entry.descriptor.id)}`,
           { details: { descriptor: entry.descriptor } },
         );
-    const constraintFrames = affectedEntries.map(captureFixedConstraintFrame),
+    const constraintFrames = affectedEntries
+        .filter((entry) => entry.descriptor.kind === "fixed")
+        .map(captureFixedConstraintFrame),
       committed = [];
     for (const [partId, { body, descriptor, properties }] of byPart) {
       const oldFrame = body.userData.massFrame,
@@ -996,6 +1026,47 @@ export class MultibodyRuntime {
     return samples;
   }
 
+  tireContactStates() {
+    return this.constraintEntries
+      .filter((entry) => entry.kind === "rolling-contact-v1")
+      .map((entry) => ({
+        partId: entry.descriptor.sourcePartId,
+        state: structuredClone(entry.constraint.state),
+      }));
+  }
+
+  forEachTireMechanicalState(visitor) {
+    for (const entry of this.constraintEntries)
+      if (entry.kind === "rolling-contact-v1")
+        visitor(entry.descriptor.sourcePartId, {
+          deflectionM: entry.constraint.state.carcassDeflectionM,
+          carcassTemperatureK: entry.constraint.state.temperatureK,
+          rimLoadN: entry.constraint.state.rimLoadN,
+          normalLoadN: entry.constraint.state.normalLoadN,
+          contactRoles: entry.constraint.state.contactRoles,
+        });
+  }
+
+  setTirePneumaticGasState(
+    partId,
+    state,
+    carcassHeatJ = 0,
+    ambientPressurePa = null,
+  ) {
+    const entry = this.constraintEntries.find(
+      (candidate) =>
+        candidate.kind === "rolling-contact-v1" &&
+        candidate.descriptor.sourcePartId === partId,
+    );
+    if (!entry) return false;
+    entry.constraint.setPneumaticGasState(
+      state,
+      carcassHeatJ,
+      ambientPressurePa,
+    );
+    return true;
+  }
+
   mobilityTelemetryFor(component, context = null, dt = 0) {
     if (!component?.id)
       throw new DomainValidationError(
@@ -1040,12 +1111,21 @@ export class MultibodyRuntime {
               tireState?.frictionEllipseUtilization || 0,
             rollingResistanceTorqueNm:
               tireState?.rollingResistanceTorqueNm || 0,
+            rollingHysteresisEnergyPerCycleJ:
+              tireState?.rollingHysteresisEnergyPerCycleJ || 0,
+            effectiveRollingResistanceCoefficient:
+              tireState?.effectiveRollingResistanceCoefficient || 0,
             surfaceSinkageM: tireState?.surfaceSinkageM || 0,
             surfaceRollingResistanceMultiplier:
               tireState?.surfaceRollingResistanceMultiplier || 1,
             rimLoadN: tireState?.rimLoadN || 0,
             dissipatedEnergyJ: tireState?.dissipatedEnergyJ || 0,
             temperatureK: tireState?.temperatureK || 293.15,
+            absolutePressurePa: tireState?.absolutePressurePa ?? null,
+            gaugePressurePa: tireState?.gaugePressurePa ?? null,
+            gasTemperatureK: tireState?.gasTemperatureK ?? null,
+            chamberVolumeM3: tireState?.chamberVolumeM3 ?? null,
+            gasMassKg: tireState?.pneumaticGasState?.massKg ?? null,
             contactRoles: tireState?.contactRoles || [],
             contactRegionKeys: tireState?.contactRegionKeys || [],
             contactMaterialKeys: tireState?.contactMaterialKeys || [],

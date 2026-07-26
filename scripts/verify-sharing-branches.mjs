@@ -77,7 +77,11 @@ const mission = structuredClone(
     mission.parts.map((part) => part.id),
     { name: "Reusable flight controller" },
   ),
-  flightInstance = instantiateSubassembly(flightTemplate, { nextId: 20_000 }),
+  flightTarget = [3, -2, 5],
+  flightInstance = instantiateSubassembly(flightTemplate, {
+    position: flightTarget,
+    nextId: 20_000,
+  }),
   flightIdMap = new Map(
     flightTemplate.parts.map((part, index) => [
       part.id,
@@ -93,6 +97,31 @@ const mission = structuredClone(
   resourcePorts = flightTemplate.exposedPorts.filter((endpoint) =>
     ["OUTLET", "PROPELLANT"].includes(endpoint.port),
   );
+const flightTemplateCentroid = [0, 1, 2].map(
+  (axis) =>
+    flightTemplate.parts.reduce((sum, part) => sum + part.pos[axis], 0) /
+    flightTemplate.parts.length,
+);
+flightTemplateCentroid.forEach((value) =>
+  assert.ok(
+    Math.abs(value) < 1e-12,
+    "fallback origin was not the part centroid",
+  ),
+);
+assert.deepEqual(
+  flightInstance.parts.map((part) => part.pos),
+  flightTemplate.parts.map((part) =>
+    part.pos.map((value, axis) => value + flightTarget[axis]),
+  ),
+  "instantiation did not translate every authored part by the target position",
+);
+assert.deepEqual(
+  flightInstance.connections.map((connection) => connection.id),
+  flightTemplate.connections.map(
+    (_connection, index) => `subassembly-20000-${index + 1}`,
+  ),
+  "instantiation did not assign deterministic one-based connection IDs",
+);
 assert.ok(resourcePorts.length > 0, "flight fixture exposes no resource ports");
 assert.ok(
   resourcePorts.every((endpoint) => endpoint.role === "resource"),

@@ -36,6 +36,7 @@ const tank = part(1, "propellanttank", [0, 1.5, 0]),
     kind: "resource",
     portA: "OUTLET",
     portB: "PROPELLANT",
+    transport: { kind: "finite-allocation-v1" },
   },
   snapshot = { parts: [tank, engine], connections: [feed] },
   blueprint = normalizeBlueprint({
@@ -61,6 +62,7 @@ assert.deepEqual(compiled.networks.resource, [
     portB: "PROPELLANT",
     mediumId: "hydrogen-peroxide-90-v1",
     directions: ["source", "sink"],
+    transport: { kind: "finite-allocation-v1" },
   },
 ]);
 assert.equal(tankBody.capabilities.materialStore.kind, "propellant-store-v1");

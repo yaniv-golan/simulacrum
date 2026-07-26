@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Adds explicit pneumatic tire chambers, conserved dry-air mass and energy,
+  pressure-coupled contact support, powered compressor/three-way-valve control,
+  tire-pressure sensing, telemetry, dynamic gas mass, and exact checkpoint v2
+  state while preserving the explicit fixed-compliance tire law. Checkpoint v1
+  is rejected because it cannot contain the required `pneumatic-gas` owner.
 - Adds strict authored-assembly projection and fingerprint contracts plus
   immutable direct component-relationship and authored-preflight inspection
   APIs. These additive APIs are queued for the next minor `0.x` release; the

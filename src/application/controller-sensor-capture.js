@@ -10,6 +10,7 @@ export function createControllerSensorCapture({ sampleWind, sensorBank }) {
         bodies: previous.bodies || {},
         signals: systems.signals || {},
         commandReceivers: systems.commandReceivers || {},
+        pneumatics: systems.pneumatics || {},
         environmentBodies: systems.environmentBodies || null,
         compiledBodies: context.services.compiledAssembly?.bodies || [],
         fixedDt,

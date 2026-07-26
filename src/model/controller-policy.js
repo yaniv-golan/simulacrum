@@ -25,6 +25,8 @@ export const CONTROLLER_CHANNELS = Object.freeze([
   "linear_velocity",
   "linear_force",
   "joint_target",
+  "inflate",
+  "position",
   "target_altitude",
   "target_x",
   "target_z",

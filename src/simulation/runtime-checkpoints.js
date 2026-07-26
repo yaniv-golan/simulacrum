@@ -147,6 +147,9 @@ export class RuntimeCheckpointCoordinator {
       releaseCouplers:
         this.#releaseCouplerSystem()?.exportState(context) ?? null,
       materialResources: this.#materialResourceExport(context),
+      pneumatics: context.pneumaticNetwork?.exportState() ?? {
+        kind: "no-pneumatic-network-v1",
+      },
       articulated: this.#articulatedController()?.exportState?.() ?? null,
       commandBus: context.commandBus.exportState(),
       inputCursor: this.inputCursor?.capture?.() ?? null,
@@ -171,6 +174,8 @@ export class RuntimeCheckpointCoordinator {
       this.#releaseCouplerSystem()?.importState(context, state.releaseCouplers);
     if (state.materialResources)
       this.#materialResourceImport(context, state.materialResources);
+    if (context.pneumaticNetwork && state.pneumatics?.version === 1)
+      context.pneumaticNetwork.importState(state.pneumatics);
     if (state.articulated)
       this.#articulatedController()?.importState?.(state.articulated);
     context.commandBus.importState(state.commandBus);
@@ -258,6 +263,9 @@ export class RuntimeCheckpointCoordinator {
           states: [],
         },
         "material-resources": this.#materialResourceExport(context),
+        "pneumatic-gas": context.pneumaticNetwork?.exportState() ?? {
+          kind: "no-pneumatic-network-v1",
+        },
         "thermal-ablation": this.aerothermalAblationOwner
           ? this.aerothermalAblationOwner.exportState()
           : { kind: "no-aerothermal-runtime-v1" },
@@ -281,7 +289,7 @@ export class RuntimeCheckpointCoordinator {
       },
       checkpoint = {
         format: "simulacrum-checkpoint",
-        version: 1,
+        version: 2,
         runConfigurationFingerprint,
         blueprintFingerprint,
         compiledTopologyFingerprint,
@@ -375,6 +383,9 @@ export class RuntimeCheckpointCoordinator {
           : null,
         materialResources: context.materialResourceNetwork
           ? payloads.get("material-resources")
+          : null,
+        pneumatics: context.pneumaticNetwork
+          ? payloads.get("pneumatic-gas")
           : null,
         articulated: this.#articulatedController()
           ? payloads.get("articulated-drive")

@@ -7,6 +7,14 @@ const MEDIA = Object.freeze({
     densityKgM3: 1_390,
     specificAvailableEnergyJkg: 2_700_000,
   }),
+  "dry-air-v1": Object.freeze({
+    id: "dry-air-v1",
+    name: "Dry air",
+    specificGasConstantJPerKgK: 287.05,
+    heatCapacityRatio: 1.4,
+    constantVolumeHeatCapacityJPerKgK: 717.5,
+    constantPressureHeatCapacityJPerKgK: 1_004.55,
+  }),
 });
 
 /** Returns the immutable physical properties for one declared medium. */

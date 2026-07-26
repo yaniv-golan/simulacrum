@@ -119,6 +119,9 @@ const reservePanelVisible = await page
   reserveMapCount = await page.locator("#test-reserve-map svg").count(),
   reservePadCount = await page.locator("[data-test-pad]").count(),
   reserveRouteCount = await page.locator("[data-test-route]").count(),
+  tirePressureRouteText = await page
+    .locator('[data-test-route="tire-pressure-comparison"]')
+    .textContent(),
   reserveLegendCount = await page.locator(".test-reserve-legend span").count();
 await click('[data-test-route="hill-and-home"]');
 await click("#test-reserve-free");
@@ -331,7 +334,9 @@ await conclude(browser, () => {
   assert.equal(reservePanelVisible, true);
   assert.equal(reserveMapCount, 1);
   assert.equal(reservePadCount, 5);
-  assert.equal(reserveRouteCount, 10);
+  assert.equal(reserveRouteCount, 11);
+  assert.match(tirePressureRouteText, /Tire Pressure A\/B\/C/);
+  assert.match(tirePressureRouteText, /repeat at low, nominal, and high/);
   assert.equal(reserveLegendCount, 9);
   assert.equal(freeStarted.testingPlayground.activeRouteId, null);
   assert.equal(

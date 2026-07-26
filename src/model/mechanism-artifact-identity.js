@@ -16,6 +16,7 @@ export const CHECKPOINT_STATE_OWNER_IDS = Object.freeze([
   "energy-power-signal",
   "release-couplers",
   "material-resources",
+  "pneumatic-gas",
   "thermal-ablation",
   "articulated-drive",
   "sensors",

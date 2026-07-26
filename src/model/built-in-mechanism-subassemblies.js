@@ -162,6 +162,42 @@ function levelingController(direction) {
   };
 }
 
+function ctisControllerSource() {
+  return `type InputBinding = 'pressure.fl' | 'pressure.fr' | 'pressure.rl' | 'pressure.rr';
+type OutputBinding = 'valve.fl' | 'valve.fr' | 'valve.rl' | 'valve.rr' | 'compressor';
+interface ControlAPI {
+  read(binding: InputBinding): number;
+  write(binding: OutputBinding, value: number): void;
+}
+const targetPa = 220000;
+const deadbandPa = 5000;
+const valve = (pressurePa: number): number =>
+  pressurePa < targetPa - deadbandPa ? 1 : pressurePa > targetPa + deadbandPa ? -1 : 0;
+function tick(api: ControlAPI, dt: number): void {
+  void dt;
+  const fl = valve(api.read('pressure.fl'));
+  const fr = valve(api.read('pressure.fr'));
+  const rl = valve(api.read('pressure.rl'));
+  const rr = valve(api.read('pressure.rr'));
+  api.write('valve.fl', fl);
+  api.write('valve.fr', fr);
+  api.write('valve.rl', rl);
+  api.write('valve.rr', rr);
+  api.write('compressor', fl > 0 || fr > 0 || rl > 0 || rr > 0 ? 1 : 0);
+}`;
+}
+
+function ctisController() {
+  return {
+    scriptLanguage: "typescript",
+    scriptSources: {
+      typescript: ctisControllerSource(),
+      visual: structuredClone(DEFAULT_VISUAL_PROGRAM),
+      wat: EMPTY_WAT_CONTROLLER,
+    },
+  };
+}
+
 function addWheelStation(builder, carrier, position, axlePort = "RIGHT") {
   const bearing = builder.add("bearing", position),
     axle = builder.add("axle", position),
@@ -367,6 +403,83 @@ function activeLevelingAsset() {
   return builder.build();
 }
 
+function fourWheelCTISAsset() {
+  const builder = new MechanismAssetBuilder(
+      "Four-wheel central tire inflation system",
+      "#65c7dc",
+    ),
+    chassis = builder.add("plate", [0, 1.55, 0]),
+    battery = builder.add("battery", [0, 2.05, -0.6]),
+    compressor = builder.add("aircompressor", [-0.65, 1.95, 0]),
+    reservoir = builder.add("airreservoir", [0.65, 1.95, 0]),
+    controller = builder.add("computer", [0, 2.05, 0.65], {
+      controller: ctisController(),
+    }),
+    corners = [
+      { key: "fl", x: -1.35, z: -0.85, axlePort: "LEFT" },
+      { key: "fr", x: -1.35, z: 0.85, axlePort: "RIGHT" },
+      { key: "rl", x: 1.35, z: -0.85, axlePort: "LEFT" },
+      { key: "rr", x: 1.35, z: 0.85, axlePort: "RIGHT" },
+    ].map(({ key, x, z, axlePort }) => {
+      const bearing = builder.add("bearing", [x, 0.65, z]),
+        axle = builder.add("axle", [x, 0.65, z]),
+        wheel = builder.add("wheel", [
+          x,
+          0.65,
+          z + (axlePort === "RIGHT" ? 1 : -1),
+        ]),
+        valve = builder.add("pneumaticvalve", [x * 0.72, 1.45, z * 0.72]),
+        sensor = builder.add("tirepressureprobe", [x * 0.86, 1.15, z * 0.86]);
+      builder.connect(chassis, "TOP", bearing, "MOUNT");
+      builder.connect(bearing, "SHAFT", axle, "JOURNAL");
+      builder.connect(axle, axlePort, wheel, "AXLE");
+      builder.connect(chassis, "TOP", valve, "MOUNT");
+      builder.connect(chassis, "TOP", sensor, "MOUNT");
+      builder.connect(reservoir, "AIR", valve, "SUPPLY", "resource");
+      builder.connect(valve, "TIRE", wheel, "AIR", "resource");
+      builder.connect(sensor, "AIR", wheel, "AIR", "resource");
+      return { key, bearing, axle, wheel, valve, sensor };
+    });
+  for (const mounted of [battery, compressor, reservoir, controller])
+    builder.connect(chassis, "TOP", mounted, "MOUNT");
+  builder.connect(compressor, "AIR", reservoir, "AIR", "resource");
+  for (const powered of [
+    compressor,
+    controller,
+    ...corners.flatMap(({ valve, sensor }) => [valve, sensor]),
+  ])
+    builder.connect(battery, "POWER", powered, "POWER", "power");
+  builder.connect(controller, "OUT", compressor, "CONTROL", "signal");
+  for (const { valve, sensor } of corners) {
+    builder.connect(controller, "OUT", valve, "CONTROL", "signal");
+    builder.connect(sensor, "SIGNAL", controller, "IN A", "signal");
+  }
+  controller.controllerBindings = [
+    ...corners.map(({ key, sensor }) => ({
+      id: `pressure.${key}`,
+      direction: "input",
+      endpointPartId: sensor.id,
+      endpointPortId: "SIGNAL",
+      reading: "tire_pressure_gauge_pa",
+    })),
+    ...corners.map(({ key, valve }) => ({
+      id: `valve.${key}`,
+      direction: "output",
+      endpointPartId: valve.id,
+      endpointPortId: "CONTROL",
+      channel: "position",
+    })),
+    {
+      id: "compressor",
+      direction: "output",
+      endpointPartId: compressor.id,
+      endpointPortId: "CONTROL",
+      channel: "inflate",
+    },
+  ];
+  return builder.build();
+}
+
 let cached = null;
 
 /** Ordinary strict subassembly assets; runtime behavior remains topology-derived. */
@@ -377,6 +490,7 @@ export function builtInMechanismSubassemblies() {
     doubleWishboneAsset(),
     rockerBogieAsset(),
     activeLevelingAsset(),
+    fourWheelCTISAsset(),
   ];
   return structuredClone(cached);
 }

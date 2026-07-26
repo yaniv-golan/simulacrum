@@ -15,7 +15,7 @@
   ],
   "properties": {
     "format": { "const": "simulacrum-checkpoint" },
-    "version": { "const": 1 },
+    "version": { "const": 2 },
     "runConfigurationFingerprint": {
       "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
     },
@@ -31,8 +31,8 @@
     "committed": { "const": true },
     "stateOwners": {
       "type": "array",
-      "minItems": 19,
-      "maxItems": 19,
+      "minItems": 20,
+      "maxItems": 20,
       "items": {
         "type": "object",
         "required": [
@@ -58,6 +58,7 @@
               "energy-power-signal",
               "release-couplers",
               "material-resources",
+              "pneumatic-gas",
               "thermal-ablation",
               "articulated-drive",
               "sensors",

@@ -100,7 +100,12 @@ function bladderSolid(store, remainingMassKg) {
  */
 export function deriveDynamicMassProperties(
   bodyDescriptor,
-  { structuralMassKg, materialStore = null },
+  {
+    structuralMassKg,
+    materialStore = null,
+    additionalPointMasses = [],
+    additionalMassContributions = [],
+  },
 ) {
   const base = bodyDescriptor.massProperties,
     structuralMass = Math.max(0.001, Number(structuralMassKg)),
@@ -108,11 +113,39 @@ export function deriveDynamicMassProperties(
     structuralCom = [...base.comPositionPartM],
     storedMass = Math.max(0, Number(materialStore?.remainingMassKg || 0)),
     bladder = materialStore ? bladderSolid(materialStore, storedMass) : null,
-    massKg = structuralMass + (bladder?.massKg || 0),
+    massContributions = [
+      ...additionalPointMasses.map((entry) => ({
+        ...entry,
+        inertiaTensorAtCenterKgM2: {
+          xx: 0,
+          yy: 0,
+          zz: 0,
+          xy: 0,
+          xz: 0,
+          yz: 0,
+        },
+      })),
+      ...additionalMassContributions,
+    ]
+      .map((entry) => ({
+        id: String(entry.id),
+        massKg: Math.max(0, Number(entry.massKg) || 0),
+        centerPartM: entry.centerPartM.map(Number),
+        inertiaAtCenter: tensorMatrix(entry.inertiaTensorAtCenterKgM2),
+      }))
+      .filter((entry) => entry.massKg > 0),
+    massKg =
+      structuralMass +
+      (bladder?.massKg || 0) +
+      massContributions.reduce((sum, entry) => sum + entry.massKg, 0),
     comPositionPartM = structuralCom.map(
       (value, axis) =>
         (value * structuralMass +
-          (bladder?.centerPartM[axis] || 0) * (bladder?.massKg || 0)) /
+          (bladder?.centerPartM[axis] || 0) * (bladder?.massKg || 0) +
+          massContributions.reduce(
+            (sum, entry) => sum + entry.centerPartM[axis] * entry.massKg,
+            0,
+          )) /
         massKg,
     ),
     structuralOffset = structuralCom.map(
@@ -134,16 +167,29 @@ export function deriveDynamicMassProperties(
       ),
     );
   }
+  for (const contribution of massContributions) {
+    const offset = contribution.centerPartM.map(
+      (value, axis) => value - comPositionPartM[axis],
+    );
+    inertia = addMatrices(
+      inertia,
+      addMatrices(
+        contribution.inertiaAtCenter,
+        parallelAxis(contribution.massKg, offset),
+      ),
+    );
+  }
   return completeMassProperties({
     sourceKind: "dynamic-dry-ablation-bladder-v1",
     massEvaluationPolicy: "single-post-thermal-transaction-v1",
     massKg,
-    volumeM3: base.volumeM3,
+    ...(Number.isFinite(base.volumeM3) ? { volumeM3: base.volumeM3 } : {}),
     comPositionPartM,
     inertiaTensorAtComPartKgM2: tensorRecord(inertia),
     contributingSolidIds: [
       ...(base.contributingSolidIds || []),
       ...(bladder ? [`material-store:${bodyDescriptor.partId}`] : []),
+      ...massContributions.map((contribution) => contribution.id),
     ],
     dynamicMaterialStore: bladder
       ? {

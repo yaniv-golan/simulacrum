@@ -6,9 +6,9 @@ import { analyzeCapabilityDispatch } from "./lib/capability-dispatch-analyzer.mj
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const REVIEWED_CAPABILITY_DISPATCH_BASELINE = Object.freeze({
-  commit: "unreleased-component-inspection-s2-and-rover-egress-2026-07-25",
-  sites: 229,
-  sha256: "94da6bbd7d71627a4b6f9b30cdb9ff5ce3a15f8c186ef9119686e73d116c0845",
+  commit: "unreleased-pneumatic-tire-pressure-2026-07-26",
+  sites: 231,
+  sha256: "119b88d89fd55293746d0882fe3a81f90901d7310d670c8bb6254b5dc8d76b88",
 });
 
 const POLICIES = Object.freeze([

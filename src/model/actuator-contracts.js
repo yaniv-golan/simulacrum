@@ -61,6 +61,15 @@ export const ACTUATOR_CHANNELS = Object.freeze({
   "release-coupler-v1": Object.freeze({
     release: range(0, 1, { unit: "trigger" }),
   }),
+  "air-compressor-v1": Object.freeze({
+    inflate: range(0, 1, { fanout: true, unit: "ratio" }),
+  }),
+  "three-way-pneumatic-valve-v1": Object.freeze({
+    position: range(-1, 1, {
+      fanout: true,
+      unit: "vent / hold / supply",
+    }),
+  }),
   "controller-target-v1": Object.freeze({
     armed: range(0, 1, { unit: "enabled" }),
     target_altitude: range(0, 1_000_000, { unit: "m" }),

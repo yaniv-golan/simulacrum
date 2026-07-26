@@ -208,8 +208,12 @@ export function createTestReservePanel({
         const records = courseView(route.id).reliability,
           recordLabel = records.attempts
             ? `${records.bestTimeS?.toFixed(2) || "—"} s best · ${Math.round(records.reliability * 100)}% · ${records.attempts} runs`
-            : "No compatible runs";
-        return `<button data-test-route="${route.id}" aria-pressed="false">${route.label}<small>${title(route.stagingPadId)} pad · ${recordLabel}</small></button>`;
+            : "No compatible runs",
+          comparisonGuide =
+            route.id === "tire-pressure-comparison"
+              ? " · repeat at low, nominal, and high cold pressure"
+              : "";
+        return `<button data-test-route="${route.id}" aria-pressed="false">${route.label}<small>${title(route.stagingPadId)} pad · ${recordLabel}${comparisonGuide}</small></button>`;
       })
       .join("");
     for (const button of buttons("[data-test-route]"))

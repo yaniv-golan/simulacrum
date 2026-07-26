@@ -80,6 +80,7 @@ below describe outcomes, not required machine types.
 | Runway Circuit       | Takes off, remains airborne through approach, lands, and stops       |
 | Helipad Precision    | Approaches airborne, lands on the helipad, and holds position        |
 | Mixed Reserve Relay  | Crosses road, trail, and water-edge districts before the lawn finish |
+| Tire Pressure A/B/C  | Repeats the durability lane at low, nominal, and high tire pressure  |
 
 A gate crossing is accepted only in route order. A trial may additionally
 require a particular contacted material, fluid visit, grounded or airborne
@@ -101,6 +102,12 @@ route, and exact deployment fingerprints match. A successful portable proof
 also binds the blueprint, controller-program digests, physical component,
 environment, terminal criteria, and run configuration. Missing identity or
 program evidence fails closed rather than being guessed.
+
+The Tire Pressure A/B/C record additionally captures each pneumatic wheel's
+transaction span, minimum/maximum gauge pressure, maximum carcass deflection,
+rim load, rolling-loss coefficient, gas temperature, initial/final gas mass,
+and failure state. Those values are projections of completed pneumatic and
+mobility telemetry, not a course-specific tire calculation.
 
 ## Contributor contract
 

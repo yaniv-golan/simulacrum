@@ -6,11 +6,10 @@ import { testCourseMissionReadModel } from "./test-course-mission-read-model.js"
 import { createTestSiteContactEffects } from "./test-site-contact-effects.js";
 import { createFlexibleLineTelemetryPresenter } from "./flexible-line-telemetry-presenter.js";
 import { createSensorReadoutPresenter } from "./sensor-readout-presenter.js";
-
+import { createPneumaticTelemetryPresenter } from "./pneumatic-telemetry-presenter.js";
 export { buildMachineDebugReadModel } from "./machine-debug-read-model.js";
-
 /**
- * @typedef {{ id: number, type: string, pos: number[], mesh: THREE.Object3D, config: Record<string, number>, flightDetached?: boolean, sensorValueRpm?: number, jointAngle?: number, reactionTorque?: number, tireDeflectionM?: number, tireDeflectionRateMPerS?: number }} PresentedPart
+ * @typedef {{ id: number, type: string, pos: number[], mesh: THREE.Object3D, config: Record<string, number>, flightDetached?: boolean, sensorValueRpm?: number, jointAngle?: number, reactionTorque?: number, tireDeflectionM?: number, tireDeflectionRateMPerS?: number, tireAbsolutePressurePa?:number|null, tireGaugePressurePa?:number|null, tireGasTemperatureK?:number|null, tireGasMassKg?:number|null, tireMassInKg?:number|null, tireMassOutKg?:number|null, tirePneumaticTransactionId?:number|null, tirePneumaticFailureMode?:string|null }} PresentedPart
  * @typedef {{ kind: string }} PresentedConnection
  * @typedef {{
  *   pose: { position: {x:number,y:number,z:number}, quaternion: {x:number,y:number,z:number,w:number}, visualOffsetY:number },
@@ -30,12 +29,11 @@ export { buildMachineDebugReadModel } from "./machine-debug-read-model.js";
  * @typedef {{
  *   mechanisms?: object, articulated?: ArticulatedTelemetry, mobility?:{assemblies:MobilityAssemblyTelemetry[]},
  *   aerothermal?: object, flight?: FlightTelemetry,
- *   testCourse?: object,
+ *   testCourse?: object, pneumatics?: {transactionId?:number, chambers?:Array<object>, transfers?:Array<object>},
  *   structures?: {health:number,newlyFailed:unknown[]}, flexibleLines?: {lines:Array<object>},
  * }} PresentedSystems
  * @typedef {{ time:number, systems?: PresentedSystems }} PresentedSnapshot
  */
-
 /**
  * @param {{
  *   model: {
@@ -55,17 +53,20 @@ export { buildMachineDebugReadModel } from "./machine-debug-read-model.js";
  */
 export function createSimulationTelemetryPresenter({ model, scene, view }) {
   const contactEffects = createTestSiteContactEffects({
-    parent: scene.effects,
-    partById: (partId) =>
-      model.parts().find((candidate) => candidate.id === partId),
-  });
+      parent: scene.effects,
+      partById: (partId) =>
+        model.parts().find((candidate) => candidate.id === partId),
+    }),
+    pneumaticPresenter = createPneumaticTelemetryPresenter({
+      parts: model.parts,
+      effects: scene.effects,
+    });
   /** @returns {HTMLElement} */
   const required = (selector) => {
     const element = view.query(selector);
     if (!element) throw new Error(`Missing telemetry UI element ${selector}`);
     return /** @type {HTMLElement} */ (element);
   };
-
   function presentMechanisms(telemetry) {
     presentMechanismTelemetry({
       telemetry,
@@ -82,7 +83,6 @@ export function createSimulationTelemetryPresenter({ model, scene, view }) {
         ),
     });
   }
-
   function presentMobility(telemetry) {
     const assemblies = telemetry?.assemblies || [];
     if (!assemblies.length) return;
@@ -98,7 +98,6 @@ export function createSimulationTelemetryPresenter({ model, scene, view }) {
     view.updateDriveHud();
     if (followed) presentMobilityMission(followed);
   }
-
   function presentMobilityWheels(telemetry) {
     if (!telemetry) return;
     if (telemetry.poseMode !== "per-part") {
@@ -140,11 +139,12 @@ export function createSimulationTelemetryPresenter({ model, scene, view }) {
       if (!wheel || wheel.flightDetached) continue;
       wheel.tireDeflectionM = wheelState.carcassDeflectionM;
       wheel.tireDeflectionRateMPerS = wheelState.carcassDeflectionRateMPerS;
+      wheel.tireGaugePressurePa = wheelState.gaugePressurePa;
+      wheel.tireGasTemperatureK = wheelState.gasTemperatureK;
       if (telemetry.poseMode === "per-part") continue;
       wheel.mesh.rotation.x += wheelState.spinDelta;
     }
   }
-
   function presentMobilityCamera(telemetry) {
     scene.cameraTarget.x = THREE.MathUtils.lerp(
       scene.cameraTarget.x,
@@ -162,7 +162,6 @@ export function createSimulationTelemetryPresenter({ model, scene, view }) {
       0.08,
     );
   }
-
   function presentMobilityMission(telemetry) {
     const status = mobilityMissionReadModel(telemetry);
     required("#mission-name").textContent = status.name;
@@ -171,7 +170,6 @@ export function createSimulationTelemetryPresenter({ model, scene, view }) {
       required(".mission-progress i").style.width =
         `${status.progressPercent}%`;
   }
-
   function presentTestCourse(course) {
     const status = testCourseMissionReadModel(course);
     if (!status) return;
@@ -179,7 +177,6 @@ export function createSimulationTelemetryPresenter({ model, scene, view }) {
     required("#mission-desc").textContent = status.description;
     required(".mission-progress i").style.width = `${status.progressPercent}%`;
   }
-
   function presentArticulated(telemetry) {
     if (!telemetry) return;
     for (const pose of telemetry.poses) {
@@ -233,19 +230,17 @@ export function createSimulationTelemetryPresenter({ model, scene, view }) {
     scene.wires.position.copy(scene.machine.position);
     scene.wires.quaternion.copy(scene.machine.quaternion);
   }
-
   const presentSensorReadout = createSensorReadoutPresenter(model, view);
-
   const presentFlexibleLines = createFlexibleLineTelemetryPresenter({
     parts: model.parts,
   });
-
   function present(snapshot = model.latest()) {
     const systems = snapshot.systems || {};
     presentMechanisms(systems.mechanisms);
     presentFlexibleLines(systems.flexibleLines);
     presentArticulated(systems.articulated);
     presentMobility(systems.mobility);
+    pneumaticPresenter.present(systems.pneumatics);
     contactEffects.present(snapshot);
     if (systems.aerothermal) view.presentAerothermal(systems.aerothermal);
     presentFlight(systems.flight);
@@ -269,7 +264,11 @@ export function createSimulationTelemetryPresenter({ model, scene, view }) {
   return Object.freeze({
     present,
     presentSensorReadout,
-    clearContactEffects: contactEffects.clear,
+    clearContactEffects: () => {
+      contactEffects.clear();
+      pneumaticPresenter.clear();
+    },
+    clearPneumaticOverlay: pneumaticPresenter.clear,
     contactEffectsSnapshot: contactEffects.snapshot,
   });
 }

@@ -53,6 +53,7 @@
     "energy-power-signal": { "sources": [] },
     "release-couplers": { "version": 1, "states": [] },
     "material-resources": { "version": 1, "stores": [] },
+    "pneumatic-gas": { "version": 1, "chambers": [] },
     "thermal-ablation": { "version": 1, "parts": [] },
     "articulated-drive": { "groups": [] },
     "sensors": { "previousSnapshot": null },
@@ -128,7 +129,7 @@
       "artifact": "inputTrace",
       "decoder": "checkpoint",
       "path": ["version"],
-      "value": 1,
+      "value": 2,
       "expected": "UNSUPPORTED_WIRE_FORMAT"
     },
     {

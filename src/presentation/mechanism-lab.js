@@ -15,6 +15,23 @@ function differenceCount(left, right) {
   return count;
 }
 
+function firstDifferencePath(left, right, path = []) {
+  if (Object.is(left, right)) return null;
+  if (!left || !right || typeof left !== "object" || typeof right !== "object")
+    return path;
+  const keys = [
+    ...new Set([...Object.keys(left), ...Object.keys(right)]),
+  ].sort();
+  for (const key of keys) {
+    const difference = firstDifferencePath(left[key], right[key], [
+      ...path,
+      key,
+    ]);
+    if (difference) return difference;
+  }
+  return null;
+}
+
 function plotMarkup(channelId, samples) {
   if (samples.length < 2) return "";
   const values = samples.map(({ value }) => value),
@@ -263,8 +280,10 @@ export function installMechanismLab({
         `Captured committed checkpoint at tick ${checkpoint.committedTick}`,
       );
     } catch (error) {
+      const failure = /** @type {Error & {path?: unknown}} */ (error),
+        path = Array.isArray(failure?.path) ? failure.path.join("/") : "";
       notify(
-        `Experiment capture failed: ${error instanceof Error ? error.message : String(error)}`,
+        `Experiment capture failed: ${error instanceof Error ? error.message : String(error)}${path ? ` at ${path}` : ""}`,
       );
     } finally {
       button.disabled = false;
@@ -278,10 +297,33 @@ export function installMechanismLab({
     const recaptured = runtime.checkpointCoordinator.capture(
       runtime.runIdentity,
     );
-    restoreResult =
-      recaptured.stateDigest === checkpoint.stateDigest
-        ? "exact state digest match"
-        : "digest mismatch";
+    if (recaptured.stateDigest === checkpoint.stateDigest) {
+      restoreResult = "exact state digest match";
+    } else {
+      const expectedByOwner = new Map(
+          checkpoint.stateOwners.map((owner) => [owner.ownerId, owner]),
+        ),
+        mismatchedOwnerIds = recaptured.stateOwners
+          .filter(
+            (owner) =>
+              expectedByOwner.get(owner.ownerId)?.payloadSha256 !==
+              owner.payloadSha256,
+          )
+          .map(({ ownerId }) => ownerId);
+      const firstOwnerId = mismatchedOwnerIds[0],
+        expectedOwner = expectedByOwner.get(firstOwnerId),
+        actualOwner = recaptured.stateOwners.find(
+          ({ ownerId }) => ownerId === firstOwnerId,
+        ),
+        differencePath =
+          expectedOwner && actualOwner
+            ? firstDifferencePath(
+                JSON.parse(expectedOwner.payloadJson),
+                JSON.parse(actualOwner.payloadJson),
+              )
+            : null;
+      restoreResult = `digest mismatch: ${mismatchedOwnerIds.join(", ") || "checkpoint envelope"}${differencePath?.length ? ` at ${differencePath.join("/")}` : ""}`;
+    }
     afterRestore();
     refresh();
     notify(`Checkpoint restored: ${restoreResult}`);

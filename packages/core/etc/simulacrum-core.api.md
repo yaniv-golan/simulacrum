@@ -202,6 +202,24 @@ export const ACTUATOR_CHANNELS: Readonly<{
             fanout: boolean;
         }>;
     }>;
+    "air-compressor-v1": Readonly<{
+        inflate: Readonly<{
+            minimum: any;
+            maximum: any;
+            failsafe: any;
+            unit: any;
+            fanout: boolean;
+        }>;
+    }>;
+    "three-way-pneumatic-valve-v1": Readonly<{
+        position: Readonly<{
+            minimum: any;
+            maximum: any;
+            failsafe: any;
+            unit: any;
+            fanout: boolean;
+        }>;
+    }>;
     "controller-target-v1": Readonly<{
         armed: Readonly<{
             minimum: any;
@@ -1443,6 +1461,15 @@ export class ComponentRelationshipIndex {
     snapshot(): any;
 }
 
+// @public
+export function compressibleOrificeMassFlowKgS(input: {
+    upstreamPressurePa: any;
+    downstreamPressurePa: any;
+    upstreamTemperatureK: any;
+    dischargeCoefficient: any;
+    areaM2: any;
+}): number;
+
 // @public (undocumented)
 export const CONNECTION_CAPACITIES: Readonly<{
     standard: Readonly<{
@@ -1605,6 +1632,7 @@ export class ControllerSensorBank {
         bodies?: {};
         signals?: {};
         commandReceivers?: {};
+        pneumatics?: {};
         environmentBodies?: any;
         compiledBodies?: any[];
         fixedDt?: number;
@@ -1714,6 +1742,17 @@ export function createLocalSubassemblyRecord(input: unknown, input2?: {
     createdAt: string;
     updatedAt: string;
 }>;
+
+// @public
+export function createPneumaticState(input: {
+    absolutePressurePa: any;
+    temperatureK: any;
+    volumeM3: any;
+}): {
+    massKg: number;
+    internalEnergyJ: number;
+    volumeM3: number;
+};
 
 // @public (undocumented)
 export function createSharePackage(input?: any): Promise<any>;
@@ -1858,6 +1897,8 @@ export function defaultActionBinding(action: any, control: any): Readonly<{
 export function deriveDynamicMassProperties(bodyDescriptor: any, input: {
     structuralMassKg: any;
     materialStore?: any;
+    additionalPointMasses?: any[];
+    additionalMassContributions?: any[];
 }): any;
 
 // @public (undocumented)
@@ -1885,6 +1926,18 @@ export class DomainValidationError extends Error {
         details: any;
     };
 }
+
+// @public (undocumented)
+export const DRY_AIR: Readonly<{
+    mediumId: "dry-air-v1";
+    specificGasConstantJPerKgK: 287.05;
+    heatCapacityRatio: 1.4;
+    constantVolumeHeatCapacityJPerKgK: 717.5;
+    constantPressureHeatCapacityJPerKgK: 1004.55;
+}>;
+
+// @public (undocumented)
+export const DRY_AIR_MEDIUM_ID: "dry-air-v1";
 
 // @public (undocumented)
 export function encodeSharePayload(value: any): Promise<string>;
@@ -2416,6 +2469,12 @@ export class FluidSystem {
     step(context: any, dt: any): void;
 }
 
+// @public (undocumented)
+export function gasAbsolutePressurePa(state: any, volumeM3: any): number;
+
+// @public (undocumented)
+export function gasTemperatureK(state: any): number;
+
 // @public
 export function geometryDescriptorForPart(part: any, catalog?: any): any;
 
@@ -2515,6 +2574,14 @@ export const MATERIAL_MEDIA: Readonly<{
         name: "90% hydrogen peroxide monopropellant";
         densityKgM3: 1390;
         specificAvailableEnergyJkg: 2700000;
+    }>;
+    "dry-air-v1": Readonly<{
+        id: "dry-air-v1";
+        name: "Dry air";
+        specificGasConstantJPerKgK: 287.05;
+        heatCapacityRatio: 1.4;
+        constantVolumeHeatCapacityJPerKgK: 717.5;
+        constantPressureHeatCapacityJPerKgK: 1004.55;
     }>;
 }>;
 
@@ -2952,6 +3019,136 @@ export function materialStoreContract(part: any, catalog?: {
         }>[];
         mechanism: any;
     };
+    aircompressor: {
+        name: string;
+        cat: string;
+        icon: string;
+        mass: number;
+        color: number;
+        desc: string;
+        size: number[];
+        powerWatts: number;
+        maximumGaugePressurePa: number;
+        maximumMassFlowKgS: number;
+        electricalEfficiency: number;
+        responseTimeS: number;
+        reliefAbsolutePressurePa: number;
+        motorThermalMassJPerK: number;
+        motorCoolingWPerK: number;
+        maximumMotorTemperatureK: number;
+        pressureRatioFlowMap: number[][];
+        ports: Readonly<{
+            localFramePart?: any;
+            id: any;
+            kind: any;
+            behavior: any;
+            direction: any;
+            multiplicity: any;
+        }>[];
+        pneumatic: {
+            kind: string;
+            outletPortId: string;
+            maximumGaugePressureField: string;
+            maximumMassFlowField: string;
+            electricalPowerField: string;
+            electricalEfficiencyField: string;
+            responseTimeField: string;
+            reliefAbsolutePressureField: string;
+            motorThermalMassField: string;
+            motorCoolingField: string;
+            maximumMotorTemperatureField: string;
+            pressureRatioFlowMapField: string;
+        };
+        controlContract: string;
+        electricalContract: {
+            kind: string;
+            configField: string;
+            minimumW: number;
+            baselineW: number;
+        };
+    };
+    airreservoir: {
+        name: string;
+        cat: string;
+        icon: string;
+        mass: number;
+        color: number;
+        desc: string;
+        size: number[];
+        gasVolumeSizeM: number[];
+        referenceInternalVolumeM3: number;
+        initialColdGaugePressurePa: number;
+        initialGasTemperatureK: number;
+        gasToShellConductanceWPerK: number;
+        maximumAbsolutePressurePa: number;
+        burstAbsolutePressurePa: number;
+        ports: Readonly<{
+            localFramePart?: any;
+            id: any;
+            kind: any;
+            behavior: any;
+            direction: any;
+            multiplicity: any;
+        }>[];
+        pneumatic: {
+            kind: string;
+            portId: string;
+            volumeField: string;
+            initialGaugePressureField: string;
+            initialTemperatureField: string;
+            gasToShellConductanceField: string;
+            maximumAbsolutePressureField: string;
+            burstAbsolutePressureField: string;
+            massModel: {
+                kind: string;
+                centerPartM: number[];
+                sizeField: string;
+            };
+        };
+    };
+    pneumaticvalve: {
+        name: string;
+        cat: string;
+        icon: string;
+        mass: number;
+        color: number;
+        desc: string;
+        size: number[];
+        powerWatts: number;
+        orificeAreaM2: number;
+        dischargeCoefficient: number;
+        openingTimeS: number;
+        commandDeadband: number;
+        leakageAreaM2: number;
+        failPosition: number;
+        ports: Readonly<{
+            localFramePart?: any;
+            id: any;
+            kind: any;
+            behavior: any;
+            direction: any;
+            multiplicity: any;
+        }>[];
+        pneumatic: {
+            kind: string;
+            supplyPortId: string;
+            tirePortId: string;
+            orificeAreaField: string;
+            dischargeCoefficientField: string;
+            electricalPowerField: string;
+            openingTimeField: string;
+            deadbandField: string;
+            leakageAreaField: string;
+            failPositionField: string;
+        };
+        controlContract: string;
+        electricalContract: {
+            kind: string;
+            configField: string;
+            minimumW: number;
+            baselineW: number;
+        };
+    };
     computer: {
         name: string;
         cat: string;
@@ -3161,6 +3358,34 @@ export function materialStoreContract(part: any, catalog?: {
             multiplicity: any;
         }>[];
         readings: string[];
+    };
+    tirepressureprobe: {
+        name: string;
+        cat: string;
+        icon: string;
+        mass: number;
+        color: number;
+        desc: string;
+        size: number[];
+        ports: Readonly<{
+            localFramePart?: any;
+            id: any;
+            kind: any;
+            behavior: any;
+            direction: any;
+            multiplicity: any;
+        }>[];
+        readings: string[];
+        pneumatic: {
+            kind: string;
+            portId: string;
+        };
+        electricalContract: {
+            kind: string;
+            requestW: number;
+            minimumW: number;
+            baselineW: number;
+        };
     };
     loadcell: {
         name: string;
@@ -4016,6 +4241,8 @@ export class MultibodyRuntime {
     // (undocumented)
     fluidState: any;
     // (undocumented)
+    forEachTireMechanicalState(visitor: any): void;
+    // (undocumented)
     groundBody: any;
     // (undocumented)
     hasArticulation(): boolean;
@@ -4122,11 +4349,18 @@ export class MultibodyRuntime {
             lateralSlipMPerS: any;
             frictionEllipseUtilization: any;
             rollingResistanceTorqueNm: any;
+            rollingHysteresisEnergyPerCycleJ: any;
+            effectiveRollingResistanceCoefficient: any;
             surfaceSinkageM: any;
             surfaceRollingResistanceMultiplier: any;
             rimLoadN: any;
             dissipatedEnergyJ: any;
             temperatureK: any;
+            absolutePressurePa: any;
+            gaugePressurePa: any;
+            gasTemperatureK: any;
+            chamberVolumeM3: any;
+            gasMassKg: any;
             contactRoles: any;
             contactRegionKeys: any;
             contactMaterialKeys: any;
@@ -4177,6 +4411,8 @@ export class MultibodyRuntime {
             z: any;
         };
     };
+    // (undocumented)
+    setTirePneumaticGasState(partId: any, state: any, carcassHeatJ?: number, ambientPressurePa?: any): boolean;
     // (undocumented)
     start(snapshot: any): any;
     // (undocumented)
@@ -4367,6 +4603,11 @@ export class MultibodyRuntime {
     // (undocumented)
     terrainHeightAt: any;
     // (undocumented)
+    tireContactStates(): {
+        partId: any;
+        state: any;
+    }[];
+    // (undocumented)
     topologyRevision: number;
     // (undocumented)
     torqueByConnection: Map<any, any>;
@@ -4473,6 +4714,225 @@ export function physicalComponents(telemetry: any): {
 
 // @public
 export class PhysicalFlightTelemetrySystem {
+    // (undocumented)
+    afterCheckpointRestore(context: any): void;
+    // (undocumented)
+    dispose(context: any): void;
+    // (undocumented)
+    initialize(context: any): void;
+    // (undocumented)
+    phase: string;
+    // (undocumented)
+    step(context: any, dt: any): void;
+}
+
+// @public
+export function pneumaticChamberVolume(chamber: any, deflectionM?: number): number;
+
+// @public
+export class PneumaticCommitSystem {
+    // (undocumented)
+    phase: string;
+    // (undocumented)
+    step(context: any, dt: any): void;
+}
+
+// @public
+export function pneumaticEffectiveArea(chamber: any, deflectionM?: number): number;
+
+// @public
+export class PneumaticNetwork {
+    constructor(compiledAssembly?: {});
+    // (undocumented)
+    chambers: Map<any, any>;
+    // (undocumented)
+    commitMechanicalState(partId: any, input: {
+        deflectionM?: number;
+        carcassTemperatureK?: number;
+        rimLoadN?: number;
+        normalLoadN?: number;
+        contactRoles?: any[];
+    }, dt: any, timeS?: number): {
+        state: any;
+        ambientPressurePa: any;
+        heatToCarcassJ: number;
+    };
+    // (undocumented)
+    commitStaticThermal(dt: any): void;
+    // (undocumented)
+    commitStructuralFailures(context: any): any[];
+    // (undocumented)
+    compiled: {};
+    // (undocumented)
+    devices: Map<any, any>;
+    // (undocumented)
+    exportState(): {
+        version: number;
+        transactionCursor: number;
+        failureEvents: any[];
+        chambers: {
+            partId: any;
+            state: any;
+            ambientPressurePa: any;
+            ambientTemperatureK: any;
+            massInKg: any;
+            massOutKg: any;
+            boundaryEnergyJ: any;
+            mechanicalWorkJ: any;
+            heatToCarcassJ: any;
+            failureMode: any;
+            leakAreaM2: any;
+            damageImpulseNs: any;
+        }[];
+        devices: {
+            partId: any;
+            dynamicState: any;
+        }[];
+    };
+    // (undocumented)
+    failureEvents: any[];
+    // (undocumented)
+    forEachChamberState(visitor: any): void;
+    // (undocumented)
+    gasMassContributionForPart(partId: any): {
+        id: string;
+        massKg: any;
+        centerPartM: any[];
+        inertiaTensorAtCenterKgM2: {
+            xx: number;
+            yy: number;
+            zz: number;
+            xy: number;
+            xz: number;
+            yz: number;
+        };
+    };
+    // (undocumented)
+    gasMassForPart(partId: any): any;
+    // (undocumented)
+    importState(snapshot: any): void;
+    // (undocumented)
+    initialGasMassKg: any;
+    // (undocumented)
+    initialInternalEnergyJ: any;
+    // (undocumented)
+    lastComponents: any[];
+    // (undocumented)
+    lastDevices: any[];
+    // (undocumented)
+    lastFailureEvents: any[];
+    // (undocumented)
+    lastGraphRevision: number;
+    // (undocumented)
+    lastLineFailures: any[];
+    // (undocumented)
+    lastSensors: any[];
+    // (undocumented)
+    lastTransfers: any[];
+    // (undocumented)
+    measurementForPart(partId: any, runGraph: any): {
+        chamberPartId: any;
+        absolutePressurePa: number;
+        gaugePressurePa: number;
+        temperatureK: number;
+    };
+    // (undocumented)
+    pendingLineFailures: any[];
+    // (undocumented)
+    resolve(context: any, dt: any): void;
+    // (undocumented)
+    stateForPart(partId: any): any;
+    // (undocumented)
+    telemetry(): {
+        valid: boolean;
+        mediumId: string;
+        chambers: {
+            partId: any;
+            bodyId: any;
+            controlVolumeKind: any;
+            absolutePressurePa: number;
+            gaugePressurePa: number;
+            ambientPressurePa: any;
+            ambientTemperatureK: any;
+            temperatureK: number;
+            volumeM3: any;
+            gasMassKg: any;
+            internalEnergyJ: any;
+            massInKg: any;
+            massOutKg: any;
+            boundaryEnergyJ: any;
+            mechanicalWorkJ: any;
+            heatToCarcassJ: any;
+            pressureLimitExceeded: boolean;
+            underpressure: boolean;
+            workingPressureMarginPa: number;
+            burst: boolean;
+            failureMode: any;
+            leakAreaM2: any;
+            damageImpulseNs: any;
+        }[];
+        devices: any[];
+        sensors: any[];
+        transfers: any[];
+        components: any[];
+        lineFailures: any[];
+        newFailureEvents: any[];
+        failureEvents: any[];
+        graphRevision: any;
+        runGraphRevision: number;
+        transactionId: number;
+        conservation: {
+            totalGasMassKg: any;
+            totalInternalEnergyJ: any;
+            massResidualKg: number;
+            energyResidualJ: number;
+            massToleranceKg: number;
+            energyToleranceJ: number;
+        };
+    };
+    // (undocumented)
+    transactionCursor: number;
+}
+
+// @public
+export function pneumaticRollingLoss(input: {
+    rollingResistance: any;
+    normalLoadN: any;
+    deflectionM: any;
+    radiusM: any;
+    surfaceMultiplier?: number;
+}): {
+    momentNm: number;
+    hysteresisEnergyPerCycleJ: number;
+    effectiveCoefficient: number;
+};
+
+// @public
+export class PneumaticStructureSystem {
+    // (undocumented)
+    phase: string;
+    // (undocumented)
+    step(context: any): void;
+}
+
+// @public
+export function pneumaticSupportResponse(input: {
+    chamber: any;
+    state: any;
+    ambientPressurePa: any;
+    deflectionM: any;
+}): {
+    volumeM3: number;
+    absolutePressurePa: number;
+    gaugePressurePa: number;
+    temperatureK: number;
+    effectiveAreaM2: number;
+    loadN: number;
+    tangentStiffnessNPerM: number;
+};
+
+// @public
+export class PneumaticSystem {
     // (undocumented)
     afterCheckpointRestore(context: any): void;
     // (undocumented)
@@ -4960,6 +5420,11 @@ export const SENSOR_PART_DEFINITIONS: Readonly<{
         label: string;
         unit: string;
     }[];
+    tirepressureprobe: {
+        key: string;
+        label: string;
+        unit: string;
+    }[];
     loadcell: {
         key: string;
         label: string;
@@ -5185,6 +5650,30 @@ export class SimulationSession {
     // (undocumented)
     time: number;
 }
+
+// @public
+export function solvePneumaticStaticLoad(input: {
+    chamber: any;
+    normalModel: any;
+    state: any;
+    ambientPressurePa: any;
+    loadN: any;
+    iterations?: number;
+}): {
+    requestedLoadN: number;
+    rimClearanceMarginM: number;
+    bottomedOut: boolean;
+    deflectionM: any;
+    carcassLoadN: number;
+    totalLoadN: number;
+    volumeM3: number;
+    absolutePressurePa: number;
+    gaugePressurePa: number;
+    temperatureK: number;
+    effectiveAreaM2: number;
+    loadN: number;
+    tangentStiffnessNPerM: number;
+};
 
 // @public (undocumented)
 export function sourcePowerContract(part: any, catalog?: Record<string, any>): Readonly<{
@@ -5696,6 +6185,136 @@ export const TYPES: {
         }>[];
         mechanism: any;
     };
+    aircompressor: {
+        name: string;
+        cat: string;
+        icon: string;
+        mass: number;
+        color: number;
+        desc: string;
+        size: number[];
+        powerWatts: number;
+        maximumGaugePressurePa: number;
+        maximumMassFlowKgS: number;
+        electricalEfficiency: number;
+        responseTimeS: number;
+        reliefAbsolutePressurePa: number;
+        motorThermalMassJPerK: number;
+        motorCoolingWPerK: number;
+        maximumMotorTemperatureK: number;
+        pressureRatioFlowMap: number[][];
+        ports: Readonly<{
+            localFramePart?: any;
+            id: any;
+            kind: any;
+            behavior: any;
+            direction: any;
+            multiplicity: any;
+        }>[];
+        pneumatic: {
+            kind: string;
+            outletPortId: string;
+            maximumGaugePressureField: string;
+            maximumMassFlowField: string;
+            electricalPowerField: string;
+            electricalEfficiencyField: string;
+            responseTimeField: string;
+            reliefAbsolutePressureField: string;
+            motorThermalMassField: string;
+            motorCoolingField: string;
+            maximumMotorTemperatureField: string;
+            pressureRatioFlowMapField: string;
+        };
+        controlContract: string;
+        electricalContract: {
+            kind: string;
+            configField: string;
+            minimumW: number;
+            baselineW: number;
+        };
+    };
+    airreservoir: {
+        name: string;
+        cat: string;
+        icon: string;
+        mass: number;
+        color: number;
+        desc: string;
+        size: number[];
+        gasVolumeSizeM: number[];
+        referenceInternalVolumeM3: number;
+        initialColdGaugePressurePa: number;
+        initialGasTemperatureK: number;
+        gasToShellConductanceWPerK: number;
+        maximumAbsolutePressurePa: number;
+        burstAbsolutePressurePa: number;
+        ports: Readonly<{
+            localFramePart?: any;
+            id: any;
+            kind: any;
+            behavior: any;
+            direction: any;
+            multiplicity: any;
+        }>[];
+        pneumatic: {
+            kind: string;
+            portId: string;
+            volumeField: string;
+            initialGaugePressureField: string;
+            initialTemperatureField: string;
+            gasToShellConductanceField: string;
+            maximumAbsolutePressureField: string;
+            burstAbsolutePressureField: string;
+            massModel: {
+                kind: string;
+                centerPartM: number[];
+                sizeField: string;
+            };
+        };
+    };
+    pneumaticvalve: {
+        name: string;
+        cat: string;
+        icon: string;
+        mass: number;
+        color: number;
+        desc: string;
+        size: number[];
+        powerWatts: number;
+        orificeAreaM2: number;
+        dischargeCoefficient: number;
+        openingTimeS: number;
+        commandDeadband: number;
+        leakageAreaM2: number;
+        failPosition: number;
+        ports: Readonly<{
+            localFramePart?: any;
+            id: any;
+            kind: any;
+            behavior: any;
+            direction: any;
+            multiplicity: any;
+        }>[];
+        pneumatic: {
+            kind: string;
+            supplyPortId: string;
+            tirePortId: string;
+            orificeAreaField: string;
+            dischargeCoefficientField: string;
+            electricalPowerField: string;
+            openingTimeField: string;
+            deadbandField: string;
+            leakageAreaField: string;
+            failPositionField: string;
+        };
+        controlContract: string;
+        electricalContract: {
+            kind: string;
+            configField: string;
+            minimumW: number;
+            baselineW: number;
+        };
+    };
     computer: {
         name: string;
         cat: string;
@@ -5905,6 +6524,34 @@ export const TYPES: {
             multiplicity: any;
         }>[];
         readings: string[];
+    };
+    tirepressureprobe: {
+        name: string;
+        cat: string;
+        icon: string;
+        mass: number;
+        color: number;
+        desc: string;
+        size: number[];
+        ports: Readonly<{
+            localFramePart?: any;
+            id: any;
+            kind: any;
+            behavior: any;
+            direction: any;
+            multiplicity: any;
+        }>[];
+        readings: string[];
+        pneumatic: {
+            kind: string;
+            portId: string;
+        };
+        electricalContract: {
+            kind: string;
+            requestW: number;
+            minimumW: number;
+            baselineW: number;
+        };
     };
     loadcell: {
         name: string;

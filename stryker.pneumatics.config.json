@@ -10,12 +10,13 @@
   ],
   "testRunner": "command",
   "commandRunner": {
-    "command": "node scripts/verify-test-site-contract.mjs && node scripts/verify-course-evaluators.mjs && node scripts/verify-pneumatic-course.mjs"
+    "command": "node scripts/verify-pneumatic-tire-runtime.mjs && node scripts/verify-pneumatic-ctis.mjs"
   },
   "mutate": [
-    "src/model/test-site.js",
-    "src/model/test-course-evaluator.js",
-    "src/simulation/environment/surface-field.js"
+    "src/simulation/pneumatic-gas.js",
+    "src/simulation/pneumatic-network.js:63-232",
+    "src/simulation/pneumatic-network.js:290-389",
+    "src/simulation/pneumatic-network.js:871-944"
   ],
   "coverageAnalysis": "off",
   "mutator": {
@@ -30,10 +31,10 @@
   },
   "concurrency": 4,
   "timeoutMS": 10000,
-  "tempDirName": "artifacts/stryker-test-site",
+  "tempDirName": "artifacts/stryker-pneumatics",
   "reporters": ["clear-text", "json"],
   "jsonReporter": {
-    "fileName": "artifacts/test-site-mutation.json"
+    "fileName": "artifacts/pneumatics-mutation.json"
   },
   "thresholds": {
     "high": 80,

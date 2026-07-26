@@ -11,6 +11,7 @@ source checkout and strict version-1 contracts.
 | Install, start, and learn the workshop     | [Main README](../README.md)                         |
 | Select, arrange, reuse, and analyze parts  | [Editor tools](EDITOR_TOOLS.md)                     |
 | Build and debug controller programs        | [Controller programming](CONTROLLER_PROGRAMMING.md) |
+| Build and test pneumatic tire circuits     | [Pneumatic tires](PNEUMATICS.md)                    |
 | Attempt outcome-based engineering tasks    | [Challenge Lab](CHALLENGE_LAB.md)                   |
 | Deploy and test a machine on the reserve   | [Workshop Test Reserve](TEST_GROUND.md)             |
 | Build, attach, simulate, and diagnose Rope | [Rope](ROPE.md)                                     |

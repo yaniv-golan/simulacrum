@@ -52,6 +52,7 @@ try {
 
   const unitSelect = page.locator("#mechanism-display-units");
   await unitSelect.selectOption("engineering");
+  await page.locator(".mechanism-editor details > summary").click();
   const stiffness = page.locator(
     '[data-mechanism-path="elasticLaw/stiffnessNPerM"]',
   );

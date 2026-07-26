@@ -159,6 +159,60 @@ export class TestCourseRun {
     this.visitedMaterialKeys = new Set();
     this.visitedFluidIds = new Set();
     this.maximumDamage = 0;
+    this.pneumaticEvidence = new Map();
+  }
+
+  capturePneumaticEvidence(telemetry) {
+    const pneumatics = telemetry?.systems?.pneumatics,
+      wheelStates = new Map(
+        (telemetry?.systems?.mobility?.assemblies || [])
+          .flatMap(({ wheelStates = [] }) => wheelStates)
+          .map((wheel) => [wheel.partId, wheel]),
+      );
+    for (const chamber of pneumatics?.chambers || []) {
+      if (chamber.controlVolumeKind !== "tire-chamber-v1") continue;
+      const wheel = wheelStates.get(chamber.partId) || {},
+        current = this.pneumaticEvidence.get(chamber.partId) || {
+          partId: chamber.partId,
+          firstTransactionId: pneumatics.transactionId,
+          minimumGaugePressurePa: Infinity,
+          maximumGaugePressurePa: -Infinity,
+          maximumDeflectionM: 0,
+          maximumRimLoadN: 0,
+          maximumRollingLossCoefficient: 0,
+          maximumTemperatureK: 0,
+          initialGasMassKg: chamber.gasMassKg,
+          finalGasMassKg: chamber.gasMassKg,
+        };
+      current.lastTransactionId = pneumatics.transactionId;
+      current.minimumGaugePressurePa = Math.min(
+        current.minimumGaugePressurePa,
+        Number(chamber.gaugePressurePa) || 0,
+      );
+      current.maximumGaugePressurePa = Math.max(
+        current.maximumGaugePressurePa,
+        Number(chamber.gaugePressurePa) || 0,
+      );
+      current.maximumDeflectionM = Math.max(
+        current.maximumDeflectionM,
+        Number(wheel.carcassDeflectionM) || 0,
+      );
+      current.maximumRimLoadN = Math.max(
+        current.maximumRimLoadN,
+        Number(wheel.rimLoadN) || 0,
+      );
+      current.maximumRollingLossCoefficient = Math.max(
+        current.maximumRollingLossCoefficient,
+        Number(wheel.effectiveRollingResistanceCoefficient) || 0,
+      );
+      current.maximumTemperatureK = Math.max(
+        current.maximumTemperatureK,
+        Number(chamber.temperatureK) || 0,
+      );
+      current.finalGasMassKg = Number(chamber.gasMassKg) || 0;
+      current.failureMode = chamber.failureMode || null;
+      this.pneumaticEvidence.set(chamber.partId, current);
+    }
   }
 
   step(telemetry) {
@@ -189,6 +243,7 @@ export class TestCourseRun {
       this.visitedMaterialKeys.add(component.materialKey);
     if (component.fluidId) this.visitedFluidIds.add(component.fluidId);
     this.maximumDamage = Math.max(this.maximumDamage, damageCount(telemetry));
+    this.capturePneumaticEvidence(telemetry);
     const brokenIntegrity = this.route.requirements.find(
       (requirement) =>
         requirement.kind === "remain-intact" &&
@@ -292,6 +347,13 @@ export class TestCourseRun {
           }
         : null,
       requirements: this.requirements(),
+      ...(this.pneumaticEvidence.size
+        ? {
+            pneumaticEvidence: [...this.pneumaticEvidence.values()]
+              .sort((left, right) => left.partId - right.partId)
+              .map((record) => ({ ...record })),
+          }
+        : {}),
     });
   }
 

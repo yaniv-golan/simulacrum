@@ -127,6 +127,7 @@ function valuesForSensor(sensor, context) {
       sampleWind,
       environmentBodies,
       compiledSensor,
+      pneumatics,
     } = context,
     host = fixedHostBody(sensor, partsById, connections, indexes),
     pose = host?.pose || {},
@@ -219,8 +220,16 @@ function valuesForSensor(sensor, context) {
           environmentBodies,
         })
       : null;
+  const tirePressure = (pneumatics?.sensors || []).find(
+      (measurement) =>
+        measurement.partId === sensor.id && measurement.valid === true,
+    ),
+    requiresPneumaticBinding = compiledSensor?.readings?.includes(
+      "tire_pressure_absolute_pa",
+    );
   return {
-    bound: Boolean(host),
+    bound:
+      Boolean(host) && (!requiresPneumaticBinding || Boolean(tirePressure)),
     bodyId: host?.bodyId || null,
     rotation_rpm: rotationRpm,
     imu_roll_deg: attitude.roll,
@@ -249,6 +258,9 @@ function valuesForSensor(sensor, context) {
     static_pressure_pa: atmosphere.pressure,
     dynamic_pressure_pa: 0.5 * atmosphere.density * airspeed ** 2,
     air_density: atmosphere.density,
+    tire_pressure_absolute_pa: finite(tirePressure?.absolutePressurePa),
+    tire_pressure_gauge_pa: finite(tirePressure?.gaugePressurePa),
+    tire_gas_temperature_k: finite(tirePressure?.temperatureK),
     load_n: peakLoad,
     load_ratio: Number.isFinite(ratedLoad) ? peakLoad / ratedLoad : 0,
     command: receiverState?.valid ? finite(receiverState.value) : 0,
@@ -283,6 +295,7 @@ export class ControllerSensorBank {
     bodies = {},
     signals = {},
     commandReceivers = {},
+    pneumatics = {},
     environmentBodies = null,
     compiledBodies = [],
     fixedDt = 1 / 120,
@@ -326,6 +339,7 @@ export class ControllerSensorBank {
             time,
             sampleWind,
             commandReceivers,
+            pneumatics,
             environmentBodies,
             compiledSensor: compiledByPart.get(sensor.id),
             previousVelocity: this.previousVelocity.get(sensor.id) || {},

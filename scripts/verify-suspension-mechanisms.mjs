@@ -51,6 +51,11 @@ const expectedTopologies = Object.freeze({
     spring: 4,
     wheels: 4,
   },
+  "Four-wheel central tire inflation system": {
+    fixed: 20,
+    revolute: 4,
+    wheels: 4,
+  },
 });
 
 function countKinds(compiled) {
@@ -214,7 +219,7 @@ const records = builtInMechanismSubassemblies();
 assert.deepEqual(
   records.map((record) => record.asset.name),
   Object.keys(expectedTopologies),
-  "built-in suspension family is incomplete",
+  "built-in mechanism family is incomplete",
 );
 for (const record of records) {
   assert.equal(record.origin.kind, "BUILT_IN");

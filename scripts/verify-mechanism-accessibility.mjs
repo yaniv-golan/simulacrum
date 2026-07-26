@@ -107,6 +107,14 @@ try {
     "outliner part name omits stable identity or port count",
   );
 
+  const advancedLaws = page.locator(".mechanism-editor details > summary");
+  await advancedLaws.focus();
+  await page.keyboard.press("Enter");
+  assert.equal(
+    await page.locator(".mechanism-editor details").getAttribute("open"),
+    "",
+    "advanced physical laws disclosure is not keyboard operable",
+  );
   const stiffness = page.getByRole("spinbutton", {
     name: "STIFFNESS",
   });

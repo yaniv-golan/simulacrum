@@ -159,7 +159,6 @@ export function installDebugReadModelFeature({
       directControl: machine.directControl(machine.platformReceivesShadows()),
     });
   }
-
   function assemblyReadModel() {
     return buildAssemblyDebugReadModel({
       parts: state.parts.map((part) => ({
@@ -221,6 +220,7 @@ export function installDebugReadModelFeature({
       demo: machineReadModel(),
       ...assemblyReadModel(),
       ...controllerReadModel(),
+      pneumatics: telemetry().systems?.pneumatics || null,
       flexibleLines: flexibleLineDebugReadModel({
         parts: state.parts,
         connections: assembly.currentConnections(),

@@ -114,7 +114,7 @@ export class SimulationSession {
       this.#clear();
       throw new AggregateError(
         [initializeError, ...cleanupErrors],
-        "Simulation session initialization failed and was rolled back",
+        `Simulation session initialization failed and was rolled back: ${String(initializeError)}`,
         { cause: initializeError },
       );
     }

@@ -1062,6 +1062,14 @@ export const WORKSHOP_TEST_SITE = createTestSiteDefinition({
       finish: { grounded: true, maxSpeedMps: 1.5, holdS: 0.75 },
     },
     {
+      id: "tire-pressure-comparison",
+      label: "Tire Pressure A/B/C",
+      gateIds: ["durability-entry", "durability-mid", "durability-finish"],
+      requirements: [{ kind: "remain-intact", maxDamage: 0 }],
+      stagingPadId: "board",
+      finish: { grounded: true, maxSpeedMps: 1.5, holdS: 0.75 },
+    },
+    {
       id: "hill-and-home",
       label: "Hill and Home",
       gateIds: ["terrain-entry", "hill-20-summit", "terrain-home"],

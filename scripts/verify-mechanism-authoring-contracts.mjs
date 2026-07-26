@@ -48,7 +48,7 @@ const expectedArtifacts = new Map([
   ["proof", ["simulacrum-proof", 1]],
   ["run-configuration", ["simulacrum-run-configuration", 1]],
   ["input-trace", ["simulacrum-input-trace", 1]],
-  ["checkpoint", ["simulacrum-checkpoint", 1]],
+  ["checkpoint", ["simulacrum-checkpoint", 2]],
   ["experiment", ["simulacrum-experiment", 1]],
   ["telemetry-playback", ["simulacrum-telemetry-playback", 1]],
 ]);

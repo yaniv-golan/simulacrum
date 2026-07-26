@@ -2,7 +2,15 @@ import { TYPES } from "../model/component-catalog.js";
 import { geometryDescriptorForType } from "../model/geometry-descriptors.js";
 import { deepFreeze } from "../model/primitives.js";
 
-const GENERIC_VISUAL_TYPES = new Set(["receiver", "navsensor", "powerbus"]);
+const GENERIC_VISUAL_TYPES = new Set([
+  "receiver",
+  "navsensor",
+  "powerbus",
+  "aircompressor",
+  "airreservoir",
+  "pneumaticvalve",
+  "tirepressureprobe",
+]);
 
 function finiteColor(value, label) {
   const color = Number(value);

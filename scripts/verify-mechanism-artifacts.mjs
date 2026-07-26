@@ -101,7 +101,7 @@ const runConfiguration = {
   }),
   checkpoint = {
     format: "simulacrum-checkpoint",
-    version: 1,
+    version: 2,
     runConfigurationFingerprint,
     blueprintFingerprint,
     compiledTopologyFingerprint: `sim-sha256-${"2".repeat(64)}`,
@@ -229,8 +229,8 @@ for (const contract of contracts) {
   );
 }
 
-assert.equal(CHECKPOINT_STATE_OWNER_IDS.length, 19);
-assert.equal(new Set(CHECKPOINT_STATE_OWNER_IDS).size, 19);
+assert.equal(CHECKPOINT_STATE_OWNER_IDS.length, 20);
+assert.equal(new Set(CHECKPOINT_STATE_OWNER_IDS).size, 20);
 assert.equal(decodeExperiment({ ...experiment, checkpoint: null }).ok, false);
 const noCheckpointExperiment = { ...experiment, checkpoint: null };
 noCheckpointExperiment.manifestDigest = experimentManifestDigest(
@@ -422,11 +422,15 @@ assert.equal(
   "WIRE_SCHEMA_VIOLATION",
 );
 assert.equal(
+  decodeCheckpoint({ ...checkpoint, version: 1 }).errors[0].code,
+  "UNSUPPORTED_CHECKPOINT_VERSION",
+);
+assert.equal(
   decodeTelemetryPlayback({ ...telemetryPlayback, frames: [] }).errors[0].code,
   "WIRE_SCHEMA_VIOLATION",
 );
 assert.throws(
-  () => decodeCheckpointOrThrow({ ...inputTrace, version: 1 }),
+  () => decodeCheckpointOrThrow({ ...inputTrace, version: 2 }),
   (error) =>
     error.code === "UNSUPPORTED_WIRE_FORMAT" && Array.isArray(error.path),
 );

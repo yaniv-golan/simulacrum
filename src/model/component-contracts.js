@@ -53,6 +53,12 @@ export function componentMaterialStore(part, catalog = TYPES) {
 }
 
 /** @param {any} part @param {Record<string, any>} [catalog] */
+export function componentPneumaticContract(part, catalog = TYPES) {
+  const contract = componentDefinition(part, catalog)?.pneumatic;
+  return contract ? immutableClone(contract) : null;
+}
+
+/** @param {any} part @param {Record<string, any>} [catalog] */
 export function componentReadings(part, catalog = TYPES) {
   const readings = componentDefinition(part, catalog)?.readings;
   return Array.isArray(readings)

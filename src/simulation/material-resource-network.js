@@ -78,7 +78,8 @@ export class MaterialResourceNetwork {
             !connection.failed &&
             activeParts.has(connection.a) &&
             activeParts.has(connection.b) &&
-            compiledEdges.has(connection.id),
+            compiledEdges.get(connection.id)?.transport?.kind ===
+              "finite-allocation-v1",
         )
         .map((connection) => compiledEdges.get(connection.id))
         .sort((left, right) => compareId(left.id, right.id)),

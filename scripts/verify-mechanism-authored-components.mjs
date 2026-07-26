@@ -516,6 +516,97 @@ const invalidRimClearance = structuredClone(components.wheel);
 invalidRimClearance.config.tireConstitutiveLaw.normalModel.maximumDeflectionM = 0.11;
 expectCode(invalidRimClearance, "INVALID_CARCASS_RIM_CLEARANCE");
 
+const pneumaticWheel = () =>
+  structuredClone(MECHANISM_COMPONENT_DEFINITIONS.wheel);
+const pneumaticChamber = (wheel) =>
+  wheel.config.tireConstitutiveLaw.pneumaticChamber;
+const preservePneumaticMassVolume = (wheel) => {
+  const chamber = pneumaticChamber(wheel),
+    massModel = chamber.massModel;
+  massModel.axialSemiAxisM =
+    chamber.referenceInternalVolumeM3 /
+    (2 * Math.PI ** 2 * massModel.majorRadiusM * massModel.radialSemiAxisM);
+};
+
+const collapsedPneumaticRange = pneumaticWheel();
+pneumaticChamber(collapsedPneumaticRange).minimumInternalVolumeM3 =
+  pneumaticChamber(collapsedPneumaticRange).referenceInternalVolumeM3;
+expectCode(collapsedPneumaticRange, "INVALID_PNEUMATIC_CHAMBER_VOLUME_RANGE");
+
+const mismatchedPneumaticMassVolume = pneumaticWheel();
+pneumaticChamber(mismatchedPneumaticMassVolume).massModel.axialSemiAxisM *= 0.9;
+expectCode(
+  mismatchedPneumaticMassVolume,
+  "INVALID_PNEUMATIC_GAS_MASS_GEOMETRY",
+);
+
+const pneumaticMassInsideRim = pneumaticWheel();
+Object.assign(pneumaticChamber(pneumaticMassInsideRim).massModel, {
+  majorRadiusM: 0.56,
+  radialSemiAxisM: 0.07,
+});
+preservePneumaticMassVolume(pneumaticMassInsideRim);
+expectCode(pneumaticMassInsideRim, "INVALID_PNEUMATIC_GAS_MASS_GEOMETRY");
+
+const pneumaticMassOutsideTire = pneumaticWheel();
+Object.assign(pneumaticChamber(pneumaticMassOutsideTire).massModel, {
+  majorRadiusM: 0.58,
+  radialSemiAxisM: 0.08,
+});
+preservePneumaticMassVolume(pneumaticMassOutsideTire);
+expectCode(pneumaticMassOutsideTire, "INVALID_PNEUMATIC_GAS_MASS_GEOMETRY");
+
+const pneumaticMassOutsideSidewalls = pneumaticWheel();
+Object.assign(pneumaticChamber(pneumaticMassOutsideSidewalls).massModel, {
+  majorRadiusM: 0.565,
+  radialSemiAxisM: 0.06,
+});
+preservePneumaticMassVolume(pneumaticMassOutsideSidewalls);
+expectCode(
+  pneumaticMassOutsideSidewalls,
+  "INVALID_PNEUMATIC_GAS_MASS_GEOMETRY",
+);
+
+const pneumaticVolumeClampsBeforeRim = pneumaticWheel();
+pneumaticChamber(
+  pneumaticVolumeClampsBeforeRim,
+).volumeLaw.quadraticVolumeLossM = 2;
+expectCode(
+  pneumaticVolumeClampsBeforeRim,
+  "PNEUMATIC_CHAMBER_VOLUME_CLAMPS_BEFORE_RIM",
+);
+
+const excessiveInitialPneumaticPressure = pneumaticWheel();
+pneumaticChamber(excessiveInitialPneumaticPressure).initialColdGaugePressurePa =
+  pneumaticChamber(
+    excessiveInitialPneumaticPressure,
+  ).limits.maximumAbsolutePressurePa;
+expectCode(
+  excessiveInitialPneumaticPressure,
+  "INITIAL_PNEUMATIC_PRESSURE_EXCEEDS_LIMIT",
+);
+
+const reversedPneumaticLeakAreas = pneumaticWheel();
+pneumaticChamber(reversedPneumaticLeakAreas).damageLaw.burstLeakAreaM2 =
+  pneumaticChamber(reversedPneumaticLeakAreas).damageLaw.punctureLeakAreaM2 / 2;
+expectCode(reversedPneumaticLeakAreas, "INVALID_PNEUMATIC_DAMAGE_LAW");
+
+const coldPneumaticThermalLimit = pneumaticWheel();
+pneumaticChamber(coldPneumaticThermalLimit).damageLaw.maximumGasTemperatureK =
+  pneumaticChamber(coldPneumaticThermalLimit).initialGasTemperatureK;
+expectCode(coldPneumaticThermalLimit, "INVALID_PNEUMATIC_DAMAGE_LAW");
+
+const reversedPneumaticPressureLimits = pneumaticWheel();
+pneumaticChamber(
+  reversedPneumaticPressureLimits,
+).limits.maximumAbsolutePressurePa = pneumaticChamber(
+  reversedPneumaticPressureLimits,
+).limits.burstAbsolutePressurePa;
+expectCode(
+  reversedPneumaticPressureLimits,
+  "INVALID_PNEUMATIC_PRESSURE_LIMIT_ORDER",
+);
+
 const uniformMassAxle = structuredClone(components.axle);
 uniformMassAxle.massPropertySource = {
   kind: "uniform-density-solids-v1",

@@ -50,7 +50,7 @@ const FORMAT_CONTRACTS = Object.freeze({
   }),
   checkpoint: Object.freeze({
     format: "simulacrum-checkpoint",
-    version: 1,
+    version: 2,
     bytes: WIRE_LIMITS.checkpointBytes,
     versionCode: "UNSUPPORTED_CHECKPOINT_VERSION",
   }),

@@ -38,6 +38,7 @@ const CONNECTION_FIELDS = new Set([
   "anchorA",
   "anchorB",
   "releaseCouplerPartId",
+  "transport",
   "config",
   "extensions",
 ]);
@@ -104,6 +105,7 @@ export function projectPortableAuthoredConnection(connection) {
     "anchorA",
     "anchorB",
     "releaseCouplerPartId",
+    "transport",
     "config",
     "extensions",
   ])

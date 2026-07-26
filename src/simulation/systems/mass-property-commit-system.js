@@ -148,24 +148,58 @@ export class MassPropertyCommitSystem {
             structuralMassKg =
               contribution?.structuralMassKg ??
               descriptor.massProperties.massKg,
-            materialStore = stores.get(descriptor.partId) || null;
+            materialStore = stores.get(descriptor.partId) || null,
+            pneumaticGasMassKg =
+              context.pneumaticNetwork?.gasMassForPart(descriptor.partId) || 0,
+            body = runtime.bodyByPart.get(descriptor.partId),
+            existing = body?.userData?.massProperties,
+            unchangedPneumaticOnly =
+              !contribution &&
+              !materialStore &&
+              pneumaticGasMassKg > 0 &&
+              existing?.contributingSolidIds?.includes(
+                `pneumatic-gas:${descriptor.partId}`,
+              ) &&
+              nearlyEqual(
+                existing.massKg,
+                structuralMassKg + pneumaticGasMassKg,
+              );
           if (
             !materialStore &&
+            pneumaticGasMassKg <= 0 &&
             Math.abs(structuralMassKg - descriptor.massProperties.massKg) <=
               1e-12
           )
             return null;
+          if (unchangedPneumaticOnly)
+            return {
+              partId: descriptor.partId,
+              massProperties: existing,
+              structuralMassKg,
+              ablatedMassKg: 0,
+              materialMassKg: 0,
+              pneumaticGasMassKg,
+              changed: false,
+            };
           const record = {
             partId: descriptor.partId,
             massProperties: deriveDynamicMassProperties(descriptor, {
               structuralMassKg,
               materialStore,
+              additionalMassContributions:
+                pneumaticGasMassKg > 0
+                  ? [
+                      context.pneumaticNetwork.gasMassContributionForPart(
+                        descriptor.partId,
+                      ),
+                    ]
+                  : [],
             }),
             structuralMassKg,
             ablatedMassKg: contribution?.ablatedMassKg || 0,
             materialMassKg: materialStore?.remainingMassKg || 0,
+            pneumaticGasMassKg,
           };
-          const body = runtime.bodyByPart.get(descriptor.partId);
           return {
             ...record,
             changed: !massPropertiesEqual(
@@ -214,7 +248,7 @@ export class MassPropertyCommitSystem {
       } catch (rollbackError) {
         throw new AggregateError(
           [commitError, rollbackError],
-          "Mass-property commit failed and rollback could not restore the previous authority",
+          `Mass-property commit failed and rollback could not restore the previous authority: ${String(commitError)}; rollback: ${String(rollbackError)}`,
           { cause: rollbackError },
         );
       }
@@ -237,6 +271,8 @@ export class MassPropertyCommitSystem {
           .structuralMassKg,
         ablatedMassKg: contributionByPart.get(record.partId).ablatedMassKg,
         materialMassKg: contributionByPart.get(record.partId).materialMassKg,
+        pneumaticGasMassKg: contributionByPart.get(record.partId)
+          .pneumaticGasMassKg,
       })),
     };
   }

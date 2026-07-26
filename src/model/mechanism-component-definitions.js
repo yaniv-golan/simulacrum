@@ -394,7 +394,7 @@ const definitions = {
         rim: "rim",
       },
       tireConstitutiveLaw: {
-        kind: "memoryless-brush-v1",
+        kind: "pneumatic-brush-v1",
         tireMaterialKey: "tire-rubber",
         calibratedNormalLoadRangeN: { lower: 100, upper: 20_000 },
         creepMatrixByLoad: [
@@ -414,13 +414,18 @@ const definitions = {
         interpolation: "linear",
         outsideCalibration: "clamp-to-endpoints-v1",
         rollingResistance: {
-          kind: "load-radius-moment-v1",
-          coefficient: 0.015,
+          kind: "deformation-hysteresis-moment-v1",
+          baselineCoefficient: 0.015,
+          // Fraction of the tire's load-deflection energy dissipated during
+          // one revolution. This makes pressure effects follow deformation.
+          lossFractionPerCycle: 0.05,
           regularizationSpeedMPerS: 0.05,
         },
         normalModel: {
           kind: "radial-foundation-v1",
-          kRadialNPerM: 180_000,
+          // Unpressurized carcass stiffness. Gas pressure supplies the rest of
+          // the nominal vertical compliance without hiding a tuned force.
+          kRadialNPerM: 40_000,
           compressionDampingNsPerM: 4_000,
           reboundDampingNsPerM: 4_000,
           // The 0.65 m tire and 0.50 m rim leave 0.15 m of radial carcass.
@@ -436,6 +441,46 @@ const definitions = {
           thermalMassJPerK: 2_500,
           ambientConductanceWPerK: 8,
           referenceTemperatureK: 293.15,
+        },
+        pneumaticChamber: {
+          kind: "sealed-ideal-gas-chamber-v1",
+          mediumId: "dry-air-v1",
+          portId: "AIR",
+          referenceInternalVolumeM3: 0.15,
+          minimumInternalVolumeM3: 0.12,
+          initialColdGaugePressurePa: 220_000,
+          initialGasTemperatureK: 293.15,
+          massModel: {
+            kind: "elliptical-toroidal-gas-volume-v1",
+            centerPartM: [0, 0, 0],
+            majorRadiusM: 0.575,
+            radialSemiAxisM: 0.075,
+            axialSemiAxisM: 0.176_294,
+            axisPart: [0, 0, 1],
+          },
+          volumeLaw: {
+            kind: "radial-deflection-polynomial-v1",
+            quadraticVolumeLossM: 0.32,
+            cubicVolumeLoss: 0.4,
+          },
+          heatTransfer: {
+            kind: "lumped-conductance-v1",
+            gasToCarcassConductanceWPerK: 18,
+          },
+          damageLaw: {
+            kind: "deterministic-contact-damage-v1",
+            rimLoadThresholdN: 18_000,
+            sidewallLoadThresholdN: 12_000,
+            excessLoadImpulseThresholdNs: 1_200,
+            punctureLeakAreaM2: 0.000006,
+            burstLeakAreaM2: 0.00025,
+            maximumGasTemperatureK: 430,
+          },
+          limits: {
+            minimumGaugePressurePa: -20_000,
+            maximumAbsolutePressurePa: 650_000,
+            burstAbsolutePressurePa: 900_000,
+          },
         },
       },
       rimMaterialKey: "workshop-aluminum",

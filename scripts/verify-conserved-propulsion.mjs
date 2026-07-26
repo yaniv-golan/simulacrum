@@ -69,6 +69,7 @@ const tank = part(1, "propellanttank", [0, 2, 0], {
     kind: "resource",
     portA: "OUTLET",
     portB: "PROPELLANT",
+    transport: { kind: "finite-allocation-v1" },
   },
   feedB = { ...feedA, id: "feed-b", b: engineB.id },
   sharedSnapshot = {
@@ -573,6 +574,83 @@ assert.deepEqual(asymmetric.contributingSolidIds, [
   "dry-solid",
   "material-store:asymmetric-store",
 ]);
+
+const gasContribution = {
+    id: "pneumatic-gas:asymmetric-store",
+    massKg: 2,
+    centerPartM: [1.2, -0.4, 0.6],
+    inertiaTensorAtCenterKgM2: {
+      xx: 0.7,
+      yy: 0.8,
+      zz: 0.9,
+      xy: 0.1,
+      xz: -0.2,
+      yz: 0.3,
+    },
+  },
+  dynamicWithGas = deriveDynamicMassProperties(asymmetricDescriptor, {
+    structuralMassKg: 5,
+    additionalMassContributions: [
+      gasContribution,
+      {
+        ...gasContribution,
+        id: "zero-mass-contribution",
+        massKg: 0,
+      },
+      {
+        ...gasContribution,
+        id: "invalid-mass-contribution",
+        massKg: "not-a-number",
+      },
+    ],
+  }),
+  gasCom = [0, 1, 2].map(
+    (axis) =>
+      (asymmetricDescriptor.massProperties.comPositionPartM[axis] * 5 +
+        gasContribution.centerPartM[axis] * gasContribution.massKg) /
+      7,
+  ),
+  gasStructuralOffset =
+    asymmetricDescriptor.massProperties.comPositionPartM.map(
+      (value, axis) => value - gasCom[axis],
+    ),
+  gasOffset = gasContribution.centerPartM.map(
+    (value, axis) => value - gasCom[axis],
+  ),
+  gasCenterTensor = [
+    [0.7, 0.1, -0.2],
+    [0.1, 0.8, 0.3],
+    [-0.2, 0.3, 0.9],
+  ],
+  expectedGasTensor = matrixAdd(
+    matrixAdd(baseTensor, independentParallelAxis(5, gasStructuralOffset)),
+    matrixAdd(
+      gasCenterTensor,
+      independentParallelAxis(gasContribution.massKg, gasOffset),
+    ),
+  );
+near(dynamicWithGas.massKg, 7);
+near(dynamicWithGas.volumeM3, asymmetricDescriptor.massProperties.volumeM3);
+dynamicWithGas.comPositionPartM.forEach((value, axis) =>
+  near(value, gasCom[axis]),
+);
+for (const [field, row, column] of [
+  ["xx", 0, 0],
+  ["yy", 1, 1],
+  ["zz", 2, 2],
+  ["xy", 0, 1],
+  ["xz", 0, 2],
+  ["yz", 1, 2],
+])
+  near(
+    dynamicWithGas.inertiaTensorAtComPartKgM2[field],
+    expectedGasTensor[row][column],
+  );
+assert.deepEqual(dynamicWithGas.contributingSolidIds, [
+  "dry-solid",
+  gasContribution.id,
+]);
+assert.equal(dynamicWithGas.dynamicMaterialStore, null);
 
 const unsupportedCatalog = structuredClone(TYPES);
 unsupportedCatalog.propellanttank.ports.find(

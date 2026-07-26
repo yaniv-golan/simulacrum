@@ -60,6 +60,23 @@ export const SENSOR_PART_DEFINITIONS = Object.freeze({
     { key: "dynamic_pressure_pa", label: "Dynamic pressure", unit: "Pa" },
     { key: "air_density", label: "Air density", unit: "kg/m³" },
   ],
+  tirepressureprobe: [
+    {
+      key: "tire_pressure_absolute_pa",
+      label: "Tire absolute pressure",
+      unit: "Pa",
+    },
+    {
+      key: "tire_pressure_gauge_pa",
+      label: "Tire gauge pressure",
+      unit: "Pa",
+    },
+    {
+      key: "tire_gas_temperature_k",
+      label: "Tire gas temperature",
+      unit: "K",
+    },
+  ],
   loadcell: [
     { key: "load_n", label: "Attachment load", unit: "N" },
     { key: "load_ratio", label: "Rated-load ratio", unit: "ratio" },

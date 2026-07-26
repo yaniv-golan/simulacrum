@@ -182,6 +182,20 @@ export { PowerNetwork } from "../simulation/power-network.js";
 export { SignalNetwork } from "../simulation/signal-network.js";
 export { MaterialResourceNetwork } from "../simulation/material-resource-network.js";
 export { materialStoreContract } from "../model/material-resource-contracts.js";
+export { PneumaticNetwork } from "../simulation/pneumatic-network.js";
+export {
+  compressibleOrificeMassFlowKgS,
+  createPneumaticState,
+  DRY_AIR,
+  DRY_AIR_MEDIUM_ID,
+  gasAbsolutePressurePa,
+  gasTemperatureK,
+  pneumaticChamberVolume,
+  pneumaticEffectiveArea,
+  pneumaticRollingLoss,
+  pneumaticSupportResponse,
+  solvePneumaticStaticLoad,
+} from "../simulation/pneumatic-gas.js";
 export { MATERIAL_MEDIA, materialMedium } from "../model/material-media.js";
 export {
   pressureNozzleContract,

@@ -29,11 +29,21 @@ demo or machine type. The repository's
 [`docs/TEST_GROUND.md`](../../docs/TEST_GROUND.md) describes the host workflow
 and evidence contract that use these systems.
 
+`PneumaticNetwork` owns conserved dry-air chamber mass and internal energy,
+compressible resource topology, powered compressor/valve dynamics, sensor
+readings, leaks, and bounded flow transactions. `PneumaticSystem` resolves flow
+before contact; `PneumaticCommitSystem` applies solved pressure-volume work and
+gas/carcass heat after integration. Completed pressure telemetry feeds tire
+contact, controllers, presentation, evidence, and checkpoint v2 without a
+second calculation. Public pure helpers expose the same ideal-gas, volume,
+support/tangent, rolling-loss, and choked-flow laws used by the runtime.
+
 Powered two-flange release couplers compile into load-rated constraints and
 exact actuator endpoints. `ReleaseCouplerSystem` consumes resolved power and
 commands, spends the authored latch energy, and opens only its flanges plus
 explicitly declared breakaway routes. It adds no hidden separation impulse;
-checkpoint v1 restores its private state through the `release-couplers` owner.
+checkpoint v2 restores its private state through the owner-version-1
+`release-couplers` record.
 
 `flexible-line-v1` components compile into deterministic distributed entities
 and unilateral internal edges, not rigid proxy bodies. `FlexibleLineRuntime`
@@ -46,7 +56,7 @@ same centreline, loads, contacts, failure, and restore truth to every consumer.
 The public fixed-step surface uses narrow `AerodynamicSystem`, `ThermalSystem`,
 and `PhysicalFlightTelemetrySystem` phases. They consume explicit host services, preserve the
 single integration transaction, and keep mutable temperature/ablation state
-separate from derived forces and completed telemetry. Checkpoint v1 accepts
+separate from derived forces and completed telemetry. Checkpoint v2 accepts
 only owner-version-1 records and persists that mutable state under
 `thermal-ablation`; it does not persist physical grouping or read models.
 

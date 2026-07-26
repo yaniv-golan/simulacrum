@@ -1,4 +1,5 @@
 import { TYPES } from "../model/component-catalog.js";
+import { materialMedium } from "../model/material-media.js";
 
 const ARTICULATED_ROLES_BY_TYPE = Object.freeze({
   plate: ["pelvis", "torso", "footL", "footR"],
@@ -172,6 +173,9 @@ const AUTHORABLE_MECHANISM_ROOTS = new Set([
 
 function mechanismUnit(path) {
   const key = String(path.at(-1));
+  if (/pressurepa$/i.test(key)) return "Pa";
+  if (/volumem3$/i.test(key)) return "m³";
+  if (/aream2$/i.test(key)) return "m²";
   if (/temperaturek$/i.test(key)) return "K";
   if (/massjperk$/i.test(key)) return "J/K";
   if (/wperk$/i.test(key)) return "W/K";
@@ -219,6 +223,9 @@ export function mechanismInspectorProperties(part) {
         unit: mechanismUnit(path),
         value,
         curvePoint: path.some((segment) => typeof segment === "number"),
+        primary:
+          path.join("/") ===
+          "tireConstitutiveLaw/pneumaticChamber/initialColdGaugePressurePa",
       });
       return;
     }
@@ -232,6 +239,25 @@ export function mechanismInspectorProperties(part) {
   return fields;
 }
 
+export function componentLiveMeasurement(part, inspection) {
+  if (part.type === "sensor")
+    return `<br><strong id="sensor-live-rpm">MEASURED SHAFT SPEED · ${inspection.observation.specialized.measuredRpm.toFixed(1)} RPM</strong>`;
+  if (part.type === "wheel" && Number.isFinite(part.tireGaugePressurePa)) {
+    const maximumDeflectionM =
+        part.mechanism?.config?.tireConstitutiveLaw?.normalModel
+          ?.maximumDeflectionM || 0,
+      rimMarginM = Math.max(
+        0,
+        maximumDeflectionM - Number(part.tireDeflectionM || 0),
+      ),
+      failure = part.tirePneumaticFailureMode
+        ? ` · FAILURE ${part.tirePneumaticFailureMode}`
+        : "";
+    return `<br><strong id="tire-live-pressure" role="status">TIRE PRESSURE · ${(part.tireGaugePressurePa / 1000).toFixed(1)} kPa GAUGE · ${Number(part.tireGasTemperatureK || 0).toFixed(1)} K<br>GAS ${Number(part.tireGasMassKg || 0).toFixed(3)} kg · DEFLECTION ${(Number(part.tireDeflectionM || 0) * 1000).toFixed(1)} mm · RIM MARGIN ${(rimMarginM * 1000).toFixed(1)} mm<br>FLOW IN ${Number(part.tireMassInKg || 0).toFixed(4)} kg · OUT ${Number(part.tireMassOutKg || 0).toFixed(4)} kg · TRANSACTION #${Number(part.tirePneumaticTransactionId || 0)}${failure}</strong>`;
+  }
+  return "";
+}
+
 export function mechanismDisplayField(field, displayUnits) {
   if (displayUnits !== "engineering")
     return { value: field.value, unit: field.unit, factor: 1 };
@@ -241,7 +267,30 @@ export function mechanismDisplayField(field, displayUnits) {
       "N/m": [0.001, "kN/m"],
       "N·m": [0.001, "kN·m"],
       W: [0.001, "kW"],
+      Pa: [0.001, "kPa"],
     },
     [factor, unit] = conversions[field.unit] || [1, field.unit];
   return { value: field.value * factor, unit, factor };
+}
+
+export function pneumaticAuthoringSummary(part, ambientPressurePa = 101_325) {
+  const chamber =
+    part?.mechanism?.config?.tireConstitutiveLaw?.pneumaticChamber;
+  if (!chamber) return null;
+  const medium = materialMedium(chamber.mediumId),
+    absolutePressurePa =
+      Number(ambientPressurePa) + chamber.initialColdGaugePressurePa,
+    gasMassKg =
+      (absolutePressurePa * chamber.referenceInternalVolumeM3) /
+      (medium.specificGasConstantJPerKgK * chamber.initialGasTemperatureK);
+  return {
+    absolutePressurePa,
+    gasMassKg,
+    internalVolumeM3: chamber.referenceInternalVolumeM3,
+    minimumGaugePressurePa: chamber.limits.minimumGaugePressurePa,
+    maximumWorkingGaugePressurePa:
+      chamber.limits.maximumAbsolutePressurePa - Number(ambientPressurePa),
+    burstGaugePressurePa:
+      chamber.limits.burstAbsolutePressurePa - Number(ambientPressurePa),
+  };
 }

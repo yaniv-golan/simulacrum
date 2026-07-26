@@ -154,6 +154,7 @@ const COMPATIBLE_BEHAVIOR_PAIRS = new Set([
   "electrical-network:electrical-network",
   "signal-network:signal-network",
   "material-resource:material-resource",
+  "compressible-gas:compressible-gas",
 ]);
 
 /**
@@ -241,6 +242,34 @@ export function validatePortConnection(
           target: portDefinition(targetPart, targetPort, catalog),
         },
       },
+    );
+  const sourceDefinition = portDefinition(sourcePart, sourcePort, catalog);
+  if (candidate?.kind === "resource") {
+    const expectedTransportKind =
+      sourceDefinition.behavior === "compressible-gas"
+        ? "compressible-gas-v1"
+        : sourceDefinition.behavior === "material-resource"
+          ? "finite-allocation-v1"
+          : null;
+    if (
+      !expectedTransportKind ||
+      candidate.transport?.kind !== expectedTransportKind
+    )
+      throw new DomainValidationError(
+        "RESOURCE_TRANSPORT_MISMATCH",
+        `Resource connection requires explicit ${String(expectedTransportKind)} transport`,
+        {
+          details: {
+            behavior: sourceDefinition.behavior,
+            actual: candidate.transport?.kind || null,
+            expected: expectedTransportKind,
+          },
+        },
+      );
+  } else if (candidate?.transport != null)
+    throw new DomainValidationError(
+      "RESOURCE_TRANSPORT_FORBIDDEN",
+      "Only resource connections may declare transport",
     );
   if (
     candidate &&

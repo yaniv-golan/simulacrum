@@ -35,7 +35,7 @@
     {
       "kind": "checkpoint",
       "format": "simulacrum-checkpoint",
-      "version": 1
+      "version": 2
     },
     {
       "kind": "experiment",

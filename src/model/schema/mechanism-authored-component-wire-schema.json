@@ -959,7 +959,9 @@
             "thermalModel"
           ],
           "properties": {
-            "kind": { "const": "memoryless-brush-v1" },
+            "kind": {
+              "enum": ["memoryless-brush-v1", "pneumatic-brush-v1"]
+            },
             "tireMaterialKey": {
               "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
             },
@@ -1006,6 +1008,32 @@
                     "kind": { "const": "load-radius-moment-v1" },
                     "coefficient": { "$ref": "#/$defs/nonnegative" },
                     "regularizationSpeedMPerS": { "$ref": "#/$defs/positive" }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "baselineCoefficient",
+                    "lossFractionPerCycle",
+                    "regularizationSpeedMPerS"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "const": "deformation-hysteresis-moment-v1"
+                    },
+                    "baselineCoefficient": {
+                      "$ref": "#/$defs/nonnegative"
+                    },
+                    "lossFractionPerCycle": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "regularizationSpeedMPerS": {
+                      "$ref": "#/$defs/positive"
+                    }
                   },
                   "additionalProperties": false
                 }
@@ -1064,8 +1092,142 @@
                 "referenceTemperatureK": { "$ref": "#/$defs/positive" }
               },
               "additionalProperties": false
+            },
+            "pneumaticChamber": {
+              "type": "object",
+              "required": [
+                "kind",
+                "mediumId",
+                "portId",
+                "referenceInternalVolumeM3",
+                "minimumInternalVolumeM3",
+                "initialColdGaugePressurePa",
+                "initialGasTemperatureK",
+                "massModel",
+                "volumeLaw",
+                "heatTransfer",
+                "damageLaw",
+                "limits"
+              ],
+              "properties": {
+                "kind": { "const": "sealed-ideal-gas-chamber-v1" },
+                "mediumId": { "const": "dry-air-v1" },
+                "portId": { "const": "AIR" },
+                "referenceInternalVolumeM3": { "$ref": "#/$defs/positive" },
+                "minimumInternalVolumeM3": { "$ref": "#/$defs/positive" },
+                "initialColdGaugePressurePa": {
+                  "$ref": "#/$defs/nonnegative"
+                },
+                "initialGasTemperatureK": { "$ref": "#/$defs/positive" },
+                "massModel": {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "centerPartM",
+                    "majorRadiusM",
+                    "radialSemiAxisM",
+                    "axialSemiAxisM",
+                    "axisPart"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "const": "elliptical-toroidal-gas-volume-v1"
+                    },
+                    "centerPartM": { "$ref": "#/$defs/vector3" },
+                    "majorRadiusM": { "$ref": "#/$defs/positive" },
+                    "radialSemiAxisM": { "$ref": "#/$defs/positive" },
+                    "axialSemiAxisM": { "$ref": "#/$defs/positive" },
+                    "axisPart": { "const": [0, 0, 1] }
+                  },
+                  "additionalProperties": false
+                },
+                "volumeLaw": {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "quadraticVolumeLossM",
+                    "cubicVolumeLoss"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "const": "radial-deflection-polynomial-v1"
+                    },
+                    "quadraticVolumeLossM": {
+                      "$ref": "#/$defs/nonnegative"
+                    },
+                    "cubicVolumeLoss": { "$ref": "#/$defs/nonnegative" }
+                  },
+                  "additionalProperties": false
+                },
+                "heatTransfer": {
+                  "type": "object",
+                  "required": ["kind", "gasToCarcassConductanceWPerK"],
+                  "properties": {
+                    "kind": { "const": "lumped-conductance-v1" },
+                    "gasToCarcassConductanceWPerK": {
+                      "$ref": "#/$defs/nonnegative"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "damageLaw": {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "rimLoadThresholdN",
+                    "sidewallLoadThresholdN",
+                    "excessLoadImpulseThresholdNs",
+                    "punctureLeakAreaM2",
+                    "burstLeakAreaM2",
+                    "maximumGasTemperatureK"
+                  ],
+                  "properties": {
+                    "kind": { "const": "deterministic-contact-damage-v1" },
+                    "rimLoadThresholdN": { "$ref": "#/$defs/positive" },
+                    "sidewallLoadThresholdN": { "$ref": "#/$defs/positive" },
+                    "excessLoadImpulseThresholdNs": {
+                      "$ref": "#/$defs/positive"
+                    },
+                    "punctureLeakAreaM2": { "$ref": "#/$defs/positive" },
+                    "burstLeakAreaM2": { "$ref": "#/$defs/positive" },
+                    "maximumGasTemperatureK": { "$ref": "#/$defs/positive" }
+                  },
+                  "additionalProperties": false
+                },
+                "limits": {
+                  "type": "object",
+                  "required": [
+                    "minimumGaugePressurePa",
+                    "maximumAbsolutePressurePa",
+                    "burstAbsolutePressurePa"
+                  ],
+                  "properties": {
+                    "minimumGaugePressurePa": { "type": "number" },
+                    "maximumAbsolutePressurePa": {
+                      "$ref": "#/$defs/positive"
+                    },
+                    "burstAbsolutePressurePa": {
+                      "$ref": "#/$defs/positive"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
             }
           },
+          "allOf": [
+            {
+              "if": {
+                "properties": { "kind": { "const": "pneumatic-brush-v1" } }
+              },
+              "then": {
+                "properties": { "pneumaticChamber": true },
+                "required": ["pneumaticChamber"]
+              },
+              "else": { "not": { "required": ["pneumaticChamber"] } }
+            }
+          ],
           "additionalProperties": false
         },
         "rimMaterialKey": {

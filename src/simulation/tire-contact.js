@@ -1,6 +1,13 @@
 import * as CANNON from "cannon-es";
 import { contactMaterialPair } from "../model/contact-material-pairs.js";
 import { DomainValidationError } from "../model/primitives.js";
+import { standardAtmosphere } from "./environment/atmosphere.js";
+import {
+  createPneumaticState,
+  pneumaticChamberVolume,
+  pneumaticRollingLoss,
+  pneumaticSupportResponse,
+} from "./pneumatic-gas.js";
 
 const EPSILON = 1e-9;
 const NORMAL_IMPULSE_NS = Symbol("simulacrumNormalImpulseNs");
@@ -290,6 +297,9 @@ function passiveBrushForces({
 
 function radialContactResponse({
   normalModel,
+  pneumaticChamber = null,
+  pneumaticState = null,
+  ambientPressurePa = 101_325,
   deflectionM,
   normalRateMPerS,
   manifoldShare,
@@ -306,10 +316,20 @@ function radialContactResponse({
     atRim = deflectionM > normalModel.maximumDeflectionM,
     totalDampingNsPerM =
       carcassDampingNsPerM + (atRim ? normalModel.rimContactDampingNsPerM : 0),
+    pneumatic =
+      pneumaticChamber && pneumaticState
+        ? pneumaticSupportResponse({
+            chamber: pneumaticChamber,
+            state: pneumaticState,
+            ambientPressurePa,
+            deflectionM: boundedDeflectionM,
+          })
+        : null,
     foundationLoadN = Math.max(
       0,
       (normalModel.kRadialNPerM * boundedDeflectionM -
-        carcassDampingNsPerM * normalRateMPerS) *
+        carcassDampingNsPerM * normalRateMPerS +
+        (pneumatic?.loadN || 0)) *
         manifoldShare,
     ),
     rimLoadN = Math.max(
@@ -324,6 +344,7 @@ function radialContactResponse({
         Math.max(
           EPSILON,
           (normalModel.kRadialNPerM +
+            (pneumatic?.tangentStiffnessNPerM || 0) +
             (atRim ? normalModel.rimContactStiffnessNPerM : 0)) *
             dt,
         ),
@@ -337,23 +358,40 @@ function radialContactResponse({
     rimLoadN,
     normalLoadN: foundationLoadN + rimLoadN,
     relaxation,
+    ...(pneumatic ? { pneumatic } : {}),
   };
 }
 
 export function surfaceFoundationResponse({
   normalModel,
+  pneumaticChamber = null,
+  pneumaticState = null,
+  ambientPressurePa = 101_325,
   pair,
   deflectionM,
   normalRateMPerS,
   manifoldShare,
   dt,
 }) {
-  const tireStiffness = normalModel.kRadialNPerM,
+  const pneumatic =
+      pneumaticChamber && pneumaticState
+        ? pneumaticSupportResponse({
+            chamber: pneumaticChamber,
+            state: pneumaticState,
+            ambientPressurePa,
+            deflectionM,
+          })
+        : null,
+    tireStiffness =
+      normalModel.kRadialNPerM + (pneumatic?.tangentStiffnessNPerM || 0),
     groundStiffness = pair.foundationStiffnessNPerM;
   if (!groundStiffness)
     return {
       ...radialContactResponse({
         normalModel,
+        pneumaticChamber,
+        pneumaticState,
+        ambientPressurePa,
         deflectionM,
         normalRateMPerS,
         manifoldShare,
@@ -373,6 +411,9 @@ export function surfaceFoundationResponse({
   return {
     ...radialContactResponse({
       normalModel,
+      pneumaticChamber,
+      pneumaticState,
+      ambientPressurePa,
       deflectionM: tireDeflectionM,
       normalRateMPerS: tireRateMPerS,
       manifoldShare,
@@ -403,6 +444,18 @@ export class TireContactConstraint extends CANNON.Constraint {
     this.fixedDt = fixedDt;
     const referenceTemperatureK =
       descriptor.tireConstitutiveLaw.thermalModel.referenceTemperatureK;
+    const chamber = descriptor.tireConstitutiveLaw.pneumaticChamber,
+      ambientPressurePa = standardAtmosphere(
+        Math.max(0, wheelBody.position.y),
+      ).pressure,
+      pneumaticState = chamber
+        ? createPneumaticState({
+            absolutePressurePa:
+              ambientPressurePa + chamber.initialColdGaugePressurePa,
+            temperatureK: chamber.initialGasTemperatureK,
+            volumeM3: chamber.referenceInternalVolumeM3,
+          })
+        : null;
     this.state = {
       touching: false,
       normalLoadN: 0,
@@ -414,10 +467,23 @@ export class TireContactConstraint extends CANNON.Constraint {
       carcassDeflectionRateMPerS: 0,
       rimLoadN: 0,
       rollingResistanceTorqueNm: 0,
+      rollingHysteresisEnergyPerCycleJ: 0,
+      effectiveRollingResistanceCoefficient: 0,
       surfaceSinkageM: 0,
       surfaceRollingResistanceMultiplier: 1,
       dissipatedEnergyJ: 0,
       temperatureK: referenceTemperatureK,
+      pneumaticGasState: pneumaticState,
+      ambientPressurePa: pneumaticState ? ambientPressurePa : null,
+      absolutePressurePa: pneumaticState
+        ? ambientPressurePa + chamber.initialColdGaugePressurePa
+        : null,
+      gaugePressurePa: pneumaticState
+        ? chamber.initialColdGaugePressurePa
+        : null,
+      gasTemperatureK:
+        pneumaticState?.temperatureK || chamber?.initialGasTemperatureK || null,
+      chamberVolumeM3: pneumaticState?.volumeM3 || null,
       frictionEllipseUtilization: 0,
       manifoldPointCount: 0,
       contactRoles: Object.freeze([]),
@@ -427,6 +493,26 @@ export class TireContactConstraint extends CANNON.Constraint {
       supportMaterialLaws: Object.freeze([]),
     };
     this.solvedContactRows = [];
+  }
+
+  setPneumaticGasState(state, carcassHeatJ = 0, ambientPressurePa = null) {
+    if (!this.descriptor.tireConstitutiveLaw.pneumaticChamber) return;
+    const thermal = this.descriptor.tireConstitutiveLaw.thermalModel;
+    this.state = {
+      ...this.state,
+      pneumaticGasState: {
+        massKg: state.massKg,
+        internalEnergyJ: state.internalEnergyJ,
+        volumeM3: state.volumeM3,
+      },
+      ambientPressurePa:
+        Number.isFinite(ambientPressurePa) && ambientPressurePa > 0
+          ? ambientPressurePa
+          : this.state.ambientPressurePa,
+      temperatureK:
+        this.state.temperatureK +
+        Number(carcassHeatJ || 0) / thermal.thermalMassJPerK,
+    };
   }
 
   update() {
@@ -450,6 +536,8 @@ export class TireContactConstraint extends CANNON.Constraint {
         carcassDeflectionRateMPerS: 0,
         rimLoadN: 0,
         rollingResistanceTorqueNm: 0,
+        rollingHysteresisEnergyPerCycleJ: 0,
+        effectiveRollingResistanceCoefficient: 0,
         surfaceSinkageM: 0,
         surfaceRollingResistanceMultiplier: 1,
         frictionEllipseUtilization: 0,
@@ -461,6 +549,27 @@ export class TireContactConstraint extends CANNON.Constraint {
         supportMaterialLaws: Object.freeze([]),
       };
     if (!contacts.length) {
+      const chamber = law.pneumaticChamber;
+      if (chamber && next.pneumaticGasState) {
+        const volumeM3 = pneumaticChamberVolume(chamber, 0),
+          ambientPressurePa =
+            next.ambientPressurePa ||
+            standardAtmosphere(Math.max(0, wheel.position.y)).pressure,
+          pneumatic = pneumaticSupportResponse({
+            chamber,
+            state: next.pneumaticGasState,
+            ambientPressurePa,
+            deflectionM: 0,
+          });
+        next.pneumaticGasState = {
+          ...next.pneumaticGasState,
+          volumeM3,
+        };
+        next.absolutePressurePa = pneumatic.absolutePressurePa;
+        next.gaugePressurePa = pneumatic.gaugePressurePa;
+        next.gasTemperatureK = pneumatic.temperatureK;
+        next.chamberVolumeM3 = volumeM3;
+      }
       this.state = next;
       return;
     }
@@ -570,8 +679,15 @@ export class TireContactConstraint extends CANNON.Constraint {
         normalRateMPerS = relativeVelocity.dot(normal),
         deflectionM = Math.max(0, -contactGap(contact)),
         normalModel = law.normalModel,
+        chamber = law.pneumaticChamber || null,
+        ambientPressurePa =
+          next.ambientPressurePa ||
+          standardAtmosphere(Math.max(0, wheel.position.y)).pressure,
         radial = surfaceFoundationResponse({
           normalModel,
+          pneumaticChamber: chamber,
+          pneumaticState: next.pneumaticGasState,
+          ambientPressurePa,
           pair,
           deflectionM,
           normalRateMPerS,
@@ -587,6 +703,12 @@ export class TireContactConstraint extends CANNON.Constraint {
           surfaceSinkageM,
           contactStiffnessNPerM,
         } = radial;
+      if (radial.pneumatic) {
+        next.absolutePressurePa = radial.pneumatic.absolutePressurePa;
+        next.gaugePressurePa = radial.pneumatic.gaugePressurePa;
+        next.gasTemperatureK = radial.pneumatic.temperatureK;
+        next.chamberVolumeM3 = radial.pneumatic.volumeM3;
+      }
       contact.setSpookParams(
         (contactStiffnessNPerM +
           (atRim ? normalModel.rimContactStiffnessNPerM : 0)) *
@@ -699,21 +821,31 @@ export class TireContactConstraint extends CANNON.Constraint {
     );
     const rolling = law.rollingResistance;
     if (
-      rolling.kind === "load-radius-moment-v1" &&
-      next.normalLoadN > EPSILON
+      next.normalLoadN > EPSILON &&
+      (rolling.kind === "load-radius-moment-v1" ||
+        rolling.kind === "deformation-hysteresis-moment-v1")
     ) {
       const angularSpeed = wheel.angularVelocity.dot(axle),
+        rollingLoss = pneumaticRollingLoss({
+          rollingResistance: rolling,
+          normalLoadN: next.normalLoadN,
+          deflectionM: next.carcassDeflectionM,
+          radiusM: descriptor.radiusM,
+          surfaceMultiplier: next.surfaceRollingResistanceMultiplier,
+        }),
+        momentMagnitudeNm = rollingLoss.momentNm,
         torqueNm =
-          -rolling.coefficient *
-          next.surfaceRollingResistanceMultiplier *
-          next.normalLoadN *
-          descriptor.radiusM *
+          -momentMagnitudeNm *
           Math.tanh(
             (angularSpeed * descriptor.radiusM) /
               rolling.regularizationSpeedMPerS,
           );
       wheel.torque.vadd(axle.scale(torqueNm), wheel.torque);
       next.rollingResistanceTorqueNm = torqueNm;
+      next.rollingHysteresisEnergyPerCycleJ =
+        rollingLoss.hysteresisEnergyPerCycleJ;
+      next.effectiveRollingResistanceCoefficient =
+        rollingLoss.effectiveCoefficient;
       next.dissipatedEnergyJ +=
         Math.max(0, -torqueNm * angularSpeed) * this.fixedDt;
     }
@@ -728,6 +860,16 @@ export class TireContactConstraint extends CANNON.Constraint {
         this.fixedDt;
     next.temperatureK +=
       (dissipatedThisStepJ - coolingJ) / thermal.thermalMassJPerK;
+    if (law.pneumaticChamber && next.pneumaticGasState) {
+      const volumeM3 = pneumaticChamberVolume(
+        law.pneumaticChamber,
+        next.carcassDeflectionM,
+      );
+      next.pneumaticGasState = {
+        ...next.pneumaticGasState,
+        volumeM3,
+      };
+    }
     this.state = next;
   }
 

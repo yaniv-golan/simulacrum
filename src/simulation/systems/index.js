@@ -34,3 +34,8 @@ export { MobilityTelemetrySystem } from "./mobility-telemetry-system.js";
 export { TestSiteTelemetrySystem } from "./test-site-telemetry-system.js";
 export { TestCourseSystem } from "./test-course-system.js";
 export { ThermalSystem } from "./thermal-system.js";
+export {
+  PneumaticCommitSystem,
+  PneumaticStructureSystem,
+  PneumaticSystem,
+} from "./pneumatic-system.js";

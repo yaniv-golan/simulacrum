@@ -431,6 +431,86 @@ function assertComponentSemantics(wire) {
         (region) => region.key === "rim",
       ),
       normalModel = config.tireConstitutiveLaw.normalModel;
+    const chamber = tire.pneumaticChamber;
+    if (
+      chamber &&
+      chamber.minimumInternalVolumeM3 >= chamber.referenceInternalVolumeM3
+    )
+      fail(
+        "INVALID_PNEUMATIC_CHAMBER_VOLUME_RANGE",
+        "Pneumatic tire minimum volume must be below its reference volume",
+        ["config", "tireConstitutiveLaw", "pneumaticChamber"],
+      );
+    if (chamber) {
+      const maximumDeflectionM = tire.normalModel.maximumDeflectionM,
+        massModel = chamber.massModel,
+        massModelVolumeM3 =
+          2 *
+          Math.PI ** 2 *
+          massModel.majorRadiusM *
+          massModel.radialSemiAxisM *
+          massModel.axialSemiAxisM,
+        minimumOperatingVolumeM3 =
+          chamber.referenceInternalVolumeM3 -
+          chamber.volumeLaw.quadraticVolumeLossM * maximumDeflectionM ** 2 -
+          chamber.volumeLaw.cubicVolumeLoss * maximumDeflectionM ** 3;
+      if (
+        Math.abs(massModelVolumeM3 - chamber.referenceInternalVolumeM3) /
+          chamber.referenceInternalVolumeM3 >
+          0.001 ||
+        massModel.majorRadiusM - massModel.radialSemiAxisM <
+          rimRegion.geometry.radiusM - 1e-9 ||
+        massModel.majorRadiusM + massModel.radialSemiAxisM >
+          config.radiusM + 1e-9 ||
+        massModel.axialSemiAxisM > config.widthM / 2 + 1e-9
+      )
+        fail(
+          "INVALID_PNEUMATIC_GAS_MASS_GEOMETRY",
+          "Pneumatic gas mass geometry must match chamber volume and fit between rim and tire bounds",
+          ["config", "tireConstitutiveLaw", "pneumaticChamber", "massModel"],
+        );
+      if (minimumOperatingVolumeM3 < chamber.minimumInternalVolumeM3)
+        fail(
+          "PNEUMATIC_CHAMBER_VOLUME_CLAMPS_BEFORE_RIM",
+          "Pneumatic tire chamber volume law must remain above its minimum through authored carcass travel",
+          ["config", "tireConstitutiveLaw", "pneumaticChamber", "volumeLaw"],
+        );
+      if (
+        101_325 + chamber.initialColdGaugePressurePa >
+        chamber.limits.maximumAbsolutePressurePa
+      )
+        fail(
+          "INITIAL_PNEUMATIC_PRESSURE_EXCEEDS_LIMIT",
+          "Initial cold tire pressure must not exceed the operating pressure limit at sea level",
+          [
+            "config",
+            "tireConstitutiveLaw",
+            "pneumaticChamber",
+            "initialColdGaugePressurePa",
+          ],
+        );
+      if (
+        chamber.damageLaw.burstLeakAreaM2 <
+          chamber.damageLaw.punctureLeakAreaM2 ||
+        chamber.damageLaw.maximumGasTemperatureK <=
+          chamber.initialGasTemperatureK
+      )
+        fail(
+          "INVALID_PNEUMATIC_DAMAGE_LAW",
+          "Pneumatic tire damage law must order leak areas and thermal limit",
+          ["config", "tireConstitutiveLaw", "pneumaticChamber", "damageLaw"],
+        );
+    }
+    if (
+      chamber &&
+      chamber.limits.maximumAbsolutePressurePa >=
+        chamber.limits.burstAbsolutePressurePa
+    )
+      fail(
+        "INVALID_PNEUMATIC_PRESSURE_LIMIT_ORDER",
+        "Pneumatic tire operating pressure must remain below burst pressure",
+        ["config", "tireConstitutiveLaw", "pneumaticChamber", "limits"],
+      );
     if (
       rimRegion.geometry.kind !== "cylinder-v1" ||
       normalModel.maximumDeflectionM >
@@ -443,6 +523,7 @@ function assertComponentSemantics(wire) {
       );
     if (
       !normalModel.progressiveStop &&
+      !chamber &&
       normalModel.kRadialNPerM * normalModel.maximumDeflectionM <
         tire.calibratedNormalLoadRangeN.upper
     )

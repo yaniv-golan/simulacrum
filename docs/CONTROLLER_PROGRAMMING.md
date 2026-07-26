@@ -34,17 +34,18 @@ named input binding in **Named Physical I/O**. The binding records one exact
 component ID, port, and reading. The API browser labels every bound reading
 with its unit and source part ID.
 
-| Component         | Readings                                                    | Physical source                          |
-| ----------------- | ----------------------------------------------------------- | ---------------------------------------- |
-| Command Receiver  | remote command                                              | Powered remote and signal route          |
-| Navigation Sensor | altitude, speed, X/Z position, X/Z velocity, X/Z wind       | Component pose and local environment     |
-| Range Sensor      | detection, surface range, range rate, XYZ relative velocity | Finite conical environment-body query    |
-| Rotation Sensor   | RPM                                                         | Mechanically attached shaft              |
-| 6-axis IMU        | roll, pitch, yaw; XYZ angular rate; XYZ acceleration        | Component pose and motion                |
-| Contact Switch    | contact, contact force, water contact                       | Solver contacts and support force        |
-| Thermal Probe     | temperature, heat flux                                      | Component thermal state                  |
-| Air Data Probe    | static pressure, dynamic pressure, density                  | Local altitude and relative airflow      |
-| Load Cell         | load and rated-load ratio                                   | Loads on the cell's physical connections |
+| Component            | Readings                                                    | Physical source                          |
+| -------------------- | ----------------------------------------------------------- | ---------------------------------------- |
+| Command Receiver     | remote command                                              | Powered remote and signal route          |
+| Navigation Sensor    | altitude, speed, X/Z position, X/Z velocity, X/Z wind       | Component pose and local environment     |
+| Range Sensor         | detection, surface range, range rate, XYZ relative velocity | Finite conical environment-body query    |
+| Rotation Sensor      | RPM                                                         | Mechanically attached shaft              |
+| 6-axis IMU           | roll, pitch, yaw; XYZ angular rate; XYZ acceleration        | Component pose and motion                |
+| Contact Switch       | contact, contact force, water contact                       | Solver contacts and support force        |
+| Thermal Probe        | temperature, heat flux                                      | Component thermal state                  |
+| Air Data Probe       | static pressure, dynamic pressure, density                  | Local altitude and relative airflow      |
+| Load Cell            | load and rated-load ratio                                   | Loads on the cell's physical connections |
+| Tire Pressure Sensor | absolute/gauge pressure and gas temperature                 | Powered connected dry-air chamber        |
 
 The API browser exposes the exact binding keys and units defined by the core
 sensor contract; the labels above are a player-facing summary rather than a
@@ -99,3 +100,11 @@ subassembly remaps endpoint component IDs while preserving controller-local
 aliases and program source. If two powered controllers bind the same physical
 target/channel, that channel reports `CONTROL CONFLICT` and neither controller
 wins.
+
+Pneumatic control uses the same endpoints. An Electric Air Compressor exposes
+normalized `inflate`; a Three-Way Pneumatic Valve exposes `position` from vent
+through hold to supply. A controller reads the Tire Pressure Sensor's previous
+completed sample and writes those exact device bindings. Removing sensor power,
+its dry-air connection, its signal route, actuator power, or an authored gas
+line removes only the corresponding reading or flow; there is no direct
+set-pressure output.

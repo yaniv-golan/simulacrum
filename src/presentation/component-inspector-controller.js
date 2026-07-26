@@ -2,9 +2,11 @@ import * as THREE from "three";
 import { TYPES } from "../model/component-catalog.js";
 import {
   articulatedRolesForType,
+  componentLiveMeasurement,
   componentInspectorProperties,
   mechanismDisplayField,
   mechanismInspectorProperties,
+  pneumaticAuthoringSummary,
 } from "./component-inspector-properties.js";
 import { createAssemblyOutlinerController } from "./assembly-outliner-controller.js";
 import {
@@ -13,7 +15,6 @@ import {
 } from "./breakaway-umbilical-editor.js";
 import * as ropeInspector from "./flexible-line-inspector.js";
 import { replaceSelectOptions } from "./select-options.js";
-
 /**
  * @typedef {{
  *   id: number, type: string, mesh: THREE.Object3D,
@@ -26,6 +27,7 @@ import { replaceSelectOptions } from "./select-options.js";
  *   mechanismDisplayUnit?:string,
  *   rigRole?: string | null, rigVisualRotation?: number[] | null,
  *   sensorValueRpm?: number,
+ *   tireGaugePressurePa?: number | null, tireGasTemperatureK?: number | null,
  * }} InspectorPart
  * @typedef {{
  *   id?: string, a: number, b: number, portA?:string, portB?:string, kind: string, failed?: boolean,
@@ -66,7 +68,6 @@ import { replaceSelectOptions } from "./select-options.js";
  *   setMode: (mode: string) => void, notify: (message: string) => void,
  * }} InspectorActionPort
  */
-
 /**
  * @param {{ model: InspectorModelPort, view: InspectorViewPort, actions: InspectorActionPort }} ports
  */
@@ -97,7 +98,6 @@ export function createComponentInspectorController({ model, view, actions }) {
       selectConnection: actions.selectConnection,
     },
   });
-
   function armPort(partId, port) {
     const part = model.parts().find((candidate) => candidate.id === partId);
     if (!part) return;
@@ -116,7 +116,6 @@ export function createComponentInspectorController({ model, view, actions }) {
     );
     render();
   }
-
   function render() {
     outliner.render();
     const inspection = model.inspection();
@@ -127,7 +126,6 @@ export function createComponentInspectorController({ model, view, actions }) {
     required(".inspector-content").classList.toggle("hidden", !part);
     view.syncSelection(Boolean(part));
     if (!part) return;
-
     const selection = model.selectedParts();
     const type = TYPES[part.type];
     const powered = inspection.observation?.specialized?.powered !== false,
@@ -195,27 +193,29 @@ export function createComponentInspectorController({ model, view, actions }) {
       part.type === "computer"
         ? `<button id="program-controller" class="program-controller"><span>{ }</span><b>PROGRAM THIS CONTROLLER</b><small>${inspection.observation.specialized.powered ? "POWERED" : "CONNECT POWER FIRST"} · ${inspection.observation.specialized.signalConnectionCount} SIGNAL OUTPUTS</small></button>`
         : "";
-    const liveMeasurement =
-      part.type === "sensor"
-        ? `<br><strong id="sensor-live-rpm">MEASURED SHAFT SPEED · ${inspection.observation.specialized.measuredRpm.toFixed(1)} RPM</strong>`
-        : "";
+    const liveMeasurement = componentLiveMeasurement(part, inspection);
     const mechanismFields = mechanismInspectorProperties(part),
       mechanismRows = (fields) =>
         fields
           .map((field) => {
             const fieldId = field.pathKey.replace(/[^a-z0-9]+/gi, "-"),
               display = mechanismDisplayField(field, displayUnits);
-            return `<tr><th scope="row"><label for="mechanism-field-${fieldId}">${field.label}</label><small>${field.pathKey}</small></th><td><input id="mechanism-field-${fieldId}" data-mechanism-path="${field.pathKey}" data-si-factor="${display.factor}" type="number" step="any" value="${display.value}" aria-describedby="mechanism-unit-${fieldId} mechanism-error"></td><td id="mechanism-unit-${fieldId}">${display.unit}</td></tr>`;
+            return `<tr><th scope="row"><label for="mechanism-field-${fieldId}">${field.label}</label><small>${field.pathKey}</small></th><td><input id="mechanism-field-${fieldId}" data-mechanism-path="${field.pathKey}" data-si-factor="${display.factor}" type="number" step="any" value="${display.value}" ${model.running() ? "disabled" : ""} aria-describedby="mechanism-unit-${fieldId} mechanism-error"></td><td id="mechanism-unit-${fieldId}">${display.unit}</td></tr>`;
           })
           .join(""),
       scalarMechanismFields = mechanismFields.filter(
-        (field) => !field.curvePoint,
+        (field) => !field.curvePoint && !field.primary,
       ),
+      primaryMechanismFields = mechanismFields.filter((field) => field.primary),
       curveMechanismFields = mechanismFields.filter(
         (field) => field.curvePoint,
       ),
+      pneumaticSummary = pneumaticAuthoringSummary(part),
+      pneumaticSummaryMarkup = pneumaticSummary
+        ? `<section class="pneumatic-authoring-summary" aria-labelledby="pneumatic-authoring-title"><h4 id="pneumatic-authoring-title">PNEUMATIC TIRE · COLD PRESSURE</h4>${primaryMechanismFields.length ? `<table><caption>Primary tire setup</caption><thead><tr><th>FIELD</th><th>VALUE</th><th>UNIT</th></tr></thead><tbody>${mechanismRows(primaryMechanismFields)}</tbody></table>` : ""}<dl><div><dt>Cold absolute pressure</dt><dd>${(pneumaticSummary.absolutePressurePa / 1000).toFixed(1)} kPa</dd></div><div><dt>Cold gas mass</dt><dd>${pneumaticSummary.gasMassKg.toFixed(3)} kg</dd></div><div><dt>Internal volume</dt><dd>${pneumaticSummary.internalVolumeM3.toFixed(3)} m³</dd></div><div><dt>Working gauge range</dt><dd>${(pneumaticSummary.minimumGaugePressurePa / 1000).toFixed(0)}–${(pneumaticSummary.maximumWorkingGaugePressurePa / 1000).toFixed(0)} kPa</dd></div><div><dt>Burst gauge threshold</dt><dd>${(pneumaticSummary.burstGaugePressurePa / 1000).toFixed(0)} kPa</dd></div></dl><small>Cold estimates use the authored SI state and standard workshop atmosphere. Live values come from pneumatic telemetry.</small></section>`
+        : "",
       mechanismEditor = part.mechanism
-        ? `<section class="mechanism-editor" aria-labelledby="mechanism-editor-title"><h4 id="mechanism-editor-title">MECHANISM PARAMETERS · AUTHORITATIVE SI</h4><label>DISPLAY UNITS<select id="mechanism-display-units"><option value="si" ${displayUnits === "si" ? "selected" : ""}>SI base units</option><option value="engineering" ${displayUnits === "engineering" ? "selected" : ""}>Engineering units</option></select></label><p class="component-contract-note">Edits are converted to SI and validated as one strict authored component before they can change the assembly.</p>${scalarMechanismFields.length ? `<table><caption>Scalar physical laws and limits</caption><thead><tr><th>FIELD</th><th>VALUE</th><th>UNIT</th></tr></thead><tbody>${mechanismRows(scalarMechanismFields)}</tbody></table>` : ""}${curveMechanismFields.length ? `<table><caption>Curve and envelope points</caption><thead><tr><th>POINT FIELD</th><th>VALUE</th><th>UNIT</th></tr></thead><tbody>${mechanismRows(curveMechanismFields)}</tbody></table>` : ""}<p id="mechanism-error" class="mechanism-error" role="status" aria-live="polite"></p></section>`
+        ? `${pneumaticSummaryMarkup}<section class="mechanism-editor" aria-labelledby="mechanism-editor-title"><h4 id="mechanism-editor-title">MECHANISM PARAMETERS · AUTHORITATIVE SI</h4><label>DISPLAY UNITS<select id="mechanism-display-units"><option value="si" ${displayUnits === "si" ? "selected" : ""}>SI base units</option><option value="engineering" ${displayUnits === "engineering" ? "selected" : ""}>Engineering units</option></select></label><p class="component-contract-note">Edits are converted to SI and validated as one strict authored component before they can change the assembly.</p><details><summary>Advanced physical laws and limits</summary>${scalarMechanismFields.length ? `<table><caption>Scalar physical laws and limits</caption><thead><tr><th>FIELD</th><th>VALUE</th><th>UNIT</th></tr></thead><tbody>${mechanismRows(scalarMechanismFields)}</tbody></table>` : ""}${curveMechanismFields.length ? `<table><caption>Curve and envelope points</caption><thead><tr><th>POINT FIELD</th><th>VALUE</th><th>UNIT</th></tr></thead><tbody>${mechanismRows(curveMechanismFields)}</tbody></table>` : ""}</details><p id="mechanism-error" class="mechanism-error" role="status" aria-live="polite"></p></section>`
         : "",
       twoEndedWorkflow = ropeInspector.twoEndedRopeWorkflow(selection);
     required("#property-list").innerHTML =

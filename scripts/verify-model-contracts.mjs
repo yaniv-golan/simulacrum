@@ -334,6 +334,7 @@ const canonicalPortBehaviors = new Set([
     "electrical-network",
     "signal-network",
     "material-resource",
+    "compressible-gas",
   ]),
   canonicalDirections = new Set(["source", "sink", "bidirectional"]),
   canonicalMultiplicities = new Set(["one", "many"]),
@@ -367,6 +368,7 @@ const kindForBehavior = {
     "electrical-network": "power",
     "signal-network": "signal",
     "material-resource": "resource",
+    "compressible-gas": "resource",
   },
   allowedBehaviorPairs = new Set([
     "fixed:fixed",
@@ -388,6 +390,7 @@ const kindForBehavior = {
     "electrical-network:electrical-network",
     "signal-network:signal-network",
     "material-resource:material-resource",
+    "compressible-gas:compressible-gas",
   ]);
 for (const leftBehavior of canonicalPortBehaviors)
   for (const rightBehavior of canonicalPortBehaviors) {
@@ -399,7 +402,7 @@ for (const leftBehavior of canonicalPortBehaviors)
             kind: kindForBehavior[leftBehavior],
             behavior: leftBehavior,
             direction: "bidirectional",
-            ...(leftBehavior === "material-resource"
+            ...(["material-resource", "compressible-gas"].includes(leftBehavior)
               ? { mediumId: "test-medium-v1" }
               : {}),
             multiplicity: "many",
@@ -413,7 +416,9 @@ for (const leftBehavior of canonicalPortBehaviors)
             kind: kindForBehavior[rightBehavior],
             behavior: rightBehavior,
             direction: "bidirectional",
-            ...(rightBehavior === "material-resource"
+            ...(["material-resource", "compressible-gas"].includes(
+              rightBehavior,
+            )
               ? { mediumId: "test-medium-v1" }
               : {}),
             multiplicity: "many",

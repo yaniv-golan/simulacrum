@@ -64,7 +64,7 @@ try {
   );
   assert.equal(
     await builtInMechanisms.count(),
-    6,
+    7,
     "ordinary reusable subassemblies are missing from the component library",
   );
   assert.deepEqual(
@@ -75,6 +75,7 @@ try {
       "Double wishbone corner",
       "Rocker-bogie suspension",
       "Active leveling suspension",
+      "Four-wheel central tire inflation system",
       "Scripted orbital staging assembly",
     ],
     "reusable construction families are not discoverable by topology",

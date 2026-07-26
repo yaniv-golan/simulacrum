@@ -213,6 +213,7 @@ export function createTestCourseRecordFeature({
         terminalReason: aborted
           ? "aborted"
           : course.failureReason || course.status,
+        pneumaticEvidence: structuredClone(course.pneumaticEvidence || []),
       },
       record = {
         proofVersion: 1,

@@ -37,10 +37,21 @@ the compiled-assembly ownership domain.
 
 ## Resources and mass ownership
 
-Power, signal, and material resources are separate compiled graphs.
+Power, signal, finite material, and compressible-gas resources are separate
+compiled authorities. Resource edges retain an exact medium identity, while
+their port behavior selects the owning runtime; the finite-store allocator
+never doubles as a gas solver. `PneumaticNetwork` owns dry-air mass and
+internal energy for tire chambers, resolves powered compressor/three-way-valve
+flow before contact, and commits chamber-volume work and gas/carcass heat after
+the completed solve. The tire constraint consumes one tire-wide pressure state,
+so a larger contact manifold cannot duplicate pneumatic support. The
+`pneumatic-gas` checkpoint owner preserves chamber state and cumulative
+mass/energy transactions, and the ordinary post-thermal mass transaction adds
+the conserved gas mass to the wheel body for the next tick.
+
 `MaterialResourceNetwork` is the sole mutable owner of finite store quantity
 and resource topology. It follows live structural revisions and reprojects
-partitioning in the same completed tick; checkpoint v1 persists it under the
+partitioning in the same completed tick; checkpoint v2 persists it under the
 dedicated `material-resources` owner. Pressure-nozzle systems turn ordinary
 endpoint commands into mass-flow requests, proportionally allocate and debit
 reachable same-medium stores, and apply only force backed by that tick's
@@ -85,8 +96,8 @@ invent launch, vehicle-mode, mission-status, or stabilization state.
 
 ## Checkpoints and physical release
 
-Checkpoint v1 persists the sole mutable flight-domain state under the strict
-version-1 `thermal-ablation` owner. Aerodynamic forces, completed flight read
+Checkpoint v2 persists the sole mutable flight-domain state under the strict
+owner-version-1 `thermal-ablation` record. Aerodynamic forces, completed flight read
 models, and physical-component identity are re-derived. Every checkpoint owner
 wrapper has exactly version 1, and restore validates compiled topology plus
 aerothermal part identity before applying the atomic transaction.

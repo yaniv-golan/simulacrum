@@ -163,10 +163,18 @@ try {
   );
 
   await activate("#mechanism-capture-proof");
-  await page.waitForFunction(
-    () =>
-      JSON.parse(window.render_game_to_text()).mechanismLab?.experiment
-        ?.manifestDigest,
+  await page.waitForFunction(() => {
+    const experiment = JSON.parse(window.render_game_to_text()).mechanismLab
+        ?.experiment,
+      notice = document.querySelector(".toast")?.textContent || "";
+    return (
+      experiment?.manifestDigest || notice.includes("Experiment capture failed")
+    );
+  });
+  assert.doesNotMatch(
+    await page.locator(".toast").textContent(),
+    /Experiment capture failed/,
+    "mechanism experiment capture failed",
   );
   let proofState = await textState();
   const captured = proofState.mechanismLab.experiment;

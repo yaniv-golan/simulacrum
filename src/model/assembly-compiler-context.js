@@ -141,6 +141,7 @@ export function compileConnectionNetworks(context) {
         portB: connection.portB,
         mediumId: portA.mediumId,
         directions: [portA.direction, portB.direction],
+        transport: cloneCompiledValue(connection.transport),
       });
     }
   }
