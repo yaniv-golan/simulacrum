@@ -18,6 +18,12 @@ export function createEditorInspectorActions({
   renderInspector,
   drawConnections,
   updateSelection,
+  disconnectConnection,
+  traceComponentRoute,
+  traceConfiguredControlChain,
+  showRelationshipTrace,
+  showRelationshipTraceSegments,
+  clearRelationshipTrace,
 }) {
   return {
     recordHistory: history.record,
@@ -49,12 +55,14 @@ export function createEditorInspectorActions({
     },
     connectWithRope: actions.connectWithRope,
     selectPart: (partId) => {
+      clearRelationshipTrace();
       actions.select(partId, [partId]);
       showSelection(state.parts.find((part) => part.id === partId) || null);
       renderInspector();
     },
     setPrimaryPart: (partId) => {
       if (!state.editor.selectedIds.has(partId)) return;
+      clearRelationshipTrace();
       actions.select(partId, state.editor.selectedIds);
       const primary = state.parts.find((part) => part.id === partId);
       showSelection(primary || null);
@@ -65,12 +73,26 @@ export function createEditorInspectorActions({
       queueMicrotask(() => view.query("#primary-selection")?.focus());
     },
     selectConnection: (connectionId, partId) => {
+      clearRelationshipTrace();
       applyEditorAction(state.editor, {
         type: "select-connection",
         connectionId,
         partId,
       });
       showSelection(state.parts.find((part) => part.id === partId) || null);
+    },
+    disconnectConnection,
+    traceComponentRoute,
+    traceConfiguredControlChain,
+    showRelationshipTrace,
+    showRelationshipTraceSegments,
+    clearRelationshipTrace,
+    framePart: (partId) => {
+      clearRelationshipTrace();
+      actions.select(partId, [partId]);
+      showSelection(state.parts.find((part) => part.id === partId) || null);
+      renderInspector();
+      queueMicrotask(() => view.query("#frame-selection")?.click());
     },
     setMode: actions.setMode,
     notify: actions.notify,

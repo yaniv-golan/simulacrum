@@ -14,6 +14,8 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-component-selection-actions.mjs",
   "verify-component-authored-carriers.mjs",
   "verify-component-relationship-analysis.mjs",
+  "verify-component-route-evidence.mjs",
+  "verify-component-route-evidence-scale.mjs",
   "verify-component-preflight.mjs",
   "verify-component-inspection-foundation-scale.mjs",
   "verify-browser-errors.mjs",
@@ -119,6 +121,7 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-ui-baseline-fixtures.mjs",
   "verify-accessibility.mjs",
   "verify-keyboard-workflows.mjs",
+  "verify-operation-input-context.mjs",
   "verify-keyboard-authoring-journey.mjs",
   "verify-editor-tools.mjs",
   "verify-failure-analysis.mjs",
@@ -137,16 +140,20 @@ export const VERIFICATION_CHECKS = Object.freeze([
 
 /**
  * Explicit exceptions for workflows that intentionally exercise several
- * reload/persistence boundaries in one browser. Product performance limits
- * remain inside their owning suites; these values bound orchestration only.
+ * application lifecycles or reload/persistence boundaries in one browser.
+ * Product performance limits remain inside their owning suites; these values
+ * bound orchestration only.
  */
 export const VERIFICATION_TIMEOUT_MS = Object.freeze({
+  "verify-mechanism-sharing-proof.mjs": 300_000,
+  "verify-blueprint-roundtrip.mjs": 300_000,
   "verify-blueprint-exchange.mjs": 300_000,
   "verify-editor-tools.mjs": 300_000,
   "verify-failure-analysis.mjs": 300_000,
   "verify-testing-playground-browser.mjs": 420_000,
   "verify-ui-baseline-fixtures.mjs": 300_000,
   "verify-component-authored-carriers-browser.mjs": 300_000,
+  "verify-keyboard-workflows.mjs": 300_000,
 });
 
 /**

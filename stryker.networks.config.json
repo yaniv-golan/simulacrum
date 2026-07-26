@@ -10,7 +10,7 @@
   ],
   "testRunner": "command",
   "commandRunner": {
-    "command": "node scripts/verify-power-signal-command-networks.mjs && node scripts/verify-material-resources.mjs && node scripts/verify-conserved-propulsion.mjs && node scripts/verify-controller-bindings.mjs && node scripts/verify-release-coupler.mjs"
+    "command": "node scripts/verify-component-route-evidence.mjs && node scripts/verify-power-signal-command-networks.mjs && node scripts/verify-material-resources.mjs && node scripts/verify-conserved-propulsion.mjs && node scripts/verify-controller-bindings.mjs && node scripts/verify-release-coupler.mjs"
   },
   "mutate": [
     "src/application/remote-control-read-model.js",
@@ -22,6 +22,9 @@
     "src/simulation/power-network.js",
     "src/simulation/signal-network.js",
     "src/simulation/material-resource-network.js",
+    "src/simulation/route-evidence-index.js",
+    "src/simulation/route-evidence-archive.js",
+    "src/simulation/systems/telemetry-system.js",
     "src/simulation/systems/command-routing-system.js",
     "src/simulation/systems/release-coupler-system.js"
   ],

@@ -17,6 +17,10 @@ export {
   displacedVolumeForPart,
 } from "../model/engineering-analysis.js";
 export { FailureRecorder, ReplayBuffer } from "../model/failure-analysis.js";
+export {
+  CHECKPOINT_STATE_OWNER_IDS,
+  CHECKPOINT_STATE_OWNER_VERSIONS,
+} from "../model/mechanism-artifact-identity.js";
 export { FailureEvent } from "../model/failure-event-extractors.js";
 export { ControllerTraceBuffer } from "../model/controller-debugger.js";
 export { SENSOR_PART_DEFINITIONS } from "../model/sensor-contracts.js";

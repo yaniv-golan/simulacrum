@@ -226,11 +226,11 @@ export function createEditorSelectionFeature({
         null,
         targetAnchorLocalM,
       );
-      workspace.cancelConnection();
-      view.query(".connection-banner")?.classList.add("hidden");
-      clearEffect("previewLine");
-      actions.setMode("build");
       if (connected) {
+        workspace.cancelConnection();
+        view.query(".connection-banner")?.classList.add("hidden");
+        clearEffect("previewLine");
+        actions.setMode("build");
         actions.notify("Physical connection created");
         actions.tutorialEvent("connected");
       }

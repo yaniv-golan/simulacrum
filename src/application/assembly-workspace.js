@@ -7,6 +7,7 @@ import {
 import { PowerNetwork } from "../simulation/power-network.js";
 import { RunAssemblyGraph } from "../simulation/run-assembly-graph.js";
 import { SignalNetwork } from "../simulation/signal-network.js";
+import { createAuthoredRouteEvidenceAccessor } from "./authored-route-evidence-accessor.js";
 import { routedControllerIdsForPart } from "./controller-route-read-model.js";
 import { readRemoteControlBinding } from "./remote-control-read-model.js";
 
@@ -140,11 +141,17 @@ export function createAssemblyWorkspace({
     return live?.length ? live : editor[key]();
   }
 
+  const routeEvidence = createAuthoredRouteEvidenceAccessor({
+    model,
+    networks,
+    catalog,
+  });
   return Object.freeze({
     model,
     editorSnapshot,
     sync,
     networks,
+    ...routeEvidence,
     powered,
     routedControllers,
     controlBinding,

@@ -229,14 +229,14 @@
   color: #c0d9d4 !important;
   text-shadow: none !important;
 }
-.port.armed {
+.port-row.armed {
   background: #163a36 !important;
   border-color: #75f0d2 !important;
   box-shadow:
     0 0 0 1px #75f0d255,
     0 0 18px #70e0c433 !important;
 }
-.port.armed em {
+.port-row.armed em {
   color: #8ff7df !important;
 }
 .camera-tools {

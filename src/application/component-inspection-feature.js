@@ -1,7 +1,7 @@
 import { analyzeComponentPreflight } from "../model/component-preflight.js";
 import { ComponentRelationshipIndex } from "../model/component-relationships.js";
 import { immutableClone } from "../model/primitives.js";
-import { portIds, portPresentation } from "../model/ports.js";
+import { portDefinition, portIds, portPresentation } from "../model/ports.js";
 import { createSelectedContextCommandCatalog } from "./component-action-catalog.js";
 import {
   projectCurrentComponentObservation,
@@ -26,7 +26,10 @@ export function createComponentInspectionFeature({
     cached = null,
     authoredRevision = null,
     authoredSnapshot = null,
-    relationshipIndex = null;
+    relationshipIndex = null,
+    routeEvidence = null,
+    routeEvidenceRevision = 0,
+    lastRouteContextKey = null;
 
   function read() {
     const revision = assembly.revision(),
@@ -38,7 +41,17 @@ export function createComponentInspectionFeature({
       evidenceRevision = runtime.evidenceRevision(),
       commandRevision = commandCatalog.revision?.() || 0,
       isolationActive = runtime.isolationActive?.() || false,
-      key = `${revision}|${selectedPartIds.join(",")}|${String(primaryPartId)}|${running ? 1 : 0}|${evidenceRevision}|${commandRevision}|${isolationActive ? 1 : 0}`;
+      connectionIntent = runtime.connectionIntent?.() || "",
+      routeContextKey = `${revision}|${String(primaryPartId)}|${running ? 1 : 0}|${evidenceRevision}`;
+    if (
+      lastRouteContextKey !== null &&
+      lastRouteContextKey !== routeContextKey
+    ) {
+      routeEvidence = null;
+      routeEvidenceRevision++;
+    }
+    lastRouteContextKey = routeContextKey;
+    const key = `${revision}|${selectedPartIds.join(",")}|${String(primaryPartId)}|${running ? 1 : 0}|${evidenceRevision}|${commandRevision}|${isolationActive ? 1 : 0}|${connectionIntent}|${routeEvidenceRevision}`;
     if (cacheKey === key && cached) return cached;
     if (authoredRevision !== revision || !relationshipIndex) {
       authoredRevision = revision;
@@ -206,23 +219,67 @@ export function createComponentInspectionFeature({
         : null,
       ports: primary
         ? portIds(primary, catalog).map((portId) => {
-            const counterpart = directRelationships.find(
-              (relationship) => relationship.portId === portId,
-            );
+            const allCounterparts = directRelationships.filter(
+                (relationship) => relationship.portId === portId,
+              ),
+              counterparts = allCounterparts.slice(0, 512),
+              counterpart = counterparts[0] || null,
+              definition = portDefinition(primary, portId, catalog),
+              projectCounterpart = (relationship) => {
+                const counterpartPart = partById.get(
+                  relationship.counterpartPartId,
+                );
+                return {
+                  partId: relationship.counterpartPartId,
+                  portId: relationship.counterpartPortId,
+                  connectionId: relationship.connectionId,
+                  name: counterpartPart
+                    ? `${catalog[counterpartPart.type]?.name || counterpartPart.type} #${counterpartPart.id}`
+                    : `Missing component #${relationship.counterpartPartId}`,
+                };
+              };
             return {
               portId,
+              kind: definition.kind,
+              direction: definition.direction,
+              behavior: definition.behavior,
               ...portPresentation(primary, portId, catalog),
-              status: counterpart ? "connected" : "available",
-              counterpart: counterpart
-                ? {
-                    partId: counterpart.counterpartPartId,
-                    portId: counterpart.counterpartPortId,
-                    connectionId: counterpart.connectionId,
-                  }
-                : null,
+              status: counterpart
+                ? counterpart.observation?.failed
+                  ? "failed"
+                  : counterpart.validity === "invalid"
+                    ? "invalid"
+                    : "connected"
+                : "available",
+              counterpart: counterpart ? projectCounterpart(counterpart) : null,
+              counterparts: counterparts.map(projectCounterpart),
+              counterpartCount: allCounterparts.length,
+              counterpartChooserStatus:
+                allCounterparts.length > 512 ? "over-limit" : "available",
+              routeTargets: assembly.routeTargetOptions?.({
+                partId: primary.id,
+                portId,
+                kind: definition.kind,
+                direction: definition.direction,
+              }) || {
+                status: "unsupported",
+                totalCount: 0,
+                options: [],
+              },
             };
           })
         : [],
+      connectionTargetAssessment: primary
+        ? runtime.connectionAssessment?.(primary.id) || []
+        : [],
+      configuredControlChains: primary
+        ? assembly.configuredControlChainOptions?.(primary.id) || {
+            status: "unsupported",
+            totalCount: 0,
+            options: [],
+          }
+        : { status: "unsupported", totalCount: 0, options: [] },
+      routeEvidence,
       preflight,
       observation,
       commands: commandCatalog.describe({
@@ -237,5 +294,18 @@ export function createComponentInspectionFeature({
     return cached;
   }
 
-  return Object.freeze({ read });
+  return Object.freeze({
+    read,
+    setRouteEvidence(value) {
+      routeEvidence = value ? immutableClone(value) : null;
+      routeEvidenceRevision++;
+      cacheKey = null;
+    },
+    clearRouteEvidence() {
+      if (routeEvidence === null) return;
+      routeEvidence = null;
+      routeEvidenceRevision++;
+      cacheKey = null;
+    },
+  });
 }

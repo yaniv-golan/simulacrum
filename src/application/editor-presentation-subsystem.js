@@ -17,7 +17,6 @@ export function createEditorPresentationSubsystem({
   isolation,
 }) {
   let selection, connection, arranger, inspector, inspection;
-
   const showSelection = (part) => selection.showSelection(part),
     renderInspector = () => inspector.render(),
     drawConnections = () => connection.draw(),
@@ -112,6 +111,8 @@ export function createEditorPresentationSubsystem({
       connectPort: () => state.editor.connectPort,
       running: () => state.running,
       inspection: inspection.read,
+      setRouteEvidence: inspection.setRouteEvidence,
+      clearRouteEvidence: inspection.clearRouteEvidence,
     },
     view: {
       query: view.query,
@@ -133,6 +134,12 @@ export function createEditorPresentationSubsystem({
       renderInspector,
       drawConnections,
       updateSelection,
+      disconnectConnection: assembly.disconnectConnection,
+      traceComponentRoute: assembly.traceComponentRoute,
+      traceConfiguredControlChain: assembly.traceConfiguredControlChain,
+      showRelationshipTrace: connection.showRelationshipTrace,
+      showRelationshipTraceSegments: connection.showRelationshipTraceSegments,
+      clearRelationshipTrace: connection.clearRelationshipTrace,
     }),
   });
 
@@ -159,8 +166,7 @@ export function createEditorPresentationSubsystem({
       const command = inspection
         .read()
         .commands.find((candidate) => candidate.id === commandId);
-      if (!command)
-        throw new Error(`Unknown selected-context command ${commandId}`);
+      if (!command) throw new Error(`Unknown selected command ${commandId}`);
       if (command.availability !== "available") {
         actions.notify(
           command.disabledReason || `${command.label} is unavailable`,

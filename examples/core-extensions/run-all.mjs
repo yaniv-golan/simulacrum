@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import { CONTROL_IR_VERSION } from "@yaniv-golan/simulacrum-core";
+import {
+  CHECKPOINT_STATE_OWNER_VERSIONS,
+  CONTROL_IR_VERSION,
+} from "@yaniv-golan/simulacrum-core";
 import { challengeExample } from "./challenge.mjs";
 import { componentExample } from "./component.mjs";
 import { componentInspectionExample } from "./component-inspection.mjs";
@@ -7,6 +10,7 @@ import { controllerProgramExample } from "./controller-program.mjs";
 import { environmentBodyExample } from "./environment-body.mjs";
 import { flexibleLineExample } from "./flexible-line.mjs";
 import { portBehaviorExample } from "./port-behavior.mjs";
+import { routeEvidenceExample } from "./route-evidence.mjs";
 import { sensorAdapterExample } from "./sensor-adapter.mjs";
 import { simulationSystemExample } from "./simulation-system.mjs";
 import { telemetryConsumerExample } from "./telemetry-consumer.mjs";
@@ -19,6 +23,14 @@ assert.equal(component.topology.bodies[0].mass, 12);
 const ports = portBehaviorExample();
 assert.equal(ports.source.direction, "source");
 assert.equal(ports.sink.direction, "sink");
+
+const route = routeEvidenceExample();
+assert.equal(route.status, "resolved");
+assert.deepEqual(
+  route.hops.map((hop) => hop.connectionId),
+  ["power-link"],
+);
+assert.equal(CHECKPOINT_STATE_OWNER_VERSIONS["material-resources"], 2);
 
 const inspection = await componentInspectionExample();
 assert.match(inspection.fingerprint, /^sim-sha256-[0-9a-f]{64}$/);
@@ -58,4 +70,4 @@ assert.deepEqual(telemetryConsumerExample(), {
   label: "ASCENDING",
 });
 
-console.log("all ten public core extension examples passed");
+console.log("all eleven public core extension examples passed");

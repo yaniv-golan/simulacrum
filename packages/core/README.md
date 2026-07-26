@@ -35,6 +35,13 @@ commands, spends the authored latch energy, and opens only its flanges plus
 explicitly declared breakaway routes. It adds no hidden separation impulse;
 checkpoint v1 restores its private state through the `release-couplers` owner.
 
+Network owners expose immutable `evidenceIndex()` records and bounded
+digest-matched `routeWitness()` queries. `SimulationSession.routeEvidence()`
+resolves completed live evidence through opaque telemetry tokens; tokens never
+enter checkpoints or portable formats. Material allocation state is version 2
+inside the existing `material-resources` checkpoint owner so same-tick duplicate
+debits remain rejected after restore.
+
 `flexible-line-v1` components compile into deterministic distributed entities
 and unilateral internal edges, not rigid proxy bodies. `FlexibleLineRuntime`
 shares the host Cannon world and fixed integration transaction; the flexible

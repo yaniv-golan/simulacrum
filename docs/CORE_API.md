@@ -148,7 +148,22 @@ state and follows live structural partitioning. Pressure-nozzle demand debits
 only reachable same-medium stores; force is derived from the delivered flow,
 nozzle exit state, ambient pressure, compiled axis, and application point. A
 single post-thermal transaction commits material and ablative mass changes for
-the next integration tick. Checkpoint v1 restores that complete transaction.
+the next integration tick. Allocation v2 permits exactly one atomic commit per
+network and fixed tick, persists its sequence and last committed tick, and
+rejects duplicate or stale direct calls. The unchanged checkpoint v1 envelope
+therefore requires owner version 2 for `material-resources`; every other owner
+remains version 1.
+
+`PowerNetwork`, `SignalNetwork`, and `MaterialResourceNetwork` retain bounded,
+immutable route indexes during their authoritative resolve/allocation work.
+Call `evidenceIndex()` to obtain the result digest, then pass that digest with a
+version-1 query to `routeWitness()`. A witness proves endpoint reachability;
+power paths do not claim which edge carried watts, and resource paths report an
+authoritative debit separately from the non-flow route. Live callers use
+`SimulationSession.routeEvidence(token, query, expectedIdentity)` with the
+opaque token and exact identity from completed telemetry. Tokens are
+session-local capabilities and are stripped from checkpoints and portable
+playback.
 
 Immutable `FailureEvent` records and source-addressed challenge criteria use
 completed network and telemetry snapshots. The canonical

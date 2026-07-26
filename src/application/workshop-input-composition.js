@@ -2,7 +2,6 @@ import { applyEditorAction } from "../model/application-state.js";
 import { installKeyboardCommandSurface } from "../presentation/keyboard-command-surface.js";
 import { installEditorInputSubsystem } from "./editor-input-subsystem.js";
 import { validateWorkshopShortcut } from "./keyboard-action-registry.js";
-
 /** Connects pointer/keyboard commands to editor, simulation, and remote facades. */
 export function installWorkshopInputComposition({
   target,
@@ -51,6 +50,7 @@ export function installWorkshopInputComposition({
       mirror: assemblyEditor.mirror,
       toggleExploded: editor.exploded.toggle,
       beginConnection: editor.beginConnection,
+      disconnectConnection: assemblyEditor.disconnectConnection,
     },
     history: { record: history.record },
     drive: {

@@ -13,6 +13,8 @@ export function createEditorComponentInspection({
     assembly: {
       snapshot: assembly.snapshot,
       revision: assembly.revision,
+      configuredControlChainOptions: assembly.configuredControlChainOptions,
+      routeTargetOptions: assembly.routeTargetOptions,
     },
     selection: {
       selectedPartIds: () => state.editor.selectedIds,
@@ -37,6 +39,9 @@ export function createEditorComponentInspection({
         return candidate ? connection.valid(candidate) : null;
       },
       isolationActive: () => isolation?.active() || false,
+      connectionIntent: () =>
+        `${state.editor.connectFrom ?? ""}:${state.editor.connectPort ?? ""}`,
+      connectionAssessment: (partId) => connection.assessTarget(partId),
     },
     catalog,
     commandCatalog,
