@@ -11,6 +11,15 @@ function candidatesFrom(services) {
   return {
     remote: Array.isArray(candidates.remote) ? candidates.remote : [],
     scripts: Array.isArray(candidates.scripts) ? candidates.scripts : [],
+    unknownExternalSources: Object.entries(candidates)
+      .filter(
+        ([key, value]) =>
+          key !== "remote" &&
+          key !== "scripts" &&
+          Array.isArray(value) &&
+          value.length,
+      )
+      .map(([key]) => key),
   };
 }
 
@@ -40,22 +49,28 @@ export class CommandRoutingSystem {
 
   step(context) {
     const bus = context.commandBus,
-      { remote, scripts } = candidatesFrom(context.services);
+      { remote, scripts, unknownExternalSources } = candidatesFrom(
+        context.services,
+      );
+    if (
+      unknownExternalSources.length ||
+      remote.some(
+        (candidate) =>
+          candidate.replayable === false ||
+          (candidate.sourceId && candidate.sourceId !== "operator"),
+      )
+    )
+      context.services.failureEvidenceRecorder?.setReplayability({
+        supported: false,
+        reasonCode: "UNREGISTERED_EXTERNAL_INPUT_SOURCE",
+      });
     bus.clearTick();
     context.services.inputTraceRecorder?.recordTick(
       context.clock.tick,
-      remote.filter((candidate) => {
-        const target = context.runGraph.part(candidate.targetId);
-        return (
-          target &&
-          !target.detached &&
-          acceptsActuatorChannel(
-            target,
-            candidate.channel,
-            context.services.catalog,
-          )
-        );
-      }),
+      remote.map((candidate) => ({
+        ...candidate,
+        value: candidate.active ? candidate.value : 0,
+      })),
     );
     context.commandCapabilities = new Set(
       remote.map((candidate) => candidate.channel).filter(Boolean),
@@ -157,6 +172,11 @@ export class CommandRoutingSystem {
       ...bus.entries(),
       capabilities: [...context.commandCapabilities].sort(),
     };
+    context.services.failureEvidenceRecorder?.recordCommandStage({
+      tick: context.clock.tick,
+      timeS: context.time,
+      commandLedger: context.telemetry.commands,
+    });
   }
 
   dispose(context) {

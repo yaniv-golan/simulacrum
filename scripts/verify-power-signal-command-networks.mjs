@@ -43,6 +43,7 @@ import { PowerNetwork } from "../src/simulation/power-network.js";
 import { RunAssemblyGraph } from "../src/simulation/run-assembly-graph.js";
 import { SignalNetwork } from "../src/simulation/signal-network.js";
 import { SimulationSession } from "../src/simulation/simulation-session.js";
+import { InputTraceRecorder } from "../src/simulation/input-trace-recorder.js";
 import { wheelDriveMotorIds } from "../src/simulation/wheel-drive-topology.js";
 import {
   isMechanismComponentType,
@@ -461,6 +462,7 @@ const commandAssembly = {
     remote: [
       { targetId: 4, channel: "throttle", value: 0.25, active: true },
       { targetId: 5, channel: "steering", value: -0.4, active: true },
+      { targetId: 999, channel: "throttle", value: 0.8, active: true },
     ],
     scripts: [
       {
@@ -481,6 +483,9 @@ const commandAssembly = {
       },
     ],
   },
+  inputTraceRecorder = new InputTraceRecorder(),
+  disappearingInputTraceRecorder = new InputTraceRecorder(),
+  replayabilityChanges = [],
   commandSession = new SimulationSession({
     systems: [
       new PowerSystem(),
@@ -490,6 +495,11 @@ const commandAssembly = {
   }).start(commandAssembly, {
     catalog: TYPES,
     readCommandCandidates: () => candidates,
+    inputTraceRecorder,
+    failureEvidenceRecorder: {
+      setReplayability: (value) => replayabilityChanges.push(value),
+      recordCommandStage: () => {},
+    },
   });
 commandSession.stepFixed();
 assert.deepEqual(commandSession.context.commandBus.read(4, "throttle"), {
@@ -507,6 +517,13 @@ assert.equal(
   commandSession.context.commandBus.read(5, "throttle").source,
   "default",
 );
+assert.ok(
+  inputTraceRecorder
+    .inputsThrough(1)
+    .some((input) => input.targetId === "999" && input.value === 0.8),
+  "external trace omitted a syntactically valid candidate rejected by routing",
+);
+candidates.remote[0].active = false;
 candidates.scripts.pop();
 commandSession.stepFixed();
 assert.deepEqual(commandSession.context.commandBus.read(4, "throttle"), {
@@ -514,6 +531,42 @@ assert.deepEqual(commandSession.context.commandBus.read(4, "throttle"), {
   conflict: false,
   source: "script",
 });
+assert.ok(
+  inputTraceRecorder
+    .inputsThrough(2)
+    .some(
+      (input) =>
+        input.targetId === "4" &&
+        input.channelId === "throttle" &&
+        input.value === 0 &&
+        input.tick === 2,
+    ),
+  "inactive momentary command retained its non-zero UI value in the trace",
+);
+disappearingInputTraceRecorder.recordTick(1, [
+  { targetId: 4, channel: "throttle", value: 1 },
+]);
+disappearingInputTraceRecorder.recordTick(2, []);
+assert.deepEqual(
+  disappearingInputTraceRecorder.inputsThrough(2).map((entry) => ({
+    tick: entry.tick,
+    targetId: entry.targetId,
+    channelId: entry.channelId,
+    value: entry.value,
+  })),
+  [
+    { tick: 1, targetId: "4", channelId: "throttle", value: 1 },
+    { tick: 2, targetId: "4", channelId: "throttle", value: 0 },
+  ],
+  "disappearing external candidate did not emit a replayable release",
+);
+candidates.hardware = [{ value: 1 }];
+commandSession.stepFixed();
+assert.deepEqual(replayabilityChanges.at(-1), {
+  supported: false,
+  reasonCode: "UNREGISTERED_EXTERNAL_INPUT_SOURCE",
+});
+delete candidates.hardware;
 commandSession.context.runGraph.failConnection("c24");
 commandSession.stepFixed();
 assert.equal(

@@ -1,0 +1,739 @@
+{
+  "$id": "https://simulacrum.local/schema/failure-evidence-wire-schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "blueprint",
+    "runConfiguration",
+    "runIdentity",
+    "diagnosticPolicy",
+    "policyFingerprint",
+    "replayAnchorCheckpoint",
+    "externalInputTrace",
+    "trigger",
+    "triggers",
+    "exactFrames",
+    "contextFrames",
+    "summary",
+    "replayability",
+    "manifestDigest"
+  ],
+  "properties": {
+    "format": { "const": "simulacrum-failure-evidence" },
+    "version": { "const": 1 },
+    "blueprint": {
+      "$ref": "https://simulacrum.local/schema/blueprint-wire-schema.json"
+    },
+    "runConfiguration": {
+      "$ref": "https://simulacrum.local/schema/run-configuration-wire-schema.json"
+    },
+    "runIdentity": { "$ref": "#/$defs/runIdentity" },
+    "diagnosticPolicy": { "$ref": "#/$defs/diagnosticPolicy" },
+    "policyFingerprint": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+    },
+    "replayAnchorCheckpoint": {
+      "oneOf": [
+        {
+          "$ref": "https://simulacrum.local/schema/checkpoint-wire-schema.json"
+        },
+        { "type": "null" }
+      ]
+    },
+    "externalInputTrace": {
+      "$ref": "https://simulacrum.local/schema/input-trace-wire-schema.json"
+    },
+    "trigger": { "$ref": "#/$defs/trigger" },
+    "triggers": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/trigger" }
+    },
+    "exactFrames": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 480,
+      "items": { "$ref": "#/$defs/exactFrame" }
+    },
+    "contextFrames": {
+      "type": "array",
+      "maxItems": 360,
+      "items": { "$ref": "#/$defs/contextFrame" }
+    },
+    "summary": { "$ref": "#/$defs/summary" },
+    "replayability": { "$ref": "#/$defs/replayability" },
+    "manifestDigest": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/sha256"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "entityId": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "nullableEntityId": {
+      "oneOf": [{ "$ref": "#/$defs/entityId" }, { "type": "null" }]
+    },
+    "validity": {
+      "enum": ["measured", "derived", "unavailable", "truncated"]
+    },
+    "vector3": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/vector3"
+    },
+    "nullableVector3": {
+      "oneOf": [{ "$ref": "#/$defs/vector3" }, { "type": "null" }]
+    },
+    "entityIds": {
+      "type": "array",
+      "maxItems": 3000,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/entityId" }
+    },
+    "runIdentity": {
+      "type": "object",
+      "required": [
+        "runConfigurationFingerprint",
+        "blueprintFingerprint",
+        "compiledTopologyFingerprint",
+        "testSiteFingerprint",
+        "materialMapFingerprint",
+        "deploymentFingerprint",
+        "deploymentJson",
+        "environment"
+      ],
+      "properties": {
+        "runConfigurationFingerprint": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+        },
+        "blueprintFingerprint": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+        },
+        "compiledTopologyFingerprint": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+        },
+        "testSiteFingerprint": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+        },
+        "materialMapFingerprint": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+        },
+        "deploymentFingerprint": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+        },
+        "deploymentJson": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 1000000
+        },
+        "environment": {
+          "type": "object",
+          "required": [
+            "seed",
+            "latitude",
+            "longitude",
+            "timeOfDay",
+            "windEnabled"
+          ],
+          "properties": {
+            "seed": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+            "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+            "timeOfDay": { "type": "number", "minimum": 0, "maximum": 24 },
+            "windEnabled": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "diagnosticPolicy": {
+      "type": "object",
+      "required": [
+        "version",
+        "exactRetentionTicks",
+        "contextRetentionTicks",
+        "contextStrideTicks",
+        "topRowsPerConnection",
+        "maxRowsPerExactFrame",
+        "maxRowsOnTriggerTick",
+        "nearFailureUtilization",
+        "stallCommandAbsMin",
+        "stallPowerFloorW",
+        "stallPowerFractionMin",
+        "stallMaxProgressM",
+        "stallDwellTicks"
+      ],
+      "properties": {
+        "version": { "const": 1 },
+        "exactRetentionTicks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 480
+        },
+        "contextRetentionTicks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "contextStrideTicks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120
+        },
+        "topRowsPerConnection": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "maxRowsPerExactFrame": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1024
+        },
+        "maxRowsOnTriggerTick": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "nearFailureUtilization": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "stallCommandAbsMin": { "type": "number", "minimum": 0, "maximum": 1 },
+        "stallPowerFloorW": { "type": "number", "minimum": 0 },
+        "stallPowerFractionMin": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "stallMaxProgressM": { "type": "number", "minimum": 0 },
+        "stallDwellTicks": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 100000
+        }
+      },
+      "additionalProperties": false
+    },
+    "replayability": {
+      "type": "object",
+      "required": ["status", "reasonCode"],
+      "properties": {
+        "status": { "enum": ["supported", "unsupported"] },
+        "reasonCode": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Z0-9_]+$"
+            },
+            { "type": "null" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "trigger": {
+      "type": "object",
+      "required": ["kind", "tick", "timeS", "subjectId", "validity"],
+      "properties": {
+        "kind": {
+          "enum": [
+            "structural-failure",
+            "contact-invariant",
+            "rolling-actuator-stall",
+            "numerical-anomaly"
+          ]
+        },
+        "tick": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/tick"
+        },
+        "timeS": { "type": "number", "minimum": 0 },
+        "subjectId": { "$ref": "#/$defs/nullableEntityId" },
+        "validity": { "$ref": "#/$defs/validity" }
+      },
+      "additionalProperties": false
+    },
+    "commandWrite": {
+      "type": "object",
+      "required": ["source", "sourceId", "targetId", "channelId", "value"],
+      "properties": {
+        "source": { "enum": ["remote", "script"] },
+        "sourceId": { "$ref": "#/$defs/entityId" },
+        "targetId": { "$ref": "#/$defs/entityId" },
+        "channelId": { "$ref": "#/$defs/entityId" },
+        "value": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "commandRejection": {
+      "type": "object",
+      "required": [
+        "source",
+        "sourceId",
+        "targetId",
+        "channelId",
+        "value",
+        "reason"
+      ],
+      "properties": {
+        "source": { "enum": ["remote", "script", "unknown"] },
+        "sourceId": { "$ref": "#/$defs/nullableEntityId" },
+        "targetId": { "$ref": "#/$defs/nullableEntityId" },
+        "channelId": { "$ref": "#/$defs/nullableEntityId" },
+        "value": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 256 }
+      },
+      "additionalProperties": false
+    },
+    "commandLedger": {
+      "type": "object",
+      "required": ["writes", "conflicts", "rejections", "capabilities"],
+      "properties": {
+        "writes": {
+          "type": "array",
+          "maxItems": 4096,
+          "items": { "$ref": "#/$defs/commandWrite" }
+        },
+        "conflicts": { "$ref": "#/$defs/entityIds" },
+        "rejections": {
+          "type": "array",
+          "maxItems": 4096,
+          "items": { "$ref": "#/$defs/commandRejection" }
+        },
+        "capabilities": { "$ref": "#/$defs/entityIds" }
+      },
+      "additionalProperties": false
+    },
+    "feature": {
+      "type": "object",
+      "required": ["cellX", "cellZ", "triangle"],
+      "properties": {
+        "cellX": { "type": "integer" },
+        "cellZ": { "type": "integer" },
+        "triangle": { "type": "integer", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "tireEvidence": {
+      "type": "object",
+      "required": [
+        "partId",
+        "contactRole",
+        "semanticRegionKey",
+        "rawPointWorldM",
+        "correctedPointWorldM",
+        "correctionWorldM",
+        "geometricToleranceM",
+        "withinGeometricTolerance",
+        "forceRowIds",
+        "validity"
+      ],
+      "properties": {
+        "partId": { "$ref": "#/$defs/nullableEntityId" },
+        "contactRole": { "$ref": "#/$defs/nullableEntityId" },
+        "semanticRegionKey": { "$ref": "#/$defs/nullableEntityId" },
+        "rawPointWorldM": { "$ref": "#/$defs/nullableVector3" },
+        "correctedPointWorldM": { "$ref": "#/$defs/nullableVector3" },
+        "correctionWorldM": { "$ref": "#/$defs/nullableVector3" },
+        "geometricToleranceM": {
+          "oneOf": [{ "type": "number", "minimum": 0 }, { "type": "null" }]
+        },
+        "withinGeometricTolerance": {
+          "oneOf": [{ "type": "boolean" }, { "type": "null" }]
+        },
+        "forceRowIds": { "$ref": "#/$defs/entityIds" },
+        "validity": { "$ref": "#/$defs/validity" }
+      },
+      "additionalProperties": false
+    },
+    "contact": {
+      "type": "object",
+      "required": [
+        "contactId",
+        "bodyId",
+        "otherBodyId",
+        "partIds",
+        "pointWorldM",
+        "normalWorld",
+        "forceWorldN",
+        "forceN",
+        "materialKey",
+        "supportShapeId",
+        "surfaceRegionId",
+        "featureId",
+        "featureValidity",
+        "tireEvidence",
+        "validity"
+      ],
+      "properties": {
+        "contactId": { "$ref": "#/$defs/nullableEntityId" },
+        "bodyId": { "$ref": "#/$defs/entityId" },
+        "otherBodyId": { "$ref": "#/$defs/nullableEntityId" },
+        "partIds": { "$ref": "#/$defs/entityIds" },
+        "pointWorldM": { "$ref": "#/$defs/vector3" },
+        "normalWorld": { "$ref": "#/$defs/vector3" },
+        "forceWorldN": { "$ref": "#/$defs/vector3" },
+        "forceN": { "type": "number", "minimum": 0 },
+        "materialKey": { "$ref": "#/$defs/nullableEntityId" },
+        "supportShapeId": { "$ref": "#/$defs/nullableEntityId" },
+        "surfaceRegionId": { "$ref": "#/$defs/nullableEntityId" },
+        "featureId": {
+          "oneOf": [{ "$ref": "#/$defs/feature" }, { "type": "null" }]
+        },
+        "featureValidity": { "$ref": "#/$defs/validity" },
+        "tireEvidence": {
+          "oneOf": [{ "$ref": "#/$defs/tireEvidence" }, { "type": "null" }]
+        },
+        "validity": { "$ref": "#/$defs/validity" }
+      },
+      "additionalProperties": false
+    },
+    "solverContribution": {
+      "type": "object",
+      "required": [
+        "rowId",
+        "rowKind",
+        "source",
+        "side",
+        "bodyId",
+        "otherBodyId",
+        "constraintId",
+        "sourceConnectionIds",
+        "sourceContactIds",
+        "forceWorldN",
+        "momentWorldNm",
+        "applicationPointWorldM",
+        "forceMagnitudeN",
+        "momentMagnitudeNm",
+        "multiplier",
+        "validity"
+      ],
+      "properties": {
+        "rowId": { "$ref": "#/$defs/entityId" },
+        "rowKind": { "$ref": "#/$defs/entityId" },
+        "source": {
+          "enum": ["constraint", "contact", "friction", "tire-force"]
+        },
+        "side": { "enum": ["A", "B"] },
+        "bodyId": { "$ref": "#/$defs/nullableEntityId" },
+        "otherBodyId": { "$ref": "#/$defs/nullableEntityId" },
+        "constraintId": { "$ref": "#/$defs/nullableEntityId" },
+        "sourceConnectionIds": { "$ref": "#/$defs/entityIds" },
+        "sourceContactIds": { "$ref": "#/$defs/entityIds" },
+        "forceWorldN": { "$ref": "#/$defs/vector3" },
+        "momentWorldNm": { "$ref": "#/$defs/vector3" },
+        "applicationPointWorldM": { "$ref": "#/$defs/vector3" },
+        "forceMagnitudeN": { "type": "number", "minimum": 0 },
+        "momentMagnitudeNm": { "type": "number", "minimum": 0 },
+        "multiplier": { "type": "number" },
+        "validity": { "$ref": "#/$defs/validity" }
+      },
+      "additionalProperties": false
+    },
+    "connectionLoad": {
+      "type": "object",
+      "required": ["connectionId", "forceN", "torqueNm"],
+      "properties": {
+        "connectionId": { "$ref": "#/$defs/entityId" },
+        "forceN": { "type": "number", "minimum": 0 },
+        "torqueNm": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "connectionEvaluation": {
+      "type": "object",
+      "required": [
+        "connectionId",
+        "loadN",
+        "torqueNm",
+        "ultimateForceN",
+        "ultimateTorqueNm",
+        "forceUtilization",
+        "torqueUtilization",
+        "stress",
+        "fatigue"
+      ],
+      "properties": {
+        "connectionId": { "$ref": "#/$defs/entityId" },
+        "loadN": { "type": "number", "minimum": 0 },
+        "torqueNm": { "type": "number", "minimum": 0 },
+        "ultimateForceN": { "type": "number", "exclusiveMinimum": 0 },
+        "ultimateTorqueNm": { "type": "number", "exclusiveMinimum": 0 },
+        "forceUtilization": { "type": "number", "minimum": 0 },
+        "torqueUtilization": { "type": "number", "minimum": 0 },
+        "stress": { "type": "number", "minimum": 0 },
+        "fatigue": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "topologyConnection": {
+      "type": "object",
+      "required": ["id", "a", "b", "kind", "failed"],
+      "properties": {
+        "id": { "$ref": "#/$defs/entityId" },
+        "a": { "$ref": "#/$defs/entityId" },
+        "b": { "$ref": "#/$defs/entityId" },
+        "kind": { "enum": ["mechanical", "mesh"] },
+        "failed": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "fullTopology": {
+      "type": "object",
+      "required": [
+        "snapshotState",
+        "graphRevision",
+        "connections",
+        "detachedPartIds"
+      ],
+      "properties": {
+        "snapshotState": { "const": "full" },
+        "graphRevision": { "type": "integer", "minimum": 0 },
+        "connections": {
+          "type": "array",
+          "maxItems": 3000,
+          "items": { "$ref": "#/$defs/topologyConnection" }
+        },
+        "detachedPartIds": { "$ref": "#/$defs/entityIds" }
+      },
+      "additionalProperties": false
+    },
+    "revisionOnlyTopology": {
+      "type": "object",
+      "required": ["snapshotState", "graphRevision"],
+      "properties": {
+        "snapshotState": { "const": "revision-only" },
+        "graphRevision": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "topology": {
+      "oneOf": [
+        { "$ref": "#/$defs/fullTopology" },
+        { "$ref": "#/$defs/revisionOnlyTopology" }
+      ]
+    },
+    "structurePre": {
+      "type": "object",
+      "required": ["evaluations", "topology"],
+      "properties": {
+        "evaluations": {
+          "type": "array",
+          "maxItems": 3000,
+          "items": { "$ref": "#/$defs/connectionEvaluation" }
+        },
+        "topology": { "$ref": "#/$defs/topology" }
+      },
+      "additionalProperties": false
+    },
+    "structureEvent": {
+      "type": "object",
+      "required": ["failedConnectionIds", "detachedPartIds", "mode", "reason"],
+      "properties": {
+        "failedConnectionIds": { "$ref": "#/$defs/entityIds" },
+        "detachedPartIds": { "$ref": "#/$defs/entityIds" },
+        "mode": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 512 }
+      },
+      "additionalProperties": false
+    },
+    "structurePost": {
+      "type": "object",
+      "required": ["event", "topology"],
+      "properties": {
+        "event": {
+          "oneOf": [{ "$ref": "#/$defs/structureEvent" }, { "type": "null" }]
+        },
+        "topology": { "$ref": "#/$defs/topology" }
+      },
+      "additionalProperties": false
+    },
+    "exactFrame": {
+      "type": "object",
+      "required": [
+        "tick",
+        "timeS",
+        "commandLedger",
+        "contacts",
+        "solverContributions",
+        "connectionLoads",
+        "structurePreMutation",
+        "structurePostMutation",
+        "contributionValidity",
+        "omittedRowCount"
+      ],
+      "properties": {
+        "tick": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/tick"
+        },
+        "timeS": { "type": "number", "minimum": 0 },
+        "commandLedger": { "$ref": "#/$defs/commandLedger" },
+        "contacts": {
+          "type": "array",
+          "maxItems": 100000,
+          "items": { "$ref": "#/$defs/contact" }
+        },
+        "solverContributions": {
+          "type": "array",
+          "maxItems": 4096,
+          "items": { "$ref": "#/$defs/solverContribution" }
+        },
+        "connectionLoads": {
+          "type": "array",
+          "maxItems": 3000,
+          "items": { "$ref": "#/$defs/connectionLoad" }
+        },
+        "structurePreMutation": {
+          "oneOf": [{ "$ref": "#/$defs/structurePre" }, { "type": "null" }]
+        },
+        "structurePostMutation": {
+          "oneOf": [{ "$ref": "#/$defs/structurePost" }, { "type": "null" }]
+        },
+        "contributionValidity": { "$ref": "#/$defs/validity" },
+        "omittedRowCount": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "motorContext": {
+      "type": "object",
+      "required": [
+        "partId",
+        "resolvedThrottle",
+        "commandSource",
+        "availablePowerW",
+        "deliveredPowerW"
+      ],
+      "properties": {
+        "partId": { "$ref": "#/$defs/entityId" },
+        "resolvedThrottle": { "type": "number", "minimum": -1, "maximum": 1 },
+        "commandSource": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "availablePowerW": { "type": "number", "minimum": 0 },
+        "deliveredPowerW": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "wheelContext": {
+      "type": "object",
+      "required": ["partId", "touching", "angularSpeed", "normalLoadN"],
+      "properties": {
+        "partId": { "$ref": "#/$defs/entityId" },
+        "touching": { "type": "boolean" },
+        "angularSpeed": { "type": "number" },
+        "normalLoadN": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "assemblyContext": {
+      "type": "object",
+      "required": [
+        "assemblyId",
+        "positionWorldM",
+        "signedSpeedMPerS",
+        "grounded",
+        "brake",
+        "motors",
+        "wheels"
+      ],
+      "properties": {
+        "assemblyId": { "$ref": "#/$defs/entityId" },
+        "positionWorldM": { "$ref": "#/$defs/vector3" },
+        "signedSpeedMPerS": { "type": "number" },
+        "grounded": { "type": "boolean" },
+        "brake": { "type": "number", "minimum": 0, "maximum": 1 },
+        "motors": {
+          "type": "array",
+          "maxItems": 300,
+          "items": { "$ref": "#/$defs/motorContext" }
+        },
+        "wheels": {
+          "type": "array",
+          "maxItems": 300,
+          "items": { "$ref": "#/$defs/wheelContext" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "contextFrame": {
+      "type": "object",
+      "required": [
+        "tick",
+        "timeS",
+        "graphRevision",
+        "commandLedger",
+        "connectionLoads",
+        "assemblies"
+      ],
+      "properties": {
+        "tick": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/tick"
+        },
+        "timeS": { "type": "number", "minimum": 0 },
+        "graphRevision": { "type": "integer", "minimum": 0 },
+        "commandLedger": { "$ref": "#/$defs/commandLedger" },
+        "connectionLoads": {
+          "type": "array",
+          "maxItems": 3000,
+          "items": { "$ref": "#/$defs/connectionLoad" }
+        },
+        "assemblies": {
+          "type": "array",
+          "maxItems": 300,
+          "items": { "$ref": "#/$defs/assemblyContext" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "causalState",
+        "triggerKind",
+        "triggerTick",
+        "triggerSubjectId",
+        "firstFailedConnectionId",
+        "topRowIds",
+        "sourceContactIds",
+        "missingLinks",
+        "preTopologyRevision",
+        "postTopologyRevision",
+        "contributionValidity"
+      ],
+      "properties": {
+        "causalState": { "enum": ["complete", "incomplete"] },
+        "triggerKind": {
+          "enum": [
+            "structural-failure",
+            "contact-invariant",
+            "rolling-actuator-stall",
+            "numerical-anomaly"
+          ]
+        },
+        "triggerTick": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/tick"
+        },
+        "triggerSubjectId": { "$ref": "#/$defs/nullableEntityId" },
+        "firstFailedConnectionId": { "$ref": "#/$defs/nullableEntityId" },
+        "topRowIds": { "$ref": "#/$defs/entityIds" },
+        "sourceContactIds": { "$ref": "#/$defs/entityIds" },
+        "missingLinks": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 256 }
+        },
+        "preTopologyRevision": {
+          "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }]
+        },
+        "postTopologyRevision": {
+          "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }]
+        },
+        "contributionValidity": { "$ref": "#/$defs/validity" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

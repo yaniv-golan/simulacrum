@@ -5,14 +5,18 @@ import {
   CANNON_SOLVER_TRANSACTION_ID,
   CannonSolverTransaction,
 } from "../src/simulation/cannon-solver-transaction.js";
-import { CannonWorldAdapter } from "../src/simulation/cannon-world-adapter.js";
+import {
+  CannonWorldAdapter,
+  completedWorldEvidenceContributions,
+  requestWorldEvidenceCapture,
+} from "../src/simulation/cannon-world-adapter.js";
 import { createYUpHeightfieldCandidateFilter } from "../src/simulation/heightfield-broadphase.js";
 
 const source = fs.readFileSync(
   "src/simulation/cannon-solver-transaction.js",
   "utf8",
 );
-assert.doesNotMatch(source, /\.(?:step|internalStep)\s*\(/);
+assert.doesNotMatch(source, /\bworld\.(?:step|internalStep)\s*\(/);
 
 function run() {
   const world = new CANNON.World({
@@ -37,8 +41,12 @@ function run() {
   let beginContacts = 0;
   world.addEventListener("beginContact", () => beginContacts++);
   adapter.beginSession();
-  for (let tick = 1; tick <= 240; tick++) adapter.integrate(1 / 120, { tick });
+  for (let tick = 1; tick <= 240; tick++) {
+    requestWorldEvidenceCapture(adapter);
+    adapter.integrate(1 / 120, { tick });
+  }
   const telemetry = adapter.telemetry(),
+    evidence = completedWorldEvidenceContributions(adapter),
     state = [
       body.position.x,
       body.position.y,
@@ -53,12 +61,27 @@ function run() {
       world.time,
       world.stepnumber,
       beginContacts,
+      evidence.map((row) => ({
+        tick: row.tick,
+        rowId: row.rowId,
+        source: row.source,
+        sourceContactIds: row.sourceContactIds,
+      })),
     ];
   assert.equal(telemetry.transactionId, CANNON_SOLVER_TRANSACTION_ID);
   assert.equal(telemetry.integrationCount, 240);
   assert.ok(Math.abs(world.time - 2) <= Number.EPSILON * 32, world.time);
   assert.equal(world.stepnumber, 240);
   assert.ok(beginContacts > 0);
+  assert.ok(evidence.length > 0);
+  assert.ok(evidence.every((row) => row.tick === 240));
+  assert.ok(
+    evidence.some(
+      (row) =>
+        row.source === "contact" &&
+        row.sourceContactIds.some((id) => id.startsWith("contact:240:")),
+    ),
+  );
   assert.ok(Math.abs(body.position.y - 0.25) < 0.01, body.position);
   return state;
 }

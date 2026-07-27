@@ -161,6 +161,10 @@ assert.deepEqual(body.contacts[0].relativeVelocity, {
   z: 0,
 });
 assert.equal(body.contacts[0].otherBodyId, "ground");
+assert.equal(body.contacts[0].tick, 1);
+assert.equal(body.contacts[0].contactId, null);
+assert.deepEqual(body.contacts[0].forceWorldN, { x: 0, y: 0, z: 0 });
+assert.equal(body.contacts[0].validity, "unavailable");
 assert.equal(body.loads[0].torqueNm, 12);
 assert.equal(body.thermal.temperatureK, 420);
 assert.ok(registry.removeConstraint("signal"));

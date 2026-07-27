@@ -184,7 +184,8 @@
   background: #edae48;
 }
 .sim-controls button:disabled,
-#failure-report-tool:disabled {
+#failure-report-tool:disabled,
+.failure-lab-actions button:disabled {
   opacity: 0.32;
   cursor: not-allowed;
 }

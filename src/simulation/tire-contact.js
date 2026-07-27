@@ -82,22 +82,47 @@ function limitHeightfieldAxleMoment(contact, wheel, axle, maximumShiftM) {
   const wheelIsA = contact.bi === wheel,
     supportBody = wheelIsA ? contact.bj : contact.bi;
   if (!supportBody.shapes.some((shape) => shape instanceof CANNON.Heightfield))
-    return;
+    return null;
   const wheelOffset = wheelIsA ? contact.ri : contact.rj,
     supportOffset = wheelIsA ? contact.rj : contact.ri,
+    rawPointWorld = worldPoint(wheel, wheelOffset),
     supportNormal = contact.ni.scale(wheelIsA ? -1 : 1),
     radialNormal = supportNormal.clone();
   radialNormal.vsub(axle.scale(supportNormal.dot(axle)), radialNormal);
-  if (radialNormal.lengthSquared() <= EPSILON) return;
+  if (radialNormal.lengthSquared() <= EPSILON) return null;
   radialNormal.normalize();
   const correctedOffset = radialNormal.scale(wheelOffset.dot(radialNormal));
   correctedOffset.vadd(axle.scale(wheelOffset.dot(axle)), correctedOffset);
   const shift = correctedOffset.vsub(wheelOffset),
-    shiftLengthM = shift.length();
-  if (shiftLengthM > maximumShiftM)
-    shift.scale(maximumShiftM / shiftLengthM, shift);
+    requiredShiftM = shift.length();
+  if (requiredShiftM > maximumShiftM)
+    shift.scale(maximumShiftM / requiredShiftM, shift);
   wheelOffset.vadd(shift, wheelOffset);
   supportOffset.vadd(shift, supportOffset);
+  const correctedPointWorld = worldPoint(wheel, wheelOffset);
+  return Object.freeze({
+    tirePartId: wheel.userData?.partId ?? null,
+    rawPointWorldM: Object.freeze({
+      x: rawPointWorld.x,
+      y: rawPointWorld.y,
+      z: rawPointWorld.z,
+    }),
+    correctedPointWorldM: Object.freeze({
+      x: correctedPointWorld.x,
+      y: correctedPointWorld.y,
+      z: correctedPointWorld.z,
+    }),
+    correctionWorldM: Object.freeze({
+      x: shift.x,
+      y: shift.y,
+      z: shift.z,
+    }),
+    requiredCorrectionM: requiredShiftM,
+    appliedCorrectionM: shift.length(),
+    geometricToleranceM: maximumShiftM,
+    withinGeometricTolerance: requiredShiftM <= maximumShiftM + EPSILON,
+    validity: "measured",
+  });
 }
 
 function disableGenericFriction(world, wheel, other) {
@@ -208,6 +233,14 @@ function coupledBrushEquations(
       equation.ri.copy(pointA.vsub(bodyA.position));
       equation.rj.copy(pointB.vsub(bodyB.position));
       equation.t.copy(tangent);
+      const evidenceEquation = /** @type {any} */ (equation);
+      evidenceEquation.simulacrumEvidenceRowKind = `tire-${component}`;
+      evidenceEquation.simulacrumEvidenceSource = "tire-force";
+      evidenceEquation.simulacrumSourceContactIds = Object.freeze(
+        normalContact.simulacrumEvidence?.contactId
+          ? [normalContact.simulacrumEvidence.contactId]
+          : [],
+      );
       // Cannon's GS bounds are accumulated impulses despite their force-like
       // property names. Dynamic equal bounds project both brush rows onto the
       // ellipse using the normal impulse accumulated earlier in this same GS
@@ -484,12 +517,13 @@ export class TireContactConstraint extends CANNON.Constraint {
       supportMaterialLaws = new Map(),
       tractionContacts = [];
     for (const contact of contacts) {
-      limitHeightfieldAxleMoment(
+      const tireEvidence = limitHeightfieldAxleMoment(
         contact,
         wheel,
         axle,
         maximumContactPatchHalfLengthM,
       );
+      if (tireEvidence) contact.simulacrumTireEvidence = tireEvidence;
       const wheelIsA = contact.bi === wheel,
         other = wheelIsA ? contact.bj : contact.bi,
         wheelPoint = worldPoint(wheel, wheelIsA ? contact.ri : contact.rj),
@@ -656,6 +690,12 @@ export class TireContactConstraint extends CANNON.Constraint {
             ? "sidewall"
             : "tire-envelope",
       );
+      if (contact.simulacrumTireEvidence)
+        contact.simulacrumTireEvidence = Object.freeze({
+          ...contact.simulacrumTireEvidence,
+          contactRole,
+          semanticRegionKey: semanticRegion.semanticKey,
+        });
       next.normalLoadN += normalLoadN;
       next.longitudinalForceN += brush.longitudinalForceN;
       next.lateralForceN += brush.lateralForceN;

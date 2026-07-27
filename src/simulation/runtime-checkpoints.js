@@ -56,14 +56,19 @@ export class RuntimeCheckpointCoordinator {
   }
 
   #requireCommittedSession() {
-    const context = this.session?.context;
-    if (
-      !context ||
-      context.clock.tick !== this.worldAdapter.telemetry().integratedTick
-    )
+    const context = this.session?.context,
+      integration = this.worldAdapter.telemetry(),
+      completedTick = context?.clock.tick === integration.integratedTick,
+      initializedBoundary =
+        context?.clock.tick === 0 &&
+        context.clock.time === 0 &&
+        integration.tick === 0 &&
+        integration.integratedTick === -1 &&
+        integration.integrationCount === 0;
+    if (!context || (!completedTick && !initializedBoundary))
       throw new DomainValidationError(
         "CHECKPOINT_REQUIRES_COMMITTED_TICK",
-        "Checkpoint capture is allowed only after a fully integrated fixed tick",
+        "Checkpoint capture is allowed only at the initialized run boundary or after a fully integrated fixed tick",
       );
     return context;
   }

@@ -10,7 +10,7 @@
   ],
   "testRunner": "command",
   "commandRunner": {
-    "command": "node scripts/verify-wire-formats.mjs && node scripts/verify-blueprint-decoder.mjs && node scripts/verify-workspace-state.mjs && node scripts/verify-mechanism-artifacts.mjs && node scripts/verify-mechanism-authored-components.mjs"
+    "command": "node scripts/verify-wire-formats.mjs && node scripts/verify-blueprint-decoder.mjs && node scripts/verify-workspace-state.mjs && node scripts/verify-mechanism-artifacts.mjs && node scripts/verify-mechanism-authored-components.mjs && node scripts/verify-failure-evidence-artifacts.mjs"
   },
   "mutate": [
     "src/model/wire-validation.js",

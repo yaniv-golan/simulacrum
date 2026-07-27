@@ -1,0 +1,452 @@
+import assert from "node:assert/strict";
+import { TYPES } from "../src/model/component-catalog.js";
+import { FailureEvidenceRecorder } from "../src/simulation/failure-evidence-recorder.js";
+import { SimulationSession } from "../src/simulation/simulation-session.js";
+import { FailureEvidenceSystem } from "../src/simulation/systems/failure-evidence-system.js";
+import { StructureSystem } from "../src/simulation/systems/structure-system.js";
+
+assert.throws(
+  () =>
+    new FailureEvidenceRecorder({
+      policy: { exactRetentionTicks: 481 },
+    }),
+  /exactRetentionTicks must be an integer between 1 and 480/,
+);
+assert.throws(
+  () =>
+    new FailureEvidenceRecorder({
+      policy: { contextStrideTicks: 1 },
+    }),
+  /retain at most 360 context frames/,
+);
+assert.throws(
+  () =>
+    new FailureEvidenceRecorder({
+      policy: { topRowsPerConnection: 8, maxRowsPerExactFrame: 4 },
+    }),
+  /maxRowsPerExactFrame must cover topRowsPerConnection/,
+);
+
+const assembly = {
+    revision: 1,
+    parts: [
+      {
+        id: 1,
+        type: "plate",
+        pos: [0, 0, 0],
+        orientation: [0, 0, 0, 1],
+        config: {},
+      },
+      {
+        id: 2,
+        type: "plate",
+        pos: [1, 0, 0],
+        orientation: [0, 0, 0, 1],
+        config: {},
+      },
+    ],
+    connections: [
+      {
+        id: "weak-link",
+        a: 1,
+        b: 2,
+        kind: "mechanical",
+        portA: "TOP",
+        portB: "BOTTOM",
+        anchorA: [0, 0, 0],
+        anchorB: [0, 0, 0],
+        capacity: {
+          ultimateForceN: 100,
+          ultimateTorqueNm: 100,
+        },
+      },
+    ],
+  },
+  order = [];
+let preMutation = null;
+let postMutation = null;
+const structuralRecorder = {
+    acceptingEvidence: () => true,
+    recordStructurePreMutation(record) {
+      order.push("pre");
+      preMutation = structuredClone(record);
+    },
+    trigger(record) {
+      order.push("trigger");
+      assert.equal(record.kind, "structural-failure");
+    },
+    recordStructurePostMutation(record) {
+      order.push("post");
+      postMutation = structuredClone(record);
+    },
+  },
+  runtime = {
+    loadByConnection: new Map([["weak-link", 120]]),
+    torqueByConnection: new Map(),
+    applyConnectionFailures(connections) {
+      order.push("apply");
+      assert.equal(
+        preMutation.topology.connections[0].failed,
+        false,
+        "pre-mutation evidence observed an already-failed connection",
+      );
+      assert.equal(
+        connections.find((connection) => connection.id === "weak-link").failed,
+        true,
+      );
+      return [];
+    },
+  },
+  structureSession = new SimulationSession({
+    systems: [new StructureSystem()],
+  }).start(assembly, {
+    catalog: TYPES,
+    multibodyRuntime: runtime,
+    failureEvidenceRecorder: structuralRecorder,
+  });
+structureSession.stepFixed();
+assert.deepEqual(order, ["pre", "trigger", "apply", "post"]);
+assert.equal(postMutation.topology.connections[0].failed, true);
+assert.deepEqual(structureSession.telemetry().systems.structures.newlyFailed, [
+  "weak-link",
+]);
+structureSession.dispose();
+
+const recorder = new FailureEvidenceRecorder({
+  policy: {
+    exactRetentionTicks: 8,
+    contextRetentionTicks: 8,
+    contextStrideTicks: 1,
+    topRowsPerConnection: 1,
+    maxRowsOnTriggerTick: 8,
+    nearFailureUtilization: 0.8,
+    stallDwellTicks: 3,
+    stallMaxProgressM: 0.03,
+  },
+});
+assert.equal(recorder.acceptingEvidence(), false);
+recorder.beginRun({
+  runIdentity: {
+    runConfigurationFingerprint: `sim-sha256-${"1".repeat(64)}`,
+  },
+});
+assert.equal(recorder.acceptingEvidence(), true);
+recorder.setReplayability({ supported: true });
+const failureSystem = new FailureEvidenceSystem();
+failureSystem.initialize();
+const context = {
+  clock: { tick: 0 },
+  time: 0,
+  services: { failureEvidenceRecorder: recorder },
+  telemetry: {},
+  runGraph: { graphRevision: 0 },
+  bodyRegistry: { snapshot: () => ({ bodies: [] }) },
+};
+for (let tick = 1; tick <= 3; tick++) {
+  context.clock.tick = tick;
+  context.time = tick / 120;
+  context.telemetry = {
+    mobility: {
+      assemblies: [
+        {
+          assemblyId: "player-authored-rolling-assembly",
+          signedSpeed: 0,
+          pose: {
+            position: { x: tick * 0.001, y: 1, z: 0 },
+          },
+          brake: 0,
+          grounded: true,
+          driveForce: {
+            availableMotorPowerW: 100,
+            deliveredMotorPowerW: 25,
+            motors: [
+              {
+                partId: 41,
+                resolvedThrottle: 0.8,
+                commandSource: "remote",
+                availablePowerW: 100,
+                deliveredPowerW: 25,
+              },
+            ],
+          },
+          wheelStates: [
+            {
+              touching: true,
+              angularSpeed: 0,
+              normalLoadN: 100,
+              longitudinalForceN: 0,
+              lateralForceN: 0,
+            },
+          ],
+        },
+      ],
+    },
+  };
+  failureSystem.step(context);
+}
+const snapshot = recorder.snapshot();
+assert.equal(snapshot.trigger.kind, "rolling-actuator-stall");
+assert.equal(snapshot.trigger.tick, 3);
+assert.equal(snapshot.replayability.state, "supported");
+assert.equal(snapshot.trigger.subjectId, "player-authored-rolling-assembly");
+assert.equal(context.telemetry.failureEvidence.captureState, "captured");
+assert.equal(snapshot.exactFrames.length, 3);
+assert.ok(Object.isFrozen(snapshot));
+assert.equal(recorder.acceptingEvidence(), false);
+context.bodyRegistry.snapshot = () => {
+  throw new Error("frozen evidence should not rescan physical state");
+};
+failureSystem.step(context);
+assert.equal(context.telemetry.failureEvidence.captureState, "captured");
+failureSystem.dispose();
+
+function runStallClassification({
+  deliveredPowerW = 25,
+  brake = 0,
+  progressPerTickM = 0.001,
+  wheelAngularSpeed = 0,
+}) {
+  const candidateRecorder = new FailureEvidenceRecorder({
+      policy: {
+        exactRetentionTicks: 8,
+        contextRetentionTicks: 8,
+        contextStrideTicks: 1,
+        stallDwellTicks: 3,
+        stallMaxProgressM: 0.03,
+      },
+    }),
+    system = new FailureEvidenceSystem(),
+    candidateContext = {
+      clock: { tick: 0 },
+      time: 0,
+      services: { failureEvidenceRecorder: candidateRecorder },
+      telemetry: {},
+      runGraph: { graphRevision: 0 },
+      bodyRegistry: { snapshot: () => ({ bodies: [] }) },
+    };
+  candidateRecorder.beginRun({ runIdentity: { id: "classification" } });
+  system.initialize(candidateContext);
+  for (let tick = 1; tick <= 3; tick++) {
+    candidateContext.clock.tick = tick;
+    candidateContext.time = tick / 120;
+    candidateContext.telemetry = {
+      mobility: {
+        assemblies: [
+          {
+            assemblyId: "renamed-player-machine",
+            signedSpeed: progressPerTickM * 120,
+            pose: {
+              position: { x: progressPerTickM * tick, y: 1, z: 0 },
+            },
+            brake,
+            grounded: true,
+            driveForce: {
+              availableMotorPowerW: 100,
+              deliveredMotorPowerW: deliveredPowerW,
+              motors: [
+                {
+                  partId: 41,
+                  resolvedThrottle: 0.8,
+                  commandSource: "script",
+                  availablePowerW: 100,
+                  deliveredPowerW,
+                },
+              ],
+            },
+            wheelStates: [
+              {
+                partId: 42,
+                touching: true,
+                angularSpeed: wheelAngularSpeed,
+                normalLoadN: 100,
+                longitudinalForceN: 0,
+                lateralForceN: 0,
+              },
+            ],
+          },
+        ],
+      },
+    };
+    system.step(candidateContext);
+  }
+  const trigger = candidateRecorder.snapshot().trigger;
+  system.dispose();
+  return trigger;
+}
+
+assert.equal(
+  runStallClassification({ progressPerTickM: 0.02 }),
+  null,
+  "a moving powered assembly was classified as stalled",
+);
+assert.equal(
+  runStallClassification({ deliveredPowerW: 0 }),
+  null,
+  "an unpowered assembly was classified as a powered stall",
+);
+assert.equal(
+  runStallClassification({ brake: 1 }),
+  null,
+  "a braked assembly was classified as stalled",
+);
+assert.equal(
+  runStallClassification({ wheelAngularSpeed: 20 })?.kind,
+  "rolling-actuator-stall",
+  "wheel spin incorrectly suppressed a no-progress stall",
+);
+
+const anomalyRecorder = new FailureEvidenceRecorder(),
+  anomalySystem = new FailureEvidenceSystem(),
+  anomalyContext = {
+    clock: { tick: 1 },
+    time: 1 / 120,
+    services: { failureEvidenceRecorder: anomalyRecorder },
+    telemetry: {
+      mobility: {
+        assemblies: [
+          {
+            assemblyId: "non-finite-machine",
+            signedSpeed: Number.NaN,
+            pose: { position: { x: 0, y: 1, z: 0 } },
+            driveForce: { motors: [] },
+            wheelStates: [],
+          },
+        ],
+      },
+    },
+    runGraph: { graphRevision: 1, events: () => [] },
+    bodyRegistry: { snapshot: () => ({ bodies: [] }) },
+  };
+anomalyRecorder.beginRun({ runIdentity: { id: "numerical" } });
+anomalySystem.initialize({
+  ...anomalyContext,
+  runGraph: { ...anomalyContext.runGraph, graphRevision: 0 },
+});
+anomalySystem.step(anomalyContext);
+assert.equal(anomalyRecorder.snapshot().trigger.kind, "numerical-anomaly");
+assert.ok(
+  anomalyRecorder.telemetrySummary().memoryBytes > 0,
+  "non-finite evidence prevented bounded memory accounting",
+);
+anomalySystem.dispose();
+
+const stageRecorder = new FailureEvidenceRecorder();
+stageRecorder.beginRun({ runIdentity: { id: "stage-order" } });
+stageRecorder.recordPhysicsStage({ tick: 1 });
+assert.throws(
+  () =>
+    stageRecorder.recordCommandStage({
+      tick: 1,
+      commandLedger: {},
+    }),
+  /stage command cannot follow physics/,
+);
+
+const contributionRecorder = new FailureEvidenceRecorder({
+  policy: {
+    exactRetentionTicks: 4,
+    contextRetentionTicks: 4,
+    contextStrideTicks: 1,
+    topRowsPerConnection: 1,
+    maxRowsOnTriggerTick: 4,
+    nearFailureUtilization: 0.8,
+  },
+});
+contributionRecorder.beginRun({ runIdentity: { id: "fixture" } });
+contributionRecorder.recordPhysicsStage({
+  tick: 1,
+  timeS: 1 / 120,
+  solverContributions: [1, 2, 3, 4, 5, 6].map((forceMagnitudeN) => ({
+    rowId: `row-${forceMagnitudeN}`,
+    side: "A",
+    sourceConnectionIds: ["connection"],
+    forceMagnitudeN,
+    momentMagnitudeNm: 0,
+  })),
+});
+contributionRecorder.recordStructurePreMutation({
+  tick: 1,
+  timeS: 1 / 120,
+  evaluations: [
+    {
+      connectionId: "connection",
+      forceUtilization: 1.2,
+      torqueUtilization: 0,
+    },
+  ],
+  topology: { graphRevision: 0, connections: [] },
+});
+contributionRecorder.trigger({
+  kind: "structural-failure",
+  tick: 1,
+  subjectId: "connection",
+});
+contributionRecorder.recordStructurePostMutation({
+  tick: 1,
+  event: { failedConnectionIds: ["connection"] },
+  topology: { graphRevision: 1, connections: [] },
+});
+contributionRecorder.completeTick({ tick: 1, timeS: 1 / 120 });
+assert.equal(
+  contributionRecorder.snapshot().exactFrames[0].solverContributions.length,
+  4,
+  "trigger tick did not enforce the configured contributor safety bound",
+);
+assert.equal(
+  contributionRecorder.snapshot().exactFrames[0].contributionValidity,
+  "truncated",
+);
+assert.equal(contributionRecorder.snapshot().exactFrames[0].omittedRowCount, 2);
+
+const normalCapRecorder = new FailureEvidenceRecorder({
+  policy: {
+    exactRetentionTicks: 4,
+    contextRetentionTicks: 4,
+    contextStrideTicks: 1,
+    topRowsPerConnection: 1,
+    maxRowsPerExactFrame: 3,
+  },
+});
+normalCapRecorder.beginRun({ runIdentity: { id: "normal-cap" } });
+normalCapRecorder.recordPhysicsStage({
+  tick: 1,
+  solverContributions: [1, 2, 3, 4, 5, 6].map((forceMagnitudeN) => ({
+    rowId: `normal-row-${forceMagnitudeN}`,
+    side: "A",
+    sourceConnectionIds: ["near-connection"],
+    forceMagnitudeN,
+    momentMagnitudeNm: 0,
+  })),
+});
+normalCapRecorder.recordStructurePreMutation({
+  tick: 1,
+  evaluations: [
+    {
+      connectionId: "near-connection",
+      forceUtilization: 0.9,
+      torqueUtilization: 0,
+    },
+  ],
+  topology: { graphRevision: 0, connections: [] },
+});
+normalCapRecorder.completeTick({ tick: 1, timeS: 1 / 120 });
+assert.deepEqual(
+  normalCapRecorder
+    .snapshot()
+    .exactFrames[0].solverContributions.map((row) => row.forceMagnitudeN),
+  [6, 5, 4],
+  "normal near-failure retention ignored the global exact-frame cap",
+);
+assert.equal(normalCapRecorder.snapshot().exactFrames[0].omittedRowCount, 3);
+assert.deepEqual(
+  normalCapRecorder.snapshot().exactFrames[0].structurePreMutation.topology,
+  { snapshotState: "revision-only", graphRevision: 0 },
+);
+assert.equal(
+  normalCapRecorder.snapshot().exactFrames[0].structurePostMutation,
+  null,
+);
+
+console.log(
+  "failure evidence runtime passed (pre-mutation order, stall matrix, stage order, bounded trigger rows)",
+);

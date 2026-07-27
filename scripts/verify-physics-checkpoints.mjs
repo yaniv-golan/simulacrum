@@ -218,6 +218,34 @@ function firstDifference(leftJson, rightJson) {
   return visit(JSON.parse(leftJson), JSON.parse(rightJson), "state");
 }
 
+const initialSource = createRuntime(),
+  initialCheckpoint = initialSource.coordinator.capture(IDENTITIES),
+  initialState = observedState(initialSource),
+  initialRestored = createRuntime();
+assert.equal(initialCheckpoint.committedTick, 0);
+assert.equal(initialCheckpoint.committed, true);
+assert.equal(initialSource.worldAdapter.telemetry().integratedTick, -1);
+assert.equal(initialSource.worldAdapter.telemetry().integrationCount, 0);
+initialRestored.coordinator.restore(initialCheckpoint, IDENTITIES);
+assert.equal(
+  observedState(initialRestored),
+  initialState,
+  "restored run-start state did not match the committed tick-zero anchor",
+);
+commandAtTick(initialSource, 1);
+commandAtTick(initialRestored, 1);
+initialSource.session.stepFixed();
+initialRestored.session.stepFixed();
+assert.equal(initialSource.worldAdapter.telemetry().integrationCount, 1);
+assert.equal(initialRestored.worldAdapter.telemetry().integrationCount, 1);
+assert.equal(
+  observedState(initialRestored),
+  observedState(initialSource),
+  "tick-zero restore diverged on the first integrated tick",
+);
+initialSource.dispose();
+initialRestored.dispose();
+
 const uninterrupted = createRuntime();
 let checkpoint = null;
 let checkpointState = null;

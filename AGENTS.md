@@ -64,6 +64,12 @@ coordinator growth.
 ## Working method
 
 1. Inspect the relevant implementation, tests, and contract documentation.
+   For a stall, invalid contact, numerical anomaly, or structural failure,
+   follow the
+   [failure-evidence debugging workflow](docs/TESTING.md#failure-evidence-debugging-workflow)
+   and [failure-analysis contract](docs/FAILURE_ANALYSIS.md) before changing
+   physics. Preserve and replay the exported artifact; do not call a root cause
+   verified when its causal chain is incomplete, unavailable, or unreproduced.
 2. Make the smallest coherent change at the owning layer.
 3. Add or update a deterministic contract test for model/physics behavior and
    a browser assertion for visible behavior.

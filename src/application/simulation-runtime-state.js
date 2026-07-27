@@ -21,6 +21,7 @@ export function createSimulationRuntimeState() {
     checkpointCoordinator: null,
     prepareCheckpointCoordinator: null,
     inputTraceRecorder: null,
+    failureEvidence: { recorder: null, replayAnchor: null, replayError: null },
     runIdentity: null,
     runBlueprint: null,
     workspaceFocusBefore: false,

@@ -199,6 +199,12 @@ mobilityIndex.refresh({
 commandBus.writeRemote(10, "command", 1);
 mobilitySystem.step(mobilityContext, 1 / 120);
 assert.equal(mobilityContext.telemetry.mobility.assemblies.length, 2);
+assert.ok(
+  mobilityContext.telemetry.mobility.assemblies.every(
+    (record) => record.driveForce.motors.length === 0,
+  ),
+  "minimal mobility runtime invented motor evidence",
+);
 assert.deepEqual(
   mobilityContext.telemetry.mobility.assemblies.map((record) => ({
     members: record.memberPartIds,
