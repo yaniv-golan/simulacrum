@@ -10,6 +10,7 @@ import { portIds, validatePortConnection } from "./ports.js";
 import { DEFAULT_VISUAL_PROGRAM } from "./visual-logic.js";
 import { resolveWireComponentConfig } from "./component-resolver.js";
 import { quaternionFromEulerXYZ } from "./primitives.js";
+import { posePartForPortMatch } from "./component-geometry-contract.js";
 import {
   isMechanismComponentType,
   mechanismComponentDefinition,
@@ -22,7 +23,7 @@ import {
 const STANDARD_CAPACITY = CONNECTION_CAPACITIES.standard,
   GEAR_CAPACITY = CONNECTION_CAPACITIES.gear,
   REINFORCED_CAPACITY = CONNECTION_CAPACITIES.reinforced,
-  STEERING_CORNER_CAPACITY = Object.freeze({
+  SUSPENSION_CORNER_CAPACITY = Object.freeze({
     ultimateForceN: 120_000,
     ultimateTorqueNm: 50_000,
   });
@@ -136,6 +137,17 @@ class BlueprintBuilder {
     };
     this.parts.push(part);
     return part;
+  }
+
+  matchPorts(movingPart, movingPortId, targetPart, targetPortId) {
+    const pose = posePartForPortMatch({
+      movingPart,
+      movingPortId,
+      targetPart,
+      targetPortId,
+    });
+    movingPart.pos = [...pose.positionM];
+    return movingPart;
   }
 
   connect(a, b, kind, options) {
@@ -261,6 +273,9 @@ function gearbox() {
       scriptLanguage: "visual",
       scriptSources: controllerSources(),
     });
+  b.matchPorts(motor, "SHAFT", inputGear, "AXLE");
+  b.matchPorts(outputBearing, "SHAFT", outputAxle, "JOURNAL");
+  b.matchPorts(sensor, "SHAFT", outputAxle, "JOURNAL");
   b.power(battery, motor);
   b.wireController(battery, controller, [motor]);
   for (const part of [motor, outputBearing, sensor, battery, controller])
@@ -329,15 +344,19 @@ function cart() {
       mechanism.config.lengthRangeM = { lower: 0.72, upper: 1.35 };
       return mechanism;
     },
-    suspensionGuide = ({ narrowTrack = false } = {}) => {
+    suspensionGuide = ({ hubMotorClearance = false } = {}) => {
       const mechanism = structuredClone(
         mechanismComponentDefinition("linear-guide"),
       );
       mechanism.config.referenceCoordinateM = 0.3;
       mechanism.config.travelRangeM = { lower: 0, upper: 0.6 };
-      if (narrowTrack)
+      if (hubMotorClearance)
         for (const [railIndex, region] of mechanism.collisionRegions.entries())
-          region.localFramePart.positionM[0] = railIndex === 0 ? -0.1 : 0.1;
+          region.localFramePart.positionM = [
+            0,
+            railIndex === 0 ? -0.75 : 0.75,
+            0,
+          ];
       return mechanism;
     },
     chassis = b.add("plate", [0, 1.56, 0]),
@@ -358,37 +377,43 @@ function cart() {
       b.add("headlight", [-0.72, 1.86, -1.18]),
       b.add("headlight", [0.72, 1.86, -1.18]),
     ],
+    // The wheel inner faces clear the chassis and the two canonical motor
+    // housings clear each other after their terminal shaft frames are matched.
+    wheelTrackHalfM = 1.46,
     wheels = [
-      b.add("wheel", [-1.32, 0.65, -0.78], {
+      b.add("wheel", [-wheelTrackHalfM, 0.65, -0.78], {
         eulerRotation: [0, Math.PI / 2, 0],
       }),
-      b.add("wheel", [1.32, 0.65, -0.78], {
+      b.add("wheel", [wheelTrackHalfM, 0.65, -0.78], {
         eulerRotation: [0, Math.PI / 2, 0],
       }),
-      b.add("wheel", [-1.32, 0.65, 0.78], {
+      b.add("wheel", [-wheelTrackHalfM, 0.65, 0.78], {
         eulerRotation: [0, Math.PI / 2, 0],
       }),
-      b.add("wheel", [1.32, 0.65, 0.78], {
+      b.add("wheel", [wheelTrackHalfM, 0.65, 0.78], {
         eulerRotation: [0, Math.PI / 2, 0],
       }),
     ],
-    motors = wheels.map((wheel) =>
-      b.add("motor", [...wheel.pos], {
-        eulerRotation: [0, Math.PI / 2, 0],
+    motors = wheels.map((wheel) => {
+      const motor = b.add("motor", [...wheel.pos], {
+        eulerRotation: [0, Math.sign(wheel.pos[0]) * (Math.PI / 2), 0],
         // The wheel contract has a local +Z axle and the authored transform
         // maps it to world +X. Each hub motor is authored on that same frame;
         // the compiler never rotates or translates the shaft implicitly.
-        config: { power: 1 },
-      }),
-    ),
+        // Mirroring the physical motor also mirrors local positive rotation.
+        // The ordinary authored wiring polarity keeps all wheel angular
+        // velocities aligned in the wheel catalog frame.
+        config: { power: 1, direction: Math.sign(wheel.pos[0]) },
+      });
+      return b.matchPorts(motor, "SHAFT", wheel, "AXLE");
+    }),
     guides = wheels.map((wheel, index) =>
       b.add("linear-guide", [wheel.pos[0], 1.15, wheel.pos[2]], {
         eulerRotation: [Math.PI / 2, 0, 0],
-        // The stock guide's wide rail spacing is useful for exposed slides,
-        // but a front outboard rail would intersect the turning knuckle and
-        // hub motor. This ordinary narrow-track variant preserves real
-        // self-collision while giving the steering corner sweep clearance.
-        mechanism: suspensionGuide({ narrowTrack: index < 2 }),
+        // The front rails straddle the canonical inboard hub-motor envelope
+        // fore/aft. This is ordinary authored collision geometry, not a
+        // collision-filter or vehicle-identity exception.
+        mechanism: suspensionGuide({ hubMotorClearance: index < 2 }),
       }),
     ),
     springs = wheels.map((wheel) =>
@@ -410,25 +435,10 @@ function cart() {
         {
           eulerRotation: [-Math.PI / 2, 0, 0],
           mechanism: poweredHingeMechanism({
-            lowerDeg: -14,
-            upperDeg: 14,
+            lowerDeg: -18,
+            upperDeg: 18,
             maximumTorqueNm: 1800,
           }),
-        },
-      ),
-    ),
-    steeringKnuckles = wheels.slice(0, 2).map((wheel) =>
-      b.add(
-        "plate",
-        [wheel.pos[0] - Math.sign(wheel.pos[0]) * 0.42, 0.65, wheel.pos[2]],
-        {
-          // Turn the plate upright so its structural-surface normal shares the
-          // steering hinge's authored vertical axis. The compiler validates
-          // this transform exactly as it would for a player-built knuckle.
-          eulerRotation: [Math.PI / 2, 0, 0],
-          // The upright clears the tire envelope; contact is therefore
-          // generated only where authored solids actually overlap.
-          scale: [0.1, 0.35, 0.25],
         },
       ),
     );
@@ -473,6 +483,8 @@ function cart() {
   ];
   for (let index = 0; index < steeringHinges.length; index++)
     guides[index].pos[0] = steeringHinges[index].pos[0];
+  for (let index = 0; index < steeringHinges.length; index++)
+    b.matchPorts(steeringHinges[index], "BASE", guides[index], "SLIDER");
   for (const powered of [
     ...motors,
     ...lamps,
@@ -508,24 +520,19 @@ function cart() {
       portB: "BASE",
       capacity:
         index < steeringHinges.length
-          ? STEERING_CORNER_CAPACITY
+          ? SUSPENSION_CORNER_CAPACITY
           : REINFORCED_CAPACITY,
     });
     if (index < steeringHinges.length) {
       b.connect(guides[index], steeringHinges[index], "mechanical", {
         portA: "SLIDER",
         portB: "BASE",
-        capacity: STEERING_CORNER_CAPACITY,
+        capacity: SUSPENSION_CORNER_CAPACITY,
       });
-      b.connect(steeringHinges[index], steeringKnuckles[index], "mechanical", {
+      b.connect(steeringHinges[index], motors[index], "mechanical", {
         portA: "ARM",
-        portB: "TOP",
-        capacity: STEERING_CORNER_CAPACITY,
-      });
-      b.connect(steeringKnuckles[index], motors[index], "mechanical", {
-        portA: "TOP",
         portB: "MOUNT",
-        capacity: STEERING_CORNER_CAPACITY,
+        capacity: SUSPENSION_CORNER_CAPACITY,
       });
     } else
       b.connect(guides[index], motors[index], "mechanical", {
@@ -536,37 +543,27 @@ function cart() {
     b.connect(chassis, springs[index], "mechanical", {
       portA: "TOP",
       portB: "END_A",
-      capacity: STANDARD_CAPACITY,
+      capacity: REINFORCED_CAPACITY,
     });
-    b.connect(
-      springs[index],
-      index < steeringKnuckles.length ? steeringKnuckles[index] : motors[index],
-      "mechanical",
-      {
-        portA: "END_B",
-        portB: index < steeringKnuckles.length ? "TOP" : "MOUNT",
-        capacity: STANDARD_CAPACITY,
-      },
-    );
+    b.connect(springs[index], motors[index], "mechanical", {
+      portA: "END_B",
+      portB: "MOUNT",
+      capacity: REINFORCED_CAPACITY,
+    });
     b.connect(chassis, dampers[index], "mechanical", {
       portA: "TOP",
       portB: "END_A",
-      capacity: STANDARD_CAPACITY,
+      capacity: REINFORCED_CAPACITY,
     });
-    b.connect(
-      dampers[index],
-      index < steeringKnuckles.length ? steeringKnuckles[index] : motors[index],
-      "mechanical",
-      {
-        portA: "END_B",
-        portB: index < steeringKnuckles.length ? "TOP" : "MOUNT",
-        capacity: STANDARD_CAPACITY,
-      },
-    );
+    b.connect(dampers[index], motors[index], "mechanical", {
+      portA: "END_B",
+      portB: "MOUNT",
+      capacity: REINFORCED_CAPACITY,
+    });
     b.connect(motors[index], wheels[index], "mechanical", {
       portA: "SHAFT",
       portB: "AXLE",
-      capacity: REINFORCED_CAPACITY,
+      capacity: SUSPENSION_CORNER_CAPACITY,
     });
   }
   return b.build({
@@ -756,31 +753,43 @@ function humanoid() {
       portB,
       capacity: STANDARD_CAPACITY,
     });
-  for (const [role, base, arm, basePort, armPort] of [
-    ["hipL", pelvis, limbByRole.get("thighL"), "TOP", "A"],
-    ["hipR", pelvis, limbByRole.get("thighR"), "TOP", "A"],
-    ["kneeL", limbByRole.get("thighL"), limbByRole.get("shinL"), "B", "A"],
-    ["kneeR", limbByRole.get("thighR"), limbByRole.get("shinR"), "B", "A"],
-    ["ankleL", limbByRole.get("shinL"), limbByRole.get("footL"), "B", "TOP"],
-    ["ankleR", limbByRole.get("shinR"), limbByRole.get("footR"), "B", "TOP"],
-    ["shoulderL", torso, limbByRole.get("upperArmL"), "SURFACE", "A"],
-    ["shoulderR", torso, limbByRole.get("upperArmR"), "SURFACE", "A"],
-    [
-      "elbowL",
-      limbByRole.get("upperArmL"),
-      limbByRole.get("forearmL"),
-      "B",
-      "A",
-    ],
-    [
-      "elbowR",
-      limbByRole.get("upperArmR"),
-      limbByRole.get("forearmR"),
-      "B",
-      "A",
-    ],
-  ]) {
+  const articulatedConnections =
+    /** @type {Array<[string,{type:string},{type:string},string,string]>} */ ([
+      ["hipL", pelvis, limbByRole.get("thighL"), "TOP", "B"],
+      ["hipR", pelvis, limbByRole.get("thighR"), "TOP", "B"],
+      ["kneeL", limbByRole.get("thighL"), limbByRole.get("shinL"), "A", "B"],
+      ["kneeR", limbByRole.get("thighR"), limbByRole.get("shinR"), "A", "B"],
+      ["ankleL", limbByRole.get("shinL"), limbByRole.get("footL"), "A", "TOP"],
+      ["ankleR", limbByRole.get("shinR"), limbByRole.get("footR"), "A", "TOP"],
+      ["shoulderL", torso, limbByRole.get("upperArmL"), "SURFACE", "B"],
+      ["shoulderR", torso, limbByRole.get("upperArmR"), "SURFACE", "B"],
+      [
+        "elbowL",
+        limbByRole.get("upperArmL"),
+        limbByRole.get("forearmL"),
+        "A",
+        "B",
+      ],
+      [
+        "elbowR",
+        limbByRole.get("upperArmR"),
+        limbByRole.get("forearmR"),
+        "A",
+        "B",
+      ],
+    ]);
+  for (const [role, base, arm, basePort, armPort] of articulatedConnections) {
     const joint = jointByRole.get(role);
+    const baseBehavior = TYPES[base.type].ports.find(
+        ({ id }) => id === basePort,
+      ).behavior,
+      armBehavior = TYPES[arm.type].ports.find(
+        ({ id }) => id === armPort,
+      ).behavior;
+    if (baseBehavior !== "structural-surface")
+      b.matchPorts(joint, "BASE", base, basePort);
+    if (armBehavior !== "structural-surface")
+      b.matchPorts(arm, armPort, joint, "ARM");
     b.connect(base, joint, "mechanical", {
       portA: basePort,
       portB: "BASE",
@@ -943,6 +952,8 @@ function drone(sources = {}) {
       capacity: REINFORCED_CAPACITY,
     });
   for (let index = 0; index < motors.length; index++) {
+    b.matchPorts(motors[index], "MOUNT", arms[index], "B");
+    b.matchPorts(rotors[index], "SHAFT", motors[index], "SHAFT");
     b.connect(arms[index], motors[index], "mechanical", {
       portA: "B",
       portB: "MOUNT",
@@ -988,7 +999,10 @@ function drone(sources = {}) {
 }
 
 function mission(sources) {
-  const stageInterfaceY = 3.73,
+  // Exact engine-MOUNT/spine-A coincidence places the engine body 65 mm lower
+  // than the former centered-port shortcut. Raise the complete authored stack
+  // so its canonical collision envelope starts above the ground plane.
+  const stageInterfaceY = 3.795,
     flangeOffsetY = 0.15,
     plateHalfHeight = TYPES.plate.size[1] / 2,
     beamHalfLength = TYPES.beam.size[0] / 2,
@@ -1069,6 +1083,7 @@ function mission(sources) {
         eulerRotation: [0, Math.PI / 2, 0],
       }),
     ];
+  b.matchPorts(engine, "MOUNT", spineA, "A");
   b.power(battery, controller);
   for (const target of [...rcsPods, coupler]) b.command(controller, target);
   b.connect(controller, engine, "signal", {

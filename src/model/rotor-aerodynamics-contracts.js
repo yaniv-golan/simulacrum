@@ -112,12 +112,22 @@ export function rotorAerodynamicContract(part, definition, geometry) {
       `Unknown propulsion contract ${String(descriptor.kind)}`,
       { path: ["parts", part.id, "propulsion", "kind"] },
     );
+  const hubOnlyCollision = geometry?.collisionPrimitives?.some(
+    ({ approximationOf }) =>
+      approximationOf === "rotor-blade-contact-unsupported-v1",
+  );
+  if (!hubOnlyCollision)
+    throw new DomainValidationError(
+      "INVALID_ROTOR_GEOMETRY",
+      "Rotor geometry must explicitly declare its blade-contact approximation",
+      { path: ["parts", part.id, "geometry", "collisionPrimitives"] },
+    );
   const config = validateRotorConfig(part.config, part.scale, part.id);
   return immutableClone({
     kind: descriptor.kind,
     localAxis: [...descriptor.localAxis],
     applicationPointPartM: [0, 0, 0],
-    bladeContactModel: geometry.rotor.bladeContactModel,
+    bladeContactModel: "unsupported-v1",
     ...config,
   });
 }

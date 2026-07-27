@@ -1,5 +1,6 @@
 import { TYPES } from "./component-catalog.js";
 import { geometryDescriptorForPart } from "./geometry-descriptors.js";
+import { portAxisPart } from "./component-geometry-contract.js";
 import { portDefinition } from "./ports.js";
 
 const EPSILON = 1e-8;
@@ -27,14 +28,15 @@ function normalizedDot(left, right) {
  * Port names never imply symmetry. Coordinate signs are reported explicitly.
  */
 function deriveForAxis(part, axis, catalog) {
-  const frames = geometryDescriptorForPart(part, catalog).portFrames,
+  const geometry = geometryDescriptorForPart(part, catalog),
+    frames = geometry.portFrames,
     entries = Object.entries(frames),
     mappings = [];
   for (const [sourcePort, sourceFrame] of entries) {
     const sourceDefinition = portDefinition(part, sourcePort, catalog),
-      desiredPosition = reflected(sourceFrame.position, axis),
-      desiredNormal = reflected(sourceFrame.normal || sourceFrame.axis, axis),
-      desiredAxis = reflected(sourceFrame.axis || sourceFrame.normal, axis),
+      sourceAxis = portAxisPart(sourceFrame),
+      desiredPosition = reflected(sourceFrame.framePart.positionM, axis),
+      desiredAxis = reflected(sourceAxis, axis),
       candidates = entries
         .filter(([targetPort]) => {
           const targetDefinition = portDefinition(part, targetPort, catalog);
@@ -49,21 +51,9 @@ function deriveForAxis(part, axis, catalog) {
           targetPort,
           targetFrame,
           score:
-            distance(desiredPosition, targetFrame.position) +
+            distance(desiredPosition, targetFrame.framePart.positionM) +
             1 -
-            Math.abs(
-              normalizedDot(
-                desiredNormal,
-                targetFrame.normal || targetFrame.axis,
-              ),
-            ) +
-            1 -
-            Math.abs(
-              normalizedDot(
-                desiredAxis,
-                targetFrame.axis || targetFrame.normal,
-              ),
-            ),
+            Math.abs(normalizedDot(desiredAxis, portAxisPart(targetFrame))),
         }))
         .sort(
           (left, right) =>
@@ -87,22 +77,21 @@ function deriveForAxis(part, axis, catalog) {
         sourcePort,
         targetPort: target.targetPort,
         coordinateSign:
-          normalizedDot(
-            desiredAxis,
-            target.targetFrame.axis || target.targetFrame.normal,
-          ) < 0
-            ? -1
-            : 1,
-        normalSign:
-          normalizedDot(
-            desiredNormal,
-            target.targetFrame.normal || target.targetFrame.axis,
-          ) < 0
+          normalizedDot(desiredAxis, portAxisPart(target.targetFrame)) < 0
             ? -1
             : 1,
       }),
     );
   }
+  for (const [portId, classification] of Object.entries(geometry.portClasses))
+    if (classification === "network-only")
+      mappings.push(
+        Object.freeze({
+          sourcePort: portId,
+          targetPort: portId,
+          coordinateSign: 1,
+        }),
+      );
   return Object.freeze({
     localReflectionPlane: axis === 0 ? "YZ" : axis === 1 ? "XZ" : "XY",
     localReflectionAxis: axis,

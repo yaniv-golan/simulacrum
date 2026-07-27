@@ -1,5 +1,36 @@
 import * as THREE from "three";
 
+/** Applies a model-owned editor preview centreline to its bounded resource. */
+export function applyFlexibleLinePreviewReadModel(part, record) {
+  const preview = part?.mesh?.userData?.flexibleLineVisual?.preview;
+  if (!preview || !record?.centerline || record.centerline.length !== 2) return;
+  const start = new THREE.Vector3(
+      record.centerline[0].x,
+      record.centerline[0].y,
+      record.centerline[0].z,
+    ),
+    end = new THREE.Vector3(
+      record.centerline[1].x,
+      record.centerline[1].y,
+      record.centerline[1].z,
+    );
+  part.mesh.updateWorldMatrix(true, false);
+  part.mesh.worldToLocal(start);
+  part.mesh.worldToLocal(end);
+  const delta = end.clone().sub(start),
+    lengthM = delta.length();
+  preview.position.copy(start).add(end).multiplyScalar(0.5);
+  preview.quaternion.identity();
+  if (lengthM > 1e-9)
+    preview.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      delta.clone().multiplyScalar(1 / lengthM),
+    );
+  preview.scale.set(1, lengthM / preview.userData.referenceLengthM, 1);
+  preview.visible = true;
+  part.previewBoundsWorldM = structuredClone(record.previewBoundsWorldM);
+}
+
 /** Mirrors completed flexible-line centerlines into bounded instanced tubes. */
 export function createFlexibleLineTelemetryPresenter({ parts }) {
   const start = new THREE.Vector3(),
@@ -18,6 +49,7 @@ export function createFlexibleLineTelemetryPresenter({ parts }) {
         visual = part?.mesh?.userData?.flexibleLineVisual;
       if (!part || !visual) continue;
       part.flexibleLineTelemetry = record;
+      part.runtimeBoundsWorldM = structuredClone(record.runtimeBoundsWorldM);
       visual.preview.visible = false;
       visual.runtime.visible = true;
       part.mesh.updateWorldMatrix(true, false);

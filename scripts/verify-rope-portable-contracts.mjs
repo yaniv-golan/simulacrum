@@ -38,8 +38,8 @@ const source = {
   name: "Portable Rope rig",
   created: "2026-07-24T00:00:00.000Z",
   parts: [
-    part(1, "plate", [-2, 1, 0]),
-    part(2, "plate", [2, 1, 0]),
+    part(1, "plate", [-0.45, 2.91, 0.2]),
+    part(2, "plate", [0.35, -1.09, -0.25]),
     part(3, "rope", [0, 1, 0]),
   ],
   connections: [
@@ -63,8 +63,8 @@ assert.deepEqual(
 
 const originalFingerprint = await fingerprintAsset("blueprint", blueprint),
   retuned = structuredClone(blueprint);
-retuned.parts.find((candidate) => candidate.type === "rope").config.lengthM +=
-  0.5;
+retuned.parts.find((candidate) => candidate.type === "rope").config.diameterM +=
+  0.005;
 assert.notEqual(
   await fingerprintAsset("blueprint", retuned),
   originalFingerprint,

@@ -20,6 +20,53 @@ export function componentExample() {
             multiplicity: "one",
           },
         ],
+        geometryContract: {
+          schemaVersion: 1,
+          kind: "primitive-component-geometry-v1",
+          geometryClass: "rigid-static-v1",
+          dimensionalScalingPolicy: "axis-aligned-affine-v1",
+          portFrames: {
+            MOUNT: {
+              position: { kind: "constant-v1", value: [0, 0, 0] },
+              orientation: [0, 0, 0, 1],
+            },
+          },
+          collisionPrimitives: [
+            {
+              id: "collision",
+              frame: {
+                position: { kind: "constant-v1", value: [0, 0, 0] },
+                orientation: [0, 0, 0, 1],
+              },
+              geometry: {
+                kind: "box-v1",
+                fullSize: { kind: "config-vector-v1", field: "size" },
+              },
+              semanticKey: "collision",
+              materialKey: "component-body",
+              contactRole: "structure",
+              approximationOf: null,
+            },
+          ],
+          bodyPrimitives: [
+            {
+              id: "body",
+              frame: {
+                position: { kind: "constant-v1", value: [0, 0, 0] },
+                orientation: [0, 0, 0, 1],
+              },
+              geometry: {
+                kind: "box-v1",
+                fullSize: { kind: "config-vector-v1", field: "size" },
+              },
+              semanticKey: "body",
+              materialKey: "component-body",
+              contactRole: "structure",
+              approximationOf: null,
+            },
+          ],
+          physicalFeatures: [],
+        },
       },
     },
     descriptor = geometryDescriptorForType("ballastPod", catalog),

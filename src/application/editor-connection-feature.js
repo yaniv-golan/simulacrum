@@ -12,8 +12,10 @@ import {
 } from "../model/ports.js";
 import { createEditorConnection } from "./editor-connection-authoring.js";
 import { createEditorConnectionAssessment } from "./editor-connection-assessment.js";
-import { canonicalizeQuaternion } from "../model/primitives.js";
 import { createRelationshipTraceController } from "../presentation/relationship-trace-controller.js";
+import { portAxisPart } from "../model/component-geometry-contract.js";
+import { flexibleLinePreviewReadModel } from "../model/flexible-line-preview-read-model.js";
+import { applyFlexibleLinePreviewReadModel } from "../presentation/flexible-line-telemetry-presenter.js";
 
 /**
  * @typedef {{
@@ -97,38 +99,18 @@ export function createEditorConnectionFeature({ workspace, history, view }) {
   }
 
   function partGeometry(part) {
-    return geometryDescriptorForPart(
-      {
-        ...part,
-        pos: part.mesh ? part.mesh.position.toArray() : part.pos,
-        orientation: part.mesh
-          ? canonicalizeQuaternion([
-              part.mesh.quaternion.x,
-              part.mesh.quaternion.y,
-              part.mesh.quaternion.z,
-              part.mesh.quaternion.w,
-            ])
-          : part.orientation,
-        scale: part.mesh
-          ? {
-              x: part.mesh.scale.x,
-              y: part.mesh.scale.y,
-              z: part.mesh.scale.z,
-            }
-          : part.scale,
-      },
-      TYPES,
-    );
+    return geometryDescriptorForPart(part);
   }
 
   function worldFrameOffset(part, port) {
-    const position = partGeometry(part).portFrames[port]?.position || [0, 0, 0];
+    const position = partGeometry(part).portFrames[port]?.framePart
+      .positionM || [0, 0, 0];
     return new THREE.Vector3(...position).applyQuaternion(part.mesh.quaternion);
   }
 
   function worldFrameAxis(part, port) {
     const frame = partGeometry(part).portFrames[port],
-      axis = frame?.axis || frame?.normal || [0, 0, 1];
+      axis = frame ? portAxisPart(frame) : [0, 0, 1];
     return new THREE.Vector3(...axis)
       .applyQuaternion(part.mesh.quaternion)
       .normalize();
@@ -142,20 +124,22 @@ export function createEditorConnectionFeature({ workspace, history, view }) {
         sourceAxis,
       );
     right.mesh.quaternion.premultiply(rotation).normalize();
+    right.orientation = right.mesh.quaternion.toArray();
     const sourceWorld = left.mesh.position
       .clone()
       .add(worldFrameOffset(left, sourcePort));
     right.mesh.position.copy(
       sourceWorld.sub(worldFrameOffset(right, targetPort)),
     );
+    right.pos = right.mesh.position.toArray();
   }
 
   function meshPitchDistance(left, right) {
     const leftFrame = partGeometry(left).portFrames.MESH;
     const rightFrame = partGeometry(right).portFrames.MESH;
     return (
-      new THREE.Vector3(...leftFrame.position).length() +
-      new THREE.Vector3(...rightFrame.position).length() +
+      new THREE.Vector3(...leftFrame.framePart.positionM).length() +
+      new THREE.Vector3(...rightFrame.framePart.positionM).length() +
       leftFrame.clearanceM +
       rightFrame.clearanceM
     );
@@ -361,6 +345,17 @@ export function createEditorConnectionFeature({ workspace, history, view }) {
 
   function draw() {
     relationshipTrace.clear();
+    for (const part of workspace.parts()) {
+      if (!part.mesh.userData?.flexibleLineVisual) continue;
+      applyFlexibleLinePreviewReadModel(
+        part,
+        flexibleLinePreviewReadModel({
+          part,
+          parts: workspace.parts(),
+          connections: workspace.connections(),
+        }),
+      );
+    }
     while (view.wires.children.length) {
       const child = view.wires.children[0];
       view.wires.remove(child);

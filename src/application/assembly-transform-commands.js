@@ -21,17 +21,8 @@ export function createAssemblyTransformCommands({
       id: part.id,
       type: part.type,
       pos: [...part.pos],
-      orientation: [
-        part.mesh.quaternion.x,
-        part.mesh.quaternion.y,
-        part.mesh.quaternion.z,
-        part.mesh.quaternion.w,
-      ],
-      scale: {
-        x: part.mesh.scale.x,
-        y: part.mesh.scale.y,
-        z: part.mesh.scale.z,
-      },
+      orientation: [...part.orientation],
+      scale: { ...part.scale },
       config: structuredClone(part.config),
       ...(part.mechanism ? { mechanism: structuredClone(part.mechanism) } : {}),
     };
@@ -226,7 +217,7 @@ export function createAssemblyTransformCommands({
         symmetry = symmetries.get(source.id),
         localReflectionScale = [1, 1, 1],
         rotation = new THREE.Matrix4().makeRotationFromQuaternion(
-          source.mesh.quaternion,
+          new THREE.Quaternion(...source.orientation),
         );
       localReflectionScale[symmetry.localReflectionAxis] = -1;
       const localReflection = new THREE.Matrix4().makeScale(

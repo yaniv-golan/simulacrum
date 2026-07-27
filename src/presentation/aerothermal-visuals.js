@@ -104,8 +104,7 @@ export function createAerothermalVisuals({ parts }) {
       part.flightThermal = structuredClone(partState.thermal);
       part.flightAeroForce ||= new THREE.Vector3();
       part.flightAeroForce.set(partState.aerodynamicForceN || 0, 0, 0);
-      part.mesh.scale.y =
-        (part.flightInitialScale?.y || 1) * (partState.scaleY || 1);
+      part.mesh.userData.aerothermalScaleY = partState.scaleY || 1;
       part.mesh.visible = partState.visible;
       if (partState.detached) part.flightDetached = true;
       updatePart(part);

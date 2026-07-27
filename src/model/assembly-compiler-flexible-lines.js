@@ -6,6 +6,7 @@ import {
   PHYSICAL_CONNECTION_KINDS,
   worldPortFrame,
 } from "./assembly-compiler-shared.js";
+import { validateConnectionFrameInvariant } from "./connection-frame-invariants.js";
 import { rotateVectorByQuaternion } from "./primitives.js";
 
 const finitePositive = (value) => Number.isFinite(value) && value > 0;
@@ -55,12 +56,24 @@ function attachmentFor(context, part, portId, endpointIndex) {
     });
     return null;
   }
-  const port = compiledPortDefinition(
-      neighbor,
-      neighborPortId,
-      context.catalog,
-    ),
-    frame = worldPortFrame(neighbor, port, neighborAnchor);
+  const partA = lineIsA ? part : neighbor,
+    partB = lineIsA ? neighbor : part,
+    invariant = validateConnectionFrameInvariant({
+      connection,
+      partA,
+      partB,
+      portA: compiledPortDefinition(partA, connection.portA, context.catalog),
+      portB: compiledPortDefinition(partB, connection.portB, context.catalog),
+      geometryA: context.geometryFor(partA),
+      geometryB: context.geometryFor(partB),
+    });
+  if (!invariant.ok) {
+    context.diagnostics.push(invariant.diagnostic);
+    return null;
+  }
+  const geometry = context.geometryFor(neighbor),
+    portFrame = geometry.portFrames[neighborPortId],
+    frame = worldPortFrame(neighbor, geometry, neighborPortId, neighborAnchor);
   context.consumedConnections.add(connection.id);
   return {
     id: `flex:${part.id}:attachment:${endpointIndex}`,
@@ -73,7 +86,7 @@ function attachmentFor(context, part, portId, endpointIndex) {
     targetBodyId: `body:${neighbor.id}`,
     targetPortId: neighborPortId,
     anchorPartM: compiledVector(
-      neighborAnchor || port.localFramePart?.positionM,
+      neighborAnchor || portFrame.framePart.positionM,
     ),
     anchorWorldM: compiledVector(frame.positionWorld),
     ultimateForceN: connection.capacity.ultimateForceN,
@@ -119,6 +132,9 @@ function initialEndpoints(part, contract, attachments, lengthM) {
 }
 
 function compileLine(context, part, contract) {
+  // A flexible-line component never falls back to a rigid body, including
+  // when its authored runtime geometry is invalid.
+  context.flexibleLineParts.add(part.id);
   const config = part.config || {},
     required = [
       "lengthM",
@@ -174,12 +190,17 @@ function compileLine(context, part, contract) {
     });
     return;
   }
-  context.flexibleLineParts.add(part.id);
   const attachments = [
-      attachmentFor(context, part, contract.endpointPortA, 0),
-      attachmentFor(context, part, contract.endpointPortB, 1),
-    ],
-    endpoints = initialEndpoints(part, contract, attachments, config.lengthM),
+    attachmentFor(context, part, contract.endpointPortA, 0),
+    attachmentFor(context, part, contract.endpointPortB, 1),
+  ];
+  if (attachments.some((attachment) => attachment === null)) return;
+  const endpoints = initialEndpoints(
+      part,
+      contract,
+      attachments,
+      config.lengthM,
+    ),
     restLengthM = config.lengthM / elementCount,
     totalMassKg = config.linearDensityKgPerM * config.lengthM,
     entityMassKg = totalMassKg / (elementCount + 1),

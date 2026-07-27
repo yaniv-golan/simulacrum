@@ -1,16 +1,10 @@
 import { TYPES } from "../model/component-catalog.js";
-import { geometryDescriptorForType } from "../model/geometry-descriptors.js";
+import {
+  geometryDescriptorForPart,
+  geometryDescriptorForType,
+} from "../model/geometry-descriptors.js";
+import { resolveComponentConfig } from "../model/component-resolver.js";
 import { deepFreeze } from "../model/primitives.js";
-
-const GENERIC_VISUAL_TYPES = new Set([
-  "receiver",
-  "navsensor",
-  "powerbus",
-  "aircompressor",
-  "airreservoir",
-  "pneumaticvalve",
-  "tirepressureprobe",
-]);
 
 function finiteColor(value, label) {
   const color = Number(value);
@@ -19,44 +13,30 @@ function finiteColor(value, label) {
   return color;
 }
 
-/**
- * Presentation-owned, engine-neutral description of how one catalog component
- * selects a visual builder. Physical dimensions remain owned by the canonical
- * model geometry descriptor; this projection only carries authored appearance
- * inputs required by a registered builder.
- * @param {string} type
- * @param {number | null | undefined} [customColor]
- */
-export function componentVisualDescriptor(type, customColor) {
-  const catalogEntry = TYPES[type],
-    kind = catalogEntry?.flexibleLine
-      ? "flexible-line"
-      : catalogEntry?.mechanism
-        ? "mechanism"
-        : catalogEntry?.teeth
-          ? "gear"
-          : GENERIC_VISUAL_TYPES.has(type)
-            ? "generic"
-            : type;
+export function componentVisualDescriptor(partOrType, customColor) {
+  const authoredPart =
+      partOrType && typeof partOrType === "object" ? partOrType : null,
+    type = authoredPart?.type ?? partOrType,
+    catalogEntry = TYPES[type];
   if (!catalogEntry)
     throw new Error(`Unknown component type "${String(type)}"`);
-  const authoredColor = finiteColor(
-    customColor ?? catalogEntry.color,
-    `${type} visual color`,
-  );
+  const config = resolveComponentConfig(authoredPart || type),
+    authoredColor = finiteColor(
+      customColor ?? authoredPart?.customColor ?? catalogEntry.color,
+      `${type} visual color`,
+    );
   return deepFreeze({
-    kind,
+    type,
+    kind: "canonical-component-v2",
     color: authoredColor,
-    customColor: customColor == null ? null : authoredColor,
-    size: Array.isArray(catalogEntry.size) ? [...catalogEntry.size] : null,
-    teeth: Number(catalogEntry.teeth || 0),
-    radius: Number(catalogEntry.radius || 0),
-    lumens: Number(catalogEntry.lumens || 0),
-    powerWatts: Number(catalogEntry.powerWatts || 0),
-    lengthM: Number(catalogEntry.lengthM || 0),
-    diameterM: Number(catalogEntry.diameterM || 0),
-    geometry: catalogEntry.flexibleLine
-      ? null
+    customColor:
+      customColor == null && authoredPart?.customColor == null
+        ? null
+        : authoredColor,
+    lumens: Number(config.lumens || 0),
+    powerWatts: Number(config.powerWatts || 0),
+    geometry: authoredPart
+      ? geometryDescriptorForPart(authoredPart)
       : geometryDescriptorForType(type),
   });
 }

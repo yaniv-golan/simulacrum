@@ -18,6 +18,11 @@ import { componentMesh } from "../src/presentation/component-mesh-factory.js";
 import { applyMechanismPose } from "../src/presentation/mechanism-pose-presenter.js";
 import { disposeObject3D } from "../src/presentation/render-resources.js";
 import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
+import {
+  boundsDimensions,
+  posePartForPortMatch,
+} from "../src/model/component-geometry-contract.js";
+import { completeConnectionContract } from "../src/model/connection-contracts.js";
 
 const CAPACITY = Object.freeze({
   ultimateForceN: 24_000,
@@ -79,8 +84,17 @@ function springFixture() {
       ordinaryPart(11, "plate", [-1.4, 0.7, 0.35], leftOrientation),
       mechanismPart(12, "spring", [0, 1.2, 0], [0, 0, 0, 1]),
       ordinaryPart(13, "beam", [1.6, 1.1, -0.4], rightOrientation),
-    ],
-    connections = [
+    ];
+  parts[2].pos = [
+    ...posePartForPortMatch({
+      movingPart: parts[2],
+      movingPortId: "A",
+      targetPart: parts[1],
+      targetPortId: "END_B",
+    }).positionM,
+  ];
+  const connections = [
+    completeConnectionContract(
       {
         id: "f2-left",
         a: 11,
@@ -88,19 +102,21 @@ function springFixture() {
         kind: "mechanical",
         portA: "TOP",
         portB: "END_A",
-        anchorA: [0.32, 0.08, -0.27],
-        capacity: { ...CAPACITY },
       },
-      {
-        id: "f2-right",
-        a: 12,
-        b: 13,
-        kind: "mechanical",
-        portA: "END_B",
-        portB: "A",
-        capacity: { ...CAPACITY },
-      },
-    ];
+      parts[0],
+      parts[1],
+      { capacity: CAPACITY },
+    ),
+    {
+      id: "f2-right",
+      a: 12,
+      b: 13,
+      kind: "mechanical",
+      portA: "END_B",
+      portB: "A",
+      capacity: { ...CAPACITY },
+    },
+  ];
   return {
     format: "simulacrum-blueprint",
     version: 1,
@@ -195,7 +211,7 @@ function strippedTopology(compiled, idMap = (id) => id) {
       id: idMap(body.partId),
       type: body.type,
       mass: body.mass,
-      dimensions: body.geometry.dimensions,
+      dimensions: boundsDimensions(body.geometry.collisionBoundsPartM),
       inertia: body.massProperties.principalMomentsKgM2,
     })),
     constraints: compiled.constraints.map((constraint) => ({
@@ -221,7 +237,7 @@ const f2Wire = springFixture(),
     leftPart.orientation,
   ).map((value, axis) => value + leftPart.pos[axis]),
   expectedRight = rotateVectorByQuaternion(
-    rightFrame.position,
+    rightFrame.framePart.positionM,
     rightPart.orientation,
   ).map((value, axis) => value + rightPart.pos[axis]);
 
@@ -273,10 +289,15 @@ assert.equal(
 for (const shaft of cartShafts) {
   const wheel = cartSnapshot.parts.find((part) => part.id === shaft.rotorId),
     expectedAxis = rotateVectorByQuaternion([0, 0, 1], wheel.orientation);
-  closeVector(
-    shaft.axisWorld,
-    expectedAxis,
-    `cart shaft ${shaft.id} follows the authored wheel axle`,
+  close(
+    Math.abs(
+      shaft.axisWorld.reduce(
+        (sum, value, axis) => sum + value * expectedAxis[axis],
+        0,
+      ),
+    ),
+    1,
+    `cart shaft ${shaft.id} is parallel or antiparallel to the authored wheel axle`,
   );
 }
 const transformedCart = compileAssembly(
@@ -347,14 +368,17 @@ const cartWire = builtInDemo("cart").blueprint,
   cart = compileAssembly(cartRoundTrip, TYPES),
   wheelPart = cartRoundTrip.parts.find((part) => part.type === "wheel"),
   wheelBody = cart.bodies.find((body) => body.partId === wheelPart.id),
-  wheelRegion = wheelBody.geometry.collisionRegions.find(
+  wheelRegion = wheelBody.geometry.collisionPrimitives.find(
     (region) => region.contactRole === "tire-envelope",
   ),
   wheelPrimitive = wheelBody.geometry.collisionPrimitives[0];
 assert.equal(wheelRegion.geometry.kind, "rounded-wheel-v1");
-assert.equal(wheelPrimitive.kind, "cylinder");
-assert.equal(wheelPrimitive.roundedWheel.kind, "rounded-wheel-v1");
-assert.notEqual(wheelPrimitive.kind, "box", "F9 wheel regressed to a box");
+assert.equal(wheelPrimitive.geometry.kind, "rounded-wheel-v1");
+assert.notEqual(
+  wheelPrimitive.geometry.kind,
+  "box-v1",
+  "F9 wheel regressed to a box",
+);
 
 const wheelWorld = new CANNON.World({
     gravity: new CANNON.Vec3(0, 0, 0),
@@ -386,24 +410,30 @@ const wheelMesh = componentMesh("wheel"),
     .toArray();
 closeVector(
   renderSize,
-  wheelBody.geometry.dimensions,
+  boundsDimensions(wheelBody.geometry.bodyBoundsPartM),
   "F9 render/compiler extent",
   1e-6,
 );
 assert.deepEqual(
-  wheelMesh.userData.geometryDescriptor.dimensions,
-  wheelBody.geometry.dimensions,
+  wheelMesh.userData.geometryDescriptor.bodyBoundsPartM,
+  wheelBody.geometry.bodyBoundsPartM,
   "presentation lost the canonical wheel descriptor",
 );
 disposeObject3D(wheelMesh);
 
 const springMesh = componentMesh("spring"),
-  springDeformationRoot = springMesh.userData.mechanismDeformationRoot;
+  springDeformationRoot = springMesh.userData.mechanismDeformationRoot,
+  springPart = { mesh: springMesh },
+  completedPose = {
+    position: { x: 3, y: 2, z: 1 },
+    quaternion: { x: 0, y: Math.SQRT1_2, z: 0, w: Math.SQRT1_2 },
+    axialScale: 0.72,
+  };
 assert.ok(
   springDeformationRoot,
   "mechanism presentation omitted its non-authoritative deformation root",
 );
-applyMechanismPose({ mesh: springMesh }, { axialScale: 0.72 });
+applyMechanismPose(springPart, completedPose);
 assert.deepEqual(
   springMesh.scale.toArray(),
   [1, 1, 1],
@@ -414,13 +444,46 @@ assert.deepEqual(
   [1, 1, 0.72],
   "axial mechanism deformation was not isolated to local +Z presentation",
 );
+const expectedAbsolutePose = {
+  position: springMesh.position.toArray(),
+  quaternion: springMesh.quaternion.toArray(),
+  deformation: springDeformationRoot.scale.toArray(),
+};
+applyMechanismPose(springPart, {
+  position: { x: -7, y: 9, z: 4 },
+  quaternion: { x: 0, y: 0, z: 0, w: 1 },
+  axialScale: 1.4,
+});
+applyMechanismPose(springPart, completedPose);
+assert.deepEqual(
+  {
+    position: springMesh.position.toArray(),
+    quaternion: springMesh.quaternion.toArray(),
+    deformation: springDeformationRoot.scale.toArray(),
+  },
+  expectedAbsolutePose,
+  "mechanism presentation retained integration history",
+);
+const replayedSpringMesh = componentMesh("spring");
+applyMechanismPose({ mesh: replayedSpringMesh }, completedPose);
+assert.deepEqual(
+  {
+    position: replayedSpringMesh.position.toArray(),
+    quaternion: replayedSpringMesh.quaternion.toArray(),
+    deformation:
+      replayedSpringMesh.userData.mechanismDeformationRoot.scale.toArray(),
+  },
+  expectedAbsolutePose,
+  "fresh replay did not reproduce the same mechanism pose",
+);
+disposeObject3D(replayedSpringMesh);
 disposeObject3D(springMesh);
 
 const scaledWheel = structuredClone(wheelPart);
 scaledWheel.scale = { x: 2, y: 2, z: 2 };
 assert.throws(
   () => geometryDescriptorForPart(scaledWheel, TYPES),
-  (error) => error.code === "MECHANISM_SCALE_FORBIDDEN_BY_POLICY",
+  (error) => error.code === "GEOMETRY_SCALE_POLICY_VIOLATION",
   "fixed authored wheel scale gained an implicit similarity law",
 );
 
@@ -438,8 +501,8 @@ const textState = JSON.parse(
     },
     wheel: {
       partId: wheelPart.id,
-      dimensions: wheelBody.geometry.dimensions,
-      collisionKind: wheelPrimitive.roundedWheel.kind,
+      dimensions: boundsDimensions(wheelBody.geometry.collisionBoundsPartM),
+      collisionKind: wheelPrimitive.geometry.kind,
     },
   }),
 );

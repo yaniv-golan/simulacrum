@@ -35,10 +35,34 @@ const identityScale = { x: 1, y: 1, z: 1 },
 
 assert.equal(compiled.stats.errorCount, 0);
 assert.equal(capability.kind, "shaft-rotor-aerodynamics-v1");
-assert.equal(geometry.rotor.bladeContactModel, "unsupported-v1");
 assert.equal(geometry.collisionPrimitives.length, 1);
-assert.equal(geometry.collisionPrimitives[0].radius, config.hubRadiusM);
-assert.equal(geometry.aerodynamicSurfaces[0].projection, "rotor-hub-only-v1");
+assert.equal(
+  geometry.collisionPrimitives[0].geometry.radiusM,
+  config.hubRadiusM,
+);
+assert.equal(
+  geometry.collisionPrimitives[0].approximationOf,
+  "rotor-blade-contact-unsupported-v1",
+);
+assert.equal(geometry.bodyPrimitives.length, config.bladeCount + 1);
+assert.deepEqual(
+  geometry.bodyPrimitives.map(({ id }) => id),
+  [
+    "hub",
+    ...Array.from(
+      { length: config.bladeCount },
+      (_, index) => `blade-${index}`,
+    ),
+  ],
+);
+assert.equal(
+  geometry.portFrames.SHAFT.framePart.positionM[2],
+  -config.hubThicknessM / 2,
+);
+assert.ok(
+  geometry.selectionBoundsPartM.maximumM[0] > config.hubRadiusM,
+  "rotor selection bounds did not include its canonical blade bodies",
+);
 assert.ok(
   geometry.aerodynamicSurfaces[0].areaM2 < Math.PI * config.radiusM ** 2,
   "rotor disk leaked into ordinary box drag",

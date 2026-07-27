@@ -35,7 +35,7 @@ function guideAssembly() {
       {
         id: 3,
         type: "beam",
-        pos: [0, 0, 0.5],
+        pos: [1.2, 0, 0.5],
         orientation: [0, 0, 0, 1],
         config: { linearDamping: 0, angularDamping: 0 },
       },
@@ -112,7 +112,7 @@ function actuatorAssembly({ powered = true } = {}) {
       {
         id: 1,
         type: "plate",
-        pos: [0, 0, 0],
+        pos: [0, 0, -0.55],
         orientation: [0, 0, 0, 1],
         config: { linearDamping: 0, angularDamping: 0 },
       },
@@ -126,14 +126,14 @@ function actuatorAssembly({ powered = true } = {}) {
       {
         id: 3,
         type: "plate",
-        pos: [0, 0, 1.1],
+        pos: [0, 0, 0.55],
         orientation: [0, 0, 0, 1],
         config: { linearDamping: 0, angularDamping: 0 },
       },
       {
         id: 4,
         type: "battery",
-        pos: [0.5, 0, 0],
+        pos: [0.5, 0.5, -0.55],
         orientation: [0, 0, 0, 1],
         storedEnergyWh: 100,
         config: {

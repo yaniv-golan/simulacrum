@@ -12,7 +12,7 @@ const withoutPresentation = (state) => {
 };
 
 const alternativeAsset = structuredClone(builtInDemo("cart").blueprint);
-alternativeAsset.parts[0].pos[0] += 2;
+for (const part of alternativeAsset.parts) part.pos[0] += 2;
 const alternativePackage = await createSharePackage({
   kind: "blueprint",
   asset: alternativeAsset,

@@ -40,7 +40,7 @@ const expectedBuiltInTopology = {
     cart: {
       constraints: {
         damper: 4,
-        fixed: 16,
+        fixed: 14,
         "linear-guide": 4,
         revolute: 6,
         spring: 4,
@@ -172,13 +172,13 @@ const connectorAssembly = {
         id: 2,
         type: "hinge",
         pos: [0, 1, 0],
-        orientation: [0, 0, 0, 1],
+        orientation: [0, Math.SQRT1_2, 0, Math.SQRT1_2],
         mechanism: mechanism("hinge"),
       },
       {
         id: 3,
         type: "beam",
-        pos: [1, 1, 0],
+        pos: [1.2, 1, 0],
         orientation: [0, 0, 0, 1],
         config: {},
       },
@@ -193,7 +193,7 @@ const connectorAssembly = {
         id: 5,
         type: "spring",
         pos: [0, 3, 0],
-        orientation: [0, 0, 0, 1],
+        orientation: [0, Math.SQRT1_2, 0, Math.SQRT1_2],
         mechanism: mechanism("spring", (definition) => {
           definition.config.referenceLaw.freeLengthM = 2;
           definition.config.elasticLaw.stiffnessNPerM = 240;
@@ -203,7 +203,7 @@ const connectorAssembly = {
       {
         id: 6,
         type: "beam",
-        pos: [1, 3, 0],
+        pos: [2.2, 3, 0],
         orientation: [0, 0, 0, 1],
         config: {},
       },
@@ -216,7 +216,7 @@ const connectorAssembly = {
         kind: "mechanical",
         portA: "TOP",
         portB: "BASE",
-        anchorA: [0, 0, 0],
+        anchorA: [1, 0, 0],
         capacity: TEST_CAPACITY,
       },
       {
@@ -235,6 +235,7 @@ const connectorAssembly = {
         kind: "mechanical",
         portA: "TOP",
         portB: "END_A",
+        anchorA: [0, 0, 0],
         capacity: TEST_CAPACITY,
       },
       {
@@ -297,13 +298,13 @@ const compiledSpring = compiledConnectors.constraints.find(
 );
 assert.deepEqual(
   compiledSpring.anchorA,
-  [-2.2, 3, 0],
-  "spring endpoint A did not use the neighbor's authored attachment frame",
+  [-1, 3, 0],
+  "spring endpoint A did not use the explicit structural attachment frame",
 );
 assert.deepEqual(
   compiledSpring.anchorB,
-  [-0.19999999999999996, 3, 0],
-  "spring endpoint B did not use the neighbor's authored attachment frame",
+  [1.0000000000000002, 3, 0],
+  "spring endpoint B did not use the neighbor's canonical port frame",
 );
 
 const damperAssembly = {
@@ -319,14 +320,14 @@ const damperAssembly = {
       {
         id: 2,
         type: "damper",
-        pos: [2, 0, 0],
-        orientation: [0, 0, 0, 1],
+        pos: [-0.7, 0, 0],
+        orientation: [0, Math.SQRT1_2, 0, Math.SQRT1_2],
         mechanism: mechanism("damper"),
       },
       {
         id: 3,
         type: "plate",
-        pos: [4, 0, 0],
+        pos: [1, 0, 0],
         orientation: [0, 0, 0, 1],
         config: {},
       },
@@ -339,6 +340,7 @@ const damperAssembly = {
         kind: "mechanical",
         portA: "TOP",
         portB: "END_A",
+        anchorA: [-1.2, 0, 0],
         capacity: TEST_CAPACITY,
       },
       {
@@ -348,6 +350,7 @@ const damperAssembly = {
         kind: "mechanical",
         portA: "END_B",
         portB: "TOP",
+        anchorB: [-1.2, 0, 0],
         capacity: TEST_CAPACITY,
       },
     ],
@@ -490,21 +493,21 @@ const axleDrivetrain = compileAssembly(
       {
         id: 31,
         type: "motor",
-        pos: [0, 1, 0],
+        pos: [0, 1, -1.92],
         orientation: [0, 0, 0, 1],
         config: {},
       },
       {
         id: 32,
         type: "axle",
-        pos: [1, 1, 0],
+        pos: [0, 1, 0],
         orientation: [0, 0, 0, 1],
         mechanism: mechanism("axle"),
       },
       {
         id: 33,
         type: "wheel",
-        pos: [2, 1, 0],
+        pos: [0, 1, 1],
         orientation: [0, 0, 0, 1],
         mechanism: mechanism("wheel"),
       },
@@ -775,7 +778,7 @@ const servoAssembly = {
         id: 202,
         type: "hinge",
         pos: [0, 2, 0],
-        orientation: [0, 0, 0, 1],
+        orientation: [0, Math.SQRT1_2, 0, Math.SQRT1_2],
         mechanism: mechanism("hinge", (definition) => {
           const lower = (-70 * Math.PI) / 180,
             upper = (70 * Math.PI) / 180;
@@ -795,7 +798,7 @@ const servoAssembly = {
       {
         id: 204,
         type: "battery",
-        pos: [-1.2, 2.7, 0],
+        pos: [-0.6, 2.5, 0],
         orientation: [0, 0, 0, 1],
         storedEnergyWh: 100,
         config: { capacityWh: 100, dischargeEfficiency: 1 },
@@ -809,7 +812,7 @@ const servoAssembly = {
         kind: "mechanical",
         portA: "TOP",
         portB: "BASE",
-        anchorA: [0, 0, 0],
+        anchorA: [1.2, 0, 0],
         capacity: TEST_CAPACITY,
       },
       {

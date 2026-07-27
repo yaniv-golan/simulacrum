@@ -20,6 +20,7 @@ const CATALOG_CONTRACT_KEYS = new Set([
   "materialStore",
   "sensorContract",
   "pneumatic",
+  "geometryContract",
 ]);
 
 const CURRENT_CATALOG = deepFreeze(structuredClone(TYPES));

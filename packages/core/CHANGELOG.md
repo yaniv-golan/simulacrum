@@ -7,6 +7,14 @@
   tire-pressure sensing, telemetry, dynamic gas mass, and exact checkpoint v2
   state while preserving the explicit fixed-compliance tire law. Checkpoint v1
   is rejected because it cannot contain the required `pneumatic-gas` owner.
+- Replaces the public component geometry descriptor with strict
+  `GeometryDescriptorV2`: one model-owned projection now supplies collision and
+  physical-body primitives, canonical port frames, anchored physical features,
+  class-specific deformation/runtime contracts, provenance, and separately
+  named bounds. Alternate catalogs must register the same complete contract;
+  missing geometry and invalid connection frames fail closed. This intentional
+  API cutover and the corresponding authored-asset migration are queued for
+  Core `0.2.0`; no portable wire schema changes.
 - Adds strict authored-assembly projection and fingerprint contracts plus
   immutable direct component-relationship and authored-preflight inspection
   APIs. These additive APIs are queued for the next minor `0.x` release; the

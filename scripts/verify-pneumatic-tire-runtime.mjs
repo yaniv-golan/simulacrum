@@ -787,7 +787,7 @@ assert.ok(
   wheelWithGas.massKg > wheelBody.massProperties.massKg,
   "contained gas did not contribute wheel mass",
 );
-assert.equal(Object.hasOwn(wheelWithGas, "volumeM3"), false);
+assert.equal(wheelWithGas.volumeM3, wheelBody.massProperties.volumeM3);
 assert.doesNotThrow(() => stableStringify(wheelWithGas));
 assert.ok(
   wheelWithGas.inertiaTensorAtComPartKgM2.zz >

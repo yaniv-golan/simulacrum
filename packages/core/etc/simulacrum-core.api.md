@@ -386,6 +386,18 @@ export const BLUEPRINT_FORMAT: "simulacrum-blueprint";
 // @public (undocumented)
 export const BLUEPRINT_VERSION: 1;
 
+// @public (undocumented)
+export type BodyPrimitiveV1 = {
+    id: string;
+    framePart: GeometryFrameV2;
+    geometry: PrimitiveGeometryV1;
+    semanticKey: string;
+    materialKey: string;
+    contactRole: string;
+    approximationOf: string | null;
+    semanticRegions: unknown[];
+};
+
 // @public
 export class BodyRegistry {
     constructor(snapshot: {}, catalog: any);
@@ -447,6 +459,12 @@ export class BodyRegistry {
     // (undocumented)
     updateKinematics(id: any, options?: {}, dt?: number): any;
 }
+
+// @public (undocumented)
+export function boundsCenter(bounds: any): number[];
+
+// @public (undocumented)
+export function boundsDimensions(bounds: any): number[];
 
 // @public (undocumented)
 export const CANNON_SOLVER_TRANSACTION_ID: "simulacrum-owned-cannon-solver-transaction-v2-motor-energy";
@@ -1029,6 +1047,9 @@ export const CHECKPOINT_STATE_OWNER_VERSIONS: Readonly<{
 export function clampActuatorCommand(part: any, channel: string, value: unknown, catalog?: Record<string, any>): any;
 
 // @public (undocumented)
+export type CollisionPrimitiveV1 = BodyPrimitiveV1;
+
+// @public (undocumented)
 export class CommandBus {
     // (undocumented)
     clearTick(): void;
@@ -1460,6 +1481,9 @@ export function completeConnectionContract(connection: any, left: any, right: an
     catalog?: Record<string, any>;
 }): any;
 
+// @public
+export const COMPONENT_GEOMETRY_SCHEMA_VERSION: 2;
+
 // @public (undocumented)
 export const COMPONENT_INSPECTION_FINGERPRINT_VERSION: 1;
 
@@ -1479,6 +1503,57 @@ export class ComponentActuatorSystem {
 
 // @public (undocumented)
 export function componentDefaults(type: any, catalog?: any): any;
+
+// @public (undocumented)
+export type ComponentGeometryCatalog = Record<string, ComponentGeometryCatalogEntry>;
+
+// @public (undocumented)
+export type ComponentGeometryCatalogEntry = Record<string, unknown> & {
+    geometryContract: ComponentGeometryDefinitionV2;
+    ports: ComponentGeometryPortDefinition[];
+    mass?: number;
+    size?: number[];
+    mechanism?: unknown;
+    flexibleLine?: unknown;
+};
+
+// @public (undocumented)
+export type ComponentGeometryDefinitionV2 = Record<string, unknown> & {
+    schemaVersion: number;
+    kind: "primitive-component-geometry-v1" | "mechanism-component-geometry-v1" | "flexible-line-component-geometry-v1" | "radial-rotor-component-geometry-v1";
+    geometryClass: GeometryClassV1;
+    dimensionalScalingPolicy: "fixed-authored-size-v1" | "uniform-similarity-v1" | "axis-aligned-affine-v1";
+    portFrames: Record<string, unknown>;
+    collisionPrimitives: unknown[] | Record<string, unknown>;
+    bodyPrimitives: unknown[] | Record<string, unknown>;
+    physicalFeatures: unknown[];
+    deformationContract: MechanismDeformationContractV1 | null;
+};
+
+// @public (undocumented)
+export type ComponentGeometryPartInput = {
+    type: string;
+    id?: string | number;
+    pos?: number[];
+    orientation?: number[];
+    scale?: number[] | {
+        x: number;
+        y: number;
+        z: number;
+    };
+    config?: Record<string, unknown>;
+    mechanism?: unknown;
+    mass?: number;
+};
+
+// @public (undocumented)
+export type ComponentGeometryPortDefinition = {
+    id: string;
+    kind: string;
+    behavior: string;
+    direction: string;
+    multiplicity: string;
+};
 
 // @public
 export function componentInspectionAssemblyFingerprintBytes(input: any): Uint8Array<ArrayBuffer>;
@@ -1517,6 +1592,12 @@ export const CONNECTION_CAPACITIES: Readonly<{
         ultimateForceN: 48000;
         ultimateTorqueNm: 14000;
     }>;
+}>;
+
+// @public (undocumented)
+export const CONNECTION_FRAME_TOLERANCES_V1: Readonly<{
+    positionM: 0.000001;
+    axisDot: 1e-8;
 }>;
 
 // @public
@@ -1927,6 +2008,9 @@ export function defaultActionBinding(action: any, control: any): Readonly<{
 }>;
 
 // @public
+export function deformedBodyBoundsPartM(descriptor: GeometryDescriptorV2, valuesByTelemetryField: Record<string, number>): GeometryBoundsV1 | null;
+
+// @public
 export function deriveDynamicMassProperties(bodyDescriptor: any, input: {
     structuralMassKg: any;
     materialStore?: any;
@@ -1935,7 +2019,7 @@ export function deriveDynamicMassProperties(bodyDescriptor: any, input: {
 }): any;
 
 // @public (undocumented)
-export function displacedVolumeForPart(part: any, catalog: any): any;
+export function displacedVolumeForPart(part: any, catalog: any): number;
 
 // @public (undocumented)
 export function distributeSelection(parts: any, axis: any): Map<any, any>;
@@ -2089,6 +2173,9 @@ export class FailureRecorder {
     // (undocumented)
     reset(): void;
 }
+
+// @public (undocumented)
+export const FEATURE_AXIAL_ORIGINS: readonly string[];
 
 // @public
 export function fingerprintAsset(kind: any, asset: any): Promise<string>;
@@ -2261,6 +2348,24 @@ export class FlexibleLineTelemetrySystem {
     // (undocumented)
     step(context: any): void;
 }
+
+// @public
+export function flexibleRuntimeBoundsWorldM(centerline: Array<{
+    x: number;
+    y: number;
+    z: number;
+}>, radiusM: number): GeometryBoundsV1;
+
+// @public (undocumented)
+export type FlexibleRuntimeGeometryContractV1 = {
+    kind: "flexible-line-runtime-geometry-v1";
+    endpointPortIds: string[];
+    diameterM: number;
+    maximumSegmentCount: number;
+    materialKey: string;
+    styleKey: "rope-v1";
+    telemetryProjection: "completed-centerline-v1";
+};
 
 // @public (undocumented)
 export namespace FLIGHT_MATERIALS {
@@ -2508,11 +2613,125 @@ export function gasAbsolutePressurePa(state: any, volumeM3: any): number;
 // @public (undocumented)
 export function gasTemperatureK(state: any): number;
 
-// @public
-export function geometryDescriptorForPart(part: any, catalog?: any): any;
+// @public (undocumented)
+export const GEOMETRY_CLASSES: readonly string[];
 
 // @public (undocumented)
-export function geometryDescriptorForType(type: string, catalog?: any): any;
+export const GEOMETRY_PRIMITIVE_KINDS: readonly string[];
+
+// @public (undocumented)
+export type GeometryAerodynamicSurfaceV1 = {
+    areaM2: number;
+    dragCoefficient: number;
+    liftSlope: number;
+};
+
+// @public (undocumented)
+export type GeometryAerothermalMaterialV1 = {
+    heatLimit: number;
+    specificHeat: number;
+    emissivity: number;
+    cd: number;
+    ablative?: boolean;
+    pyrolysisTemperatureK?: number;
+    heatOfAblationJkg?: number;
+};
+
+// @public (undocumented)
+export type GeometryAerothermalV1 = {
+    material: GeometryAerothermalMaterialV1;
+    noseRadiusM: number;
+};
+
+// @public (undocumented)
+export type GeometryAllowedRangeV1 = {
+    minimum: number;
+    maximum: number;
+};
+
+// @public (undocumented)
+export type GeometryApproximationV1 = {
+    id: string;
+    approximationOf: string;
+};
+
+// @public (undocumented)
+export type GeometryBoundsV1 = {
+    minimumM: number[];
+    maximumM: number[];
+};
+
+// @public (undocumented)
+export type GeometryClassV1 = "rigid-static-v1" | "mechanism-deformed-v1" | "runtime-flexible-v1";
+
+// @public
+export function geometryDescriptorForPart(part: ComponentGeometryPartInput, catalog?: ComponentGeometryCatalog): GeometryDescriptorV2;
+
+// @public
+export function geometryDescriptorForType(type: string, catalog?: ComponentGeometryCatalog): GeometryDescriptorV2;
+
+// @public (undocumented)
+export type GeometryDescriptorV2 = {
+    schemaVersion: 2;
+    type: string;
+    geometryClass: GeometryClassV1;
+    collisionPrimitives: CollisionPrimitiveV1[];
+    bodyPrimitives: BodyPrimitiveV1[];
+    portClasses: Record<string, PortSpatialClassV1>;
+    portFrames: Record<string, PortFrameV2>;
+    physicalFeatures: PhysicalFeatureV1[];
+    deformationContract: MechanismDeformationContractV1 | null;
+    runtimeGeometryContract: FlexibleRuntimeGeometryContractV1 | null;
+    collisionBoundsPartM: GeometryBoundsV1 | null;
+    bodyBoundsPartM: GeometryBoundsV1 | null;
+    featureBoundsPartM: GeometryBoundsV1 | null;
+    selectionBoundsPartM: GeometryBoundsV1 | null;
+    overallPhysicalBoundsPartM: GeometryBoundsV1 | null;
+    massKg: number;
+    massProperties: GeometryMassPropertiesV1;
+    displacementM3: number;
+    aerodynamicSurfaces: GeometryAerodynamicSurfaceV1[];
+    aerothermal: GeometryAerothermalV1;
+    provenance: GeometryProvenanceV2;
+};
+
+// @public (undocumented)
+export type GeometryFrameV2 = {
+    positionM: number[];
+    orientation: number[];
+};
+
+// @public (undocumented)
+export type GeometryMassPropertiesV1 = {
+    sourceKind: string;
+    massEvaluationPolicy: string;
+    massKg: number;
+    volumeM3: number;
+    comPositionPartM: number[];
+    inertiaTensorAtComPartKgM2: InertiaTensorV1;
+    contributingSolidIds: string[];
+    principalMomentsKgM2: number[];
+    principalAxesPart: number[][];
+    decompositionPolicy: string;
+};
+
+// @public (undocumented)
+export type GeometryProjectionSourceV1 = {
+    projection: "collision" | "body" | "feature";
+    id: string;
+    definitionPath: string;
+};
+
+// @public (undocumented)
+export type GeometryProvenanceV2 = {
+    kind: "component-geometry-definition-v2";
+    definitionKind: string;
+    definitionVersion: number;
+    definitionDigest: string;
+    topologyDigest: string | null;
+    sources: GeometryProjectionSourceV1[];
+    approximations: GeometryApproximationV1[];
+};
 
 // @public
 export class HistoryStore {
@@ -2548,8 +2767,24 @@ export class HistoryStore {
     undoStack: any[];
 }
 
+// @public (undocumented)
+export const IDENTITY_FRAME: Readonly<{
+    positionM: readonly number[];
+    orientation: readonly number[];
+}>;
+
 // @public
 export function immutableClone(value: any): any;
+
+// @public (undocumented)
+export type InertiaTensorV1 = {
+    xx: number;
+    yy: number;
+    zz: number;
+    xy: number;
+    xz: number;
+    yz: number;
+};
 
 // @public (undocumented)
 export function inferConnectionKind(partA: any, partB: any, selectedPort?: any): any;
@@ -2683,7 +2918,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2700,7 +2934,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2717,7 +2950,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2735,7 +2967,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2754,7 +2985,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2773,7 +3003,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2789,7 +3018,6 @@ export function materialStoreContract(part: any, catalog?: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2805,7 +3033,6 @@ export function materialStoreContract(part: any, catalog?: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2824,7 +3051,6 @@ export function materialStoreContract(part: any, catalog?: {
         teeth: number;
         radius: number;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2843,7 +3069,6 @@ export function materialStoreContract(part: any, catalog?: {
         teeth: number;
         radius: number;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2861,7 +3086,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2898,7 +3122,6 @@ export function materialStoreContract(part: any, catalog?: {
         ratedRpm: number;
         maximumRpm: number;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2919,7 +3142,6 @@ export function materialStoreContract(part: any, catalog?: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2943,7 +3165,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2959,7 +3180,6 @@ export function materialStoreContract(part: any, catalog?: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -2975,7 +3195,6 @@ export function materialStoreContract(part: any, catalog?: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3005,7 +3224,6 @@ export function materialStoreContract(part: any, catalog?: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3021,7 +3239,6 @@ export function materialStoreContract(part: any, catalog?: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3043,7 +3260,6 @@ export function materialStoreContract(part: any, catalog?: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3059,7 +3275,6 @@ export function materialStoreContract(part: any, catalog?: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3081,7 +3296,6 @@ export function materialStoreContract(part: any, catalog?: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3109,7 +3323,6 @@ export function materialStoreContract(part: any, catalog?: {
         maximumMotorTemperatureK: number;
         pressureRatioFlowMap: number[][];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3154,7 +3367,6 @@ export function materialStoreContract(part: any, catalog?: {
         maximumAbsolutePressurePa: number;
         burstAbsolutePressurePa: number;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3193,7 +3405,6 @@ export function materialStoreContract(part: any, catalog?: {
         leakageAreaM2: number;
         failPosition: number;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3229,7 +3440,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3255,7 +3465,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3282,7 +3491,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3307,7 +3515,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3340,7 +3547,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3359,7 +3565,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3385,7 +3590,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3403,7 +3607,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3421,7 +3624,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3439,7 +3641,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3467,7 +3668,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3485,7 +3685,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3513,7 +3712,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3540,7 +3738,6 @@ export function materialStoreContract(part: any, catalog?: {
         capacityKg: number;
         initialUsableMassKg: number;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3573,7 +3770,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3590,7 +3786,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3623,7 +3818,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3665,7 +3859,6 @@ export function materialStoreContract(part: any, catalog?: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -3714,6 +3907,22 @@ export function measureEnvironmentProximity(input: {
     rangeResolutionM: any;
     environmentBodies: any;
 }): any;
+
+// @public (undocumented)
+export type MechanismDeformationContractV1 = {
+    kind: "mechanism-deformation-v1";
+    coordinates: MechanismDeformationCoordinateV1[];
+};
+
+// @public (undocumented)
+export type MechanismDeformationCoordinateV1 = {
+    id: string;
+    telemetryField: string;
+    projection: "anchor-local-z-scale-v1";
+    primitiveIds: string[];
+    referenceValue: number;
+    allowedRange: GeometryAllowedRangeV1;
+};
 
 // @public
 export class MechanismSystem {
@@ -4336,6 +4545,8 @@ export class MultibodyRuntime {
     // (undocumented)
     forEachTireMechanicalState(visitor: any): void;
     // (undocumented)
+    geometryByPart: Map<any, any>;
+    // (undocumented)
     groundBody: any;
     // (undocumented)
     hasArticulation(): boolean;
@@ -4352,7 +4563,7 @@ export class MultibodyRuntime {
     // (undocumented)
     materialForPart: any;
     // (undocumented)
-    mobilityTelemetryFor(component: any, context?: any, dt?: number): {
+    mobilityTelemetryFor(component: any, context?: any, _dt?: number): {
         active: boolean;
         poseMode: string;
         pose: {
@@ -4461,7 +4672,6 @@ export class MultibodyRuntime {
             supportMaterialLaws: any;
             manifoldPointCount: any;
             angularSpeed: any;
-            spinDelta: number;
             groundY: any;
             inPond: boolean;
             onPlatform: boolean;
@@ -4643,7 +4853,8 @@ export class MultibodyRuntime {
             angularSpeed: any;
             jointAngle?: undefined;
             reactionTorque?: undefined;
-            axialScale?: undefined;
+            deformationOutOfRange?: undefined;
+            deformedBodyBoundsWorldM?: undefined;
         } | {
             id: any;
             position: {
@@ -4665,16 +4876,24 @@ export class MultibodyRuntime {
             contactForceN?: undefined;
             phase?: undefined;
             angularSpeed?: undefined;
-            axialScale?: undefined;
+            deformationOutOfRange?: undefined;
+            deformedBodyBoundsWorldM?: undefined;
         } | {
+            [x: number]: number;
             id: any;
             position: {
                 x: any;
                 y: any;
                 z: any;
             };
-            axialScale: number;
-            quaternion?: undefined;
+            quaternion: {
+                x: any;
+                y: any;
+                z: any;
+                w: any;
+            };
+            deformationOutOfRange: boolean;
+            deformedBodyBoundsWorldM: GeometryBoundsV1;
             velocity?: undefined;
             angularVelocity?: undefined;
             contact?: undefined;
@@ -4772,6 +4991,9 @@ export function normalizeVisualProgram(input: any): {
 // @public (undocumented)
 export function parseSharedText(value: any): Promise<any>;
 
+// @public (undocumented)
+export const PHYSICAL_FEATURE_ROLES: readonly string[];
+
 // @public
 export class PhysicalAssemblyIndex {
     constructor(compiledAssembly: any);
@@ -4827,6 +5049,37 @@ export function physicalComponents(telemetry: any): {
     detachedPartIds: any[];
     worstFatigue: number;
 }[];
+
+// @public (undocumented)
+export type PhysicalFeatureAnchorV1 = {
+    kind: "port-frame-v1";
+    portId: string;
+    offsetM: number[];
+};
+
+// @public (undocumented)
+export type PhysicalFeatureDimensionsV1 = {
+    radiusM: number;
+    lengthM: number;
+} | {
+    radiusXM: number;
+    radiusYM: number;
+    lengthM: number;
+};
+
+// @public (undocumented)
+export function physicalFeaturePrimitivesForDescriptor(descriptor: any): any;
+
+// @public (undocumented)
+export type PhysicalFeatureV1 = {
+    id: string;
+    primitive: "cylinder-v1" | "elliptic-cylinder-v1";
+    anchor: PhysicalFeatureAnchorV1;
+    dimensions: PhysicalFeatureDimensionsV1;
+    axialOrigin: "center-v1" | "start-v1" | "end-v1";
+    role: "physical-interface";
+    materialKey: string;
+};
 
 // @public
 export class PhysicalFlightTelemetrySystem {
@@ -5062,10 +5315,23 @@ export class PneumaticSystem {
 }
 
 // @public (undocumented)
+export const PORT_SPATIAL_CLASSES: readonly string[];
+
+// @public (undocumented)
 export function portableShareCopy(value: any): any;
 
 // @public (undocumented)
+export function portAxisPart(portFrame: any): number[];
+
+// @public (undocumented)
 export function portDefinition(part: any, port: any, catalog?: Record<string, any>): any;
+
+// @public (undocumented)
+export type PortFrameV2 = {
+    framePart: GeometryFrameV2;
+    clearanceM: number;
+    anchorPolicy: "fixed-point-v1" | "surface-point-v1";
+};
 
 // @public (undocumented)
 export function portIds(component: any, catalog?: Record<string, any>): any;
@@ -5075,6 +5341,18 @@ export function portPresentation(part: any, port: any, catalog?: Record<string, 
 
 // @public (undocumented)
 export function portsCompatible(sourcePart: any, sourcePort: any, targetPart: any, targetPort: any, catalog?: Record<string, any>): boolean;
+
+// @public (undocumented)
+export type PortSpatialClassV1 = "spatial-mechanical" | "resource-attachment" | "flexible-line-attachment" | "network-only";
+
+// @public
+export function posePartForPortMatch(input: {
+    movingPart: any;
+    movingPortId: any;
+    targetPart: any;
+    targetPortId: any;
+    catalog?: ComponentGeometryCatalog;
+}): any;
 
 // @public (undocumented)
 export function powerContract(part: any, catalog?: Record<string, any>): Readonly<{
@@ -5208,6 +5486,44 @@ export class PressureNozzleForceSystem {
 export function pressureNozzlePerformance(contract: any, deliveredMassFlowKgS: any, ambientPressurePa: any): any;
 
 // @public (undocumented)
+export function primaryGeometryAxisPart(descriptor: any): number[];
+
+// @public (undocumented)
+export type PrimitiveGeometryV1 = {
+    kind: "box-v1";
+    fullSizeM: number[];
+} | {
+    kind: "cylinder-v1";
+    radiusM: number;
+    axialLengthM: number;
+} | {
+    kind: "elliptic-cylinder-v1";
+    radiusXM: number;
+    radiusYM: number;
+    axialLengthM: number;
+} | {
+    kind: "sphere-v1";
+    radiusM: number;
+} | {
+    kind: "capsule-v1";
+    radiusM: number;
+    cylinderLengthM: number;
+} | {
+    kind: "cone-v1";
+    startRadiusM: number;
+    endRadiusM: number;
+    axialLengthM: number;
+} | {
+    kind: "rounded-wheel-v1";
+    radiusM: number;
+    widthM: number;
+    shoulderRadiusM: number;
+};
+
+// @public
+export function projectBoundsToWorld(bounds: GeometryBoundsV1 | null, positionWorldM: number[], orientationWorld: number[]): GeometryBoundsV1 | null;
+
+// @public (undocumented)
 export function projectedBoxArea(size: any, direction: any): number;
 
 // @public
@@ -5314,6 +5630,12 @@ export class ReplayBuffer {
 
 // @public (undocumented)
 export function resolveComponentConfig(partOrType: any, overrides: any, catalog?: any): any;
+
+// @public
+export function resolveComponentGeometryContract(part: ComponentGeometryPartInput, catalog?: ComponentGeometryCatalog): GeometryDescriptorV2;
+
+// @public (undocumented)
+export function resolveComponentGeometryContractForType(type: string, catalog?: ComponentGeometryCatalog): GeometryDescriptorV2;
 
 // @public
 export function resolveRemoteAction(profile: any, controls: any, action: any, pressed: any): Readonly<{
@@ -5949,7 +6271,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -5966,7 +6287,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -5983,7 +6303,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6001,7 +6320,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6020,7 +6338,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6039,7 +6356,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6055,7 +6371,6 @@ export const TYPES: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6071,7 +6386,6 @@ export const TYPES: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6090,7 +6404,6 @@ export const TYPES: {
         teeth: number;
         radius: number;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6109,7 +6422,6 @@ export const TYPES: {
         teeth: number;
         radius: number;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6127,7 +6439,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6164,7 +6475,6 @@ export const TYPES: {
         ratedRpm: number;
         maximumRpm: number;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6185,7 +6495,6 @@ export const TYPES: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6209,7 +6518,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6225,7 +6533,6 @@ export const TYPES: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6241,7 +6548,6 @@ export const TYPES: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6271,7 +6577,6 @@ export const TYPES: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6287,7 +6592,6 @@ export const TYPES: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6309,7 +6613,6 @@ export const TYPES: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6325,7 +6628,6 @@ export const TYPES: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6347,7 +6649,6 @@ export const TYPES: {
         color: number;
         desc: string;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6375,7 +6676,6 @@ export const TYPES: {
         maximumMotorTemperatureK: number;
         pressureRatioFlowMap: number[][];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6420,7 +6720,6 @@ export const TYPES: {
         maximumAbsolutePressurePa: number;
         burstAbsolutePressurePa: number;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6459,7 +6758,6 @@ export const TYPES: {
         leakageAreaM2: number;
         failPosition: number;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6495,7 +6793,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6521,7 +6818,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6548,7 +6844,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6573,7 +6868,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6606,7 +6900,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6625,7 +6918,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6651,7 +6943,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6669,7 +6960,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6687,7 +6977,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6705,7 +6994,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6733,7 +7021,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6751,7 +7038,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6779,7 +7065,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6806,7 +7091,6 @@ export const TYPES: {
         capacityKg: number;
         initialUsableMassKg: number;
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6839,7 +7123,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6856,7 +7139,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6889,7 +7171,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6931,7 +7212,6 @@ export const TYPES: {
         desc: string;
         size: number[];
         ports: Readonly<{
-            localFramePart?: any;
             id: any;
             kind: any;
             behavior: any;
@@ -6967,6 +7247,9 @@ export const TYPES: {
 };
 
 // @public (undocumented)
+export function validateComponentGeometryDefinitionOrThrow(value: unknown): ComponentGeometryDefinitionV2;
+
+// @public (undocumented)
 export function validateControlIR(input: any): any;
 
 // @public (undocumented)
@@ -6974,6 +7257,9 @@ export function validateControllerBindingManifest(input: any): readonly any[];
 
 // @public (undocumented)
 export function validateFlexibleLineConfig(config: any, path?: string[]): any;
+
+// @public (undocumented)
+export function validateGeometryDescriptorOrThrow(value: unknown): GeometryDescriptorV2;
 
 // @public (undocumented)
 export function validatePortConnection(sourcePart: any, sourcePort: any, targetPart: any, targetPort: any, connections?: any[], catalog?: Record<string, any>, candidate?: any): boolean;

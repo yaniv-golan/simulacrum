@@ -7,9 +7,9 @@ import { analyzeCapabilityDispatch } from "./lib/capability-dispatch-analyzer.mj
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const REVIEWED_CAPABILITY_DISPATCH_BASELINE = Object.freeze({
   commit:
-    "unreleased-pneumatics-component-selection-and-drone-mixer-2026-07-26",
-  sites: 248,
-  sha256: "8e99905ecfa5c27ca9e58ed20df4d67723fb41072eaa9423c27401e0f5b713bd",
+    "unreleased-pneumatics-canonical-geometry-and-rover-motor-settlement-2026-07-27",
+  sites: 255,
+  sha256: "f0a058b137bf42ca6c9aa2a52d908b2fa6a58045874eeaddf55da33386160336",
 });
 
 const POLICIES = Object.freeze([
@@ -72,7 +72,7 @@ const POLICIES = Object.freeze([
   },
   {
     pattern:
-      /^src\/model\/(?:component-contracts|component-preflight|sensor-contracts|visual-logic)\.js$/,
+      /^src\/model\/(?:component-contracts|component-geometry-contract|component-preflight|sensor-contracts|visual-logic)\.js$/,
     family: "declared-model-adapters",
     disposition: "KEEP",
     owner: "model/catalog-adapters",

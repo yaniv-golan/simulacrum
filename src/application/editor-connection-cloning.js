@@ -8,13 +8,9 @@ import { validatePortConnection } from "../model/ports.js";
 function transform(part) {
   return {
     ...part,
-    pos: part.mesh.position.toArray(),
-    orientation: [
-      part.mesh.quaternion.x,
-      part.mesh.quaternion.y,
-      part.mesh.quaternion.z,
-      part.mesh.quaternion.w,
-    ],
+    pos: [...part.pos],
+    orientation: [...part.orientation],
+    scale: { ...part.scale },
   };
 }
 

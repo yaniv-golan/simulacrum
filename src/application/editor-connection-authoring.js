@@ -6,13 +6,9 @@ import {
 function authoringTransform(part) {
   return {
     ...part,
-    pos: part.mesh.position.toArray(),
-    orientation: part.mesh.quaternion.toArray(),
-    rotation: [
-      part.mesh.rotation.x,
-      part.mesh.rotation.y,
-      part.mesh.rotation.z,
-    ],
+    pos: [...part.pos],
+    orientation: [...part.orientation],
+    scale: { ...part.scale },
   };
 }
 

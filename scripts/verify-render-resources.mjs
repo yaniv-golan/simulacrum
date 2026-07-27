@@ -70,14 +70,17 @@ assert.equal(
 );
 
 const beam = componentMesh("beam");
-assert.ok(
-  beam.children.length === 1,
-  `beam draw surface count regressed to ${beam.children.length}`,
-);
-const secondBeam = componentMesh("beam");
+const beamBody = beam.getObjectByProperty("name", "Canonical body body"),
+  secondBeam = componentMesh("beam"),
+  secondBeamBody = secondBeam.getObjectByProperty(
+    "name",
+    "Canonical body body",
+  );
+assert.ok(beamBody, "beam omitted its one canonical body primitive");
+assert.deepEqual(beam.userData.geometryProjection.bodyPrimitiveIds, ["body"]);
 assert.equal(
-  beam.children[0].geometry,
-  secondBeam.children[0].geometry,
+  beamBody.geometry,
+  secondBeamBody.geometry,
   "component primitives must reuse immutable geometry",
 );
 disposeObject3D(beam);

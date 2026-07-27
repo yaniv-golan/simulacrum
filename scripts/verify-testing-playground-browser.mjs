@@ -197,6 +197,10 @@ await click("#run-btn");
 await page.waitForFunction(
   () => JSON.parse(window.render_game_to_text()).running === false,
 );
+const effectsAfterRetryStop = await page.evaluate(
+  () =>
+    JSON.parse(window.render_game_to_text()).testingPlayground.contactEffects,
+);
 if (await page.locator(".failure-lab").isVisible())
   await click("#close-failure-lab");
 await click("#test-reserve-btn");
@@ -375,7 +379,7 @@ await conclude(browser, () => {
     effectsBeforeRetry.visibleMarks + effectsBeforeRetry.visibleParticles > 0,
     `physical drive/brake telemetry did not produce any bounded contact effects: ${JSON.stringify(mobilityAfterDrive)}`,
   );
-  assert.deepEqual(retried.testingPlayground.contactEffects, {
+  assert.deepEqual(effectsAfterRetryStop, {
     capacity: { marks: 192, particles: 96 },
     visibleMarks: 0,
     visibleParticles: 0,

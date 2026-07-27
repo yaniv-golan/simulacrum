@@ -1,7 +1,9 @@
 import { geometryDescriptorForPart } from "./geometry-descriptors.js";
+import { portAxisPart } from "./component-geometry-contract.js";
 import { portDefinition } from "./ports.js";
 import { componentPorts } from "./component-contracts.js";
 import { canonicalQuaternion, rotateVectorByQuaternion } from "./primitives.js";
+export { worldPortFrame } from "./connection-frame-invariants.js";
 
 export const PHYSICAL_CONNECTION_KINDS = new Set(["mechanical", "mesh"]);
 export const COORDINATE_CONSTRAINT_KINDS = new Set([
@@ -29,10 +31,9 @@ export function compiledPortDefinition(part, portId, catalog) {
 
 export function axisFor(part, catalog) {
   if (Array.isArray(part.config?.axis)) return compiledVector(part.config.axis);
-  return compiledVector(
-    geometryDescriptorForPart(part, catalog).renderDetailAnchors.axis,
-    [1, 0, 0],
-  );
+  const geometry = geometryDescriptorForPart(part, catalog),
+    firstFrame = Object.values(geometry.portFrames)[0];
+  return firstFrame ? portAxisPart(firstFrame) : [1, 0, 0];
 }
 
 export function isAxialForceElement(part) {
@@ -82,17 +83,21 @@ export function orientationFor(part) {
   });
 }
 
-export function worldPortFrame(part, descriptor, structuralAnchor = null) {
-  const localFrame = descriptor.localFramePart || {
-      positionM: [0, 0, 0],
-      orientation: [0, 0, 0, 1],
-    },
-    orientation = orientationFor(part),
+/**
+ * Projects an internal mechanism-coordinate frame into world space. This is
+ * deliberately separate from component port geometry: mechanism frames own a
+ * constraint coordinate, never an attachment location.
+ */
+export function worldMechanismFrame(part, framePart) {
+  const orientation = orientationFor(part),
     positionOffset = rotateVectorByQuaternion(
-      compiledVector(structuralAnchor || localFrame.positionM),
+      compiledVector(framePart.positionM),
       orientation,
     ),
-    localAxis = rotateVectorByQuaternion([0, 0, 1], localFrame.orientation);
+    localAxis = rotateVectorByQuaternion(
+      [0, 0, 1],
+      canonicalQuaternion(framePart.orientation),
+    );
   return {
     positionWorld: compiledVector(part.pos).map(
       (value, axis) => value + positionOffset[axis],

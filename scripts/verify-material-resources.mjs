@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import {
   AssemblyModel,
+  boundsDimensions,
   compileAssembly,
+  geometryDescriptorForPart,
   MaterialResourceNetwork,
   MaterialResourceSystem,
   RunAssemblyGraph,
@@ -459,7 +461,8 @@ assert.throws(
       ...tank,
       config: { ...tank.config, size: [1, 0, 1] },
     }),
-  /positive dimensions|exceed the authored storage solid/,
+  (error) => error.code === "INVALID_GEOMETRY_DIMENSION",
+  "material storage accepted a non-positive canonical body dimension",
 );
 assert.throws(
   () =>
@@ -473,17 +476,26 @@ assert.throws(
     }),
   /exceed the authored storage solid/,
 );
-const scaledStore = materialStoreContract(tank, TYPES, {
-  dimensions: [2, 3, 2],
-  portFrames: { OUTLET: { position: [0, -1.5, 0] } },
-});
+const syntheticGeometry = (dimensions, outletPosition) => ({
+    bodyBoundsPartM: {
+      minimumM: dimensions.map((value) => -value / 2),
+      maximumM: dimensions.map((value) => value / 2),
+    },
+    portFrames: {
+      OUTLET: { framePart: { positionM: outletPosition } },
+    },
+  }),
+  scaledStore = materialStoreContract(
+    tank,
+    TYPES,
+    syntheticGeometry([2, 3, 2], [0, -1.5, 0]),
+  );
 assert.deepEqual(scaledStore.storageSolid.fullSizeM, [1.64, 2.7, 1.64]);
 for (const position of [null, [0, -1], [0.1, -1.5, 0]])
   assert.throws(
     () =>
       materialStoreContract(tank, TYPES, {
-        dimensions: [2, 3, 2],
-        portFrames: { OUTLET: { position } },
+        ...syntheticGeometry([2, 3, 2], position),
       }),
     (error) =>
       [
@@ -495,10 +507,11 @@ const inwardOutlet = [...scaledStore.storageSolid.outletAnchorPartM];
 inwardOutlet[1] += 0.1;
 assert.throws(
   () =>
-    materialStoreContract(tank, TYPES, {
-      dimensions: [2, 3, 2],
-      portFrames: { OUTLET: { position: inwardOutlet } },
-    }),
+    materialStoreContract(
+      tank,
+      TYPES,
+      syntheticGeometry([2, 3, 2], inwardOutlet),
+    ),
   (error) => error?.code === "MISALIGNED_MATERIAL_STORE_OUTLET",
 );
 const normalizedAxisCatalog = structuredClone(TYPES);
@@ -514,12 +527,15 @@ assert.equal(
   }).initialUsableMassKg,
   0,
 );
-const exactVolumeCapacityKg =
-  1.2 *
-  0.82 *
-  (2.4 * 0.9) *
-  (1.2 * 0.82) *
-  materialMedium("hydrogen-peroxide-90-v1").densityKgM3;
+const tankBodyDimensions = boundsDimensions(
+    geometryDescriptorForPart(tank).bodyBoundsPartM,
+  ),
+  exactVolumeCapacityKg =
+    tankBodyDimensions[0] *
+    0.82 *
+    (tankBodyDimensions[1] * 0.9) *
+    (tankBodyDimensions[2] * 0.82) *
+    materialMedium("hydrogen-peroxide-90-v1").densityKgM3;
 assert.equal(
   materialStoreContract({
     ...tank,

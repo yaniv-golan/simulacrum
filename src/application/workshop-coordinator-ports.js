@@ -73,8 +73,11 @@ export function createWorkshopCoordinatorPorts({
         totalCount: 0,
         options: [],
       },
-    disconnectConnection: (connectionId) =>
-      editor()?.disconnectConnection(connectionId) || false,
+    editorMutations: Object.freeze({
+      disconnectConnection: (connectionId) =>
+        editor()?.disconnectConnection(connectionId) || false,
+      rebuildGeometry: (part) => editor()?.rebuildGeometry(part) || false,
+    }),
     traceComponentRoute,
     async traceConfiguredControlChain({
       controllerPartId,

@@ -7,6 +7,7 @@ import {
   ReplayBuffer,
 } from "../src/model/failure-analysis.js";
 import { componentDefaults } from "../src/model/component-resolver.js";
+import { flexibleRuntimeBoundsWorldM } from "../src/model/component-geometry-contract.js";
 import {
   completeConnectionContract,
   CONNECTION_CAPACITIES,
@@ -26,11 +27,17 @@ import { RigidBodySystem } from "../src/simulation/systems/rigid-body-system.js"
 import { StructureSystem } from "../src/simulation/systems/structure-system.js";
 import { TelemetrySystem } from "../src/simulation/systems/telemetry-system.js";
 
-const part = (id, type, pos, config = componentDefaults(type)) => ({
+const part = (
   id,
   type,
   pos,
-  orientation: [0, 0, 0, 1],
+  config = componentDefaults(type),
+  orientation = [0, 0, 0, 1],
+) => ({
+  id,
+  type,
+  pos,
+  orientation,
   ...(TYPES[type]?.mechanism ? {} : { scale: [1, 1, 1] }),
   ...authoredComponentFields(type, TYPES[type]?.mechanism ? {} : config),
 });
@@ -66,6 +73,7 @@ function createRun({
   capacity = CONNECTION_CAPACITIES.reinforced,
   ropeConfig = componentDefaults("rope"),
   ropePosition = [0, -2, 0],
+  ropeOrientation = [0, 0, 0, 1],
   targetType = "plate",
   targetPort = "TOP",
   targetPosition = [0, 0, 0],
@@ -74,7 +82,7 @@ function createRun({
   const world = new CANNON.World({ gravity: new CANNON.Vec3(...gravity) }),
     worldAdapter = new CannonWorldAdapter(world),
     material = new CANNON.Material("generic-structure"),
-    rope = part(1, "rope", ropePosition, ropeConfig),
+    rope = part(1, "rope", ropePosition, ropeConfig, ropeOrientation),
     target = part(2, targetType, targetPosition),
     snapshot = {
       revision: 1,
@@ -135,7 +143,8 @@ function createRun({
 
 {
   const run = createRun({
-    ropePosition: [2, 0.65, 0],
+    ropePosition: [2.65, 0.65, 0],
+    ropeOrientation: [0, 0, Math.SQRT1_2, Math.SQRT1_2],
     targetType: "wheel",
     targetPort: "SURFACE",
     targetPosition: [0, 0.65, 0],
@@ -245,6 +254,14 @@ function createRun({
   assert.equal(telemetry.boundaries[1].state, "free");
   assert.ok(telemetry.maximumTensionN > 0, "hanging Rope carried no weight");
   assert.ok(telemetry.centerline.at(-1).y < telemetry.centerline[0].y);
+  assert.deepEqual(
+    telemetry.runtimeBoundsWorldM,
+    flexibleRuntimeBoundsWorldM(
+      telemetry.centerline,
+      componentDefaults("rope").diameterM / 2,
+    ),
+    "completed Rope telemetry did not own its exact solved bounds",
+  );
   assert.equal(run.session.context.bodyRegistry.bodiesForPart(1).length, 17);
   run.session.dispose();
   run.flexibleLineRuntime.dispose();
@@ -267,7 +284,11 @@ function createRun({
 }
 
 {
-  const run = createRun({ gravity: [0, 0, 0], anchorM: [0.5, 0, 0] }),
+  const run = createRun({
+      gravity: [0, 0, 0],
+      anchorM: [0.5, 0, 0],
+      ropePosition: [0.5, -2, 0],
+    }),
     endpoint = run.flexibleLineRuntime.bodyByEntityId.get("flex:1:node:0");
   run.anchorBody.angularVelocity.set(0, 0, 2);
   const before = endpoint.position.clone();

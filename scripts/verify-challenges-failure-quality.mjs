@@ -9,6 +9,7 @@ import {
   ReplayBuffer,
 } from "../src/model/failure-analysis.js";
 import { TYPES } from "../src/model/component-catalog.js";
+import { componentDefaults } from "../src/model/component-resolver.js";
 import { resolveReferenceInitialControls } from "../src/model/challenge-reference-controls.js";
 import {
   evaluateChallengeConstraints,
@@ -252,26 +253,34 @@ const gearMachine = {
       {
         id: 99,
         type: "plate",
+        pos: [4, 0, 0],
         orientation: [0, 0, 0, 1],
-        config: { mass: 1 },
+        scale: { x: 1, y: 1, z: 1 },
+        config: { ...componentDefaults("plate"), mass: 1 },
       },
       {
         id: 0,
         type: "motor",
+        pos: [0, 0, -0.92],
         orientation: [0, 0, 0, 1],
-        config: { mass: 3 },
+        scale: { x: 1, y: 1, z: 1 },
+        config: { ...componentDefaults("motor"), mass: 3 },
       },
       {
         id: 2,
         type: "gear24",
+        pos: [1.355, 0, 0],
         orientation: [0, 0, 0, 1],
-        config: { mass: 4 },
+        scale: { x: 1, y: 1, z: 1 },
+        config: { ...componentDefaults("gear24"), mass: 4 },
       },
       {
         id: 1,
         type: "gear12",
+        pos: [0, 0, 0],
         orientation: [0, 0, 0, 1],
-        config: { mass: 2 },
+        scale: { x: 1, y: 1, z: 1 },
+        config: { ...componentDefaults("gear12"), mass: 2 },
       },
     ],
     connections: [
@@ -567,13 +576,19 @@ assert.equal(result.progress, 0.5);
 assert.equal(result.status, "running");
 
 function currentPart(id, type) {
+  const originX = id >= 20 ? 10 : 0,
+    positions = {
+      motor: [originX, 1, -0.92],
+      gear12: [originX, 1, 0],
+      gear24: [originX + 1.355, 1, 0],
+    };
   return {
     id,
     type,
-    pos: [id / 10, 1, 0],
+    pos: positions[type],
     orientation: [0, 0, 0, 1],
-    scale: [1, 1, 1],
-    config: {},
+    scale: { x: 1, y: 1, z: 1 },
+    config: componentDefaults(type),
   };
 }
 

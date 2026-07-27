@@ -7,14 +7,40 @@ const port = (id, behavior, multiplicity = "one") => ({
   behavior,
   direction: "bidirectional",
   multiplicity,
-  localFramePart: { positionM: [0, 0, 0], orientation: [0, 0, 0, 1] },
 });
+
+const originFrame = {
+    position: { kind: "constant-v1", value: [0, 0, 0] },
+    orientation: [0, 0, 0, 1],
+  },
+  boxPrimitive = (id) => ({
+    id,
+    frame: originFrame,
+    geometry: {
+      kind: "box-v1",
+      fullSize: { kind: "config-vector-v1", field: "size" },
+    },
+    semanticKey: id,
+    materialKey: "test-anchor",
+    contactRole: "structure",
+    approximationOf: null,
+  });
 
 const catalog = {
   anchor: {
     mass: 10,
     size: [1, 1, 1],
     ports: [port("MOUNT", "structural-surface", "many")],
+    geometryContract: {
+      schemaVersion: 1,
+      kind: "primitive-component-geometry-v1",
+      geometryClass: "rigid-static-v1",
+      dimensionalScalingPolicy: "axis-aligned-affine-v1",
+      portFrames: { MOUNT: originFrame },
+      collisionPrimitives: [boxPrimitive("collision")],
+      bodyPrimitives: [boxPrimitive("body")],
+      physicalFeatures: [],
+    },
   },
   line: {
     ports: [
@@ -27,6 +53,25 @@ const catalog = {
       endpointPortB: "END_B",
       initialAxisPart: [0, -1, 0],
       maximumElementCount: 64,
+    },
+    geometryContract: {
+      schemaVersion: 1,
+      kind: "flexible-line-component-geometry-v1",
+      geometryClass: "runtime-flexible-v1",
+      dimensionalScalingPolicy: "fixed-authored-size-v1",
+      portFrames: {
+        END_A: {
+          position: { kind: "flexible-endpoint-v1", endpoint: "a" },
+          orientation: [0, 1, 0, 0],
+        },
+        END_B: {
+          position: { kind: "flexible-endpoint-v1", endpoint: "b" },
+          orientation: [0, 0, 0, 1],
+        },
+      },
+      collisionPrimitives: [],
+      bodyPrimitives: [],
+      physicalFeatures: [],
     },
   },
 };
@@ -42,11 +87,11 @@ const lineConfig = {
   materialKey: "test-rope",
 };
 
-const part = (id, type, pos, config = {}) => ({
+const part = (id, type, pos, config = {}, orientation = [0, 0, 0, 1]) => ({
   id,
   type,
   pos,
-  orientation: [0, 0, 0, 1],
+  orientation,
   scale: [1, 1, 1],
   config,
 });
@@ -117,7 +162,12 @@ const connection = (id, lineId, linePort, anchorId) => ({
 }
 
 {
-  const rope = part("line-1", "line", [3, 2, 0], lineConfig),
+  const rope = part("line-1", "line", [2, 2, 0], lineConfig, [
+      0,
+      0,
+      Math.SQRT1_2,
+      Math.SQRT1_2,
+    ]),
     support = part("support", "anchor", [0, 2, 0], {
       mass: 10,
       size: [1, 1, 1],
@@ -163,8 +213,8 @@ const connection = (id, lineId, linePort, anchorId) => ({
     }),
     first = connection("attach-a", rope.id, "END_A", support.id),
     second = connection("attach-b", rope.id, "END_B", support.id);
-  first.anchorB = [-1, 0, 0];
-  second.anchorB = [1, 0, 0];
+  first.anchorB = [0, 2, 0];
+  second.anchorB = [0, -2, 0];
   const compiled = compileAssembly(
     { parts: [rope, support], connections: [first, second] },
     catalog,
@@ -172,11 +222,11 @@ const connection = (id, lineId, linePort, anchorId) => ({
   assert.equal(compiled.diagnostics.length, 0);
   assert.deepEqual(
     compiled.flexibleLines[0].entities[0].positionWorldM,
-    [-1, 3, 0],
+    [0, 5, 0],
   );
   assert.deepEqual(
     compiled.flexibleLines[0].entities.at(-1).positionWorldM,
-    [1, 3, 0],
+    [0, 1, 0],
   );
 }
 

@@ -30,6 +30,8 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-mechanism-artifacts.mjs",
   "verify-mechanism-authored-components.mjs",
   "verify-mechanism-geometry-compiler.mjs",
+  "verify-component-geometry-contract.mjs",
+  "verify-component-geometry-cutover.mjs",
   "verify-geometry-covariance.mjs",
   "verify-elastic-elements.mjs",
   "verify-flexible-line-compiler.mjs",

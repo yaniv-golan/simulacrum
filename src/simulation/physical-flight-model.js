@@ -1,4 +1,5 @@
 import * as CANNON from "cannon-es";
+import { boundsDimensions } from "../model/component-geometry-contract.js";
 
 const stableId = (value) => `${typeof value}:${String(value)}`;
 const compareId = (left, right) =>
@@ -11,7 +12,7 @@ function addScaled(target, source, scale) {
 }
 
 function partRecord(part, descriptor, body) {
-  const dimensions = descriptor.geometry.dimensions,
+  const dimensions = boundsDimensions(descriptor.geometry.collisionBoundsPartM),
     capabilities = descriptor.capabilities;
   return Object.freeze({
     id: part.id,

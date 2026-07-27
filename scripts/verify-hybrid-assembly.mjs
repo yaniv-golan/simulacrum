@@ -4,6 +4,7 @@ import { componentDefaults } from "../src/model/component-resolver.js";
 import { createSharePackage } from "../src/model/share-packages.js";
 import { TYPES } from "../src/model/component-catalog.js";
 import { mechanismComponentDefinition } from "../src/model/mechanism-component-definitions.js";
+import { posePartForPortMatch } from "../src/model/component-geometry-contract.js";
 import {
   completeConnectionContract,
   CONNECTION_CAPACITIES,
@@ -57,17 +58,45 @@ function wheeledRocket() {
   const { blueprint } = builtInDemo("cart"),
     chassis = blueprint.parts.find((part) => part.type === "plate"),
     controller = blueprint.parts.find((part) => part.type === "computer"),
-    thruster = addPart(blueprint, "rocket", [0, 1.5, 1]),
-    tank = addPart(blueprint, "propellanttank", [0, 1.5, -1], {
+    thruster = addPart(blueprint, "rocket", [0, 0, 0], {
+      scale: { x: 0.5, y: 1, z: 0.5 },
+    }),
+    tankSupport = addPart(blueprint, "beam", [1, 0, 1], {
+      eulerRotation: [0, 0, Math.PI / 2],
+      scale: { x: 0.4, y: 1, z: 1 },
+    }),
+    tank = addPart(blueprint, "propellanttank", [0, 0, 0], {
       config: { capacityKg: 50, initialUsableMassKg: 50 },
+      eulerRotation: [Math.PI, 0, 0],
     });
+  const thrusterPose = posePartForPortMatch({
+      movingPart: thruster,
+      movingPortId: "MOUNT",
+      targetPart: chassis,
+      targetPortId: "BOTTOM",
+    }),
+    supportPose = posePartForPortMatch({
+      movingPart: tankSupport,
+      movingPortId: "A",
+      targetPart: chassis,
+      targetPortId: "TOP",
+    });
+  thruster.pos = [...thrusterPose.positionM];
+  tankSupport.pos = [1, supportPose.positionM[1], 1];
+  const tankPose = posePartForPortMatch({
+    movingPart: tank,
+    movingPortId: "MOUNT",
+    targetPart: tankSupport,
+    targetPortId: "B",
+  });
+  tank.pos = [...tankPose.positionM];
   blueprint.name = "Hybrid wheeled flight test";
   connect(
     blueprint,
     chassis,
     thruster,
     "mechanical",
-    "TOP",
+    "BOTTOM",
     "MOUNT",
     CONNECTION_CAPACITIES.reinforced,
   );
@@ -75,9 +104,18 @@ function wheeledRocket() {
   connect(
     blueprint,
     chassis,
-    tank,
+    tankSupport,
     "mechanical",
     "TOP",
+    "A",
+    CONNECTION_CAPACITIES.reinforced,
+  );
+  connect(
+    blueprint,
+    tankSupport,
+    tank,
+    "mechanical",
+    "B",
     "MOUNT",
     CONNECTION_CAPACITIES.reinforced,
   );
@@ -116,11 +154,19 @@ function wheeledDrone() {
       [-1.32, 0.65, 0.78],
       [1.32, 0.65, 0.78],
     ].map((position) => addPart(blueprint, "wheel", position)),
-    motors = wheels.map((wheel) =>
-      addPart(blueprint, "motor", [...wheel.pos], {
+    motors = wheels.map((wheel) => {
+      const motor = addPart(blueprint, "motor", [...wheel.pos], {
         config: { rpm: 120, power: 4 },
-      }),
-    );
+      });
+      const pose = posePartForPortMatch({
+        movingPart: motor,
+        movingPortId: "SHAFT",
+        targetPart: wheel,
+        targetPortId: "AXLE",
+      });
+      motor.pos = [...pose.positionM];
+      return motor;
+    });
   blueprint.name = "Wheeled quad drone";
   for (let index = 0; index < wheels.length; index++) {
     const motor = motors[index],

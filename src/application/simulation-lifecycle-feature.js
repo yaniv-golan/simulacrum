@@ -138,7 +138,6 @@ export function createSimulationLifecycleFeature({
   function createFlightPhysics() {
     destroyFlightPhysics();
     for (const part of run.parts) {
-      part.flightInitialScale = part.mesh.scale.clone();
       part.flightDetached = null;
       part.flightThermal = null;
     }
@@ -345,8 +344,7 @@ export function createSimulationLifecycleFeature({
     for (const part of run.parts) {
       presentation.attachPartToMachine(part);
       part.mesh.visible = true;
-      if (part.flightInitialScale)
-        part.mesh.scale.copy(part.flightInitialScale);
+      part.mesh.scale.set(1, 1, 1);
       part.flightDetached = null;
       part.flightThermal = null;
       part.mesh.position.set(...part.pos);

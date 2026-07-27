@@ -123,7 +123,6 @@ export function createWorkshopEditorPresentationSubsystem({
       explodedState: createExplodedStatePort(state),
     });
   visibility.current = selectionVisibility;
-
   return Object.freeze({
     transformGizmo,
     transform,

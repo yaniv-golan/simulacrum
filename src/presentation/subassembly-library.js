@@ -39,7 +39,10 @@ export function createSubassemblyLibrary({
       authored = isMechanismComponentType(saved.type)
         ? saved.mechanism
         : saved.config,
-      part = addPart(saved.type, saved.pos, authored, color);
+      part = addPart(saved.type, saved.pos, authored, color, {
+        orientation: saved.orientation,
+        scale: saved.scale,
+      });
     if (saved.type === "battery") part.storedEnergyWh = saved.storedEnergyWh;
     part.rigRole = saved.rigRole || null;
     part.rigVisualRotation = saved.rigVisualRotation
@@ -61,12 +64,6 @@ export function createSubassemblyLibrary({
       part.programAcquisition = acquisition;
       part.programTrust = null;
     }
-    part.mesh.quaternion.set(...saved.orientation);
-    part.mesh.scale.set(
-      saved.scale?.x ?? 1,
-      saved.scale?.y ?? 1,
-      saved.scale?.z ?? 1,
-    );
     part.rot = part.mesh.rotation.y;
     if (["footL", "footR"].includes(part.rigRole)) atlasFootPart(part);
     return part;

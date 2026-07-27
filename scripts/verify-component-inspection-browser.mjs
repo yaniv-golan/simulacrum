@@ -140,6 +140,25 @@ try {
     "selected motor ports do not expose their direct counterpart",
   );
 
+  const scaleInput = page.locator('[data-scale-axis="x"]');
+  await scaleInput.evaluate((input) => {
+    input.value = "1.1";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await page.waitForFunction(
+    (partId) =>
+      JSON.parse(window.render_game_to_text()).parts.find(
+        (part) => part.id === partId,
+      )?.scale.x === 1.1,
+    state.selectedPart,
+  );
+  state = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  assert.equal(
+    state.parts.find((part) => part.id === state.selectedPart)?.scale.x,
+    1.1,
+    "Inspector scaling did not rebuild the canonical authored component",
+  );
+
   const authoredBeforeIsolation = {
       revision: state.architecture.assemblyRevision,
       partIds: state.parts.map(({ id }) => id),

@@ -35,7 +35,6 @@ export function createComponentInspectionCarrierBlueprint() {
     },
   ];
   computer.extensions = { "example.controller": { mode: "inspection" } };
-  connection.anchorB = [0, 0, 0];
   connection.extensions = {
     "example.connection": { label: "carrier attachment", tags: [1, 2] },
   };

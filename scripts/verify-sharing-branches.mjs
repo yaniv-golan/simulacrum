@@ -723,7 +723,7 @@ const exposedRemix = service.remix();
 exposedRemix.remixDepth = 99;
 assert.equal(service.remix().remixDepth, 1);
 const modifiedCart = structuredClone(cart);
-modifiedCart.parts[0].pos[0] += 0.25;
+for (const part of modifiedCart.parts) part.pos[0] += 0.25;
 const remixedPackage = await service.createPackage({
   kind: "blueprint",
   asset: modifiedCart,

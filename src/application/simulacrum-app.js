@@ -108,7 +108,7 @@ const editorStageComposition = createWorkshopEditorStageComposition({
       configuredControlChainOptions: coordinator.configuredControlChainOptions,
       routeTargetOptions: coordinator.routeTargetOptions,
       powered: partHasPower,
-      disconnectConnection: coordinator.disconnectConnection,
+      ...coordinator.editorMutations,
       traceComponentRoute: coordinator.traceComponentRoute,
       traceConfiguredControlChain: coordinator.traceConfiguredControlChain,
     },

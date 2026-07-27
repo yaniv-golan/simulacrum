@@ -4,6 +4,7 @@ import { canonicalQuaternion, rotateVectorByQuaternion } from "./primitives.js";
 import { pressureNozzlePerformance } from "./pressure-nozzle-contracts.js";
 import { componentDefinition } from "./component-contracts.js";
 import { orientedBoundsFor, orientedBoundsOverlap } from "./oriented-bounds.js";
+import { boundsCenter } from "./component-geometry-contract.js";
 
 const add = (a, b) => a.map((value, axis) => value + b[axis]);
 const scale = (vector, scalar) => vector.map((value) => value * scalar);
@@ -86,7 +87,10 @@ export function analyzeAssembly(snapshot, catalog) {
       const part = partById.get(body.partId);
       return {
         volume: body.geometry.displacementM3,
-        center: worldPoint(part, body.geometry.renderDetailAnchors.center),
+        center: worldPoint(
+          part,
+          boundsCenter(body.geometry.collisionBoundsPartM),
+        ),
       };
     }),
     volumePoints = [...rigidVolumes, ...flexibleVolumes],

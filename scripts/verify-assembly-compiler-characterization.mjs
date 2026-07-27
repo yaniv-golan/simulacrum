@@ -18,60 +18,60 @@ import { instantiateSubassembly } from "../src/model/subassemblies.js";
 
 const GOLDEN_DIGESTS = Object.freeze({
   "demo:gearbox": {
-    sha256: "3072238421922066407f16c9d0affba08b0340c6bd79d4fd0fe35809d2f9e8fe",
-    bytes: 39_283,
+    sha256: "64db156805677fbb14ff847b7ddf8feb12995588ffc496851012549007f1cd9d",
+    bytes: 45_929,
   },
   "demo:cart": {
-    sha256: "3aa516a32ef9ca0cfd4429ca5e0949eb4924c7f4b9ece20b5b208b6f9731f6a9",
-    bytes: 280_059,
+    sha256: "da641080cf469926086548ff59c00c29fe201961201ecefcd62205418c9c05fb",
+    bytes: 266_701,
   },
   "covariance:transformed-cart": {
-    sha256: "028bae135c35001b3c35bc1d54b61f864fda9270ef733f6cac9203e515fae3be",
-    bytes: 287_311,
+    sha256: "7622d653dd0276d5a56d19133f07841ec7492a5a146ec92e106c6f91440e962d",
+    bytes: 272_966,
   },
   "demo:humanoid": {
-    sha256: "489237569350df5ba5db83deacdf2a43996539ac69f1a254128ec587274de915",
-    bytes: 195_381,
+    sha256: "4285c1ed40f2b955d083d2763436707606b05661bb7fb626d31fd250cb84f313",
+    bytes: 207_232,
   },
   "demo:drone": {
-    sha256: "019647bef275b0943ca233cfb304b42047a5a96ea0b3494d2fed64d677eaa8c0",
-    bytes: 194_682,
+    sha256: "d524b87bb6c9f77c747fff56769d7e96b054877082cc2270de78a25c3cc4d951",
+    bytes: 228_317,
   },
   "demo:mission": {
-    sha256: "5001fad2aa63588626a52c085129dab71976e52782915245d2e387ae6da30c94",
-    bytes: 712_018,
+    sha256: "681775a4ff3e9feea0fd90b799427167bb9b0d8d4d92bd5c1f60248b5e69da2a",
+    bytes: 754_358,
   },
   "mechanism:Rigid axle suspension": {
-    sha256: "7bff528a0d40397f8ae6ab64a3a8cd8bb6feefbab77a15173b5fc7b485a1ccc2",
-    bytes: 73_602,
+    sha256: "509dc66523ac427638f73a210cf22ebbfe27bf1d49997ba6ef35ee7a3bc9e6fe",
+    bytes: 63_493,
   },
   "mechanism:Trailing arm suspension": {
-    sha256: "2e9e9b73dabedc3e1233579c4994b3e659aa4393eb35b819e92478c9798ae237",
-    bytes: 53_272,
+    sha256: "0aa6b437a6b9255225001c444f6b692d8d2aab9b3b36fc07bcefd4bbfa58d0f3",
+    bytes: 47_998,
   },
   "mechanism:Double wishbone corner": {
-    sha256: "02a6c11de0202965dfc36179dd9930e098beaf9479ce58fa39c89311c1835cd1",
-    bytes: 88_260,
+    sha256: "6989832dd1db4e2dc11f4e8662d6dac172379a43d2a310f7b1f4e135e845aed2",
+    bytes: 81_704,
   },
   "mechanism:Rocker-bogie suspension": {
-    sha256: "90a66dd2e111caa7234061a9cbec0e734b7455b2d7bcb8d37d8a03e5284bc0d1",
-    bytes: 128_646,
+    sha256: "24d74ded7f82d030707a3e1f295ee4de4acc59c3c97fb677814cf3393c117a20",
+    bytes: 109_690,
   },
   "mechanism:Active leveling suspension": {
-    sha256: "305bfc09eba7c59b6b9d95fecd2f2360a644dff53982ee80304a0293ef31ba11",
-    bytes: 155_399,
+    sha256: "21aaacb0768f434540d0922811f4599169ba7c75ab1fc1b3d2890c088c66dbe5",
+    bytes: 153_018,
   },
   "mechanism:Four-wheel central tire inflation system": {
-    sha256: "88dc5f322016e43c344a8c5316d1a6f6b5ef2bca1c206894f5d017e16bc7ae49",
-    bytes: 304_970,
+    sha256: "45aea247088bca5c34e35acb7ebc0b0b9391401053b7d22bab5e74ba4116d6af",
+    bytes: 294_624,
   },
   "hybrid:wheeled-rocket": {
-    sha256: "96c56dd59abc71bede4f2182cc46eb6e22a8888f93a24976dfa652db6734a805",
-    bytes: 324_820,
+    sha256: "8d34162261ca7faddcc37654d1f5d394164183b15a856479a30f2cdf00f064b7",
+    bytes: 277_943,
   },
   "diagnostic:dangling-connection": {
-    sha256: "de301b3736f8dbbcace9087dc4d80b618e4d3fa623f397ada750136ce4c02f48",
-    bytes: 3_089,
+    sha256: "f19c571d658cc2faebaa0dec3e6fde6b9e881bb5005a6f78abd7f7bc1b0cd70c",
+    bytes: 4_532,
   },
 });
 

@@ -16,7 +16,7 @@ const fixturePath = new URL(
   ),
   source = await fs.readFile(fixturePath, "utf8"),
   expectedSourceSha256 =
-    "5f7445e58ca6305a1ee8b618833d66436a16a4713da8bfea7e611110058e138a";
+    "9c6255a15702177101c01d76f54afc1fe8cf28d80ef3555f764ec3ef9aa22f97";
 assert.equal(sha256Hex(source), expectedSourceSha256);
 assert.doesNotMatch(source, /shaft-rotor-aerodynamics-v1/);
 const assembly = decodeBlueprintOrThrow(JSON.parse(source)).assembly,

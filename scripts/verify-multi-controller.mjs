@@ -6,6 +6,7 @@ import { decodeBlueprintOrThrow } from "../src/model/blueprint-decoder.js";
 import { createSharePackage } from "../src/model/share-packages.js";
 import { executableDigest } from "../src/model/executable-program.js";
 import { descriptorForController } from "../src/application/executable-trust-service.js";
+import { posePartForPortMatch } from "../src/model/component-geometry-contract.js";
 
 const source = `interface ControlAPI { read(binding: string): number; write(binding: string, value: number): void; }
 function tick(api: ControlAPI, dt: number): void { void dt; api.write('drive', 0.6); }`,
@@ -80,6 +81,21 @@ function tick(api: ControlAPI, dt: number): void { void dt; api.write('drive', 0
       },
     ),
   );
+
+for (const [motorId, gearId] of [
+  [4, 5],
+  [6, 7],
+]) {
+  const motor = byId.get(motorId),
+    gear = byId.get(gearId),
+    pose = posePartForPortMatch({
+      movingPart: gear,
+      movingPortId: "AXLE",
+      targetPart: motor,
+      targetPortId: "SHAFT",
+    });
+  gear.pos = [...pose.positionM];
+}
 
 for (const [controllerId, motorId] of controllerTargets)
   byId.get(controllerId).controllerBindings = [
