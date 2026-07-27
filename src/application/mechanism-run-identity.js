@@ -5,6 +5,7 @@ import {
 import { deepFreeze, stableStringify } from "../model/primitives.js";
 import { CONTACT_MATERIAL_PAIRS } from "../model/contact-material-pairs.js";
 import { sha256Hex } from "../model/sha256.js";
+import { fingerprintEvidenceDeployment } from "../model/failure-evidence-identity.js";
 import { CANNON_SOLVER_TRANSACTION_ID } from "../simulation/cannon-solver-transaction.js";
 
 const encoder = new TextEncoder();
@@ -29,7 +30,7 @@ export function fingerprintContactMaterialMap() {
 }
 
 export function fingerprintTestDeployment(deployment) {
-  return `sim-sha256-${sha256Hex(stableStringify(deployment))}`;
+  return fingerprintEvidenceDeployment(deployment);
 }
 
 function identity(id, version, value) {

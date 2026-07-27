@@ -66,6 +66,13 @@ const FORMAT_CONTRACTS = Object.freeze({
     bytes: WIRE_LIMITS.telemetryPlaybackBytes,
     versionCode: "UNSUPPORTED_TELEMETRY_PLAYBACK_VERSION",
   }),
+  "failure-evidence": Object.freeze({
+    format: "simulacrum-failure-evidence",
+    version: 1,
+    bytes: WIRE_LIMITS.failureEvidenceBytes,
+    nodes: WIRE_LIMITS.failureEvidenceNodes,
+    versionCode: "UNSUPPORTED_FAILURE_EVIDENCE_VERSION",
+  }),
   "mechanism-authored-component": Object.freeze({
     format: "simulacrum-authored-mechanism-component",
     version: 1,
@@ -78,7 +85,7 @@ function issue(code, message, path = [], details = null) {
   return new DomainValidationError(code, message, { path, details });
 }
 
-function inspectTree(value) {
+function inspectTree(value, maximumNodes = WIRE_LIMITS.maxNodes) {
   const stack = [{ value, depth: 0, path: [], exit: false }];
   const ancestors = new WeakSet();
   let nodes = 0;
@@ -89,10 +96,10 @@ function inspectTree(value) {
       continue;
     }
     nodes++;
-    if (nodes > WIRE_LIMITS.maxNodes)
+    if (nodes > maximumNodes)
       throw issue(
         "WIRE_NODE_LIMIT",
-        `Wire value exceeds ${WIRE_LIMITS.maxNodes} nodes`,
+        `Wire value exceeds ${maximumNodes} nodes`,
         current.path,
       );
     if (current.depth > WIRE_LIMITS.maxDepth)
@@ -262,7 +269,7 @@ export function validateWireInput(input, kind, validator) {
     throw issue("UNSUPPORTED_WIRE_FORMAT", `Expected ${contract.format}`, [
       "format",
     ]);
-  const nodes = inspectTree(parsed);
+  const nodes = inspectTree(parsed, contract.nodes);
   let serialized;
   try {
     serialized = typeof input === "string" ? input : JSON.stringify(parsed);

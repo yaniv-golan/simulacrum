@@ -1,4 +1,5 @@
 import { DomainValidationError } from "../../model/primitives.js";
+import { multibodyFailureEvidenceMotorStates } from "../multibody-runtime.js";
 
 /** Publishes one mobility record per canonical physical rolling assembly. */
 export class MobilityTelemetrySystem {
@@ -15,9 +16,21 @@ export class MobilityTelemetrySystem {
       );
     const assemblies = index
       .snapshot()
-      .components.map((component) =>
-        runtime.mobilityTelemetryFor(component, context, dt),
-      )
+      .components.map((component) => {
+        const assembly = runtime.mobilityTelemetryFor(component, context, dt);
+        if (!assembly) return null;
+        return {
+          ...assembly,
+          driveForce: {
+            ...assembly.driveForce,
+            motors: multibodyFailureEvidenceMotorStates(
+              runtime,
+              component,
+              context,
+            ),
+          },
+        };
+      })
       .filter(Boolean);
     context.telemetry.mobility = { assemblies };
   }

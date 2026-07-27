@@ -12,6 +12,8 @@ import { createWorkshopSimulationSubsystem } from "./workshop-simulation-subsyst
 import { createRunMechanismLab } from "./mechanism-lab-feature.js";
 import { createTestCourseRecordFeature } from "./test-course-records.js";
 import { createWorkshopRunPresentationPort } from "./workshop-run-presentation-port.js";
+import { createFailureEvidenceExportFeature } from "./failure-evidence-export-feature.js";
+import { downloadFailureEvidence } from "../presentation/failure-evidence-download.js";
 
 /** Owns one run session: challenges, playback, failure, controllers, and physics. */
 export function createWorkshopRunComposition({
@@ -33,6 +35,12 @@ export function createWorkshopRunComposition({
     presentation = editor.editorPresentation,
     direct = assembly.controls.directControl;
   let simulation, failure, mechanismLab;
+
+  const evidenceExport = createFailureEvidenceExportFeature({
+    runtime,
+    download: downloadFailureEvidence,
+    notify: shell.notify,
+  });
 
   const machineView = () => {
       const live = state.running ? runtime.telemetry?.run : null;
@@ -91,6 +99,7 @@ export function createWorkshopRunComposition({
     stepLive: playback.step,
     presentTelemetry: assembly.telemetry.present,
     resetSimulation: () => simulation.reset(),
+    requestFailureEvidenceExport: evidenceExport.request,
     notify: shell.notify,
   });
 

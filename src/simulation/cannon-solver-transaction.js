@@ -5,6 +5,10 @@ import {
   stableStringify,
 } from "../model/primitives.js";
 import { sha256Hex } from "../model/sha256.js";
+import {
+  assignConstraintEvidenceRows,
+  constraintReactionContributions,
+} from "./constraint-reaction-wrench.js";
 
 export const CANNON_SOLVER_TRANSACTION_ID =
   "simulacrum-owned-cannon-solver-transaction-v2-motor-energy";
@@ -18,6 +22,31 @@ const preStepEvent = { type: "preStep" };
 const postStepEvent = { type: "postStep" };
 const privateStateByTransaction = new WeakMap();
 
+/** Advances one project-owned solve with optional evidence-only provenance. */
+export function stepCannonSolverTransaction(
+  transaction,
+  dt,
+  tick,
+  { captureEvidence = false } = {},
+) {
+  const state = privateStateByTransaction.get(transaction);
+  if (!state) throw new TypeError("Unknown Cannon solver transaction");
+  state.pendingEvidenceTick = captureEvidence ? tick : null;
+  try {
+    return transaction.step(dt);
+  } finally {
+    state.pendingEvidenceTick = null;
+  }
+}
+
+/** Returns detached evidence without extending the public transaction class. */
+export function completedCannonSolverEvidence(transaction) {
+  return (
+    privateStateByTransaction.get(transaction)?.evidenceContributions ||
+    Object.freeze([])
+  );
+}
+
 function stableBodyKey(body) {
   const identity =
     body.userData?.partId ??
@@ -25,6 +54,169 @@ function stableBodyKey(body) {
     body.userData?.stressKey ??
     body.id;
   return `${typeof identity}:${String(identity)}`;
+}
+
+function evidenceBodyKey(body, world) {
+  if (body.userData?.partId != null)
+    return {
+      id: `part:${String(body.userData.partId)}`,
+      validity: "measured",
+    };
+  if (body.userData?.externalBodyId != null)
+    return {
+      id: String(body.userData.externalBodyId),
+      validity: "measured",
+    };
+  return {
+    id: `anonymous-body:${world.bodies.indexOf(body)}`,
+    validity: "unavailable",
+  };
+}
+
+function evidenceShapeKey(body, shape) {
+  const explicit = shape?.userData?.shapeId;
+  if (explicit != null) return { id: String(explicit), validity: "measured" };
+  const index = body.shapes.indexOf(shape);
+  return {
+    id: `body-shape:${Math.max(0, index)}`,
+    validity: "derived",
+  };
+}
+
+function numberKey(value) {
+  const number = Number(value || 0);
+  return (Object.is(number, -0) ? 0 : number).toPrecision(17);
+}
+
+function vectorKey(value) {
+  return [numberKey(value?.x), numberKey(value?.y), numberKey(value?.z)].join(
+    ",",
+  );
+}
+
+function canonicalContactRecord(contact, world) {
+  const leftBody = evidenceBodyKey(contact.bi, world),
+    rightBody = evidenceBodyKey(contact.bj, world),
+    leftShape = evidenceShapeKey(contact.bi, contact.si),
+    rightShape = evidenceShapeKey(contact.bj, contact.sj),
+    swap =
+      leftBody.id.localeCompare(rightBody.id, "en") > 0 ||
+      (leftBody.id === rightBody.id &&
+        leftShape.id.localeCompare(rightShape.id, "en") > 0),
+    firstBody = swap ? rightBody : leftBody,
+    secondBody = swap ? leftBody : rightBody,
+    firstShape = swap ? rightShape : leftShape,
+    secondShape = swap ? leftShape : rightShape,
+    firstPoint = swap ? contact.rj : contact.ri,
+    secondPoint = swap ? contact.ri : contact.rj,
+    normal = swap ? contact.ni.scale(-1) : contact.ni,
+    sortKey = [
+      firstBody.id,
+      firstShape.id,
+      secondBody.id,
+      secondShape.id,
+      vectorKey(firstPoint),
+      vectorKey(secondPoint),
+      vectorKey(normal),
+    ].join("|");
+  return {
+    contact,
+    sortKey,
+    bodyAId: firstBody.id,
+    bodyBId: secondBody.id,
+    shapeAId: firstShape.id,
+    shapeBId: secondShape.id,
+    validity: [firstBody, secondBody, firstShape, secondShape].some(
+      (entry) => entry.validity === "unavailable",
+    )
+      ? "unavailable"
+      : [firstShape, secondShape].some((entry) => entry.validity === "derived")
+        ? "derived"
+        : "measured",
+  };
+}
+
+function annotateContactRows(world, tick) {
+  const records = world.contacts
+    .map((contact) => canonicalContactRecord(contact, world))
+    .sort((left, right) => left.sortKey.localeCompare(right.sortKey, "en"));
+  for (const [ordinal, record] of records.entries()) {
+    const contactId = `contact:${String(tick)}:${record.bodyAId}:${
+        record.shapeAId
+      }:${record.bodyBId}:${record.shapeBId}:${ordinal}`,
+      evidence = Object.freeze({
+        tick,
+        contactId,
+        collisionOrdinal: ordinal,
+        bodyAId: record.bodyAId,
+        bodyBId: record.bodyBId,
+        shapeAId: record.shapeAId,
+        shapeBId: record.shapeBId,
+        validity: record.validity,
+      });
+    record.contact.simulacrumEvidence = evidence;
+    record.contact.simulacrumEvidenceRow = Object.freeze({
+      rowId: `${contactId}:normal`,
+      rowKind: "contact-normal",
+      localOrdinal: 0,
+      source: "contact",
+      constraintId: null,
+      sourceConnectionIds: Object.freeze([]),
+      sourceContactIds: Object.freeze([contactId]),
+    });
+  }
+}
+
+function sameBodyPair(left, right) {
+  return (
+    (left.bi === right.bi && left.bj === right.bj) ||
+    (left.bi === right.bj && left.bj === right.bi)
+  );
+}
+
+function sameContactAnchors(friction, contact) {
+  const direct = friction.bi === contact.bi;
+  return (
+    vectorKey(friction.ri) === vectorKey(direct ? contact.ri : contact.rj) &&
+    vectorKey(friction.rj) === vectorKey(direct ? contact.rj : contact.ri)
+  );
+}
+
+function annotateFrictionRows(world, tick) {
+  const records = world.frictionEquations
+    .map((equation) => {
+      const bodies = [
+          evidenceBodyKey(equation.bi, world).id,
+          evidenceBodyKey(equation.bj, world).id,
+        ].sort((left, right) => left.localeCompare(right, "en")),
+        sourceContactIds = world.contacts
+          .filter(
+            (contact) =>
+              sameBodyPair(equation, contact) &&
+              sameContactAnchors(equation, contact),
+          )
+          .map((contact) => contact.simulacrumEvidence?.contactId)
+          .filter(Boolean)
+          .sort((left, right) => left.localeCompare(right, "en")),
+        sortKey = [
+          ...bodies,
+          vectorKey(equation.ri),
+          vectorKey(equation.rj),
+          vectorKey(equation.t),
+        ].join("|");
+      return { equation, sortKey, bodies, sourceContactIds };
+    })
+    .sort((left, right) => left.sortKey.localeCompare(right.sortKey, "en"));
+  for (const [ordinal, record] of records.entries())
+    record.equation.simulacrumEvidenceRow = Object.freeze({
+      rowId: `friction:${String(tick)}:${record.bodies.join(":")}:${ordinal}`,
+      rowKind: "contact-friction",
+      localOrdinal: ordinal,
+      source: "friction",
+      constraintId: null,
+      sourceConnectionIds: Object.freeze([]),
+      sourceContactIds: Object.freeze(record.sourceContactIds),
+    });
 }
 
 function resolveSurfaceLaw(body, otherBody, offset) {
@@ -317,6 +509,8 @@ export class CannonSolverTransaction {
       activeTick: null,
       motorRegistrations: new Map(),
       pendingMotorRecords: null,
+      pendingEvidenceTick: null,
+      evidenceContributions: Object.freeze([]),
     });
     this.oldContacts = [];
     this.frictionEquationPool = [];
@@ -327,6 +521,8 @@ export class CannonSolverTransaction {
     state.activeTick = null;
     state.motorRegistrations.clear();
     state.pendingMotorRecords = null;
+    state.pendingEvidenceTick = null;
+    state.evidenceContributions = Object.freeze([]);
   }
 
   beginTick(tick) {
@@ -435,7 +631,10 @@ export class CannonSolverTransaction {
       bodies = world.bodies,
       constraints = world.constraints,
       solver = world.solver,
-      dynamic = CANNON.Body.DYNAMIC;
+      dynamic = CANNON.Body.DYNAMIC,
+      evidenceTick = privateStateByTransaction.get(this).pendingEvidenceTick,
+      captureEvidence = evidenceTick != null,
+      tick = evidenceTick ?? this.world.stepnumber + 1;
     world.dt = dt;
 
     for (const body of bodies)
@@ -545,6 +744,10 @@ export class CannonSolverTransaction {
       world.frictionEquations,
       this.frictionEquationPool,
     );
+    if (captureEvidence) {
+      annotateContactRows(world, tick);
+      annotateFrictionRows(world, tick);
+    }
     applyResolvedSurfaceLaws(world, dt);
     for (const equation of world.frictionEquations)
       solver.addEquation(equation);
@@ -605,6 +808,17 @@ export class CannonSolverTransaction {
       }
     for (const constraint of constraints) {
       constraint.update();
+      if (captureEvidence) {
+        const metadata = constraint.simulacrumEvidence || {},
+          constraintIndex = constraints.indexOf(constraint);
+        assignConstraintEvidenceRows(constraint, {
+          constraintId:
+            metadata.constraintId ?? `unowned-constraint:${constraintIndex}`,
+          sourceConnectionIds: metadata.sourceConnectionIds || [],
+          tick,
+          source: metadata.source || "constraint",
+        });
+      }
       for (const equation of constraint.equations) solver.addEquation(equation);
     }
     const motorRegistrations = privateState.motorRegistrations,
@@ -630,6 +844,21 @@ export class CannonSolverTransaction {
     }
     motorRegistrations.clear();
     privateState.activeTick = null;
+    privateState.evidenceContributions = captureEvidence
+      ? Object.freeze(
+          [...world.contacts, ...world.frictionEquations].flatMap((equation) =>
+            constraintReactionContributions(
+              {
+                bodyA: equation.bi,
+                bodyB: equation.bj,
+                equations: [equation],
+              },
+              "A",
+              { tick },
+            ),
+          ),
+        )
+      : Object.freeze([]);
     solver.removeAllEquations();
     for (const body of bodies)
       if (body.type & dynamic) {

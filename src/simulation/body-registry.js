@@ -35,6 +35,12 @@ function vector(value, path) {
   return { x, y, z };
 }
 
+function evidenceValidity(value, fallback = "unavailable") {
+  return ["measured", "derived", "unavailable", "truncated"].includes(value)
+    ? value
+    : fallback;
+}
+
 function quaternion(value, path) {
   const result = {
     x: finiteNumber(value?.x ?? 0, { path: [...path, "x"] }),
@@ -473,6 +479,14 @@ export class BodyRegistry {
   recordContact(id, contact) {
     const body = this.#requireBody(id),
       sample = deepFreeze({
+        tick: finiteNumber(contact?.tick ?? this.#tick, {
+          min: 0,
+          path: ["body", id, "contact", "tick"],
+        }),
+        contactId:
+          typeof contact?.contactId === "string" && contact.contactId
+            ? contact.contactId
+            : null,
         point: vector(contact?.point, ["body", id, "contact", "point"]),
         normal: vector(contact?.normal, ["body", id, "contact", "normal"]),
         forceN: finiteNumber(contact?.forceN ?? contact?.force ?? 0, {
@@ -489,9 +503,25 @@ export class BodyRegistry {
           "contact",
           "relativeVelocity",
         ]),
+        forceWorldN: vector(contact?.forceWorldN, [
+          "body",
+          id,
+          "contact",
+          "forceWorldN",
+        ]),
         otherBodyId: contact?.otherBodyId ?? null,
         otherMaterialKey: contact?.otherMaterialKey ?? null,
         otherShapeId: contact?.otherShapeId ?? null,
+        supportShapeId: contact?.supportShapeId ?? null,
+        surfaceRegionId: contact?.surfaceRegionId ?? null,
+        featureId: contact?.featureId
+          ? structuredClone(contact.featureId)
+          : null,
+        featureValidity: evidenceValidity(contact?.featureValidity),
+        tireEvidence: contact?.tireEvidence
+          ? structuredClone(contact.tireEvidence)
+          : null,
+        validity: evidenceValidity(contact?.validity),
         surface: contact?.surface ?? null,
       });
     this.#bodies.set(

@@ -127,6 +127,13 @@ export class FlexibleLineRuntime {
             timeStepS: this.fixedDt,
           });
         constraint.collideConnected = false;
+        /** @type {any} */ (constraint).simulacrumEvidence = Object.freeze({
+          constraintId: String(edge.id),
+          sourceConnectionIds: Object.freeze(
+            [...new Set(edge.sourceConnectionIds || [])].map(String).sort(),
+          ),
+          source: "constraint",
+        });
         this.world.addConstraint(constraint);
         this.edgeEntries.push({
           descriptor: edge,
@@ -156,6 +163,15 @@ export class FlexibleLineRuntime {
             pivotTarget,
             attachment.ultimateForceN * 4,
           );
+        /** @type {any} */ (constraint).simulacrumEvidence = Object.freeze({
+          constraintId: `flexible-attachment:${String(
+            attachment.sourceConnectionId,
+          )}`,
+          sourceConnectionIds: Object.freeze([
+            String(attachment.sourceConnectionId),
+          ]),
+          source: "constraint",
+        });
         this.world.addConstraint(constraint);
         this.attachmentEntries.push({
           descriptor: attachment,

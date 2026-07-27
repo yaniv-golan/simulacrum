@@ -2,7 +2,10 @@ import * as CANNON from "cannon-es";
 import { readActuatorCommand } from "../model/actuator-contracts.js";
 import { compileAssembly } from "../model/assembly-compiler.js";
 import { DomainValidationError } from "../model/primitives.js";
-import { CannonWorldAdapter } from "./cannon-world-adapter.js";
+import {
+  CannonWorldAdapter,
+  completedWorldEvidenceContributions,
+} from "./cannon-world-adapter.js";
 import {
   applyAxialForce,
   AxialLimitConstraint,
@@ -14,7 +17,10 @@ import {
   springResponse,
   stopResponse,
 } from "./two-frame-mechanisms.js";
-import { constraintReactionWrench } from "./constraint-reaction-wrench.js";
+import {
+  constraintReactionContributions,
+  constraintReactionWrench,
+} from "./constraint-reaction-wrench.js";
 import { TireContactConstraint } from "./tire-contact.js";
 import {
   boundsCenter,
@@ -34,6 +40,8 @@ const COORDINATE_KINDS = new Set([
   "linear-guide",
   "linear-actuator",
 ]);
+const failureEvidenceByRuntime = new WeakMap();
+const evidenceCapturingRuntimes = new WeakSet();
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const plainVector = (value) => ({ x: value.x, y: value.y, z: value.z });
 const plainQuaternion = (value) => ({
@@ -72,6 +80,65 @@ function quaternionFromPositiveZ(axis) {
   quaternion.setFromVectors(new CANNON.Vec3(0, 0, 1), axis);
   quaternion.normalize();
   return quaternion;
+}
+
+function motorIdsFor(runtime, component) {
+  const memberPartIds = new Set(component.supportPartIds),
+    constraintEntries = Array.isArray(runtime.constraintEntries)
+      ? runtime.constraintEntries
+      : [];
+  return [
+    ...new Set(
+      constraintEntries
+        .filter(
+          (entry) =>
+            entry.active !== false &&
+            entry.descriptor.motorId != null &&
+            memberPartIds.has(entry.descriptor.motorId),
+        )
+        .map((entry) => entry.descriptor.motorId),
+    ),
+  ];
+}
+
+function motorEvidenceStates(runtime, component, context) {
+  if (!context) return [];
+  return motorIdsFor(runtime, component).map((id) => {
+    const command = readActuatorCommand(
+        context.commandBus,
+        runtime.part(id),
+        "throttle",
+        0,
+      ),
+      availablePowerW =
+        context.powerNetwork?.allocationFor(id)?.allocatedW || 0;
+    return {
+      partId: id,
+      resolvedThrottle: command.value,
+      commandSource: command.source,
+      availablePowerW,
+      deliveredPowerW: runtime.motorElectricalWByPart.get(id) || 0,
+    };
+  });
+}
+
+/** Internal diagnostic view without extending the Core-exported runtime. */
+export function completedMultibodyFailureEvidence(runtime) {
+  return failureEvidenceByRuntime.get(runtime) || Object.freeze([]);
+}
+
+/** Marks exactly the next completed integration for provenance capture. */
+export function requestMultibodyFailureEvidenceCapture(runtime) {
+  if (runtime) evidenceCapturingRuntimes.add(runtime);
+}
+
+/** Internal per-motor command/power view for the evidence telemetry system. */
+export function multibodyFailureEvidenceMotorStates(
+  runtime,
+  component,
+  context,
+) {
+  return motorEvidenceStates(runtime, component, context);
 }
 
 function quaternionFromPrincipalAxes(axes) {
@@ -557,6 +624,7 @@ export class MultibodyRuntime {
     this.loadByConnection = new Map();
     this.torqueByConnection = new Map();
     this.motorElectricalWByPart = new Map();
+    failureEvidenceByRuntime.set(this, Object.freeze([]));
     this.lastTelemetry = null;
     this.activeLuminairePartIds = [];
     this.fluidState = null;
@@ -586,11 +654,19 @@ export class MultibodyRuntime {
         position: frame.position,
         quaternion: frame.bodyToWorld,
       });
-      for (const primitive of descriptor.geometry.collisionPrimitives) {
+      for (const [
+        primitiveIndex,
+        primitive,
+      ] of descriptor.geometry.collisionPrimitives.entries()) {
         const { shape, offset, orientation } = shapeAndOrientation(
           primitive,
           frame,
         );
+        const evidenceShape = /** @type {any} */ (shape);
+        evidenceShape.userData = {
+          ...(evidenceShape.userData || {}),
+          shapeId: `part:${String(descriptor.partId)}:shape:${primitiveIndex}`,
+        };
         body.addShape(shape, offset, orientation || undefined);
       }
       const [ix, iy, iz] = descriptor.massProperties.principalMomentsKgM2;
@@ -648,6 +724,18 @@ export class MultibodyRuntime {
           constraint,
         });
       }
+    for (const entry of this.constraintEntries)
+      if (entry.constraint)
+        entry.constraint.simulacrumEvidence = Object.freeze({
+          constraintId: String(entry.descriptor.id),
+          sourceConnectionIds: Object.freeze(
+            [...new Set(entry.descriptor.sourceConnectionIds || [])]
+              .map(String)
+              .sort(),
+          ),
+          source:
+            entry.kind === "rolling-contact-v1" ? "tire-force" : "constraint",
+        });
     for (const descriptor of this.compiled.collisionExclusions) {
       const bodyA = this.bodyByPart.get(descriptor.a),
         bodyB = this.bodyByPart.get(descriptor.b);
@@ -655,6 +743,11 @@ export class MultibodyRuntime {
       const constraint = new CollisionExclusionConstraint(bodyA, bodyB, {
         collideConnected: false,
         wakeUpBodies: false,
+      });
+      /** @type {any} */ (constraint).simulacrumEvidence = Object.freeze({
+        constraintId: `collision-exclusion:${String(descriptor.id)}`,
+        sourceConnectionIds: Object.freeze([]),
+        source: "constraint",
       });
       this.world.addConstraint(constraint);
       this.collisionExclusionConstraints.push({
@@ -1222,30 +1315,10 @@ export class MultibodyRuntime {
               Math.abs(position.z - this.groundBody.position.z),
           )
         : 0,
-      motorIds = [
-        ...new Set(
-          this.constraintEntries
-            .filter(
-              (entry) =>
-                entry.active !== false &&
-                entry.descriptor.motorId != null &&
-                memberPartIds.has(entry.descriptor.motorId),
-            )
-            .map((entry) => entry.descriptor.motorId),
-        ),
-      ],
+      motorIds = motorIdsFor(this, component),
+      motorStates = motorEvidenceStates(this, component, context),
       requestedThrottle = context
-        ? mean(
-            motorIds.map(
-              (id) =>
-                readActuatorCommand(
-                  context.commandBus,
-                  this.part(id),
-                  "throttle",
-                  0,
-                ).value,
-            ),
-          )
+        ? mean(motorStates.map((motor) => motor.resolvedThrottle))
         : 0,
       brake = context
         ? Math.max(
@@ -2091,6 +2164,11 @@ export class MultibodyRuntime {
 
   afterIntegration(dt) {
     if (!this.compiled) return null;
+    const captureEvidence = evidenceCapturingRuntimes.delete(this),
+      tick = this.worldAdapter?.telemetry().integratedTick ?? null,
+      contributionLedger = captureEvidence
+        ? [...completedWorldEvidenceContributions(this.worldAdapter)]
+        : [];
     for (const entry of this.constraintEntries)
       if (entry.active !== false && entry.kind === "rolling-contact-v1")
         entry.constraint.commitSolvedState();
@@ -2170,6 +2248,16 @@ export class MultibodyRuntime {
     for (const entry of this.constraintEntries) {
       if (entry.active === false || !entry.constraint) continue;
       const reaction = constraintReactionWrench(entry.constraint);
+      if (captureEvidence)
+        contributionLedger.push(
+          ...constraintReactionContributions(entry.constraint, "A", {
+            tick,
+            constraintId: entry.descriptor.id,
+            sourceConnectionIds: entry.descriptor.sourceConnectionIds || [],
+            source:
+              entry.kind === "rolling-contact-v1" ? "tire-force" : "constraint",
+          }),
+        );
       if (entry.descriptor.kind === "revolute")
         entry.reactionTorque = reaction.torqueNm;
       for (const id of entry.descriptor.sourceConnectionIds || []) {
@@ -2183,6 +2271,7 @@ export class MultibodyRuntime {
         );
       }
     }
+    failureEvidenceByRuntime.set(this, Object.freeze(contributionLedger));
     for (const [partId, body] of this.bodyByPart) {
       const descriptor = this.compiled.bodies.find(
           (candidate) => candidate.partId === partId,
@@ -2687,6 +2776,8 @@ export class MultibodyRuntime {
     this.compiled = null;
     this.lastTelemetry = null;
     this.motorElectricalWByPart.clear();
+    evidenceCapturingRuntimes.delete(this);
+    failureEvidenceByRuntime.set(this, Object.freeze([]));
     this.activeLuminairePartIds = [];
     this.fluidState = null;
     this.topologyRevision = 0;

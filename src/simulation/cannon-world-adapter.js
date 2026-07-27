@@ -3,7 +3,21 @@ import { DomainValidationError, finiteNumber } from "../model/primitives.js";
 import {
   CANNON_SOLVER_TRANSACTION_ID,
   CannonSolverTransaction,
+  completedCannonSolverEvidence,
+  stepCannonSolverTransaction,
 } from "./cannon-solver-transaction.js";
+
+const evidenceCapturingAdapters = new WeakSet();
+
+/** Internal completed-row view without extending the Core-exported class. */
+export function completedWorldEvidenceContributions(adapter) {
+  return completedCannonSolverEvidence(adapter.transaction);
+}
+
+/** Marks exactly the next owned integration for provenance capture. */
+export function requestWorldEvidenceCapture(adapter) {
+  evidenceCapturingAdapters.add(adapter);
+}
 
 /**
  * The sole Cannon integration boundary. A simulation tick may integrate the
@@ -58,7 +72,14 @@ export class CannonWorldAdapter {
       min: Number.EPSILON,
       path: ["fixedDt"],
     });
-    this.transaction.step(dt);
+    const captureEvidence = evidenceCapturingAdapters.has(this);
+    try {
+      stepCannonSolverTransaction(this.transaction, dt, this.#tick, {
+        captureEvidence,
+      });
+    } finally {
+      evidenceCapturingAdapters.delete(this);
+    }
     this.#integratedTick = this.#tick;
     this.#integrationCount++;
     return this.telemetry();

@@ -4,6 +4,22 @@ function keyFor(targetId, channel) {
   return `${String(targetId)}\u0000${channel}`;
 }
 
+function candidateFromKey(key) {
+  const separator = key.indexOf("\u0000");
+  return {
+    targetId: key.slice(0, separator),
+    channelId: key.slice(separator + 1),
+    value: 0,
+  };
+}
+
+function candidateOrder(left, right) {
+  return (
+    left.targetId.localeCompare(right.targetId) ||
+    left.channelId.localeCompare(right.channelId)
+  );
+}
+
 function normalizedCandidates(candidates) {
   const byTargetChannel = new Map();
   for (const candidate of Array.isArray(candidates) ? candidates : []) {
@@ -23,11 +39,7 @@ function normalizedCandidates(candidates) {
       value,
     });
   }
-  return [...byTargetChannel.values()].sort(
-    (left, right) =>
-      left.targetId.localeCompare(right.targetId) ||
-      left.channelId.localeCompare(right.channelId),
-  );
+  return [...byTargetChannel.values()].sort(candidateOrder);
 }
 
 /** Records external command values at fixed-tick input boundaries. */
@@ -50,7 +62,19 @@ export class InputTraceRecorder {
         "INVALID_INPUT_TRACE_TICK",
         "Input trace tick must be a non-negative safe integer",
       );
-    for (const candidate of normalizedCandidates(candidates)) {
+    const current = normalizedCandidates(candidates),
+      currentKeys = new Set(
+        current.map((candidate) =>
+          keyFor(candidate.targetId, candidate.channelId),
+        ),
+      ),
+      released = [...this.previousValues]
+        .filter(
+          ([key, previousValue]) =>
+            !currentKeys.has(key) && !Object.is(previousValue, 0),
+        )
+        .map(([key]) => candidateFromKey(key));
+    for (const candidate of [...current, ...released].sort(candidateOrder)) {
       const key = keyFor(candidate.targetId, candidate.channelId);
       if (Object.is(this.previousValues.get(key), candidate.value)) continue;
       this.previousValues.set(key, candidate.value);

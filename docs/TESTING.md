@@ -40,6 +40,60 @@ The older `TEST_FILTER=... npm test` interface remains supported for CI and
 existing automation. It deliberately retains normal npm lifecycle hooks; use
 `test:focused` for local iteration.
 
+## Failure-evidence debugging workflow
+
+Use this workflow for a stall, invalid tire contact, numerical anomaly, or
+structural failure. The artifact observes the normal 1/120-second production
+path; it is not permission to add a demo-specific reproducer or alternate
+failure decision.
+
+1. Reproduce the symptom without changing physics. In the running application,
+   open **Failure report** and choose **Export diagnostic bundle** after the
+   recorder captures a trigger. Preserve the original JSON unchanged.
+2. Strict-decode and replay that exact artifact under the supported Node
+   runtime:
+
+   ```bash
+   node scripts/verify-failure-evidence-replay.mjs path/to/bundle.json
+   ```
+
+3. Exercise the recorder, wire artifact, and clean production replay contracts:
+
+   ```bash
+   npm run test:focused -- verify-failure-evidence-runtime verify-failure-evidence-artifacts verify-failure-evidence-replay-runtime
+   ```
+
+4. For rover stalls or wheel failures, run the production-order scenario matrix.
+   It covers slow and fast ramp egress, constant-forward grass and asphalt, and
+   repeated forward/reverse operation without dispatching physics from demo
+   identity:
+
+   ```bash
+   npm run test:focused -- verify-rover-failure-evidence-diagnostic
+   ```
+
+5. When changing the visible report, export action, or replay controls, also run:
+
+   ```bash
+   npm run test:focused -- verify-failure-analysis
+   ```
+
+Read the evidence in causal order: trigger and accepted external input;
+available actuator power and resolved commands; contact and terrain identity;
+solved row contribution; authored connection load versus capacity; then the
+same-tick pre/post topology. Keep contact, structural, and later cascade events
+distinct.
+
+Call a root cause **verified** only when the artifact strict-decodes,
+`summary.causalState` is `complete`, replay returns `reproduced: true`, and the
+cited links in the causal chain are not `unavailable`. Label `derived` evidence
+as derived. If capture or replay says `incomplete`, `unsupported`,
+`unavailable`, or reports an identity/digest mismatch, report the limitation and
+keep the proposed cause unverified; never fill a missing contact, solver row,
+terrain feature, or connection by inference. See
+[Failure analysis](FAILURE_ANALYSIS.md) for artifact contents, replay semantics,
+and ownership boundaries.
+
 ## Timing reports
 
 Harness runs write unique JSON timing reports plus

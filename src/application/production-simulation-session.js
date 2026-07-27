@@ -11,10 +11,8 @@ export function startProductionSimulationSession({
   runtime,
   physics,
   controllers,
-  challenges,
-  assembly,
-  run,
-  runEvidence,
+  evidence,
+  services,
 }) {
   const session = new SimulationSession({
     systems: createProductionSimulationSystems(compiled),
@@ -27,10 +25,11 @@ export function startProductionSimulationSession({
       readSensors: controllers.captureSensors,
       tickControllers: controllers.tick,
       readCommandCandidates: controllers.readCommandCandidates,
-      inputTraceRecorder: runEvidence.inputTraceRecorder,
-      runIdentity: runtime.runIdentity,
+      inputTraceRecorder: evidence.inputTraceRecorder,
+      failureEvidenceRecorder: evidence.failureEvidenceRecorder,
+      runIdentity: services.runIdentity,
       controllerTelemetry: controllers.telemetry,
-      resolveChallengeBinding: challenges.resolveBinding,
+      resolveChallengeBinding: services.resolveChallengeBinding,
       aerodynamicForceOwner: runtime.aerodynamicForceOwner,
       rotorForceOwner: runtime.rotorForceOwner,
       heatInputCollector: runtime.heatInputCollector,
@@ -45,17 +44,15 @@ export function startProductionSimulationSession({
       compiledAssembly: compiled,
       environmentBodyRegistry: physics.environmentBodyRegistry,
       environmentOrigin: physics.environmentOrigin,
-      windEnabled: run.windEnabled,
+      windEnabled: services.windEnabled,
       pondAt: physics.pondAt,
       captureTelemetry: captureProductionSystemTelemetry,
-      connectionValid: assembly.connectionValid,
+      connectionValid: services.connectionValid,
       partMass: (part) => physics.catalog[part.type]?.mass || 0,
     });
-    runEvidence.activate();
     return session;
   } catch (error) {
     session.dispose();
-    runEvidence.dispose();
     throw error;
   }
 }

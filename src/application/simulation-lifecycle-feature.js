@@ -1,12 +1,8 @@
-import { startMultibodyRuntime } from "../simulation/multibody-runtime.js";
-import { FlexibleLineRuntime } from "../simulation/flexible-line-runtime.js";
 import { fingerprintAsset } from "../model/portable-asset-identity.js";
 import { createPhysicalFlightServices } from "../simulation/physical-flight-services.js";
 import { PhysicalAssemblyIndex } from "../simulation/physical-assembly-index.js";
-import { TerrainCollisionStream } from "../simulation/environment/terrain-collision-stream.js";
-import { WATER_DENSITY } from "../simulation/environment/earth.js";
 import { createRunEvidenceLifecycle } from "./run-evidence-lifecycle.js";
-import { startProductionSimulationSession } from "./production-simulation-session.js";
+import { createSimulationRunRuntime } from "./simulation-run-runtime.js";
 
 export { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
 
@@ -15,8 +11,7 @@ export { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
  * @typedef {{ x:number,y:number,z:number }} VectorReading
  * @typedef {{
  *   id:number, type:string, pos:Vector3Tuple, rot:number,
- *   mesh:import("three").Object3D, config:Record<string,unknown>,
- *   rigRole?:string|null, programTrust?:{digest?:string}|null,
+ *   mesh:import("three").Object3D, config:Record<string,unknown>, rigRole?:string|null, programTrust?:{digest?:string}|null,
  *   startPos?:Vector3Tuple, phase?:number, lastMeasuredPhase?:number,
  *   measuredRpm?:number, sensorValueRpm?:number,
  *   runStartOrientation?:[number,number,number,number],
@@ -36,9 +31,9 @@ export { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
  *   telemetry:ReturnType<typeof import("../simulation/telemetry.js").createTelemetrySnapshot>,
  *   physicalFlightModel:object|null, aerodynamicForceOwner:object|null, rotorForceOwner:object|null, heatInputCollector:object|null, aerothermalAblationOwner:object|null, physicalFlightTelemetry:object|null,
  *   physicalAssemblyIndex:PhysicalAssemblyIndex|null,
- *   multibodyRuntime:ReturnType<typeof startMultibodyRuntime>|null,
- *   flexibleLineRuntime:FlexibleLineRuntime|null,
- *   terrainCollisionStream:TerrainCollisionStream|null, workspaceFocusBefore:boolean, checkpointCoordinator:object|null,
+ *   multibodyRuntime:ReturnType<typeof import("../simulation/multibody-runtime.js").startMultibodyRuntime>|null,
+ *   flexibleLineRuntime:import("../simulation/flexible-line-runtime.js").FlexibleLineRuntime|null,
+ *   terrainCollisionStream:import("../simulation/environment/terrain-collision-stream.js").TerrainCollisionStream|null, workspaceFocusBefore:boolean, checkpointCoordinator:object|null,
  *   prepareCheckpointCoordinator:(()=>Promise<object>)|null, inputTraceRecorder:object|null, runIdentity:object|null, runBlueprint:object|null,
  * }} SimulationRuntimePort
  * @typedef {{
@@ -245,65 +240,61 @@ export function createSimulationLifecycleFeature({
     runtime.flexibleLineRuntime?.dispose();
     runtime.flexibleLineRuntime = null;
     runtime.multibodyRuntime?.dispose();
-    runtime.multibodyRuntime = startMultibodyRuntime(assembly.snapshot(), {
-      world: physics.world,
-      worldAdapter: physics.worldAdapter,
-      material: physics.debrisMaterial,
-      catalog: physics.catalog,
-      surfaceHeightAt: physics.surfaceHeightAt,
-      terrainHeightAt: physics.terrainHeightAt,
-      pondAt: physics.pondAt,
-      waterDensity: WATER_DENSITY,
-      groundBody: physics.groundBody,
-      fieldBody: physics.fieldBody,
-      materialForPart: physics.materialForPart,
-    });
-    runtime.flexibleLineRuntime = new FlexibleLineRuntime({
-      world: physics.world,
-      materialForKey: physics.materialForKey,
-      multibodyRuntime: runtime.multibodyRuntime,
-    }).start(runtime.multibodyRuntime.compiled);
-    if (runtime.multibodyRuntime) {
-      presentation.setWiresVisible(false);
-      runtime.terrainCollisionStream?.dispose();
-      runtime.terrainCollisionStream = new TerrainCollisionStream({
-        world: physics.world,
-        heightAt: physics.terrainHeightAt,
-        material: physics.groundMaterial,
-        tileSize: physics.terrainSize,
-        segments: 32,
-        centralTile: { x: 0, z: 0 },
-        neighborhood: 1,
-      });
-      createFlightPhysics();
-    }
+    runtime.multibodyRuntime = null;
+    runtime.terrainCollisionStream?.dispose();
+    runtime.terrainCollisionStream = null;
     controllers.resetSensors();
-    runEvidence = createRunEvidenceLifecycle({
+    const activeRunEvidence = createRunEvidenceLifecycle({
       runtime,
       assembly,
       physics,
       controllers,
       run,
     });
-    runEvidence.prepare(runtime.multibodyRuntime.compiled);
+    runEvidence = activeRunEvidence;
+    let activeRuntime;
     try {
-      runtime.session = startProductionSimulationSession({
-        compiled: runtime.multibodyRuntime.compiled,
+      activeRuntime = createSimulationRunRuntime({
         snapshot: assembly.snapshot(),
-        runtime,
         physics,
         controllers,
-        challenges,
-        assembly,
-        run,
-        runEvidence,
+        evidence: {
+          inputTraceRecorder: activeRunEvidence.inputTraceRecorder,
+          failureEvidenceRecorder: activeRunEvidence.failureEvidenceRecorder,
+        },
+        services: {
+          prepareRun: activeRunEvidence.prepare,
+          resolveChallengeBinding: challenges.resolveBinding,
+          windEnabled: run.windEnabled,
+          connectionValid: assembly.connectionValid,
+        },
       });
-      runtime.telemetry = runtime.session.telemetry();
+      Object.assign(runtime, {
+        session: activeRuntime.session,
+        multibodyRuntime: activeRuntime.multibodyRuntime,
+        flexibleLineRuntime: activeRuntime.flexibleLineRuntime,
+        terrainCollisionStream: activeRuntime.terrainCollisionStream,
+        physicalAssemblyIndex: activeRuntime.physicalAssemblyIndex,
+        physicalFlightModel: activeRuntime.physicalFlightModel,
+        aerodynamicForceOwner: activeRuntime.aerodynamicForceOwner,
+        rotorForceOwner: activeRuntime.rotorForceOwner,
+        heatInputCollector: activeRuntime.heatInputCollector,
+        aerothermalAblationOwner: activeRuntime.aerothermalAblationOwner,
+        physicalFlightTelemetry: activeRuntime.physicalFlightTelemetry,
+      });
+      activeRunEvidence.activate();
     } catch (error) {
+      activeRuntime?.dispose();
       runtime.session = null;
+      activeRunEvidence.dispose();
       runEvidence = null;
       throw error;
     }
+    presentation.setWiresVisible(false);
+    presentation.aerothermal.prepare();
+    runtime.telemetry = runtime.session.telemetry();
+    await activeRunEvidence.captureReplayAnchor();
+    if (!run.running || runEvidence !== activeRunEvidence) return;
     presentation.clearSelection();
     presentation.render();
     presentation.notify(

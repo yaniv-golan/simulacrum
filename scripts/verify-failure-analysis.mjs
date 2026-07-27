@@ -1,5 +1,7 @@
 import { assert, assertNoErrors, conclude } from "./lib/assert.mjs";
 import { createBrowserTest } from "./lib/browser-test.mjs";
+import fs from "node:fs";
+import { decodeFailureEvidenceOrThrow } from "../src/model/failure-evidence-artifacts.js";
 
 const { browser, page, errors, baseUrl } = await createBrowserTest();
 await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
@@ -32,13 +34,39 @@ await page
   .locator('.command-hold[data-index="7"]')
   .dispatchEvent("pointerdown");
 await page.locator('.command-hold[data-index="7"]').dispatchEvent("pointerup");
-await page.evaluate(() => window.advanceTime(60000));
+let postAbortElapsedMs = 0;
+for (; postAbortElapsedMs < 60_000; postAbortElapsedMs += 2_000) {
+  await page.evaluate(() => window.advanceTime(2_000));
+  const sample = JSON.parse(
+    await page.evaluate(() => window.render_game_to_text()),
+  );
+  if (sample.failureAnalysis.report.eventCount > 0) break;
+}
 
 const failed = JSON.parse(
     await page.evaluate(() => window.render_game_to_text()),
   ),
   reportText = await page.locator(".failure-report-body").innerText(),
+  evidenceText = await page.locator(".failure-evidence-body").innerText(),
   panelVisible = await page.locator(".failure-lab").isVisible();
+let exportedEvidence = null;
+if (failed.failureAnalysis.evidence?.trigger) {
+  const downloadPromise = page.waitForEvent("download", { timeout: 30_000 });
+  await page.click("#export-failure-evidence");
+  const download = await downloadPromise.catch(async (error) => {
+      const toast = await page
+        .locator(".toast")
+        .innerText()
+        .catch(() => "");
+      throw new Error(
+        `${error instanceof Error ? error.message : String(error)}; export status: ${toast || "unavailable"}`,
+      );
+    }),
+    downloadPath = await download.path();
+  exportedEvidence = decodeFailureEvidenceOrThrow(
+    JSON.parse(fs.readFileSync(downloadPath, "utf8")),
+  ).wire;
+}
 await page.screenshot({ path: "artifacts/failure-postmortem.png" });
 assert.equal(
   panelVisible,
@@ -114,7 +142,9 @@ console.log(
         delta: afterStep.simulationTime - beforeStep.simulationTime,
         paused: afterStep.simulationPaused,
       },
+      postAbortElapsedMs,
       report: failed.failureAnalysis.report,
+      evidence: failed.failureAnalysis.evidence,
       replay: failed.failureAnalysis.replay,
       effects: failed.failureAnalysis.effects,
       replayCursor: {
@@ -163,6 +193,16 @@ await conclude(browser, () => {
   assert.match(reportText, /PEAK LOAD/);
   assert.match(reportText, /RATED LOAD/);
   assert.match(reportText, /CAUSAL CHAIN/);
+  assert.ok(
+    failed.failureAnalysis.evidence?.trigger,
+    "physical failure produced no exact fixed-step evidence trigger",
+  );
+  assert.match(evidenceText, /FIXED-STEP EVIDENCE/);
+  assert.equal(
+    exportedEvidence?.trigger.tick,
+    failed.failureAnalysis.evidence?.trigger.tick,
+    "downloaded evidence did not match the shared telemetry trigger",
+  );
   assert.ok(
     failed.failureAnalysis.effects.triggeredEvents > 0,
     "failure emitted no physical presentation effect",

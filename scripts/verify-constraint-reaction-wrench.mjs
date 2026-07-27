@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import * as CANNON from "cannon-es";
-import { constraintReactionWrench } from "../src/simulation/constraint-reaction-wrench.js";
+import {
+  assignConstraintEvidenceRows,
+  constraintReactionContributions,
+  constraintReactionWrench,
+} from "../src/simulation/constraint-reaction-wrench.js";
 
 const DT = 1 / 120;
 
@@ -61,6 +65,43 @@ function exactWrenchProbe() {
     },
     wrenchA = constraintReactionWrench(constraint),
     wrenchB = constraintReactionWrench(constraint, "B");
+  assignConstraintEvidenceRows(constraint, {
+    constraintId: "fixture-constraint",
+    sourceConnectionIds: ["fixture-connection"],
+    tick: 12,
+  });
+  const contributions = constraintReactionContributions(constraint, "A", {
+      tick: 12,
+    }),
+    sum = contributions.reduce(
+      (total, row) => ({
+        force: {
+          x: total.force.x + row.forceWorldN.x,
+          y: total.force.y + row.forceWorldN.y,
+          z: total.force.z + row.forceWorldN.z,
+        },
+        moment: {
+          x: total.moment.x + row.momentAtApplicationPointWorldNm.x,
+          y: total.moment.y + row.momentAtApplicationPointWorldNm.y,
+          z: total.moment.z + row.momentAtApplicationPointWorldNm.z,
+        },
+      }),
+      {
+        force: { x: 0, y: 0, z: 0 },
+        moment: { x: 0, y: 0, z: 0 },
+      },
+    );
+  assert.deepEqual(sum.force, wrenchA.force);
+  assert.deepEqual(sum.moment, wrenchA.moment);
+  assert.equal(contributions.length, 2);
+  assert.match(contributions[0].rowId, /^constraint:12:fixture-constraint:A:/u);
+  assert.match(
+    constraintReactionContributions(constraint, "B", { tick: 12 })[0].rowId,
+    /^constraint:12:fixture-constraint:B:/u,
+  );
+  assert.deepEqual(contributions[0].sourceConnectionIds, [
+    "fixture-connection",
+  ]);
   assert.deepEqual(wrenchA.force, { x: 6, y: 8, z: 10 });
   assert.deepEqual(wrenchA.moment, { x: 26, y: 18, z: 38 });
   near(wrenchA.forceN, Math.sqrt(200), 1e-12, "exact side-A force");
@@ -71,6 +112,10 @@ function exactWrenchProbe() {
   near(wrenchB.torqueNm, Math.sqrt(1636), 1e-12, "exact side-B torque");
   assert.throws(
     () => constraintReactionWrench(constraint, "C"),
+    /Unknown constraint wrench side C/,
+  );
+  assert.throws(
+    () => constraintReactionContributions(constraint, "C"),
     /Unknown constraint wrench side C/,
   );
 }

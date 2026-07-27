@@ -1,4 +1,5 @@
 import { InputTraceRecorder } from "../simulation/input-trace-recorder.js";
+import { FailureEvidenceRecorder } from "../simulation/failure-evidence-recorder.js";
 import { createCheckpointCoordinatorLoader } from "./checkpoint-coordinator-loader.js";
 import { createWorkshopRunConfiguration } from "./mechanism-run-identity.js";
 import { deploymentForBlueprint } from "./testing-playground-deployment.js";
@@ -11,10 +12,18 @@ export function createRunEvidenceLifecycle({
   controllers,
   run,
 }) {
-  const inputTraceRecorder = new InputTraceRecorder();
+  const inputTraceRecorder = new InputTraceRecorder(),
+    failureEvidenceRecorder = new FailureEvidenceRecorder();
+  let disposed = false;
+  const ownsRuntime = () =>
+    !disposed &&
+    runtime.inputTraceRecorder === inputTraceRecorder &&
+    runtime.failureEvidence.recorder === failureEvidenceRecorder;
   runtime.inputTraceRecorder = inputTraceRecorder;
+  runtime.failureEvidence.recorder = failureEvidenceRecorder;
   return Object.freeze({
     inputTraceRecorder,
+    failureEvidenceRecorder,
     prepare(compiled) {
       runtime.runBlueprint = assembly.serialize("Mechanism experiment");
       const deployment = deploymentForBlueprint(
@@ -33,8 +42,12 @@ export function createRunEvidenceLifecycle({
           deployment,
         },
       });
+      failureEvidenceRecorder.beginRun({
+        runIdentity: runtime.runIdentity,
+      });
       runtime.checkpointCoordinator = null;
       runtime.prepareCheckpointCoordinator = null;
+      return runtime.runIdentity;
     },
     activate() {
       if (!runtime.runIdentity)
@@ -45,10 +58,52 @@ export function createRunEvidenceLifecycle({
         controllers,
       });
     },
+    async captureReplayAnchor() {
+      try {
+        const prepareCheckpointCoordinator =
+            runtime.prepareCheckpointCoordinator,
+          coordinator = await prepareCheckpointCoordinator();
+        if (!ownsRuntime()) return false;
+        const runIdentity = runtime.runIdentity;
+        runtime.failureEvidence.replayAnchor = coordinator.capture({
+          runConfigurationFingerprint: runIdentity.runConfigurationFingerprint,
+          blueprintFingerprint: runIdentity.blueprintFingerprint,
+          compiledTopologyFingerprint: runIdentity.compiledTopologyFingerprint,
+        });
+        if (!ownsRuntime()) return false;
+        runtime.failureEvidence.replayError = null;
+        failureEvidenceRecorder.setReplayability({ supported: true });
+        return true;
+      } catch (error) {
+        if (!ownsRuntime()) return false;
+        const reasonCode =
+          /** @type {{code?:string}} */ (error)?.code ||
+          "REPLAY_ANCHOR_CAPTURE_FAILED";
+        runtime.failureEvidence.replayAnchor = null;
+        runtime.failureEvidence.replayError = reasonCode;
+        failureEvidenceRecorder.setReplayability({
+          supported: false,
+          reasonCode,
+        });
+        return false;
+      }
+    },
     dispose() {
+      disposed = true;
+      failureEvidenceRecorder.reset();
+      if (
+        runtime.inputTraceRecorder !== inputTraceRecorder ||
+        runtime.failureEvidence.recorder !== failureEvidenceRecorder
+      )
+        return;
       runtime.checkpointCoordinator = null;
       runtime.prepareCheckpointCoordinator = null;
       runtime.inputTraceRecorder = null;
+      runtime.failureEvidence = {
+        recorder: null,
+        replayAnchor: null,
+        replayError: null,
+      };
       runtime.runIdentity = null;
       runtime.runBlueprint = null;
     },

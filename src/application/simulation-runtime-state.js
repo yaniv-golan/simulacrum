@@ -1,5 +1,4 @@
 import { createTelemetrySnapshot } from "../simulation/telemetry.js";
-
 /**
  * Mutable state that exists only for one workshop simulation lifecycle.
  * Keeping it separate from editor and persistent assembly state makes reset,
@@ -23,6 +22,7 @@ export function createSimulationRuntimeState() {
     checkpointCoordinator: null,
     prepareCheckpointCoordinator: null,
     inputTraceRecorder: null,
+    failureEvidence: { recorder: null, replayAnchor: null, replayError: null },
     runIdentity: null,
     runBlueprint: null,
     workspaceFocusBefore: false,

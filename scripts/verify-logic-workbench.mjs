@@ -66,6 +66,9 @@ await page.selectOption("#logic-breakpoint-op", "gte");
 await page.fill("#logic-breakpoint-value", "-1000000");
 await page.click("#logic-arm-breakpoint");
 await page.click("#logic-test-machine");
+await page.waitForFunction(
+  () => JSON.parse(window.render_game_to_text()).running === true,
+);
 for (let index = 0; index < 10; index++) {
   await page.evaluate(() => window.advanceTime(280));
   await page.waitForTimeout(35);

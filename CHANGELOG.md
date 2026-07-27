@@ -4,6 +4,12 @@
 
 ### Added
 
+- Added bounded fixed-step failure evidence for player-authored machines:
+  tick-zero replay anchors, complete external input traces, deterministic
+  contact and solver-row identities, pre/post structural topology, generic
+  stall and invariant triggers, a strict private diagnostic bundle, and a
+  production-path CLI replay verifier. This application-private contract does
+  not change the separately versioned Core API.
 - Added the component-inspection foundation: deterministic S0 question,
   scenario, task, viewport, and 300-part/3,000-connection baselines; a versioned
   immutable selected-component read model; strict authored-content projection

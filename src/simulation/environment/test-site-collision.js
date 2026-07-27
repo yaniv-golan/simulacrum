@@ -136,6 +136,7 @@ export function createTestSiteCollisionBody({
     userData: {
       materialKey: "canonical-test-site",
       shapeId: "test-reserve:heightfield",
+      featureIdentityKind: "heightfield-cell-triangle-v1",
     },
   });
   body.addShape(

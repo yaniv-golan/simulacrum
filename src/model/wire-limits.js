@@ -7,6 +7,8 @@ export const WIRE_LIMITS = Object.freeze({
   checkpointBytes: 32_000_000,
   experimentBytes: 48_000_000,
   telemetryPlaybackBytes: 32_000_000,
+  failureEvidenceBytes: 64_000_000,
+  failureEvidenceNodes: 1_000_000,
   mechanismAuthoredComponentBytes: 2_000_000,
   maxDepth: 64,
   maxNodes: 100_000,

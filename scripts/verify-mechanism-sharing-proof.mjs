@@ -223,34 +223,43 @@ try {
     CHECKPOINT_STATE_OWNER_IDS,
     "portable proof omitted or reordered a production checkpoint owner",
   );
-  assert.equal(decoded.inputTrace.inputs.length, 0);
+  assert.ok(
+    decoded.inputTrace.inputs.length > 0 &&
+      decoded.inputTrace.inputs.every(
+        (entry) =>
+          entry.sourceId === "operator" && Number.isFinite(entry.value),
+      ),
+    "proof must preserve classified raw-boundary external candidates",
+  );
   assert.equal(decoded.manifestDigest, captured.manifestDigest);
 
   await activate('[data-lab-command="run"]');
+  await page.waitForFunction(
+    () => !JSON.parse(window.render_game_to_text()).running,
+  );
   await activate("#close-mechanism-lab");
   await page.click("#demos-btn");
   await page.click('[data-demo="cart"]');
+  const cartFixture = await textState();
+  assert.equal(cartFixture.demo.kind, "cart");
+  assert.match(cartFixture.remote.controls[0].label, /drive throttle/i);
+  await page.locator(".command-range").evaluateAll((inputs) => {
+    for (const input of inputs) {
+      input.value = "0";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  });
   await page
     .locator('[data-mode="test"]')
     .evaluate((element) => element.click());
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).running,
   );
-  if (await page.locator("#close-remote").isVisible())
-    await page.click("#close-remote");
-  await page.locator("canvas").click({ position: { x: 320, y: 240 } });
-  await page.evaluate(() =>
-    window.dispatchEvent(
-      new KeyboardEvent("keydown", { key: "w", code: "KeyW" }),
-    ),
-  );
-  await page.evaluate(() => window.advanceTime(250));
-  await page.evaluate(() =>
-    window.dispatchEvent(
-      new KeyboardEvent("keyup", { key: "w", code: "KeyW" }),
-    ),
-  );
-  await page.evaluate(() => window.advanceTime(100));
+  const brake = page.locator('.command-hold[data-index="2"]');
+  await brake.dispatchEvent("pointerdown");
+  await page.evaluate(() => window.advanceTime(50));
+  await brake.dispatchEvent("pointerup");
+  await page.evaluate(() => window.advanceTime(50));
   await page.click("#tools-btn");
   await activate("#mechanism-lab-tool");
   await activate('[data-lab-command="pause"]');
@@ -258,6 +267,9 @@ try {
     window.__copiedMechanismExperiment = null;
   });
   await activate("#mechanism-capture-proof");
+  await page.waitForSelector("#mechanism-capture-proof:not([disabled])", {
+    timeout: 120_000,
+  });
   await page.waitForFunction(
     () =>
       JSON.parse(window.render_game_to_text()).mechanismLab?.experiment
@@ -268,22 +280,33 @@ try {
   const drivenExperiment = decodeExperimentOrThrow(
       JSON.parse(await page.evaluate(() => window.__copiedMechanismExperiment)),
     ).wire,
-    drivePress = drivenExperiment.inputTrace.inputs.find(
-      (input) => input.value === 1,
-    );
+    commandPress = drivenExperiment.inputTrace.inputs.find(
+      (input) =>
+        input.value > 0 &&
+        drivenExperiment.inputTrace.inputs.some(
+          (candidate) =>
+            candidate.targetId === input.targetId &&
+            candidate.channelId === input.channelId &&
+            candidate.value === 0 &&
+            candidate.tick > input.tick,
+        ),
+    ),
+    commandRelease = commandPress
+      ? drivenExperiment.inputTrace.inputs.find(
+          (input) =>
+            input.targetId === commandPress.targetId &&
+            input.channelId === commandPress.channelId &&
+            input.value === 0 &&
+            input.tick > commandPress.tick,
+        )
+      : null;
   assert.ok(
-    drivePress,
-    "production experiment omitted the operator drive transition",
+    commandPress,
+    `production experiment omitted the operator command transition: ${JSON.stringify(drivenExperiment.inputTrace.inputs)}`,
   );
   assert.ok(
-    drivenExperiment.inputTrace.inputs.some(
-      (input) =>
-        input.targetId === drivePress.targetId &&
-        input.channelId === drivePress.channelId &&
-        input.value === 0 &&
-        input.tick > drivePress.tick,
-    ),
-    "production experiment omitted the matching operator drive release",
+    commandRelease,
+    "production experiment omitted the command release",
   );
   assert.ok(
     drivenExperiment.inputTrace.inputs.every(

@@ -14,6 +14,16 @@ function reportMarkup(report) {
   return `<div class="failure-title"><i class="${event.mode}"></i><div><small>ROOT CAUSE · ${event.mode.toUpperCase()} · T+${event.timeS.toFixed(3)} S${report.eventCount > 1 ? ` · ${report.eventCount} FAILURE EVENTS` : ""}</small><h3>${event.partA.name} ↔ ${event.partB.name}</h3><p>${event.reason}</p></div></div><div class="failure-metrics"><span><b>${formatForce(event.load.peakN)}</b><small>PEAK LOAD</small></span><span><b>${formatForce(event.load.ratedN)}</b><small>RATED LOAD</small></span><span><b>${event.load.ratedN ? `${(event.load.utilization * 100).toFixed(0)}%` : "—"}</b><small>UTILIZATION</small></span><span><b>${event.detachedPartIds.length}</b><small>DETACHED</small></span></div><div class="causal-chain"><small>CAUSAL CHAIN</small>${event.causalChain.map((entry, index) => `<div><i>${index + 1}</i><span><b>${entry.label}</b><em>${entry.value}</em></span></div>`).join("")}</div>`;
 }
 
+function evidenceMarkup(summary) {
+  if (!summary?.trigger)
+    return '<div class="failure-empty failure-evidence"><b>DIAGNOSTIC CAPTURE ARMED</b><span>Exact fixed-step evidence will freeze on a stall, contact invariant, numerical anomaly, or structural failure.</span></div>';
+  const diagnostic = summary.diagnostic || {},
+    contact = diagnostic.contact,
+    contribution = diagnostic.contribution,
+    connection = diagnostic.connection;
+  return `<div class="causal-chain failure-evidence"><small>FIXED-STEP EVIDENCE · ${summary.validity.toUpperCase()}</small><div><i>1</i><span><b>${summary.trigger.kind}</b><em>tick ${summary.trigger.tick} · subject ${summary.trigger.subjectId ?? "unavailable"}</em></span></div><div><i>2</i><span><b>${contact ? `${contact.surfaceRegionId || contact.materialKey || "contact"} · ${formatForce(contact.forceN || 0)}` : "Contact unavailable"}</b><em>${contact ? `shape ${contact.supportShapeId || "unavailable"} · feature ${contact.featureValidity}` : "No retained source contact"}</em></span></div><div><i>3</i><span><b>${contribution ? `${contribution.rowKind} · ${formatForce(contribution.forceMagnitudeN || 0)}` : "Solver contribution unavailable"}</b><em>${contribution?.rowId || "No retained row identity"}</em></span></div><div><i>4</i><span><b>${connection ? `Connection ${connection.connectionId}` : "Authored connection unavailable"}</b><em>${connection ? `${(Math.max(connection.forceUtilization, connection.torqueUtilization) * 100).toFixed(0)}% utilized · topology ${diagnostic.preTopologyRevision} → ${diagnostic.postTopologyRevision}` : "No structural capacity link for this trigger"}</em></span></div><div><i>5</i><span><b>Replay ${summary.replayability.state}</b><em>${summary.replayability.reasonCode || `${summary.exactFrameCount} exact frames retained`}</em></span></div></div>`;
+}
+
 /** Owns post-mortem, exact-step, replay UI, and failure presentation effects. */
 export function installFailureLab({
   root = document,
@@ -26,6 +36,7 @@ export function installFailureLab({
   stepLive,
   presentTelemetry,
   resetSimulation,
+  requestFailureEvidenceExport = async () => ({ ok: false }),
   notify = (_message) => {},
 }) {
   const $ = (selector) => root.querySelector(selector),
@@ -48,10 +59,11 @@ export function installFailureLab({
     .querySelector(".shell")
     .insertAdjacentHTML(
       "beforeend",
-      `<section class="failure-lab glass hidden"><div class="failure-lab-head"><div><small>TEST ANALYSIS</small><h2>Failure post-mortem</h2></div><button id="close-failure-lab" aria-label="Close failure analysis">×</button></div><div class="failure-live-state"><i></i><span id="failure-state-label">LIVE TEST</span><output id="failure-time-label">T+0.000 S</output></div><div class="failure-report-body"></div><div class="replay-deck hidden"><div class="replay-readout"><b>INSTANT REPLAY</b><span id="replay-clock">0.00 / 0.00 s</span></div><input id="replay-scrubber" type="range" min="0" max="0" value="0" step="1"><div class="replay-controls"><button id="replay-start" title="First recorded frame">|◀</button><button id="replay-back" title="Previous recorded frame">◀</button><button id="replay-play" title="Play/pause replay">▶</button><button id="replay-forward" title="Next recorded frame">▶</button><button id="replay-end" title="Last recorded frame">▶|</button></div></div><div class="failure-lab-actions"><button id="replay-failure">REPLAY FAILURE</button><button id="return-live" class="hidden">RETURN TO LIVE</button><button id="reset-from-report">RESET TEST</button></div></section>`,
+      `<section class="failure-lab glass hidden"><div class="failure-lab-head"><div><small>TEST ANALYSIS</small><h2>Failure post-mortem</h2></div><button id="close-failure-lab" aria-label="Close failure analysis">×</button></div><div class="failure-live-state"><i></i><span id="failure-state-label">LIVE TEST</span><output id="failure-time-label">T+0.000 S</output></div><div class="failure-report-body"></div><div class="failure-evidence-body"></div><div class="replay-deck hidden"><div class="replay-readout"><b>INSTANT REPLAY</b><span id="replay-clock">0.00 / 0.00 s</span></div><input id="replay-scrubber" type="range" min="0" max="0" value="0" step="1"><div class="replay-controls"><button id="replay-start" title="First recorded frame">|◀</button><button id="replay-back" title="Previous recorded frame">◀</button><button id="replay-play" title="Play/pause replay">▶</button><button id="replay-forward" title="Next recorded frame">▶</button><button id="replay-end" title="Last recorded frame">▶|</button></div></div><div class="failure-lab-actions"><button id="export-failure-evidence" disabled>EXPORT DIAGNOSTIC BUNDLE</button><button id="replay-failure">REPLAY FAILURE</button><button id="return-live" class="hidden">RETURN TO LIVE</button><button id="reset-from-report">RESET TEST</button></div></section>`,
     );
   const panel = $(".failure-lab"),
     reportBody = $(".failure-report-body"),
+    evidenceBody = $(".failure-evidence-body"),
     replayDeck = $(".replay-deck"),
     scrubber = $("#replay-scrubber");
   let replayActive = false,
@@ -84,17 +96,23 @@ export function installFailureLab({
   }
 
   function syncButtons() {
-    const hasReport = recorder.report().eventCount > 0,
+    const evidence = getLiveTelemetry()?.systems?.failureEvidence,
+      hasReport =
+        recorder.report().eventCount > 0 || Boolean(evidence?.trigger),
       hasReplay = replay.frames.length > 1;
     $("#failure-report").disabled = !hasReport;
     $("#failure-report-tool").disabled = !hasReport;
     $("#instant-replay").disabled = !hasReplay;
     $("#replay-failure").disabled = !hasReplay;
+    $("#export-failure-evidence").disabled = !evidence?.trigger;
   }
 
   function renderReport() {
     const report = recorder.report();
     reportBody.innerHTML = reportMarkup(report);
+    evidenceBody.innerHTML = evidenceMarkup(
+      getLiveTelemetry()?.systems?.failureEvidence,
+    );
     $("#failure-time-label").textContent = report.primary
       ? `T+${report.primary.timeS.toFixed(3)} S`
       : `T+${(getLiveTelemetry()?.time || 0).toFixed(3)} S`;
@@ -265,6 +283,12 @@ export function installFailureLab({
     closeReport();
     resetSimulation();
   };
+  $("#export-failure-evidence").onclick = async () => {
+    const button = $("#export-failure-evidence");
+    button.disabled = true;
+    await requestFailureEvidenceExport();
+    syncButtons();
+  };
   $("#replay-start").onclick = () => showReplayFrame(0);
   $("#replay-back").onclick = () => showReplayFrame(replayCursor - 1);
   $("#replay-forward").onclick = () => showReplayFrame(replayCursor + 1);
@@ -286,6 +310,7 @@ export function installFailureLab({
       const report = recorder.report();
       return {
         open: !panel.classList.contains("hidden"),
+        evidence: getLiveTelemetry()?.systems?.failureEvidence || null,
         report: {
           ...report,
           timeline: report.timeline.map((event) => ({

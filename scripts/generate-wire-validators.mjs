@@ -28,6 +28,11 @@ const targets = Object.freeze([
   ["checkpoint", "checkpoint-wire-schema.json", "validateCheckpointWire"],
   ["experiment", "experiment-wire-schema.json", "validateExperimentWire"],
   [
+    "failure-evidence",
+    "failure-evidence-wire-schema.json",
+    "validateFailureEvidenceWire",
+  ],
+  [
     "telemetry-playback",
     "telemetry-playback-wire-schema.json",
     "validateTelemetryPlaybackWire",
@@ -52,6 +57,7 @@ const outputGroups = Object.freeze([
       "checkpoint",
       "experiment",
       "telemetry-playback",
+      "failure-evidence",
     ],
   ],
 ]);

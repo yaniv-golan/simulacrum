@@ -78,7 +78,13 @@ export class TerrainCollisionStream {
       type: CANNON.Body.STATIC,
       material: this.material,
     });
-    body.addShape(new CANNON.Heightfield(heights, { elementSize }));
+    const heightfield = new CANNON.Heightfield(heights, { elementSize });
+    /** @type {any} */ (heightfield).userData = {
+      materialKey: "compacted-soil",
+      shapeId: `terrain:${key}:heightfield`,
+      featureIdentityKind: "heightfield-cell-triangle-v1",
+    };
+    body.addShape(heightfield);
     body.position.set(minimumX, 0, maximumZ);
     body.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
     const runtimeBody = /** @type {any} */ (body);

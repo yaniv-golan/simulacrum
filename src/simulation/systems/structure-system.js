@@ -3,6 +3,27 @@ import { applyRunGraphLoads } from "../run-assembly-graph.js";
 
 const PHYSICAL_KINDS = new Set(["mechanical", "mesh"]);
 
+function structuralTopology(context) {
+  return {
+    graphRevision: context.runGraph.graphRevision,
+    connections: context.runGraph
+      .connections()
+      .filter((connection) => PHYSICAL_KINDS.has(connection.kind))
+      .map((connection) => ({
+        id: connection.id,
+        a: connection.a,
+        b: connection.b,
+        kind: connection.kind,
+        failed: Boolean(connection.failed),
+      })),
+    detachedPartIds: context.runGraph
+      .parts()
+      .filter((part) => part.detached)
+      .map((part) => part.id)
+      .sort((left, right) => String(left).localeCompare(String(right), "en")),
+  };
+}
+
 function runtimeBodyComponents(runtime, allowed = null) {
   if (!runtime?.compiled) return [];
   const ids = [...runtime.bodyByPart.keys()].filter(
@@ -175,6 +196,30 @@ export class StructureSystem {
                 : connection,
             )
           : null;
+    const failureEvidenceRecorder = context.services.failureEvidenceRecorder,
+      captureEvidence = Boolean(failureEvidenceRecorder?.acceptingEvidence?.());
+    if (captureEvidence)
+      failureEvidenceRecorder.recordStructurePreMutation({
+        tick: context.clock.tick,
+        timeS: context.time,
+        evaluations: evaluations.map((evaluation, index) => ({
+          ...evaluation.record,
+          fatigue: Number(updatedConnections[index]?.fatigue || 0),
+          ultimateForceN: Number(evaluation.connection.capacity.ultimateForceN),
+          ultimateTorqueNm: Number(
+            evaluation.connection.capacity.ultimateTorqueNm,
+          ),
+        })),
+        topology: structuralTopology(context),
+      });
+    if (newlyFailed.length)
+      failureEvidenceRecorder?.trigger({
+        kind: "structural-failure",
+        tick: context.clock.tick,
+        timeS: context.time,
+        subjectId: newlyFailed[0],
+        validity: "measured",
+      });
     let detachedConstraints = pendingConnections
       ? runtime?.applyConnectionFailures(pendingConnections) || []
       : [];
@@ -229,6 +274,13 @@ export class StructureSystem {
         if (body) context.bodyRegistry.setDetached(body.bodyId, true);
       }
     this.#appliedGraphRevision = context.runGraph.graphRevision;
+    if (captureEvidence)
+      failureEvidenceRecorder.recordStructurePostMutation({
+        tick: context.clock.tick,
+        timeS: context.time,
+        event: structuralEvent,
+        topology: structuralTopology(context),
+      });
 
     const runtimeConnections = context.runGraph.connections();
     context.telemetry.structures = {

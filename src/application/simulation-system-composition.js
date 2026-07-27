@@ -35,6 +35,7 @@ import {
   TestSiteTelemetrySystem,
   ThermalSystem,
 } from "../simulation/systems/index.js";
+import { FailureEvidenceSystem } from "../simulation/systems/failure-evidence-system.js";
 import { PhysicalAssemblySystem } from "../simulation/systems/physical-assembly-system.js";
 
 /** Creates the single ordered production fixed-step pipeline. */
@@ -75,6 +76,7 @@ export function createProductionSimulationSystems(compiledAssembly = null) {
     new TestSiteTelemetrySystem(),
     new TestCourseSystem(),
     new MobilityTelemetrySystem(),
+    new FailureEvidenceSystem(),
     new PhysicalFlightTelemetrySystem(),
     new TelemetrySystem(),
   ];
@@ -90,6 +92,7 @@ export function captureProductionSystemTelemetry(context) {
     sensors: telemetry.sensors,
     controllers: telemetry.controllers,
     mobility: telemetry.mobility || null,
+    failureEvidence: telemetry.failureEvidence || null,
     articulated: telemetry.articulated || null,
     flight: telemetry.flight || null,
     aerodynamics: telemetry.aerodynamics || null,
