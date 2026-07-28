@@ -51,4 +51,40 @@ assert.ok(
   Object.values(camera.position).every(Number.isFinite),
   "camera pose must remain finite at aerospace-scale translation",
 );
+
+const animatedSubject = { id: 2 },
+  animatedCenter = new THREE.Vector3(4100, 5000, -6000);
+tracker.update({
+  dt: 1 / 120,
+  yaw: 0.72,
+  pitch: 0.47,
+  distance: 18,
+  tracking: {
+    sphere: new THREE.Sphere(animatedCenter, 6),
+    subjects: [animatedSubject],
+  },
+  safeFrame,
+});
+const envelopeDistance = tracker.telemetry.fitDistance;
+tracker.update({
+  dt: 1 / 120,
+  yaw: 0.72,
+  pitch: 0.47,
+  distance: 18,
+  tracking: {
+    sphere: new THREE.Sphere(animatedCenter, 3),
+    subjects: [animatedSubject],
+  },
+  safeFrame,
+});
+assert.equal(
+  tracker.telemetry.boundsRadius,
+  6,
+  "animated child bounds contracted the active tracking envelope",
+);
+assert.equal(
+  tracker.telemetry.fitDistance,
+  envelopeDistance,
+  "animated child bounds changed the active camera fit",
+);
 console.log("camera tracker passed");

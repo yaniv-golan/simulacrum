@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { CameraTracker } from "./camera-tracker.js";
+import { cameraTrackingBounds } from "./camera-tracking-bounds.js";
 import {
   partIdForCameraHit,
   placementIntentForCamera,
@@ -332,12 +333,11 @@ export function createCameraInteractionController({
     const focusedEnvironmentObject = assembly.focusedEnvironmentObject();
     if (!followSelection && focusedEnvironmentObject)
       subjects.push(focusedEnvironmentObject);
-    const bounds = new THREE.Box3();
-    for (const subject of subjects) bounds.expandByObject(subject, true);
-    const sphere = bounds.getBoundingSphere(new THREE.Sphere());
-    return Number.isFinite(sphere.radius) && sphere.radius > 0
-      ? { sphere, subjects }
-      : null;
+    return cameraTrackingBounds({
+      subjects,
+      machine,
+      parts: assembly.parts(),
+    });
   }
 
   function update(dt) {

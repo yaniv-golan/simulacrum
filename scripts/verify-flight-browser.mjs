@@ -117,6 +117,22 @@ const maxCollectiveSamples = await page.evaluate(() => {
 const maxCollectiveState = JSON.parse(
   await page.evaluate(() => window.render_game_to_text()),
 );
+const maxCollectiveCameraSamples = await page.evaluate(() => {
+  const observations = [];
+  for (let tick = 1; tick <= 48; tick++) {
+    window.advanceTime(1000 / 120);
+    const state = JSON.parse(window.render_game_to_text());
+    observations.push({
+      attitudeDeg: state.demo.drone.attitudeDeg,
+      angularRateRadS: state.demo.drone.angularRateRadS,
+      cameraPosition: state.camera.position,
+      cameraTarget: state.camera.target,
+      boundsRadius: state.camera.tracking?.boundsRadius,
+      renderedDistance: state.camera.renderedDistance,
+    });
+  }
+  return observations;
+});
 await page.screenshot({
   path: "artifacts/flight-runtime/drone-max-collective-stable.png",
   fullPage: true,
@@ -129,6 +145,7 @@ console.log(
       maxCollective: {
         drone: maxCollectiveState.demo.drone,
         samples: maxCollectiveSamples,
+        cameraSamples: maxCollectiveCameraSamples,
       },
       flightStatus: state.mission,
       visibleSource,
@@ -242,6 +259,63 @@ await conclude(browser, () => {
     ),
     "maximum collective caused structural failure",
   );
+  const maximumStep = (samples, read) =>
+      Math.max(
+        ...samples
+          .slice(1)
+          .map((sample, index) =>
+            Math.abs(read(sample) - read(samples[index])),
+          ),
+      ),
+    directionChanges = (samples, read) => {
+      let changes = 0,
+        previousDirection = 0;
+      for (let index = 1; index < samples.length; index++) {
+        const delta = read(samples[index]) - read(samples[index - 1]),
+          direction = delta > 0.01 ? 1 : delta < -0.01 ? -1 : 0;
+        if (!direction) continue;
+        if (previousDirection && direction !== previousDirection) changes++;
+        previousDirection = direction;
+      }
+      return changes;
+    };
+  for (const axis of ["x", "y", "z"]) {
+    assert.ok(
+      directionChanges(
+        maxCollectiveCameraSamples,
+        (sample) => sample.cameraTarget[axis],
+      ) <= 2,
+      `animated flight geometry repeatedly reversed the camera target on ${axis}`,
+    );
+    assert.ok(
+      maximumStep(
+        maxCollectiveCameraSamples,
+        (sample) => sample.cameraPosition[axis] - sample.cameraTarget[axis],
+      ) <= 0.11,
+      `animated flight geometry shook the camera offset on ${axis}`,
+    );
+  }
+  const trackingRadii = maxCollectiveCameraSamples.map(
+    (sample) => sample.boundsRadius,
+  );
+  assert.ok(
+    trackingRadii.every(
+      (radius, index) => index === 0 || radius >= trackingRadii[index - 1],
+    ),
+    "animated rotor bounds contracted the active camera envelope",
+  );
+  assert.ok(
+    Math.max(...trackingRadii) - Math.min(...trackingRadii) <= 0.05,
+    "animated rotor bounds materially expanded the active camera envelope",
+  );
+  for (const axis of ["pitch", "roll", "yaw"])
+    assert.ok(
+      maximumStep(
+        maxCollectiveCameraSamples,
+        (sample) => sample.attitudeDeg[axis],
+      ) <= 0.2,
+      `drone airframe itself shook on ${axis}`,
+    );
   assert.match(
     visibleSource,
     /motor\.0\.throttle/,

@@ -10,6 +10,8 @@ export class CameraTracker {
     this.target = target;
     this.smoothedTarget = target.clone();
     this.smoothedDistance = initialDistance;
+    this.trackedSubjects = [];
+    this.trackingRadius = 0;
     this.telemetry = {
       active: false,
       boundsRadius: 0,
@@ -83,15 +85,23 @@ export class CameraTracker {
     this.telemetry.active = Boolean(tracking);
     if (tracking) {
       const { sphere, subjects } = tracking,
+        sameSubjects =
+          subjects.length === this.trackedSubjects.length &&
+          subjects.every(
+            (subject, index) => subject === this.trackedSubjects[index],
+          ),
+        trackingRadius = sameSubjects
+          ? Math.max(this.trackingRadius, sphere.radius)
+          : sphere.radius,
         safe = safeFrame,
         width = Math.max(1, safe.viewport.width),
         height = Math.max(1, safe.viewport.height),
         safeWidth = Math.max(80, safe.right - safe.left),
         safeHeight = Math.max(80, safe.bottom - safe.top),
         tanHalfFov = Math.tan(THREE.MathUtils.degToRad(this.camera.fov * 0.5)),
-        verticalFit = sphere.radius / (tanHalfFov * (safeHeight / height)),
+        verticalFit = trackingRadius / (tanHalfFov * (safeHeight / height)),
         horizontalFit =
-          sphere.radius /
+          trackingRadius /
           (tanHalfFov * this.camera.aspect * (safeWidth / width)),
         fitDistance = Math.max(verticalFit, horizontalFit) * 1.18,
         viewDirection = new THREE.Vector3(
@@ -122,8 +132,10 @@ export class CameraTracker {
         );
       // Translation belongs to the tracked body, not to the camera spring.
       this.smoothedTarget.copy(this.target);
+      this.trackedSubjects = [...subjects];
+      this.trackingRadius = trackingRadius;
       Object.assign(this.telemetry, {
-        boundsRadius: sphere.radius,
+        boundsRadius: trackingRadius,
         fitDistance,
         subjects: subjects.length,
         safeFrame: {
@@ -134,6 +146,8 @@ export class CameraTracker {
         },
       });
     } else {
+      this.trackedSubjects = [];
+      this.trackingRadius = 0;
       if (followSelection && selectionPosition)
         this.target.copy(selectionPosition);
       this.smoothedTarget.lerp(this.target, smoothing);

@@ -3,10 +3,20 @@ import * as THREE from "three";
 import { createCameraInteractionController } from "../src/presentation/camera-interaction-controller.js";
 import { projectWorkshopAxes } from "../src/presentation/workshop-orientation-indicator.js";
 
+globalThis.getComputedStyle = () => ({
+  display: "block",
+  visibility: "visible",
+  opacity: "1",
+});
+
 const camera = new THREE.PerspectiveCamera(52, 16 / 9, 0.1, 1000),
   machine = new THREE.Group(),
   partMesh = new THREE.Mesh(
     new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshBasicMaterial(),
+  ),
+  animatedRotor = new THREE.Mesh(
+    new THREE.BoxGeometry(6, 0.1, 0.4),
     new THREE.MeshBasicMaterial(),
   ),
   part = { id: 1, type: "beam", mesh: partMesh },
@@ -41,8 +51,10 @@ const camera = new THREE.PerspectiveCamera(52, 16 / 9, 0.1, 1000),
       return controls.get(selector);
     },
   };
+partMesh.add(animatedRotor);
 machine.add(partMesh);
-let cameraTool = null;
+let cameraTool = null,
+  running = false;
 const controller = createCameraInteractionController({
   scene: {
     camera,
@@ -56,7 +68,7 @@ const controller = createCameraInteractionController({
     parts: () => [part],
     selectedId: () => part.id,
     selectedIds: () => new Set([part.id]),
-    running: () => false,
+    running: () => running,
     focusedEnvironmentObject: () => null,
     partName: () => "Beam",
   },
@@ -141,6 +153,28 @@ controller.handleNavigationKey(key("Home", "Home"));
 assert.equal(controller.snapshot().presetId, null);
 assert.equal(controller.snapshot().axisViewId, null);
 
+running = true;
+partMesh.position.set(100, 20, -50);
+controller.update(1 / 120);
+const translatedTarget = controller.snapshot().target.clone(),
+  initialTrackingRadius = controller.snapshot().tracking.boundsRadius;
+assert.deepEqual(
+  translatedTarget.toArray(),
+  partMesh.position.toArray(),
+  "running camera tracked the static machine scene root instead of the physical part roots",
+);
+animatedRotor.rotation.y = Math.PI / 2;
+controller.update(1 / 120);
+assert.deepEqual(
+  controller.snapshot().target.toArray(),
+  translatedTarget.toArray(),
+  "animated child geometry moved the running camera target",
+);
+assert.ok(
+  controller.snapshot().tracking.boundsRadius >= initialTrackingRadius,
+  "animated child geometry contracted the active tracking envelope",
+);
+
 const identityProjection = Object.fromEntries(
   projectWorkshopAxes(new THREE.Quaternion()).map((axis) => [axis.id, axis]),
 );
@@ -190,4 +224,6 @@ assert.deepEqual(obliqueProjection, {
 
 partMesh.geometry.dispose();
 partMesh.material.dispose();
+animatedRotor.geometry.dispose();
+animatedRotor.material.dispose();
 console.log("camera interaction controller verification passed");
