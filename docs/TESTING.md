@@ -8,6 +8,11 @@ Use Node.js 24.18 and the npm version declared by `packageManager` in
 `package.json` when comparing timings. Timing results from another toolchain are
 diagnostic only.
 
+Hosted CI also exercises Node 26 in a non-blocking compatibility lane. That
+lane is an early warning for runtime and toolchain drift, not release
+qualification: Node 24.18 remains the supported engine until a future LTS
+cutover passes the full completion, mutation, performance, and soak gates.
+
 ## Edit loop
 
 For a known pure Node verifier, direct execution is the fastest path because it

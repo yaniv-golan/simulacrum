@@ -10,9 +10,14 @@ Install Node.js 24.18 LTS, run `npm ci`, then use `npm run dev`. Before opening 
 
 GitHub Actions deliberately separates feedback speed from deep qualification:
 
-- **CI** runs on pull requests and pushes to `main`. It executes the static,
-  architecture, contract, coverage, package, and audit gates plus a
-  representative browser/simulation smoke set. Tags do not repeat this run.
+- **CI** runs on pull requests and pushes to `main`. Its required Node 24.18
+  lane executes the static, architecture, contract, coverage, package, and
+  audit gates plus a representative browser/simulation smoke set. A separate
+  non-blocking Node 26 compatibility lane runs the same technical gates except
+  the duplicated dependency audit. That lane is diagnostic while Node 26 is a
+  Current release: its success does not expand the supported engine range, and
+  its failure does not waive the Node 24.18 release gates. Tags do not repeat
+  these runs.
 - **Deep verification** runs weekly or on demand. Four deterministic shards
   execute all verification suites in parallel, followed by production builds
   and live performance baselines. Its optional mutation matrix runs the eight
