@@ -358,6 +358,7 @@ header {
 .assembly-outliner {
   flex: 0 1 38%;
   min-height: 92px;
+  max-height: 42%;
   overflow-y: auto;
   border-bottom: 1px solid var(--line);
   padding: 0 0 12px;
@@ -366,6 +367,10 @@ header {
 .assembly-outliner h3,
 .assembly-outliner p {
   margin: 0 0 5px;
+}
+.assembly-outliner h3 {
+  font: 600 11px/1.2 "Space Grotesk";
+  letter-spacing: 0.1em;
 }
 .assembly-outliner p,
 .assembly-outliner summary,
@@ -396,7 +401,8 @@ header {
   padding: 4px 5px;
   background: transparent;
   color: #d8eae7;
-  font: 500 8px "Space Grotesk";
+  font: 500 8px/1.25 "Space Grotesk";
+  overflow-wrap: anywhere;
   text-align: left;
   cursor: pointer;
 }

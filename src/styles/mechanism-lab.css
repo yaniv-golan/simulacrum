@@ -37,15 +37,21 @@
   height: 100%;
   border: 0;
   margin: 0;
+  max-height: none;
 }
 .shell.mechanism-lab-open #assembly-outliner-list {
   min-height: 0;
   overflow-y: auto;
 }
 .shell.mechanism-lab-open .assembly-outliner p,
+.shell.mechanism-lab-open .assembly-outliner h3,
 .shell.mechanism-lab-open .assembly-outliner button,
 .shell.mechanism-lab-open .assembly-outliner button span {
   font-size: 9px;
+}
+.shell.mechanism-lab-open .assembly-outliner h3 {
+  font-size: 11px;
+  line-height: 1.2;
 }
 .mechanism-lab header,
 .mechanism-lab-actions,

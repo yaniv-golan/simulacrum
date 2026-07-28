@@ -3,7 +3,7 @@ export function createRemoteConsoleTemplate() {
     <div class="remote-head">
       <div><small>COMMAND UPLINK</small><h2 id="remote-title">Field Remote</h2></div>
       <div class="uplink"><i></i><span>CHECKING LINK</span></div>
-      <button id="close-remote" aria-label="Close Field Remote">×</button>
+      <button id="close-remote" class="panel-dismiss" aria-label="Close Field Remote" title="Close Field Remote">CLOSE</button>
     </div>
     <div class="remote-profile">
       <label>CONTROL TEMPLATE

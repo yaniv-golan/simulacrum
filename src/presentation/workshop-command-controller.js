@@ -87,6 +87,7 @@ export function installWorkshopCommandController({
   remoteButton.onclick = () => {
     const opening = remotePanel.classList.contains("hidden");
     remotePanel.classList.toggle("hidden", !opening);
+    remoteButton.setAttribute("aria-expanded", String(opening));
     if (opening) {
       primarySurfaces.hideOthers(".remote-console");
       remote.render();
@@ -96,6 +97,7 @@ export function installWorkshopCommandController({
   required("#close-remote").onclick = () => {
     remote.releaseHeld();
     remotePanel.classList.add("hidden");
+    remoteButton.setAttribute("aria-expanded", "false");
     remoteButton.focus();
   };
   required("#remote-profile").onchange = (event) =>
@@ -155,6 +157,7 @@ export function installWorkshopCommandController({
       browser.loadDemo(button.dataset.demo || "gearbox");
       primarySurfaces.hideOthers(".remote-console");
       required(".remote-console").classList.remove("hidden");
+      remoteButton.setAttribute("aria-expanded", "true");
       remote.render();
       queueMicrotask(() => required("#close-remote").focus());
     };

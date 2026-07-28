@@ -13,7 +13,7 @@ export function createWorkshopHeaderTemplate() {
       <button id="test-reserve-btn" title="Open the Workshop Test Reserve" aria-label="Test Reserve"><i>⌖</i><span>TEST GROUND</span></button>
       <button id="demos-btn" title="Load a demonstration" aria-label="Demos"><i>▦</i><span>DEMOS</span></button>
       <button id="challenges-btn" title="Open engineering challenges" aria-label="Challenges"><i>⚑</i><span>CHALLENGES</span></button>
-      <button id="remote-btn" title="Open the Field Remote" aria-label="Remote"><i>⌁</i><span>REMOTE</span></button>
+      <button id="remote-btn" title="Open or show the Field Remote" aria-label="Field Remote" aria-expanded="false"><i>⌁</i><span>FIELD REMOTE</span></button>
       <div class="tools-menu-wrap">
         <button id="tools-btn" title="Open workshop tools" aria-label="Tools" aria-haspopup="menu" aria-expanded="false"><i>•••</i><span>TOOLS</span></button>
         <div class="tools-menu hidden" role="menu" aria-label="Workshop tools">

@@ -58,6 +58,18 @@
   opacity: 0.35;
   cursor: not-allowed;
 }
+.controller-window-actions #close-controller {
+  min-width: 52px;
+  color: #86a29e;
+  font-size: 6px;
+  letter-spacing: 0.08em;
+}
+.controller-window-actions #close-controller:hover,
+.controller-window-actions #close-controller:focus-visible {
+  color: #ffac9d;
+  border-color: #9e5148;
+  outline: none;
+}
 .drive-hud.collapsed {
   width: 310px;
   border-radius: 8px;
@@ -78,6 +90,7 @@
   border-radius: 5px;
   background: #0b2222ee;
   color: #70e0c4;
+  min-height: 34px;
   padding: 9px 12px;
   box-shadow: 0 8px 24px #0008;
   cursor: pointer;
@@ -111,6 +124,7 @@
   display: grid;
   gap: 5px;
   max-height: 260px;
+  min-height: 0;
   overflow-y: auto;
 }
 .direct-control {
@@ -131,7 +145,8 @@
 }
 .direct-control b {
   color: #d9eee9;
-  font: 600 8px "Space Grotesk";
+  font: 600 8px/1.2 "Space Grotesk";
+  overflow-wrap: anywhere;
 }
 .direct-control small {
   margin-top: 2px;

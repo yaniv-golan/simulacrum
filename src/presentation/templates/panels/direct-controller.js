@@ -1,5 +1,5 @@
 export function createDirectControllerTemplate() {
-  return `<button class="controller-launcher hidden" id="controller-launcher" title="Open model controller">◆ CONTROLLER</button>
+  return `<button class="controller-launcher hidden" id="controller-launcher" title="Open direct controller">OPEN CONTROLLER</button>
   <section class="drive-hud glass hidden" aria-label="Direct controller">
     <div class="drive-head">
       <div><small id="direct-profile">CONTROL SURFACE</small><b>DIRECT CONTROL</b></div>
@@ -7,7 +7,7 @@ export function createDirectControllerTemplate() {
       <div class="controller-window-actions">
         <button id="controller-mode" title="Switch custom or generic controller">CUSTOM</button>
         <button id="collapse-controller" title="Collapse controller" aria-expanded="true">−</button>
-        <button id="close-controller" title="Close controller" aria-label="Close direct controller">×</button>
+        <button id="close-controller" title="Hide direct controller" aria-label="Hide direct controller">HIDE</button>
       </div>
     </div>
     <div class="controller-body">
