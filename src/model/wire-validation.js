@@ -68,7 +68,7 @@ const FORMAT_CONTRACTS = Object.freeze({
   }),
   "failure-evidence": Object.freeze({
     format: "simulacrum-failure-evidence",
-    version: 1,
+    version: 2,
     bytes: WIRE_LIMITS.failureEvidenceBytes,
     nodes: WIRE_LIMITS.failureEvidenceNodes,
     versionCode: "UNSUPPORTED_FAILURE_EVIDENCE_VERSION",

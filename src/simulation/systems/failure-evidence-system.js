@@ -1,12 +1,5 @@
 import { completedMultibodyFailureEvidence } from "../multibody-runtime.js";
 
-function horizontalProgress(left, right) {
-  return Math.hypot(
-    Number(right?.x || 0) - Number(left?.x || 0),
-    Number(right?.z || 0) - Number(left?.z || 0),
-  );
-}
-
 function finiteVector(vector) {
   return [vector?.x, vector?.y, vector?.z].every((value) =>
     Number.isFinite(Number(value ?? 0)),
@@ -73,7 +66,7 @@ export class FailureEvidenceSystem {
   phase = "telemetry";
 
   initialize(context) {
-    this.positionsByAssembly = new Map();
+    this.shaftHistoryByMotor = new Map();
     this.lastGraphRevision = Number(context?.runGraph?.graphRevision || 0);
   }
 
@@ -81,15 +74,18 @@ export class FailureEvidenceSystem {
     const recorder = context.services.failureEvidenceRecorder;
     if (!recorder) return;
     if (!recorder.acceptingEvidence()) {
-      context.telemetry.failureEvidence = recorder.telemetrySummary();
+      context.telemetry.failureEvidence = {
+        ...recorder.telemetrySummary(),
+        captureStatus:
+          context.services.failureEvidenceCaptureStatus?.() || null,
+      };
       return;
     }
     const policy = recorder.policy,
       assemblies = context.telemetry.mobility?.assemblies || [],
-      liveAssemblyIds = new Set();
+      liveMotorIds = new Set();
     for (const assembly of assemblies) {
       const assemblyId = String(assembly.assemblyId);
-      liveAssemblyIds.add(assemblyId);
       if (!finiteMobility(assembly))
         recorder.trigger({
           kind: "numerical-anomaly",
@@ -98,61 +94,69 @@ export class FailureEvidenceSystem {
           subjectId: assemblyId,
           validity: "measured",
         });
-      const motors = assembly.driveForce?.motors || [],
-        commanded = motors.some(
-          (motor) =>
-            Math.abs(Number(motor.resolvedThrottle || 0)) >=
-            policy.stallCommandAbsMin,
-        ),
-        availablePowerW = Number(
-          assembly.driveForce?.availableMotorPowerW || 0,
-        ),
-        deliveredPowerW = Number(
-          assembly.driveForce?.deliveredMotorPowerW || 0,
-        ),
-        powered =
-          deliveredPowerW >= policy.stallPowerFloorW &&
-          deliveredPowerW >= availablePowerW * policy.stallPowerFractionMin,
-        touching = (assembly.wheelStates || []).some((wheel) => wheel.touching),
-        candidate =
-          commanded &&
-          powered &&
-          assembly.grounded &&
-          touching &&
-          Number(assembly.brake || 0) <= 0.05,
-        positions = this.positionsByAssembly.get(assemblyId) || [];
-      if (candidate) {
-        positions.push({
+      const touching = (assembly.wheelStates || []).some(
+        (wheel) => wheel.touching,
+      );
+      for (const motor of assembly.driveForce?.motors || []) {
+        const motorId = `${assemblyId}:${String(motor.partId)}`,
+          command = Number(motor.resolvedThrottle || 0),
+          candidate =
+            Math.abs(command) >= policy.stallCommandAbsMin &&
+            motor.operational === true &&
+            Number(motor.availablePowerW || 0) >= policy.stallPowerFloorW &&
+            assembly.grounded &&
+            touching &&
+            Number(assembly.brake || 0) <= 0.05,
+          history = this.shaftHistoryByMotor.get(motorId) || [];
+        liveMotorIds.add(motorId);
+        if (!candidate) {
+          this.shaftHistoryByMotor.delete(motorId);
+          continue;
+        }
+        const direction = Math.sign(command),
+          previousDirection = history.at(-1)?.direction;
+        if (previousDirection != null && previousDirection !== direction)
+          history.length = 0;
+        const positionRad = Number(motor.shaftPositionRad || 0),
+          previousPositionRad = history.at(-1)?.positionRad;
+        history.push({
           tick: context.clock.tick,
-          position: structuredClone(assembly.pose.position),
+          positionRad,
+          progressRad:
+            previousPositionRad == null
+              ? 0
+              : Math.abs(positionRad - previousPositionRad),
+          direction,
         });
-        if (positions.length > policy.stallDwellTicks)
-          positions.splice(0, positions.length - policy.stallDwellTicks);
-        this.positionsByAssembly.set(assemblyId, positions);
+        if (history.length > policy.stallDwellTicks)
+          history.splice(0, history.length - policy.stallDwellTicks);
+        this.shaftHistoryByMotor.set(motorId, history);
         if (
-          positions.length === policy.stallDwellTicks &&
-          horizontalProgress(
-            positions[0].position,
-            positions.at(-1).position,
-          ) <= policy.stallMaxProgressM
+          history.length === policy.stallDwellTicks &&
+          history.reduce(
+            (total, sample) => total + Number(sample.progressRad || 0),
+            0,
+          ) <= policy.stallShaftProgressMinRad
         )
           recorder.trigger({
             kind: "rolling-actuator-stall",
             tick: context.clock.tick,
             timeS: context.time,
-            subjectId: assemblyId,
+            subjectId: motor.partId,
             validity: "measured",
           });
-      } else this.positionsByAssembly.delete(assemblyId);
+      }
     }
-    for (const assemblyId of this.positionsByAssembly.keys())
-      if (!liveAssemblyIds.has(assemblyId))
-        this.positionsByAssembly.delete(assemblyId);
+    for (const motorId of this.shaftHistoryByMotor.keys())
+      if (!liveMotorIds.has(motorId)) this.shaftHistoryByMotor.delete(motorId);
 
     const bodySnapshot = context.bodyRegistry.snapshot();
     for (const body of bodySnapshot.bodies)
       for (const contact of body.contacts)
-        if (contact.tireEvidence?.withinGeometricTolerance === false)
+        if (
+          contact.tireEvidence?.withinGeometricTolerance === false &&
+          Number(contact.forceN || 0) >= policy.contactInvariantLoadFloorN
+        )
           recorder.trigger({
             kind: "contact-invariant",
             tick: context.clock.tick,
@@ -189,7 +193,7 @@ export class FailureEvidenceSystem {
       this.lastGraphRevision = graphRevision;
     }
 
-    context.telemetry.failureEvidence = recorder.completeTick({
+    let summary = recorder.completeTick({
       tick: context.clock.tick,
       timeS: context.time,
       contextTelemetry: {
@@ -197,9 +201,28 @@ export class FailureEvidenceSystem {
         graphRevision,
       },
     });
+    if (
+      summary.captureState === "captured" &&
+      context.services.finalizeFailureEvidenceEpisode
+    ) {
+      const result = context.services.finalizeFailureEvidenceEpisode(
+        recorder.snapshot(),
+      );
+      if (result?.rearm) {
+        recorder.rearmEpisode({
+          priorEpisodeBoundaries: result.priorEpisodeBoundaries,
+        });
+        this.shaftHistoryByMotor.clear();
+        summary = recorder.telemetrySummary();
+      }
+    }
+    context.telemetry.failureEvidence = {
+      ...summary,
+      captureStatus: context.services.failureEvidenceCaptureStatus?.() || null,
+    };
   }
 
   dispose() {
-    this.positionsByAssembly?.clear();
+    this.shaftHistoryByMotor?.clear();
   }
 }

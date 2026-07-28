@@ -82,13 +82,42 @@ controller rather than replayed as external input. If the anchor or an external
 source cannot be represented, the capture explicitly reports replay as
 unsupported.
 
-The downloaded `simulacrum-failure-evidence` version-1 JSON is a strict,
+The downloaded `simulacrum-failure-evidence` version-2 JSON is a strict,
 self-contained application artifact. It includes the blueprint, run
 configuration and fingerprints, diagnostic policy, replay anchor, external
 input trace, exact and context frames, derived causal summary, replayability,
-and manifest digest. Missing or truncated provenance produces an incomplete
-chain; analysis never guesses a terrain feature, source contact, solver row, or
+ordered prior-episode boundaries, and manifest digest. The application
+composes, digest-signs, and strict-decodes a completed episode before telemetry
+reports its capture status as `ready`; Export writes only that immutable cached
+artifact. Missing or truncated provenance produces an incomplete chain;
+analysis never guesses a terrain feature, source contact, solver row, or
 authored connection.
+
+A validated nonstructural episode re-arms a fresh recorder on the next fixed
+tick while retaining the same tick-zero checkpoint and continuing external
+input trace. A later structural episode replaces the cached diagnostic only
+after its own strict validation. Its artifact contains every earlier trigger
+boundary and policy fingerprint in order. Replay runs through those same
+boundaries and rejects a missing, extra, reordered, or changed episode rather
+than suppressing it as UI state. The bounded boundary history stops re-arming
+before it would lose an earlier episode.
+
+The generic rolling-stall trigger is actuator-local: it observes accepted
+throttle, allocated electrical power, actuator availability, brake and ground
+state, and accumulated shaft progress over the configured dwell. Mechanical
+output power is retained as evidence but is not an eligibility condition,
+because it naturally falls to zero at a hard stall. Reversals reset the
+directional dwell, and actual shaft rotation remains progress even when the
+vehicle is wheelspinning or pivoting. Invalid tire candidates are diagnostic
+observations until a solved normal load reaches the configured load floor; an
+unloaded narrowphase candidate cannot freeze the capture.
+
+Exact frames declare solver contribution validity independently. When bounded
+retention omits rows, the frame is `truncated`, never `measured`; analysis may
+therefore report an incomplete causal chain but cannot elevate omitted solver
+provenance to a verified root cause. Cannon's pooled contact and friction rows
+are scrubbed of Simulacrum evidence, terrain-feature, and tire annotations
+before reuse, including on ticks where evidence capture is inactive.
 
 Verify a downloaded bundle under the repository's supported Node runtime:
 
@@ -101,6 +130,9 @@ builds a fresh production `SimulationSession`, restores tick zero, applies only
 the external trace at fixed input boundaries, and compares the trigger,
 topology, scalar connection loads, and causal row/contact IDs. Exit status zero
 means `reproduced: true`; mismatches are emitted as machine-readable JSON.
+Checkpoint and artifact identities include the owned Cannon transaction
+version; captures from an earlier contact transaction are rejected rather than
+replayed under different solver semantics.
 
 ## Effects and sound
 

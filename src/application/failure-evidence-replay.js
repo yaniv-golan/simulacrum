@@ -1,5 +1,5 @@
 import { createControllerSensorCapture } from "./controller-sensor-capture.js";
-import { createFailureEvidenceArtifact } from "./failure-evidence-export.js";
+import { createFailureEvidenceCaptureCoordinator } from "./failure-evidence-capture-coordinator.js";
 import {
   compiledTopologyFingerprint,
   fingerprintContactMaterialMap,
@@ -270,6 +270,29 @@ export async function verifyFailureEvidenceReplay(input) {
     },
   });
   recorder.setReplayability({ supported: true });
+  const artifactRuntime = {
+      runBlueprint: artifact.blueprint,
+      runIdentity: {
+        ...artifact.runIdentity,
+        deployment: JSON.parse(artifact.runIdentity.deploymentJson),
+        configuration: artifact.runConfiguration,
+      },
+      inputTraceRecorder: {
+        inputsThrough: (tick) =>
+          artifact.externalInputTrace.inputs.filter(
+            (entry) => entry.tick <= tick,
+          ),
+      },
+      failureEvidence: {
+        recorder,
+        replayAnchor: artifact.replayAnchorCheckpoint,
+        captureCoordinator: null,
+      },
+    },
+    captureCoordinator = createFailureEvidenceCaptureCoordinator({
+      runtime: artifactRuntime,
+    });
+  artifactRuntime.failureEvidence.captureCoordinator = captureCoordinator;
   const physics = {
     ...physicsWorld,
     catalog: TYPES,
@@ -317,6 +340,7 @@ export async function verifyFailureEvidenceReplay(input) {
     evidence: {
       inputTraceRecorder: null,
       failureEvidenceRecorder: recorder,
+      failureEvidenceCaptureCoordinator: captureCoordinator,
     },
     services: {
       resolveChallengeBinding: () => null,
@@ -355,8 +379,11 @@ export async function verifyFailureEvidenceReplay(input) {
     tracePlayer.reset();
     while (runRuntime.session.context.clock.tick < artifact.trigger.tick)
       runRuntime.session.stepFixed();
-    const actualSnapshot = recorder.snapshot();
-    if (!actualSnapshot.trigger)
+    const actualArtifact = captureCoordinator.artifact();
+    if (
+      !actualArtifact ||
+      actualArtifact.trigger.tick !== artifact.trigger.tick
+    )
       return {
         reproduced: false,
         trigger: artifact.trigger,
@@ -364,34 +391,23 @@ export async function verifyFailureEvidenceReplay(input) {
           {
             field: "trigger",
             expected: artifact.trigger,
-            actual: null,
+            actual: actualArtifact?.trigger || null,
           },
         ],
       };
-    const actualArtifact = createFailureEvidenceArtifact({
-        runtime: {
-          runBlueprint: artifact.blueprint,
-          runIdentity: {
-            ...artifact.runIdentity,
-            deployment: JSON.parse(artifact.runIdentity.deploymentJson),
-            configuration: artifact.runConfiguration,
-          },
-          inputTraceRecorder: {
-            inputsThrough: (tick) =>
-              artifact.externalInputTrace.inputs.filter(
-                (entry) => entry.tick <= tick,
-              ),
-          },
-          failureEvidence: {
-            recorder,
-            replayAnchor: artifact.replayAnchorCheckpoint,
-          },
-        },
-      }),
-      mismatches = compareProjection(
-        frameProjection(artifact),
-        frameProjection(actualArtifact),
-      );
+    const mismatches = compareProjection(
+      frameProjection(artifact),
+      frameProjection(actualArtifact),
+    );
+    if (
+      stableStringify(artifact.priorEpisodeBoundaries) !==
+      stableStringify(actualArtifact.priorEpisodeBoundaries)
+    )
+      mismatches.push({
+        field: "priorEpisodeBoundaries",
+        expected: artifact.priorEpisodeBoundaries,
+        actual: actualArtifact.priorEpisodeBoundaries,
+      });
     if (
       artifact.summary.contributionValidity === "truncated" ||
       artifact.summary.contributionValidity === "unavailable"

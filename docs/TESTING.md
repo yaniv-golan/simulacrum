@@ -65,8 +65,11 @@ failure decision.
 
 4. For rover stalls or wheel failures, run the production-order scenario matrix.
    It covers slow and fast ramp egress, constant-forward grass and asphalt, and
-   repeated forward/reverse operation without dispatching physics from demo
-   identity:
+   a 40-second repeated forward/reverse run without dispatching physics from
+   demo identity. The verifier requires sustained progress, no structural
+   failure, no loaded inadmissible tire row, no false stall trigger, and no
+   overloaded authored connection; any evidence trigger is a failure of this
+   healthy-terrain regression rather than an alternate passing outcome:
 
    ```bash
    npm run test:focused -- verify-rover-failure-evidence-diagnostic
@@ -84,6 +87,14 @@ solved row contribution; authored connection load versus capacity; then the
 same-tick pre/post topology. Keep contact, structural, and later cascade events
 distinct.
 
+A rolling-actuator stall is evaluated per accepted, powered, operational
+driven shaft. It requires a grounded, unbraked assembly and insufficient shaft
+progress for the policy dwell; zero delivered mechanical power does not excuse
+a stopped powered shaft, while a rotating wheel with no vehicle translation is
+not a mechanical actuator stall. An out-of-tolerance tire candidate triggers
+only when its solved normal load reaches the policy floor. Pooled Cannon rows
+must be free of prior-tick evidence annotations whenever capture is inactive.
+
 Call a root cause **verified** only when the artifact strict-decodes,
 `summary.causalState` is `complete`, replay returns `reproduced: true`, and the
 cited links in the causal chain are not `unavailable`. Label `derived` evidence
@@ -93,6 +104,12 @@ keep the proposed cause unverified; never fill a missing contact, solver row,
 terrain feature, or connection by inference. See
 [Failure analysis](FAILURE_ANALYSIS.md) for artifact contents, replay semantics,
 and ownership boundaries.
+
+For a version-2 bundle with `priorEpisodeBoundaries`, replay must reproduce the
+complete ordered boundary list before comparing the target episode. A report
+is export-ready only when shared telemetry exposes
+`failureEvidence.captureStatus.state === "ready"`; an export-button click must
+not compose or validate a new artifact.
 
 ## Timing reports
 

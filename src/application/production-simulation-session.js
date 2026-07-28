@@ -27,6 +27,10 @@ export function startProductionSimulationSession({
       readCommandCandidates: controllers.readCommandCandidates,
       inputTraceRecorder: evidence.inputTraceRecorder,
       failureEvidenceRecorder: evidence.failureEvidenceRecorder,
+      finalizeFailureEvidenceEpisode:
+        evidence.failureEvidenceCaptureCoordinator?.finalize,
+      failureEvidenceCaptureStatus:
+        evidence.failureEvidenceCaptureCoordinator?.status,
       runIdentity: services.runIdentity,
       controllerTelemetry: controllers.telemetry,
       resolveChallengeBinding: services.resolveChallengeBinding,

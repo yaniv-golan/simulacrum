@@ -229,7 +229,11 @@ function straightGroundJourney({ label, source, routeId, start, stop, axis }) {
     });
     result = run.step(telemetryFrame(scenario, tick));
   }
-  assert.equal(result.status, "complete", `${label}: ${result.failureReason}`);
+  assert.equal(
+    result.status,
+    "complete",
+    `${label}: ${result.failureReason}; final=${JSON.stringify(componentState(scenario))}`,
+  );
   finishScenario(scenario, label);
   return result;
 }

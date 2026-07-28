@@ -23,6 +23,10 @@ import {
 } from "./constraint-reaction-wrench.js";
 import { TireContactConstraint } from "./tire-contact.js";
 import {
+  registerRollingSupport,
+  unregisterRollingSupport,
+} from "./rolling-support-registration.js";
+import {
   boundsCenter,
   boundsDimensions,
   deformedBodyBoundsPartM,
@@ -110,14 +114,20 @@ function motorEvidenceStates(runtime, component, context) {
         "throttle",
         0,
       ),
-      availablePowerW =
-        context.powerNetwork?.allocationFor(id)?.allocatedW || 0;
+      allocation = context.powerNetwork?.allocationFor(id),
+      availablePowerW = allocation?.allocatedW || 0,
+      drivenEntry = runtime.constraintEntries.find(
+        (entry) => entry.active !== false && entry.descriptor?.motorId === id,
+      );
     return {
       partId: id,
       resolvedThrottle: command.value,
       commandSource: command.source,
       availablePowerW,
       deliveredPowerW: runtime.motorElectricalWByPart.get(id) || 0,
+      operational: Boolean(allocation?.operational && drivenEntry),
+      shaftPositionRad: Number(drivenEntry?.angle || 0),
+      shaftAngularSpeedRadPerS: Number(drivenEntry?.velocity || 0),
     };
   });
 }
@@ -713,6 +723,12 @@ export class MultibodyRuntime {
           descriptor,
           this.fixedDt,
         );
+        registerRollingSupport(this.worldAdapter.transaction, {
+          wheelBody: body,
+          wheelShape: body.shapes[0],
+          descriptor,
+          constraint,
+        });
         this.world.addConstraint(constraint);
         this.constraintEntries.push({
           descriptor: {
@@ -2762,7 +2778,15 @@ export class MultibodyRuntime {
 
   dispose() {
     for (const entry of this.constraintEntries)
-      if (entry.constraint) this.world.removeConstraint(entry.constraint);
+      if (entry.constraint) {
+        if (entry.kind === "rolling-contact-v1")
+          unregisterRollingSupport(this.worldAdapter?.transaction, {
+            wheelBody: entry.constraint.wheelBody,
+            wheelShape: entry.constraint.wheelBody.shapes[0],
+            constraint: entry.constraint,
+          });
+        this.world.removeConstraint(entry.constraint);
+      }
     for (const entry of this.collisionExclusionConstraints)
       this.world.removeConstraint(entry.constraint);
     for (const body of this.bodyByPart.values()) this.world.removeBody(body);

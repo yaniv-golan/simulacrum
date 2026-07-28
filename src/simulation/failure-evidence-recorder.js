@@ -106,7 +106,7 @@ function compactRows(frame, policy, triggered) {
     capped = selected.slice(0, policy.maxRowsPerExactFrame);
   return {
     rows: capped,
-    validity: "measured",
+    validity: capped.length === rows.length ? "measured" : "truncated",
     omittedRowCount: rows.length - capped.length,
   };
 }
@@ -140,15 +140,53 @@ function revisionOnlyTopology(topology) {
   };
 }
 
-function compactStructureHistory(frame, triggered) {
+function evaluationMagnitude(evaluation) {
+  return Math.max(
+    Number(evaluation?.forceUtilization || 0),
+    Number(evaluation?.torqueUtilization || 0),
+  );
+}
+
+function loadMagnitude(load) {
+  return Math.max(Number(load?.forceN || 0), Number(load?.torqueNm || 0));
+}
+
+function compactConnectionLoads(loads, maximum) {
+  return [...(loads || [])]
+    .sort(
+      (left, right) =>
+        loadMagnitude(right) - loadMagnitude(left) ||
+        String(left.connectionId).localeCompare(
+          String(right.connectionId),
+          "en",
+        ),
+    )
+    .slice(0, maximum);
+}
+
+function compactStructureHistory(frame, triggered, policy) {
   if (triggered) return frame;
   const pre = frame.structurePreMutation,
     post = frame.structurePostMutation;
   return {
     ...frame,
+    connectionLoads: compactConnectionLoads(
+      frame.connectionLoads,
+      policy.topRowsPerConnection,
+    ),
     structurePreMutation: pre
       ? {
           ...pre,
+          evaluations: [...(pre.evaluations || [])]
+            .sort(
+              (left, right) =>
+                evaluationMagnitude(right) - evaluationMagnitude(left) ||
+                String(left.connectionId).localeCompare(
+                  String(right.connectionId),
+                  "en",
+                ),
+            )
+            .slice(0, policy.topRowsPerConnection),
           topology: revisionOnlyTopology(pre.topology),
         }
       : null,
@@ -269,6 +307,34 @@ export class FailureEvidenceRecorder {
     this.runIdentity = immutable(runIdentity);
     this.policyFingerprint = failureEvidencePolicyFingerprint(this.policy);
     this.active = true;
+  }
+
+  /** Starts the next bounded episode without changing the tick-zero anchor. */
+  rearmEpisode({ priorEpisodeBoundaries = [] } = {}) {
+    if (!this.active || !this.frozen)
+      throw new DomainValidationError(
+        "FAILURE_EVIDENCE_EPISODE_NOT_FROZEN",
+        "Failure evidence can re-arm only after a completed episode",
+      );
+    if (
+      !Array.isArray(priorEpisodeBoundaries) ||
+      priorEpisodeBoundaries.length > 31
+    )
+      throw new DomainValidationError(
+        "FAILURE_EVIDENCE_EPISODE_HISTORY_LIMIT",
+        "Failure-evidence prior episode history must contain at most 31 boundaries",
+      );
+    this.priorEpisodeBoundaries = immutable(priorEpisodeBoundaries);
+    this.current = null;
+    this.exactFrames = [];
+    this.contextFrames = [];
+    this.exactFrameByteSizes = [];
+    this.contextFrameByteSizes = [];
+    this.triggers = [];
+    this.primaryTrigger = null;
+    this.frozen = null;
+    this.frozenTelemetrySummary = null;
+    this.frozenMemoryBytes = 0;
   }
 
   setReplayability({ supported, reasonCode = null }) {
@@ -397,7 +463,7 @@ export class FailureEvidenceRecorder {
     advanceStage(frame, "complete");
     const triggered = this.primaryTrigger?.tick === tick,
       compacted = compactRows(frame, this.policy, triggered),
-      frameEvidence = compactStructureHistory(frame, triggered);
+      frameEvidence = compactStructureHistory(frame, triggered, this.policy);
     delete frameEvidence._stage;
     delete frameEvidence._stageOrder;
     const exactFrame = immutable({
@@ -420,7 +486,10 @@ export class FailureEvidenceRecorder {
           tick,
           timeS,
           commandLedger: frame.commandLedger || {},
-          connectionLoads: frame.connectionLoads || [],
+          connectionLoads: compactConnectionLoads(
+            frame.connectionLoads,
+            this.policy.topRowsPerConnection,
+          ),
           ...contextTelemetry,
         }),
         Math.ceil(
@@ -439,6 +508,7 @@ export class FailureEvidenceRecorder {
       runIdentity: this.runIdentity,
       policy: this.policy,
       policyFingerprint: this.policyFingerprint,
+      priorEpisodeBoundaries: this.priorEpisodeBoundaries,
       replayability: this.replayability,
       trigger: this.primaryTrigger,
       triggers: this.triggers,
@@ -454,6 +524,7 @@ export class FailureEvidenceRecorder {
       runIdentity: this.runIdentity,
       policy: this.policy,
       policyFingerprint: this.policyFingerprint,
+      priorEpisodeBoundaries: this.priorEpisodeBoundaries,
       replayability: this.replayability,
       trigger: this.primaryTrigger,
       triggers: this.triggers,
@@ -500,6 +571,7 @@ export class FailureEvidenceRecorder {
       contextFrameCount: retained.contextFrames.length,
       memoryBytes,
       lastCompletedTick: this.lastCompletedTick,
+      episodeIndex: this.priorEpisodeBoundaries.length,
     });
     if (this.frozen) this.frozenTelemetrySummary = summary;
     return summary;
@@ -512,6 +584,7 @@ export class FailureEvidenceRecorder {
         runIdentity: this.runIdentity,
         policy: this.policy,
         policyFingerprint: this.policyFingerprint,
+        priorEpisodeBoundaries: this.priorEpisodeBoundaries,
         replayability: this.replayability,
         trigger: this.primaryTrigger,
         triggers: this.triggers,
@@ -525,6 +598,7 @@ export class FailureEvidenceRecorder {
     this.active = false;
     this.runIdentity = null;
     this.policyFingerprint = null;
+    this.priorEpisodeBoundaries = immutable([]);
     this.current = null;
     this.exactFrames = [];
     this.contextFrames = [];

@@ -110,6 +110,9 @@ function normalizeTireEvidence(evidence) {
       typeof evidence.withinGeometricTolerance === "boolean"
         ? evidence.withinGeometricTolerance
         : null,
+    manifoldId: id(evidence.manifoldId),
+    supportFeatureId: id(evidence.supportFeatureId),
+    supportValidity: validity(evidence.supportValidity),
     forceRowIds: ids(evidence.tireForceRowIds),
     validity: measuredValidity(evidence.validity, numericFields),
   };
@@ -298,6 +301,9 @@ function normalizeContextFrame(frame) {
         commandSource: String(motor.commandSource || "default"),
         availablePowerW: Math.max(0, finite(motor.availablePowerW)),
         deliveredPowerW: Math.max(0, finite(motor.deliveredPowerW)),
+        operational: Boolean(motor.operational),
+        shaftPositionRad: finite(motor.shaftPositionRad),
+        shaftAngularSpeedRadPerS: finite(motor.shaftAngularSpeedRadPerS),
       })),
       wheels: (assembly.wheelStates || []).map((wheel) => ({
         partId: String(wheel.partId),
@@ -320,9 +326,12 @@ function normalizeTrigger(trigger) {
 }
 
 /** Composes the application-private, self-contained diagnostic wire artifact. */
-export function createFailureEvidenceArtifact({ runtime }) {
+export function createFailureEvidenceArtifact({
+  runtime,
+  snapshot: suppliedSnapshot = null,
+}) {
   const recorder = runtime?.failureEvidence?.recorder,
-    snapshot = recorder?.snapshot(),
+    snapshot = suppliedSnapshot || recorder?.snapshot(),
     trigger = snapshot?.trigger;
   if (!trigger) throw new Error("Failure evidence has not captured a trigger");
   const runIdentity = runtime.runIdentity,
@@ -341,7 +350,7 @@ export function createFailureEvidenceArtifact({ runtime }) {
     exactFrames = snapshot.exactFrames.map(normalizeExactFrame),
     artifact = {
       format: "simulacrum-failure-evidence",
-      version: 1,
+      version: 2,
       blueprint: structuredClone(runtime.runBlueprint),
       runConfiguration: structuredClone(runIdentity.configuration),
       runIdentity: {
@@ -370,6 +379,9 @@ export function createFailureEvidenceArtifact({ runtime }) {
           .inputsThrough(trigger.tick)
           .filter((entry) => entry.tick >= 1),
       },
+      priorEpisodeBoundaries: structuredClone(
+        snapshot.priorEpisodeBoundaries || [],
+      ),
       trigger: normalizeTrigger(trigger),
       triggers: snapshot.triggers.map(normalizeTrigger),
       exactFrames,

@@ -17,6 +17,7 @@ import { createEarthEnvironmentBodyRegistry } from "../src/simulation/environmen
 import { FailureEvidenceRecorder } from "../src/simulation/failure-evidence-recorder.js";
 import { InputTraceRecorder } from "../src/simulation/input-trace-recorder.js";
 import { RuntimeCheckpointCoordinator } from "../src/simulation/runtime-checkpoints.js";
+import { cannonSolverTransactionResourceState } from "../src/simulation/cannon-solver-transaction.js";
 import { ControllerRuntimeManager } from "../src/scripting/controller-runtime-manager.js";
 
 const environment = createTestingPlaygroundEnvironment(),
@@ -153,6 +154,12 @@ async function runScenario(spec) {
       },
     });
   evidenceRecorder.beginRun({ runIdentity });
+  assert.equal(
+    cannonSolverTransactionResourceState(physicsWorld.worldAdapter.transaction)
+      .rollingSupportRegistrations,
+    runRuntime.multibodyRuntime.compiled.contactRegions.length,
+    "rolling-support registrations do not match the compiled capabilities",
+  );
   const replayAnchor = runRuntime
     .createCheckpointCoordinator(inputTraceRecorder)
     .capture({
@@ -171,10 +178,27 @@ async function runScenario(spec) {
   let firstFieldTick = null,
     firstFailure = null,
     peakUtilization = 0,
-    observedGraphRevision = 0;
+    peakDistanceFromStartM = 0,
+    peakLoadedInvalidContactForceN = 0,
+    observedGraphRevision = 0,
+    peakCanonicalContactAllocations = 0;
   try {
     for (let tick = 1; tick <= spec.maximumTicks; tick++) {
+      if (tick === spec.diagnosticOnlyTriggerTick)
+        evidenceRecorder.trigger({
+          kind: "rolling-actuator-stall",
+          tick,
+          timeS: tick / 120,
+          subjectId: motorIds[0],
+          validity: "measured",
+        });
       runRuntime.session.stepFixed();
+      peakCanonicalContactAllocations = Math.max(
+        peakCanonicalContactAllocations,
+        cannonSolverTransactionResourceState(
+          physicsWorld.worldAdapter.transaction,
+        ).canonicalContactAllocations,
+      );
       const telemetry = runRuntime.session.telemetry(),
         mobility = telemetry.systems.mobility?.assemblies?.[0],
         graphRevision = runRuntime.session.context.runGraph.graphRevision,
@@ -183,6 +207,21 @@ async function runScenario(spec) {
             ? runRuntime.session.context.runGraph.events().at(-1)
             : null;
       observedGraphRevision = graphRevision;
+      peakDistanceFromStartM = Math.max(
+        peakDistanceFromStartM,
+        Math.hypot(
+          Number(mobility?.pose?.position?.x || 0) - startPosition.x,
+          Number(mobility?.pose?.position?.z || 0) - startPosition.z,
+        ),
+      );
+      for (const body of runRuntime.session.context.bodyRegistry.snapshot()
+        .bodies)
+        for (const contact of body.contacts)
+          if (contact.tireEvidence?.withinGeometricTolerance === false)
+            peakLoadedInvalidContactForceN = Math.max(
+              peakLoadedInvalidContactForceN,
+              Number(contact.forceN || 0),
+            );
       peakUtilization = Math.max(
         peakUtilization,
         peakConnectionUtilization(runRuntime),
@@ -260,6 +299,9 @@ async function runScenario(spec) {
       finalPosition: finalMobility?.pose?.position || null,
       finalSpeedMPerS: finalMobility?.signedSpeed ?? null,
       peakUtilization,
+      peakDistanceFromStartM,
+      peakLoadedInvalidContactForceN,
+      peakCanonicalContactAllocations,
       firstFailure,
       evidenceTrigger: trigger,
       artifactCausalState: artifact?.summary.causalState || null,
@@ -267,6 +309,13 @@ async function runScenario(spec) {
     };
   } finally {
     runRuntime.dispose();
+    assert.equal(
+      cannonSolverTransactionResourceState(
+        physicsWorld.worldAdapter.transaction,
+      ).rollingSupportRegistrations,
+      0,
+      "rolling-support registration leaked after runtime disposal",
+    );
     runtimeManager.disposeAll();
   }
 }
@@ -296,14 +345,14 @@ for (const spec of [
     x: -48,
     z: 140,
     throttle: 0.7,
-    maximumTicks: 720,
+    maximumTicks: 1800,
   },
   {
     id: "constant-forward-dry-asphalt",
     x: -92,
     z: 140,
     throttle: 0.7,
-    maximumTicks: 480,
+    maximumTicks: 1800,
   },
   {
     id: "repeated-forward-reverse-short-grass",
@@ -311,22 +360,18 @@ for (const spec of [
     z: 140,
     throttle: 0.7,
     reversePeriodTicks: 180,
-    maximumTicks: 720,
+    maximumTicks: 4800,
+  },
+  {
+    id: "maximum-retention-export-budget",
+    x: -48,
+    z: 140,
+    throttle: 0.7,
+    diagnosticOnlyTriggerTick: 480,
+    maximumTicks: 480,
   },
 ])
   scenarios.push(await runScenario(spec));
-
-for (const scenario of scenarios) {
-  assert.ok(
-    scenario.displacementM > 0.1 || scenario.evidenceTrigger,
-    `${scenario.id} neither moved nor captured diagnostic evidence`,
-  );
-  if (scenario.id.includes("ramp"))
-    assert.ok(
-      scenario.firstFieldTick != null || scenario.evidenceTrigger,
-      `${scenario.id} did not reach grass and captured no explanation`,
-    );
-}
 
 console.log(
   JSON.stringify(
@@ -339,6 +384,87 @@ console.log(
     2,
   ),
 );
+
+for (const scenario of scenarios) {
+  assert.equal(
+    scenario.firstFailure,
+    null,
+    `${scenario.id} must not break on ordinary continuous terrain`,
+  );
+  if (scenario.id !== "maximum-retention-export-budget")
+    assert.equal(
+      scenario.evidenceTrigger,
+      null,
+      `${scenario.id} emitted a false diagnostic trigger`,
+    );
+  assert.equal(
+    scenario.peakLoadedInvalidContactForceN,
+    0,
+    `${scenario.id} solved a geometrically invalid rolling contact`,
+  );
+  assert.ok(
+    scenario.peakUtilization < 1,
+    `${scenario.id} overloaded an authored connection (${scenario.peakUtilization})`,
+  );
+  assert.ok(
+    scenario.peakCanonicalContactAllocations <= 64,
+    `${scenario.id} canonical contact pool grew without a physical bound`,
+  );
+}
+
+const byId = new Map(scenarios.map((scenario) => [scenario.id, scenario]));
+for (const id of ["slow-ramp-to-grass", "fast-ramp-to-grass"])
+  assert.notEqual(
+    byId.get(id).firstFieldTick,
+    null,
+    `${id} did not reach grass`,
+  );
+assert.ok(
+  byId.get("slow-ramp-to-grass").displacementM > 3,
+  "slow ramp exit did not make sustained progress",
+);
+assert.ok(
+  byId.get("fast-ramp-to-grass").displacementM > 5,
+  "fast ramp exit did not make sustained progress",
+);
+for (const id of [
+  "constant-forward-short-grass",
+  "constant-forward-dry-asphalt",
+]) {
+  const scenario = byId.get(id);
+  assert.equal(
+    scenario.completedTick,
+    1800,
+    `${id} did not complete 15 seconds`,
+  );
+  assert.ok(
+    scenario.displacementM > 20,
+    `${id} stalled before sustained travel`,
+  );
+  assert.ok(
+    Math.abs(scenario.finalSpeedMPerS) > 2,
+    `${id} ended at stall speed`,
+  );
+}
+const reversal = byId.get("repeated-forward-reverse-short-grass");
+assert.equal(
+  reversal.completedTick,
+  4800,
+  "reversal run ended before 40 seconds",
+);
+assert.ok(
+  reversal.peakDistanceFromStartM > 3,
+  "reversal run never demonstrated sustained powered motion",
+);
+const exportBudget = byId.get("maximum-retention-export-budget");
+assert.equal(exportBudget.completedTick, 480);
+assert.equal(exportBudget.evidenceTrigger?.tick, 480);
+assert.equal(
+  exportBudget.artifactCausalState,
+  "complete",
+  "full-retention rover evidence did not strict-export with a complete chain",
+);
+
 console.log(
   "rover failure-evidence diagnostic passed (slow/fast ramp, grass, asphalt, full production order)",
 );

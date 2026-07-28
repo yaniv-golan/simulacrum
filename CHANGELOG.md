@@ -55,6 +55,12 @@
 
 ### Changed
 
+- Advanced the private failure-evidence artifact to version 2. Captures are now
+  proactively composed and strict-validated before the UI reports them ready;
+  export writes only that cached artifact. Bounded nonstructural episodes
+  re-arm on the next tick, later structural evidence replaces the cached
+  diagnostic only after validation, and replay verifies the ordered prior
+  episode boundaries instead of silently skipping an earlier trigger.
 - Routed existing Inspector identity, status, ports, power, charge,
   misalignment, structural-load, controller, sensor, and selection-scope facts
   through the application inspection boundary and the shared text debug model
@@ -82,6 +88,14 @@
 
 ### Fixed
 
+- Replaced partially corrected heightfield tire rows with transaction-owned
+  rolling-support canonicalization before solver insertion. Ordinary wheels
+  now leave the workshop ramp and sustain driving on grass or asphalt without
+  false axle torque, stalls, or wheel-mount overload, while solid obstacles
+  retain their normal collision path. Failure evidence now detects a powered
+  stopped shaft from actuator state and shaft progress, ignores unloaded
+  invalid candidates, labels omitted solver rows as truncated, clears pooled
+  row metadata, and rejects checkpoints from the previous solver transaction.
 - Removed controller bindings that target deleted components as part of the
   same undoable selection deletion; Undo restores both the component and the
   exact binding manifest.

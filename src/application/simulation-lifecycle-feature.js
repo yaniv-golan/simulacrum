@@ -261,6 +261,8 @@ export function createSimulationLifecycleFeature({
         evidence: {
           inputTraceRecorder: activeRunEvidence.inputTraceRecorder,
           failureEvidenceRecorder: activeRunEvidence.failureEvidenceRecorder,
+          failureEvidenceCaptureCoordinator:
+            activeRunEvidence.failureEvidenceCaptureCoordinator,
         },
         services: {
           prepareRun: activeRunEvidence.prepare,

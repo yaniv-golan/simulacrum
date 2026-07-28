@@ -3,6 +3,7 @@ import { FailureEvidenceRecorder } from "../simulation/failure-evidence-recorder
 import { createCheckpointCoordinatorLoader } from "./checkpoint-coordinator-loader.js";
 import { createWorkshopRunConfiguration } from "./mechanism-run-identity.js";
 import { deploymentForBlueprint } from "./testing-playground-deployment.js";
+import { createFailureEvidenceCaptureCoordinator } from "./failure-evidence-capture-coordinator.js";
 
 /** Owns trace, identity, and checkpoint handles for exactly one active run. */
 export function createRunEvidenceLifecycle({
@@ -13,7 +14,10 @@ export function createRunEvidenceLifecycle({
   run,
 }) {
   const inputTraceRecorder = new InputTraceRecorder(),
-    failureEvidenceRecorder = new FailureEvidenceRecorder();
+    failureEvidenceRecorder = new FailureEvidenceRecorder(),
+    failureEvidenceCaptureCoordinator = createFailureEvidenceCaptureCoordinator(
+      { runtime },
+    );
   let disposed = false;
   const ownsRuntime = () =>
     !disposed &&
@@ -21,9 +25,12 @@ export function createRunEvidenceLifecycle({
     runtime.failureEvidence.recorder === failureEvidenceRecorder;
   runtime.inputTraceRecorder = inputTraceRecorder;
   runtime.failureEvidence.recorder = failureEvidenceRecorder;
+  runtime.failureEvidence.captureCoordinator =
+    failureEvidenceCaptureCoordinator;
   return Object.freeze({
     inputTraceRecorder,
     failureEvidenceRecorder,
+    failureEvidenceCaptureCoordinator,
     prepare(compiled) {
       runtime.runBlueprint = assembly.serialize("Mechanism experiment");
       const deployment = deploymentForBlueprint(
@@ -45,6 +52,7 @@ export function createRunEvidenceLifecycle({
       failureEvidenceRecorder.beginRun({
         runIdentity: runtime.runIdentity,
       });
+      failureEvidenceCaptureCoordinator.reset();
       runtime.checkpointCoordinator = null;
       runtime.prepareCheckpointCoordinator = null;
       return runtime.runIdentity;
@@ -91,6 +99,7 @@ export function createRunEvidenceLifecycle({
     dispose() {
       disposed = true;
       failureEvidenceRecorder.reset();
+      failureEvidenceCaptureCoordinator.reset();
       if (
         runtime.inputTraceRecorder !== inputTraceRecorder ||
         runtime.failureEvidence.recorder !== failureEvidenceRecorder
@@ -103,6 +112,7 @@ export function createRunEvidenceLifecycle({
         recorder: null,
         replayAnchor: null,
         replayError: null,
+        captureCoordinator: null,
       };
       runtime.runIdentity = null;
       runtime.runBlueprint = null;

@@ -12,9 +12,9 @@ const DEFAULTS = Object.freeze({
   nearFailureUtilization: 0.8,
   stallCommandAbsMin: 0.5,
   stallPowerFloorW: 1,
-  stallPowerFractionMin: 0.05,
-  stallMaxProgressM: 0.03,
+  stallShaftProgressMinRad: 0.03,
   stallDwellTicks: 120,
+  contactInvariantLoadFloorN: 1,
 });
 
 function boundedInteger(value, field, minimum, maximum) {
@@ -95,15 +95,9 @@ export function createFailureEvidencePolicy(overrides = {}) {
         "stallPowerFloorW",
         0,
       ),
-      stallPowerFractionMin: finiteRange(
-        value.stallPowerFractionMin,
-        "stallPowerFractionMin",
-        0,
-        1,
-      ),
-      stallMaxProgressM: finiteRange(
-        value.stallMaxProgressM,
-        "stallMaxProgressM",
+      stallShaftProgressMinRad: finiteRange(
+        value.stallShaftProgressMinRad,
+        "stallShaftProgressMinRad",
         0,
       ),
       stallDwellTicks: boundedInteger(
@@ -111,6 +105,11 @@ export function createFailureEvidencePolicy(overrides = {}) {
         "stallDwellTicks",
         2,
         100_000,
+      ),
+      contactInvariantLoadFloorN: finiteRange(
+        value.contactInvariantLoadFloorN,
+        "contactInvariantLoadFloorN",
+        0,
       ),
     };
   if (policy.contextRetentionTicks < policy.exactRetentionTicks)
