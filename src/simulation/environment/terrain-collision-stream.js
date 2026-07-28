@@ -93,6 +93,40 @@ export class TerrainCollisionStream {
       surface: "streamed terrain",
       materialKey: "compacted-soil",
       tile: key,
+      rollingSupportAt: (x, z) => {
+        const localX = (x - minimumX) / elementSize,
+          localZ = (maximumZ - z) / elementSize,
+          ix = Math.max(0, Math.min(this.segments - 1, Math.floor(localX))),
+          iz = Math.max(0, Math.min(this.segments - 1, Math.floor(localZ))),
+          fx = localX - ix,
+          fz = localZ - iz,
+          triangle = fx + fz <= 1 ? 0 : 1,
+          delta = elementSize * 0.5,
+          left = Number(this.heightAt(x - delta, z)) || 0,
+          right = Number(this.heightAt(x + delta, z)) || 0,
+          back = Number(this.heightAt(x, z - delta)) || 0,
+          front = Number(this.heightAt(x, z + delta)) || 0,
+          nx = -(right - left) / (2 * delta),
+          nz = -(front - back) / (2 * delta),
+          length = Math.hypot(nx, 1, nz);
+        return Object.freeze({
+          validity:
+            localX >= 0 &&
+            localX <= this.segments &&
+            localZ >= 0 &&
+            localZ <= this.segments
+              ? "measured"
+              : "unavailable",
+          heightM: Number(this.heightAt(x, z)) || 0,
+          normal: Object.freeze({
+            x: nx / length,
+            y: 1 / length,
+            z: nz / length,
+          }),
+          materialKey: "compacted-soil",
+          featureId: `terrain:${key}:heightfield:cell:${ix}:${iz}:triangle:${triangle}`,
+        });
+      },
       broadphaseCandidateFilter: createYUpHeightfieldCandidateFilter({
         heights,
         elementSize,

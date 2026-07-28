@@ -49,6 +49,11 @@ export class CannonWorldAdapter {
     return this.telemetry();
   }
 
+  dispose() {
+    evidenceCapturingAdapters.delete(this);
+    this.transaction.dispose?.();
+  }
+
   beginTick(tick = this.#tick + 1) {
     const next = finiteNumber(tick, { min: 0, path: ["tick"] });
     if (next < this.#tick)

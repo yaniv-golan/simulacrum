@@ -283,6 +283,31 @@ assert.equal(
   beforeRejectedRestore,
   "rejected checkpoint identity partially mutated the running simulation",
 );
+const oldTransactionCheckpoint = structuredClone(checkpoint),
+  compiledOwner = oldTransactionCheckpoint.stateOwners.find(
+    (owner) => owner.ownerId === "compiled-topology",
+  ),
+  oldCompiled = JSON.parse(compiledOwner.payloadJson);
+oldCompiled.transactionId =
+  "simulacrum-owned-cannon-solver-transaction-v2-motor-energy";
+compiledOwner.payloadJson = stableStringify(oldCompiled);
+compiledOwner.payloadByteLength = new TextEncoder().encode(
+  compiledOwner.payloadJson,
+).byteLength;
+compiledOwner.payloadSha256 = sha256Hex(compiledOwner.payloadJson);
+oldTransactionCheckpoint.stateDigest = checkpointStateDigest(
+  oldTransactionCheckpoint,
+);
+assert.throws(
+  () => restored.coordinator.restore(oldTransactionCheckpoint, IDENTITIES),
+  (error) => error?.code === "CANNON_TRANSACTION_CHECKPOINT_MISMATCH",
+  "checkpoint from the previous solver transaction was accepted",
+);
+assert.equal(
+  observedState(restored),
+  beforeRejectedRestore,
+  "transaction identity rejection mutated the running simulation",
+);
 const hostileCheckpoint = structuredClone(checkpoint),
   physicsOwner = hostileCheckpoint.stateOwners.find(
     (owner) => owner.ownerId === "physics-world",

@@ -11,7 +11,7 @@ export function failureEvidenceManifestDigest(input) {
   const view = structuredClone(input);
   delete view.manifestDigest;
   return sha256Hex(
-    `simulacrum-failure-evidence-manifest-v1\0${stableStringify(view)}`,
+    `simulacrum-failure-evidence-manifest-v2\0${stableStringify(view)}`,
   );
 }
 

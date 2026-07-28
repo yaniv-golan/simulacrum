@@ -121,7 +121,7 @@ const recorder = new FailureEvidenceRecorder({
     maxRowsOnTriggerTick: 8,
     nearFailureUtilization: 0.8,
     stallDwellTicks: 3,
-    stallMaxProgressM: 0.03,
+    stallShaftProgressMinRad: 0.03,
   },
 });
 assert.equal(recorder.acceptingEvidence(), false);
@@ -166,6 +166,9 @@ for (let tick = 1; tick <= 3; tick++) {
                 commandSource: "remote",
                 availablePowerW: 100,
                 deliveredPowerW: 25,
+                operational: true,
+                shaftPositionRad: 0,
+                shaftAngularSpeedRadPerS: 0,
               },
             ],
           },
@@ -188,7 +191,7 @@ const snapshot = recorder.snapshot();
 assert.equal(snapshot.trigger.kind, "rolling-actuator-stall");
 assert.equal(snapshot.trigger.tick, 3);
 assert.equal(snapshot.replayability.state, "supported");
-assert.equal(snapshot.trigger.subjectId, "player-authored-rolling-assembly");
+assert.equal(snapshot.trigger.subjectId, "41");
 assert.equal(context.telemetry.failureEvidence.captureState, "captured");
 assert.equal(snapshot.exactFrames.length, 3);
 assert.ok(Object.isFrozen(snapshot));
@@ -199,12 +202,27 @@ context.bodyRegistry.snapshot = () => {
 failureSystem.step(context);
 assert.equal(context.telemetry.failureEvidence.captureState, "captured");
 failureSystem.dispose();
+recorder.rearmEpisode({
+  priorEpisodeBoundaries: [
+    {
+      episodeIndex: 0,
+      trigger: snapshot.trigger,
+      policyFingerprint: snapshot.policyFingerprint,
+    },
+  ],
+});
+assert.equal(recorder.acceptingEvidence(), true);
+assert.equal(recorder.snapshot().trigger, null);
+assert.equal(recorder.telemetrySummary().episodeIndex, 1);
 
 function runStallClassification({
   deliveredPowerW = 25,
   brake = 0,
-  progressPerTickM = 0.001,
+  shaftProgressPerTickRad = 0,
   wheelAngularSpeed = 0,
+  availablePowerW = 100,
+  operational = true,
+  grounded = true,
 }) {
   const candidateRecorder = new FailureEvidenceRecorder({
       policy: {
@@ -212,7 +230,7 @@ function runStallClassification({
         contextRetentionTicks: 8,
         contextStrideTicks: 1,
         stallDwellTicks: 3,
-        stallMaxProgressM: 0.03,
+        stallShaftProgressMinRad: 0.03,
       },
     }),
     system = new FailureEvidenceSystem(),
@@ -234,22 +252,25 @@ function runStallClassification({
         assemblies: [
           {
             assemblyId: "renamed-player-machine",
-            signedSpeed: progressPerTickM * 120,
+            signedSpeed: 0,
             pose: {
-              position: { x: progressPerTickM * tick, y: 1, z: 0 },
+              position: { x: 0, y: 1, z: 0 },
             },
             brake,
-            grounded: true,
+            grounded,
             driveForce: {
-              availableMotorPowerW: 100,
+              availableMotorPowerW: availablePowerW,
               deliveredMotorPowerW: deliveredPowerW,
               motors: [
                 {
                   partId: 41,
                   resolvedThrottle: 0.8,
                   commandSource: "script",
-                  availablePowerW: 100,
+                  availablePowerW,
                   deliveredPowerW,
+                  operational,
+                  shaftPositionRad: shaftProgressPerTickRad * tick,
+                  shaftAngularSpeedRadPerS: shaftProgressPerTickRad * 120,
                 },
               ],
             },
@@ -275,14 +296,24 @@ function runStallClassification({
 }
 
 assert.equal(
-  runStallClassification({ progressPerTickM: 0.02 }),
+  runStallClassification({ shaftProgressPerTickRad: 0.1 }),
   null,
-  "a moving powered assembly was classified as stalled",
+  "a rotating powered shaft was classified as stalled",
 );
 assert.equal(
-  runStallClassification({ deliveredPowerW: 0 }),
+  runStallClassification({ deliveredPowerW: 0 })?.kind,
+  "rolling-actuator-stall",
+  "zero mechanical power at zero speed hid a powered shaft stall",
+);
+assert.equal(
+  runStallClassification({ availablePowerW: 0 }),
   null,
-  "an unpowered assembly was classified as a powered stall",
+  "a motor without allocated power was classified as a powered stall",
+);
+assert.equal(
+  runStallClassification({ operational: false }),
+  null,
+  "an inoperative actuator was classified as stalled",
 );
 assert.equal(
   runStallClassification({ brake: 1 }),
@@ -290,9 +321,66 @@ assert.equal(
   "a braked assembly was classified as stalled",
 );
 assert.equal(
-  runStallClassification({ wheelAngularSpeed: 20 })?.kind,
-  "rolling-actuator-stall",
-  "wheel spin incorrectly suppressed a no-progress stall",
+  runStallClassification({
+    wheelAngularSpeed: 20,
+    shaftProgressPerTickRad: 0.2,
+  }),
+  null,
+  "wheelspin with real shaft motion was classified as a mechanical stall",
+);
+assert.equal(
+  runStallClassification({ grounded: false }),
+  null,
+  "an airborne actuator was classified as a rolling stall",
+);
+
+function runContactInvariantClassification(forceN) {
+  const candidateRecorder = new FailureEvidenceRecorder({
+      policy: { contactInvariantLoadFloorN: 1 },
+    }),
+    system = new FailureEvidenceSystem(),
+    candidateContext = {
+      clock: { tick: 1 },
+      time: 1 / 120,
+      services: { failureEvidenceRecorder: candidateRecorder },
+      telemetry: { mobility: { assemblies: [] } },
+      runGraph: { graphRevision: 0 },
+      bodyRegistry: {
+        snapshot: () => ({
+          bodies: [
+            {
+              contacts: [
+                {
+                  forceN,
+                  tireEvidence: {
+                    tirePartId: 42,
+                    withinGeometricTolerance: false,
+                    validity: "measured",
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+      },
+    };
+  candidateRecorder.beginRun({ runIdentity: { id: "contact-invariant" } });
+  system.initialize(candidateContext);
+  system.step(candidateContext);
+  const trigger = candidateRecorder.snapshot().trigger;
+  system.dispose();
+  return trigger;
+}
+
+assert.equal(
+  runContactInvariantClassification(0),
+  null,
+  "an unloaded raw candidate froze failure evidence",
+);
+assert.equal(
+  runContactInvariantClassification(10)?.kind,
+  "contact-invariant",
+  "a loaded invalid tire row did not trigger evidence",
 );
 
 const anomalyRecorder = new FailureEvidenceRecorder(),
@@ -438,6 +526,11 @@ assert.deepEqual(
   "normal near-failure retention ignored the global exact-frame cap",
 );
 assert.equal(normalCapRecorder.snapshot().exactFrames[0].omittedRowCount, 3);
+assert.equal(
+  normalCapRecorder.snapshot().exactFrames[0].contributionValidity,
+  "truncated",
+  "an omitted non-trigger solver-row set was reported as measured",
+);
 assert.deepEqual(
   normalCapRecorder.snapshot().exactFrames[0].structurePreMutation.topology,
   { snapshotState: "revision-only", graphRevision: 0 },

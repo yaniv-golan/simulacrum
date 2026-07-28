@@ -186,6 +186,37 @@ assert.equal(
   false,
   "altered external input trace unexpectedly reproduced",
 );
+const inventedBoundaryArtifact = structuredClone(artifact);
+inventedBoundaryArtifact.priorEpisodeBoundaries = [
+  {
+    episodeIndex: 0,
+    trigger: {
+      kind: "numerical-anomaly",
+      tick: 1,
+      timeS: 1 / 120,
+      subjectId: "invented-prior-episode",
+      validity: "measured",
+    },
+    policyFingerprint: artifact.policyFingerprint,
+  },
+];
+inventedBoundaryArtifact.manifestDigest = failureEvidenceManifestDigest(
+  inventedBoundaryArtifact,
+);
+const inventedBoundaryReplay = await verifyFailureEvidenceReplay(
+  inventedBoundaryArtifact,
+);
+assert.equal(
+  inventedBoundaryReplay.reproduced,
+  false,
+  "replay accepted a missing prior episode boundary",
+);
+assert.ok(
+  inventedBoundaryReplay.mismatches.some(
+    (entry) => entry.field === "priorEpisodeBoundaries",
+  ),
+  inventedBoundaryReplay.mismatches,
+);
 
 runRuntime.dispose();
 runtimeManager.disposeAll();

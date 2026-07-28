@@ -467,7 +467,7 @@ export function boundsCenter(bounds: any): number[];
 export function boundsDimensions(bounds: any): number[];
 
 // @public (undocumented)
-export const CANNON_SOLVER_TRANSACTION_ID: "simulacrum-owned-cannon-solver-transaction-v2-motor-energy";
+export const CANNON_SOLVER_TRANSACTION_ID: "simulacrum-owned-cannon-solver-transaction-v3-rolling-support";
 
 // @public
 export class CannonMaterialAdapter {
@@ -503,6 +503,8 @@ export class CannonSolverTransaction {
     // (undocumented)
     bodyPairsB: any[];
     // (undocumented)
+    dispose(): void;
+    // (undocumented)
     frictionEquationPool: any[];
     // (undocumented)
     motorEnergyRecordsForTick(tick: any): any;
@@ -535,10 +537,12 @@ export class CannonWorldAdapter {
         tick: number;
         integratedTick: number;
         integrationCount: number;
-        transactionId: "simulacrum-owned-cannon-solver-transaction-v2-motor-energy";
+        transactionId: "simulacrum-owned-cannon-solver-transaction-v3-rolling-support";
     }>;
     // (undocumented)
     beginTick(tick?: number): void;
+    // (undocumented)
+    dispose(): void;
     // (undocumented)
     exportState(): {
         externalBodies: any;
@@ -546,7 +550,7 @@ export class CannonWorldAdapter {
         tick: number;
         integratedTick: number;
         integrationCount: number;
-        transactionId: "simulacrum-owned-cannon-solver-transaction-v2-motor-energy";
+        transactionId: "simulacrum-owned-cannon-solver-transaction-v3-rolling-support";
     };
     // (undocumented)
     importState(state: any): void;
@@ -558,7 +562,7 @@ export class CannonWorldAdapter {
         tick: number;
         integratedTick: number;
         integrationCount: number;
-        transactionId: "simulacrum-owned-cannon-solver-transaction-v2-motor-energy";
+        transactionId: "simulacrum-owned-cannon-solver-transaction-v3-rolling-support";
     }>;
     // (undocumented)
     telemetry(): Readonly<{
@@ -566,7 +570,7 @@ export class CannonWorldAdapter {
         tick: number;
         integratedTick: number;
         integrationCount: number;
-        transactionId: "simulacrum-owned-cannon-solver-transaction-v2-motor-energy";
+        transactionId: "simulacrum-owned-cannon-solver-transaction-v3-rolling-support";
     }>;
     // (undocumented)
     transaction: CannonSolverTransaction;

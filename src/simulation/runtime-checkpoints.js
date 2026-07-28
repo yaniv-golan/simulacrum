@@ -378,9 +378,17 @@ export class RuntimeCheckpointCoordinator {
       )
         .flatMap((line) => line.internalEdges.map((edge) => edge.id))
         .sort();
+    if (!context)
+      throw new DomainValidationError(
+        "CHECKPOINT_COMPILED_TOPOLOGY_MISMATCH",
+        "Checkpoint compiled topology does not match the running simulation",
+      );
+    if (compiled.transactionId !== CANNON_SOLVER_TRANSACTION_ID)
+      throw new DomainValidationError(
+        "CANNON_TRANSACTION_CHECKPOINT_MISMATCH",
+        "Checkpoint Cannon solver transaction identity changed",
+      );
     if (
-      !context ||
-      compiled.transactionId !== CANNON_SOLVER_TRANSACTION_ID ||
       stableStringify(compiled.bodyIds) !== stableStringify(currentBodies) ||
       stableStringify(compiled.constraintIds) !==
         stableStringify(currentConstraints) ||

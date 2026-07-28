@@ -10,6 +10,7 @@ import { CommandBus } from "../src/simulation/command-bus.js";
 import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
 import { PowerNetwork } from "../src/simulation/power-network.js";
 import { RunAssemblyGraph } from "../src/simulation/run-assembly-graph.js";
+import { MotorEnergySettlementSystem } from "../src/simulation/systems/motor-energy-settlement-system.js";
 
 const environment = createTestingPlaygroundEnvironment(),
   source = decodeBlueprintOrThrow(builtInDemo("cart").blueprint).assembly,
@@ -27,6 +28,7 @@ function scenario({ id, throttle, steering, steeringTicks = maximumTicks }) {
     }),
     runGraph = new RunAssemblyGraph(assembly),
     powerNetwork = new PowerNetwork(TYPES),
+    motorEnergySettlement = new MotorEnergySettlementSystem(),
     commandBus = new CommandBus(),
     runtime = new MultibodyRuntime({
       world: physics.world,
@@ -39,7 +41,17 @@ function scenario({ id, throttle, steering, steeringTicks = maximumTicks }) {
       terrainHeightAt: environment.terrainHeightAt,
       pondAt: environment.pondAt,
     }),
-    context = { runGraph, powerNetwork, commandBus, services: {} },
+    context = {
+      runGraph,
+      powerNetwork,
+      commandBus,
+      clock: { tick: 0 },
+      telemetry: {},
+      services: {
+        multibodyRuntime: runtime,
+        worldAdapter: physics.worldAdapter,
+      },
+    },
     motorIds = assembly.parts
       .filter((part) => part.type === "motor")
       .map((part) => part.id),
@@ -69,6 +81,7 @@ function scenario({ id, throttle, steering, steeringTicks = maximumTicks }) {
     allMotorsActive = true,
     completedTick = maximumTicks;
   for (let tick = 1; tick <= maximumTicks; tick++) {
+    context.clock.tick = tick;
     commandBus.clearTick();
     for (const motorId of motorIds)
       commandBus.writeRemote(motorId, "throttle", throttle);
@@ -81,6 +94,7 @@ function scenario({ id, throttle, steering, steeringTicks = maximumTicks }) {
     powerNetwork.resolve(runGraph, dt);
     runtime.stepActuators(context, dt);
     physics.worldAdapter.integrate(dt, { tick });
+    motorEnergySettlement.step(context, dt);
     runtime.afterIntegration(dt);
 
     const position = runtime.bodyByPart.get(chassisId).position,
@@ -142,6 +156,7 @@ function scenario({ id, throttle, steering, steeringTicks = maximumTicks }) {
       allMotorsActive,
     };
   runtime.dispose();
+  motorEnergySettlement.dispose();
   return result;
 }
 

@@ -46,6 +46,7 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-suspension-mechanisms.mjs",
   "verify-active-stabilization.mjs",
   "verify-wheel-contact-runtime.mjs",
+  "verify-rolling-support-manifold.mjs",
   "verify-pneumatic-tire-runtime.mjs",
   "verify-pneumatic-ctis.mjs",
   "verify-pneumatic-course.mjs",

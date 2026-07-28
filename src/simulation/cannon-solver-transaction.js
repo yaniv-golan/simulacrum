@@ -9,9 +9,15 @@ import {
   assignConstraintEvidenceRows,
   constraintReactionContributions,
 } from "./constraint-reaction-wrench.js";
+import { canonicalizeRegisteredHeightfieldTireContacts } from "./tire-contact.js";
+import {
+  clearRollingSupportRegistrations,
+  rollingSupportRegistrationCount,
+  rollingSupportRegistrations,
+} from "./rolling-support-registration.js";
 
 export const CANNON_SOLVER_TRANSACTION_ID =
-  "simulacrum-owned-cannon-solver-transaction-v2-motor-energy";
+  "simulacrum-owned-cannon-solver-transaction-v3-rolling-support";
 
 const collideEvent = {
   type: CANNON.Body.COLLIDE_EVENT_NAME,
@@ -21,6 +27,80 @@ const collideEvent = {
 const preStepEvent = { type: "preStep" };
 const postStepEvent = { type: "postStep" };
 const privateStateByTransaction = new WeakMap();
+
+function clearSimulacrumEquationMetadata(equation) {
+  for (const key of [
+    "simulacrumEvidence",
+    "simulacrumEvidenceRow",
+    "simulacrumTireEvidence",
+    "surfaceMaterialKey",
+    "surfaceShapeId",
+    "simulacrumRollingSupport",
+  ])
+    delete equation[key];
+}
+
+const CANONICAL_ROLLING_SUPPORT = Symbol("canonicalRollingSupport");
+
+function resetVector(value) {
+  value?.set?.(0, 0, 0);
+}
+
+function resetCanonicalContact(contact) {
+  clearSimulacrumEquationMetadata(contact);
+  contact[CANONICAL_ROLLING_SUPPORT] = false;
+  contact.bi = null;
+  contact.bj = null;
+  contact.si = null;
+  contact.sj = null;
+  resetVector(contact.ri);
+  resetVector(contact.rj);
+  resetVector(contact.ni);
+  resetVector(contact.jacobianElementA?.spatial);
+  resetVector(contact.jacobianElementA?.rotational);
+  resetVector(contact.jacobianElementB?.spatial);
+  resetVector(contact.jacobianElementB?.rotational);
+  contact.minForce = 0;
+  contact.maxForce = 1e6;
+  contact.a = 0;
+  contact.b = 0;
+  contact.eps = 0;
+  contact.enabled = true;
+  contact.multiplier = 0;
+  contact.restitution = 0;
+}
+
+function copyCanonicalContact(contact, raw, candidate) {
+  resetCanonicalContact(contact);
+  contact[CANONICAL_ROLLING_SUPPORT] = true;
+  contact.bi = raw.bi;
+  contact.bj = raw.bj;
+  contact.si = raw.si;
+  contact.sj = raw.sj;
+  const geometry = candidate.geometry,
+    pointA = candidate.wheelIsA
+      ? geometry.wheelOffsetWorld
+      : geometry.supportOffsetWorld,
+    pointB = candidate.wheelIsA
+      ? geometry.supportOffsetWorld
+      : geometry.wheelOffsetWorld;
+  contact.ri.set(pointA.x, pointA.y, pointA.z);
+  contact.rj.set(pointB.x, pointB.y, pointB.z);
+  contact.ni.set(
+    candidate.contactNormalWorld.x,
+    candidate.contactNormalWorld.y,
+    candidate.contactNormalWorld.z,
+  );
+  contact.minForce = raw.minForce;
+  contact.maxForce = raw.maxForce;
+  contact.a = raw.a;
+  contact.b = raw.b;
+  contact.eps = raw.eps;
+  contact.enabled = raw.enabled;
+  contact.multiplier = 0;
+  contact.restitution = raw.restitution;
+  return contact;
+}
 
 /** Advances one project-owned solve with optional evidence-only provenance. */
 export function stepCannonSolverTransaction(
@@ -45,6 +125,16 @@ export function completedCannonSolverEvidence(transaction) {
     privateStateByTransaction.get(transaction)?.evidenceContributions ||
     Object.freeze([])
   );
+}
+
+export function cannonSolverTransactionResourceState(transaction) {
+  const state = privateStateByTransaction.get(transaction);
+  if (!state) throw new TypeError("Unknown Cannon solver transaction");
+  return Object.freeze({
+    canonicalContactPoolSize: state.canonicalContactPool.length,
+    canonicalContactAllocations: state.canonicalContactAllocations,
+    rollingSupportRegistrations: rollingSupportRegistrationCount(transaction),
+  });
 }
 
 function stableBodyKey(body) {
@@ -110,7 +200,9 @@ function canonicalContactRecord(contact, world) {
     firstPoint = swap ? contact.rj : contact.ri,
     secondPoint = swap ? contact.ri : contact.rj,
     normal = swap ? contact.ni.scale(-1) : contact.ni,
+    rolling = contact.simulacrumRollingSupport || null,
     sortKey = [
+      rolling?.manifoldId || "ordinary-contact",
       firstBody.id,
       firstShape.id,
       secondBody.id,
@@ -126,6 +218,7 @@ function canonicalContactRecord(contact, world) {
     bodyBId: secondBody.id,
     shapeAId: firstShape.id,
     shapeBId: secondShape.id,
+    rolling,
     validity: [firstBody, secondBody, firstShape, secondShape].some(
       (entry) => entry.validity === "unavailable",
     )
@@ -141,9 +234,9 @@ function annotateContactRows(world, tick) {
     .map((contact) => canonicalContactRecord(contact, world))
     .sort((left, right) => left.sortKey.localeCompare(right.sortKey, "en"));
   for (const [ordinal, record] of records.entries()) {
-    const contactId = `contact:${String(tick)}:${record.bodyAId}:${
-        record.shapeAId
-      }:${record.bodyBId}:${record.shapeBId}:${ordinal}`,
+    const contactId = record.rolling
+        ? `contact:${String(tick)}:${record.rolling.manifoldId}`
+        : `contact:${String(tick)}:${record.bodyAId}:${record.shapeAId}:${record.bodyBId}:${record.shapeBId}:${ordinal}`,
       evidence = Object.freeze({
         tick,
         contactId,
@@ -152,7 +245,16 @@ function annotateContactRows(world, tick) {
         bodyBId: record.bodyBId,
         shapeAId: record.shapeAId,
         shapeBId: record.shapeBId,
-        validity: record.validity,
+        validity:
+          record.rolling?.validity === "measured"
+            ? record.validity
+            : record.rolling?.validity || record.validity,
+        ...(record.rolling
+          ? {
+              manifoldId: record.rolling.manifoldId,
+              supportFeatureId: record.rolling.featureId,
+            }
+          : {}),
       });
     record.contact.simulacrumEvidence = evidence;
     record.contact.simulacrumEvidenceRow = Object.freeze({
@@ -511,6 +613,8 @@ export class CannonSolverTransaction {
       pendingMotorRecords: null,
       pendingEvidenceTick: null,
       evidenceContributions: Object.freeze([]),
+      canonicalContactPool: [],
+      canonicalContactAllocations: 0,
     });
     this.oldContacts = [];
     this.frictionEquationPool = [];
@@ -538,6 +642,36 @@ export class CannonSolverTransaction {
         "Registered motor energy budgets do not match the integration tick",
       );
     state.activeTick = tick;
+  }
+
+  #releaseCanonicalContact(contact) {
+    const state = privateStateByTransaction.get(this);
+    resetCanonicalContact(contact);
+    state.canonicalContactPool.push(contact);
+  }
+
+  #acquireCanonicalContact(raw, candidate) {
+    const state = privateStateByTransaction.get(this),
+      pooled = state.canonicalContactPool.pop(),
+      contact = pooled || new CANNON.ContactEquation(raw.bi, raw.bj);
+    if (!pooled) state.canonicalContactAllocations++;
+    return copyCanonicalContact(contact, raw, candidate);
+  }
+
+  dispose() {
+    const state = privateStateByTransaction.get(this);
+    for (const contact of this.world.contacts)
+      if (contact[CANONICAL_ROLLING_SUPPORT]) resetCanonicalContact(contact);
+    this.world.contacts.length = 0;
+    this.world.frictionEquations.length = 0;
+    this.oldContacts.length = 0;
+    this.frictionEquationPool.length = 0;
+    state.canonicalContactPool.length = 0;
+    state.canonicalContactAllocations = 0;
+    state.motorRegistrations.clear();
+    state.pendingMotorRecords = null;
+    state.evidenceContributions = Object.freeze([]);
+    clearRollingSupportRegistrations(this);
   }
 
   registerMotorEnergyBudget({
@@ -730,10 +864,18 @@ export class CannonSolverTransaction {
       pairsB.length = writeIndex;
     }
     world.collisionMatrixTick();
-    for (const contact of world.contacts) this.oldContacts.push(contact);
+    for (const contact of world.contacts)
+      if (contact[CANONICAL_ROLLING_SUPPORT])
+        this.#releaseCanonicalContact(contact);
+      else {
+        clearSimulacrumEquationMetadata(contact);
+        this.oldContacts.push(contact);
+      }
     world.contacts.length = 0;
-    for (const equation of world.frictionEquations)
+    for (const equation of world.frictionEquations) {
+      clearSimulacrumEquationMetadata(equation);
       this.frictionEquationPool.push(equation);
+    }
     world.frictionEquations.length = 0;
     world.narrowphase.getContacts(
       pairsA,
@@ -744,6 +886,20 @@ export class CannonSolverTransaction {
       world.frictionEquations,
       this.frictionEquationPool,
     );
+    canonicalizeRegisteredHeightfieldTireContacts({
+      world,
+      registrations: rollingSupportRegistrations(this),
+      acquireCanonical: (contact, candidate) =>
+        this.#acquireCanonicalContact(contact, candidate),
+      recycleContact: (contact) => {
+        clearSimulacrumEquationMetadata(contact);
+        this.oldContacts.push(contact);
+      },
+      recycleFriction: (equation) => {
+        clearSimulacrumEquationMetadata(equation);
+        this.frictionEquationPool.push(equation);
+      },
+    });
     if (captureEvidence) {
       annotateContactRows(world, tick);
       annotateFrictionRows(world, tick);

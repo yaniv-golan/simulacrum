@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Advances the owned Cannon solver transaction identity for the canonical
+  rolling-support registration and pre-annotation heightfield contact seam.
+  The public Cannon adapter and transaction also expose additive `dispose()`
+  lifecycle methods for releasing transaction-owned pools and registrations.
+  Checkpoints carrying the previous transaction identity are intentionally
+  rejected; this strict cutover is queued for Core `0.2.0`.
 - Adds explicit pneumatic tire chambers, conserved dry-air mass and energy,
   pressure-coupled contact support, powered compressor/three-way-valve control,
   tire-pressure sensing, telemetry, dynamic gas mass, and exact checkpoint v2

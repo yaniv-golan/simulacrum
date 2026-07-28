@@ -36,3 +36,10 @@ The descriptor is derived from current catalog and part data. It is not added
 to blueprint, workspace, share, or subassembly envelopes, so this cutover does
 not advance a wire schema or add a compatibility reader. The package remains
 `0.1.0` in the source workspace until the actual `0.2.0` release transaction.
+
+The owned Cannon transaction v3 rolling-support cutover is likewise queued for
+Core `0.2.0`. Its transaction identity changes deliberately so checkpoints
+captured under v2 motor-energy/contact semantics fail closed instead of being
+restored under the new pre-annotation rolling-contact path. The additive public
+`dispose()` methods on `CannonSolverTransaction` and `CannonWorldAdapter` are a
+minor-version API addition and ship in that same `0.2.0` cutover.

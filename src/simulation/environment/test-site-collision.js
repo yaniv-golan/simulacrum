@@ -149,6 +149,35 @@ export function createTestSiteCollisionBody({
       externalBodyId: "environment:test-reserve",
       surface: "Workshop Test Reserve",
       materialKey: "short-grass",
+      rollingSupportAt: (x, z) => {
+        const sample = sampleAt(x, z),
+          localX = (x - minimumX) / elementSize,
+          localZ = (z - minimumZ) / elementSize,
+          ix = Math.max(0, Math.min(segmentsX - 1, Math.floor(localX))),
+          iz = Math.max(0, Math.min(segmentsZ - 1, Math.floor(localZ))),
+          fx = localX - ix,
+          fz = localZ - iz,
+          triangle = fx + fz <= 1 ? 0 : 1,
+          delta = elementSize * 0.5,
+          left = sampleAt(x - delta, z).heightM,
+          right = sampleAt(x + delta, z).heightM,
+          back = sampleAt(x, z - delta).heightM,
+          front = sampleAt(x, z + delta).heightM,
+          nx = -(right - left) / (2 * delta),
+          nz = -(front - back) / (2 * delta),
+          length = Math.hypot(nx, 1, nz);
+        return Object.freeze({
+          validity: sample?.inside ? "measured" : "unavailable",
+          heightM: sample.heightM,
+          normal: Object.freeze({
+            x: nx / length,
+            y: 1 / length,
+            z: nz / length,
+          }),
+          materialKey: sample.materialKey,
+          featureId: `test-reserve:heightfield:cell:${ix}:${iz}:triangle:${triangle}`,
+        });
+      },
       triangleCounts: Object.freeze(triangleCounts),
       vertexCount: (segmentsX + 1) * (segmentsZ + 1),
       contactMaterialAt: (x, z, participantMaterialName) => {

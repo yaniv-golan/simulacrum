@@ -12,6 +12,7 @@
     "policyFingerprint",
     "replayAnchorCheckpoint",
     "externalInputTrace",
+    "priorEpisodeBoundaries",
     "trigger",
     "triggers",
     "exactFrames",
@@ -22,7 +23,7 @@
   ],
   "properties": {
     "format": { "const": "simulacrum-failure-evidence" },
-    "version": { "const": 1 },
+    "version": { "const": 2 },
     "blueprint": {
       "$ref": "https://simulacrum.local/schema/blueprint-wire-schema.json"
     },
@@ -44,6 +45,11 @@
     },
     "externalInputTrace": {
       "$ref": "https://simulacrum.local/schema/input-trace-wire-schema.json"
+    },
+    "priorEpisodeBoundaries": {
+      "type": "array",
+      "maxItems": 31,
+      "items": { "$ref": "#/$defs/episodeBoundary" }
     },
     "trigger": { "$ref": "#/$defs/trigger" },
     "triggers": {
@@ -160,9 +166,9 @@
         "nearFailureUtilization",
         "stallCommandAbsMin",
         "stallPowerFloorW",
-        "stallPowerFractionMin",
-        "stallMaxProgressM",
-        "stallDwellTicks"
+        "stallShaftProgressMinRad",
+        "stallDwellTicks",
+        "contactInvariantLoadFloorN"
       ],
       "properties": {
         "version": { "const": 1 },
@@ -203,17 +209,13 @@
         },
         "stallCommandAbsMin": { "type": "number", "minimum": 0, "maximum": 1 },
         "stallPowerFloorW": { "type": "number", "minimum": 0 },
-        "stallPowerFractionMin": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        },
-        "stallMaxProgressM": { "type": "number", "minimum": 0 },
+        "stallShaftProgressMinRad": { "type": "number", "minimum": 0 },
         "stallDwellTicks": {
           "type": "integer",
           "minimum": 2,
           "maximum": 100000
-        }
+        },
+        "contactInvariantLoadFloorN": { "type": "number", "minimum": 0 }
       },
       "additionalProperties": false
     },
@@ -254,6 +256,18 @@
         "timeS": { "type": "number", "minimum": 0 },
         "subjectId": { "$ref": "#/$defs/nullableEntityId" },
         "validity": { "$ref": "#/$defs/validity" }
+      },
+      "additionalProperties": false
+    },
+    "episodeBoundary": {
+      "type": "object",
+      "required": ["episodeIndex", "trigger", "policyFingerprint"],
+      "properties": {
+        "episodeIndex": { "type": "integer", "minimum": 0, "maximum": 30 },
+        "trigger": { "$ref": "#/$defs/trigger" },
+        "policyFingerprint": {
+          "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
+        }
       },
       "additionalProperties": false
     },
@@ -329,6 +343,9 @@
         "correctionWorldM",
         "geometricToleranceM",
         "withinGeometricTolerance",
+        "manifoldId",
+        "supportFeatureId",
+        "supportValidity",
         "forceRowIds",
         "validity"
       ],
@@ -345,6 +362,9 @@
         "withinGeometricTolerance": {
           "oneOf": [{ "type": "boolean" }, { "type": "null" }]
         },
+        "manifoldId": { "$ref": "#/$defs/nullableEntityId" },
+        "supportFeatureId": { "$ref": "#/$defs/nullableEntityId" },
+        "supportValidity": { "$ref": "#/$defs/validity" },
         "forceRowIds": { "$ref": "#/$defs/entityIds" },
         "validity": { "$ref": "#/$defs/validity" }
       },
@@ -605,14 +625,20 @@
         "resolvedThrottle",
         "commandSource",
         "availablePowerW",
-        "deliveredPowerW"
+        "deliveredPowerW",
+        "operational",
+        "shaftPositionRad",
+        "shaftAngularSpeedRadPerS"
       ],
       "properties": {
         "partId": { "$ref": "#/$defs/entityId" },
         "resolvedThrottle": { "type": "number", "minimum": -1, "maximum": 1 },
         "commandSource": { "type": "string", "minLength": 1, "maxLength": 64 },
         "availablePowerW": { "type": "number", "minimum": 0 },
-        "deliveredPowerW": { "type": "number", "minimum": 0 }
+        "deliveredPowerW": { "type": "number", "minimum": 0 },
+        "operational": { "type": "boolean" },
+        "shaftPositionRad": { "type": "number" },
+        "shaftAngularSpeedRadPerS": { "type": "number" }
       },
       "additionalProperties": false
     },

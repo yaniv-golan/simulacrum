@@ -225,9 +225,16 @@ kernels. The surface field composes tagged mound, grade-ramp,
 corridor-profile, and ripple-train features with material, district, fluid,
 zone, and route queries. Simulation samples that field at 2 m into one bounded
 Y-up Cannon Heightfield, then resolves every terrain contact's material and
-pair law from the canonical completed contact point before solving. This
-supports sphere, box, convex, and cylinder contacts without a tire-only lookup
-or coincident surface colliders.
+pair law from the canonical completed contact point before solving. Ordinary
+shapes use the generic contact path. Compiled `rolling-contact-v1` constraints
+register their wheel capability with the simulation-owned Cannon transaction;
+after narrowphase and before annotation or solver insertion, that transaction
+rejects inadmissible heightfield tire candidates, canonicalizes admissible
+tread points while preserving signed normal separation, and removes generic
+heightfield friction rows owned by the authored tire law. `world.contacts`
+remains the one solved-contact authority for collision events, tire settlement,
+telemetry, failure evidence, and material provenance. No coincident surface
+collider or demo identity participates in this dispatch.
 
 Static fixtures declare exact box, cylinder, or compound child geometry.
 Model-owned seeded vegetation compiles immutable poses and sizes used by both

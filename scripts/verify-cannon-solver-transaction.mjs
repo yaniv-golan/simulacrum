@@ -4,6 +4,7 @@ import * as CANNON from "cannon-es";
 import {
   CANNON_SOLVER_TRANSACTION_ID,
   CannonSolverTransaction,
+  cannonSolverTransactionResourceState,
 } from "../src/simulation/cannon-solver-transaction.js";
 import {
   CannonWorldAdapter,
@@ -11,6 +12,10 @@ import {
   requestWorldEvidenceCapture,
 } from "../src/simulation/cannon-world-adapter.js";
 import { createYUpHeightfieldCandidateFilter } from "../src/simulation/heightfield-broadphase.js";
+import {
+  registerRollingSupport,
+  unregisterRollingSupport,
+} from "../src/simulation/rolling-support-registration.js";
 
 const source = fs.readFileSync(
   "src/simulation/cannon-solver-transaction.js",
@@ -87,6 +92,111 @@ function run() {
 }
 
 assert.deepEqual(run(), run(), "owned solver transaction is nondeterministic");
+
+function pooledMetadataRun() {
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.80665, 0) }),
+    ground = new CANNON.Body({
+      type: CANNON.Body.STATIC,
+      shape: new CANNON.Plane(),
+    }),
+    body = new CANNON.Body({
+      mass: 1,
+      shape: new CANNON.Sphere(0.25),
+      position: new CANNON.Vec3(0, 0.24, 0),
+    }),
+    transaction = new CannonSolverTransaction(world),
+    adapter = new CannonWorldAdapter(world, transaction),
+    constraint = new CANNON.DistanceConstraint(ground, body, 1);
+  ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+  world.addBody(ground);
+  world.addBody(body);
+  adapter.beginSession();
+  requestWorldEvidenceCapture(adapter);
+  adapter.integrate(1 / 120, { tick: 1 });
+  assert.ok(world.contacts.length > 0, "metadata fixture did not contact");
+  assert.ok(world.contacts.every((row) => row.simulacrumEvidence?.tick === 1));
+  const capturedRows = new Set(world.contacts);
+  adapter.integrate(1 / 120, { tick: 2 });
+  assert.ok(
+    [...world.contacts, ...transaction.oldContacts].some((row) =>
+      capturedRows.has(row),
+    ),
+    "captured contact was lost instead of returning to Cannon ownership",
+  );
+  for (const row of [
+    ...world.contacts,
+    ...world.frictionEquations,
+    ...transaction.oldContacts,
+    ...transaction.frictionEquationPool,
+  ]) {
+    assert.equal(row.simulacrumEvidence, undefined);
+    assert.equal(row.simulacrumEvidenceRow, undefined);
+    assert.equal(row.simulacrumTireEvidence, undefined);
+    assert.equal(row.surfaceMaterialKey, undefined);
+    assert.equal(row.surfaceShapeId, undefined);
+  }
+
+  registerRollingSupport(transaction, {
+    wheelBody: body,
+    wheelShape: body.shapes[0],
+    descriptor: Object.freeze({ id: "fixture-rolling-support" }),
+    constraint,
+  });
+  assert.throws(
+    () =>
+      registerRollingSupport(transaction, {
+        wheelBody: body,
+        wheelShape: body.shapes[0],
+        descriptor: Object.freeze({ id: "duplicate" }),
+        constraint,
+      }),
+    (error) => error?.code === "DUPLICATE_ROLLING_SUPPORT_REGISTRATION",
+  );
+  assert.throws(
+    () =>
+      unregisterRollingSupport(transaction, {
+        wheelBody: body,
+        wheelShape: body.shapes[0],
+        constraint: new CANNON.DistanceConstraint(ground, body, 1),
+      }),
+    (error) => error?.code === "ROLLING_SUPPORT_REGISTRATION_MISMATCH",
+  );
+  assert.equal(
+    unregisterRollingSupport(transaction, {
+      wheelBody: body,
+      wheelShape: body.shapes[0],
+      constraint,
+    }),
+    true,
+  );
+  assert.equal(
+    unregisterRollingSupport(transaction, {
+      wheelBody: body,
+      wheelShape: body.shapes[0],
+      constraint,
+    }),
+    false,
+  );
+  registerRollingSupport(transaction, {
+    wheelBody: body,
+    wheelShape: body.shapes[0],
+    descriptor: Object.freeze({ id: "dispose-fixture" }),
+    constraint,
+  });
+  assert.equal(
+    cannonSolverTransactionResourceState(transaction)
+      .rollingSupportRegistrations,
+    1,
+  );
+  adapter.dispose();
+  assert.deepEqual(cannonSolverTransactionResourceState(transaction), {
+    canonicalContactPoolSize: 0,
+    canonicalContactAllocations: 0,
+    rollingSupportRegistrations: 0,
+  });
+}
+
+pooledMetadataRun();
 
 function budgetedMotorRun() {
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),

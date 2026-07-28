@@ -8,6 +8,11 @@ import {
   pneumaticRollingLoss,
   pneumaticSupportResponse,
 } from "./pneumatic-gas.js";
+import {
+  buildCanonicalRollingSupportPoint,
+  rollingContactPatchHalfLength,
+  rollingSupportManifoldId,
+} from "./rolling-support-manifold.js";
 
 const EPSILON = 1e-9;
 const NORMAL_IMPULSE_NS = Symbol("simulacrumNormalImpulseNs");
@@ -84,8 +89,14 @@ function contactGap(contact) {
   return contact.ni.dot(pointB.vsub(pointA));
 }
 
-/** Removes only the clipped point's nonphysical rolling-tangent lever arm. */
-function limitHeightfieldAxleMoment(contact, wheel, axle, maximumShiftM) {
+/** Converts one raw row into a pure bounded rolling-support candidate. */
+function heightfieldRollingSupportCandidate(
+  contact,
+  wheel,
+  axle,
+  maximumShiftM,
+  supportNormalOverride = null,
+) {
   const wheelIsA = contact.bi === wheel,
     supportBody = wheelIsA ? contact.bj : contact.bi;
   if (!supportBody.shapes.some((shape) => shape instanceof CANNON.Heightfield))
@@ -93,21 +104,36 @@ function limitHeightfieldAxleMoment(contact, wheel, axle, maximumShiftM) {
   const wheelOffset = wheelIsA ? contact.ri : contact.rj,
     supportOffset = wheelIsA ? contact.rj : contact.ri,
     rawPointWorld = worldPoint(wheel, wheelOffset),
-    supportNormal = contact.ni.scale(wheelIsA ? -1 : 1),
-    radialNormal = supportNormal.clone();
-  radialNormal.vsub(axle.scale(supportNormal.dot(axle)), radialNormal);
-  if (radialNormal.lengthSquared() <= EPSILON) return null;
-  radialNormal.normalize();
-  const correctedOffset = radialNormal.scale(wheelOffset.dot(radialNormal));
-  correctedOffset.vadd(axle.scale(wheelOffset.dot(axle)), correctedOffset);
-  const shift = correctedOffset.vsub(wheelOffset),
-    requiredShiftM = shift.length();
-  if (requiredShiftM > maximumShiftM)
-    shift.scale(maximumShiftM / requiredShiftM, shift);
-  wheelOffset.vadd(shift, wheelOffset);
-  supportOffset.vadd(shift, supportOffset);
-  const correctedPointWorld = worldPoint(wheel, wheelOffset);
+    supportNormal = supportNormalOverride
+      ? new CANNON.Vec3(
+          supportNormalOverride.x,
+          supportNormalOverride.y,
+          supportNormalOverride.z,
+        )
+      : contact.ni.scale(wheelIsA ? -1 : 1),
+    geometry = buildCanonicalRollingSupportPoint({
+      wheelOffsetWorld: wheelOffset,
+      supportOffsetWorld: supportOffset,
+      supportNormalWorld: supportNormal,
+      axleWorld: axle,
+      maximumShiftM,
+    });
+  if (geometry.reasonCode === "AXLE_NORMAL_CONTACT") return null;
+  const correctedPointWorld = wheel.position.vadd(
+    new CANNON.Vec3(
+      geometry.wheelOffsetWorld.x,
+      geometry.wheelOffsetWorld.y,
+      geometry.wheelOffsetWorld.z,
+    ),
+  );
   return Object.freeze({
+    geometry,
+    wheelIsA,
+    contactNormalWorld: Object.freeze({
+      x: supportNormal.x * (wheelIsA ? -1 : 1),
+      y: supportNormal.y * (wheelIsA ? -1 : 1),
+      z: supportNormal.z * (wheelIsA ? -1 : 1),
+    }),
     tirePartId: wheel.userData?.partId ?? null,
     rawPointWorldM: Object.freeze({
       x: rawPointWorld.x,
@@ -120,15 +146,204 @@ function limitHeightfieldAxleMoment(contact, wheel, axle, maximumShiftM) {
       z: correctedPointWorld.z,
     }),
     correctionWorldM: Object.freeze({
-      x: shift.x,
-      y: shift.y,
-      z: shift.z,
+      ...geometry.correctionWorldM,
     }),
-    requiredCorrectionM: requiredShiftM,
-    appliedCorrectionM: shift.length(),
+    requiredCorrectionM: geometry.requiredCorrectionM,
+    appliedCorrectionM: geometry.appliedCorrectionM,
     geometricToleranceM: maximumShiftM,
-    withinGeometricTolerance: requiredShiftM <= maximumShiftM + EPSILON,
+    withinGeometricTolerance: geometry.accepted,
     validity: "measured",
+  });
+}
+
+function rollingPatchHalfLength(descriptor) {
+  return rollingContactPatchHalfLength({
+    radiusM: descriptor.radiusM,
+    maximumDeflectionM:
+      descriptor.tireConstitutiveLaw.normalModel.maximumDeflectionM,
+  });
+}
+
+function stableBodyId(body) {
+  return String(
+    body.userData?.partId ?? body.userData?.externalBodyId ?? `body:${body.id}`,
+  );
+}
+
+function stableShapeId(body, shape) {
+  return String(
+    shape?.userData?.shapeId ??
+      `body:${stableBodyId(body)}:shape:${Math.max(0, body.shapes.indexOf(shape))}`,
+  );
+}
+
+function derivedFeatureId(shapeId, point) {
+  const quantize = (value) => Math.round(Number(value || 0) * 1e6);
+  return `${shapeId}:derived:${quantize(point.x)}:${quantize(point.z)}`;
+}
+
+/**
+ * Canonicalizes registered tire/heightfield rows before evidence annotation or
+ * solver insertion. Rejected rows are returned to the caller-owned Cannon
+ * pool; retained rows preserve their signed normal gap because both contact
+ * offsets receive the same tangential correction.
+ */
+export function canonicalizeRegisteredHeightfieldTireContacts({
+  world,
+  registrations,
+  acquireCanonical,
+  recycleContact,
+  recycleFriction,
+}) {
+  const retained = [],
+    acceptedByManifold = new Map();
+  let rejectedContactCount = 0;
+  for (const contact of world.contacts || []) {
+    const registration =
+      registrations.get(contact.bi)?.get(contact.si) ||
+      registrations.get(contact.bj)?.get(contact.sj);
+    if (!registration || !world.constraints.includes(registration.constraint)) {
+      retained.push(contact);
+      continue;
+    }
+    const wheel = registration.wheelBody,
+      wheelIsA = contact.bi === wheel,
+      other = wheelIsA ? contact.bj : contact.bi;
+    if (!other?.shapes?.some((shape) => shape instanceof CANNON.Heightfield)) {
+      retained.push(contact);
+      continue;
+    }
+    const axle = partVectorToWorld(
+      wheel,
+      new CANNON.Vec3(...registration.descriptor.localAxleAxis),
+    );
+    axle.normalize();
+    let candidate = heightfieldRollingSupportCandidate(
+      contact,
+      wheel,
+      axle,
+      rollingPatchHalfLength(registration.descriptor),
+    );
+    if (!candidate) {
+      retained.push(contact);
+      continue;
+    }
+    if (!candidate.withinGeometricTolerance) {
+      rejectedContactCount++;
+      recycleContact(contact);
+      continue;
+    }
+    let wheelPoint = wheel.position.vadd(
+        new CANNON.Vec3(
+          candidate.geometry.wheelOffsetWorld.x,
+          candidate.geometry.wheelOffsetWorld.y,
+          candidate.geometry.wheelOffsetWorld.z,
+        ),
+      ),
+      supportShape = contact.bi === wheel ? contact.sj : contact.si,
+      supportShapeId = stableShapeId(other, supportShape),
+      initialSupport = other.userData?.rollingSupportAt?.(
+        wheelPoint.x,
+        wheelPoint.z,
+      );
+    if (initialSupport?.validity === "measured" && initialSupport.normal) {
+      candidate = heightfieldRollingSupportCandidate(
+        contact,
+        wheel,
+        axle,
+        rollingPatchHalfLength(registration.descriptor),
+        initialSupport.normal,
+      );
+      if (!candidate?.withinGeometricTolerance) {
+        rejectedContactCount++;
+        recycleContact(contact);
+        continue;
+      }
+      wheelPoint = wheel.position.vadd(
+        new CANNON.Vec3(
+          candidate.geometry.wheelOffsetWorld.x,
+          candidate.geometry.wheelOffsetWorld.y,
+          candidate.geometry.wheelOffsetWorld.z,
+        ),
+      );
+    }
+    const support =
+        other.userData?.rollingSupportAt?.(wheelPoint.x, wheelPoint.z) ||
+        initialSupport,
+      featureId =
+        support?.featureId || derivedFeatureId(supportShapeId, wheelPoint),
+      manifoldId = rollingSupportManifoldId({
+        wheelId: stableBodyId(wheel),
+        supportBodyId: stableBodyId(other),
+        supportShapeId,
+        featureId,
+      }),
+      record = {
+        raw: contact,
+        candidate,
+        manifoldId,
+        featureId,
+        supportShapeId,
+        support,
+      },
+      current = acceptedByManifold.get(manifoldId);
+    if (
+      !current ||
+      candidate.geometry.signedNormalGapM <
+        current.candidate.geometry.signedNormalGapM
+    ) {
+      if (current) recycleContact(current.raw);
+      acceptedByManifold.set(manifoldId, record);
+    } else recycleContact(contact);
+  }
+  for (const record of [...acceptedByManifold.values()].sort((left, right) =>
+    left.manifoldId.localeCompare(right.manifoldId, "en"),
+  )) {
+    const canonical = acquireCanonical(record.raw, record.candidate);
+    const { geometry: _geometry, ...candidateEvidence } = record.candidate;
+    canonical.simulacrumTireEvidence = Object.freeze({
+      ...candidateEvidence,
+      manifoldId: record.manifoldId,
+      supportFeatureId: record.featureId,
+      supportValidity: record.support?.validity || "derived",
+    });
+    canonical.simulacrumRollingSupport = Object.freeze({
+      manifoldId: record.manifoldId,
+      featureId: record.featureId,
+      supportShapeId: record.supportShapeId,
+      role: "tire-envelope",
+      validity: record.support?.validity || "derived",
+    });
+    retained.push(canonical);
+    recycleContact(record.raw);
+  }
+  world.contacts.length = 0;
+  world.contacts.push(...retained);
+
+  const retainedFriction = [];
+  for (const equation of world.frictionEquations || []) {
+    const registration =
+      registrations.get(equation.bi)?.get(equation.si) ||
+      registrations.get(equation.bj)?.get(equation.sj) ||
+      registrations.get(equation.bi)?.values().next().value ||
+      registrations.get(equation.bj)?.values().next().value;
+    if (!registration) {
+      retainedFriction.push(equation);
+      continue;
+    }
+    const other =
+      equation.bi === registration.wheelBody ? equation.bj : equation.bi;
+    if (other?.shapes?.some((shape) => shape instanceof CANNON.Heightfield)) {
+      recycleFriction(equation);
+      continue;
+    }
+    retainedFriction.push(equation);
+  }
+  world.frictionEquations.length = 0;
+  world.frictionEquations.push(...retainedFriction);
+  return Object.freeze({
+    retainedContactCount: retained.length,
+    rejectedContactCount,
   });
 }
 
@@ -611,30 +826,14 @@ export class TireContactConstraint extends CANNON.Constraint {
       new CANNON.Vec3(...descriptor.localAxleAxis),
     );
     axle.normalize();
-    const maximumDeflectionM = law.normalModel.maximumDeflectionM,
-      // Chord geometry bounds the longitudinal reach of a circular contact
-      // patch compressed by the authored maximum radial deflection.
-      maximumContactPatchHalfLengthM = Math.sqrt(
-        Math.max(
-          0,
-          2 * descriptor.radiusM * maximumDeflectionM - maximumDeflectionM ** 2,
-        ),
-      ),
-      contactRoles = new Set(),
+    const contactRoles = new Set(),
       contactRegionKeys = new Set(),
       contactMaterialKeys = new Set(),
       supportMaterialLaws = new Map(),
       tractionContacts = [];
     for (const contact of contacts) {
-      const tireEvidence = limitHeightfieldAxleMoment(
-        contact,
-        wheel,
-        axle,
-        maximumContactPatchHalfLengthM,
-      );
-      if (tireEvidence) contact.simulacrumTireEvidence = tireEvidence;
-      const wheelIsA = contact.bi === wheel,
-        other = wheelIsA ? contact.bj : contact.bi,
+      const wheelIsA = contact.bi === wheel;
+      const other = wheelIsA ? contact.bj : contact.bi,
         wheelPoint = worldPoint(wheel, wheelIsA ? contact.ri : contact.rj),
         otherPoint = worldPoint(other, wheelIsA ? contact.rj : contact.ri),
         normal = contact.ni.scale(wheelIsA ? -1 : 1),

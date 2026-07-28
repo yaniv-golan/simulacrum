@@ -98,13 +98,16 @@ export function installFailureLab({
   function syncButtons() {
     const evidence = getLiveTelemetry()?.systems?.failureEvidence,
       hasReport =
-        recorder.report().eventCount > 0 || Boolean(evidence?.trigger),
+        recorder.report().eventCount > 0 ||
+        Boolean(evidence?.trigger) ||
+        evidence?.captureStatus?.state === "ready",
       hasReplay = replay.frames.length > 1;
     $("#failure-report").disabled = !hasReport;
     $("#failure-report-tool").disabled = !hasReport;
     $("#instant-replay").disabled = !hasReplay;
     $("#replay-failure").disabled = !hasReplay;
-    $("#export-failure-evidence").disabled = !evidence?.trigger;
+    $("#export-failure-evidence").disabled =
+      evidence?.captureStatus?.state !== "ready";
   }
 
   function renderReport() {

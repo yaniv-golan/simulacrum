@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createFailureEvidenceArtifact } from "../src/application/failure-evidence-export.js";
+import { createFailureEvidenceCaptureCoordinator } from "../src/application/failure-evidence-capture-coordinator.js";
 import {
   decodeFailureEvidence,
   decodeFailureEvidenceOrThrow,
@@ -20,6 +21,7 @@ import {
   failureEvidencePolicyFingerprint,
 } from "../src/simulation/failure-evidence-policy.js";
 import { InputTracePlayer } from "../src/simulation/input-trace-player.js";
+import { WIRE_LIMITS } from "../src/model/wire-limits.js";
 
 const blueprint = JSON.parse(
     fs.readFileSync(
@@ -248,7 +250,45 @@ assert.equal(decoded.wire.summary.firstFailedConnectionId, "joint-1");
 assert.deepEqual(decoded.wire.summary.sourceContactIds, ["contact:1:a:b:0"]);
 assert.equal(encodeFailureEvidence(artifact), stableStringify(artifact));
 assert.match(fingerprintFailureEvidence(artifact), /^sim-sha256-[0-9a-f]{64}$/);
+assert.equal(artifact.version, 2);
+assert.deepEqual(artifact.priorEpisodeBoundaries, []);
+
+const episodeCoordinator = createFailureEvidenceCaptureCoordinator({ runtime }),
+  diagnosticTrigger = {
+    ...trigger,
+    kind: "rolling-actuator-stall",
+    subjectId: "motor-1",
+  },
+  diagnosticSnapshot = {
+    ...runtime.failureEvidence.recorder.snapshot(),
+    priorEpisodeBoundaries: [],
+    trigger: diagnosticTrigger,
+    triggers: [diagnosticTrigger],
+  },
+  diagnosticResult = episodeCoordinator.finalize(diagnosticSnapshot);
+assert.equal(diagnosticResult.rearm, true);
+assert.equal(episodeCoordinator.status().state, "ready");
+assert.deepEqual(episodeCoordinator.artifact().priorEpisodeBoundaries, []);
+const structuralTrigger = { ...trigger, tick: 2, timeS: 2 / 120 },
+  structuralFrame = { ...rawFrame, tick: 2, timeS: 2 / 120 },
+  structuralResult = episodeCoordinator.finalize({
+    ...runtime.failureEvidence.recorder.snapshot(),
+    priorEpisodeBoundaries: diagnosticResult.priorEpisodeBoundaries,
+    trigger: structuralTrigger,
+    triggers: [structuralTrigger],
+    exactFrames: [structuralFrame],
+  });
+assert.equal(structuralResult.rearm, false);
+assert.equal(episodeCoordinator.artifact().trigger.kind, "structural-failure");
+assert.deepEqual(
+  episodeCoordinator.artifact().priorEpisodeBoundaries,
+  diagnosticResult.priorEpisodeBoundaries,
+);
 assert.equal(decodeFailureEvidence({ ...artifact, future: true }).ok, false);
+assert.equal(
+  decodeFailureEvidence({ ...artifact, version: 1 }).errors[0].code,
+  "UNSUPPORTED_FAILURE_EVIDENCE_VERSION",
+);
 assert.equal(
   decodeFailureEvidence({ ...artifact, replayAnchorCheckpoint: null }).errors[0]
     .code,
@@ -270,6 +310,119 @@ assert.deepEqual(player.readCommandCandidates(1).remote, [
 ]);
 assert.equal(player.readCommandCandidates(2).remote[0].value, 1);
 
+const denseBlueprint = {
+    ...structuredClone(blueprint),
+    name: "Maximum-density failure-evidence fixture",
+    parts: Array.from({ length: 300 }, (_, index) => ({
+      ...structuredClone(blueprint.parts[0]),
+      id: index + 1,
+      pos: [(index % 20) * 2.4, 1, Math.floor(index / 20) * 3],
+    })),
+    connections: [structuredClone(blueprint.connections[0])],
+  },
+  denseRunConfiguration = {
+    ...structuredClone(runConfiguration),
+    seed: "maximum-density-failure-evidence-fixture",
+    durationTicks: 840,
+    budgets: { ...runConfiguration.budgets, maxBodies: 512 },
+  },
+  denseRunConfigurationFingerprint = fingerprintRunConfiguration(
+    denseRunConfiguration,
+  ),
+  denseBlueprintFingerprint = fingerprintExperimentBlueprint(denseBlueprint),
+  denseTrigger = { ...trigger, tick: 840, timeS: 7 },
+  quietExactFrame = {
+    ...rawFrame,
+    structurePreMutation: null,
+    structurePostMutation: null,
+  },
+  denseSnapshot = {
+    ...runtime.failureEvidence.recorder.snapshot(),
+    replayability: {
+      state: "unsupported",
+      reasonCode: "DENSE_FIXTURE_NO_RUNTIME_ANCHOR",
+    },
+    trigger: denseTrigger,
+    triggers: [denseTrigger],
+    exactFrames: Array.from({ length: 480 }, (_, index) => {
+      const tick = index + 361;
+      return tick === denseTrigger.tick
+        ? { ...rawFrame, tick, timeS: tick / 120 }
+        : { ...quietExactFrame, tick, timeS: tick / 120 };
+    }),
+    contextFrames: Array.from({ length: 360 }, (_, index) => {
+      const tick = index + 1;
+      return {
+        tick,
+        timeS: tick / 120,
+        graphRevision: 4,
+        commandLedger: rawFrame.commandLedger,
+        connectionLoads: rawFrame.connectionLoads,
+        mobility: {
+          assemblies: [
+            {
+              assemblyId: "maximum-density-machine",
+              pose: { position: { x: tick / 120, y: 1, z: 0 } },
+              signedSpeed: 1,
+              grounded: true,
+              brake: 0,
+              driveForce: {
+                motors: [
+                  {
+                    partId: 1,
+                    resolvedThrottle: 1,
+                    commandSource: "remote",
+                    availablePowerW: 1000,
+                    deliveredPowerW: 500,
+                    operational: true,
+                    shaftPositionRad: tick / 10,
+                    shaftAngularSpeedRadPerS: 12,
+                  },
+                ],
+              },
+              wheelStates: [
+                {
+                  partId: 2,
+                  touching: true,
+                  angularSpeed: 12,
+                  normalLoadN: 1000,
+                },
+              ],
+            },
+          ],
+        },
+      };
+    }),
+  },
+  denseRuntime = {
+    ...runtime,
+    runBlueprint: denseBlueprint,
+    runIdentity: {
+      ...runtime.runIdentity,
+      configuration: denseRunConfiguration,
+      runConfigurationFingerprint: denseRunConfigurationFingerprint,
+      blueprintFingerprint: denseBlueprintFingerprint,
+    },
+    inputTraceRecorder: { inputsThrough: () => [] },
+    failureEvidence: {
+      ...runtime.failureEvidence,
+      replayAnchor: null,
+      recorder: { snapshot: () => denseSnapshot },
+    },
+  },
+  denseCoordinator = createFailureEvidenceCaptureCoordinator({
+    runtime: denseRuntime,
+  }),
+  denseResult = denseCoordinator.finalize(denseSnapshot),
+  denseDecoded = decodeFailureEvidenceOrThrow(denseCoordinator.artifact());
+assert.equal(denseResult.rearm, false);
+assert.equal(denseCoordinator.status().state, "ready");
+assert.equal(denseDecoded.wire.blueprint.parts.length, 300);
+assert.equal(denseDecoded.wire.exactFrames.length, 480);
+assert.equal(denseDecoded.wire.contextFrames.length, 360);
+assert.ok(denseDecoded.envelope.bytes <= WIRE_LIMITS.failureEvidenceBytes);
+assert.ok(denseDecoded.envelope.nodes <= WIRE_LIMITS.failureEvidenceNodes);
+
 console.log(
-  "failure evidence artifacts passed (strict wire, causal summary, tick-zero anchor, trace playback)",
+  `failure evidence artifacts passed (strict wire, causal summary, tick-zero anchor, trace playback, maximum-density envelope ${denseDecoded.envelope.bytes} bytes/${denseDecoded.envelope.nodes} nodes)`,
 );

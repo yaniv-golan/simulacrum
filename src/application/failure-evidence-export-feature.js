@@ -6,9 +6,9 @@ export function createFailureEvidenceExportFeature({
 }) {
   async function request() {
     try {
-      const { createFailureEvidenceArtifact } =
-        await import("./failure-evidence-export.js");
-      const artifact = createFailureEvidenceArtifact({ runtime });
+      const artifact = runtime.failureEvidence?.captureCoordinator?.artifact();
+      if (!artifact)
+        throw new Error("No proactively validated diagnostic bundle is ready");
       await download(artifact);
       notify("Diagnostic bundle exported");
       return { ok: true, artifact };

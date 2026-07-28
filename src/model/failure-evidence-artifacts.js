@@ -119,6 +119,26 @@ function validateArtifact(wire) {
       "Failure evidence can trigger only after initialized tick zero",
       ["trigger", "tick"],
     );
+  for (const [index, boundary] of wire.priorEpisodeBoundaries.entries()) {
+    if (boundary.episodeIndex !== index)
+      fail(
+        "NONCANONICAL_FAILURE_EVIDENCE_EPISODE_ORDER",
+        "Prior failure-evidence episode indices must be contiguous and ordered",
+        ["priorEpisodeBoundaries", index, "episodeIndex"],
+      );
+    if (
+      boundary.policyFingerprint !== wire.policyFingerprint ||
+      boundary.trigger.tick >= wire.trigger.tick ||
+      (index > 0 &&
+        wire.priorEpisodeBoundaries[index - 1].trigger.tick >=
+          boundary.trigger.tick)
+    )
+      fail(
+        "FAILURE_EVIDENCE_EPISODE_BOUNDARY_MISMATCH",
+        "Prior episode boundaries must use the current policy and increasing pre-target ticks",
+        ["priorEpisodeBoundaries", index],
+      );
+  }
 
   if (wire.replayability.status === "supported") {
     if (wire.replayability.reasonCode !== null)
