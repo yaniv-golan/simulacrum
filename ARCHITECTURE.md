@@ -146,6 +146,17 @@ read-only canonical anchors and bounds. Decorations cannot define collision,
 connection, selection, telemetry, or analysis evidence and cannot be a fallback
 for an unknown physical kind.
 
+The component appearance library resolves only canonical material, semantic,
+role, custom-color, and aerothermal inputs. Catalog finishes and procedural
+surface textures have bounded application lifetime; arbitrary player colors
+remain component- or batch-owned and are disposed with their visible owner.
+One presentation-owned detail controller selects hero, standard, or performance
+projection beneath stable part roots. It uses camera projection, assembly size,
+selection, and run state, exposes its decision in the debug read model, and runs
+in the same order for real-time frames and deterministic `advanceTime()`.
+Large-assembly batches are an explicit performance-tier projection and suppress
+redundant per-root detail work while active.
+
 ## Failure analysis and challenges
 
 Failure analysis follows the same boundary. The DOM-free `FailureRecorder`

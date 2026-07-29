@@ -83,6 +83,43 @@ for (const [type, definition] of Object.entries(TYPES)) {
   });
 }
 
+for (const type of [
+  "airreservoir",
+  "receiver",
+  "navsensor",
+  "rangesensor",
+  "sensor",
+  "imu",
+  "contactsensor",
+  "thermalprobe",
+  "pressureprobe",
+  "loadcell",
+  "gyro",
+  "headlight",
+  "rocket",
+  "rcs",
+]) {
+  const defaultDescriptor = resolveComponentGeometryContractForType(type),
+    scaledDescriptor = resolveComponentGeometryContract({
+      id: 800,
+      type,
+      pos: [0, 0, 0],
+      orientation: [0, 0, 0, 1],
+      scale: { x: 1.7, y: 0.65, z: 1.25 },
+      config: componentDefaults(type),
+    });
+  assert.equal(
+    defaultDescriptor.bodyPrimitives[0].geometry.kind,
+    "cylinder-v1",
+    `${type} lost its round catalog silhouette`,
+  );
+  assert.equal(
+    scaledDescriptor.bodyPrimitives[0].geometry.kind,
+    "elliptic-cylinder-v1",
+    `${type} did not preserve its silhouette under independent-axis scaling`,
+  );
+}
+
 assert.throws(
   () =>
     resolveComponentGeometryContract(

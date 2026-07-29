@@ -1,4 +1,5 @@
 import { createCelestialEnvironment } from "../presentation/celestial-environment.js";
+import { ComponentDetailController } from "../presentation/component-detail-controller.js";
 import { LargeAssemblyBatcher } from "../presentation/large-assembly-batcher.js";
 import {
   createWorkshopPlatform,
@@ -44,7 +45,8 @@ export function createWorkshopStageFoundation({
     }),
     largeAssemblyBatcher = new LargeAssemblyBatcher({
       machine: platform.machine,
-    });
+    }),
+    componentDetail = new ComponentDetailController();
   return Object.freeze({
     ...sceneGraph,
     ...celestial,
@@ -54,6 +56,7 @@ export function createWorkshopStageFoundation({
     environmentBodyRegistry,
     nearSpaceBodyId: NEAR_SPACE_BODY_ID,
     largeAssemblyBatcher,
+    componentDetail,
     normalPixelRatio: Math.min(viewport.pixelRatio || 1, 2),
   });
 }

@@ -48,6 +48,7 @@ export function createWorldEnvironmentFeature({
         earthMaterial: scene.earthMaterial,
         atmosphereMaterial: scene.atmosphereMaterial,
         earthLimb: scene.earthLimb,
+        reflectionEnvironment: scene.reflectionEnvironment,
         atmosphereShell: scene.atmosphereShell,
         stars: scene.stars,
         clouds,

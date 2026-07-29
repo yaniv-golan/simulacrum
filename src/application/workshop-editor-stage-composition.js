@@ -144,7 +144,10 @@ export function createWorkshopEditorStageComposition({
         normalPixelRatio: stage.normalPixelRatio,
         pixelRatio: () => stage.renderer.getPixelRatio(),
         setPixelRatio: (ratio) => stage.renderer.setPixelRatio(ratio),
-        setPerformanceMode: (reduced) => world.setPerformanceMode(reduced),
+        setPerformanceMode: (reduced) => {
+          world.setPerformanceMode(reduced);
+          stage.reflectionEnvironment.setPerformanceMode(reduced);
+        },
         setEnvironmentVisible: (visible) => {
           world.horizonEnvironment.visible = visible;
           world.streamer.group.visible = visible;
@@ -187,6 +190,7 @@ function createEditorScenePort(stage) {
     earthMaterial: stage.earthMaterial,
     atmosphereMaterial: stage.atmosphereMaterial,
     earthLimb: stage.earthLimb,
+    reflectionEnvironment: stage.reflectionEnvironment,
     atmosphereShell: stage.atmosphereShell,
     stars: stage.stars,
     targetRing: stage.targetRing,

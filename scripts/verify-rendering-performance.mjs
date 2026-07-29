@@ -109,6 +109,13 @@ for (let cycle = 0; cycle < 5; cycle++) {
     })),
   );
 }
+const standardPresentation = await page.evaluate(() => {
+  const state = JSON.parse(window.render_game_to_text());
+  return {
+    detail: state.presentation.componentDetail,
+    reflectionEnvironment: state.environment.reflectionEnvironment,
+  };
+});
 
 const parts = Array.from({ length: 300 }, (_, index) => ({
     id: index + 1,
@@ -188,6 +195,8 @@ const renderSample = await page.evaluate(() => ({
   app: window.simulacrum_performance(),
   reserveLod: JSON.parse(window.render_game_to_text()).environment.testSite
     .presentationLod,
+  reflectionEnvironment: JSON.parse(window.render_game_to_text()).environment
+    .reflectionEnvironment,
   renderer: (() => {
     const canvas = document.querySelector("canvas"),
       gl = canvas?.getContext("webgl2") || canvas?.getContext("webgl"),
@@ -212,6 +221,7 @@ console.log(
   JSON.stringify(
     {
       resourceSamples,
+      standardPresentation,
       renderSample,
       frameSamples,
       frameWindowP95Ms,
@@ -247,6 +257,11 @@ await conclude(browser, () => {
       lastResources.webgl[key] <= firstResources.webgl[key] + 2,
       `raw WebGL ${key} grew across warmed load/clear cycles`,
     );
+  assert.deepEqual(
+    lastResources.app.shared,
+    firstResources.app.shared,
+    "owned or shared component resources drifted across warmed cycles",
+  );
   assert.ok(
     lastResources.blobs <= firstResources.blobs,
     "Blob URLs grew across warmed cycles",
@@ -256,6 +271,15 @@ await conclude(browser, () => {
     "workers grew across warmed cycles",
   );
   assert.equal(renderSample.app.parts, 300);
+  assert.equal(standardPresentation.reflectionEnvironment.active, true);
+  assert.equal(
+    Object.values(standardPresentation.detail.counts).reduce(
+      (sum, count) => sum + count,
+      0,
+    ),
+    firstResources.app.parts,
+  );
+  assert.equal(standardPresentation.detail.pendingTransitions, 0);
   assert.equal(
     renderSample.app.reducedComponentShadows,
     true,
@@ -281,6 +305,17 @@ await conclude(browser, () => {
       edgeGlintsVisible: false,
     },
   });
+  assert.deepEqual(renderSample.app.componentDetail.counts, {
+    hero: 0,
+    standard: 0,
+    performance: 300,
+  });
+  assert.equal(renderSample.app.componentDetail.pendingTransitions, 0);
+  assert.equal(
+    renderSample.reflectionEnvironment.active,
+    false,
+    "large-assembly mode retained the procedural reflection pass",
+  );
   assert.ok(
     renderSample.draws <= 50_760 * 0.7,
     `300-part draw calls missed the 30% reduction (${renderSample.draws})`,
