@@ -1,5 +1,6 @@
 import { createPrimarySurfaceController } from "./primary-surface-controller.js";
 import { bindSelectedCommandButtons } from "./selected-command-button-bindings.js";
+import { installWorkshopScriptCommandBindings } from "./workshop-script-command-bindings.js";
 
 /**
  * @typedef {{ query:(selector:string)=>Element|null, queryAll:(selector:string)=>Element[] }} WorkshopCommandView
@@ -163,30 +164,11 @@ export function installWorkshopCommandController({
     };
   }
   required("#blueprint-btn").onclick = () => browser.openBlueprints();
-  required("#wasm-btn").onclick = () => {
-    if (required(".wasm-console").classList.contains("hidden")) {
-      primarySurfaces.hideOthers(".wasm-console");
-      script.open();
-      queueMicrotask(() => required("#close-wasm").focus());
-    } else {
-      script.save();
-      required(".wasm-console").classList.add("hidden");
-      required("#tools-btn").focus();
-    }
-  };
-  required("#close-wasm").onclick = () => {
-    script.save();
-    required(".wasm-console").classList.add("hidden");
-    required("#tools-btn").focus();
-  };
-  for (const language of view.queryAll("[data-script-language]")) {
-    const button = /** @type {HTMLButtonElement} */ (language);
-    button.onclick = () =>
-      script.setLanguage(button.dataset.scriptLanguage || "visual");
-  }
-  required("#compile-wasm").onclick = () => script.compile();
-  required("#trust-program").onclick = () => script.trust();
-  required("#stop-wasm").onclick = () => script.stop();
-  required("#wasm-source").addEventListener("input", () => script.invalidate());
+  installWorkshopScriptCommandBindings({
+    required,
+    view,
+    primarySurfaces,
+    script,
+  });
   return Object.freeze({});
 }

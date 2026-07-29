@@ -92,7 +92,11 @@ export class CameraTracker {
           ),
         radiusSmoothing = 1 - Math.exp(-Math.max(0.001, dt) * 8),
         trackingRadius = sameSubjects
-          ? THREE.MathUtils.lerp(this.trackingRadius, sphere.radius, radiusSmoothing)
+          ? THREE.MathUtils.lerp(
+              this.trackingRadius,
+              sphere.radius,
+              radiusSmoothing,
+            )
           : sphere.radius,
         safe = safeFrame,
         width = Math.max(1, safe.viewport.width),
