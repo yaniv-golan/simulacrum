@@ -151,7 +151,6 @@ const importedCard = page.locator(
 );
 await importedCard.waitFor();
 await importedCard.locator("[data-load-share]").click();
-await page.click("#close-blueprints");
 
 await page.click("#tools-btn");
 await page.click("#wasm-btn");
