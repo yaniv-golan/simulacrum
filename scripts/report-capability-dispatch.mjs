@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const REVIEWED_CAPABILITY_DISPATCH_BASELINE = Object.freeze({
   commit: "unreleased-component-visual-realism-2026-07-30",
   sites: 260,
-  sha256: "7434a3bbc548e0f3ac8857543c2a2714770aee2042c7475add293a9a873fb05e",
+  sha256: "40cf1514ab4b8b45a056d83f4dcbceaaa8de8ca670ced91d3c2eb58edbf13d93",
 });
 
 const POLICIES = Object.freeze([
