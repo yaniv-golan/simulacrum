@@ -369,8 +369,16 @@ missing frames, invalid quaternions, and inconsistent bounds. Alternate
 catalogs have no fallback geometry. Compiled spatial connections also fail with
 stable diagnostics when their authored endpoint frames violate the applicable
 fixed, rotary, guide, gear, or flexible-line invariant. Descriptor v2 is a
-public API cutover queued for Core `0.2.0`, but it remains derived data and does
-not change any portable wire envelope.
+public API contract in Core `0.2.0`, but it remains derived data and does not
+change any portable wire envelope. Its closed body primitive union includes
+rounded boxes, spur gears, helical springs, bounded extruded profiles, rounded
+wheels, and the basic analytic solids. Mechanism deformation is driven only by
+completed `coordinateId`/`coordinateM` samples through
+`mechanismDeformationTransforms()`; pose-owned visual scale fields are not part
+of the contract. A finite completed coordinate is clamped to its authored
+`allowedCoordinateRangeM` for body projection. Physical telemetry retains the
+raw coordinate and its out-of-range diagnostic, while visual and selection
+bounds cannot escape the declared mechanism envelope.
 
 ## Reusable assemblies and engineering analysis
 

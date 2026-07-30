@@ -190,8 +190,27 @@ const frameSamples = await page.evaluate(
       requestAnimationFrame(sample);
     }),
 );
+await page.evaluate(
+  () =>
+    new Promise((resolve) => {
+      const metrics = window.__simulacrumWebGLMetrics;
+      metrics.drawSignatures = {};
+      metrics.captureDrawSignatures = true;
+      let frames = 0;
+      const capture = () => {
+        if (++frames >= 3) {
+          metrics.captureDrawSignatures = false;
+          resolve();
+        } else requestAnimationFrame(capture);
+      };
+      requestAnimationFrame(capture);
+    }),
+);
 const renderSample = await page.evaluate(() => ({
   draws: window.__simulacrumWebGLMetrics.draws,
+  drawSignatures: structuredClone(
+    window.__simulacrumWebGLMetrics.drawSignatures,
+  ),
   app: window.simulacrum_performance(),
   reserveLod: JSON.parse(window.render_game_to_text()).environment.testSite
     .presentationLod,

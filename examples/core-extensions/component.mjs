@@ -56,8 +56,9 @@ export function componentExample() {
                 orientation: [0, 0, 0, 1],
               },
               geometry: {
-                kind: "box-v1",
+                kind: "rounded-box-v1",
                 fullSize: { kind: "config-vector-v1", field: "size" },
+                radiusM: 0.06,
               },
               semanticKey: "body",
               materialKey: "component-body",

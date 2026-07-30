@@ -90,12 +90,12 @@ const rootPackage = JSON.parse(
   );
 
 assert.equal(rootPackage.version, "0.1.0");
-assert.equal(corePackage.version, "0.1.0");
+assert.equal(corePackage.version, "0.2.0");
 assert.equal(rootPackage.engines?.node, ">=24.18 <25");
 assert.equal(corePackage.engines?.node, ">=24.18 <25");
 assert.deepEqual(releaseHeadings, ["Unreleased", "0.1.0 - 2026-07-22"]);
 assert.equal(fs.existsSync(path.join(root, ".gitmodules")), false);
 
 console.log(
-  `release snapshot passed (${existingTracked.length} tracked files, versions 0.1.0)`,
+  `release snapshot passed (${existingTracked.length} tracked files, app 0.1.0 / Core 0.2.0)`,
 );

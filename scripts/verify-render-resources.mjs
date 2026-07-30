@@ -21,6 +21,35 @@ const duplicate = sharePrimitiveGeometry(new THREE.BoxGeometry(1, 2, 3));
 assert.equal(first, duplicate, "identical primitive geometry must be shared");
 assert.equal(isSharedRenderResource(first), true);
 
+const rawBufferA = new THREE.BufferGeometry(),
+  rawBufferB = new THREE.BufferGeometry();
+rawBufferA.setAttribute(
+  "position",
+  new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3),
+);
+rawBufferB.setAttribute(
+  "position",
+  new THREE.Float32BufferAttribute([0, 0, 0, 2, 0, 0, 0, 2, 0], 3),
+);
+assert.notEqual(
+  sharePrimitiveGeometry(rawBufferA),
+  sharePrimitiveGeometry(rawBufferB),
+  "parameterless buffers without explicit keys must not alias",
+);
+assert.equal(isSharedRenderResource(rawBufferA), false);
+rawBufferA.dispose();
+rawBufferB.dispose();
+
+const keyedBufferA = new THREE.BufferGeometry(),
+  keyedBufferB = new THREE.BufferGeometry();
+keyedBufferA.userData.sharedPrimitiveKey = "explicit-buffer-fixture";
+keyedBufferB.userData.sharedPrimitiveKey = "explicit-buffer-fixture";
+assert.equal(
+  sharePrimitiveGeometry(keyedBufferA),
+  sharePrimitiveGeometry(keyedBufferB),
+  "explicitly keyed buffers must remain shareable",
+);
+
 const sharedMaterial = markSharedRenderResource(
     new THREE.MeshBasicMaterial({ color: 0xffffff }),
   ),
@@ -91,7 +120,21 @@ assert.equal(
 );
 disposeObject3D(beam);
 disposeObject3D(secondBeam);
-assert.ok(sharedRenderResourceStats().primitiveGeometries >= 1);
+const springByTier = ["performance", "standard", "hero"].map((tier) =>
+    componentMesh("spring", undefined, tier),
+  ),
+  categorizedStats = sharedRenderResourceStats();
+assert.ok(categorizedStats.primitiveGeometries >= 1);
+assert.ok(
+  categorizedStats.profileGeometries >= springByTier.length,
+  "profile geometry resources were not reported separately",
+);
+for (const tier of ["performance", "standard", "hero"])
+  assert.ok(
+    categorizedStats.activeTierResources[tier] >= 1,
+    `${tier} render resources were absent from tier diagnostics`,
+  );
+for (const spring of springByTier) disposeObject3D(spring);
 
 assert.equal(
   componentAppearanceProfile({ materialKey: "workshop-steel" }),
@@ -143,7 +186,12 @@ assert.equal(wheelBody.castShadow, true);
 assert.equal(wheelBody.receiveShadow, true);
 assert.ok(Math.abs(wheelBounds.x - 1.3) < 1e-6);
 assert.ok(Math.abs(wheelBounds.y - 1.3) < 1e-6);
-assert.ok(Math.abs(wheelBounds.z - 0.42) < 1e-6);
+assert.ok(Math.abs(wheelBounds.z - 0.46) < 1e-6);
+assert.equal(
+  wheel.userData.geometryDescriptor.collisionBoundsPartM.maximumM[2] * 2,
+  0.42,
+  "visible rim flange changed the authored tire collision width",
+);
 disposeObject3D(wheel);
 
 const scaledRoundPart = (id, type, scale) => {
@@ -185,7 +233,7 @@ for (const root of [scaledReservoir, scaledReceiver]) {
       .setFromObject(root)
       .getSize(new THREE.Vector3())
       .toArray(),
-    bounds = root.userData.geometryDescriptor.bodyBoundsPartM,
+    bounds = root.userData.geometryDescriptor.overallPhysicalBoundsPartM,
     expected = bounds.maximumM.map(
       (maximum, axis) => maximum - bounds.minimumM[axis],
     );
@@ -342,6 +390,18 @@ assert.deepEqual(batcher.snapshot(), {
 });
 assert.ok(parts.every((part) => !part.mesh.visible));
 const batchMesh = machine.getObjectByName("largeAssemblyBeamBatch");
+assert.equal(batchMesh.castShadow, false);
+assert.equal(batchMesh.receiveShadow, false);
+assert.equal(
+  batchMesh.material.roughnessMap,
+  null,
+  "lowest-tier beam batch retained a per-fragment texture sample",
+);
+assert.equal(
+  batchMesh.geometry.groups.length,
+  1,
+  "one-material beam batch retained redundant per-face draw groups",
+);
 assert.equal(
   batchMesh.userData.partIds[41],
   42,
@@ -356,6 +416,16 @@ assert.deepEqual(
   parts[0].mesh.userData.geometryDescriptor.bodyPrimitives[0].geometry
     .fullSizeM,
   "batch geometry diverged from the canonical beam primitive",
+);
+assert.equal(
+  batchMesh.geometry.parameters.profile,
+  "performance-box-v1",
+  "large-assembly batch lost its explicit lowest-tier profile",
+);
+assert.equal(
+  batchMesh.geometry.parameters.radius,
+  parts[0].mesh.userData.geometryDescriptor.bodyPrimitives[0].geometry.radiusM,
+  "large-assembly batch lost the canonical beam corner radius",
 );
 assert.equal(
   batchMesh.material.color.getHex(),

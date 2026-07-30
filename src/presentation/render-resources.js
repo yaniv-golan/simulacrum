@@ -6,13 +6,17 @@ const activeOwnedResources = new Map();
 
 const CACHEABLE_GEOMETRIES = new Set([
   "BoxGeometry",
+  "BufferGeometry",
   "ConeGeometry",
   "CylinderGeometry",
+  "ExtrudeGeometry",
   "LatheGeometry",
   "PlaneGeometry",
   "RingGeometry",
+  "RoundedBoxGeometry",
   "SphereGeometry",
   "TorusGeometry",
+  "TubeGeometry",
 ]);
 
 /** Marks an immutable render resource whose lifetime is the application. */
@@ -56,9 +60,12 @@ export function isSharedRenderResource(resource) {
  */
 export function sharePrimitiveGeometry(geometry) {
   if (!geometry || !CACHEABLE_GEOMETRIES.has(geometry.type)) return geometry;
-  const key = geometry.userData.sharedPrimitiveKey
-    ? `${geometry.type}:${geometry.userData.sharedPrimitiveKey}`
-    : `${geometry.type}:${JSON.stringify(geometry.parameters)}`;
+  const explicitKey = geometry.userData.sharedPrimitiveKey;
+  if (!explicitKey && !geometry.parameters) return geometry;
+  const tier = geometry.userData.sharedDetailTier || "unscoped",
+    key = explicitKey
+      ? `${tier}:${geometry.type}:${explicitKey}`
+      : `${tier}:${geometry.type}:${JSON.stringify(geometry.parameters)}`;
   const existing = sharedGeometryCache.get(key);
   if (existing) {
     geometry.dispose();
@@ -114,10 +121,26 @@ export function disposeObject3D(object, { remove = true } = {}) {
 }
 
 export function sharedRenderResourceStats() {
+  const geometries = [...sharedGeometryCache.values()],
+    activeTierResources = {};
+  for (const geometry of geometries) {
+    const tier = geometry.userData.sharedDetailTier || "unscoped";
+    activeTierResources[tier] = (activeTierResources[tier] || 0) + 1;
+  }
   return {
-    primitiveGeometries: sharedGeometryCache.size,
+    primitiveGeometries: geometries.filter(
+      (geometry) => geometry.userData.sharedGeometryCategory !== "profile",
+    ).length,
+    profileGeometries: geometries.filter(
+      (geometry) => geometry.userData.sharedGeometryCategory === "profile",
+    ).length,
     baseMaterials: sharedMaterials.size,
     sharedTextures: sharedTextures.size,
+    activeTierResources: Object.fromEntries(
+      Object.entries(activeTierResources).sort(([left], [right]) =>
+        left.localeCompare(right),
+      ),
+    ),
     owned: Object.fromEntries(
       [...activeOwnedResources].sort(([left], [right]) =>
         left.localeCompare(right),

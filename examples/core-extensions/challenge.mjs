@@ -22,7 +22,7 @@ export function challengeExample() {
         {
           id: 2,
           type: "gear24",
-          pos: [1.355, 0, 0],
+          pos: [1.285, 0, 0],
           orientation: [0, 0, 0, 1],
           scale: { x: 1, y: 1, z: 1 },
           config: { ...componentDefaults("gear24"), mass: 4 },

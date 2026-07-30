@@ -32,6 +32,7 @@ export function rebuildComponentVisual(g, detailTier = "standard") {
     geometryDescriptor: visualDescriptor.geometry,
     appearanceResolver: createComponentAppearanceResolver(visualDescriptor),
     detailPolicy,
+    detailTier,
   });
   buildDecoration({
     g,

@@ -11,6 +11,8 @@ export async function installWebGLResourceTracker(page) {
       buffers: 0,
       programs: 0,
       textures: 0,
+      captureDrawSignatures: false,
+      drawSignatures: {},
     });
     const wrapContext = (prototype) => {
       if (!prototype || prototype.__simulacrumResourceTracker) return;
@@ -25,6 +27,16 @@ export async function installWebGLResourceTracker(page) {
         if (!original) continue;
         prototype[name] = function (...args) {
           metrics.draws++;
+          if (metrics.captureDrawSignatures) {
+            const arrays = name.startsWith("drawArrays"),
+              vertexCount = Number(args[arrays ? 2 : 1]) || 0,
+              instanceCount = name.endsWith("Instanced")
+                ? Number(args[arrays ? 3 : 4]) || 0
+                : 1,
+              signature = `${name}:${vertexCount}:${instanceCount}`;
+            metrics.drawSignatures[signature] =
+              (metrics.drawSignatures[signature] || 0) + 1;
+          }
           return original.apply(this, args);
         };
       }

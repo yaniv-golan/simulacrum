@@ -1,0 +1,51 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "ignorePatterns": [
+    "/artifacts",
+    "/coverage",
+    "/dist",
+    "/output",
+    "/packages/core/dist",
+    "/temp"
+  ],
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node scripts/verify-component-visual-primitives.mjs && node scripts/verify-component-geometry-contract.mjs && node scripts/verify-geometry-covariance.mjs"
+  },
+  "mutate": [
+    "src/model/component-geometry-contract.js:441-455",
+    "src/model/component-geometry-contract.js:520-564",
+    "src/model/component-geometry-contract.js:630-755",
+    "src/model/component-geometry-contract.js:1308-1322",
+    "src/model/component-geometry-contract.js:1365-1493",
+    "src/model/component-geometry-contract.js:1807-1815",
+    "src/model/component-geometry-contract.js:2410-2441",
+    "src/model/component-geometry-contract.js:2484-2489",
+    "src/model/component-geometry-contract.js:2537-2545",
+    "src/model/component-geometry-contract.js:2974-2984",
+    "src/model/component-geometry-contract.js:3086-3170"
+  ],
+  "coverageAnalysis": "off",
+  "mutator": {
+    "excludedMutations": [
+      "StringLiteral",
+      "ArrayDeclaration",
+      "ObjectLiteral",
+      "OptionalChaining",
+      "MethodExpression",
+      "ArrowFunction"
+    ]
+  },
+  "concurrency": 4,
+  "timeoutMS": 15000,
+  "tempDirName": "artifacts/stryker-component-geometry",
+  "reporters": ["clear-text", "json"],
+  "jsonReporter": {
+    "fileName": "artifacts/component-geometry-mutation.json"
+  },
+  "thresholds": {
+    "high": 80,
+    "low": 80,
+    "break": 80
+  }
+}
