@@ -8,7 +8,7 @@ The Challenge Lab contains two complementary kinds of work:
   safety limits without prescribing a machine. Start with only the payload or
   bring the machine already on the plate.
 
-The nearby Workshop Test Reserve also offers ten guided proving-ground trials.
+The nearby Workshop Test Reserve also offers eleven guided proving-ground trials.
 Those trials reuse the same evidence discipline and local record store, but
 they evaluate ordered site gates, zones, support materials, fluid visits,
 airborne/grounded state, speed bands, integrity, and controlled finishes on the

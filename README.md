@@ -2,6 +2,12 @@
 
 An interactive Three.js mechanical construction workshop. Components are real selectable objects with named ports, editable behavior, visible connections, and mechanism-specific simulation.
 
+> **Documentation version:** This README describes the current unreleased
+> `main` branch. The latest tagged stable release is 0.1.0 and does not include
+> every feature described below. Download 0.1.0 from **Releases**, or use
+> **Code → Download ZIP** for the current source checkout. See the
+> [changelog](CHANGELOG.md) for the exact differences.
+
 ## Choose your path
 
 - **Play for the first time:** follow [Install and play](#install-and-play--beginner-friendly-guide), then [Recommended first session](#recommended-first-session).
@@ -163,6 +169,15 @@ The included gearbox uses a 12-tooth pinion driving a 24-tooth gear. The output 
 - **My Parts:** select one component or a connected multi-part mechanism, press **+**, give the assembly a name and accent, and reuse it from the persistent personal library. Relative transforms, tuning, controller programs, and every internal connection are retained. Saved assemblies remain available after reloading the browser and can be removed from their library card.
 - **Pneumatics:** Grip Wheels, Electric Air Compressors, Three-Way Pneumatic Valves, Tire Pressure Sensors, and rated Air Reservoirs build ordinary dry-air circuits. The reusable **Four-wheel central tire inflation system** shows independent wheel regulation without a vehicle-wide pressure command.
 
+Component silhouettes, interfaces, and rendered motion come from the same
+canonical geometry descriptors used by editing and simulation. Rounded tires,
+pressure vessels, sensors, lamps, and thrusters retain their authored envelopes
+and port frames. Bounded material finishes and a procedural reflection
+environment distinguish steel, aluminum, rubber, Rope, composites, ablative
+surfaces, and player-painted structure. Camera-aware detail tiers preserve part
+IDs, selection, ports, and major silhouettes; assemblies above 128 parts use
+reduced shadows and performance projections automatically.
+
 Connections are classified and drawn by function: orange for power, mint for mechanical links, gold for meshed gears, and blue for signals. Gear meshes automatically use tooth-count ratios.
 
 Motors do not receive free energy. A motor only turns when its POWER network reaches a charged Power Cell. The inspector reports **POWERED** or **NO POWER**, and battery charge drains according to configured motor load while simulation runs.
@@ -201,7 +216,7 @@ successful solution classes. See [docs/CHALLENGE_LAB.md](docs/CHALLENGE_LAB.md).
 Choose **Test Ground** while simulation is stopped to open a compact map of the
 480 m x 360 m proving ground surrounding the construction plate. You can start
 from the board, place the complete assembly on one of five clearance-checked
-staging pads, run a free test, or select one of ten guided trials. Deployment is
+staging pads, run a free test, or select one of eleven guided trials. Deployment is
 one undoable rigid transform of the current build; it does not repair,
 stabilize, or replace the machine.
 
@@ -264,6 +279,12 @@ irregular 3.2 m pond with a dry island, shallow ford, physical bridge, 254 m
 runway, helipad, seeded trees, rocks, logs, steps, curbs, markers, and signs all
 derive from one strict `test-site-definition-v2` used by collision, rendering,
 telemetry, the map, and trials.
+
+The workbench is a finite raised platform, not an infinite ground plane. Its
+south side has a continuously graded concrete ramp for routine access to the
+Test Reserve; the north, east, and west edges remain exposed for deliberate
+drop-and-landing tests. The mission display switches from `ROVER FALLING` to
+`FIELD TERRAIN` when the rover reaches the grass.
 
 Dry and wet asphalt, concrete, compacted soil, grass, gravel, sand, mud, and
 low-grip polymer have explicit physical material identities. Tires report the
@@ -409,29 +430,43 @@ Blueprint version 1 stores the strict endpoint-binding manifest, selected langua
 
 ## Controls
 
+The in-game **Learn** panel and **Keyboard & commands** surface show the complete
+active, remappable control set.
+
+### Simulation and machine controls
+
 - During a running test, press `.` or choose **▸│** to pause and advance exactly one 1/120-second physics tick. Use this to inspect controller, load, contact, structure, and thermal changes without timing ambiguity.
+- Rover driving: after starting simulation, hold `W`/`S` for forward/reverse, `A`/`D` to steer, `Space` to brake, and `L` to toggle the physical headlights. The same semantic action bindings appear as sliders/buttons in Remote and its optional pinned Direct Control surface. The rover's visible TypeScript program reads four powered Command Receivers and drives four hub motors, two physical steering hinges, and two lamps through exact endpoint bindings. The panel reports `D`, `N`, or `R`; steering yaw reverses physically while backing up.
+- Starting the rover enables physics but deliberately leaves throttle at zero. The Direct Control surface and mission display show the required input, live speed, throttle, steering, brake state, and headlights.
+
+### Failure and replay tools
+
 - A physical failure automatically opens a post-mortem with the first failed attachment, peak transmitted load, rated capacity, utilization, detached parts, and a causal chain. Choose **↶** or **Replay failure** for a bounded, read-only telemetry replay; scrubbing never reruns physics or sends commands.
 - A stall, invalid tire contact, numerical anomaly, or structural failure also freezes exact 120 Hz diagnostic evidence. Open **Failure report** and choose **Export diagnostic bundle** to save its tick-zero checkpoint, external input trace, contact and solver provenance, and pre/post topology for deterministic verification.
 - Failure sparks, impact dust, water spray, heat smoke, and procedural sound scale from recorded physical severity and environment data. They are presentation effects only and never influence the solver.
-- Rover driving: after starting simulation, hold `W`/`S` for forward/reverse, `A`/`D` to steer, `Space` to brake, and `L` to toggle the physical headlights. The same semantic action bindings appear as sliders/buttons in Remote and its optional pinned Direct Control surface. The rover's visible TypeScript program reads four powered Command Receivers and drives four hub motors, two physical steering hinges, and two lamps through exact endpoint bindings. The panel reports `D`, `N`, or `R`; steering yaw reverses physically while backing up.
-- Starting the rover enables physics but deliberately leaves throttle at zero. The Direct Control surface and mission display show the required input, live speed, throttle, steering, brake state, and headlights.
-- Headlights are physical spot emitters rather than a screen-space effect: nearby components occlude the beams, the platform receives their shadows, and lamp power drains the connected battery while enabled.
-- Component silhouettes, interfaces, and rendered motion come from the same canonical geometry descriptors used by editing and simulation. Rounded tires, pressure vessels, sensors, lamps, and thrusters therefore retain their authored envelope and port frames instead of using unrelated display models. Steel, aluminum, rubber, rope, composites, ablative surfaces, and player-painted structure use distinct bounded material finishes and a procedural reflection environment. Camera-aware detail tiers preserve part IDs, selection, ports, and major silhouettes; assemblies above 128 parts automatically use reduced shadows and performance projections.
-- The workbench is a finite raised platform, not an infinite ground plane. Its south side has a continuously graded concrete ramp for routine access to the Test Reserve; the north, east, and west edges remain exposed for deliberate drop-and-landing tests. The mission display switches from `ROVER FALLING` to `FIELD TERRAIN` when the rover reaches the grass.
+
+### Selection and editing
+
 - Left-click a component to select it.
 - Hovered parts receive a pale 3D outline. The selected part receives a bright bounding cage, floor halo, persistent name label, and inspector panel, so selection remains visible from any camera angle.
+- Choose a library item and click the workbench to place it on the two-meter snap grid.
+- Choose **Move** (`G`) or **Rotate** (`R`) to attach a direct 3D gizmo to the selected component. Movement snaps to 0.25 m and rotation to 15° increments.
 - With canvas focus, press `C` to duplicate the current selection. Simulacrum first tries the outward face under the pointer, then a direction toward the camera, and advances along the 0.25 m authoring grid until the complete cloned group clears existing authored solids. Board-authored selections stay inside the workbench boundary; assemblies intentionally deployed into the Test Reserve stay editable in that coordinate space. `Ctrl/Cmd+D` remains an alias. The clones retain their relative transforms and internal connections, become the current selection, and enter Move for immediate refinement.
 - With canvas focus, press `X` to delete the current selection. `Delete` and `Backspace` remain aliases. Duplicate and delete are single undoable operations; held-key repeat cannot apply either command more than once.
-- Choose a library item and click the workbench to place it on the two-meter snap grid.
+- Choose **Explode** or press `Shift+X` to temporarily spread every component away from the assembly center. The thicker color-coded power, signal, shaft, and gear connections remain attached to their endpoints. Parts remain selectable, but transform editing is locked until **Collapse** restores every exact position. Wiring or starting simulation also collapses the view automatically.
+- Click any neutral area of the workbench to clear the selection.
+
+### Camera
+
 - On a Mac trackpad, `Option`+drag orbits, `Space`+drag pans, and pinch or two-finger scroll zooms toward the pointer. The same gestures use `Alt` and `Space` on Windows or Linux.
 - With any mouse, secondary-button drag orbits and middle-button drag pans. Choose the visible **Orbit** or **Pan** button to turn an ordinary drag into that gesture. `Shift`+scroll pans sideways; `Alt`/`Ctrl`+secondary-drag dollies toward or away from the subject.
 - Press `F` to frame the complete selected set. When nothing is selected, `F` frames the complete machine. `Shift+F` follows the primary selected component, and double-clicking a component selects and focuses it.
-- Press `1`, `3`, or `7` for front, side, or top views. The `+`, `−`, and Home buttons zoom and reset the workshop view. The `?` button in the camera dock displays the complete control guide.
-- Choose **Explode** or press `Shift+X` to temporarily spread every component away from the assembly center. The thicker color-coded power, signal, shaft, and gear connections remain attached to their endpoints. Parts remain selectable, but transform editing is locked until **Collapse** restores every exact position. Wiring or starting simulation also collapses the view automatically.
-- Pointer shortcuts: `Option`/`Alt`+drag or secondary-button drag orbits; `Space`+drag or middle-button drag pans; pinch or the wheel zooms toward the pointer.
-- Keyboard shortcuts: `C` duplicates, `X` deletes, `F` frames the complete selection, `Shift+X` toggles Exploded View, and `O`/`P` activate Orbit/Pan. Arrow keys orbit; `WASD` moves across the ground plane; `Q`/`E` move down/up; `+`/`−` zoom; `Home` resets the camera. Printable editor and camera commands require canvas focus. While Simulate is running, machine commands remain active when an ordinary button has focus, but text entry, hotkey capture, menus, dialogs, and native widget keys take precedence. The Keyboard & commands surface shows, remaps, clears, and resets every active alias.
-- Choose **Move** (`G`) or **Rotate** (`R`) to attach a direct 3D gizmo to the selected component. Movement snaps to 0.25 m and rotation to 15° increments.
-- Click any neutral area of the workbench to clear the selection.
+- Press Numpad `1`, `3`, or `7` for front, side, or top views. Number-row `1`, `2`, and `3` switch to Build, Connect, and Simulate instead. The `+`, `−`, and Home buttons zoom and reset the workshop view. The `?` button in the camera dock displays the complete control guide.
+- With canvas focus, `O`/`P` activate Orbit/Pan, arrow keys orbit, `WASD` moves across the ground plane, `Q`/`E` moves down/up, `+`/`−` zooms, and `Home` resets the camera.
+- `Ctrl+Shift+F` toggles fullscreen. Plain `F` retains the frame-selection action.
+
+### Wiring and Rope
+
 - Click a connection port to reveal its focused actions. An available port can
   start connection mode; a connected port names the exact counterpart and can
   select it, frame it, trace an owner-produced path, or disconnect that one
@@ -440,7 +475,12 @@ Blueprint version 1 stores the strict endpoint-binding manifest, selected langua
 - Rope has named `END_A` and `END_B` ports. While stopped, `Alt+A`/`Alt+B` starts the ordinary attachment workflow for that end and `Alt+Shift+A`/`Alt+Shift+B` detaches it. Multi-select exactly two components to create a two-ended Rope as one undoable Inspector action.
 - While connecting, a source banner remains on screen and a dashed live cable follows the cursor toward the hovered target. Incompatible target ports keep their exact reason visible and leave the source armed for another choice. `Esc` or the banner's Cancel button exits connection mode.
 - `Esc` cancels placement or connection.
-- `Ctrl+Shift+F` toggles fullscreen. Plain `F` is reserved for the standard frame-selection camera action.
+
+Printable editor and camera commands require canvas focus. While Simulate is
+running, machine commands remain active when an ordinary button has focus, but
+text entry, hotkey capture, menus, dialogs, and native widget keys take
+precedence. The **Keyboard & commands** surface shows, remaps, clears, and
+resets every active alias.
 
 ## Current scope
 

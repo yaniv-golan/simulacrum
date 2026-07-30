@@ -14,129 +14,47 @@ npm run core:build
 The workspace resolves the package name to the same public facade used by the
 game and by the package produced with `npm pack` before a future npm release.
 
-## Assembly and simulation quick start
+## Minimal runnable session
+
+After building Core, save this example as `quick-start.mjs` in the repository
+root and run `node quick-start.mjs`:
 
 ```js
 import {
-  AerodynamicSystem,
   AssemblyModel,
-  analyzeAssembly,
-  analyzeComponentPreflight,
-  ChallengeRun,
-  challengeReliability,
-  compileAssembly,
-  compileVisualProgram,
-  COMPONENT_GEOMETRY_SCHEMA_VERSION,
-  controllerBindingManifest,
-  ControllerSensorBank,
-  ControllerTraceBuffer,
-  ComponentRelationshipIndex,
-  createSubassemblyTemplate,
-  EnvironmentBodyRegistry,
-  EnvironmentBodySystem,
-  FlexibleLineRuntime,
-  FlexibleLineStructureSystem,
-  FlexibleLineSystem,
-  FlexibleLineTelemetrySystem,
-  FailureEvent,
-  FailureRecorder,
-  fingerprintComponentInspectionAssembly,
-  geometryDescriptorForPart,
-  instantiateSubassembly,
-  MassPropertyCommitSystem,
-  MechanismSystem,
-  MobilityTelemetrySystem,
-  MaterialResourceNetwork,
-  MaterialResourceCommitSystem,
-  MaterialResourceSystem,
-  PneumaticCommitSystem,
-  PneumaticNetwork,
-  PneumaticSystem,
-  MultibodyRuntime,
-  PressureNozzleDemandSystem,
-  PressureNozzleForceSystem,
-  PhysicalAssemblyIndex,
-  PhysicalFlightTelemetrySystem,
-  ReleaseCouplerSystem,
-  RigidBodySystem,
+  SensorSystem,
   SimulationSession,
-  TestCourseSystem,
-  TestSiteTelemetrySystem,
-  ThermalSystem,
-  PowerSystem,
-  ReplayBuffer,
-  decodeAuthoredAssemblyContentOrThrow,
-  measureEnvironmentProximity,
-  TYPES,
-  validateComponentGeometryDefinitionOrThrow,
-  validateGeometryDescriptorOrThrow,
+  TelemetrySystem,
 } from "@yaniv-golan/simulacrum-core";
 
-const assembly = AssemblyModel.fromBlueprint(blueprint);
-const authored = decodeAuthoredAssemblyContentOrThrow(assembly.snapshot());
-const authoredFingerprint = await fingerprintComponentInspectionAssembly(
-  assembly.snapshot(),
-);
-const relationships = new ComponentRelationshipIndex(authored);
-const selectedPreflight = analyzeComponentPreflight(authored, {
-  selectedPartIds: [authored.parts[0]?.id].filter(Number.isSafeInteger),
+const assembly = AssemblyModel.fromBlueprint({
+  format: "simulacrum-blueprint",
+  version: 1,
+  name: "Empty machine",
+  created: new Date().toISOString(),
+  parts: [],
+  connections: [],
+  remoteProfiles: {},
+  defaultRemoteProfile: null,
 });
-const reusable = createSubassemblyTemplate(assembly.snapshot(), selectedIds, {
-  name: "Drive module",
-  origin: [0, 0, 0],
-});
-const instance = instantiateSubassembly(reusable, {
-  position: [4, 0, 0],
-  nextId: 100,
-});
-const analysis = analyzeAssembly(assembly.snapshot(), TYPES);
-const compiled = compileAssembly(assembly.snapshot(), TYPES);
-const materials = new MaterialResourceNetwork(compiled);
-const pneumatics = new PneumaticNetwork(compiled);
-const mechanisms = new MultibodyRuntime({ world, material, catalog: TYPES });
-mechanisms.start(assembly.snapshot());
-const flexibleLines = new FlexibleLineRuntime({
-  world,
-  materialForKey,
-  multibodyRuntime: mechanisms,
-});
-flexibleLines.start(compiled);
-const nozzleDemand = new PressureNozzleDemandSystem();
 
 const session = new SimulationSession({
-  systems: [
-    new PowerSystem(),
-    new MaterialResourceSystem(),
-    nozzleDemand,
-    new ReleaseCouplerSystem(),
-    new MechanismSystem(),
-    new PneumaticSystem(),
-    new FlexibleLineSystem(),
-    new PressureNozzleForceSystem(),
-    new RigidBodySystem(),
-    new FlexibleLineStructureSystem(),
-    new FlexibleLineTelemetrySystem(),
-    new MaterialResourceCommitSystem(),
-    new PneumaticCommitSystem(),
-    new MassPropertyCommitSystem(),
-  ],
+  systems: [new SensorSystem(), new TelemetrySystem()],
 });
-session.start(assembly.snapshot(), {
-  ...services,
-  world,
-  worldAdapter: mechanisms.worldAdapter,
-  multibodyRuntime: mechanisms,
-  flexibleLineRuntime: flexibleLines,
-  compiledAssembly: compiled,
-  pressureNozzleDemandSystem: nozzleDemand,
-});
-session.step(1 / 60);
+
+session.start(assembly.snapshot());
 session.stepFixed(); // exactly one 1/120-second phase-ordered tick
-const telemetry = session.telemetry();
+console.log(session.telemetry());
 session.dispose();
-flexibleLines.dispose();
-mechanisms.dispose();
 ```
+
+This intentionally starts with an empty valid blueprint so the required public
+inputs are visible and the example needs no host-owned physics services. For
+complete component, system, controller, sensor, challenge, and telemetry
+integrations, run `npm run examples:core` and follow the
+[executable extension guide](core-extensions.md). Those examples provide the
+host services required by each advanced subsystem instead of relying on
+undeclared placeholder variables.
 
 ## Physical systems and resources
 

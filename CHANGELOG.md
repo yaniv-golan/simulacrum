@@ -4,6 +4,17 @@
 
 ### Added
 
+- Added player-authored pneumatic tire systems: conserved dry-air chambers in
+  Grip Wheels, powered compressors and three-way valves, tire-pressure sensors,
+  rated reservoirs, live pressure/temperature telemetry, pressure-coupled
+  contact support, leaks and overpressure failure, exact checkpoint state, a
+  reusable four-wheel central tire inflation system, and the Test Reserve's
+  Tire Pressure A/B/C durability trial.
+- Added a five-minute electric multirotor qualification path built from ordinary
+  batteries, shaft motors, fixed-pitch rotors, controllers, and authored signal
+  and power networks. Rotor thrust, motor-energy settlement, heat, depletion,
+  checkpoints, and completed propulsion provenance use the same fixed-step
+  simulation path as other player-built machines.
 - Added bounded fixed-step failure evidence for player-authored machines:
   tick-zero replay anchors, complete external input traces, deterministic
   contact and solver-row identities, pre/post structural topology, generic
@@ -31,7 +42,7 @@
   measurable terrain features, a four-sided workshop apron transition, a
   shallow ford, an irregular deep pond and dry
   island, a physical bridge, dense collidable woodland, a 254 m runway, a
-  helipad, staging pads, and ten machine-independent guided trials.
+  helipad, staging pads, and eleven machine-independent guided trials.
 - Made the strict immutable `test-site-definition-v2` the single authority for
   terrain, surface materials, water, fixtures, vegetation, deployment, maps,
   rendering, telemetry, and route evaluation; obsolete version-1 definitions
@@ -55,6 +66,12 @@
 
 ### Changed
 
+- Unified component collision, port frames, rendered physical silhouettes, and
+  runtime deformation around the model-owned geometry descriptors. Component
+  presentation now includes bounded material finishes, a procedural reflection
+  environment, camera-aware detail tiers, and reduced shadows and projections
+  for large assemblies without changing part IDs, selection, or physical
+  authority.
 - Advanced the private failure-evidence artifact to version 2. Captures are now
   proactively composed and strict-validated before the UI reports them ready;
   export writes only that cached artifact. Bounded nonstructural episodes
