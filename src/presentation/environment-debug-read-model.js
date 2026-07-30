@@ -16,6 +16,7 @@ import { compileTestSiteVegetation } from "../model/test-site-vegetation.js";
  *   detailLod?:()=>{level:string,grassBladesVisible:number,fixtureVisualsVisible:boolean,surfaceRegionsVisible:boolean},
  *   spaceBlend:number, skyColor:string, windEnabled:boolean, elapsed:number,
  *   starOpacity:number, moonOpacity:number, earthOpacity:number,
+ *   reflectionEnvironment?:{kind:string,daylight:number,spaceBlend:number,intensity:number,active:boolean},
  *   meteorite:EnvironmentVector,
  *   environment:{
  *     buildSiteLatDeg:number, buildSiteLonDeg:number, chunkSizeM:number,
@@ -120,6 +121,14 @@ export function buildEnvironmentDebugReadModel(input) {
     starOpacity: +input.starOpacity.toFixed(3),
     moonOpacity: +input.moonOpacity.toFixed(3),
     earthOpacity: +input.earthOpacity.toFixed(3),
+    reflectionEnvironment: input.reflectionEnvironment
+      ? {
+          ...input.reflectionEnvironment,
+          daylight: +input.reflectionEnvironment.daylight.toFixed(3),
+          spaceBlend: +input.reflectionEnvironment.spaceBlend.toFixed(3),
+          intensity: +input.reflectionEnvironment.intensity.toFixed(3),
+        }
+      : null,
     karmanLineM: environment.karmanLineM,
     moon: {
       physicalDistanceM: environment.moonDistanceM,

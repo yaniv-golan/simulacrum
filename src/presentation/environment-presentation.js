@@ -110,6 +110,7 @@ export function createEnvironmentPresentation({
       1.08,
       spaceBlend,
     );
+    scene.reflectionEnvironment.setLighting(daylight, spaceBlend);
     const astronomicalNight = 1 - smoothstep(-12, -4, elevationDeg),
       nightStars = astronomicalNight * (1 - spaceBlend);
     scene.starMaterial.opacity = Math.max(nightStars * 0.82, spaceBlend * 0.98);

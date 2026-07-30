@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { createWorkshopReflectionEnvironment } from "./workshop-reflection-environment.js";
 
 export { createWorkshopPlatform } from "./workshop-platform.js";
 export { createTransformGizmoController } from "./transform-gizmo-controller.js";
@@ -35,6 +36,10 @@ export function createWorkshopScene({
     "3D construction workspace. Use the visible workshop controls or keyboard shortcuts to edit and inspect the machine.",
   );
   stage?.append(renderer.domElement);
+  const reflectionEnvironment = createWorkshopReflectionEnvironment({
+    scene,
+    renderer,
+  });
 
   const hemisphere = new THREE.HemisphereLight(0xeaf9ff, 0x32483e, 2.4),
     ambientFill = new THREE.AmbientLight(0x88a6ca, 0.34),
@@ -51,5 +56,14 @@ export function createWorkshopScene({
   });
   moonLight.position.set(30, 45, -35);
   scene.add(hemisphere, ambientFill, sun, sun.target, moonLight);
-  return { scene, camera, renderer, hemisphere, ambientFill, sun, moonLight };
+  return {
+    scene,
+    camera,
+    renderer,
+    hemisphere,
+    ambientFill,
+    sun,
+    moonLight,
+    reflectionEnvironment,
+  };
 }

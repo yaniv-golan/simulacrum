@@ -14,6 +14,8 @@ export function prepareArticulatedFootVisual(part) {
   disposeObject3D(part.mesh, { remove: false });
   part.mesh.clear();
   part.mesh.scale.set(1, 1, 1);
+  part.mesh.userData.visualDetailPolicy = "authored-fixed-v1";
+  part.mesh.userData.visualDetailTier = "standard";
   mesh(
     new THREE.BoxGeometry(0.38, 0.1, 0.72),
     mats.rubber,

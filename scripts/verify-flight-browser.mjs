@@ -299,14 +299,14 @@ await conclude(browser, () => {
     (sample) => sample.boundsRadius,
   );
   assert.ok(
-    trackingRadii.every(
-      (radius, index) => index === 0 || radius >= trackingRadii[index - 1],
-    ),
-    "animated rotor bounds contracted the active camera envelope",
+    maximumStep(trackingRadii, (radius) => radius) <= 0.02 + 1e-9,
+    "animated rotor bounds changed the active camera envelope abruptly",
   );
   assert.ok(
-    Math.max(...trackingRadii) - Math.min(...trackingRadii) <= 0.05,
-    "animated rotor bounds materially expanded the active camera envelope",
+    (Math.max(...trackingRadii) - Math.min(...trackingRadii)) /
+      Math.min(...trackingRadii) <=
+      0.02,
+    "animated rotor bounds materially varied the active camera envelope",
   );
   for (const axis of ["pitch", "roll", "yaw"])
     assert.ok(

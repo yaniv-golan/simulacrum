@@ -1,5 +1,35 @@
 import * as THREE from "three";
-import { disposeObject3D, sharePrimitiveGeometry } from "./render-resources.js";
+import {
+  disposeObject3D,
+  sharePrimitiveGeometry,
+  trackOwnedRenderResource,
+} from "./render-resources.js";
+import { sharedSurfaceTextures } from "./mesh-primitives.js";
+
+const IDENTITY = [0, 0, 0, 1];
+
+function canonicalBeamBatchDescriptor(part) {
+  const geometry = part.mesh.userData.geometryDescriptor,
+    visual = part.mesh.userData.visualDescriptor,
+    body = geometry?.bodyPrimitives;
+  if (
+    body?.length !== 1 ||
+    body[0].geometry.kind !== "box-v1" ||
+    body[0].framePart.positionM.some((value) => value !== 0) ||
+    body[0].framePart.orientation.some(
+      (value, index) => value !== IDENTITY[index],
+    ) ||
+    !visual
+  )
+    return null;
+  const sizeM = body[0].geometry.fullSizeM,
+    color = visual.color;
+  return {
+    sizeM,
+    color,
+    key: `${sizeM.join(",")}:${color}`,
+  };
+}
 
 /**
  * Draws repeated structural beams as low-detail instances for very large edit
@@ -16,9 +46,6 @@ export class LargeAssemblyBatcher {
     this.signature = "";
     this.inverseMachineWorld = new THREE.Matrix4();
     this.instanceMatrix = new THREE.Matrix4();
-    this.geometry = sharePrimitiveGeometry(
-      new THREE.BoxGeometry(2.4, 0.34, 0.34),
-    );
   }
 
   sync(parts, { enabled = true } = {}) {
@@ -26,7 +53,10 @@ export class LargeAssemblyBatcher {
       signature = eligible
         ? parts
             .filter((part) => part.type === "beam")
-            .map((part) => `${part.id}:${part.customColor ?? "default"}`)
+            .map((part) => {
+              const descriptor = canonicalBeamBatchDescriptor(part);
+              return `${part.id}:${descriptor?.key || "ineligible"}`;
+            })
             .join("|")
         : "";
     if (signature === this.signature) return;
@@ -37,20 +67,25 @@ export class LargeAssemblyBatcher {
     const groups = new Map();
     for (const part of parts) {
       if (part.type !== "beam") continue;
-      const color = part.customColor ?? part.config?.color ?? 0x668fa3,
-        key = String(color);
-      if (!groups.has(key)) groups.set(key, { color, parts: [] });
+      const descriptor = canonicalBeamBatchDescriptor(part);
+      if (!descriptor) continue;
+      const { color, key, sizeM } = descriptor;
+      if (!groups.has(key)) groups.set(key, { color, sizeM, parts: [] });
       groups.get(key).parts.push(part);
     }
     for (const group of groups.values()) {
       if (group.parts.length < this.minimumGroupSize) continue;
-      const material = new THREE.MeshStandardMaterial({
-          color: group.color,
-          metalness: 0.68,
-          roughness: 0.28,
-        }),
+      const material = trackOwnedRenderResource(
+          new THREE.MeshStandardMaterial({
+            color: group.color,
+            metalness: 0.58,
+            roughness: 0.38,
+            roughnessMap: sharedSurfaceTextures.microRoughness,
+          }),
+          "batchColorMaterials",
+        ),
         mesh = new THREE.InstancedMesh(
-          this.geometry,
+          sharePrimitiveGeometry(new THREE.BoxGeometry(...group.sizeM)),
           material,
           group.parts.length,
         );
@@ -62,6 +97,7 @@ export class LargeAssemblyBatcher {
       this.batches.push({ mesh, parts: group.parts });
       for (const part of group.parts) {
         part.mesh.visible = false;
+        part.mesh.userData.largeAssemblyBatched = true;
         this.hiddenParts.add(part);
       }
     }
@@ -100,7 +136,10 @@ export class LargeAssemblyBatcher {
   }
 
   disposeBatches() {
-    for (const part of this.hiddenParts) part.mesh.visible = true;
+    for (const part of this.hiddenParts) {
+      part.mesh.visible = true;
+      delete part.mesh.userData.largeAssemblyBatched;
+    }
     this.hiddenParts.clear();
     for (const batch of this.batches) disposeObject3D(batch.mesh);
     this.batches.length = 0;

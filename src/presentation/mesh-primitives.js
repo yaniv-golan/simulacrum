@@ -3,11 +3,50 @@ import {
   markSharedRenderResource,
   sharePrimitiveGeometry,
 } from "./render-resources.js";
+
+function roughnessTexture() {
+  const size = 8,
+    data = new Uint8Array(size * size * 4);
+  for (let index = 0; index < size * size; index++) {
+    const x = index % size,
+      y = Math.floor(index / size),
+      value = 176 + ((x * 29 + y * 47 + x * y * 7) % 48);
+    data[index * 4] = value;
+    data[index * 4 + 1] = value;
+    data[index * 4 + 2] = value;
+    data[index * 4 + 3] = 255;
+  }
+  const texture = new THREE.DataTexture(
+    data,
+    size,
+    size,
+    THREE.RGBAFormat,
+    THREE.UnsignedByteType,
+  );
+  texture.name = "deterministic-micro-roughness-v1";
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(4, 4);
+  texture.needsUpdate = true;
+  return markSharedRenderResource(texture);
+}
+
+export const sharedSurfaceTextures = Object.freeze({
+  microRoughness: roughnessTexture(),
+});
+
 export const mats = {
   steel: new THREE.MeshStandardMaterial({
     color: 0x8fa3a8,
     metalness: 0.9,
-    roughness: 0.2,
+    roughness: 0.3,
+    roughnessMap: sharedSurfaceTextures.microRoughness,
+  }),
+  aluminum: new THREE.MeshStandardMaterial({
+    color: 0xb8c5c7,
+    metalness: 0.78,
+    roughness: 0.42,
+    roughnessMap: sharedSurfaceTextures.microRoughness,
   }),
   dark: new THREE.MeshStandardMaterial({
     color: 0x182529,
@@ -18,6 +57,7 @@ export const mats = {
     color: 0x12191b,
     metalness: 0.05,
     roughness: 0.82,
+    roughnessMap: sharedSurfaceTextures.microRoughness,
   }),
   brass: new THREE.MeshStandardMaterial({
     color: 0xc89538,
@@ -41,8 +81,29 @@ export const mats = {
     metalness: 0.15,
     roughness: 0.12,
   }),
+  nylon: new THREE.MeshStandardMaterial({
+    color: 0x8c775a,
+    metalness: 0.02,
+    roughness: 0.76,
+    roughnessMap: sharedSurfaceTextures.microRoughness,
+  }),
+  composite: new THREE.MeshStandardMaterial({
+    color: 0x273236,
+    metalness: 0.08,
+    roughness: 0.48,
+    roughnessMap: sharedSurfaceTextures.microRoughness,
+  }),
+  ablative: new THREE.MeshStandardMaterial({
+    color: 0x30231f,
+    metalness: 0,
+    roughness: 0.91,
+    roughnessMap: sharedSurfaceTextures.microRoughness,
+  }),
 };
-for (const material of Object.values(mats)) markSharedRenderResource(material);
+for (const [name, material] of Object.entries(mats)) {
+  material.name = `catalog-${name}`;
+  markSharedRenderResource(material);
+}
 export function mesh(geo, mat, pos = [0, 0, 0], rot = [0, 0, 0], parent) {
   const m = new THREE.Mesh(sharePrimitiveGeometry(geo), mat);
   m.position.set(pos[0] || 0, pos[1] || 0, pos[2] || 0);

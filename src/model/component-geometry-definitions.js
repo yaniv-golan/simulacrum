@@ -2,6 +2,7 @@ import { deepFreeze } from "./primitives.js";
 
 const IDENTITY = Object.freeze([0, 0, 0, 1]);
 const FLIP_Z = Object.freeze([0, 1, 0, 0]);
+const AXIAL_Z_TO_Y = Object.freeze([-Math.SQRT1_2, 0, 0, Math.SQRT1_2]);
 
 const constantPosition = (value) => ({ kind: "constant-v1", value });
 const sizeFraction = (value) => ({ kind: "size-fraction-v1", value });
@@ -70,6 +71,20 @@ function ordinary({
     bodyPrimitives,
     physicalFeatures,
   };
+}
+
+function shapedOrdinary({ ports, id, geometry, orientation = IDENTITY }) {
+  return ordinary({
+    ports,
+    bodyPrimitives: [
+      primitive(id, geometry, {
+        frame: frame(constantPosition([0, 0, 0]), orientation),
+      }),
+    ],
+    collisionPrimitives: [
+      primitive("collision", boxGeometry, { approximationOf: id }),
+    ],
+  });
 }
 
 function mechanism({
@@ -333,29 +348,78 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
   aircompressor: ordinary({
     ports: genericFaces(["MOUNT", "POWER", "CONTROL", "AIR"]),
   }),
-  airreservoir: ordinary({ ports: genericFaces(["MOUNT", "AIR"]) }),
+  airreservoir: shapedOrdinary({
+    ports: genericFaces(["MOUNT", "AIR"]),
+    id: "reservoir-body",
+    geometry: { kind: "cylinder-v1", radiusM: 0.375, axialLengthM: 1.1 },
+  }),
   pneumaticvalve: ordinary({
     ports: genericFaces(["MOUNT", "POWER", "CONTROL", "SUPPLY", "TIRE"]),
   }),
   computer: ordinary({ ports: { MOUNT: face(1, -1) } }),
-  receiver: ordinary({ ports: { MOUNT: face(1, -1) } }),
-  navsensor: ordinary({ ports: { MOUNT: face(1, -1) } }),
-  rangesensor: ordinary({ ports: { MOUNT: face(1, -1) } }),
-  sensor: ordinary({
+  receiver: shapedOrdinary({
+    ports: { MOUNT: face(1, -1) },
+    id: "receiver-body",
+    geometry: { kind: "cylinder-v1", radiusM: 0.25, axialLengthM: 0.22 },
+    orientation: AXIAL_Z_TO_Y,
+  }),
+  navsensor: shapedOrdinary({
+    ports: { MOUNT: face(1, -1) },
+    id: "navigation-body",
+    geometry: { kind: "cylinder-v1", radiusM: 0.275, axialLengthM: 0.2 },
+    orientation: AXIAL_Z_TO_Y,
+  }),
+  rangesensor: shapedOrdinary({
+    ports: { MOUNT: face(1, -1) },
+    id: "rangefinder-body",
+    geometry: { kind: "cylinder-v1", radiusM: 0.21, axialLengthM: 0.52 },
+    orientation: AXIAL_Z_TO_Y,
+  }),
+  sensor: shapedOrdinary({
     ports: {
       MOUNT: face(2, 1),
       SHAFT: frame(constantPosition([0, 0, -0.14]), FLIP_Z),
     },
+    id: "rotation-sensor-body",
+    geometry: { kind: "cylinder-v1", radiusM: 0.225, axialLengthM: 0.28 },
   }),
-  imu: ordinary({ ports: { MOUNT: face(1, -1) } }),
-  contactsensor: ordinary({ ports: { MOUNT: face(1, 1) } }),
-  thermalprobe: ordinary({ ports: { MOUNT: face(1, -1) } }),
-  pressureprobe: ordinary({ ports: { MOUNT: face(2, 1) } }),
+  imu: shapedOrdinary({
+    ports: { MOUNT: face(1, -1) },
+    id: "imu-body",
+    geometry: { kind: "cylinder-v1", radiusM: 0.25, axialLengthM: 0.18 },
+    orientation: AXIAL_Z_TO_Y,
+  }),
+  contactsensor: shapedOrdinary({
+    ports: { MOUNT: face(1, 1) },
+    id: "contact-pad-body",
+    geometry: { kind: "cylinder-v1", radiusM: 0.24, axialLengthM: 0.16 },
+    orientation: AXIAL_Z_TO_Y,
+  }),
+  thermalprobe: shapedOrdinary({
+    ports: { MOUNT: face(1, -1) },
+    id: "thermal-probe-body",
+    geometry: { kind: "cylinder-v1", radiusM: 0.14, axialLengthM: 0.5 },
+    orientation: AXIAL_Z_TO_Y,
+  }),
+  pressureprobe: shapedOrdinary({
+    ports: { MOUNT: face(2, 1) },
+    id: "air-data-probe-body",
+    geometry: { kind: "cylinder-v1", radiusM: 0.15, axialLengthM: 0.65 },
+  }),
   tirepressureprobe: ordinary({
     ports: genericFaces(["MOUNT", "POWER", "SIGNAL", "AIR"]),
   }),
-  loadcell: ordinary({ ports: { A: face(1, -1), B: face(1, 1) } }),
-  gyro: ordinary({ ports: { MOUNT: face(1, -1) } }),
+  loadcell: shapedOrdinary({
+    ports: { A: face(1, -1), B: face(1, 1) },
+    id: "load-cell-body",
+    geometry: { kind: "cylinder-v1", radiusM: 0.275, axialLengthM: 0.22 },
+    orientation: AXIAL_Z_TO_Y,
+  }),
+  gyro: shapedOrdinary({
+    ports: { MOUNT: face(1, -1) },
+    id: "reaction-wheel-body",
+    geometry: { kind: "cylinder-v1", radiusM: 0.325, axialLengthM: 0.3 },
+  }),
   battery: ordinary({ ports: { MOUNT: face(1, -1) } }),
   propellanttank: ordinary({
     ports: { MOUNT: face(1, 1), OUTLET: face(1, -1) },
@@ -382,9 +446,23 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
     ],
   }),
   powerbus: ordinary({ ports: { MOUNT: face(1, -1) } }),
-  headlight: ordinary({ ports: { MOUNT: face(2, 1) } }),
-  rocket: ordinary({ ports: { MOUNT: face(1, 1), PROPELLANT: face(1, 1) } }),
-  rcs: ordinary({ ports: { MOUNT: face(1, -1), PROPELLANT: face(1, 1) } }),
+  headlight: shapedOrdinary({
+    ports: { MOUNT: face(2, 1) },
+    id: "lamp-housing",
+    geometry: { kind: "cylinder-v1", radiusM: 0.21, axialLengthM: 0.34 },
+  }),
+  rocket: shapedOrdinary({
+    ports: { MOUNT: face(1, 1), PROPELLANT: face(1, 1) },
+    id: "thruster-body",
+    geometry: { kind: "cylinder-v1", radiusM: 0.4, axialLengthM: 1.15 },
+    orientation: AXIAL_Z_TO_Y,
+  }),
+  rcs: shapedOrdinary({
+    ports: { MOUNT: face(1, -1), PROPELLANT: face(1, 1) },
+    id: "rcs-body",
+    geometry: { kind: "cylinder-v1", radiusM: 0.36, axialLengthM: 0.42 },
+    orientation: AXIAL_Z_TO_Y,
+  }),
 });
 
 export const REGISTERED_COMPONENT_GEOMETRY_TYPES = Object.freeze(

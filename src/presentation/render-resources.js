@@ -1,10 +1,14 @@
 const sharedResources = new WeakSet();
 const sharedGeometryCache = new Map();
+const sharedMaterials = new Set();
+const sharedTextures = new Set();
+const activeOwnedResources = new Map();
 
 const CACHEABLE_GEOMETRIES = new Set([
   "BoxGeometry",
   "ConeGeometry",
   "CylinderGeometry",
+  "LatheGeometry",
   "PlaneGeometry",
   "RingGeometry",
   "SphereGeometry",
@@ -13,7 +17,31 @@ const CACHEABLE_GEOMETRIES = new Set([
 
 /** Marks an immutable render resource whose lifetime is the application. */
 export function markSharedRenderResource(resource) {
-  if (resource && typeof resource === "object") sharedResources.add(resource);
+  if (resource && typeof resource === "object") {
+    sharedResources.add(resource);
+    if (resource.isMaterial) sharedMaterials.add(resource);
+    if (resource.isTexture) sharedTextures.add(resource);
+  }
+  return resource;
+}
+
+/** Tracks a disposable, object-owned resource without retaining it after release. */
+export function trackOwnedRenderResource(resource, category) {
+  if (!resource || typeof resource.addEventListener !== "function")
+    return resource;
+  const key = String(category || "other");
+  activeOwnedResources.set(key, (activeOwnedResources.get(key) || 0) + 1);
+  let active = true;
+  const released = () => {
+    if (!active) return;
+    active = false;
+    activeOwnedResources.set(
+      key,
+      Math.max(0, (activeOwnedResources.get(key) || 0) - 1),
+    );
+    resource.removeEventListener("dispose", released);
+  };
+  resource.addEventListener("dispose", released);
   return resource;
 }
 
@@ -28,7 +56,9 @@ export function isSharedRenderResource(resource) {
  */
 export function sharePrimitiveGeometry(geometry) {
   if (!geometry || !CACHEABLE_GEOMETRIES.has(geometry.type)) return geometry;
-  const key = `${geometry.type}:${JSON.stringify(geometry.parameters)}`;
+  const key = geometry.userData.sharedPrimitiveKey
+    ? `${geometry.type}:${geometry.userData.sharedPrimitiveKey}`
+    : `${geometry.type}:${JSON.stringify(geometry.parameters)}`;
   const existing = sharedGeometryCache.get(key);
   if (existing) {
     geometry.dispose();
@@ -84,5 +114,14 @@ export function disposeObject3D(object, { remove = true } = {}) {
 }
 
 export function sharedRenderResourceStats() {
-  return { primitiveGeometries: sharedGeometryCache.size };
+  return {
+    primitiveGeometries: sharedGeometryCache.size,
+    baseMaterials: sharedMaterials.size,
+    sharedTextures: sharedTextures.size,
+    owned: Object.fromEntries(
+      [...activeOwnedResources].sort(([left], [right]) =>
+        left.localeCompare(right),
+      ),
+    ),
+  };
 }

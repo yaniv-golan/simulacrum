@@ -1,5 +1,5 @@
 import { installWorkshopRuntimeSubsystem } from "./workshop-runtime-subsystem.js";
-import { buildPresentationDebugReadModel } from "../presentation/presentation-debug-read-model.js";
+import { createWorkshopRuntimeDebugView } from "./workshop-runtime-debug-view.js";
 /** Maps completed feature facades into the frame-loop and debug read-model ports. */
 export function installWorkshopRuntimeComposition({
   target,
@@ -43,17 +43,28 @@ export function installWorkshopRuntimeComposition({
       updateEnvironment: world.updateEnvironment,
       waterTexture: () => world.waterNormalTexture,
       updateCamera: world.updateCamera,
+      updateDetail: () =>
+        stage.componentDetail.update({
+          parts: shell.state.parts,
+          camera: stage.camera,
+          viewportHeightPx:
+            stage.renderer.domElement.clientHeight || target.innerHeight,
+          running: shell.state.running,
+          selectedIds: shell.state.editor.selectedIds,
+        }),
       updateBatch: () => stage.largeAssemblyBatcher.update(),
       render: () => stage.renderer.render(stage.scene, stage.camera),
       renderer: stage.renderer,
       camera: stage.camera,
       batchSnapshot: () => stage.largeAssemblyBatcher.snapshot(),
+      detailSnapshot: () => stage.componentDetail.snapshot(),
       environmentCapture: world.applyCapturePreset,
     },
     environment: {
       localToGlobal: stage.earth.localToGlobal,
       localSurfaceSample: stage.earth.surfaceSampleAt,
       detailLod: world.detailLodSnapshot,
+      reflectionEnvironment: stage.reflectionEnvironment.snapshot,
       chunks: () => [...streamer.chunks.values()],
       skyColor: () => `#${stage.scene.background.getHexString()}`,
       starOpacity: () => stage.starMaterial.opacity,
@@ -105,23 +116,7 @@ export function installWorkshopRuntimeComposition({
     },
     testingPlayground,
     view: {
-      debug: {
-        learningOpen: () =>
-          !shell.query(".learn-center").classList.contains("hidden"),
-        coachOpen: () =>
-          !shell.query(".discovery-coach").classList.contains("hidden"),
-        directVisible: () =>
-          !shell.query(".drive-hud").classList.contains("hidden"),
-        controllerStatus: () =>
-          shell.query("#wasm-status")?.textContent || null,
-        mission: () => shell.query("#mission-name").textContent,
-        presentation: () =>
-          buildPresentationDebugReadModel({
-            state: shell.state,
-            keyboard: input.keyboard.snapshot,
-            selectionVisibility: editor.selectionVisibility.snapshot,
-          }),
-      },
+      debug: createWorkshopRuntimeDebugView({ shell, input, editor }),
       renderUi: view.renderUi,
       renderRemote: assembly.controls.renderRemote,
       renderScriptEditor: controllers.render,

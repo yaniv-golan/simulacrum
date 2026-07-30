@@ -59,6 +59,7 @@ export function installDebugReadModelFeature({
       earthOpacity: environment.earthOpacity(),
       meteorite: environment.meteorite(),
       environment: ENVIRONMENT_DEBUG_CONTRACT,
+      reflectionEnvironment: environment.reflectionEnvironment(),
     });
   }
   function editorReadModel() {

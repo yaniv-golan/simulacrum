@@ -8,6 +8,36 @@ const AXIAL_Y_TO_Z = new THREE.Quaternion().setFromAxisAngle(
   Math.PI / 2,
 );
 
+function roundedWheelGeometry(geometry, radialSegments, shoulderSegments) {
+  const halfWidthM = geometry.widthM / 2,
+    shoulderM = geometry.shoulderRadiusM,
+    innerRadiusM = geometry.radiusM - shoulderM,
+    lowerCenterM = -halfWidthM + shoulderM,
+    upperCenterM = halfWidthM - shoulderM,
+    points = [new THREE.Vector2(0, -halfWidthM)];
+  for (let index = 0; index <= shoulderSegments; index++) {
+    const angle = -Math.PI / 2 + (index / shoulderSegments) * (Math.PI / 2);
+    points.push(
+      new THREE.Vector2(
+        innerRadiusM + Math.cos(angle) * shoulderM,
+        lowerCenterM + Math.sin(angle) * shoulderM,
+      ),
+    );
+  }
+  points.push(new THREE.Vector2(geometry.radiusM, upperCenterM));
+  for (let index = 1; index <= shoulderSegments; index++) {
+    const angle = (index / shoulderSegments) * (Math.PI / 2);
+    points.push(
+      new THREE.Vector2(
+        innerRadiusM + Math.cos(angle) * shoulderM,
+        upperCenterM + Math.sin(angle) * shoulderM,
+      ),
+    );
+  }
+  points.push(new THREE.Vector2(0, halfWidthM));
+  return new THREE.LatheGeometry(points, radialSegments);
+}
+
 function geometryForPrimitive(geometry, detailPolicy) {
   const radialSegments = Math.max(8, Number(detailPolicy.radialSegments || 24));
   let result;
@@ -29,6 +59,13 @@ function geometryForPrimitive(geometry, detailPolicy) {
   else if (geometry.kind === "elliptic-cylinder-v1") {
     result = new THREE.CylinderGeometry(1, 1, 1, radialSegments);
     result.scale(geometry.radiusXM, geometry.axialLengthM, geometry.radiusYM);
+    result.userData.sharedPrimitiveKey = [
+      geometry.kind,
+      geometry.radiusXM,
+      geometry.radiusYM,
+      geometry.axialLengthM,
+      radialSegments,
+    ].join(":");
   } else if (geometry.kind === "capsule-v1")
     result = new THREE.CapsuleGeometry(
       geometry.radiusM,
@@ -44,12 +81,10 @@ function geometryForPrimitive(geometry, detailPolicy) {
       radialSegments,
     );
   else if (geometry.kind === "rounded-wheel-v1")
-    result = new THREE.CylinderGeometry(
-      geometry.radiusM,
-      geometry.radiusM,
-      geometry.widthM,
+    result = roundedWheelGeometry(
+      geometry,
       radialSegments,
-      2,
+      Math.max(2, Number(detailPolicy.shoulderSegments || 6)),
     );
   else
     throw new Error(`Unsupported canonical render primitive ${geometry.kind}`);
@@ -79,6 +114,8 @@ function projectPrimitive({ primitive, material, detailPolicy, role }) {
   object.userData.canonicalGeometryId = primitive.id;
   object.userData.canonicalFramePart = structuredClone(primitive.framePart);
   object.userData.canonicalGeometry = structuredClone(primitive.geometry);
+  object.castShadow = detailPolicy.castShadow !== false;
+  object.receiveShadow = detailPolicy.receiveShadow !== false;
   return object;
 }
 
@@ -110,6 +147,8 @@ function straightFlexiblePreview({ descriptor, material, detailPolicy }) {
   preview.name = "Canonical flexible-line rest preview";
   preview.userData.flexibleLinePreview = true;
   preview.userData.referenceLengthM = Math.max(lengthM, 1e-9);
+  preview.castShadow = detailPolicy.castShadow !== false;
+  preview.receiveShadow = detailPolicy.receiveShadow !== false;
   return preview;
 }
 
@@ -138,6 +177,8 @@ function projectFlexibleRuntime({
   runtime.frustumCulled = false;
   runtime.name = "Canonical flexible-line solved segments";
   runtime.userData.flexibleLineRuntime = true;
+  runtime.castShadow = detailPolicy.castShadow !== false;
+  runtime.receiveShadow = detailPolicy.receiveShadow !== false;
   runtime.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   runtimeRoot.add(preview, runtime);
   g.userData.flexibleLineVisual = {

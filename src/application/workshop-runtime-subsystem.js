@@ -28,6 +28,7 @@ export function installWorkshopRuntimeSubsystem({
       updateWater: (time) =>
         presentation.waterTexture()?.offset.set(time * 0.012, time * -0.007),
       updateCamera: presentation.updateCamera,
+      updateDetail: presentation.updateDetail,
       updateBatch: presentation.updateBatch,
       render: presentation.render,
     },
@@ -49,6 +50,7 @@ export function installWorkshopRuntimeSubsystem({
       controllers: controller.runtimeCount(),
       reducedComponentShadows: assembly.reducedShadows(),
       largeAssemblyBatch: presentation.batchSnapshot(),
+      componentDetail: presentation.detailSnapshot(),
     }),
     environmentCapture: presentation.environmentCapture,
   });
@@ -71,7 +73,13 @@ export function installWorkshopRuntimeSubsystem({
       trace: controller.trace,
     },
     testingPlayground,
-    view: view.debug,
+    view: {
+      ...view.debug,
+      presentation: () => ({
+        ...view.debug.presentation(),
+        componentDetail: presentation.detailSnapshot(),
+      }),
+    },
   });
 
   target.addEventListener("resize", () => {

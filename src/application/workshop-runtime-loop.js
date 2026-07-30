@@ -8,7 +8,8 @@
  * @typedef {{
  *   streamEarth:(maximum?:number)=>void, updateExploded:(dt:number)=>void,
  *   updateEnvironment:()=>void, updateWater:(time:number)=>void,
- *   updateCamera:(dt:number)=>void, updateBatch:()=>void, render:()=>void,
+ *   updateCamera:(dt:number)=>void, updateDetail:()=>void,
+ *   updateBatch:()=>void, render:()=>void,
  * }} RuntimePresentationPort
  */
 
@@ -48,6 +49,7 @@ export function installWorkshopRuntimeLoop({
     presentation.updateEnvironment();
     presentation.updateWater(timestamp / 1000);
     presentation.updateCamera(dt);
+    presentation.updateDetail();
     presentation.updateBatch();
     presentation.render();
     presentedInitialFrame = true;
@@ -69,6 +71,8 @@ export function installWorkshopRuntimeLoop({
     presentation.updateEnvironment();
     presentation.updateWater(simulation.elapsed());
     presentation.updateCamera(Math.min(1, milliseconds / 1000));
+    presentation.updateDetail();
+    presentation.updateBatch();
     presentation.render();
   }
 
