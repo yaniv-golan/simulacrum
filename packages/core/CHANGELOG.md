@@ -2,12 +2,22 @@
 
 ## Unreleased
 
+## 0.2.0 - 2026-07-30
+
+- Extends `GeometryDescriptorV2` with the closed `rounded-box-v1`,
+  `spur-gear-v1`, `helical-spring-v1`, and `extruded-profile-v1` body
+  primitives. Built-in mechanisms now declare visible-body recipes separately
+  from collision approximations.
+- Replaces pose-owned axial scale values with stable completed mechanism
+  `coordinateId`/`coordinateM` samples. `mechanismDeformationTransforms()` is
+  the shared pure transform authority for rendered bodies and deformed bounds.
+
 - Advances the owned Cannon solver transaction identity for the canonical
   rolling-support registration and pre-annotation heightfield contact seam.
   The public Cannon adapter and transaction also expose additive `dispose()`
   lifecycle methods for releasing transaction-owned pools and registrations.
   Checkpoints carrying the previous transaction identity are intentionally
-  rejected; this strict cutover is queued for Core `0.2.0`.
+  rejected as part of the Core `0.2.0` cutover.
 - Adds explicit pneumatic tire chambers, conserved dry-air mass and energy,
   pressure-coupled contact support, powered compressor/three-way-valve control,
   tire-pressure sensing, telemetry, dynamic gas mass, and exact checkpoint v2
@@ -24,7 +34,7 @@
 - Adds strict authored-assembly projection and fingerprint contracts plus
   immutable direct component-relationship and authored-preflight inspection
   APIs. These additive APIs are queued for the next minor `0.x` release; the
-  source workspace remains `0.1.0` until that release transaction.
+  contract ships in Core `0.2.0`.
 - Adds deterministic endpoint-aware power, signal, and resource route evidence,
   bounded live session tokens, and digest-matched owner queries without making
   path witnesses into flow or controller-causality claims.

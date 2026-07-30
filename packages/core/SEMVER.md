@@ -17,28 +17,28 @@ this policy, the changelog, examples, and clean-package tests.
 Version `1.0.0` will mark a stable public API and documented compatibility
 guarantees.
 
-`GeometryDescriptorV2`, its strict definition/descriptor validators, canonical
+Core `0.2.0` ships `GeometryDescriptorV2`, its strict definition/descriptor validators, canonical
 port-frame connection checks, and the additive `flexible-line-v1` compiler,
 runtime, material, system, topology, telemetry, and checkpoint exports are
-queued for Core `0.2.0`. Descriptor v2 intentionally removes the ambiguous
+part of the same release. Descriptor v2 intentionally removes the ambiguous
 geometry aliases from the public API and requires alternate catalogs to provide
 a complete geometry contract. Repository-owned assets migrate their authored
 part transforms and connections in the same cutover; consumers must do the same
 instead of relying on inferred centered ports.
 
-Endpoint-aware route evidence and `SimulationSession.routeEvidence()` are also
-queued for Core `0.2.0`. The same transaction cuts the strict
+Endpoint-aware route evidence and `SimulationSession.routeEvidence()` also ship
+in Core `0.2.0`. The same transaction cuts the strict
 `material-resources` checkpoint owner from version 1 to version 2 and the state
 digest domain to `simulacrum-checkpoint-state-v2`; there is no compatibility
 reader, while the 19-owner set and checkpoint envelope version stay unchanged.
 
 The descriptor is derived from current catalog and part data. It is not added
 to blueprint, workspace, share, or subassembly envelopes, so this cutover does
-not advance a wire schema or add a compatibility reader. The package remains
-`0.1.0` in the source workspace until the actual `0.2.0` release transaction.
+not advance a wire schema or add a compatibility reader. The package is
+`0.2.0` in the source workspace.
 
-The owned Cannon transaction v3 rolling-support cutover is likewise queued for
-Core `0.2.0`. Its transaction identity changes deliberately so checkpoints
+The owned Cannon transaction v3 rolling-support cutover likewise ships in Core
+`0.2.0`. Its transaction identity changes deliberately so checkpoints
 captured under v2 motor-energy/contact semantics fail closed instead of being
 restored under the new pre-annotation rolling-contact path. The additive public
 `dispose()` methods on `CannonSolverTransaction` and `CannonWorldAdapter` are a

@@ -135,7 +135,7 @@ export const TYPES = {
     color: 0xd9a441,
     desc: "Fast, low-torque gear",
     teeth: 12,
-    radius: 0.48,
+    radius: 0.41,
     ports: [
       port("AXLE", "mechanical", "rotary-coupling", "bidirectional", "one"),
       port("MESH", "mesh", "gear", "bidirectional", "many"),

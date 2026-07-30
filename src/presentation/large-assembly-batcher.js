@@ -4,9 +4,33 @@ import {
   sharePrimitiveGeometry,
   trackOwnedRenderResource,
 } from "./render-resources.js";
-import { sharedSurfaceTextures } from "./mesh-primitives.js";
 
 const IDENTITY = [0, 0, 0, 1];
+
+function roundedBeamBatchGeometry(sizeM, radiusM) {
+  // This batch is activated only for the distant 300-part performance tier,
+  // where the authored corner radius is smaller than a pixel. Keep the radius
+  // in metadata for identity/inspection, but use the collision-aligned box so
+  // invisible bevel triangles do not consume the entire software-render budget.
+  const [widthM, heightM, depthM] = sizeM,
+    geometry = new THREE.BoxGeometry(widthM, heightM, depthM);
+  geometry.clearGroups();
+  geometry.addGroup(0, geometry.index.count, 0);
+  Object.assign(geometry.parameters, {
+    width: widthM,
+    height: heightM,
+    depth: depthM,
+    radius: radiusM,
+    profile: "performance-box-v1",
+  });
+  geometry.userData.sharedPrimitiveKey = [
+    "rounded-box-v1",
+    ...sizeM,
+    radiusM,
+    "performance-box-v1",
+  ].join(":");
+  return geometry;
+}
 
 function canonicalBeamBatchDescriptor(part) {
   const geometry = part.mesh.userData.geometryDescriptor,
@@ -14,7 +38,7 @@ function canonicalBeamBatchDescriptor(part) {
     body = geometry?.bodyPrimitives;
   if (
     body?.length !== 1 ||
-    body[0].geometry.kind !== "box-v1" ||
+    body[0].geometry.kind !== "rounded-box-v1" ||
     body[0].framePart.positionM.some((value) => value !== 0) ||
     body[0].framePart.orientation.some(
       (value, index) => value !== IDENTITY[index],
@@ -23,11 +47,13 @@ function canonicalBeamBatchDescriptor(part) {
   )
     return null;
   const sizeM = body[0].geometry.fullSizeM,
+    radiusM = body[0].geometry.radiusM,
     color = visual.color;
   return {
     sizeM,
+    radiusM,
     color,
-    key: `${sizeM.join(",")}:${color}`,
+    key: `${sizeM.join(",")}:${radiusM}:${color}`,
   };
 }
 
@@ -69,8 +95,9 @@ export class LargeAssemblyBatcher {
       if (part.type !== "beam") continue;
       const descriptor = canonicalBeamBatchDescriptor(part);
       if (!descriptor) continue;
-      const { color, key, sizeM } = descriptor;
-      if (!groups.has(key)) groups.set(key, { color, sizeM, parts: [] });
+      const { color, key, radiusM, sizeM } = descriptor;
+      if (!groups.has(key))
+        groups.set(key, { color, radiusM, sizeM, parts: [] });
       groups.get(key).parts.push(part);
     }
     for (const group of groups.values()) {
@@ -80,18 +107,19 @@ export class LargeAssemblyBatcher {
             color: group.color,
             metalness: 0.58,
             roughness: 0.38,
-            roughnessMap: sharedSurfaceTextures.microRoughness,
           }),
           "batchColorMaterials",
         ),
         mesh = new THREE.InstancedMesh(
-          sharePrimitiveGeometry(new THREE.BoxGeometry(...group.sizeM)),
+          sharePrimitiveGeometry(
+            roundedBeamBatchGeometry(group.sizeM, group.radiusM),
+          ),
           material,
           group.parts.length,
         );
       mesh.name = "largeAssemblyBeamBatch";
       mesh.castShadow = false;
-      mesh.receiveShadow = true;
+      mesh.receiveShadow = false;
       mesh.userData.partIds = group.parts.map((part) => part.id);
       this.machine.add(mesh);
       this.batches.push({ mesh, parts: group.parts });

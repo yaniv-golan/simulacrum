@@ -187,6 +187,11 @@ for (let tick = 0; tick < 3_600; tick++) {
         Math.hypot(orientationError.x, orientationError.y, orientationError.z),
         Math.abs(orientationError.w),
       );
+  assert.equal(state.coordinateId, "axial-extension");
+  assert.ok(
+    telemetry.poses.every((pose) => !Object.hasOwn(pose, "axialScale")),
+    "legacy pose-owned deformation authority reappeared",
+  );
   maximumTransverseM = Math.max(maximumTransverseM, state.transverseM);
   maximumAngularRad = Math.max(maximumAngularRad, angularError);
 }
@@ -298,6 +303,7 @@ const poweredSnapshot = actuatorAssembly(),
     (state) => state.kind === "linear-actuator",
   );
 assert.ok(poweredState.coordinateM > 0.75, poweredState);
+assert.equal(poweredState.coordinateId, "axial-extension");
 assert.ok(poweredState.coordinateM <= 1.4 + 1e-6, poweredState);
 assert.ok(poweredState.electricalEnergyJ > 0, poweredState);
 assert.ok(poweredState.dissipatedEnergyJ >= 0, poweredState);

@@ -2012,7 +2012,10 @@ export function defaultActionBinding(action: any, control: any): Readonly<{
 }>;
 
 // @public
-export function deformedBodyBoundsPartM(descriptor: GeometryDescriptorV2, valuesByTelemetryField: Record<string, number>): GeometryBoundsV1 | null;
+export function deformedBodyBoundsPartM(descriptor: GeometryDescriptorV2, coordinateSamples: {
+    coordinateId: string;
+    coordinateM: number;
+}[]): GeometryBoundsV1 | null;
 
 // @public
 export function deriveDynamicMassProperties(bodyDescriptor: any, input: {
@@ -3921,11 +3924,28 @@ export type MechanismDeformationContractV1 = {
 // @public (undocumented)
 export type MechanismDeformationCoordinateV1 = {
     id: string;
-    telemetryField: string;
-    projection: "anchor-local-z-scale-v1";
+    projections: MechanismPrimitiveProjectionV1[];
+    referenceCoordinateM: number;
+    referenceBodyLengthM: number;
+    allowedCoordinateRangeM: GeometryAllowedRangeV1;
+};
+
+// @public
+export function mechanismDeformationTransforms(descriptor: GeometryDescriptorV2, coordinateSamples: {
+    coordinateId: string;
+    coordinateM: number;
+}[]): any;
+
+// @public (undocumented)
+export type MechanismPrimitiveProjectionV1 = {
+    id: string;
+    kind: "anchor-local-z-scale-v1";
     primitiveIds: string[];
-    referenceValue: number;
-    allowedRange: GeometryAllowedRangeV1;
+} | {
+    id: string;
+    kind: "local-z-translation-v1";
+    primitiveIds: string[];
+    gainMPerM: number;
 };
 
 // @public
@@ -4883,7 +4903,6 @@ export class MultibodyRuntime {
             deformationOutOfRange?: undefined;
             deformedBodyBoundsWorldM?: undefined;
         } | {
-            [x: number]: number;
             id: any;
             position: {
                 x: any;
@@ -4917,6 +4936,7 @@ export class MultibodyRuntime {
         twoFrameMechanisms: {
             id: any;
             sourcePartId: any;
+            coordinateId: any;
             kind: any;
             active: boolean;
             coordinateM: any;
@@ -5497,6 +5517,10 @@ export type PrimitiveGeometryV1 = {
     kind: "box-v1";
     fullSizeM: number[];
 } | {
+    kind: "rounded-box-v1";
+    fullSizeM: number[];
+    radiusM: number;
+} | {
     kind: "cylinder-v1";
     radiusM: number;
     axialLengthM: number;
@@ -5522,6 +5546,29 @@ export type PrimitiveGeometryV1 = {
     radiusM: number;
     widthM: number;
     shoulderRadiusM: number;
+} | {
+    kind: "spur-gear-v1";
+    toothCount: number;
+    pitchRadiusM: number;
+    pressureAngleRad: number;
+    moduleM: number;
+    axialThicknessM: number;
+    rootRadiusM: number;
+    tipRadiusM: number;
+    boreRadiusM: number;
+    hubRadiusM: number | null;
+    hubThicknessM: number | null;
+} | {
+    kind: "helical-spring-v1";
+    meanCoilRadiusM: number;
+    wireRadiusM: number;
+    activeTurns: number;
+    endTreatment: "plain-v1" | "closed-ground-v1";
+    referenceAxialLengthM: number;
+} | {
+    kind: "extruded-profile-v1";
+    pointsM: number[][];
+    axialThicknessM: number;
 };
 
 // @public

@@ -702,7 +702,7 @@ for (const type of Object.keys(TYPES)) {
             (descriptor.bodyBoundsPartM.maximumM[axis] -
               descriptor.bodyBoundsPartM.minimumM[axis]),
         ) <= 1e-6,
-        `${type} rendered extent ${axis} diverged from canonical collision geometry`,
+        `${type} rendered extent ${axis} diverged from canonical body geometry`,
       );
   }
   renderObject.traverse((object) => {
@@ -722,7 +722,8 @@ assert.deepEqual(
   [0, 0, 0.92],
 );
 assert.deepEqual(axleGeometry.portFrames.LEFT.framePart.positionM, [0, 0, -1]);
-assert.equal(gearGeometry.collisionPrimitives[0].geometry.radiusM, 0.48);
+assert.equal(gearGeometry.collisionPrimitives[0].geometry.radiusM, 0.41);
+assert.equal(gearGeometry.bodyPrimitives[0].geometry.kind, "spur-gear-v1");
 assert.equal(gearGeometry.collisionPrimitives[0].geometry.axialLengthM, 0.22);
 assert.equal(wheelGeometry.collisionPrimitives[0].geometry.radiusM, 0.65);
 assert.equal(wheelGeometry.collisionPrimitives[0].geometry.widthM, 0.42);

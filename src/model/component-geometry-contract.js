@@ -23,14 +23,15 @@ import { sha256Hex } from "./sha256.js";
 /** @typedef {{positionM:number[],orientation:number[]}} GeometryFrameV2 */
 /** @typedef {{framePart:GeometryFrameV2,clearanceM:number,anchorPolicy:"fixed-point-v1"|"surface-point-v1"}} PortFrameV2 */
 /** @typedef {{minimumM:number[],maximumM:number[]}} GeometryBoundsV1 */
-/** @typedef {{kind:"box-v1",fullSizeM:number[]}|{kind:"cylinder-v1",radiusM:number,axialLengthM:number}|{kind:"elliptic-cylinder-v1",radiusXM:number,radiusYM:number,axialLengthM:number}|{kind:"sphere-v1",radiusM:number}|{kind:"capsule-v1",radiusM:number,cylinderLengthM:number}|{kind:"cone-v1",startRadiusM:number,endRadiusM:number,axialLengthM:number}|{kind:"rounded-wheel-v1",radiusM:number,widthM:number,shoulderRadiusM:number}} PrimitiveGeometryV1 */
+/** @typedef {{kind:"box-v1",fullSizeM:number[]}|{kind:"rounded-box-v1",fullSizeM:number[],radiusM:number}|{kind:"cylinder-v1",radiusM:number,axialLengthM:number}|{kind:"elliptic-cylinder-v1",radiusXM:number,radiusYM:number,axialLengthM:number}|{kind:"sphere-v1",radiusM:number}|{kind:"capsule-v1",radiusM:number,cylinderLengthM:number}|{kind:"cone-v1",startRadiusM:number,endRadiusM:number,axialLengthM:number}|{kind:"rounded-wheel-v1",radiusM:number,widthM:number,shoulderRadiusM:number}|{kind:"spur-gear-v1",toothCount:number,pitchRadiusM:number,pressureAngleRad:number,moduleM:number,axialThicknessM:number,rootRadiusM:number,tipRadiusM:number,boreRadiusM:number,hubRadiusM:number|null,hubThicknessM:number|null}|{kind:"helical-spring-v1",meanCoilRadiusM:number,wireRadiusM:number,activeTurns:number,endTreatment:"plain-v1"|"closed-ground-v1",referenceAxialLengthM:number}|{kind:"extruded-profile-v1",pointsM:number[][],axialThicknessM:number}} PrimitiveGeometryV1 */
 /** @typedef {{id:string,framePart:GeometryFrameV2,geometry:PrimitiveGeometryV1,semanticKey:string,materialKey:string,contactRole:string,approximationOf:string|null,semanticRegions:unknown[]}} BodyPrimitiveV1 */
 /** @typedef {BodyPrimitiveV1} CollisionPrimitiveV1 */
 /** @typedef {{kind:"port-frame-v1",portId:string,offsetM:number[]}} PhysicalFeatureAnchorV1 */
 /** @typedef {{radiusM:number,lengthM:number}|{radiusXM:number,radiusYM:number,lengthM:number}} PhysicalFeatureDimensionsV1 */
 /** @typedef {{id:string,primitive:"cylinder-v1"|"elliptic-cylinder-v1",anchor:PhysicalFeatureAnchorV1,dimensions:PhysicalFeatureDimensionsV1,axialOrigin:"center-v1"|"start-v1"|"end-v1",role:"physical-interface",materialKey:string}} PhysicalFeatureV1 */
 /** @typedef {{minimum:number,maximum:number}} GeometryAllowedRangeV1 */
-/** @typedef {{id:string,telemetryField:string,projection:"anchor-local-z-scale-v1",primitiveIds:string[],referenceValue:number,allowedRange:GeometryAllowedRangeV1}} MechanismDeformationCoordinateV1 */
+/** @typedef {{id:string,kind:"anchor-local-z-scale-v1",primitiveIds:string[]}|{id:string,kind:"local-z-translation-v1",primitiveIds:string[],gainMPerM:number}} MechanismPrimitiveProjectionV1 */
+/** @typedef {{id:string,projections:MechanismPrimitiveProjectionV1[],referenceCoordinateM:number,referenceBodyLengthM:number,allowedCoordinateRangeM:GeometryAllowedRangeV1}} MechanismDeformationCoordinateV1 */
 /** @typedef {{kind:"mechanism-deformation-v1",coordinates:MechanismDeformationCoordinateV1[]}} MechanismDeformationContractV1 */
 /** @typedef {{kind:"flexible-line-runtime-geometry-v1",endpointPortIds:string[],diameterM:number,maximumSegmentCount:number,materialKey:string,styleKey:"rope-v1",telemetryProjection:"completed-centerline-v1"}} FlexibleRuntimeGeometryContractV1 */
 /** @typedef {{xx:number,yy:number,zz:number,xy:number,xz:number,yz:number}} InertiaTensorV1 */
@@ -62,12 +63,16 @@ export const PORT_SPATIAL_CLASSES = Object.freeze([
 ]);
 export const GEOMETRY_PRIMITIVE_KINDS = Object.freeze([
   "box-v1",
+  "rounded-box-v1",
   "cylinder-v1",
   "elliptic-cylinder-v1",
   "sphere-v1",
   "capsule-v1",
   "cone-v1",
   "rounded-wheel-v1",
+  "spur-gear-v1",
+  "helical-spring-v1",
+  "extruded-profile-v1",
 ]);
 export const PHYSICAL_FEATURE_ROLES = Object.freeze(["physical-interface"]);
 export const FEATURE_AXIAL_ORIGINS = Object.freeze([
@@ -83,6 +88,15 @@ export const CONNECTION_FRAME_TOLERANCES_V1 = Object.freeze({
 const GEOMETRY_CLASS_SET = new Set(GEOMETRY_CLASSES);
 const PORT_CLASS_SET = new Set(PORT_SPATIAL_CLASSES);
 const PRIMITIVE_KIND_SET = new Set(GEOMETRY_PRIMITIVE_KINDS);
+const COLLISION_PRIMITIVE_KIND_SET = new Set([
+  "box-v1",
+  "cylinder-v1",
+  "elliptic-cylinder-v1",
+  "sphere-v1",
+  "capsule-v1",
+  "cone-v1",
+  "rounded-wheel-v1",
+]);
 const FEATURE_ORIGIN_SET = new Set(FEATURE_AXIAL_ORIGINS);
 const NETWORK_BEHAVIORS = new Set(["electrical-network", "signal-network"]);
 const FLEXIBLE_BEHAVIORS = new Set(["flexible-termination"]);
@@ -424,6 +438,21 @@ function resolvedPrimitiveGeometry(source, config, scale, orientation) {
   const scaleX = scaleAlongLocalAxis(orientation, scale, 0),
     scaleY = scaleAlongLocalAxis(orientation, scale, 1),
     scaleZ = scaleAlongLocalAxis(orientation, scale, 2);
+  if (source.kind === "rounded-box-v1") {
+    const fullSize =
+      source.fullSize?.kind === "config-vector-v1"
+        ? config[source.fullSize.field]
+        : source.fullSizeM;
+    return {
+      kind: "rounded-box-v1",
+      fullSizeM: finiteVector3(fullSize).map(
+        (value, axis) => value * scale[axis],
+      ),
+      radiusM:
+        definitionScalar(source.radiusM, config, "radiusM") *
+        Math.min(scaleX, scaleY, scaleZ),
+    };
+  }
   if (source.kind === "cylinder-v1") {
     const radius = definitionScalar(
         source.radius ?? source.radiusM,
@@ -488,6 +517,51 @@ function resolvedPrimitiveGeometry(source, config, scale, orientation) {
         Math.min(scaleX, scaleZ),
     };
   }
+  if (source.kind === "spur-gear-v1") {
+    if (Math.abs(scaleX - scaleY) > 1e-12)
+      fail(
+        "GEOMETRY_SCALE_POLICY_VIOLATION",
+        "spur-gear-v1 requires equal radial scale",
+      );
+    return {
+      kind: "spur-gear-v1",
+      toothCount: Number(source.toothCount),
+      pitchRadiusM: Number(source.pitchRadiusM) * scaleX,
+      pressureAngleRad: Number(source.pressureAngleRad),
+      moduleM: Number(source.moduleM) * scaleX,
+      axialThicknessM: Number(source.axialThicknessM) * scaleZ,
+      rootRadiusM: Number(source.rootRadiusM) * scaleX,
+      tipRadiusM: Number(source.tipRadiusM) * scaleX,
+      boreRadiusM: Number(source.boreRadiusM) * scaleX,
+      hubRadiusM:
+        source.hubRadiusM === null ? null : Number(source.hubRadiusM) * scaleX,
+      hubThicknessM:
+        source.hubThicknessM === null
+          ? null
+          : Number(source.hubThicknessM) * scaleZ,
+    };
+  }
+  if (source.kind === "helical-spring-v1") {
+    if (Math.abs(scaleX - scaleY) > 1e-12)
+      fail(
+        "GEOMETRY_SCALE_POLICY_VIOLATION",
+        "helical-spring-v1 requires equal radial scale",
+      );
+    return {
+      kind: "helical-spring-v1",
+      meanCoilRadiusM: Number(source.meanCoilRadiusM) * scaleX,
+      wireRadiusM: Number(source.wireRadiusM) * scaleX,
+      activeTurns: Number(source.activeTurns),
+      endTreatment: source.endTreatment,
+      referenceAxialLengthM: Number(source.referenceAxialLengthM) * scaleZ,
+    };
+  }
+  if (source.kind === "extruded-profile-v1")
+    return {
+      kind: "extruded-profile-v1",
+      pointsM: source.pointsM.map(([x, y]) => [x * scaleX, y * scaleY]),
+      axialThicknessM: Number(source.axialThicknessM) * scaleZ,
+    };
   fail(
     "UNKNOWN_GEOMETRY_PRIMITIVE",
     `Unknown primitive definition ${String(source.kind)}`,
@@ -499,13 +573,14 @@ function resolvedDefinitionPrimitive(
   config,
   componentDefinition,
   scale,
-  { collision = false } = {},
+  { collision = false, authoredPart = null } = {},
 ) {
   const framePart = resolvedDefinitionFrame(
     source.frame,
     config,
     componentDefinition,
     scale,
+    authoredPart,
   );
   const resolvedGeometry = resolvedPrimitiveGeometry(
       source.geometry,
@@ -534,7 +609,7 @@ function resolvedDefinitionPrimitive(
 }
 
 function primitiveHalfExtents(geometry) {
-  if (geometry.kind === "box-v1")
+  if (geometry.kind === "box-v1" || geometry.kind === "rounded-box-v1")
     return geometry.fullSizeM.map((value) => value / 2);
   if (geometry.kind === "sphere-v1")
     return [geometry.radiusM, geometry.radiusM, geometry.radiusM];
@@ -552,6 +627,21 @@ function primitiveHalfExtents(geometry) {
   }
   if (geometry.kind === "rounded-wheel-v1")
     return [geometry.radiusM, geometry.radiusM, geometry.widthM / 2];
+  if (geometry.kind === "spur-gear-v1")
+    return [
+      geometry.tipRadiusM,
+      geometry.tipRadiusM,
+      Math.max(geometry.axialThicknessM, geometry.hubThicknessM || 0) / 2,
+    ];
+  if (geometry.kind === "helical-spring-v1") {
+    const radialM = geometry.meanCoilRadiusM + geometry.wireRadiusM;
+    return [radialM, radialM, geometry.referenceAxialLengthM / 2];
+  }
+  if (geometry.kind === "extruded-profile-v1") {
+    const maximumX = Math.max(...geometry.pointsM.map(([x]) => Math.abs(x))),
+      maximumY = Math.max(...geometry.pointsM.map(([, y]) => Math.abs(y)));
+    return [maximumX, maximumY, geometry.axialThicknessM / 2];
+  }
   fail("UNKNOWN_GEOMETRY_PRIMITIVE", `Unknown primitive ${geometry.kind}`);
 }
 
@@ -594,38 +684,73 @@ function unionBounds(bounds) {
   };
 }
 
+function transformForProjection(coordinate, projection, coordinateM) {
+  if (projection.kind === "anchor-local-z-scale-v1")
+    return {
+      projection: projection.kind,
+      coordinateId: coordinate.id,
+      positionM: [0, 0, 0],
+      orientation: [0, 0, 0, 1],
+      scale: [1, 1, coordinateM / coordinate.referenceBodyLengthM],
+    };
+  if (projection.kind === "local-z-translation-v1")
+    return {
+      projection: projection.kind,
+      coordinateId: coordinate.id,
+      positionM: [
+        0,
+        0,
+        (coordinateM - coordinate.referenceCoordinateM) * projection.gainMPerM,
+      ],
+      orientation: [0, 0, 0, 1],
+      scale: [1, 1, 1],
+    };
+  fail(
+    "UNKNOWN_DEFORMATION_PROJECTION",
+    `Unknown deformation projection ${String(projection.kind)}`,
+  );
+}
+
+function transformLocalBounds(bounds, transform) {
+  const z = [
+    bounds.minimumM[2] * transform.scale[2] + transform.positionM[2],
+    bounds.maximumM[2] * transform.scale[2] + transform.positionM[2],
+  ];
+  return {
+    minimumM: [bounds.minimumM[0], bounds.minimumM[1], Math.min(...z)],
+    maximumM: [bounds.maximumM[0], bounds.maximumM[1], Math.max(...z)],
+  };
+}
+
 function conservativeDeformationSelectionBounds(
-  bodyBoundsPartM,
+  bodyPrimitives,
   featureBoundsPartM,
   deformationContract,
 ) {
-  if (!bodyBoundsPartM) return featureBoundsPartM;
-  let minimumZ = bodyBoundsPartM.minimumM[2],
-    maximumZ = bodyBoundsPartM.maximumM[2];
-  for (const coordinate of deformationContract?.coordinates || []) {
-    if (coordinate.projection !== "anchor-local-z-scale-v1") continue;
-    const candidates = [
-      minimumZ * coordinate.allowedRange.minimum,
-      minimumZ * coordinate.allowedRange.maximum,
-      maximumZ * coordinate.allowedRange.minimum,
-      maximumZ * coordinate.allowedRange.maximum,
-    ];
-    minimumZ = Math.min(...candidates);
-    maximumZ = Math.max(...candidates);
-  }
+  const projectionByPrimitive = new Map();
+  for (const coordinate of deformationContract?.coordinates || [])
+    for (const projection of coordinate.projections)
+      for (const primitiveId of projection.primitiveIds)
+        projectionByPrimitive.set(primitiveId, { coordinate, projection });
   return unionBounds([
-    {
-      minimumM: [
-        bodyBoundsPartM.minimumM[0],
-        bodyBoundsPartM.minimumM[1],
-        minimumZ,
-      ],
-      maximumM: [
-        bodyBoundsPartM.maximumM[0],
-        bodyBoundsPartM.maximumM[1],
-        maximumZ,
-      ],
-    },
+    ...bodyPrimitives.flatMap((primitive) => {
+      const bounds = boundsForPrimitive(primitive),
+        match = projectionByPrimitive.get(primitive.id);
+      if (!match) return [bounds];
+      return [
+        match.coordinate.allowedCoordinateRangeM.minimum,
+        match.coordinate.allowedCoordinateRangeM.maximum,
+      ].map((coordinateM) =>
+        transformLocalBounds(
+          bounds,
+          transformForProjection(
+            match.coordinate,
+            match.projection,
+            coordinateM,
+          ),
+        ),
+      );
+    }),
     featureBoundsPartM,
   ]);
 }
@@ -682,6 +807,18 @@ export function physicalFeaturePrimitivesForDescriptor(descriptor) {
 function volumeOfGeometry(geometry) {
   if (geometry.kind === "box-v1")
     return geometry.fullSizeM.reduce((product, value) => product * value, 1);
+  if (geometry.kind === "rounded-box-v1") {
+    const [x, y, z] = geometry.fullSizeM.map(
+        (value) => value - 2 * geometry.radiusM,
+      ),
+      radiusM = geometry.radiusM;
+    return (
+      x * y * z +
+      2 * radiusM * (x * y + x * z + y * z) +
+      Math.PI * radiusM ** 2 * (x + y + z) +
+      (4 * Math.PI * radiusM ** 3) / 3
+    );
+  }
   if (geometry.kind === "sphere-v1")
     return (4 * Math.PI * geometry.radiusM ** 3) / 3;
   if (geometry.kind === "cylinder-v1")
@@ -706,6 +843,28 @@ function volumeOfGeometry(geometry) {
     );
   if (geometry.kind === "rounded-wheel-v1")
     return Math.PI * geometry.radiusM ** 2 * geometry.widthM;
+  if (geometry.kind === "spur-gear-v1")
+    return (
+      Math.PI *
+      (geometry.pitchRadiusM ** 2 - geometry.boreRadiusM ** 2) *
+      geometry.axialThicknessM
+    );
+  if (geometry.kind === "helical-spring-v1") {
+    const centerlineAxialSpanM =
+        geometry.referenceAxialLengthM - 2 * geometry.wireRadiusM,
+      centerlineLengthM = Math.hypot(
+        2 * Math.PI * geometry.meanCoilRadiusM * geometry.activeTurns,
+        centerlineAxialSpanM,
+      );
+    return Math.PI * geometry.wireRadiusM ** 2 * centerlineLengthM;
+  }
+  if (geometry.kind === "extruded-profile-v1") {
+    const twiceArea = geometry.pointsM.reduce((sum, point, index, points) => {
+      const next = points[(index + 1) % points.length];
+      return sum + point[0] * next[1] - next[0] * point[1];
+    }, 0);
+    return (Math.abs(twiceArea) / 2) * geometry.axialThicknessM;
+  }
   fail("UNKNOWN_GEOMETRY_PRIMITIVE", `Unknown primitive ${geometry.kind}`);
 }
 
@@ -782,8 +941,14 @@ function radialRotorGeometry(config) {
           quaternionFromEulerXYZ([bladePitchRad, 0, angle]),
         ),
         {
-          kind: "box-v1",
-          fullSizeM: [bladeSpanM, config.bladeChordM, 0.018],
+          kind: "extruded-profile-v1",
+          pointsM: [
+            [-bladeSpanM / 2, -config.bladeChordM * 0.38],
+            [bladeSpanM / 2, -config.bladeChordM * 0.16],
+            [bladeSpanM / 2, config.bladeChordM * 0.1],
+            [-bladeSpanM / 2, config.bladeChordM * 0.62],
+          ],
+          axialThicknessM: 0.018,
         },
         { semanticKey: "rotor-blade", materialKey: "generic-structure" },
       );
@@ -894,56 +1059,55 @@ function deformationContractFor(
   if (!contract) return null;
   const available = new Set(bodyPrimitives.map(({ id }) => id));
   for (const coordinate of contract.coordinates)
-    for (const id of coordinate.primitiveIds)
-      if (!available.has(id))
-        fail(
-          "INVALID_DEFORMATION_PRIMITIVE",
-          `Deformation coordinate ${coordinate.id} references missing primitive ${id}`,
-        );
+    for (const projection of coordinate.projections)
+      for (const id of projection.primitiveIds)
+        if (!available.has(id))
+          fail(
+            "INVALID_DEFORMATION_PRIMITIVE",
+            `Deformation coordinate ${coordinate.id} references missing primitive ${id}`,
+          );
   const resolved = structuredClone(contract),
     mechanismConfig =
       authoredPart?.mechanism?.config || componentDefinition.mechanism?.config;
   for (const coordinate of resolved.coordinates) {
-    if (
-      coordinate.projection !== "anchor-local-z-scale-v1" ||
-      !mechanismConfig?.lengthRangeM
-    )
-      continue;
-    const frameA = portFrames[mechanismConfig.endpointPortA]?.framePart,
-      frameB = portFrames[mechanismConfig.endpointPortB]?.framePart,
-      referenceLengthM =
+    const frameA = portFrames[mechanismConfig?.endpointPortA]?.framePart,
+      frameB = portFrames[mechanismConfig?.endpointPortB]?.framePart,
+      endpointReferenceM =
         frameA && frameB
           ? Math.hypot(
               ...frameB.positionM.map(
                 (value, axis) => value - frameA.positionM[axis],
               ),
             )
-          : 0;
+          : 0,
+      referenceCoordinateM = Number(
+        mechanismConfig?.referenceCoordinateM ?? endpointReferenceM,
+      ),
+      authoredRange =
+        mechanismConfig?.lengthRangeM ?? mechanismConfig?.travelRangeM;
+    if (!authoredRange) continue;
     const bodyBounds = unionBounds(
-        coordinate.primitiveIds.map((primitiveId) =>
-          boundsForPrimitive(
-            bodyPrimitives.find(({ id }) => id === primitiveId),
+        coordinate.projections.flatMap((projection) =>
+          projection.primitiveIds.map((primitiveId) =>
+            boundsForPrimitive(
+              bodyPrimitives.find(({ id }) => id === primitiveId),
+            ),
           ),
         ),
       ),
       bodyReferenceLengthM = bodyBounds
         ? bodyBounds.maximumM[2] - bodyBounds.minimumM[2]
         : 0;
-    if (referenceLengthM <= 0 || bodyReferenceLengthM <= 0)
+    if (referenceCoordinateM <= 0 || bodyReferenceLengthM <= 0)
       fail(
         "INVALID_DEFORMATION_REFERENCE",
         `Deformation coordinate ${coordinate.id} has no finite endpoint reference`,
       );
-    coordinate.referenceValue = referenceLengthM / bodyReferenceLengthM;
-    coordinate.allowedRange = {
-      minimum: Math.min(
-        coordinate.allowedRange.minimum,
-        mechanismConfig.lengthRangeM.lower / bodyReferenceLengthM,
-      ),
-      maximum: Math.max(
-        coordinate.allowedRange.maximum,
-        mechanismConfig.lengthRangeM.upper / bodyReferenceLengthM,
-      ),
+    coordinate.referenceCoordinateM = referenceCoordinateM;
+    coordinate.referenceBodyLengthM = bodyReferenceLengthM;
+    coordinate.allowedCoordinateRangeM = {
+      minimum: authoredRange.lower,
+      maximum: authoredRange.upper,
     };
   }
   return resolved;
@@ -985,7 +1149,13 @@ function flexibleSelectionBounds(portFrames, contract) {
   return unionBounds(bounds);
 }
 
-function descriptorForMechanism(part, scale) {
+function descriptorForMechanism(
+  part,
+  scale,
+  geometryDefinition,
+  config,
+  componentDefinition,
+) {
   const compiled = compileMechanismBodyGeometry({
       sourcePartId: part.id,
       component: part.mechanism,
@@ -1005,8 +1175,10 @@ function descriptorForMechanism(part, scale) {
     collisionPrimitives = collisionRegions.map((region) =>
       mechanismPrimitive(region, hasTireEnvelope ? body.collisionRegions : []),
     ),
-    bodyPrimitives = body.collisionRegions.map((region) =>
-      mechanismPrimitive(region),
+    bodyPrimitives = geometryDefinition.bodyPrimitives.map((source) =>
+      resolvedDefinitionPrimitive(source, config, componentDefinition, scale, {
+        authoredPart: part,
+      }),
     ),
     massProperties = {
       ...structuredClone(body.massProperties),
@@ -1014,7 +1186,7 @@ function descriptorForMechanism(part, scale) {
         body.massProperties.massEvaluationPolicy ?? "authored-explicit-v1",
       volumeM3:
         body.massProperties.volumeM3 ??
-        bodyPrimitives.reduce(
+        collisionPrimitives.reduce(
           (sum, item) => sum + volumeOfGeometry(item.geometry),
           0,
         ),
@@ -1069,6 +1241,51 @@ function validateFrameRecord(value, path) {
   });
 }
 
+function polygonArea2(points) {
+  return points.reduce((sum, point, index) => {
+    const next = points[(index + 1) % points.length];
+    return sum + point[0] * next[1] - next[0] * point[1];
+  }, 0);
+}
+
+function validateClosedProfile(points, path) {
+  if (!Array.isArray(points) || points.length < 3 || points.length > 32)
+    fail(
+      "INVALID_GEOMETRY_PROFILE",
+      `${path.join(".")} must contain 3 to 32 points`,
+      path,
+    );
+  points.forEach((point, index) => {
+    if (!Array.isArray(point) || point.length !== 2)
+      fail(
+        "INVALID_GEOMETRY_PROFILE",
+        `${path.join(".")}.${index} must be a 2D point`,
+        [...path, index],
+      );
+    point.forEach((coordinate, axis) => {
+      if (!Number.isFinite(coordinate) || Math.abs(coordinate) > 10_000)
+        fail(
+          "INVALID_GEOMETRY_PROFILE",
+          "Profile coordinates must be finite and bounded",
+          [...path, index, axis],
+        );
+    });
+    const next = points[(index + 1) % points.length];
+    if (next && point[0] === next[0] && point[1] === next[1])
+      fail("INVALID_GEOMETRY_PROFILE", "Profile contains a zero-length edge", [
+        ...path,
+        index,
+      ]);
+  });
+  if (Math.abs(polygonArea2(points)) <= 1e-12)
+    fail(
+      "INVALID_GEOMETRY_PROFILE",
+      "Profile must enclose a non-zero area",
+      path,
+    );
+  return points;
+}
+
 function validatePrimitiveGeometryRecord(value, path) {
   if (!value || typeof value !== "object" || Array.isArray(value))
     fail(
@@ -1088,6 +1305,21 @@ function validatePrimitiveGeometryRecord(value, path) {
       (dimension, axis) =>
         finitePositive(dimension, [...path, "fullSizeM", axis]),
     );
+  } else if (value.kind === "rounded-box-v1") {
+    closedKeys(value, ["kind", "fullSizeM", "radiusM"], path);
+    const dimensions = finiteVector3(value.fullSizeM, {
+      path: [...path, "fullSizeM"],
+    });
+    dimensions.forEach((dimension, axis) =>
+      finitePositive(dimension, [...path, "fullSizeM", axis]),
+    );
+    finitePositive(value.radiusM, [...path, "radiusM"]);
+    if (value.radiusM > Math.min(...dimensions) / 2)
+      fail(
+        "INVALID_GEOMETRY_DIMENSION",
+        "Rounded-box radius exceeds its envelope",
+        [...path, "radiusM"],
+      );
   } else if (value.kind === "cylinder-v1") {
     closedKeys(value, ["kind", "radiusM", "axialLengthM"], path);
     finitePositive(value.radiusM, [...path, "radiusM"]);
@@ -1119,7 +1351,7 @@ function validatePrimitiveGeometryRecord(value, path) {
         path,
       );
     finitePositive(value.axialLengthM, [...path, "axialLengthM"]);
-  } else {
+  } else if (value.kind === "rounded-wheel-v1") {
     closedKeys(value, ["kind", "radiusM", "widthM", "shoulderRadiusM"], path);
     finitePositive(value.radiusM, [...path, "radiusM"]);
     finitePositive(value.widthM, [...path, "widthM"]);
@@ -1130,6 +1362,134 @@ function validatePrimitiveGeometryRecord(value, path) {
         "Rounded-wheel shoulder radius exceeds its envelope",
         [...path, "shoulderRadiusM"],
       );
+  } else if (value.kind === "spur-gear-v1") {
+    closedKeys(
+      value,
+      [
+        "kind",
+        "toothCount",
+        "pitchRadiusM",
+        "pressureAngleRad",
+        "moduleM",
+        "axialThicknessM",
+        "rootRadiusM",
+        "tipRadiusM",
+        "boreRadiusM",
+        "hubRadiusM",
+        "hubThicknessM",
+      ],
+      path,
+    );
+    if (!Number.isInteger(value.toothCount) || value.toothCount < 4)
+      fail(
+        "INVALID_GEOMETRY_DIMENSION",
+        "A spur gear requires at least four integer teeth",
+        [...path, "toothCount"],
+      );
+    for (const key of [
+      "pitchRadiusM",
+      "pressureAngleRad",
+      "moduleM",
+      "axialThicknessM",
+      "rootRadiusM",
+      "tipRadiusM",
+      "boreRadiusM",
+    ])
+      finitePositive(value[key], [...path, key]);
+    if (value.pressureAngleRad >= Math.PI / 2)
+      fail(
+        "INVALID_GEOMETRY_DIMENSION",
+        "Spur-gear pressure angle must be below pi/2",
+        [...path, "pressureAngleRad"],
+      );
+    if (
+      Math.abs(value.pitchRadiusM - (value.moduleM * value.toothCount) / 2) >
+      1e-9
+    )
+      fail(
+        "INCONSISTENT_GEAR_GEOMETRY",
+        "Spur-gear pitch radius must equal module times tooth count over two",
+        path,
+      );
+    if (!(
+      value.boreRadiusM < value.rootRadiusM &&
+      value.rootRadiusM < value.pitchRadiusM &&
+      value.pitchRadiusM < value.tipRadiusM
+    ))
+      fail(
+        "INCONSISTENT_GEAR_GEOMETRY",
+        "Spur-gear radii must order bore, root, pitch, then tip",
+        path,
+      );
+    const hasHub = value.hubRadiusM !== null,
+      hasHubThickness = value.hubThicknessM !== null;
+    if (hasHub !== hasHubThickness)
+      fail(
+        "INCONSISTENT_GEAR_GEOMETRY",
+        "Spur-gear hub radius and thickness must be both present or both null",
+        path,
+      );
+    if (hasHub) {
+      finitePositive(value.hubRadiusM, [...path, "hubRadiusM"]);
+      finitePositive(value.hubThicknessM, [...path, "hubThicknessM"]);
+      if (
+        value.hubRadiusM <= value.boreRadiusM ||
+        value.hubRadiusM > value.rootRadiusM ||
+        value.hubThicknessM < value.axialThicknessM
+      )
+        fail(
+          "INCONSISTENT_GEAR_GEOMETRY",
+          "Spur-gear hub must surround the bore within the root and span the face",
+          path,
+        );
+    }
+  } else if (value.kind === "helical-spring-v1") {
+    closedKeys(
+      value,
+      [
+        "kind",
+        "meanCoilRadiusM",
+        "wireRadiusM",
+        "activeTurns",
+        "endTreatment",
+        "referenceAxialLengthM",
+      ],
+      path,
+    );
+    for (const key of [
+      "meanCoilRadiusM",
+      "wireRadiusM",
+      "activeTurns",
+      "referenceAxialLengthM",
+    ])
+      finitePositive(value[key], [...path, key]);
+    if (value.meanCoilRadiusM <= value.wireRadiusM)
+      fail(
+        "INVALID_GEOMETRY_DIMENSION",
+        "Spring mean coil radius must exceed wire radius",
+        [...path, "meanCoilRadiusM"],
+      );
+    if (value.activeTurns < 1)
+      fail(
+        "INVALID_GEOMETRY_DIMENSION",
+        "Spring requires at least one active turn",
+        [...path, "activeTurns"],
+      );
+    if (value.referenceAxialLengthM <= 2 * value.wireRadiusM)
+      fail(
+        "INVALID_GEOMETRY_DIMENSION",
+        "Spring reference length must contain the wire envelope",
+        [...path, "referenceAxialLengthM"],
+      );
+    if (!["plain-v1", "closed-ground-v1"].includes(value.endTreatment))
+      fail("INVALID_GEOMETRY_PROFILE", "Unknown spring end treatment", [
+        ...path,
+        "endTreatment",
+      ]);
+  } else {
+    closedKeys(value, ["kind", "pointsM", "axialThicknessM"], path);
+    validateClosedProfile(value.pointsM, [...path, "pointsM"]);
+    finitePositive(value.axialThicknessM, [...path, "axialThicknessM"]);
   }
 }
 
@@ -1216,7 +1576,7 @@ function validateDeformationContract(value, bodyPrimitives, path) {
     fail("INVALID_DEFORMATION_CONTRACT", "Invalid deformation contract", path);
   const bodyIds = new Set(bodyPrimitives.map(({ id }) => id)),
     coordinateIds = new Set(),
-    telemetryFields = new Set(),
+    projectionIds = new Set(),
     claimedPrimitives = new Set();
   for (const [index, coordinate] of value.coordinates.entries()) {
     const coordinatePath = [...path, "coordinates", index];
@@ -1224,11 +1584,10 @@ function validateDeformationContract(value, bodyPrimitives, path) {
       coordinate,
       [
         "id",
-        "telemetryField",
-        "projection",
-        "primitiveIds",
-        "referenceValue",
-        "allowedRange",
+        "projections",
+        "referenceCoordinateM",
+        "referenceBodyLengthM",
+        "allowedCoordinateRangeM",
       ],
       coordinatePath,
     );
@@ -1244,67 +1603,98 @@ function validateDeformationContract(value, bodyPrimitives, path) {
       );
     coordinateIds.add(coordinate.id);
     if (
-      typeof coordinate.telemetryField !== "string" ||
-      !coordinate.telemetryField ||
-      telemetryFields.has(coordinate.telemetryField)
+      !Array.isArray(coordinate.projections) ||
+      !coordinate.projections.length
     )
       fail(
         "INVALID_DEFORMATION_CONTRACT",
-        "Invalid deformation telemetry field",
+        "Deformation coordinate requires projections",
         coordinatePath,
       );
-    telemetryFields.add(coordinate.telemetryField);
-    if (coordinate.projection !== "anchor-local-z-scale-v1")
-      fail(
-        "INVALID_DEFORMATION_CONTRACT",
-        "Unknown deformation projection",
-        coordinatePath,
+    for (const [
+      projectionIndex,
+      projection,
+    ] of coordinate.projections.entries()) {
+      const projectionPath = [
+        ...coordinatePath,
+        "projections",
+        projectionIndex,
+      ];
+      closedOptionalKeys(
+        projection,
+        ["id", "kind", "primitiveIds"],
+        ["gainMPerM"],
+        projectionPath,
       );
-    if (
-      !Array.isArray(coordinate.primitiveIds) ||
-      !coordinate.primitiveIds.length
-    )
-      fail(
-        "INVALID_DEFORMATION_CONTRACT",
-        "Deformation requires primitive IDs",
-        coordinatePath,
-      );
-    for (const primitiveId of coordinate.primitiveIds) {
-      if (!bodyIds.has(primitiveId) || claimedPrimitives.has(primitiveId))
+      if (
+        typeof projection.id !== "string" ||
+        !projection.id ||
+        projectionIds.has(projection.id) ||
+        !["anchor-local-z-scale-v1", "local-z-translation-v1"].includes(
+          projection.kind,
+        ) ||
+        !Array.isArray(projection.primitiveIds) ||
+        !projection.primitiveIds.length
+      )
         fail(
-          "INVALID_DEFORMATION_PRIMITIVE",
-          `Invalid deformation primitive ${primitiveId}`,
-          coordinatePath,
+          "INVALID_DEFORMATION_CONTRACT",
+          "Invalid mechanism primitive projection",
+          projectionPath,
         );
-      claimedPrimitives.add(primitiveId);
+      projectionIds.add(projection.id);
+      if (projection.kind === "local-z-translation-v1") {
+        if (!Number.isFinite(projection.gainMPerM))
+          fail(
+            "INVALID_DEFORMATION_CONTRACT",
+            "Translation projection requires a finite gain",
+            projectionPath,
+          );
+      } else if (Object.hasOwn(projection, "gainMPerM"))
+        fail(
+          "INVALID_DEFORMATION_CONTRACT",
+          "Scale projection cannot declare a translation gain",
+          projectionPath,
+        );
+      for (const primitiveId of projection.primitiveIds) {
+        if (!bodyIds.has(primitiveId) || claimedPrimitives.has(primitiveId))
+          fail(
+            "INVALID_DEFORMATION_PRIMITIVE",
+            `Invalid deformation primitive ${primitiveId}`,
+            projectionPath,
+          );
+        claimedPrimitives.add(primitiveId);
+      }
     }
-    finitePositive(coordinate.referenceValue, [
+    finitePositive(coordinate.referenceCoordinateM, [
       ...coordinatePath,
-      "referenceValue",
+      "referenceCoordinateM",
+    ]);
+    finitePositive(coordinate.referenceBodyLengthM, [
+      ...coordinatePath,
+      "referenceBodyLengthM",
     ]);
     closedKeys(
-      coordinate.allowedRange,
+      coordinate.allowedCoordinateRangeM,
       ["minimum", "maximum"],
-      [...coordinatePath, "allowedRange"],
+      [...coordinatePath, "allowedCoordinateRangeM"],
     );
-    finitePositive(coordinate.allowedRange.minimum, [
+    finiteNonNegative(coordinate.allowedCoordinateRangeM.minimum, [
       ...coordinatePath,
-      "allowedRange",
+      "allowedCoordinateRangeM",
       "minimum",
     ]);
-    finitePositive(coordinate.allowedRange.maximum, [
+    finiteNonNegative(coordinate.allowedCoordinateRangeM.maximum, [
       ...coordinatePath,
-      "allowedRange",
+      "allowedCoordinateRangeM",
       "maximum",
     ]);
     if (
-      coordinate.allowedRange.minimum > coordinate.referenceValue ||
-      coordinate.allowedRange.maximum < coordinate.referenceValue ||
-      coordinate.allowedRange.minimum > coordinate.allowedRange.maximum
+      coordinate.allowedCoordinateRangeM.minimum >
+      coordinate.allowedCoordinateRangeM.maximum
     )
       fail(
         "INVALID_DEFORMATION_CONTRACT",
-        "Deformation range excludes its reference value",
+        "Deformation coordinate range is inverted",
         coordinatePath,
       );
   }
@@ -1410,6 +1800,15 @@ export function validateGeometryDescriptorOrThrow(value) {
       fail("INVALID_GEOMETRY_COLLECTION", `${collectionName} must be an array`);
     for (const [index, item] of collection.entries()) {
       validatePrimitiveRecord(item, [collectionName, index]);
+      if (
+        collectionName === "collisionPrimitives" &&
+        !COLLISION_PRIMITIVE_KIND_SET.has(item.geometry.kind)
+      )
+        fail(
+          "INVALID_GEOMETRY_PRIMITIVE_ROLE",
+          `${item.geometry.kind} is a body-only geometry primitive`,
+          [collectionName, index, "geometry", "kind"],
+        );
       if (ids.has(`${collectionName}:${item.id}`))
         fail(
           "DUPLICATE_GEOMETRY_ID",
@@ -1730,7 +2129,7 @@ export function validateGeometryDescriptorOrThrow(value) {
     requireBounds(
       descriptor.selectionBoundsPartM,
       conservativeDeformationSelectionBounds(
-        bodyBounds,
+        descriptor.bodyPrimitives,
         featureBounds,
         descriptor.deformationContract,
       ),
@@ -1983,16 +2382,58 @@ export function validateComponentGeometryDefinitionOrThrow(value) {
         path,
       );
     if (geometry.kind === "box-v1") {
-      closedKeys(geometry, ["kind", "fullSize"], path);
-      closedKeys(geometry.fullSize, ["kind", "field"], [...path, "fullSize"]);
-      if (
-        geometry.fullSize.kind !== "config-vector-v1" ||
-        typeof geometry.fullSize.field !== "string"
-      )
+      const sizeKey = Object.hasOwn(geometry, "fullSize")
+        ? "fullSize"
+        : "fullSizeM";
+      closedKeys(geometry, ["kind", sizeKey], path);
+      if (sizeKey === "fullSize") {
+        closedKeys(geometry.fullSize, ["kind", "field"], [...path, "fullSize"]);
+        if (
+          geometry.fullSize.kind !== "config-vector-v1" ||
+          typeof geometry.fullSize.field !== "string"
+        )
+          fail(
+            "INVALID_COMPONENT_GEOMETRY_DEFINITION",
+            "Invalid box dimension source",
+            path,
+          );
+      } else
+        finiteVector3(geometry.fullSizeM, {
+          path: [...path, "fullSizeM"],
+        }).forEach((dimension, axis) =>
+          finitePositive(dimension, [...path, "fullSizeM", axis]),
+        );
+    } else if (geometry.kind === "rounded-box-v1") {
+      const sizeKey = Object.hasOwn(geometry, "fullSize")
+        ? "fullSize"
+        : "fullSizeM";
+      closedKeys(geometry, ["kind", sizeKey, "radiusM"], path);
+      let dimensions = null;
+      if (sizeKey === "fullSize") {
+        closedKeys(geometry.fullSize, ["kind", "field"], [...path, "fullSize"]);
+        if (
+          geometry.fullSize.kind !== "config-vector-v1" ||
+          typeof geometry.fullSize.field !== "string"
+        )
+          fail(
+            "INVALID_COMPONENT_GEOMETRY_DEFINITION",
+            "Invalid rounded-box dimension source",
+            path,
+          );
+      } else {
+        dimensions = finiteVector3(geometry.fullSizeM, {
+          path: [...path, "fullSizeM"],
+        });
+        dimensions.forEach((dimension, axis) =>
+          finitePositive(dimension, [...path, "fullSizeM", axis]),
+        );
+      }
+      finitePositive(geometry.radiusM, [...path, "radiusM"]);
+      if (dimensions && geometry.radiusM > Math.min(...dimensions) / 2)
         fail(
-          "INVALID_COMPONENT_GEOMETRY_DEFINITION",
-          "Invalid box dimension source",
-          path,
+          "INVALID_GEOMETRY_DIMENSION",
+          "Rounded-box radius exceeds its envelope",
+          [...path, "radiusM"],
         );
     } else if (geometry.kind === "cylinder-v1") {
       const radiusKey = Object.hasOwn(geometry, "radius")
@@ -2036,6 +2477,12 @@ export function validateComponentGeometryDefinitionOrThrow(value) {
       );
       for (const key of ["radiusM", "widthM", "shoulderRadiusM"])
         finitePositive(geometry[key], [...path, key]);
+    } else if (geometry.kind === "spur-gear-v1") {
+      validatePrimitiveGeometryRecord(geometry, path);
+    } else if (geometry.kind === "helical-spring-v1") {
+      validatePrimitiveGeometryRecord(geometry, path);
+    } else if (geometry.kind === "extruded-profile-v1") {
+      validatePrimitiveGeometryRecord(geometry, path);
     } else
       fail(
         "UNKNOWN_GEOMETRY_PRIMITIVE",
@@ -2083,6 +2530,15 @@ export function validateComponentGeometryDefinitionOrThrow(value) {
           collectionName,
           index,
         ]);
+        if (
+          collectionName === "collisionPrimitives" &&
+          !COLLISION_PRIMITIVE_KIND_SET.has(source.geometry.kind)
+        )
+          fail(
+            "INVALID_GEOMETRY_PRIMITIVE_ROLE",
+            `${source.geometry.kind} is a body-only geometry primitive`,
+            ["geometryDefinition", collectionName, index, "geometry", "kind"],
+          );
         if (collectionIds.has(source.id))
           fail(
             "DUPLICATE_GEOMETRY_ID",
@@ -2092,17 +2548,36 @@ export function validateComponentGeometryDefinitionOrThrow(value) {
       }
     }
   } else if (definition.kind === "mechanism-component-geometry-v1") {
-    for (const collectionName of ["collisionPrimitives", "bodyPrimitives"]) {
-      closedKeys(
-        definition[collectionName],
-        ["kind"],
-        ["geometryDefinition", collectionName],
+    closedKeys(
+      definition.collisionPrimitives,
+      ["kind"],
+      ["geometryDefinition", "collisionPrimitives"],
+    );
+    if (
+      definition.collisionPrimitives.kind !== "mechanism-collision-regions-v1"
+    )
+      fail(
+        "INVALID_COMPONENT_GEOMETRY_DEFINITION",
+        "Mechanism collision geometry must project authored collision regions",
       );
-      if (definition[collectionName].kind !== "mechanism-collision-regions-v1")
+    if (!Array.isArray(definition.bodyPrimitives))
+      fail(
+        "INVALID_COMPONENT_GEOMETRY_DEFINITION",
+        "Mechanism bodyPrimitives must be an explicit recipe array",
+      );
+    const bodyIds = new Set();
+    for (const [index, source] of definition.bodyPrimitives.entries()) {
+      validateDefinitionPrimitive(source, [
+        "geometryDefinition",
+        "bodyPrimitives",
+        index,
+      ]);
+      if (bodyIds.has(source.id))
         fail(
-          "INVALID_COMPONENT_GEOMETRY_DEFINITION",
-          "Mechanism geometry must project collision regions",
+          "DUPLICATE_GEOMETRY_ID",
+          `Duplicate mechanism body primitive ${source.id}`,
         );
+      bodyIds.add(source.id);
     }
   } else if (definition.kind === "radial-rotor-component-geometry-v1") {
     closedKeys(
@@ -2280,7 +2755,13 @@ export function resolveComponentGeometryContract(
     ),
     mechanism =
       definitionKind === "mechanism-component-geometry-v1"
-        ? descriptorForMechanism(part, scale)
+        ? descriptorForMechanism(
+            part,
+            scale,
+            geometryDefinition,
+            config,
+            componentDefinition,
+          )
         : null,
     rotorGeometry = rotorConfig ? radialRotorGeometry(rotorConfig) : null,
     definitionCollisionPrimitives = /** @type {any[]} */ (
@@ -2348,7 +2829,7 @@ export function resolveComponentGeometryContract(
       ? flexibleSelectionBounds(portFrames, runtimeGeometryContract)
       : deformationContract
         ? conservativeDeformationSelectionBounds(
-            bodyBoundsPartM,
+            bodyPrimitives,
             featureBoundsPartM,
             deformationContract,
           )
@@ -2402,6 +2883,12 @@ export function resolveComponentGeometryContract(
     sourceDigest = sha256Hex(stableStringify(geometryDefinition)),
     definitionPathForPrimitive = (projection, item) => {
       if (definitionKind === "mechanism-component-geometry-v1") {
+        if (projection === "body") {
+          const index = definitionBodyPrimitives.findIndex(
+            ({ id }) => id === item.id,
+          );
+          return `geometryContract.bodyPrimitives[${index}]`;
+        }
         const authoredMechanism = /** @type {any} */ (part.mechanism),
           index = authoredMechanism.collisionRegions.findIndex(
             ({ semanticKey }) => semanticKey === item.semanticKey,
@@ -2589,55 +3076,98 @@ export function boundsDimensions(bounds) {
  * snapshot. The descriptor remains the reference-pose authority; this helper
  * projects only coordinates explicitly declared by its deformation contract.
  * @param {GeometryDescriptorV2} descriptor
- * @param {Record<string,number>} valuesByTelemetryField
+ * @param {{coordinateId:string,coordinateM:number}[]} coordinateSamples
  * @returns {GeometryBoundsV1|null}
  */
-export function deformedBodyBoundsPartM(descriptor, valuesByTelemetryField) {
+export function deformedBodyBoundsPartM(descriptor, coordinateSamples) {
   if (descriptor.geometryClass !== "mechanism-deformed-v1")
     return descriptor.bodyBoundsPartM;
   const coordinates = descriptor.deformationContract?.coordinates || [];
-  closedKeys(
-    valuesByTelemetryField,
-    coordinates.map(({ telemetryField }) => telemetryField),
-    ["deformationValues"],
+  const transforms = mechanismDeformationTransforms(
+    descriptor,
+    coordinateSamples,
   );
   let projectionPlan = deformationProjectionPlans.get(descriptor);
   if (!projectionPlan) {
-    const coordinateByPrimitive = new Map();
+    const projectionByPrimitive = new Map();
     for (const coordinate of coordinates)
-      for (const primitiveId of coordinate.primitiveIds)
-        coordinateByPrimitive.set(primitiveId, coordinate);
+      for (const projection of coordinate.projections)
+        for (const primitiveId of projection.primitiveIds)
+          projectionByPrimitive.set(primitiveId, projection);
     projectionPlan = descriptor.bodyPrimitives.map((primitive) => ({
       bounds: boundsForPrimitive(primitive),
-      coordinate: coordinateByPrimitive.get(primitive.id) || null,
+      projection: projectionByPrimitive.get(primitive.id) || null,
     }));
     deformationProjectionPlans.set(descriptor, projectionPlan);
   }
-  const valueByCoordinate = new Map();
-  for (const coordinate of coordinates) {
-    const value = Number(valuesByTelemetryField[coordinate.telemetryField]);
-    if (!Number.isFinite(value))
+  return unionBounds(
+    projectionPlan.map(({ bounds, projection }) => {
+      if (!projection) return bounds;
+      return transformLocalBounds(bounds, transforms[projection.id]);
+    }),
+  );
+}
+
+/**
+ * Resolves presentation and bounds transforms from the same completed physical
+ * mechanism coordinates. No pose-owned scale or presentation inference enters
+ * this function.
+ * @param {GeometryDescriptorV2} descriptor
+ * @param {{coordinateId:string,coordinateM:number}[]} coordinateSamples
+ */
+export function mechanismDeformationTransforms(descriptor, coordinateSamples) {
+  const coordinates = descriptor.deformationContract?.coordinates || [];
+  if (!Array.isArray(coordinateSamples))
+    fail(
+      "INVALID_DEFORMATION_TELEMETRY",
+      "Mechanism coordinate samples must be an array",
+    );
+  const coordinateById = new Map(
+      coordinates.map((coordinate) => [coordinate.id, coordinate]),
+    ),
+    sampleById = new Map();
+  for (const [index, sample] of coordinateSamples.entries()) {
+    closedKeys(
+      sample,
+      ["coordinateId", "coordinateM"],
+      ["mechanismCoordinates", index],
+    );
+    if (
+      typeof sample.coordinateId !== "string" ||
+      !coordinateById.has(sample.coordinateId) ||
+      sampleById.has(sample.coordinateId) ||
+      !Number.isFinite(sample.coordinateM)
+    )
       fail(
         "INVALID_DEFORMATION_TELEMETRY",
-        `Deformation ${coordinate.telemetryField} must be finite`,
+        `Invalid mechanism coordinate ${String(sample.coordinateId)}`,
       );
-    valueByCoordinate.set(coordinate, value);
+    const { minimum, maximum } = coordinateById.get(
+      sample.coordinateId,
+    ).allowedCoordinateRangeM;
+    sampleById.set(
+      sample.coordinateId,
+      Math.min(maximum, Math.max(minimum, sample.coordinateM)),
+    );
   }
-  return unionBounds(
-    projectionPlan.map(({ bounds, coordinate }) => {
-      if (!coordinate) return bounds;
-      if (coordinate.projection !== "anchor-local-z-scale-v1")
-        fail(
-          "UNKNOWN_DEFORMATION_PROJECTION",
-          `Unknown deformation projection ${coordinate.projection}`,
-        );
-      const value = valueByCoordinate.get(coordinate);
-      const z = [bounds.minimumM[2] * value, bounds.maximumM[2] * value];
-      return {
-        minimumM: [bounds.minimumM[0], bounds.minimumM[1], Math.min(...z)],
-        maximumM: [bounds.maximumM[0], bounds.maximumM[1], Math.max(...z)],
-      };
-    }),
+  if (sampleById.size !== coordinates.length)
+    fail(
+      "INVALID_DEFORMATION_TELEMETRY",
+      "Every deformation coordinate requires one completed sample",
+    );
+  return deepFreeze(
+    Object.fromEntries(
+      coordinates.flatMap((coordinate) =>
+        coordinate.projections.map((projection) => [
+          projection.id,
+          transformForProjection(
+            coordinate,
+            projection,
+            sampleById.get(coordinate.id),
+          ),
+        ]),
+      ),
+    ),
   );
 }
 

@@ -1,4 +1,5 @@
 import { sharedRenderResourceStats } from "../presentation/render-resources.js";
+import { componentVisualDiagnostics } from "../presentation/component-visual-diagnostics.js";
 import { installDebugReadModelFeature } from "./debug-read-model-feature.js";
 import { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
 
@@ -51,6 +52,7 @@ export function installWorkshopRuntimeSubsystem({
       reducedComponentShadows: assembly.reducedShadows(),
       largeAssemblyBatch: presentation.batchSnapshot(),
       componentDetail: presentation.detailSnapshot(),
+      visualGeometry: componentVisualDiagnostics(state.parts),
     }),
     environmentCapture: presentation.environmentCapture,
   });

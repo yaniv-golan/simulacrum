@@ -31,8 +31,10 @@ There is no generic fallback for an alternate catalog entry. Call
 Spatial mechanical connections must satisfy the canonical port-frame rule;
 asset authors migrate the authored part transform or explicit permitted anchor,
 not a renderer offset. Network-only ports remain intentionally frameless.
-Descriptor v2 is queued for Core `0.2.0` and is not serialized into portable
-wire envelopes.
+Descriptor v2 ships in Core `0.2.0` and is not serialized into portable wire
+envelopes. Its body union is closed over analytic and bounded parametric
+primitives; custom catalogs cannot supply arbitrary triangle meshes or
+presentation-only fallback geometry.
 
 The public inspection foundation uses the same strict portable field allowlist.
 `decodeAuthoredAssemblyContentOrThrow()` rejects unknown editor snapshot fields,

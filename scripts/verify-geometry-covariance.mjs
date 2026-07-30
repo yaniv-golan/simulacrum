@@ -423,17 +423,24 @@ disposeObject3D(wheelMesh);
 
 const springMesh = componentMesh("spring"),
   springDeformationRoot = springMesh.userData.mechanismDeformationRoot,
+  springCoordinate =
+    springMesh.userData.geometryDescriptor.deformationContract.coordinates[0],
+  springSample = (scale) => [
+    {
+      coordinateId: springCoordinate.id,
+      coordinateM: springCoordinate.referenceBodyLengthM * scale,
+    },
+  ],
   springPart = { mesh: springMesh },
   completedPose = {
     position: { x: 3, y: 2, z: 1 },
     quaternion: { x: 0, y: Math.SQRT1_2, z: 0, w: Math.SQRT1_2 },
-    axialScale: 0.72,
   };
 assert.ok(
   springDeformationRoot,
   "mechanism presentation omitted its non-authoritative deformation root",
 );
-applyMechanismPose(springPart, completedPose);
+applyMechanismPose(springPart, completedPose, springSample(0.72));
 assert.deepEqual(
   springMesh.scale.toArray(),
   [1, 1, 1],
@@ -449,12 +456,15 @@ const expectedAbsolutePose = {
   quaternion: springMesh.quaternion.toArray(),
   deformation: springDeformationRoot.scale.toArray(),
 };
-applyMechanismPose(springPart, {
-  position: { x: -7, y: 9, z: 4 },
-  quaternion: { x: 0, y: 0, z: 0, w: 1 },
-  axialScale: 1.4,
-});
-applyMechanismPose(springPart, completedPose);
+applyMechanismPose(
+  springPart,
+  {
+    position: { x: -7, y: 9, z: 4 },
+    quaternion: { x: 0, y: 0, z: 0, w: 1 },
+  },
+  springSample(1.4),
+);
+applyMechanismPose(springPart, completedPose, springSample(0.72));
 assert.deepEqual(
   {
     position: springMesh.position.toArray(),
@@ -465,7 +475,11 @@ assert.deepEqual(
   "mechanism presentation retained integration history",
 );
 const replayedSpringMesh = componentMesh("spring");
-applyMechanismPose({ mesh: replayedSpringMesh }, completedPose);
+applyMechanismPose(
+  { mesh: replayedSpringMesh },
+  completedPose,
+  springSample(0.72),
+);
 assert.deepEqual(
   {
     position: replayedSpringMesh.position.toArray(),

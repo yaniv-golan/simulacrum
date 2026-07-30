@@ -21,6 +21,14 @@ geometrically invalid connections fail closed instead of receiving a centered
 port or generic visual fallback. Presentation may add classified decoration,
 but decoration is never physical evidence.
 
+Core `0.2.0` includes canonical rounded boxes, common-law spur gears, helical
+springs, bounded extruded profiles, and rounded wheels. Mechanism body recipes
+remain independent from collision approximations, and completed
+`coordinateId`/`coordinateM` samples feed the same pure deformation transform
+used for body bounds and host presentation. Projection clamps those samples to
+the authored coordinate range; the simulation read model remains responsible
+for preserving and diagnosing any raw physical overtravel.
+
 The canonical `PhysicalAssemblyIndex`, per-component
 `MobilityTelemetrySystem`, and semantic remote-action contracts preserve
 authored frame/member identity and structural lineage. Exact remote targets

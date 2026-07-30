@@ -2420,33 +2420,21 @@ export class MultibodyRuntime {
         ),
         geometry = this.geometryByPart.get(entry.descriptor.sourcePartId),
         coordinate = geometry.deformationContract.coordinates[0],
-        endpointFrameA =
-          geometry.portFrames[entry.descriptor.mechanism.endpointPortA]
-            .framePart,
-        endpointFrameB =
-          geometry.portFrames[entry.descriptor.mechanism.endpointPortB]
-            .framePart,
-        referencePortDistanceM = Math.hypot(
-          ...endpointFrameB.positionM.map(
-            (value, axis) => value - endpointFrameA.positionM[axis],
-          ),
-        ),
-        referenceBodyLengthM =
-          referencePortDistanceM / coordinate.referenceValue,
-        axialScale = state.coordinateM / Math.max(0.01, referenceBodyLengthM),
         orientation = quaternionFromPositiveZ(state.axis),
         position = state.pointA.vadd(state.pointB).scale(0.5),
-        deformationValues = { [coordinate.telemetryField]: axialScale };
+        coordinateSample = {
+          coordinateId: coordinate.id,
+          coordinateM: state.coordinateM,
+        };
       poses.push({
         id: entry.descriptor.sourcePartId,
         position: plainVector(position),
         quaternion: plainQuaternion(orientation),
-        [coordinate.telemetryField]: axialScale,
         deformationOutOfRange:
-          axialScale < coordinate.allowedRange.minimum ||
-          axialScale > coordinate.allowedRange.maximum,
+          state.coordinateM < coordinate.allowedCoordinateRangeM.minimum ||
+          state.coordinateM > coordinate.allowedCoordinateRangeM.maximum,
         deformedBodyBoundsWorldM: projectBoundsToWorld(
-          deformedBodyBoundsPartM(geometry, deformationValues),
+          deformedBodyBoundsPartM(geometry, [coordinateSample]),
           [position.x, position.y, position.z],
           [orientation.x, orientation.y, orientation.z, orientation.w],
         ),
@@ -2460,29 +2448,35 @@ export class MultibodyRuntime {
           "prismatic-coordinate-v1",
         ].includes(entry.kind),
       )
-      .map((entry) => ({
-        id: entry.descriptor.id,
-        sourcePartId: entry.descriptor.sourcePartId,
-        kind: entry.descriptor.kind,
-        active: entry.active !== false,
-        coordinateM: entry.coordinateM,
-        rateMPerS: entry.rateMPerS,
-        forceN:
-          entry.kind === "axial-force-v1" ? entry.force : entry.appliedForceN,
-        reactionForceN: entry.reactionForceN || 0,
-        transverseM: entry.transverseM || 0,
-        elasticPotentialJ: entry.elasticPotentialJ || 0,
-        dampingWorkJ: entry.dampingWorkJ || 0,
-        frictionWorkJ: entry.frictionWorkJ || 0,
-        mechanicalWorkJ: entry.actuatorMechanicalWorkJ || 0,
-        electricalEnergyJ: entry.actuatorElectricalEnergyJ || 0,
-        dissipatedEnergyJ: entry.actuatorDissipatedEnergyJ || 0,
-        temperatureK: entry.temperatureK || null,
-        powered: Boolean(entry.powered),
-        saturated: Boolean(entry.saturated),
-        thermalDerate: entry.thermalDerate ?? 1,
-        thermalShutdown: Boolean(entry.thermalShutdown),
-      }));
+      .map((entry) => {
+        const geometry = this.geometryByPart.get(entry.descriptor.sourcePartId),
+          coordinateId =
+            geometry?.deformationContract?.coordinates?.[0]?.id ?? null;
+        return {
+          id: entry.descriptor.id,
+          sourcePartId: entry.descriptor.sourcePartId,
+          coordinateId,
+          kind: entry.descriptor.kind,
+          active: entry.active !== false,
+          coordinateM: entry.coordinateM,
+          rateMPerS: entry.rateMPerS,
+          forceN:
+            entry.kind === "axial-force-v1" ? entry.force : entry.appliedForceN,
+          reactionForceN: entry.reactionForceN || 0,
+          transverseM: entry.transverseM || 0,
+          elasticPotentialJ: entry.elasticPotentialJ || 0,
+          dampingWorkJ: entry.dampingWorkJ || 0,
+          frictionWorkJ: entry.frictionWorkJ || 0,
+          mechanicalWorkJ: entry.actuatorMechanicalWorkJ || 0,
+          electricalEnergyJ: entry.actuatorElectricalEnergyJ || 0,
+          dissipatedEnergyJ: entry.actuatorDissipatedEnergyJ || 0,
+          temperatureK: entry.temperatureK || null,
+          powered: Boolean(entry.powered),
+          saturated: Boolean(entry.saturated),
+          thermalDerate: entry.thermalDerate ?? 1,
+          thermalShutdown: Boolean(entry.thermalShutdown),
+        };
+      });
     return {
       active: true,
       activeMotors,

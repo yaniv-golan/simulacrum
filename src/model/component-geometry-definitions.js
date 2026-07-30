@@ -43,6 +43,11 @@ const boxGeometry = {
   kind: "box-v1",
   fullSize: { kind: "config-vector-v1", field: "size" },
 };
+const roundedBoxGeometry = {
+  kind: "rounded-box-v1",
+  fullSize: { kind: "config-vector-v1", field: "size" },
+  radiusM: 0.035,
+};
 const primitive = (id, geometry, options = {}) => ({
   id,
   frame: options.frame || frame(constantPosition([0, 0, 0])),
@@ -55,7 +60,7 @@ const primitive = (id, geometry, options = {}) => ({
 
 function ordinary({
   ports,
-  bodyPrimitives = [primitive("body", boxGeometry)],
+  bodyPrimitives = [primitive("body", roundedBoxGeometry)],
   collisionPrimitives = [primitive("collision", boxGeometry)],
   physicalFeatures = [],
   geometryClass = "rigid-static-v1",
@@ -73,10 +78,18 @@ function ordinary({
   };
 }
 
-function shapedOrdinary({ ports, id, geometry, orientation = IDENTITY }) {
+function shapedOrdinary({
+  ports,
+  id,
+  geometry,
+  orientation = IDENTITY,
+  bodyPrimitives = null,
+  physicalFeatures = [],
+  dimensionalScalingPolicy = "axis-aligned-affine-v1",
+}) {
   return ordinary({
     ports,
-    bodyPrimitives: [
+    bodyPrimitives: bodyPrimitives || [
       primitive(id, geometry, {
         frame: frame(constantPosition([0, 0, 0]), orientation),
       }),
@@ -84,11 +97,14 @@ function shapedOrdinary({ ports, id, geometry, orientation = IDENTITY }) {
     collisionPrimitives: [
       primitive("collision", boxGeometry, { approximationOf: id }),
     ],
+    physicalFeatures,
+    dimensionalScalingPolicy,
   });
 }
 
 function mechanism({
   ports,
+  bodyPrimitives,
   geometryClass = "rigid-static-v1",
   deformationContract = null,
 }) {
@@ -99,7 +115,7 @@ function mechanism({
     dimensionalScalingPolicy: "fixed-authored-size-v1",
     portFrames: ports,
     collisionPrimitives: { kind: "mechanism-collision-regions-v1" },
-    bodyPrimitives: { kind: "mechanism-collision-regions-v1" },
+    bodyPrimitives,
     physicalFeatures: [],
     deformationContract,
   };
@@ -168,43 +184,250 @@ const mechanismFrames = {
   },
 };
 
-const axialDeformation = (primitiveIds) => ({
+const mechanismDeformation = (projections) => ({
   kind: "mechanism-deformation-v1",
   coordinates: [
     {
       id: "axial-extension",
-      telemetryField: "axialScale",
-      projection: "anchor-local-z-scale-v1",
-      primitiveIds,
-      referenceValue: 1,
-      allowedRange: { minimum: 0.25, maximum: 2 },
+      projections,
+      referenceCoordinateM: 1,
+      referenceBodyLengthM: 1,
+      allowedCoordinateRangeM: { minimum: 0.25, maximum: 2 },
     },
   ],
 });
 
-const gearDefinition = ordinary({
-  ports: {
-    AXLE: frame(constantPosition([0, 0, 0])),
-    MESH: {
-      ...frame(configScalarAxis("radius", 0)),
-      clearanceM: 0.0275,
+const axialScaleDeformation = (primitiveIds) =>
+  mechanismDeformation([
+    {
+      id: "axial-scale",
+      kind: "anchor-local-z-scale-v1",
+      primitiveIds,
     },
-  },
-  collisionPrimitives: [
-    primitive("collision", {
+  ]);
+
+const opposedEndpointDeformation = (primitiveIdA, primitiveIdB) =>
+  mechanismDeformation([
+    {
+      id: "endpoint-a-translation",
+      kind: "local-z-translation-v1",
+      primitiveIds: [primitiveIdA],
+      gainMPerM: -0.5,
+    },
+    {
+      id: "endpoint-b-translation",
+      kind: "local-z-translation-v1",
+      primitiveIds: [primitiveIdB],
+      gainMPerM: 0.5,
+    },
+  ]);
+
+const mechanismBody = {
+  axle: [
+    primitive("shaft", {
       kind: "cylinder-v1",
-      radius: { kind: "config-scalar-v1", field: "radius" },
-      axialLengthM: 0.22,
+      radiusM: 0.09,
+      axialLengthM: 2,
     }),
   ],
-  bodyPrimitives: [
-    primitive("gear-body", {
-      kind: "cylinder-v1",
-      radius: { kind: "config-scalar-v1", field: "radius" },
-      axialLengthM: 0.22,
-    }),
+  bearing: [
+    primitive(
+      "bearing-housing",
+      {
+        kind: "rounded-box-v1",
+        fullSizeM: [0.72, 0.58, 0.34],
+        radiusM: 0.08,
+      },
+      { materialKey: "workshop-steel" },
+    ),
+    primitive(
+      "bearing-ring",
+      { kind: "cylinder-v1", radiusM: 0.24, axialLengthM: 0.38 },
+      { materialKey: "workshop-steel" },
+    ),
   ],
-});
+  hinge: [
+    primitive(
+      "hinge-pin",
+      { kind: "cylinder-v1", radiusM: 0.055, axialLengthM: 0.28 },
+      { materialKey: "workshop-steel" },
+    ),
+    ...[-0.1, 0.1].map((offsetM, index) =>
+      primitive(
+        `hinge-knuckle-${index + 1}`,
+        { kind: "cylinder-v1", radiusM: 0.105, axialLengthM: 0.08 },
+        {
+          frame: frame(constantPosition([0, 0, offsetM])),
+          materialKey: "workshop-steel",
+        },
+      ),
+    ),
+  ],
+  spring: [
+    primitive(
+      "spring-coil",
+      {
+        kind: "helical-spring-v1",
+        meanCoilRadiusM: 0.16,
+        wireRadiusM: 0.018,
+        activeTurns: 7,
+        endTreatment: "closed-ground-v1",
+        referenceAxialLengthM: 1.1,
+      },
+      {
+        semanticKey: "spring-coil:non-evidentiary-manufacturing-profile-v1",
+        materialKey: "workshop-steel",
+      },
+    ),
+  ],
+  damper: [
+    primitive(
+      "damper-tube",
+      { kind: "cylinder-v1", radiusM: 0.13, axialLengthM: 0.62 },
+      {
+        frame: frame(constantPosition([0, 0, -0.19])),
+        materialKey: "workshop-steel",
+      },
+    ),
+    primitive(
+      "damper-rod",
+      { kind: "cylinder-v1", radiusM: 0.055, axialLengthM: 0.55 },
+      {
+        frame: frame(constantPosition([0, 0, 0.225])),
+        materialKey: "workshop-steel",
+      },
+    ),
+  ],
+  "release-coupler": [
+    ...[-0.07, 0.07].map((offsetM, index) =>
+      primitive(
+        `coupler-flange-${index + 1}`,
+        { kind: "cylinder-v1", radiusM: 0.22, axialLengthM: 0.06 },
+        {
+          frame: frame(constantPosition([0, 0, offsetM])),
+          materialKey: "workshop-steel",
+        },
+      ),
+    ),
+    primitive(
+      "coupler-latch",
+      {
+        kind: "rounded-box-v1",
+        fullSizeM: [0.24, 0.18, 0.12],
+        radiusM: 0.025,
+      },
+      { materialKey: "workshop-steel" },
+    ),
+  ],
+  "linear-guide": [
+    ...[-0.34, 0.34].map((offsetM, index) =>
+      primitive(
+        `guide-rail-${index + 1}`,
+        { kind: "box-v1", fullSizeM: [0.12, 0.45, 1] },
+        {
+          frame: frame(constantPosition([offsetM, 0, 0])),
+          materialKey: "workshop-steel",
+        },
+      ),
+    ),
+    primitive(
+      "guide-slider",
+      {
+        kind: "rounded-box-v1",
+        fullSizeM: [0.82, 0.5, 0.22],
+        radiusM: 0.045,
+      },
+      { materialKey: "workshop-aluminum" },
+    ),
+  ],
+  "linear-actuator": [
+    primitive(
+      "actuator-tube",
+      { kind: "cylinder-v1", radiusM: 0.17, axialLengthM: 0.68 },
+      {
+        frame: frame(constantPosition([0, 0, -0.21])),
+        materialKey: "workshop-steel",
+      },
+    ),
+    primitive(
+      "actuator-rod",
+      { kind: "cylinder-v1", radiusM: 0.075, axialLengthM: 0.6 },
+      {
+        frame: frame(constantPosition([0, 0, 0.25])),
+        materialKey: "workshop-steel",
+      },
+    ),
+  ],
+  wheel: [
+    primitive(
+      "tire-envelope",
+      {
+        kind: "rounded-wheel-v1",
+        radiusM: 0.65,
+        widthM: 0.42,
+        shoulderRadiusM: 0.08,
+      },
+      {
+        semanticKey: "tire-envelope",
+        materialKey: "tire-rubber",
+        contactRole: "tire-envelope",
+      },
+    ),
+    primitive(
+      "rim",
+      { kind: "cylinder-v1", radiusM: 0.5, axialLengthM: 0.46 },
+      {
+        semanticKey: "rim",
+        materialKey: "workshop-aluminum",
+        contactRole: "rim",
+      },
+    ),
+  ],
+};
+
+const GEAR_MODULE_M = 0.82 / 12;
+const gearDefinition = (toothCount, boreRadiusM, hubRadiusM) => {
+  const pitchRadiusM = (GEAR_MODULE_M * toothCount) / 2;
+  return ordinary({
+    ports: {
+      AXLE: frame(constantPosition([0, 0, 0])),
+      MESH: {
+        ...frame(configScalarAxis("radius", 0)),
+        clearanceM: 0.0275,
+      },
+    },
+    collisionPrimitives: [
+      primitive(
+        "collision",
+        {
+          kind: "cylinder-v1",
+          radius: { kind: "config-scalar-v1", field: "radius" },
+          axialLengthM: 0.22,
+        },
+        { approximationOf: "gear-body" },
+      ),
+    ],
+    bodyPrimitives: [
+      primitive(
+        "gear-body",
+        {
+          kind: "spur-gear-v1",
+          toothCount,
+          pitchRadiusM,
+          pressureAngleRad: (20 * Math.PI) / 180,
+          moduleM: GEAR_MODULE_M,
+          axialThicknessM: 0.22,
+          rootRadiusM: pitchRadiusM - 1.25 * GEAR_MODULE_M,
+          tipRadiusM: pitchRadiusM + GEAR_MODULE_M,
+          boreRadiusM,
+          hubRadiusM,
+          hubThicknessM: 0.3,
+        },
+        { materialKey: "workshop-steel" },
+      ),
+    ],
+  });
+};
 
 const radialRotorDefinition = {
   schemaVersion: 1,
@@ -279,11 +502,31 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
       }),
     ],
   }),
-  fin: ordinary({ ports: { ROOT: face(0, -1) } }),
-  axle: mechanism({ ports: mechanismFrames.axle }),
-  bearing: mechanism({ ports: mechanismFrames.bearing }),
-  gear12: gearDefinition,
-  gear24: gearDefinition,
+  fin: ordinary({
+    ports: { ROOT: face(0, -1) },
+    bodyPrimitives: [
+      primitive("fin-profile", {
+        kind: "extruded-profile-v1",
+        pointsM: [
+          [-0.06, -0.525],
+          [0.06, -0.525],
+          [0.035, 0.525],
+          [-0.055, 0.24],
+        ],
+        axialThicknessM: 0.72,
+      }),
+    ],
+  }),
+  axle: mechanism({
+    ports: mechanismFrames.axle,
+    bodyPrimitives: mechanismBody.axle,
+  }),
+  bearing: mechanism({
+    ports: mechanismFrames.bearing,
+    bodyPrimitives: mechanismBody.bearing,
+  }),
+  gear12: gearDefinition(12, 0.1, 0.2),
+  gear24: gearDefinition(24, 0.14, 0.3),
   motor: ordinary({
     ports: {
       MOUNT: frame(constantPosition([0, 0, -0.5]), FLIP_Z),
@@ -312,12 +555,16 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
     ],
   }),
   rotor: radialRotorDefinition,
-  hinge: mechanism({ ports: mechanismFrames.hinge }),
+  hinge: mechanism({
+    ports: mechanismFrames.hinge,
+    bodyPrimitives: mechanismBody.hinge,
+  }),
   lever: ordinary({ ports: { PIVOT: face(1, -1), LINK: face(1, 1) } }),
   spring: mechanism({
     ports: mechanismFrames.spring,
+    bodyPrimitives: mechanismBody.spring,
     geometryClass: "mechanism-deformed-v1",
-    deformationContract: axialDeformation(["housing"]),
+    deformationContract: axialScaleDeformation(["spring-coil"]),
   }),
   rope: {
     schemaVersion: 1,
@@ -334,17 +581,43 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
   },
   damper: mechanism({
     ports: mechanismFrames.damper,
+    bodyPrimitives: mechanismBody.damper,
     geometryClass: "mechanism-deformed-v1",
-    deformationContract: axialDeformation(["housing"]),
+    deformationContract: opposedEndpointDeformation(
+      "damper-tube",
+      "damper-rod",
+    ),
   }),
-  "release-coupler": mechanism({ ports: mechanismFrames["release-coupler"] }),
-  "linear-guide": mechanism({ ports: mechanismFrames["linear-guide"] }),
+  "release-coupler": mechanism({
+    ports: mechanismFrames["release-coupler"],
+    bodyPrimitives: mechanismBody["release-coupler"],
+  }),
+  "linear-guide": mechanism({
+    ports: mechanismFrames["linear-guide"],
+    bodyPrimitives: mechanismBody["linear-guide"],
+    geometryClass: "mechanism-deformed-v1",
+    deformationContract: mechanismDeformation([
+      {
+        id: "slider-translation",
+        kind: "local-z-translation-v1",
+        primitiveIds: ["guide-slider"],
+        gainMPerM: 1,
+      },
+    ]),
+  }),
   "linear-actuator": mechanism({
     ports: mechanismFrames["linear-actuator"],
+    bodyPrimitives: mechanismBody["linear-actuator"],
     geometryClass: "mechanism-deformed-v1",
-    deformationContract: axialDeformation(["housing"]),
+    deformationContract: opposedEndpointDeformation(
+      "actuator-tube",
+      "actuator-rod",
+    ),
   }),
-  wheel: mechanism({ ports: mechanismFrames.wheel }),
+  wheel: mechanism({
+    ports: mechanismFrames.wheel,
+    bodyPrimitives: mechanismBody.wheel,
+  }),
   aircompressor: ordinary({
     ports: genericFaces(["MOUNT", "POWER", "CONTROL", "AIR"]),
   }),
@@ -352,6 +625,17 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
     ports: genericFaces(["MOUNT", "AIR"]),
     id: "reservoir-body",
     geometry: { kind: "cylinder-v1", radiusM: 0.375, axialLengthM: 1.1 },
+    physicalFeatures: [
+      {
+        id: "air-neck",
+        primitive: "cylinder-v1",
+        anchor: { kind: "port-frame-v1", portId: "AIR", offsetM: [0, 0, 0] },
+        dimensions: { radiusM: 0.075, lengthM: 0.14 },
+        axialOrigin: "start-v1",
+        role: "physical-interface",
+        materialKey: "workshop-steel",
+      },
+    ],
   }),
   pneumaticvalve: ordinary({
     ports: genericFaces(["MOUNT", "POWER", "CONTROL", "SUPPLY", "TIRE"]),
@@ -374,6 +658,24 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
     id: "rangefinder-body",
     geometry: { kind: "cylinder-v1", radiusM: 0.21, axialLengthM: 0.52 },
     orientation: AXIAL_Z_TO_Y,
+    bodyPrimitives: [
+      primitive(
+        "rangefinder-body",
+        { kind: "cylinder-v1", radiusM: 0.21, axialLengthM: 0.48 },
+        {
+          frame: frame(constantPosition([0, -0.02, 0]), AXIAL_Z_TO_Y),
+        },
+      ),
+      primitive(
+        "rangefinder-aperture",
+        { kind: "cylinder-v1", radiusM: 0.14, axialLengthM: 0.035 },
+        {
+          frame: frame(constantPosition([0, 0.2375, 0]), AXIAL_Z_TO_Y),
+          semanticKey: "sensor-aperture",
+          materialKey: "workshop-steel",
+        },
+      ),
+    ],
   }),
   sensor: shapedOrdinary({
     ports: {
@@ -405,6 +707,24 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
     ports: { MOUNT: face(2, 1) },
     id: "air-data-probe-body",
     geometry: { kind: "cylinder-v1", radiusM: 0.15, axialLengthM: 0.65 },
+    bodyPrimitives: [
+      primitive(
+        "air-data-probe-body",
+        { kind: "cylinder-v1", radiusM: 0.15, axialLengthM: 0.42 },
+        { frame: frame(constantPosition([0, 0, 0.115])) },
+      ),
+      primitive(
+        "air-data-probe-tip",
+        {
+          kind: "cone-v1",
+          startRadiusM: 0.15,
+          endRadiusM: 0.035,
+          axialLengthM: 0.23,
+        },
+        { frame: frame(constantPosition([0, 0, -0.21])) },
+      ),
+    ],
+    dimensionalScalingPolicy: "uniform-similarity-v1",
   }),
   tirepressureprobe: ordinary({
     ports: genericFaces(["MOUNT", "POWER", "SIGNAL", "AIR"]),
@@ -444,6 +764,21 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
     collisionPrimitives: [
       primitive("collision", boxGeometry, { approximationOf: "tank-body" }),
     ],
+    physicalFeatures: [
+      {
+        id: "propellant-outlet-neck",
+        primitive: "cylinder-v1",
+        anchor: {
+          kind: "port-frame-v1",
+          portId: "OUTLET",
+          offsetM: [0, 0, 0],
+        },
+        dimensions: { radiusM: 0.09, lengthM: 0.16 },
+        axialOrigin: "start-v1",
+        role: "physical-interface",
+        materialKey: "workshop-steel",
+      },
+    ],
   }),
   powerbus: ordinary({ ports: { MOUNT: face(1, -1) } }),
   headlight: shapedOrdinary({
@@ -456,12 +791,56 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
     id: "thruster-body",
     geometry: { kind: "cylinder-v1", radiusM: 0.4, axialLengthM: 1.15 },
     orientation: AXIAL_Z_TO_Y,
+    bodyPrimitives: [
+      primitive(
+        "thruster-chamber",
+        { kind: "cylinder-v1", radiusM: 0.3, axialLengthM: 0.62 },
+        { frame: frame(constantPosition([0, 0.235, 0]), AXIAL_Z_TO_Y) },
+      ),
+      primitive(
+        "thruster-nozzle",
+        {
+          kind: "cone-v1",
+          startRadiusM: 0.18,
+          endRadiusM: 0.4,
+          axialLengthM: 0.53,
+        },
+        {
+          frame: frame(constantPosition([0, -0.34, 0]), AXIAL_Z_TO_Y),
+          semanticKey: "propulsion-nozzle",
+          materialKey: "workshop-steel",
+        },
+      ),
+    ],
+    dimensionalScalingPolicy: "axis-aligned-affine-v1",
   }),
   rcs: shapedOrdinary({
     ports: { MOUNT: face(1, -1), PROPELLANT: face(1, 1) },
     id: "rcs-body",
     geometry: { kind: "cylinder-v1", radiusM: 0.36, axialLengthM: 0.42 },
     orientation: AXIAL_Z_TO_Y,
+    bodyPrimitives: [
+      primitive("rcs-pod", {
+        kind: "rounded-box-v1",
+        fullSizeM: [0.64, 0.34, 0.64],
+        radiusM: 0.07,
+      }),
+      primitive(
+        "rcs-nozzle",
+        {
+          kind: "cone-v1",
+          startRadiusM: 0.085,
+          endRadiusM: 0.16,
+          axialLengthM: 0.16,
+        },
+        {
+          frame: frame(constantPosition([0, 0.25, 0]), AXIAL_Z_TO_Y),
+          semanticKey: "propulsion-nozzle",
+          materialKey: "workshop-steel",
+        },
+      ),
+    ],
+    dimensionalScalingPolicy: "uniform-similarity-v1",
   }),
 });
 

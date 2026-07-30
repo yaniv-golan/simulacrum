@@ -5,6 +5,7 @@ import {
   deformedBodyBoundsPartM,
   flexibleRuntimeBoundsWorldM,
   GEOMETRY_CLASSES,
+  mechanismDeformationTransforms,
   physicalFeaturePrimitivesForDescriptor,
   PORT_SPATIAL_CLASSES,
   resolveComponentGeometryContract,
@@ -14,6 +15,7 @@ import {
 } from "../src/model/component-geometry-contract.js";
 import { builtInDemo } from "../src/model/demo-blueprints.js";
 import { componentDefaults } from "../src/model/component-resolver.js";
+import { mechanismComponentDefinition } from "../src/model/mechanism-component-definitions.js";
 import { flexibleLinePreviewReadModel } from "../src/model/flexible-line-preview-read-model.js";
 import { componentMesh } from "../src/presentation/component-mesh-factory.js";
 import { worldPortFrame } from "../src/model/connection-frame-invariants.js";
@@ -92,12 +94,9 @@ for (const type of [
   "imu",
   "contactsensor",
   "thermalprobe",
-  "pressureprobe",
   "loadcell",
   "gyro",
   "headlight",
-  "rocket",
-  "rcs",
 ]) {
   const defaultDescriptor = resolveComponentGeometryContractForType(type),
     scaledDescriptor = resolveComponentGeometryContract({
@@ -119,6 +118,40 @@ for (const type of [
     `${type} did not preserve its silhouette under independent-axis scaling`,
   );
 }
+
+for (const type of ["pressureprobe", "rocket", "rcs"])
+  assert.throws(
+    () =>
+      resolveComponentGeometryContract({
+        id: 801,
+        type,
+        pos: [0, 0, 0],
+        orientation: [0, 0, 0, 1],
+        scale: { x: 1.2, y: 1, z: 1 },
+        config: componentDefaults(type),
+      }),
+    (error) => error.code === "GEOMETRY_SCALE_POLICY_VIOLATION",
+    `${type} accepted a nonuniform scale that its rotational profile cannot represent`,
+  );
+
+const axiallyScaledRocket = resolveComponentGeometryContract({
+  id: 802,
+  type: "rocket",
+  pos: [0, 0, 0],
+  orientation: [0, 0, 0, 1],
+  scale: { x: 0.5, y: 1, z: 0.5 },
+  config: componentDefaults("rocket"),
+});
+const [scaledChamber, scaledNozzle] = axiallyScaledRocket.bodyPrimitives.map(
+  (primitive) => primitive.geometry,
+);
+assert.equal(scaledChamber.kind, "cylinder-v1");
+assert.ok(Math.abs(scaledChamber.radiusM - 0.15) < 1e-12);
+assert.ok(Math.abs(scaledChamber.axialLengthM - 0.62) < 1e-12);
+assert.equal(scaledNozzle.kind, "cone-v1");
+assert.ok(Math.abs(scaledNozzle.startRadiusM - 0.09) < 1e-12);
+assert.ok(Math.abs(scaledNozzle.endRadiusM - 0.2) < 1e-12);
+assert.ok(Math.abs(scaledNozzle.axialLengthM - 0.53) < 1e-12);
 
 assert.throws(
   () =>
@@ -188,19 +221,195 @@ assert.equal(affineMotor.collisionPrimitives[0].approximationOf !== null, true);
 
 const spring = resolveComponentGeometryContractForType("spring"),
   axialCoordinate = spring.deformationContract.coordinates[0],
-  deformed = deformedBodyBoundsPartM(spring, {
-    [axialCoordinate.telemetryField]: axialCoordinate.referenceValue,
-  });
+  referenceSample = {
+    coordinateId: axialCoordinate.id,
+    coordinateM: axialCoordinate.referenceCoordinateM,
+  },
+  deformed = deformedBodyBoundsPartM(spring, [referenceSample]);
 assert.deepEqual(deformed, spring.bodyBoundsPartM);
+assert.deepEqual(
+  mechanismDeformationTransforms(spring, [referenceSample])[
+    axialCoordinate.projections[0].id
+  ].scale,
+  [1, 1, 1],
+);
 assert.throws(
   () =>
-    deformedBodyBoundsPartM(spring, {
-      [axialCoordinate.telemetryField]: axialCoordinate.referenceValue,
-      presentationGuess: 1,
-    }),
+    deformedBodyBoundsPartM(spring, [
+      { ...referenceSample, presentationGuess: 1 },
+    ]),
   (error) => error.code === "UNKNOWN_GEOMETRY_FIELD",
   "undeclared presentation deformation became runtime geometry",
 );
+
+const damper = resolveComponentGeometryContractForType("damper"),
+  damperCoordinate = damper.deformationContract.coordinates[0],
+  damperAtMinimum = mechanismDeformationTransforms(damper, [
+    {
+      coordinateId: damperCoordinate.id,
+      coordinateM: damperCoordinate.allowedCoordinateRangeM.minimum,
+    },
+  ]),
+  [damperEndA, damperEndB] = damperCoordinate.projections;
+assert.ok(damperAtMinimum[damperEndA.id].positionM[2] > 0);
+assert.ok(damperAtMinimum[damperEndB.id].positionM[2] < 0);
+assert.equal(damperAtMinimum[damperEndA.id].positionM[2], 0.4);
+assert.equal(damperAtMinimum[damperEndB.id].positionM[2], -0.4);
+assert.equal(
+  Math.abs(damperAtMinimum[damperEndA.id].positionM[2]),
+  Math.abs(damperAtMinimum[damperEndB.id].positionM[2]),
+);
+
+const guide = resolveComponentGeometryContractForType("linear-guide"),
+  guideCoordinate = guide.deformationContract.coordinates[0],
+  guideProjection = guideCoordinate.projections[0],
+  guideAtMaximum = mechanismDeformationTransforms(guide, [
+    {
+      coordinateId: guideCoordinate.id,
+      coordinateM: guideCoordinate.allowedCoordinateRangeM.maximum,
+    },
+  ]);
+assert.equal(guideCoordinate.referenceCoordinateM, 0.3);
+assert.equal(guideAtMaximum[guideProjection.id].positionM[2], 0.3);
+assert.equal(Object.isFrozen(guideAtMaximum[guideProjection.id]), true);
+assert.deepEqual(
+  deformedBodyBoundsPartM(guide, [
+    {
+      coordinateId: guideCoordinate.id,
+      coordinateM: guideCoordinate.allowedCoordinateRangeM.maximum,
+    },
+  ]),
+  {
+    minimumM: [-0.41, -0.25, -0.5],
+    maximumM: [0.41, 0.25, 0.5],
+  },
+  "unprojected guide rails did not retain their reference bounds",
+);
+
+const shortStrokeActuatorMechanism = structuredClone(
+    mechanismComponentDefinition("linear-actuator"),
+  ),
+  shortStrokeRangeM = { lower: 0.7, upper: 0.9 };
+shortStrokeActuatorMechanism.config.lengthRangeM = shortStrokeRangeM;
+const shortStrokeActuator = resolveComponentGeometryContract({
+    id: 803,
+    type: "linear-actuator",
+    pos: [0, 0, 0],
+    orientation: [0, 0, 0, 1],
+    scale: { x: 1, y: 1, z: 1 },
+    mechanism: shortStrokeActuatorMechanism,
+  }),
+  shortStrokeCoordinate =
+    shortStrokeActuator.deformationContract.coordinates[0];
+assert.ok(
+  shortStrokeCoordinate.referenceCoordinateM >
+    shortStrokeCoordinate.allowedCoordinateRangeM.maximum,
+  "fixture did not exercise an external affine calibration reference",
+);
+assert.deepEqual(shortStrokeCoordinate.allowedCoordinateRangeM, {
+  minimum: shortStrokeRangeM.lower,
+  maximum: shortStrokeRangeM.upper,
+});
+for (const coordinateM of Object.values(
+  shortStrokeCoordinate.allowedCoordinateRangeM,
+))
+  for (const transform of Object.values(
+    mechanismDeformationTransforms(shortStrokeActuator, [
+      { coordinateId: shortStrokeCoordinate.id, coordinateM },
+    ]),
+  ))
+    assert.ok(
+      [
+        ...transform.positionM,
+        ...transform.orientation,
+        ...transform.scale,
+      ].every(Number.isFinite),
+      "external reference produced a non-finite allowed-range transform",
+    );
+
+const springAtMinimumSample = {
+    coordinateId: axialCoordinate.id,
+    coordinateM: axialCoordinate.allowedCoordinateRangeM.minimum,
+  },
+  springAtMaximumSample = {
+    coordinateId: axialCoordinate.id,
+    coordinateM: axialCoordinate.allowedCoordinateRangeM.maximum,
+  },
+  springAtMinimum = deformedBodyBoundsPartM(spring, [springAtMinimumSample]),
+  springAtMaximum = deformedBodyBoundsPartM(spring, [springAtMaximumSample]),
+  referenceHalfLengthM = spring.bodyBoundsPartM.maximumM[2],
+  expectedMinimumHalfLengthM =
+    referenceHalfLengthM *
+    (springAtMinimumSample.coordinateM / axialCoordinate.referenceBodyLengthM),
+  expectedMaximumHalfLengthM =
+    referenceHalfLengthM *
+    (springAtMaximumSample.coordinateM / axialCoordinate.referenceBodyLengthM);
+assert.equal(springAtMinimum.minimumM[2], -expectedMinimumHalfLengthM);
+assert.equal(springAtMinimum.maximumM[2], expectedMinimumHalfLengthM);
+assert.equal(springAtMaximum.minimumM[2], -expectedMaximumHalfLengthM);
+assert.equal(springAtMaximum.maximumM[2], expectedMaximumHalfLengthM);
+assert.deepEqual(spring.selectionBoundsPartM, {
+  minimumM: [-0.178, -0.178, -1],
+  maximumM: [0.178, 0.178, 1],
+});
+assert.deepEqual(
+  deformedBodyBoundsPartM(damper, [
+    {
+      coordinateId: damperCoordinate.id,
+      coordinateM: damperCoordinate.allowedCoordinateRangeM.minimum,
+    },
+  ]),
+  {
+    minimumM: [-0.13, -0.13, -0.45000000000000007],
+    maximumM: [0.13, 0.13, 0.52],
+  },
+);
+assert.deepEqual(
+  deformedBodyBoundsPartM(damper, [
+    {
+      coordinateId: damperCoordinate.id,
+      coordinateM: damperCoordinate.allowedCoordinateRangeM.maximum,
+    },
+  ]),
+  {
+    minimumM: [-0.13, -0.13, -0.8],
+    maximumM: [0.13, 0.13, 0.8],
+  },
+);
+assert.deepEqual(
+  deformedBodyBoundsPartM(spring, [springAtMinimumSample]),
+  springAtMinimum,
+  "cached deformation projection changed endpoint bounds",
+);
+for (const [coordinateM, expected] of [
+  [axialCoordinate.allowedCoordinateRangeM.minimum - 1, springAtMinimum],
+  [axialCoordinate.allowedCoordinateRangeM.maximum + 1, springAtMaximum],
+])
+  assert.deepEqual(
+    deformedBodyBoundsPartM(spring, [
+      { coordinateId: axialCoordinate.id, coordinateM },
+    ]),
+    expected,
+    "out-of-range physical telemetry escaped the authored deformation envelope",
+  );
+const rigidBeam = resolveComponentGeometryContractForType("beam");
+assert.deepEqual(
+  deformedBodyBoundsPartM(rigidBeam, []),
+  rigidBeam.bodyBoundsPartM,
+  "rigid geometry did not preserve its canonical body bounds",
+);
+for (const samples of [
+  null,
+  [],
+  [{ coordinateId: "unknown", coordinateM: 0.5 }],
+  [{ coordinateId: axialCoordinate.id, coordinateM: Number.NaN }],
+  [referenceSample, referenceSample],
+])
+  assert.throws(
+    () => mechanismDeformationTransforms(spring, samples),
+    (error) => error.code === "INVALID_DEFORMATION_TELEMETRY",
+    "invalid completed mechanism coordinates reached geometry projection",
+  );
 assert.deepEqual(
   flexibleRuntimeBoundsWorldM(
     [
