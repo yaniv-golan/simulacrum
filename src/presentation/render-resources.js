@@ -1,8 +1,14 @@
 const sharedResources = new WeakSet();
 const sharedGeometryCache = new Map();
+const sharedGeometryCounts = { primitive: 0, profile: 0 };
 const sharedMaterials = new Set();
 const sharedTextures = new Set();
 const activeOwnedResources = new Map();
+
+export const SHARED_GEOMETRY_LIMITS = Object.freeze({
+  primitive: 512,
+  profile: 256,
+});
 
 const CACHEABLE_GEOMETRIES = new Set([
   "BoxGeometry",
@@ -63,6 +69,10 @@ export function sharePrimitiveGeometry(geometry) {
   const explicitKey = geometry.userData.sharedPrimitiveKey;
   if (!explicitKey && !geometry.parameters) return geometry;
   const tier = geometry.userData.sharedDetailTier || "unscoped",
+    category =
+      geometry.userData.sharedGeometryCategory === "profile"
+        ? "profile"
+        : "primitive",
     key = explicitKey
       ? `${tier}:${geometry.type}:${explicitKey}`
       : `${tier}:${geometry.type}:${JSON.stringify(geometry.parameters)}`;
@@ -71,7 +81,13 @@ export function sharePrimitiveGeometry(geometry) {
     geometry.dispose();
     return existing;
   }
+  // Parameterized authored geometry has an unbounded key space. Once the
+  // application-owned reuse pool is full, keep new geometry object-owned so
+  // ordinary hierarchy disposal releases it safely without evicting live data.
+  if (sharedGeometryCounts[category] >= SHARED_GEOMETRY_LIMITS[category])
+    return geometry;
   sharedGeometryCache.set(key, geometry);
+  sharedGeometryCounts[category]++;
   return markSharedRenderResource(geometry);
 }
 

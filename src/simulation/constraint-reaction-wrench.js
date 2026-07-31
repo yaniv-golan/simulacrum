@@ -24,14 +24,24 @@ function magnitude(value) {
   return Math.hypot(value.x, value.y, value.z);
 }
 
+const normalizedRowKinds = new Map();
+
 function normalizedRowKind(value) {
-  const result = String(value || "equation")
-    .replace(/Equation$/u, "")
-    .replace(/([a-z0-9])([A-Z])/gu, "$1-$2")
-    .replace(/[^A-Za-z0-9]+/gu, "-")
-    .replace(/^-+|-+$/gu, "")
-    .toLowerCase();
-  return result || "equation";
+  const source = String(value || "equation"),
+    cached = normalizedRowKinds.get(source);
+  if (cached) return cached;
+  const result = source
+      .replace(/Equation$/u, "")
+      .replace(/([a-z0-9])([A-Z])/gu, "$1-$2")
+      .replace(/[^A-Za-z0-9]+/gu, "-")
+      .replace(/^-+|-+$/gu, "")
+      .toLowerCase(),
+    normalized = result || "equation";
+  // Equation kinds come from a bounded set of engine/custom constraint
+  // classes. Keep hostile or dynamically generated labels from growing a
+  // process-lifetime cache without bound.
+  if (normalizedRowKinds.size < 128) normalizedRowKinds.set(source, normalized);
+  return normalized;
 }
 
 function bodyIdentity(body) {
@@ -111,6 +121,335 @@ export function assignConstraintEvidenceRows(
   }
 }
 
+function contributionTerms(constraint, equation, side) {
+  const multiplier = Number(equation.multiplier || 0),
+    jacobian = equation[`jacobianElement${side}`];
+  if (!equation.enabled || !jacobian || !Number.isFinite(multiplier))
+    return null;
+  const spatial = vectorComponents(jacobian.spatial),
+    rotational = vectorComponents(jacobian.rotational),
+    anchorFromCom = equationAnchorFromCom(constraint, equation, side),
+    forceWorldN = {
+      x: spatial.x * multiplier,
+      y: spatial.y * multiplier,
+      z: spatial.z * multiplier,
+    },
+    momentAtComNm = {
+      x: rotational.x * multiplier,
+      y: rotational.y * multiplier,
+      z: rotational.z * multiplier,
+    },
+    forceMomentAtCom = cross(anchorFromCom, forceWorldN),
+    momentAtApplicationPointWorldNm = {
+      x: momentAtComNm.x - forceMomentAtCom.x,
+      y: momentAtComNm.y - forceMomentAtCom.y,
+      z: momentAtComNm.z - forceMomentAtCom.z,
+    };
+  return {
+    multiplier,
+    anchorFromCom,
+    forceWorldN,
+    momentAtApplicationPointWorldNm,
+    forceMagnitudeN: magnitude(forceWorldN),
+    momentMagnitudeNm: magnitude(momentAtApplicationPointWorldNm),
+  };
+}
+
+function contributionMagnitudes(constraint, equation, side) {
+  const multiplier = Number(equation.multiplier || 0),
+    jacobian = equation[`jacobianElement${side}`];
+  if (!equation.enabled || !jacobian || !Number.isFinite(multiplier))
+    return null;
+  const spatial = jacobian.spatial,
+    rotational = jacobian.rotational,
+    equationAnchor = side === "A" ? equation.ri : equation.rj,
+    anchor =
+      equationAnchor || equationAnchorFromCom(constraint, equation, side),
+    forceX = Number(spatial?.x || 0) * multiplier,
+    forceY = Number(spatial?.y || 0) * multiplier,
+    forceZ = Number(spatial?.z || 0) * multiplier,
+    anchorX = Number(anchor?.x || 0),
+    anchorY = Number(anchor?.y || 0),
+    anchorZ = Number(anchor?.z || 0),
+    momentX =
+      Number(rotational?.x || 0) * multiplier -
+      (anchorY * forceZ - anchorZ * forceY),
+    momentY =
+      Number(rotational?.y || 0) * multiplier -
+      (anchorZ * forceX - anchorX * forceZ),
+    momentZ =
+      Number(rotational?.z || 0) * multiplier -
+      (anchorX * forceY - anchorY * forceX);
+  return {
+    forceMagnitudeN: Math.hypot(forceX, forceY, forceZ),
+    momentMagnitudeNm: Math.hypot(momentX, momentY, momentZ),
+  };
+}
+
+function contributionCandidate(
+  constraint,
+  equation,
+  side,
+  metadata,
+  metadataSourceConnectionIds,
+  fallbackOrdinal,
+  terms,
+) {
+  const row = equation.simulacrumEvidenceRow || {},
+    rowKind =
+      row.rowKind ||
+      normalizedRowKind(equation.constructor?.name || "equation"),
+    localOrdinal = Number.isSafeInteger(row.localOrdinal)
+      ? row.localOrdinal
+      : fallbackOrdinal,
+    constraintId = row.constraintId ?? metadata.constraintId ?? null,
+    tick = metadata.tick ?? null,
+    rowId = row.rowIdPrefix
+      ? `${row.rowIdPrefix}:${side}:${row.rowIdSuffix}`
+      : row.rowId || null,
+    firstSeparator = rowId?.indexOf(":") ?? -1,
+    secondSeparator =
+      firstSeparator >= 0 ? rowId.indexOf(":", firstSeparator + 1) : -1,
+    rowOrderKey =
+      secondSeparator >= 0
+        ? `${rowId.slice(0, firstSeparator)}${rowId.slice(secondSeparator)}`
+        : `constraint:${String(
+            constraintId,
+          )}:${side}:${rowKind}:${localOrdinal}`;
+  return {
+    constraint,
+    equation,
+    side,
+    metadata,
+    tick,
+    rowId,
+    rowOrderKey,
+    rowKind,
+    localOrdinal,
+    constraintId,
+    sourceConnectionIds: row.sourceConnectionIds || metadataSourceConnectionIds,
+    forceMagnitudeN: terms.forceMagnitudeN,
+    momentMagnitudeNm: terms.momentMagnitudeNm,
+  };
+}
+
+function normalizedConnectionIds(values) {
+  if (
+    Object.isFrozen(values) &&
+    values.every((value) => typeof value === "string")
+  )
+    return values;
+  return [...new Set(values || [])].map(String).sort();
+}
+
+/** Resolves the exact tick-addressable ID only for a retained candidate. */
+export function constraintReactionCandidateRowId(candidate) {
+  return (
+    candidate.rowId ||
+    `constraint:${String(candidate.tick)}:${String(
+      candidate.constraintId,
+    )}:${candidate.side}:${candidate.rowKind}:${candidate.localOrdinal}`
+  );
+}
+
+/** True when a retained solved-row candidate would materialize non-finite evidence. */
+export function invalidConstraintReactionCandidate(candidate) {
+  const side = candidate?.side || "A",
+    position = candidate?.constraint?.[`body${side}`]?.position,
+    finitePosition =
+      !position || [position.x, position.y, position.z].every(Number.isFinite);
+  return (
+    !Number.isFinite(candidate?.forceMagnitudeN) ||
+    !Number.isFinite(candidate?.momentMagnitudeNm) ||
+    !finitePosition
+  );
+}
+
+/** Lightweight solved-row descriptors used for bounded evidence selection. */
+export function constraintReactionContributionCandidates(
+  constraint,
+  side = "A",
+  metadata = {},
+) {
+  if (side !== "A" && side !== "B")
+    throw new RangeError(`Unknown constraint wrench side ${side}`);
+  const candidates = [],
+    metadataSourceConnectionIds = normalizedConnectionIds(
+      metadata.sourceConnectionIds || [],
+    );
+  for (const equation of constraint?.equations || []) {
+    const terms = contributionMagnitudes(constraint, equation, side);
+    if (!terms) continue;
+    candidates.push(
+      contributionCandidate(
+        constraint,
+        equation,
+        side,
+        metadata,
+        metadataSourceConnectionIds,
+        candidates.length,
+        terms,
+      ),
+    );
+  }
+  return candidates;
+}
+
+/** Computes the aggregate wrench and evidence magnitudes in one solved-row pass. */
+export function constraintReactionWrenchEvidence(
+  constraint,
+  side = "A",
+  metadata = {},
+) {
+  if (side !== "A" && side !== "B")
+    throw new RangeError(`Unknown constraint wrench side ${side}`);
+  const force = { x: 0, y: 0, z: 0 },
+    moment = { x: 0, y: 0, z: 0 },
+    candidates = [],
+    metadataSourceConnectionIds = normalizedConnectionIds(
+      metadata.sourceConnectionIds || [],
+    );
+  for (const equation of constraint?.equations || []) {
+    if (!equation.enabled) continue;
+    const multiplier = Number(equation.multiplier || 0),
+      jacobian = equation[`jacobianElement${side}`];
+    if (!jacobian || !Number.isFinite(multiplier)) continue;
+    const spatial = jacobian.spatial,
+      rotational = jacobian.rotational,
+      anchor = equationAnchorFromCom(constraint, equation, side),
+      forceX = Number(spatial?.x || 0) * multiplier,
+      forceY = Number(spatial?.y || 0) * multiplier,
+      forceZ = Number(spatial?.z || 0) * multiplier,
+      momentX =
+        Number(rotational?.x || 0) * multiplier -
+        (anchor.y * forceZ - anchor.z * forceY),
+      momentY =
+        Number(rotational?.y || 0) * multiplier -
+        (anchor.z * forceX - anchor.x * forceZ),
+      momentZ =
+        Number(rotational?.z || 0) * multiplier -
+        (anchor.x * forceY - anchor.y * forceX),
+      terms = {
+        forceMagnitudeN: Math.hypot(forceX, forceY, forceZ),
+        momentMagnitudeNm: Math.hypot(momentX, momentY, momentZ),
+      };
+    force.x += forceX;
+    force.y += forceY;
+    force.z += forceZ;
+    moment.x += momentX;
+    moment.y += momentY;
+    moment.z += momentZ;
+    candidates.push(
+      contributionCandidate(
+        constraint,
+        equation,
+        side,
+        metadata,
+        metadataSourceConnectionIds,
+        candidates.length,
+        terms,
+      ),
+    );
+  }
+  return {
+    wrench: Object.freeze({
+      force: Object.freeze(force),
+      moment: Object.freeze(moment),
+      forceN: magnitude(force),
+      torqueNm: magnitude(moment),
+    }),
+    candidates,
+  };
+}
+
+/** Finds a non-finite solved row without constructing contribution DTOs. */
+export function invalidConstraintReactionContributionCandidate(
+  constraint,
+  side = "A",
+  metadata = {},
+) {
+  for (const [index, equation] of (constraint?.equations || []).entries()) {
+    const terms = contributionMagnitudes(constraint, equation, side);
+    if (
+      terms &&
+      (!Number.isFinite(terms.forceMagnitudeN) ||
+        !Number.isFinite(terms.momentMagnitudeNm))
+    )
+      return {
+        rowId:
+          equation.simulacrumEvidenceRow?.rowId ||
+          `constraint:${String(metadata.tick ?? null)}:${String(
+            metadata.constraintId ?? null,
+          )}:${side}:equation:${index}`,
+        ...terms,
+      };
+  }
+  return null;
+}
+
+/** Materializes one selected solved-row contribution. */
+export function materializeConstraintReactionContribution(
+  candidate,
+  freeze = true,
+) {
+  const {
+      constraint,
+      equation,
+      side,
+      metadata,
+      tick,
+      rowId: candidateRowId,
+      rowKind,
+      localOrdinal,
+      constraintId,
+      sourceConnectionIds,
+    } = candidate,
+    suffix = side,
+    row = equation.simulacrumEvidenceRow || {},
+    terms = contributionTerms(constraint, equation, side),
+    sourceContactIds =
+      row.sourceContactIds ??
+      equation.simulacrumEvidenceSourceContactIds?.() ??
+      equation.simulacrumSourceContactIds ??
+      metadata.sourceContactIds ??
+      [];
+  if (!terms) return null;
+  const rowId = candidateRowId || constraintReactionCandidateRowId(candidate);
+  const contribution = {
+    tick,
+    rowId,
+    rowKind,
+    localOrdinal,
+    source: row.source || metadata.source || "constraint",
+    side,
+    bodyId: metadata.bodyId ?? bodyIdentity(constraint[`body${suffix}`]),
+    otherBodyId:
+      metadata.otherBodyId ??
+      bodyIdentity(constraint[`body${side === "A" ? "B" : "A"}`]),
+    constraintId,
+    sourceConnectionIds: [...sourceConnectionIds],
+    sourceContactIds: [...new Set(sourceContactIds)].map(String).sort(),
+    forceWorldN: terms.forceWorldN,
+    momentAtApplicationPointWorldNm: terms.momentAtApplicationPointWorldNm,
+    applicationPointWorldM: worldApplicationPoint(
+      constraint,
+      terms.anchorFromCom,
+      side,
+    ),
+    forceMagnitudeN: terms.forceMagnitudeN,
+    momentMagnitudeNm: terms.momentMagnitudeNm,
+    multiplier: terms.multiplier,
+    validity: "measured",
+  };
+  if (!freeze) return contribution;
+  Object.freeze(contribution.sourceConnectionIds);
+  Object.freeze(contribution.sourceContactIds);
+  Object.freeze(contribution.forceWorldN);
+  Object.freeze(contribution.momentAtApplicationPointWorldNm);
+  Object.freeze(contribution.applicationPointWorldM);
+  return Object.freeze(contribution);
+}
+
 /**
  * Returns the signed solved contribution of every usable equation row.
  * Summing these records yields the same wrench as constraintReactionWrench().
@@ -120,92 +459,11 @@ export function constraintReactionContributions(
   side = "A",
   metadata = {},
 ) {
-  if (side !== "A" && side !== "B")
-    throw new RangeError(`Unknown constraint wrench side ${side}`);
-  const suffix = side,
-    records = [];
-  for (const equation of constraint?.equations || []) {
-    if (!equation.enabled) continue;
-    const multiplier = Number(equation.multiplier || 0),
-      jacobian = equation[`jacobianElement${suffix}`];
-    if (!jacobian || !Number.isFinite(multiplier)) continue;
-    const spatial = vectorComponents(jacobian.spatial),
-      rotational = vectorComponents(jacobian.rotational),
-      anchorFromCom = equationAnchorFromCom(constraint, equation, side),
-      forceWorldN = {
-        x: spatial.x * multiplier,
-        y: spatial.y * multiplier,
-        z: spatial.z * multiplier,
-      },
-      momentAtComNm = {
-        x: rotational.x * multiplier,
-        y: rotational.y * multiplier,
-        z: rotational.z * multiplier,
-      },
-      forceMomentAtCom = cross(anchorFromCom, forceWorldN),
-      row = equation.simulacrumEvidenceRow || {},
-      rowKind = normalizedRowKind(
-        row.rowKind || equation.constructor?.name || "equation",
-      ),
-      localOrdinal = Number.isSafeInteger(row.localOrdinal)
-        ? row.localOrdinal
-        : records.length,
-      constraintId = row.constraintId ?? metadata.constraintId ?? null,
-      tick = metadata.tick ?? null,
-      rowId = row.rowIdPrefix
-        ? `${row.rowIdPrefix}:${side}:${row.rowIdSuffix}`
-        : row.rowId ||
-          `constraint:${String(tick)}:${String(
-            constraintId,
-          )}:${side}:${rowKind}:${localOrdinal}`;
-    records.push(
-      Object.freeze({
-        tick,
-        rowId,
-        rowKind,
-        localOrdinal,
-        source: row.source || metadata.source || "constraint",
-        side,
-        bodyId: metadata.bodyId ?? bodyIdentity(constraint[`body${suffix}`]),
-        otherBodyId:
-          metadata.otherBodyId ??
-          bodyIdentity(constraint[`body${side === "A" ? "B" : "A"}`]),
-        constraintId,
-        sourceConnectionIds: Object.freeze(
-          [
-            ...new Set(
-              row.sourceConnectionIds || metadata.sourceConnectionIds || [],
-            ),
-          ]
-            .map(String)
-            .sort(),
-        ),
-        sourceContactIds: Object.freeze(
-          [...new Set(row.sourceContactIds || metadata.sourceContactIds || [])]
-            .map(String)
-            .sort(),
-        ),
-        forceWorldN: Object.freeze(forceWorldN),
-        momentAtApplicationPointWorldNm: Object.freeze({
-          x: momentAtComNm.x - forceMomentAtCom.x,
-          y: momentAtComNm.y - forceMomentAtCom.y,
-          z: momentAtComNm.z - forceMomentAtCom.z,
-        }),
-        applicationPointWorldM: Object.freeze(
-          worldApplicationPoint(constraint, anchorFromCom, side),
-        ),
-        forceMagnitudeN: magnitude(forceWorldN),
-        momentMagnitudeNm: magnitude({
-          x: momentAtComNm.x - forceMomentAtCom.x,
-          y: momentAtComNm.y - forceMomentAtCom.y,
-          z: momentAtComNm.z - forceMomentAtCom.z,
-        }),
-        multiplier,
-        validity: "measured",
-      }),
-    );
-  }
-  return Object.freeze(records);
+  return Object.freeze(
+    constraintReactionContributionCandidates(constraint, side, metadata)
+      .map((candidate) => materializeConstraintReactionContribution(candidate))
+      .filter(Boolean),
+  );
 }
 
 /**

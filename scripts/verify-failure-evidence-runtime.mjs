@@ -3,6 +3,7 @@ import { TYPES } from "../src/model/component-catalog.js";
 import { FailureEvidenceRecorder } from "../src/simulation/failure-evidence-recorder.js";
 import { SimulationSession } from "../src/simulation/simulation-session.js";
 import { FailureEvidenceSystem } from "../src/simulation/systems/failure-evidence-system.js";
+import { invalidConstraintReactionCandidate } from "../src/simulation/constraint-reaction-wrench.js";
 import { StructureSystem } from "../src/simulation/systems/structure-system.js";
 
 assert.throws(
@@ -25,6 +26,15 @@ assert.throws(
       policy: { topRowsPerConnection: 8, maxRowsPerExactFrame: 4 },
     }),
   /maxRowsPerExactFrame must cover topRowsPerConnection/,
+);
+
+const unicodeMemoryRecorder = new FailureEvidenceRecorder();
+unicodeMemoryRecorder.beginRun({ runIdentity: { id: "machine-א" } });
+assert.equal(
+  unicodeMemoryRecorder.telemetrySummary().memoryBytes,
+  new TextEncoder().encode(JSON.stringify(unicodeMemoryRecorder.snapshot()))
+    .byteLength,
+  "failure-evidence memory accounting treated Unicode as single-byte text",
 );
 
 const assembly = {
@@ -417,6 +427,19 @@ assert.ok(
   "non-finite evidence prevented bounded memory accounting",
 );
 anomalySystem.dispose();
+
+assert.equal(
+  invalidConstraintReactionCandidate({
+    side: "A",
+    constraint: {
+      bodyA: { position: { x: Number.POSITIVE_INFINITY, y: 0, z: 0 } },
+    },
+    forceMagnitudeN: 0,
+    momentMagnitudeNm: 0,
+  }),
+  true,
+  "a non-finite solver application point escaped anomaly classification",
+);
 
 const stageRecorder = new FailureEvidenceRecorder();
 stageRecorder.beginRun({ runIdentity: { id: "stage-order" } });

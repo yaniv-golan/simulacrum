@@ -6,6 +6,7 @@ import { ComponentDetailController } from "../src/presentation/component-detail-
 import { componentDetailTier } from "../src/presentation/component-detail-policy.js";
 import { LargeAssemblyBatcher } from "../src/presentation/large-assembly-batcher.js";
 import { prepareArticulatedFootVisual } from "../src/presentation/articulated-foot-visual.js";
+import { mats } from "../src/presentation/mesh-primitives.js";
 import { componentDefaults } from "../src/model/component-resolver.js";
 import { installWorkshopRuntimeLoop } from "../src/application/workshop-runtime-loop.js";
 import {
@@ -14,6 +15,7 @@ import {
   markSharedRenderResource,
   sharePrimitiveGeometry,
   sharedRenderResourceStats,
+  SHARED_GEOMETRY_LIMITS,
 } from "../src/presentation/render-resources.js";
 
 const first = sharePrimitiveGeometry(new THREE.BoxGeometry(1, 2, 3));
@@ -168,6 +170,14 @@ assert.equal(
   "composite",
 );
 assert.equal(
+  componentAppearanceProfile({
+    materialKey: "generic-structure",
+    semanticKey: "rotor-blade",
+    customColor: 0x335577,
+  }),
+  "composite",
+);
+assert.equal(
   componentAppearanceProfile({ materialKey: "generic-structure" }),
   "paint",
 );
@@ -175,6 +185,16 @@ assert.throws(
   () => componentAppearanceProfile({ materialKey: "unknown-material" }),
   /Unsupported component appearance/,
 );
+
+const coatedRotor = componentMesh("rotor", 0x335577),
+  coatedBlade = coatedRotor.getObjectByProperty(
+    "name",
+    "Canonical body blade-0",
+  );
+assert.equal(coatedBlade.material.color.getHex(), 0x335577);
+assert.equal(coatedBlade.material.metalness, mats.composite.metalness);
+assert.equal(coatedBlade.material.roughness, mats.composite.roughness);
+disposeObject3D(coatedRotor);
 
 const wheel = componentMesh("wheel"),
   wheelBody = wheel.getObjectByProperty("name", "Canonical body tire-envelope"),
@@ -281,6 +301,56 @@ assert.equal(
   "performance",
   "performance tier did not retain its exit hysteresis",
 );
+let oscillatingTier = "hero";
+for (const projectedDiameterPx of [250, 181, 259, 190])
+  oscillatingTier = componentDetailTier({
+    currentTier: oscillatingTier,
+    projectedDiameterPx,
+    partCount: 1,
+  });
+assert.equal(oscillatingTier, "hero");
+oscillatingTier = componentDetailTier({
+  currentTier: oscillatingTier,
+  projectedDiameterPx: 179,
+  partCount: 1,
+});
+assert.equal(oscillatingTier, "standard");
+for (const [partCount, selected, expected] of [
+  [128, false, "standard"],
+  [129, false, "performance"],
+  [129, true, "standard"],
+  [256, true, "standard"],
+  [257, true, "performance"],
+  [300, false, "performance"],
+])
+  assert.equal(
+    componentDetailTier({
+      currentTier: "standard",
+      projectedDiameterPx: 100,
+      partCount,
+      selected,
+    }),
+    expected,
+    `part-count detail boundary failed at ${partCount}:${selected}`,
+  );
+assert.equal(
+  componentDetailTier({
+    currentTier: "standard",
+    projectedDiameterPx: 100,
+    partCount: 1,
+    quality: "hero",
+  }),
+  "hero",
+);
+assert.equal(
+  componentDetailTier({
+    currentTier: "hero",
+    projectedDiameterPx: 400,
+    partCount: 1,
+    quality: "performance",
+  }),
+  "performance",
+);
 
 const detailCamera = new THREE.PerspectiveCamera(42, 1, 0.25, 1000),
   detailRoot = componentMesh("beam"),
@@ -288,6 +358,31 @@ const detailCamera = new THREE.PerspectiveCamera(42, 1, 0.25, 1000),
   detailController = new ComponentDetailController();
 detailRoot.userData.partId = detailPart.id;
 detailCamera.position.set(0, 0, 100);
+detailController.update({
+  parts: [detailPart],
+  camera: detailCamera,
+  viewportHeightPx: 720,
+  pixelRatio: 1,
+  running: true,
+  selectedIds: new Set([detailPart.id]),
+});
+const cssPixelDiameter =
+  detailController.snapshot().selected[0].projectedDiameterPx;
+detailController.update({
+  parts: [detailPart],
+  camera: detailCamera,
+  viewportHeightPx: 720,
+  pixelRatio: 2,
+  running: true,
+  selectedIds: new Set([detailPart.id]),
+});
+assert.ok(
+  Math.abs(
+    detailController.snapshot().selected[0].projectedDiameterPx -
+      cssPixelDiameter * 2,
+  ) <= 0.2,
+  "device pixel ratio did not participate in projected detail size",
+);
 detailController.update({
   parts: [detailPart],
   camera: detailCamera,
@@ -497,6 +592,25 @@ assert.equal(
   "unique custom colors leaked object-owned materials",
 );
 
+const beforeScaleChurn = sharedRenderResourceStats();
+for (let index = 0; index < SHARED_GEOMETRY_LIMITS.primitive + 32; index++) {
+  const scaled = scaledRoundPart(10_000 + index, "beam", {
+    x: 1 + index / 10_000,
+    y: 1,
+    z: 1,
+  });
+  disposeObject3D(scaled);
+}
+const afterScaleChurn = sharedRenderResourceStats();
+assert.ok(
+  afterScaleChurn.primitiveGeometries <= SHARED_GEOMETRY_LIMITS.primitive,
+  "authored scale churn exceeded the application-owned geometry bound",
+);
+assert.ok(
+  afterScaleChurn.primitiveGeometries >= beforeScaleChurn.primitiveGeometries,
+  "scale churn unexpectedly released application-owned shared geometry",
+);
+
 const presentationOrder = [];
 let scheduledFrame = null;
 const runtimeLoop = installWorkshopRuntimeLoop({
@@ -545,6 +659,62 @@ assert.deepEqual(presentationOrder.slice(-6), [
   "render",
 ]);
 runtimeLoop.dispose();
+
+function detailTierThroughLoop(mode) {
+  const root = componentMesh("beam"),
+    part = { id: 77_001, mesh: root, ambientHeatBindings: null },
+    camera = new THREE.PerspectiveCamera(42, 1, 0.25, 1000),
+    controller = new ComponentDetailController();
+  camera.position.set(0, 0, 100);
+  let scheduled = null;
+  const loop = installWorkshopRuntimeLoop({
+    target: {
+      requestAnimationFrame(callback) {
+        scheduled = callback;
+        return 1;
+      },
+      cancelAnimationFrame() {},
+    },
+    simulation: {
+      simulate() {},
+      updateFailure() {},
+      elapsed: () => 0,
+    },
+    presentation: {
+      streamEarth() {},
+      updateExploded() {},
+      updateEnvironment() {},
+      updateWater() {},
+      updateCamera() {},
+      updateDetail() {
+        controller.update({
+          parts: [part],
+          camera,
+          viewportHeightPx: 720,
+          pixelRatio: 2,
+          running: false,
+          selectedIds: new Set(),
+          quality: "auto",
+        });
+      },
+      updateBatch() {},
+      render() {},
+    },
+    diagnostics: () => ({}),
+    now: () => 0,
+  });
+  if (mode === "deterministic") loop.advanceTime(16.667);
+  else scheduled(16.667);
+  const tier = root.userData.visualDetailTier;
+  loop.dispose();
+  disposeObject3D(root);
+  return tier;
+}
+assert.equal(
+  detailTierThroughLoop("deterministic"),
+  detailTierThroughLoop("realtime"),
+  "real-time and deterministic advancement selected different detail tiers",
+);
 
 const finalStats = sharedRenderResourceStats();
 assert.equal(finalStats.owned.componentColorMaterials || 0, 0);

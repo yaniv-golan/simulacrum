@@ -63,6 +63,10 @@ export class PressureNozzleDemandSystem {
         "MATERIAL_RESOURCE_NETWORK_UNAVAILABLE",
         "Pressure-nozzle demand requires the material-resource network",
       );
+    if (!context.pressureNozzleRuntime.engines.size) {
+      context.telemetry.propulsion = this.telemetry(context);
+      return;
+    }
     const requests = [];
     for (const engine of context.pressureNozzleRuntime.engines.values()) {
       const part = context.runGraph.part(engine.partId),

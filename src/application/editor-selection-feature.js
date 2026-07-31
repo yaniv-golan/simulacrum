@@ -59,6 +59,7 @@ export function createEditorSelectionFeature({
   let selectionBox = null;
   let selectionRing = null;
   let hoverBox = null;
+  let labelLayoutKey = null;
 
   function queryRequired(selector) {
     const element = view.query(selector);
@@ -109,6 +110,7 @@ export function createEditorSelectionFeature({
     const label = queryRequired(".selection-label");
     if (!part) {
       label.classList.add("hidden");
+      labelLayoutKey = null;
       scene.transform.detach();
       return;
     }
@@ -164,8 +166,11 @@ export function createEditorSelectionFeature({
         ? `${selection.length} COMPONENTS · PRIMARY ${view.partName(part.type).toUpperCase()} #${part.id}`
         : view.partName(part.type).toUpperCase();
     label.classList.remove("hidden");
-    view.positionLabel();
-    requestAnimationFrame(view.positionLabel);
+    const nextLabelLayoutKey = `${part.id}:${[...workspace.selectedIds()].sort().join(",")}:${labelTitle.textContent}`;
+    if (nextLabelLayoutKey !== labelLayoutKey) {
+      labelLayoutKey = nextLabelLayoutKey;
+      requestAnimationFrame(view.positionLabel);
+    }
 
     if (
       !workspace.exploded() &&

@@ -1,5 +1,6 @@
 import { portDefinition, portIds, portsCompatible } from "../model/ports.js";
 import { immutableClone } from "../model/primitives.js";
+import { registerOwnedImmutable } from "../model/owned-immutable-value.js";
 import { isSensorPart } from "../model/sensor-contracts.js";
 import { componentHasControlContract } from "../model/component-contracts.js";
 import { powerContract } from "../model/actuator-contracts.js";
@@ -99,12 +100,15 @@ export class SignalNetwork {
   #controllersBySensor = new Map();
   #graphRevision = -1;
   #evidenceIndex = null;
+  #evidenceStateKey = null;
+  #telemetry = null;
 
   constructor(catalog = {}) {
     this.#catalog = catalog;
   }
 
   resolve(runGraph, powerNetwork) {
+    this.#telemetry = null;
     this.#routesByTarget.clear();
     this.#targetsByController.clear();
     this.#sensorsByController.clear();
@@ -207,26 +211,7 @@ export class SignalNetwork {
       from: { partId: edge.sourceId, portId: edge.sourcePortId },
       to: { partId: edge.targetId, portId: edge.targetPortId },
     }));
-    this.#evidenceIndex = createRouteEvidenceIndex({
-      medium: "signal",
-      runGraph,
-      edges: evidenceEdges,
-      sourcePartIds: [
-        ...controllers.map((controller) => controller.id),
-        ...this.#controllersBySensor.keys(),
-      ],
-      targetPartIds: [
-        ...this.#routesByTarget.keys(),
-        ...this.#sensorsByController.keys(),
-      ],
-      terminalPartIds: controllers.map((controller) => controller.id),
-      blockingConnectionIds: connections
-        .filter(
-          (connection) => connection.kind === "signal" && connection.failed,
-        )
-        .map((connection) => connection.id),
-      blockerEvidence: "known",
-      resultFacts: {
+    const resultFacts = {
         routes: [...this.#routesByTarget]
           .sort(([left], [right]) => compareId(left, right))
           .map(([targetId, controllerIds]) => ({
@@ -240,7 +225,34 @@ export class SignalNetwork {
             sensorIds: [...sensorIds].sort(compareId),
           })),
       },
-    });
+      evidenceStateKey = JSON.stringify({
+        graphRevision: runGraph.graphRevision,
+        resultFacts,
+      });
+    if (evidenceStateKey !== this.#evidenceStateKey)
+      this.#evidenceIndex = createRouteEvidenceIndex({
+        medium: "signal",
+        runGraph,
+        edges: evidenceEdges,
+        sourcePartIds: [
+          ...controllers.map((controller) => controller.id),
+          ...this.#controllersBySensor.keys(),
+        ],
+        targetPartIds: [
+          ...this.#routesByTarget.keys(),
+          ...this.#sensorsByController.keys(),
+        ],
+        terminalPartIds: controllers.map((controller) => controller.id),
+        blockingConnectionIds: connections
+          .filter(
+            (connection) => connection.kind === "signal" && connection.failed,
+          )
+          .map((connection) => connection.id),
+        blockerEvidence: "known",
+        resultFacts,
+        topologyCacheKey: "signal-network",
+      });
+    this.#evidenceStateKey = evidenceStateKey;
     return this;
   }
 
@@ -303,33 +315,36 @@ export class SignalNetwork {
   }
 
   telemetry() {
-    return immutableClone({
-      graphRevision: this.#graphRevision,
-      routes: [...this.#routesByTarget]
-        .sort(([left], [right]) => compareId(left, right))
-        .map(([targetId, controllers]) => ({
-          targetId,
-          controllerIds: [...controllers].sort(compareId),
-        })),
-      controllerTargets: [...this.#targetsByController]
-        .sort(([left], [right]) => compareId(left, right))
-        .map(([controllerId, targets]) => ({
-          controllerId,
-          targetIds: [...targets].sort(compareId),
-        })),
-      controllerSensors: [...this.#sensorsByController]
-        .sort(([left], [right]) => compareId(left, right))
-        .map(([controllerId, sensors]) => ({
-          controllerId,
-          endpoints: [...sensors].sort(compareId).map((partId) => ({
-            partId,
-            portIds: [
-              ...(this.#sensorEndpointsByController
-                .get(controllerId)
-                ?.get(partId)?.originPortIds || []),
-            ].sort(),
+    this.#telemetry ||= registerOwnedImmutable(
+      immutableClone({
+        graphRevision: this.#graphRevision,
+        routes: [...this.#routesByTarget]
+          .sort(([left], [right]) => compareId(left, right))
+          .map(([targetId, controllers]) => ({
+            targetId,
+            controllerIds: [...controllers].sort(compareId),
           })),
-        })),
-    });
+        controllerTargets: [...this.#targetsByController]
+          .sort(([left], [right]) => compareId(left, right))
+          .map(([controllerId, targets]) => ({
+            controllerId,
+            targetIds: [...targets].sort(compareId),
+          })),
+        controllerSensors: [...this.#sensorsByController]
+          .sort(([left], [right]) => compareId(left, right))
+          .map(([controllerId, sensors]) => ({
+            controllerId,
+            endpoints: [...sensors].sort(compareId).map((partId) => ({
+              partId,
+              portIds: [
+                ...(this.#sensorEndpointsByController
+                  .get(controllerId)
+                  ?.get(partId)?.originPortIds || []),
+              ].sort(),
+            })),
+          })),
+      }),
+    );
+    return this.#telemetry;
   }
 }

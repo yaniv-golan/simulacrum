@@ -1,5 +1,6 @@
 import { portDefinition, portIds, portsCompatible } from "../model/ports.js";
 import { immutableClone } from "../model/primitives.js";
+import { registerOwnedImmutable } from "../model/owned-immutable-value.js";
 import {
   powerContract,
   sourcePowerContract,
@@ -91,12 +92,17 @@ export class PowerNetwork {
   #powered = new Set();
   #graphRevision = -1;
   #evidenceIndex = null;
+  #evidenceStateKey = null;
+  #telemetry = null;
+  #allocationTelemetry = new Map();
 
   constructor(catalog = {}) {
     this.#catalog = catalog;
   }
 
   resolve(runGraph, fixedDt = 1 / 120) {
+    this.#telemetry = null;
+    this.#allocationTelemetry.clear();
     this.#runGraph = runGraph;
     this.#fixedDt = Math.max(1e-9, Number(fixedDt) || 1 / 120);
     this.#consumers.clear();
@@ -216,19 +222,7 @@ export class PowerNetwork {
     for (const record of this.#consumers.values())
       if (record.baselineW > 0)
         this.drawPower(record.id, record.baselineW, this.#fixedDt);
-    this.#evidenceIndex = createRouteEvidenceIndex({
-      medium: "power",
-      runGraph,
-      edges: powerEvidenceEdges(connections, byId, this.#catalog),
-      sourcePartIds: declaredSourcePartIds,
-      targetPartIds: [...this.#consumers.keys()],
-      blockingConnectionIds: connections
-        .filter(
-          (connection) => connection.kind === "power" && connection.failed,
-        )
-        .map((connection) => connection.id),
-      blockerEvidence: "known",
-      resultFacts: {
+    const resultFacts = {
         poweredPartIds: [...this.#powered].sort(compareId),
         declaredSources: declaredSourcePartIds.sort(compareId),
         availableSources: [...this.#sources.keys()].sort(compareId),
@@ -241,7 +235,27 @@ export class PowerNetwork {
             minimumW,
           })),
       },
-    });
+      evidenceStateKey = JSON.stringify({
+        graphRevision: runGraph.graphRevision,
+        resultFacts,
+      });
+    if (evidenceStateKey !== this.#evidenceStateKey)
+      this.#evidenceIndex = createRouteEvidenceIndex({
+        medium: "power",
+        runGraph,
+        edges: powerEvidenceEdges(connections, byId, this.#catalog),
+        sourcePartIds: declaredSourcePartIds,
+        targetPartIds: [...this.#consumers.keys()],
+        blockingConnectionIds: connections
+          .filter(
+            (connection) => connection.kind === "power" && connection.failed,
+          )
+          .map((connection) => connection.id),
+        blockerEvidence: "known",
+        resultFacts,
+        topologyCacheKey: "power-network",
+      });
+    this.#evidenceStateKey = evidenceStateKey;
     return this;
   }
 
@@ -263,17 +277,21 @@ export class PowerNetwork {
 
   allocationFor(partId) {
     const record = this.#consumers.get(partId);
-    return record
-      ? immutableClone({
-          allocationId: `power-allocation:${this.#graphRevision}:${String(partId)}`,
-          requestedW: record.requestedW,
-          allocatedW: record.allocatedW,
-          deliveredW: record.deliveredW,
-          unmetW: record.unmetW,
-          operational: this.isPowered(partId),
-          sourceIds: [...record.sourceShares.keys()].sort(compareId),
-        })
-      : null;
+    if (!record) return null;
+    let telemetry = this.#allocationTelemetry.get(partId);
+    if (!telemetry) {
+      telemetry = immutableClone({
+        allocationId: `power-allocation:${this.#graphRevision}:${String(partId)}`,
+        requestedW: record.requestedW,
+        allocatedW: record.allocatedW,
+        deliveredW: record.deliveredW,
+        unmetW: record.unmetW,
+        operational: this.isPowered(partId),
+        sourceIds: [...record.sourceShares.keys()].sort(compareId),
+      });
+      this.#allocationTelemetry.set(partId, telemetry);
+    }
+    return telemetry;
   }
 
   sourceIdsFor(partId) {
@@ -307,43 +325,48 @@ export class PowerNetwork {
       source.energyDrawJ += consumedJ;
     }
     record.deliveredW += deliveredW;
+    this.#telemetry = null;
+    this.#allocationTelemetry.delete(partId);
     return deliveredW;
   }
 
   telemetry() {
-    return immutableClone({
-      graphRevision: this.#graphRevision,
-      poweredPartIds: [...this.#powered].sort(compareId),
-      sources: [...this.#sources.values()]
-        .sort((a, b) => compareId(a.id, b.id))
-        .map((source) => ({ ...source })),
-      consumers: [...this.#consumers.values()]
-        .sort((a, b) => compareId(a.id, b.id))
-        .map((consumer) => ({
-          id: consumer.id,
-          requestedW: consumer.requestedW,
-          allocatedW: consumer.allocatedW,
-          unmetW: consumer.unmetW,
-          deliveredW: consumer.deliveredW,
-          operational: this.isPowered(consumer.id),
-          sourceIds: [...consumer.sourceShares.keys()].sort(compareId),
-        })),
-      requestedW: [...this.#consumers.values()].reduce(
-        (sum, entry) => sum + entry.requestedW,
-        0,
-      ),
-      allocatedW: [...this.#consumers.values()].reduce(
-        (sum, entry) => sum + entry.allocatedW,
-        0,
-      ),
-      deliveredW: [...this.#consumers.values()].reduce(
-        (sum, entry) => sum + entry.deliveredW,
-        0,
-      ),
-      unmetW: [...this.#consumers.values()].reduce(
-        (sum, entry) => sum + entry.unmetW,
-        0,
-      ),
-    });
+    this.#telemetry ||= registerOwnedImmutable(
+      immutableClone({
+        graphRevision: this.#graphRevision,
+        poweredPartIds: [...this.#powered].sort(compareId),
+        sources: [...this.#sources.values()]
+          .sort((a, b) => compareId(a.id, b.id))
+          .map((source) => ({ ...source })),
+        consumers: [...this.#consumers.values()]
+          .sort((a, b) => compareId(a.id, b.id))
+          .map((consumer) => ({
+            id: consumer.id,
+            requestedW: consumer.requestedW,
+            allocatedW: consumer.allocatedW,
+            unmetW: consumer.unmetW,
+            deliveredW: consumer.deliveredW,
+            operational: this.isPowered(consumer.id),
+            sourceIds: [...consumer.sourceShares.keys()].sort(compareId),
+          })),
+        requestedW: [...this.#consumers.values()].reduce(
+          (sum, entry) => sum + entry.requestedW,
+          0,
+        ),
+        allocatedW: [...this.#consumers.values()].reduce(
+          (sum, entry) => sum + entry.allocatedW,
+          0,
+        ),
+        deliveredW: [...this.#consumers.values()].reduce(
+          (sum, entry) => sum + entry.deliveredW,
+          0,
+        ),
+        unmetW: [...this.#consumers.values()].reduce(
+          (sum, entry) => sum + entry.unmetW,
+          0,
+        ),
+      }),
+    );
+    return this.#telemetry;
   }
 }

@@ -1,5 +1,8 @@
 import { deepFreeze } from "../model/primitives.js";
-import { registerOwnedImmutable } from "../model/owned-immutable-value.js";
+import {
+  isOwnedImmutable,
+  registerOwnedImmutable,
+} from "../model/owned-immutable-value.js";
 
 const ROUTE_SLOT_NAMES = Object.freeze([
   "power",
@@ -70,9 +73,14 @@ function telemetrySnapshot(
   // Public callers receive a detached value. The fixed-step publisher owns
   // the fresh per-tick projection and can freeze it in place, avoiding a full
   // telemetry clone on every 120 Hz step.
-  const frozenSystems = deepFreeze(
-    cloneSystems ? structuredClone(systems) : systems,
-  );
+  let frozenSystems;
+  if (cloneSystems) frozenSystems = deepFreeze(structuredClone(systems));
+  else {
+    const seen = new WeakSet();
+    for (const value of Object.values(systems))
+      if (!isOwnedImmutable(value)) deepFreeze(value, seen);
+    frozenSystems = Object.freeze(systems);
+  }
   return registerOwnedImmutable(
     Object.freeze({
       schemaVersion: 1,

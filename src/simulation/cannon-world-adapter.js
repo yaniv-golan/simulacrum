@@ -4,6 +4,7 @@ import {
   CANNON_SOLVER_TRANSACTION_ID,
   CannonSolverTransaction,
   completedCannonSolverEvidence,
+  completedCannonSolverEvidenceCandidates,
   stepCannonSolverTransaction,
 } from "./cannon-solver-transaction.js";
 
@@ -12,6 +13,11 @@ const evidenceCapturingAdapters = new WeakSet();
 /** Internal completed-row view without extending the Core-exported class. */
 export function completedWorldEvidenceContributions(adapter) {
   return completedCannonSolverEvidence(adapter.transaction);
+}
+
+/** Lightweight completed-row descriptors for bounded evidence selection. */
+export function completedWorldEvidenceCandidates(adapter) {
+  return completedCannonSolverEvidenceCandidates(adapter.transaction);
 }
 
 /** Marks exactly the next owned integration for provenance capture. */

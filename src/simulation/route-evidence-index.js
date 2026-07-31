@@ -18,6 +18,9 @@ export const ROUTE_EVIDENCE_LIMITS = Object.freeze({
 });
 
 const encoder = new TextEncoder(),
+  topologyFingerprintCache = new WeakMap(),
+  routeTopologyCache = new WeakMap(),
+  routeIndexCache = new WeakMap(),
   compareCodeUnits = (left, right) =>
     left === right ? 0 : left < right ? -1 : 1,
   stableId = (value) => `${typeof value}:${String(value)}`,
@@ -94,10 +97,15 @@ function topologyRecord(runGraph) {
 }
 
 export function fingerprintRuntimeTopology(runGraph) {
-  return fingerprint(
+  const revision = runGraph?.graphRevision,
+    cached = topologyFingerprintCache.get(runGraph);
+  if (cached?.revision === revision) return cached.fingerprint;
+  const value = fingerprint(
     "simulacrum-runtime-topology-v1",
     topologyRecord(runGraph),
   );
+  topologyFingerprintCache.set(runGraph, { revision, fingerprint: value });
+  return value;
 }
 
 function cycleConnectionIds(edges) {
@@ -152,7 +160,7 @@ function chargedIndex(value) {
 /**
  * Creates one immutable owner-level path index. The caller owns edge validity;
  * this helper owns only deterministic traversal, identity, and bounds.
- * @param {{medium?:string,runGraph?:any,graphRevision?:number,edges?:any[],sourcePartIds?:any[],targetPartIds?:any[],terminalPartIds?:any[],blockingConnectionIds?:string[],blockerEvidence?:"known"|"unknown",resultFacts?:Record<string,any>}} [options]
+ * @param {{medium?:string,runGraph?:any,graphRevision?:number,edges?:any[],sourcePartIds?:any[],targetPartIds?:any[],terminalPartIds?:any[],blockingConnectionIds?:string[],blockerEvidence?:"known"|"unknown",resultFacts?:Record<string,any>,topologyCacheKey?:string}} [options]
  */
 export function createRouteEvidenceIndex({
   medium,
@@ -165,6 +173,7 @@ export function createRouteEvidenceIndex({
   blockingConnectionIds = [],
   blockerEvidence = "unknown",
   resultFacts = {},
+  topologyCacheKey = null,
 } = {}) {
   if (
     !runGraph ||
@@ -175,26 +184,51 @@ export function createRouteEvidenceIndex({
       "INVALID_ROUTE_EVIDENCE_INDEX",
       "Route evidence indexes require a medium and authoritative run graph",
     );
-  const canonicalEdges = edges.map(canonicalEdge).sort(edgeOrder),
-    topologyFingerprint = fingerprintRuntimeTopology(runGraph),
-    canonical = {
-      version: 1,
-      kind: "network-route-index-v1",
-      medium,
-      graphRevision,
-      runtimeTopologyFingerprint: topologyFingerprint,
-      edges: canonicalEdges,
+  const topologyInput = {
+      edges: edges.map(canonicalEdge).sort(edgeOrder),
       sourcePartIds: canonicalPartIds(sourcePartIds),
       targetPartIds: canonicalPartIds(targetPartIds),
       terminalPartIds: canonicalPartIds(terminalPartIds),
-      cycleConnectionIds: cycleConnectionIds(canonicalEdges),
       blockingConnectionIds: [
         ...new Set(blockingConnectionIds.map(String)),
       ].sort(compareCodeUnits),
       blockerEvidence,
+    },
+    topologyInputKey = stableStringify(topologyInput),
+    cachedTopologies = routeTopologyCache.get(runGraph) || new Map(),
+    cachedRecord = topologyCacheKey
+      ? cachedTopologies.get(topologyCacheKey)
+      : null,
+    topology =
+      cachedRecord?.graphRevision === graphRevision &&
+      cachedRecord.topologyInputKey === topologyInputKey
+        ? cachedRecord.topology
+        : {
+            graphRevision,
+            runtimeTopologyFingerprint: fingerprintRuntimeTopology(runGraph),
+            ...topologyInput,
+          };
+  topology.cycleConnectionIds ||= cycleConnectionIds(topology.edges);
+  if (topologyCacheKey && topology !== cachedRecord?.topology) {
+    cachedTopologies.set(topologyCacheKey, {
+      graphRevision,
+      topologyInputKey,
+      topology,
+    });
+    routeTopologyCache.set(runGraph, cachedTopologies);
+  }
+  const canonical = {
+      version: 1,
+      kind: "network-route-index-v1",
+      medium,
+      ...topology,
       resultFacts: structuredClone(resultFacts),
     },
-    networkResultDigest = fingerprint(
+    cacheKey = stableStringify(canonical),
+    ownerKey = `${medium}:${topologyCacheKey || "default"}`,
+    cached = routeIndexCache.get(runGraph)?.get(ownerKey);
+  if (cached?.key === cacheKey) return cached.index;
+  const networkResultDigest = fingerprint(
       "simulacrum-network-result-v1",
       canonical,
     ),
@@ -203,20 +237,25 @@ export function createRouteEvidenceIndex({
       networkResultDigest,
       indexDigest: fingerprint("simulacrum-route-evidence-index-v1", canonical),
     },
-    available = chargedIndex({ ...withDigest, status: "available" });
-  if (available.byteLength > ROUTE_EVIDENCE_LIMITS.maximumIndexBytes)
-    return deepFreeze({
-      version: 1,
-      kind: "network-route-index-v1",
-      medium,
-      status: "over-limit",
-      graphRevision,
-      runtimeTopologyFingerprint: topologyFingerprint,
-      networkResultDigest,
-      indexDigest: null,
-      byteLength: available.byteLength,
-    });
-  return deepFreeze(available);
+    available = chargedIndex({ ...withDigest, status: "available" }),
+    index =
+      available.byteLength > ROUTE_EVIDENCE_LIMITS.maximumIndexBytes
+        ? deepFreeze({
+            version: 1,
+            kind: "network-route-index-v1",
+            medium,
+            status: "over-limit",
+            graphRevision,
+            runtimeTopologyFingerprint: topology.runtimeTopologyFingerprint,
+            networkResultDigest,
+            indexDigest: null,
+            byteLength: available.byteLength,
+          })
+        : deepFreeze(available),
+    byMedium = routeIndexCache.get(runGraph) || new Map();
+  byMedium.set(ownerKey, { key: cacheKey, index });
+  routeIndexCache.set(runGraph, byMedium);
+  return index;
 }
 
 function queryMedium(kind) {

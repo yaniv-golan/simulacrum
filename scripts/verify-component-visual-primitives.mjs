@@ -43,6 +43,7 @@ const IDENTITY_FRAME = {
     "spur-gear-v1": {
       kind: "spur-gear-v1",
       toothCount: 24,
+      toothPhaseRad: 0,
       pitchRadiusM: 0.6,
       pressureAngleRad: (20 * Math.PI) / 180,
       moduleM: 0.05,

@@ -1,4 +1,5 @@
 import { DomainValidationError, immutableClone } from "../model/primitives.js";
+import { registerOwnedImmutable } from "../model/owned-immutable-value.js";
 import {
   createRouteEvidenceIndex,
   routeWitnessFromIndex,
@@ -206,6 +207,7 @@ export class MaterialResourceNetwork {
             remainingMassKg,
           })),
       },
+      topologyCacheKey: "material-resource-reachability",
     });
     return this;
   }
@@ -548,6 +550,7 @@ export class MaterialResourceNetwork {
             tick,
             allocations: committedAllocation,
           },
+          topologyCacheKey: "material-resource-allocation",
         })
       : null;
     for (const [partId, stagedStore] of stagedStores)
@@ -584,24 +587,27 @@ export class MaterialResourceNetwork {
                 remainingMassKg,
               })),
           },
+          topologyCacheKey: "material-resource-reachability",
         })
       : null;
     return immutableClone(this.#lastAllocation);
   }
 
   telemetry() {
-    return immutableClone({
-      version: 1,
-      graphRevision: this.#graphRevision,
-      allocationPolicy: "ideal-manifold-v1",
-      stores: [...this.#stores.values()]
-        .sort((left, right) => compareId(left.partId, right.partId))
-        .map((store) => ({ ...store })),
-      components: this.#components.map((component) => ({ ...component })),
-      allocations: this.#lastAllocation.map((allocation) => ({
-        ...allocation,
-      })),
-    });
+    return registerOwnedImmutable(
+      immutableClone({
+        version: 1,
+        graphRevision: this.#graphRevision,
+        allocationPolicy: "ideal-manifold-v1",
+        stores: [...this.#stores.values()]
+          .sort((left, right) => compareId(left.partId, right.partId))
+          .map((store) => ({ ...store })),
+        components: this.#components.map((component) => ({ ...component })),
+        allocations: this.#lastAllocation.map((allocation) => ({
+          ...allocation,
+        })),
+      }),
+    );
   }
 
   exportState() {

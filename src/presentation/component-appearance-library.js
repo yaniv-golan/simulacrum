@@ -15,11 +15,10 @@ export function componentAppearanceProfile({
   materialKey,
   semanticKey,
   role,
-  customColor,
   aerothermal,
 }) {
   if (aerothermal?.material?.ablative === true) return "ablative";
-  if (semanticKey === "rotor-blade" && customColor == null) return "composite";
+  if (semanticKey === "rotor-blade") return "composite";
   if (MATERIAL_PROFILES[materialKey]) return MATERIAL_PROFILES[materialKey];
   if (materialKey === "generic-structure") return "paint";
   throw new Error(
@@ -38,15 +37,28 @@ function createPaintMaterial(color) {
   return trackOwnedRenderResource(material, "componentColorMaterials");
 }
 
+function createCompositeCoating(color) {
+  const material = mats.composite.clone();
+  material.color.setHex(color);
+  material.name = `component-composite-coating-${color
+    .toString(16)
+    .padStart(6, "0")}`;
+  return trackOwnedRenderResource(material, "componentColorMaterials");
+}
+
 /** Creates a bounded resolver: shared catalog finishes plus one lazy paint material. */
 export function createComponentAppearanceResolver(visualDescriptor) {
-  let paintMaterial = null;
+  let paintMaterial = null,
+    compositeCoating = null;
   return (appearance) => {
     const profile = componentAppearanceProfile({
       ...appearance,
-      customColor: visualDescriptor.customColor,
       aerothermal: visualDescriptor.geometry.aerothermal,
     });
+    if (profile === "composite" && visualDescriptor.customColor != null) {
+      compositeCoating ||= createCompositeCoating(visualDescriptor.color);
+      return compositeCoating;
+    }
     if (profile !== "paint") return mats[profile];
     paintMaterial ||= createPaintMaterial(visualDescriptor.color);
     return paintMaterial;

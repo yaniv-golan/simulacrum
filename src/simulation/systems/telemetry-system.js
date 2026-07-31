@@ -47,10 +47,12 @@ export class TelemetrySystem {
       context.telemetry.power = context.powerNetwork.telemetry();
     if (context.signalNetwork)
       context.telemetry.signals = context.signalNetwork.telemetry();
-    context.telemetry.commands = {
+    context.telemetry.commands ||= Object.freeze({
       ...context.commandBus.entries(),
-      capabilities: [...(context.commandCapabilities || [])].sort(),
-    };
+      capabilities: Object.freeze(
+        [...(context.commandCapabilities || [])].sort(),
+      ),
+    });
     const captured = context.services.captureTelemetry?.(context),
       systems = captured?.systems || captured || context.telemetry,
       finalTopologyFingerprint = fingerprintRuntimeTopology(context.runGraph),

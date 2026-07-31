@@ -16,31 +16,47 @@ const outputDirectory = path.resolve(
   });
 
 const click = (selector) => page.locator(selector).dispatchEvent("click"),
-  state = () => page.evaluate(() => JSON.parse(window.render_game_to_text())),
   advance = (milliseconds) =>
     page.evaluate((duration) => window.advanceTime(duration), milliseconds),
   canvas = () => page.locator("#stage canvas"),
   capture = async (name) => {
-    await page.waitForTimeout(120);
-    await page.locator(".shell").evaluate((shell) => {
-      shell.style.visibility = "hidden";
-    });
-    const pngDataUrl = await canvas().evaluate((element) =>
-      element.toDataURL("image/png"),
-    );
+    const { pngDataUrl, hasVisiblePixel, snapshot, visualGeometry } =
+      await canvas().evaluate((element) => {
+        // WebGL's drawing buffer is not preserved. Render and read back in the
+        // same browser task so a later compositor clear cannot yield a blank
+        // but otherwise valid PNG.
+        window.advanceTime(0);
+        const context =
+            element.getContext("webgl2") || element.getContext("webgl"),
+          pixels = new Uint8Array(element.width * element.height * 4);
+        context.readPixels(
+          0,
+          0,
+          element.width,
+          element.height,
+          context.RGBA,
+          context.UNSIGNED_BYTE,
+          pixels,
+        );
+        return {
+          pngDataUrl: element.toDataURL("image/png"),
+          hasVisiblePixel: pixels.some((channel, index) =>
+            index % 4 === 3 ? channel !== 0 : false,
+          ),
+          snapshot: JSON.parse(window.render_game_to_text()),
+          visualGeometry: window.simulacrum_performance().visualGeometry,
+        };
+      });
+    assert.ok(hasVisiblePixel, `${name} captured a fully transparent canvas`);
     await writeFile(
       path.join(outputDirectory, `${name}.png`),
       Buffer.from(pngDataUrl.split(",", 2)[1], "base64"),
     );
-    await page.locator(".shell").evaluate((shell) => {
-      shell.style.visibility = "";
-    });
-    const snapshot = await state();
     await writeFile(
       path.join(outputDirectory, `${name}.json`),
       `${JSON.stringify(snapshot, null, 2)}\n`,
     );
-    return snapshot;
+    return { snapshot, visualGeometry };
   };
 
 await mkdir(outputDirectory, { recursive: true });
@@ -98,13 +114,14 @@ for (const layout of layouts) {
     await click("#view-front");
     await click("#focus-view");
     await advance(250);
-    const overview = await capture(`${demo.id}-${layout.id}-day-overview`);
+    const { snapshot: overview, visualGeometry } = await capture(
+      `${demo.id}-${layout.id}-day-overview`,
+    );
     captureCount++;
     assert.ok(overview.parts.some(({ type }) => type === demo.targetType));
-    const visualGeometry = await page.evaluate(
-        () => window.simulacrum_performance().visualGeometry,
+    const textPart = overview.parts.find(
+        ({ type }) => type === demo.targetType,
       ),
-      textPart = overview.parts.find(({ type }) => type === demo.targetType),
       renderedPart = visualGeometry.find(({ id }) => id === textPart.id);
     assert.equal(renderedPart?.type, textPart.type);
     assert.ok(
@@ -132,18 +149,17 @@ for (const layout of layouts) {
     await page.locator("#isolate-selection").dispatchEvent("click");
     await page.locator("#frame-selection").dispatchEvent("click");
     await page.waitForTimeout(150);
-    const detail = await capture(
-      demo.id === "cart" && layout.id === "laptop"
-        ? "spring-laptop-day-detail"
-        : `${demo.id}-${layout.id}-day-${demo.targetType}-detail`,
-    );
+    const { snapshot: detail, visualGeometry: detailedGeometry } =
+      await capture(
+        demo.id === "cart" && layout.id === "laptop"
+          ? "spring-laptop-day-detail"
+          : `${demo.id}-${layout.id}-day-${demo.targetType}-detail`,
+      );
     captureCount++;
     assert.deepEqual(detail.presentation.selectionVisibility.isolatedPartIds, [
       targetId,
     ]);
-    const detailedVisual = (
-      await page.evaluate(() => window.simulacrum_performance().visualGeometry)
-    ).find(({ id }) => id === targetId);
+    const detailedVisual = detailedGeometry.find(({ id }) => id === targetId);
     const selectedDetail = detail.presentation.componentDetail.selected.find(
       ({ id }) => id === targetId,
     );
@@ -160,7 +176,9 @@ for (const layout of layouts) {
       () => JSON.parse(window.render_game_to_text()).running === true,
     );
     await advance(250);
-    const running = await capture(`${demo.id}-${layout.id}-night-running`);
+    const { snapshot: running } = await capture(
+      `${demo.id}-${layout.id}-night-running`,
+    );
     captureCount++;
     assert.equal(running.running, true);
     await click("#run-btn");

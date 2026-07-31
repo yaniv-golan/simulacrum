@@ -38,6 +38,7 @@ import { compileAssembly } from "../src/model/assembly-compiler.js";
 import { SimulationSession } from "../src/simulation/simulation-session.js";
 import { mechanismComponentDefinition } from "../src/model/mechanism-component-definitions.js";
 import { finiteOr } from "../src/model/finite-or.js";
+import { componentElectricalContract } from "../src/model/component-contracts.js";
 
 function expectDomainError(action, code) {
   assert.throws(action, (error) => {
@@ -55,6 +56,65 @@ assert.equal(
   Infinity,
   "runtime fallbacks may intentionally represent an unbounded measurement",
 );
+
+const mutableElectricalContract = { minimumWatts: 4, nominalWatts: 8 },
+  mutableContractCatalog = {
+    custom: { electricalContract: mutableElectricalContract },
+  },
+  firstElectricalContract = componentElectricalContract(
+    { type: "custom" },
+    mutableContractCatalog,
+  );
+assert.strictEqual(
+  componentElectricalContract({ type: "custom" }, mutableContractCatalog),
+  firstElectricalContract,
+  "unchanged flat component contracts did not reuse their immutable clone",
+);
+mutableElectricalContract.nominalWatts = 12;
+const changedElectricalContract = componentElectricalContract(
+  { type: "custom" },
+  mutableContractCatalog,
+);
+assert.notStrictEqual(changedElectricalContract, firstElectricalContract);
+assert.equal(changedElectricalContract.nominalWatts, 12);
+assert.equal(firstElectricalContract.nominalWatts, 8);
+assert.ok(Object.isFrozen(changedElectricalContract));
+mutableElectricalContract.maximumWatts = 20;
+assert.equal(
+  componentElectricalContract({ type: "custom" }, mutableContractCatalog)
+    .maximumWatts,
+  20,
+  "an added contract field did not invalidate the immutable clone",
+);
+delete mutableElectricalContract.maximumWatts;
+assert.equal(
+  componentElectricalContract({ type: "custom" }, mutableContractCatalog)
+    .maximumWatts,
+  undefined,
+  "a deleted contract field did not invalidate the immutable clone",
+);
+const nestedPortMetadata = { label: "first" },
+  shallowFrozenPort = Object.freeze({
+    id: "CUSTOM",
+    kind: "signal",
+    direction: "in",
+    metadata: nestedPortMetadata,
+  }),
+  nestedPortCatalog = { custom: { ports: [shallowFrozenPort] } },
+  firstNestedPort = portDefinition(
+    { type: "custom" },
+    "CUSTOM",
+    nestedPortCatalog,
+  );
+nestedPortMetadata.label = "second";
+const changedNestedPort = portDefinition(
+  { type: "custom" },
+  "CUSTOM",
+  nestedPortCatalog,
+);
+assert.equal(firstNestedPort.metadata.label, "first");
+assert.equal(changedNestedPort.metadata.label, "second");
+assert.notStrictEqual(changedNestedPort, firstNestedPort);
 
 assert.equal(
   stableStringify({ z: 1, a: { y: 2, x: 3 } }),

@@ -9,6 +9,7 @@ import {
   canonicalQuaternion,
   deepFreeze,
   DomainValidationError,
+  finiteNumber,
   finiteScale3,
   finiteVector3,
   quaternionFromEulerXYZ,
@@ -23,7 +24,7 @@ import { sha256Hex } from "./sha256.js";
 /** @typedef {{positionM:number[],orientation:number[]}} GeometryFrameV2 */
 /** @typedef {{framePart:GeometryFrameV2,clearanceM:number,anchorPolicy:"fixed-point-v1"|"surface-point-v1"}} PortFrameV2 */
 /** @typedef {{minimumM:number[],maximumM:number[]}} GeometryBoundsV1 */
-/** @typedef {{kind:"box-v1",fullSizeM:number[]}|{kind:"rounded-box-v1",fullSizeM:number[],radiusM:number}|{kind:"cylinder-v1",radiusM:number,axialLengthM:number}|{kind:"elliptic-cylinder-v1",radiusXM:number,radiusYM:number,axialLengthM:number}|{kind:"sphere-v1",radiusM:number}|{kind:"capsule-v1",radiusM:number,cylinderLengthM:number}|{kind:"cone-v1",startRadiusM:number,endRadiusM:number,axialLengthM:number}|{kind:"rounded-wheel-v1",radiusM:number,widthM:number,shoulderRadiusM:number}|{kind:"spur-gear-v1",toothCount:number,pitchRadiusM:number,pressureAngleRad:number,moduleM:number,axialThicknessM:number,rootRadiusM:number,tipRadiusM:number,boreRadiusM:number,hubRadiusM:number|null,hubThicknessM:number|null}|{kind:"helical-spring-v1",meanCoilRadiusM:number,wireRadiusM:number,activeTurns:number,endTreatment:"plain-v1"|"closed-ground-v1",referenceAxialLengthM:number}|{kind:"extruded-profile-v1",pointsM:number[][],axialThicknessM:number}} PrimitiveGeometryV1 */
+/** @typedef {{kind:"box-v1",fullSizeM:number[]}|{kind:"rounded-box-v1",fullSizeM:number[],radiusM:number}|{kind:"cylinder-v1",radiusM:number,axialLengthM:number}|{kind:"elliptic-cylinder-v1",radiusXM:number,radiusYM:number,axialLengthM:number}|{kind:"sphere-v1",radiusM:number}|{kind:"capsule-v1",radiusM:number,cylinderLengthM:number}|{kind:"cone-v1",startRadiusM:number,endRadiusM:number,axialLengthM:number}|{kind:"rounded-wheel-v1",radiusM:number,widthM:number,shoulderRadiusM:number}|{kind:"spur-gear-v1",toothCount:number,toothPhaseRad:number,pitchRadiusM:number,pressureAngleRad:number,moduleM:number,axialThicknessM:number,rootRadiusM:number,tipRadiusM:number,boreRadiusM:number,hubRadiusM:number|null,hubThicknessM:number|null}|{kind:"helical-spring-v1",meanCoilRadiusM:number,wireRadiusM:number,activeTurns:number,endTreatment:"plain-v1"|"closed-ground-v1",referenceAxialLengthM:number}|{kind:"extruded-profile-v1",pointsM:number[][],axialThicknessM:number}} PrimitiveGeometryV1 */
 /** @typedef {{id:string,framePart:GeometryFrameV2,geometry:PrimitiveGeometryV1,semanticKey:string,materialKey:string,contactRole:string,approximationOf:string|null,semanticRegions:unknown[]}} BodyPrimitiveV1 */
 /** @typedef {BodyPrimitiveV1} CollisionPrimitiveV1 */
 /** @typedef {{kind:"port-frame-v1",portId:string,offsetM:number[]}} PhysicalFeatureAnchorV1 */
@@ -353,7 +354,11 @@ function primitive(id, framePart, geometry, metadata = {}) {
   };
 }
 
-function mechanismPrimitive(region, semanticRegions = []) {
+function mechanismPrimitive(
+  region,
+  semanticRegions = [],
+  approximationOf = null,
+) {
   const sourceGeometry = region.geometry,
     geometry =
       sourceGeometry.kind === "capsule-v1"
@@ -391,6 +396,7 @@ function mechanismPrimitive(region, semanticRegions = []) {
       semanticKey: region.semanticKey,
       materialKey: region.materialKey,
       contactRole: region.contactRole,
+      approximationOf,
       semanticRegions,
     },
   );
@@ -526,6 +532,7 @@ function resolvedPrimitiveGeometry(source, config, scale, orientation) {
     return {
       kind: "spur-gear-v1",
       toothCount: Number(source.toothCount),
+      toothPhaseRad: Number(source.toothPhaseRad),
       pitchRadiusM: Number(source.pitchRadiusM) * scaleX,
       pressureAngleRad: Number(source.pressureAngleRad),
       moduleM: Number(source.moduleM) * scaleX,
@@ -1172,8 +1179,14 @@ function descriptorForMechanism(
           (region) => region.contactRole === "tire-envelope",
         )
       : body.collisionRegions,
+    collisionApproximationOf =
+      geometryDefinition.collisionPrimitives.approximationOf,
     collisionPrimitives = collisionRegions.map((region) =>
-      mechanismPrimitive(region, hasTireEnvelope ? body.collisionRegions : []),
+      mechanismPrimitive(
+        region,
+        hasTireEnvelope ? body.collisionRegions : [],
+        collisionApproximationOf,
+      ),
     ),
     bodyPrimitives = geometryDefinition.bodyPrimitives.map((source) =>
       resolvedDefinitionPrimitive(source, config, componentDefinition, scale, {
@@ -1368,6 +1381,7 @@ function validatePrimitiveGeometryRecord(value, path) {
       [
         "kind",
         "toothCount",
+        "toothPhaseRad",
         "pitchRadiusM",
         "pressureAngleRad",
         "moduleM",
@@ -1386,6 +1400,9 @@ function validatePrimitiveGeometryRecord(value, path) {
         "A spur gear requires at least four integer teeth",
         [...path, "toothCount"],
       );
+    finiteNumber(value.toothPhaseRad, {
+      path: [...path, "toothPhaseRad"],
+    });
     for (const key of [
       "pitchRadiusM",
       "pressureAngleRad",
@@ -2550,7 +2567,7 @@ export function validateComponentGeometryDefinitionOrThrow(value) {
   } else if (definition.kind === "mechanism-component-geometry-v1") {
     closedKeys(
       definition.collisionPrimitives,
-      ["kind"],
+      ["kind", "approximationOf"],
       ["geometryDefinition", "collisionPrimitives"],
     );
     if (
@@ -2579,6 +2596,12 @@ export function validateComponentGeometryDefinitionOrThrow(value) {
         );
       bodyIds.add(source.id);
     }
+    const approximationOf = definition.collisionPrimitives.approximationOf;
+    if (approximationOf !== null && !bodyIds.has(approximationOf))
+      fail(
+        "INVALID_COMPONENT_GEOMETRY_DEFINITION",
+        "Mechanism collision approximation target must name a body primitive",
+      );
   } else if (definition.kind === "radial-rotor-component-geometry-v1") {
     closedKeys(
       definition.collisionPrimitives,

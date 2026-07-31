@@ -78,7 +78,7 @@ function spurGearGeometry(geometry, detailPolicy) {
     flankSamples = Math.max(2, Number(detailPolicy.gearFlankSegments || 3)),
     points = [];
   for (let tooth = 0; tooth < geometry.toothCount; tooth++) {
-    const centerAngle = tooth * toothPitchRad;
+    const centerAngle = geometry.toothPhaseRad + tooth * toothPitchRad;
     for (const side of [-1, 1]) {
       const samples = Array.from({ length: flankSamples + 1 }, (_, index) =>
         side < 0 ? index : flankSamples - index,
@@ -141,6 +141,7 @@ function spurGearGeometry(geometry, detailPolicy) {
   result.userData.sharedPrimitiveKey = [
     geometry.kind,
     geometry.toothCount,
+    geometry.toothPhaseRad,
     geometry.pitchRadiusM,
     geometry.pressureAngleRad,
     geometry.moduleM,
@@ -181,14 +182,49 @@ function helicalSpringGeometry(geometry, detailPolicy) {
           -axialSpanM / 2 + axialFraction * axialSpanM,
         );
       }
-    })(),
-    result = new THREE.TubeGeometry(
-      path,
-      longitudinalSegments,
-      geometry.wireRadiusM,
-      Math.max(6, Number(detailPolicy.springWireSegments || 10)),
-      false,
-    );
+
+      getTangent(fraction, target = new THREE.Vector3()) {
+        const delta = 0.0001,
+          before = this.getPoint(Math.max(0, fraction - delta)),
+          after = this.getPoint(Math.min(1, fraction + delta));
+        return target.subVectors(after, before).normalize();
+      }
+    })();
+  let result = new THREE.TubeGeometry(
+    path,
+    longitudinalSegments,
+    geometry.wireRadiusM,
+    Math.max(6, Number(detailPolicy.springWireSegments || 10)),
+    false,
+  );
+  if (geometry.endTreatment === "closed-ground-v1") {
+    const wireSegments = Math.max(
+        6,
+        Number(detailPolicy.springWireSegments || 10),
+      ),
+      caps = [0, 1].map((fraction) => {
+        const cap = new THREE.CylinderGeometry(
+            geometry.wireRadiusM,
+            geometry.wireRadiusM,
+            geometry.wireRadiusM * 0.15,
+            wireSegments,
+          ),
+          point = path.getPoint(fraction),
+          tangent = path.getTangent(fraction).normalize();
+        cap.applyQuaternion(
+          new THREE.Quaternion().setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0),
+            tangent,
+          ),
+        );
+        cap.translate(point.x, point.y, point.z);
+        return cap;
+      }),
+      capped = mergeGeometries([result, ...caps], false);
+    result.dispose();
+    for (const cap of caps) cap.dispose();
+    result = capped;
+  }
   result.computeBoundingBox();
   const bounds = result.boundingBox,
     radialM = geometry.meanCoilRadiusM + geometry.wireRadiusM,

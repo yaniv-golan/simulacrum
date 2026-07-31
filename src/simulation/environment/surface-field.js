@@ -9,15 +9,21 @@ import { testSiteHeightFeatureOffset } from "../../model/test-site-terrain.js";
 export function createSurfaceField(definition) {
   const [footprintX, footprintZ] = definition.footprint.centerM,
     [footprintWidth, footprintDepth] = definition.footprint.sizeM,
+    fluidRegions = definition.fluidRegions.map((fluid) => {
+      const bounds = testSiteShapeBounds(fluid.shape);
+      return {
+        fluid,
+        bounds,
+        referenceRadius:
+          Math.min(bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ) / 2,
+      };
+    }),
     contains = (x, z) =>
       Math.abs(x - footprintX) <= footprintWidth / 2 &&
       Math.abs(z - footprintZ) <= footprintDepth / 2,
     fluidAt = (x, z, margin = 1) => {
-      for (const fluid of definition.fluidRegions) {
-        const bounds = testSiteShapeBounds(fluid.shape),
-          referenceRadius =
-            Math.min(bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ) / 2,
-          marginM = Math.max(0, margin - 1) * referenceRadius;
+      for (const { fluid, bounds, referenceRadius } of fluidRegions) {
+        const marginM = Math.max(0, margin - 1) * referenceRadius;
         if (!testSiteShapeContains(fluid.shape, x, z, marginM)) continue;
         const distanceM = testSiteShapeSignedDistance(fluid.shape, x, z),
           inwardDistanceM = Math.max(0, -distanceM),

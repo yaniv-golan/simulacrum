@@ -619,6 +619,12 @@ assert.deepEqual(onlineReceiver.state, {
   conflict: false,
   tick: 42,
 });
+assert.ok(Object.isFrozen(onlineReceiver.state.routedControllerIds));
+assert.throws(
+  () => onlineReceiver.state.routedControllerIds.push(99),
+  TypeError,
+  "owned receiver telemetry exposed a mutable nested controller list",
+);
 for (const options of [
   { powered: false },
   { detached: true },

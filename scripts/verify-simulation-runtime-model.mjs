@@ -67,6 +67,8 @@ graph.applyLoad("signal", {
 });
 assert.equal(graph.part(1).energyWh, 87.5);
 assert.equal(graph.part(1).energyJ, 87.5 * 3600);
+assert.ok(Object.isFrozen(graph.part(1)));
+assert.ok(Object.isFrozen(graph.part(1).config));
 assert.equal(graph.controllerState(2).commands.throttle, 0.5);
 assert.equal(graph.connection("signal").peakLoadN, 400);
 assert.deepEqual(editor, editorBefore, "runtime mutations leaked into editor");
@@ -145,6 +147,15 @@ registry.recordContact("vehicle", {
   otherBodyId: "ground",
   surface: "field",
 });
+const cyclicFeatureId = { kind: "cyclic-test" };
+cyclicFeatureId.self = cyclicFeatureId;
+const cyclicContact = registry.recordContact("vehicle", {
+  point: { x: 1, y: 0, z: 3 },
+  normal: { x: 0, y: 1, z: 0 },
+  featureId: cyclicFeatureId,
+});
+assert.strictEqual(cyclicContact.featureId.self, cyclicContact.featureId);
+assert.ok(Object.isFrozen(cyclicContact.featureId));
 registry.recordLoad("vehicle", {
   connectionId: "signal",
   forceN: 400,
@@ -163,6 +174,8 @@ assert.deepEqual(body.contacts[0].relativeVelocity, {
 assert.equal(body.contacts[0].otherBodyId, "ground");
 assert.equal(body.contacts[0].tick, 1);
 assert.equal(body.contacts[0].contactId, null);
+assert.ok(Object.isFrozen(body.contacts[0]));
+assert.ok(Object.isFrozen(body.contacts[0].point));
 assert.deepEqual(body.contacts[0].forceWorldN, { x: 0, y: 0, z: 0 });
 assert.equal(body.contacts[0].validity, "unavailable");
 assert.equal(body.loads[0].torqueNm, 12);

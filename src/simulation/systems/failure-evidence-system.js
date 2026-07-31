@@ -1,21 +1,4 @@
-import { completedMultibodyFailureEvidence } from "../multibody-runtime.js";
-
-function finiteVector(vector) {
-  return [vector?.x, vector?.y, vector?.z].every((value) =>
-    Number.isFinite(Number(value ?? 0)),
-  );
-}
-
-function finiteContribution(row) {
-  return (
-    Number.isFinite(Number(row?.multiplier ?? 0)) &&
-    Number.isFinite(Number(row?.forceMagnitudeN ?? 0)) &&
-    Number.isFinite(Number(row?.momentMagnitudeNm ?? 0)) &&
-    finiteVector(row?.forceWorldN) &&
-    finiteVector(row?.momentAtApplicationPointWorldNm) &&
-    finiteVector(row?.applicationPointWorldM)
-  );
-}
+import { invalidMultibodyFailureEvidenceCandidate } from "../multibody-runtime.js";
 
 function compactMobilityTelemetry(mobility) {
   return {
@@ -164,10 +147,9 @@ export class FailureEvidenceSystem {
             subjectId: contact.tireEvidence.tirePartId,
             validity: contact.tireEvidence.validity,
           });
-
-    const invalidContribution = completedMultibodyFailureEvidence(
+    const invalidContribution = invalidMultibodyFailureEvidenceCandidate(
       context.services.multibodyRuntime,
-    ).find((row) => !finiteContribution(row));
+    );
     if (invalidContribution)
       recorder.trigger({
         kind: "numerical-anomaly",
@@ -192,14 +174,14 @@ export class FailureEvidenceSystem {
         });
       this.lastGraphRevision = graphRevision;
     }
-
+    const contextTelemetry = {
+      mobility: compactMobilityTelemetry(context.telemetry.mobility),
+      graphRevision,
+    };
     let summary = recorder.completeTick({
       tick: context.clock.tick,
       timeS: context.time,
-      contextTelemetry: {
-        mobility: compactMobilityTelemetry(context.telemetry.mobility),
-        graphRevision,
-      },
+      contextTelemetry,
     });
     if (
       summary.captureState === "captured" &&

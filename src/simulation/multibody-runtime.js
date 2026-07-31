@@ -3,8 +3,12 @@ import { readActuatorCommand } from "../model/actuator-contracts.js";
 import { compileAssembly } from "../model/assembly-compiler.js";
 import { DomainValidationError } from "../model/primitives.js";
 import {
+  registerCannonCollisionExclusion,
+  unregisterCannonCollisionExclusion,
+} from "./cannon-solver-transaction.js";
+import {
   CannonWorldAdapter,
-  completedWorldEvidenceContributions,
+  completedWorldEvidenceCandidates,
 } from "./cannon-world-adapter.js";
 import {
   applyAxialForce,
@@ -18,8 +22,12 @@ import {
   stopResponse,
 } from "./two-frame-mechanisms.js";
 import {
-  constraintReactionContributions,
+  constraintReactionContributionCandidates,
+  constraintReactionCandidateRowId,
+  invalidConstraintReactionCandidate,
   constraintReactionWrench,
+  constraintReactionWrenchEvidence,
+  materializeConstraintReactionContribution,
 } from "./constraint-reaction-wrench.js";
 import { TireContactConstraint } from "./tire-contact.js";
 import {
@@ -35,16 +43,14 @@ import {
 } from "../model/component-geometry-contract.js";
 import { geometryDescriptorForPart } from "../model/geometry-descriptors.js";
 
-class CollisionExclusionConstraint extends CANNON.Constraint {
-  update() {}
-}
-
 const COORDINATE_KINDS = new Set([
   "revolute",
   "linear-guide",
   "linear-actuator",
 ]);
 const failureEvidenceByRuntime = new WeakMap();
+const fluidDescriptorsByRuntime = new WeakMap();
+const telemetryBodyDescriptorsByRuntime = new WeakMap();
 const evidenceCapturingRuntimes = new WeakSet();
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const plainVector = (value) => ({ x: value.x, y: value.y, z: value.z });
@@ -59,6 +65,178 @@ const frameValuesEqual = (left, right, tolerance = 1e-12) =>
   Array.isArray(right) &&
   left.length === right.length &&
   left.every((value, index) => Math.abs(value - right[index]) <= tolerance);
+
+function evidenceRowMagnitude(row) {
+  return Math.max(
+    0,
+    Number(row?.forceMagnitudeN || 0),
+    Number(row?.momentMagnitudeNm || 0),
+  );
+}
+
+function evidenceRowOrder(left, right) {
+  const magnitudeOrder =
+    evidenceRowMagnitude(right) - evidenceRowMagnitude(left);
+  if (magnitudeOrder) return magnitudeOrder;
+  const leftId = String(left.rowOrderKey || left.rowId),
+    rightId = String(right.rowOrderKey || right.rowId);
+  if (leftId !== rightId) return leftId < rightId ? -1 : 1;
+  const leftSide = String(left.side || ""),
+    rightSide = String(right.side || "");
+  return leftSide === rightSide ? 0 : leftSide < rightSide ? -1 : 1;
+}
+
+function evidenceRowKey(row) {
+  return `${String(row?.rowOrderKey || row?.rowId)}\0${String(
+    row?.side || "",
+  )}`;
+}
+
+function addBoundedEvidenceRow(bucket, row, maximum) {
+  const rows = bucket.rows;
+  if (!bucket.sorted) {
+    rows.push(row);
+    if (rows.length <= maximum) return;
+    rows.sort(evidenceRowOrder);
+    rows.length = maximum;
+    bucket.sorted = true;
+    return;
+  }
+  let low = 0,
+    high = rows.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (evidenceRowOrder(row, rows[middle]) < 0) high = middle;
+    else low = middle + 1;
+  }
+  if (low >= maximum) return;
+  rows.splice(low, 0, row);
+  if (rows.length > maximum) rows.pop();
+}
+
+function selectEvidenceRows(rows, { triggered, nearConnectionIds, policy }) {
+  const seenEquationsBySide = new Map(),
+    fallbackUniqueKeys = new Set();
+  if (triggered) {
+    const unique = [];
+    for (const row of rows) {
+      if (row?.equation && typeof row.equation === "object") {
+        const side = String(row.side || ""),
+          seen = seenEquationsBySide.get(side) || new WeakSet();
+        if (seen.has(row.equation)) continue;
+        seen.add(row.equation);
+        seenEquationsBySide.set(side, seen);
+      } else {
+        const key = evidenceRowKey(row);
+        if (fallbackUniqueKeys.has(key)) continue;
+        fallbackUniqueKeys.add(key);
+      }
+      unique.push(row);
+    }
+    return {
+      rows: unique.sort(evidenceRowOrder).slice(0, policy.maxRowsOnTriggerTick),
+      totalRowCount: unique.length,
+    };
+  }
+  const nearConnections = new Set((nearConnectionIds || []).map(String));
+  const retainedCandidates = new WeakSet(),
+    retainedFallbackKeys = new Set(),
+    byConnection = new Map(),
+    unprojected = { rows: [], sorted: false };
+  let totalRowCount = 0;
+  for (const row of rows) {
+    if (row?.equation && typeof row.equation === "object") {
+      const side = String(row.side || ""),
+        seen = seenEquationsBySide.get(side) || new WeakSet();
+      if (seen.has(row.equation)) continue;
+      seen.add(row.equation);
+      seenEquationsBySide.set(side, seen);
+    } else {
+      const key = evidenceRowKey(row);
+      if (fallbackUniqueKeys.has(key)) continue;
+      fallbackUniqueKeys.add(key);
+    }
+    totalRowCount++;
+    const connectionIds = row.sourceConnectionIds || [];
+    if (!connectionIds.length) {
+      addBoundedEvidenceRow(unprojected, row, policy.topRowsPerConnection);
+      continue;
+    }
+    for (const connectionId of connectionIds) {
+      const key = String(connectionId),
+        bucket = byConnection.get(key) || { rows: [], sorted: false };
+      addBoundedEvidenceRow(
+        bucket,
+        row,
+        nearConnections.has(key)
+          ? policy.maxRowsPerExactFrame
+          : policy.topRowsPerConnection,
+      );
+      byConnection.set(key, bucket);
+    }
+  }
+  const selected = { rows: [], sorted: false };
+  for (const bucket of byConnection.values()) {
+    for (const row of bucket.rows) {
+      if (row && typeof row === "object") {
+        if (retainedCandidates.has(row)) continue;
+        retainedCandidates.add(row);
+      } else {
+        const key = evidenceRowKey(row);
+        if (retainedFallbackKeys.has(key)) continue;
+        retainedFallbackKeys.add(key);
+      }
+      addBoundedEvidenceRow(selected, row, policy.maxRowsPerExactFrame);
+    }
+  }
+  for (const row of unprojected.rows) {
+    if (row && typeof row === "object") {
+      if (retainedCandidates.has(row)) continue;
+      retainedCandidates.add(row);
+    } else {
+      const key = evidenceRowKey(row);
+      if (retainedFallbackKeys.has(key)) continue;
+      retainedFallbackKeys.add(key);
+    }
+    addBoundedEvidenceRow(selected, row, policy.maxRowsPerExactFrame);
+  }
+  if (!selected.sorted) selected.rows.sort(evidenceRowOrder);
+  return { rows: selected.rows, totalRowCount };
+}
+
+function constraintEvidenceCandidates(evidence) {
+  evidence.constraintCandidates ||=
+    evidence.candidates ||
+    evidence.constraints.flatMap(({ constraint, metadata }) =>
+      constraintReactionContributionCandidates(constraint, "A", metadata),
+    );
+  return evidence.constraintCandidates;
+}
+
+function materializeDeferredEvidence(evidence, options = null) {
+  const worldCandidates = completedWorldEvidenceCandidates(
+    evidence.worldAdapter,
+  );
+  const constraints = constraintEvidenceCandidates(evidence);
+  const candidates = [...worldCandidates, ...constraints],
+    selection = options
+      ? selectEvidenceRows(candidates, options)
+      : {
+          rows: candidates,
+          totalRowCount: new Set(candidates.map(evidenceRowKey)).size,
+        },
+    selected = selection.rows;
+  const rows = selected
+    .map((candidate) =>
+      materializeConstraintReactionContribution(candidate, !options),
+    )
+    .filter(Boolean);
+  return {
+    rows: Object.freeze(rows),
+    totalRowCount: selection.totalRowCount,
+    retentionApplied: Boolean(options),
+  };
+}
 
 function massFrameIsInvariant(body, properties) {
   const current = body.userData?.massProperties;
@@ -134,7 +312,50 @@ function motorEvidenceStates(runtime, component, context) {
 
 /** Internal diagnostic view without extending the Core-exported runtime. */
 export function completedMultibodyFailureEvidence(runtime) {
-  return failureEvidenceByRuntime.get(runtime) || Object.freeze([]);
+  const evidence = failureEvidenceByRuntime.get(runtime);
+  if (!evidence || Array.isArray(evidence))
+    return evidence || Object.freeze([]);
+  const completed = materializeDeferredEvidence(evidence).rows;
+  failureEvidenceByRuntime.set(runtime, completed);
+  return completed;
+}
+
+/** Materializes only rows admitted by the recorder's existing retention policy. */
+export function boundedMultibodyFailureEvidence(runtime, options) {
+  const evidence = failureEvidenceByRuntime.get(runtime);
+  if (!evidence) return { rows: Object.freeze([]), totalRowCount: 0 };
+  if (Array.isArray(evidence)) {
+    const selection = selectEvidenceRows([...evidence], options);
+    return {
+      rows: Object.freeze(selection.rows),
+      totalRowCount: selection.totalRowCount,
+      retentionApplied: true,
+    };
+  }
+  return materializeDeferredEvidence(evidence, options);
+}
+
+/** Finds a non-finite completed contribution without allocating every row DTO. */
+export function invalidMultibodyFailureEvidenceCandidate(runtime) {
+  const evidence = failureEvidenceByRuntime.get(runtime);
+  if (!evidence) return null;
+  if (Array.isArray(evidence))
+    return evidence.find(
+      (row) =>
+        !Number.isFinite(row.forceMagnitudeN) ||
+        !Number.isFinite(row.momentMagnitudeNm),
+    );
+  const invalid = invalidConstraintReactionCandidate,
+    worldInvalid = completedWorldEvidenceCandidates(evidence.worldAdapter).find(
+      invalid,
+    );
+  const candidate =
+    worldInvalid || constraintEvidenceCandidates(evidence).find(invalid);
+  return candidate?.rowId
+    ? candidate
+    : candidate
+      ? { ...candidate, rowId: constraintReactionCandidateRowId(candidate) }
+      : null;
 }
 
 /** Marks exactly the next completed integration for provenance capture. */
@@ -212,13 +433,10 @@ function physicsFrame(descriptor) {
 
 function partFrame(body) {
   const frame = body.userData.massFrame,
-    principalToPartInverse = frame.principalToPart.conjugate(
-      new CANNON.Quaternion(),
-    ),
-    quaternion = body.quaternion.mult(
-      principalToPartInverse,
-      new CANNON.Quaternion(),
-    ),
+    partToPrincipal =
+      frame.partToPrincipal ||
+      frame.principalToPart.conjugate(new CANNON.Quaternion()),
+    quaternion = body.quaternion.mult(partToPrincipal, new CANNON.Quaternion()),
     comOffsetWorld = quaternion.vmult(frame.comPart),
     position = body.position.vsub(comOffsetWorld),
     originOffset = position.vsub(body.position),
@@ -627,6 +845,8 @@ export class MultibodyRuntime {
     this.materialForPart = materialForPart;
     this.compiled = null;
     this.geometryByPart = new Map();
+    fluidDescriptorsByRuntime.set(this, []);
+    telemetryBodyDescriptorsByRuntime.set(this, new Map());
     this.bodyByPart = new Map();
     this.constraintEntries = [];
     this.collisionExclusionConstraints = [];
@@ -697,13 +917,30 @@ export class MultibodyRuntime {
         partId: descriptor.partId,
         massFrame: {
           principalToPart: frame.principalToPart,
+          partToPrincipal: frame.partToPrincipal,
           comPart: frame.comPart,
         },
         massProperties: structuredClone(descriptor.massProperties),
       };
       this.world.addBody(body);
       this.bodyByPart.set(descriptor.partId, body);
+      telemetryBodyDescriptorsByRuntime.get(this).set(descriptor.partId, {
+        descriptor,
+        primaryAxisPart: cannonVector(
+          primaryGeometryAxisPart(descriptor.geometry),
+        ),
+      });
       this.phaseByPart.set(descriptor.partId, 0);
+      const collisionBounds = descriptor.geometry.collisionBoundsPartM;
+      fluidDescriptorsByRuntime.get(this).push({
+        partId: descriptor.partId,
+        buoyancyCenterPart: cannonVector(boundsCenter(collisionBounds)),
+        halfHeightM: Math.max(
+          0.03,
+          (boundsDimensions(collisionBounds)[1] || 0.2) / 2,
+        ),
+        volumeM3: descriptor.geometry.displacementM3,
+      });
     }
     for (const descriptor of this.compiled.constraints)
       this.createConstraint(descriptor);
@@ -756,19 +993,14 @@ export class MultibodyRuntime {
       const bodyA = this.bodyByPart.get(descriptor.a),
         bodyB = this.bodyByPart.get(descriptor.b);
       if (!bodyA || !bodyB) continue;
-      const constraint = new CollisionExclusionConstraint(bodyA, bodyB, {
-        collideConnected: false,
-        wakeUpBodies: false,
-      });
-      /** @type {any} */ (constraint).simulacrumEvidence = Object.freeze({
-        constraintId: `collision-exclusion:${String(descriptor.id)}`,
-        sourceConnectionIds: Object.freeze([]),
-        source: "constraint",
-      });
-      this.world.addConstraint(constraint);
+      const exclusion = { bodyA, bodyB };
+      registerCannonCollisionExclusion(
+        this.worldAdapter.transaction,
+        exclusion,
+      );
       this.collisionExclusionConstraints.push({
         descriptor,
-        constraint,
+        exclusion,
         active: true,
       });
     }
@@ -1497,24 +1729,18 @@ export class MultibodyRuntime {
       wetBodies = 0,
       waterDepth = 0;
     const byPart = {};
-    for (const part of this.compiled.parts) {
-      const body = this.bodyByPart.get(part.id);
+    for (const descriptor of fluidDescriptorsByRuntime.get(this) || []) {
+      const body = this.bodyByPart.get(descriptor.partId);
       if (!body) continue;
-      const descriptor = this.compiled.bodies.find(
-          (candidate) => candidate.partId === part.id,
-        )?.geometry,
-        frame = partFrame(body),
+      const frame = partFrame(body),
         buoyancyCenter = frame.quaternion
-          .vmult(cannonVector(boundsCenter(descriptor.collisionBoundsPartM)))
+          .vmult(descriptor.buoyancyCenterPart)
           .vadd(frame.position),
         pond = this.pondAt(buoyancyCenter.x, buoyancyCenter.z),
-        volume = descriptor.displacementM3,
-        halfHeight = Math.max(
-          0.03,
-          (boundsDimensions(descriptor?.collisionBoundsPartM)[1] || 0.2) / 2,
-        );
+        volume = descriptor.volumeM3,
+        halfHeight = descriptor.halfHeightM;
       displacedVolumeM3 += volume;
-      byPart[String(part.id)] = {
+      byPart[String(descriptor.partId)] = {
         volumeM3: volume,
         submerged: 0,
         submergedVolumeM3: 0,
@@ -1554,7 +1780,7 @@ export class MultibodyRuntime {
         pond.waterY - this.terrainHeightAt(buoyancyCenter.x, buoyancyCenter.z),
       );
       waterDepth = Math.max(waterDepth, localWaterDepth);
-      byPart[String(part.id)] = {
+      byPart[String(descriptor.partId)] = {
         volumeM3: volume,
         submerged,
         submergedVolumeM3: volume * submerged,
@@ -2174,6 +2400,13 @@ export class MultibodyRuntime {
         );
     }
 
+    // The production pipeline publishes mechanisms again after the owned
+    // integration step. No intervening system consumes this projection, so
+    // avoid building the same pose/joint DTO twice in one fixed tick.
+    if (context.services.deferMechanismTelemetryUntilIntegration) {
+      this.lastTelemetry = { ...this.lastTelemetry, activeMotors };
+      return this.lastTelemetry;
+    }
     this.lastTelemetry = this.telemetry(activeMotors);
     return this.lastTelemetry;
   }
@@ -2182,9 +2415,7 @@ export class MultibodyRuntime {
     if (!this.compiled) return null;
     const captureEvidence = evidenceCapturingRuntimes.delete(this),
       tick = this.worldAdapter?.telemetry().integratedTick ?? null,
-      contributionLedger = captureEvidence
-        ? [...completedWorldEvidenceContributions(this.worldAdapter)]
-        : [];
+      contributionCandidates = [];
     for (const entry of this.constraintEntries)
       if (entry.active !== false && entry.kind === "rolling-contact-v1")
         entry.constraint.commitSolvedState();
@@ -2263,17 +2494,16 @@ export class MultibodyRuntime {
     }
     for (const entry of this.constraintEntries) {
       if (entry.active === false || !entry.constraint) continue;
-      const reaction = constraintReactionWrench(entry.constraint);
-      if (captureEvidence)
-        contributionLedger.push(
-          ...constraintReactionContributions(entry.constraint, "A", {
-            tick,
-            constraintId: entry.descriptor.id,
-            sourceConnectionIds: entry.descriptor.sourceConnectionIds || [],
-            source:
-              entry.kind === "rolling-contact-v1" ? "tire-force" : "constraint",
-          }),
-        );
+      const metadata = {
+          ...entry.constraint.simulacrumEvidence,
+          tick,
+        },
+        evidence = captureEvidence
+          ? constraintReactionWrenchEvidence(entry.constraint, "A", metadata)
+          : null,
+        reaction =
+          evidence?.wrench || constraintReactionWrench(entry.constraint);
+      if (evidence) contributionCandidates.push(...evidence.candidates);
       if (entry.descriptor.kind === "revolute")
         entry.reactionTorque = reaction.torqueNm;
       for (const id of entry.descriptor.sourceConnectionIds || []) {
@@ -2287,7 +2517,16 @@ export class MultibodyRuntime {
         );
       }
     }
-    failureEvidenceByRuntime.set(this, Object.freeze(contributionLedger));
+    failureEvidenceByRuntime.set(
+      this,
+      captureEvidence
+        ? {
+            worldAdapter: this.worldAdapter,
+            candidates: contributionCandidates,
+            constraints: [],
+          }
+        : Object.freeze([]),
+    );
     for (const [partId, body] of this.bodyByPart) {
       const descriptor = this.compiled.bodies.find(
           (candidate) => candidate.partId === partId,
@@ -2308,7 +2547,6 @@ export class MultibodyRuntime {
       partId,
       Math.max(0, Number(deliveredW) || 0),
     );
-    this.lastTelemetry = this.telemetry(this.lastTelemetry?.activeMotors || 0);
     return this.lastTelemetry;
   }
 
@@ -2338,7 +2576,10 @@ export class MultibodyRuntime {
       )
         continue;
       entry.active = false;
-      this.world.removeConstraint(entry.constraint);
+      unregisterCannonCollisionExclusion(
+        this.worldAdapter.transaction,
+        entry.exclusion,
+      );
     }
     if (detached.length) this.topologyRevision++;
     return detached;
@@ -2346,37 +2587,44 @@ export class MultibodyRuntime {
 
   telemetry(activeMotors = 0) {
     if (!this.compiled) return null;
-    const poses = [];
+    const contactsByBody = new Map();
+    for (const contact of this.world.contacts || []) {
+      const forceN = Math.abs(contact.multiplier || 0);
+      for (const body of contact.bi === contact.bj
+        ? [contact.bi]
+        : [contact.bi, contact.bj]) {
+        const summary = contactsByBody.get(body) || { count: 0, forceN: 0 };
+        summary.count++;
+        summary.forceN += forceN;
+        contactsByBody.set(body, summary);
+      }
+    }
+    const poses = [],
+      poseByPart = new Map(),
+      descriptors = telemetryBodyDescriptorsByRuntime.get(this);
     for (const [partId, body] of this.bodyByPart) {
-      const descriptor = this.compiled.bodies.find(
-          (candidate) => candidate.partId === partId,
-        ),
+      const indexed = descriptors.get(partId),
         frame = partFrame(body),
-        axis = cannonVector(primaryGeometryAxisPart(descriptor.geometry)),
-        speed = signedAngleVelocity(body, axis),
+        speed = signedAngleVelocity(body, indexed.primaryAxisPart),
         phase = this.phaseByPart.get(partId) || 0,
-        contacts = (this.world.contacts || []).filter(
-          (contact) => contact.bi === body || contact.bj === body,
-        );
+        contact = contactsByBody.get(body);
       poses.push({
         id: partId,
         position: plainVector(frame.position),
         quaternion: plainQuaternion(frame.quaternion),
         velocity: plainVector(frame.velocity),
         angularVelocity: plainVector(body.angularVelocity),
-        contact: contacts.length > 0,
-        contactForceN: contacts.reduce(
-          (sum, contact) => sum + Math.abs(contact.multiplier || 0),
-          0,
-        ),
+        contact: Boolean(contact?.count),
+        contactForceN: contact?.forceN || 0,
         phase,
         angularSpeed: speed,
       });
+      poseByPart.set(partId, poses.at(-1));
     }
     for (const entry of this.constraintEntries) {
       const motorId = entry.descriptor.motorId;
       if (!motorId) continue;
-      const pose = poses.find((candidate) => candidate.id === motorId);
+      const pose = poseByPart.get(motorId);
       if (pose) pose.phase = entry.angle;
     }
     const joints = this.constraintEntries
@@ -2440,43 +2688,69 @@ export class MultibodyRuntime {
         ),
       });
     }
-    const twoFrameMechanisms = this.constraintEntries
-      .filter((entry) =>
-        [
-          "axial-force-v1",
-          "axial-actuator-v1",
-          "prismatic-coordinate-v1",
-        ].includes(entry.kind),
-      )
-      .map((entry) => {
-        const geometry = this.geometryByPart.get(entry.descriptor.sourcePartId),
-          coordinateId =
-            geometry?.deformationContract?.coordinates?.[0]?.id ?? null;
-        return {
-          id: entry.descriptor.id,
-          sourcePartId: entry.descriptor.sourcePartId,
-          coordinateId,
-          kind: entry.descriptor.kind,
-          active: entry.active !== false,
-          coordinateM: entry.coordinateM,
-          rateMPerS: entry.rateMPerS,
-          forceN:
-            entry.kind === "axial-force-v1" ? entry.force : entry.appliedForceN,
-          reactionForceN: entry.reactionForceN || 0,
-          transverseM: entry.transverseM || 0,
-          elasticPotentialJ: entry.elasticPotentialJ || 0,
-          dampingWorkJ: entry.dampingWorkJ || 0,
-          frictionWorkJ: entry.frictionWorkJ || 0,
-          mechanicalWorkJ: entry.actuatorMechanicalWorkJ || 0,
-          electricalEnergyJ: entry.actuatorElectricalEnergyJ || 0,
-          dissipatedEnergyJ: entry.actuatorDissipatedEnergyJ || 0,
-          temperatureK: entry.temperatureK || null,
-          powered: Boolean(entry.powered),
-          saturated: Boolean(entry.saturated),
-          thermalDerate: entry.thermalDerate ?? 1,
-          thermalShutdown: Boolean(entry.thermalShutdown),
-        };
-      });
+    const integratedTick =
+        this.worldAdapter?.telemetry().integratedTick ?? null,
+      twoFrameMechanisms =
+        /** @type {Array<{id:string|number,sourcePartId:string|number,coordinateId:string,kind:string,active:boolean,tick:number|null,unit:"m",allowedCoordinateRangeM:{minimum:number,maximum:number},validity:"measured"|"invalid",rangeStatus:"within-range"|"below-range"|"above-range"|"invalid",coordinateM:number,rateMPerS:number,forceN:number,reactionForceN:number,transverseM:number,elasticPotentialJ:number,dampingWorkJ:number,frictionWorkJ:number,mechanicalWorkJ:number,electricalEnergyJ:number,dissipatedEnergyJ:number,temperatureK:number|null,powered:boolean,saturated:boolean,thermalDerate:number,thermalShutdown:boolean}>} */ (
+          this.constraintEntries
+            .filter((entry) =>
+              [
+                "axial-force-v1",
+                "axial-actuator-v1",
+                "prismatic-coordinate-v1",
+              ].includes(entry.kind),
+            )
+            .map((entry) => {
+              const geometry = this.geometryByPart.get(
+                  entry.descriptor.sourcePartId,
+                ),
+                coordinate = geometry?.deformationContract?.coordinates?.[0],
+                coordinateM = Number(entry.coordinateM),
+                allowedCoordinateRangeM = coordinate?.allowedCoordinateRangeM,
+                validity = Number.isFinite(coordinateM)
+                  ? "measured"
+                  : "invalid",
+                rangeStatus =
+                  validity === "invalid"
+                    ? "invalid"
+                    : coordinateM < allowedCoordinateRangeM.minimum
+                      ? "below-range"
+                      : coordinateM > allowedCoordinateRangeM.maximum
+                        ? "above-range"
+                        : "within-range";
+              return {
+                id: entry.descriptor.id,
+                sourcePartId: entry.descriptor.sourcePartId,
+                coordinateId: coordinate.id,
+                kind: entry.descriptor.kind,
+                active: entry.active !== false,
+                tick: integratedTick,
+                unit: "m",
+                allowedCoordinateRangeM: { ...allowedCoordinateRangeM },
+                validity,
+                rangeStatus,
+                coordinateM,
+                rateMPerS: entry.rateMPerS,
+                forceN:
+                  entry.kind === "axial-force-v1"
+                    ? entry.force
+                    : entry.appliedForceN,
+                reactionForceN: entry.reactionForceN || 0,
+                transverseM: entry.transverseM || 0,
+                elasticPotentialJ: entry.elasticPotentialJ || 0,
+                dampingWorkJ: entry.dampingWorkJ || 0,
+                frictionWorkJ: entry.frictionWorkJ || 0,
+                mechanicalWorkJ: entry.actuatorMechanicalWorkJ || 0,
+                electricalEnergyJ: entry.actuatorElectricalEnergyJ || 0,
+                dissipatedEnergyJ: entry.actuatorDissipatedEnergyJ || 0,
+                temperatureK: entry.temperatureK || null,
+                powered: Boolean(entry.powered),
+                saturated: Boolean(entry.saturated),
+                thermalDerate: entry.thermalDerate ?? 1,
+                thermalShutdown: Boolean(entry.thermalShutdown),
+              };
+            })
+        );
     return {
       active: true,
       activeMotors,
@@ -2741,9 +3015,16 @@ export class MultibodyRuntime {
     );
     for (const entry of this.collisionExclusionConstraints) {
       entry.active = exclusionStates.get(entry.descriptor.id) !== false;
-      if (!entry.active) this.world.removeConstraint(entry.constraint);
-      else if (!this.world.constraints.includes(entry.constraint))
-        this.world.addConstraint(entry.constraint);
+      if (!entry.active)
+        unregisterCannonCollisionExclusion(
+          this.worldAdapter.transaction,
+          entry.exclusion,
+        );
+      else
+        registerCannonCollisionExclusion(
+          this.worldAdapter.transaction,
+          entry.exclusion,
+        );
     }
     this.world.time = state.world.time;
     this.world.stepnumber = state.world.stepnumber;
@@ -2782,12 +3063,17 @@ export class MultibodyRuntime {
         this.world.removeConstraint(entry.constraint);
       }
     for (const entry of this.collisionExclusionConstraints)
-      this.world.removeConstraint(entry.constraint);
+      unregisterCannonCollisionExclusion(
+        this.worldAdapter.transaction,
+        entry.exclusion,
+      );
     for (const body of this.bodyByPart.values()) this.world.removeBody(body);
     this.constraintEntries.length = 0;
     this.collisionExclusionConstraints.length = 0;
     this.bodyByPart.clear();
     this.geometryByPart.clear();
+    fluidDescriptorsByRuntime.set(this, []);
+    telemetryBodyDescriptorsByRuntime.set(this, new Map());
     this.phaseByPart.clear();
     this.loadByConnection.clear();
     this.torqueByConnection.clear();

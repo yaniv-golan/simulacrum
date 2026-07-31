@@ -1,3 +1,5 @@
+import { deepFreeze } from "../model/primitives.js";
+
 export class CommandBus {
   constructor() {
     this.remote = new Map();
@@ -81,7 +83,7 @@ export class CommandBus {
       ),
       conflicts: Object.freeze([...this.conflicts]),
       rejections: Object.freeze(
-        this.rejections.map((entry) => Object.freeze({ ...entry })),
+        this.rejections.map((entry) => deepFreeze({ ...entry })),
       ),
     });
   }

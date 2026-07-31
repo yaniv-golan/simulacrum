@@ -23,24 +23,27 @@ export function testSiteShapeWorldPoint(shape, point) {
   };
 }
 
-function segmentDistance(point, start, end) {
+function segmentDistanceSquared(point, start, end) {
   const dx = end[0] - start[0],
     dz = end[1] - start[1],
     lengthSquared = dx * dx + dz * dz;
   if (lengthSquared <= EPSILON)
-    return Math.hypot(point.x - start[0], point.z - start[1]);
+    return (point.x - start[0]) ** 2 + (point.z - start[1]) ** 2;
   const amount = clamp(
-    ((point.x - start[0]) * dx + (point.z - start[1]) * dz) / lengthSquared,
-    0,
-    1,
-  );
-  return Math.hypot(
-    point.x - (start[0] + dx * amount),
-    point.z - (start[1] + dz * amount),
-  );
+      ((point.x - start[0]) * dx + (point.z - start[1]) * dz) / lengthSquared,
+      0,
+      1,
+    ),
+    offsetX = point.x - (start[0] + dx * amount),
+    offsetZ = point.z - (start[1] + dz * amount);
+  return offsetX * offsetX + offsetZ * offsetZ;
 }
 
-function ringContains(ring, point) {
+function segmentDistance(point, start, end) {
+  return Math.sqrt(segmentDistanceSquared(point, start, end));
+}
+
+function ringLocation(ring, point) {
   let inside = false;
   for (
     let index = 0, previous = ring.length - 1;
@@ -49,8 +52,8 @@ function ringContains(ring, point) {
   ) {
     const start = ring[previous],
       end = ring[index],
-      distance = segmentDistance(point, start, end);
-    if (distance <= EPSILON) return true;
+      distanceSquared = segmentDistanceSquared(point, start, end);
+    if (distanceSquared <= EPSILON * EPSILON) return 0;
     if (
       start[1] > point.z !== end[1] > point.z &&
       point.x <
@@ -59,7 +62,11 @@ function ringContains(ring, point) {
     )
       inside = !inside;
   }
-  return inside;
+  return inside ? 1 : -1;
+}
+
+function ringContains(ring, point) {
+  return ringLocation(ring, point) >= 0;
 }
 
 function ringArea(ring) {
@@ -170,22 +177,34 @@ export function testSitePolygonRingsIssue(rings) {
   return null;
 }
 
-function polygonContains(shape, point) {
-  return (
-    ringContains(shape.ringsM[0], point) &&
-    !shape.ringsM.slice(1).some((ring) => ringContains(ring, point))
-  );
-}
-
-function polygonEdgeDistance(shape, point) {
-  let distance = Infinity;
-  for (const ring of shape.ringsM)
-    for (let index = 0; index < ring.length; index++)
-      distance = Math.min(
-        distance,
-        segmentDistance(point, ring[index], ring[(index + 1) % ring.length]),
+function polygonSignedDistance(shape, point) {
+  let distanceSquared = Infinity;
+  const ringStates = shape.ringsM.map((ring) => {
+    let inside = false;
+    for (
+      let index = 0, previous = ring.length - 1;
+      index < ring.length;
+      previous = index++
+    ) {
+      const start = ring[previous],
+        end = ring[index];
+      distanceSquared = Math.min(
+        distanceSquared,
+        segmentDistanceSquared(point, start, end),
       );
-  return distance;
+      if (
+        start[1] > point.z !== end[1] > point.z &&
+        point.x <
+          ((end[0] - start[0]) * (point.z - start[1])) / (end[1] - start[1]) +
+            start[0]
+      )
+        inside = !inside;
+    }
+    return inside;
+  });
+  const inside = ringStates[0] && !ringStates.slice(1).some(Boolean),
+    distance = Math.sqrt(distanceSquared);
+  return inside ? -distance : distance;
 }
 
 function rectangleSignedDistance(point, halfX, halfZ) {
@@ -248,10 +267,7 @@ export function testSiteShapeSignedDistance(shape, x, z) {
       normalizedRadius = Math.hypot(point.x / radiusX, point.z / radiusZ);
     return (normalizedRadius - 1) * Math.min(radiusX, radiusZ);
   }
-  if (shape.kind === "polygon") {
-    const distance = polygonEdgeDistance(shape, point);
-    return polygonContains(shape, point) ? -distance : distance;
-  }
+  if (shape.kind === "polygon") return polygonSignedDistance(shape, point);
   if (shape.kind === "corridor-network")
     return corridorSignedDistance(shape, point);
   return Infinity;
@@ -259,6 +275,14 @@ export function testSiteShapeSignedDistance(shape, x, z) {
 
 /** Deterministic containment shared by site compilers and evaluators. */
 export function testSiteShapeContains(shape, x, z, marginM = 0) {
+  if (shape.kind === "polygon" && marginM === 0) {
+    const point = testSiteShapeLocalPoint(shape, x, z),
+      outerLocation = ringLocation(shape.ringsM[0], point);
+    return (
+      outerLocation >= 0 &&
+      !shape.ringsM.slice(1).some((ring) => ringLocation(ring, point) > 0)
+    );
+  }
   return testSiteShapeSignedDistance(shape, x, z) <= marginM + EPSILON;
 }
 

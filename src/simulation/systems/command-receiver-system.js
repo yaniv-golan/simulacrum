@@ -1,4 +1,5 @@
 import { componentHasControlContract } from "../../model/component-contracts.js";
+import { registerOwnedImmutable } from "../../model/owned-immutable-value.js";
 
 /** Commits powered, route-valid remote commands into ordinary receiver state. */
 export class CommandReceiverSystem {
@@ -39,7 +40,7 @@ export class CommandReceiverSystem {
           value: Number(command.value || 0),
           valid: online && !command.conflict,
           powered,
-          routedControllerIds: [...routedControllers],
+          routedControllerIds: Object.freeze([...routedControllers]),
           source: command.source,
           conflict: command.conflict,
           tick: context.clock.tick,
@@ -47,9 +48,11 @@ export class CommandReceiverSystem {
       context.commands.set(receiver.id, state);
       states.push(state);
     }
-    context.telemetry.commandReceivers = Object.freeze({
-      states: Object.freeze(states),
-    });
+    context.telemetry.commandReceivers = registerOwnedImmutable(
+      Object.freeze({
+        states: Object.freeze(states),
+      }),
+    );
   }
 
   dispose(context) {

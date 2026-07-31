@@ -143,7 +143,7 @@ export class RunAssemblyGraph {
     if (after !== before) {
       this.#parts.set(
         id,
-        deepFreeze({
+        Object.freeze({
           ...current,
           ...batteryEnergyReadModel({
             capacityJ: current.capacityJ || 0,

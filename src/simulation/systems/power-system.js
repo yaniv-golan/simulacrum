@@ -9,7 +9,8 @@ export class PowerSystem {
 
   step(context, fixedDt) {
     context.powerNetwork.resolve(context.runGraph, fixedDt);
-    context.telemetry.power = context.powerNetwork.telemetry();
+    if (!context.services.deferPowerTelemetryUntilCompletion)
+      context.telemetry.power = context.powerNetwork.telemetry();
   }
 
   dispose(context) {

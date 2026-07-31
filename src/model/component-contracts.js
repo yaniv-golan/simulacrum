@@ -1,6 +1,43 @@
 import { TYPES } from "./component-catalog.js";
 import { immutableClone } from "./primitives.js";
 
+const immutableContractClones = new WeakMap();
+
+function flatContractSnapshot(contract) {
+  const keys = [],
+    values = [];
+  for (const key in contract) {
+    if (!Object.hasOwn(contract, key)) continue;
+    const value = contract[key];
+    if (value != null && typeof value === "object") return null;
+    keys.push(key);
+    values.push(value);
+  }
+  return { keys, values };
+}
+
+function flatContractUnchanged(contract, snapshot) {
+  let ownKeyCount = 0;
+  for (const key in contract) if (Object.hasOwn(contract, key)) ownKeyCount++;
+  return (
+    ownKeyCount === snapshot.keys.length &&
+    snapshot.keys.every((key, index) =>
+      Object.is(contract[key], snapshot.values[index]),
+    )
+  );
+}
+
+function immutableContract(contract) {
+  const cached = immutableContractClones.get(contract);
+  if (cached && flatContractUnchanged(contract, cached.snapshot))
+    return cached.clone;
+  const snapshot = flatContractSnapshot(contract);
+  const clone = immutableClone(contract);
+  if (snapshot) immutableContractClones.set(contract, { snapshot, clone });
+  else immutableContractClones.delete(contract);
+  return clone;
+}
+
 /**
  * The catalog boundary is the only place where a portable component type is
  * resolved into declared behavior. Compiler and runtime consumers receive the
@@ -37,25 +74,25 @@ export function componentHasControlContract(part, contractId, catalog = TYPES) {
 /** @param {any} part @param {Record<string, any>} [catalog] */
 export function componentElectricalContract(part, catalog = TYPES) {
   const contract = componentDefinition(part, catalog)?.electricalContract;
-  return contract ? immutableClone(contract) : null;
+  return contract ? immutableContract(contract) : null;
 }
 
 /** @param {any} part @param {Record<string, any>} [catalog] */
 export function componentElectricalSource(part, catalog = TYPES) {
   const contract = componentDefinition(part, catalog)?.electricalSource;
-  return contract ? immutableClone(contract) : null;
+  return contract ? immutableContract(contract) : null;
 }
 
 /** @param {any} part @param {Record<string, any>} [catalog] */
 export function componentMaterialStore(part, catalog = TYPES) {
   const contract = componentDefinition(part, catalog)?.materialStore;
-  return contract ? immutableClone(contract) : null;
+  return contract ? immutableContract(contract) : null;
 }
 
 /** @param {any} part @param {Record<string, any>} [catalog] */
 export function componentPneumaticContract(part, catalog = TYPES) {
   const contract = componentDefinition(part, catalog)?.pneumatic;
-  return contract ? immutableClone(contract) : null;
+  return contract ? immutableContract(contract) : null;
 }
 
 /** @param {any} part @param {Record<string, any>} [catalog] */
@@ -69,7 +106,7 @@ export function componentReadings(part, catalog = TYPES) {
 /** @param {any} part @param {Record<string, any>} [catalog] */
 export function componentPropulsion(part, catalog = TYPES) {
   const propulsion = componentDefinition(part, catalog)?.flight?.propulsion;
-  return propulsion ? immutableClone(propulsion) : null;
+  return propulsion ? immutableContract(propulsion) : null;
 }
 
 /** @param {any} part @param {Record<string, any>} [catalog] */

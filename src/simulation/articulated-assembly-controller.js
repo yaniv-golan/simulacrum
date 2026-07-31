@@ -5,6 +5,7 @@ const clamp = (value, minimum, maximum) =>
   Math.max(minimum, Math.min(maximum, value));
 const lerp = (left, right, amount) => left + (right - left) * amount;
 const SIDES = ["L", "R"];
+const bodyReadModelsBySnapshot = new WeakMap();
 const LOCOMOTION_BODY_ROLES = Object.freeze([
   "pelvis",
   "torso",
@@ -79,10 +80,18 @@ function dot(left, right) {
 }
 
 function bodyReadModel(bodies, partId) {
-  const binding = bodies?.bodyByPart?.find((entry) => entry.partId === partId);
-  return binding
-    ? bodies.bodies.find((body) => body.bodyId === binding.bodyId) || null
-    : null;
+  if (!bodies) return null;
+  let byPart = bodyReadModelsBySnapshot.get(bodies);
+  if (!byPart) {
+    const byBody = new Map(
+      (bodies.bodies || []).map((body) => [body.bodyId, body]),
+    );
+    byPart = new Map();
+    for (const binding of bodies.bodyByPart || [])
+      byPart.set(binding.partId, byBody.get(binding.bodyId) || null);
+    bodyReadModelsBySnapshot.set(bodies, byPart);
+  }
+  return byPart.get(partId) || null;
 }
 
 function convexHull(points) {
@@ -793,7 +802,9 @@ export class ArticulatedAssemblyController {
             : (cycle + dt * (0.67 + speed * 0.42)) % 1;
       if (balance) this.applyGyro(context, group, measurement, rootRead, dt);
     }
-    return this.telemetry(context.previousTelemetry?.bodies);
+    return context.services.deferMechanismTelemetryUntilIntegration
+      ? this.lastTelemetry
+      : this.telemetry(context.previousTelemetry?.bodies);
   }
 
   applyGyro(context, group, measurement, rootRead, dt) {
@@ -936,12 +947,12 @@ export class ArticulatedAssemblyController {
         collapsed ||
         state.airborneTime > 0.7;
     }
-    this.lastTelemetry = this.telemetry(bodies);
+    this.lastTelemetry = this.telemetry(bodies, context.telemetry.mechanisms);
     return this.lastTelemetry;
   }
 
-  telemetry(bodies) {
-    const mechanism = this.runtime.telemetry(),
+  telemetry(bodies, completedMechanism = null) {
+    const mechanism = completedMechanism || this.runtime.telemetry(),
       groups = this.groups.map((group) => {
         const state = group.state,
           measurement = state.measurement || this.measure(group, bodies),

@@ -49,8 +49,10 @@ export function installWorkshopRuntimeComposition({
           camera: stage.camera,
           viewportHeightPx:
             stage.renderer.domElement.clientHeight || target.innerHeight,
+          pixelRatio: stage.renderer.getPixelRatio(),
           running: shell.state.running,
           selectedIds: shell.state.editor.selectedIds,
+          quality: shell.state.componentDetailQuality,
         }),
       updateBatch: () => stage.largeAssemblyBatcher.update(),
       render: () => stage.renderer.render(stage.scene, stage.camera),

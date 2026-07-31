@@ -20,6 +20,7 @@ import {
   boundsDimensions,
   posePartForPortMatch,
 } from "../src/model/component-geometry-contract.js";
+import { captureProductionSystemTelemetry } from "../src/application/simulation-system-composition.js";
 
 function createWorld({ ground = true, slopeRad = 0, stepHeight = 0 } = {}) {
   const world = new CANNON.World({
@@ -105,7 +106,12 @@ function controlsFor(blueprint, overrides = {}) {
     }));
 }
 
-function startScenario(blueprint, worldOptions = {}, controlOverrides = {}) {
+function startScenario(
+  blueprint,
+  worldOptions = {},
+  controlOverrides = {},
+  serviceOverrides = {},
+) {
   const environment = createWorld(worldOptions),
     runtime = startMultibodyRuntime(blueprint, {
       world: environment.world,
@@ -138,6 +144,7 @@ function startScenario(blueprint, worldOptions = {}, controlOverrides = {}) {
       readCommandCandidates: () => ({ remote, scripts: [] }),
       connectionValid: (connection) => !connection.failed,
       partMass: (part) => TYPES[part.type]?.mass || 0,
+      ...serviceOverrides,
     });
   return { ...environment, runtime, session, remote };
 }
@@ -338,6 +345,39 @@ function disposeScenario(scenario, expectedStaticBodies = 1) {
     "scenario disposal leaked dynamic bodies",
   );
 }
+
+const deferralAssembly = decodeBlueprintOrThrow(
+    builtInDemo("gearbox").blueprint,
+  ).assembly,
+  immediateTelemetryScenario = startScenario(deferralAssembly),
+  deferredTelemetryScenario = startScenario(
+    deferralAssembly,
+    {},
+    {},
+    {
+      captureTelemetry: captureProductionSystemTelemetry,
+      deferMechanismTelemetryUntilIntegration: true,
+      deferPowerTelemetryUntilCompletion: true,
+    },
+  );
+for (let tick = 0; tick < 2; tick++) {
+  immediateTelemetryScenario.session.stepFixed();
+  deferredTelemetryScenario.session.stepFixed();
+}
+const immediateSystems = immediateTelemetryScenario.session.telemetry().systems,
+  deferredSystems = deferredTelemetryScenario.session.telemetry().systems;
+assert.deepEqual(
+  deferredSystems.mechanisms,
+  immediateSystems.mechanisms,
+  "production mechanism telemetry deferral changed completed-tick semantics",
+);
+assert.deepEqual(
+  deferredSystems.power,
+  immediateSystems.power,
+  "production power telemetry deferral changed completed-tick semantics",
+);
+disposeScenario(immediateTelemetryScenario);
+disposeScenario(deferredTelemetryScenario);
 
 const atlas = decodeBlueprintOrThrow(
     builtInDemo("humanoid").blueprint,
