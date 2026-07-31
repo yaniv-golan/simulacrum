@@ -50,7 +50,56 @@ try {
   state = await textState();
   assert.deepEqual(state.selectedEntity, { kind: "part", partId: spring.id });
 
-  const unitSelect = page.locator("#mechanism-display-units");
+  const unitSelect = page.locator("#mechanism-display-units"),
+    readMechanismTypography = () =>
+      page.locator(".mechanism-editor").evaluate((editor) => {
+        const style = (selector) =>
+          getComputedStyle(editor.querySelector(selector));
+        return {
+          labelDisplay: style(":scope > label").display,
+          labelFontSize: style(":scope > label").fontSize,
+          selectFontSize: style("select").fontSize,
+          noteFontSize: style(".component-contract-note").fontSize,
+          summaryFontSize: style("summary").fontSize,
+          editorRight: editor.getBoundingClientRect().right,
+          selectRight: editor.querySelector("select").getBoundingClientRect()
+            .right,
+        };
+      }),
+    expectedMechanismTypography = {
+      labelDisplay: "grid",
+      labelFontSize: "8px",
+      selectFontSize: "9px",
+      noteFontSize: "9px",
+      summaryFontSize: "9px",
+    },
+    initialViewport = page.viewportSize();
+  for (const [name, viewport] of [
+    ["laptop", { width: 1280, height: 800 }],
+    ["wide", { width: 1920, height: 1080 }],
+  ]) {
+    await page.setViewportSize(viewport);
+    const typography = await readMechanismTypography();
+    assert.deepEqual(
+      {
+        labelDisplay: typography.labelDisplay,
+        labelFontSize: typography.labelFontSize,
+        selectFontSize: typography.selectFontSize,
+        noteFontSize: typography.noteFontSize,
+        summaryFontSize: typography.summaryFontSize,
+      },
+      expectedMechanismTypography,
+      `mechanism Inspector typography escaped the compact panel scale at ${name}`,
+    );
+    assert.ok(
+      typography.selectRight <= typography.editorRight,
+      `mechanism display-unit selector escaped the Inspector at ${name}`,
+    );
+    await page.screenshot({
+      path: `artifacts/mechanism-inspector-typography-${name}.png`,
+    });
+  }
+  await page.setViewportSize(initialViewport);
   await unitSelect.selectOption("engineering");
   await page.locator(".mechanism-editor details > summary").click();
   const stiffness = page.locator(

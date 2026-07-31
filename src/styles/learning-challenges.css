@@ -1034,6 +1034,39 @@
   font-size: 8px;
   letter-spacing: 0.14em;
 }
+.mechanism-editor > label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: #89aaa4;
+  font: 600 8px "Space Grotesk";
+  letter-spacing: 0.08em;
+}
+.mechanism-editor select {
+  max-width: 100%;
+  min-width: 0;
+  padding: 5px 24px 5px 7px;
+  border: 1px solid #315652;
+  background: #102426;
+  color: #e1f3ef;
+  font: 500 9px "DM Sans";
+  letter-spacing: 0;
+}
+.mechanism-editor .component-contract-note {
+  margin: 8px 0 10px;
+  color: #78928e;
+  font: 400 9px/1.45 "DM Sans";
+}
+.mechanism-editor details {
+  color: #89aaa4;
+  font: 400 8px/1.45 "DM Sans";
+}
+.mechanism-editor summary {
+  color: #b5ceca;
+  font: 600 9px/1.35 "Space Grotesk";
+  cursor: pointer;
+}
 .mechanism-editor table {
   width: 100%;
   margin-top: 10px;
