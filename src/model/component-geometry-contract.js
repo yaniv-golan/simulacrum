@@ -318,10 +318,10 @@ function resolvedPorts(part, config, catalog, scale, geometryDefinition) {
     portClasses = {},
     portFrames = {};
   for (const descriptor of componentPorts(part, catalog)) {
-    const classification = portClass(descriptor);
+    const source = geometryDefinition.portFrames?.[descriptor.id],
+      classification = portClass(descriptor);
     portClasses[descriptor.id] = classification;
-    if (classification === "network-only") continue;
-    const source = geometryDefinition.portFrames?.[descriptor.id];
+    if (classification === "network-only" && !source) continue;
     if (!source)
       fail(
         "MISSING_SPATIAL_PORT_FRAME",
@@ -1867,7 +1867,7 @@ export function validateGeometryDescriptorOrThrow(value) {
     if (!PORT_CLASS_SET.has(classification))
       fail("UNKNOWN_PORT_SPATIAL_CLASS", `Unknown class for ${portId}`);
     const hasFrame = Object.hasOwn(descriptor.portFrames, portId);
-    if ((classification === "network-only") === hasFrame)
+    if (classification !== "network-only" && !hasFrame)
       fail(
         "INVALID_PORT_FRAME_MEMBERSHIP",
         `Port frame membership is invalid for ${portId}`,
@@ -3069,7 +3069,9 @@ export function portAxisPart(portFrame) {
 }
 
 export function primaryGeometryAxisPart(descriptor) {
-  const firstFrame = Object.values(descriptor.portFrames)[0];
+  const firstFrame = Object.entries(descriptor.portFrames).find(
+    ([portId]) => descriptor.portClasses[portId] !== "network-only",
+  )?.[1];
   return firstFrame ? portAxisPart(firstFrame) : [0, 0, 1];
 }
 

@@ -84,17 +84,17 @@ try {
 
   await page.keyboard.press("ControlOrMeta+A");
   let state = await textState();
-  assert.equal(state.parts.length, 9, "sandbox gearbox fixture changed");
+  assert.equal(state.parts.length, 15, "sandbox gearbox fixture changed");
   assert.equal(
     state.selectedParts.length,
-    9,
+    15,
     "select-all did not prepare a complete reusable assembly",
   );
   await page.click('.panel-collapse[aria-label="Expand component library"]');
   await page.click("#library-add");
   assert.equal(
     await page.locator("#creator-selection-count").textContent(),
-    "9 SELECTED PARTS",
+    "15 SELECTED PARTS",
     "subassembly creator does not explain its selection scope",
   );
   await page.fill("#custom-name", "Bench transmission");
@@ -114,10 +114,10 @@ try {
     "updatedAt",
     "version",
   ]);
-  assert.equal(library[0].asset.parts.length, 9, "saved assembly lost parts");
+  assert.equal(library[0].asset.parts.length, 15, "saved assembly lost parts");
   assert.equal(
     library[0].asset.connections.length,
-    14,
+    22,
     "saved assembly lost internal physical/network links",
   );
   assertExplicitConnections(library[0].asset, "saved subassembly");
@@ -240,22 +240,22 @@ try {
   await page.mouse.click(640, 430);
   await page.waitForTimeout(250);
   state = await textState();
-  assert.equal(state.parts.length, 9, "placing a subassembly lost parts");
+  assert.equal(state.parts.length, 15, "placing a subassembly lost parts");
   assert.equal(
     state.connections.length,
-    14,
+    22,
     "placing a subassembly lost its internal graph",
   );
   assertExplicitConnections(state, "instantiated subassembly");
   assert.equal(
     state.selectedParts.length,
-    9,
+    15,
     "placed subassembly was not retained as the active selection",
   );
   await assertCanonicalVisualProductState(page, "subassembly reuse");
   assert.equal(
     new Set(state.parts.map((part) => part.id)).size,
-    9,
+    15,
     "placed subassembly did not receive fresh unique IDs",
   );
 
@@ -279,7 +279,7 @@ try {
   state = await textState();
   assert.equal(
     state.selectedParts.length,
-    9,
+    15,
     "marquee did not select the complete visible assembly",
   );
   await page.click("#close-inspect");
@@ -301,7 +301,7 @@ try {
   await page.mouse.up();
   assert.equal(
     (await textState()).selectedParts.length,
-    9,
+    15,
     "crossing marquee did not select touched components",
   );
 

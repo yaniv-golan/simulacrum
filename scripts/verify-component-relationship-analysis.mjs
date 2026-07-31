@@ -8,8 +8,10 @@ const assembly = decodeBlueprintOrThrow(
     createComponentInspectionCarrierBlueprint(),
   ).assembly,
   index = new ComponentRelationshipIndex(assembly),
-  motor = index.forPart(2),
-  computer = index.forPart(9);
+  motorId = assembly.parts.find(({ type }) => type === "motor").id,
+  computerId = assembly.parts.find(({ type }) => type === "computer").id,
+  motor = index.forPart(motorId),
+  computer = index.forPart(computerId);
 
 assert.ok(motor.connections.length > 0);
 assert.deepEqual(
@@ -21,7 +23,7 @@ assert.deepEqual(
 assert.ok(
   motor.controllerBindings.some(
     ({ bindingId, controllerPartId }) =>
-      bindingId === "inspection.motor" && controllerPartId === 9,
+      bindingId === "inspection.motor" && controllerPartId === computerId,
   ),
   "endpoint did not receive its direct controller-binding reference",
 );

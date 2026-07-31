@@ -7,6 +7,8 @@ export function createComponentInspectionCarrierBlueprint() {
     axle = blueprint.parts.find(({ type }) => type === "axle"),
     battery = blueprint.parts.find(({ type }) => type === "battery"),
     computer = blueprint.parts.find(({ type }) => type === "computer"),
+    motor = blueprint.parts.find(({ type }) => type === "motor"),
+    sensor = blueprint.parts.find(({ type }) => type === "sensor"),
     connection = blueprint.connections.find(
       ({ kind }) => kind === "mechanical",
     );
@@ -22,14 +24,14 @@ export function createComponentInspectionCarrierBlueprint() {
     {
       id: "inspection.motor",
       direction: "output",
-      endpointPartId: 2,
+      endpointPartId: motor.id,
       endpointPortId: "CONTROL",
       channel: "throttle",
     },
     {
       id: "inspection.sensor",
       direction: "input",
-      endpointPartId: 7,
+      endpointPartId: sensor.id,
       endpointPortId: "SIGNAL",
       reading: "rotation_rpm",
     },

@@ -76,6 +76,13 @@
   material finishes, a procedural reflection environment, camera-aware detail
   tiers, and reduced large-assembly projections preserve part IDs, selection,
   performance, and physical authority.
+- Kept authored network conduits visible while simulation is active when both
+  endpoints declare canonical physical terminal frames. Power, signal, and
+  resource conduits follow live component poses in bounded instanced batches;
+  mechanical and gear relationship overlays remain authoring-only. Rebuilt the
+  stock gearbox on a larger mounting plate with motor-flange uprights, two
+  supported output-shaft bearings, an outboard rotation sensor, reinforced
+  floor-mounted equipment joints, and canonical clearance beneath the 24T gear.
 - Advanced the private failure-evidence artifact to version 2. Captures are now
   proactively composed and strict-validated before the UI reports them ready;
   export writes only that cached artifact. Bounded nonstructural episodes

@@ -261,37 +261,94 @@ class BlueprintBuilder {
 
 function gearbox() {
   const b = new BlueprintBuilder("gearbox"),
-    plate = b.add("plate", [0, 0.2, 0]),
-    motor = b.add("motor", [-2, 0.9, 0]),
-    inputGear = b.add("gear12", [-2, 0.9, 0.82]),
-    outputGear = b.add("gear24", [-0.77, 0.9, 0.82]),
-    outputAxle = b.add("axle", [-0.77, 0.9, 0.82]),
-    outputBearing = b.add("bearing", [-0.77, 0.9, 0.48]),
-    sensor = b.add("sensor", [-0.77, 0.9, 1.14]),
-    battery = b.add("battery", [-2, 0.75, -1.4]),
-    controller = b.add("computer", [-0.8, 0.55, -1.35], {
+    plateTopY = 0.29,
+    shaftY = 1.32,
+    supportCenterY = (plateTopY + shaftY) / 2,
+    supportScale = (shaftY - plateTopY) / TYPES.beam.size[0],
+    verticalSupport = (x, z) =>
+      b.add("beam", [x, supportCenterY, z], {
+        eulerRotation: [0, 0, Math.PI / 2],
+        scale: [supportScale, 1, 1],
+      }),
+    plate = b.add("plate", [0, 0.2, 0], { scale: [2.2, 1, 1.5] }),
+    motor = b.add("motor", [-1.2, shaftY, -0.92]),
+    inputGear = b.add("gear12", [-1.2, shaftY, 0]),
+    outputGear = b.add("gear24", [0.03, shaftY, 0]),
+    outputAxle = b.add("axle", [0.03, shaftY, 0]),
+    outputBearingLeft = b.add("bearing", [0.03, shaftY, -0.62]),
+    outputBearingRight = b.add("bearing", [0.03, shaftY, 0.62]),
+    sensor = b.add("sensor", [0.03, shaftY, 1.14]),
+    battery = b.add("battery", [1.55, 0.79, -0.85]),
+    controller = b.add("computer", [1.45, 0.45, 0.55], {
       scriptLanguage: "visual",
       scriptSources: controllerSources(),
-    });
+    }),
+    motorSupports = [
+      verticalSupport(motor.pos[0] - 0.27, motor.pos[2] - 0.5),
+      verticalSupport(motor.pos[0] + 0.27, motor.pos[2] - 0.5),
+    ],
+    bearingSupports = [
+      verticalSupport(
+        outputBearingLeft.pos[0],
+        outputBearingLeft.pos[2] - 0.17,
+      ),
+      verticalSupport(
+        outputBearingRight.pos[0],
+        outputBearingRight.pos[2] - 0.17,
+      ),
+    ],
+    sensorSupport = verticalSupport(sensor.pos[0], sensor.pos[2] + 0.14);
   b.matchPorts(motor, "SHAFT", inputGear, "AXLE");
-  b.matchPorts(outputBearing, "SHAFT", outputAxle, "JOURNAL");
-  b.matchPorts(sensor, "SHAFT", outputAxle, "JOURNAL");
+  b.matchPorts(outputBearingLeft, "SHAFT", outputAxle, "JOURNAL LEFT");
+  b.matchPorts(outputBearingRight, "SHAFT", outputAxle, "JOURNAL RIGHT");
+  b.matchPorts(sensor, "SHAFT", outputAxle, "RIGHT");
   b.power(battery, motor);
   b.wireController(battery, controller, [motor]);
-  for (const part of [motor, outputBearing, sensor, battery, controller])
+  for (const part of [battery, controller])
     b.connect(plate, part, "mechanical", {
       portA: "TOP",
       portB: "MOUNT",
+      capacity: REINFORCED_CAPACITY,
+    });
+  for (const support of [...motorSupports, ...bearingSupports, sensorSupport])
+    b.connect(plate, support, "mechanical", {
+      portA: "TOP",
+      portB: "A",
       capacity: STANDARD_CAPACITY,
     });
+  for (const support of motorSupports)
+    b.connect(support, motor, "mechanical", {
+      portA: "B",
+      portB: "MOUNT",
+      capacity: STANDARD_CAPACITY,
+    });
+  for (const [support, bearing] of bearingSupports.map((support, index) => [
+    support,
+    [outputBearingLeft, outputBearingRight][index],
+  ]))
+    b.connect(support, bearing, "mechanical", {
+      portA: "B",
+      portB: "MOUNT",
+      capacity: STANDARD_CAPACITY,
+    });
+  b.connect(sensorSupport, sensor, "mechanical", {
+    portA: "B",
+    portB: "MOUNT",
+    capacity: STANDARD_CAPACITY,
+  });
   b.connect(motor, inputGear, "mechanical", {
     portA: "SHAFT",
     portB: "AXLE",
     capacity: STANDARD_CAPACITY,
   });
-  b.connect(outputBearing, outputAxle, "mechanical", {
+  b.connect(outputBearingLeft, outputAxle, "mechanical", {
     portA: "SHAFT",
-    portB: "JOURNAL",
+    portB: "JOURNAL LEFT",
+    capacity: STANDARD_CAPACITY,
+  });
+  b.connect(outputBearingRight, outputAxle, "mechanical", {
+    portA: "SHAFT",
+    portB: "JOURNAL RIGHT",
     capacity: STANDARD_CAPACITY,
   });
   b.connect(inputGear, outputGear, "mesh", {
@@ -305,7 +362,7 @@ function gearbox() {
     capacity: STANDARD_CAPACITY,
   });
   b.connect(outputAxle, sensor, "mechanical", {
-    portA: "JOURNAL",
+    portA: "RIGHT",
     portB: "SHAFT",
     capacity: STANDARD_CAPACITY,
   });

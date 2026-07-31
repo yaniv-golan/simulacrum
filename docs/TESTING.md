@@ -184,6 +184,10 @@ npm run test:component-visual-workflows
 
 `test:component-visual-workflows` executes every unique suite named by the
 checked-in operation matrix; it is not a token or source-text coverage report.
+For a local screenshot iteration, `verify-component-visual-realism-browser`
+accepts comma-separated `COMPONENT_VISUAL_DEMO_FILTER` and
+`COMPONENT_VISUAL_LAYOUT_FILTER` values (for example, `gearbox` and `laptop`).
+Filtered captures are diagnostic and never replace the unfiltered matrix.
 For geometry decision changes, also run the dedicated mutation gate:
 
 ```bash

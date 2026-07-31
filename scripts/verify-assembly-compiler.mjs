@@ -4,6 +4,8 @@ import { TYPES } from "../src/model/component-catalog.js";
 import { builtInDemo } from "../src/model/demo-blueprints.js";
 import { decodeBlueprintOrThrow } from "../src/model/blueprint-decoder.js";
 import { compileAssembly } from "../src/model/assembly-compiler.js";
+import { geometryDescriptorForPart } from "../src/model/geometry-descriptors.js";
+import { rotateVectorByQuaternion } from "../src/model/primitives.js";
 import { CommandBus } from "../src/simulation/command-bus.js";
 import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
 import { PowerNetwork } from "../src/simulation/power-network.js";
@@ -36,7 +38,7 @@ function assertNear(actual, expected, message, epsilon = 1e-9) {
 
 const expectedBuiltInTopology = {
     gearbox: {
-      constraints: { fixed: 6, gear: 1, measurement: 1, revolute: 2 },
+      constraints: { fixed: 13, gear: 1, measurement: 1, revolute: 3 },
       power: 2,
       signal: 2,
       resource: 0,
@@ -142,12 +144,12 @@ assert.equal(
 );
 assert.equal(
   compiledGearbox.constraints.filter((item) => item.kind === "fixed").length,
-  6,
+  13,
   "mounted gearbox components did not compile to fixed constraints",
 );
 assert.equal(
   compiledGearbox.constraints.filter((item) => item.kind === "revolute").length,
-  2,
+  3,
   "gear shafts did not compile to revolute constraints",
 );
 assert.equal(
@@ -640,6 +642,58 @@ for (let step = 0; step < 1_440; step++) {
 const inputPose = telemetry.poses.find((pose) => pose.id === input.id),
   outputPose = telemetry.poses.find((pose) => pose.id === output.id),
   observedRatio = inputPose.phase / outputPose.phase;
+for (const connectionId of [
+  "demo-gearbox-11",
+  "demo-gearbox-12",
+  "demo-gearbox-13",
+  "demo-gearbox-14",
+  "demo-gearbox-17",
+  "demo-gearbox-18",
+])
+  assert.ok(
+    telemetry.connectionLoads[connectionId] > 0,
+    `${connectionId} carried no sustained physical support reaction`,
+  );
+const outputAxle = runtimeGearbox.parts.find((part) => part.type === "axle"),
+  outputBearings = runtimeGearbox.parts.filter(
+    (part) => part.type === "bearing",
+  ),
+  axleBody = runtime.bodyByPart.get(outputAxle.id);
+for (const bearingPart of outputBearings) {
+  const bearingBody = runtime.bodyByPart.get(bearingPart.id),
+    separationM = bearingBody.position.distanceTo(axleBody.position);
+  assertNear(
+    separationM,
+    0.62,
+    `bearing ${bearingPart.id} lost its authored shaft seat`,
+    0.03,
+  );
+}
+const platePart = runtimeGearbox.parts.find((part) => part.type === "plate"),
+  platePose = telemetry.poses.find((pose) => pose.id === platePart.id),
+  outputPositionPlate = rotateVectorByQuaternion(
+    ["x", "y", "z"].map(
+      (axis) => outputPose.position[axis] - platePose.position[axis],
+    ),
+    [
+      -platePose.quaternion.x,
+      -platePose.quaternion.y,
+      -platePose.quaternion.z,
+      platePose.quaternion.w,
+    ],
+  ),
+  plateBounds = geometryDescriptorForPart(platePart).bodyBoundsPartM,
+  outputGearGeometry = geometryDescriptorForPart(output).bodyPrimitives.find(
+    ({ geometry }) => geometry.kind === "spur-gear-v1",
+  ).geometry,
+  liveGearClearanceM =
+    outputPositionPlate[1] -
+    outputGearGeometry.tipRadiusM -
+    plateBounds.maximumM[1];
+assert.ok(
+  liveGearClearanceM >= 0.08,
+  `rotating 24T gear lost plate-relative clearance (${liveGearClearanceM} m)`,
+);
 assert.ok(
   Math.abs(inputPose.phase) > 0.2 && Math.abs(outputPose.phase) > 0.1,
   "powered compiled drivetrain did not rotate",
@@ -660,11 +714,11 @@ assert.ok(
   "compiled motor consumed no electrical energy",
 );
 assert.ok(
-  telemetry.connectionLoads["demo-gearbox-11"] > 0,
+  telemetry.connectionLoads["demo-gearbox-19"] > 0,
   "gear contact produced no physical attachment load",
 );
 assert.ok(
-  telemetry.connectionTorques["demo-gearbox-11"] > 0,
+  telemetry.connectionTorques["demo-gearbox-19"] > 0,
   "powered gear contact produced no physical reaction torque",
 );
 const motorEntry = runtime.constraintEntries.find(

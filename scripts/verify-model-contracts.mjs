@@ -680,7 +680,7 @@ assert.deepEqual(
   compatibleTargetPorts({ id: 7, type: "wheel" }, "AXLE", axle, TYPES, [
     leftConnection,
   ]),
-  ["RIGHT", "JOURNAL"],
+  ["RIGHT", "JOURNAL", "JOURNAL LEFT", "JOURNAL RIGHT"],
   "occupied axle end was offered for a second wheel",
 );
 expectDomainError(

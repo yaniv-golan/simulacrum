@@ -67,6 +67,7 @@ export function createEditorPresentationSubsystem({
       selectedId: () => state.editor.selected,
       exploded: () => state.exploded,
       explodeAmount: () => state.explodeAmount,
+      running: () => state.running,
     },
     history,
     view: {
@@ -89,7 +90,6 @@ export function createEditorPresentationSubsystem({
     renderInspector,
     toast: actions.notify,
   });
-
   inspection = composeInspection({
     state,
     assembly,
@@ -98,7 +98,6 @@ export function createEditorPresentationSubsystem({
     commandCatalog,
     isolation,
   });
-
   inspector = createComponentInspectorController({
     model: {
       parts: () => state.parts,
@@ -142,7 +141,6 @@ export function createEditorPresentationSubsystem({
       clearRelationshipTrace: connection.clearRelationshipTrace,
     }),
   });
-
   return Object.freeze({
     selection,
     connection,
@@ -156,8 +154,10 @@ export function createEditorPresentationSubsystem({
     selectPart: selection.select,
     connect: connection.connect,
     connectionValid: connection.valid,
+    connectionVisualSnapshot: connection.snapshotVisuals,
     drawConnections,
     isMechanicallyAnchored: connection.isMechanicallyAnchored,
+    updateConnectionVisuals: connection.updateVisuals,
     renderInspector,
     inspection: inspection.read,
     bindSelectedCommands: commandCatalog.bind,

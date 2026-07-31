@@ -31,6 +31,7 @@ export function installWorkshopRuntimeSubsystem({
       updateCamera: presentation.updateCamera,
       updateDetail: presentation.updateDetail,
       updateBatch: presentation.updateBatch,
+      updateConnections: presentation.updateConnections,
       render: presentation.render,
     },
     diagnostics: () => ({
@@ -61,7 +62,6 @@ export function installWorkshopRuntimeSubsystem({
     }),
     environmentCapture: presentation.environmentCapture,
   });
-
   installDebugReadModelFeature({
     target,
     state,
@@ -85,10 +85,10 @@ export function installWorkshopRuntimeSubsystem({
       presentation: () => ({
         ...view.debug.presentation(),
         componentDetail: presentation.detailSnapshot(),
+        connectionVisuals: editor.connectionVisuals(),
       }),
     },
   });
-
   target.addEventListener("resize", () => {
     presentation.camera.aspect = target.innerWidth / target.innerHeight;
     presentation.camera.updateProjectionMatrix();

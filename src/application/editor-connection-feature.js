@@ -16,6 +16,7 @@ import { createRelationshipTraceController } from "../presentation/relationship-
 import { portAxisPart } from "../model/component-geometry-contract.js";
 import { flexibleLinePreviewReadModel } from "../model/flexible-line-preview-read-model.js";
 import { applyFlexibleLinePreviewReadModel } from "../presentation/flexible-line-telemetry-presenter.js";
+import { createRuntimeNetworkConduitController } from "../presentation/runtime-network-conduit-controller.js";
 
 /**
  * @typedef {{
@@ -50,6 +51,7 @@ import { applyFlexibleLinePreviewReadModel } from "../presentation/flexible-line
  *   selectedId: () => number | null,
  *   exploded: () => boolean,
  *   explodeAmount: () => number,
+ *   running: () => boolean,
  * }} ConnectionWorkspacePort
  * @typedef {{
  *   suspended: () => boolean,
@@ -77,13 +79,22 @@ import { applyFlexibleLinePreviewReadModel } from "../presentation/flexible-line
  * }} ports
  */
 export function createEditorConnectionFeature({ workspace, history, view }) {
-  const assessTarget = createEditorConnectionAssessment({
+  const authoringWires = new THREE.Group(),
+    assessTarget = createEditorConnectionAssessment({
       workspace,
       catalog: TYPES,
     }),
     relationshipTrace = createRelationshipTraceController({
-      wires: view.wires,
+      wires: authoringWires,
+    }),
+    runtimeConduits = createRuntimeNetworkConduitController({
+      parent: view.wires,
+      parts: workspace.parts,
+      connections: workspace.connections,
+      connectionValid: valid,
     });
+  authoringWires.name = "authoringConnectionOverlays";
+  view.wires.add(authoringWires);
   const coordinateBehaviors = new Set([
     "rotary-coupling",
     "revolute-support",
@@ -356,14 +367,19 @@ export function createEditorConnectionFeature({ workspace, history, view }) {
         }),
       );
     }
-    while (view.wires.children.length) {
-      const child = view.wires.children[0];
-      view.wires.remove(child);
+    while (authoringWires.children.length) {
+      const child = authoringWires.children[0];
+      authoringWires.remove(child);
       child.geometry?.dispose();
       if (Array.isArray(child.material))
         child.material.forEach((material) => material.dispose());
       else child.material?.dispose();
     }
+    if (workspace.running()) {
+      runtimeConduits.sync();
+      return;
+    }
+    runtimeConduits.clear();
     for (const connection of workspace.connections()) {
       const left = workspace.parts().find((part) => part.id === connection.a);
       const right = workspace.parts().find((part) => part.id === connection.b);
@@ -405,7 +421,7 @@ export function createEditorConnectionFeature({ workspace, history, view }) {
       );
       tube.userData.connectionId = connection.id;
       tube.userData.connectionKind = connection.kind;
-      view.wires.add(tube);
+      authoringWires.add(tube);
     }
   }
 
@@ -417,6 +433,13 @@ export function createEditorConnectionFeature({ workspace, history, view }) {
     isMechanicallyAnchored,
     showRelationshipTrace: relationshipTrace.show,
     showRelationshipTraceSegments: relationshipTrace.showSegments,
+    snapshotVisuals: () => ({
+      mode: workspace.running() ? "runtime-network-conduits" : "authoring",
+      ...runtimeConduits.snapshot(),
+    }),
+    updateVisuals: () => {
+      if (workspace.running()) runtimeConduits.update();
+    },
     valid,
   });
 }

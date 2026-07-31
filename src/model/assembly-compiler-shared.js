@@ -32,7 +32,9 @@ export function compiledPortDefinition(part, portId, catalog) {
 export function axisFor(part, catalog) {
   if (Array.isArray(part.config?.axis)) return compiledVector(part.config.axis);
   const geometry = geometryDescriptorForPart(part, catalog),
-    firstFrame = Object.values(geometry.portFrames)[0];
+    firstFrame = Object.entries(geometry.portFrames).find(
+      ([portId]) => geometry.portClasses[portId] !== "network-only",
+    )?.[1];
   return firstFrame ? portAxisPart(firstFrame) : [1, 0, 0];
 }
 

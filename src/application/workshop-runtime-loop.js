@@ -9,7 +9,7 @@
  *   streamEarth:(maximum?:number)=>void, updateExploded:(dt:number)=>void,
  *   updateEnvironment:()=>void, updateWater:(time:number)=>void,
  *   updateCamera:(dt:number)=>void, updateDetail:()=>void,
- *   updateBatch:()=>void, render:()=>void,
+ *   updateBatch:()=>void, updateConnections?:()=>void, render:()=>void,
  * }} RuntimePresentationPort
  */
 
@@ -51,6 +51,7 @@ export function installWorkshopRuntimeLoop({
     presentation.updateCamera(dt);
     presentation.updateDetail();
     presentation.updateBatch();
+    presentation.updateConnections?.();
     presentation.render();
     presentedInitialFrame = true;
     frameId = target.requestAnimationFrame(frame);
@@ -73,6 +74,7 @@ export function installWorkshopRuntimeLoop({
     presentation.updateCamera(Math.min(1, milliseconds / 1000));
     presentation.updateDetail();
     presentation.updateBatch();
+    presentation.updateConnections?.();
     presentation.render();
   }
 

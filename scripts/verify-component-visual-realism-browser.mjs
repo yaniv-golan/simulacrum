@@ -81,17 +81,34 @@ await page.waitForFunction(
   () => typeof window.render_game_to_text === "function",
 );
 
+const requestedLayouts = new Set(
+    process.env.COMPONENT_VISUAL_LAYOUT_FILTER?.split(",").filter(Boolean) ||
+      [],
+  ),
+  requestedDemos = new Set(
+    process.env.COMPONENT_VISUAL_DEMO_FILTER?.split(",").filter(Boolean) || [],
+  );
+for (const id of requestedLayouts)
+  assert.ok(
+    ["laptop", "wide"].includes(id),
+    `unknown component-visual layout filter: ${id}`,
+  );
+for (const id of requestedDemos)
+  assert.ok(
+    ["gearbox", "cart", "drone", "humanoid", "mission"].includes(id),
+    `unknown component-visual demo filter: ${id}`,
+  );
 const layouts = [
     { id: "laptop", width: 1440, height: 900 },
     { id: "wide", width: 1920, height: 1080 },
-  ],
+  ].filter(({ id }) => !requestedLayouts.size || requestedLayouts.has(id)),
   demos = [
     { id: "gearbox", targetType: "gear24", requiredKind: "spur-gear-v1" },
     { id: "cart", targetType: "spring", requiredKind: "helical-spring-v1" },
     { id: "drone", targetType: "rotor", requiredKind: "extruded-profile-v1" },
     { id: "humanoid", targetType: "hinge", requiredKind: "cylinder-v1" },
     { id: "mission", targetType: "rocket", requiredKind: "cone-v1" },
-  ],
+  ].filter(({ id }) => !requestedDemos.size || requestedDemos.has(id)),
   setTimeOfDay = (hour) =>
     page.locator("#time-of-day").evaluate((control, value) => {
       control.value = String(value);
@@ -157,6 +174,11 @@ for (const layout of layouts) {
         (id) => id !== "collision" && !id.startsWith("collision:"),
       ),
       `${demo.id} rendered a collision fallback as canonical body geometry`,
+    );
+    assert.equal(
+      overview.presentation.connectionVisuals.mode,
+      "authoring",
+      `${demo.id} build mode did not retain authoring connection overlays`,
     );
     if (demo.id === "cart") {
       cartPartCount = overview.parts.length;
@@ -231,9 +253,66 @@ for (const layout of layouts) {
     );
     captureCount++;
     assert.equal(running.running, true);
+    const expectedRuntimeConduits = running.connections.filter(
+      ({ kind, failed, valid }) =>
+        ["power", "resource", "signal"].includes(kind) && !failed && valid,
+    );
+    assert.equal(
+      running.presentation.connectionVisuals.mode,
+      "runtime-network-conduits",
+    );
+    const visibleRuntimeConduits =
+      running.presentation.connectionVisuals.connections;
+    assert.equal(
+      running.presentation.connectionVisuals.visible,
+      visibleRuntimeConduits.length > 0,
+      `${demo.id} runtime conduit visibility disagrees with its spatial projection`,
+    );
+    assert.ok(
+      visibleRuntimeConduits.every(({ id }) =>
+        expectedRuntimeConduits.some((connection) => connection.id === id),
+      ),
+      `${demo.id} runtime view drew a structural relationship as a conduit`,
+    );
+    assert.ok(
+      visibleRuntimeConduits.every(
+        ({ startWorldM, endWorldM, sagM }) =>
+          startWorldM.every(Number.isFinite) &&
+          endWorldM.every(Number.isFinite) &&
+          sagM > 0,
+      ),
+      `${demo.id} runtime conduit lost its canonical endpoint pose or gravity sag`,
+    );
+    if (demo.id === "gearbox") {
+      const batteryToMotor = running.connections.find(
+        ({ kind, a, b }) =>
+          kind === "power" &&
+          running.parts.find(({ id }) => id === a)?.type === "battery" &&
+          running.parts.find(({ id }) => id === b)?.type === "motor",
+      );
+      assert.ok(
+        visibleRuntimeConduits.some(
+          ({ id, kind }) => id === batteryToMotor?.id && kind === "power",
+        ),
+        "active gearbox hid the power cable between the cell and motor",
+      );
+      assert.deepEqual(
+        visibleRuntimeConduits.map(({ id }) => id).sort(),
+        expectedRuntimeConduits.map(({ id }) => id).sort(),
+        "active gearbox did not project every authored spatial network conduit",
+      );
+    }
     await click("#run-btn");
     await page.waitForFunction(
       () => JSON.parse(window.render_game_to_text()).running === false,
+    );
+    const stopped = JSON.parse(
+      await page.evaluate(() => window.render_game_to_text()),
+    );
+    assert.equal(
+      stopped.presentation.connectionVisuals.mode,
+      "authoring",
+      `${demo.id} did not restore authoring connection overlays after Run stopped`,
     );
   }
 }
