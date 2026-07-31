@@ -148,6 +148,18 @@ try {
     "placed battery was not the primary selection",
   );
   await assertCanonicalVisualProductState(page, "battery placement");
+  const constructionNote = page
+    .locator(".component-construction .component-contract-note")
+    .first();
+  assert.equal(
+    await constructionNote.evaluate((note) => getComputedStyle(note).fontSize),
+    "9px",
+    "Blueprint Construction note escaped the compact Inspector type scale",
+  );
+  await constructionNote.scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: "artifacts/inspector-construction-typography.png",
+  });
   const colorInput = page.locator("[data-custom-color]");
   await colorInput.evaluate((input) => {
     input.value = "#2357d9";

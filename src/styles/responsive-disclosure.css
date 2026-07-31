@@ -138,6 +138,10 @@
     left 180ms ease,
     right 180ms ease;
 }
+.catalog,
+.inspector {
+  overflow: visible;
+}
 .panel-collapse {
   position: absolute;
   top: 50%;
@@ -153,20 +157,20 @@
   box-shadow: 0 8px 24px #00100db8;
 }
 .panel-collapse-left {
-  right: 5px;
+  right: -29px;
   border-radius: 5px 0 0 5px;
 }
 .panel-collapse-right {
-  left: 5px;
+  left: -29px;
   border-radius: 0 5px 5px 0;
 }
 .catalog.panel-collapsed {
   transition: none;
-  transform: translateX(calc(-100% + 40px));
+  transform: translateX(-100%);
 }
 .inspector.panel-collapsed {
   transition: none;
-  transform: translateX(calc(100% - 40px));
+  transform: translateX(100%);
 }
 .catalog.panel-collapsed > :not(.panel-collapse),
 .inspector.panel-collapsed > :not(.panel-collapse) {

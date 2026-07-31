@@ -64,6 +64,12 @@ try {
           editorRight: editor.getBoundingClientRect().right,
           selectRight: editor.querySelector("select").getBoundingClientRect()
             .right,
+          inspectorLeft: editor.closest(".inspector").getBoundingClientRect()
+            .left,
+          collapseButtonRight: editor
+            .closest(".inspector")
+            .querySelector(".panel-collapse")
+            .getBoundingClientRect().right,
         };
       }),
     expectedMechanismTypography = {
@@ -94,6 +100,10 @@ try {
     assert.ok(
       typography.selectRight <= typography.editorRight,
       `mechanism display-unit selector escaped the Inspector at ${name}`,
+    );
+    assert.ok(
+      typography.collapseButtonRight <= typography.inspectorLeft,
+      `Inspector collapse control overlapped panel content at ${name}`,
     );
     await page.screenshot({
       path: `artifacts/mechanism-inspector-typography-${name}.png`,
