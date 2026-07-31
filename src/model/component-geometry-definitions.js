@@ -153,6 +153,8 @@ const mechanismFrames = {
     LEFT: frame(constantPosition([0, 0, -1]), FLIP_Z),
     RIGHT: frame(constantPosition([0, 0, 1])),
     JOURNAL: frame(constantPosition([0, 0, 0])),
+    "JOURNAL LEFT": frame(constantPosition([0, 0, -0.62]), FLIP_Z),
+    "JOURNAL RIGHT": frame(constantPosition([0, 0, 0.62])),
   },
   bearing: {
     MOUNT: frame(constantPosition([0, 0, -0.17]), FLIP_Z),
@@ -634,6 +636,8 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
   motor: ordinary({
     ports: {
       MOUNT: frame(constantPosition([0, 0, -0.5]), FLIP_Z),
+      POWER: frame(constantPosition([0.3, 0.28, -0.46]), FLIP_Z),
+      CONTROL: frame(constantPosition([-0.3, 0.28, -0.46]), FLIP_Z),
       SHAFT: frame(constantPosition([0, 0, 0.92])),
     },
     bodyPrimitives: [
@@ -800,7 +804,15 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
       ),
     ],
   }),
-  computer: ordinary({ ports: { MOUNT: face(1, -1) } }),
+  computer: ordinary({
+    ports: {
+      MOUNT: face(1, -1),
+      POWER: frame(constantPosition([-0.3, 0.16, -0.32])),
+      "IN A": frame(constantPosition([-0.12, 0.16, 0.32])),
+      "IN B": frame(constantPosition([0.12, 0.16, 0.32])),
+      OUT: frame(constantPosition([0.3, 0.16, -0.32])),
+    },
+  }),
   receiver: shapedOrdinary({
     ports: { MOUNT: face(1, -1) },
     id: "receiver-body",
@@ -883,6 +895,7 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
     ports: {
       MOUNT: face(2, 1),
       SHAFT: frame(constantPosition([0, 0, -0.14]), FLIP_Z),
+      SIGNAL: frame(constantPosition([0, 0.225, 0.08])),
     },
     id: "rotation-sensor-body",
     geometry: { kind: "cylinder-v1", radiusM: 0.225, axialLengthM: 0.28 },
@@ -1060,7 +1073,12 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
       ),
     ],
   }),
-  battery: ordinary({ ports: { MOUNT: face(1, -1) } }),
+  battery: ordinary({
+    ports: {
+      MOUNT: face(1, -1),
+      POWER: frame(constantPosition([0, 0.5, 0])),
+    },
+  }),
   propellanttank: ordinary({
     ports: { MOUNT: face(1, 1), OUTLET: face(1, -1) },
     bodyPrimitives: [

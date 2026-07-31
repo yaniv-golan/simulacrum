@@ -292,7 +292,8 @@ export function createSimulationLifecycleFeature({
       runEvidence = null;
       throw error;
     }
-    presentation.setWiresVisible(false);
+    presentation.drawWires();
+    presentation.setWiresVisible(true);
     presentation.aerothermal.prepare();
     runtime.telemetry = runtime.session.telemetry();
     await activeRunEvidence.captureReplayAnchor();

@@ -278,8 +278,11 @@ strict data-only `geometryContract`; `geometryDescriptorForPart()` resolves it
 to immutable `GeometryDescriptorV2` using the authored part transform and
 scale. The descriptor separately names collision, body, feature, selection,
 and overall physical bounds, classifies every port, and contains frames only
-for spatial ports. Physical features are anchored to those canonical frames,
-so a host renderer cannot independently place a shaft or attachment surface.
+for spatial mechanical/resource ports plus optional presentation terminals for
+network-only ports. Physical-axis inference explicitly ignores network-only
+terminal frames. Physical features are anchored to the remaining canonical
+frames, so a host renderer cannot independently place a shaft or attachment
+surface.
 
 `validateComponentGeometryDefinitionOrThrow()` and
 `validateGeometryDescriptorOrThrow()` reject unknown fields, primitive kinds,

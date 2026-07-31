@@ -30,7 +30,9 @@ function normalizedDot(left, right) {
 function deriveForAxis(part, axis, catalog) {
   const geometry = geometryDescriptorForPart(part, catalog),
     frames = geometry.portFrames,
-    entries = Object.entries(frames),
+    entries = Object.entries(frames).filter(
+      ([portId]) => geometry.portClasses[portId] !== "network-only",
+    ),
     mappings = [];
   for (const [sourcePort, sourceFrame] of entries) {
     const sourceDefinition = portDefinition(part, sourcePort, catalog),

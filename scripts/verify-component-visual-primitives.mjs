@@ -17,6 +17,8 @@ import {
 } from "../src/model/component-geometry-decisions.js";
 import { projectCanonicalComponentGeometry } from "../src/presentation/canonical-component-geometry-projector.js";
 import { disposeObject3D } from "../src/presentation/render-resources.js";
+import { createRuntimeNetworkConduitController } from "../src/presentation/runtime-network-conduit-controller.js";
+import { builtInDemo } from "../src/model/demo-blueprints.js";
 
 const IDENTITY_FRAME = {
     position: { kind: "constant-v1", value: [0, 0, 0] },
@@ -665,6 +667,74 @@ assert.throws(
     }),
   (error) => error.code === "INVALID_GEOMETRY_PROFILE",
   "extruded profiles accepted a zero-area polygon",
+);
+
+const gearbox = builtInDemo("gearbox").blueprint,
+  conduitParent = new THREE.Group(),
+  conduitParts = gearbox.parts.map((part) => {
+    const mesh = new THREE.Group();
+    mesh.position.set(...part.pos);
+    mesh.quaternion.set(...part.orientation);
+    conduitParent.add(mesh);
+    return { ...part, mesh };
+  }),
+  conduitController = createRuntimeNetworkConduitController({
+    parent: conduitParent,
+    parts: () => conduitParts,
+    connections: () => gearbox.connections,
+    connectionValid: () => true,
+  });
+conduitController.sync();
+const initialConduits = conduitController.snapshot(),
+  initialBatteryCable = initialConduits.connections.find(
+    ({ id }) => id === "demo-gearbox-1",
+  );
+assert.equal(initialConduits.connectionCount, 4);
+assert.deepEqual(initialConduits.byKind, { power: 2, signal: 2 });
+const conduitGroup = conduitParent.getObjectByName("runtimeNetworkConduits"),
+  firstBatches = [...conduitGroup.children];
+let disposedBatchCount = 0;
+for (const batch of firstBatches)
+  batch.addEventListener("dispose", () => disposedBatchCount++);
+conduitController.sync();
+assert.equal(
+  disposedBatchCount,
+  firstBatches.length,
+  "runtime conduit rebuild retained obsolete instanced GPU buffers",
+);
+assert.ok(
+  conduitGroup.children.length <= 3,
+  "runtime conduit rebuild accumulated duplicate kind batches",
+);
+assert.ok(
+  initialConduits.connections.every(({ id }) =>
+    gearbox.connections.some(
+      ({ id: candidateId, kind }) =>
+        candidateId === id && ["power", "signal", "resource"].includes(kind),
+    ),
+  ),
+  "runtime conduit projection drew a mechanical relationship arc",
+);
+const motorVisual = conduitParts.find(({ type }) => type === "motor");
+motorVisual.mesh.position.x += 0.5;
+conduitController.update();
+const movedBatteryCable = conduitController
+  .snapshot()
+  .connections.find(({ id }) => id === "demo-gearbox-1");
+assert.equal(
+  movedBatteryCable.endWorldM[0] - initialBatteryCable.endWorldM[0],
+  0.5,
+  "runtime conduit did not follow its moving canonical terminal",
+);
+const rebuiltBatches = [...conduitGroup.children];
+for (const batch of rebuiltBatches)
+  batch.addEventListener("dispose", () => disposedBatchCount++);
+conduitController.clear();
+assert.equal(conduitController.snapshot().visible, false);
+assert.equal(
+  disposedBatchCount,
+  firstBatches.length + rebuiltBatches.length,
+  "clearing runtime conduits retained instanced GPU buffers",
 );
 
 console.log("component visual primitives passed");

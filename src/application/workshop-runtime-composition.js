@@ -55,6 +55,7 @@ export function installWorkshopRuntimeComposition({
           quality: shell.state.componentDetailQuality,
         }),
       updateBatch: () => stage.largeAssemblyBatcher.update(),
+      updateConnections: editor.editorPresentation.updateConnectionVisuals,
       render: () => stage.renderer.render(stage.scene, stage.camera),
       renderer: stage.renderer,
       camera: stage.camera,
@@ -92,6 +93,7 @@ export function installWorkshopRuntimeComposition({
       camera: () => cameraController.snapshot(),
       transformGizmo: editor.transformGizmo.operation,
       inspection: editor.editorPresentation.inspection,
+      connectionVisuals: editor.editorPresentation.connectionVisualSnapshot,
     },
     machine: {
       root: stage.machine,

@@ -180,7 +180,7 @@ ablative surfaces, and player-painted structure. Camera-aware detail tiers
 preserve part IDs, selection, ports, and major silhouettes; assemblies above
 128 parts use reduced shadows and performance projections automatically.
 
-Connections are classified and drawn by function: orange for power, mint for mechanical links, gold for meshed gears, and blue for signals. Gear meshes automatically use tooth-count ratios.
+Connections are classified and drawn by function: orange for power, mint for mechanical links, gold for meshed gears, and blue for signals. In Build and Connect modes these colors expose the complete authored relationship graph. During simulation, mechanical and mesh relationship arcs disappear while power, signal, and resource connections with canonical physical terminal frames remain as live conduits attached to their moving endpoints. Gear meshes automatically use tooth-count ratios.
 
 Motors do not receive free energy. A motor only turns when its POWER network reaches a charged Power Cell. The inspector reports **POWERED** or **NO POWER**, and battery charge drains according to configured motor load while simulation runs.
 
@@ -316,7 +316,7 @@ Only a 7×7 visual neighborhood is kept in memory, with physical heightfield col
 
 Open **Demos** in the header and follow the numbered complexity ladder. Loading a structure also opens its matching remote. Every stage remains an ordinary editable assembly rather than a locked showcase.
 
-- **1 · Powered Gearbox:** battery, powered motor, controller, mounted 12T input gear, meshed 24T output gear, and rotation sensor. It demonstrates electrical enablement, shaft alignment, opposite rotation, and exact 2:1 reduction.
+- **1 · Powered Gearbox:** battery, powered motor on two rear-flange uprights, controller, mounted 12T input gear, a 24T output gear carried between two supported shaft bearings, and an outboard rotation sensor. The enlarged mounting plate contains every component, the gear tips clear its top surface, and canonical power/signal terminals keep the real conduits visible during operation. It demonstrates electrical enablement, shaft alignment, opposite rotation, and exact 2:1 reduction.
 - **2 · Suspension Rover:** powered dynamic chassis, four suspended wheels, motor, steering hinge, battery, controller, power network, command link, and two functional headlights. Each 1,600-lumen headlight uses inverse-square attenuation, a dipped soft-edged beam, dynamic shadow casting, and real 110 W combined battery draw. Its tire constraint provides longitudinal traction and lateral grip only while the wheels are supported; crossing the finite plate edge or a reserve-material boundary resolves the exact contacted surface law and publishes that provenance. Its visible controls are an ordinary pinned control surface generated from the editable Cart remote.
 - **3 · Quad Drone:** crossed frame, flight deck, four independently powered shaft motors and fixed-pitch rotors, battery, controller, and flight-control network.
 - **4 · Atlas Humanoid:** a 13-body physical robot with feet, shins, thighs, pelvis, torso, head, upper arms, and forearms; ten powered hip, knee, ankle, shoulder, and elbow hinges; a battery, motor, controller, 6-axis IMU, and balance gyro.

@@ -20,6 +20,7 @@ import { createComponentInspectionCarrierBlueprint } from "./lib/component-inspe
 const source = createComponentInspectionCarrierBlueprint(),
   decoded = decodeBlueprintOrThrow(source),
   authored = decoded.assembly,
+  controllerId = decoded.wire.parts.find(({ type }) => type === "computer").id,
   sourceFingerprint = await fingerprintComponentInspectionAssembly(authored),
   model = AssemblyModel.fromBlueprint(authored),
   recreated = createBlueprint(model, { name: source.name, created: null });
@@ -56,10 +57,10 @@ assert.deepEqual(recreated.connections, decoded.wire.connections);
 const workspace = createWorkspace({
     blueprint: decoded.wire,
     idSeed: Math.max(...decoded.wire.parts.map(({ id }) => id)) + 1,
-    selectedPartIds: [9],
-    selectedControllerId: 9,
+    selectedPartIds: [controllerId],
+    selectedControllerId: controllerId,
     activeRemoteProfile: decoded.wire.defaultRemoteProfile,
-    programAcquisitionByController: { 9: "BUILT_IN" },
+    programAcquisitionByController: { [controllerId]: "BUILT_IN" },
     remoteControlState: Object.fromEntries(
       Object.entries(decoded.wire.remoteProfiles).map(([id, profile]) => [
         id,
@@ -96,7 +97,9 @@ const allIds = authored.parts.map(({ id }) => id),
   instance = instantiateSubassembly(subassembly, {
     position: [10, 2, -4],
     nextId: 100,
-  });
+  }),
+  instanceMotorId = instance.parts.find(({ type }) => type === "motor").id,
+  instanceSensorId = instance.parts.find(({ type }) => type === "sensor").id;
 assert.deepEqual(
   instance.parts.find(({ type }) => type === "plate").extensions,
   source.parts.find(({ type }) => type === "plate").extensions,
@@ -115,14 +118,14 @@ assert.deepEqual(
     {
       id: "inspection.motor",
       direction: "output",
-      endpointPartId: 101,
+      endpointPartId: instanceMotorId,
       endpointPortId: "CONTROL",
       channel: "throttle",
     },
     {
       id: "inspection.sensor",
       direction: "input",
-      endpointPartId: 106,
+      endpointPartId: instanceSensorId,
       endpointPortId: "SIGNAL",
       reading: "rotation_rpm",
     },

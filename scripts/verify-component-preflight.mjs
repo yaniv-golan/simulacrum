@@ -4,10 +4,13 @@ import { analyzeComponentPreflight } from "../src/model/component-preflight.js";
 import { createComponentInspectionCarrierBlueprint } from "./lib/component-inspection-carrier-fixture.mjs";
 
 const assembly = decodeBlueprintOrThrow(
-  createComponentInspectionCarrierBlueprint(),
-).assembly;
+    createComponentInspectionCarrierBlueprint(),
+  ).assembly,
+  controllerId = assembly.parts.find(({ type }) => type === "computer").id;
 assert.deepEqual(analyzeComponentPreflight(assembly).status, "not-checked");
-const passed = analyzeComponentPreflight(assembly, { selectedPartIds: [9] });
+const passed = analyzeComponentPreflight(assembly, {
+  selectedPartIds: [controllerId],
+});
 assert.equal(passed.status, "passed");
 assert.deepEqual(passed.diagnostics, []);
 assert.equal(
@@ -18,7 +21,7 @@ assert.equal(
 
 const invalid = structuredClone(assembly);
 invalid.parts
-  .find(({ id }) => id === 9)
+  .find(({ id }) => id === controllerId)
   .controllerBindings.push({
     id: "invalid.endpoint",
     direction: "output",
@@ -26,12 +29,14 @@ invalid.parts
     endpointPortId: "CONTROL",
     channel: "throttle",
   });
-const blocked = analyzeComponentPreflight(invalid, { selectedPartIds: [9] });
+const blocked = analyzeComponentPreflight(invalid, {
+  selectedPartIds: [controllerId],
+});
 assert.equal(blocked.status, "blocked");
 assert.ok(
   blocked.diagnostics.some(
     ({ code, partId }) =>
-      code === "MISSING_CONTROLLER_ENDPOINT" && partId === 9,
+      code === "MISSING_CONTROLLER_ENDPOINT" && partId === controllerId,
   ),
 );
 const unknown = analyzeComponentPreflight(assembly, {

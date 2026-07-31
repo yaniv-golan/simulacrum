@@ -10,6 +10,8 @@ import {
   mechanismDeformationTransforms,
   physicalFeaturePrimitivesForDescriptor,
   PORT_SPATIAL_CLASSES,
+  primaryGeometryAxisPart,
+  projectBoundsToWorld,
   resolveComponentGeometryContract,
   resolveComponentGeometryContractForType,
   validateComponentGeometryDefinitionOrThrow,
@@ -27,6 +29,23 @@ import { supportMaterialResponse } from "../src/model/contact-material-pairs.js"
 assert.equal(COMPONENT_GEOMETRY_SCHEMA_VERSION, 2);
 assert.equal(new Set(GEOMETRY_CLASSES).size, 3);
 assert.equal(new Set(PORT_SPATIAL_CLASSES).size, 4);
+for (const journalId of ["JOURNAL LEFT", "JOURNAL RIGHT"])
+  assert.equal(
+    TYPES.axle.ports.find(({ id }) => id === journalId)?.multiplicity,
+    "one",
+    `${journalId} allowed overlapping attachments at one physical seat`,
+  );
+assert.deepEqual(
+  primaryGeometryAxisPart({
+    portClasses: { POWER: "network-only", SHAFT: "spatial-mechanical" },
+    portFrames: {
+      POWER: { framePart: { orientation: [0, Math.SQRT1_2, 0, Math.SQRT1_2] } },
+      SHAFT: { framePart: { orientation: [0, 0, 0, 1] } },
+    },
+  }),
+  [0, 0, 1],
+  "a network terminal became authoritative for a physical component axis",
+);
 
 const hinge = resolveComponentGeometryContractForType("hinge");
 assert.deepEqual(
@@ -36,6 +55,20 @@ assert.deepEqual(
 );
 assert.deepEqual(hinge.portFrames.BASE.framePart.orientation, [0, 1, 0, 0]);
 assert.deepEqual(hinge.portFrames.ARM.framePart.orientation, [0, 0, 0, 1]);
+
+for (const [type, networkPorts] of Object.entries({
+  battery: ["POWER"],
+  computer: ["POWER", "IN A", "IN B", "OUT"],
+  motor: ["POWER", "CONTROL"],
+  sensor: ["SIGNAL"],
+})) {
+  const descriptor = resolveComponentGeometryContractForType(type);
+  for (const portId of networkPorts)
+    assert.ok(
+      descriptor.portFrames[portId]?.framePart.positionM.every(Number.isFinite),
+      `${type}.${portId} has no canonical physical conduit terminal`,
+    );
+}
 
 for (const patch of [
   { type: "" },
@@ -375,6 +408,81 @@ assert.ok(
   ) < 1e-12,
   "stock gears are not centered at the canonical pitch-radius sum",
 );
+
+const stockGearbox = builtInDemo("gearbox").blueprint,
+  stockPartById = new Map(stockGearbox.parts.map((part) => [part.id, part])),
+  stockPlate = stockGearbox.parts.find((part) => part.type === "plate"),
+  stockOutputGear = stockGearbox.parts.find((part) => part.type === "gear24"),
+  stockOutputAxle = stockGearbox.parts.find((part) => part.type === "axle"),
+  stockPlateBounds = projectBoundsToWorld(
+    resolveComponentGeometryContract(stockPlate).bodyBoundsPartM,
+    stockPlate.pos,
+    stockPlate.orientation,
+  ),
+  stockGearBounds = projectBoundsToWorld(
+    resolveComponentGeometryContract(stockOutputGear).bodyBoundsPartM,
+    stockOutputGear.pos,
+    stockOutputGear.orientation,
+  ),
+  stockSupportTargets = stockGearbox.connections
+    .filter(({ portA, portB }) => portA === "B" && portB === "MOUNT")
+    .map(({ a, b }) => [stockPartById.get(a), stockPartById.get(b)]),
+  targetCounts = Object.fromEntries(
+    ["motor", "bearing", "sensor"].map((type) => [
+      type,
+      stockSupportTargets.filter(
+        ([support, target]) =>
+          support?.type === "beam" && target?.type === type,
+      ).length,
+    ]),
+  );
+assert.ok(
+  stockGearBounds.minimumM[1] - stockPlateBounds.maximumM[1] >= 0.1,
+  "stock 24T gear intersects or visually sinks into its mounting plate",
+);
+assert.deepEqual(
+  targetCounts,
+  { motor: 2, bearing: 2, sensor: 1 },
+  "stock drivetrain lost an explicit structural support load path",
+);
+for (const [support] of stockSupportTargets)
+  assert.ok(
+    stockGearbox.connections.some(
+      ({ a, b, portA, portB }) =>
+        a === stockPlate.id &&
+        b === support.id &&
+        portA === "TOP" &&
+        portB === "A",
+    ),
+    `support ${support.id} does not terminate on the mounting plate`,
+  );
+assert.deepEqual(
+  stockGearbox.connections
+    .filter(
+      ({ a, b, portA }) =>
+        b === stockOutputAxle.id &&
+        portA === "SHAFT" &&
+        stockPartById.get(a)?.type === "bearing",
+    )
+    .map(({ portB }) => portB)
+    .sort(),
+  ["JOURNAL LEFT", "JOURNAL RIGHT"],
+  "stock output shaft is not supported on both sides of the large gear",
+);
+for (const part of stockGearbox.parts) {
+  const worldBounds = projectBoundsToWorld(
+    resolveComponentGeometryContract(part).selectionBoundsPartM,
+    part.pos,
+    part.orientation,
+  );
+  assert.ok(
+    worldBounds.minimumM[0] >= stockPlateBounds.minimumM[0] - 1e-9 &&
+      worldBounds.maximumM[0] <= stockPlateBounds.maximumM[0] + 1e-9 &&
+      worldBounds.minimumM[2] >= stockPlateBounds.minimumM[2] - 1e-9 &&
+      worldBounds.maximumM[2] <= stockPlateBounds.maximumM[2] + 1e-9,
+    `stock ${part.type} #${part.id} hangs outside the mounting plate footprint`,
+  );
+}
 
 const aerodynamicFixture = resolveComponentGeometryContract({
   id: 991,
