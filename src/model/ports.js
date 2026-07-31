@@ -64,6 +64,20 @@ const PORT_PRESENTATION = Object.freeze({
   },
 });
 
+const immutablePortDefinitions = new WeakMap(),
+  deeplyFrozenPortDefinitions = new WeakSet();
+
+function isDeeplyFrozen(value, seen = new WeakSet()) {
+  if (value == null || typeof value !== "object") return true;
+  if (!Object.isFrozen(value)) return false;
+  if (deeplyFrozenPortDefinitions.has(value) || seen.has(value)) return true;
+  seen.add(value);
+  for (const child of Object.values(value))
+    if (!isDeeplyFrozen(child, seen)) return false;
+  deeplyFrozenPortDefinitions.add(value);
+  return true;
+}
+
 /** @param {any} component @param {Record<string, any>} [catalog] */
 export function portIds(component, catalog = TYPES) {
   const type = typeof component === "string" ? component : component?.type;
@@ -81,7 +95,13 @@ export function portDefinition(part, port, catalog = TYPES) {
       `Port ${String(port)} is not declared by ${String(part?.type)}`,
       { details: { partType: part?.type, port } },
     );
-  return immutableClone(descriptor);
+  if (!isDeeplyFrozen(descriptor)) return immutableClone(descriptor);
+  let immutable = immutablePortDefinitions.get(descriptor);
+  if (!immutable) {
+    immutable = immutableClone(descriptor);
+    immutablePortDefinitions.set(descriptor, immutable);
+  }
+  return immutable;
 }
 
 /** @param {any} part @param {any} port @param {Record<string, any>} [catalog] */

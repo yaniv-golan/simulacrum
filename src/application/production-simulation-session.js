@@ -51,6 +51,8 @@ export function startProductionSimulationSession({
       windEnabled: services.windEnabled,
       pondAt: physics.pondAt,
       captureTelemetry: captureProductionSystemTelemetry,
+      deferMechanismTelemetryUntilIntegration: true,
+      deferPowerTelemetryUntilCompletion: true,
       connectionValid: services.connectionValid,
       partMass: (part) => physics.catalog[part.type]?.mass || 0,
     });

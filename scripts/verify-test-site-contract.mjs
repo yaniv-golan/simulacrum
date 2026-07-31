@@ -286,6 +286,8 @@ const validatedPolygonSite = createTestSiteDefinition(polygonSite),
   corridorShape = validatedPolygonSite.surfaceRegions[1].shape;
 assert.equal(testSiteShapeContains(polygonShape, -20, 26), true);
 assert.equal(testSiteShapeContains(polygonShape, 0, 26), false);
+assert.equal(testSiteShapeContains(polygonShape, -4, 26), true);
+assert.equal(testSiteShapeContains(polygonShape, -30, 26), true);
 assert.ok(testSiteShapeSignedDistance(polygonShape, -20, 26) < 0);
 assert.ok(testSiteShapeSignedDistance(polygonShape, 0, 26) > 0);
 assert.equal(testSiteShapeContains(corridorShape, 0, -29), true);

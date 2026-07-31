@@ -483,7 +483,13 @@ const shortageGraph = new RunAssemblyGraph({
   shortage = new PowerNetwork(TYPES).resolve(shortageGraph, 1);
 assert.equal(shortage.allocationFor("a").allocatedW, 27.5);
 assert.equal(shortage.allocationFor("b").allocatedW, 27.5);
+const allocationBeforeDraw = shortage.allocationFor("a");
+assert.strictEqual(shortage.allocationFor("a"), allocationBeforeDraw);
 shortage.drawPower("a", 55, 1);
+const allocationAfterDraw = shortage.allocationFor("a");
+assert.notStrictEqual(allocationAfterDraw, allocationBeforeDraw);
+assert.equal(allocationBeforeDraw.deliveredW, 0);
+assert.equal(allocationAfterDraw.deliveredW, 27.5);
 shortage.drawPower("b", 55, 1);
 assert.equal(shortage.telemetry().deliveredW, 55);
 assert.equal(shortage.telemetry().requestedW, 110);

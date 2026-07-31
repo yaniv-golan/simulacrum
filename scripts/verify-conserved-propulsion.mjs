@@ -920,6 +920,25 @@ assert.throws(
 );
 missingNetworkDemand.dispose(missingNetworkContext);
 
+let emptyAllocationCalls = 0;
+const emptyDemand = new PressureNozzleDemandSystem(),
+  emptyDemandContext = {
+    clock: { tick: 1 },
+    services: { compiledAssembly: { bodies: [] } },
+    telemetry: {},
+    materialResourceNetwork: {
+      allocate() {
+        emptyAllocationCalls++;
+        return [];
+      },
+    },
+  };
+emptyDemand.initialize(emptyDemandContext);
+emptyDemand.step(emptyDemandContext, DT);
+assert.equal(emptyAllocationCalls, 0);
+assert.deepEqual(emptyDemandContext.telemetry.propulsion.engines, []);
+emptyDemand.dispose(emptyDemandContext);
+
 function massFailureContext(commitMassProperties) {
   const body = {
     userData: {

@@ -24,7 +24,11 @@ function immutable(value) {
 }
 
 function serializedBytes(value) {
-  return encoder.encode(JSON.stringify(value)).byteLength;
+  const serialized = JSON.stringify(value);
+  for (let index = 0; index < serialized.length; index++)
+    if (serialized.charCodeAt(index) > 0x7f)
+      return encoder.encode(serialized).byteLength;
+  return serialized.length;
 }
 
 function rowMagnitude(row) {
@@ -52,27 +56,29 @@ function uniqueRows(rows) {
   return [...byId.values()];
 }
 
-function compactRows(frame, policy, triggered) {
+function nearConnectionIds(frame, policy) {
+  return (frame.structurePreMutation?.evaluations || [])
+    .filter(
+      (entry) =>
+        Math.max(
+          Number(entry.forceUtilization || 0),
+          Number(entry.torqueUtilization || 0),
+        ) >= policy.nearFailureUtilization,
+    )
+    .map((entry) => String(entry.connectionId));
+}
+
+function compactRows(frame, policy, triggered, totalRowCount = null) {
   const rows = uniqueRows(frame.solverContributions),
-    evaluations = frame.structurePreMutation?.evaluations || [],
-    nearConnections = new Set(
-      evaluations
-        .filter(
-          (entry) =>
-            Math.max(
-              Number(entry.forceUtilization || 0),
-              Number(entry.torqueUtilization || 0),
-            ) >= policy.nearFailureUtilization,
-        )
-        .map((entry) => String(entry.connectionId)),
-    );
+    nearConnections = new Set(nearConnectionIds(frame, policy)),
+    total = totalRowCount == null ? rows.length : totalRowCount;
   if (triggered) {
     const sorted = [...rows].sort(rowOrder),
       retained = sorted.slice(0, policy.maxRowsOnTriggerTick);
     return {
       rows: retained,
-      validity: retained.length === sorted.length ? "measured" : "truncated",
-      omittedRowCount: sorted.length - retained.length,
+      validity: retained.length === total ? "measured" : "truncated",
+      omittedRowCount: Math.max(0, total - retained.length),
     };
   }
   const retained = new Map(),
@@ -106,8 +112,8 @@ function compactRows(frame, policy, triggered) {
     capped = selected.slice(0, policy.maxRowsPerExactFrame);
   return {
     rows: capped,
-    validity: capped.length === rows.length ? "measured" : "truncated",
-    omittedRowCount: rows.length - capped.length,
+    validity: capped.length === total ? "measured" : "truncated",
+    omittedRowCount: Math.max(0, total - capped.length),
   };
 }
 
@@ -307,6 +313,7 @@ export class FailureEvidenceRecorder {
     this.runIdentity = immutable(runIdentity);
     this.policyFingerprint = failureEvidencePolicyFingerprint(this.policy);
     this.active = true;
+    this.liveMetadataBytes = null;
   }
 
   /** Starts the next bounded episode without changing the tick-zero anchor. */
@@ -335,6 +342,7 @@ export class FailureEvidenceRecorder {
     this.frozen = null;
     this.frozenTelemetrySummary = null;
     this.frozenMemoryBytes = 0;
+    this.liveMetadataBytes = null;
   }
 
   setReplayability({ supported, reasonCode = null }) {
@@ -349,6 +357,7 @@ export class FailureEvidenceRecorder {
         ? null
         : String(reasonCode || "REPLAY_ANCHOR_UNAVAILABLE"),
     });
+    this.liveMetadataBytes = null;
   }
 
   /** Whether the observer still needs exact per-tick provenance. */
@@ -443,6 +452,7 @@ export class FailureEvidenceRecorder {
     this.triggers.push(candidate);
     this.triggers.sort(triggerOrder);
     this.primaryTrigger = this.triggers[0];
+    this.liveMetadataBytes = null;
   }
 
   recordStructurePostMutation({ tick, timeS, event, topology }) {
@@ -461,17 +471,50 @@ export class FailureEvidenceRecorder {
     const frame = this.#frame(tick, timeS);
     if (!frame) return this.telemetrySummary();
     advanceStage(frame, "complete");
-    const triggered = this.primaryTrigger?.tick === tick,
-      compacted = compactRows(frame, this.policy, triggered),
+    const triggered = this.primaryTrigger?.tick === tick;
+    let totalRowCount = null,
+      retentionApplied = false;
+    if (typeof frame.solverContributions === "function") {
+      const completed = frame.solverContributions({
+        triggered,
+        nearConnectionIds: nearConnectionIds(frame, this.policy),
+        policy: this.policy,
+      });
+      if (Array.isArray(completed)) frame.solverContributions = completed;
+      else {
+        frame.solverContributions = completed.rows;
+        totalRowCount = completed.totalRowCount;
+        retentionApplied = completed.retentionApplied === true;
+      }
+    }
+    const compacted = retentionApplied
+        ? {
+            rows: frame.solverContributions,
+            validity:
+              frame.solverContributions.length === totalRowCount
+                ? "measured"
+                : "truncated",
+            omittedRowCount: Math.max(
+              0,
+              totalRowCount - frame.solverContributions.length,
+            ),
+          }
+        : compactRows(frame, this.policy, triggered, totalRowCount),
       frameEvidence = compactStructureHistory(frame, triggered, this.policy);
     delete frameEvidence._stage;
     delete frameEvidence._stageOrder;
-    const exactFrame = immutable({
+    // Physics and structure producers hand the recorder fresh DTOs. The
+    // command ledger is published by its owner as an immutable completed-stage
+    // value, so it can be retained with the other recorder-owned DTOs.
+    // Exported/frozen artifacts still pass through immutable() at their
+    // boundary.
+    const exactFrame = {
       ...frameEvidence,
+      commandLedger: frameEvidence.commandLedger || {},
       solverContributions: compacted.rows,
       contributionValidity: compacted.validity,
       omittedRowCount: compacted.omittedRowCount,
-    });
+    };
     boundedMeasuredPush(
       this.exactFrames,
       this.exactFrameByteSizes,
@@ -482,7 +525,7 @@ export class FailureEvidenceRecorder {
       boundedMeasuredPush(
         this.contextFrames,
         this.contextFrameByteSizes,
-        immutable({
+        {
           tick,
           timeS,
           commandLedger: frame.commandLedger || {},
@@ -491,7 +534,7 @@ export class FailureEvidenceRecorder {
             this.policy.topRowsPerConnection,
           ),
           ...contextTelemetry,
-        }),
+        },
         Math.ceil(
           this.policy.contextRetentionTicks / this.policy.contextStrideTicks,
         ),
@@ -519,7 +562,7 @@ export class FailureEvidenceRecorder {
   }
 
   #liveMemoryBytes() {
-    const metadataBytes = serializedBytes({
+    this.liveMetadataBytes ??= serializedBytes({
       version: 1,
       runIdentity: this.runIdentity,
       policy: this.policy,
@@ -531,10 +574,10 @@ export class FailureEvidenceRecorder {
       exactFrames: [],
       contextFrames: [],
     });
-    // metadataBytes already includes each pair of empty array brackets. The
+    // The cached metadata size already includes each pair of empty brackets. The
     // retained payload contributes only serialized elements and commas.
     return (
-      metadataBytes +
+      this.liveMetadataBytes +
       arrayPayloadBytes(this.exactFrameByteSizes) +
       arrayPayloadBytes(this.contextFrameByteSizes)
     );
@@ -609,6 +652,7 @@ export class FailureEvidenceRecorder {
     this.frozen = null;
     this.frozenTelemetrySummary = null;
     this.frozenMemoryBytes = 0;
+    this.liveMetadataBytes = null;
     this.lastCompletedTick = 0;
     this.replayability = immutable({
       state: "pending-anchor",

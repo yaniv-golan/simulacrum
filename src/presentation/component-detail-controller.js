@@ -49,6 +49,7 @@ export class ComponentDetailController {
     parts,
     camera,
     viewportHeightPx,
+    pixelRatio = 1,
     running,
     selectedIds = new Set(),
     quality = "auto",
@@ -84,7 +85,11 @@ export class ComponentDetailController {
         continue;
       }
       const currentTier = root.userData.visualDetailTier || "standard",
-        diameterPx = projectedDiameterPx(root, camera, viewportHeightPx),
+        diameterPx = projectedDiameterPx(
+          root,
+          camera,
+          viewportHeightPx * Math.max(0.25, Number(pixelRatio) || 1),
+        ),
         desiredTier = componentDetailTier({
           currentTier,
           projectedDiameterPx: diameterPx,

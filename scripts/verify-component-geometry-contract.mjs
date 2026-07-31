@@ -219,6 +219,19 @@ const affineMotor = resolveComponentGeometryContract({
 assert.equal(affineMotor.physicalFeatures[0].primitive, "elliptic-cylinder-v1");
 assert.equal(affineMotor.collisionPrimitives[0].approximationOf !== null, true);
 
+const pinionGeometry =
+    resolveComponentGeometryContractForType("gear12").bodyPrimitives[0]
+      .geometry,
+  wheelGearGeometry =
+    resolveComponentGeometryContractForType("gear24").bodyPrimitives[0]
+      .geometry,
+  wheelGapAtStockContactRad =
+    wheelGearGeometry.toothPhaseRad +
+    11.5 * ((Math.PI * 2) / wheelGearGeometry.toothCount);
+assert.equal(pinionGeometry.toothPhaseRad, 0);
+assert.ok(Math.abs(wheelGapAtStockContactRad - Math.PI) < 1e-12);
+assert.equal(pinionGeometry.moduleM, wheelGearGeometry.moduleM);
+
 const spring = resolveComponentGeometryContractForType("spring"),
   axialCoordinate = spring.deformationContract.coordinates[0],
   referenceSample = {
@@ -226,6 +239,10 @@ const spring = resolveComponentGeometryContractForType("spring"),
     coordinateM: axialCoordinate.referenceCoordinateM,
   },
   deformed = deformedBodyBoundsPartM(spring, [referenceSample]);
+assert.deepEqual(spring.provenance.approximations, [
+  { id: "housing", approximationOf: "spring-coil" },
+]);
+assert.equal(spring.collisionPrimitives[0].geometry.kind, "box-v1");
 assert.deepEqual(deformed, spring.bodyBoundsPartM);
 assert.deepEqual(
   mechanismDeformationTransforms(spring, [referenceSample])[

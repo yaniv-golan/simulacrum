@@ -55,6 +55,7 @@ jobs:
         domain:
           - acquisition-harness
           - model-boundaries
+          - component-geometry
           - wire
           - networks
           - propulsion

@@ -6,6 +6,10 @@ import { CommandBus } from "../src/simulation/command-bus.js";
 import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
 import { PowerNetwork } from "../src/simulation/power-network.js";
 import { RunAssemblyGraph } from "../src/simulation/run-assembly-graph.js";
+import { componentMesh } from "../src/presentation/component-mesh-factory.js";
+import { applyMechanismPose } from "../src/presentation/mechanism-pose-presenter.js";
+import { mechanismDeformationTransforms } from "../src/model/component-geometry-contract.js";
+import { disposeObject3D } from "../src/presentation/render-resources.js";
 
 const DT = 1 / 120,
   CAPACITY = { ultimateForceN: 24_000, ultimateTorqueNm: 6_000 };
@@ -188,6 +192,16 @@ for (let tick = 0; tick < 3_600; tick++) {
         Math.abs(orientationError.w),
       );
   assert.equal(state.coordinateId, "axial-extension");
+  assert.equal(state.tick, tick + 1);
+  assert.equal(state.unit, "m");
+  assert.equal(state.validity, "measured");
+  assert.ok(
+    ["within-range", "below-range", "above-range"].includes(state.rangeStatus),
+  );
+  assert.deepEqual(state.allowedCoordinateRangeM, {
+    minimum: 0,
+    maximum: 0.6,
+  });
   assert.ok(
     telemetry.poses.every((pose) => !Object.hasOwn(pose, "axialScale")),
     "legacy pose-owned deformation authority reappeared",
@@ -213,6 +227,70 @@ assert.ok(
     frictionForceN: guideEntry.appliedForceN,
   }),
 );
+const completedGuideTelemetry = guideRuntime.telemetry(),
+  completedGuideState = completedGuideTelemetry.twoFrameMechanisms.find(
+    (state) => state.kind === "linear-guide",
+  ),
+  completedGuidePose = completedGuideTelemetry.poses.find(
+    (pose) => pose.id === completedGuideState.sourcePartId,
+  ),
+  guideCheckpoint = guideRuntime.exportState(),
+  guideWorldCheckpoint = guideRuntime.worldAdapter.exportState(),
+  replayWorld = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
+  replayRuntime = new MultibodyRuntime({ world: replayWorld, catalog: TYPES });
+replayRuntime.start(guideSnapshot);
+replayRuntime.importState(guideCheckpoint);
+replayRuntime.worldAdapter.importState(guideWorldCheckpoint);
+const replayGuideState = replayRuntime
+  .telemetry()
+  .twoFrameMechanisms.find((state) => state.kind === "linear-guide");
+assert.deepEqual(
+  {
+    tick: replayGuideState.tick,
+    coordinateId: replayGuideState.coordinateId,
+    coordinateM: replayGuideState.coordinateM,
+    unit: replayGuideState.unit,
+    validity: replayGuideState.validity,
+    rangeStatus: replayGuideState.rangeStatus,
+  },
+  {
+    tick: completedGuideState.tick,
+    coordinateId: completedGuideState.coordinateId,
+    coordinateM: completedGuideState.coordinateM,
+    unit: completedGuideState.unit,
+    validity: completedGuideState.validity,
+    rangeStatus: completedGuideState.rangeStatus,
+  },
+  "checkpoint replay changed the completed deformation authority",
+);
+const guidePart = guideSnapshot.parts.find(
+    (part) => part.id === completedGuideState.sourcePartId,
+  ),
+  renderedGuide = {
+    ...guidePart,
+    mesh: componentMesh(guidePart),
+  },
+  coordinateSample = {
+    coordinateId: completedGuideState.coordinateId,
+    coordinateM: completedGuideState.coordinateM,
+  },
+  expectedGuideTransforms = mechanismDeformationTransforms(
+    renderedGuide.mesh.userData.geometryDescriptor,
+    [coordinateSample],
+  );
+applyMechanismPose(renderedGuide, completedGuidePose, [coordinateSample]);
+const renderedSliderTransform =
+  renderedGuide.mesh.userData.mechanismDeformationRoots["slider-translation"];
+assert.deepEqual(
+  renderedSliderTransform.position.toArray(),
+  expectedGuideTransforms["slider-translation"].positionM,
+);
+assert.deepEqual(
+  renderedGuide.deformedBodyBoundsWorldM,
+  completedGuidePose.deformedBodyBoundsWorldM,
+);
+disposeObject3D(renderedGuide.mesh);
+replayRuntime.dispose();
 guideRuntime.dispose();
 
 function guidePermutationState(reverseRows) {

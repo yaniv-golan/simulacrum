@@ -1,4 +1,5 @@
 import { DomainValidationError } from "../model/primitives.js";
+import { registerOwnedImmutable } from "../model/owned-immutable-value.js";
 import {
   advanceThermalState,
   createThermalState,
@@ -8,6 +9,15 @@ import { vectorLength } from "./flight-vector-math.js";
 
 function physicalConnection(connection) {
   return ["mechanical", "mesh"].includes(connection.kind) && !connection.failed;
+}
+
+function ownedThermalSnapshot(partId, state) {
+  const thermal = Object.freeze({ ...state }),
+    parts = Object.freeze({ [partId]: thermal });
+  return {
+    thermal,
+    bodyThermal: registerOwnedImmutable(Object.freeze({ parts })),
+  };
 }
 
 /** Owns only mutable material temperature, ablation and thermal failure state. */
@@ -69,7 +79,8 @@ export class AerothermalAblationOwner {
       for (const record of this.#aerodynamics.heatRecords())
         heatByPart.set(record.partId, record);
     const thermalFailures = new Set(),
-      consumedParts = new Set();
+      consumedParts = new Set(),
+      snapshots = new Map();
     for (const part of this.#model.parts) {
       const thermal = this.#thermalByPart.get(part.id),
         heat = heatByPart.get(part.id);
@@ -84,11 +95,10 @@ export class AerothermalAblationOwner {
         if (response.consumed) consumedParts.add(part.id);
         if (response.exceededLimit) thermalFailures.add(part.id);
       }
+      const snapshot = ownedThermalSnapshot(part.id, thermal);
+      snapshots.set(part.id, snapshot.thermal);
       const bodyId = context.bodyRegistry.bodyForPart(part.id)?.bodyId;
-      if (bodyId)
-        context.bodyRegistry.setThermal(bodyId, {
-          parts: { [part.id]: structuredClone(thermal) },
-        });
+      if (bodyId) context.bodyRegistry.setThermal(bodyId, snapshot.bodyThermal);
     }
     const failurePartIds = new Set([...thermalFailures, ...consumedParts]),
       failedConnectionIds = context.runGraph
@@ -110,7 +120,7 @@ export class AerothermalAblationOwner {
         mode: consumedParts.size ? "ablation" : "thermal",
         time: context.time,
       });
-    this.#telemetry = this.#projectTelemetry(context);
+    this.#telemetry = this.#projectTelemetry(context, snapshots);
     context.telemetry.aerothermal = this.#telemetry;
   }
 
@@ -135,13 +145,15 @@ export class AerothermalAblationOwner {
     return this.#telemetry || this.#projectTelemetry(context);
   }
 
-  #projectTelemetry(context) {
+  #projectTelemetry(context, snapshots = null) {
     const parts = this.#model.parts.map((part) => {
         const thermal = this.#thermalByPart.get(part.id),
           force = this.#aerodynamics.forceForPart(part.id);
         return {
           id: part.id,
-          thermal: structuredClone(thermal),
+          thermal:
+            snapshots?.get(part.id) ||
+            ownedThermalSnapshot(part.id, thermal).thermal,
           scaleY: Math.max(0.035, thermal.remainingMass / thermal.initialMass),
           visible: !thermal.consumed,
           aerodynamicForceN: force ? vectorLength(force) : 0,

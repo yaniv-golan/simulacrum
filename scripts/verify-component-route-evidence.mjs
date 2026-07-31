@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   ROUTE_EVIDENCE_LIMITS,
   createRouteEvidenceIndex,
+  fingerprintRuntimeTopology,
   routeEvidenceByteLength,
   routeWitnessFromIndex,
 } from "../src/simulation/route-evidence-index.js";
@@ -226,6 +227,68 @@ for (const [offset, index] of oneHopIndexes.entries()) {
       "network-derived-minimum-hop",
     );
 }
+
+const repeatedIndexOptions = {
+    medium: "power",
+    runGraph: oneHopGraph,
+    edges: oneHopEdge,
+    sourcePartIds: [0],
+    targetPartIds: [1],
+    blockerEvidence: "known",
+    resultFacts: { poweredPartIds: [0, 1] },
+  },
+  firstRepeatedIndex = createRouteEvidenceIndex(repeatedIndexOptions),
+  secondRepeatedIndex = createRouteEvidenceIndex(repeatedIndexOptions);
+assert.strictEqual(
+  secondRepeatedIndex,
+  firstRepeatedIndex,
+  "identical route evidence inputs did not reuse the immutable index",
+);
+assert.notStrictEqual(
+  createRouteEvidenceIndex({
+    ...repeatedIndexOptions,
+    resultFacts: { poweredPartIds: [0] },
+  }),
+  firstRepeatedIndex,
+  "changed network results reused stale route evidence",
+);
+const cachedTopologyOptions = {
+    ...repeatedIndexOptions,
+    topologyCacheKey: "mutable-catalog-regression",
+  },
+  cachedTopologyIndex = createRouteEvidenceIndex(cachedTopologyOptions),
+  changedCachedTopologyIndex = createRouteEvidenceIndex({
+    ...cachedTopologyOptions,
+    edges: [
+      {
+        connectionId: "wire-reversed",
+        from: { partId: 1, portId: "OUT" },
+        to: { partId: 0, portId: "IN" },
+      },
+    ],
+    sourcePartIds: [1],
+    targetPartIds: [0],
+  });
+assert.notStrictEqual(changedCachedTopologyIndex, cachedTopologyIndex);
+assert.deepEqual(changedCachedTopologyIndex.sourcePartIds, [1]);
+assert.equal(changedCachedTopologyIndex.edges[0].connectionId, "wire-reversed");
+const mutableParts = [
+    { id: 0, detached: false },
+    { id: 1, detached: false },
+  ],
+  mutableGraph = {
+    graphRevision: 1,
+    parts: () => mutableParts,
+    connections: () => [],
+  },
+  initialTopologyFingerprint = fingerprintRuntimeTopology(mutableGraph);
+mutableParts[1].detached = true;
+mutableGraph.graphRevision++;
+assert.notEqual(
+  fingerprintRuntimeTopology(mutableGraph),
+  initialTopologyFingerprint,
+  "graph revision change retained a stale topology fingerprint",
+);
 
 const disconnectedIndex = createRouteEvidenceIndex({
   medium: "power",

@@ -11,6 +11,10 @@ import { RunAssemblyGraph } from "../src/simulation/run-assembly-graph.js";
 import { mechanismComponentDefinition } from "../src/model/mechanism-component-definitions.js";
 import { MotorEnergySettlementSystem } from "../src/simulation/systems/motor-energy-settlement-system.js";
 import { HeatInputCollector } from "../src/simulation/heat-input-collector.js";
+import {
+  cannonCollisionExclusionRegistered,
+  stepCannonSolverTransaction,
+} from "../src/simulation/cannon-solver-transaction.js";
 
 const TEST_CAPACITY = {
   ultimateForceN: 24_000,
@@ -432,10 +436,32 @@ assert.ok(
   exclusionRuntime.collisionExclusionConstraints.every(
     (entry) =>
       entry.active === true &&
-      entry.constraint.collideConnected === false &&
-      entry.constraint.equations.length === 0,
+      entry.exclusion.bodyA &&
+      entry.exclusion.bodyB &&
+      !exclusionWorld.constraints.includes(entry.exclusion),
   ),
-  "collision exclusions gained solver equations or allowed adjacent contact",
+  "collision exclusions entered the solver instead of the owned broadphase filter",
+);
+const overlappingExclusion =
+  exclusionRuntime.collisionExclusionConstraints[0].exclusion;
+overlappingExclusion.bodyA.position.set(0, 0, 0);
+overlappingExclusion.bodyB.position.set(0, 0, 0);
+overlappingExclusion.bodyA.velocity.set(0, 0, 0);
+overlappingExclusion.bodyB.velocity.set(0, 0, 0);
+stepCannonSolverTransaction(
+  exclusionRuntime.worldAdapter.transaction,
+  1 / 120,
+  1,
+);
+assert.equal(
+  exclusionWorld.contacts.some(
+    ({ bi, bj }) =>
+      (bi === overlappingExclusion.bodyA &&
+        bj === overlappingExclusion.bodyB) ||
+      (bi === overlappingExclusion.bodyB && bj === overlappingExclusion.bodyA),
+  ),
+  false,
+  "registered collision exclusion did not suppress an overlapping body pair",
 );
 exclusionRuntime.dispose();
 
@@ -698,8 +724,14 @@ assert.ok(
 assert.ok(
   runtime.collisionExclusionConstraints.every((entry) =>
     entry.active
-      ? world.constraints.includes(entry.constraint)
-      : !world.constraints.includes(entry.constraint),
+      ? cannonCollisionExclusionRegistered(
+          runtime.worldAdapter.transaction,
+          entry.exclusion,
+        )
+      : !cannonCollisionExclusionRegistered(
+          runtime.worldAdapter.transaction,
+          entry.exclusion,
+        ),
   ),
   "collision exclusions did not follow the post-failure topology",
 );

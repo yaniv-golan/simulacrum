@@ -107,6 +107,7 @@ function mechanism({
   bodyPrimitives,
   geometryClass = "rigid-static-v1",
   deformationContract = null,
+  collisionApproximationOf = null,
 }) {
   return {
     schemaVersion: 1,
@@ -114,7 +115,10 @@ function mechanism({
     geometryClass,
     dimensionalScalingPolicy: "fixed-authored-size-v1",
     portFrames: ports,
-    collisionPrimitives: { kind: "mechanism-collision-regions-v1" },
+    collisionPrimitives: {
+      kind: "mechanism-collision-regions-v1",
+      approximationOf: collisionApproximationOf,
+    },
     bodyPrimitives,
     physicalFeatures: [],
     deformationContract,
@@ -206,18 +210,22 @@ const axialScaleDeformation = (primitiveIds) =>
     },
   ]);
 
-const opposedEndpointDeformation = (primitiveIdA, primitiveIdB) =>
+const opposedEndpointDeformation = (primitiveIdsA, primitiveIdsB) =>
   mechanismDeformation([
     {
       id: "endpoint-a-translation",
       kind: "local-z-translation-v1",
-      primitiveIds: [primitiveIdA],
+      primitiveIds: Array.isArray(primitiveIdsA)
+        ? primitiveIdsA
+        : [primitiveIdsA],
       gainMPerM: -0.5,
     },
     {
       id: "endpoint-b-translation",
       kind: "local-z-translation-v1",
-      primitiveIds: [primitiveIdB],
+      primitiveIds: Array.isArray(primitiveIdsB)
+        ? primitiveIdsB
+        : [primitiveIdsB],
       gainMPerM: 0.5,
     },
   ]);
@@ -297,6 +305,34 @@ const mechanismBody = {
         materialKey: "workshop-steel",
       },
     ),
+    primitive(
+      "damper-seal",
+      { kind: "cylinder-v1", radiusM: 0.13, axialLengthM: 0.04 },
+      {
+        frame: frame(constantPosition([0, 0, 0.1])),
+        materialKey: "tire-rubber",
+      },
+    ),
+    primitive(
+      "damper-end-cap",
+      { kind: "cylinder-v1", radiusM: 0.13, axialLengthM: 0.035 },
+      {
+        frame: frame(constantPosition([0, 0, -0.48])),
+        materialKey: "workshop-steel",
+      },
+    ),
+    ...[-0.5, 0.5].map((offsetM, index) =>
+      primitive(
+        `damper-flange-${index + 1}`,
+        { kind: "cylinder-v1", radiusM: 0.13, axialLengthM: 0.035 },
+        {
+          frame: frame(
+            constantPosition([0, 0, offsetM - Math.sign(offsetM) * 0.0175]),
+          ),
+          materialKey: "workshop-steel",
+        },
+      ),
+    ),
   ],
   "release-coupler": [
     ...[-0.07, 0.07].map((offsetM, index) =>
@@ -339,6 +375,30 @@ const mechanismBody = {
       },
       { materialKey: "workshop-aluminum" },
     ),
+    primitive(
+      "guide-base-flange",
+      {
+        kind: "rounded-box-v1",
+        fullSizeM: [0.82, 0.5, 0.08],
+        radiusM: 0.025,
+      },
+      {
+        frame: frame(constantPosition([0, 0, -0.46])),
+        materialKey: "workshop-steel",
+      },
+    ),
+    primitive(
+      "guide-slider-flange",
+      {
+        kind: "rounded-box-v1",
+        fullSizeM: [0.82, 0.5, 0.08],
+        radiusM: 0.025,
+      },
+      {
+        frame: frame(constantPosition([0, 0, 0.12])),
+        materialKey: "workshop-aluminum",
+      },
+    ),
   ],
   "linear-actuator": [
     primitive(
@@ -356,6 +416,34 @@ const mechanismBody = {
         frame: frame(constantPosition([0, 0, 0.25])),
         materialKey: "workshop-steel",
       },
+    ),
+    primitive(
+      "actuator-seal",
+      { kind: "cylinder-v1", radiusM: 0.17, axialLengthM: 0.045 },
+      {
+        frame: frame(constantPosition([0, 0, 0.115])),
+        materialKey: "tire-rubber",
+      },
+    ),
+    primitive(
+      "actuator-end-cap",
+      { kind: "cylinder-v1", radiusM: 0.17, axialLengthM: 0.035 },
+      {
+        frame: frame(constantPosition([0, 0, -0.53])),
+        materialKey: "workshop-steel",
+      },
+    ),
+    ...[-0.55, 0.55].map((offsetM, index) =>
+      primitive(
+        `actuator-flange-${index + 1}`,
+        { kind: "cylinder-v1", radiusM: 0.17, axialLengthM: 0.035 },
+        {
+          frame: frame(
+            constantPosition([0, 0, offsetM - Math.sign(offsetM) * 0.0175]),
+          ),
+          materialKey: "workshop-steel",
+        },
+      ),
     ),
   ],
   wheel: [
@@ -386,7 +474,12 @@ const mechanismBody = {
 };
 
 const GEAR_MODULE_M = 0.82 / 12;
-const gearDefinition = (toothCount, boreRadiusM, hubRadiusM) => {
+const gearDefinition = (
+  toothCount,
+  boreRadiusM,
+  hubRadiusM,
+  toothPhaseRad = 0,
+) => {
   const pitchRadiusM = (GEAR_MODULE_M * toothCount) / 2;
   return ordinary({
     ports: {
@@ -413,6 +506,7 @@ const gearDefinition = (toothCount, boreRadiusM, hubRadiusM) => {
         {
           kind: "spur-gear-v1",
           toothCount,
+          toothPhaseRad,
           pitchRadiusM,
           pressureAngleRad: (20 * Math.PI) / 180,
           moduleM: GEAR_MODULE_M,
@@ -526,7 +620,9 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
     bodyPrimitives: mechanismBody.bearing,
   }),
   gear12: gearDefinition(12, 0.1, 0.2),
-  gear24: gearDefinition(24, 0.14, 0.3),
+  // At the stock +X/-X pitch contact, pinion tooth zero meets this gear's
+  // half-pitch gap. Runtime counter-rotation preserves that engagement phase.
+  gear24: gearDefinition(24, 0.14, 0.3, Math.PI / 24),
   motor: ordinary({
     ports: {
       MOUNT: frame(constantPosition([0, 0, -0.5]), FLIP_Z),
@@ -565,6 +661,7 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
     bodyPrimitives: mechanismBody.spring,
     geometryClass: "mechanism-deformed-v1",
     deformationContract: axialScaleDeformation(["spring-coil"]),
+    collisionApproximationOf: "spring-coil",
   }),
   rope: {
     schemaVersion: 1,
@@ -584,8 +681,8 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
     bodyPrimitives: mechanismBody.damper,
     geometryClass: "mechanism-deformed-v1",
     deformationContract: opposedEndpointDeformation(
-      "damper-tube",
-      "damper-rod",
+      ["damper-tube", "damper-seal", "damper-end-cap", "damper-flange-1"],
+      ["damper-rod", "damper-flange-2"],
     ),
   }),
   "release-coupler": mechanism({
@@ -600,7 +697,7 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
       {
         id: "slider-translation",
         kind: "local-z-translation-v1",
-        primitiveIds: ["guide-slider"],
+        primitiveIds: ["guide-slider", "guide-slider-flange"],
         gainMPerM: 1,
       },
     ]),
@@ -610,8 +707,13 @@ export const COMPONENT_GEOMETRY_DEFINITIONS = deepFreeze({
     bodyPrimitives: mechanismBody["linear-actuator"],
     geometryClass: "mechanism-deformed-v1",
     deformationContract: opposedEndpointDeformation(
-      "actuator-tube",
-      "actuator-rod",
+      [
+        "actuator-tube",
+        "actuator-seal",
+        "actuator-end-cap",
+        "actuator-flange-1",
+      ],
+      ["actuator-rod", "actuator-flange-2"],
     ),
   }),
   wheel: mechanism({

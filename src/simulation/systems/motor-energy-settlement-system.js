@@ -89,15 +89,19 @@ export class MotorEnergySettlementSystem {
       recordDigest: pending.recordDigest,
     });
     this.lastSettledTick = tick;
-    context.telemetry.power = context.powerNetwork.telemetry();
-    context.telemetry.motorEnergy = immutableClone({
-      ...this.telemetry(),
-      records: settled,
-      recordDigest: pending.recordDigest,
-    });
+    if (!context.services.deferPowerTelemetryUntilCompletion)
+      context.telemetry.power = context.powerNetwork.telemetry();
+    context.telemetry.motorEnergy = this.#telemetry(
+      settled,
+      pending.recordDigest,
+    );
   }
 
   telemetry() {
+    return this.#telemetry();
+  }
+
+  #telemetry(records = [], recordDigest = null) {
     return immutableClone({
       version: 1,
       lastSettledTick: this.lastSettledTick,
@@ -109,8 +113,8 @@ export class MotorEnergySettlementSystem {
           ),
         )
         .map(([partId, totals]) => ({ partId, ...totals })),
-      records: [],
-      recordDigest: null,
+      records,
+      recordDigest,
     });
   }
 

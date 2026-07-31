@@ -25,19 +25,19 @@ const ACCEPTANCE = Object.freeze({
   lever: { kinds: ["rounded-box-v1"], decorations: ["recessed-fasteners-v1"] },
   spring: { kinds: ["helical-spring-v1"], deformed: true },
   rope: { kinds: [], runtime: true },
-  damper: { kinds: ["cylinder-v1"], minimumBodies: 2, deformed: true },
+  damper: { kinds: ["cylinder-v1"], minimumBodies: 6, deformed: true },
   "release-coupler": {
     kinds: ["cylinder-v1", "rounded-box-v1"],
     minimumBodies: 3,
   },
   "linear-guide": {
     kinds: ["box-v1", "rounded-box-v1"],
-    minimumBodies: 3,
+    minimumBodies: 5,
     deformed: true,
   },
   "linear-actuator": {
     kinds: ["cylinder-v1"],
-    minimumBodies: 2,
+    minimumBodies: 6,
     deformed: true,
   },
   wheel: {
@@ -212,6 +212,37 @@ for (const [type, requirement] of Object.entries(ACCEPTANCE)) {
       decorationIds.has(recipeId),
       `${type} lost classified decoration ${recipeId}`,
     );
+  const canonicalMaterialNames = [];
+  mesh.traverse((object) => {
+    if (object.userData?.canonicalGeometryRole === "body")
+      canonicalMaterialNames.push(object.material?.name || "");
+  });
+  canonicalMaterialNames.sort();
+  assert.ok(
+    canonicalMaterialNames.every(Boolean),
+    `${type} has a body primitive without a canonical material identity`,
+  );
+  for (const tier of ["standard", "performance"]) {
+    const tierMesh = componentMesh(type, undefined, tier),
+      tierBodyIds = [],
+      tierMaterialNames = [];
+    tierMesh.traverse((object) => {
+      if (object.userData?.canonicalGeometryRole !== "body") return;
+      tierBodyIds.push(object.userData.canonicalGeometryId);
+      tierMaterialNames.push(object.material?.name || "");
+    });
+    assert.deepEqual(
+      tierBodyIds.sort(),
+      descriptor.bodyPrimitives.map(({ id }) => id).sort(),
+      `${type}.${tier} lost canonical body identity`,
+    );
+    assert.deepEqual(
+      tierMaterialNames.sort(),
+      canonicalMaterialNames,
+      `${type}.${tier} changed canonical material identity`,
+    );
+    disposeObject3D(tierMesh, { remove: false });
+  }
   disposeObject3D(mesh, { remove: false });
 }
 
@@ -228,6 +259,10 @@ assert.ok(
   wheelRim.geometry.axialLengthM / 2 - wheelTire.geometry.widthM / 2 <= 0.025,
   "wheel rim protrusion exceeded the bounded physical flange allowance",
 );
+const springDescriptor = resolveComponentGeometryContractForType("spring");
+assert.deepEqual(springDescriptor.provenance.approximations, [
+  { id: "housing", approximationOf: "spring-coil" },
+]);
 
 console.log(
   `component visual acceptance passed (${Object.keys(ACCEPTANCE).length}/42 catalog types)`,

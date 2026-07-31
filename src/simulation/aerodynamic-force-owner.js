@@ -1,4 +1,5 @@
 import * as CANNON from "cannon-es";
+import { registerOwnedImmutable } from "../model/owned-immutable-value.js";
 import {
   projectedBoxArea,
   standardAtmosphere,
@@ -287,27 +288,29 @@ export class AerodynamicForceOwner {
   }
 
   telemetry() {
-    return Object.freeze({
-      active: this.active(),
-      records: Object.freeze(
-        this.#model.parts.map((part) => {
-          const state = this.#stateByPart.get(part.id);
-          return Object.freeze({
-            tick: this.#tick,
-            partId: part.id,
-            applicationPointWorldM: Object.freeze(
-              plainVector(part.body.position),
-            ),
-            forceN: Object.freeze(plainVector(state.aeroForce)),
-            dragForceN: Object.freeze(plainVector(state.dragForce)),
-            liftForceN: Object.freeze(plainVector(state.liftForce)),
-            magnitudeN: vectorLength(state.aeroForce),
-            dragMagnitudeN: vectorLength(state.dragForce),
-            liftMagnitudeN: vectorLength(state.liftForce),
-          });
-        }),
-      ),
-    });
+    return registerOwnedImmutable(
+      Object.freeze({
+        active: this.active(),
+        records: Object.freeze(
+          this.#model.parts.map((part) => {
+            const state = this.#stateByPart.get(part.id);
+            return Object.freeze({
+              tick: this.#tick,
+              partId: part.id,
+              applicationPointWorldM: Object.freeze(
+                plainVector(part.body.position),
+              ),
+              forceN: Object.freeze(plainVector(state.aeroForce)),
+              dragForceN: Object.freeze(plainVector(state.dragForce)),
+              liftForceN: Object.freeze(plainVector(state.liftForce)),
+              magnitudeN: vectorLength(state.aeroForce),
+              dragMagnitudeN: vectorLength(state.dragForce),
+              liftMagnitudeN: vectorLength(state.liftForce),
+            });
+          }),
+        ),
+      }),
+    );
   }
 
   dispose() {

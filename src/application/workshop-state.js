@@ -13,17 +13,17 @@ import {
   remoteProfilesFromTemplates,
   runtimeControlsFromProfiles,
 } from "./remote-control-state.js";
-
 export { STORAGE_KEYS } from "./browser-storage.js";
-
-/** Creates persisted application state and fresh per-controller source buffers. */
 export function createWorkshopState({
   controlTemplates,
   defaultWatSource,
   defaultTsSource,
   defaultVisualProgram,
   storage = new BrowserStorage(),
+  componentDetailQuality = "auto",
 }) {
+  if (!["auto", "hero", "performance"].includes(componentDetailQuality))
+    throw new TypeError("Invalid componentDetailQuality");
   const newControllerSources = () => ({
       wat: defaultWatSource,
       typescript: defaultTsSource,
@@ -54,6 +54,7 @@ export function createWorkshopState({
       running: false,
       simulationPaused: false,
       timeScale: 1,
+      componentDetailQuality,
       activeChallenge: null,
       challengeStatus: "idle",
       challengeProgress: 0,

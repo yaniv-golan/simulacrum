@@ -168,10 +168,10 @@ export class CommandRoutingSystem {
         ),
       );
     }
-    context.telemetry.commands = {
+    context.telemetry.commands = Object.freeze({
       ...bus.entries(),
-      capabilities: [...context.commandCapabilities].sort(),
-    };
+      capabilities: Object.freeze([...context.commandCapabilities].sort()),
+    });
     context.services.failureEvidenceRecorder?.recordCommandStage({
       tick: context.clock.tick,
       timeS: context.time,

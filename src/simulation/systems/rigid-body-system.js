@@ -1,7 +1,7 @@
 import * as CANNON from "cannon-es";
 import { requestWorldEvidenceCapture } from "../cannon-world-adapter.js";
 import {
-  completedMultibodyFailureEvidence,
+  boundedMultibodyFailureEvidence,
   requestMultibodyFailureEvidenceCapture,
 } from "../multibody-runtime.js";
 
@@ -156,9 +156,8 @@ export class RigidBodySystem {
         tick: context.clock.tick,
         timeS: context.time,
         contacts,
-        solverContributions: completedMultibodyFailureEvidence(
-          services.multibodyRuntime,
-        ),
+        solverContributions: (options) =>
+          boundedMultibodyFailureEvidence(services.multibodyRuntime, options),
         connectionLoads: connectionIds.map((connectionId) => ({
           connectionId,
           forceN: Number(forceByConnection.get(connectionId) || 0),

@@ -1,5 +1,6 @@
 import { geometryDescriptorForPart } from "../model/geometry-descriptors.js";
 import { componentDefinition } from "../model/component-contracts.js";
+import { isOwnedImmutable } from "../model/owned-immutable-value.js";
 import {
   canonicalId,
   deepFreeze,
@@ -12,11 +13,20 @@ const zeroVector = () => ({ x: 0, y: 0, z: 0 });
 const identityQuaternion = () => ({ x: 0, y: 0, z: 0, w: 1 });
 const loadTransactions = new WeakMap();
 
+function freezeFreshBodyValue(value, seen = new WeakSet()) {
+  if (value == null || typeof value !== "object" || Object.isFrozen(value))
+    return value;
+  if (seen.has(value)) return value;
+  seen.add(value);
+  for (const child of Object.values(value)) freezeFreshBodyValue(child, seen);
+  return Object.freeze(value);
+}
+
 // Existing body members are already immutable. Freeze only the fresh patch
 // before replacing the shallow record; recursively walking unchanged geometry
 // and prior samples at 120 Hz is redundant and becomes quadratic.
 function updateFrozenBody(body, patch) {
-  return Object.freeze({ ...body, ...deepFreeze(patch) });
+  return Object.freeze({ ...body, ...freezeFreshBodyValue(patch) });
 }
 
 /** Internal fixed-step batch boundary; intentionally absent from Core. */
@@ -478,7 +488,7 @@ export class BodyRegistry {
 
   recordContact(id, contact) {
     const body = this.#requireBody(id),
-      sample = deepFreeze({
+      sample = freezeFreshBodyValue({
         tick: finiteNumber(contact?.tick ?? this.#tick, {
           min: 0,
           path: ["body", id, "contact", "tick"],
@@ -568,7 +578,11 @@ export class BodyRegistry {
     const body = this.#requireBody(id);
     this.#bodies.set(
       id,
-      updateFrozenBody(body, { thermal: structuredClone(thermal || {}) }),
+      updateFrozenBody(body, {
+        thermal: isOwnedImmutable(thermal)
+          ? thermal
+          : structuredClone(thermal || {}),
+      }),
     );
     this.#revision++;
     return this.body(id);

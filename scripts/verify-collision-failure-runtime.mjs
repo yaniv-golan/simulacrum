@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import * as CANNON from "cannon-es";
 import { TYPES } from "../src/model/component-catalog.js";
 import { CannonWorldAdapter } from "../src/simulation/cannon-world-adapter.js";
+import { cannonCollisionExclusionRegistered } from "../src/simulation/cannon-solver-transaction.js";
 import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
 import { SimulationSession } from "../src/simulation/simulation-session.js";
 import { RigidBodySystem } from "../src/simulation/systems/rigid-body-system.js";
@@ -330,7 +331,15 @@ assert.equal(world.constraints.includes(weakConstraint.constraint), false);
 assert.ok(cargoExclusions.length >= 2);
 for (const exclusion of cargoExclusions) {
   assert.equal(exclusion.active, false);
-  assert.equal(world.constraints.includes(exclusion.constraint), false);
+  assert.ok(exclusion.exclusion.bodyA && exclusion.exclusion.bodyB);
+  assert.equal(
+    cannonCollisionExclusionRegistered(
+      runtime.worldAdapter.transaction,
+      exclusion.exclusion,
+    ),
+    false,
+    "failed connection retained its collision exclusion",
+  );
 }
 for (const entry of runtime.constraintEntries.filter((candidate) =>
   candidate.descriptor.sourceConnectionIds?.some((id) =>
