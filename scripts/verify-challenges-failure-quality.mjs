@@ -269,7 +269,7 @@ const gearMachine = {
       {
         id: 2,
         type: "gear24",
-        pos: [1.285, 0, 0],
+        pos: [1.23, 0, 0],
         orientation: [0, 0, 0, 1],
         scale: { x: 1, y: 1, z: 1 },
         config: { ...componentDefaults("gear24"), mass: 4 },
@@ -580,7 +580,7 @@ function currentPart(id, type) {
     positions = {
       motor: [originX, 1, -0.92],
       gear12: [originX, 1, 0],
-      gear24: [originX + 1.285, 1, 0],
+      gear24: [originX + 1.23, 1, 0],
     };
   return {
     id,

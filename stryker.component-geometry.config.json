@@ -13,6 +13,9 @@
     "command": "node scripts/verify-component-visual-primitives.mjs && node scripts/verify-component-geometry-contract.mjs && node scripts/verify-geometry-covariance.mjs"
   },
   "mutate": [
+    "src/model/component-geometry-definitions.js:56-105",
+    "src/model/component-geometry-definitions.js:479-527",
+    "src/model/component-geometry-definitions.js:726-797",
     "src/model/component-geometry-contract.js:441-455",
     "src/model/component-geometry-contract.js:520-564",
     "src/model/component-geometry-contract.js:630-755",

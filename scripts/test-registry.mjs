@@ -191,6 +191,7 @@ export const NON_SUITE_VERIFICATION_FILES = Object.freeze([
   "verify-challenge-lab.mjs",
   "verify-component-inspection-performance-live.mjs",
   "verify-component-inspection-performance.mjs",
+  "verify-component-visual-workflows.mjs",
   "verify-performance-budget-live.mjs",
   "verify-performance-budget.mjs",
   "verify-failure-evidence-replay.mjs",

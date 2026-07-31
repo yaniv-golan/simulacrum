@@ -6,6 +6,7 @@ import {
   resetBrowserStorageForTest,
 } from "./lib/browser-storage-fixture.mjs";
 import { createComponentInspectionCarrierBlueprint } from "./lib/component-inspection-carrier-fixture.mjs";
+import { assertCanonicalVisualProductState } from "./lib/component-visual-product-assertions.mjs";
 
 const blueprint = createComponentInspectionCarrierBlueprint(),
   extensionConnection = blueprint.connections.find(
@@ -64,6 +65,7 @@ try {
     () => JSON.parse(window.render_game_to_text()).parts.length === 9,
   );
   await waitForPersistedPartCount(9);
+  await assertCanonicalVisualProductState(page, "shared blueprint load");
 
   let persisted = await readBrowserStorageRoot(page, "workspace");
   assert.deepEqual(
@@ -90,6 +92,7 @@ try {
     () => JSON.parse(window.render_game_to_text()).parts.length === 18,
   );
   let live = await textState();
+  await assertCanonicalVisualProductState(page, "component duplication");
   const persistedPlates = live.parts.filter(({ type }) => type === "plate");
   assert.equal(
     persistedPlates.length,
@@ -143,6 +146,7 @@ try {
     3,
     "mirror did not preserve every plate extension carrier",
   );
+  await assertCanonicalVisualProductState(page, "component mirroring");
 
   await page.locator("canvas").focus();
   await page.keyboard.press("Meta+KeyZ");
@@ -153,6 +157,7 @@ try {
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).parts.length === 9,
   );
+  await assertCanonicalVisualProductState(page, "history undo");
   await page.keyboard.press("Meta+Shift+KeyZ");
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).parts.length === 18,
@@ -167,6 +172,7 @@ try {
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).parts.length === 9,
   );
+  await assertCanonicalVisualProductState(page, "history redo and undo");
   await page.keyboard.press("Meta+KeyA");
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).selectedParts.length === 9,
@@ -198,6 +204,7 @@ try {
     () => JSON.parse(window.render_game_to_text()).parts.length === 9,
   );
   await waitForPersistedPartCount(9);
+  await assertCanonicalVisualProductState(page, "My Parts reuse");
   persisted = await readBrowserStorageRoot(page, "workspace");
   assert.deepEqual(
     persisted.blueprint.parts.find(({ type }) => type === "plate").extensions,
@@ -210,6 +217,7 @@ try {
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).parts.length === 9,
   );
+  await assertCanonicalVisualProductState(page, "workspace reload");
   persisted = await readBrowserStorageRoot(page, "workspace");
   assert.deepEqual(
     persisted.blueprint.parts.find(({ type }) => type === "plate").extensions,

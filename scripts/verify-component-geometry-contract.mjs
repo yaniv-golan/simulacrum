@@ -1,6 +1,8 @@
 import { assert } from "./lib/assert.mjs";
 import { TYPES } from "../src/model/component-catalog.js";
 import {
+  boundsCenter,
+  boundsDimensions,
   COMPONENT_GEOMETRY_SCHEMA_VERSION,
   deformedBodyBoundsPartM,
   flexibleRuntimeBoundsWorldM,
@@ -34,6 +36,21 @@ assert.deepEqual(
 );
 assert.deepEqual(hinge.portFrames.BASE.framePart.orientation, [0, 1, 0, 0]);
 assert.deepEqual(hinge.portFrames.ARM.framePart.orientation, [0, 0, 0, 1]);
+
+for (const patch of [
+  { type: "" },
+  { type: 42 },
+  { geometryClass: "invented-v1" },
+]) {
+  const invalid = structuredClone(hinge);
+  Object.assign(invalid, patch);
+  assert.throws(
+    () => validateGeometryDescriptorOrThrow(invalid),
+    (error) =>
+      ["INVALID_GEOMETRY_TYPE", "UNKNOWN_GEOMETRY_CLASS"].includes(error.code),
+    "invalid descriptor identity passed strict validation",
+  );
+}
 
 for (const [type, definition] of Object.entries(TYPES)) {
   validateComponentGeometryDefinitionOrThrow(definition.geometryContract);
@@ -88,12 +105,8 @@ for (const [type, definition] of Object.entries(TYPES)) {
 for (const type of [
   "airreservoir",
   "receiver",
-  "navsensor",
   "rangesensor",
   "sensor",
-  "imu",
-  "contactsensor",
-  "thermalprobe",
   "loadcell",
   "gyro",
   "headlight",
@@ -119,7 +132,33 @@ for (const type of [
   );
 }
 
-for (const type of ["pressureprobe", "rocket", "rcs"])
+for (const type of ["imu", "contactsensor"]) {
+  const defaultDescriptor = resolveComponentGeometryContractForType(type),
+    scaledDescriptor = resolveComponentGeometryContract({
+      id: 801,
+      type,
+      pos: [0, 0, 0],
+      orientation: [0, 0, 0, 1],
+      scale: { x: 1.7, y: 0.65, z: 1.25 },
+      config: componentDefaults(type),
+    });
+  assert.equal(
+    defaultDescriptor.bodyPrimitives[0].geometry.kind,
+    "rounded-box-v1",
+  );
+  assert.equal(
+    scaledDescriptor.bodyPrimitives[0].geometry.kind,
+    "rounded-box-v1",
+  );
+}
+
+for (const type of [
+  "navsensor",
+  "thermalprobe",
+  "pressureprobe",
+  "rocket",
+  "rcs",
+])
   assert.throws(
     () =>
       resolveComponentGeometryContract({
@@ -218,6 +257,85 @@ const affineMotor = resolveComponentGeometryContract({
 });
 assert.equal(affineMotor.physicalFeatures[0].primitive, "elliptic-cylinder-v1");
 assert.equal(affineMotor.collisionPrimitives[0].approximationOf !== null, true);
+assert.deepEqual(
+  resolveComponentGeometryContractForType("battery").provenance.approximations,
+  [{ id: "collision", approximationOf: "body" }],
+  "ordinary components lost explicit collision provenance",
+);
+assert.deepEqual(
+  resolveComponentGeometryContractForType("fin").provenance.approximations,
+  [{ id: "collision", approximationOf: "fin-profile" }],
+  "ordinary custom bodies lost collision provenance",
+);
+assert.equal(
+  TYPES.fin.geometryContract.collisionPrimitives[0].approximationOf,
+  TYPES.fin.geometryContract.bodyPrimitives[0].id,
+  "shaped ordinary collision fallback did not name its authored body",
+);
+
+for (const [type, expected] of [
+  [
+    "aircompressor",
+    [
+      ["collision", "body"],
+      ["compressor-motor-collision", "compressor-motor"],
+    ],
+  ],
+  [
+    "pneumaticvalve",
+    [
+      ["collision", "body"],
+      ["valve-solenoid-1-collision", "valve-solenoid-1"],
+      ["valve-solenoid-2-collision", "valve-solenoid-2"],
+    ],
+  ],
+]) {
+  const descriptor = resolveComponentGeometryContractForType(type);
+  assert.deepEqual(
+    descriptor.collisionPrimitives.map(({ id, approximationOf }) => [
+      id,
+      approximationOf,
+    ]),
+    expected,
+    `${type} lost visible-body collision provenance`,
+  );
+  assert.deepEqual(
+    new Set(
+      descriptor.provenance.approximations.map(
+        (entry) => entry.approximationOf,
+      ),
+    ),
+    new Set(descriptor.bodyPrimitives.map(({ id }) => id)),
+    `${type} has visible bodies with no collision approximation`,
+  );
+}
+const compressor = resolveComponentGeometryContractForType("aircompressor"),
+  compressorMotor = compressor.bodyPrimitives.find(
+    ({ id }) => id === "compressor-motor",
+  ),
+  valve = resolveComponentGeometryContractForType("pneumaticvalve");
+assert.deepEqual(compressorMotor.framePart.positionM, [0, 0.34, 0]);
+assert.equal(compressorMotor.materialKey, "workshop-steel");
+assert.deepEqual(
+  valve.bodyPrimitives
+    .filter(({ id }) => id.startsWith("valve-solenoid-"))
+    .map(({ framePart }) => framePart.positionM),
+  [
+    [-0.2, 0.3, 0],
+    [0.2, 0.3, 0],
+  ],
+  "pneumatic valve solenoids lost their symmetric physical placement",
+);
+assert.deepEqual(
+  valve.collisionPrimitives
+    .filter(({ id }) => id.startsWith("valve-solenoid-"))
+    .map(({ framePart }) => framePart.positionM),
+  [
+    [-0.2, 0.3, 0],
+    [0.2, 0.3, 0],
+  ],
+  "pneumatic valve collision regions lost their symmetric placement",
+);
 
 const pinionGeometry =
     resolveComponentGeometryContractForType("gear12").bodyPrimitives[0]
@@ -229,8 +347,65 @@ const pinionGeometry =
     wheelGearGeometry.toothPhaseRad +
     11.5 * ((Math.PI * 2) / wheelGearGeometry.toothCount);
 assert.equal(pinionGeometry.toothPhaseRad, 0);
+assert.equal(pinionGeometry.pressureAngleRad, (20 * Math.PI) / 180);
+assert.equal(wheelGearGeometry.pressureAngleRad, (20 * Math.PI) / 180);
 assert.ok(Math.abs(wheelGapAtStockContactRad - Math.PI) < 1e-12);
 assert.equal(pinionGeometry.moduleM, wheelGearGeometry.moduleM);
+assert.equal(
+  resolveComponentGeometryContractForType("gear12").portFrames.MESH.clearanceM,
+  0,
+);
+assert.equal(
+  resolveComponentGeometryContractForType("gear24").portFrames.MESH.clearanceM,
+  0,
+);
+const stockGearParts = builtInDemo("gearbox").blueprint.parts.filter((part) =>
+    ["gear12", "gear24"].includes(part.type),
+  ),
+  stockGearCenterDistanceM = Math.hypot(
+    ...stockGearParts[0].pos.map(
+      (value, axis) => value - stockGearParts[1].pos[axis],
+    ),
+  );
+assert.ok(
+  Math.abs(
+    stockGearCenterDistanceM -
+      pinionGeometry.pitchRadiusM -
+      wheelGearGeometry.pitchRadiusM,
+  ) < 1e-12,
+  "stock gears are not centered at the canonical pitch-radius sum",
+);
+
+const aerodynamicFixture = resolveComponentGeometryContract({
+  id: 991,
+  type: "beam",
+  pos: [0, 0, 0],
+  orientation: [0, 0, 0, 1],
+  scale: [1, 1, 1],
+  config: {
+    ...componentDefaults("beam"),
+    size: [2, 3, 4],
+    liftSlope: 0.7,
+  },
+});
+assert.equal(aerodynamicFixture.aerodynamicSurfaces[0].areaM2, 12);
+assert.equal(aerodynamicFixture.aerodynamicSurfaces[0].liftSlope, 0.7);
+for (const [size, expectedAreaM2] of [
+  [[4, 3, 2], 12],
+  [[4, 2, 3], 12],
+]) {
+  const fixture = resolveComponentGeometryContract({
+    id: 992,
+    type: "beam",
+    pos: [0, 0, 0],
+    orientation: [0, 0, 0, 1],
+    scale: [1, 1, 1],
+    config: { ...componentDefaults("beam"), size },
+  });
+  assert.equal(fixture.aerodynamicSurfaces[0].areaM2, expectedAreaM2);
+}
+assert.deepEqual(boundsCenter(null), [0, 0, 0]);
+assert.deepEqual(boundsDimensions(null), [0, 0, 0]);
 
 const spring = resolveComponentGeometryContractForType("spring"),
   axialCoordinate = spring.deformationContract.coordinates[0],
@@ -497,6 +672,13 @@ assert.throws(
   (error) => error.code === "UNKNOWN_GEOMETRY_FIELD",
   "alternate catalog geometry accepted a presentation-only field",
 );
+const danglingApproximation = structuredClone(TYPES.fin.geometryContract);
+danglingApproximation.collisionPrimitives[0].approximationOf = "missing-body";
+assert.throws(
+  () => validateComponentGeometryDefinitionOrThrow(danglingApproximation),
+  (error) => error.code === "INVALID_COMPONENT_GEOMETRY_DEFINITION",
+  "collision provenance accepted a missing body target",
+);
 
 for (const mutation of [
   (descriptor) => {
@@ -511,6 +693,12 @@ for (const mutation of [
   (descriptor) => {
     descriptor.portFrames.A.framePart.orientation = [0, 0, 0, 2];
   },
+  (descriptor) => {
+    descriptor.bodyPrimitives[0].geometry.kind = "invented-v1";
+  },
+  (descriptor) => {
+    descriptor.bodyPrimitives[0].geometry.fullSizeM = [-1, 1, 1];
+  },
 ]) {
   const invalid = structuredClone(
     resolveComponentGeometryContractForType("beam"),
@@ -518,6 +706,28 @@ for (const mutation of [
   mutation(invalid);
   assert.throws(() => validateGeometryDescriptorOrThrow(invalid));
 }
+
+const unknownPrimitiveDescriptor = structuredClone(
+  resolveComponentGeometryContractForType("beam"),
+);
+unknownPrimitiveDescriptor.bodyPrimitives[0].geometry.kind = "invented-v1";
+assert.throws(
+  () => validateGeometryDescriptorOrThrow(unknownPrimitiveDescriptor),
+  (error) => error.code === "UNKNOWN_GEOMETRY_PRIMITIVE",
+  "unknown primitive kind did not fail at the primitive boundary",
+);
+
+const invalidBoxDescriptor = structuredClone(
+  resolveComponentGeometryContractForType("linear-guide"),
+);
+invalidBoxDescriptor.bodyPrimitives.find(
+  ({ geometry }) => geometry.kind === "box-v1",
+).geometry.fullSizeM = [-1, 1, 1];
+assert.throws(
+  () => validateGeometryDescriptorOrThrow(invalidBoxDescriptor),
+  (error) => error.code === "INVALID_GEOMETRY_DIMENSION",
+  "box dimensions bypassed primitive validation",
+);
 
 const rover = builtInDemo("cart").blueprint,
   compiledRover = compileAssembly(rover, TYPES),

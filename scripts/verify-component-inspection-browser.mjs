@@ -1,6 +1,7 @@
 import { assert, assertNoErrors, closeBrowser } from "./lib/assert.mjs";
 import { createBrowserTest } from "./lib/browser-test.mjs";
 import { prepareUiBaselineFixture } from "./lib/ui-baseline-fixtures.mjs";
+import { assertCanonicalVisualProductState } from "./lib/component-visual-product-assertions.mjs";
 
 const { browser, page, errors, baseUrl } = await createBrowserTest({
   viewport: { width: 1280, height: 720 },
@@ -158,6 +159,7 @@ try {
     1.1,
     "Inspector scaling did not rebuild the canonical authored component",
   );
+  await assertCanonicalVisualProductState(page, "inspector scale rebuild");
 
   const authoredBeforeIsolation = {
       revision: state.architecture.assemblyRevision,
@@ -179,6 +181,7 @@ try {
     isolated.presentation.selectionVisibility.isolatedPartIds,
     state.selectedParts,
   );
+  await assertCanonicalVisualProductState(page, "inspect isolate and frame");
   assert.equal(
     isolated.presentation.selectionVisibility.hiddenPartIds.length,
     state.parts.length - state.selectedParts.length,

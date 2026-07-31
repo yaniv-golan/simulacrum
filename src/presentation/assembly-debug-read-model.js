@@ -6,6 +6,7 @@
  * @typedef {{
  *   id:number,type:string,rigRole?:string|null,rigVisualRotation?:number[]|null,
  *   controllerBindings?:object[]|null,extensions?:Record<string,unknown>,pos:number[],
+ *   customColor?:number|null,
  *   scale:{x:number,y:number,z:number},
  *   mesh:import("three").Object3D, config:Record<string,number>, mechanism?:Record<string,any>, phase?:number,
  *   jointAngle?:number,reactionTorque?:number,tireDeflectionM?:number,
@@ -26,6 +27,8 @@ export function buildAssemblyDebugReadModel(input) {
       type: part.type,
       rigRole: part.rigRole || undefined,
       authored: {
+        customColor: part.customColor ?? null,
+        positionM: structuredClone(part.pos),
         rigVisualRotation: part.rigVisualRotation
           ? structuredClone(part.rigVisualRotation)
           : undefined,

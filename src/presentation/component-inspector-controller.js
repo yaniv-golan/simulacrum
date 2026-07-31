@@ -16,6 +16,7 @@ import {
 import * as ropeInspector from "./flexible-line-inspector.js";
 import { replaceSelectOptions } from "./select-options.js";
 import { createComponentInspectorPortController } from "./component-inspector-port-controller.js";
+import { bindComponentConstructionEditor } from "./component-construction-editor.js";
 
 /**
  * @typedef {{
@@ -27,6 +28,7 @@ import { createComponentInspectorPortController } from "./component-inspector-po
  *   },
  *   mechanismAuthoringDiagnostic?: {code:string,message:string,path:Array<string|number>}|null,
  *   mechanismDisplayUnit?:string,
+ *   customColor?:number|null,
  *   rigRole?: string | null, rigVisualRotation?: number[] | null,
  *   sensorValueRpm?: number,
  *   tireGaugePressurePa?: number | null, tireGasTemperatureK?: number | null,
@@ -57,6 +59,7 @@ import { createComponentInspectorPortController } from "./component-inspector-po
  * @typedef {{
  *   recordHistory: (label: string) => void,
  *   configurePart: (part: InspectorPart, patch: Record<string, number | boolean | string>) => void,
+ *   recolorPart: (part: InspectorPart, color: number) => boolean,
  *   configureMechanism: (part: InspectorPart, path: Array<string|number>, value: number) => {ok:boolean,code?:string,message?:string,path?:Array<string|number>}, scalePart: (part: InspectorPart, axis: string, value: number) => boolean,
  *   syncAssembly: () => void,
  *   drawConnections: () => void, updateSelection: () => void,
@@ -200,6 +203,8 @@ export function createComponentInspectorController({ model, view, actions }) {
     }
 
     const articulatedRoles = articulatedRolesForType(part.type);
+    const visualColor = Number(part.customColor ?? type.color),
+      visualColorHex = `#${visualColor.toString(16).padStart(6, "0")}`;
     const articulatedRoleEditor = articulatedRoles.length
       ? `<label class="assembly-role-field">ARTICULATED ROLE<select id="rig-role"><option value="">NONE</option>${articulatedRoles.map((role) => `<option value="${role}" ${part.rigRole === role ? "selected" : ""}>${role}</option>`).join("")}</select><small>Optional controller metadata. Bodies and joints still come only from your physical connections.</small></label>`
       : "";
@@ -240,7 +245,7 @@ export function createComponentInspectorController({ model, view, actions }) {
             `<label class="property"><span>${label}<b data-value="${key}">${value}${unit}</b></span><input type="range" min="${min}" max="${max}" step="${step}" value="${value}" data-prop="${key}" data-unit="${unit}"></label>`,
         )
         .join("") +
-      `${ropeInspector.flexibleLineReadout(part)}${mechanismEditor}${twoEndedWorkflow}${controllerProgramEditor}${view.arrangerMarkup(selection)}<div class="component-construction"><h4>BLUEPRINT CONSTRUCTION</h4>${articulatedRoleEditor}${part.mechanism ? '<p class="component-contract-note">Mechanism scale is identity; edit the explicit physical law above.</p>' : ["x", "y", "z"].map((axis) => `<label class="property"><span>SCALE ${axis.toUpperCase()}<b>${part.scale[axis].toFixed(2)}×</b></span><input data-scale-axis="${axis}" type="range" min="0.2" max="2.5" step="0.05" value="${part.scale[axis]}"></label>`).join("")}</div>`;
+      `${ropeInspector.flexibleLineReadout(part)}${mechanismEditor}${twoEndedWorkflow}${controllerProgramEditor}${view.arrangerMarkup(selection)}<div class="component-construction"><h4>BLUEPRINT CONSTRUCTION</h4><label class="component-finish-color">PAINT / COATING COLOR<input data-custom-color type="color" value="${visualColorHex}" ${model.running() ? "disabled" : ""}></label><p class="component-contract-note">Color applies only to canonical paintable or coated regions. Steel, rubber, glass, and thermal surfaces retain their physical finish.</p>${articulatedRoleEditor}${part.mechanism ? '<p class="component-contract-note">Mechanism scale is identity; edit the explicit physical law above.</p>' : ["x", "y", "z"].map((axis) => `<label class="property"><span>SCALE ${axis.toUpperCase()}<b>${part.scale[axis].toFixed(2)}×</b></span><input data-scale-axis="${axis}" type="range" min="0.2" max="2.5" step="0.05" value="${part.scale[axis]}"></label>`).join("")}</div>`;
 
     const structuralConnections = inspection.relationships.connections.filter(
       (connection) => ["mechanical", "mesh"].includes(connection.kind),
@@ -396,19 +401,16 @@ export function createComponentInspectorController({ model, view, actions }) {
       notify: actions.notify,
     });
     view.bindArranger();
-    for (const element of view.queryAll("[data-scale-axis]")) {
-      const input = /** @type {HTMLInputElement} */ (element);
-      input.onblur = () => delete input.dataset.historyRecorded;
-      input.oninput = () => {
-        recordEdit(input, `scale ${TYPES[part.type].name}`);
-        const axis = input.dataset.scaleAxis;
-        if (!axis || !["x", "y", "z"].includes(axis)) return;
-        if (!actions.scalePart(part, axis, +input.value)) return;
-        actions.syncAssembly();
-        actions.drawConnections();
-        actions.updateSelection();
-      };
-    }
+    bindComponentConstructionEditor({
+      colorInput: /** @type {HTMLInputElement|null} */ (
+        view.query("[data-custom-color]")
+      ),
+      scaleInputs: view.queryAll("[data-scale-axis]"),
+      part,
+      partName: TYPES[part.type].name,
+      recordEdit,
+      actions,
+    });
     for (const element of view.queryAll("[data-prop]")) {
       const input = /** @type {HTMLInputElement} */ (element);
       input.onblur = () => delete input.dataset.historyRecorded;

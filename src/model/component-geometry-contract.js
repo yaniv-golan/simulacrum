@@ -1,5 +1,12 @@
 import { FLIGHT_MATERIALS, TYPES } from "./component-catalog.js";
 import { componentPorts } from "./component-contracts.js";
+import {
+  clampMechanismCoordinate,
+  deformationAxialScale,
+  deformationAxialTranslation,
+  equalRadialScale,
+  gearPitchConsistent,
+} from "./component-geometry-decisions.js";
 import { resolveComponentConfig } from "./component-resolver.js";
 import {
   compileMechanismBodyGeometry,
@@ -492,7 +499,7 @@ function resolvedPrimitiveGeometry(source, config, scale, orientation) {
     source.kind === "cone-v1" ||
     source.kind === "rounded-wheel-v1"
   ) {
-    if (Math.abs(scaleX - scaleY) > 1e-12)
+    if (!equalRadialScale(scaleX, scaleY))
       fail(
         "GEOMETRY_SCALE_POLICY_VIOLATION",
         `${source.kind} requires equal radial scale`,
@@ -524,7 +531,7 @@ function resolvedPrimitiveGeometry(source, config, scale, orientation) {
     };
   }
   if (source.kind === "spur-gear-v1") {
-    if (Math.abs(scaleX - scaleY) > 1e-12)
+    if (!equalRadialScale(scaleX, scaleY))
       fail(
         "GEOMETRY_SCALE_POLICY_VIOLATION",
         "spur-gear-v1 requires equal radial scale",
@@ -698,7 +705,11 @@ function transformForProjection(coordinate, projection, coordinateM) {
       coordinateId: coordinate.id,
       positionM: [0, 0, 0],
       orientation: [0, 0, 0, 1],
-      scale: [1, 1, coordinateM / coordinate.referenceBodyLengthM],
+      scale: [
+        1,
+        1,
+        deformationAxialScale(coordinateM, coordinate.referenceBodyLengthM),
+      ],
     };
   if (projection.kind === "local-z-translation-v1")
     return {
@@ -707,7 +718,11 @@ function transformForProjection(coordinate, projection, coordinateM) {
       positionM: [
         0,
         0,
-        (coordinateM - coordinate.referenceCoordinateM) * projection.gainMPerM,
+        deformationAxialTranslation(
+          coordinateM,
+          coordinate.referenceCoordinateM,
+          projection.gainMPerM,
+        ),
       ],
       orientation: [0, 0, 0, 1],
       scale: [1, 1, 1],
@@ -1420,8 +1435,7 @@ function validatePrimitiveGeometryRecord(value, path) {
         [...path, "pressureAngleRad"],
       );
     if (
-      Math.abs(value.pitchRadiusM - (value.moduleM * value.toothCount) / 2) >
-      1e-9
+      !gearPitchConsistent(value.pitchRadiusM, value.moduleM, value.toothCount)
     )
       fail(
         "INCONSISTENT_GEAR_GEOMETRY",
@@ -2564,6 +2578,23 @@ export function validateComponentGeometryDefinitionOrThrow(value) {
         collectionIds.add(source.id);
       }
     }
+    const bodyIds = new Set(definition.bodyPrimitives.map(({ id }) => id));
+    for (const [index, source] of definition.collisionPrimitives.entries()) {
+      if (
+        source.approximationOf !== null &&
+        !bodyIds.has(source.approximationOf)
+      )
+        fail(
+          "INVALID_COMPONENT_GEOMETRY_DEFINITION",
+          "Collision approximation target must name a body primitive",
+          [
+            "geometryDefinition",
+            "collisionPrimitives",
+            index,
+            "approximationOf",
+          ],
+        );
+    }
   } else if (definition.kind === "mechanism-component-geometry-v1") {
     closedKeys(
       definition.collisionPrimitives,
@@ -3170,7 +3201,7 @@ export function mechanismDeformationTransforms(descriptor, coordinateSamples) {
     ).allowedCoordinateRangeM;
     sampleById.set(
       sample.coordinateId,
-      Math.min(maximum, Math.max(minimum, sample.coordinateM)),
+      clampMechanismCoordinate(sample.coordinateM, minimum, maximum),
     );
   }
   if (sampleById.size !== coordinates.length)

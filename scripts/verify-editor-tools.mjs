@@ -6,6 +6,7 @@ import {
   resetBrowserStorageForTest,
 } from "./lib/browser-storage-fixture.mjs";
 import { TYPES } from "../src/model/component-catalog.js";
+import { assertCanonicalVisualProductState } from "./lib/component-visual-product-assertions.mjs";
 
 const { browser, page, errors, baseUrl } = await createBrowserTest();
 fs.mkdirSync("artifacts", { recursive: true });
@@ -146,6 +147,33 @@ try {
     1,
     "placed battery was not the primary selection",
   );
+  await assertCanonicalVisualProductState(page, "battery placement");
+  const colorInput = page.locator("[data-custom-color]");
+  await colorInput.evaluate((input) => {
+    input.value = "#2357d9";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.blur();
+  });
+  state = await textState();
+  assert.equal(
+    state.parts[0].authored.customColor,
+    0x2357d9,
+    "inspector recolor did not update the authored component",
+  );
+  await assertCanonicalVisualProductState(page, "battery recolor");
+  await page.click("#undo-tool");
+  assert.equal(
+    (await textState()).parts[0].authored.customColor,
+    null,
+    "recolor undo did not restore the catalog finish",
+  );
+  await page.click("#redo-tool");
+  assert.equal(
+    (await textState()).parts[0].authored.customColor,
+    0x2357d9,
+    "recolor redo did not restore the authored color",
+  );
+  await assertCanonicalVisualProductState(page, "battery recolor redo");
   const capacity = page.locator('[data-prop="capacityWh"]');
   assert.equal(
     await capacity.count(),
@@ -212,6 +240,7 @@ try {
     9,
     "placed subassembly was not retained as the active selection",
   );
+  await assertCanonicalVisualProductState(page, "subassembly reuse");
   assert.equal(
     new Set(state.parts.map((part) => part.id)).size,
     9,
@@ -272,18 +301,28 @@ try {
     "primary Y alignment did not update every selected component",
   );
   await page.click("#undo-tool");
+  await assertCanonicalVisualProductState(page, "arrangement undo");
 
-  await page.locator('[data-pivot-axis="0"]').evaluate((input) => {
-    input.value = "10";
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-  });
+  const pivotHandlerBound = await page
+    .locator('[data-pivot-axis="0"]')
+    .evaluate((input) => {
+      input.value = "10";
+      const bound = typeof input.onchange === "function";
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      return bound;
+    });
+  assert.equal(
+    pivotHandlerBound,
+    true,
+    "numeric transform input lost its bound editor action",
+  );
   state = await textState();
   const meanX =
-    state.parts.reduce((sum, part) => sum + part.position[0], 0) /
+    state.parts.reduce((sum, part) => sum + part.authored.positionM[0], 0) /
     state.parts.length;
   assert.ok(
     Math.abs(meanX - 10) < 1e-6,
-    "numeric transform did not position the group pivot exactly",
+    `numeric transform did not position the group pivot exactly: ${meanX}`,
   );
   await page.click("#undo-tool");
 

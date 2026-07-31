@@ -20,8 +20,8 @@ GitHub Actions deliberately separates feedback speed from deep qualification:
   these runs.
 - **Deep verification** runs weekly or on demand. Four deterministic shards
   execute all verification suites in parallel, followed by production builds
-  and live performance baselines. Its optional mutation matrix runs the eight
-  general decision domains independently on the weekly schedule and should be
+  and live performance baselines. Its optional mutation matrix runs the nine
+  hosted decision domains independently on the weekly schedule and should be
   requested before a release when critical schema, network, controller,
   challenge, or failure decisions changed. Test-site and course changes use the
   dedicated local `npm run mutation:test-site` gate; it is part of the

@@ -29,6 +29,24 @@ export function createEditorInspectorActions({
     recordHistory: history.record,
     configurePart: configureComponentPart,
     configureMechanism: configureAuthoredMechanism,
+    recolorPart: (part, color) => {
+      if (!Number.isInteger(color) || color < 0 || color > 0xffffff) {
+        actions.notify("Color rejected: expected a 24-bit RGB value");
+        return false;
+      }
+      const previous = part.customColor;
+      part.customColor = color;
+      try {
+        assembly.rebuildGeometry(part);
+        return true;
+      } catch (error) {
+        part.customColor = previous;
+        actions.notify(
+          `Color rejected: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        return false;
+      }
+    },
     scalePart: (part, axis, value) => {
       const previous = { ...part.scale };
       part.scale = { ...part.scale, [axis]: Number(value) };

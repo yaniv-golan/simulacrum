@@ -24,11 +24,7 @@ function immutable(value) {
 }
 
 function serializedBytes(value) {
-  const serialized = JSON.stringify(value);
-  for (let index = 0; index < serialized.length; index++)
-    if (serialized.charCodeAt(index) > 0x7f)
-      return encoder.encode(serialized).byteLength;
-  return serialized.length;
+  return encoder.encode(JSON.stringify(value)).byteLength;
 }
 
 function rowMagnitude(row) {

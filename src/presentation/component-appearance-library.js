@@ -26,6 +26,20 @@ export function componentAppearanceProfile({
   );
 }
 
+/** Resolves the frozen finish and custom-color ownership contract. */
+export function componentAppearanceContract(inputs) {
+  const profile = componentAppearanceProfile(inputs),
+    customColorPolicy =
+      profile === "paint"
+        ? "object-owned-paint-v1"
+        : profile === "composite"
+          ? "object-owned-composite-coating-v1"
+          : profile === "ablative"
+            ? "runtime-owned-aerothermal-clone-v1"
+            : "shared-fixed-finish-v1";
+  return Object.freeze({ profile, customColorPolicy });
+}
+
 function createPaintMaterial(color) {
   const material = new THREE.MeshStandardMaterial({
     color,

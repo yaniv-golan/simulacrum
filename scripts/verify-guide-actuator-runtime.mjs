@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import * as CANNON from "cannon-es";
+import * as THREE from "three";
 import { TYPES } from "../src/model/component-catalog.js";
 import { mechanismComponentDefinition } from "../src/model/mechanism-component-definitions.js";
 import { CommandBus } from "../src/simulation/command-bus.js";
@@ -8,7 +9,10 @@ import { PowerNetwork } from "../src/simulation/power-network.js";
 import { RunAssemblyGraph } from "../src/simulation/run-assembly-graph.js";
 import { componentMesh } from "../src/presentation/component-mesh-factory.js";
 import { applyMechanismPose } from "../src/presentation/mechanism-pose-presenter.js";
-import { mechanismDeformationTransforms } from "../src/model/component-geometry-contract.js";
+import {
+  deformedBodyBoundsPartM,
+  mechanismDeformationTransforms,
+} from "../src/model/component-geometry-contract.js";
 import { disposeObject3D } from "../src/presentation/render-resources.js";
 
 const DT = 1 / 120,
@@ -231,13 +235,17 @@ const completedGuideTelemetry = guideRuntime.telemetry(),
   completedGuideState = completedGuideTelemetry.twoFrameMechanisms.find(
     (state) => state.kind === "linear-guide",
   ),
-  completedGuidePose = completedGuideTelemetry.poses.find(
+  completedGuidePose = completedGuideTelemetry.poses.findLast(
     (pose) => pose.id === completedGuideState.sourcePartId,
   ),
   guideCheckpoint = guideRuntime.exportState(),
   guideWorldCheckpoint = guideRuntime.worldAdapter.exportState(),
   replayWorld = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
   replayRuntime = new MultibodyRuntime({ world: replayWorld, catalog: TYPES });
+assert.ok(
+  completedGuidePose?.deformedBodyBoundsWorldM,
+  "completed linear-guide pose omitted authoritative deformed bounds",
+);
 replayRuntime.start(guideSnapshot);
 replayRuntime.importState(guideCheckpoint);
 replayRuntime.worldAdapter.importState(guideWorldCheckpoint);
@@ -289,6 +297,38 @@ assert.deepEqual(
   renderedGuide.deformedBodyBoundsWorldM,
   completedGuidePose.deformedBodyBoundsWorldM,
 );
+const guideDescriptor = renderedGuide.mesh.userData.geometryDescriptor,
+  guideCoordinate = guideDescriptor.deformationContract.coordinates[0];
+for (const coordinateM of [
+  guideCoordinate.allowedCoordinateRangeM.minimum,
+  guideCoordinate.referenceCoordinateM,
+  guideCoordinate.allowedCoordinateRangeM.maximum,
+]) {
+  const samples = [{ coordinateId: guideCoordinate.id, coordinateM }],
+    expectedBounds = deformedBodyBoundsPartM(guideDescriptor, samples);
+  applyMechanismPose(
+    renderedGuide,
+    {
+      position: { x: 0, y: 0, z: 0 },
+      quaternion: { x: 0, y: 0, z: 0, w: 1 },
+      deformedBodyBoundsWorldM: expectedBounds,
+    },
+    samples,
+  );
+  renderedGuide.mesh.updateMatrixWorld(true);
+  const renderedBounds = new THREE.Box3().setFromObject(renderedGuide.mesh),
+    actualBounds = {
+      minimumM: renderedBounds.min.toArray(),
+      maximumM: renderedBounds.max.toArray(),
+    };
+  for (const key of ["minimumM", "maximumM"])
+    for (let axis = 0; axis < 3; axis++)
+      assert.ok(
+        Math.abs(actualBounds[key][axis] - expectedBounds[key][axis]) <= 1e-7,
+        JSON.stringify({ coordinateM, expectedBounds, actualBounds }),
+      );
+  assert.deepEqual(renderedGuide.deformedBodyBoundsWorldM, expectedBounds);
+}
 disposeObject3D(renderedGuide.mesh);
 replayRuntime.dispose();
 guideRuntime.dispose();

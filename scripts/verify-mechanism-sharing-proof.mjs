@@ -3,6 +3,7 @@ import { CHECKPOINT_STATE_OWNER_IDS } from "../src/model/mechanism-artifacts.js"
 import { stableStringify } from "../src/model/primitives.js";
 import { assert, assertNoErrors, closeBrowser } from "./lib/assert.mjs";
 import { createBrowserTest } from "./lib/browser-test.mjs";
+import { assertCanonicalVisualProductState } from "./lib/component-visual-product-assertions.mjs";
 import {
   readBrowserStorageRoot,
   resetBrowserStorageForTest,
@@ -204,6 +205,10 @@ try {
   assert.match(
     await page.locator("#mechanism-proof").textContent(),
     /RESTORE PROOF\s*exact state digest match/s,
+  );
+  await assertCanonicalVisualProductState(
+    page,
+    "exact mechanism checkpoint restore",
   );
 
   await activate("#mechanism-copy-proof");
