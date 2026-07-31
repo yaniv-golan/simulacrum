@@ -25,7 +25,9 @@ GitHub Actions deliberately separates feedback speed from deep qualification:
   requested before a release when critical schema, network, controller,
   challenge, or failure decisions changed. Test-site and course changes use the
   dedicated local `npm run mutation:test-site` gate; it is part of the
-  aggregate `npm run mutation` command but not the hosted matrix.
+  aggregate `npm run mutation` command but not the hosted matrix. Canonical
+  component geometry changes use `npm run mutation:component-geometry`, which
+  combines the broad geometry score with a 100% critical-decision slice.
 - **Release soak** remains manual because its 30-minute lifecycle exercise is
   useful before releases and high-risk resource changes, not on ordinary pull
   requests.
@@ -46,6 +48,7 @@ Known pure Node verifiers may be run directly for the shortest edit loop. The
 focused command skips unconditional harness setup, but it does not suppress a
 build owned by a selected suite and it does not replace the full completion
 gates. See [Testing and verification](docs/TESTING.md) for timing reports,
-guardrails, legacy `TEST_FILTER` automation, and harness maintenance.
+guardrails, component-visual evidence qualification, legacy `TEST_FILTER`
+automation, and harness maintenance.
 
 Keep model and simulation modules free of DOM, CSS, cameras, and meshes. Put reusable domain behavior behind `src/core/index.js`. Add deterministic contract tests for physics/model changes and browser assertions for visible behavior. Blueprint input is strict v1: reject missing, unsupported, future, or guessed fields instead of adding compatibility branches. Update architecture, wire schemas, generated validators, and API documentation together when a contract changes.

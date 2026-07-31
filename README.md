@@ -171,12 +171,14 @@ The included gearbox uses a 12-tooth pinion driving a 24-tooth gear. The output 
 
 Component silhouettes, interfaces, and rendered motion come from the same
 canonical geometry descriptors used by editing and simulation. Rounded tires,
-pressure vessels, sensors, lamps, and thrusters retain their authored envelopes
-and port frames. Bounded material finishes and a procedural reflection
-environment distinguish steel, aluminum, rubber, Rope, composites, ablative
-surfaces, and player-painted structure. Camera-aware detail tiers preserve part
-IDs, selection, ports, and major silhouettes; assemblies above 128 parts use
-reduced shadows and performance projections automatically.
+meshing toothed gears, helical springs, pressure vessels, compressors, valves,
+sensors, lamps, and thrusters retain their authored envelopes and port frames.
+Spring coils compress and extend from completed mechanism coordinates rather
+than a presentation-only animation. Bounded material finishes and a procedural
+reflection environment distinguish steel, aluminum, rubber, Rope, composites,
+ablative surfaces, and player-painted structure. Camera-aware detail tiers
+preserve part IDs, selection, ports, and major silhouettes; assemblies above
+128 parts use reduced shadows and performance projections automatically.
 
 Connections are classified and drawn by function: orange for power, mint for mechanical links, gold for meshed gears, and blue for signals. Gear meshes automatically use tooth-count ratios.
 

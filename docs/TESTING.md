@@ -171,6 +171,48 @@ comparison screenshots/text state can be refreshed separately with
 server; they are labeled `existing-ui-baseline` and are not future release
 budgets.
 
+### Component visual realism qualification
+
+Canonical component-geometry or presentation changes must prove the model,
+runtime deformation, rendered product, catalog views, and ordinary editor
+workflows together. Run the focused geometry and browser owners first:
+
+```bash
+npm run test:focused -- verify-component-geometry-contract verify-component-visual-acceptance verify-component-catalog-turntable-browser verify-component-visual-realism-browser
+npm run test:component-visual-workflows
+```
+
+`test:component-visual-workflows` executes every unique suite named by the
+checked-in operation matrix; it is not a token or source-text coverage report.
+For geometry decision changes, also run the dedicated mutation gate:
+
+```bash
+npm run mutation:component-geometry
+```
+
+The gate reports the broad geometry score separately from the 100% critical
+decision slice. Do not lower either threshold to accommodate a surviving
+first-principles decision.
+
+Build final visual evidence from one unchanged source identity. The live
+baseline must precede inventory capture because its timing and lifecycle
+summary is part of the evidence bundle:
+
+```bash
+npm run baseline:verify
+npm run capture:component-visual-inventory
+npm run capture:component-visual-finalize
+```
+
+The browser and catalog suites write ignored captures under
+`artifacts/component-visual-realism/`. The finalizer requires their workspace
+identity, the inventory, and the release-performance capture to agree, then
+hashes every retained artifact into `evidence-bundle-manifest.json`. Regenerate
+the affected capture after any source edit or merge commit before finalizing;
+never hand-edit a manifest or reuse a passing image from another identity. Run
+`npm run release:soak` as well for a release or high-risk render-resource
+lifecycle change.
+
 ## Completion and release gates
 
 Focused success is not completion. Before completing a substantial change, run

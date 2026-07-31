@@ -66,12 +66,16 @@
 
 ### Changed
 
-- Unified component collision, port frames, rendered physical silhouettes, and
-  runtime deformation around the model-owned geometry descriptors. Component
-  presentation now includes bounded material finishes, a procedural reflection
-  environment, camera-aware detail tiers, and reduced shadows and projections
-  for large assemblies without changing part IDs, selection, or physical
-  authority.
+- Replaced generic block-like component presentation with model-owned physical
+  silhouettes across all 42 catalog types. Meshing gears show their authored
+  teeth, springs render as helical coils and deform from completed mechanism
+  coordinates, and compressors, pneumatic valves, sensors, motors, tanks,
+  thrusters, wheels, and structural parts retain distinct bodies and interfaces.
+  Collision provenance, port frames, selection bounds, rendered bodies, and
+  runtime deformation now share the canonical geometry descriptors. Bounded
+  material finishes, a procedural reflection environment, camera-aware detail
+  tiers, and reduced large-assembly projections preserve part IDs, selection,
+  performance, and physical authority.
 - Advanced the private failure-evidence artifact to version 2. Captures are now
   proactively composed and strict-validated before the UI reports them ready;
   export writes only that cached artifact. Bounded nonstructural episodes
