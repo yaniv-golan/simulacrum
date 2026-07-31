@@ -1,11 +1,20 @@
 import * as THREE from "three";
 import { assert } from "./lib/assert.mjs";
 import {
+  boundsCenter,
+  boundsDimensions,
   GEOMETRY_PRIMITIVE_KINDS,
   resolveComponentGeometryContract,
   validateComponentGeometryDefinitionOrThrow,
   validateGeometryDescriptorOrThrow,
 } from "../src/model/component-geometry-contract.js";
+import {
+  clampMechanismCoordinate,
+  deformationAxialScale,
+  deformationAxialTranslation,
+  equalRadialScale,
+  gearPitchConsistent,
+} from "../src/model/component-geometry-decisions.js";
 import { projectCanonicalComponentGeometry } from "../src/presentation/canonical-component-geometry-projector.js";
 import { disposeObject3D } from "../src/presentation/render-resources.js";
 
@@ -79,6 +88,15 @@ for (const kind of Object.keys(geometries))
     GEOMETRY_PRIMITIVE_KINDS.includes(kind),
     `${kind} is not in the closed primitive union`,
   );
+assert.equal(equalRadialScale(1e-12, 2e-12), true);
+assert.equal(equalRadialScale(1e-12, 2.1e-12), false);
+assert.equal(gearPitchConsistent(1.002e-9, 1e-12, 4), true);
+assert.equal(gearPitchConsistent(1.102e-9, 1e-12, 4), false);
+assert.equal(deformationAxialScale(0.72, 1.2), 0.6);
+assert.equal(deformationAxialTranslation(0.72, 1, -0.5), 0.14);
+assert.equal(clampMechanismCoordinate(0.4, 0.72, 1.35), 0.72);
+assert.equal(clampMechanismCoordinate(2, 0.72, 1.35), 1.35);
+assert.equal(clampMechanismCoordinate(1, 0.72, 1.35), 1);
 
 function descriptorFor(
   kind,
@@ -125,6 +143,26 @@ function canonicalBody(root) {
   });
   return result;
 }
+
+function uniquePolarSamples(geometry, radiusM, toleranceM = 1e-6) {
+  const values = [];
+  for (const [x, y] of Array.from(geometry.attributes.position.array).reduce(
+    (pairs, value, index, source) => {
+      if (index % 3 === 0) pairs.push([value, source[index + 1]]);
+      return pairs;
+    },
+    [],
+  )) {
+    if (Math.abs(Math.hypot(x, y) - radiusM) > toleranceM) continue;
+    const angle = Math.atan2(y, x);
+    if (!values.some((candidate) => Math.abs(candidate - angle) < 1e-6))
+      values.push(angle);
+  }
+  return values.sort((a, b) => a - b);
+}
+
+const angularDistance = (left, right) =>
+  Math.abs(Math.atan2(Math.sin(left - right), Math.cos(left - right)));
 
 function definitionForBodyGeometry(geometry) {
   return {
@@ -188,6 +226,32 @@ for (const [kind, geometry] of Object.entries(geometries)) {
       body.geometry.userData.sharedPrimitiveKey,
       `${kind} lacks a deterministic render-resource key`,
     );
+    if (kind === "spur-gear-v1") {
+      const tipSamples = uniquePolarSamples(body.geometry, geometry.tipRadiusM),
+        rootSamples = uniquePolarSamples(body.geometry, geometry.rootRadiusM);
+      assert.equal(
+        tipSamples.length,
+        geometry.toothCount * 2,
+        "rendered gear does not expose two involute tip flanks per authored tooth",
+      );
+      assert.equal(
+        rootSamples.length,
+        geometry.toothCount,
+        "rendered gear does not expose one root gap per authored tooth",
+      );
+      const pitchRad = (Math.PI * 2) / geometry.toothCount;
+      for (let tooth = 0; tooth < geometry.toothCount; tooth++) {
+        const expectedRootAngle =
+          geometry.toothPhaseRad + (tooth + 0.5) * pitchRad;
+        assert.ok(
+          rootSamples.some(
+            (actualRootAngle) =>
+              angularDistance(actualRootAngle, expectedRootAngle) < 1e-5,
+          ),
+          `rendered gear root ${tooth} ignored authored tooth phase`,
+        );
+      }
+    }
     disposeObject3D(root, { remove: false });
     material.dispose();
   }
@@ -241,6 +305,17 @@ const scaledRoundedBox = descriptorFor(
     [2, 3, 4],
     "axis-aligned-affine-v1",
   ).bodyPrimitives[0].geometry;
+const scaledWheel = descriptorFor(
+  "rounded-wheel-v1",
+  {
+    kind: "rounded-wheel-v1",
+    radiusM: 0.65,
+    widthM: 0.42,
+    shoulderRadiusM: 0.08,
+  },
+  [2, 2, 3],
+  "axis-aligned-affine-v1",
+).bodyPrimitives[0].geometry;
 assert.deepEqual(scaledRoundedBox, {
   kind: "rounded-box-v1",
   fullSizeM: [2.4, 2.4000000000000004, 2],
@@ -273,6 +348,17 @@ assert.deepEqual(scaledProfile, {
   ],
   axialThicknessM: 0.48,
 });
+assert.deepEqual(scaledWheel, {
+  kind: "rounded-wheel-v1",
+  radiusM: 1.3,
+  widthM: 1.26,
+  shoulderRadiusM: 0.16,
+});
+assert.deepEqual(
+  boundsCenter({ minimumM: [-2, 1, 4], maximumM: [4, 5, 10] }),
+  [1, 3, 7],
+);
+assert.deepEqual(boundsDimensions(null), [0, 0, 0]);
 for (const kind of ["spur-gear-v1", "helical-spring-v1"])
   assert.throws(
     () =>
@@ -285,6 +371,25 @@ for (const kind of ["spur-gear-v1", "helical-spring-v1"])
     (error) => error.code === "GEOMETRY_SCALE_POLICY_VIOLATION",
     `${kind} accepted unequal radial scaling`,
   );
+assert.doesNotThrow(() =>
+  descriptorFor(
+    "spur-gear-v1",
+    geometries["spur-gear-v1"],
+    [1, 1 + 0.5e-12, 1],
+    "axis-aligned-affine-v1",
+  ),
+);
+assert.throws(
+  () =>
+    descriptorFor(
+      "spur-gear-v1",
+      geometries["spur-gear-v1"],
+      [1, 1 + 2e-12, 1],
+      "axis-aligned-affine-v1",
+    ),
+  (error) => error.code === "GEOMETRY_SCALE_POLICY_VIOLATION",
+  "spur-gear radial-scale epsilon no longer separates rounding from anisotropy",
+);
 
 const hublessGear = descriptorFor("spur-gear-v1", {
   ...geometries["spur-gear-v1"],
@@ -308,6 +413,16 @@ assert.throws(
   () => validateGeometryDescriptorOrThrow(invalidRoundedDescriptor),
   (error) => error.code === "INVALID_GEOMETRY_DIMENSION",
   "resolved rounded-box descriptor accepted an oversized radius",
+);
+assert.deepEqual(
+  descriptorFor("cone-v1", {
+    kind: "cone-v1",
+    startRadiusM: 0.2,
+    endRadiusM: 0.4,
+    axialLengthM: 1.2,
+  }).bodyBoundsPartM,
+  { minimumM: [-0.4, -0.4, -0.6], maximumM: [0.4, 0.4, 0.6] },
+  "cone analytic bounds do not preserve the authored axial half-length",
 );
 assert.equal(
   descriptorFor("spur-gear-v1", {
@@ -403,6 +518,27 @@ for (const patch of [
       }),
     (error) => error.code === "INCONSISTENT_GEAR_GEOMETRY",
   );
+for (const patch of [
+  { shoulderRadiusM: 0.22 },
+  { shoulderRadiusM: 0 },
+  { widthM: -0.42 },
+  { invented: true },
+])
+  assert.throws(
+    () =>
+      descriptorFor("rounded-wheel-v1", {
+        kind: "rounded-wheel-v1",
+        radiusM: 0.65,
+        widthM: 0.42,
+        shoulderRadiusM: 0.08,
+        ...patch,
+      }),
+    (error) =>
+      ["INVALID_GEOMETRY_DIMENSION", "UNKNOWN_GEOMETRY_FIELD"].includes(
+        error.code,
+      ),
+    "malformed rounded-wheel geometry passed descriptor validation",
+  );
 assert.throws(
   () =>
     descriptorFor("spur-gear-v1", {
@@ -422,7 +558,20 @@ validateComponentGeometryDefinitionOrThrow(
     radiusM: 0.1,
   }),
 );
+assert.throws(
+  () =>
+    validateComponentGeometryDefinitionOrThrow({
+      ...definitionForBodyGeometry(geometries["rounded-box-v1"]),
+      bodyPrimitives: null,
+    }),
+  (error) => error.code === "INVALID_COMPONENT_GEOMETRY_DEFINITION",
+  "a non-array primitive collection passed definition validation",
+);
 for (const geometry of [
+  {
+    kind: "box-v1",
+    fullSize: { kind: "config-vector-v1", field: 42 },
+  },
   {
     kind: "rounded-box-v1",
     fullSize: { kind: "invented-v1", field: "size" },
@@ -479,6 +628,21 @@ assert.throws(
     }),
   (error) => error.code === "INCONSISTENT_GEAR_GEOMETRY",
   "spur gears accepted an inconsistent module/pitch law",
+);
+assert.doesNotThrow(() =>
+  descriptorFor("spur-gear-v1", {
+    ...geometries["spur-gear-v1"],
+    pitchRadiusM: 0.6 + 0.5e-9,
+  }),
+);
+assert.throws(
+  () =>
+    descriptorFor("spur-gear-v1", {
+      ...geometries["spur-gear-v1"],
+      pitchRadiusM: 0.6 + 2e-9,
+    }),
+  (error) => error.code === "INCONSISTENT_GEAR_GEOMETRY",
+  "spur-gear pitch epsilon no longer separates rounding from inconsistency",
 );
 assert.throws(
   () =>

@@ -4,6 +4,19 @@ import {
   geometryDescriptorForType,
 } from "@yaniv-golan/simulacrum-core";
 
+/** Minimal data-only orthographic renderer; no DOM, Three.js, or game runtime. */
+function renderDescriptorToSvg(descriptor) {
+  const shapes = descriptor.bodyPrimitives.map((primitive) => {
+    if (primitive.geometry.kind !== "rounded-box-v1")
+      throw new Error(`Unsupported SVG primitive ${primitive.geometry.kind}`);
+    const [widthM, heightM] = primitive.geometry.fullSizeM,
+      [xM, yM] = primitive.framePart.positionM,
+      scale = 100;
+    return `<rect data-primitive="${primitive.id}" x="${(xM - widthM / 2) * scale}" y="${(-yM - heightM / 2) * scale}" width="${widthM * scale}" height="${heightM * scale}" rx="${primitive.geometry.radiusM * scale}" />`;
+  });
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100">${shapes.join("")}</svg>`;
+}
+
 export function componentExample() {
   const catalog = {
       ...TYPES,
@@ -87,6 +100,7 @@ export function componentExample() {
         connections: [],
       },
       catalog,
-    );
-  return { catalog, descriptor, topology };
+    ),
+    nonGameSvg = renderDescriptorToSvg(descriptor);
+  return { catalog, descriptor, topology, nonGameSvg };
 }

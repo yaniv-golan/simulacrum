@@ -7,11 +7,23 @@ import {
 } from "../src/model/component-geometry-contract.js";
 import { componentMesh } from "../src/presentation/component-mesh-factory.js";
 import { disposeObject3D } from "../src/presentation/render-resources.js";
+import { componentAppearanceContract } from "../src/presentation/component-appearance-library.js";
+import { COMPONENT_APPEARANCE_MATRIX_V1 } from "./fixtures/component-appearance-matrix.js";
 
 const ACCEPTANCE = Object.freeze({
-  beam: { kinds: ["rounded-box-v1"], identity: "rounded-structural" },
-  plate: { kinds: ["rounded-box-v1"], identity: "rounded-structural" },
-  cargo: { kinds: ["rounded-box-v1"], decorations: ["recessed-fasteners-v1"] },
+  beam: {
+    kinds: ["rounded-box-v1"],
+    productDecision: "rounded-structural-extrusion-v1",
+  },
+  plate: {
+    kinds: ["rounded-box-v1"],
+    productDecision: "rounded-sheet-stock-v1",
+  },
+  cargo: {
+    kinds: ["rounded-box-v1"],
+    productDecision: "sealed-cargo-case-v1",
+    decorations: ["recessed-fasteners-v1"],
+  },
   nosecone: { kinds: ["cone-v1"] },
   heatshield: { kinds: ["cone-v1"] },
   fin: { kinds: ["extruded-profile-v1"] },
@@ -22,7 +34,11 @@ const ACCEPTANCE = Object.freeze({
   motor: { kinds: ["cylinder-v1"], features: ["shaft"] },
   rotor: { kinds: ["cylinder-v1", "extruded-profile-v1"], minimumBodies: 3 },
   hinge: { kinds: ["cylinder-v1"], minimumBodies: 3 },
-  lever: { kinds: ["rounded-box-v1"], decorations: ["recessed-fasteners-v1"] },
+  lever: {
+    kinds: ["rounded-box-v1"],
+    productDecision: "rounded-control-bar-v1",
+    decorations: ["recessed-fasteners-v1"],
+  },
   spring: { kinds: ["helical-spring-v1"], deformed: true },
   rope: { kinds: [], runtime: true },
   damper: { kinds: ["cylinder-v1"], minimumBodies: 6, deformed: true },
@@ -46,40 +62,61 @@ const ACCEPTANCE = Object.freeze({
     decorations: ["tire-sidewall-rings-v1"],
   },
   aircompressor: {
-    kinds: ["rounded-box-v1"],
+    kinds: ["rounded-box-v1", "cylinder-v1"],
+    minimumBodies: 2,
     decorations: ["recessed-fasteners-v1", "enclosure-vents-v1"],
   },
   airreservoir: { kinds: ["cylinder-v1"], features: ["air-neck"] },
   pneumaticvalve: {
-    kinds: ["rounded-box-v1"],
+    kinds: ["rounded-box-v1", "cylinder-v1"],
+    minimumBodies: 3,
     decorations: ["recessed-fasteners-v1", "enclosure-vents-v1"],
   },
   computer: {
     kinds: ["rounded-box-v1"],
+    productDecision: "sealed-compute-enclosure-v1",
     decorations: ["recessed-fasteners-v1", "enclosure-vents-v1"],
   },
   receiver: {
     kinds: ["cylinder-v1"],
+    minimumBodies: 2,
     decorations: ["equipment-label-plate-v1"],
   },
   navsensor: {
-    kinds: ["cylinder-v1"],
+    kinds: ["cylinder-v1", "cone-v1"],
+    minimumBodies: 2,
     decorations: ["equipment-label-plate-v1"],
   },
   rangesensor: { kinds: ["cylinder-v1"], minimumBodies: 2 },
-  sensor: { kinds: ["cylinder-v1"] },
-  imu: { kinds: ["cylinder-v1"], decorations: ["equipment-label-plate-v1"] },
-  contactsensor: { kinds: ["cylinder-v1"] },
-  thermalprobe: { kinds: ["cylinder-v1"] },
+  sensor: {
+    kinds: ["cylinder-v1"],
+    minimumBodies: 2,
+    features: ["encoder-shaft"],
+  },
+  imu: {
+    kinds: ["rounded-box-v1"],
+    productDecision: "calibrated-square-instrument-v1",
+    decorations: ["equipment-label-plate-v1"],
+  },
+  contactsensor: {
+    kinds: ["rounded-box-v1", "cylinder-v1"],
+    minimumBodies: 2,
+  },
+  thermalprobe: {
+    kinds: ["cylinder-v1", "cone-v1"],
+    minimumBodies: 3,
+  },
   pressureprobe: { kinds: ["cylinder-v1", "cone-v1"], minimumBodies: 2 },
   tirepressureprobe: {
     kinds: ["rounded-box-v1"],
+    productDecision: "sealed-ctis-controller-v1",
     decorations: ["recessed-fasteners-v1", "equipment-label-plate-v1"],
   },
-  loadcell: { kinds: ["cylinder-v1"] },
-  gyro: { kinds: ["cylinder-v1"] },
+  loadcell: { kinds: ["cylinder-v1"], minimumBodies: 3 },
+  gyro: { kinds: ["cylinder-v1"], minimumBodies: 2 },
   battery: {
     kinds: ["rounded-box-v1"],
+    productDecision: "sealed-battery-case-v1",
     decorations: ["recessed-fasteners-v1", "enclosure-vents-v1"],
   },
   propellanttank: {
@@ -88,6 +125,7 @@ const ACCEPTANCE = Object.freeze({
   },
   powerbus: {
     kinds: ["rounded-box-v1"],
+    productDecision: "sealed-distribution-enclosure-v1",
     decorations: ["recessed-fasteners-v1", "enclosure-vents-v1"],
   },
   headlight: {
@@ -103,6 +141,8 @@ assert.deepEqual(
   Object.keys(TYPES).sort(),
   "the visual acceptance matrix is not 42/42 current catalog types",
 );
+
+const observedAppearanceRegions = new Set();
 
 for (const [type, requirement] of Object.entries(ACCEPTANCE)) {
   const descriptor = resolveComponentGeometryContractForType(type),
@@ -121,6 +161,17 @@ for (const [type, requirement] of Object.entries(ACCEPTANCE)) {
     Boolean(requirement.deformed),
     `${type} deformation classification disagrees with acceptance`,
   );
+  if (
+    descriptor.bodyPrimitives.length === 1 &&
+    ["box-v1", "rounded-box-v1"].includes(
+      descriptor.bodyPrimitives[0].geometry.kind,
+    )
+  )
+    assert.match(
+      requirement.productDecision || "",
+      /-v1$/,
+      `${type} retained a one-box silhouette without an explicit product decision`,
+    );
   assert.equal(
     descriptor.geometryClass === "runtime-flexible-v1",
     Boolean(requirement.runtime),
@@ -131,6 +182,57 @@ for (const [type, requirement] of Object.entries(ACCEPTANCE)) {
       descriptor.physicalFeatures.some(({ id }) => id === featureId),
       `${type} lost canonical physical feature ${featureId}`,
     );
+
+  const appearanceRegions = [
+    ...descriptor.bodyPrimitives.map((primitive) => ({
+      projection: "body",
+      id: primitive.id,
+      materialKey: primitive.materialKey,
+      semanticKey: primitive.semanticKey || null,
+      role: null,
+    })),
+    ...descriptor.physicalFeatures.map((feature) => ({
+      projection: "feature",
+      id: feature.id,
+      materialKey: feature.materialKey,
+      semanticKey: null,
+      role: feature.role || null,
+    })),
+    ...(descriptor.runtimeGeometryContract
+      ? [
+          {
+            projection: "runtime",
+            id: descriptor.runtimeGeometryContract.styleKey,
+            materialKey: descriptor.runtimeGeometryContract.materialKey,
+            semanticKey: descriptor.runtimeGeometryContract.styleKey,
+            role: "runtime",
+          },
+        ]
+      : []),
+  ];
+  for (const region of appearanceRegions) {
+    const key = `${type}/${region.projection}/${region.id}`,
+      aerothermal = descriptor.aerothermal?.material?.ablative === true,
+      contract = componentAppearanceContract({
+        materialKey: region.materialKey,
+        semanticKey: region.semanticKey,
+        role: region.role,
+        aerothermal: descriptor.aerothermal,
+      });
+    observedAppearanceRegions.add(key);
+    assert.deepEqual(
+      [
+        region.materialKey,
+        region.semanticKey,
+        region.role,
+        aerothermal,
+        contract.profile,
+        contract.customColorPolicy,
+      ],
+      COMPONENT_APPEARANCE_MATRIX_V1[key],
+      `${key} diverged from the frozen appearance matrix`,
+    );
+  }
 
   const projectedFeatures = physicalFeaturePrimitivesForDescriptor(descriptor);
   assert.equal(projectedFeatures.length, descriptor.physicalFeatures.length);
@@ -245,6 +347,12 @@ for (const [type, requirement] of Object.entries(ACCEPTANCE)) {
   }
   disposeObject3D(mesh, { remove: false });
 }
+
+assert.deepEqual(
+  [...observedAppearanceRegions].sort(),
+  Object.keys(COMPONENT_APPEARANCE_MATRIX_V1).sort(),
+  "the frozen appearance matrix does not cover every canonical region",
+);
 
 const wheelDescriptor = resolveComponentGeometryContractForType("wheel"),
   wheelTire = wheelDescriptor.bodyPrimitives.find(

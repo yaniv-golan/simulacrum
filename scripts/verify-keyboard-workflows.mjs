@@ -1,5 +1,6 @@
 import { assert, assertNoErrors, conclude } from "./lib/assert.mjs";
 import { createBrowserTest } from "./lib/browser-test.mjs";
+import { assertCanonicalVisualProductState } from "./lib/component-visual-product-assertions.mjs";
 
 const { browser, page, errors, baseUrl } = await createBrowserTest({
     viewport: { width: 1280, height: 800 },
@@ -185,6 +186,7 @@ assert.equal(
   true,
   "Shift+X did not activate Exploded View",
 );
+await assertCanonicalVisualProductState(page, "exploded view");
 await page.keyboard.press("Shift+KeyX");
 assert.equal(
   await page.evaluate(
@@ -193,6 +195,7 @@ assert.equal(
   false,
   "Shift+X did not collapse Exploded View",
 );
+await assertCanonicalVisualProductState(page, "collapsed exploded view");
 
 await page.locator("#tools-btn").focus();
 await page.keyboard.press("ArrowDown");

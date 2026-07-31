@@ -4,6 +4,8 @@ import {
 } from "./test-site-shapes.js";
 import { deepFreeze, DomainValidationError } from "./primitives.js";
 
+const compiledByFrozenDefinition = new WeakMap();
+
 function seededRandom(seedValue) {
   let seed = seedValue >>> 0;
   return () => {
@@ -70,6 +72,10 @@ function exclusionsFor(rule, testSite) {
 
 /** Deterministically expands strict vegetation rules into immutable instances. */
 export function compileTestSiteVegetation(testSite) {
+  const cached = Object.isFrozen(testSite)
+    ? compiledByFrozenDefinition.get(testSite)
+    : null;
+  if (cached) return cached;
   const instances = [];
   for (const rule of testSite.vegetationRules) {
     const random = seededRandom(rule.seed),
@@ -156,7 +162,10 @@ export function compileTestSiteVegetation(testSite) {
       );
     instances.push(...accepted);
   }
-  return deepFreeze(instances);
+  const compiled = deepFreeze(instances);
+  if (Object.isFrozen(testSite))
+    compiledByFrozenDefinition.set(testSite, compiled);
+  return compiled;
 }
 
 /** Projects collidable vegetation into the same explicit fixture contract. */

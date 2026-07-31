@@ -2,6 +2,7 @@ import { assert, assertNoErrors, conclude } from "./lib/assert.mjs";
 import { createBrowserTest } from "./lib/browser-test.mjs";
 import fs from "node:fs";
 import { decodeFailureEvidenceOrThrow } from "../src/model/failure-evidence-artifacts.js";
+import { assertCanonicalVisualProductState } from "./lib/component-visual-product-assertions.mjs";
 
 const { browser, page, errors, baseUrl } = await createBrowserTest();
 await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
@@ -49,6 +50,7 @@ const failed = JSON.parse(
   reportText = await page.locator(".failure-report-body").innerText(),
   evidenceText = await page.locator(".failure-evidence-body").innerText(),
   panelVisible = await page.locator(".failure-lab").isVisible();
+await assertCanonicalVisualProductState(page, "completed failure state");
 let exportedEvidence = null;
 if (failed.failureAnalysis.evidence?.trigger) {
   const downloadPromise = page.waitForEvent("download", { timeout: 30_000 });
@@ -95,6 +97,7 @@ await page.waitForTimeout(60);
 const replayEffect = JSON.parse(
   await page.evaluate(() => window.render_game_to_text()),
 );
+await assertCanonicalVisualProductState(page, "failure replay frame");
 await page.screenshot({ path: "artifacts/failure-effects-replay.png" });
 await page.locator("#replay-scrubber").evaluate((input) => {
   input.value = "0";
@@ -108,6 +111,7 @@ await page.click("#return-live");
 const returnedLive = JSON.parse(
   await page.evaluate(() => window.render_game_to_text()),
 );
+await assertCanonicalVisualProductState(page, "return from failure replay");
 await page.click("#close-failure-lab");
 const remoteRestoredAfterClose = await page
   .locator(".remote-console")

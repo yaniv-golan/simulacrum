@@ -32,12 +32,11 @@ export function installDebugReadModelFeature({
   testingPlayground,
   view,
 }) {
-  function controllerTelemetry() {
-    return telemetry().systems?.controllers || controller.runtimeTelemetry();
+  function controllerTelemetry(frame) {
+    return frame.systems?.controllers || controller.runtimeTelemetry();
   }
-  function environmentReadModel() {
-    const frame = telemetry(),
-      focus = state.running ? machine.root.position : editor.cameraTarget;
+  function environmentReadModel(frame) {
+    const focus = state.running ? machine.root.position : editor.cameraTarget;
     return buildEnvironmentDebugReadModel({
       focus: { x: focus.x, z: focus.z },
       origin: {
@@ -62,9 +61,8 @@ export function installDebugReadModelFeature({
       reflectionEnvironment: environment.reflectionEnvironment(),
     });
   }
-  function editorReadModel() {
-    const frame = telemetry(),
-      activeSession = session(),
+  function editorReadModel(frame) {
+    const activeSession = session(),
       mechanismLab = editor.mechanismLab();
     return buildEditorDebugReadModel({
       mode: state.editor.mode,
@@ -136,9 +134,8 @@ export function installDebugReadModelFeature({
       componentInspection: editor.inspection(),
     });
   }
-  function machineReadModel() {
-    const frame = telemetry(),
-      wheelCapable = machine.hasWheels(),
+  function machineReadModel(frame) {
+    const wheelCapable = machine.hasWheels(),
       projection = projectMachineTelemetry(
         frame,
         state.parts,
@@ -162,12 +159,12 @@ export function installDebugReadModelFeature({
       directControl: machine.directControl(machine.platformReceivesShadows()),
     });
   }
-  function assemblyReadModel() {
+  function assemblyReadModel(frame) {
     return buildAssemblyDebugReadModel({
       parts: state.parts.map((part) => ({
         ...part,
         measuredRpm:
-          part.type === "sensor" ? sensorRpm(telemetry(), part.id) : undefined,
+          part.type === "sensor" ? sensorRpm(frame, part.id) : undefined,
         runtimeEnergy:
           part.type === "battery"
             ? assembly.currentPart(part.id)?.energyWh
@@ -175,7 +172,7 @@ export function installDebugReadModelFeature({
         powered:
           part.type === "motor"
             ? state.running
-              ? telemetry().systems?.power?.poweredPartIds?.includes(part.id)
+              ? frame.systems?.power?.poweredPartIds?.includes(part.id)
               : assembly.powered(part)
             : undefined,
       })),
@@ -185,9 +182,9 @@ export function installDebugReadModelFeature({
       })),
     });
   }
-  function controllerReadModel() {
+  function controllerReadModel(frame) {
     const active = controller.active() || null,
-      runtime = controllerTelemetry(),
+      runtime = controllerTelemetry(frame),
       controls = state.remoteControls[state.remoteProfile] || [],
       profile = state.remoteProfiles[state.remoteProfile];
     return buildControllerDebugReadModel({
@@ -213,25 +210,28 @@ export function installDebugReadModelFeature({
   }
   installJsonTextReadModel(
     "render_game_to_text",
-    () => ({
-      coordinateSystem: workshopAxes.workshopCoordinateSystemSummary(),
-      coordinateFrames: workshopAxes.workshopCoordinateFrames(),
-      environment: environmentReadModel(),
-      testingPlayground: testingPlayground.snapshot(),
-      ...editorReadModel(),
-      demo: machineReadModel(),
-      ...assemblyReadModel(),
-      ...controllerReadModel(),
-      pneumatics: telemetry().systems?.pneumatics || null,
-      flexibleLines: flexibleLineDebugReadModel({
-        parts: state.parts,
-        connections: assembly.currentConnections(),
-        telemetry: telemetry(),
-        running: state.running,
-      }),
-      mission: view.mission(),
-      presentation: view.presentation(),
-    }),
+    () => {
+      const frame = telemetry();
+      return {
+        coordinateSystem: workshopAxes.workshopCoordinateSystemSummary(),
+        coordinateFrames: workshopAxes.workshopCoordinateFrames(),
+        environment: environmentReadModel(frame),
+        testingPlayground: testingPlayground.snapshot(),
+        ...editorReadModel(frame),
+        demo: machineReadModel(frame),
+        ...assemblyReadModel(frame),
+        ...controllerReadModel(frame),
+        pneumatics: frame.systems?.pneumatics || null,
+        flexibleLines: flexibleLineDebugReadModel({
+          parts: state.parts,
+          connections: assembly.currentConnections(),
+          telemetry: frame,
+          running: state.running,
+        }),
+        mission: view.mission(),
+        presentation: view.presentation(),
+      };
+    },
     target,
   );
   installJsonTextReadModel(

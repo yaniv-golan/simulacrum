@@ -3,6 +3,11 @@ import path from "node:path";
 import { assert } from "./lib/assert.mjs";
 import { createBrowserTest } from "./lib/browser-test.mjs";
 import { resetBrowserStorageForTest } from "./lib/browser-storage-fixture.mjs";
+import { assertCanonicalVisualProductState } from "./lib/component-visual-product-assertions.mjs";
+import {
+  captureComponentVisualEvidenceIdentity,
+  writeComponentVisualEvidenceManifest,
+} from "./lib/component-visual-evidence.mjs";
 
 const outputDirectory = path.resolve(
     process.env.COMPONENT_VISUAL_CAPTURE_DIR ||
@@ -15,7 +20,8 @@ const outputDirectory = path.resolve(
     },
   });
 
-const click = (selector) => page.locator(selector).dispatchEvent("click"),
+const artifacts = new Set(),
+  click = (selector) => page.locator(selector).dispatchEvent("click"),
   advance = (milliseconds) =>
     page.evaluate((duration) => window.advanceTime(duration), milliseconds),
   canvas = () => page.locator("#stage canvas"),
@@ -52,10 +58,12 @@ const click = (selector) => page.locator(selector).dispatchEvent("click"),
       path.join(outputDirectory, `${name}.png`),
       Buffer.from(pngDataUrl.split(",", 2)[1], "base64"),
     );
+    artifacts.add(`${name}.png`);
     await writeFile(
       path.join(outputDirectory, `${name}.json`),
       `${JSON.stringify(snapshot, null, 2)}\n`,
     );
+    artifacts.add(`${name}.json`);
     return { snapshot, visualGeometry };
   };
 
@@ -89,6 +97,18 @@ const layouts = [
       control.value = String(value);
       control.dispatchEvent(new Event("input", { bubbles: true }));
     }, hour);
+const evidence = await captureComponentVisualEvidenceIdentity({
+  browser,
+  page,
+  evidenceClass: "browser-product-demo-visual-oracle",
+  captureMatrix: {
+    layouts,
+    demos: demos.map(({ id }) => id),
+    lighting: ["day", "night"],
+    views: ["overview", "mechanism-detail", "running"],
+    detailQuality: "auto",
+  },
+});
 let captureCount = 0,
   cartPartCount = 0;
 
@@ -116,6 +136,10 @@ for (const layout of layouts) {
     await advance(250);
     const { snapshot: overview, visualGeometry } = await capture(
       `${demo.id}-${layout.id}-day-overview`,
+    );
+    await assertCanonicalVisualProductState(
+      page,
+      `${demo.id} ${layout.id} daylight overview`,
     );
     captureCount++;
     assert.ok(overview.parts.some(({ type }) => type === demo.targetType));
@@ -148,17 +172,39 @@ for (const layout of layouts) {
       .dispatchEvent("click");
     await page.locator("#isolate-selection").dispatchEvent("click");
     await page.locator("#frame-selection").dispatchEvent("click");
-    await page.waitForTimeout(150);
+    await page.waitForFunction(
+      () => {
+        const camera = JSON.parse(window.render_game_to_text()).camera;
+        return (
+          Math.abs(camera.renderedDistance - camera.distance) <= 0.05 &&
+          camera.trackingError <= 0.05
+        );
+      },
+      null,
+      { timeout: 10_000 },
+    );
     const { snapshot: detail, visualGeometry: detailedGeometry } =
       await capture(
         demo.id === "cart" && layout.id === "laptop"
           ? "spring-laptop-day-detail"
           : `${demo.id}-${layout.id}-day-${demo.targetType}-detail`,
       );
+    await assertCanonicalVisualProductState(
+      page,
+      `${demo.id} ${layout.id} isolated detail`,
+    );
     captureCount++;
     assert.deepEqual(detail.presentation.selectionVisibility.isolatedPartIds, [
       targetId,
     ]);
+    assert.ok(
+      Math.abs(detail.camera.renderedDistance - detail.camera.distance) <= 0.05,
+      `${demo.id} ${layout.id} detail camera did not settle to its framed distance`,
+    );
+    assert.ok(
+      detail.camera.trackingError <= 0.05,
+      `${demo.id} ${layout.id} detail camera did not settle on the selected part`,
+    );
     const detailedVisual = detailedGeometry.find(({ id }) => id === targetId);
     const selectedDetail = detail.presentation.componentDetail.selected.find(
       ({ id }) => id === targetId,
@@ -179,6 +225,10 @@ for (const layout of layouts) {
     const { snapshot: running } = await capture(
       `${demo.id}-${layout.id}-night-running`,
     );
+    await assertCanonicalVisualProductState(
+      page,
+      `${demo.id} ${layout.id} night run`,
+    );
     captureCount++;
     assert.equal(running.running, true);
     await click("#run-btn");
@@ -192,6 +242,12 @@ await writeFile(
   path.join(outputDirectory, "browser-errors.json"),
   `${JSON.stringify(errors, null, 2)}\n`,
 );
+artifacts.add("browser-errors.json");
+await writeComponentVisualEvidenceManifest({
+  outputDirectory,
+  evidence,
+  artifacts,
+});
 await browser.close();
 assert.deepEqual(errors, [], `browser errors: ${errors.join("\n")}`);
 

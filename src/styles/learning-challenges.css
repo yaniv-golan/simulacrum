@@ -1085,6 +1085,24 @@
   font-size: 8px;
   letter-spacing: 0.16em;
 }
+.component-construction .component-finish-color {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+  color: #8aa49f;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+}
+.component-construction .component-finish-color input {
+  width: 42px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid rgba(115, 173, 165, 0.35);
+  border-radius: 3px;
+  background: #0b1d1e;
+}
 .component-construction .assembly-role-field {
   display: grid;
   gap: 6px;

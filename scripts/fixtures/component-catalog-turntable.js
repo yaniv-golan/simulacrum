@@ -5,6 +5,7 @@ import { componentMesh } from "../../src/presentation/component-mesh-factory.js"
 import { disposeObject3D } from "../../src/presentation/render-resources.js";
 
 export const catalogTypes = Object.freeze(Object.keys(TYPES).sort());
+export const CATALOG_CAMERA_DISTANCE_M = 6;
 
 export function installComponentCatalogTurntable() {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false }),
@@ -34,17 +35,16 @@ export function installComponentCatalogTurntable() {
 
   function render(type, lighting) {
     if (current) disposeObject3D(current);
-    current = componentMesh(type, undefined, "hero");
+    current = componentMesh(type, undefined, "standard");
     current.rotation.set(-0.22, 0.62, 0);
     current.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(current),
       center = bounds.getCenter(new THREE.Vector3()),
-      size = bounds.getSize(new THREE.Vector3()),
-      radius = Math.max(0.05, size.length() / 2);
+      size = bounds.getSize(new THREE.Vector3());
     current.position.sub(center);
-    camera.position.set(0, radius * 0.12, radius * 3.6);
-    camera.near = Math.max(0.001, radius / 100);
-    camera.far = radius * 20;
+    camera.position.set(0, 0.25, CATALOG_CAMERA_DISTANCE_M);
+    camera.near = 0.01;
+    camera.far = 100;
     camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
     if (lighting === "night") {
@@ -63,7 +63,8 @@ export function installComponentCatalogTurntable() {
     return {
       type,
       lighting,
-      detailTier: "hero",
+      detailTier: "standard",
+      cameraDistanceM: CATALOG_CAMERA_DISTANCE_M,
       renderedSizeM: size.toArray(),
       descriptor: structuredClone(current.userData.geometryDescriptor),
       renderer: {
@@ -76,8 +77,50 @@ export function installComponentCatalogTurntable() {
     };
   }
 
+  function renderGearEngagement(lighting) {
+    if (current) disposeObject3D(current);
+    const pinion = componentMesh("gear12", undefined, "standard"),
+      wheel = componentMesh("gear24", undefined, "standard"),
+      pinionGeometry = pinion.userData.geometryDescriptor.bodyPrimitives[0].geometry,
+      wheelGeometry = wheel.userData.geometryDescriptor.bodyPrimitives[0].geometry,
+      centerDistanceM = pinionGeometry.pitchRadiusM + wheelGeometry.pitchRadiusM;
+    current = new THREE.Group();
+    pinion.position.x = -centerDistanceM / 2;
+    wheel.position.x = centerDistanceM / 2;
+    current.add(pinion, wheel);
+    camera.position.set(0, 0, CATALOG_CAMERA_DISTANCE_M);
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+    if (lighting === "night") {
+      scene.background = new THREE.Color(0x071316);
+      hemisphere.intensity = 0.55;
+      key.intensity = 2.2;
+      fill.intensity = 0.5;
+    } else {
+      scene.background = new THREE.Color(0x9baba5);
+      hemisphere.intensity = 2.4;
+      key.intensity = 3.2;
+      fill.intensity = 1.4;
+    }
+    scene.add(current);
+    renderer.render(scene, camera);
+    return {
+      lighting,
+      detailTier: "standard",
+      cameraDistanceM: CATALOG_CAMERA_DISTANCE_M,
+      centerDistanceM,
+      pinion: structuredClone(pinionGeometry),
+      wheel: structuredClone(wheelGeometry),
+      renderer: {
+        calls: renderer.info.render.calls,
+        triangles: renderer.info.render.triangles,
+      },
+    };
+  }
+
   function identity() {
-    const gl = renderer.getContext();
+    const gl = renderer.getContext(),
+      debug = gl.getExtension("WEBGL_debug_renderer_info");
     return {
       userAgent: navigator.userAgent,
       devicePixelRatio: window.devicePixelRatio,
@@ -85,6 +128,17 @@ export function installComponentCatalogTurntable() {
       webglVersion: gl.getParameter(gl.VERSION),
       webglRenderer: gl.getParameter(gl.RENDERER),
       webglVendor: gl.getParameter(gl.VENDOR),
+      webglUnmaskedRenderer: debug
+        ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL)
+        : null,
+      webglUnmaskedVendor: debug
+        ? gl.getParameter(debug.UNMASKED_VENDOR_WEBGL)
+        : null,
+      colorSpace: renderer.outputColorSpace,
+      toneMapping: renderer.toneMapping,
+      toneMappingExposure: renderer.toneMappingExposure,
+      detailTier: "standard",
+      cameraDistanceM: CATALOG_CAMERA_DISTANCE_M,
     };
   }
 
@@ -94,5 +148,11 @@ export function installComponentCatalogTurntable() {
     renderer.domElement.remove();
   }
 
-  return { canvas: renderer.domElement, dispose, identity, render };
+  return {
+    canvas: renderer.domElement,
+    dispose,
+    identity,
+    render,
+    renderGearEngagement,
+  };
 }

@@ -4,6 +4,7 @@ import { createBrowserTest } from "./lib/browser-test.mjs";
 import { authoredComponentFields } from "../src/model/component-authoring.js";
 import { createSharePackage } from "../src/model/share-packages.js";
 import { DEFAULT_VISUAL_PROGRAM } from "../src/model/visual-logic.js";
+import { assertCanonicalVisualProductState } from "./lib/component-visual-product-assertions.mjs";
 
 const { browser, page, errors, baseUrl } = await createBrowserTest();
 await fs.mkdir("artifacts", { recursive: true });
@@ -254,6 +255,15 @@ try {
     2,
     "Disconnect did not preserve the selected component",
   );
+  await page.locator('[data-port-control="RIGHT"]').click();
+  await page.locator('[data-port-action="connect"][data-port="RIGHT"]').click();
+  await page.locator('[data-outliner-part="1"]').click();
+  await page.locator('[data-port-control="AXLE"]').click();
+  await page.locator('[data-port-action="connect"][data-port="AXLE"]').click();
+  await page.waitForFunction(
+    () => JSON.parse(window.render_game_to_text()).connections.length === 1,
+  );
+  await assertCanonicalVisualProductState(page, "interactive port connection");
 
   await importFixture(fixture({ a: 2, portA: "LEFT", b: 1, portB: "AXLE" }));
   assert.equal(

@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "ignorePatterns": [
+    "/artifacts",
+    "/coverage",
+    "/dist",
+    "/output",
+    "/packages/core/dist",
+    "/temp"
+  ],
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node scripts/verify-component-visual-primitives.mjs && node scripts/verify-component-geometry-contract.mjs && node scripts/verify-component-visual-acceptance.mjs && node scripts/verify-geometry-covariance.mjs"
+  },
+  "mutate": ["src/model/component-geometry-decisions.js"],
+  "coverageAnalysis": "off",
+  "concurrency": 4,
+  "timeoutMS": 15000,
+  "tempDirName": "artifacts/stryker-component-geometry-critical",
+  "reporters": ["clear-text", "json"],
+  "jsonReporter": {
+    "fileName": "artifacts/component-geometry-critical-mutation.json"
+  },
+  "thresholds": {
+    "high": 100,
+    "low": 100,
+    "break": 100
+  }
+}

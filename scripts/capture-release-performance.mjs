@@ -1,11 +1,11 @@
 import { execFileSync } from "node:child_process";
-import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { gzipSync } from "node:zlib";
 import { startTestServer } from "./lib/test-server.mjs";
 import { installWebGLResourceTracker } from "./lib/webgl-resource-tracker.mjs";
+import { captureWorkspaceIdentity } from "./lib/workspace-identity.mjs";
 import { componentDefaults } from "../src/model/component-resolver.js";
 import { createSharePackage } from "../src/model/share-packages.js";
 
@@ -28,41 +28,6 @@ const outputPath = path.resolve(
 const warmupRuns = 5;
 const measuredRuns = 9;
 const framesPerRun = 3;
-const command = (args, cwd = sourceRoot) =>
-  execFileSync("git", args, {
-    cwd,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-  }).trim();
-const workspaceChecksum = async (cwd, excludes = []) => {
-  const hash = crypto.createHash("sha256");
-  hash.update(
-    command(
-      [
-        "diff",
-        "--binary",
-        "HEAD",
-        "--",
-        ".",
-        ...excludes.map((value) => `:(exclude)${value}`),
-      ],
-      cwd,
-    ),
-  );
-  const untracked = command(
-    ["ls-files", "--others", "--exclude-standard", "-z"],
-    cwd,
-  )
-    .split("\0")
-    .filter(Boolean)
-    .filter((value) => !excludes.includes(value))
-    .sort();
-  for (const relativePath of untracked) {
-    hash.update(`\0${relativePath}\0`);
-    hash.update(await fs.readFile(path.join(cwd, relativePath)));
-  }
-  return hash.digest("hex");
-};
 const median = (values) => {
   const ordered = [...values].sort((left, right) => left - right);
   return ordered[Math.floor(ordered.length / 2)];
@@ -81,17 +46,19 @@ const slope = (values) => {
   const denominator = points.reduce((sum, [x]) => sum + (x - meanX) ** 2, 0);
   return denominator ? numerator / denominator : 0;
 };
-const sourceChecksumExcludes = sourceRoot === root ? [] : ["node_modules"];
-const sourceIdentity = {
-  commit: command(["rev-parse", "HEAD"]),
-  dirtySha256: await workspaceChecksum(sourceRoot, sourceChecksumExcludes),
-  checksumExcludes: sourceChecksumExcludes,
-};
-const harnessIdentity = {
-  commit: command(["rev-parse", "HEAD"], root),
-  dirtySha256: await workspaceChecksum(root, [path.relative(root, outputPath)]),
-  checksumExcludes: [path.relative(root, outputPath)],
-};
+const sourceChecksumExcludes =
+    sourceRoot === root
+      ? ["artifacts", "dist", "packages/core/dist"]
+      : ["node_modules"],
+  sourceIdentity = await captureWorkspaceIdentity(
+    sourceRoot,
+    sourceChecksumExcludes,
+  ),
+  harnessIdentity = await captureWorkspaceIdentity(root, [
+    "artifacts",
+    "dist",
+    "packages/core/dist",
+  ]);
 
 await fs.rm(path.join(sourceRoot, "dist"), { recursive: true, force: true });
 execFileSync(

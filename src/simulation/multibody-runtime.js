@@ -60,6 +60,7 @@ const plainQuaternion = (value) => ({
   z: value.z,
   w: value.w,
 });
+
 const frameValuesEqual = (left, right, tolerance = 1e-12) =>
   Array.isArray(left) &&
   Array.isArray(right) &&
@@ -2656,7 +2657,11 @@ export class MultibodyRuntime {
     for (const entry of this.constraintEntries.filter(
       (candidate) =>
         candidate.active !== false &&
-        ["axial-force-v1", "axial-actuator-v1"].includes(candidate.kind),
+        [
+          "axial-force-v1",
+          "axial-actuator-v1",
+          "prismatic-coordinate-v1",
+        ].includes(candidate.kind),
     )) {
       const bodyA = this.bodyByPart.get(entry.descriptor.a),
         bodyB = this.bodyByPart.get(entry.descriptor.b),
@@ -2665,6 +2670,12 @@ export class MultibodyRuntime {
           bodyB,
           entry.localAnchorA,
           entry.localAnchorB,
+          entry.kind === "prismatic-coordinate-v1"
+            ? entry.constraint.axisWorld()
+            : null,
+          entry.kind === "prismatic-coordinate-v1"
+            ? entry.descriptor.coordinateOffsetM
+            : 0,
         ),
         geometry = this.geometryByPart.get(entry.descriptor.sourcePartId),
         coordinate = geometry.deformationContract.coordinates[0],

@@ -80,10 +80,10 @@ export function installMechanismLab({
     experiment = null,
     restoreResult = null;
 
-  function sessionState() {
+  function sessionState({ includeDigest = true } = {}) {
     const session = getSession(),
       entries = session?.context?.commandBus?.entries?.(),
-      state = session?.exportState?.();
+      state = includeDigest ? session?.exportState?.() : null;
     return {
       mode: !session ? "stopped" : commands.paused() ? "paused" : "running",
       tick: session?.context?.clock?.tick || 0,
@@ -356,9 +356,10 @@ export function installMechanismLab({
       }
     },
     snapshot() {
+      const open = !panel.classList.contains("hidden");
       return {
-        open: !panel.classList.contains("hidden"),
-        session: sessionState(),
+        open,
+        session: sessionState({ includeDigest: open }),
         channelCount: channels.length,
         pinnedChannelIds: [...pinnedChannelIds],
         baseline: baseline

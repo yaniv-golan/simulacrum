@@ -544,6 +544,11 @@ assert.equal(vegetationFixtures.length, 280);
 assert.ok(Object.isFrozen(vegetation));
 assert.ok(Object.isFrozen(vegetation[0].pose.positionM));
 assert.equal(
+  compileTestSiteVegetation(WORKSHOP_TEST_SITE),
+  vegetation,
+  "immutable test-site vegetation was recompiled instead of reused",
+);
+assert.equal(
   WORKSHOP_TEST_SITE.staticFixtures.find(({ id }) => id === "water-bridge")
     .collisionGeometry.children.length,
   7,

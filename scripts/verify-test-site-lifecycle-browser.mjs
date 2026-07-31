@@ -3,7 +3,7 @@ import { createBrowserTest } from "./lib/browser-test.mjs";
 import { componentDefaults } from "../src/model/component-resolver.js";
 import { createSharePackage } from "../src/model/share-packages.js";
 
-const MAX_STABLE_GEOMETRIES = 270,
+const MAX_STABLE_GEOMETRIES = 280,
   largeParts = Array.from({ length: 129 }, (_, index) => ({
     id: index + 1,
     type: "beam",

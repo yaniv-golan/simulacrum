@@ -22,6 +22,10 @@ assert.deepEqual(component.descriptor.bodyBoundsPartM, {
 });
 assert.deepEqual(Object.keys(component.descriptor.portFrames), ["MOUNT"]);
 assert.equal(component.topology.bodies[0].mass, 12);
+assert.match(
+  component.nonGameSvg,
+  /<rect data-primitive="body"[^>]*width="80"[^>]*height="50"/,
+);
 
 const ports = portBehaviorExample();
 assert.equal(ports.source.direction, "source");
