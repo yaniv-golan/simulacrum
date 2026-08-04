@@ -195,9 +195,17 @@ header {
 .inspector-content {
   flex: 1 1 auto;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.inspector-scroll-body {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
-  padding-bottom: 64px;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
 }
 .catalog-head {
   padding: 18px 17px 12px;
@@ -775,15 +783,17 @@ header {
   color: #63817c;
 }
 .inspector-actions {
-  position: absolute;
-  bottom: 16px;
-  left: 18px;
-  right: 18px;
+  flex: 0 0 auto;
   display: flex;
   gap: 7px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -10px 20px #020b0b38;
 }
 .inspector-actions button {
   flex: 1;
+  min-height: 44px;
   background: #102426;
   border: 1px solid #304a48;
   color: #86a29e;
@@ -798,6 +808,10 @@ header {
 }
 .inspector-actions .danger {
   color: #d8897e;
+}
+.inspector-actions button:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 2px;
 }
 .bottom-bar {
   pointer-events: auto;
