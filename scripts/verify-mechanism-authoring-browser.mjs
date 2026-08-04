@@ -79,9 +79,44 @@ try {
       noteFontSize: "9px",
       summaryFontSize: "9px",
     },
+    readInspectorLayout = (scrollRatio) =>
+      page.locator(".inspector-content").evaluate((content, ratio) => {
+        const scrollBody = content.querySelector(".inspector-scroll-body"),
+          actions = content.querySelector(".inspector-actions"),
+          lastContent = scrollBody.lastElementChild,
+          rect = (element) => {
+            const bounds = element.getBoundingClientRect();
+            return {
+              top: bounds.top,
+              right: bounds.right,
+              bottom: bounds.bottom,
+              left: bounds.left,
+              width: bounds.width,
+              height: bounds.height,
+            };
+          },
+          maximumScrollTop = scrollBody.scrollHeight - scrollBody.clientHeight;
+        scrollBody.scrollTop = maximumScrollTop * ratio;
+        return new Promise((resolve) =>
+          requestAnimationFrame(() =>
+            resolve({
+              content: rect(content),
+              scrollBody: rect(scrollBody),
+              actions: rect(actions),
+              actionPosition: getComputedStyle(actions).position,
+              actionButtonHeights: [...actions.querySelectorAll("button")].map(
+                (button) => rect(button).height,
+              ),
+              maximumScrollTop,
+              scrollTop: scrollBody.scrollTop,
+              lastContentBottom: rect(lastContent).bottom,
+            }),
+          ),
+        );
+      }, scrollRatio),
     initialViewport = page.viewportSize();
   for (const [name, viewport] of [
-    ["laptop", { width: 1280, height: 800 }],
+    ["laptop", { width: 1280, height: 720 }],
     ["wide", { width: 1920, height: 1080 }],
   ]) {
     await page.setViewportSize(viewport);
@@ -105,11 +140,58 @@ try {
       typography.collapseButtonRight <= typography.inspectorLeft,
       `Inspector collapse control overlapped panel content at ${name}`,
     );
-    await page.screenshot({
-      path: `artifacts/mechanism-inspector-typography-${name}.png`,
-    });
+    for (const [position, scrollRatio] of [
+      ["top", 0],
+      ["middle", 0.5],
+      ["bottom", 1],
+    ]) {
+      const layout = await readInspectorLayout(scrollRatio);
+      assert.equal(
+        layout.actionPosition,
+        "static",
+        `Inspector actions escaped the in-flow footer at ${name}/${position}`,
+      );
+      assert.ok(
+        layout.maximumScrollTop > 0,
+        `mechanism Inspector fixture did not exercise scrolling at ${name}`,
+      );
+      assert.ok(
+        layout.scrollBody.bottom <= layout.actions.top + 0.5,
+        `Inspector properties ran under the action footer at ${name}/${position}`,
+      );
+      assert.ok(
+        layout.actions.bottom <= layout.content.bottom + 0.5,
+        `Inspector action footer escaped its panel at ${name}/${position}`,
+      );
+      assert.ok(
+        layout.actionButtonHeights.every((height) => height >= 44),
+        `Inspector action target fell below 44px at ${name}/${position}`,
+      );
+      if (position === "bottom")
+        assert.ok(
+          layout.lastContentBottom <= layout.scrollBody.bottom + 0.5,
+          `Inspector's final content cannot clear the footer at ${name}`,
+        );
+      await page.screenshot({
+        path: `artifacts/mechanism-inspector-footer-${name}-${position}.png`,
+      });
+    }
   }
   await page.setViewportSize(initialViewport);
+  await page.locator(".inspector-scroll-body").evaluate((scrollBody) => {
+    const focusable = [
+      ...scrollBody.querySelectorAll(
+        "button:not([disabled]), input:not([disabled]), select:not([disabled]), summary, [tabindex]:not([tabindex='-1'])",
+      ),
+    ].filter((element) => element.getClientRects().length > 0);
+    focusable.at(-1).focus();
+  });
+  await page.keyboard.press("Tab");
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.id),
+    "duplicate-part",
+    "Tab order did not advance from Inspector properties into the action footer",
+  );
   await unitSelect.selectOption("engineering");
   await page.locator(".mechanism-editor details > summary").click();
   const stiffness = page.locator(
