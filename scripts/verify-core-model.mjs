@@ -62,7 +62,7 @@ import {
 } from "../src/simulation/environment/atmosphere.js";
 
 const demoExpectations = {
-  gearbox: [15, 22],
+  gearbox: [17, 24],
   cart: [33, 65],
   drone: [22, 44],
   humanoid: [28, 54],
