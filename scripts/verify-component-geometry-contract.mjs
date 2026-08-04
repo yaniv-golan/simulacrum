@@ -56,6 +56,19 @@ assert.deepEqual(
 assert.deepEqual(hinge.portFrames.BASE.framePart.orientation, [0, 1, 0, 0]);
 assert.deepEqual(hinge.portFrames.ARM.framePart.orientation, [0, 0, 0, 1]);
 
+const bearing = resolveComponentGeometryContractForType("bearing");
+assert.deepEqual(
+  bearing.portFrames.MOUNT.framePart.positionM,
+  [0, -0.29, 0],
+  "pillow-block mount is not on the underside of its housing",
+);
+assert.deepEqual(bearing.portFrames.MOUNT.framePart.orientation, [
+  Math.SQRT1_2,
+  0,
+  0,
+  Math.SQRT1_2,
+]);
+
 for (const [type, networkPorts] of Object.entries({
   battery: ["POWER"],
   computer: ["POWER", "IN A", "IN B", "OUT"],
@@ -411,7 +424,11 @@ assert.ok(
 
 const stockGearbox = builtInDemo("gearbox").blueprint,
   stockPartById = new Map(stockGearbox.parts.map((part) => [part.id, part])),
-  stockPlate = stockGearbox.parts.find((part) => part.type === "plate"),
+  stockPlates = stockGearbox.parts.filter((part) => part.type === "plate"),
+  stockPlate = stockPlates.toSorted(
+    (a, b) => b.scale.x * b.scale.z - a.scale.x * a.scale.z,
+  )[0],
+  stockPedestalFeet = stockPlates.filter(({ id }) => id !== stockPlate.id),
   stockOutputGear = stockGearbox.parts.find((part) => part.type === "gear24"),
   stockOutputAxle = stockGearbox.parts.find((part) => part.type === "axle"),
   stockPlateBounds = projectBoundsToWorld(
@@ -437,25 +454,60 @@ const stockGearbox = builtInDemo("gearbox").blueprint,
     ]),
   );
 assert.ok(
-  stockGearBounds.minimumM[1] - stockPlateBounds.maximumM[1] >= 0.1,
-  "stock 24T gear intersects or visually sinks into its mounting plate",
+  stockGearBounds.minimumM[1] - stockPlateBounds.maximumM[1] >= 0.3,
+  "stock 24T gear lacks visually unambiguous mounting-plate clearance",
+);
+assert.equal(stockPedestalFeet.length, 2);
+assert.deepEqual(
+  stockPedestalFeet.map((part) => part.pos[2]).sort(),
+  stockGearbox.parts
+    .filter((part) => part.type === "bearing")
+    .map((part) => part.pos[2])
+    .sort(),
+  "bearing pedestal feet are not centered beneath both bearing housings",
 );
 assert.deepEqual(
   targetCounts,
   { motor: 2, bearing: 2, sensor: 1 },
   "stock drivetrain lost an explicit structural support load path",
 );
-for (const [support] of stockSupportTargets)
+for (const [support, target] of stockSupportTargets) {
+  const directBaseConnection = stockGearbox.connections.some(
+    ({ a, b, portA, portB }) =>
+      a === stockPlate.id &&
+      b === support.id &&
+      portA === "TOP" &&
+      portB === "A",
+  );
+  if (target.type !== "bearing") {
+    assert.ok(
+      directBaseConnection,
+      `support ${support.id} does not terminate on the mounting plate`,
+    );
+    continue;
+  }
+  const footToColumn = stockGearbox.connections.find(
+    ({ a, b, portA, portB }) =>
+      b === support.id &&
+      stockPedestalFeet.some(({ id }) => id === a) &&
+      portA === "TOP" &&
+      portB === "A",
+  );
+  assert.ok(
+    footToColumn,
+    `bearing support ${support.id} has no distinct pedestal foot`,
+  );
   assert.ok(
     stockGearbox.connections.some(
       ({ a, b, portA, portB }) =>
         a === stockPlate.id &&
-        b === support.id &&
+        b === footToColumn.a &&
         portA === "TOP" &&
-        portB === "A",
+        portB === "BOTTOM",
     ),
-    `support ${support.id} does not terminate on the mounting plate`,
+    `bearing pedestal ${footToColumn.a} does not terminate on the base plate`,
   );
+}
 assert.deepEqual(
   stockGearbox.connections
     .filter(

@@ -192,7 +192,8 @@ for (const layout of layouts) {
     await page
       .locator(`[data-outliner-part="${targetId}"]`)
       .dispatchEvent("click");
-    await page.locator("#isolate-selection").dispatchEvent("click");
+    if (demo.id !== "gearbox")
+      await page.locator("#isolate-selection").dispatchEvent("click");
     await page.locator("#frame-selection").dispatchEvent("click");
     await page.waitForFunction(
       () => {
@@ -216,9 +217,13 @@ for (const layout of layouts) {
       `${demo.id} ${layout.id} isolated detail`,
     );
     captureCount++;
-    assert.deepEqual(detail.presentation.selectionVisibility.isolatedPartIds, [
-      targetId,
-    ]);
+    assert.deepEqual(
+      detail.presentation.selectionVisibility.isolatedPartIds,
+      demo.id === "gearbox" ? [] : [targetId],
+      demo.id === "gearbox"
+        ? "gearbox clearance detail hid its mounting context"
+        : `${demo.id} detail lost its isolated target`,
+    );
     assert.ok(
       Math.abs(detail.camera.renderedDistance - detail.camera.distance) <= 0.05,
       `${demo.id} ${layout.id} detail camera did not settle to its framed distance`,
@@ -233,7 +238,8 @@ for (const layout of layouts) {
     );
     assert.equal(detailedVisual.detailTier, selectedDetail?.tier);
     assert.ok(detailedVisual.bodyPrimitiveKinds.includes(demo.requiredKind));
-    await page.locator("#show-all-components").dispatchEvent("click");
+    if (demo.id !== "gearbox")
+      await page.locator("#show-all-components").dispatchEvent("click");
     await page.locator("#close-inspect").dispatchEvent("click");
     await click("#view-front");
     await click("#focus-view");

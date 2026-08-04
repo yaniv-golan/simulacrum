@@ -3,6 +3,7 @@ import { deepFreeze } from "./primitives.js";
 const IDENTITY = Object.freeze([0, 0, 0, 1]);
 const FLIP_Z = Object.freeze([0, 1, 0, 0]);
 const AXIAL_Z_TO_Y = Object.freeze([-Math.SQRT1_2, 0, 0, Math.SQRT1_2]);
+const AXIAL_Z_TO_NEGATIVE_Y = Object.freeze([Math.SQRT1_2, 0, 0, Math.SQRT1_2]);
 const AXIAL_Z_TO_X = Object.freeze([0, Math.SQRT1_2, 0, Math.SQRT1_2]);
 
 const constantPosition = (value) => ({ kind: "constant-v1", value });
@@ -157,7 +158,7 @@ const mechanismFrames = {
     "JOURNAL RIGHT": frame(constantPosition([0, 0, 0.62])),
   },
   bearing: {
-    MOUNT: frame(constantPosition([0, 0, -0.17]), FLIP_Z),
+    MOUNT: frame(constantPosition([0, -0.29, 0]), AXIAL_Z_TO_NEGATIVE_Y),
     SHAFT: frame(constantPosition([0, 0, 0])),
   },
   hinge: {

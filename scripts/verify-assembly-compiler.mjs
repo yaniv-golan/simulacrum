@@ -38,7 +38,7 @@ function assertNear(actual, expected, message, epsilon = 1e-9) {
 
 const expectedBuiltInTopology = {
     gearbox: {
-      constraints: { fixed: 13, gear: 1, measurement: 1, revolute: 3 },
+      constraints: { fixed: 15, gear: 1, measurement: 1, revolute: 3 },
       power: 2,
       signal: 2,
       resource: 0,
@@ -144,7 +144,7 @@ assert.equal(
 );
 assert.equal(
   compiledGearbox.constraints.filter((item) => item.kind === "fixed").length,
-  13,
+  15,
   "mounted gearbox components did not compile to fixed constraints",
 );
 assert.equal(
@@ -642,14 +642,36 @@ for (let step = 0; step < 1_440; step++) {
 const inputPose = telemetry.poses.find((pose) => pose.id === input.id),
   outputPose = telemetry.poses.find((pose) => pose.id === output.id),
   observedRatio = inputPose.phase / outputPose.phase;
-for (const connectionId of [
-  "demo-gearbox-11",
-  "demo-gearbox-12",
-  "demo-gearbox-13",
-  "demo-gearbox-14",
-  "demo-gearbox-17",
-  "demo-gearbox-18",
-])
+const basePlate = runtimeGearbox.parts.find(
+    (part) => part.type === "plate" && part.scale.x > 1,
+  ),
+  pedestalFeet = runtimeGearbox.parts.filter(
+    (part) => part.type === "plate" && part.id !== basePlate.id,
+  ),
+  supportConnectionIds = runtimeGearbox.connections
+    .filter((connection) => {
+      const partA = runGraph.part(connection.a),
+        partB = runGraph.part(connection.b);
+      return (
+        (partA.type === "beam" &&
+          ["motor", "bearing"].includes(partB.type) &&
+          connection.portA === "B" &&
+          connection.portB === "MOUNT") ||
+        (partA.type === "bearing" && partB.type === "axle") ||
+        (partA.type === "plate" &&
+          partB.type === "plate" &&
+          connection.a === basePlate.id) ||
+        (pedestalFeet.some(({ id }) => id === connection.a) &&
+          partB.type === "beam")
+      );
+    })
+    .map(({ id }) => id);
+assert.equal(
+  supportConnectionIds.length,
+  10,
+  "gearbox support qualification does not cover both complete pedestal paths",
+);
+for (const connectionId of supportConnectionIds)
   assert.ok(
     telemetry.connectionLoads[connectionId] > 0,
     `${connectionId} carried no sustained physical support reaction`,
@@ -691,7 +713,7 @@ const platePart = runtimeGearbox.parts.find((part) => part.type === "plate"),
     outputGearGeometry.tipRadiusM -
     plateBounds.maximumM[1];
 assert.ok(
-  liveGearClearanceM >= 0.08,
+  liveGearClearanceM >= 0.3,
   `rotating 24T gear lost plate-relative clearance (${liveGearClearanceM} m)`,
 );
 assert.ok(
@@ -714,7 +736,9 @@ assert.ok(
   "compiled motor consumed no electrical energy",
 );
 assert.ok(
-  telemetry.connectionLoads["demo-gearbox-19"] > 0,
+  telemetry.connectionLoads[
+    runtimeGearbox.connections.find(({ kind }) => kind === "mesh").id
+  ] > 0,
   "gear contact produced no physical attachment load",
 );
 assert.ok(

@@ -6,9 +6,9 @@ import { analyzeCapabilityDispatch } from "./lib/capability-dispatch-analyzer.mj
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const REVIEWED_CAPABILITY_DISPATCH_BASELINE = Object.freeze({
-  commit: "unreleased-gearbox-first-principles-2026-07-31",
-  sites: 274,
-  sha256: "f123d34d13e1d4e41c93be5407498321bcbdd740c28dcf11271dfde9ed9eaec9",
+  commit: "unreleased-gearbox-clearance-pedestals-2026-08-04",
+  sites: 285,
+  sha256: "a591a638eb0731aa132a98335e3dc40324bf9f42351276f5330a5f2c8dd70a9b",
 });
 
 const POLICIES = Object.freeze([

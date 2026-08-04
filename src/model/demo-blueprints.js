@@ -262,13 +262,17 @@ class BlueprintBuilder {
 function gearbox() {
   const b = new BlueprintBuilder("gearbox"),
     plateTopY = 0.29,
-    shaftY = 1.32,
-    supportCenterY = (plateTopY + shaftY) / 2,
-    supportScale = (shaftY - plateTopY) / TYPES.beam.size[0],
-    verticalSupport = (x, z) =>
-      b.add("beam", [x, supportCenterY, z], {
+    shaftY = 1.55,
+    bearingMountY = shaftY - 0.29,
+    pedestalFootTopY = plateTopY + TYPES.plate.size[1],
+    verticalSupport = (x, z, baseY = plateTopY, topY = shaftY) =>
+      b.add("beam", [x, (baseY + topY) / 2, z], {
         eulerRotation: [0, 0, Math.PI / 2],
-        scale: [supportScale, 1, 1],
+        scale: [(topY - baseY) / TYPES.beam.size[0], 1, 1],
+      }),
+    pedestalFoot = (x, z) =>
+      b.add("plate", [x, plateTopY + TYPES.plate.size[1] / 2, z], {
+        scale: [0.42, 1, 0.32],
       }),
     plate = b.add("plate", [0, 0.2, 0], { scale: [2.2, 1, 1.5] }),
     motor = b.add("motor", [-1.2, shaftY, -0.92]),
@@ -287,16 +291,18 @@ function gearbox() {
       verticalSupport(motor.pos[0] - 0.27, motor.pos[2] - 0.5),
       verticalSupport(motor.pos[0] + 0.27, motor.pos[2] - 0.5),
     ],
-    bearingSupports = [
-      verticalSupport(
-        outputBearingLeft.pos[0],
-        outputBearingLeft.pos[2] - 0.17,
-      ),
-      verticalSupport(
-        outputBearingRight.pos[0],
-        outputBearingRight.pos[2] - 0.17,
-      ),
-    ],
+    bearingPedestals = [outputBearingLeft, outputBearingRight].map(
+      (bearing) => ({
+        foot: pedestalFoot(bearing.pos[0], bearing.pos[2]),
+        column: verticalSupport(
+          bearing.pos[0],
+          bearing.pos[2],
+          pedestalFootTopY,
+          bearingMountY,
+        ),
+        bearing,
+      }),
+    ),
     sensorSupport = verticalSupport(sensor.pos[0], sensor.pos[2] + 0.14);
   b.matchPorts(motor, "SHAFT", inputGear, "AXLE");
   b.matchPorts(outputBearingLeft, "SHAFT", outputAxle, "JOURNAL LEFT");
@@ -310,7 +316,7 @@ function gearbox() {
       portB: "MOUNT",
       capacity: REINFORCED_CAPACITY,
     });
-  for (const support of [...motorSupports, ...bearingSupports, sensorSupport])
+  for (const support of [...motorSupports, sensorSupport])
     b.connect(plate, support, "mechanical", {
       portA: "TOP",
       portB: "A",
@@ -322,15 +328,23 @@ function gearbox() {
       portB: "MOUNT",
       capacity: STANDARD_CAPACITY,
     });
-  for (const [support, bearing] of bearingSupports.map((support, index) => [
-    support,
-    [outputBearingLeft, outputBearingRight][index],
-  ]))
-    b.connect(support, bearing, "mechanical", {
+  for (const { foot, column, bearing } of bearingPedestals) {
+    b.connect(plate, foot, "mechanical", {
+      portA: "TOP",
+      portB: "BOTTOM",
+      capacity: STANDARD_CAPACITY,
+    });
+    b.connect(foot, column, "mechanical", {
+      portA: "TOP",
+      portB: "A",
+      capacity: STANDARD_CAPACITY,
+    });
+    b.connect(column, bearing, "mechanical", {
       portA: "B",
       portB: "MOUNT",
       capacity: STANDARD_CAPACITY,
     });
+  }
   b.connect(sensorSupport, sensor, "mechanical", {
     portA: "B",
     portB: "MOUNT",
