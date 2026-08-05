@@ -1282,6 +1282,25 @@ export function compileAssembly(snapshot: any, catalog?: {}): Readonly<{
         b: any;
         anchorA: any[];
         anchorB: any[];
+        attachmentFrameA?: {
+            portId: any;
+            positionPartM: number[];
+            orientationPart: number[];
+            positionWorldM: number[];
+            orientationWorld: number[];
+        };
+        attachmentFrameB?: {
+            portId: any;
+            positionPartM: number[];
+            orientationPart: number[];
+            positionWorldM: number[];
+            orientationWorld: number[];
+        };
+        failureAttachments?: Array<{
+            connectionId: any;
+            side: "A" | "B";
+            bodyPartId: any;
+        }>;
         breakForce: number;
         breakTorque: number;
     } | {
@@ -1431,6 +1450,25 @@ export function compileAssembly(snapshot: any, catalog?: {}): Readonly<{
         sourceConnectionIds: any[];
         a: any;
         b: any;
+        attachmentFrameA: {
+            portId: any;
+            positionPartM: number[];
+            orientationPart: number[];
+            positionWorldM: number[];
+            orientationWorld: number[];
+        };
+        attachmentFrameB: {
+            portId: any;
+            positionPartM: number[];
+            orientationPart: number[];
+            positionWorldM: number[];
+            orientationWorld: number[];
+        };
+        failureAttachments: Array<{
+            connectionId: any;
+            side: "A" | "B";
+            bodyPartId: any;
+        }>;
         breakForce: any;
         breakTorque: any;
         axisA?: undefined;
@@ -4200,6 +4238,25 @@ export class MultibodyRuntime {
             b: any;
             anchorA: any[];
             anchorB: any[];
+            attachmentFrameA?: {
+                portId: any;
+                positionPartM: number[];
+                orientationPart: number[];
+                positionWorldM: number[];
+                orientationWorld: number[];
+            };
+            attachmentFrameB?: {
+                portId: any;
+                positionPartM: number[];
+                orientationPart: number[];
+                positionWorldM: number[];
+                orientationWorld: number[];
+            };
+            failureAttachments?: Array<{
+                connectionId: any;
+                side: "A" | "B";
+                bodyPartId: any;
+            }>;
             breakForce: number;
             breakTorque: number;
         } | {
@@ -4349,6 +4406,25 @@ export class MultibodyRuntime {
             sourceConnectionIds: any[];
             a: any;
             b: any;
+            attachmentFrameA: {
+                portId: any;
+                positionPartM: number[];
+                orientationPart: number[];
+                positionWorldM: number[];
+                orientationWorld: number[];
+            };
+            attachmentFrameB: {
+                portId: any;
+                positionPartM: number[];
+                orientationPart: number[];
+                positionWorldM: number[];
+                orientationWorld: number[];
+            };
+            failureAttachments: Array<{
+                connectionId: any;
+                side: "A" | "B";
+                bodyPartId: any;
+            }>;
             breakForce: any;
             breakTorque: any;
             axisA?: undefined;

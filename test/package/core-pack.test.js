@@ -108,11 +108,40 @@ await fs.writeFile(
   path.join(fixtureRoot, "node-smoke.mjs"),
   `import {
   AssemblyModel,
+  compileAssembly,
+  componentDefaults,
   SimulationSession,
   TelemetrySystem,
+  TYPES,
 } from "@yaniv-golan/simulacrum-core";
 
 const model = new AssemblyModel();
+const compiled = compileAssembly(
+  {
+    revision: 1,
+    parts: [
+      { id: 1, type: "beam", pos: [0, 0, 0], orientation: [0, 0, 0, 1], config: componentDefaults("beam") },
+      { id: 2, type: "beam", pos: [2.4, 0, 0], orientation: [0, 0, 0, 1], config: componentDefaults("beam") },
+    ],
+    connections: [{
+      id: "fixed-joint",
+      a: 1,
+      b: 2,
+      kind: "mechanical",
+      portA: "B",
+      portB: "A",
+      capacity: { ultimateForceN: 24000, ultimateTorqueNm: 6000 },
+    }],
+  },
+  TYPES,
+);
+const fixed = compiled.constraints.find((constraint) => constraint.kind === "fixed");
+if (fixed?.attachmentFrameA?.positionWorldM?.[0] !== 1.2)
+  throw new Error("packed compiler omitted fixed attachment frame A");
+if (fixed?.attachmentFrameB?.positionWorldM?.[0] !== 1.2)
+  throw new Error("packed compiler omitted fixed attachment frame B");
+if (fixed?.failureAttachments?.map((attachment) => attachment.connectionId).join(",") !== "fixed-joint,fixed-joint")
+  throw new Error("packed compiler omitted fixed attachment failure ownership");
 const session = new SimulationSession({ systems: [new TelemetrySystem()] });
 session.start(model.snapshot());
 session.stepFixed();
@@ -126,11 +155,24 @@ assert.match(
   /clean Node import passed/,
 );
 
+await fs.cp(
+  path.join(root, "examples", "core-extensions"),
+  path.join(fixtureRoot, "core-extensions"),
+  { recursive: true },
+);
+assert.match(
+  run(process.execPath, ["core-extensions/run-all.mjs"], {
+    cwd: fixtureRoot,
+  }),
+  /all twelve public core extension examples passed/,
+);
+
 await fs.writeFile(
   path.join(fixtureRoot, "type-smoke.mts"),
   `import {
   AssemblyModel,
   COMPONENT_GEOMETRY_SCHEMA_VERSION,
+  compileAssembly,
   geometryDescriptorForType,
   SimulationSession,
   validateGeometryDescriptorOrThrow,
@@ -152,6 +194,18 @@ const geometryClass: GeometryDescriptorV2["geometryClass"] = descriptor.geometry
 const feature: PhysicalFeatureV1 | undefined = descriptor.physicalFeatures[0];
 const selectionBounds: GeometryBoundsV1 | null = descriptor.selectionBoundsPartM;
 const collisionBounds: GeometryBoundsV1 | null = descriptor.collisionBoundsPartM;
+declare const compiledAssembly: ReturnType<typeof compileAssembly>;
+let attachmentPositionX: number | undefined,
+  failureSide: "A" | "B" | undefined;
+for (const compiledConstraint of compiledAssembly.constraints) {
+  if (
+    "attachmentFrameA" in compiledConstraint &&
+    "failureAttachments" in compiledConstraint
+  ) {
+    attachmentPositionX = compiledConstraint.attachmentFrameA?.positionWorldM[0];
+    failureSide = compiledConstraint.failureAttachments?.[0]?.side;
+  }
+}
 if (primitive?.geometry.kind === "box-v1") {
   const width: number = primitive.geometry.fullSizeM[0];
   void width;
@@ -169,6 +223,8 @@ void geometryClass;
 void feature;
 void selectionBounds;
 void collisionBounds;
+void attachmentPositionX;
+void failureSide;
 void schemaVersion;
 void invalidPrimitiveKind;
 `,

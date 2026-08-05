@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Adds engine-neutral authored fixed-attachment frames and endpoint-specific
+  failure ownership to compiled assembly constraints. Constraint solvers retain
+  their existing reference frames; reaction wrenches are translated to each
+  physical attachment before structural-capacity evaluation. Structural
+  detachment severs boundary connections while preserving connections internal
+  to the separated physical component.
+
 ## 0.2.0 - 2026-07-30
 
 - Extends `GeometryDescriptorV2` with the closed `rounded-box-v1`,

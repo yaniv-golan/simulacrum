@@ -319,13 +319,60 @@ function compileLinearGuide(context, connection, a, b, leftPort, rightPort) {
   });
 }
 
-function compileFixed(context, connection, a, b) {
+function fixedAttachmentFrame(context, connection, part, port, side) {
+  const structuralAnchor = connection[`anchor${side}`],
+    projected = worldPortFrame(
+      part,
+      context.geometryFor(part),
+      port.id,
+      structuralAnchor,
+    );
+  return {
+    portId: port.id,
+    positionPartM: compiledVector(
+      structuralAnchor ?? projected.portFrame.framePart.positionM,
+    ),
+    orientationPart: [...projected.orientationPart],
+    positionWorldM: [...projected.positionWorld],
+    orientationWorld: [...projected.orientationWorld],
+  };
+}
+
+function compileFixed(context, connection, a, b, leftPort, rightPort) {
+  const attachmentFrameA = fixedAttachmentFrame(
+      context,
+      connection,
+      a,
+      leftPort,
+      "A",
+    ),
+    attachmentFrameB = fixedAttachmentFrame(
+      context,
+      connection,
+      b,
+      rightPort,
+      "B",
+    );
   context.constraints.push({
     id: constraintId("fixed", connection),
     kind: "fixed",
     sourceConnectionIds: [connection.id],
     a: a.id,
     b: b.id,
+    attachmentFrameA,
+    attachmentFrameB,
+    failureAttachments: [
+      {
+        connectionId: connection.id,
+        side: "A",
+        bodyPartId: a.id,
+      },
+      {
+        connectionId: connection.id,
+        side: "B",
+        bodyPartId: b.id,
+      },
+    ],
     breakForce: connection.capacity.ultimateForceN,
     breakTorque: connection.capacity.ultimateTorqueNm,
   });

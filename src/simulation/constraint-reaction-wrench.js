@@ -54,7 +54,7 @@ function bodyIdentity(body) {
 
 function worldApplicationPoint(constraint, anchorFromCom, side) {
   const body = constraint[`body${side}`],
-    position = body?.position;
+    position = body?.previousPosition || body?.position;
   return position
     ? {
         x: Number(position.x || 0) + anchorFromCom.x,
@@ -71,8 +71,9 @@ function equationAnchorFromCom(constraint, equation, side) {
     body = constraint[`body${suffix}`],
     localAnchor =
       constraint[`pivot${suffix}`] || constraint[`localAnchor${suffix}`];
-  return localAnchor && body?.quaternion
-    ? vectorComponents(body.quaternion.vmult(localAnchor))
+  const orientation = body?.previousQuaternion || body?.quaternion;
+  return localAnchor && orientation
+    ? vectorComponents(orientation.vmult(localAnchor))
     : { x: 0, y: 0, z: 0 };
 }
 
@@ -155,6 +156,29 @@ function contributionTerms(constraint, equation, side) {
   };
 }
 
+function termsAtApplicationPoint(constraint, side, terms, applicationPoint) {
+  if (!terms || !applicationPoint) return terms;
+  const solvedPoint = worldApplicationPoint(
+      constraint,
+      terms.anchorFromCom,
+      side,
+    ),
+    target = vectorComponents(applicationPoint),
+    referenceToTarget = {
+      x: solvedPoint.x - target.x,
+      y: solvedPoint.y - target.y,
+      z: solvedPoint.z - target.z,
+    },
+    translatedMoment = cross(referenceToTarget, terms.forceWorldN);
+  addScaled(translatedMoment, terms.momentAtApplicationPointWorldNm, 1);
+  return {
+    ...terms,
+    momentAtApplicationPointWorldNm: translatedMoment,
+    momentMagnitudeNm: magnitude(translatedMoment),
+    applicationPointWorldM: target,
+  };
+}
+
 function contributionMagnitudes(constraint, equation, side) {
   const multiplier = Number(equation.multiplier || 0),
     jacobian = equation[`jacobianElement${side}`];
@@ -227,7 +251,9 @@ function contributionCandidate(
     rowKind,
     localOrdinal,
     constraintId,
-    sourceConnectionIds: row.sourceConnectionIds || metadataSourceConnectionIds,
+    sourceConnectionIds: Object.hasOwn(metadata, "sourceConnectionIds")
+      ? metadataSourceConnectionIds
+      : row.sourceConnectionIds || metadataSourceConnectionIds,
     forceMagnitudeN: terms.forceMagnitudeN,
     momentMagnitudeNm: terms.momentMagnitudeNm,
   };
@@ -278,7 +304,14 @@ export function constraintReactionContributionCandidates(
       metadata.sourceConnectionIds || [],
     );
   for (const equation of constraint?.equations || []) {
-    const terms = contributionMagnitudes(constraint, equation, side);
+    const terms = metadata.applicationPointWorldM
+      ? termsAtApplicationPoint(
+          constraint,
+          side,
+          contributionTerms(constraint, equation, side),
+          metadata.applicationPointWorldM,
+        )
+      : contributionMagnitudes(constraint, equation, side);
     if (!terms) continue;
     candidates.push(
       contributionCandidate(
@@ -310,35 +343,20 @@ export function constraintReactionWrenchEvidence(
       metadata.sourceConnectionIds || [],
     );
   for (const equation of constraint?.equations || []) {
-    if (!equation.enabled) continue;
-    const multiplier = Number(equation.multiplier || 0),
-      jacobian = equation[`jacobianElement${side}`];
-    if (!jacobian || !Number.isFinite(multiplier)) continue;
-    const spatial = jacobian.spatial,
-      rotational = jacobian.rotational,
-      anchor = equationAnchorFromCom(constraint, equation, side),
-      forceX = Number(spatial?.x || 0) * multiplier,
-      forceY = Number(spatial?.y || 0) * multiplier,
-      forceZ = Number(spatial?.z || 0) * multiplier,
-      momentX =
-        Number(rotational?.x || 0) * multiplier -
-        (anchor.y * forceZ - anchor.z * forceY),
-      momentY =
-        Number(rotational?.y || 0) * multiplier -
-        (anchor.z * forceX - anchor.x * forceZ),
-      momentZ =
-        Number(rotational?.z || 0) * multiplier -
-        (anchor.x * forceY - anchor.y * forceX),
-      terms = {
-        forceMagnitudeN: Math.hypot(forceX, forceY, forceZ),
-        momentMagnitudeNm: Math.hypot(momentX, momentY, momentZ),
-      };
-    force.x += forceX;
-    force.y += forceY;
-    force.z += forceZ;
-    moment.x += momentX;
-    moment.y += momentY;
-    moment.z += momentZ;
+    const unshifted = contributionTerms(constraint, equation, side);
+    if (!unshifted) continue;
+    const terms = termsAtApplicationPoint(
+      constraint,
+      side,
+      unshifted,
+      metadata.applicationPointWorldM,
+    );
+    force.x += terms.forceWorldN.x;
+    force.y += terms.forceWorldN.y;
+    force.z += terms.forceWorldN.z;
+    moment.x += terms.momentAtApplicationPointWorldNm.x;
+    moment.y += terms.momentAtApplicationPointWorldNm.y;
+    moment.z += terms.momentAtApplicationPointWorldNm.z;
     candidates.push(
       contributionCandidate(
         constraint,
@@ -406,7 +424,12 @@ export function materializeConstraintReactionContribution(
     } = candidate,
     suffix = side,
     row = equation.simulacrumEvidenceRow || {},
-    terms = contributionTerms(constraint, equation, side),
+    terms = termsAtApplicationPoint(
+      constraint,
+      side,
+      contributionTerms(constraint, equation, side),
+      metadata.applicationPointWorldM,
+    ),
     sourceContactIds =
       row.sourceContactIds ??
       equation.simulacrumEvidenceSourceContactIds?.() ??
@@ -431,11 +454,9 @@ export function materializeConstraintReactionContribution(
     sourceContactIds: [...new Set(sourceContactIds)].map(String).sort(),
     forceWorldN: terms.forceWorldN,
     momentAtApplicationPointWorldNm: terms.momentAtApplicationPointWorldNm,
-    applicationPointWorldM: worldApplicationPoint(
-      constraint,
-      terms.anchorFromCom,
-      side,
-    ),
+    applicationPointWorldM:
+      terms.applicationPointWorldM ||
+      worldApplicationPoint(constraint, terms.anchorFromCom, side),
     forceMagnitudeN: terms.forceMagnitudeN,
     momentMagnitudeNm: terms.momentMagnitudeNm,
     multiplier: terms.multiplier,

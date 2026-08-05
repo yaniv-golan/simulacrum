@@ -57,6 +57,7 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-pneumatic-tire-browser.mjs",
   "verify-collision-failure-runtime.mjs",
   "verify-constraint-reaction-wrench.mjs",
+  "verify-fixed-attachment-runtime.mjs",
   "verify-cannon-solver-transaction.mjs",
   "verify-physics-stress.mjs",
   "verify-physics-checkpoints.mjs",

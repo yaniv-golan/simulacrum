@@ -265,13 +265,17 @@ export class RunAssemblyGraph {
       internalFailures = [...new Set(failedInternalEdgeIds)].map((id) =>
         canonicalId(id),
       ),
-      detachments = [...new Set(detachedPartIds)];
+      detachments = [...new Set(detachedPartIds)],
+      detached = new Set(detachments);
     for (const id of failures) this.#requireConnection(id);
     for (const id of detachments) this.#requirePart(id);
     const allFailures = new Set(failures);
     for (const partId of detachments)
       for (const connection of this.#connections.values())
-        if (connection.a === partId || connection.b === partId)
+        if (
+          (connection.a === partId || connection.b === partId) &&
+          !(detached.has(connection.a) && detached.has(connection.b))
+        )
           allFailures.add(connection.id);
     let changed = internalFailures.length > 0;
     for (const id of allFailures) {

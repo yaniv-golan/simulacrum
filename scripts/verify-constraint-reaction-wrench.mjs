@@ -4,6 +4,7 @@ import {
   assignConstraintEvidenceRows,
   constraintReactionContributions,
   constraintReactionWrench,
+  constraintReactionWrenchEvidence,
 } from "../src/simulation/constraint-reaction-wrench.js";
 
 const DT = 1 / 120;
@@ -199,6 +200,81 @@ function axialAnchorProbe() {
   );
 }
 
+function authoredLockWrenchProbe() {
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
+    shape = new CANNON.Box(new CANNON.Vec3(0.3, 0.2, 0.1)),
+    bodyA = new CANNON.Body({
+      mass: 2,
+      shape,
+      position: new CANNON.Vec3(0, 0, 0),
+    }),
+    bodyB = new CANNON.Body({
+      mass: 3,
+      shape,
+      position: new CANNON.Vec3(2, 0, 0),
+    }),
+    constraint = new CANNON.LockConstraint(bodyA, bodyB, { maxForce: 1e9 }),
+    authoredPoint = new CANNON.Vec3(1, 0.5, 0);
+  bodyA.pointToLocalFrame(authoredPoint, constraint.pivotA);
+  bodyB.pointToLocalFrame(authoredPoint, constraint.pivotB);
+  Object.assign(world.solver, { iterations: 100, tolerance: 1e-12 });
+  for (const body of [bodyA, bodyB]) {
+    body.linearDamping = 0;
+    body.angularDamping = 0;
+    world.addBody(body);
+  }
+  world.addConstraint(constraint);
+  bodyB.force.set(0, 100, 25);
+  world.step(DT);
+
+  const wrenchA = constraintReactionWrench(constraint, "A"),
+    endpoint = { x: 0, y: 0.5, z: 0 },
+    endpointEvidence = constraintReactionWrenchEvidence(constraint, "A", {
+      sourceConnectionIds: ["endpoint-a"],
+      applicationPointWorldM: endpoint,
+    }),
+    solvedPoint = bodyA.previousPosition.vadd(
+      bodyA.previousQuaternion.vmult(constraint.pivotA),
+    ),
+    referenceToEndpoint = {
+      x: solvedPoint.x - endpoint.x,
+      y: solvedPoint.y - endpoint.y,
+      z: solvedPoint.z - endpoint.z,
+    },
+    force = endpointEvidence.wrench.force,
+    translatedMoment = {
+      x:
+        wrenchA.moment.x +
+        referenceToEndpoint.y * force.z -
+        referenceToEndpoint.z * force.y,
+      y:
+        wrenchA.moment.y +
+        referenceToEndpoint.z * force.x -
+        referenceToEndpoint.x * force.z,
+      z:
+        wrenchA.moment.z +
+        referenceToEndpoint.x * force.y -
+        referenceToEndpoint.y * force.x,
+    };
+  assert.ok(wrenchA.forceN > 1, "authored lock carried no solved reaction");
+  for (const component of ["x", "y", "z"])
+    near(
+      endpointEvidence.wrench.moment[component],
+      translatedMoment[component],
+      1e-10,
+      `translated endpoint moment ${component}`,
+    );
+  assert.ok(endpointEvidence.candidates.length > 0);
+  assert.ok(
+    endpointEvidence.candidates.every(
+      (candidate) =>
+        candidate.sourceConnectionIds.length === 1 &&
+        candidate.sourceConnectionIds[0] === "endpoint-a",
+    ),
+    "endpoint evidence retained constraint-wide source IDs",
+  );
+}
+
 function hingeProbe({ force = null, torque = null }) {
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
     shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.4, 0.3)),
@@ -251,6 +327,7 @@ near(freeTorqueProbe.wrench.torqueNm, 0, 0.05, "free-axis torque reaction");
 
 exactWrenchProbe();
 axialAnchorProbe();
+authoredLockWrenchProbe();
 
 console.log(
   `constraint reaction wrench passed (${forceProbe.wrench.forceN.toFixed(2)} N force, ${torqueProbe.wrench.torqueNm.toFixed(2)} Nm constrained torque)`,

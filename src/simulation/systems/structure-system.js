@@ -230,7 +230,7 @@ export class StructureSystem {
         ) || []),
       );
     const separatedPartIds = detachedConstraints.length
-      ? this.#separatedParts(context, runtime)
+      ? this.#separatedParts(context, runtime, pendingConnections)
       : [];
     let structuralEvent = null;
     if (newlyFailed.length || separatedPartIds.length) {
@@ -295,7 +295,7 @@ export class StructureSystem {
     };
   }
 
-  #separatedParts(context, runtime) {
+  #separatedParts(context, runtime, connectionStates = null) {
     if (!runtime?.compiled) return [];
     const detached = new Set();
     for (const initial of this.initialBodyComponents || []) {
@@ -317,14 +317,41 @@ export class StructureSystem {
         for (const id of component)
           if (!context.runGraph.part(id)?.detached) detached.add(id);
     }
+    const connectionById = new Map(
+      (connectionStates || context.runGraph.connections()).map((connection) => [
+        connection.id,
+        connection,
+      ]),
+    );
     for (const entry of runtime.constraintEntries || []) {
       const connectorId = entry.descriptor.sourcePartId;
       if (
         connectorId == null ||
         entry.active !== false ||
+        runtime.bodyByPart.has(connectorId) ||
         context.runGraph.part(connectorId)?.detached
       )
         continue;
+      const sourceConnections = (entry.descriptor.sourceConnectionIds || [])
+        .map((id) => connectionById.get(id))
+        .filter(Boolean);
+      if (
+        sourceConnections.length ===
+          (entry.descriptor.sourceConnectionIds || []).length &&
+        sourceConnections.length
+      ) {
+        const liveNeighbors = sourceConnections
+          .filter((connection) => !connection.failed)
+          .map((connection) =>
+            connection.a === connectorId ? connection.b : connection.a,
+          );
+        if (
+          !liveNeighbors.length ||
+          liveNeighbors.every((partId) => detached.has(partId))
+        )
+          detached.add(connectorId);
+        continue;
+      }
       if (detached.has(entry.descriptor.a) || detached.has(entry.descriptor.b))
         detached.add(connectorId);
     }

@@ -6,7 +6,10 @@ import {
   PHYSICAL_CONNECTION_KINDS,
   worldPoint,
 } from "./assembly-compiler-shared.js";
-import { validateConnectionFrameInvariant } from "./connection-frame-invariants.js";
+import {
+  validateConnectionFrameInvariant,
+  worldPortFrame,
+} from "./connection-frame-invariants.js";
 
 function physicalEdgesFor(context, connector) {
   return context.connections.filter(
@@ -55,7 +58,13 @@ function resolveAttachments(context, connector, orderedEdges, neighbors) {
             },
           }
         : frame;
-    return { edge, neighbor, neighborPort, frame: resolvedFrame };
+    return {
+      edge,
+      neighbor,
+      neighborPort,
+      structuralAnchor,
+      frame: resolvedFrame,
+    };
   });
 }
 
@@ -86,7 +95,56 @@ function compileEndpointPointMasses(
   }
 }
 
-function forceElementBase(connector, orderedEdges, neighbors, attachments) {
+function compiledAttachmentFrame(context, attachment) {
+  const projected = worldPortFrame(
+    attachment.neighbor,
+    context.geometryFor(attachment.neighbor),
+    attachment.neighborPort,
+    attachment.structuralAnchor,
+  );
+  return {
+    portId: attachment.neighborPort,
+    positionPartM: compiledVector(
+      attachment.structuralAnchor ?? projected.portFrame.framePart.positionM,
+    ),
+    orientationPart: [...projected.orientationPart],
+    positionWorldM: [...projected.positionWorld],
+    orientationWorld: [...projected.orientationWorld],
+  };
+}
+
+function forceElementBase(
+  context,
+  connector,
+  orderedEdges,
+  neighbors,
+  attachments,
+) {
+  const fixedEndpointAuthority = connector.mechanism.config.releaseLaw
+    ? (() => {
+        const attachmentFrameA = compiledAttachmentFrame(
+            context,
+            attachments[0],
+          ),
+          attachmentFrameB = compiledAttachmentFrame(context, attachments[1]);
+        return {
+          attachmentFrameA,
+          attachmentFrameB,
+          failureAttachments: [
+            {
+              connectionId: orderedEdges[0].id,
+              side: "A",
+              bodyPartId: neighbors[0],
+            },
+            {
+              connectionId: orderedEdges[1].id,
+              side: "B",
+              bodyPartId: neighbors[1],
+            },
+          ],
+        };
+      })()
+    : {};
   return {
     id: `connector:${connector.id}`,
     sourcePartId: connector.id,
@@ -101,6 +159,7 @@ function forceElementBase(connector, orderedEdges, neighbors, attachments) {
       attachments[1].neighbor,
       attachments[1].frame.framePart.positionM,
     ),
+    ...fixedEndpointAuthority,
     breakForce: Math.min(
       ...orderedEdges.map((edge) => edge.capacity.ultimateForceN),
     ),
@@ -308,7 +367,7 @@ function compileConnector(context, connector) {
   compiler(
     context,
     connector,
-    forceElementBase(connector, orderedEdges, neighbors, attachments),
+    forceElementBase(context, connector, orderedEdges, neighbors, attachments),
     mechanismConfig,
   );
 }

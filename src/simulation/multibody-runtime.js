@@ -434,15 +434,56 @@ function physicsFrame(descriptor) {
 
 function partFrame(body) {
   const frame = body.userData.massFrame,
-    partToPrincipal =
-      frame.partToPrincipal ||
-      frame.principalToPart.conjugate(new CANNON.Quaternion()),
+    partToPrincipal = frame.principalToPart.conjugate(new CANNON.Quaternion()),
     quaternion = body.quaternion.mult(partToPrincipal, new CANNON.Quaternion()),
     comOffsetWorld = quaternion.vmult(frame.comPart),
     position = body.position.vsub(comOffsetWorld),
     originOffset = position.vsub(body.position),
     velocity = body.angularVelocity.cross(originOffset).vadd(body.velocity);
   return { position, quaternion, velocity };
+}
+
+function solvedPartPoint(body, positionPartM) {
+  const massFrame = body.userData.massFrame,
+    position = body.previousPosition || body.position,
+    quaternion = body.previousQuaternion || body.quaternion,
+    // principalToPart is the serialized authority. Never trust a cached
+    // inverse: mass-property commits and checkpoint imports intentionally
+    // replace the authority and older checkpoints do not carry the inverse.
+    partToPrincipal = massFrame.principalToPart.conjugate(
+      new CANNON.Quaternion(),
+    ),
+    partFromCom = cannonVector(positionPartM).vsub(massFrame.comPart),
+    bodyLocalPoint = partToPrincipal.vmult(partFromCom);
+  return position.vadd(quaternion.vmult(bodyLocalPoint));
+}
+
+function solvedConstraintPoint(constraint, side) {
+  const body = constraint[`body${side}`],
+    position = body.previousPosition || body.position,
+    quaternion = body.previousQuaternion || body.quaternion,
+    localPoint = constraint[`pivot${side}`] || new CANNON.Vec3();
+  return position.vadd(quaternion.vmult(localPoint));
+}
+
+function translatedConstraintWrench(constraint, side, applicationPoint) {
+  const wrench = constraintReactionWrench(constraint, side),
+    referencePoint = solvedConstraintPoint(constraint, side),
+    referenceToApplication = referencePoint.vsub(applicationPoint),
+    force = cannonVector([wrench.force.x, wrench.force.y, wrench.force.z]),
+    moment = cannonVector([wrench.moment.x, wrench.moment.y, wrench.moment.z]);
+  referenceToApplication
+    .cross(force, moment)
+    .vadd(
+      cannonVector([wrench.moment.x, wrench.moment.y, wrench.moment.z]),
+      moment,
+    );
+  return Object.freeze({
+    force: wrench.force,
+    moment: Object.freeze({ x: moment.x, y: moment.y, z: moment.z }),
+    forceN: wrench.forceN,
+    torqueNm: moment.length(),
+  });
 }
 
 function partWorldAxis(body, partLocalAxis) {
@@ -918,7 +959,6 @@ export class MultibodyRuntime {
         partId: descriptor.partId,
         massFrame: {
           principalToPart: frame.principalToPart,
-          partToPrincipal: frame.partToPrincipal,
           comPart: frame.comPart,
         },
         massProperties: structuredClone(descriptor.massProperties),
@@ -1189,6 +1229,11 @@ export class MultibodyRuntime {
           this.fixedDt,
         ),
       });
+      // Keep Cannon's one common COM-midpoint solver reference. It preserves
+      // the authored relative transform without forcing the two physical
+      // endpoints of a rigid element to coincide, and it retains the existing
+      // finite-solver conditioning. Attachment frames are evidence/application
+      // points; solved reactions are translated to them below.
       constraint.collideConnected = false;
       this.world.addConstraint(constraint);
       this.constraintEntries.push({ descriptor, constraint });
@@ -2496,10 +2541,63 @@ export class MultibodyRuntime {
     for (const entry of this.constraintEntries) {
       if (entry.active === false || !entry.constraint) continue;
       const metadata = {
-          ...entry.constraint.simulacrumEvidence,
-          tick,
-        },
-        evidence = captureEvidence
+        ...entry.constraint.simulacrumEvidence,
+        tick,
+      };
+      if (
+        entry.descriptor.kind === "fixed" &&
+        entry.descriptor.failureAttachments?.length
+      ) {
+        for (const attachment of entry.descriptor.failureAttachments) {
+          const body = this.bodyByPart.get(attachment.bodyPartId),
+            attachmentFrame =
+              entry.descriptor[`attachmentFrame${attachment.side}`],
+            applicationPoint = solvedPartPoint(
+              body,
+              attachmentFrame.positionPartM,
+            ),
+            attachmentMetadata = {
+              ...metadata,
+              sourceConnectionIds: [String(attachment.connectionId)],
+              applicationPointWorldM: {
+                x: applicationPoint.x,
+                y: applicationPoint.y,
+                z: applicationPoint.z,
+              },
+            },
+            evidence = captureEvidence
+              ? constraintReactionWrenchEvidence(
+                  entry.constraint,
+                  attachment.side,
+                  attachmentMetadata,
+                )
+              : null,
+            reaction =
+              evidence?.wrench ||
+              translatedConstraintWrench(
+                entry.constraint,
+                attachment.side,
+                applicationPoint,
+              );
+          if (evidence) contributionCandidates.push(...evidence.candidates);
+          this.loadByConnection.set(
+            attachment.connectionId,
+            Math.max(
+              reaction.forceN,
+              this.loadByConnection.get(attachment.connectionId) || 0,
+            ),
+          );
+          this.torqueByConnection.set(
+            attachment.connectionId,
+            Math.max(
+              reaction.torqueNm,
+              this.torqueByConnection.get(attachment.connectionId) || 0,
+            ),
+          );
+        }
+        continue;
+      }
+      const evidence = captureEvidence
           ? constraintReactionWrenchEvidence(entry.constraint, "A", metadata)
           : null,
         reaction =
