@@ -5,6 +5,26 @@ const clamp = (value, minimum, maximum) =>
   Math.max(minimum, Math.min(maximum, value));
 const lerp = (left, right, amount) => left + (right - left) * amount;
 const SIDES = ["L", "R"];
+const CHECKPOINT_STATE_FIELDS = Object.freeze([
+  "id",
+  "airborneTime",
+  "gyroMomentum",
+  "initialRootPosition",
+  "nominalRootClearance",
+  "gaitCycle",
+  "committedSwingSide",
+]);
+const checkpointKeysMatch = (value, expected) =>
+  Boolean(
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === expected.length &&
+    expected.every((key) => Object.hasOwn(value, key)),
+  );
+const exactFiniteVector = (value) =>
+  checkpointKeysMatch(value, ["x", "y", "z"]) &&
+  [value.x, value.y, value.z].every(Number.isFinite);
 const bodyReadModelsBySnapshot = new WeakMap();
 const LOCOMOTION_BODY_ROLES = Object.freeze([
   "pelvis",
@@ -183,6 +203,50 @@ function commandForAssembly(context, partIds, channel, fallback) {
     : fallback;
 }
 
+function articulatedGroupIds(runtime, physicsState = null) {
+  const targetEntries = physicsState
+      ? new Map(
+          (physicsState.entries || []).map((record) => [record.id, record]),
+        )
+      : null,
+    activeEntries = runtime.constraintEntries.filter((entry) =>
+      targetEntries
+        ? targetEntries.get(entry.descriptor.id)?.values?.active === true
+        : entry.active !== false,
+    ),
+    adjacency = new Map(
+      runtime.compiled?.bodies.map((body) => [body.partId, new Set()]) || [],
+    );
+  for (const entry of activeEntries) {
+    const { descriptor } = entry;
+    if (descriptor.kind === "measurement") continue;
+    adjacency.get(descriptor.a)?.add(descriptor.b);
+    adjacency.get(descriptor.b)?.add(descriptor.a);
+  }
+  const candidates = activeEntries.filter(
+      (entry) =>
+        entry.descriptor.kind === "revolute" &&
+        entry.descriptor.controlled &&
+        entry.descriptor.sourcePartId != null,
+    ),
+    visited = new Set(),
+    ids = [];
+  for (const candidate of candidates) {
+    if (visited.has(candidate.descriptor.a)) continue;
+    const bodyIds = new Set(),
+      queue = [candidate.descriptor.a];
+    while (queue.length) {
+      const id = queue.shift();
+      if (bodyIds.has(id)) continue;
+      bodyIds.add(id);
+      for (const neighbor of adjacency.get(id) || []) queue.push(neighbor);
+    }
+    for (const id of bodyIds) visited.add(id);
+    ids.push([...bodyIds].map(String).sort().join("|"));
+  }
+  return ids.sort((left, right) => left.localeCompare(right, "en"));
+}
+
 /**
  * Plans articulated motion for compiled component bodies. It never creates a
  * body, constraint, contact, or world step: role metadata only opts a generic
@@ -193,6 +257,7 @@ export class ArticulatedAssemblyController {
     this.runtime = runtime;
     this.groups = [];
     this.stateByGroup = new Map();
+    this.stateInitialized = false;
     this.topologyKey = "";
     this.lastTelemetry = null;
   }
@@ -203,19 +268,92 @@ export class ArticulatedAssemblyController {
 
   exportState() {
     return structuredClone({
-      version: 1,
-      topologyKey: this.topologyKey,
-      stateByGroup: [...this.stateByGroup],
-      lastTelemetry: this.lastTelemetry,
+      version: 2,
+      initialized: this.stateInitialized,
+      stateByGroup: [...this.stateByGroup]
+        .sort(([left], [right]) => left.localeCompare(right, "en"))
+        .map(([id, state]) => ({
+          id,
+          airborneTime: state.airborneTime,
+          gyroMomentum: state.gyroMomentum,
+          initialRootPosition: state.initialRootPosition,
+          nominalRootClearance: state.nominalRootClearance,
+          gaitCycle: state.gaitCycle,
+          committedSwingSide: state.committedSwingSide,
+        })),
     });
   }
 
+  validateState(state, { physicsState = null } = {}) {
+    if (
+      !checkpointKeysMatch(state, ["version", "initialized", "stateByGroup"]) ||
+      state.version !== 2 ||
+      typeof state.initialized !== "boolean" ||
+      !Array.isArray(state.stateByGroup)
+    )
+      throw new TypeError(
+        "articulated checkpoint must be an exact version 2 mutable projection",
+      );
+    const stateByGroup = new Map();
+    for (const record of state.stateByGroup) {
+      if (
+        !checkpointKeysMatch(record, CHECKPOINT_STATE_FIELDS) ||
+        typeof record.id !== "string" ||
+        record.id.length === 0 ||
+        stateByGroup.has(record.id) ||
+        !Number.isFinite(record.airborneTime) ||
+        record.airborneTime < 0 ||
+        !checkpointKeysMatch(record.gyroMomentum, ["x", "z"]) ||
+        ![record.gyroMomentum.x, record.gyroMomentum.z].every(
+          Number.isFinite,
+        ) ||
+        !(
+          record.initialRootPosition === null ||
+          exactFiniteVector(record.initialRootPosition)
+        ) ||
+        !Number.isFinite(record.nominalRootClearance) ||
+        record.nominalRootClearance <= 0 ||
+        !Number.isFinite(record.gaitCycle) ||
+        record.gaitCycle < 0 ||
+        record.gaitCycle >= 1 ||
+        ![null, "L", "R"].includes(record.committedSwingSide)
+      )
+        throw new TypeError(
+          "articulated checkpoint contains an invalid or duplicate group state",
+        );
+      stateByGroup.set(record.id, {
+        airborneTime: record.airborneTime,
+        fallen: false,
+        gaitPhase: "JOINT CONTROL",
+        swingSide: null,
+        gyroMomentum: structuredClone(record.gyroMomentum),
+        initialRootPosition: structuredClone(record.initialRootPosition),
+        nominalRootClearance: record.nominalRootClearance,
+        gaitCycle: record.gaitCycle,
+        committedSwingSide: record.committedSwingSide,
+      });
+    }
+    const expectedGroupIds = articulatedGroupIds(this.runtime, physicsState),
+      actualGroupIds = [...stateByGroup.keys()].sort((left, right) =>
+        left.localeCompare(right, "en"),
+      );
+    if (
+      state.initialized
+        ? expectedGroupIds.length !== actualGroupIds.length ||
+          expectedGroupIds.some((id, index) => id !== actualGroupIds[index])
+        : actualGroupIds.length !== 0
+    )
+      throw new TypeError(
+        "articulated checkpoint group state does not match target topology",
+      );
+    return stateByGroup;
+  }
+
   importState(state) {
-    if (state?.version !== 1)
-      throw new TypeError("articulated checkpoint must use version 1");
-    this.topologyKey = String(state.topologyKey || "");
-    this.stateByGroup = new Map(structuredClone(state.stateByGroup || []));
-    this.lastTelemetry = structuredClone(state.lastTelemetry || null);
+    this.stateByGroup = this.validateState(state);
+    this.stateInitialized = state.initialized;
+    this.topologyKey = "";
+    this.lastTelemetry = null;
     for (const group of this.groups)
       if (this.stateByGroup.has(group.id))
         group.state = this.stateByGroup.get(group.id);
@@ -228,6 +366,7 @@ export class ArticulatedAssemblyController {
       key = `${context.runGraph.graphRevision}:${this.runtime.topologyRevision}:${activeEntries.length}`;
     if (key === this.topologyKey) return;
     this.topologyKey = key;
+    this.stateInitialized = true;
     const parts = this.runtime.compiled?.parts || [],
       partById = new Map(parts.map((part) => [part.id, part])),
       adjacency = new Map(
@@ -270,7 +409,8 @@ export class ArticulatedAssemblyController {
           entry.descriptor.sourcePartId != null,
       ),
       visitedRoots = new Set(),
-      groups = [];
+      groups = [],
+      nextStateByGroup = new Map();
     for (const candidate of candidates) {
       if (visitedRoots.has(candidate.descriptor.a)) continue;
       const bodyIds = new Set(),
@@ -347,7 +487,7 @@ export class ArticulatedAssemblyController {
         gaitCycle: 0,
         committedSwingSide: null,
       };
-      this.stateByGroup.set(id, previous);
+      nextStateByGroup.set(id, previous);
       groups.push({
         id,
         bodyIds,
@@ -363,6 +503,7 @@ export class ArticulatedAssemblyController {
         state: previous,
       });
     }
+    this.stateByGroup = nextStateByGroup;
     this.groups = groups;
     for (const entry of this.runtime.constraintEntries)
       entry.articulatedTarget = null;
@@ -1070,6 +1211,7 @@ export class ArticulatedAssemblyController {
       entry.articulatedTarget = null;
     this.groups = [];
     this.stateByGroup.clear();
+    this.stateInitialized = false;
     this.topologyKey = "";
     this.lastTelemetry = null;
   }

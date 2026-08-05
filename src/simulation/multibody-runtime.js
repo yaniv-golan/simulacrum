@@ -60,6 +60,167 @@ const plainQuaternion = (value) => ({
   z: value.z,
   w: value.w,
 });
+const PHYSICS_BODY_AUTHORITY_FIELDS = Object.freeze([
+  "mass",
+  "invMass",
+  "inertia",
+  "invInertia",
+  "massFrame",
+  "massProperties",
+  "shapeOffsets",
+  "shapeOrientations",
+]);
+const PHYSICS_BODY_CHECKPOINT_FIELDS = Object.freeze([
+  "partId",
+  "position",
+  "previousPosition",
+  "interpolatedPosition",
+  "quaternion",
+  "previousQuaternion",
+  "interpolatedQuaternion",
+  "velocity",
+  "angularVelocity",
+  "force",
+  "torque",
+  "sleepState",
+  "timeLastSleepy",
+]);
+const PHYSICS_CHECKPOINT_FIELDS = Object.freeze([
+  "version",
+  "fixedDt",
+  "sourceRevision",
+  "world",
+  "bodies",
+  "entries",
+  "exclusionStates",
+  "phaseByPart",
+  "loadByConnection",
+  "torqueByConnection",
+  "motorElectricalWByPart",
+  "activeLuminairePartIds",
+  "fluidState",
+  "topologyRevision",
+  "solverStatePolicy",
+]);
+const CHECKPOINT_ENTRY_SCALAR_KEYS = Object.freeze([
+  "active",
+  "angle",
+  "rawAngle",
+  "velocity",
+  "reactionTorque",
+  "force",
+  "coordinateM",
+  "rateMPerS",
+  "transverseM",
+  "reactionForceN",
+  "appliedForceN",
+  "elasticPotentialJ",
+  "dampingWorkJ",
+  "dampingPowerW",
+  "frictionWorkJ",
+  "actuatorMechanicalWorkJ",
+  "actuatorElectricalEnergyJ",
+  "actuatorDissipatedEnergyJ",
+  "temperatureK",
+  "powered",
+  "saturated",
+  "thermalDerate",
+  "thermalShutdown",
+  "clutchEngaged",
+  "clutchCoordinateM",
+  "phaseA",
+  "phaseB",
+]);
+
+function checkpointKeysMatch(value, expectedKeys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort(),
+    expected = [...expectedKeys].sort();
+  return (
+    actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index])
+  );
+}
+
+function checkpointVectorIsFinite(value) {
+  return Boolean(
+    value &&
+    checkpointKeysMatch(value, ["x", "y", "z"]) &&
+    [value.x, value.y, value.z].every(
+      (component) =>
+        typeof component === "number" && Number.isFinite(component),
+    ),
+  );
+}
+
+function checkpointQuaternionIsUnit(value) {
+  if (
+    !value ||
+    !checkpointKeysMatch(value, ["x", "y", "z", "w"]) ||
+    ![value.x, value.y, value.z, value.w].every(
+      (component) =>
+        typeof component === "number" && Number.isFinite(component),
+    )
+  )
+    return false;
+  const normSquared =
+    value.x * value.x +
+    value.y * value.y +
+    value.z * value.z +
+    value.w * value.w;
+  return Math.abs(normSquared - 1) <= 1e-6;
+}
+
+function checkpointTreeIsFinite(value, { allowStrings = true } = {}) {
+  if (value == null || typeof value === "boolean") return true;
+  if (typeof value === "string") return allowStrings;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (Array.isArray(value))
+    return value.every((entry) =>
+      checkpointTreeIsFinite(entry, { allowStrings }),
+    );
+  if (typeof value !== "object") return false;
+  return Object.values(value).every((entry) =>
+    checkpointTreeIsFinite(entry, { allowStrings }),
+  );
+}
+
+function checkpointShapeMatches(value, template) {
+  if (template === null)
+    return (
+      value === null || (typeof value === "number" && Number.isFinite(value))
+    );
+  if (Array.isArray(template))
+    return Array.isArray(value) && checkpointTreeIsFinite(value);
+  if (typeof template === "number")
+    return typeof value === "number" && Number.isFinite(value);
+  if (typeof template === "boolean") return typeof value === "boolean";
+  if (typeof template === "string") return typeof value === "string";
+  if (!template || typeof template !== "object") return false;
+  if (!checkpointKeysMatch(value, Object.keys(template))) return false;
+  return Object.keys(template).every((key) =>
+    checkpointShapeMatches(value[key], template[key]),
+  );
+}
+
+function numericCheckpointMap(records, validIds, { min = -Infinity } = {}) {
+  if (!Array.isArray(records)) return null;
+  const result = new Map();
+  for (const entry of records) {
+    if (
+      !Array.isArray(entry) ||
+      entry.length !== 2 ||
+      !validIds.has(entry[0]) ||
+      result.has(entry[0]) ||
+      typeof entry[1] !== "number" ||
+      !Number.isFinite(entry[1]) ||
+      entry[1] < min
+    )
+      return null;
+    result.set(entry[0], entry[1]);
+  }
+  return result;
+}
 
 const frameValuesEqual = (left, right, tolerance = 1e-12) =>
   Array.isArray(left) &&
@@ -1279,6 +1440,7 @@ export class MultibodyRuntime {
         force: 0,
         coordinateM: descriptor.restLength || 0,
         rateMPerS: 0,
+        transverseM: 0,
         elasticPotentialJ: 0,
         dampingWorkJ: 0,
         dampingPowerW: 0,
@@ -1291,6 +1453,8 @@ export class MultibodyRuntime {
         temperatureK: 293.15,
         powered: false,
         saturated: false,
+        thermalDerate: 1,
+        thermalShutdown: false,
         clutchEngaged: false,
         clutchCoordinateM: null,
       });
@@ -1338,6 +1502,8 @@ export class MultibodyRuntime {
         temperatureK: 293.15,
         powered: false,
         saturated: false,
+        thermalDerate: 1,
+        thermalShutdown: false,
         clutchEngaged: false,
         clutchCoordinateM: null,
       });
@@ -2793,82 +2959,27 @@ export class MultibodyRuntime {
         angularVelocity: plainVector(body.angularVelocity),
         force: plainVector(body.force),
         torque: plainVector(body.torque),
-        mass: body.mass,
-        invMass: body.invMass,
-        inertia: plainVector(body.inertia),
-        invInertia: plainVector(body.invInertia),
-        massFrame: {
-          principalToPart: plainQuaternion(
-            body.userData.massFrame.principalToPart,
-          ),
-          comPart: plainVector(body.userData.massFrame.comPart),
-        },
-        massProperties: structuredClone(body.userData.massProperties),
-        shapeOffsets: body.shapeOffsets.map(plainVector),
-        shapeOrientations: body.shapeOrientations.map(plainQuaternion),
         sleepState: body.sleepState,
         timeLastSleepy: body.timeLastSleepy,
       }),
-      scalarEntryKeys = [
-        "active",
-        "angle",
-        "rawAngle",
-        "velocity",
-        "reactionTorque",
-        "force",
-        "coordinateM",
-        "rateMPerS",
-        "transverseM",
-        "reactionForceN",
-        "appliedForceN",
-        "elasticPotentialJ",
-        "dampingWorkJ",
-        "dampingPowerW",
-        "frictionWorkJ",
-        "actuatorMechanicalWorkJ",
-        "actuatorElectricalEnergyJ",
-        "actuatorDissipatedEnergyJ",
-        "temperatureK",
-        "powered",
-        "saturated",
-        "thermalDerate",
-        "thermalShutdown",
-        "clutchEngaged",
-        "clutchCoordinateM",
-        "phaseA",
-        "phaseB",
-      ],
       entries = this.constraintEntries.map((entry) => ({
         id: entry.descriptor.id,
         kind: entry.kind || null,
         values: {
           active: entry.active !== false,
           ...Object.fromEntries(
-            scalarEntryKeys
-              .filter((key) => key !== "active" && Object.hasOwn(entry, key))
-              .map((key) => [key, entry[key]]),
+            CHECKPOINT_ENTRY_SCALAR_KEYS.filter(
+              (key) => key !== "active" && Object.hasOwn(entry, key),
+            ).map((key) => [key, entry[key]]),
           ),
         },
         tireState:
           entry.kind === "rolling-contact-v1"
             ? structuredClone(entry.constraint.state)
             : null,
-        fixedFrame:
-          entry.descriptor.kind === "fixed" && entry.constraint
-            ? {
-                pivotA: plainVector(entry.constraint.pivotA),
-                pivotB: plainVector(entry.constraint.pivotB),
-                xA: plainVector(entry.constraint.xA),
-                yA: plainVector(entry.constraint.yA),
-                zA: plainVector(entry.constraint.zA),
-                xB: plainVector(entry.constraint.xB),
-                yB: plainVector(entry.constraint.yB),
-                zB: plainVector(entry.constraint.zB),
-              }
-            : null,
       }));
     return structuredClone({
-      version: 1,
+      version: 2,
       fixedDt: this.fixedDt,
       sourceRevision: this.compiled.sourceRevision,
       world: {
@@ -2896,13 +3007,18 @@ export class MultibodyRuntime {
     });
   }
 
-  importState(state) {
-    if (!this.compiled || state?.version !== 1)
+  validateState(state) {
+    if (!this.compiled || state?.version !== 2)
       throw new DomainValidationError(
         "INVALID_MULTIBODY_CHECKPOINT",
         "Multibody checkpoint does not match the running runtime",
       );
+    const expectedCheckpointFields = [
+      ...PHYSICS_CHECKPOINT_FIELDS,
+      ...(Object.hasOwn(state, "worldAdapter") ? ["worldAdapter"] : []),
+    ];
     if (
+      !checkpointKeysMatch(state, expectedCheckpointFields) ||
       state.fixedDt !== this.fixedDt ||
       state.sourceRevision !== this.compiled.sourceRevision ||
       state.solverStatePolicy !== "deterministic-cold-start-v1"
@@ -2911,10 +3027,26 @@ export class MultibodyRuntime {
         "MULTIBODY_CHECKPOINT_IDENTITY_MISMATCH",
         "Multibody checkpoint identities do not match the running runtime",
       );
+    if (
+      !Array.isArray(state.bodies) ||
+      !Array.isArray(state.entries) ||
+      !Array.isArray(state.exclusionStates) ||
+      !checkpointKeysMatch(state.world, ["time", "stepnumber"]) ||
+      !Number.isFinite(state.world.time) ||
+      !Number.isSafeInteger(state.world.stepnumber) ||
+      state.world.stepnumber < 0 ||
+      !Number.isSafeInteger(state.topologyRevision) ||
+      state.topologyRevision < 0
+    )
+      throw new DomainValidationError(
+        "INVALID_MULTIBODY_CHECKPOINT",
+        "Multibody checkpoint contains invalid or non-finite state",
+      );
     const bodies = new Map(
       state.bodies.map((record) => [record.partId, record]),
     );
     if (
+      state.bodies.length !== this.bodyByPart.size ||
       bodies.size !== this.bodyByPart.size ||
       [...this.bodyByPart.keys()].some((partId) => !bodies.has(partId))
     )
@@ -2922,15 +3054,178 @@ export class MultibodyRuntime {
         "MULTIBODY_CHECKPOINT_BODY_MISMATCH",
         "Multibody checkpoint body set does not match compiled topology",
       );
-    const copyVector = (target, value) =>
-        target.set(Number(value.x), Number(value.y), Number(value.z)),
-      copyQuaternion = (target, value) =>
-        target.set(
-          Number(value.x),
-          Number(value.y),
-          Number(value.z),
-          Number(value.w),
+    for (const record of bodies.values()) {
+      if (
+        PHYSICS_BODY_AUTHORITY_FIELDS.some((field) =>
+          Object.hasOwn(record, field),
+        )
+      )
+        throw new DomainValidationError(
+          "MULTIBODY_CHECKPOINT_MASS_AUTHORITY_MISMATCH",
+          `Physics checkpoint duplicates mass or geometry authority for ${String(record.partId)}`,
         );
+      if (
+        !checkpointKeysMatch(record, PHYSICS_BODY_CHECKPOINT_FIELDS) ||
+        ![
+          "position",
+          "previousPosition",
+          "interpolatedPosition",
+          "velocity",
+          "angularVelocity",
+          "force",
+          "torque",
+        ].every((field) => checkpointVectorIsFinite(record[field])) ||
+        !["quaternion", "previousQuaternion", "interpolatedQuaternion"].every(
+          (field) => checkpointQuaternionIsUnit(record[field]),
+        ) ||
+        ![CANNON.Body.AWAKE, CANNON.Body.SLEEPY, CANNON.Body.SLEEPING].includes(
+          record.sleepState,
+        ) ||
+        !Number.isFinite(record.timeLastSleepy) ||
+        record.timeLastSleepy < 0
+      )
+        throw new DomainValidationError(
+          "INVALID_MULTIBODY_CHECKPOINT_BODY_STATE",
+          `Physics checkpoint body state is invalid for ${String(record.partId)}`,
+        );
+    }
+    const entries = new Map(state.entries.map((record) => [record.id, record]));
+    if (
+      state.entries.length !== this.constraintEntries.length ||
+      entries.size !== this.constraintEntries.length ||
+      this.constraintEntries.some((entry) => !entries.has(entry.descriptor.id))
+    )
+      throw new DomainValidationError(
+        "MULTIBODY_CHECKPOINT_CONSTRAINT_MISMATCH",
+        "Multibody checkpoint constraint set does not match compiled topology",
+      );
+    for (const entry of this.constraintEntries) {
+      const record = entries.get(entry.descriptor.id);
+      if (!checkpointKeysMatch(record, ["id", "kind", "values", "tireState"]))
+        throw new DomainValidationError(
+          "MULTIBODY_CHECKPOINT_CONSTRAINT_FIELD_MISMATCH",
+          `Constraint ${entry.descriptor.id} checkpoint record exceeds its mutable projection`,
+        );
+      if ((entry.kind || null) !== record.kind)
+        throw new DomainValidationError(
+          "MULTIBODY_CHECKPOINT_CONSTRAINT_KIND_MISMATCH",
+          `Constraint ${entry.descriptor.id} changed kind`,
+        );
+      const expectedValueKeys = CHECKPOINT_ENTRY_SCALAR_KEYS.filter(
+        (key) => key === "active" || Object.hasOwn(entry, key),
+      );
+      if (!checkpointKeysMatch(record.values, expectedValueKeys))
+        throw new DomainValidationError(
+          "MULTIBODY_CHECKPOINT_CONSTRAINT_FIELD_MISMATCH",
+          `Constraint ${entry.descriptor.id} checkpoint fields do not match its mutable state projection (${Object.keys(record.values).sort().join(",")} versus ${expectedValueKeys.sort().join(",")})`,
+        );
+      for (const key of expectedValueKeys) {
+        const value = record.values[key],
+          liveValue = key === "active" ? entry.active !== false : entry[key];
+        if (
+          (typeof liveValue === "boolean" && typeof value !== "boolean") ||
+          (typeof liveValue === "number" && !Number.isFinite(value)) ||
+          (liveValue === null && value !== null)
+        )
+          throw new DomainValidationError(
+            "INVALID_MULTIBODY_CHECKPOINT_CONSTRAINT_STATE",
+            `Constraint ${entry.descriptor.id} has an invalid ${key} value`,
+          );
+      }
+      if (
+        entry.kind === "rolling-contact-v1"
+          ? !checkpointShapeMatches(record.tireState, entry.constraint.state)
+          : record.tireState !== null
+      )
+        throw new DomainValidationError(
+          "MULTIBODY_CHECKPOINT_TIRE_STATE_MISMATCH",
+          `Constraint ${entry.descriptor.id} has invalid tire-state ownership`,
+        );
+    }
+    const exclusionStates = new Map(
+      state.exclusionStates.map((record) => [record.id, record.active]),
+    );
+    if (
+      state.exclusionStates.length !==
+        this.collisionExclusionConstraints.length ||
+      exclusionStates.size !== this.collisionExclusionConstraints.length ||
+      state.exclusionStates.some(
+        (record) =>
+          !checkpointKeysMatch(record, ["id", "active"]) ||
+          typeof record.active !== "boolean",
+      ) ||
+      this.collisionExclusionConstraints.some(
+        (entry) => !exclusionStates.has(entry.descriptor.id),
+      ) ||
+      [...exclusionStates.values()].some(
+        (active) => typeof active !== "boolean",
+      )
+    )
+      throw new DomainValidationError(
+        "MULTIBODY_CHECKPOINT_EXCLUSION_MISMATCH",
+        "Multibody checkpoint collision exclusions do not match compiled topology",
+      );
+    const partIds = new Set(this.bodyByPart.keys()),
+      connectionIds = new Set(
+        this.compiled.constraints.flatMap(
+          (descriptor) => descriptor.sourceConnectionIds || [],
+        ),
+      ),
+      phaseByPart = numericCheckpointMap(state.phaseByPart, partIds),
+      loadByConnection = numericCheckpointMap(
+        state.loadByConnection,
+        connectionIds,
+        { min: 0 },
+      ),
+      torqueByConnection = numericCheckpointMap(
+        state.torqueByConnection,
+        connectionIds,
+        { min: 0 },
+      ),
+      motorElectricalWByPart = numericCheckpointMap(
+        state.motorElectricalWByPart,
+        partIds,
+        { min: 0 },
+      ),
+      activeLuminairePartIds = state.activeLuminairePartIds;
+    if (
+      !phaseByPart ||
+      phaseByPart.size !== partIds.size ||
+      [...partIds].some((partId) => !phaseByPart.has(partId)) ||
+      !loadByConnection ||
+      !torqueByConnection ||
+      !motorElectricalWByPart ||
+      !Array.isArray(activeLuminairePartIds) ||
+      new Set(activeLuminairePartIds).size !== activeLuminairePartIds.length ||
+      activeLuminairePartIds.some((partId) => !partIds.has(partId)) ||
+      (state.fluidState !== null &&
+        !checkpointTreeIsFinite(state.fluidState, { allowStrings: false }))
+    )
+      throw new DomainValidationError(
+        "INVALID_MULTIBODY_CHECKPOINT_RUNTIME_STATE",
+        "Multibody checkpoint contains invalid runtime projections",
+      );
+    return {
+      bodies,
+      entries,
+      exclusionStates,
+      world: structuredClone(state.world),
+      phaseByPart,
+      loadByConnection,
+      torqueByConnection,
+      motorElectricalWByPart,
+      activeLuminairePartIds: [...activeLuminairePartIds],
+      fluidState: structuredClone(state.fluidState),
+      topologyRevision: state.topologyRevision,
+    };
+  }
+
+  importState(state) {
+    const validated = this.validateState(state),
+      { bodies, entries, exclusionStates } = validated;
+    const copyVector = (target, value) => target.set(value.x, value.y, value.z),
+      copyQuaternion = (target, value) =>
+        target.set(value.x, value.y, value.z, value.w);
     for (const [partId, body] of this.bodyByPart) {
       const record = bodies.get(partId);
       copyVector(body.position, record.position);
@@ -2946,71 +3241,14 @@ export class MultibodyRuntime {
       copyVector(body.angularVelocity, record.angularVelocity);
       copyVector(body.force, record.force);
       copyVector(body.torque, record.torque);
-      body.mass = record.mass;
-      body.invMass = record.invMass;
-      copyVector(body.inertia, record.inertia);
-      copyVector(body.invInertia, record.invInertia);
-      copyQuaternion(
-        body.userData.massFrame.principalToPart,
-        record.massFrame.principalToPart,
-      );
-      copyVector(body.userData.massFrame.comPart, record.massFrame.comPart);
-      body.userData.massProperties = structuredClone(record.massProperties);
-      if (
-        record.shapeOffsets.length !== body.shapeOffsets.length ||
-        record.shapeOrientations.length !== body.shapeOrientations.length
-      )
-        throw new DomainValidationError(
-          "MULTIBODY_CHECKPOINT_SHAPE_MISMATCH",
-          `Multibody checkpoint shape frame set changed for ${String(partId)}`,
-        );
-      for (let index = 0; index < body.shapeOffsets.length; index++) {
-        copyVector(body.shapeOffsets[index], record.shapeOffsets[index]);
-        copyQuaternion(
-          body.shapeOrientations[index],
-          record.shapeOrientations[index],
-        );
-      }
       body.sleepState = record.sleepState;
       body.timeLastSleepy = record.timeLastSleepy;
       body.aabbNeedsUpdate = true;
       body.updateInertiaWorld(true);
     }
-    const entries = new Map(state.entries.map((record) => [record.id, record]));
-    if (
-      entries.size !== this.constraintEntries.length ||
-      this.constraintEntries.some((entry) => !entries.has(entry.descriptor.id))
-    )
-      throw new DomainValidationError(
-        "MULTIBODY_CHECKPOINT_CONSTRAINT_MISMATCH",
-        "Multibody checkpoint constraint set does not match compiled topology",
-      );
     for (const entry of this.constraintEntries) {
       const record = entries.get(entry.descriptor.id);
-      if ((entry.kind || null) !== record.kind)
-        throw new DomainValidationError(
-          "MULTIBODY_CHECKPOINT_CONSTRAINT_KIND_MISMATCH",
-          `Constraint ${entry.descriptor.id} changed kind`,
-        );
       Object.assign(entry, structuredClone(record.values));
-      if (entry.descriptor.kind === "fixed") {
-        if (!record.fixedFrame)
-          throw new DomainValidationError(
-            "MULTIBODY_CHECKPOINT_FIXED_FRAME_MISMATCH",
-            `Constraint ${entry.descriptor.id} is missing its fixed frame`,
-          );
-        for (const field of [
-          "pivotA",
-          "pivotB",
-          "xA",
-          "yA",
-          "zA",
-          "xB",
-          "yB",
-          "zB",
-        ])
-          copyVector(entry.constraint[field], record.fixedFrame[field]);
-      }
       if (entry.kind === "rolling-contact-v1") {
         entry.constraint.state = structuredClone(record.tireState);
         entry.constraint.solvedContactRows = [];
@@ -3021,9 +3259,6 @@ export class MultibodyRuntime {
         else if (!this.world.constraints.includes(entry.constraint))
           this.world.addConstraint(entry.constraint);
     }
-    const exclusionStates = new Map(
-      state.exclusionStates.map((record) => [record.id, record.active]),
-    );
     for (const entry of this.collisionExclusionConstraints) {
       entry.active = exclusionStates.get(entry.descriptor.id) !== false;
       if (!entry.active)
@@ -3037,8 +3272,8 @@ export class MultibodyRuntime {
           entry.exclusion,
         );
     }
-    this.world.time = state.world.time;
-    this.world.stepnumber = state.world.stepnumber;
+    this.world.time = validated.world.time;
+    this.world.stepnumber = validated.world.stepnumber;
     this.world.contacts.length = 0;
     this.world.frictionEquations.length = 0;
     // Cannon body/shape IDs are process-local allocation handles. The declared
@@ -3052,13 +3287,13 @@ export class MultibodyRuntime {
     this.world.shapeOverlapKeeper.current.length = 0;
     this.world.shapeOverlapKeeper.previous.length = 0;
     this.world.broadphase.dirty = true;
-    this.phaseByPart = new Map(state.phaseByPart);
-    this.loadByConnection = new Map(state.loadByConnection);
-    this.torqueByConnection = new Map(state.torqueByConnection);
-    this.motorElectricalWByPart = new Map(state.motorElectricalWByPart);
-    this.activeLuminairePartIds = [...state.activeLuminairePartIds];
-    this.fluidState = structuredClone(state.fluidState);
-    this.topologyRevision = state.topologyRevision;
+    this.phaseByPart = validated.phaseByPart;
+    this.loadByConnection = validated.loadByConnection;
+    this.torqueByConnection = validated.torqueByConnection;
+    this.motorElectricalWByPart = validated.motorElectricalWByPart;
+    this.activeLuminairePartIds = validated.activeLuminairePartIds;
+    this.fluidState = validated.fluidState;
+    this.topologyRevision = validated.topologyRevision;
     this.lastTelemetry = this.telemetry(this.lastTelemetry?.activeMotors || 0);
   }
 

@@ -147,6 +147,7 @@ export function createTestSiteCollisionBody({
   Object.assign(body, {
     userData: {
       externalBodyId: "environment:test-reserve",
+      checkpointPolicy: "reconstruct-from-owner-v1",
       surface: "Workshop Test Reserve",
       materialKey: "short-grass",
       rollingSupportAt: (x, z) => {

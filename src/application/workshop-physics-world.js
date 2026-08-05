@@ -44,6 +44,7 @@ export function createWorkshopPhysicsWorld({ surfaceSampleAt, footprint }) {
   Object.assign(groundBody, {
     userData: {
       externalBodyId: "environment:build-plate",
+      checkpointPolicy: "reconstruct-from-owner-v1",
       surface: "build plate",
       materialKey: "workshop-steel",
     },

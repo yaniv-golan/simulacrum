@@ -395,11 +395,42 @@ export class ControllerSensorBank {
       }));
   }
 
-  importState(state) {
+  validateState(state) {
     if (!Array.isArray(state))
       throw new TypeError("sensor checkpoint must be an array");
+    const velocities = new Map();
+    for (const record of state) {
+      if (
+        !record ||
+        typeof record !== "object" ||
+        Array.isArray(record) ||
+        Object.keys(record).sort().join("\0") !== "sensorId\0velocity" ||
+        record.sensorId == null ||
+        velocities.has(record.sensorId) ||
+        !record.velocity ||
+        typeof record.velocity !== "object" ||
+        Array.isArray(record.velocity) ||
+        Object.keys(record.velocity).sort().join("\0") !== "x\0y\0z" ||
+        ["x", "y", "z"].some(
+          (axis) =>
+            typeof record.velocity[axis] !== "number" ||
+            !Number.isFinite(record.velocity[axis]),
+        )
+      )
+        throw new TypeError(
+          "sensor checkpoint contains invalid velocity state",
+        );
+      velocities.set(record.sensorId, structuredClone(record.velocity));
+    }
+    return velocities;
+  }
+
+  importState(state) {
     this.previousVelocity = new Map(
-      state.map((record) => [record.sensorId, vector(record.velocity)]),
+      [...this.validateState(state)].map(([sensorId, velocity]) => [
+        sensorId,
+        vector(velocity),
+      ]),
     );
   }
 }

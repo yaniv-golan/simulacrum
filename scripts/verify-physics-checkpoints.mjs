@@ -12,12 +12,16 @@ import { stableStringify } from "../src/model/primitives.js";
 import { sha256Hex } from "../src/model/sha256.js";
 import { instantiateSubassembly } from "../src/model/subassemblies.js";
 import { createControllerSensorCapture } from "../src/application/controller-sensor-capture.js";
-import { prepareTypeScriptController } from "../src/scripting/controller-compilers.js";
+import {
+  prepareTypeScriptController,
+  prepareWasmController,
+} from "../src/scripting/controller-compilers.js";
 import { ControllerRuntimeManager } from "../src/scripting/controller-runtime-manager.js";
 import { CannonWorldAdapter } from "../src/simulation/cannon-world-adapter.js";
 import { ControllerSensorBank } from "../src/simulation/controller-sensors.js";
 import { controllerBindingManifest } from "../src/model/controller-bindings.js";
 import { TerrainCollisionStream } from "../src/simulation/environment/terrain-collision-stream.js";
+import { AerothermalAblationOwner } from "../src/simulation/aerothermal-ablation-owner.js";
 import { PhysicalAssemblyIndex } from "../src/simulation/physical-assembly-index.js";
 import { createPhysicalFlightServices } from "../src/simulation/physical-flight-services.js";
 import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
@@ -38,6 +42,16 @@ import { StructureSystem } from "../src/simulation/systems/structure-system.js";
 import { TelemetrySystem } from "../src/simulation/systems/telemetry-system.js";
 import { ThermalSystem } from "../src/simulation/systems/thermal-system.js";
 import { MotorEnergySettlementSystem } from "../src/simulation/systems/motor-energy-settlement-system.js";
+import {
+  MaterialResourceCommitSystem,
+  MaterialResourceSystem,
+} from "../src/simulation/systems/material-resource-system.js";
+import {
+  PneumaticCommitSystem,
+  PneumaticStructureSystem,
+  PneumaticSystem,
+} from "../src/simulation/systems/pneumatic-system.js";
+import { MassPropertyCommitSystem } from "../src/simulation/systems/mass-property-commit-system.js";
 
 const DT = 1 / 120,
   SPLIT_TICK = 144,
@@ -117,6 +131,7 @@ function createRuntime() {
     });
   ground.userData = {
     externalBodyId: "fixture:checkpoint-ground",
+    checkpointPolicy: "reconstruct-from-owner-v1",
     surface: "checkpoint ground",
     materialKey: "workshop-steel",
   };
@@ -220,6 +235,88 @@ function firstDifference(leftJson, rightJson) {
   return visit(JSON.parse(leftJson), JSON.parse(rightJson), "state");
 }
 
+function rewriteCheckpointOwner(checkpoint, ownerId, rewrite) {
+  const owner = checkpoint.stateOwners.find(
+      (candidate) => candidate.ownerId === ownerId,
+    ),
+    payload = JSON.parse(owner.payloadJson);
+  rewrite(payload);
+  owner.payloadJson = stableStringify(payload);
+  owner.payloadByteLength = new TextEncoder().encode(
+    owner.payloadJson,
+  ).byteLength;
+  owner.payloadSha256 = sha256Hex(owner.payloadJson);
+  checkpoint.stateDigest = checkpointStateDigest(checkpoint);
+}
+
+const ablativeMaterial = Object.freeze({
+    ablative: true,
+    emissivity: 0.82,
+    specificHeat: 950,
+    pyrolysisTemperatureK: 760,
+    heatOfAblationJkg: 2_800_000,
+    heatLimit: 1_400,
+  }),
+  thermalPart = Object.freeze({
+    id: "thermal-fixture",
+    baseStructuralMassKg: 10,
+    body: { mass: 10 },
+    aerothermal: { material: ablativeMaterial },
+  }),
+  thermalModel = {
+    parts: [thermalPart],
+    active: () => true,
+  },
+  thermalAerodynamics = {
+    forceForPart: () => null,
+    heatRecords: () => [],
+  },
+  thermalSource = new AerothermalAblationOwner({
+    physicalFlightModel: thermalModel,
+    aerodynamicForceOwner: thermalAerodynamics,
+  }),
+  depletedThermalState = thermalSource.exportState();
+assert.equal(depletedThermalState.version, 2);
+assert.equal(
+  Object.hasOwn(depletedThermalState.parts[0].thermal, "initialMass"),
+  false,
+  "thermal checkpoint duplicated immutable initial-mass authority",
+);
+assert.equal(
+  Object.hasOwn(depletedThermalState.parts[0].thermal, "specificHeat"),
+  false,
+  "thermal checkpoint duplicated immutable material authority",
+);
+depletedThermalState.parts[0].thermal.remainingMass = 4;
+depletedThermalState.parts[0].thermal.ablatedMass = 6;
+const thermalRestored = new AerothermalAblationOwner({
+  physicalFlightModel: thermalModel,
+  aerodynamicForceOwner: thermalAerodynamics,
+});
+thermalRestored.importState(depletedThermalState);
+assert.equal(
+  thermalRestored.massContributions()[0].structuralMassKg,
+  4,
+  "fresh aerothermal owner did not reconstruct depleted structural mass",
+);
+const impossibleThermalState = structuredClone(depletedThermalState);
+impossibleThermalState.parts[0].thermal.remainingMass = 11;
+impossibleThermalState.parts[0].thermal.ablatedMass = 0;
+assert.throws(
+  () => thermalRestored.validateState(impossibleThermalState),
+  (error) => error?.code === "INVALID_AEROTHERMAL_CHECKPOINT_STATE",
+  "aerothermal owner accepted mass creation",
+);
+const nonFiniteThermalState = structuredClone(depletedThermalState);
+nonFiniteThermalState.parts[0].thermal.temperatureK = Number.NaN;
+assert.throws(
+  () => thermalRestored.validateState(nonFiniteThermalState),
+  (error) => error?.code === "INVALID_AEROTHERMAL_CHECKPOINT_STATE",
+  "aerothermal owner accepted non-finite thermal state",
+);
+thermalSource.dispose();
+thermalRestored.dispose();
+
 const initialSource = createRuntime(),
   initialCheckpoint = initialSource.coordinator.capture(IDENTITIES),
   initialState = observedState(initialSource),
@@ -262,6 +359,28 @@ for (let tick = 1; tick <= FINAL_TICK; tick++) {
     assert.deepEqual(
       checkpoint.stateOwners.map((owner) => owner.ownerId),
       CHECKPOINT_STATE_OWNER_IDS,
+    );
+    const physicsPayload = JSON.parse(
+        checkpoint.stateOwners.find(
+          (owner) => owner.ownerId === "physics-world",
+        ).payloadJson,
+      ),
+      bodyRegistryPayload = JSON.parse(
+        checkpoint.stateOwners.find(
+          (owner) => owner.ownerId === "body-registry",
+        ).payloadJson,
+      );
+    assert.equal(physicsPayload.version, 2);
+    assert.equal(
+      physicsPayload.bodies.some((body) => Object.hasOwn(body, "mass")),
+      false,
+    );
+    assert.equal(bodyRegistryPayload.schemaVersion, 2);
+    assert.equal(
+      bodyRegistryPayload.bodies.some((body) =>
+        Object.hasOwn(body, "massProperties"),
+      ),
+      false,
     );
   } else if (tick > SPLIT_TICK)
     expected.set(tick, observedState(uninterrupted));
@@ -329,11 +448,515 @@ assert.equal(
   beforeRejectedRestore,
   "failed checkpoint import was not rolled back atomically",
 );
-restored.coordinator.restore(checkpoint, IDENTITIES);
+const hostileMassCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(hostileMassCheckpoint, "physics-world", (physics) => {
+  physics.bodies[0].mass = 123;
+  physics.bodies[0].invMass = 1 / 123;
+});
+assert.throws(
+  () => restored.coordinator.restore(hostileMassCheckpoint, IDENTITIES),
+  (error) => error?.code === "MULTIBODY_CHECKPOINT_MASS_AUTHORITY_MISMATCH",
+  "physics checkpoint was allowed to smuggle duplicated mass authority",
+);
 assert.equal(
   observedState(restored),
+  beforeRejectedRestore,
+  "rejected physics mass authority partially mutated the running simulation",
+);
+const hostileRegistryMassCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(
+  hostileRegistryMassCheckpoint,
+  "body-registry",
+  (bodyRegistry) => {
+    bodyRegistry.bodies[0].massProperties = { massKg: 123 };
+  },
+);
+assert.throws(
+  () => restored.coordinator.restore(hostileRegistryMassCheckpoint, IDENTITIES),
+  (error) => error?.code === "BODY_REGISTRY_CHECKPOINT_MASS_AUTHORITY_MISMATCH",
+  "body-registry checkpoint was allowed to smuggle derived mass authority",
+);
+assert.equal(
+  observedState(restored),
+  beforeRejectedRestore,
+  "rejected body-registry mass authority partially mutated the running simulation",
+);
+const hostileConstraintFieldCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(
+  hostileConstraintFieldCheckpoint,
+  "physics-world",
+  (physics) => {
+    physics.entries[0].values.constraint = null;
+  },
+);
+assert.throws(
+  () =>
+    restored.coordinator.restore(hostileConstraintFieldCheckpoint, IDENTITIES),
+  (error) => error?.code === "MULTIBODY_CHECKPOINT_CONSTRAINT_FIELD_MISMATCH",
+  "constraint checkpoint accepted a field outside its mutable projection",
+);
+assert.equal(
+  observedState(restored),
+  beforeRejectedRestore,
+  "rejected constraint field injection partially mutated the running simulation",
+);
+const hostileRegistryGeometryCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(
+  hostileRegistryGeometryCheckpoint,
+  "body-registry",
+  (bodyRegistry) => {
+    bodyRegistry.bodies[0].descriptors = [{ kind: "smuggled-geometry" }];
+  },
+);
+assert.throws(
+  () =>
+    restored.coordinator.restore(hostileRegistryGeometryCheckpoint, IDENTITIES),
+  (error) => error?.code === "BODY_REGISTRY_CHECKPOINT_FIELD_MISMATCH",
+  "body-registry checkpoint accepted duplicated geometry authority",
+);
+assert.equal(
+  observedState(restored),
+  beforeRejectedRestore,
+  "rejected body-registry geometry authority partially mutated the running simulation",
+);
+const hostileRegistryPoseCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(
+  hostileRegistryPoseCheckpoint,
+  "body-registry",
+  (bodyRegistry) => {
+    bodyRegistry.bodies[0].pose = {
+      position: { x: 0, y: 1_000, z: 0 },
+      quaternion: { x: 0, y: 0, z: 0, w: 1 },
+    };
+  },
+);
+assert.throws(
+  () => restored.coordinator.restore(hostileRegistryPoseCheckpoint, IDENTITIES),
+  (error) => error?.code === "INVALID_BODY_REGISTRY_CHECKPOINT_BODY_STATE",
+  "body-registry checkpoint accepted duplicated physics pose authority",
+);
+assert.equal(
+  observedState(restored),
+  beforeRejectedRestore,
+  "rejected body-registry pose authority partially mutated the running simulation",
+);
+const hostileSessionEnvironmentCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(
+  hostileSessionEnvironmentCheckpoint,
+  "session",
+  (session) => {
+    session.environment = { gravityMPerS2: [0, 0, 0] };
+  },
+);
+assert.throws(
+  () =>
+    restored.coordinator.restore(
+      hostileSessionEnvironmentCheckpoint,
+      IDENTITIES,
+    ),
+  (error) => error?.code === "INVALID_SESSION_CHECKPOINT",
+  "session checkpoint accepted authored environment injection",
+);
+assert.equal(
+  observedState(restored),
+  beforeRejectedRestore,
+  "rejected session environment injection partially mutated the running simulation",
+);
+const hostileSolverCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(hostileSolverCheckpoint, "solver-contact", (solver) => {
+  solver.iterations = 999;
+});
+assert.throws(
+  () => restored.coordinator.restore(hostileSolverCheckpoint, IDENTITIES),
+  (error) => error?.code === "INVALID_SOLVER_CONTACT_CHECKPOINT",
+  "solver-contact checkpoint accepted mutable solver configuration",
+);
+assert.equal(
+  observedState(restored),
+  beforeRejectedRestore,
+  "rejected solver configuration partially mutated the running simulation",
+);
+const hostileMultibodyFrameCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(
+  hostileMultibodyFrameCheckpoint,
+  "physics-world",
+  (physics) => {
+    physics.entries[0].fixedFrame = { injected: true };
+  },
+);
+assert.throws(
+  () =>
+    restored.coordinator.restore(hostileMultibodyFrameCheckpoint, IDENTITIES),
+  (error) => error?.code === "MULTIBODY_CHECKPOINT_CONSTRAINT_FIELD_MISMATCH",
+  "multibody checkpoint accepted authored fixed-frame injection",
+);
+const hostileMultibodyVectorCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(
+  hostileMultibodyVectorCheckpoint,
+  "physics-world",
+  (physics) => {
+    physics.bodies[0].position.injected = 1;
+  },
+);
+assert.throws(
+  () =>
+    restored.coordinator.restore(hostileMultibodyVectorCheckpoint, IDENTITIES),
+  (error) => error?.code === "INVALID_MULTIBODY_CHECKPOINT_BODY_STATE",
+  "multibody checkpoint accepted an extended position vector",
+);
+const hostileMultibodySleepCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(
+  hostileMultibodySleepCheckpoint,
+  "physics-world",
+  (physics) => {
+    physics.bodies[0].sleepState = 999;
+  },
+);
+assert.throws(
+  () =>
+    restored.coordinator.restore(hostileMultibodySleepCheckpoint, IDENTITIES),
+  (error) => error?.code === "INVALID_MULTIBODY_CHECKPOINT_BODY_STATE",
+  "multibody checkpoint accepted an impossible sleep state",
+);
+const hostileRunGraphCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(hostileRunGraphCheckpoint, "run-graph", (runGraph) => {
+  runGraph.parts.at(-1).id = runGraph.parts[0].id;
+  runGraph.parts.at(-1).type = "smuggled-authored-type";
+  runGraph.parts.at(-1).config = { authority: "checkpoint" };
+});
+assert.throws(
+  () => restored.coordinator.restore(hostileRunGraphCheckpoint, IDENTITIES),
+  (error) => error?.code === "RUN_GRAPH_CHECKPOINT_IDENTITY_MISMATCH",
+  "run-graph checkpoint accepted duplicate identity and authored topology",
+);
+assert.equal(
+  observedState(restored),
+  beforeRejectedRestore,
+  "rejected run-graph topology injection partially mutated the running simulation",
+);
+const hostileRegistryThermalCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(
+  hostileRegistryThermalCheckpoint,
+  "body-registry",
+  (bodyRegistry) => {
+    bodyRegistry.bodies[0].thermal = {
+      parts: { hostile: { temperatureK: 9_999, remainingMass: 0 } },
+    };
+  },
+);
+assert.throws(
+  () =>
+    restored.coordinator.restore(hostileRegistryThermalCheckpoint, IDENTITIES),
+  (error) => error?.code === "BODY_REGISTRY_CHECKPOINT_FIELD_MISMATCH",
+  "body-registry checkpoint accepted projected thermal authority",
+);
+assert.equal(
+  observedState(restored),
+  beforeRejectedRestore,
+  "rejected body-registry thermal authority partially mutated the running simulation",
+);
+const duplicatePhysicsBodyCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(
+  duplicatePhysicsBodyCheckpoint,
+  "physics-world",
+  (physics) => {
+    physics.bodies.push(structuredClone(physics.bodies[0]));
+  },
+);
+assert.throws(
+  () =>
+    restored.coordinator.restore(duplicatePhysicsBodyCheckpoint, IDENTITIES),
+  (error) => error?.code === "MULTIBODY_CHECKPOINT_BODY_MISMATCH",
+  "physics checkpoint accepted a duplicate body identity",
+);
+const incoherentClockCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(incoherentClockCheckpoint, "session", (session) => {
+  session.clock.tick += 1;
+  session.clock.time += DT;
+  session.time += DT;
+});
+assert.throws(
+  () => restored.coordinator.restore(incoherentClockCheckpoint, IDENTITIES),
+  (error) => error?.code === "CHECKPOINT_OWNER_TIME_MISMATCH",
+  "checkpoint accepted contradictory owner clocks",
+);
+assert.equal(
+  observedState(restored),
+  beforeRejectedRestore,
+  "owner-clock rejection partially mutated the running simulation",
+);
+const invalidSessionWrapperCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(
+  invalidSessionWrapperCheckpoint,
+  "session",
+  (session) => {
+    session.sensors = { kind: "unknown-checkpoint-wrapper-v1" };
+  },
+);
+const routeEvidenceArchive = restored.session.context.routeEvidenceArchive,
+  originalRouteEvidenceInvalidation =
+    routeEvidenceArchive.invalidateForCheckpointImport,
+  routeEvidenceInvalidations = [];
+routeEvidenceArchive.invalidateForCheckpointImport = function (...args) {
+  routeEvidenceInvalidations.push(args);
+  return originalRouteEvidenceInvalidation.apply(this, args);
+};
+try {
+  assert.throws(
+    () =>
+      restored.coordinator.restore(invalidSessionWrapperCheckpoint, IDENTITIES),
+    (error) => error?.code === "INVALID_SESSION_CHECKPOINT_VALUE",
+    "session checkpoint accepted an unknown value wrapper",
+  );
+} finally {
+  routeEvidenceArchive.invalidateForCheckpointImport =
+    originalRouteEvidenceInvalidation;
+}
+assert.deepEqual(
+  routeEvidenceInvalidations,
+  [],
+  "rejected session checkpoint irreversibly invalidated route evidence",
+);
+const hostileAbsentFlexibleCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(
+  hostileAbsentFlexibleCheckpoint,
+  "flexible-line-runtime",
+  (flexibleLines) => {
+    flexibleLines.version = 1;
+  },
+);
+assert.throws(
+  () =>
+    restored.coordinator.restore(hostileAbsentFlexibleCheckpoint, IDENTITIES),
+  (error) => error?.code === "CHECKPOINT_OWNER_PRESENCE_MISMATCH",
+  "an absent optional owner accepted a non-sentinel payload",
+);
+restored.coordinator.flexibleLineRuntime = {};
+try {
+  assert.throws(
+    () => restored.coordinator.restore(checkpoint, IDENTITIES),
+    (error) => error?.code === "CHECKPOINT_OWNER_PRESENCE_MISMATCH",
+    "a live flexible-line owner accepted an absent-owner sentinel",
+  );
+} finally {
+  restored.coordinator.flexibleLineRuntime = null;
+}
+restored.session.context.pneumaticNetwork = {};
+try {
+  assert.throws(
+    () => restored.coordinator.restore(checkpoint, IDENTITIES),
+    (error) => error?.code === "CHECKPOINT_OWNER_PRESENCE_MISMATCH",
+    "a live pneumatic owner accepted an absent-owner sentinel",
+  );
+} finally {
+  delete restored.session.context.pneumaticNetwork;
+}
+
+const externalWorld = new CANNON.World(),
+  externalMaterial = new CANNON.Material("external-contact-material"),
+  counterpartMaterial = new CANNON.Material("counterpart-material"),
+  externalBody = new CANNON.Body({
+    type: CANNON.Body.DYNAMIC,
+    mass: 3,
+    material: externalMaterial,
+    shape: new CANNON.Sphere(0.25),
+  }),
+  externalAdapter = new CannonWorldAdapter(externalWorld);
+externalWorld.addContactMaterial(
+  new CANNON.ContactMaterial(externalMaterial, counterpartMaterial, {
+    friction: 0.1,
+    restitution: 0.2,
+  }),
+);
+externalBody.userData = {
+  externalBodyId: "fixture:dynamic-external",
+  checkpointPolicy: "world-kinematics-v1",
+};
+externalWorld.addBody(externalBody);
+delete externalBody.userData.checkpointPolicy;
+assert.throws(
+  () => externalAdapter.exportState(),
+  (error) => error?.code === "INVALID_EXTERNAL_BODY_CHECKPOINT_POLICY",
+  "external body without an explicit checkpoint policy was accepted",
+);
+externalBody.userData.checkpointPolicy = "world-kinematics-v1";
+const externalState = externalAdapter.exportState(),
+  hostileExternalState = structuredClone(externalState);
+assert.equal(Object.hasOwn(externalState.externalBodies[0], "mass"), false);
+assert.equal(Object.hasOwn(externalState.externalBodies[0], "inertia"), false);
+assert.equal(externalState.externalBodies[0].physicalIdentity.mass, 3);
+hostileExternalState.externalBodies[0].mass = 123;
+assert.throws(
+  () => externalAdapter.importState(hostileExternalState),
+  (error) => error?.code === "CANNON_EXTERNAL_BODY_AUTHORITY_MISMATCH",
+  "external dynamic body checkpoint accepted duplicated mass authority",
+);
+assert.equal(externalBody.mass, 3);
+const extraExternalState = structuredClone(externalState);
+extraExternalState.injected = true;
+assert.throws(
+  () => externalAdapter.importState(extraExternalState),
+  (error) => error?.code === "CANNON_TRANSACTION_CHECKPOINT_MISMATCH",
+  "external world checkpoint accepted an extra top-level field",
+);
+externalBody.mass = 9;
+externalBody.updateMassProperties();
+assert.throws(
+  () => externalAdapter.importState(externalState),
+  (error) => error?.code === "CANNON_EXTERNAL_BODY_PHYSICAL_IDENTITY_MISMATCH",
+  "world-kinematics checkpoint accepted a body with different mass and inertia",
+);
+externalBody.mass = 3;
+externalBody.updateMassProperties();
+externalBody.shapes[0].radius = 0.5;
+assert.throws(
+  () => externalAdapter.importState(externalState),
+  (error) => error?.code === "CANNON_EXTERNAL_BODY_PHYSICAL_IDENTITY_MISMATCH",
+  "world-kinematics checkpoint accepted a body with different collision geometry",
+);
+externalBody.shapes[0].radius = 0.25;
+const substitutedMaterial = new CANNON.Material("external-contact-material");
+externalWorld.addContactMaterial(
+  new CANNON.ContactMaterial(substitutedMaterial, counterpartMaterial, {
+    friction: 0.9,
+    restitution: 0.2,
+  }),
+);
+externalBody.material = substitutedMaterial;
+assert.throws(
+  () => externalAdapter.importState(externalState),
+  (error) => error?.code === "CANNON_EXTERNAL_BODY_PHYSICAL_IDENTITY_MISMATCH",
+  "world-kinematics checkpoint accepted a different pairwise contact law behind identical material fields",
+);
+externalBody.material = externalMaterial;
+externalAdapter.dispose();
+
+const invalidLateOwnerCheckpoint = structuredClone(checkpoint);
+rewriteCheckpointOwner(
+  invalidLateOwnerCheckpoint,
+  "energy-power-signal",
+  (energy) => {
+    energy.motorEnergySettlement.version = 99;
+  },
+);
+const importTargets = [
+    restored.session.context.runGraph,
+    restored.multibodyRuntime,
+    restored.session.context.bodyRegistry,
+    restored.session,
+    restored.worldAdapter,
+  ],
+  originalImports = importTargets.map((target) => target.importState),
+  importCalls = [];
+for (const [index, target] of importTargets.entries())
+  target.importState = function (...args) {
+    importCalls.push(index);
+    return originalImports[index].apply(this, args);
+  };
+try {
+  assert.throws(
+    () => restored.coordinator.restore(invalidLateOwnerCheckpoint, IDENTITIES),
+    (error) => error?.code === "INVALID_MOTOR_ENERGY_SETTLEMENT_CHECKPOINT",
+    "invalid late checkpoint owner was accepted",
+  );
+} finally {
+  for (const [index, target] of importTargets.entries())
+    target.importState = originalImports[index];
+}
+assert.deepEqual(
+  importCalls,
+  [],
+  "checkpoint validation invoked an owner importer before every owner passed preflight",
+);
+assert.equal(
+  observedState(restored),
+  beforeRejectedRestore,
+  "late-owner checkpoint rejection mutated the running simulation",
+);
+const originalWorldImport = restored.worldAdapter.importState,
+  originalAtomicRouteInvalidation =
+    restored.session.context.routeEvidenceArchive.invalidateForCheckpointImport,
+  atomicRouteInvalidations = [];
+let worldImportCalls = 0;
+restored.worldAdapter.importState = function (...args) {
+  worldImportCalls++;
+  if (worldImportCalls === 1)
+    throw new Error("synthetic post-validation world import failure");
+  return originalWorldImport.apply(this, args);
+};
+restored.session.context.routeEvidenceArchive.invalidateForCheckpointImport =
+  function (...args) {
+    atomicRouteInvalidations.push(args);
+    return originalAtomicRouteInvalidation.apply(this, args);
+  };
+try {
+  assert.throws(
+    () => restored.coordinator.restore(checkpoint, IDENTITIES),
+    /synthetic post-validation world import failure/,
+    "synthetic import-time failure did not reach transactional rollback",
+  );
+} finally {
+  restored.worldAdapter.importState = originalWorldImport;
+  restored.session.context.routeEvidenceArchive.invalidateForCheckpointImport =
+    originalAtomicRouteInvalidation;
+}
+assert.equal(worldImportCalls, 2, "rollback did not restore the world owner");
+assert.deepEqual(
+  atomicRouteInvalidations,
+  [],
+  "failed restore invalidated route evidence before transaction commit",
+);
+assert.equal(
+  observedState(restored),
+  beforeRejectedRestore,
+  "import-time failure was not rolled back to the complete baseline",
+);
+const successfulRouteInvalidations = [];
+restored.session.context.routeEvidenceArchive.invalidateForCheckpointImport =
+  function (...args) {
+    successfulRouteInvalidations.push(args);
+    return originalAtomicRouteInvalidation.apply(this, args);
+  };
+try {
+  restored.coordinator.restore(checkpoint, IDENTITIES);
+} finally {
+  restored.session.context.routeEvidenceArchive.invalidateForCheckpointImport =
+    originalAtomicRouteInvalidation;
+}
+assert.equal(
+  successfulRouteInvalidations.length,
+  1,
+  "successful restore did not commit route-evidence invalidation exactly once",
+);
+const restoredCheckpointState = observedState(restored);
+const restoredCheckpointDifference = firstDifference(
+    restoredCheckpointState,
+    checkpointState,
+  ),
+  restoredBodyIndex = Number(
+    /state\.bodyRegistry\.bodies\.(\d+)/.exec(
+      restoredCheckpointDifference?.path || "",
+    )?.[1],
+  );
+if (Number.isSafeInteger(restoredBodyIndex))
+  restoredCheckpointDifference.bodyId =
+    JSON.parse(checkpointState).bodyRegistry.bodies[restoredBodyIndex].bodyId;
+if (restoredCheckpointDifference?.bodyId?.startsWith("cannon:part:")) {
+  const partId = Number(restoredCheckpointDifference.bodyId.slice(12)),
+    body = restored.multibodyRuntime.bodyByPart.get(partId),
+    checkpointPhysics = JSON.parse(checkpointState).physics.bodies.find(
+      (record) => record.partId === partId,
+    );
+  restoredCheckpointDifference.physicsPosition = checkpointPhysics?.position;
+  restoredCheckpointDifference.restoredPosition = body?.position;
+  restoredCheckpointDifference.restoredMassFrame = body?.userData?.massFrame;
+  restoredCheckpointDifference.sourceMassFrame =
+    uninterrupted.multibodyRuntime.bodyByPart.get(partId)?.userData?.massFrame;
+}
+assert.equal(
+  restoredCheckpointState,
   checkpointState,
-  "restored state did not match the captured committed tick",
+  `restored state did not match the captured committed tick: ${JSON.stringify(restoredCheckpointDifference)}`,
 );
 for (let tick = SPLIT_TICK + 1; tick <= FINAL_TICK; tick++) {
   commandAtTick(restored, tick);
@@ -397,6 +1020,7 @@ async function createActiveRuntime() {
   assert.ok(record, "active checkpoint fixture is missing");
   ground.userData = {
     externalBodyId: "fixture:active-checkpoint-ground",
+    checkpointPolicy: "reconstruct-from-owner-v1",
     surface: "active checkpoint ground",
     materialKey: "workshop-steel",
   };
@@ -541,6 +1165,56 @@ for (let tick = 73; tick <= 150; tick++) {
 activeUninterrupted.dispose();
 activeRestored.dispose();
 
+const observerHostileRuntime = await createActiveRuntime();
+observerHostileRuntime.session.stepFixed();
+const observerCheckpoint =
+    observerHostileRuntime.coordinator.capture(IDENTITIES),
+  observerCheckpointTick = observerHostileRuntime.session.context.clock.tick;
+observerHostileRuntime.session.stepFixed();
+observerHostileRuntime.controllerManager.onCommands = () => {
+  throw new Error("observer exploded");
+};
+observerHostileRuntime.controllerManager.onStatus = () => {
+  throw new Error("observer exploded");
+};
+assert.doesNotThrow(
+  () =>
+    observerHostileRuntime.coordinator.restore(observerCheckpoint, IDENTITIES),
+  "post-commit controller observer failure escaped checkpoint restore",
+);
+assert.equal(
+  observerHostileRuntime.session.context.clock.tick,
+  observerCheckpointTick,
+  "observer containment prevented the committed checkpoint from restoring",
+);
+observerHostileRuntime.dispose();
+
+const trappedControllerRuntime = await createActiveRuntime();
+trappedControllerRuntime.session.stepFixed();
+trappedControllerRuntime.controllerManager.attach(
+  "fixture:trapped-controller",
+  await prepareWasmController(
+    `(module
+    (func (export "tick") (param f64)
+      unreachable))`,
+    [],
+  ),
+  "TRAPPED CHECKPOINT",
+);
+assert.equal(
+  trappedControllerRuntime.controllerManager.tick(
+    "fixture:trapped-controller",
+    DT,
+    {},
+  ),
+  false,
+);
+assert.doesNotThrow(
+  () => trappedControllerRuntime.coordinator.capture(IDENTITIES),
+  "trapped controller made its checkpoint owner uncapturable",
+);
+trappedControllerRuntime.dispose();
+
 function createFailureRuntime() {
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
     material = new CANNON.Material("checkpoint-failure-material"),
@@ -567,6 +1241,7 @@ function createFailureRuntime() {
   impactor.allowSleep = false;
   impactor.userData = {
     externalBodyId: "fixture:checkpoint-impactor",
+    checkpointPolicy: "world-kinematics-v1",
     surface: "checkpoint impactor",
     materialKey: "workshop-steel",
   };
@@ -618,6 +1293,7 @@ const failureUninterrupted = createFailureRuntime(),
   failureExpected = new Map();
 let failureCheckpoint = null,
   failureCheckpointState = null,
+  postFailureCheckpoint = null,
   failureTick = null;
 for (let tick = 1; tick <= 80; tick++) {
   failureUninterrupted.session.stepFixed();
@@ -632,6 +1308,9 @@ for (let tick = 1; tick <= 80; tick++) {
     failureCheckpointState = observedState(failureUninterrupted);
   } else if (tick > 10)
     failureExpected.set(tick, observedState(failureUninterrupted));
+  if (tick === 20)
+    postFailureCheckpoint =
+      failureUninterrupted.coordinator.capture(IDENTITIES);
 }
 assert.equal(failureTick, 14, "failure checkpoint fixture changed transition");
 const failureRestored = createFailureRuntime();
@@ -655,12 +1334,61 @@ assert.deepEqual(
   })),
   [{ failed: ["weak-link"], detached: [4], tick: 14 }],
 );
+const hostileInternalFailureCheckpoint = structuredClone(postFailureCheckpoint);
+rewriteCheckpointOwner(
+  hostileInternalFailureCheckpoint,
+  "run-graph",
+  (runGraph) => {
+    runGraph.events[0].failedInternalEdgeIds = ["injected-flex-edge"];
+  },
+);
+assert.throws(
+  () =>
+    failureRestored.coordinator.restore(
+      hostileInternalFailureCheckpoint,
+      IDENTITIES,
+    ),
+  (error) => error?.code === "INVALID_RUN_GRAPH_EVENT_CHECKPOINT",
+  "run graph checkpoint accepted an uncompiled flexible-edge failure",
+);
+const contradictoryFailureCheckpoint = structuredClone(postFailureCheckpoint);
+rewriteCheckpointOwner(
+  contradictoryFailureCheckpoint,
+  "run-graph",
+  (runGraph) => {
+    runGraph.events[0].failedConnectionIds = [];
+  },
+);
+assert.throws(
+  () =>
+    failureRestored.coordinator.restore(
+      contradictoryFailureCheckpoint,
+      IDENTITIES,
+    ),
+  (error) => error?.code === "RUN_GRAPH_CHECKPOINT_EVENT_STATE_MISMATCH",
+  "run graph checkpoint accepted event history that contradicted final failure state",
+);
 failureUninterrupted.dispose();
 failureRestored.dispose();
 
-function createHybridTerrainRuntime() {
+function createHybridTerrainRuntime({
+  depleteOwners = false,
+  includeMassOwner = true,
+} = {}) {
   const snapshot = structuredClone(assembly);
   for (const part of snapshot.parts) part.pos[0] += 400;
+  const missionAssembly = decodeBlueprintOrThrow(
+      builtInDemo("mission").blueprint,
+    ).assembly,
+    nextPartId = Math.max(...snapshot.parts.map((part) => Number(part.id))) + 1;
+  for (const [index, type] of ["propellanttank", "heatshield"].entries()) {
+    const part = structuredClone(
+      missionAssembly.parts.find((candidate) => candidate.type === type),
+    );
+    part.id = nextPartId + index;
+    part.pos = [402 + index * 2, 3, 0];
+    snapshot.parts.push(part);
+  }
   const world = new CANNON.World({
       gravity: new CANNON.Vec3(0, -9.80665, 0),
     }),
@@ -695,6 +1423,21 @@ function createHybridTerrainRuntime() {
     }),
   );
   multibodyRuntime.start(snapshot);
+  const sameOwnerPartId = nextPartId + 1,
+    sameOwnerBody = multibodyRuntime.compiled.bodies.find(
+      (body) => body.partId === sameOwnerPartId,
+    ),
+    materialTemplate = multibodyRuntime.compiled.bodies.find(
+      (body) => body.partId === nextPartId,
+    ).capabilities.materialStore,
+    pneumaticTemplate = multibodyRuntime.compiled.bodies.find(
+      (body) => body.capabilities.pneumatic?.kind === "tire-chamber-v1",
+    ).capabilities.pneumatic;
+  sameOwnerBody.capabilities = {
+    ...sameOwnerBody.capabilities,
+    materialStore: structuredClone(materialTemplate),
+    pneumatic: structuredClone(pneumaticTemplate),
+  };
   const physicalAssemblyIndex = new PhysicalAssemblyIndex(
       multibodyRuntime.compiled,
     ),
@@ -708,13 +1451,19 @@ function createHybridTerrainRuntime() {
     session = new SimulationSession({
       systems: [
         new PowerSystem(),
+        new MaterialResourceSystem(),
         new MechanismSystem(),
+        new PneumaticSystem(),
         new RollingContactSystem(),
         new AerodynamicSystem(),
         new RigidBodySystem(),
         new MotorEnergySettlementSystem(),
         structureSystem,
+        new PneumaticStructureSystem(),
+        new MaterialResourceCommitSystem(),
         new ThermalSystem(),
+        new PneumaticCommitSystem(),
+        ...(includeMassOwner ? [new MassPropertyCommitSystem()] : []),
         new PhysicalAssemblySystem(),
         new PhysicalFlightTelemetrySystem(),
         new TelemetrySystem(),
@@ -725,6 +1474,7 @@ function createHybridTerrainRuntime() {
       catalog: TYPES,
       multibodyRuntime,
       ...flightServices,
+      compiledAssembly: multibodyRuntime.compiled,
       physicalAssemblyIndex,
       connectionValid: (connection) => !connection.failed,
       partMass: (part) => TYPES[part.type]?.mass || 0,
@@ -736,6 +1486,39 @@ function createHybridTerrainRuntime() {
       aerothermalAblationOwner: flightServices.aerothermalAblationOwner,
       terrainState,
     });
+  if (depleteOwners) {
+    const materialState = structuredClone(
+        session.context.materialResourceNetwork.exportState(),
+      ),
+      propellantStore = materialState.stores.find(
+        (store) => store.partId === sameOwnerPartId,
+      );
+    propellantStore.remainingMassKg *= 0.4;
+    session.context.materialResourceNetwork.importState(
+      materialState,
+      session.context.runGraph,
+    );
+    const thermalState = flightServices.aerothermalAblationOwner.exportState(),
+      heatshield = thermalState.parts.find(
+        (record) => record.id === sameOwnerPartId,
+      ),
+      initialHeatshieldMass =
+        heatshield.thermal.remainingMass + heatshield.thermal.ablatedMass;
+    heatshield.thermal.remainingMass = initialHeatshieldMass * 0.6;
+    heatshield.thermal.ablatedMass = initialHeatshieldMass * 0.4;
+    heatshield.thermal.consumed = false;
+    flightServices.aerothermalAblationOwner.importState(thermalState);
+    flightServices.aerothermalAblationOwner.synchronizeBodyRegistry(
+      session.context.bodyRegistry,
+    );
+    const pneumaticState = session.context.pneumaticNetwork.exportState(),
+      chamberState = pneumaticState.chambers.find(
+        (record) => record.partId === sameOwnerPartId,
+      ).state;
+    chamberState.massKg *= 0.7;
+    chamberState.internalEnergyJ *= 0.7;
+    session.context.pneumaticNetwork.importState(pneumaticState);
+  }
   return {
     world,
     worldAdapter,
@@ -746,6 +1529,7 @@ function createHybridTerrainRuntime() {
     ...flightServices,
     physicalAssemblyIndex,
     terrainState,
+    combinedOwnerPartId: sameOwnerPartId,
     dispose() {
       session.dispose();
       flightServices.physicalFlightModel.dispose();
@@ -765,16 +1549,48 @@ function driveHybrid(run, tick) {
     );
 }
 
-const hybridUninterrupted = createHybridTerrainRuntime(),
+const hybridUninterrupted = createHybridTerrainRuntime({
+    depleteOwners: true,
+  }),
   hybridExpected = new Map();
 let hybridCheckpoint = null,
-  hybridCheckpointState = null;
+  hybridCheckpointState = null,
+  combinedOwnerMassAtCheckpoint = null,
+  combinedOwnerContributionsAtCheckpoint = null;
 for (let tick = 1; tick <= 110; tick++) {
   driveHybrid(hybridUninterrupted, tick);
   hybridUninterrupted.session.stepFixed();
   if (tick === 48) {
     hybridCheckpoint = hybridUninterrupted.coordinator.capture(IDENTITIES);
     hybridCheckpointState = observedState(hybridUninterrupted);
+    const sameOwnerPartId = hybridUninterrupted.combinedOwnerPartId,
+      thermalContribution = hybridUninterrupted.aerothermalAblationOwner
+        .massContributions()
+        .find((record) => record.partId === sameOwnerPartId).structuralMassKg,
+      materialContribution =
+        hybridUninterrupted.session.context.materialResourceNetwork
+          .stores()
+          .find((record) => record.partId === sameOwnerPartId).remainingMassKg,
+      pneumaticContribution =
+        hybridUninterrupted.session.context.pneumaticNetwork.gasMassForPart(
+          sameOwnerPartId,
+        );
+    combinedOwnerContributionsAtCheckpoint = {
+      thermalContribution,
+      materialContribution,
+      pneumaticContribution,
+    };
+    combinedOwnerMassAtCheckpoint =
+      hybridUninterrupted.multibodyRuntime.bodyByPart.get(sameOwnerPartId).mass;
+    assert.ok(
+      Math.abs(
+        combinedOwnerMassAtCheckpoint -
+          thermalContribution -
+          materialContribution -
+          pneumaticContribution,
+      ) < 1e-9,
+      "one body did not combine thermal, material, and pneumatic mass owners",
+    );
     assert.equal(hybridUninterrupted.terrainState.tiles.size, 9);
   } else if (tick > 48)
     hybridExpected.set(tick, observedState(hybridUninterrupted));
@@ -786,6 +1602,13 @@ const hybridRestored = createHybridTerrainRuntime(),
     (owner) => owner.ownerId === "thermal-ablation",
   ),
   wrongThermalState = JSON.parse(thermalOwner.payloadJson);
+assert.notEqual(
+  hybridRestored.multibodyRuntime.bodyByPart.get(
+    hybridRestored.combinedOwnerPartId,
+  ).mass,
+  combinedOwnerMassAtCheckpoint,
+  "fresh same-body owner mass unexpectedly matched the depleted checkpoint before restore",
+);
 wrongThermalState.parts[0].id = "not-a-live-part";
 thermalOwner.payloadJson = stableStringify(wrongThermalState);
 thermalOwner.payloadByteLength = new TextEncoder().encode(
@@ -808,8 +1631,128 @@ assert.equal(
   beforeHybridRejectedRestore,
   "aerothermal identity rejection mutated an earlier checkpoint owner",
 );
+const impossibleThermalMassCheckpoint = structuredClone(hybridCheckpoint);
+rewriteCheckpointOwner(
+  impossibleThermalMassCheckpoint,
+  "thermal-ablation",
+  (thermal) => {
+    const state = thermal.parts[0].thermal,
+      initialMass = state.remainingMass + state.ablatedMass;
+    state.remainingMass = initialMass + 1;
+    state.ablatedMass = 0;
+  },
+);
+assert.throws(
+  () =>
+    hybridRestored.coordinator.restore(
+      impossibleThermalMassCheckpoint,
+      IDENTITIES,
+    ),
+  (error) => error?.code === "INVALID_AEROTHERMAL_CHECKPOINT_STATE",
+  "coordinator accepted an aerothermal checkpoint that creates mass",
+);
+assert.equal(
+  observedState(hybridRestored),
+  beforeHybridRejectedRestore,
+  "aerothermal mass rejection mutated an earlier checkpoint owner",
+);
+const hostileTerrainPoseCheckpoint = structuredClone(hybridCheckpoint);
+rewriteCheckpointOwner(
+  hostileTerrainPoseCheckpoint,
+  "physics-world",
+  (physics) => {
+    const terrainBody = physics.worldAdapter.externalBodies.find(
+      (body) => body.checkpointPolicy === "reconstruct-from-owner-v1",
+    );
+    terrainBody.position = { x: 0, y: 1000, z: 0 };
+  },
+);
+assert.throws(
+  () =>
+    hybridRestored.coordinator.restore(
+      hostileTerrainPoseCheckpoint,
+      IDENTITIES,
+    ),
+  (error) => error?.code === "CANNON_EXTERNAL_BODY_AUTHORITY_MISMATCH",
+  "owner-reconstructed terrain accepted a world-owned pose",
+);
+assert.equal(
+  observedState(hybridRestored),
+  beforeHybridRejectedRestore,
+  "terrain authority rejection mutated an earlier checkpoint owner",
+);
+const futureMaterialTickCheckpoint = structuredClone(hybridCheckpoint);
+rewriteCheckpointOwner(
+  futureMaterialTickCheckpoint,
+  "material-resources",
+  (material) => {
+    material.network.lastCommittedAllocationTick =
+      futureMaterialTickCheckpoint.committedTick + 1;
+  },
+);
+assert.throws(
+  () =>
+    hybridRestored.coordinator.restore(
+      futureMaterialTickCheckpoint,
+      IDENTITIES,
+    ),
+  (error) => error?.code === "CHECKPOINT_OWNER_TIME_MISMATCH",
+  "material owner accepted a transaction from a future tick",
+);
+const duplicateMaterialStoreCheckpoint = structuredClone(hybridCheckpoint);
+rewriteCheckpointOwner(
+  duplicateMaterialStoreCheckpoint,
+  "material-resources",
+  (material) => {
+    material.network.stores.push(structuredClone(material.network.stores[0]));
+  },
+);
+assert.throws(
+  () =>
+    hybridRestored.coordinator.restore(
+      duplicateMaterialStoreCheckpoint,
+      IDENTITIES,
+    ),
+  (error) => error?.code === "MATERIAL_RESOURCE_CHECKPOINT_IDENTITY_MISMATCH",
+  "material owner accepted duplicate store identity",
+);
+const missingMassOwnerRuntime = createHybridTerrainRuntime({
+  includeMassOwner: false,
+});
+assert.throws(
+  () =>
+    missingMassOwnerRuntime.coordinator.restore(hybridCheckpoint, IDENTITIES),
+  (error) => error?.code === "MASS_PROPERTY_CHECKPOINT_OWNER_MISSING",
+  "checkpoint restore made combined mass reconstruction optional",
+);
+missingMassOwnerRuntime.dispose();
 hybridRestored.coordinator.restore(hybridCheckpoint, IDENTITIES);
 assert.equal(observedState(hybridRestored), hybridCheckpointState);
+assert.equal(
+  hybridRestored.multibodyRuntime.bodyByPart.get(
+    hybridRestored.combinedOwnerPartId,
+  ).mass,
+  combinedOwnerMassAtCheckpoint,
+  "fresh restore did not reconstruct combined same-body owner mass before kinematics",
+);
+assert.deepEqual(
+  {
+    thermalContribution: hybridRestored.aerothermalAblationOwner
+      .massContributions()
+      .find((record) => record.partId === hybridRestored.combinedOwnerPartId)
+      .structuralMassKg,
+    materialContribution: hybridRestored.session.context.materialResourceNetwork
+      .stores()
+      .find((record) => record.partId === hybridRestored.combinedOwnerPartId)
+      .remainingMassKg,
+    pneumaticContribution:
+      hybridRestored.session.context.pneumaticNetwork.gasMassForPart(
+        hybridRestored.combinedOwnerPartId,
+      ),
+  },
+  combinedOwnerContributionsAtCheckpoint,
+  "fresh restore did not reconstruct each owner contribution on the same body",
+);
 for (let tick = 49; tick <= 110; tick++) {
   driveHybrid(hybridRestored, tick);
   hybridRestored.session.stepFixed();

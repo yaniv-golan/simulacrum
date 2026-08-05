@@ -867,6 +867,41 @@ assert.deepEqual(
   idleRun.session.telemetry().systems.massProperties,
   "checkpoint restore left a stale mass-property diagnostic cache",
 );
+
+const depletedSource = createRuntime({ throttle: 1 });
+for (let tick = 0; tick < 180; tick++) depletedSource.session.stepFixed();
+const depletedCheckpoint = depletedSource.coordinator.capture(IDENTITIES),
+  depletedMass = depletedSource.multibodyRuntime.bodyByPart.get(tank.id).mass,
+  depletedMaterials =
+    depletedSource.session.context.materialResourceNetwork.exportState(),
+  depletedTarget = createRuntime({ throttle: 1 }),
+  initialTargetMass = depletedTarget.multibodyRuntime.bodyByPart.get(
+    tank.id,
+  ).mass;
+assert.ok(
+  depletedMass < initialTargetMass,
+  "dynamic-mass checkpoint fixture did not consume material",
+);
+depletedTarget.coordinator.restore(depletedCheckpoint, IDENTITIES);
+near(
+  depletedTarget.multibodyRuntime.bodyByPart.get(tank.id).mass,
+  depletedMass,
+  1e-12,
+);
+assert.deepEqual(
+  depletedTarget.session.context.materialResourceNetwork.exportState(),
+  depletedMaterials,
+  "fresh runtime did not restore the dynamic-mass owner state",
+);
+depletedSource.session.stepFixed();
+depletedTarget.session.stepFixed();
+near(
+  depletedTarget.multibodyRuntime.bodyByPart.get(tank.id).mass,
+  depletedSource.multibodyRuntime.bodyByPart.get(tank.id).mass,
+  1e-12,
+);
+depletedSource.dispose();
+depletedTarget.dispose();
 idleRun.session.stepFixed();
 const idleContext = idleRun.session.context,
   idleEngine = idleContext.pressureNozzleRuntime.engines.get(engineA.id),

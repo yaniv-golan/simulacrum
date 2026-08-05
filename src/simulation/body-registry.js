@@ -12,6 +12,52 @@ import {
 const zeroVector = () => ({ x: 0, y: 0, z: 0 });
 const identityQuaternion = () => ({ x: 0, y: 0, z: 0, w: 1 });
 const loadTransactions = new WeakMap();
+const BODY_CHECKPOINT_KEYS = Object.freeze([
+  "bodyId",
+  "acceleration",
+  "contacts",
+  "loads",
+  "detached",
+]);
+const CONSTRAINT_CHECKPOINT_KEYS = Object.freeze(["constraintId", "detached"]);
+const BODY_REGISTRY_AUTHORITY_FIELDS = Object.freeze([
+  "partIds",
+  "descriptors",
+  "massProperties",
+  "constraintIds",
+  "bound",
+  "thermal",
+]);
+
+function checkpointKeysMatch(value, expectedKeys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort(),
+    expected = [...expectedKeys].sort();
+  return (
+    actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index])
+  );
+}
+
+function checkpointTreeIsFinite(value) {
+  if (value == null || typeof value === "string" || typeof value === "boolean")
+    return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (Array.isArray(value)) return value.every(checkpointTreeIsFinite);
+  if (typeof value !== "object") return false;
+  return Object.values(value).every(checkpointTreeIsFinite);
+}
+
+function checkpointVector(value) {
+  return Boolean(
+    value &&
+    checkpointKeysMatch(value, ["x", "y", "z"]) &&
+    [value.x, value.y, value.z].every(
+      (component) =>
+        typeof component === "number" && Number.isFinite(component),
+    ),
+  );
+}
 
 function freezeFreshBodyValue(value, seen = new WeakSet()) {
   if (value == null || typeof value !== "object" || Object.isFrozen(value))
@@ -674,7 +720,144 @@ export class BodyRegistry {
     return structuredClone(this.snapshot());
   }
 
-  importState(state) {
+  exportCheckpointState() {
+    return structuredClone({
+      schemaVersion: 2,
+      revision: this.#revision,
+      tick: this.#tick,
+      bodies: [...this.#bodies.values()].map((body) => ({
+        bodyId: body.bodyId,
+        acceleration: body.acceleration,
+        contacts: body.contacts,
+        loads: body.loads,
+        detached: body.detached,
+      })),
+      constraints: [...this.#constraints.values()].map((constraint) => ({
+        constraintId: constraint.constraintId,
+        detached: constraint.detached,
+      })),
+    });
+  }
+
+  validateCheckpointState(state) {
+    if (state?.schemaVersion !== 2 || !Array.isArray(state.bodies))
+      throw new DomainValidationError(
+        "BODY_REGISTRY_CHECKPOINT_MASS_AUTHORITY_MISMATCH",
+        "Body-registry checkpoint must not duplicate derived mass authority",
+      );
+    if (
+      !checkpointKeysMatch(state, [
+        "schemaVersion",
+        "revision",
+        "tick",
+        "bodies",
+        "constraints",
+      ]) ||
+      !Array.isArray(state.constraints)
+    )
+      throw new DomainValidationError(
+        "BODY_REGISTRY_CHECKPOINT_FIELD_MISMATCH",
+        "Body-registry checkpoint contains fields outside its mutable projection",
+      );
+    const bodies = new Map(),
+      constraints = new Map();
+    for (const record of state.bodies) {
+      if (
+        BODY_REGISTRY_AUTHORITY_FIELDS.some((field) =>
+          Object.hasOwn(record || {}, field),
+        )
+      ) {
+        const massAuthority = Object.hasOwn(record || {}, "massProperties");
+        throw new DomainValidationError(
+          massAuthority
+            ? "BODY_REGISTRY_CHECKPOINT_MASS_AUTHORITY_MISMATCH"
+            : "BODY_REGISTRY_CHECKPOINT_FIELD_MISMATCH",
+          massAuthority
+            ? "Body-registry checkpoint must not duplicate derived mass authority"
+            : "Body-registry checkpoint must not restore topology, geometry, or projected owner state",
+        );
+      }
+      if (
+        !checkpointKeysMatch(record, BODY_CHECKPOINT_KEYS) ||
+        typeof record.bodyId !== "string" ||
+        !checkpointVector(record.acceleration) ||
+        !Array.isArray(record.contacts) ||
+        !Array.isArray(record.loads) ||
+        !checkpointTreeIsFinite(record.contacts) ||
+        !checkpointTreeIsFinite(record.loads) ||
+        typeof record.detached !== "boolean" ||
+        bodies.has(record.bodyId)
+      )
+        throw new DomainValidationError(
+          "INVALID_BODY_REGISTRY_CHECKPOINT_BODY_STATE",
+          `Body-registry checkpoint contains invalid mutable state for ${String(record?.bodyId)}`,
+        );
+      bodies.set(record.bodyId, structuredClone(record));
+    }
+    for (const record of state.constraints) {
+      if (
+        !checkpointKeysMatch(record, CONSTRAINT_CHECKPOINT_KEYS) ||
+        typeof record.constraintId !== "string" ||
+        typeof record.detached !== "boolean" ||
+        constraints.has(record.constraintId)
+      )
+        throw new DomainValidationError(
+          "INVALID_BODY_REGISTRY_CHECKPOINT_CONSTRAINT_STATE",
+          `Body-registry checkpoint contains invalid mutable constraint state for ${String(record?.constraintId)}`,
+        );
+      constraints.set(record.constraintId, structuredClone(record));
+    }
+    if (
+      bodies.size !== this.#bodies.size ||
+      [...this.#bodies.keys()].some((bodyId) => !bodies.has(bodyId)) ||
+      constraints.size !== this.#constraints.size ||
+      [...this.#constraints.keys()].some(
+        (constraintId) => !constraints.has(constraintId),
+      )
+    )
+      throw new DomainValidationError(
+        "BODY_REGISTRY_CHECKPOINT_IDENTITY_MISMATCH",
+        "Body registry checkpoint does not match the running topology",
+      );
+    return {
+      bodies,
+      constraints,
+      revision: finiteNumber(state.revision, {
+        min: 0,
+        path: ["checkpoint", "revision"],
+      }),
+      tick: finiteNumber(state.tick, {
+        min: 0,
+        path: ["checkpoint", "tick"],
+      }),
+    };
+  }
+
+  importCheckpointState(state) {
+    const validated = this.validateCheckpointState(state);
+    this.#bodies = new Map(
+      [...this.#bodies].map(([id, body]) => [
+        id,
+        deepFreeze({ ...body, ...structuredClone(validated.bodies.get(id)) }),
+      ]),
+    );
+    this.#constraints = new Map(
+      [...this.#constraints].map(([id, constraint]) => [
+        id,
+        deepFreeze({
+          ...constraint,
+          ...structuredClone(validated.constraints.get(id)),
+        }),
+      ]),
+    );
+    this.#revision = validated.revision;
+    this.#tick = validated.tick;
+    this.#snapshotRevision = -1;
+    this.#snapshotTick = -1;
+    this.#snapshot = null;
+  }
+
+  validateState(state) {
     if (state?.schemaVersion !== 1)
       throw new DomainValidationError(
         "INVALID_BODY_REGISTRY_CHECKPOINT",
@@ -727,25 +910,40 @@ export class BodyRegistry {
         "BODY_REGISTRY_CHECKPOINT_IDENTITY_MISMATCH",
         "Body registry checkpoint does not match the running topology",
       );
+    return {
+      bodies,
+      bodyByPart,
+      constraints,
+      constraintByPart,
+      revision: finiteNumber(state.revision, {
+        min: 0,
+        path: ["checkpoint", "revision"],
+      }),
+      tick: finiteNumber(state.tick, {
+        min: 0,
+        path: ["checkpoint", "tick"],
+      }),
+    };
+  }
+
+  importState(state) {
+    const validated = this.validateState(state);
     this.#bodies = new Map(
-      [...bodies].map(([id, body]) => [id, deepFreeze(structuredClone(body))]),
+      [...validated.bodies].map(([id, body]) => [
+        id,
+        deepFreeze(structuredClone(body)),
+      ]),
     );
-    this.#bodyByPart = bodyByPart;
+    this.#bodyByPart = validated.bodyByPart;
     this.#constraints = new Map(
-      [...constraints].map(([id, constraint]) => [
+      [...validated.constraints].map(([id, constraint]) => [
         id,
         deepFreeze(structuredClone(constraint)),
       ]),
     );
-    this.#constraintByPart = constraintByPart;
-    this.#revision = finiteNumber(state.revision, {
-      min: 0,
-      path: ["checkpoint", "revision"],
-    });
-    this.#tick = finiteNumber(state.tick, {
-      min: 0,
-      path: ["checkpoint", "tick"],
-    });
+    this.#constraintByPart = validated.constraintByPart;
+    this.#revision = validated.revision;
+    this.#tick = validated.tick;
     this.#snapshotRevision = -1;
     this.#snapshotTick = -1;
     this.#snapshot = null;

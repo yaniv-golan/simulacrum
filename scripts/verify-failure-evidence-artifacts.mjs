@@ -10,6 +10,7 @@ import {
 } from "../src/model/failure-evidence-artifacts.js";
 import {
   CHECKPOINT_STATE_OWNER_IDS,
+  CHECKPOINT_STATE_OWNER_VERSIONS,
   checkpointStateDigest,
   fingerprintExperimentBlueprint,
   fingerprintRunConfiguration,
@@ -71,7 +72,7 @@ const blueprint = JSON.parse(
     const payloadJson = stableStringify(fixture.stateOwnerPayloads[ownerId]);
     return {
       ownerId,
-      ownerVersion: ownerId === "material-resources" ? 2 : 1,
+      ownerVersion: CHECKPOINT_STATE_OWNER_VERSIONS[ownerId],
       payloadJson,
       payloadByteLength: new TextEncoder().encode(payloadJson).byteLength,
       payloadSha256: sha256Hex(payloadJson),

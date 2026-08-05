@@ -427,7 +427,26 @@ export class BodyRegistry {
         engineBody: any;
     }[];
     // (undocumented)
+    exportCheckpointState(): {
+        schemaVersion: number;
+        revision: number;
+        tick: number;
+        bodies: {
+            bodyId: any;
+            acceleration: any;
+            contacts: any;
+            loads: any;
+            detached: any;
+        }[];
+        constraints: {
+            constraintId: any;
+            detached: any;
+        }[];
+    };
+    // (undocumented)
     exportState(): any;
+    // (undocumented)
+    importCheckpointState(state: any): void;
     // (undocumented)
     importState(state: any): void;
     // (undocumented)
@@ -458,6 +477,22 @@ export class BodyRegistry {
     updateConstraint(id: any, options?: {}): any;
     // (undocumented)
     updateKinematics(id: any, options?: {}, dt?: number): any;
+    // (undocumented)
+    validateCheckpointState(state: any): {
+        bodies: Map<any, any>;
+        constraints: Map<any, any>;
+        revision: number;
+        tick: number;
+    };
+    // (undocumented)
+    validateState(state: any): {
+        bodies: Map<any, any>;
+        bodyByPart: Map<any, any>;
+        constraints: Map<any, any>;
+        constraintByPart: Map<any, any>;
+        revision: number;
+        tick: number;
+    };
 }
 
 // @public (undocumented)
@@ -574,6 +609,17 @@ export class CannonWorldAdapter {
     }>;
     // (undocumented)
     transaction: CannonSolverTransaction;
+    // (undocumented)
+    validateState(state: any, input?: {
+        externalBodyPlans?: any[];
+    }): {
+        bodies: Map<any, any>;
+        records: Map<any, any>;
+        session: number;
+        tick: number;
+        integratedTick: number;
+        integrationCount: number;
+    };
     // (undocumented)
     world: any;
 }
@@ -1091,6 +1137,13 @@ export class CommandBus {
     remote: Map<any, any>;
     // (undocumented)
     script: Map<any, any>;
+    // (undocumented)
+    validateState(state: any): {
+        remote: Map<any, any>;
+        script: Map<any, any>;
+        conflicts: Set<any>;
+        rejections: any;
+    };
     // (undocumented)
     writeRemote(targetId: any, channel: any, value: any): boolean;
     // (undocumented)
@@ -1671,7 +1724,7 @@ export function controllerBindingManifestIdentity(manifest: any): string;
 // @public
 export function controllerBindingOptions(controller: any, parts: any[], connections: any[], catalog?: Record<string, any>): readonly any[];
 
-// @public
+// @public (undocumented)
 export class ControllerRuntimeManager {
     // Warning: (ae-forgotten-export) The symbol "ControllerRuntimeManagerOptions" needs to be exported by the entry point index.d.ts
     constructor(input?: ControllerRuntimeManagerOptions);
@@ -1684,6 +1737,7 @@ export class ControllerRuntimeManager {
         policyVersion: any;
         bindingManifest: any;
         bindingManifestIdentity: any;
+        programIdentity: any;
         ready: boolean;
         commands: Map<any, any>;
         tick: number;
@@ -1700,29 +1754,28 @@ export class ControllerRuntimeManager {
     // (undocumented)
     exportState(): {
         controllerId: any;
-        label: any;
-        language: any;
-        policyVersion: any;
-        bindingManifest: any;
         bindingManifestIdentity: any;
+        programIdentity: any;
         ready: any;
         commands: any[];
         tick: any;
         lastTick: any;
-        status: any;
         error: any;
         engineState: any;
     }[];
     // (undocumented)
     ids(): any[];
     // (undocumented)
-    importState(state: any): void;
+    importState(state: any, input?: {
+        notify?: boolean;
+    }): void;
     // (undocumented)
     onCommands: (controllerId: number | string, commands: Map<string, number>) => void;
     // (undocumented)
     onStatus: (controllerId: number | string, status: string, online: boolean) => void;
     // (undocumented)
     onTrace: (event: object) => void;
+    publishState(): void;
     // (undocumented)
     ready(controllerId: any): boolean;
     // (undocumented)
@@ -1739,6 +1792,8 @@ export class ControllerRuntimeManager {
     };
     // (undocumented)
     tick(controllerId: any, dt: any, sensors: any): boolean;
+    // (undocumented)
+    validateState(state: any): Map<any, any>;
 }
 
 // @public
@@ -1768,6 +1823,8 @@ export class ControllerSensorBank {
     previousVelocity: Map<any, any>;
     // (undocumented)
     reset(): void;
+    // (undocumented)
+    validateState(state: any): Map<any, any>;
 }
 
 // @public (undocumented)
@@ -2327,6 +2384,13 @@ export class FlexibleLineRuntime {
     // (undocumented)
     topologyRevision: number;
     // (undocumented)
+    validateState(state: any): {
+        entities: Map<any, any>;
+        edges: Map<any, any>;
+        attachments: Map<any, any>;
+        contactDissipationByPart: Map<any, any>;
+    };
+    // (undocumented)
     world: any;
 }
 
@@ -2831,11 +2895,26 @@ export class MassPropertyCommitSystem {
     // (undocumented)
     afterCheckpointRestore(context: any): void;
     // (undocumented)
+    checkpointOwner: string;
+    // (undocumented)
     dispose(context: any): void;
     // (undocumented)
     initialize(context: any): void;
     // (undocumented)
     phase: string;
+    // (undocumented)
+    reconstructAfterCheckpointOwners(context: any): {
+        stage: any;
+        evaluatedPartCount: any;
+        committedPartCount: any;
+        unchangedPartIds: any;
+        records: any;
+        appliedAfterIntegratedTick: any;
+        effectiveTick: any;
+        timingPolicy: string;
+        transactionId: string;
+        committedAtTick: any;
+    };
     // (undocumented)
     step(context: any): void;
     // (undocumented)
@@ -2900,6 +2979,12 @@ export class MaterialResourceNetwork {
     stores(): any;
     // (undocumented)
     telemetry(): any;
+    // (undocumented)
+    validateState(state: any): {
+        stores: any[][];
+        lastCommittedAllocationTick: any;
+        nextAllocationSequence: any;
+    };
 }
 
 // @public
@@ -3986,6 +4071,11 @@ export class MotorEnergySettlementSystem {
     telemetry(): any;
     // (undocumented)
     totals: Map<any, any>;
+    // (undocumented)
+    validateState(state: any): {
+        lastSettledTick: any;
+        totals: Map<any, any>;
+    };
 }
 
 // @public
@@ -4466,34 +4556,6 @@ export class MultibodyRuntime {
                 y: any;
                 z: any;
             };
-            mass: any;
-            invMass: any;
-            inertia: {
-                x: any;
-                y: any;
-                z: any;
-            };
-            invInertia: {
-                x: any;
-                y: any;
-                z: any;
-            };
-            massFrame: {
-                principalToPart: {
-                    x: any;
-                    y: any;
-                    z: any;
-                    w: any;
-                };
-                comPart: {
-                    x: any;
-                    y: any;
-                    z: any;
-                };
-            };
-            massProperties: any;
-            shapeOffsets: any;
-            shapeOrientations: any;
             sleepState: any;
             timeLastSleepy: any;
         }[];
@@ -4504,48 +4566,6 @@ export class MultibodyRuntime {
                 active: boolean;
             };
             tireState: any;
-            fixedFrame: {
-                pivotA: {
-                    x: any;
-                    y: any;
-                    z: any;
-                };
-                pivotB: {
-                    x: any;
-                    y: any;
-                    z: any;
-                };
-                xA: {
-                    x: any;
-                    y: any;
-                    z: any;
-                };
-                yA: {
-                    x: any;
-                    y: any;
-                    z: any;
-                };
-                zA: {
-                    x: any;
-                    y: any;
-                    z: any;
-                };
-                xB: {
-                    x: any;
-                    y: any;
-                    z: any;
-                };
-                yB: {
-                    x: any;
-                    y: any;
-                    z: any;
-                };
-                zB: {
-                    x: any;
-                    y: any;
-                    z: any;
-                };
-            };
         }[];
         exclusionStates: {
             id: any;
@@ -4979,6 +4999,20 @@ export class MultibodyRuntime {
     // (undocumented)
     torqueByConnection: Map<any, any>;
     // (undocumented)
+    validateState(state: any): {
+        bodies: Map<any, any>;
+        entries: Map<any, any>;
+        exclusionStates: Map<any, any>;
+        world: any;
+        phaseByPart: Map<any, any>;
+        loadByConnection: Map<any, any>;
+        torqueByConnection: Map<any, any>;
+        motorElectricalWByPart: Map<any, any>;
+        activeLuminairePartIds: any[];
+        fluidState: any;
+        topologyRevision: any;
+    };
+    // (undocumented)
     waterDensity: number;
     // (undocumented)
     wheelContactSamples(body: any, up: any): {
@@ -5293,6 +5327,14 @@ export class PneumaticNetwork {
     };
     // (undocumented)
     transactionCursor: number;
+    // (undocumented)
+    validateState(snapshot: any): {
+        chamberStages: any;
+        deviceStages: any;
+        numericLedgerKeys: string[];
+        transactionCursor: any;
+        failureEvents: any;
+    };
 }
 
 // @public
@@ -5434,6 +5476,7 @@ export function prepareControlIRController(ir: any, input?: {
     policyVersion: string;
     bindingManifest: readonly any[];
     bindingManifestIdentity: string;
+    programIdentity: any;
     instantiate(): Readonly<{
         tick(dt: any, nextSensors: any): Map<any, any>;
         exportState(): {
@@ -5441,6 +5484,7 @@ export function prepareControlIRController(ir: any, input?: {
             value: number;
         }[];
         importState(state: any): void;
+        validateState(state: any): any[];
         dispose(): void;
     }>;
 }>>;
@@ -5451,6 +5495,7 @@ export function prepareTypeScriptController(source: any, bindingManifest: any): 
     policyVersion: string;
     bindingManifest: readonly any[];
     bindingManifestIdentity: string;
+    programIdentity: any;
     instantiate(): Readonly<{
         tick(dt: any, nextSensors: any): Map<any, any>;
         exportState(): {
@@ -5458,6 +5503,7 @@ export function prepareTypeScriptController(source: any, bindingManifest: any): 
             value: number;
         }[];
         importState(state: any): void;
+        validateState(state: any): any[];
         dispose(): void;
     }>;
 }>>;
@@ -5468,6 +5514,7 @@ export function prepareWasmController(source: any, bindingManifest: any): Promis
     policyVersion: string;
     bindingManifest: readonly any[];
     bindingManifestIdentity: string;
+    programIdentity: any;
     instantiate(): Readonly<{
         tick(dt: any, nextSensors: any): Map<any, any>;
         exportState(): {
@@ -5475,6 +5522,7 @@ export function prepareWasmController(source: any, bindingManifest: any): Promis
             value: number;
         }[];
         importState(state: any): void;
+        validateState(state: any): any[];
         dispose(): void;
     }>;
 }>>;
@@ -5500,6 +5548,8 @@ export class PressureNozzleDemandSystem {
     step(context: any, dt: any): void;
     // (undocumented)
     telemetry(context: any): any;
+    // (undocumented)
+    validateState(context: any, state: any): Map<any, any>;
 }
 
 // @public
@@ -5626,6 +5676,8 @@ export class ReleaseCouplerSystem {
     phase: string;
     // (undocumented)
     step(context: any, fixedDt: any): void;
+    // (undocumented)
+    validateState(context: any, checkpoint: any): Map<any, any>;
 }
 
 // @public (undocumented)
@@ -5729,9 +5781,12 @@ export function resolveWireComponentConfig(part: any, catalog?: any): any;
 // @public
 export class RigidBodySystem {
     // (undocumented)
+    checkpointOwner: string;
+    // (undocumented)
     initialize(context: any): void;
     // (undocumented)
     phase: string;
+    reconstructAfterPhysicsRestore(context: any, dt?: number): void;
     // (undocumented)
     step(context: any, dt: any): void;
 }
@@ -5798,10 +5853,29 @@ export class RunAssemblyGraph {
     events(): readonly any[];
     // (undocumented)
     exportState(): {
+        version: number;
         revision: number;
         graphRevision: number;
-        parts: any[];
-        connections: any[];
+        parts: {
+            energyJ?: any;
+            id: any;
+            detached: any;
+        }[];
+        connections: {
+            id: any;
+            stress: any;
+            fatigue: any;
+            failed: any;
+            peakLoadN: any;
+            peakTorqueNm: any;
+            lastLoadN: any;
+            lastTorqueNm: any;
+            forceUtilization: any;
+            torqueUtilization: any;
+            failureReason: any;
+            failureMode: any;
+            failedAtS: any;
+        }[];
         controllers: {
             id: any;
             state: any;
@@ -5820,6 +5894,7 @@ export class RunAssemblyGraph {
     parts(): readonly any[];
     // (undocumented)
     get revision(): number;
+    setCheckpointInternalEdgeIds(ids?: any[]): void;
     // (undocumented)
     setControllerState(id: any, state: any): any;
     // (undocumented)
@@ -5828,6 +5903,15 @@ export class RunAssemblyGraph {
     snapshot(): any;
     // (undocumented)
     startSnapshot(): any;
+    // (undocumented)
+    validateState(state: any): {
+        parts: Map<any, any>;
+        connections: Map<any, any>;
+        controllers: Map<any, any>;
+        events: any;
+        revision: any;
+        graphRevision: any;
+    };
 }
 
 // @public
@@ -6084,6 +6168,7 @@ export class SimulationSession {
     });
     // (undocumented)
     accumulator: number;
+    commitCheckpointRestore(): void;
     // (undocumented)
     context: {
         runGraph: any;
@@ -6126,7 +6211,6 @@ export class SimulationSession {
             time: number;
             fixedDt: number;
         };
-        environment: any;
         sensors: {
             kind: string;
             entries: [any, any][];
@@ -6146,6 +6230,11 @@ export class SimulationSession {
             entries?: undefined;
         };
         completedSensorSnapshot: any;
+    };
+    // (undocumented)
+    exportTelemetryState(): {
+        version: number;
+        tick: number;
         telemetry: any;
         previousTelemetry: any;
     };
@@ -6153,6 +6242,8 @@ export class SimulationSession {
     fixedDt: number;
     // (undocumented)
     importState(state: any): void;
+    // (undocumented)
+    importTelemetryState(state: any): void;
     // (undocumented)
     maxSubsteps: number;
     resynchronizeAfterCheckpointRestore(): void;
@@ -6170,6 +6261,21 @@ export class SimulationSession {
     telemetry(): any;
     // (undocumented)
     time: number;
+    // (undocumented)
+    validateState(state: any): {
+        accumulator: any;
+        time: any;
+        clock: any;
+        sensors: any;
+        commands: any;
+        completedSensorSnapshot: any;
+    };
+    // (undocumented)
+    validateTelemetryState(state: any): {
+        tick: any;
+        telemetry: any;
+        previousTelemetry: any;
+    };
 }
 
 // @public
@@ -6228,13 +6334,15 @@ export class StructureSystem {
     // (undocumented)
     exportState(): {
         version: number;
-        initialBodyComponents: any;
-        overloadSeconds: [any, any][];
+        overloadSeconds: {
+            connectionId: any;
+            seconds: any;
+        }[];
     };
     // (undocumented)
     importState(state: any): void;
     // (undocumented)
-    initialBodyComponents: any;
+    initialBodyComponents: any[] | any[][];
     // (undocumented)
     initialize(context: any): void;
     // (undocumented)
@@ -6243,6 +6351,8 @@ export class StructureSystem {
     phase: string;
     // (undocumented)
     step(context: any, dt: any): void;
+    // (undocumented)
+    validateState(state: any): Map<any, any>;
 }
 
 // @public (undocumented)

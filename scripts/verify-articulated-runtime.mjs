@@ -671,6 +671,29 @@ assert.equal(
   "BALANCE HOLD",
   "remote command leaked into a disconnected articulation",
 );
+const pairedController = paired.session.context.services.articulatedController,
+  pairedControllerCheckpoint = pairedController.exportState(),
+  pairedPhysicsCheckpoint = paired.runtime.exportState(),
+  unknownGroupCheckpoint = structuredClone(pairedControllerCheckpoint),
+  missingGroupCheckpoint = structuredClone(pairedControllerCheckpoint);
+unknownGroupCheckpoint.stateByGroup[0].id = "ghost-group";
+assert.throws(
+  () =>
+    pairedController.validateState(unknownGroupCheckpoint, {
+      physicsState: pairedPhysicsCheckpoint,
+    }),
+  /does not match target topology/,
+  "articulated checkpoint accepted an unknown group identity",
+);
+missingGroupCheckpoint.stateByGroup.pop();
+assert.throws(
+  () =>
+    pairedController.validateState(missingGroupCheckpoint, {
+      physicsState: pairedPhysicsCheckpoint,
+    }),
+  /does not match target topology/,
+  "articulated checkpoint silently omitted authoritative group state",
+);
 
 if (process.env.SIM_DEBUG)
   console.log(

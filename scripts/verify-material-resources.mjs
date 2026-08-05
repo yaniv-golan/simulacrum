@@ -556,18 +556,25 @@ assert.throws(
   () => resources.importState({ ...checkpoint, stores: [] }, runGraph),
   /store set changed/,
 );
-for (const patch of [
-  { mediumId: "water-v1" },
-  { capacityKg: checkpoint.stores[0].capacityKg + 1 },
-  { remainingMassKg: Number.NaN },
-  { remainingMassKg: -1 },
-])
+for (const patch of [{ mediumId: "water-v1" }, { capacityKg: 1 }])
   assert.throws(
     () =>
       resources.importState(
         {
           ...checkpoint,
           stores: [{ ...checkpoint.stores[0], ...patch }],
+        },
+        runGraph,
+      ),
+    (error) => error?.code === "MATERIAL_RESOURCE_CHECKPOINT_IDENTITY_MISMATCH",
+  );
+for (const remainingMassKg of [Number.NaN, -1])
+  assert.throws(
+    () =>
+      resources.importState(
+        {
+          ...checkpoint,
+          stores: [{ ...checkpoint.stores[0], remainingMassKg }],
         },
         runGraph,
       ),
@@ -603,7 +610,7 @@ assert.throws(
         stores: multiCheckpoint.stores.map((store, index) =>
           index === 0
             ? { ...store, remainingMassKg: 1 }
-            : { ...store, mediumId: "wrong-v1" },
+            : { ...store, remainingMassKg: Number.NaN },
         ),
       },
       multiGraph,

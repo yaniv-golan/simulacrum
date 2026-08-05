@@ -3,6 +3,21 @@ import {
   immutableClone,
 } from "../../model/primitives.js";
 
+const checkpointKeysMatch = (value, expected) =>
+  Boolean(
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === expected.length &&
+    expected.every((key) => Object.hasOwn(value, key)),
+  );
+const totalFields = Object.freeze([
+  "electricalEnergyJ",
+  "positiveMechanicalWorkJ",
+  "absorbedMechanicalWorkJ",
+  "rejectedHeatJ",
+]);
+
 /** Settles solver-metered motor-row work against the current power allocation. */
 export class MotorEnergySettlementSystem {
   phase = "integration";
@@ -126,18 +141,48 @@ export class MotorEnergySettlementSystem {
     });
   }
 
-  importState(state) {
+  validateState(state) {
     if (
-      state?.version !== 1 ||
+      !checkpointKeysMatch(state, ["version", "lastSettledTick", "totals"]) ||
+      state.version !== 1 ||
       !Number.isSafeInteger(state.lastSettledTick) ||
+      state.lastSettledTick < 0 ||
       !Array.isArray(state.totals)
     )
       throw new DomainValidationError(
         "INVALID_MOTOR_ENERGY_SETTLEMENT_CHECKPOINT",
         "Motor energy settlement checkpoint must use version 1",
       );
-    this.lastSettledTick = state.lastSettledTick;
-    this.totals = new Map(structuredClone(state.totals));
+    const totals = new Map();
+    for (const entry of state.totals) {
+      const partId = entry?.[0],
+        values = entry?.[1],
+        validPartId =
+          (typeof partId === "string" && partId.length > 0) ||
+          Number.isSafeInteger(partId);
+      if (
+        !Array.isArray(entry) ||
+        entry.length !== 2 ||
+        !validPartId ||
+        totals.has(partId) ||
+        !checkpointKeysMatch(values, totalFields) ||
+        !totalFields.every(
+          (field) => Number.isFinite(values[field]) && values[field] >= 0,
+        )
+      )
+        throw new DomainValidationError(
+          "INVALID_MOTOR_ENERGY_SETTLEMENT_CHECKPOINT",
+          "Motor energy settlement totals must be unique finite non-negative part records",
+        );
+      totals.set(partId, structuredClone(values));
+    }
+    return { lastSettledTick: state.lastSettledTick, totals };
+  }
+
+  importState(state) {
+    const validated = this.validateState(state);
+    this.lastSettledTick = validated.lastSettledTick;
+    this.totals = validated.totals;
   }
 
   dispose() {

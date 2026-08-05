@@ -369,7 +369,7 @@ assert.equal(
 );
 
 const futureOwnerCheckpoint = structuredClone(checkpoint);
-futureOwnerCheckpoint.stateOwners[0].ownerVersion = 2;
+futureOwnerCheckpoint.stateOwners[0].ownerVersion = 3;
 futureOwnerCheckpoint.stateDigest = checkpointStateDigest(
   futureOwnerCheckpoint,
 );

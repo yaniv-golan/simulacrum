@@ -86,7 +86,28 @@
           {
             "if": {
               "properties": {
-                "ownerId": { "const": "material-resources" }
+                "ownerId": {
+                  "enum": [
+                    "session",
+                    "input-command-bus",
+                    "run-graph",
+                    "compiled-topology",
+                    "physics-world",
+                    "solver-contact",
+                    "tire-carcass",
+                    "body-registry",
+                    "structure-failure",
+                    "energy-power-signal",
+                    "material-resources",
+                    "pneumatic-gas",
+                    "thermal-ablation",
+                    "articulated-drive",
+                    "sensors",
+                    "controllers",
+                    "terrain-environment",
+                    "telemetry-event-ids"
+                  ]
+                }
               },
               "required": ["ownerId"]
             },

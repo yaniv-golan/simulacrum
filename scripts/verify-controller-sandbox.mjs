@@ -6,6 +6,8 @@ import {
 } from "../src/scripting/controller-compilers.js";
 import { ControllerRuntimeManager } from "../src/scripting/controller-runtime-manager.js";
 import { ControllerRuntimeReadModel } from "../src/application/controller-runtime-read-model.js";
+import { CommandBus } from "../src/simulation/command-bus.js";
+import { ControllerSensorBank } from "../src/simulation/controller-sensors.js";
 import {
   compileVisualProgram,
   DEFAULT_VISUAL_PROGRAM,
@@ -66,6 +68,28 @@ assert.deepEqual(
     ),
   ].sort(),
   "controller ABI must expose every authored actuator channel",
+);
+
+const checkpointCommandBus = new CommandBus();
+checkpointCommandBus.writeRemote(3, "throttle", 0.5);
+checkpointCommandBus.writeScript(5, "brake", 3, "brake", 0.25);
+const commandBusCheckpoint = checkpointCommandBus.exportState(),
+  stringCommandCheckpoint = structuredClone(commandBusCheckpoint);
+stringCommandCheckpoint.remote[0].value = "0.5";
+assert.throws(
+  () => new CommandBus().importState(stringCommandCheckpoint),
+  /invalid remote data/,
+  "command checkpoint accepted a coercible numeric string",
+);
+const checkpointSensorBank = new ControllerSensorBank(),
+  sensorCheckpoint = [{ sensorId: 2, velocity: { x: 1, y: 2, z: 3 } }],
+  stringSensorCheckpoint = structuredClone(sensorCheckpoint);
+checkpointSensorBank.importState(sensorCheckpoint);
+stringSensorCheckpoint[0].velocity.x = "1";
+assert.throws(
+  () => checkpointSensorBank.importState(stringSensorCheckpoint),
+  /invalid velocity state/,
+  "sensor checkpoint accepted a coercible numeric string",
 );
 
 const baseIR = () => ({
@@ -806,6 +830,15 @@ assert.deepEqual(statuses.slice(0, 2), [
 assert.equal(manager.tick(1, 1 / 120, {}), false);
 assert.equal(manager.ready(1), false);
 assert.match(manager.status(1).status, /fuel exhausted/);
+const trappedControllerCheckpoint = manager
+  .exportState()
+  .find((record) => record.controllerId === 1);
+assert.equal(
+  trappedControllerCheckpoint.ready,
+  false,
+  "trapped controller did not retain checkpointable terminal state",
+);
+assert.match(trappedControllerCheckpoint.error, /fuel exhausted/);
 assert.equal(manager.tick(2, 1 / 120, {}), true);
 assert.equal(manager.commands(2).get("throttle"), 0.4);
 assert.equal(manager.ready(2), true, "one trap stopped another controller");
@@ -926,20 +959,70 @@ assert.throws(
   () => restoredManager.importState([]),
   /does not match attached programs/,
 );
-for (const mutateCheckpoint of [
-  (state) => (state[0].controllerId = 404),
-  (state) => (state[0].language = "wat"),
-  (state) => (state[0].policyVersion = "future-policy"),
+for (const [mutateCheckpoint, expectedError] of [
+  [(state) => (state[0].controllerId = 404), /identity mismatch/],
+  [(state) => (state[0].language = "wat"), /invalid runtime state/],
+  [
+    (state) => (state[0].policyVersion = "future-policy"),
+    /invalid runtime state/,
+  ],
+  [(state) => (state[0].commands[0][1] = "0.5"), /invalid commands/],
+  [
+    (state) => (state[0].engineState[0].value = "1"),
+    /does not match program globals/,
+  ],
 ]) {
   const mismatchedCheckpoint = structuredClone(controllerCheckpoint);
   mutateCheckpoint(mismatchedCheckpoint);
   assert.throws(
     () => restoredManager.importState(mismatchedCheckpoint),
-    /identity mismatch/,
+    expectedError,
   );
 }
+const outputBeforeDeferredImport = new Map(restoredOutputs.get(41)),
+  deferredCheckpoint = structuredClone(controllerCheckpoint);
+deferredCheckpoint[0].commands = [["throttle", 0.75]];
+restoredManager.importState(deferredCheckpoint, { notify: false });
+assert.deepEqual(
+  restoredOutputs.get(41),
+  outputBeforeDeferredImport,
+  "controller checkpoint import emitted callbacks before global commit",
+);
+restoredManager.publishState();
+assert.deepEqual(restoredOutputs.get(41), new Map([["throttle", 0.75]]));
+let rejectObserverPublication = false,
+  rejectedObserverCalls = 0;
+const observerManager = new ControllerRuntimeManager({
+  onCommands: () => {
+    if (rejectObserverPublication) {
+      rejectedObserverCalls++;
+      throw new Error("commands observer rejected");
+    }
+  },
+  onStatus: () => {
+    if (rejectObserverPublication) {
+      rejectedObserverCalls++;
+      throw new Error("status observer rejected");
+    }
+  },
+});
+observerManager.attach(41, statefulPrepared, "OBSERVER CONTAINMENT");
+observerManager.tick(41, 0.25, { speed: 2 });
+const observerCheckpoint = observerManager.exportState();
+rejectObserverPublication = true;
+assert.doesNotThrow(
+  () => observerManager.importState(observerCheckpoint),
+  "post-commit observer rejection escaped controller restore",
+);
+assert.equal(rejectedObserverCalls, 2);
+assert.doesNotThrow(
+  () => observerManager.publishState(),
+  "controller publication did not isolate observer failures",
+);
+assert.equal(rejectedObserverCalls, 4);
 statefulManager.disposeAll();
 restoredManager.disposeAll();
+observerManager.disposeAll();
 
 const defaultManager = new ControllerRuntimeManager();
 assert.throws(() => defaultManager.attach(1, null), /instantiate/);

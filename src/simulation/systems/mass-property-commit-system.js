@@ -50,6 +50,12 @@ function massPropertiesEqual(left, right) {
 }
 
 function timingFor(stage, tick) {
+  if (stage === "checkpoint-restore")
+    return {
+      appliedAfterIntegratedTick: tick,
+      effectiveTick: tick + 1,
+      timingPolicy: "owner-first-checkpoint-reconstruction-v1",
+    };
   return stage === "initialization"
     ? {
         appliedAfterIntegratedTick: null,
@@ -66,6 +72,7 @@ function timingFor(stage, tick) {
 /** Owns the only runtime transaction that may change physical body mass. */
 export class MassPropertyCommitSystem {
   phase = "thermal";
+  checkpointOwner = "mass-properties";
 
   initialize(context) {
     context.massPropertyRuntime = {
@@ -111,6 +118,12 @@ export class MassPropertyCommitSystem {
       unchangedPartIds: restored.unchangedPartIds,
       records: restored.records,
     });
+  }
+
+  reconstructAfterCheckpointOwners(context) {
+    const transaction = this.#commit(context, "checkpoint-restore");
+    context.massPropertyRuntime.lastTransaction = transaction;
+    return transaction;
   }
 
   dispose(context) {

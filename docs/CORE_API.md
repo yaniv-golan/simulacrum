@@ -79,8 +79,32 @@ single post-thermal transaction commits material and ablative mass changes for
 the next integration tick. Allocation v2 permits exactly one atomic commit per
 network and fixed tick, persists its sequence and last committed tick, and
 rejects duplicate or stale direct calls. Checkpoint v2 restores that complete
-transaction and requires owner version 2 for `material-resources`; every other
-pre-existing owner remains version 1.
+transaction and requires owner version 2 for `material-resources`. The
+checkpoint-integrity cutover also advances `run-graph`, `physics-world`,
+`body-registry`, `thermal-ablation`, `session`, `input-command-bus`,
+`compiled-topology`, `solver-contact`, `tire-carcass`, `structure-failure`,
+`energy-power-signal`, `pneumatic-gas`, `articulated-drive`, `sensors`,
+`controllers`, `terrain-environment`, and `telemetry-event-ids` to owner
+version 2. Only `flexible-line-runtime` and `release-couplers` retain their
+strict owner-version-1 projections. Payloads contain only mutable state, while
+live authored topology, environment, geometry, mass-property, material, and
+thermal owners reconstruct their authoritative data before kinematic replay.
+Optional owners use explicit absence sentinels, every owner clock must describe
+the same committed boundary, and controller callbacks are deferred until the
+whole restore commits. A checkpoint therefore cannot silently omit a live
+subsystem, inject state for one that is not running, combine mutually
+inconsistent ticks, or publish a partially restored controller state.
+Structural events must replay exactly to the final failed-connection and
+detached-part state, and articulated state must contain exactly the groups
+derived from the target active-constraint topology. A `world-kinematics-v1`
+external body persists kinematics plus an immutable physical-identity
+attestation covering mass, inertia, collision geometry, and material; restore
+rejects a different body or pairwise/default contact law rather than treating
+those properties as mutable world authority. The attestation is derived from
+physical fields and does not persist process-local Cannon IDs. Trapped
+controller engines remain checkpointable, while
+post-commit observer exceptions are contained and cannot turn a committed
+restore into a reported rollback.
 
 Compressible dry-air ports use the distinct `compressible-gas` behavior and
 `dry-air-v1` medium. `PneumaticNetwork` owns each tire chamber's conserved gas

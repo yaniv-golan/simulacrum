@@ -454,8 +454,22 @@ assert.ok(gas.telemetry().chambers[0].massOutKg > 0);
 
 const checkpoint = gas.exportState(),
   restored = new PneumaticNetwork(compiled);
+const coercibleCheckpoint = structuredClone(checkpoint);
+coercibleCheckpoint.chambers[0].state.massKg = String(
+  coercibleCheckpoint.chambers[0].state.massKg,
+);
+assert.throws(
+  () => restored.importState(coercibleCheckpoint),
+  /Invalid pneumatic chamber checkpoint state/,
+  "pneumatic checkpoint accepted coercible string mass",
+);
 restored.importState(checkpoint);
 assert.deepEqual(restored.exportState(), checkpoint);
+assert.equal(
+  restored.gasMassForPart(wheel.id),
+  gas.gasMassForPart(wheel.id),
+  "fresh pneumatic owner did not reconstruct contained gas mass",
+);
 assert.ok(
   Number.isFinite(
     gasAbsolutePressurePa(
@@ -512,6 +526,36 @@ const damageCheckpoint = damageNetwork.exportState(),
   damageRestored = new PneumaticNetwork(
     compileAssembly(damageModel.snapshot(), TYPES),
   );
+const duplicateFailureCheckpoint = structuredClone(damageCheckpoint);
+duplicateFailureCheckpoint.failureEvents.push(
+  structuredClone(duplicateFailureCheckpoint.failureEvents[0]),
+);
+assert.throws(
+  () => damageRestored.importState(duplicateFailureCheckpoint),
+  /Invalid pneumatic failure checkpoint history/,
+  "pneumatic checkpoint accepted duplicate failure event identity",
+);
+const inventedFailureModeCheckpoint = structuredClone(damageCheckpoint);
+inventedFailureModeCheckpoint.failureEvents[0].mode = "demo-puncture";
+assert.throws(
+  () => damageRestored.importState(inventedFailureModeCheckpoint),
+  /Invalid pneumatic failure checkpoint history/,
+  "pneumatic checkpoint accepted an invented failure mode",
+);
+const negativeFailurePressureCheckpoint = structuredClone(damageCheckpoint);
+negativeFailurePressureCheckpoint.failureEvents[0].absolutePressurePa = -1;
+assert.throws(
+  () => damageRestored.importState(negativeFailurePressureCheckpoint),
+  /Invalid pneumatic failure checkpoint history/,
+  "pneumatic checkpoint accepted negative event pressure",
+);
+const negativeChamberMassCheckpoint = structuredClone(damageCheckpoint);
+negativeChamberMassCheckpoint.chambers[0].state.massKg = -1;
+assert.throws(
+  () => damageRestored.importState(negativeChamberMassCheckpoint),
+  /Invalid pneumatic chamber checkpoint state/,
+  "pneumatic checkpoint accepted negative gas mass",
+);
 damageRestored.importState(damageCheckpoint);
 damageNetwork.resolve({ runGraph: damageGraph, time: 74 / 120 }, 1 / 120);
 damageRestored.resolve({ runGraph: damageGraph, time: 74 / 120 }, 1 / 120);

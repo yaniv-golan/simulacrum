@@ -13,6 +13,58 @@ import {
 const EPSILON = 1e-12;
 const clamp = (value, lower, upper) => Math.max(lower, Math.min(upper, value));
 const nodeId = (partId, portId) => `${String(partId)}\0${portId}`;
+const PNEUMATIC_CHAMBER_FAILURE_MODES = new Set([
+  "burst-v1",
+  "chamber-overtemperature-v1",
+  "puncture-v1",
+]);
+const PNEUMATIC_CHAMBER_CHECKPOINT_FIELDS = Object.freeze([
+  "partId",
+  "state",
+  "ambientPressurePa",
+  "ambientTemperatureK",
+  "massInKg",
+  "massOutKg",
+  "boundaryEnergyJ",
+  "mechanicalWorkJ",
+  "heatToCarcassJ",
+  "failureMode",
+  "leakAreaM2",
+  "damageImpulseNs",
+]);
+const PNEUMATIC_FAILURE_CHECKPOINT_FIELDS = Object.freeze([
+  "eventId",
+  "mode",
+  "partId",
+  "chamberPartId",
+  "connectionId",
+  "absolutePressurePa",
+  "internalEnergyJ",
+  "gasMassKg",
+  "leakAreaM2",
+  "transactionId",
+  "timeS",
+  "causal",
+]);
+
+function checkpointKeysMatch(value, expectedKeys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort(),
+    expected = [...expectedKeys].sort();
+  return (
+    actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index])
+  );
+}
+
+function checkpointTreeIsFinite(value) {
+  if (value == null || typeof value === "string" || typeof value === "boolean")
+    return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (Array.isArray(value)) return value.every(checkpointTreeIsFinite);
+  if (typeof value !== "object") return false;
+  return Object.values(value).every(checkpointTreeIsFinite);
+}
 
 function approach(current, target, maximumDelta) {
   return current + clamp(target - current, -maximumDelta, maximumDelta);
@@ -1230,9 +1282,16 @@ export class PneumaticNetwork {
     };
   }
 
-  importState(snapshot) {
+  validateState(snapshot) {
     if (
       snapshot?.version !== 1 ||
+      !checkpointKeysMatch(snapshot, [
+        "version",
+        "transactionCursor",
+        "failureEvents",
+        "chambers",
+        "devices",
+      ]) ||
       !Number.isSafeInteger(snapshot.transactionCursor) ||
       snapshot.transactionCursor < 0 ||
       !Array.isArray(snapshot.chambers) ||
@@ -1244,26 +1303,47 @@ export class PneumaticNetwork {
         (device) => device.dynamicState,
       ),
       chamberIds = new Set(snapshot.chambers.map(({ partId }) => partId)),
-      deviceIds = new Set(snapshot.devices.map(({ partId }) => partId));
+      deviceIds = new Set(snapshot.devices.map(({ partId }) => partId)),
+      failureEventIds = new Set(
+        snapshot.failureEvents.map(({ eventId }) => eventId),
+      );
     if (
       chamberIds.size !== this.chambers.size ||
+      snapshot.chambers.length !== this.chambers.size ||
       [...this.chambers.keys()].some((partId) => !chamberIds.has(partId)) ||
       deviceIds.size !== dynamicDevices.length ||
+      snapshot.devices.length !== dynamicDevices.length ||
       dynamicDevices.some(({ partId }) => !deviceIds.has(partId))
     )
       throw new TypeError("Pneumatic checkpoint identity mismatch");
     if (
       snapshot.failureEvents.length > 128 ||
+      failureEventIds.size !== snapshot.failureEvents.length ||
       snapshot.failureEvents.some(
         (event) =>
           !event ||
+          !checkpointKeysMatch(event, PNEUMATIC_FAILURE_CHECKPOINT_FIELDS) ||
           typeof event.eventId !== "string" ||
+          !PNEUMATIC_CHAMBER_FAILURE_MODES.has(event.mode) ||
           !this.chambers.has(event.chamberPartId) ||
-          !Number.isFinite(Number(event.absolutePressurePa)) ||
-          !Number.isFinite(Number(event.internalEnergyJ)) ||
-          !Number.isFinite(Number(event.gasMassKg)) ||
+          event.partId !== event.chamberPartId ||
+          (event.connectionId !== null &&
+            typeof event.connectionId !== "string" &&
+            !Number.isSafeInteger(event.connectionId)) ||
+          !Number.isFinite(event.absolutePressurePa) ||
+          event.absolutePressurePa <= 0 ||
+          !Number.isFinite(event.internalEnergyJ) ||
+          event.internalEnergyJ <= 0 ||
+          !Number.isFinite(event.gasMassKg) ||
+          event.gasMassKg <= 0 ||
+          !Number.isFinite(event.leakAreaM2) ||
+          event.leakAreaM2 < 0 ||
           !Number.isSafeInteger(event.transactionId) ||
-          event.transactionId < 0,
+          event.transactionId < 0 ||
+          event.transactionId > snapshot.transactionCursor ||
+          !Number.isFinite(event.timeS) ||
+          event.timeS < 0 ||
+          !checkpointTreeIsFinite(event.causal),
       )
     )
       throw new TypeError("Invalid pneumatic failure checkpoint history");
@@ -1286,50 +1366,76 @@ export class PneumaticNetwork {
           ...numericLedgerKeys.map((key) => saved[key]),
         ];
         if (
-          values.some((value) => !Number.isFinite(Number(value))) ||
-          Number(saved.state.massKg) <= 0 ||
-          Number(saved.state.internalEnergyJ) <= 0 ||
-          Number(saved.state.volumeM3) <= 0 ||
-          Number(saved.ambientPressurePa) <= 0 ||
-          Number(saved.ambientTemperatureK) <= 0 ||
-          Number(saved.leakAreaM2) < 0 ||
-          Number(saved.damageImpulseNs) < 0
+          !checkpointKeysMatch(saved, PNEUMATIC_CHAMBER_CHECKPOINT_FIELDS) ||
+          !checkpointKeysMatch(saved.state, [
+            "massKg",
+            "internalEnergyJ",
+            "volumeM3",
+          ]) ||
+          values.some((value) => !Number.isFinite(value)) ||
+          saved.state.massKg <= 0 ||
+          saved.state.internalEnergyJ <= 0 ||
+          saved.state.volumeM3 <= 0 ||
+          saved.ambientPressurePa <= 0 ||
+          saved.ambientTemperatureK <= 0 ||
+          saved.leakAreaM2 < 0 ||
+          saved.damageImpulseNs < 0 ||
+          (saved.failureMode !== null &&
+            !PNEUMATIC_CHAMBER_FAILURE_MODES.has(saved.failureMode))
         )
           throw new TypeError("Invalid pneumatic chamber checkpoint state");
-        return { record: this.chambers.get(saved.partId), saved };
+        return {
+          record: this.chambers.get(saved.partId),
+          saved: structuredClone(saved),
+        };
       }),
       deviceStages = snapshot.devices.map((saved) => {
         const device = this.devices.get(saved.partId),
           state = saved.dynamicState;
-        if (!device?.dynamicState || !state || typeof state !== "object")
+        if (
+          !checkpointKeysMatch(saved, ["partId", "dynamicState"]) ||
+          !device?.dynamicState ||
+          !checkpointKeysMatch(state, Object.keys(device.dynamicState))
+        )
           throw new TypeError("Invalid pneumatic device checkpoint state");
         if (
           device.kind === "three-way-valve-v1" &&
-          (!Number.isFinite(Number(state.position)) ||
-            Math.abs(Number(state.position)) > 1)
+          (!Number.isFinite(state.position) || Math.abs(state.position) > 1)
         )
           throw new TypeError("Invalid pneumatic valve checkpoint state");
         if (
           device.kind === "ambient-air-compressor-v1" &&
-          (!Number.isFinite(Number(state.spool)) ||
-            Number(state.spool) < 0 ||
-            Number(state.spool) > 1 ||
-            !Number.isFinite(Number(state.motorTemperatureK)) ||
-            Number(state.motorTemperatureK) <= 0 ||
+          (!Number.isFinite(state.spool) ||
+            state.spool < 0 ||
+            state.spool > 1 ||
+            !Number.isFinite(state.motorTemperatureK) ||
+            state.motorTemperatureK <= 0 ||
             typeof state.overheated !== "boolean")
         )
           throw new TypeError("Invalid pneumatic compressor checkpoint state");
-        return { device, state };
+        return { device, state: structuredClone(state) };
       });
+    return {
+      chamberStages,
+      deviceStages,
+      numericLedgerKeys,
+      transactionCursor: snapshot.transactionCursor,
+      failureEvents: structuredClone(snapshot.failureEvents),
+    };
+  }
+
+  importState(snapshot) {
+    const validated = this.validateState(snapshot),
+      { chamberStages, deviceStages, numericLedgerKeys } = validated;
     for (const { record, saved } of chamberStages) {
       record.state = structuredClone(saved.state);
-      for (const key of numericLedgerKeys) record[key] = Number(saved[key]);
+      for (const key of numericLedgerKeys) record[key] = saved[key];
       record.failureMode = saved.failureMode || null;
     }
     for (const { device, state } of deviceStages)
       device.dynamicState = structuredClone(state);
-    this.transactionCursor = snapshot.transactionCursor;
-    this.failureEvents = structuredClone(snapshot.failureEvents);
+    this.transactionCursor = validated.transactionCursor;
+    this.failureEvents = validated.failureEvents;
     this.lastFailureEvents = [];
   }
 }

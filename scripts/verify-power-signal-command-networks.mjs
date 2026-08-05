@@ -1225,15 +1225,24 @@ assert.deepEqual(restoredBus.read(5, "stride", -1), {
   source: "none",
 });
 assert.throws(() => restoredBus.importState(null), /must be an object/);
+const invalidRemoteCheckpoint = checkpointBus.exportState();
+invalidRemoteCheckpoint.remote[0].targetId = null;
 assert.throws(
-  () => restoredBus.importState({ remote: [{ targetId: null }] }),
+  () => restoredBus.importState(invalidRemoteCheckpoint),
   /invalid remote data/,
 );
+const invalidScriptCheckpoint = checkpointBus.exportState();
+invalidScriptCheckpoint.script[0].controllerId = null;
 assert.throws(
-  () => restoredBus.importState({ script: [{ controllerId: null }] }),
+  () => restoredBus.importState(invalidScriptCheckpoint),
   /invalid script data/,
 );
-restoredBus.importState({});
+restoredBus.importState({
+  remote: [],
+  script: [],
+  conflicts: [],
+  rejections: [],
+});
 assert.deepEqual(restoredBus.entries(), {
   remote: [],
   script: [],

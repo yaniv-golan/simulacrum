@@ -20,6 +20,16 @@ function candidateOrder(left, right) {
   );
 }
 
+function checkpointKeysMatch(value, expectedKeys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort(),
+    expected = [...expectedKeys].sort();
+  return (
+    actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index])
+  );
+}
+
 function normalizedCandidates(candidates) {
   const byTargetChannel = new Map();
   for (const candidate of Array.isArray(candidates) ? candidates : []) {
@@ -100,28 +110,72 @@ export class InputTraceRecorder {
 
   capture() {
     return {
-      version: 1,
-      sourceId: this.sourceId,
-      nextSequence: this.nextSequence,
-      records: structuredClone(this.records),
-      previousValues: [...this.previousValues],
+      version: 2,
+      records: this.records.map(
+        ({ sourceId: _sourceId, channelId, ...record }) => ({
+          ...structuredClone(record),
+          channel: channelId,
+        }),
+      ),
     };
   }
 
-  restore(state) {
+  validateState(state) {
     if (
-      state?.version !== 1 ||
-      state.sourceId !== this.sourceId ||
-      !Number.isSafeInteger(state.nextSequence) ||
-      !Array.isArray(state.records) ||
-      !Array.isArray(state.previousValues)
+      state?.version !== 2 ||
+      !checkpointKeysMatch(state, ["version", "records"]) ||
+      !Array.isArray(state.records)
     )
       throw new DomainValidationError(
         "INVALID_INPUT_TRACE_CHECKPOINT",
         "Input trace checkpoint does not match the active recorder",
       );
-    this.nextSequence = state.nextSequence;
-    this.records = structuredClone(state.records);
-    this.previousValues = new Map(structuredClone(state.previousValues));
+    let previousTick = -1;
+    const records = state.records.map((record, index) => {
+      if (
+        !checkpointKeysMatch(record, [
+          "tick",
+          "sequence",
+          "targetId",
+          "channel",
+          "value",
+        ]) ||
+        !Number.isSafeInteger(record.tick) ||
+        record.tick < previousTick ||
+        record.sequence !== index ||
+        typeof record.targetId !== "string" ||
+        !record.targetId ||
+        typeof record.channel !== "string" ||
+        !record.channel ||
+        typeof record.value !== "number" ||
+        !Number.isFinite(record.value)
+      )
+        throw new DomainValidationError(
+          "INVALID_INPUT_TRACE_CHECKPOINT",
+          "Input trace checkpoint contains invalid ordered records",
+        );
+      previousTick = record.tick;
+      return {
+        tick: record.tick,
+        sequence: record.sequence,
+        sourceId: this.sourceId,
+        targetId: record.targetId,
+        channelId: record.channel,
+        value: record.value,
+      };
+    });
+    return records;
+  }
+
+  restore(state) {
+    const records = this.validateState(state);
+    this.nextSequence = records.length;
+    this.records = structuredClone(records);
+    this.previousValues = new Map();
+    for (const record of records)
+      this.previousValues.set(
+        keyFor(record.targetId, record.channelId),
+        record.value,
+      );
   }
 }

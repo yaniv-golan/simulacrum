@@ -30,7 +30,24 @@ Endpoint-aware route evidence and `SimulationSession.routeEvidence()` also ship
 in Core `0.2.0`. The same transaction cuts the strict
 `material-resources` checkpoint owner from version 1 to version 2 and the state
 digest domain to `simulacrum-checkpoint-state-v2`; there is no compatibility
-reader, while the 19-owner set and checkpoint envelope version stay unchanged.
+reader, while the 20-owner set and checkpoint envelope version stay unchanged.
+
+The next checkpoint-integrity cutover advances every owner except
+`flexible-line-runtime` and `release-couplers` to version 2 and advances the
+state digest domain to `simulacrum-checkpoint-state-v3`. Checkpoints no longer
+duplicate authored topology or environment, geometry, mass, inertia, fixed
+frames, projected thermal state, solver/contact caches, tire projections, or
+derived network telemetry. Live material, pneumatic, and aerothermal owners
+rebuild mass properties before version-2 kinematic physics is applied, and the
+body-registry read model is then reconstructed from that final physics state.
+Optional-owner presence, cross-owner time coherence, external-body policy,
+strict numeric domains, structural event replay, target articulated topology,
+trapped-controller capture, and controller publication also fail closed.
+World-owned external kinematics attest immutable mass, inertia, collision
+geometry, material identity, and canonical pairwise/default contact laws
+without persisting process-local Cannon IDs; observer exceptions after commit
+are contained. There is no compatibility reader for the older owner layouts; the
+20-owner set and top-level checkpoint envelope remain unchanged at version 2.
 
 The descriptor is derived from current catalog and part data. It is not added
 to blueprint, workspace, share, or subassembly envelopes, so this cutover does

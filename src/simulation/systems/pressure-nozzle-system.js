@@ -179,17 +179,38 @@ export class PressureNozzleDemandSystem {
     });
   }
 
-  importState(context, state) {
-    if (state?.version !== 1 || !Array.isArray(state.engines))
+  validateState(context, state) {
+    if (
+      state?.version !== 1 ||
+      !state ||
+      typeof state !== "object" ||
+      Array.isArray(state) ||
+      Object.keys(state).sort().join("\0") !== "engines\0version" ||
+      !Array.isArray(state.engines)
+    )
       throw new DomainValidationError(
         "INVALID_PRESSURE_NOZZLE_CHECKPOINT",
         "Pressure-nozzle checkpoint must use version 1",
       );
-    const records = new Map(
-        state.engines.map((record) => [record.partId, record]),
-      ),
+    const records = new Map(),
       engines = context.pressureNozzleRuntime.engines;
+    for (const record of state.engines) {
+      if (
+        !record ||
+        typeof record !== "object" ||
+        Array.isArray(record) ||
+        Object.keys(record).sort().join("\0") !==
+          "gimbalXRad\0gimbalZRad\0partId\0throttleState" ||
+        records.has(record.partId)
+      )
+        throw new DomainValidationError(
+          "PRESSURE_NOZZLE_CHECKPOINT_IDENTITY_MISMATCH",
+          "Pressure-nozzle checkpoint engine identities are not unique",
+        );
+      records.set(record.partId, record);
+    }
     if (
+      state.engines.length !== engines.size ||
       records.size !== engines.size ||
       [...engines.keys()].some((partId) => !records.has(partId))
     )
@@ -199,13 +220,29 @@ export class PressureNozzleDemandSystem {
       );
     for (const engine of engines.values()) {
       const record = records.get(engine.partId);
-      for (const field of ["throttleState", "gimbalXRad", "gimbalZRad"])
-        if (!Number.isFinite(record[field]))
-          throw new DomainValidationError(
-            "INVALID_PRESSURE_NOZZLE_CHECKPOINT",
-            `Pressure-nozzle checkpoint ${field} must be finite`,
-          );
-      engine.throttleState = clamp(record.throttleState, 0, 1);
+      if (
+        !Number.isFinite(record.throttleState) ||
+        record.throttleState < 0 ||
+        record.throttleState > 1 ||
+        !Number.isFinite(record.gimbalXRad) ||
+        Math.abs(record.gimbalXRad) > engine.contract.gimbalRangeRad ||
+        !Number.isFinite(record.gimbalZRad) ||
+        Math.abs(record.gimbalZRad) > engine.contract.gimbalRangeRad
+      )
+        throw new DomainValidationError(
+          "INVALID_PRESSURE_NOZZLE_CHECKPOINT",
+          `Pressure-nozzle checkpoint state is outside the authored domain for ${String(engine.partId)}`,
+        );
+    }
+    return records;
+  }
+
+  importState(context, state) {
+    const records = this.validateState(context, state),
+      engines = context.pressureNozzleRuntime.engines;
+    for (const engine of engines.values()) {
+      const record = records.get(engine.partId);
+      engine.throttleState = record.throttleState;
       engine.gimbalXRad = record.gimbalXRad;
       engine.gimbalZRad = record.gimbalZRad;
       engine.record = null;

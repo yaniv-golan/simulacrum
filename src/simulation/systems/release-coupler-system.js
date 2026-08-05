@@ -133,11 +133,15 @@ export class ReleaseCouplerSystem {
     };
   }
 
-  importState(context, checkpoint) {
+  validateState(context, checkpoint) {
     const expected = descriptors(context),
       states = checkpoint?.states;
     if (
-      checkpoint?.version !== 1 ||
+      !checkpoint ||
+      typeof checkpoint !== "object" ||
+      Array.isArray(checkpoint) ||
+      Object.keys(checkpoint).sort().join("\0") !== "states\0version" ||
+      checkpoint.version !== 1 ||
       !Array.isArray(states) ||
       states.length !== expected.length
     )
@@ -150,6 +154,11 @@ export class ReleaseCouplerSystem {
       const descriptor = expected[index],
         state = states[index];
       if (
+        !state ||
+        typeof state !== "object" ||
+        Array.isArray(state) ||
+        Object.keys(state).sort().join("\0") !==
+          "accumulatedEnergyJ\0partId\0previousCommand" ||
         state?.partId !== descriptor.sourcePartId ||
         !Number.isFinite(state.previousCommand) ||
         state.previousCommand < -1 ||
@@ -168,6 +177,10 @@ export class ReleaseCouplerSystem {
         accumulatedEnergyJ: state.accumulatedEnergyJ,
       });
     }
-    this.#actuationByPart = restored;
+    return restored;
+  }
+
+  importState(context, checkpoint) {
+    this.#actuationByPart = this.validateState(context, checkpoint);
   }
 }

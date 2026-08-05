@@ -97,10 +97,26 @@ invent launch, vehicle-mode, mission-status, or stabilization state.
 ## Checkpoints and physical release
 
 Checkpoint v2 persists the sole mutable flight-domain state under the strict
-owner-version-1 `thermal-ablation` record. Aerodynamic forces, completed flight read
-models, and physical-component identity are re-derived. Every checkpoint owner
-wrapper has exactly version 1, and restore validates compiled topology plus
-aerothermal part identity before applying the atomic transaction.
+owner-version-2 `thermal-ablation` record. Aerodynamic forces, registry thermal
+read models, and physical-component identity are re-derived. The current
+integrity cutover uses owner version 2 for every owner except
+`flexible-line-runtime` and `release-couplers`, whose exact mutable projections
+remain version 1. Session environment, compiled topology, geometry, mass and
+inertia, fixed frames, solver/contact caches, tire projections, and derived
+network telemetry are not competing checkpoint authorities. Restore validates
+every owner and one shared committed-tick boundary before applying the
+transaction. It reconstructs mass from material, pneumatic, and aerothermal
+owners before kinematics; reprojects the body registry after final physics;
+requires structural event history and articulated group state to match the
+target topology; and requires world-owned external kinematics to attest the
+live body's mass, inertia, collision geometry, and material identity without
+restoring those immutable properties. Material identity includes the canonical
+pairwise contact law and default contact policy, never process-local Cannon
+IDs. Trapped controllers retain checkpointable terminal state. Controller callbacks run only after commit, and observer
+exceptions are contained because observers are not checkpoint authorities.
+The coordinator invalidates
+non-checkpointed route-evidence caches only after all imports and
+resynchronization succeed.
 
 Physical release is an actuator-phase mechanism, not a vehicle or mission
 mode. `ReleaseCouplerSystem` consumes compiled two-flange latch descriptors,

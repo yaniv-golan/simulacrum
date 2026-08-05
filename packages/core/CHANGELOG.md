@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+- Makes checkpoint restore a validate-then-apply transaction across every live
+  owner. All checkpoint owners except `flexible-line-runtime` and
+  `release-couplers` advance to version 2 and serialize exact mutable
+  projections only. Authored topology and environment, geometry, mass,
+  inertia, fixed frames, solver/contact caches, tire projections, and derived
+  network telemetry cannot become competing checkpoint authority.
+  Owner-reconstructed external bodies reject world-owned poses and every
+  external body requires an explicit policy. Dynamic mass is reconstructed
+  from material, pneumatic, and aerothermal owners before kinematic physics;
+  body-registry kinematics are then reprojected from the final physics state.
+  The checkpoint-state digest domain advances to
+  `simulacrum-checkpoint-state-v3`; cross-owner clocks, exact identities,
+  optional-owner presence, strict numeric domains, and staged controller
+  publication fail closed. Route-evidence caches and controller callbacks are
+  published only after a successful commit; callback failures are contained.
+  Trapped controllers remain checkpointable, structural event history must
+  replay to final graph state, articulated groups must match target topology,
+  and world-owned external kinematics carry immutable mass/inertia/shape
+  identity attestations including canonical pairwise/default contact laws.
+  Process-local Cannon material IDs are not persisted. Older owner layouts fail
+  closed while the top-level checkpoint envelope remains version 2.
+
 ## 0.2.0 - 2026-07-30
 
 - Extends `GeometryDescriptorV2` with the closed `rounded-box-v1`,
@@ -41,7 +63,7 @@
 - Advances the existing `material-resources` checkpoint owner to version 2 for
   atomic allocation sequence/last-tick state and advances the checkpoint-state
   digest domain. Pre-cutover owner-v1 checkpoints are intentionally rejected by
-  the strict current decoder; the top-level checkpoint remains version 1.
+  the strict current decoder; the top-level checkpoint remains version 2.
 - Adds the `flexible-line-v1` compiler/runtime contract, one-to-many physical
   entity ownership, tension-only constraints, strict Rope materials, completed
   telemetry, failure evidence, and exact checkpoint state.

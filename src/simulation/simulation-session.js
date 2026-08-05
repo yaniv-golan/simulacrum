@@ -1,4 +1,8 @@
-import { deepFreeze, DomainValidationError } from "../model/primitives.js";
+import {
+  deepFreeze,
+  DomainValidationError,
+  stableStringify,
+} from "../model/primitives.js";
 import { createSimulationContext } from "./simulation-context.js";
 import {
   createTelemetrySnapshot,
@@ -14,13 +18,50 @@ function checkpointValue(value) {
     : { kind: "value-v1", value };
 }
 
-function restoreCheckpointValue(record) {
-  if (record?.kind === "map-v1")
+function checkpointKeysMatch(value, expectedKeys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort(),
+    expected = [...expectedKeys].sort();
+  return (
+    actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index])
+  );
+}
+
+function checkpointTreeIsFinite(value) {
+  if (value == null || typeof value === "string" || typeof value === "boolean")
+    return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (Array.isArray(value)) return value.every(checkpointTreeIsFinite);
+  if (typeof value !== "object") return false;
+  return Object.values(value).every(checkpointTreeIsFinite);
+}
+
+function validateCheckpointValue(record) {
+  if (
+    record?.kind === "map-v1" &&
+    checkpointKeysMatch(record, ["kind", "entries"]) &&
+    Array.isArray(record.entries) &&
+    record.entries.every(
+      (entry) =>
+        Array.isArray(entry) &&
+        entry.length === 2 &&
+        checkpointTreeIsFinite(entry[0]) &&
+        checkpointTreeIsFinite(entry[1]),
+    ) &&
+    new Set(record.entries.map(([key]) => stableStringify(key))).size ===
+      record.entries.length
+  )
     return new Map(structuredClone(record.entries));
-  if (record?.kind === "value-v1") return structuredClone(record.value);
+  if (
+    record?.kind === "value-v1" &&
+    checkpointKeysMatch(record, ["kind", "value"]) &&
+    checkpointTreeIsFinite(record.value)
+  )
+    return structuredClone(record.value);
   throw new DomainValidationError(
     "INVALID_SESSION_CHECKPOINT_VALUE",
-    "Session checkpoint contains an unknown value representation",
+    "Session checkpoint contains an invalid value representation",
   );
 }
 
@@ -224,30 +265,38 @@ export class SimulationSession {
         "Cannot checkpoint a simulation session before it starts",
       );
     return structuredClone({
-      version: 1,
+      version: 2,
       fixedDt: this.fixedDt,
       maxSubsteps: this.maxSubsteps,
       accumulator: this.accumulator,
       time: this.time,
       clock: this.context.clock,
-      environment: this.context.environment,
       sensors: checkpointValue(this.context.sensors),
       commandValues: checkpointValue(this.context.commands),
       completedSensorSnapshot: this.context.completedSensorSnapshot ?? null,
-      telemetry: stripRouteEvidenceCapabilities(this.context.telemetry),
-      previousTelemetry: stripRouteEvidenceCapabilities(
-        this.context.previousTelemetry,
-      ),
     });
   }
 
-  importState(state) {
-    if (!this.context || state?.version !== 1)
+  validateState(state) {
+    if (
+      !this.context ||
+      state?.version !== 2 ||
+      !checkpointKeysMatch(state, [
+        "version",
+        "fixedDt",
+        "maxSubsteps",
+        "accumulator",
+        "time",
+        "clock",
+        "sensors",
+        "commandValues",
+        "completedSensorSnapshot",
+      ])
+    )
       throw new DomainValidationError(
         "INVALID_SESSION_CHECKPOINT",
         "Simulation session checkpoint is not valid for this session",
       );
-    this.#routeEvidenceArchive?.invalidateForCheckpointImport();
     if (
       state.fixedDt !== this.fixedDt ||
       state.maxSubsteps !== this.maxSubsteps
@@ -256,21 +305,101 @@ export class SimulationSession {
         "SESSION_CHECKPOINT_IDENTITY_MISMATCH",
         "Simulation session timing identity changed",
       );
-    this.accumulator = state.accumulator;
-    this.time = state.time;
-    this.context.time = state.time;
-    this.context.clock = structuredClone(state.clock);
-    this.context.environment = deepFreeze(structuredClone(state.environment));
-    this.context.sensors = restoreCheckpointValue(state.sensors);
-    this.context.commands = restoreCheckpointValue(state.commandValues);
-    if (state.completedSensorSnapshot !== null)
-      this.context.completedSensorSnapshot = Object.freeze(
-        structuredClone(state.completedSensorSnapshot),
+    if (
+      !Number.isFinite(state.accumulator) ||
+      !Number.isFinite(state.time) ||
+      !checkpointKeysMatch(state.clock, ["tick", "time", "fixedDt"]) ||
+      !Number.isSafeInteger(state.clock.tick) ||
+      state.clock.tick < 0 ||
+      !Number.isFinite(state.clock.time) ||
+      state.clock.fixedDt !== this.fixedDt ||
+      Math.abs(state.clock.time - state.time) > 1e-12 ||
+      (state.completedSensorSnapshot !== null &&
+        !checkpointTreeIsFinite(state.completedSensorSnapshot))
+    )
+      throw new DomainValidationError(
+        "INVALID_SESSION_CHECKPOINT",
+        "Simulation session checkpoint contains invalid state",
       );
-    this.context.telemetry = stripRouteEvidenceCapabilities(state.telemetry);
-    this.context.previousTelemetry = stripRouteEvidenceCapabilities(
-      state.previousTelemetry,
-    );
+    return {
+      accumulator: state.accumulator,
+      time: state.time,
+      clock: structuredClone(state.clock),
+      sensors: validateCheckpointValue(state.sensors),
+      commands: validateCheckpointValue(state.commandValues),
+      completedSensorSnapshot:
+        state.completedSensorSnapshot === null
+          ? null
+          : Object.freeze(structuredClone(state.completedSensorSnapshot)),
+    };
+  }
+
+  importState(state) {
+    const validated = this.validateState(state);
+    this.accumulator = validated.accumulator;
+    this.time = validated.time;
+    this.context.time = validated.time;
+    this.context.clock = validated.clock;
+    this.context.sensors = validated.sensors;
+    this.context.commands = validated.commands;
+    if (validated.completedSensorSnapshot === null)
+      delete this.context.completedSensorSnapshot;
+    else
+      this.context.completedSensorSnapshot = validated.completedSensorSnapshot;
+  }
+
+  exportTelemetryState() {
+    if (!this.context)
+      throw new DomainValidationError(
+        "SESSION_CHECKPOINT_NOT_RUNNING",
+        "Cannot checkpoint telemetry before the session starts",
+      );
+    return structuredClone({
+      version: 2,
+      tick: this.context.clock.tick,
+      telemetry: stripRouteEvidenceCapabilities(this.context.telemetry),
+      previousTelemetry: stripRouteEvidenceCapabilities(
+        this.context.previousTelemetry,
+      ),
+    });
+  }
+
+  validateTelemetryState(state) {
+    if (
+      !checkpointKeysMatch(state, [
+        "version",
+        "tick",
+        "telemetry",
+        "previousTelemetry",
+      ]) ||
+      state.version !== 2 ||
+      !Number.isSafeInteger(state.tick) ||
+      state.tick < 0 ||
+      !checkpointTreeIsFinite(state.telemetry) ||
+      !checkpointTreeIsFinite(state.previousTelemetry)
+    )
+      throw new DomainValidationError(
+        "INVALID_TELEMETRY_CHECKPOINT",
+        "Telemetry checkpoint must be an exact finite version 2 projection",
+      );
+    return {
+      tick: state.tick,
+      telemetry: stripRouteEvidenceCapabilities(state.telemetry),
+      previousTelemetry: stripRouteEvidenceCapabilities(
+        state.previousTelemetry,
+      ),
+    };
+  }
+
+  importTelemetryState(state) {
+    const validated = this.validateTelemetryState(state);
+    this.context.telemetry = validated.telemetry;
+    this.context.previousTelemetry = validated.previousTelemetry;
+  }
+
+  /** Irreversible cache invalidation occurs only after every owner commits. */
+  commitCheckpointRestore() {
+    this.#routeEvidenceArchive?.invalidateForCheckpointImport();
   }
 
   /** Rebuilds non-authoritative system caches after every complete restore. */

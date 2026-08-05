@@ -1,5 +1,24 @@
 import { deepFreeze } from "../model/primitives.js";
 
+function checkpointKeysMatch(value, expectedKeys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort(),
+    expected = [...expectedKeys].sort();
+  return (
+    actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index])
+  );
+}
+
+function checkpointTreeIsFinite(value) {
+  if (value == null || typeof value === "string" || typeof value === "boolean")
+    return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (Array.isArray(value)) return value.every(checkpointTreeIsFinite);
+  if (typeof value !== "object") return false;
+  return Object.values(value).every(checkpointTreeIsFinite);
+}
+
 export class CommandBus {
   constructor() {
     this.remote = new Map();
@@ -93,29 +112,95 @@ export class CommandBus {
     return structuredClone(state);
   }
 
-  importState(state) {
-    if (!state || typeof state !== "object")
+  validateState(state) {
+    if (
+      !checkpointKeysMatch(state, [
+        "remote",
+        "script",
+        "conflicts",
+        "rejections",
+      ])
+    )
       throw new TypeError("command bus checkpoint must be an object");
-    this.clearTick();
-    for (const entry of state.remote || [])
-      if (!this.writeRemote(entry.targetId, entry.channel, entry.value))
+    if (
+      !Array.isArray(state.remote || []) ||
+      !Array.isArray(state.script || []) ||
+      !Array.isArray(state.conflicts || []) ||
+      !Array.isArray(state.rejections || []) ||
+      new Set(state.conflicts).size !== state.conflicts.length ||
+      state.conflicts.some((key) => typeof key !== "string") ||
+      !checkpointTreeIsFinite(state.rejections)
+    )
+      throw new TypeError("command bus checkpoint contains invalid arrays");
+    const remote = new Map(),
+      script = new Map(),
+      conflicts = new Set(state.conflicts || []);
+    for (const entry of state.remote || []) {
+      const key = CommandBus.key(entry?.targetId, entry?.channel);
+      if (
+        !checkpointKeysMatch(entry, ["targetId", "channel", "value"]) ||
+        entry.targetId == null ||
+        typeof entry.channel !== "string" ||
+        !entry.channel ||
+        typeof entry.value !== "number" ||
+        !Number.isFinite(entry.value) ||
+        remote.has(key)
+      )
         throw new TypeError(
           "command bus checkpoint contains invalid remote data",
         );
-    for (const entry of state.script || [])
+      remote.set(key, {
+        targetId: entry.targetId,
+        channel: entry.channel,
+        value: entry.value,
+      });
+    }
+    for (const entry of state.script || []) {
+      const key = CommandBus.key(entry?.targetId, entry?.channel);
       if (
-        !this.writeScript(
-          entry.controllerId,
-          entry.bindingId,
-          entry.targetId,
-          entry.channel,
-          entry.value,
-        )
+        !checkpointKeysMatch(entry, [
+          "controllerId",
+          "bindingId",
+          "targetId",
+          "channel",
+          "value",
+        ]) ||
+        entry?.controllerId == null ||
+        typeof entry.bindingId !== "string" ||
+        !entry.bindingId ||
+        entry.targetId == null ||
+        typeof entry.channel !== "string" ||
+        !entry.channel ||
+        typeof entry.value !== "number" ||
+        !Number.isFinite(entry.value) ||
+        script.has(key)
       )
         throw new TypeError(
           "command bus checkpoint contains invalid script data",
         );
-    this.conflicts = new Set(state.conflicts || []);
-    this.rejections = structuredClone(state.rejections || []);
+      script.set(key, {
+        controllerId: entry.controllerId,
+        bindingId: entry.bindingId,
+        targetId: entry.targetId,
+        channel: entry.channel,
+        value: entry.value,
+      });
+    }
+    if ([...conflicts].some((key) => !script.has(key)))
+      throw new TypeError("command bus checkpoint contains unknown conflicts");
+    return {
+      remote,
+      script,
+      conflicts,
+      rejections: structuredClone(state.rejections || []),
+    };
+  }
+
+  importState(state) {
+    const validated = this.validateState(state);
+    this.remote = validated.remote;
+    this.script = validated.script;
+    this.conflicts = validated.conflicts;
+    this.rejections = validated.rejections;
   }
 }
