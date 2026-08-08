@@ -1,10 +1,11 @@
-import { compileAssembly } from "./assembly-compiler.js";
+import { compileAssemblyFromIssuedRoots } from "./assembly-compiler.js";
 import { geometryDescriptorForPart } from "./geometry-descriptors.js";
 import { canonicalQuaternion, rotateVectorByQuaternion } from "./primitives.js";
 import { pressureNozzlePerformance } from "./pressure-nozzle-contracts.js";
 import { componentDefinition } from "./component-contracts.js";
 import { orientedBoundsFor, orientedBoundsOverlap } from "./oriented-bounds.js";
 import { boundsCenter } from "./component-geometry-contract.js";
+import { requireInertPlainData } from "./plain-data-contract.js";
 
 const add = (a, b) => a.map((value, axis) => value + b[axis]);
 const scale = (vector, scalar) => vector.map((value) => value * scalar);
@@ -51,11 +52,23 @@ export function displacedVolumeForPart(part, catalog) {
   return geometryDescriptorForPart(part, catalog).displacementM3;
 }
 
-export function analyzeAssembly(snapshot, catalog) {
+export function analyzeAssembly(snapshotInput, catalogInput) {
+  const snapshot = requireInertPlainData(snapshotInput, {
+      code: "INVALID_ASSEMBLY_PLAIN_DATA",
+      message:
+        "Assembly input must be serialized JSON or an exported immutable data root",
+      path: ["assembly"],
+    }),
+    catalog = requireInertPlainData(catalogInput, {
+      code: "INVALID_COMPONENT_CATALOG_PLAIN_DATA",
+      message:
+        "Component catalog input must be serialized JSON or an exported immutable data root",
+      path: ["catalog"],
+    });
   const parts = snapshot?.parts || [],
     connections = snapshot?.connections || [],
     partById = new Map(parts.map((part) => [part.id, part])),
-    compiled = compileAssembly(snapshot, catalog),
+    compiled = compileAssemblyFromIssuedRoots(snapshot, catalog),
     flexibleMassPoints = (compiled.flexibleLines || []).flatMap((line) =>
       line.entities.map((entity) => ({
         mass: entity.massKg,

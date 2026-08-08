@@ -4,6 +4,7 @@ import { createCheckpointCoordinatorLoader } from "./checkpoint-coordinator-load
 import { createWorkshopRunConfiguration } from "./mechanism-run-identity.js";
 import { deploymentForBlueprint } from "./testing-playground-deployment.js";
 import { createFailureEvidenceCaptureCoordinator } from "./failure-evidence-capture-coordinator.js";
+import { readCannonSolverProfileAuthority } from "../simulation/cannon-world-adapter.js";
 
 /** Owns trace, identity, and checkpoint handles for exactly one active run. */
 export function createRunEvidenceLifecycle({
@@ -48,6 +49,7 @@ export function createRunEvidenceLifecycle({
           testSite: physics.testSite,
           deployment,
         },
+        solverProfile: readCannonSolverProfileAuthority(physics.worldAdapter),
       });
       failureEvidenceRecorder.beginRun({
         runIdentity: runtime.runIdentity,
@@ -73,11 +75,15 @@ export function createRunEvidenceLifecycle({
           coordinator = await prepareCheckpointCoordinator();
         if (!ownsRuntime()) return false;
         const runIdentity = runtime.runIdentity;
-        runtime.failureEvidence.replayAnchor = coordinator.capture({
-          runConfigurationFingerprint: runIdentity.runConfigurationFingerprint,
-          blueprintFingerprint: runIdentity.blueprintFingerprint,
-          compiledTopologyFingerprint: runIdentity.compiledTopologyFingerprint,
-        });
+        runtime.failureEvidence.replayAnchor = coordinator.capture(
+          JSON.stringify({
+            runConfigurationFingerprint:
+              runIdentity.runConfigurationFingerprint,
+            blueprintFingerprint: runIdentity.blueprintFingerprint,
+            compiledTopologyFingerprint:
+              runIdentity.compiledTopologyFingerprint,
+          }),
+        );
         if (!ownsRuntime()) return false;
         runtime.failureEvidence.replayError = null;
         failureEvidenceRecorder.setReplayability({ supported: true });

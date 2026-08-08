@@ -12,6 +12,10 @@ export class SignalSystem {
     context.telemetry.signals = context.signalNetwork.telemetry();
   }
 
+  afterCheckpointRestore(context) {
+    context.signalNetwork.resolve(context.runGraph, context.powerNetwork);
+  }
+
   dispose(context) {
     delete context.signalNetwork;
   }

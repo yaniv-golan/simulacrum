@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import * as CANNON from "cannon-es";
 import * as THREE from "three";
-import { compileAssembly } from "../src/model/assembly-compiler.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import { decodeBlueprintOrThrow } from "../src/model/blueprint-decoder.js";
 import { builtInDemo } from "../src/model/demo-blueprints.js";
 import { analyzeAssembly } from "../src/model/engineering-analysis.js";
@@ -335,7 +335,7 @@ closeVector(
   "mirrored F2 anchor B",
 );
 
-const analysis = analyzeAssembly(f2Decoded, TYPES);
+const analysis = analyzeAssembly(JSON.stringify(f2Decoded), TYPES);
 close(analysis.totalMass, f2.stats.totalMass, "analysis/compiler total mass");
 const expectedCom = f2.bodies
   .reduce(
@@ -348,7 +348,7 @@ closeVector(analysis.centerOfMass, expectedCom, "analysis/compiler COM");
 
 const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
   runtime = new MultibodyRuntime({ world, catalog: TYPES }),
-  telemetry = runtime.start(f2Decoded);
+  telemetry = runtime.start(JSON.stringify(f2Decoded));
 for (const part of f2Decoded.parts.filter(
   (candidate) => candidate.type !== "spring",
 )) {
@@ -384,7 +384,7 @@ const wheelWorld = new CANNON.World({
     gravity: new CANNON.Vec3(0, 0, 0),
   }),
   wheelRuntime = new MultibodyRuntime({ world: wheelWorld, catalog: TYPES });
-wheelRuntime.start(cartRoundTrip);
+wheelRuntime.start(JSON.stringify(cartRoundTrip));
 const engineWheel = wheelRuntime.bodyByPart.get(wheelPart.id);
 assert.ok(
   engineWheel.shapes.some(

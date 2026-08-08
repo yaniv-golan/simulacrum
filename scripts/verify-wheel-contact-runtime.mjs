@@ -1,7 +1,7 @@
 import * as CANNON from "cannon-es";
 import { assert } from "./lib/assert.mjs";
 import { TYPES } from "../src/model/component-catalog.js";
-import { compileAssembly } from "../src/model/assembly-compiler.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import { contactMaterialPair } from "../src/model/contact-material-pairs.js";
 import { CannonWorldAdapter } from "../src/simulation/cannon-world-adapter.js";
 import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
@@ -310,7 +310,9 @@ function obstacleProbe({
   world.solver.tolerance = 0.0002;
   for (const body of groundBodies) world.addBody(body);
   if (obstacle) world.addBody(obstacle);
-  runtime.start({ revision: 1, parts: [authoredWheel], connections: [] });
+  runtime.start(
+    JSON.stringify({ revision: 1, parts: [authoredWheel], connections: [] }),
+  );
   const body = runtime.bodyByPart.get(authoredWheel.id);
   assert.equal(
     body.shapes.length,
@@ -435,7 +437,9 @@ function sidewallProbe(angleDeg = 0) {
   world.solver.iterations = 30;
   world.solver.tolerance = 0.0002;
   world.addBody(wall);
-  runtime.start({ revision: 1, parts: [authoredWheel], connections: [] });
+  runtime.start(
+    JSON.stringify({ revision: 1, parts: [authoredWheel], connections: [] }),
+  );
   let maximumNormalLoadN = 0,
     maximumTangentialForceN = 0,
     observedSidewall = false,

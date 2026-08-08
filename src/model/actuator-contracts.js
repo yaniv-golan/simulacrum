@@ -26,7 +26,6 @@ export const ACTUATOR_CHANNELS = Object.freeze({
   "rotary-drive-v1": Object.freeze({
     throttle: range(-1, 1, { fanout: true }),
     brake: range(0, 1, { fanout: true, unit: "ratio" }),
-    gait_speed: range(0, 1, { fanout: true, unit: "ratio" }),
     collective: range(0, 1, { fanout: true, unit: "ratio" }),
   }),
   "rotary-position-v1": Object.freeze({
@@ -35,8 +34,6 @@ export const ACTUATOR_CHANNELS = Object.freeze({
     yaw: range(-1, 1, { fanout: true, unit: "normalized angle" }),
     pitch: range(-1, 1, { fanout: true, unit: "normalized angle" }),
     roll: range(-1, 1, { fanout: true, unit: "normalized angle" }),
-    stride: range(0, 1, { fanout: true, unit: "ratio", failsafe: 0.5 }),
-    crouch: range(0, 1, { fanout: true, unit: "ratio" }),
   }),
   "linear-position-v1": Object.freeze({
     linear_target: range(0, 1, { unit: "normalized stroke" }),
@@ -44,7 +41,6 @@ export const ACTUATOR_CHANNELS = Object.freeze({
     linear_force: range(-1, 1, { unit: "normalized force" }),
   }),
   "reaction-wheel-v1": Object.freeze({
-    balance: range(0, 1, { fanout: true, unit: "enabled", failsafe: 1 }),
     yaw: range(-1, 1, { fanout: true }),
     pitch: range(-1, 1, { fanout: true }),
     roll: range(-1, 1, { fanout: true }),
@@ -77,7 +73,6 @@ export const ACTUATOR_CHANNELS = Object.freeze({
     target_z: range(-1_000_000, 1_000_000, { unit: "m" }),
     abort: range(0, 1, { unit: "hold" }),
     alt_hold: range(0, 1, { unit: "enabled" }),
-    balance: range(0, 1, { unit: "enabled", failsafe: 1 }),
   }),
 });
 

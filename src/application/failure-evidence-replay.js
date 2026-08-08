@@ -23,6 +23,7 @@ import { ControllerSensorBank } from "../simulation/controller-sensors.js";
 import { createEarthEnvironmentBodyRegistry } from "../simulation/environment/earth-environment-bodies.js";
 import { sampleWindVelocity } from "../simulation/environment/wind-field.js";
 import { FailureEvidenceRecorder } from "../simulation/failure-evidence-recorder.js";
+import { InputTraceRecorder } from "../simulation/input-trace-recorder.js";
 import { InputTracePlayer } from "../simulation/input-trace-player.js";
 import { RuntimeCheckpointCoordinator } from "../simulation/runtime-checkpoints.js";
 import { ControllerRuntimeManager } from "../scripting/controller-runtime-manager.js";
@@ -208,9 +209,19 @@ export async function verifyFailureEvidenceReplay(input) {
     };
 
   const controllerState = ownerPayload(
-    artifact.replayAnchorCheckpoint,
-    "controllers",
-  );
+      artifact.replayAnchorCheckpoint,
+      "controllers",
+    ),
+    inputCommandState = ownerPayload(
+      artifact.replayAnchorCheckpoint,
+      "input-command-bus",
+    ),
+    replayInputCursor =
+      inputCommandState?.inputCursor == null
+        ? null
+        : new InputTraceRecorder({
+            sourceId: inputCommandState.inputCursor.sourceId,
+          });
   const environment = createTestingPlaygroundEnvironment(),
     identityMismatches = [];
   for (const [field, actual] of [
@@ -278,6 +289,7 @@ export async function verifyFailureEvidenceReplay(input) {
         configuration: artifact.runConfiguration,
       },
       inputTraceRecorder: {
+        sourceId: artifact.externalInputTrace.sourceId,
         inputsThrough: (tick) =>
           artifact.externalInputTrace.inputs.filter(
             (entry) => entry.tick <= tick,
@@ -309,7 +321,6 @@ export async function verifyFailureEvidenceReplay(input) {
         enabled: artifact.runIdentity.environment.windEnabled,
         elapsedSeconds: time,
       }),
-    materialForPart: () => physicsWorld.debrisMaterial,
   };
   let controllers;
   try {
@@ -367,15 +378,16 @@ export async function verifyFailureEvidenceReplay(input) {
           },
         ],
       };
-    runRuntime
-      .createCheckpointCoordinator(null)
-      .restore(artifact.replayAnchorCheckpoint, {
+    runRuntime.createCheckpointCoordinator(replayInputCursor).restore(
+      JSON.stringify(artifact.replayAnchorCheckpoint),
+      JSON.stringify({
         runConfigurationFingerprint:
           artifact.runIdentity.runConfigurationFingerprint,
         blueprintFingerprint: artifact.runIdentity.blueprintFingerprint,
         compiledTopologyFingerprint:
           artifact.runIdentity.compiledTopologyFingerprint,
-      });
+      }),
+    );
     tracePlayer.reset();
     while (runRuntime.session.context.clock.tick < artifact.trigger.tick)
       runRuntime.session.stepFixed();

@@ -1,3 +1,5 @@
+import { minimumDynamicStructuralMass } from "../model/dynamic-mass-properties.js";
+
 const STEFAN_BOLTZMANN = 5.670374419e-8;
 
 export function createThermalState(material, mass, temperatureK = 288.15) {
@@ -15,7 +17,17 @@ export function createThermalState(material, mass, temperatureK = 288.15) {
 }
 
 export function thermalMass(state) {
-  return Math.max(0.001, state.remainingMass);
+  const residualMass = minimumDynamicStructuralMass(state.initialMass),
+    remainingMass = Number(state.remainingMass);
+  if (
+    !Number.isFinite(remainingMass) ||
+    remainingMass < residualMass ||
+    remainingMass > state.initialMass
+  )
+    throw new RangeError(
+      `remaining thermal mass must be finite and between ${residualMass} and ${state.initialMass}`,
+    );
+  return remainingMass;
 }
 
 /**
@@ -66,12 +78,15 @@ export function advanceThermalState(
       thermalEnergy > 0 &&
       state.temperatureK >= state.pyrolysisTemperatureK
     ) {
-      const ablatedMass = Math.min(
-        state.remainingMass,
-        thermalEnergy / state.heatOfAblationJkg,
-      );
+      const residualMass = minimumDynamicStructuralMass(state.initialMass),
+        ablatedMass = Math.min(
+          Math.max(0, state.remainingMass - residualMass),
+          thermalEnergy / state.heatOfAblationJkg,
+        );
       state.remainingMass -= ablatedMass;
-      state.ablatedMass += ablatedMass;
+      // Derive the complement from the sole remaining-mass authority so the
+      // represented partition is exact rather than two drifting accumulators.
+      state.ablatedMass = state.initialMass - state.remainingMass;
     }
   } else {
     state.temperatureK +=

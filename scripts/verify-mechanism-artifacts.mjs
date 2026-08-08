@@ -36,6 +36,7 @@ import {
 } from "../src/model/mechanism-artifacts.js";
 import { sha256Hex } from "../src/model/sha256.js";
 import { stableStringify } from "../src/model/primitives.js";
+import { createWorkshopRunConfiguration } from "../src/application/mechanism-run-identity.js";
 
 const fixture = JSON.parse(
     fs.readFileSync(
@@ -83,7 +84,8 @@ const runConfiguration = {
   runConfigurationFingerprint = fingerprintRunConfiguration(runConfiguration),
   inputTrace = {
     format: "simulacrum-input-trace",
-    version: 1,
+    version: 3,
+    sourceId: "operator",
     runConfigurationFingerprint,
     startTick: 0,
     endTick: fixture.run.durationTicks,
@@ -151,6 +153,59 @@ const telemetryPlayback = {
   })),
 };
 
+const emptyCompiledAuthority = {
+    version: 1,
+    sourceRevision: 0,
+    parts: [],
+    bodies: [],
+    constraints: [],
+    rigidClusters: [],
+    collisionExclusions: [],
+    forceElements: [],
+    actuators: [],
+    contactRegions: [],
+    networks: {},
+  },
+  runIdentityInput = {
+    blueprint,
+    compiled: emptyCompiledAuthority,
+    environment: {
+      latitude: 0,
+      longitude: 0,
+      timeOfDay: 12,
+      windEnabled: false,
+      testSite: {},
+      deployment: null,
+    },
+  },
+  solverIdentity30 = createWorkshopRunConfiguration({
+    ...runIdentityInput,
+    solverProfile: {
+      fixedDt: 1 / 120,
+      iterations: 30,
+      tolerance: 2e-4,
+    },
+  }),
+  solverIdentity31 = createWorkshopRunConfiguration({
+    ...runIdentityInput,
+    solverProfile: {
+      fixedDt: 1 / 120,
+      iterations: 31,
+      tolerance: 1e-5,
+    },
+  });
+assert.notEqual(
+  solverIdentity30.configuration.identities.solverProfile.sha256,
+  solverIdentity31.configuration.identities.solverProfile.sha256,
+  "run identity erased the effective solver iteration/tolerance authority",
+);
+assert.equal(solverIdentity30.configuration.fixedStepS, 1 / 120);
+assert.throws(
+  () => createWorkshopRunConfiguration(runIdentityInput),
+  (error) => error?.code === "INVALID_RUN_SOLVER_PROFILE",
+  "run identity accepted an unattested implicit solver profile",
+);
+
 const artifacts = {
     runConfiguration,
     inputTrace,
@@ -202,9 +257,11 @@ const artifacts = {
   ];
 
 for (const contract of contracts) {
-  const artifact = artifacts[contract.name];
+  const artifact = artifacts[contract.name],
+    boundaryInput =
+      contract.name === "checkpoint" ? JSON.stringify(artifact) : artifact;
   assert.equal(contract.validator(artifact), true, `${contract.name} schema`);
-  const decoded = contract.decode(artifact);
+  const decoded = contract.decode(boundaryInput);
   assert.equal(
     decoded.ok,
     true,
@@ -214,8 +271,8 @@ for (const contract of contracts) {
   assert(decoded.value.envelope.bytes > 0);
   assert(decoded.value.envelope.nodes > 0);
   assert.match(decoded.value.fingerprint, /^sim-sha256-[0-9a-f]{64}$/);
-  assert.equal(contract.fingerprint(artifact), decoded.value.fingerprint);
-  assert.equal(contract.encode(artifact), stableStringify(artifact));
+  assert.equal(contract.fingerprint(boundaryInput), decoded.value.fingerprint);
+  assert.equal(contract.encode(boundaryInput), stableStringify(artifact));
   assert.deepEqual(
     contract.orThrow(JSON.stringify(artifact)).wire,
     artifact,
@@ -229,6 +286,43 @@ for (const contract of contracts) {
     `${contract.name} decoded values are immutable`,
   );
 }
+
+let wireAccessorReads = 0;
+const accessorRunConfiguration = structuredClone(runConfiguration);
+Object.defineProperty(accessorRunConfiguration, "version", {
+  enumerable: true,
+  get() {
+    wireAccessorReads++;
+    return 1;
+  },
+});
+assert.equal(
+  decodeRunConfiguration(accessorRunConfiguration).errors[0].code,
+  "INVALID_WIRE_PLAIN_DATA",
+  "wire boundary accepted an executable accessor",
+);
+assert.equal(
+  wireAccessorReads,
+  0,
+  "wire boundary invoked an accessor before rejection",
+);
+let wireProxyGetterReads = 0;
+const proxyRunConfiguration = new Proxy(structuredClone(runConfiguration), {
+  get(target, key, receiver) {
+    wireProxyGetterReads++;
+    return Reflect.get(target, key, receiver);
+  },
+});
+assert.equal(
+  decodeRunConfiguration(proxyRunConfiguration).errors[0].code,
+  "INVALID_WIRE_PLAIN_DATA",
+  "wire boundary accepted Proxy authority",
+);
+assert.equal(
+  wireProxyGetterReads,
+  0,
+  "wire Proxy rejection invoked a data getter",
+);
 
 assert.equal(CHECKPOINT_STATE_OWNER_IDS.length, 20);
 assert.equal(new Set(CHECKPOINT_STATE_OWNER_IDS).size, 20);
@@ -246,6 +340,13 @@ const singleTickInputTrace = {
   inputs: [structuredClone(inputTrace.inputs.at(-1))],
 };
 assert.equal(decodeInputTrace(singleTickInputTrace).ok, true);
+const mixedSourceInputTrace = structuredClone(inputTrace);
+mixedSourceInputTrace.inputs[0].sourceId = "unregistered-source";
+assert.equal(
+  decodeInputTrace(mixedSourceInputTrace).errors[0].code,
+  "INPUT_TRACE_SOURCE_MISMATCH",
+  "input trace accepted commands attributed to multiple sources",
+);
 const singleTickExperiment = {
   ...experiment,
   inputTrace: singleTickInputTrace,
@@ -267,7 +368,7 @@ assert.equal(decodeTelemetryPlayback(singleTickPlayback).ok, true);
 const decoders = {
   runConfiguration: decodeRunConfiguration,
   inputTrace: decodeInputTrace,
-  checkpoint: decodeCheckpoint,
+  checkpoint: (value) => decodeCheckpoint(JSON.stringify(value)),
   experiment: decodeExperiment,
   telemetryPlayback: decodeTelemetryPlayback,
 };
@@ -364,17 +465,17 @@ Object.assign(deepCheckpoint.stateOwners[0], {
 });
 deepCheckpoint.stateDigest = checkpointStateDigest(deepCheckpoint);
 assert.equal(
-  decodeCheckpoint(deepCheckpoint).errors[0].code,
+  decodeCheckpoint(JSON.stringify(deepCheckpoint)).errors[0].code,
   "EMBEDDED_JSON_DEPTH_LIMIT",
 );
 
 const futureOwnerCheckpoint = structuredClone(checkpoint);
-futureOwnerCheckpoint.stateOwners[0].ownerVersion = 2;
+futureOwnerCheckpoint.stateOwners[0].ownerVersion = 4;
 futureOwnerCheckpoint.stateDigest = checkpointStateDigest(
   futureOwnerCheckpoint,
 );
 assert.equal(
-  decodeCheckpoint(futureOwnerCheckpoint).errors[0].code,
+  decodeCheckpoint(JSON.stringify(futureOwnerCheckpoint)).errors[0].code,
   "WIRE_SCHEMA_VIOLATION",
 );
 
@@ -394,7 +495,7 @@ Object.assign(wideCheckpoint.stateOwners[0], {
 });
 wideCheckpoint.stateDigest = checkpointStateDigest(wideCheckpoint);
 assert.equal(
-  decodeCheckpoint(wideCheckpoint).errors[0].code,
+  decodeCheckpoint(JSON.stringify(wideCheckpoint)).errors[0].code,
   "EMBEDDED_JSON_NODE_LIMIT",
 );
 
@@ -410,7 +511,7 @@ assert.equal(
 );
 
 assert.equal(
-  decodeInputTrace({ ...inputTrace, version: 2 }).errors[0].code,
+  decodeInputTrace({ ...inputTrace, version: 1 }).errors[0].code,
   "UNSUPPORTED_INPUT_TRACE_VERSION",
 );
 assert.equal(
@@ -419,11 +520,13 @@ assert.equal(
   "WIRE_SCHEMA_VIOLATION",
 );
 assert.equal(
-  decodeCheckpoint({ ...checkpoint, committed: false }).errors[0].code,
+  decodeCheckpoint(JSON.stringify({ ...checkpoint, committed: false }))
+    .errors[0].code,
   "WIRE_SCHEMA_VIOLATION",
 );
 assert.equal(
-  decodeCheckpoint({ ...checkpoint, version: 1 }).errors[0].code,
+  decodeCheckpoint(JSON.stringify({ ...checkpoint, version: 1 })).errors[0]
+    .code,
   "UNSUPPORTED_CHECKPOINT_VERSION",
 );
 assert.equal(
@@ -431,7 +534,7 @@ assert.equal(
   "WIRE_SCHEMA_VIOLATION",
 );
 assert.throws(
-  () => decodeCheckpointOrThrow({ ...inputTrace, version: 2 }),
+  () => decodeCheckpointOrThrow(JSON.stringify({ ...inputTrace, version: 2 })),
   (error) =>
     error.code === "UNSUPPORTED_WIRE_FORMAT" && Array.isArray(error.path),
 );

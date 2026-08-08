@@ -13,6 +13,12 @@ export class PowerSystem {
       context.telemetry.power = context.powerNetwork.telemetry();
   }
 
+  afterCheckpointRestore(context) {
+    context.powerNetwork.resolve(context.runGraph, context.clock.fixedDt, {
+      commitBaseline: false,
+    });
+  }
+
   dispose(context) {
     delete context.powerNetwork;
   }

@@ -876,30 +876,34 @@ function humanoid() {
     name: "Atlas Humanoid",
     title: "ATLAS HUMANOID",
     description:
-      "A constrained rigid-body robot: enable gait and balance, then simulate.",
+      "A constrained rigid-body plant: command individual powered joints and inspect the physical response.",
     selectedType: "computer",
     controls: [
-      control("Walk speed", "gait_speed", "range", motor, {
-        min: 0,
+      ["Left hip", joints[0]],
+      ["Right hip", joints[1]],
+      ["Left knee", joints[2]],
+      ["Right knee", joints[3]],
+      ["Left ankle", joints[4]],
+      ["Right ankle", joints[5]],
+    ].map(([label, joint]) =>
+      control(label, "joint_target", "range", joint, {
+        min: -1,
         max: 1,
         step: 0.05,
       }),
-      control("Stride length", "stride", "range", joints[0], {
-        min: 0,
-        max: 1,
-        step: 0.05,
-        value: 0.5,
-      }),
-      control("Balance assist", "balance", "toggle", gyro, { value: 1 }),
-      control("Crouch", "crouch", "hold", joints[0]),
-      control("Emergency stop", "brake", "toggle", motor),
-    ],
+    ),
   });
 }
 
 function drone(sources = {}) {
   const b = new BlueprintBuilder("drone"),
-    deck = b.add("plate", [0, 1.35, 0]),
+    // Author the vehicle at rest on the ground: the deck's lower face is the
+    // support plane. Starting an unrestrained assembly above that plane adds
+    // impact energy unrelated to its commanded flight mission.
+    deckCenterHeightM = TYPES.plate.size[1] / 2,
+    groundedHeight = (authoredHeightM) =>
+      authoredHeightM - 1.35 + deckCenterHeightM,
+    deck = b.add("plate", [0, groundedHeight(1.35), 0]),
     positions = [
       [-1.35, 0.95, -1.35],
       [1.35, 0.95, -1.35],
@@ -907,11 +911,11 @@ function drone(sources = {}) {
       [1.35, 0.95, 1.35],
     ],
     arms = positions.map(([x, , z]) =>
-      b.add("beam", [x * 0.5, 1.45, z * 0.5], {
+      b.add("beam", [x * 0.5, groundedHeight(1.45), z * 0.5], {
         eulerRotation: [0, -Math.atan2(z, x), 0],
       }),
     ),
-    battery = b.add("battery", [0, 1.9, 0], {
+    battery = b.add("battery", [0, groundedHeight(1.9), 0], {
       config: {
         mass: 95,
         size: [1.2, 0.7, 0.85],
@@ -921,22 +925,22 @@ function drone(sources = {}) {
       },
       storedEnergyWh: 21_000,
     }),
-    controller = b.add("computer", [0, 2.45, 0], {
+    controller = b.add("computer", [0, groundedHeight(2.45), 0], {
       scriptLanguage: "typescript",
       scriptSources: controllerSources(sources.droneTypescript || ""),
     }),
-    imu = b.add("imu", [0, 2.82, 0]),
-    navigation = b.add("navsensor", [0.62, 2.42, 0]),
+    imu = b.add("imu", [0, groundedHeight(2.82), 0]),
+    navigation = b.add("navsensor", [0.62, groundedHeight(2.42), 0]),
     receivers = {
-      collective: b.add("receiver", [-0.85, 1.82, -0.5]),
-      yaw: b.add("receiver", [-0.43, 1.82, -0.5]),
-      pitch: b.add("receiver", [0, 1.82, -0.5]),
-      roll: b.add("receiver", [0.43, 1.82, -0.5]),
-      altitudeHold: b.add("receiver", [0.85, 1.82, -0.5]),
+      collective: b.add("receiver", [-0.85, groundedHeight(1.82), -0.5]),
+      yaw: b.add("receiver", [-0.43, groundedHeight(1.82), -0.5]),
+      pitch: b.add("receiver", [0, groundedHeight(1.82), -0.5]),
+      roll: b.add("receiver", [0.43, groundedHeight(1.82), -0.5]),
+      altitudeHold: b.add("receiver", [0.85, groundedHeight(1.82), -0.5]),
     },
     handedness = [1, -1, -1, 1],
     motors = positions.map(([x, , z], index) =>
-      b.add("motor", [x, 1.95, z], {
+      b.add("motor", [x, groundedHeight(1.95), z], {
         eulerRotation: [-Math.PI / 2, 0, 0],
         config: {
           mass: 24,
@@ -948,7 +952,7 @@ function drone(sources = {}) {
       }),
     ),
     rotors = positions.map(([x, , z], index) =>
-      b.add("rotor", [x, 2.83, z], {
+      b.add("rotor", [x, groundedHeight(2.83), z], {
         eulerRotation: [-Math.PI / 2, 0, 0],
         config: {
           radiusM: 0.95,

@@ -6,12 +6,17 @@ import {
   PHYSICAL_CONNECTION_KINDS,
   worldPoint,
 } from "./assembly-compiler-shared.js";
-import { validateConnectionFrameInvariant } from "./connection-frame-invariants.js";
+import {
+  validateConnectionFrameInvariant,
+  worldPortFrame,
+} from "./connection-frame-invariants.js";
+import { compareCanonicalIds } from "./primitives.js";
 
 function physicalEdgesFor(context, connector) {
   return context.connections.filter(
     (connection) =>
       PHYSICAL_CONNECTION_KINDS.has(connection.kind) &&
+      !context.rejectedConnectionIds.has(connection.id) &&
       !connection.failed &&
       (connection.a === connector.id || connection.b === connector.id),
   );
@@ -55,7 +60,13 @@ function resolveAttachments(context, connector, orderedEdges, neighbors) {
             },
           }
         : frame;
-    return { edge, neighbor, neighborPort, frame: resolvedFrame };
+    return {
+      edge,
+      neighbor,
+      neighborPort,
+      structuralAnchor,
+      frame: resolvedFrame,
+    };
   });
 }
 
@@ -78,7 +89,10 @@ function compileEndpointPointMasses(
     points.push({
       sourcePartId: connector.id,
       sourceConnectionId: edge.id,
-      endpointPort: connectorPort(edge),
+      sourcePortId: connectorPort(edge),
+      targetPartId: neighbor.id,
+      targetPortId: attachments[index].neighborPort,
+      positionFramePartId: neighbor.id,
       massKg: massModel.totalMassKg * fractions[index],
       positionPartM: compiledVector(frame.framePart.positionM),
     });
@@ -86,11 +100,61 @@ function compileEndpointPointMasses(
   }
 }
 
-function forceElementBase(connector, orderedEdges, neighbors, attachments) {
+function compiledAttachmentFrame(context, attachment) {
+  const projected = worldPortFrame(
+    attachment.neighbor,
+    context.geometryFor(attachment.neighbor),
+    attachment.neighborPort,
+    attachment.structuralAnchor,
+  );
   return {
-    id: `connector:${connector.id}`,
+    portId: attachment.neighborPort,
+    positionPartM: compiledVector(
+      attachment.structuralAnchor ?? projected.portFrame.framePart.positionM,
+    ),
+    orientationPart: [...projected.orientationPart],
+    positionWorldM: [...projected.positionWorld],
+    orientationWorld: [...projected.orientationWorld],
+  };
+}
+
+function forceElementBase(
+  context,
+  connector,
+  orderedEdges,
+  neighbors,
+  attachments,
+) {
+  const fixedEndpointAuthority = connector.mechanism.config.releaseLaw
+    ? (() => {
+        const attachmentFrameA = compiledAttachmentFrame(
+            context,
+            attachments[0],
+          ),
+          attachmentFrameB = compiledAttachmentFrame(context, attachments[1]);
+        return {
+          attachmentFrameA,
+          attachmentFrameB,
+          failureAttachments: [
+            {
+              connectionId: orderedEdges[0].id,
+              side: "A",
+              bodyPartId: neighbors[0],
+            },
+            {
+              connectionId: orderedEdges[1].id,
+              side: "B",
+              bodyPartId: neighbors[1],
+            },
+          ],
+        };
+      })()
+    : {};
+  return {
+    id: context.partScopedId("connector", connector.id),
     sourcePartId: connector.id,
     sourceConnectionIds: orderedEdges.map((edge) => edge.id),
+    solverOrderClass: "condensed-connector-v1",
     a: neighbors[0],
     b: neighbors[1],
     anchorA: worldPoint(
@@ -101,6 +165,7 @@ function forceElementBase(connector, orderedEdges, neighbors, attachments) {
       attachments[1].neighbor,
       attachments[1].frame.framePart.positionM,
     ),
+    ...fixedEndpointAuthority,
     breakForce: Math.min(
       ...orderedEdges.map((edge) => edge.capacity.ultimateForceN),
     ),
@@ -129,7 +194,7 @@ const FORCE_ELEMENT_COMPILERS = new Map([
       };
       context.constraints.push(descriptor);
       context.actuators.push({
-        id: `actuator:${connector.id}`,
+        id: context.partScopedId("actuator", connector.id),
         kind: "release-coupler-v1",
         sourcePartId: connector.id,
         constraintId: descriptor.id,
@@ -141,7 +206,7 @@ const FORCE_ELEMENT_COMPILERS = new Map([
               !connection.failed,
           )
           .map((connection) => connection.id)
-          .sort((left, right) => String(left).localeCompare(String(right))),
+          .sort(compareCanonicalIds),
         law: cloneCompiledValue(mechanismConfig.releaseLaw),
       });
     },
@@ -156,7 +221,7 @@ const FORCE_ELEMENT_COMPILERS = new Map([
       };
       context.constraints.push(descriptor);
       context.actuators.push({
-        id: `actuator:${connector.id}`,
+        id: context.partScopedId("actuator", connector.id),
         kind: "linear-actuator-v1",
         sourcePartId: connector.id,
         constraintId: descriptor.id,
@@ -188,7 +253,7 @@ const FORCE_ELEMENT_COMPILERS = new Map([
         };
       context.constraints.push(descriptor);
       context.forceElements.push({
-        id: `force:${connector.id}`,
+        id: context.partScopedId("force", connector.id),
         kind: "axial-spring-v1",
         sourcePartId: connector.id,
         constraintId: descriptor.id,
@@ -205,10 +270,10 @@ const FORCE_ELEMENT_COMPILERS = new Map([
         mechanism: cloneCompiledValue(mechanismConfig),
       });
       context.forceElements.push({
-        id: `force:${connector.id}`,
+        id: context.partScopedId("force", connector.id),
         kind: "axial-damper-v1",
         sourcePartId: connector.id,
-        constraintId: `connector:${connector.id}`,
+        constraintId: context.partScopedId("connector", connector.id),
         law: cloneCompiledValue(mechanismConfig),
       });
     },
@@ -308,7 +373,7 @@ function compileConnector(context, connector) {
   compiler(
     context,
     connector,
-    forceElementBase(connector, orderedEdges, neighbors, attachments),
+    forceElementBase(context, connector, orderedEdges, neighbors, attachments),
     mechanismConfig,
   );
 }

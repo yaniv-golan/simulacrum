@@ -1,7 +1,7 @@
 import * as CANNON from "cannon-es";
 import {
   DomainValidationError,
-  immutableClone,
+  scopedIdentity,
   stableStringify,
 } from "../model/primitives.js";
 import { sha256Hex } from "../model/sha256.js";
@@ -198,12 +198,16 @@ function stableBodyKey(body) {
 function evidenceBodyKey(body, world) {
   if (body.userData?.partId != null)
     return {
-      id: `part:${String(body.userData.partId)}`,
+      id: scopedIdentity("part", body.userData.partId, {
+        typedStrings: true,
+      }),
       validity: "measured",
     };
   if (body.userData?.externalBodyId != null)
     return {
-      id: String(body.userData.externalBodyId),
+      id: scopedIdentity("external-body", body.userData.externalBodyId, {
+        typedStrings: true,
+      }),
       validity: "measured",
     };
   return {
@@ -214,7 +218,11 @@ function evidenceBodyKey(body, world) {
 
 function evidenceShapeKey(body, shape) {
   const explicit = shape?.userData?.shapeId;
-  if (explicit != null) return { id: String(explicit), validity: "measured" };
+  if (explicit != null)
+    return {
+      id: scopedIdentity("shape", explicit, { typedStrings: true }),
+      validity: "measured",
+    };
   const index = body.shapes.indexOf(shape);
   return {
     id: `body-shape:${Math.max(0, index)}`,
@@ -844,7 +852,11 @@ export class CannonSolverTransaction {
         "MOTOR_ENERGY_RECORD_TICK_MISMATCH",
         `Pending motor records belong to tick ${pending.tick}, not ${tick}`,
       );
-    return immutableClone(pending);
+    // The transaction constructs this envelope from primitive-only records and
+    // freezes every record, the array, and the envelope before publication.
+    // Returning that immutable owner-issued value avoids a structured clone on
+    // every integration tick without exposing mutable solver state.
+    return pending;
   }
 
   acknowledgeMotorEnergySettlement({ tick, recordDigest: digest }) {
@@ -1167,6 +1179,8 @@ export class CannonSolverTransaction {
       }
     }
     world.hasActiveBodies = hasActiveBodies;
-    world.time += dt;
+    // Committed simulation time is an exact projection of the integer step
+    // owner. Repeated floating addition would create a second, drifting clock.
+    world.time = world.stepnumber * dt;
   }
 }

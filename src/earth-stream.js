@@ -311,6 +311,7 @@ export function createEarthStreamer({
     );
     body.userData = {
       externalBodyId: `environment:earth:${chunk.key}`,
+      checkpointPolicy: "reconstruct-from-owner-v1",
       surface: "streamed Earth terrain",
       materialKey: "natural-terrain",
       earthChunk: chunk.key,

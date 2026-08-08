@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import {
   AssemblyModel,
-  compileAssembly,
   compressibleOrificeMassFlowKgS,
   createPneumaticState,
   deriveDynamicMassProperties,
@@ -17,12 +16,13 @@ import {
   solvePneumaticStaticLoad,
   TYPES,
 } from "../src/core/index.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import { surfaceFoundationResponse } from "../src/simulation/tire-contact.js";
 import {
   pneumaticEffectiveArea,
   pneumaticEffectiveAreaSlope,
 } from "../src/simulation/pneumatic-gas.js";
-import { stableStringify } from "../src/model/primitives.js";
+import { identityToken, stableStringify } from "../src/model/primitives.js";
 
 function assertNear(actual, expected, tolerance = 1e-12) {
   assert.ok(
@@ -359,6 +359,141 @@ const transform = {
     },
   };
 
+function compressorScenario({
+  command = 1,
+  conflict = false,
+  connected = true,
+  detached = false,
+  maximumGaugePressurePa = null,
+  powered = true,
+} = {}) {
+  const probeCompressor = configured(
+      "compressor-probe",
+      "aircompressor",
+      [1, 1, 0],
+    ),
+    probeWheel = structuredClone(wheel);
+  probeWheel.id = "compressor-target";
+  if (maximumGaugePressurePa != null)
+    probeCompressor.config = {
+      ...probeCompressor.config,
+      maximumGaugePressurePa,
+    };
+  const probeConnection = {
+      id: "compressor-probe-line",
+      kind: "resource",
+      a: probeCompressor.id,
+      portA: "AIR",
+      b: probeWheel.id,
+      portB: "AIR",
+      transport: structuredClone(connections[0].transport),
+    },
+    probeSnapshot = {
+      parts: connected ? [probeCompressor, probeWheel] : [probeCompressor],
+      connections: connected ? [probeConnection] : [],
+    },
+    probeModel = new AssemblyModel(probeSnapshot),
+    probeGraph = new RunAssemblyGraph(probeModel.snapshot()),
+    probeNetwork = new PneumaticNetwork(
+      compileAssembly(probeModel.snapshot(), TYPES),
+    );
+  if (detached)
+    probeGraph.detachComponent(probeCompressor.id, {
+      mode: "compressor-probe-detachment",
+    });
+  const initialChamber = probeNetwork.telemetry().chambers[0] ?? null,
+    dt = 1 / 120;
+  probeNetwork.resolve(
+    {
+      runGraph: probeGraph,
+      commandBus: {
+        read() {
+          return { value: command, conflict };
+        },
+      },
+      powerNetwork: {
+        allocationFor() {
+          return { operational: powered };
+        },
+        drawPower(_partId, requestedW) {
+          return powered ? requestedW : 0;
+        },
+      },
+    },
+    dt,
+  );
+  return {
+    compressor: probeCompressor,
+    device: probeNetwork.telemetry().devices[0],
+    dt,
+    initialChamber,
+    transfer: probeNetwork.telemetry().transfers[0] ?? null,
+    wheel: probeWheel,
+  };
+}
+
+for (const [label, options, expectedReason, expectedRelief] of [
+  ["idle", { command: 0 }, null, false],
+  ["detached", { detached: true }, "detached", false],
+  ["conflict", { conflict: true }, "command-conflict", false],
+  ["power loss", { powered: false }, "power-loss", false],
+  ["disconnected", { connected: false }, "disconnected", false],
+  [
+    "relief",
+    { maximumGaugePressurePa: 100_000 },
+    "relief-or-backpressure",
+    true,
+  ],
+]) {
+  const { device } = compressorScenario(options);
+  assert.equal(device.limitingReason, expectedReason, `${label} cause changed`);
+  assert.equal(device.reliefActive, expectedRelief, `${label} relief changed`);
+}
+
+{
+  const {
+      compressor: probe,
+      device,
+      dt,
+      initialChamber,
+      transfer,
+      wheel: target,
+    } = compressorScenario({ command: 0.5 }),
+    pressureRatio =
+      initialChamber.absolutePressurePa / initialChamber.ambientPressurePa,
+    [left, right] = probe.config.pressureRatioFlowMap.reduce(
+      (bounds, point) => {
+        if (point[0] <= pressureRatio) bounds[0] = point;
+        if (point[0] >= pressureRatio && bounds[1] == null) bounds[1] = point;
+        return bounds;
+      },
+      [probe.config.pressureRatioFlowMap[0], null],
+    ),
+    interpolationFraction =
+      (pressureRatio - left[0]) / Math.max(1e-12, right[0] - left[0]),
+    performanceFactor = left[1] + (right[1] - left[1]) * interpolationFraction,
+    pressureLimitPa = Math.min(
+      initialChamber.ambientPressurePa + probe.config.maximumGaugePressurePa,
+      target.mechanism.config.tireConstitutiveLaw.pneumaticChamber.limits
+        .maximumAbsolutePressurePa,
+    ),
+    headFraction =
+      (pressureLimitPa - initialChamber.absolutePressurePa) /
+      (pressureLimitPa - initialChamber.ambientPressurePa),
+    expectedSpool = Math.min(0.5, dt / probe.config.responseTimeS),
+    expectedRequestedMassKg =
+      probe.config.maximumMassFlowKgS *
+      expectedSpool *
+      dt *
+      headFraction *
+      performanceFactor;
+  assertNear(device.spool, expectedSpool);
+  assert.equal(device.requestedW, probe.config.powerWatts * 0.5);
+  assert.equal(device.deliveredW, probe.config.powerWatts * 0.5);
+  assert.equal(device.electricalEnergyJ, device.deliveredW * dt);
+  assertNear(transfer.requestedMassKg, expectedRequestedMassKg);
+}
+
 const fixedWheel = structuredClone(wheel);
 fixedWheel.id = 10;
 fixedWheel.mechanism.config.tireConstitutiveLaw.kind = "memoryless-brush-v1";
@@ -454,8 +589,72 @@ assert.ok(gas.telemetry().chambers[0].massOutKg > 0);
 
 const checkpoint = gas.exportState(),
   restored = new PneumaticNetwork(compiled);
+const importPneumaticState = (network, state) =>
+  network.importState(JSON.stringify(state));
+const coercibleCheckpoint = structuredClone(checkpoint);
+coercibleCheckpoint.chambers[0].state.massKg = String(
+  coercibleCheckpoint.chambers[0].state.massKg,
+);
+assert.throws(
+  () => importPneumaticState(restored, coercibleCheckpoint),
+  /Invalid pneumatic chamber checkpoint state/,
+  "pneumatic checkpoint accepted coercible string mass",
+);
 restored.importState(checkpoint);
 assert.deepEqual(restored.exportState(), checkpoint);
+const pneumaticBeforeHostileRestore = restored.exportState();
+let pneumaticCheckpointGetterReads = 0;
+const accessorPneumaticCheckpoint = structuredClone(checkpoint);
+Object.defineProperty(accessorPneumaticCheckpoint.chambers[0].state, "massKg", {
+  enumerable: true,
+  get() {
+    pneumaticCheckpointGetterReads++;
+    return checkpoint.chambers[0].state.massKg;
+  },
+});
+const customPrototypePneumaticCheckpoint = structuredClone(checkpoint);
+Object.setPrototypeOf(customPrototypePneumaticCheckpoint, { forged: true });
+let pneumaticProxyReads = 0;
+const proxiedPneumaticCheckpoint = new Proxy(structuredClone(checkpoint), {
+  get(target, key, receiver) {
+    pneumaticProxyReads++;
+    return Reflect.get(target, key, receiver);
+  },
+});
+const cyclicPneumaticCheckpoint = structuredClone(checkpoint);
+cyclicPneumaticCheckpoint.loop = cyclicPneumaticCheckpoint;
+for (const [label, hostile] of [
+  ["nested accessor", accessorPneumaticCheckpoint],
+  ["custom prototype", customPrototypePneumaticCheckpoint],
+  ["Proxy", proxiedPneumaticCheckpoint],
+  ["cycle", cyclicPneumaticCheckpoint],
+]) {
+  assert.throws(
+    () => restored.importState(hostile),
+    (error) => error?.code === "INVALID_PNEUMATIC_CHECKPOINT_PLAIN_DATA",
+    `pneumatic checkpoint accepted ${label} state`,
+  );
+  assert.deepEqual(
+    restored.exportState(),
+    pneumaticBeforeHostileRestore,
+    `rejected pneumatic ${label} state changed live authority`,
+  );
+}
+assert.equal(
+  pneumaticCheckpointGetterReads,
+  0,
+  "pneumatic checkpoint rejection invoked an accessor",
+);
+assert.equal(
+  pneumaticProxyReads,
+  0,
+  "pneumatic checkpoint Proxy rejection invoked a data getter",
+);
+assert.equal(
+  restored.gasMassForPart(wheel.id),
+  gas.gasMassForPart(wheel.id),
+  "fresh pneumatic owner did not reconstruct contained gas mass",
+);
 assert.ok(
   Number.isFinite(
     gasAbsolutePressurePa(
@@ -512,7 +711,37 @@ const damageCheckpoint = damageNetwork.exportState(),
   damageRestored = new PneumaticNetwork(
     compileAssembly(damageModel.snapshot(), TYPES),
   );
-damageRestored.importState(damageCheckpoint);
+const duplicateFailureCheckpoint = structuredClone(damageCheckpoint);
+duplicateFailureCheckpoint.failureEvents.push(
+  structuredClone(duplicateFailureCheckpoint.failureEvents[0]),
+);
+assert.throws(
+  () => importPneumaticState(damageRestored, duplicateFailureCheckpoint),
+  /Invalid pneumatic failure checkpoint history/,
+  "pneumatic checkpoint accepted duplicate failure event identity",
+);
+const inventedFailureModeCheckpoint = structuredClone(damageCheckpoint);
+inventedFailureModeCheckpoint.failureEvents[0].mode = "demo-puncture";
+assert.throws(
+  () => importPneumaticState(damageRestored, inventedFailureModeCheckpoint),
+  /Invalid pneumatic failure checkpoint history/,
+  "pneumatic checkpoint accepted an invented failure mode",
+);
+const negativeFailurePressureCheckpoint = structuredClone(damageCheckpoint);
+negativeFailurePressureCheckpoint.failureEvents[0].absolutePressurePa = -1;
+assert.throws(
+  () => importPneumaticState(damageRestored, negativeFailurePressureCheckpoint),
+  /Invalid pneumatic failure checkpoint history/,
+  "pneumatic checkpoint accepted negative event pressure",
+);
+const negativeChamberMassCheckpoint = structuredClone(damageCheckpoint);
+negativeChamberMassCheckpoint.chambers[0].state.massKg = -1;
+assert.throws(
+  () => importPneumaticState(damageRestored, negativeChamberMassCheckpoint),
+  /Invalid pneumatic chamber checkpoint state/,
+  "pneumatic checkpoint accepted negative gas mass",
+);
+importPneumaticState(damageRestored, damageCheckpoint);
 damageNetwork.resolve({ runGraph: damageGraph, time: 74 / 120 }, 1 / 120);
 damageRestored.resolve({ runGraph: damageGraph, time: 74 / 120 }, 1 / 120);
 assert.deepEqual(damageRestored.exportState(), damageNetwork.exportState());
@@ -520,9 +749,9 @@ assert.deepEqual(damageRestored.exportState(), damageNetwork.exportState());
 const burstNetwork = new PneumaticNetwork(
     compileAssembly(damageModel.snapshot(), TYPES),
   ),
-  burstState = burstNetwork.exportState();
+  burstState = structuredClone(burstNetwork.exportState());
 burstState.chambers[0].state.internalEnergyJ *= 4;
-burstNetwork.importState(burstState);
+importPneumaticState(burstNetwork, burstState);
 burstNetwork.resolve({ runGraph: damageGraph, time: 1 }, 1 / 120);
 assert.equal(burstNetwork.telemetry().chambers[0].failureMode, "burst-v1");
 assert.equal(
@@ -533,13 +762,13 @@ assert.equal(
 const overtemperatureNetwork = new PneumaticNetwork(
     compileAssembly(damageModel.snapshot(), TYPES),
   ),
-  overtemperatureState = overtemperatureNetwork.exportState(),
+  overtemperatureState = structuredClone(overtemperatureNetwork.exportState()),
   overtemperatureChamber = overtemperatureState.chambers[0];
 overtemperatureChamber.state.internalEnergyJ =
   overtemperatureChamber.state.massKg *
   DRY_AIR.constantVolumeHeatCapacityJPerKgK *
   (damageLaw.maximumGasTemperatureK + 1);
-overtemperatureNetwork.importState(overtemperatureState);
+importPneumaticState(overtemperatureNetwork, overtemperatureState);
 overtemperatureNetwork.resolve({ runGraph: damageGraph, time: 1 }, 1 / 120);
 assert.equal(
   overtemperatureNetwork.telemetry().chambers[0].failureMode,
@@ -613,6 +842,98 @@ assert.ok(
 );
 assert.ok(
   Math.abs(equalization.telemetry().conservation.energyResidualJ) < 1e-9,
+);
+
+const mixedNumericHigh = structuredClone(highWheel),
+  mixedNumericLow = structuredClone(lowWheel),
+  mixedStringHigh = structuredClone(highWheel),
+  mixedStringLow = structuredClone(lowWheel);
+mixedNumericHigh.id = 1;
+mixedNumericLow.id = 2;
+mixedStringHigh.id = "1";
+mixedStringLow.id = 3;
+const mixedIdentitySnapshot = {
+    parts: [mixedNumericHigh, mixedNumericLow, mixedStringHigh, mixedStringLow],
+    connections: [
+      {
+        ...structuredClone(equalizer),
+        id: "numeric-circuit",
+        a: 1,
+        b: 2,
+      },
+      {
+        ...structuredClone(equalizer),
+        id: "string-circuit",
+        a: "1",
+        b: 3,
+      },
+    ],
+  },
+  mixedIdentityModel = new AssemblyModel(mixedIdentitySnapshot),
+  mixedIdentityGraph = new RunAssemblyGraph(mixedIdentityModel.snapshot()),
+  mixedIdentityNetwork = new PneumaticNetwork(
+    compileAssembly(mixedIdentityModel.snapshot(), TYPES),
+  );
+mixedIdentityNetwork.resolve({ runGraph: mixedIdentityGraph }, 1 / 120);
+assert.deepEqual(
+  mixedIdentityNetwork.telemetry().components.map(({ partIds }) => partIds),
+  [
+    [1, 2],
+    ["1", 3],
+  ],
+  "numeric and string pneumatic identities aliased disconnected circuits",
+);
+assert.deepEqual(
+  mixedIdentityNetwork
+    .telemetry()
+    .transfers.map(({ connectionIds }) => connectionIds),
+  [["numeric-circuit"], ["string-circuit"]],
+  "pneumatic transfer provenance crossed typed identity boundaries",
+);
+assert.deepEqual(
+  [1, "1"].map(
+    (partId) => mixedIdentityNetwork.gasMassContributionForPart(partId).id,
+  ),
+  ["pneumatic-gas:1", "pneumatic-gas:string:1:1"],
+  "pneumatic mass provenance collapsed numeric and string part identities",
+);
+const mixedFailureNetwork = new PneumaticNetwork(
+    compileAssembly(mixedIdentityModel.snapshot(), TYPES),
+  ),
+  mixedFailureState = structuredClone(mixedFailureNetwork.exportState());
+for (const saved of mixedFailureState.chambers)
+  if (saved.partId === 1 || saved.partId === "1")
+    saved.state.internalEnergyJ *= 4;
+importPneumaticState(mixedFailureNetwork, mixedFailureState);
+mixedFailureNetwork.resolve({ runGraph: mixedIdentityGraph, time: 1 }, 1 / 120);
+const typedFailureEvents = mixedFailureNetwork
+  .telemetry()
+  .newFailureEvents.filter(
+    ({ partId, mode }) =>
+      (partId === 1 || partId === "1") && mode === "burst-v1",
+  );
+assert.equal(typedFailureEvents.length, 2);
+assert.equal(
+  new Set(typedFailureEvents.map(({ eventId }) => eventId)).size,
+  2,
+  "simultaneous typed pneumatic failures shared an event identity",
+);
+for (const event of typedFailureEvents)
+  assert.ok(
+    event.eventId.includes(
+      `:${identityToken(event.partId, { typedStrings: true })}:`,
+    ),
+    `pneumatic failure ${event.eventId} lost typed part provenance`,
+  );
+const mixedFailureCheckpoint = mixedFailureNetwork.exportState(),
+  mixedFailureRestored = new PneumaticNetwork(
+    compileAssembly(mixedIdentityModel.snapshot(), TYPES),
+  );
+importPneumaticState(mixedFailureRestored, mixedFailureCheckpoint);
+assert.deepEqual(
+  mixedFailureRestored.exportState(),
+  mixedFailureCheckpoint,
+  "typed simultaneous pneumatic failures did not survive checkpoint restore",
 );
 
 const reversedHighWheel = structuredClone(lowWheel),
@@ -775,13 +1096,91 @@ assert.equal(
 const wheelGasContribution = reservoirNetwork.gasMassContributionForPart(
     reservoirWheel.id,
   ),
+  reservoirGasContribution = reservoirNetwork.gasMassContributionForPart(
+    reservoir.id,
+  ),
   wheelBody = reservoirCompiled.bodies.find(
     ({ partId }) => partId === reservoirWheel.id,
+  ),
+  reservoirBody = reservoirCompiled.bodies.find(
+    ({ partId }) => partId === reservoir.id,
   ),
   wheelWithGas = deriveDynamicMassProperties(wheelBody, {
     structuralMassKg: wheelBody.massProperties.massKg,
     additionalMassContributions: [wheelGasContribution],
-  });
+  }),
+  wheelMassModel = wheelBody.capabilities.pneumatic.chamber.massModel,
+  wheelGasMassKg = reservoirNetwork.stateForPart(reservoirWheel.id).massKg,
+  expectedWheelRadialMomentKgM2 =
+    wheelGasMassKg *
+    (wheelMassModel.majorRadiusM ** 2 / 2 +
+      (3 * wheelMassModel.radialSemiAxisM ** 2) / 8 +
+      wheelMassModel.axialSemiAxisM ** 2 / 4),
+  expectedWheelAxialMomentKgM2 =
+    wheelGasMassKg *
+    (wheelMassModel.majorRadiusM ** 2 +
+      (3 * wheelMassModel.radialSemiAxisM ** 2) / 4),
+  reservoirMassModel = reservoirBody.capabilities.pneumatic.massModel,
+  [reservoirSizeX, reservoirSizeY, reservoirSizeZ] =
+    reservoirBody.capabilities.pneumatic.config[reservoirMassModel.sizeField],
+  reservoirGasMassKg = reservoirNetwork.stateForPart(reservoir.id).massKg;
+assert.deepEqual(wheelGasContribution.centerPartM, wheelMassModel.centerPartM);
+assertNear(
+  wheelGasContribution.inertiaTensorAtCenterKgM2.xx,
+  expectedWheelRadialMomentKgM2,
+);
+assertNear(
+  wheelGasContribution.inertiaTensorAtCenterKgM2.yy,
+  expectedWheelRadialMomentKgM2,
+);
+assertNear(
+  wheelGasContribution.inertiaTensorAtCenterKgM2.zz,
+  expectedWheelAxialMomentKgM2,
+);
+assert.deepEqual(
+  reservoirGasContribution.centerPartM,
+  reservoirMassModel.centerPartM,
+);
+assertNear(
+  reservoirGasContribution.inertiaTensorAtCenterKgM2.xx,
+  (reservoirGasMassKg *
+    (reservoirSizeY * reservoirSizeY + reservoirSizeZ * reservoirSizeZ)) /
+    12,
+);
+assertNear(
+  reservoirGasContribution.inertiaTensorAtCenterKgM2.yy,
+  (reservoirGasMassKg *
+    (reservoirSizeX * reservoirSizeX + reservoirSizeZ * reservoirSizeZ)) /
+    12,
+);
+assertNear(
+  reservoirGasContribution.inertiaTensorAtCenterKgM2.zz,
+  (reservoirGasMassKg *
+    (reservoirSizeX * reservoirSizeX + reservoirSizeY * reservoirSizeY)) /
+    12,
+);
+const reservoirProjectionCheckpoint = reservoirNetwork.exportState(),
+  reservoirMassProjection = reservoirNetwork.massProjectionForState(
+    reservoirProjectionCheckpoint,
+  );
+assert.deepEqual(
+  reservoirMassProjection.records,
+  reservoirNetwork.massContributions(),
+  "checkpoint mass projection changed gas owner records",
+);
+assert.deepEqual(
+  reservoirMassProjection.contributions,
+  [reservoir.id, reservoirWheel.id].map((partId) => ({
+    partId,
+    contribution: reservoirNetwork.gasMassContributionForPart(partId),
+  })),
+  "checkpoint mass projection changed contained-gas inertia",
+);
+assert.deepEqual(
+  reservoirNetwork.exportState(),
+  reservoirProjectionCheckpoint,
+  "checkpoint mass projection mutated live pneumatic authority",
+);
 assert.ok(wheelGasContribution.inertiaTensorAtCenterKgM2.zz > 0);
 assert.ok(
   wheelWithGas.massKg > wheelBody.massProperties.massKg,
@@ -870,7 +1269,7 @@ assert.notEqual(
   dynamicAltitudeCheckpoint.chambers[0].ambientPressurePa,
   altitudeChamber.ambientPressurePa,
 );
-restoredAltitudeNetwork.importState(dynamicAltitudeCheckpoint);
+importPneumaticState(restoredAltitudeNetwork, dynamicAltitudeCheckpoint);
 assert.deepEqual(
   restoredAltitudeNetwork.exportState(),
   dynamicAltitudeCheckpoint,

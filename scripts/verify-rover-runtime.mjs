@@ -118,7 +118,7 @@ const cart = decodeBlueprintOrThrow(builtInDemo("cart").blueprint).assembly,
   steeredWheelIds = drivenWheelIdList.slice(0, steeringHingeIds.length),
   steeredWheelId = steeredWheelIds[0];
 
-runtime.start(assembly);
+runtime.start(JSON.stringify(assembly));
 assert.equal(
   runtime.bodyByPart.size,
   runtime.compiled.bodies.length,
@@ -240,8 +240,8 @@ for (let tick = 1; tick <= 600; tick++) {
     idleMotorTelemetry = actuatorTelemetry;
     assert.equal(
       actuatorTelemetry.activeMotors,
-      0,
-      "zero throttle engaged a hidden motor-speed servo instead of freewheeling",
+      steeringHingeIds.length,
+      "active-motor telemetry did not distinguish energized steering servos from the freewheeling drivetrain",
     );
     assert.ok(
       driveMotorIds.every(
@@ -408,8 +408,8 @@ assert.ok(
 );
 assert.equal(
   idleMotorTelemetry?.activeMotors,
-  0,
-  "neutral drivetrain state was not observed",
+  steeringHingeIds.length,
+  "neutral drivetrain state did not retain exactly the authored steering servos",
 );
 assert.ok(
   runtime.bodyByPart.get(looseWheel.id).position.y < looseWheel.pos[1],
@@ -452,7 +452,7 @@ const brakedDrivenStates = fixtureMobilityTelemetry(runtime, {
     ) / brakedDrivenStates.length;
 assert.equal(
   brakeTelemetry?.activeMotors,
-  driveMotorIds.length,
+  driveMotorIds.length + steeringHingeIds.length,
   "explicit brake command did not engage every powered drivetrain actuator",
 );
 assert.ok(

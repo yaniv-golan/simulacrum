@@ -41,7 +41,11 @@
   ],
   "stateOwnerPayloads": {
     "session": { "tick": 2, "mode": "paused" },
-    "input-command-bus": { "cursor": 2, "nextSequence": 2 },
+    "input-command-bus": {
+      "cursor": 2,
+      "nextSequence": 2,
+      "inputCursor": { "sourceId": "operator" }
+    },
     "run-graph": { "revision": 1 },
     "compiled-topology": { "revision": 1 },
     "physics-world": { "bodies": [] },

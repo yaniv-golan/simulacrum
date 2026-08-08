@@ -1,4 +1,12 @@
-import { DomainValidationError, stableStringify } from "./primitives.js";
+import {
+  detachPlainData,
+  DomainValidationError,
+  stableStringify,
+} from "./primitives.js";
+import {
+  issueInertPlainData,
+  requireInertPlainData,
+} from "./plain-data-contract.js";
 import { EXTENSION_NAMESPACE_PATTERN, WIRE_LIMITS } from "./wire-limits.js";
 
 const encoder = new TextEncoder();
@@ -44,7 +52,7 @@ const FORMAT_CONTRACTS = Object.freeze({
   }),
   "input-trace": Object.freeze({
     format: "simulacrum-input-trace",
-    version: 1,
+    version: 3,
     bytes: WIRE_LIMITS.inputTraceBytes,
     versionCode: "UNSUPPORTED_INPUT_TRACE_VERSION",
   }),
@@ -255,6 +263,26 @@ export function validateWireInput(input, kind, validator) {
       cause: error instanceof Error ? error.message : String(error),
     });
   }
+  if (typeof input !== "string") {
+    if (kind === "checkpoint")
+      parsed = requireInertPlainData(input, {
+        code: "INVALID_WIRE_PLAIN_DATA",
+        message:
+          "checkpoint must be serialized JSON or an exported immutable wire root",
+      });
+    else
+      parsed = detachPlainData(input, {
+        code: "INVALID_WIRE_PLAIN_DATA",
+        cycleCode: "CYCLIC_WIRE_VALUE",
+        depthCode: "WIRE_DEPTH_LIMIT",
+        finiteNumberCode: "INVALID_FINITE_NUMBER",
+        finiteNumbers: true,
+        maximumDepth: WIRE_LIMITS.maxDepth,
+        maximumNodes: contract.nodes ?? WIRE_LIMITS.maxNodes,
+        message: `${kind} must be accessor-free acyclic plain data`,
+        nodeCode: "WIRE_NODE_LIMIT",
+      });
+  }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
     throw issue("INVALID_WIRE_DOCUMENT", `${kind} must be an object`);
   const versionField = contract.versionField || "version";
@@ -296,7 +324,14 @@ export function validateWireInput(input, kind, validator) {
     );
   if (!validator(parsed)) throw mapAjvError(validator.errors[0], kind);
   inspectExtensions(parsed);
-  return Object.freeze({ value: structuredClone(parsed), bytes, nodes });
+  return Object.freeze({
+    value:
+      kind === "checkpoint"
+        ? issueInertPlainData(parsed)
+        : structuredClone(parsed),
+    bytes,
+    nodes,
+  });
 }
 
 export function wireResult(operation) {

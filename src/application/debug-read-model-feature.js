@@ -89,7 +89,8 @@ export function installDebugReadModelFeature({
             }))
           : undefined,
       },
-      running: state.running,
+      running: state.running && !state.simulationStarting,
+      simulationStarting: state.simulationStarting,
       simulationPaused: state.simulationPaused,
       timeScale: state.timeScale,
       simulationTime: frame.time,

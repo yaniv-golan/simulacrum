@@ -9,6 +9,8 @@ import {
 import {
   CannonWorldAdapter,
   completedWorldEvidenceContributions,
+  configureCannonWorldSolverProfile,
+  readCannonSolverProfileAuthority,
   requestWorldEvidenceCapture,
 } from "../src/simulation/cannon-world-adapter.js";
 import { createYUpHeightfieldCandidateFilter } from "../src/simulation/heightfield-broadphase.js";
@@ -22,6 +24,175 @@ const source = fs.readFileSync(
   "utf8",
 );
 assert.doesNotMatch(source, /\bworld\.(?:step|internalStep)\s*\(/);
+
+{
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) });
+  world.solver.iterations = 30;
+  world.solver.tolerance = 2e-4;
+  configureCannonWorldSolverProfile(world, {
+    fixedDt: 1 / 120,
+    iterations: 30,
+    tolerance: 2e-4,
+  });
+  const adapter = new CannonWorldAdapter(
+    world,
+    new CannonSolverTransaction(world),
+  );
+  assert.throws(
+    () => adapter.exportState(),
+    (error) => error?.code === "INVALID_CANNON_WORLD_CHECKPOINT_COUNTER",
+    "adapter exported an unreachable pre-session checkpoint",
+  );
+  assert.deepEqual(readCannonSolverProfileAuthority(adapter), {
+    fixedDt: 1 / 120,
+    iterations: 30,
+    tolerance: 2e-4,
+  });
+  adapter.beginSession(1 / 120);
+  const checkpoint = adapter.exportState();
+  assert.deepEqual(checkpoint.solverProfile, {
+    fixedDt: 1 / 120,
+    iterations: 30,
+    tolerance: 2e-4,
+  });
+  world.solver.iterations = 1;
+  world.solver.tolerance = 0.5;
+  assert.throws(
+    () => adapter.exportState(),
+    /solver configuration diverged/i,
+    "checkpoint capture ignored live solver-profile mutation",
+  );
+  assert.throws(
+    () => adapter.integrate(1 / 120, { tick: 1 }),
+    /solver configuration diverged/i,
+    "integration accepted unattested live solver-profile mutation",
+  );
+  assert.equal(adapter.telemetry().tick, 0);
+  adapter.importState(checkpoint);
+  assert.equal(world.solver.iterations, 30);
+  assert.equal(world.solver.tolerance, 2e-4);
+  assert.deepEqual(adapter.exportState(), checkpoint);
+  const forgedProfile = structuredClone(checkpoint);
+  forgedProfile.solverProfile.iterations = 1;
+  assert.throws(
+    () => adapter.validateState(JSON.stringify(forgedProfile)),
+    /solver profile does not match/i,
+    "checkpoint accepted a different finite-iteration solver profile",
+  );
+  const unreachableCounters = structuredClone(checkpoint);
+  unreachableCounters.tick = 0;
+  unreachableCounters.integratedTick = 100;
+  unreachableCounters.integrationCount = 1;
+  assert.throws(
+    () => adapter.validateState(JSON.stringify(unreachableCounters)),
+    (error) => error?.code === "INVALID_CANNON_CHECKPOINT_COUNTER_RELATION",
+    "checkpoint accepted unreachable Cannon counter relationships",
+  );
+  assert.throws(
+    () => adapter.integrate(1 / 60, { tick: 1 }),
+    /solver configuration diverged/i,
+    "integration accepted a fixed step outside solver-profile authority",
+  );
+  assert.equal(adapter.telemetry().tick, 0);
+  adapter.dispose();
+}
+
+{
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
+    body = new CANNON.Body({
+      mass: 1,
+      shape: new CANNON.Sphere(0.25),
+    });
+  body.userData = {
+    externalBodyId: "canonical-quaternion-body",
+    checkpointPolicy: "world-kinematics-v1",
+  };
+  body.quaternion.setFromEuler(0.4, -0.2, 0.7);
+  body.previousQuaternion.copy(body.quaternion);
+  body.interpolatedQuaternion.copy(body.quaternion);
+  world.addBody(body);
+  const adapter = new CannonWorldAdapter(world);
+  adapter.beginSession();
+  const liveOrientation = () =>
+    ["quaternion", "previousQuaternion", "interpolatedQuaternion"].map(
+      (field) => ({
+        x: body[field].x,
+        y: body[field].y,
+        z: body[field].z,
+        w: body[field].w,
+      }),
+    );
+  const beforeCapture = liveOrientation(),
+    checkpoint = adapter.exportState(),
+    baseline = structuredClone(checkpoint),
+    forged = structuredClone(checkpoint),
+    record = forged.externalBodies[0];
+  assert.deepEqual(
+    liveOrientation(),
+    beforeCapture,
+    "checkpoint capture silently projected live external orientations",
+  );
+  adapter.importState(checkpoint);
+  assert.deepEqual(
+    liveOrientation(),
+    beforeCapture,
+    "no-op checkpoint restore changed live external orientation bits",
+  );
+  assert.doesNotThrow(
+    () => adapter.validateState(checkpoint),
+    "adapter rejected its canonical quaternion checkpoint projection",
+  );
+  record.quaternion.w += 2e-7;
+  assert.throws(
+    () => adapter.validateState(JSON.stringify(forged)),
+    (error) => error?.code === "INVALID_CANNON_EXTERNAL_BODY_CHECKPOINT",
+    "checkpoint accepted a finite but noncanonical near-unit quaternion",
+  );
+  assert.deepEqual(
+    adapter.exportState(),
+    baseline,
+    "rejected quaternion checkpoint mutated world-owned state",
+  );
+  let accessorReads = 0;
+  const accessorCheckpoint = {};
+  Object.defineProperty(accessorCheckpoint, "version", {
+    enumerable: true,
+    get() {
+      accessorReads++;
+      return 1;
+    },
+  });
+  assert.throws(
+    () => adapter.validateState(accessorCheckpoint),
+    (error) => error?.code === "INVALID_CANNON_CHECKPOINT_INPUT",
+  );
+  assert.equal(accessorReads, 0, "Cannon validator executed a state accessor");
+  let proxyReads = 0;
+  const checkpointProxy = new Proxy(structuredClone(checkpoint), {
+    get() {
+      proxyReads++;
+      return undefined;
+    },
+    getPrototypeOf() {
+      proxyReads++;
+      return Object.prototype;
+    },
+    ownKeys() {
+      proxyReads++;
+      return [];
+    },
+    getOwnPropertyDescriptor() {
+      proxyReads++;
+      return undefined;
+    },
+  });
+  assert.throws(
+    () => adapter.validateState(checkpointProxy),
+    (error) => error?.code === "INVALID_CANNON_CHECKPOINT_INPUT",
+  );
+  assert.equal(proxyReads, 0, "Cannon validator executed a Proxy trap");
+  adapter.dispose();
+}
 
 function run() {
   const world = new CANNON.World({
@@ -92,6 +263,74 @@ function run() {
 }
 
 assert.deepEqual(run(), run(), "owned solver transaction is nondeterministic");
+
+function typedContactProvenanceRun() {
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
+    numeric = new CANNON.Body({
+      mass: 1,
+      shape: new CANNON.Sphere(1),
+      position: new CANNON.Vec3(-0.25, 0, 0),
+    }),
+    textual = new CANNON.Body({
+      mass: 1,
+      shape: new CANNON.Sphere(1),
+      position: new CANNON.Vec3(0.25, 0, 0),
+    }),
+    adapter = new CannonWorldAdapter(world);
+  numeric.userData = { partId: 1 };
+  textual.userData = { partId: "1" };
+  world.addBody(numeric);
+  world.addBody(textual);
+  adapter.beginSession();
+  requestWorldEvidenceCapture(adapter);
+  adapter.integrate(1 / 120, { tick: 1 });
+  const contributions = completedWorldEvidenceContributions(adapter);
+  assert.ok(world.contacts.length > 0, "typed-ID fixture did not collide");
+  const contact = world.contacts[0].simulacrumEvidence,
+    bodyIds = new Set([contact.bodyAId, contact.bodyBId]),
+    expectedBodyIds = new Set(["part:1", "part:string:1:1"]);
+  assert.deepEqual(
+    bodyIds,
+    expectedBodyIds,
+    "numeric and string-homograph part IDs collapsed in contact provenance",
+  );
+  assert.equal(
+    new Set(
+      world.frictionEquations.map(
+        (equation) => equation.simulacrumEvidenceRow.rowId,
+      ),
+    ).size,
+    world.frictionEquations.length,
+    "typed-ID friction provenance produced duplicate row identities",
+  );
+  assert.ok(
+    world.frictionEquations.every((equation) =>
+      [...expectedBodyIds].every((id) =>
+        equation.simulacrumEvidenceRow.rowId.includes(id),
+      ),
+    ),
+    "friction provenance omitted a typed contact-body identity",
+  );
+  const contactContributions = contributions.filter((row) =>
+    row.sourceContactIds.includes(contact.contactId),
+  );
+  assert.ok(
+    contactContributions.length > 0,
+    "typed contact produced no materialized solver contributions",
+  );
+  assert.ok(
+    contactContributions.every(
+      (row) =>
+        expectedBodyIds.has(row.bodyId) &&
+        expectedBodyIds.has(row.otherBodyId) &&
+        row.bodyId !== row.otherBodyId,
+    ),
+    "materialized solver contributions lost typed contact-body identity",
+  );
+  adapter.dispose();
+}
+
+typedContactProvenanceRun();
 
 function pooledMetadataRun() {
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.80665, 0) }),
@@ -216,8 +455,14 @@ function budgetedMotorRun() {
     dt = 1 / 120;
   world.addBody(support);
   world.addBody(rotor);
-  support.userData = { externalBodyId: "motor-support" };
-  rotor.userData = { externalBodyId: "motor-rotor" };
+  support.userData = {
+    externalBodyId: "motor-support",
+    checkpointPolicy: "world-kinematics-v1",
+  };
+  rotor.userData = {
+    externalBodyId: "motor-rotor",
+    checkpointPolicy: "world-kinematics-v1",
+  };
   world.addConstraint(hinge);
   hinge.enableMotor();
   hinge.setMotorSpeed(1_000);
@@ -243,6 +488,9 @@ function budgetedMotorRun() {
   );
   const pending = transaction.motorEnergyRecordsForTick(1),
     [record] = pending.records;
+  assert.ok(Object.isFrozen(pending), "motor record envelope is mutable");
+  assert.ok(Object.isFrozen(pending.records), "motor record array is mutable");
+  assert.ok(Object.isFrozen(record), "motor energy record is mutable");
   assert.ok(record.positiveMechanicalWorkJ <= 1 + 1e-9, record);
   assert.ok(record.positiveMechanicalWorkJ >= 1 - 1e-8, record);
   assert.ok(record.saturated, record);

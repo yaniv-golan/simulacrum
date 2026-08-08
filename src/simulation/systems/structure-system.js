@@ -1,5 +1,9 @@
 import { recordBodyLoads } from "../body-registry.js";
 import { applyRunGraphLoads } from "../run-assembly-graph.js";
+import {
+  issueInertPlainData,
+  requireInertPlainData,
+} from "../../model/plain-data-contract.js";
 
 const PHYSICAL_KINDS = new Set(["mechanical", "mesh"]);
 
@@ -70,6 +74,7 @@ function runtimeBodyComponents(runtime, allowed = null) {
  */
 export class StructureSystem {
   #appliedGraphRevision = -1;
+  #checkpointConnectionIds = new Set();
   phase = "structures";
   checkpointOwner = "structure-failure";
 
@@ -78,6 +83,12 @@ export class StructureSystem {
       context.services.multibodyRuntime,
     );
     this.overloadSeconds = new Map();
+    this.#checkpointConnectionIds = new Set(
+      context.runGraph
+        .connections()
+        .filter((connection) => PHYSICAL_KINDS.has(connection.kind))
+        .map((connection) => connection.id),
+    );
     this.#appliedGraphRevision = context.runGraph.graphRevision;
   }
 
@@ -230,7 +241,7 @@ export class StructureSystem {
         ) || []),
       );
     const separatedPartIds = detachedConstraints.length
-      ? this.#separatedParts(context, runtime)
+      ? this.#separatedParts(context, runtime, pendingConnections)
       : [];
     let structuralEvent = null;
     if (newlyFailed.length || separatedPartIds.length) {
@@ -295,7 +306,7 @@ export class StructureSystem {
     };
   }
 
-  #separatedParts(context, runtime) {
+  #separatedParts(context, runtime, connectionStates = null) {
     if (!runtime?.compiled) return [];
     const detached = new Set();
     for (const initial of this.initialBodyComponents || []) {
@@ -317,14 +328,41 @@ export class StructureSystem {
         for (const id of component)
           if (!context.runGraph.part(id)?.detached) detached.add(id);
     }
+    const connectionById = new Map(
+      (connectionStates || context.runGraph.connections()).map((connection) => [
+        connection.id,
+        connection,
+      ]),
+    );
     for (const entry of runtime.constraintEntries || []) {
       const connectorId = entry.descriptor.sourcePartId;
       if (
         connectorId == null ||
         entry.active !== false ||
+        runtime.bodyByPart.has(connectorId) ||
         context.runGraph.part(connectorId)?.detached
       )
         continue;
+      const sourceConnections = (entry.descriptor.sourceConnectionIds || [])
+        .map((id) => connectionById.get(id))
+        .filter(Boolean);
+      if (
+        sourceConnections.length ===
+          (entry.descriptor.sourceConnectionIds || []).length &&
+        sourceConnections.length
+      ) {
+        const liveNeighbors = sourceConnections
+          .filter((connection) => !connection.failed)
+          .map((connection) =>
+            connection.a === connectorId ? connection.b : connection.a,
+          );
+        if (
+          !liveNeighbors.length ||
+          liveNeighbors.every((partId) => detached.has(partId))
+        )
+          detached.add(connectorId);
+        continue;
+      }
       if (detached.has(entry.descriptor.a) || detached.has(entry.descriptor.b))
         detached.add(connectorId);
     }
@@ -350,26 +388,61 @@ export class StructureSystem {
   dispose() {
     this.initialBodyComponents = [];
     this.overloadSeconds?.clear();
+    this.#checkpointConnectionIds.clear();
     this.#appliedGraphRevision = -1;
   }
 
   exportState() {
-    return structuredClone({
-      version: 1,
-      initialBodyComponents: this.initialBodyComponents || [],
-      overloadSeconds: [...(this.overloadSeconds || new Map())],
+    return issueInertPlainData({
+      version: 2,
+      overloadSeconds: [...(this.overloadSeconds || new Map())]
+        .sort(([left], [right]) =>
+          String(left).localeCompare(String(right), "en"),
+        )
+        .map(([connectionId, seconds]) => ({ connectionId, seconds })),
     });
   }
 
+  validateState(state) {
+    state = requireInertPlainData(state, {
+      code: "INVALID_STRUCTURE_CHECKPOINT_INPUT",
+      message:
+        "Structure checkpoint must be serialized JSON or an exported immutable state",
+    });
+    if (
+      !state ||
+      typeof state !== "object" ||
+      Array.isArray(state) ||
+      Object.keys(state).sort().join("\0") !== "overloadSeconds\0version" ||
+      state.version !== 2 ||
+      !Array.isArray(state.overloadSeconds) ||
+      state.overloadSeconds.length > this.#checkpointConnectionIds.size
+    )
+      throw new TypeError(
+        "structure checkpoint must be an exact version 2 mutable projection",
+      );
+    const overloadSeconds = new Map();
+    for (const record of state.overloadSeconds) {
+      if (
+        !record ||
+        typeof record !== "object" ||
+        Array.isArray(record) ||
+        Object.keys(record).sort().join("\0") !== "connectionId\0seconds" ||
+        !this.#checkpointConnectionIds.has(record.connectionId) ||
+        overloadSeconds.has(record.connectionId) ||
+        !Number.isFinite(record.seconds) ||
+        record.seconds < 0
+      )
+        throw new TypeError(
+          "structure checkpoint contains invalid overload state",
+        );
+      overloadSeconds.set(record.connectionId, record.seconds);
+    }
+    return overloadSeconds;
+  }
+
   importState(state) {
-    if (state?.version !== 1)
-      throw new TypeError("structure checkpoint must use version 1");
-    this.initialBodyComponents = structuredClone(
-      state.initialBodyComponents || [],
-    );
-    this.overloadSeconds = new Map(
-      structuredClone(state.overloadSeconds || []),
-    );
+    this.overloadSeconds = this.validateState(state);
     // The imported runtime owns the exact constraint state. Force one
     // idempotent graph-to-runtime reconciliation on the next step so this
     // derived cache cannot suppress externally committed topology changes.

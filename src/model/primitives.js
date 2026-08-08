@@ -1,5 +1,7 @@
 /** @typedef {{path?: Array<string | number>, details?: unknown, cause?: unknown}} ValidationOptions */
 
+const compiledIdCollator = new Intl.Collator("en-US", { numeric: true });
+
 /** Structured validation failure used by model and persistence boundaries. */
 export class DomainValidationError extends Error {
   /**
@@ -43,6 +45,144 @@ export function deepFreeze(value, seen = new WeakSet()) {
 /** Returns a detached immutable value suitable for public model reads. */
 export function immutableClone(value) {
   return deepFreeze(structuredClone(value));
+}
+
+/**
+ * Detaches strict JSON-like data without reading through accessors. Repeated
+ * identities are expanded into independent values, while cycles are rejected
+ * because persisted tree data cannot encode them.
+ */
+export function detachPlainData(
+  value,
+  {
+    code = "INVALID_PLAIN_DATA",
+    cycleCode = code,
+    depthCode = code,
+    finiteNumberCode = code,
+    finiteNumbers = false,
+    maximumDepth = Infinity,
+    maximumNodes = Infinity,
+    message = "Expected accessor-free acyclic plain data",
+    nodeCode = code,
+    path = [],
+  } = {},
+) {
+  const ancestors = new WeakSet();
+  let nodes = 0;
+  const fail = (failurePath, cause, failureCode = code) => {
+    const location = failurePath.length
+      ? failurePath.map(String).join(".")
+      : "<root>";
+    throw new DomainValidationError(failureCode, `${message} at ${location}`, {
+      path: failurePath,
+      cause,
+    });
+  };
+  const visit = (candidate, candidatePath, depth) => {
+    nodes++;
+    if (nodes > maximumNodes) fail(candidatePath, null, nodeCode);
+    if (depth > maximumDepth) fail(candidatePath, null, depthCode);
+    if (
+      candidate === null ||
+      typeof candidate === "string" ||
+      typeof candidate === "boolean"
+    )
+      return candidate;
+    if (typeof candidate === "number") {
+      if (finiteNumbers && !Number.isFinite(candidate))
+        fail(candidatePath, null, finiteNumberCode);
+      return candidate;
+    }
+    if (typeof candidate !== "object") fail(candidatePath);
+    if (ancestors.has(candidate)) fail(candidatePath, null, cycleCode);
+    ancestors.add(candidate);
+
+    let prototype, keys;
+    try {
+      prototype = Object.getPrototypeOf(candidate);
+      keys = Reflect.ownKeys(candidate);
+    } catch (cause) {
+      fail(candidatePath, cause);
+    }
+    const array = Array.isArray(candidate);
+    if (
+      (array && prototype !== Array.prototype) ||
+      (!array && prototype !== Object.prototype && prototype !== null)
+    )
+      fail(candidatePath);
+    if (keys.some((key) => typeof key === "symbol")) fail(candidatePath);
+
+    const descriptorFor = (key, keyPath) => {
+      let descriptor;
+      try {
+        descriptor = Object.getOwnPropertyDescriptor(candidate, key);
+      } catch (cause) {
+        fail(keyPath, cause);
+      }
+      if (
+        !descriptor ||
+        !("value" in descriptor) ||
+        (key !== "length" && descriptor.enumerable !== true)
+      )
+        fail(keyPath);
+      return descriptor;
+    };
+
+    if (array) {
+      const lengthDescriptor = descriptorFor("length", [
+          ...candidatePath,
+          "length",
+        ]),
+        length = lengthDescriptor.value,
+        keySet = new Set(keys);
+      if (
+        !Number.isSafeInteger(length) ||
+        length < 0 ||
+        keys.length !== length + 1 ||
+        !keySet.has("length")
+      )
+        fail(candidatePath);
+      const result = [];
+      for (let index = 0; index < length; index++) {
+        const key = String(index);
+        if (!keySet.has(key)) fail([...candidatePath, index]);
+        result.push(
+          visit(
+            descriptorFor(key, [...candidatePath, index]).value,
+            [...candidatePath, index],
+            depth + 1,
+          ),
+        );
+      }
+      ancestors.delete(candidate);
+      return result;
+    }
+
+    const result = {};
+    for (const key of keys) {
+      if (typeof key !== "string") fail(candidatePath);
+      result[key] = visit(
+        descriptorFor(key, [...candidatePath, key]).value,
+        [...candidatePath, key],
+        depth + 1,
+      );
+    }
+    ancestors.delete(candidate);
+    return result;
+  };
+  const detached = visit(value, path, 0);
+  // ECMAScript does not expose a portable `isProxy` predicate. The structured
+  // clone algorithm does, however, reject Proxy exotic objects without
+  // invoking their `get` trap. Run it only after the descriptor walk above has
+  // rejected accessors without reading them. A proxy may observe the
+  // descriptor inspection used for structural validation, but it can never be
+  // accepted as data authority or supply a lazily-read property value.
+  try {
+    structuredClone(value);
+  } catch (cause) {
+    fail(path, cause);
+  }
+  return detached;
 }
 
 export function finiteNumber(
@@ -219,6 +359,87 @@ export function canonicalId(value, { path = [] } = {}) {
     "IDs must be safe integers or non-empty strings up to 160 characters",
     { path, details: { value } },
   );
+}
+
+/**
+ * Validates a runtime/compiler-owned identity. These projections may be longer
+ * than their bounded authored source after deterministic namespace prefixes
+ * are added, but remain exact non-empty strings or safe integers.
+ */
+export function compiledId(value, { path = [] } = {}) {
+  if (
+    (typeof value === "number" && Number.isSafeInteger(value)) ||
+    (typeof value === "string" && value.length > 0)
+  )
+    return value;
+  throw new DomainValidationError(
+    "INVALID_COMPILED_ID",
+    "Compiled IDs must be safe integers or non-empty strings",
+    { path, details: { value } },
+  );
+}
+
+/**
+ * Total ordering for canonical authored IDs and their longer compiled string
+ * projections. Generated IDs may exceed the authored 160-character limit, so
+ * compiled surfaces share this comparator without re-validating source limits.
+ */
+export function compareCompiledIds(left, right) {
+  const validLeft = compiledId(left),
+    validRight = compiledId(right);
+  if (validLeft === validRight) return 0;
+  const legacyOrder = compiledIdCollator.compare(
+    String(validLeft),
+    String(validRight),
+  );
+  if (legacyOrder) return legacyOrder;
+  if (typeof validLeft !== typeof validRight)
+    return typeof validLeft === "number" ? -1 : 1;
+  if (typeof validLeft === "number" && typeof validRight === "number")
+    return validLeft - validRight;
+  return validLeft < validRight ? -1 : 1;
+}
+
+/**
+ * Total ordering for canonical authored identities. Preserve the compiler's
+ * historical numeric collation first, then resolve collation-equivalent
+ * values by type and exact value so authored insertion order can never decide.
+ */
+export function compareCanonicalIds(leftValue, rightValue) {
+  const left = canonicalId(leftValue),
+    right = canonicalId(rightValue);
+  return compareCompiledIds(left, right);
+}
+
+/**
+ * Compiled string identifiers can normally retain their legacy projection.
+ * If a namespace contains both a number and its exact string form, every
+ * string in that namespace is length-prefixed so the projection remains
+ * injective without depending on authored array order.
+ */
+export function identitySetUsesTypedStrings(values) {
+  const numericTokens = new Set(
+    values
+      .filter((value) => typeof value === "number")
+      .map((value) => String(value)),
+  );
+  return values.some(
+    (value) => typeof value === "string" && numericTokens.has(value),
+  );
+}
+
+export function identityToken(value, { typedStrings = false } = {}) {
+  const id = canonicalId(value);
+  return typedStrings && typeof id === "string"
+    ? `string:${id.length}:${id}`
+    : String(id);
+}
+
+export function scopedIdentity(scope, value, options = {}) {
+  const token = identityToken(value, options);
+  if (typeof scope !== "string" || !scope)
+    throw new TypeError("identity scope must be a non-empty string");
+  return `${scope}:${token}`;
 }
 
 function canonicalize(value, path, ancestors) {

@@ -4,6 +4,7 @@ import {
 } from "./component-geometry-contract.js";
 import {
   canonicalQuaternion,
+  canonicalizeQuaternion,
   finiteVector3,
   rotateVectorByQuaternion,
 } from "./primitives.js";
@@ -18,6 +19,17 @@ const AXIS_BEARING_BEHAVIORS = new Set([
 
 function finitePartPosition(part) {
   return finiteVector3(part.pos, { path: ["parts", part.id, "pos"] });
+}
+
+function composeQuaternion(left, right) {
+  const [ax, ay, az, aw] = canonicalQuaternion(left),
+    [bx, by, bz, bw] = canonicalQuaternion(right);
+  return canonicalizeQuaternion([
+    aw * bx + ax * bw + ay * bz - az * by,
+    aw * by - ax * bz + ay * bw + az * bx,
+    aw * bz + ax * by - ay * bx + az * bw,
+    aw * bw - ax * bx - ay * by - az * bz,
+  ]);
 }
 
 export function worldPortFrame(
@@ -38,6 +50,7 @@ export function worldPortFrame(
   const orientation = canonicalQuaternion(part.orientation, {
       path: ["parts", part.id, "orientation"],
     }),
+    orientationPart = canonicalQuaternion(portFrame.framePart.orientation),
     positionPartM = structuralAnchor
       ? finiteVector3(structuralAnchor)
       : portFrame.framePart.positionM,
@@ -45,8 +58,15 @@ export function worldPortFrame(
     positionWorld = finitePartPosition(part).map(
       (value, axis) => value + positionOffset[axis],
     ),
-    axisWorld = rotateVectorByQuaternion(portAxisPart(portFrame), orientation);
-  return { positionWorld, axisWorld, portFrame };
+    axisWorld = rotateVectorByQuaternion(portAxisPart(portFrame), orientation),
+    orientationWorld = composeQuaternion(orientation, orientationPart);
+  return {
+    positionWorld,
+    axisWorld,
+    orientationPart,
+    orientationWorld,
+    portFrame,
+  };
 }
 
 function diagnosticBase(connection, partA, partB, portA, portB, rule) {

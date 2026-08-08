@@ -240,10 +240,6 @@ export function createWorkshopRunComposition({
         );
         return { x: velocity.x, y: velocity.y, z: velocity.z };
       },
-      materialForPart: (part) =>
-        ["footL", "footR"].includes(part?.rigRole)
-          ? stage.footMaterial
-          : stage.debrisMaterial,
     },
     presentation: createWorkshopRunPresentationPort({
       shell,

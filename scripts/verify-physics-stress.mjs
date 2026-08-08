@@ -245,12 +245,20 @@ function runWheelFleet() {
       .filter((part) => part.type === "motor")
       .map((part) => part.id),
     wheelCount = assembly.parts.filter((part) => part.type === "wheel").length;
-  runtime.start(assembly);
+  runtime.start(JSON.stringify(assembly));
   assert.equal(runtime.compiled.contactRegions.length, wheelCount);
   assert.ok(runtime.constraintEntries.length >= 40);
-  const stepMs = [];
+  const driveEntries = runtime.constraintEntries.filter(
+      (entry) => entry.descriptor.motorId != null,
+    ),
+    positionActuatorEntries = runtime.constraintEntries.filter(
+      (entry) => entry.descriptor.controlled,
+    ),
+    stepMs = [];
   let maximumContacts = 0,
-    maximumActiveMotors = 0;
+    maximumActiveMotors = 0,
+    maximumActiveDriveMotors = 0,
+    maximumActivePositionActuators = 0;
   for (let tick = 1; tick <= 360; tick++) {
     context.clock.tick = tick;
     context.telemetry = {};
@@ -267,6 +275,17 @@ function runWheelFleet() {
     stepMs.push(performance.now() - started);
     maximumContacts = Math.max(maximumContacts, world.contacts.length);
     maximumActiveMotors = Math.max(maximumActiveMotors, telemetry.activeMotors);
+    maximumActiveDriveMotors = Math.max(
+      maximumActiveDriveMotors,
+      driveEntries.filter((entry) => entry.constraint.motorEquation.enabled)
+        .length,
+    );
+    maximumActivePositionActuators = Math.max(
+      maximumActivePositionActuators,
+      positionActuatorEntries.filter(
+        (entry) => entry.constraint.motorEquation.enabled,
+      ).length,
+    );
     if (tick % 120 === 0)
       assertFiniteBodies(
         [...runtime.bodyByPart.values()],
@@ -274,7 +293,12 @@ function runWheelFleet() {
       );
   }
   const p95StepMs = percentile(stepMs, 0.95);
-  assert.equal(maximumActiveMotors, motorIds.length);
+  assert.equal(maximumActiveDriveMotors, driveEntries.length);
+  assert.equal(maximumActivePositionActuators, positionActuatorEntries.length);
+  assert.equal(
+    maximumActiveMotors,
+    driveEntries.length + positionActuatorEntries.length,
+  );
   assert.ok(maximumContacts >= wheelCount / 2);
   assert.ok(
     p95StepMs < 20,

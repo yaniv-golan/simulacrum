@@ -156,6 +156,13 @@ const cyclicContact = registry.recordContact("vehicle", {
 });
 assert.strictEqual(cyclicContact.featureId.self, cyclicContact.featureId);
 assert.ok(Object.isFrozen(cyclicContact.featureId));
+const cyclicRevision = registry.revision;
+assert.ok(Number.isSafeInteger(cyclicRevision));
+assert.equal(
+  registry.revision,
+  cyclicRevision,
+  "cyclic structured-clone telemetry changed an unchanged runtime revision",
+);
 registry.recordLoad("vehicle", {
   connectionId: "signal",
   forceN: 400,

@@ -1,11 +1,45 @@
 import * as CANNON from "cannon-es";
 import { flexibleLineMaterial } from "../model/flexible-line-materials.js";
 import { flexibleRuntimeBoundsWorldM } from "../model/component-geometry-contract.js";
-import { DomainValidationError } from "../model/primitives.js";
+import {
+  DomainValidationError,
+  identitySetUsesTypedStrings,
+  identityToken,
+} from "../model/primitives.js";
+import {
+  issueInertPlainData,
+  requireInertPlainData,
+} from "../model/plain-data-contract.js";
 import { TensionOnlyDistanceConstraint } from "./tension-only-distance-constraint.js";
 
 const plainVector = ({ x, y, z }) => ({ x, y, z });
 const plainQuaternion = ({ x, y, z, w }) => ({ x, y, z, w });
+const checkpointKeysMatch = (value, expected) =>
+  Boolean(
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === expected.length &&
+    expected.every((key) => Object.hasOwn(value, key)),
+  );
+const finiteVector = (value) =>
+  Boolean(
+    checkpointKeysMatch(value, ["x", "y", "z"]) &&
+    [value.x, value.y, value.z].every(Number.isFinite),
+  );
+const unitQuaternion = (value) => {
+  if (
+    !checkpointKeysMatch(value, ["x", "y", "z", "w"]) ||
+    ![value.x, value.y, value.z, value.w].every(Number.isFinite)
+  )
+    return false;
+  const normSquared =
+    value.x * value.x +
+    value.y * value.y +
+    value.z * value.z +
+    value.w * value.w;
+  return Math.abs(normSquared - 1) <= 1e-6;
+};
 const MAX_CONTACT_SAMPLES_PER_LINE = 16;
 const totalLength = (centerline) =>
   centerline.slice(1).reduce((sum, point, index) => {
@@ -80,11 +114,20 @@ export class FlexibleLineRuntime {
     this.topologyRevision = 0;
     this.lastDissipationTick = -1;
     this.contactDissipationByPart = new Map();
+    this.connectionIdsUseTypedStrings = false;
   }
 
   start(compiledAssembly) {
     this.dispose();
     this.compiledLines = compiledAssembly?.flexibleLines || [];
+    const sourceConnectionIds = this.compiledLines.flatMap((line) => [
+      ...line.internalEdges.flatMap((edge) => edge.sourceConnectionIds || []),
+      ...line.attachments
+        .filter((attachment) => attachment.kind === "point-attachment-v1")
+        .map((attachment) => attachment.sourceConnectionId),
+    ]);
+    this.connectionIdsUseTypedStrings =
+      identitySetUsesTypedStrings(sourceConnectionIds);
     for (const line of this.compiledLines) {
       for (const entity of line.entities) {
         const lineMaterial = this.materialForKey
@@ -130,7 +173,13 @@ export class FlexibleLineRuntime {
         /** @type {any} */ (constraint).simulacrumEvidence = Object.freeze({
           constraintId: String(edge.id),
           sourceConnectionIds: Object.freeze(
-            [...new Set(edge.sourceConnectionIds || [])].map(String).sort(),
+            [...new Set(edge.sourceConnectionIds || [])]
+              .map((sourceConnectionId) =>
+                identityToken(sourceConnectionId, {
+                  typedStrings: this.connectionIdsUseTypedStrings,
+                }),
+              )
+              .sort(),
           ),
           source: "constraint",
         });
@@ -163,13 +212,13 @@ export class FlexibleLineRuntime {
             pivotTarget,
             attachment.ultimateForceN * 4,
           );
+        const sourceConnectionId = identityToken(
+          attachment.sourceConnectionId,
+          { typedStrings: this.connectionIdsUseTypedStrings },
+        );
         /** @type {any} */ (constraint).simulacrumEvidence = Object.freeze({
-          constraintId: `flexible-attachment:${String(
-            attachment.sourceConnectionId,
-          )}`,
-          sourceConnectionIds: Object.freeze([
-            String(attachment.sourceConnectionId),
-          ]),
+          constraintId: `flexible-attachment:${sourceConnectionId}`,
+          sourceConnectionIds: Object.freeze([sourceConnectionId]),
           source: "constraint",
         });
         this.world.addConstraint(constraint);
@@ -500,7 +549,7 @@ export class FlexibleLineRuntime {
   }
 
   exportState() {
-    return {
+    return issueInertPlainData({
       version: 1,
       entities: [...this.bodyByEntityId].map(([entityId, body]) => ({
         entityId,
@@ -522,7 +571,7 @@ export class FlexibleLineRuntime {
       topologyRevision: this.topologyRevision,
       lastDissipationTick: this.lastDissipationTick,
       contactDissipationByPart: [...this.contactDissipationByPart],
-    };
+    });
   }
 
   applyConnectionFailures(connections) {
@@ -543,20 +592,43 @@ export class FlexibleLineRuntime {
     return removed;
   }
 
-  importState(state) {
-    if (state?.version !== 1)
+  validateState(state) {
+    state = requireInertPlainData(state, {
+      code: "INVALID_FLEXIBLE_LINE_CHECKPOINT_INPUT",
+      message:
+        "Flexible-line checkpoint must be serialized JSON or an exported immutable state",
+    });
+    if (
+      !checkpointKeysMatch(state, [
+        "version",
+        "entities",
+        "edges",
+        "attachments",
+        "topologyRevision",
+        "lastDissipationTick",
+        "contactDissipationByPart",
+      ]) ||
+      state.version !== 1 ||
+      !Array.isArray(state.entities) ||
+      !Array.isArray(state.edges) ||
+      !Array.isArray(state.attachments) ||
+      !Array.isArray(state.contactDissipationByPart)
+    )
       throw new DomainValidationError(
         "INVALID_FLEXIBLE_LINE_CHECKPOINT",
-        "Flexible-line checkpoint must use version 1",
+        "Flexible-line checkpoint must be an exact version 1 mutable projection",
       );
     const entities = new Map(
-        (state.entities || []).map((entity) => [entity.entityId, entity]),
+        state.entities.map((entity) => [entity.entityId, entity]),
       ),
-      edges = new Map((state.edges || []).map((edge) => [edge.id, edge])),
+      edges = new Map(state.edges.map((edge) => [edge.id, edge])),
       attachments = new Map(
-        (state.attachments || []).map((entry) => [entry.id, entry]),
+        state.attachments.map((entry) => [entry.id, entry]),
       );
     if (
+      entities.size !== state.entities.length ||
+      edges.size !== state.edges.length ||
+      attachments.size !== state.attachments.length ||
       entities.size !== this.bodyByEntityId.size ||
       edges.size !== this.edgeEntries.length ||
       attachments.size !== this.attachmentEntries.length
@@ -565,13 +637,88 @@ export class FlexibleLineRuntime {
         "FLEXIBLE_LINE_CHECKPOINT_IDENTITY_MISMATCH",
         "Flexible-line checkpoint does not match compiled topology",
       );
-    for (const [entityId, body] of this.bodyByEntityId) {
+    for (const [entityId] of this.bodyByEntityId) {
       const source = entities.get(entityId);
-      if (!source)
+      if (
+        !source ||
+        !checkpointKeysMatch(source, [
+          "entityId",
+          "position",
+          "quaternion",
+          "velocity",
+          "angularVelocity",
+        ]) ||
+        !finiteVector(source.position) ||
+        !unitQuaternion(source.quaternion) ||
+        !finiteVector(source.velocity) ||
+        !finiteVector(source.angularVelocity)
+      )
         throw new DomainValidationError(
           "FLEXIBLE_LINE_CHECKPOINT_IDENTITY_MISMATCH",
-          `Flexible entity ${entityId} is missing from checkpoint`,
+          `Flexible entity ${entityId} is missing or invalid in checkpoint`,
         );
+    }
+    for (const entry of this.edgeEntries) {
+      const source = edges.get(entry.descriptor.id);
+      if (
+        !source ||
+        !checkpointKeysMatch(source, ["id", "active", "dampingWorkJ"]) ||
+        typeof source.active !== "boolean" ||
+        !Number.isFinite(source.dampingWorkJ) ||
+        source.dampingWorkJ < 0
+      )
+        throw new DomainValidationError(
+          "FLEXIBLE_LINE_CHECKPOINT_IDENTITY_MISMATCH",
+          `Flexible edge ${entry.descriptor.id} is missing or invalid in checkpoint`,
+        );
+    }
+    for (const entry of this.attachmentEntries) {
+      const source = attachments.get(entry.descriptor.sourceConnectionId);
+      if (
+        !source ||
+        !checkpointKeysMatch(source, ["id", "active", "lastReactionN"]) ||
+        typeof source.active !== "boolean" ||
+        !Number.isFinite(source.lastReactionN) ||
+        source.lastReactionN < 0
+      )
+        throw new DomainValidationError(
+          "FLEXIBLE_LINE_CHECKPOINT_IDENTITY_MISMATCH",
+          `Flexible attachment ${entry.descriptor.sourceConnectionId} is missing or invalid in checkpoint`,
+        );
+    }
+    if (
+      !Number.isSafeInteger(state.topologyRevision) ||
+      state.topologyRevision < 0 ||
+      !Number.isSafeInteger(state.lastDissipationTick) ||
+      state.lastDissipationTick < -1
+    )
+      throw new DomainValidationError(
+        "INVALID_FLEXIBLE_LINE_CHECKPOINT",
+        "Flexible-line checkpoint contains invalid runtime counters",
+      );
+    const contactDissipationByPart = new Map();
+    for (const entry of state.contactDissipationByPart) {
+      if (
+        !Array.isArray(entry) ||
+        entry.length !== 2 ||
+        contactDissipationByPart.has(entry[0]) ||
+        !Number.isFinite(entry[1]) ||
+        entry[1] < 0
+      )
+        throw new DomainValidationError(
+          "INVALID_FLEXIBLE_LINE_CHECKPOINT",
+          "Flexible-line contact dissipation must contain unique finite part totals",
+        );
+      contactDissipationByPart.set(entry[0], entry[1]);
+    }
+    return { entities, edges, attachments, contactDissipationByPart };
+  }
+
+  importState(state) {
+    const { entities, edges, attachments, contactDissipationByPart } =
+      this.validateState(state);
+    for (const [entityId, body] of this.bodyByEntityId) {
+      const source = entities.get(entityId);
       body.position.set(
         source.position.x,
         source.position.y,
@@ -596,11 +743,6 @@ export class FlexibleLineRuntime {
     }
     for (const entry of this.edgeEntries) {
       const source = edges.get(entry.descriptor.id);
-      if (!source)
-        throw new DomainValidationError(
-          "FLEXIBLE_LINE_CHECKPOINT_IDENTITY_MISMATCH",
-          `Flexible edge ${entry.descriptor.id} is missing from checkpoint`,
-        );
       if (entry.active !== Boolean(source.active)) {
         if (source.active) this.world.addConstraint(entry.constraint);
         else this.world.removeConstraint(entry.constraint);
@@ -610,11 +752,6 @@ export class FlexibleLineRuntime {
     }
     for (const entry of this.attachmentEntries) {
       const source = attachments.get(entry.descriptor.sourceConnectionId);
-      if (!source)
-        throw new DomainValidationError(
-          "FLEXIBLE_LINE_CHECKPOINT_IDENTITY_MISMATCH",
-          `Flexible attachment ${entry.descriptor.sourceConnectionId} is missing from checkpoint`,
-        );
       if (entry.active !== Boolean(source.active)) {
         if (source.active) this.world.addConstraint(entry.constraint);
         else this.world.removeConstraint(entry.constraint);
@@ -622,11 +759,9 @@ export class FlexibleLineRuntime {
       entry.active = Boolean(source.active);
       entry.lastReactionN = source.lastReactionN;
     }
-    this.topologyRevision = Number(state.topologyRevision || 0);
-    this.lastDissipationTick = Number(state.lastDissipationTick ?? -1);
-    this.contactDissipationByPart = new Map(
-      state.contactDissipationByPart || [],
-    );
+    this.topologyRevision = state.topologyRevision;
+    this.lastDissipationTick = state.lastDissipationTick;
+    this.contactDissipationByPart = contactDissipationByPart;
   }
 
   dispose() {
@@ -643,5 +778,6 @@ export class FlexibleLineRuntime {
     this.topologyRevision = 0;
     this.lastDissipationTick = -1;
     this.contactDissipationByPart.clear();
+    this.connectionIdsUseTypedStrings = false;
   }
 }

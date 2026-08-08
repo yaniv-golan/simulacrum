@@ -20,7 +20,8 @@ export function createMechanismExperiment({
     runConfigurationFingerprint = fingerprintRunConfiguration(runConfiguration),
     inputTrace = decodeInputTraceOrThrow({
       format: "simulacrum-input-trace",
-      version: 1,
+      version: 3,
+      sourceId: inputTraceRecorder.sourceId,
       runConfigurationFingerprint,
       startTick: 0,
       endTick,

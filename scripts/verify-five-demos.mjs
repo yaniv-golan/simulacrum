@@ -100,6 +100,8 @@ for (const demo of demoKinds) {
   results[demo] = {
     parts: state.parts.length,
     mechanisms: state.architecture.session?.systems.mechanisms?.activeMotors,
+    jointCount:
+      state.architecture.session?.systems.mechanisms?.joints?.length || 0,
     mobility:
       (state.architecture.session?.systems.mobility?.assemblies?.length || 0) >
       0,
@@ -115,8 +117,8 @@ for (const demo of demoKinds) {
       motorPartId: record.motorPartId,
       powerSourceIds: record.powerSourceIds,
     })),
-    articulated:
-      state.architecture.session?.systems.articulated?.active || false,
+    privilegedArticulation:
+      state.architecture.session?.systems.articulated || null,
     failedConnections: state.connections
       .filter((connection) => connection.failed)
       .map((connection) => connection.id),
@@ -172,9 +174,14 @@ await conclude(browser, () => {
   );
   assert.equal(results.drone.flight, true, "drone flight runtime did not run");
   assert.equal(
-    results.humanoid.articulated,
-    true,
-    "humanoid articulated runtime did not run",
+    results.humanoid.jointCount,
+    10,
+    "articulated plant lost joints",
+  );
+  assert.equal(
+    results.humanoid.privilegedArticulation,
+    null,
+    "humanoid demo retained privileged gait telemetry",
   );
   assert.equal(
     results.mission.flight,

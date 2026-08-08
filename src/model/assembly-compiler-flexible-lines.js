@@ -16,6 +16,7 @@ function endpointConnections(context, part, portId) {
   return context.connections.filter(
     (connection) =>
       !connection.failed &&
+      !context.rejectedConnectionIds.has(connection.id) &&
       PHYSICAL_CONNECTION_KINDS.has(connection.kind) &&
       ((connection.a === part.id && connection.portA === portId) ||
         (connection.b === part.id && connection.portB === portId)),
@@ -76,14 +77,14 @@ function attachmentFor(context, part, portId, endpointIndex) {
     frame = worldPortFrame(neighbor, geometry, neighborPortId, neighborAnchor);
   context.consumedConnections.add(connection.id);
   return {
-    id: `flex:${part.id}:attachment:${endpointIndex}`,
+    id: `${context.partScopedId("flex", part.id)}:attachment:${endpointIndex}`,
     kind: "point-attachment-v1",
     sourcePartId: part.id,
     endpointPortId: portId,
     endpointIndex,
     sourceConnectionId: connection.id,
     targetPartId: neighbor.id,
-    targetBodyId: `body:${neighbor.id}`,
+    targetBodyId: context.partScopedId("body", neighbor.id),
     targetPortId: neighborPortId,
     anchorPartM: compiledVector(
       neighborAnchor || portFrame.framePart.positionM,
@@ -205,7 +206,7 @@ function compileLine(context, part, contract) {
     totalMassKg = config.linearDensityKgPerM * config.lengthM,
     entityMassKg = totalMassKg / (elementCount + 1),
     entities = Array.from({ length: elementCount + 1 }, (_, index) => ({
-      id: `flex:${part.id}:node:${index}`,
+      id: `${context.partScopedId("flex", part.id)}:node:${index}`,
       sourcePartId: part.id,
       nodeIndex: index,
       massKg: entityMassKg,
@@ -216,7 +217,7 @@ function compileLine(context, part, contract) {
       ),
     })),
     internalEdges = Array.from({ length: elementCount }, (_, index) => ({
-      id: `flex:${part.id}:edge:${index}`,
+      id: `${context.partScopedId("flex", part.id)}:edge:${index}`,
       sourcePartId: part.id,
       edgeIndex: index,
       entityAId: entities[index].id,
@@ -227,7 +228,7 @@ function compileLine(context, part, contract) {
       ultimateTensionN: config.ultimateTensionN,
     }));
   context.flexibleLines.push({
-    id: `flexible-line:${part.id}`,
+    id: context.partScopedId("flexible-line", part.id),
     kind: "flexible-line-v1",
     sourcePartId: part.id,
     lengthM: config.lengthM,

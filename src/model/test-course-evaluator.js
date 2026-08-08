@@ -302,6 +302,7 @@ export class TestCourseRun {
           component.speedMps <= this.route.finish.maxSpeedMps;
       this.finishHoldS = controlled ? this.finishHoldS + elapsedS : 0;
       if (
+        controlled &&
         this.finishHoldS + 1e-12 >= this.route.finish.holdS &&
         this.requirements().every(({ met }) => met)
       )

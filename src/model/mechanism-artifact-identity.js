@@ -29,7 +29,27 @@ export const CHECKPOINT_STATE_OWNER_VERSIONS = Object.freeze(
   Object.fromEntries(
     CHECKPOINT_STATE_OWNER_IDS.map((ownerId) => [
       ownerId,
-      ownerId === "material-resources" ? 2 : 1,
+      new Set(["session", "body-registry", "telemetry-event-ids"]).has(ownerId)
+        ? 3
+        : new Set([
+              "input-command-bus",
+              "run-graph",
+              "compiled-topology",
+              "physics-world",
+              "solver-contact",
+              "tire-carcass",
+              "structure-failure",
+              "energy-power-signal",
+              "material-resources",
+              "pneumatic-gas",
+              "thermal-ablation",
+              "articulated-drive",
+              "sensors",
+              "controllers",
+              "terrain-environment",
+            ]).has(ownerId)
+          ? 2
+          : 1,
     ]),
   ),
 );
@@ -59,7 +79,7 @@ export function checkpointStateDigest(input) {
     committed: input.committed,
     stateOwners: input.stateOwners,
   };
-  return sha256Hex(`simulacrum-checkpoint-state-v2\0${stableStringify(view)}`);
+  return sha256Hex(`simulacrum-checkpoint-state-v3\0${stableStringify(view)}`);
 }
 
 export function experimentManifestDigest(input) {

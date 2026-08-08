@@ -18,7 +18,13 @@ export function createSimulationPlaybackController({
 
   function simulate(dt) {
     const session = getSession();
-    if (!state.running || state.simulationPaused || !session) return 0;
+    if (
+      !state.running ||
+      state.simulationStarting ||
+      state.simulationPaused ||
+      !session
+    )
+      return 0;
     const previousTime = session.time;
     session.step(dt * state.timeScale);
     return consume(previousTime);
@@ -35,6 +41,7 @@ export function createSimulationPlaybackController({
       frames = Math.max(0, Math.floor(count));
     if (
       !state.running ||
+      state.simulationStarting ||
       state.simulationPaused ||
       !session ||
       !Number.isFinite(dt) ||
@@ -52,7 +59,7 @@ export function createSimulationPlaybackController({
 
   function step() {
     const session = getSession();
-    if (!state.running || !session) return 0;
+    if (!state.running || state.simulationStarting || !session) return 0;
     state.simulationPaused = true;
     const previousTime = session.time;
     session.stepFixed();
@@ -63,14 +70,14 @@ export function createSimulationPlaybackController({
   }
 
   function togglePause() {
-    if (!state.running) return;
+    if (!state.running || state.simulationStarting) return;
     state.simulationPaused = !state.simulationPaused;
     render();
     notify(state.simulationPaused ? "Simulation paused" : "Simulation resumed");
   }
 
   function cycleSpeed(direction = 1) {
-    if (!state.running) return;
+    if (!state.running || state.simulationStarting) return;
     const speeds = [0.1, 0.25, 0.5, 1, 2],
       current = speeds.indexOf(state.timeScale),
       next = Math.max(

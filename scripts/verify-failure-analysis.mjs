@@ -16,7 +16,14 @@ await page.locator('.command-range[data-index="2"]').evaluate((input) => {
 });
 await page.click('.command-toggle[data-index="0"]');
 await page.click("#run-btn");
-await page.waitForTimeout(120);
+await page.waitForFunction(
+  () => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.running && state.simulationStarting === false;
+  },
+  null,
+  { timeout: 30_000 },
+);
 await page.click("#sim-pause");
 const beforeStep = JSON.parse(
   await page.evaluate(() => window.render_game_to_text()),
@@ -41,7 +48,14 @@ for (; postAbortElapsedMs < 60_000; postAbortElapsedMs += 2_000) {
   const sample = JSON.parse(
     await page.evaluate(() => window.render_game_to_text()),
   );
-  if (sample.failureAnalysis.report.eventCount > 0) break;
+  const captureState =
+    sample.failureAnalysis.evidence?.captureStatus?.state || null;
+  if (captureState === "unavailable")
+    throw new Error(
+      `failure evidence finalization became unavailable: ${JSON.stringify(sample.failureAnalysis.evidence.captureStatus)}`,
+    );
+  if (sample.failureAnalysis.report.eventCount > 0 && captureState === "ready")
+    break;
 }
 
 const failed = JSON.parse(
@@ -200,6 +214,11 @@ await conclude(browser, () => {
   assert.ok(
     failed.failureAnalysis.evidence?.trigger,
     "physical failure produced no exact fixed-step evidence trigger",
+  );
+  assert.equal(
+    failed.failureAnalysis.evidence?.captureStatus?.state,
+    "ready",
+    "physical failure evidence did not finish validation before export",
   );
   assert.match(evidenceText, /FIXED-STEP EVIDENCE/);
   assert.equal(

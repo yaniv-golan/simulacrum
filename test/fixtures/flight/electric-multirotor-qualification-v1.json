@@ -2,7 +2,7 @@
   "format": "simulacrum-electric-multirotor-qualification",
   "version": 1,
   "fixedStepS": 0.008333333333333333,
-  "blueprintFingerprint": "sim-sha256-710ee032808a09b5847cfe52b8ff9b39124de444443fe43d015f7a41ce2368d8",
+  "blueprintFingerprint": "sim-sha256-146dec23c3abeb60995747b63ce3774b1f8b6d4cae6af1df987d5ec3c8ac86a5",
   "identities": {
     "solverTransaction": "simulacrum-owned-cannon-solver-transaction-v2-motor-energy",
     "rotorProfile": "utility-fixed-pitch-v1"

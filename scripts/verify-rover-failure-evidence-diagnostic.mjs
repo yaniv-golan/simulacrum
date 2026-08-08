@@ -18,7 +18,10 @@ import { FailureEvidenceRecorder } from "../src/simulation/failure-evidence-reco
 import { InputTraceRecorder } from "../src/simulation/input-trace-recorder.js";
 import { RuntimeCheckpointCoordinator } from "../src/simulation/runtime-checkpoints.js";
 import { cannonSolverTransactionResourceState } from "../src/simulation/cannon-solver-transaction.js";
+import { WORKSHOP_CANNON_SOLVER_PROFILE } from "../src/simulation/cannon-solver-profile.js";
 import { ControllerRuntimeManager } from "../src/scripting/controller-runtime-manager.js";
+import { sha256Hex } from "../src/model/sha256.js";
+import { stableStringify } from "../src/model/primitives.js";
 
 const environment = createTestingPlaygroundEnvironment(),
   baseBlueprint = builtInDemo("cart").blueprint;
@@ -98,7 +101,6 @@ async function runScenario(spec) {
       environmentBodyRegistry: createEarthEnvironmentBodyRegistry(),
       environmentOrigin: () => ({ x: 0, y: 0, z: 0 }),
       windAt: () => ({ x: 0, y: 0, z: 0 }),
-      materialForPart: () => physicsWorld.debrisMaterial,
     },
     controllers = {
       captureSensors(context) {
@@ -152,8 +154,24 @@ async function runScenario(spec) {
         testSite: environment.testSite,
         deployment: null,
       },
+      solverProfile: physicsWorld.worldAdapter.exportState().solverProfile,
     });
   evidenceRecorder.beginRun({ runIdentity });
+  assert.equal(
+    physicsWorld.world.solver.iterations,
+    WORKSHOP_CANNON_SOLVER_PROFILE.iterations,
+    "runtime solver iteration authority diverged from the canonical profile",
+  );
+  assert.equal(
+    physicsWorld.world.solver.tolerance,
+    WORKSHOP_CANNON_SOLVER_PROFILE.tolerance,
+    "runtime solver tolerance authority diverged from the canonical profile",
+  );
+  assert.equal(
+    runIdentity.configuration.identities.solverProfile.sha256,
+    sha256Hex(stableStringify(WORKSHOP_CANNON_SOLVER_PROFILE)),
+    "artifact solver identity does not describe the runtime profile",
+  );
   assert.equal(
     cannonSolverTransactionResourceState(physicsWorld.worldAdapter.transaction)
       .rollingSupportRegistrations,
@@ -162,11 +180,13 @@ async function runScenario(spec) {
   );
   const replayAnchor = runRuntime
     .createCheckpointCoordinator(inputTraceRecorder)
-    .capture({
-      runConfigurationFingerprint: runIdentity.runConfigurationFingerprint,
-      blueprintFingerprint: runIdentity.blueprintFingerprint,
-      compiledTopologyFingerprint: runIdentity.compiledTopologyFingerprint,
-    });
+    .capture(
+      JSON.stringify({
+        runConfigurationFingerprint: runIdentity.runConfigurationFingerprint,
+        blueprintFingerprint: runIdentity.blueprintFingerprint,
+        compiledTopologyFingerprint: runIdentity.compiledTopologyFingerprint,
+      }),
+    );
   evidenceRecorder.setReplayability({ supported: true });
 
   const startPosition = structuredClone(

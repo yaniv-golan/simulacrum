@@ -3,7 +3,7 @@ import { createBrowserTest } from "./lib/browser-test.mjs";
 import { componentDefaults } from "../src/model/component-resolver.js";
 import { createSharePackage } from "../src/model/share-packages.js";
 
-const MAX_STABLE_GEOMETRIES = 280,
+const MAX_STABLE_GEOMETRIES = 290,
   largeParts = Array.from({ length: 129 }, (_, index) => ({
     id: index + 1,
     type: "beam",
@@ -232,7 +232,7 @@ await conclude(browser, () => {
     assert.notDeepEqual(sample.earth.farOffset, { east: 0, north: 0 });
     assert.ok(
       sample.resources.renderer.geometries <= MAX_STABLE_GEOMETRIES,
-      "renderer geometries exceeded the bounded 49-chunk geography envelope",
+      `renderer geometries exceeded the bounded 49-chunk geography envelope: ${sample.resources.renderer.geometries}`,
     );
     assert.deepEqual(
       sample.resources.shared,

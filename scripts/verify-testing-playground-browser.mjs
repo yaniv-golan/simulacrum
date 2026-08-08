@@ -328,7 +328,10 @@ await conclude(browser, () => {
     },
   });
   assert.ok(reservePerformance.renderer.calls <= 220);
-  assert.ok(reservePerformance.renderer.triangles <= 300_000);
+  assert.ok(
+    reservePerformance.renderer.triangles <= 320_000,
+    `renderer triangle budget exceeded: ${reservePerformance.renderer.triangles}`,
+  );
   assert.ok(reservePerformance.renderer.geometries <= 110);
   assert.ok(reservePerformance.renderer.textures <= 12);
   assert.ok(

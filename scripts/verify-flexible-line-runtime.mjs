@@ -14,6 +14,7 @@ import {
 } from "../src/model/connection-contracts.js";
 import { CannonWorldAdapter } from "../src/simulation/cannon-world-adapter.js";
 import { CannonMaterialAdapter } from "../src/simulation/cannon-material-adapter.js";
+import { constraintReactionContributions } from "../src/simulation/constraint-reaction-wrench.js";
 import { FlexibleLineRuntime } from "../src/simulation/flexible-line-runtime.js";
 import { startMultibodyRuntime } from "../src/simulation/multibody-runtime.js";
 import { SimulationSession } from "../src/simulation/simulation-session.js";
@@ -49,10 +50,11 @@ function attachment(
   targetPort,
   anchorB = null,
   capacity = CONNECTION_CAPACITIES.reinforced,
+  connectionId = `attach:${endpoint}`,
 ) {
   return completeConnectionContract(
     {
-      id: `attach:${endpoint}`,
+      id: connectionId,
       kind: "mechanical",
       a: rope.id,
       b: target.id,
@@ -91,7 +93,7 @@ function createRun({
         attachment(rope, "END_A", target, targetPort, anchorM, capacity),
       ],
     },
-    multibodyRuntime = startMultibodyRuntime(snapshot, {
+    multibodyRuntime = startMultibodyRuntime(JSON.stringify(snapshot), {
       world,
       worldAdapter,
       material,
@@ -110,9 +112,18 @@ function createRun({
     world.addBody(groundBody);
   }
   if (fixedAnchor) {
-    anchorBody.type = CANNON.Body.STATIC;
-    anchorBody.mass = 0;
-    anchorBody.updateMassProperties();
+    const supportBody = new CANNON.Body({
+      type: CANNON.Body.STATIC,
+      material,
+    });
+    supportBody.position.copy(anchorBody.position);
+    supportBody.quaternion.copy(anchorBody.quaternion);
+    world.addBody(supportBody);
+    world.addConstraint(
+      new CANNON.LockConstraint(anchorBody, supportBody, {
+        collideConnected: false,
+      }),
+    );
   }
   const session = new SimulationSession({
     systems: [
@@ -139,6 +150,93 @@ function createRun({
     anchorBody,
     snapshot,
   };
+}
+
+{
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
+    worldAdapter = new CannonWorldAdapter(world),
+    material = new CANNON.Material("generic-structure"),
+    rope = part(1, "rope", [0, 0, 0]),
+    targetA = part(2, "plate", [0, 2, 0]),
+    targetB = part(3, "plate", [0, -2, 0]),
+    snapshot = {
+      revision: 1,
+      parts: [rope, targetA, targetB],
+      connections: [
+        attachment(
+          rope,
+          "END_A",
+          targetA,
+          "TOP",
+          null,
+          CONNECTION_CAPACITIES.reinforced,
+          1,
+        ),
+        attachment(
+          rope,
+          "END_B",
+          targetB,
+          "TOP",
+          null,
+          CONNECTION_CAPACITIES.reinforced,
+          "1",
+        ),
+      ],
+    },
+    multibodyRuntime = startMultibodyRuntime(JSON.stringify(snapshot), {
+      world,
+      worldAdapter,
+      material,
+      catalog: TYPES,
+    }),
+    flexibleLineRuntime = new FlexibleLineRuntime({
+      world,
+      material,
+      multibodyRuntime,
+    }).start(multibodyRuntime.compiled);
+  assert.deepEqual(
+    flexibleLineRuntime.attachmentEntries
+      .map(({ constraint }) => constraint.simulacrumEvidence.constraintId)
+      .sort(),
+    ["flexible-attachment:1", "flexible-attachment:string:1:1"],
+    "numeric/string homograph attachment constraints shared one identity",
+  );
+  assert.deepEqual(
+    flexibleLineRuntime.attachmentEntries
+      .flatMap(
+        ({ constraint }) => constraint.simulacrumEvidence.sourceConnectionIds,
+      )
+      .sort(),
+    ["1", "string:1:1"],
+    "numeric/string homograph flexible-line provenance collapsed",
+  );
+  worldAdapter.beginSession();
+  worldAdapter.integrate(1 / 120, { tick: 1 });
+  const completedContributions = flexibleLineRuntime.attachmentEntries.flatMap(
+      ({ constraint }) =>
+        constraintReactionContributions(
+          constraint,
+          "A",
+          constraint.simulacrumEvidence,
+        ),
+    ),
+    solverRowSourceConnectionIds = completedContributions
+      .filter(({ constraintId }) =>
+        String(constraintId).startsWith("flexible-attachment:"),
+      )
+      .flatMap(({ sourceConnectionIds }) => sourceConnectionIds);
+  assert.deepEqual(
+    [...new Set(solverRowSourceConnectionIds)].sort(),
+    ["1", "string:1:1"],
+    `solver-row provenance collapsed flexible-line connection homographs: ${JSON.stringify(completedContributions.map(({ constraintId, sourceConnectionIds }) => ({ constraintId, sourceConnectionIds })))}`,
+  );
+  assert.ok(
+    solverRowSourceConnectionIds.length > 0,
+    "a flexible-line solver row lost its source connection identity",
+  );
+  flexibleLineRuntime.dispose();
+  multibodyRuntime.dispose();
+  worldAdapter.dispose();
 }
 
 {
@@ -390,7 +488,7 @@ function createRun({
     materialKey: "workshop-steel",
   };
   world.addBody(ground);
-  const multibodyRuntime = startMultibodyRuntime(snapshot, {
+  const multibodyRuntime = startMultibodyRuntime(JSON.stringify(snapshot), {
       world,
       worldAdapter,
       material: structureMaterial,

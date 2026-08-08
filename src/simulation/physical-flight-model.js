@@ -16,6 +16,7 @@ function partRecord(part, descriptor, body) {
     capabilities = descriptor.capabilities;
   return Object.freeze({
     id: part.id,
+    bodyId: descriptor.id,
     type: part.type,
     body,
     baseStructuralMassKg: Math.max(0.001, Number(descriptor.mass)),

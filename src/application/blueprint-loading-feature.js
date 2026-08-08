@@ -271,7 +271,6 @@ export function createBlueprintLoadingFeature(dependencies) {
       );
       renderUI();
       renderRemote();
-      state.loadFrozen = false;
       document.body.classList.remove("load-recovery");
     } finally {
       buildHistory.suspended = wasSuspended;
@@ -338,7 +337,6 @@ export function createBlueprintLoadingFeature(dependencies) {
         disposePartPresentation(part);
     },
     freeze: () => {
-      state.loadFrozen = true;
       document.body.classList.add("load-recovery");
       stopAllControllerRuntimes("WORKSPACE RECOVERY");
     },

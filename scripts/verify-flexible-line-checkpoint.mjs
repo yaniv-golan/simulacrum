@@ -26,6 +26,7 @@ const IDENTITIES = Object.freeze({
   blueprintFingerprint: `sim-sha256-${"2".repeat(64)}`,
   compiledTopologyFingerprint: `sim-sha256-${"3".repeat(64)}`,
 });
+const IDENTITIES_JSON = JSON.stringify(IDENTITIES);
 
 function part(id, type, pos, config = componentDefaults(type)) {
   return {
@@ -66,7 +67,7 @@ function createRuntime() {
       parts: [rope, plate],
       connections: [connection],
     },
-    multibodyRuntime = startMultibodyRuntime(snapshot, {
+    multibodyRuntime = startMultibodyRuntime(JSON.stringify(snapshot), {
       world,
       worldAdapter,
       material,
@@ -77,11 +78,7 @@ function createRuntime() {
       material,
       multibodyRuntime,
     }).start(multibodyRuntime.compiled),
-    plateBody = multibodyRuntime.bodyByPart.get(plate.id),
     structureSystem = new StructureSystem();
-  plateBody.type = CANNON.Body.STATIC;
-  plateBody.mass = 0;
-  plateBody.updateMassProperties();
   const session = new SimulationSession({
       systems: [
         new FlexibleLineSystem(),
@@ -148,13 +145,13 @@ function continueThroughFailure(run, finalTick) {
 
 const run = createRuntime();
 run.session.stepFixed(10);
-const checkpoint = run.coordinator.capture(IDENTITIES);
+const checkpoint = run.coordinator.capture(IDENTITIES_JSON);
 assert.equal(checkpoint.committedTick, 10);
 const uninterruptedFailureTick = continueThroughFailure(run, 50),
   uninterrupted = observed(run);
 assert.ok(uninterruptedFailureTick, "shock continuation did not break Rope");
 
-run.coordinator.restore(checkpoint, IDENTITIES);
+run.coordinator.restore(checkpoint, IDENTITIES_JSON);
 assert.equal(run.session.context.clock.tick, 10);
 const restoredFailureTick = continueThroughFailure(run, 50),
   restored = observed(run);

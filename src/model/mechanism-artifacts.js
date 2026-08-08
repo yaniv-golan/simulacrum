@@ -106,6 +106,12 @@ function validateInputTrace(wire) {
   );
   const sequences = new Set();
   for (const [index, input] of wire.inputs.entries()) {
+    if (input.sourceId !== wire.sourceId)
+      fail(
+        "INPUT_TRACE_SOURCE_MISMATCH",
+        "Every input must retain the trace's single registered source identity",
+        ["inputs", index, "sourceId"],
+      );
     if (sequences.has(input.sequence))
       fail(
         "DUPLICATE_INPUT_SEQUENCE",

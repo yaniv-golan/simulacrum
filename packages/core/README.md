@@ -37,6 +37,20 @@ never select behavior. Environment-body descriptors, deterministic registries,
 proximity measurement, and compiled range sensors apply to any sensed world
 object without mission-specific physics.
 
+Engine contact materials are projected from each compiled collision
+primitive's authored `materialKey` through `MultibodyRuntime.materialForKey`.
+The canonical symmetric material-pair table owns contact laws; demo names and
+presentation roles never select friction or restitution.
+
+Powered rotary coordinates execute their authored position-impedance law
+directly: command range, stiffness, damping, maximum speed, torque, power,
+efficiency, idle draw, and winding thermal limits all bound the generic Cannon
+motor row. Solver-measured positive work is settled against physical source
+energy, unsupported regeneration becomes actuator heat, and checkpoints require
+the electrical, net-mechanical, and dissipated-energy ledger to conserve.
+Flexible-line solver provenance preserves numeric and same-spelling string
+connection identities injectively.
+
 `MobilityTelemetrySystem` also publishes exact support-material identities and
 laws, bounded soft-surface sinkage, and rolling-resistance multipliers.
 `TestSiteTelemetrySystem` projects canonical proving-ground districts,
@@ -69,6 +83,17 @@ enter checkpoints or portable formats. Material allocation state is version 2
 inside the existing `material-resources` checkpoint owner so same-tick duplicate
 debits remain rejected after restore.
 
+Executable checkpoint imports accept serialized JSON or the deeply frozen root
+returned by the matching exporter/decoder. Raw mutable objects are not
+inspected: this prevents accessors and Proxy structural traps from becoming
+checkpoint authority. Simulation, clock, and Cannon world time are exact
+projections of integer committed tick and fixed timestep.
+The assembly compiler and `MultibodyRuntime.start()` use the same boundary for
+assembly snapshots and component catalogs. Built-in `TYPES` and
+`AssemblyModel.snapshot()` are package-issued roots; custom external inputs are
+serialized first. Checkpoint capture/restore runtime identities are exact
+serialized three-fingerprint projections.
+
 `flexible-line-v1` components compile into deterministic distributed entities
 and unilateral internal edges, not rigid proxy bodies. `FlexibleLineRuntime`
 shares the host Cannon world and fixed integration transaction; the flexible
@@ -76,13 +101,18 @@ line actuator, structure, and telemetry systems preserve phase order. Plural
 entity ownership and split lineage remain in `BodyRegistry` and
 `PhysicalAssemblyIndex`, while completed telemetry and checkpoints expose the
 same centreline, loads, contacts, failure, and restore truth to every consumer.
+Registry checkpoint import is coordinator-owned, validates connection
+provenance against the running topology, and derives its public revision from
+the exact owned state so rewind and rollback remain exact.
 
 The public fixed-step surface uses narrow `AerodynamicSystem`, `ThermalSystem`,
 and `PhysicalFlightTelemetrySystem` phases. They consume explicit host services, preserve the
 single integration transaction, and keep mutable temperature/ablation state
-separate from derived forces and completed telemetry. Checkpoint v2 accepts
-only owner-version-1 records and persists that mutable state under
-`thermal-ablation`; it does not persist physical grouping or read models.
+separate from derived forces and completed telemetry. Checkpoint v2 requires
+the current exact per-owner versions: every owner is version 2 except
+`flexible-line-runtime` and `release-couplers`, which remain version 1. Mutable
+thermal state is persisted under `thermal-ablation`; physical grouping and read
+models are re-derived.
 
 ## Availability
 

@@ -2,9 +2,22 @@ import * as CANNON from "cannon-es";
 import { rotorAerodynamicPerformance } from "../model/rotor-aerodynamics-contracts.js";
 import { writePartToWorldQuaternion } from "./body-part-frame.js";
 import { standardAtmosphere } from "./environment/atmosphere.js";
-import { immutableClone } from "../model/primitives.js";
+import {
+  identitySetUsesTypedStrings,
+  immutableClone,
+  scopedIdentity,
+} from "../model/primitives.js";
 
 const ZERO = CANNON.Vec3.ZERO;
+
+function bodyIdForPart(model, part) {
+  if (part.bodyId) return part.bodyId;
+  return scopedIdentity("body", part.id, {
+    typedStrings: identitySetUsesTypedStrings(
+      (model?.parts || []).map((candidate) => candidate.id),
+    ),
+  });
+}
 
 /** Applies passive rotor aerodynamics from compiled shaft capability records. */
 export class RotorForceOwner {
@@ -40,7 +53,7 @@ export class RotorForceOwner {
         records.push({
           kind: contract.kind,
           partId: part.id,
-          bodyId: `body:${String(part.id)}`,
+          bodyId: bodyIdForPart(this.#model, part),
           tick: context.clock.tick,
           active: false,
           valid: false,
@@ -103,7 +116,7 @@ export class RotorForceOwner {
       records.push({
         kind: contract.kind,
         partId: part.id,
-        bodyId: `body:${String(part.id)}`,
+        bodyId: bodyIdForPart(this.#model, part),
         shaftConstraintId: shaft.constraintId,
         motorPartId: shaft.motorId,
         powerSourceIds: sourceIds,

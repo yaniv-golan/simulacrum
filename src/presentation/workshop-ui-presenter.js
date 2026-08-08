@@ -17,9 +17,16 @@ export function createWorkshopUiPresenter({ model, view }) {
     );
     view.setText(
       "#run-btn",
-      model.running() ? "■ STOP SIMULATION" : "▶ START SIMULATION",
+      model.starting()
+        ? "■ CANCEL STARTUP"
+        : model.running()
+          ? "■ STOP SIMULATION"
+          : "▶ START SIMULATION",
     );
     view.toggleHidden(".sim-controls", !model.running());
+    view.setDisabled("#sim-pause", model.starting());
+    view.setDisabled("#sim-speed", model.starting());
+    view.setDisabled("#sim-reset", model.starting());
     view.setText("#sim-pause", model.paused() ? "▶" : "Ⅱ");
     view.toggleClass("#sim-pause", "active", model.paused());
     view.setText("#sim-speed", `${model.timeScale()}×`);

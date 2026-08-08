@@ -9,6 +9,7 @@ import { componentInspectionExample } from "./component-inspection.mjs";
 import { controllerProgramExample } from "./controller-program.mjs";
 import { environmentBodyExample } from "./environment-body.mjs";
 import { flexibleLineExample } from "./flexible-line.mjs";
+import { fixedAttachmentExample } from "./fixed-attachment.mjs";
 import { portBehaviorExample } from "./port-behavior.mjs";
 import { routeEvidenceExample } from "./route-evidence.mjs";
 import { sensorAdapterExample } from "./sensor-adapter.mjs";
@@ -63,6 +64,25 @@ assert.equal(flexibleLine.internalEdges, flexibleLine.physicalEntities - 1);
 assert.deepEqual(flexibleLine.endpointStates, ["free-v1", "free-v1"]);
 assert.equal(flexibleLine.discretization, "flexible-line-discretization-v1");
 
+const fixedAttachment = fixedAttachmentExample();
+assert.deepEqual(
+  fixedAttachment.attachmentFrames.map((frame) => frame.positionWorldM),
+  [
+    [1.2, 0, 0],
+    [1.2, 0, 0],
+  ],
+);
+assert.deepEqual(
+  fixedAttachment.failureOwners.map((attachment) => ({
+    connectionId: attachment.connectionId,
+    bodyPartId: attachment.bodyPartId,
+  })),
+  [
+    { connectionId: "fixed-joint", bodyPartId: 1 },
+    { connectionId: "fixed-joint", bodyPartId: 2 },
+  ],
+);
+
 const controller = await controllerProgramExample();
 assert.equal(controller.version, CONTROL_IR_VERSION);
 assert.equal(controller.entry, "tick");
@@ -77,4 +97,4 @@ assert.deepEqual(telemetryConsumerExample(), {
   label: "ASCENDING",
 });
 
-console.log("all eleven public core extension examples passed");
+console.log("all twelve public core extension examples passed");

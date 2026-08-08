@@ -80,7 +80,7 @@ for (const [x, z] of probes) {
   const collisionMaterial = physics.fieldBody.userData.contactMaterialAt(
     x,
     z,
-    "detached-component",
+    physics.debrisMaterial.name,
   ).materialKey;
   assert.equal(
     collisionMaterial,

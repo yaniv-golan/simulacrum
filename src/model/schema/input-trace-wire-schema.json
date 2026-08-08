@@ -5,6 +5,7 @@
   "required": [
     "format",
     "version",
+    "sourceId",
     "runConfigurationFingerprint",
     "startTick",
     "endTick",
@@ -12,7 +13,10 @@
   ],
   "properties": {
     "format": { "const": "simulacrum-input-trace" },
-    "version": { "const": 1 },
+    "version": { "const": 3 },
+    "sourceId": {
+      "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+    },
     "runConfigurationFingerprint": {
       "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/fingerprint"
     },
@@ -48,7 +52,16 @@
             "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
           },
           "targetId": {
-            "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"
+              }
+            ]
           },
           "channelId": {
             "$ref": "https://simulacrum.local/schema/mechanism-artifact-defs.json#/$defs/identifier"

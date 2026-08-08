@@ -1,63 +1,23 @@
 import * as CANNON from "cannon-es";
 import { createYUpHeightfieldCandidateFilter } from "../heightfield-broadphase.js";
-import { supportMaterialResponse } from "../../model/contact-material-pairs.js";
+import { contactMaterialPair } from "../../model/contact-material-pairs.js";
 import { TEST_SITE_TERRAIN_ELEMENT_SIZE_M } from "../../model/test-site-terrain.js";
 
-const PARTICIPANT_SURFACE_FRICTION = Object.freeze({
-  "short-grass": 0.62,
-  "dry-asphalt": 0.92,
-  "wet-asphalt": 0.56,
-  "weathered-concrete": 0.86,
-  "compacted-soil": 0.72,
-  "loose-gravel": 0.5,
-  "dry-sand": 0.4,
-  "saturated-mud": 0.3,
-  "low-grip-polymer": 0.16,
-});
-
-function participantSurfaceLaw(materialKey, participantMaterialName) {
-  const baseFriction = PARTICIPANT_SURFACE_FRICTION[materialKey];
-  if (!Number.isFinite(baseFriction))
-    throw new RangeError(`Unknown test-site contact material ${materialKey}`);
-  const response = supportMaterialResponse(materialKey),
-    scale = participantMaterialName === "robot-foot" ? 1 : 0.72;
+function participantSurfaceLaw(materialKey, participantMaterialKey) {
+  const law = contactMaterialPair(materialKey, participantMaterialKey);
   return Object.freeze({
     materialKey,
     shapeId: `test-reserve:${materialKey}`,
-    friction: baseFriction * scale,
-    restitution: 0.02,
-    contactEquationStiffness: response.foundationStiffnessNPerM || 1e8,
-    contactEquationRelaxation: response.foundationStiffnessNPerM ? 4 : 3,
+    friction: Math.min(
+      law.longitudinalFrictionCoefficient,
+      law.lateralFrictionCoefficient,
+    ),
+    restitution: law.restitutionCoefficient,
+    contactEquationStiffness: law.foundationStiffnessNPerM || 1e8,
+    contactEquationRelaxation: law.foundationStiffnessNPerM ? 4 : 3,
     frictionEquationStiffness: 1e8,
     frictionEquationRelaxation: 3,
   });
-}
-
-/** Installs explicit non-tire contact laws for every physical site surface. */
-export function installTestSiteContactMaterials({
-  world,
-  materialsByKey,
-  footMaterial,
-  debrisMaterial,
-}) {
-  for (const [materialKey, surfaceMaterial] of materialsByKey)
-    for (const [participantMaterial, scale] of [
-      [footMaterial, 1],
-      [debrisMaterial, 0.72],
-    ])
-      world.addContactMaterial(
-        new CANNON.ContactMaterial(participantMaterial, surfaceMaterial, {
-          friction: PARTICIPANT_SURFACE_FRICTION[materialKey] * scale,
-          restitution: 0.02,
-          contactEquationStiffness:
-            supportMaterialResponse(materialKey).foundationStiffnessNPerM ||
-            1e8,
-          contactEquationRelaxation: supportMaterialResponse(materialKey)
-            .foundationStiffnessNPerM
-            ? 4
-            : 3,
-        }),
-      );
 }
 
 /**
@@ -147,6 +107,7 @@ export function createTestSiteCollisionBody({
   Object.assign(body, {
     userData: {
       externalBodyId: "environment:test-reserve",
+      checkpointPolicy: "reconstruct-from-owner-v1",
       surface: "Workshop Test Reserve",
       materialKey: "short-grass",
       rollingSupportAt: (x, z) => {
@@ -180,7 +141,7 @@ export function createTestSiteCollisionBody({
       },
       triangleCounts: Object.freeze(triangleCounts),
       vertexCount: (segmentsX + 1) * (segmentsZ + 1),
-      contactMaterialAt: (x, z, participantMaterialName) => {
+      contactMaterialAt: (x, z, participantMaterialKey) => {
         const sample = sampleAt(x, z);
         if (!sample?.inside)
           throw new RangeError(
@@ -188,7 +149,7 @@ export function createTestSiteCollisionBody({
           );
         return participantSurfaceLaw(
           sample.materialKey,
-          participantMaterialName,
+          participantMaterialKey,
         );
       },
       broadphaseCandidateFilter: createYUpHeightfieldCandidateFilter({

@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import * as CANNON from "cannon-es";
 import { builtInMechanismSubassemblies } from "../src/model/built-in-mechanism-subassemblies.js";
-import { compileAssembly } from "../src/model/assembly-compiler.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import { TYPES } from "../src/model/component-catalog.js";
 import { instantiateSubassembly } from "../src/model/subassemblies.js";
 import { CannonWorldAdapter } from "../src/simulation/cannon-world-adapter.js";
-import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
+import {
+  exportValidatedMultibodyState,
+  MultibodyRuntime,
+} from "../src/simulation/multibody-runtime.js";
 import { PhysicalAssemblyIndex } from "../src/simulation/physical-assembly-index.js";
 import { SimulationSession } from "../src/simulation/simulation-session.js";
 import { MobilityTelemetrySystem } from "../src/simulation/systems/mobility-telemetry-system.js";
@@ -141,7 +144,17 @@ function runCourse(record) {
   }
   world.solver.iterations = 40;
   world.solver.tolerance = 0.0002;
-  runtime.start(snapshot);
+  runtime.start(JSON.stringify(snapshot));
+  const initialFluidState = runtime.applyFluidForces();
+  assert.equal(
+    initialFluidState.byPart.length,
+    runtime.compiled.bodies.length,
+    `${record.asset.name} fluid authority did not cover every physical body`,
+  );
+  assert.doesNotThrow(
+    () => exportValidatedMultibodyState(runtime),
+    `${record.asset.name} could not checkpoint body-complete fluid authority`,
+  );
   const physicalAssemblyIndex = new PhysicalAssemblyIndex(runtime.compiled),
     session = new SimulationSession({
       systems: [

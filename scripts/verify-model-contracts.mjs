@@ -34,7 +34,7 @@ import {
   componentVisualDescriptor,
   registeredComponentVisualTypes,
 } from "../src/presentation/component-visual-descriptor.js";
-import { compileAssembly } from "../src/model/assembly-compiler.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import { SimulationSession } from "../src/simulation/simulation-session.js";
 import { mechanismComponentDefinition } from "../src/model/mechanism-component-definitions.js";
 import { finiteOr } from "../src/model/finite-or.js";

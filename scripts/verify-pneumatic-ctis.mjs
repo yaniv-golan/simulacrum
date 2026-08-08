@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import {
   AssemblyModel,
-  compileAssembly,
   PneumaticNetwork,
   RunAssemblyGraph,
   TYPES,
 } from "../src/core/index.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import { builtInMechanismSubassemblies } from "../src/model/built-in-mechanism-subassemblies.js";
 import {
   controllerBindingManifest,

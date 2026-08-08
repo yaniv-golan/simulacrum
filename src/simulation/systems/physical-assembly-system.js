@@ -39,6 +39,7 @@ export class PhysicalAssemblySystem {
   }
 
   afterCheckpointRestore(context) {
-    refreshIndex(context);
+    const snapshot = refreshIndex(context);
+    if (snapshot) context.telemetry.physicalAssembly = snapshot;
   }
 }

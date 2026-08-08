@@ -1,5 +1,12 @@
 import { completeMassProperties } from "./mechanism-geometry-compiler.js";
-import { DomainValidationError } from "./primitives.js";
+import { DomainValidationError, scopedIdentity } from "./primitives.js";
+
+/** Injective provenance identity for one runtime-owned mass contribution. */
+export function dynamicMassContributorIdentity(kind, partId) {
+  if (typeof kind !== "string" || !kind)
+    throw new TypeError("Dynamic mass contributor kind must be non-empty text");
+  return scopedIdentity(kind, partId, { typedStrings: true });
+}
 
 const ZERO = Object.freeze([
   Object.freeze([0, 0, 0]),
@@ -93,6 +100,14 @@ function bladderSolid(store, remainingMassKg) {
   };
 }
 
+/** Positive residual required while a finite-inertia dynamic body still exists. */
+export function minimumDynamicStructuralMass(initialMassKg) {
+  const initial = Number(initialMassKg);
+  if (!Number.isFinite(initial) || !(initial > 0))
+    throw new RangeError("initial structural mass must be positive and finite");
+  return Math.min(0.001, initial);
+}
+
 /**
  * Composes immutable dry/ablative mass with the remaining outlet-anchored
  * bladder volume. The returned frame and tensor are authoritative for the next
@@ -108,8 +123,17 @@ export function deriveDynamicMassProperties(
   },
 ) {
   const base = bodyDescriptor.massProperties,
-    structuralMass = Math.max(0.001, Number(structuralMassKg)),
-    structuralScale = structuralMass / Math.max(0.001, base.massKg),
+    minimumStructuralMass = minimumDynamicStructuralMass(base.massKg),
+    structuralMass = Number(structuralMassKg);
+  if (
+    !Number.isFinite(structuralMass) ||
+    structuralMass < minimumStructuralMass ||
+    structuralMass > base.massKg
+  )
+    throw new RangeError(
+      `structural mass must be finite and between ${minimumStructuralMass} and ${base.massKg}`,
+    );
+  const structuralScale = structuralMass / base.massKg,
     structuralCom = [...base.comPositionPartM],
     storedMass = Math.max(0, Number(materialStore?.remainingMassKg || 0)),
     bladder = materialStore ? bladderSolid(materialStore, storedMass) : null,
@@ -188,7 +212,14 @@ export function deriveDynamicMassProperties(
     inertiaTensorAtComPartKgM2: tensorRecord(inertia),
     contributingSolidIds: [
       ...(base.contributingSolidIds || []),
-      ...(bladder ? [`material-store:${bodyDescriptor.partId}`] : []),
+      ...(bladder
+        ? [
+            dynamicMassContributorIdentity(
+              "material-store",
+              bodyDescriptor.partId,
+            ),
+          ]
+        : []),
       ...massContributions.map((contribution) => contribution.id),
     ],
     dynamicMaterialStore: bladder

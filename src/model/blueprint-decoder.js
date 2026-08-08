@@ -1,4 +1,4 @@
-import { compileAssembly } from "./assembly-compiler.js";
+import { compileAssemblyFromIssuedRoots } from "./assembly-compiler.js";
 import { AssemblyModel } from "./assembly-model.js";
 import { TYPES } from "./component-catalog.js";
 import { isPhysicalConnectionKind } from "./connection-contracts.js";
@@ -285,7 +285,7 @@ function decode(input) {
   const model = new AssemblyModel({ parts: wire.parts, connections: [] });
   for (const connection of wire.connections) model.addConnection(connection);
   const assembly = model.snapshot(),
-    compilation = compileAssembly(assembly, TYPES);
+    compilation = compileAssemblyFromIssuedRoots(assembly, TYPES);
   if (compilation.stats.errorCount)
     error(
       "ASSEMBLY_COMPILE_FAILED",

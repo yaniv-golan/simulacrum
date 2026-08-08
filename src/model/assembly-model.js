@@ -11,6 +11,7 @@ import { decodeMechanismAuthoredComponentOrThrow } from "./mechanism-authored-co
 import { isMechanismComponentType } from "./mechanism-component-definitions.js";
 import { materialStoreContract } from "./material-resource-contracts.js";
 import { validateFlexibleLineConfig } from "./flexible-line-materials.js";
+import { issueInertPlainData } from "./plain-data-contract.js";
 import { portDefinition, validatePortConnection } from "./ports.js";
 
 function connectionIdentity(connection) {
@@ -286,7 +287,7 @@ export class AssemblyModel {
   }
 
   snapshot() {
-    return immutableClone({
+    return issueInertPlainData({
       parts: [...this.#parts.values()],
       connections: [...this.#connections.values()],
       revision: this.#revision,

@@ -30,10 +30,13 @@ public report, and clean Node/browser installs run in CI.
 
 Runtime measurements use the model-owned `finiteOr()` fallback policy so
 telemetry, challenge, failure, sensor, and sandboxed-controller projections
-remain total without weakening strict authored-data validation. Portable and
-share boundaries call `structuredClone()` directly. The remaining named clone
-helpers express real policy: null-preserving browser storage or detachment into
-the compiled-assembly ownership domain.
+remain total without weakening strict authored-data validation. Persisted
+plain-data and executable-state boundaries consume the narrow
+`plain-data-contract` serialized-or-package-issued surface; arbitrary objects
+and proxies are rejected before structural inspection, so accessors, cycles,
+and custom prototypes cannot become lazy authority. Other named clone helpers
+express distinct policy: null-preserving browser storage or detachment into the
+compiled-assembly ownership domain.
 
 ## Resources and mass ownership
 
@@ -97,10 +100,37 @@ invent launch, vehicle-mode, mission-status, or stabilization state.
 ## Checkpoints and physical release
 
 Checkpoint v2 persists the sole mutable flight-domain state under the strict
-owner-version-1 `thermal-ablation` record. Aerodynamic forces, completed flight read
-models, and physical-component identity are re-derived. Every checkpoint owner
-wrapper has exactly version 1, and restore validates compiled topology plus
-aerothermal part identity before applying the atomic transaction.
+owner-version-2 `thermal-ablation` record. Aerodynamic forces, registry thermal
+read models, and physical-component identity are re-derived. The current
+integrity cutover uses owner version 2 for every owner except
+`flexible-line-runtime` and `release-couplers`, whose exact mutable projections
+remain version 1. Session environment, compiled topology, geometry, mass and
+inertia, fixed frames, solver/contact caches, tire projections, and derived
+network telemetry are not competing checkpoint authorities. Restore validates
+every owner and one shared committed-tick boundary before applying the
+transaction. Pure prevalidation reconstructs target mass, COM, inertia, and
+collision frames from the target material, pneumatic, and aerothermal payloads
+without consulting or mutating their live state. Ablative authority conserves
+initial mass between its remaining and ablated terms and cannot mint the
+positive residual of a still-existing dynamic body; below-residual input is
+rejected rather than clamped upward. The transaction then applies
+those owners and the same mass plan before kinematics; it reprojects the body
+registry after final physics;
+requires structural event history to match the target topology; retains the
+legacy `articulated-drive` owner only as a canonical null tombstone, never as
+runtime control state; and requires world-owned external kinematics to attest the
+live body's mass, inertia, collision geometry, and material identity without
+restoring those immutable properties. Material identity includes the canonical
+pairwise contact law and default contact policy, never process-local Cannon
+IDs. The world adapter owns and checkpoints fixed step, iteration budget, and
+tolerance; integration and capture fail on live drift, while restore reinstates
+the attested solver profile, and run identity hashes that effective adapter
+authority rather than a parallel constant. Trapped controllers retain checkpointable terminal state. Controller
+callbacks run only after commit, and observer exceptions are contained because
+observers are not checkpoint authorities.
+The coordinator invalidates
+non-checkpointed route-evidence caches only after all imports and
+resynchronization succeed.
 
 Physical release is an actuator-phase mechanism, not a vehicle or mission
 mode. `ReleaseCouplerSystem` consumes compiled two-flange latch descriptors,

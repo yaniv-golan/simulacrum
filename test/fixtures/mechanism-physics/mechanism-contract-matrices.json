@@ -30,7 +30,7 @@
     {
       "kind": "input-trace",
       "format": "simulacrum-input-trace",
-      "version": 1
+      "version": 3
     },
     {
       "kind": "checkpoint",

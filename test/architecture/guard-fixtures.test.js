@@ -15,6 +15,35 @@ const cases = [
     expected: [],
   },
   {
+    name: "valid narrow scripting model contract",
+    files: {
+      "scripting/runtime.js":
+        'import { detachPlainData } from "../model/plain-data-contract.js"; export const detach = detachPlainData;',
+      "model/plain-data-contract.js":
+        "export const detachPlainData = (value) => value;",
+    },
+    expected: [],
+  },
+  {
+    name: "valid narrow scripting identity contract",
+    files: {
+      "scripting/runtime.js":
+        'import { compareCanonicalIds } from "../model/canonical-id-contract.js"; export const compare = compareCanonicalIds;',
+      "model/canonical-id-contract.js":
+        "export const compareCanonicalIds = (left, right) => String(left).localeCompare(String(right));",
+    },
+    expected: [],
+  },
+  {
+    name: "broad scripting model surface",
+    files: {
+      "scripting/runtime.js":
+        'import { detachPlainData } from "../model/primitives.js"; export const detach = detachPlainData;',
+      "model/primitives.js": "export const detachPlainData = (value) => value;",
+    },
+    expected: ["SCRIPTING_MODEL_SURFACE"],
+  },
+  {
     name: "dynamic layer escape",
     files: {
       "presentation/view.js":

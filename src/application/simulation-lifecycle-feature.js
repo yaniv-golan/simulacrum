@@ -22,7 +22,7 @@ export { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
  *   parts:SimulationPart[], activeChallenge:string|null,
  *   challengeStatus:string, challengeProgress:number, challengeHold:number,
  *   challengeScore:number, exploded:boolean, explodeAmount:number,
- *   running:boolean, simulationPaused:boolean, timeScale:number,
+ *   running:boolean, simulationStarting:boolean, simulationPaused:boolean, timeScale:number,
  *   elapsed:number,
  *   timeOfDay:number, windEnabled:boolean,
  * }} SimulationRunPort
@@ -61,7 +61,6 @@ export { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
  *   environmentOrigin:()=>VectorReading, karmanLineM:number,
  *   latitude:number, longitude:number,
  *   windAt:(position:VectorReading,time:number)=>VectorReading,
- *   materialForPart:(part:SimulationPart)=>import("cannon-es").Material,
  *   materialForKey:(materialKey:string)=>import("cannon-es").Material,
  * }} SimulationPhysicsPort
  * @typedef {{
@@ -197,7 +196,8 @@ export function createSimulationLifecycleFeature({
       presentation.setExploded(false, true);
     presentation.beginTestCourseAttempt();
     run.running = true;
-    run.simulationPaused = false;
+    run.simulationStarting = true;
+    run.simulationPaused = true;
     run.timeScale = 1;
     presentation.setEditorTestMode();
     runtime.workspaceFocusBefore = presentation.workspaceFocused();
@@ -290,6 +290,9 @@ export function createSimulationLifecycleFeature({
       runtime.session = null;
       activeRunEvidence.dispose();
       runEvidence = null;
+      run.running = false;
+      run.simulationStarting = false;
+      run.simulationPaused = false;
       throw error;
     }
     presentation.drawWires();
@@ -298,6 +301,8 @@ export function createSimulationLifecycleFeature({
     runtime.telemetry = runtime.session.telemetry();
     await activeRunEvidence.captureReplayAnchor();
     if (!run.running || runEvidence !== activeRunEvidence) return;
+    run.simulationStarting = false;
+    run.simulationPaused = false;
     presentation.clearSelection();
     presentation.render();
     presentation.notify(
@@ -316,6 +321,7 @@ export function createSimulationLifecycleFeature({
       presentation.setExploded(false, true);
     if (runtime.telemetry.systems?.mobility) presentation.resetDriveInput();
     run.running = false;
+    run.simulationStarting = false;
     presentation.focusWorkspace(runtime.workspaceFocusBefore);
     run.simulationPaused = false;
     presentation.failure.endRun();

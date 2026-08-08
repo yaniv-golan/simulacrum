@@ -242,7 +242,8 @@ Open **Remote** in the header to create and operate a command console. Commands 
 Four templates provide useful starting points:
 
 - **Powered Cart:** bidirectional drive throttle, steering, hold-to-brake, and lights.
-- **Humanoid Robot:** gait speed, stride length, balance assist, crouch, and emergency stop.
+- **Humanoid Robot:** six independent, normalized joint targets for the left and
+  right hips, knees, and ankles.
 - **Flight Drone:** collective thrust, yaw, pitch, roll, and altitude hold.
 - **Space Mission:** arm, launch, main throttle, target altitude, staging, and abort.
 
@@ -332,22 +333,26 @@ Vehicle altitude drives a smooth transition from the ground atmosphere at 45 km 
 
 A 12 m-radius meteorite target hovers at `x = -100 m`, `y = 100,000 m`, directly left of the build area's vertical launch line. It is an ordinary registered environment body, not a hidden flight-runtime coordinate. The orbital blueprint carries a mechanically mounted, electrically powered Range Sensor whose finite cone, maximum range, and resolution observe the meteorite through an ordinary signal route to the flight computer. The challenge accepts a rendezvous only while that completed sensor telemetry proves the configured range and relative-speed limits. Removing its mount, power, signal, controller binding, or line of sight removes target knowledge. Proximity framing follows the same valid sensor fix.
 
-### Atlas physical gait
+### Atlas articulated plant
 
-Atlas is no longer animated by moving a single model through space. Each limb is a `cannon-es` rigid body and every orange joint is a torque-limited hinge constraint. Its feet have a dedicated high-friction contact material and can only generate support forces while touching the floor.
+Atlas is an ordinary constrained rigid-body assembly. Its limbs are physical
+bodies and its powered joints are torque-limited hinge constraints whose
+response is bounded by authored command range, stiffness, damping, maximum
+speed, torque, electrical power, winding thermal limits, and solver-metered
+energy laws. Electrical input is conserved as net mechanical work plus
+dissipation. Support can arise only from ordinary collision contact.
 
-The controller recomputes the whole-body center of mass, current support center, foot contacts, torso pitch/roll, and angular velocity every physics step. Its gait is staged as double support, weight transfer, single support, swing, and landing instead of driving both legs with an unrestricted sine wave. A high-friction stance constraint is created only after the intended support foot reaches the floor; the other foot then follows a force-controlled lift-and-placement arc with equal-and-opposite reactions at the pelvis.
-
-Atlas uses +Z as its single forward frame, matching the front-mounted head/IMU sensors. Hip, knee, ankle, arm, balance-velocity, swing-foot placement, and distance telemetry all use that same frame. Its directional feet have a heel, ankle mount, rubber sole, widened toe, and gold front bumper so toe direction is visually explicit.
-
-Atlas’s toes, ankle pivots, swing trajectory, commanded velocity, and telemetry all define forward as world `+Z`. The stance leg drives the pelvis toward a bounded forward velocity while knee flexion clears the swing foot. If the support contact, COM, or attitude leaves its safe envelope, the controller cancels the swing and returns both legs to a recovery posture. Turning Balance assist off removes this stabilization, so the articulated robot can genuinely fall.
-
-The mission display reports forward distance, gait phase, COM offset, planted feet, and balance loss. Set Walk speed to zero to inspect a two-foot balance hold, then increase it gradually and adjust Stride length from the remote.
+The stock remote exposes six independent `joint_target` commands for the hips,
+knees, and ankles. No gait, stance, balance, or recovery controller is
+installed, and standing, walking, endurance, and disturbance recovery are not
+yet qualified. Those capabilities must come from generic controllers using
+ordinary sensors, commands, power, contact evidence, and physical reactions;
+the demo identity supplies no privileged mechanics or command sequence.
 
 ## Engineering simulation tier
 
 - **Rope and flexible load paths:** Rope is an ordinary authored component with two independently free or attached ends. Deterministic distributed masses, circular contact elements, and unilateral axial constraints produce gravity sag, slack-without-push, tension, endpoint reactions, off-axis torque, frictional contact, internal break location, and physical fragments in the same 1/120-second Cannon transaction as rigid bodies. Completed telemetry, replay, checkpoints, Failure Lab, and `render_game_to_text()` share the same solved centreline and loads. See [Rope](docs/ROPE.md) for authoring, wheel attachment, validity, and release limits.
-- **Articulated constraints:** hinge joints integrate angular velocity and position using commanded target angle, available motor torque, inertia, viscous damping, configurable lower/upper stops, and inelastic limit reaction. The Atlas demo additionally uses native rigid-body hinge and lock constraints, ground contacts, and joint motors. Live reaction torque is calculated for every joint.
+- **Articulated constraints:** powered hinges use the same generic authored position-impedance law for every assembly: normalized commands map through the authored angle range, while stiffness, damping, maximum speed, torque, allocated electrical power, solver-metered work, losses, and winding temperature bound the resulting constraint impulse. Passive joints and structural stops remain ordinary physical constraints, and live reaction torque is measured for every joint. No demo or role metadata selects this behavior.
 - **Mechanisms, suspension, and wheel contact:** springs, dampers, stops, guides, joints, power-limited actuators, axles, bearings, and wheels are ordinary authored parts and connections compiled into physical bodies and constraints. Wheels use rounded rotating collision geometry with distinct tire-envelope, sidewall, and rim contact regions—not ray casts or rectangular proxies. A stock Grip Wheel has an explicit dry-air chamber: conserved gas mass and internal energy determine absolute and gauge pressure as the tire-wide chamber volume changes under load, and that pressure contributes to normal support before the authored rim bottoms out. Connect its `AIR` port to an Electric Air Compressor through a powered Three-Way Pneumatic Valve to inflate, hold, or vent it during a run; a powered Tire Pressure Sensor exposes the connected chamber to an ordinary controller. The old `memoryless-brush-v1` fixed-compliance law remains valid only when explicitly authored. Normal impulse from the coupled contact solve bounds longitudinal and lateral tire force; carcass deflection, combined slip, rolling resistance, dissipation, gas/carcass temperature, and pressure evolve from the authored tire, gas, and material laws. Suspension motion emerges from its constructed topology, so a wheel climbs a small obstacle only when geometry, friction, torque, load, speed, pressure, and available travel permit it. Bottoming, rim contact, excessive obstacles, overpressure burst, or hard chassis impacts can produce ordinary failure evidence; no hidden vehicle rig supplies lift or stabilization.
 
 See [Pneumatic tires and dry-air circuits](docs/PNEUMATICS.md) for stopped

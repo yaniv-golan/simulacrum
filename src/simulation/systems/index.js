@@ -20,7 +20,6 @@ export { RigidBodySystem } from "./rigid-body-system.js";
 export { MotorEnergySettlementSystem } from "./motor-energy-settlement-system.js";
 export { RotorPropulsionSystem } from "./rotor-propulsion-system.js";
 export { TelemetrySystem } from "./telemetry-system.js";
-export { ArticulatedConstraintSystem } from "./articulated-constraint-system.js";
 export { FluidSystem } from "./fluid-system.js";
 export {
   FlexibleLineSystem,

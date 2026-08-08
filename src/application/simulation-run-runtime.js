@@ -32,7 +32,7 @@ export function createSimulationRunRuntime({
       waterDensity: WATER_DENSITY,
       groundBody: physics.groundBody,
       fieldBody: physics.fieldBody,
-      materialForPart: physics.materialForPart,
+      materialForKey: physics.materialForKey,
     });
     flexibleLineRuntime = new FlexibleLineRuntime({
       world: physics.world,

@@ -214,6 +214,11 @@ export {
   validateRotorConfig,
 } from "../model/rotor-aerodynamics-contracts.js";
 export { wheelDriveMotorIds } from "../simulation/wheel-drive-topology.js";
+export * from "../model/rigid-cluster-contract.js";
+export {
+  reconstructTreeCutWrenches,
+  rigidClusterCutFramesWorld,
+} from "../simulation/rigid-cluster-cut-wrench.js";
 export { compileAssembly } from "../model/assembly-compiler.js";
 export {
   FLEXIBLE_LINE_MATERIALS,

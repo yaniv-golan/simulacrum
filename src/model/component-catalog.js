@@ -1,5 +1,6 @@
 import { mechanismComponentDefinition } from "./mechanism-component-definitions.js";
 import { COMPONENT_GEOMETRY_DEFINITIONS } from "./component-geometry-definitions.js";
+import { issueInertPlainData } from "./plain-data-contract.js";
 
 const port = (id, kind, behavior, direction, multiplicity, metadata = {}) =>
   Object.freeze({
@@ -11,7 +12,7 @@ const port = (id, kind, behavior, direction, multiplicity, metadata = {}) =>
     ...metadata,
   });
 
-export const TYPES = {
+const TYPE_DEFINITIONS = {
   beam: {
     name: "Alloy Beam",
     cat: "structure",
@@ -1038,12 +1039,14 @@ export const TYPES = {
   },
 };
 
-for (const [type, definition] of Object.entries(TYPES)) {
+for (const [type, definition] of Object.entries(TYPE_DEFINITIONS)) {
   const geometryContract = COMPONENT_GEOMETRY_DEFINITIONS[type];
   if (!geometryContract)
     throw new Error(`Missing canonical geometry contract for ${type}`);
   definition.geometryContract = geometryContract;
 }
+
+export const TYPES = issueInertPlainData(TYPE_DEFINITIONS);
 
 export const FLIGHT_MATERIALS = {
   beam: { heatLimit: 660, specificHeat: 900, emissivity: 0.28, cd: 0.72 },

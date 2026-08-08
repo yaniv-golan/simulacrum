@@ -8,12 +8,26 @@ import {
   validateControllerBindingManifest,
 } from "../model/controller-bindings.js";
 import { finiteOr } from "../model/finite-or.js";
+import {
+  issueInertPlainData,
+  requireInertPlainData,
+} from "../model/plain-data-contract.js";
 
 let wabtRuntimePromise;
 const loadWabtRuntime = () => {
   wabtRuntimePromise ||= import("wabt").then((module) => module.default());
   return wabtRuntimePromise;
 };
+
+async function sha256Identity(value) {
+  const digest = await globalThis.crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value),
+  );
+  return `sim-sha256-${[...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("")}`;
+}
 
 const RESERVED_PREFIX = "__sim_";
 const DECLARATION_FORMS = new Set(["export", "param", "result", "local"]);
@@ -483,7 +497,12 @@ function validateAndInstrument(module) {
   return module;
 }
 
-function createPreparedRuntime(module, language, bindingManifest) {
+function createPreparedRuntime(
+  module,
+  language,
+  bindingManifest,
+  programIdentity,
+) {
   const bindings = validateControllerBindingManifest(bindingManifest),
     bindingManifestIdentity = controllerBindingManifestIdentity(bindings);
   return Object.freeze({
@@ -491,6 +510,7 @@ function createPreparedRuntime(module, language, bindingManifest) {
     policyVersion: CONTROLLER_POLICY_VERSION,
     bindingManifest: bindings,
     bindingManifestIdentity,
+    programIdentity,
     instantiate() {
       let sensors = {},
         outputs = [],
@@ -569,25 +589,51 @@ function createPreparedRuntime(module, language, bindingManifest) {
         },
         exportState() {
           if (disposed) throw new Error("controller runtime is disposed");
-          return stateGlobals.map(([name, global]) => ({
-            name,
-            value: Number(global.value),
-          }));
+          return issueInertPlainData(
+            stateGlobals.map(([name, global]) => ({
+              name,
+              value: Number(global.value),
+            })),
+          );
         },
         importState(state) {
           if (disposed) throw new Error("controller runtime is disposed");
-          if (!Array.isArray(state) || state.length !== stateGlobals.length)
+          const validated = this.validateState(state);
+          for (let index = 0; index < stateGlobals.length; index++)
+            stateGlobals[index][1].value = validated[index].value;
+        },
+        validateState(state) {
+          if (disposed) throw new Error("controller runtime is disposed");
+          const detachedState = requireInertPlainData(state, {
+            code: "INVALID_WAT_CHECKPOINT_PLAIN_DATA",
+            message:
+              "WAT checkpoint must be serialized JSON or an exported immutable state",
+          });
+          if (
+            !Array.isArray(detachedState) ||
+            detachedState.length !== stateGlobals.length
+          )
             throw new Error("controller state shape does not match program");
           for (let index = 0; index < stateGlobals.length; index++) {
-            const [name, global] = stateGlobals[index],
-              record = state[index],
-              value = Number(record?.value);
-            if (record?.name !== name || !Number.isFinite(value))
+            const [name] = stateGlobals[index],
+              record = detachedState[index],
+              value = record?.value;
+            if (
+              !record ||
+              typeof record !== "object" ||
+              Array.isArray(record) ||
+              Object.keys(record).length !== 2 ||
+              !Object.hasOwn(record, "name") ||
+              !Object.hasOwn(record, "value") ||
+              record.name !== name ||
+              typeof value !== "number" ||
+              !Number.isFinite(value)
+            )
               throw new Error(
                 "controller state does not match program globals",
               );
-            global.value = value;
           }
+          return detachedState;
         },
         dispose() {
           disposed = true;
@@ -659,7 +705,12 @@ export async function compileWatController(
       exports.length !== 1 + stateExports.length
     )
       throw new Error("compiled controller exports violate the runtime ABI");
-    return createPreparedRuntime(module, language, bindings);
+    return createPreparedRuntime(
+      module,
+      language,
+      bindings,
+      await sha256Identity(instrumentedSource),
+    );
   } finally {
     parsed.destroy?.();
   }

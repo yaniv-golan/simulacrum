@@ -27,10 +27,12 @@ const DEFAULT_PUBLIC_ENTRYPOINTS = Object.freeze({
 });
 
 const SCRIPTING_MODEL_CONTRACTS = new Set([
+  "model/canonical-id-contract.js",
   "model/control-program-ir.js",
   "model/controller-bindings.js",
   "model/controller-policy.js",
   "model/finite-or.js",
+  "model/plain-data-contract.js",
 ]);
 
 const DELETED_RUNTIME_IDENTIFIERS = new Set([

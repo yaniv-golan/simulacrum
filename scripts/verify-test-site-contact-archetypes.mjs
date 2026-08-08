@@ -117,10 +117,7 @@ function createScenario(source, lane, name) {
       world: physics.world,
       worldAdapter: physics.worldAdapter,
       material: physics.debrisMaterial,
-      materialForPart: (part) =>
-        ["footL", "footR"].includes(part?.rigRole)
-          ? physics.footMaterial
-          : physics.debrisMaterial,
+      materialForKey: physics.materialForKey,
       catalog: TYPES,
       groundBody: physics.groundBody,
       fieldBody: physics.fieldBody,
@@ -128,7 +125,20 @@ function createScenario(source, lane, name) {
       terrainHeightAt: environment.terrainHeightAt,
       pondAt: environment.pondAt,
     });
-  runtime.start(assembly);
+  runtime.start(JSON.stringify(assembly));
+  physics.worldAdapter.beginSession();
+  for (const [partId, body] of runtime.bodyByPart) {
+    const descriptor = runtime.compiled.bodies.find(
+      (candidate) => candidate.partId === partId,
+    );
+    assert.deepEqual(
+      body.shapes.map((shape) => shape.material?.name),
+      descriptor.geometry.collisionPrimitives.map(
+        (primitive) => primitive.materialKey,
+      ),
+      `${name} did not project canonical primitive material identity`,
+    );
+  }
   for (const body of runtime.bodyByPart.values())
     body.userData.testArchetype = name;
   return { physics, runtime };

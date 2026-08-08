@@ -7,7 +7,7 @@ import {
 /** Compile one ordinary free-ended Rope without creating a rigid proxy body. */
 export function flexibleLineExample() {
   const compiled = compileAssembly(
-    {
+    JSON.stringify({
       revision: 1,
       parts: [
         {
@@ -20,7 +20,7 @@ export function flexibleLineExample() {
         },
       ],
       connections: [],
-    },
+    }),
     TYPES,
   );
   const line = compiled.flexibleLines[0];

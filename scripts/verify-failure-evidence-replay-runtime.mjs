@@ -83,7 +83,6 @@ const physics = {
     environmentBodyRegistry: createEarthEnvironmentBodyRegistry(),
     environmentOrigin: () => ({ x: 0, y: 0, z: 0 }),
     windAt: () => ({ x: 0, y: 0, z: 0 }),
-    materialForPart: () => physicsWorld.debrisMaterial,
   },
   controllers = {
     captureSensors(context, fixedDt) {
@@ -148,15 +147,18 @@ const physics = {
       testSite: environment.testSite,
       deployment: null,
     },
+    solverProfile: physics.worldAdapter.exportState().solverProfile,
   });
 recorder.beginRun({ runIdentity });
 const replayAnchor = runRuntime
   .createCheckpointCoordinator(inputTraceRecorder)
-  .capture({
-    runConfigurationFingerprint: runIdentity.runConfigurationFingerprint,
-    blueprintFingerprint: runIdentity.blueprintFingerprint,
-    compiledTopologyFingerprint: runIdentity.compiledTopologyFingerprint,
-  });
+  .capture(
+    JSON.stringify({
+      runConfigurationFingerprint: runIdentity.runConfigurationFingerprint,
+      blueprintFingerprint: runIdentity.blueprintFingerprint,
+      compiledTopologyFingerprint: runIdentity.compiledTopologyFingerprint,
+    }),
+  );
 recorder.setReplayability({ supported: true });
 for (let tick = 1; tick <= 20 && !recorder.snapshot().trigger; tick++)
   runRuntime.session.stepFixed();

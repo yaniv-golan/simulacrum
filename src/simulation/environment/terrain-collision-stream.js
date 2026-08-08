@@ -1,5 +1,9 @@
 import * as CANNON from "cannon-es";
 import { createYUpHeightfieldCandidateFilter } from "../heightfield-broadphase.js";
+import {
+  issueInertPlainData,
+  requireInertPlainData,
+} from "../../model/plain-data-contract.js";
 
 /**
  * Maintains deterministic heightfield collision tiles around active bodies.
@@ -90,6 +94,7 @@ export class TerrainCollisionStream {
     const runtimeBody = /** @type {any} */ (body);
     runtimeBody.userData = {
       externalBodyId: `environment:terrain:${key}`,
+      checkpointPolicy: "reconstruct-from-owner-v1",
       surface: "streamed terrain",
       materialKey: "compacted-soil",
       tile: key,
@@ -148,28 +153,62 @@ export class TerrainCollisionStream {
   }
 
   exportState() {
-    return {
-      version: 1,
-      tileSize: this.tileSize,
-      segments: this.segments,
-      centralKey: this.centralKey,
-      neighborhood: this.neighborhood,
+    return issueInertPlainData({
+      version: 2,
       keys: [...this.tiles.keys()].sort(),
+    });
+  }
+
+  validateState(state) {
+    state = requireInertPlainData(state, {
+      code: "INVALID_TERRAIN_CHECKPOINT_INPUT",
+      message:
+        "Terrain checkpoint must be serialized JSON or an exported immutable state",
+    });
+    if (
+      !state ||
+      typeof state !== "object" ||
+      Array.isArray(state) ||
+      Object.keys(state).sort().join("\0") !== "keys\0version" ||
+      state.version !== 2
+    )
+      throw new TypeError(
+        "terrain checkpoint must be an exact version 2 mutable projection",
+      );
+    if (
+      !Array.isArray(state.keys) ||
+      new Set(state.keys).size !== state.keys.length ||
+      state.keys.some((key) => {
+        if (typeof key !== "string") return true;
+        const values = key.split(",").map(Number);
+        return (
+          values.length !== 2 ||
+          values.some((value) => !Number.isSafeInteger(value)) ||
+          key !== `${values[0]},${values[1]}` ||
+          key === this.centralKey
+        );
+      })
+    )
+      throw new TypeError("terrain checkpoint contains invalid tile keys");
+    return new Set(state.keys);
+  }
+
+  checkpointExternalBodyPlan(state) {
+    const required = this.validateState(state);
+    return {
+      currentExternalBodyIds: [...this.tiles.values()].map(
+        (body) => body.userData.externalBodyId,
+      ),
+      targetExternalBodies: [...required].map((key) => ({
+        externalBodyId: `environment:terrain:${key}`,
+        type: CANNON.Body.STATIC,
+        checkpointPolicy: "reconstruct-from-owner-v1",
+      })),
     };
   }
 
   importState(state) {
-    if (
-      state?.version !== 1 ||
-      state.tileSize !== this.tileSize ||
-      state.segments !== this.segments ||
-      state.centralKey !== this.centralKey ||
-      state.neighborhood !== this.neighborhood
-    )
-      throw new TypeError(
-        "terrain checkpoint does not match the running terrain stream",
-      );
-    const required = new Set(state.keys || []);
+    const required = this.validateState(state);
     for (const [key, body] of this.tiles) {
       if (required.has(key)) continue;
       this.world.removeBody(body);

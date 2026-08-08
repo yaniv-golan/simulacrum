@@ -38,6 +38,10 @@ assert.equal(
   sweptTestSiteShapeEntry(rectangle, { x: -4, z: 0 }, { x: -3, z: 0 }),
   null,
 );
+assert.equal(
+  sweptTestSiteShapeEntry(rectangle, { x: -4, z: 2 }, { x: 4, z: 4 }),
+  null,
+);
 close(sweptTestSiteShapeEntry(ellipse, { x: -3, z: 0 }, { x: 3, z: 0 }), 1 / 6);
 close(sweptTestSiteShapeEntry(ellipse, { x: -3, z: 1 }, { x: 3, z: 1 }), 0.5);
 assert.equal(
@@ -125,6 +129,15 @@ const polygonGate = {
 close(
   sweptTestSiteShapeEntry(polygonGate, { x: -4, z: 0 }, { x: 4, z: 0 }),
   1 / 4,
+  1e-8,
+);
+close(
+  sweptTestSiteShapeEntry(
+    polygonGate,
+    { x: -4.3, z: 0.27 },
+    { x: 3.7, z: 0.27 },
+  ),
+  2.3 / 8,
   1e-8,
 );
 close(
@@ -431,6 +444,50 @@ for (const speed of [5, 10]) {
     { kind: "gate-state", id: "state-gate", met: true },
   ]);
 }
+const outsideFinish = new TestCourseRun({
+  testSite: boundarySite,
+  routeId: "state-route",
+  targetPartId: 9,
+});
+outsideFinish.step(boundaryFrame(1, -3, 5));
+assert.equal(outsideFinish.step(boundaryFrame(2, 3, 5)).status, "running");
+for (const { grounded, speedMps } of [
+  { grounded: false, speedMps: 10.01 },
+  { grounded: false, speedMps: 5 },
+]) {
+  const finishSite = structuredClone(boundarySite);
+  finishSite.id = `finish-site-${speedMps}`;
+  finishSite.routes[0].requirements[0].maxSpeedMps = 20;
+  finishSite.routes[0].finish = {
+    grounded: speedMps === 5,
+    maxSpeedMps: 10,
+    holdS: 0,
+  };
+  const run = new TestCourseRun({
+    testSite: finishSite,
+    routeId: "state-route",
+    targetPartId: 9,
+  });
+  const startFrame = boundaryFrame(1, -3, 5);
+  startFrame.systems.testSite.siteId = finishSite.id;
+  run.step(startFrame);
+  const finishFrame = boundaryFrame(2, 0, speedMps);
+  finishFrame.systems.testSite.siteId = finishSite.id;
+  finishFrame.systems.testSite.components[0].grounded = grounded;
+  assert.equal(run.step(finishFrame).status, "running");
+}
+const terminalRun = new TestCourseRun({
+  testSite: boundarySite,
+  routeId: "state-route",
+  targetPartId: 9,
+});
+terminalRun.step(boundaryFrame(1, -3, 5));
+const terminalSnapshot = terminalRun.step(boundaryFrame(2, 0, 5));
+assert.equal(terminalSnapshot.status, "complete");
+assert.deepEqual(terminalRun.step(boundaryFrame(3, 3, 50)), {
+  ...terminalSnapshot,
+  tick: 3,
+});
 const tooFast = new TestCourseRun({
   testSite: boundarySite,
   routeId: "state-route",

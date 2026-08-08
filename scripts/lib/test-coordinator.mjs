@@ -72,6 +72,7 @@ export async function runTestCoordinator({
   selectedChecks,
   requestedChecks = selectedChecks,
   mode = "full",
+  selection = null,
   suiteTimeoutMs = 180_000,
   aggregateTimeoutMs = 45 * 60_000,
   timeoutOverrides = {},
@@ -93,6 +94,7 @@ export async function runTestCoordinator({
       status: "running",
       requestedChecks: [...requestedChecks],
       selectedChecks: [...selectedChecks],
+      selection: selection === null ? null : structuredClone(selection),
       toolchain: {
         node: process.version,
         npm: npmVersion(),
@@ -151,6 +153,7 @@ export async function runTestCoordinator({
             root,
             server,
             artifactsDir,
+            runId: report.runId,
             timeoutMs: Math.max(suiteTimeoutMs, timeoutOverrides[check] || 0),
             signal: abortController.signal,
           }),

@@ -69,10 +69,7 @@ function createScenario(source, start) {
       world: physics.world,
       worldAdapter: physics.worldAdapter,
       material: physics.debrisMaterial,
-      materialForPart: (part) =>
-        ["footL", "footR"].includes(part?.rigRole)
-          ? physics.footMaterial
-          : physics.debrisMaterial,
+      materialForKey: physics.materialForKey,
       catalog: TYPES,
       groundBody: physics.groundBody,
       fieldBody: physics.fieldBody,
@@ -80,7 +77,7 @@ function createScenario(source, start) {
       terrainHeightAt: environment.terrainHeightAt,
       pondAt: environment.pondAt,
     });
-  runtime.start(assembly);
+  runtime.start(JSON.stringify(assembly));
   return { physics, runtime, partIds: assembly.parts.map(({ id }) => id) };
 }
 

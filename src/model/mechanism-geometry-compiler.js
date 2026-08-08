@@ -101,15 +101,22 @@ function parallelAxis(massKg, offset) {
   );
 }
 
-function principalInertia(tensor) {
-  const matrix = tensorMatrix(tensor).map((row) => [...row]),
+function principalInertia(tensor, { normalizeScale = false } = {}) {
+  const sourceMatrix = tensorMatrix(tensor),
+    tensorScale = Math.max(...sourceMatrix.flat().map(Math.abs)),
+    normalization = normalizeScale && tensorScale > 0 ? tensorScale : 1,
+    matrix = sourceMatrix.map((row) =>
+      row.map((value) => value / normalization),
+    ),
     axes = IDENTITY_MATRIX.map((row) => [...row]),
     pairs = [
       [0, 1],
       [0, 2],
       [1, 2],
     ],
-    scale = Math.max(1, tensor.xx, tensor.yy, tensor.zz);
+    comparisonScale = normalizeScale
+      ? 1
+      : Math.max(1, tensor.xx, tensor.yy, tensor.zz);
   for (let iteration = 0; iteration < 32; iteration++) {
     const [p, q] = pairs.reduce((selected, candidate) =>
       Math.abs(matrix[candidate[0]][candidate[1]]) >
@@ -117,7 +124,7 @@ function principalInertia(tensor) {
         ? candidate
         : selected,
     );
-    if (Math.abs(matrix[p][q]) <= scale * 1e-14) break;
+    if (Math.abs(matrix[p][q]) <= comparisonScale * 1e-14) break;
     const difference = matrix[q][q] - matrix[p][p],
       tau = difference / (2 * matrix[p][q]),
       tangent =
@@ -152,7 +159,7 @@ function principalInertia(tensor) {
   }
   const ordered = [0, 1, 2]
       .map((index) => ({
-        moment: matrix[index][index],
+        moment: matrix[index][index] * normalization,
         axis: axes.map((row) => row[index]),
         index,
       }))
@@ -171,19 +178,32 @@ function principalInertia(tensor) {
   return {
     principalMomentsKgM2: ordered.map(({ moment }) => moment),
     principalAxesPart: [first, second, multiply(third, 1 / thirdLength)],
-    decompositionPolicy: "ordered-right-handed-jacobi-v1",
+    decompositionPolicy: normalizeScale
+      ? "ordered-right-handed-scale-normalized-jacobi-v1"
+      : "ordered-right-handed-jacobi-v1",
   };
 }
 
-function withPrincipalInertia(properties) {
-  return {
+function withPrincipalInertia(properties, options) {
+  const completed = {
     ...properties,
-    ...principalInertia(properties.inertiaTensorAtComPartKgM2),
+    ...principalInertia(properties.inertiaTensorAtComPartKgM2, options),
   };
+  if (
+    completed.principalMomentsKgM2.some(
+      (value) => typeof value !== "number" || !Number.isFinite(value),
+    ) ||
+    completed.principalAxesPart.some(
+      (axis) =>
+        !Array.isArray(axis) || axis.some((value) => !Number.isFinite(value)),
+    )
+  )
+    throw new RangeError("principal inertia decomposition must remain finite");
+  return completed;
 }
 
-export function completeMassProperties(properties) {
-  return deepFreeze(withPrincipalInertia(structuredClone(properties)));
+export function completeMassProperties(properties, options) {
+  return deepFreeze(withPrincipalInertia(structuredClone(properties), options));
 }
 
 function primitiveMassProperties(geometry, densityKgPerM3) {

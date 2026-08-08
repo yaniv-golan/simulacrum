@@ -44,6 +44,7 @@ import { RunAssemblyGraph } from "../src/simulation/run-assembly-graph.js";
 import { SignalNetwork } from "../src/simulation/signal-network.js";
 import { SimulationSession } from "../src/simulation/simulation-session.js";
 import { InputTraceRecorder } from "../src/simulation/input-trace-recorder.js";
+import { InputTracePlayer } from "../src/simulation/input-trace-player.js";
 import { wheelDriveMotorIds } from "../src/simulation/wheel-drive-topology.js";
 import {
   isMechanismComponentType,
@@ -156,20 +157,20 @@ for (const channel of ["target_x", "target_z"])
     { minimum: -1_000_000, maximum: 1_000_000 },
   );
 assert.equal(clampActuatorCommand({ type: "motor" }, "throttle", 2), 1);
-assert.equal(clampActuatorCommand({ type: "hinge" }, "stride", NaN), 0.5);
+assert.equal(clampActuatorCommand({ type: "hinge" }, "joint_target", NaN), 0);
 assert.equal(clampActuatorCommand({ type: "plate" }, "throttle", 1), null);
 const conflictBus = new CommandBus();
 conflictBus.writeScript("a", "drive", 1, "throttle", 1);
 conflictBus.writeScript("b", "drive", 1, "throttle", -1);
-conflictBus.writeScript("a", "stride", 2, "stride", 0);
-conflictBus.writeScript("b", "stride", 2, "stride", 1);
+conflictBus.writeScript("a", "joint", 2, "joint_target", -1);
+conflictBus.writeScript("b", "joint", 2, "joint_target", 1);
 assert.equal(
   readActuatorCommand(conflictBus, part(1, "motor"), "throttle", 1).value,
   0,
 );
 assert.equal(
-  readActuatorCommand(conflictBus, part(2, "hinge"), "stride", 0).value,
-  0.5,
+  readActuatorCommand(conflictBus, part(2, "hinge"), "joint_target", 0).value,
+  0,
 );
 const idleBus = new CommandBus();
 assert.equal(
@@ -580,7 +581,7 @@ assert.equal(
 assert.ok(
   inputTraceRecorder
     .inputsThrough(1)
-    .some((input) => input.targetId === "999" && input.value === 0.8),
+    .some((input) => input.targetId === 999 && input.value === 0.8),
   "external trace omitted a syntactically valid candidate rejected by routing",
 );
 candidates.remote[0].active = false;
@@ -596,7 +597,7 @@ assert.ok(
     .inputsThrough(2)
     .some(
       (input) =>
-        input.targetId === "4" &&
+        input.targetId === 4 &&
         input.channelId === "throttle" &&
         input.value === 0 &&
         input.tick === 2,
@@ -615,10 +616,173 @@ assert.deepEqual(
     value: entry.value,
   })),
   [
-    { tick: 1, targetId: "4", channelId: "throttle", value: 1 },
-    { tick: 2, targetId: "4", channelId: "throttle", value: 0 },
+    { tick: 1, targetId: 4, channelId: "throttle", value: 1 },
+    { tick: 2, targetId: 4, channelId: "throttle", value: 0 },
   ],
   "disappearing external candidate did not emit a replayable release",
+);
+const typedTraceRecorder = new InputTraceRecorder({
+  sourceId: "typed-identity-probe",
+});
+typedTraceRecorder.recordTick(1, [
+  { targetId: 1, channel: "throttle", value: 0.2 },
+  { targetId: "1", channel: "throttle", value: 0.8 },
+]);
+const typedTraceInputs = typedTraceRecorder.inputsThrough(1);
+assert.deepEqual(
+  typedTraceInputs.map(({ targetId, value }) => ({ targetId, value })),
+  [
+    { targetId: 1, value: 0.2 },
+    { targetId: "1", value: 0.8 },
+  ],
+  "input trace collapsed numeric and string target authorities",
+);
+const restoredTypedTraceRecorder = new InputTraceRecorder({
+  sourceId: "typed-identity-probe",
+});
+restoredTypedTraceRecorder.restore(typedTraceRecorder.capture());
+assert.deepEqual(
+  restoredTypedTraceRecorder.inputsThrough(1),
+  typedTraceInputs,
+  "input-trace checkpoint restore collapsed typed target authorities",
+);
+const mismatchedSourceRecorder = new InputTraceRecorder({
+  sourceId: "different-source-authority",
+});
+assert.throws(
+  () => mismatchedSourceRecorder.restore(typedTraceRecorder.capture()),
+  (error) => error?.code === "INVALID_INPUT_TRACE_CHECKPOINT",
+  "input-trace checkpoint silently relabeled historical source authority",
+);
+assert.deepEqual(
+  mismatchedSourceRecorder.inputsThrough(1),
+  [],
+  "source-identity rejection mutated the receiving input recorder",
+);
+const typedTraceCheckpoint = typedTraceRecorder.capture(),
+  typedTraceBeforeRejection = restoredTypedTraceRecorder.capture();
+let inputTraceCheckpointGetterReads = 0;
+const accessorInputTraceCheckpoint = structuredClone(typedTraceCheckpoint);
+Object.defineProperty(accessorInputTraceCheckpoint, "version", {
+  enumerable: true,
+  get() {
+    inputTraceCheckpointGetterReads++;
+    return 2;
+  },
+});
+for (const [label, candidate] of [
+  ["root accessor", accessorInputTraceCheckpoint],
+  [
+    "custom prototype",
+    Object.setPrototypeOf(structuredClone(typedTraceCheckpoint), {
+      forged: true,
+    }),
+  ],
+]) {
+  assert.throws(
+    () => restoredTypedTraceRecorder.restore(candidate),
+    (error) => error?.code === "INVALID_INPUT_TRACE_CHECKPOINT",
+    `input trace accepted ${label}`,
+  );
+  assert.deepEqual(
+    restoredTypedTraceRecorder.capture(),
+    typedTraceBeforeRejection,
+    `rejected ${label} changed input-trace state`,
+  );
+}
+const nestedAccessorInputTraceCheckpoint =
+  structuredClone(typedTraceCheckpoint);
+Object.defineProperty(nestedAccessorInputTraceCheckpoint.records[0], "value", {
+  enumerable: true,
+  get() {
+    inputTraceCheckpointGetterReads++;
+    return 0.2;
+  },
+});
+assert.throws(
+  () => restoredTypedTraceRecorder.restore(nestedAccessorInputTraceCheckpoint),
+  (error) => error?.code === "INVALID_INPUT_TRACE_CHECKPOINT",
+  "input trace accepted a nested record accessor",
+);
+assert.equal(
+  inputTraceCheckpointGetterReads,
+  0,
+  "input-trace checkpoint rejection invoked an accessor",
+);
+let inputTraceProxyReads = 0;
+const proxiedInputTraceCheckpoint = new Proxy(
+  structuredClone(typedTraceCheckpoint),
+  {
+    get(target, key, receiver) {
+      inputTraceProxyReads++;
+      return Reflect.get(target, key, receiver);
+    },
+  },
+);
+assert.throws(
+  () => restoredTypedTraceRecorder.restore(proxiedInputTraceCheckpoint),
+  (error) => error?.code === "INVALID_INPUT_TRACE_CHECKPOINT",
+  "input trace accepted Proxy checkpoint state",
+);
+assert.equal(
+  inputTraceProxyReads,
+  0,
+  "input-trace Proxy rejection invoked a data getter",
+);
+const cyclicInputTraceCheckpoint = structuredClone(typedTraceCheckpoint);
+cyclicInputTraceCheckpoint.loop = cyclicInputTraceCheckpoint;
+assert.throws(
+  () => restoredTypedTraceRecorder.restore(cyclicInputTraceCheckpoint),
+  (error) => error?.code === "INVALID_INPUT_TRACE_CHECKPOINT",
+  "input trace accepted cyclic checkpoint state",
+);
+assert.deepEqual(
+  restoredTypedTraceRecorder.capture(),
+  typedTraceBeforeRejection,
+  "hostile input-trace rejection changed release-command authority",
+);
+restoredTypedTraceRecorder.recordTick(2, []);
+assert.deepEqual(
+  restoredTypedTraceRecorder.inputsThrough(2).slice(-2),
+  [
+    {
+      tick: 2,
+      sequence: 2,
+      sourceId: "typed-identity-probe",
+      targetId: 1,
+      channelId: "throttle",
+      value: 0,
+    },
+    {
+      tick: 2,
+      sequence: 3,
+      sourceId: "typed-identity-probe",
+      targetId: "1",
+      channelId: "throttle",
+      value: 0,
+    },
+  ],
+  "rejected input-trace checkpoint changed subsequent release commands",
+);
+const typedTraceWire = {
+    format: "simulacrum-input-trace",
+    version: 3,
+    sourceId: "typed-identity-probe",
+    runConfigurationFingerprint: `sim-sha256-${"0".repeat(64)}`,
+    startTick: 1,
+    endTick: 1,
+    inputs: typedTraceInputs,
+  },
+  typedTracePlayback = new InputTracePlayer(typedTraceWire, {
+    targetIds: ["1", 1],
+  }).readCommandCandidates(1).remote;
+assert.deepEqual(
+  typedTracePlayback.map(({ targetId, value }) => ({ targetId, value })),
+  [
+    { targetId: 1, value: 0.2 },
+    { targetId: "1", value: 0.8 },
+  ],
+  "input-trace playback made typed target identity depend on targetIds order",
 );
 candidates.hardware = [{ value: 1 }];
 commandSession.stepFixed();
@@ -1175,10 +1339,15 @@ assert.deepEqual(bus.read(1, "throttle"), {
   source: "remote",
 });
 assert.equal(bus.writeRemote(null, "throttle", 1), false);
+assert.equal(bus.writeRemote(1, "", 1), false);
 assert.equal(bus.writeRemote(1, "throttle", Infinity), false);
+assert.equal(bus.writeRemote({}, "throttle", 1), false);
 assert.equal(bus.writeScript(null, "drive", 1, "throttle", 1), false);
 assert.equal(bus.writeScript(1, null, 2, "throttle", 1), false);
 assert.equal(bus.writeScript(1, "drive", null, "throttle", 1), false);
+assert.equal(bus.writeScript(1, "drive", 2, "", 1), false);
+assert.equal(bus.writeScript(1, "drive", 2, "throttle", Infinity), false);
+assert.equal(bus.writeScript(1, "drive", {}, "throttle", 1), false);
 assert.equal(bus.writeScript(1, "drive", 2, "throttle", 0.4), true);
 assert.equal(bus.writeScript(1, "drive", 2, "throttle", 0.6), true);
 assert.equal(bus.writeScript(2, "drive", 2, "throttle", 0.8), false);
@@ -1192,24 +1361,67 @@ assert.deepEqual(bus.read(2, "throttle", 0.2), {
   source: "default",
 });
 
+const mixedRemoteIdentityBus = new CommandBus();
+assert.equal(mixedRemoteIdentityBus.writeRemote(1, "throttle", 0.2), true);
+assert.equal(mixedRemoteIdentityBus.writeRemote("1", "throttle", 0.8), true);
+assert.equal(mixedRemoteIdentityBus.read(1, "throttle").value, 0.2);
+assert.equal(mixedRemoteIdentityBus.read("1", "throttle").value, 0.8);
+assert.equal(mixedRemoteIdentityBus.entries().remote.length, 2);
+const mixedScriptIdentityBus = new CommandBus();
+assert.equal(
+  mixedScriptIdentityBus.writeScript(
+    "controller-a",
+    "drive",
+    1,
+    "throttle",
+    0.2,
+  ),
+  true,
+);
+assert.equal(
+  mixedScriptIdentityBus.writeScript(
+    "controller-b",
+    "drive",
+    "1",
+    "throttle",
+    0.8,
+  ),
+  true,
+);
+assert.equal(mixedScriptIdentityBus.read(1, "throttle").value, 0.2);
+assert.equal(mixedScriptIdentityBus.read("1", "throttle").value, 0.8);
+const mixedIdentityCheckpoint = mixedScriptIdentityBus.exportState(),
+  mixedIdentityRestored = new CommandBus();
+mixedIdentityRestored.importState(mixedIdentityCheckpoint);
+assert.deepEqual(
+  mixedIdentityRestored.entries(),
+  mixedScriptIdentityBus.entries(),
+);
+
 const checkpointBus = new CommandBus();
 assert.equal(checkpointBus.writeRemote(4, "throttle", 0.25), true);
-assert.equal(checkpointBus.writeScript(2, "stride", 5, "stride", 0.75), true);
-assert.equal(checkpointBus.writeScript(3, "stride", 5, "stride", -0.75), false);
+assert.equal(
+  checkpointBus.writeScript(2, "joint", 5, "joint_target", 0.75),
+  true,
+);
+assert.equal(
+  checkpointBus.writeScript(3, "joint", 5, "joint_target", -0.75),
+  false,
+);
 checkpointBus.reject({ targetId: 99, channel: "throttle" }, "unrouted");
-const checkpointState = checkpointBus.exportState();
+const checkpointState = structuredClone(checkpointBus.exportState());
 assert.deepEqual(checkpointState, {
   remote: [{ targetId: 4, channel: "throttle", value: 0.25 }],
   script: [
     {
       controllerId: 2,
-      bindingId: "stride",
+      bindingId: "joint",
       targetId: 5,
-      channel: "stride",
+      channel: "joint_target",
       value: 0.75,
     },
   ],
-  conflicts: ["5:stride"],
+  conflicts: [CommandBus.key(5, "joint_target")],
   rejections: [{ targetId: 99, channel: "throttle", reason: "unrouted" }],
 });
 checkpointState.remote[0].value = 1;
@@ -1219,27 +1431,190 @@ const restoredBus = new CommandBus();
 restoredBus.writeRemote(88, "lights", 1);
 restoredBus.importState(checkpointBus.exportState());
 assert.deepEqual(restoredBus.entries(), checkpointBus.entries());
-assert.deepEqual(restoredBus.read(5, "stride", -1), {
+assert.deepEqual(restoredBus.read(5, "joint_target", -1), {
   value: -1,
   conflict: true,
   source: "none",
 });
-assert.throws(() => restoredBus.importState(null), /must be an object/);
 assert.throws(
-  () => restoredBus.importState({ remote: [{ targetId: null }] }),
+  () => restoredBus.importState(null),
+  (error) => error?.code === "INVALID_COMMAND_BUS_CHECKPOINT_PLAIN_DATA",
+);
+const invalidRemoteCheckpoint = structuredClone(checkpointBus.exportState());
+invalidRemoteCheckpoint.remote[0].targetId = null;
+assert.throws(
+  () => restoredBus.importState(JSON.stringify(invalidRemoteCheckpoint)),
   /invalid remote data/,
 );
+const invalidScriptCheckpoint = structuredClone(checkpointBus.exportState());
+invalidScriptCheckpoint.script[0].controllerId = null;
 assert.throws(
-  () => restoredBus.importState({ script: [{ controllerId: null }] }),
+  () => restoredBus.importState(JSON.stringify(invalidScriptCheckpoint)),
   /invalid script data/,
 );
-restoredBus.importState({});
+const validEmptyCommandCheckpoint = {
+    remote: [],
+    script: [],
+    conflicts: [],
+    rejections: [],
+  },
+  assertInvalidCommandCheckpoint = (candidate, pattern, label) =>
+    assert.throws(
+      () =>
+        restoredBus.validateState(
+          typeof candidate === "string" ? candidate : JSON.stringify(candidate),
+        ),
+      pattern,
+      label,
+    );
+for (const [index, candidate] of [
+  [],
+  {},
+  { ...validEmptyCommandCheckpoint, extra: true },
+  { remote: [], script: [], conflicts: [] },
+  { ...validEmptyCommandCheckpoint, remote: {} },
+  { ...validEmptyCommandCheckpoint, script: {} },
+  { ...validEmptyCommandCheckpoint, conflicts: {} },
+  { ...validEmptyCommandCheckpoint, rejections: {} },
+  { ...validEmptyCommandCheckpoint, conflicts: ["duplicate", "duplicate"] },
+  { ...validEmptyCommandCheckpoint, conflicts: [1] },
+  '{"remote":[],"script":[],"conflicts":[],"rejections":[{"value":1e999}]}',
+].entries())
+  assertInvalidCommandCheckpoint(
+    candidate,
+    /object|invalid arrays/,
+    `command checkpoint envelope mutant ${index} was accepted`,
+  );
+const validRemote = { targetId: 4, channel: "throttle", value: 0.25 };
+for (const [index, entry] of [
+  { ...validRemote, extra: true },
+  { channel: "throttle", value: 0.25 },
+  { ...validRemote, targetId: null },
+  { ...validRemote, targetId: {} },
+  { ...validRemote, channel: 1 },
+  { ...validRemote, channel: "" },
+  { ...validRemote, value: "0.25" },
+].entries())
+  assertInvalidCommandCheckpoint(
+    { ...validEmptyCommandCheckpoint, remote: [entry] },
+    /invalid remote data/,
+    `command checkpoint remote mutant ${index} was accepted`,
+  );
+assertInvalidCommandCheckpoint(
+  '{"remote":[{"targetId":4,"channel":"throttle","value":1e999}],"script":[],"conflicts":[],"rejections":[]}',
+  /invalid remote data/,
+  "command checkpoint accepted nonfinite remote value",
+);
+assertInvalidCommandCheckpoint(
+  {
+    ...validEmptyCommandCheckpoint,
+    remote: [validRemote, { ...validRemote }],
+  },
+  /invalid remote data/,
+  "command checkpoint accepted duplicate remote authority",
+);
+const validScript = {
+  controllerId: 2,
+  bindingId: "joint",
+  targetId: 5,
+  channel: "joint_target",
+  value: 0.75,
+};
+for (const [index, entry] of [
+  { ...validScript, extra: true },
+  { bindingId: "joint", targetId: 5, channel: "joint_target", value: 0.75 },
+  { ...validScript, controllerId: null },
+  { ...validScript, bindingId: 1 },
+  { ...validScript, bindingId: "" },
+  { ...validScript, targetId: null },
+  { ...validScript, targetId: {} },
+  { ...validScript, channel: 1 },
+  { ...validScript, channel: "" },
+  { ...validScript, value: "0.75" },
+].entries())
+  assertInvalidCommandCheckpoint(
+    { ...validEmptyCommandCheckpoint, script: [entry] },
+    /invalid script data/,
+    `command checkpoint script mutant ${index} was accepted`,
+  );
+assertInvalidCommandCheckpoint(
+  '{"remote":[],"script":[{"controllerId":2,"bindingId":"joint","targetId":5,"channel":"joint_target","value":1e999}],"conflicts":[],"rejections":[]}',
+  /invalid script data/,
+  "command checkpoint accepted nonfinite script value",
+);
+assertInvalidCommandCheckpoint(
+  {
+    ...validEmptyCommandCheckpoint,
+    script: [validScript, { ...validScript }],
+  },
+  /invalid script data/,
+  "command checkpoint accepted duplicate script authority",
+);
+assertInvalidCommandCheckpoint(
+  {
+    ...validEmptyCommandCheckpoint,
+    conflicts: [CommandBus.key(5, "joint_target")],
+  },
+  /unknown conflicts/,
+  "command checkpoint accepted a conflict without a script owner",
+);
+restoredBus.importState(
+  JSON.stringify({
+    remote: [],
+    script: [],
+    conflicts: [],
+    rejections: [],
+  }),
+);
 assert.deepEqual(restoredBus.entries(), {
   remote: [],
   script: [],
   conflicts: [],
   rejections: [],
 });
+let commandCheckpointGetterReads = 0;
+const accessorCommandCheckpoint = structuredClone(checkpointBus.exportState());
+Object.defineProperty(accessorCommandCheckpoint.remote[0], "targetId", {
+  enumerable: true,
+  get() {
+    commandCheckpointGetterReads++;
+    return 4;
+  },
+});
+assert.throws(
+  () => restoredBus.validateState(accessorCommandCheckpoint),
+  (error) => error?.code === "INVALID_COMMAND_BUS_CHECKPOINT_PLAIN_DATA",
+  "command checkpoint accepted an executable accessor",
+);
+assert.equal(
+  commandCheckpointGetterReads,
+  0,
+  "command checkpoint rejection invoked an accessor",
+);
+const inheritedCommandCheckpoint = structuredClone(checkpointBus.exportState());
+Object.setPrototypeOf(inheritedCommandCheckpoint, { forged: true });
+assert.throws(
+  () => restoredBus.validateState(inheritedCommandCheckpoint),
+  (error) => error?.code === "INVALID_COMMAND_BUS_CHECKPOINT_PLAIN_DATA",
+  "command checkpoint accepted a custom prototype",
+);
+let commandCheckpointProxyReads = 0;
+const proxiedCommandCheckpoint = new Proxy(checkpointBus.exportState(), {
+  get(target, key, receiver) {
+    commandCheckpointProxyReads++;
+    return Reflect.get(target, key, receiver);
+  },
+});
+assert.throws(
+  () => restoredBus.validateState(proxiedCommandCheckpoint),
+  (error) => error?.code === "INVALID_COMMAND_BUS_CHECKPOINT_PLAIN_DATA",
+  "command checkpoint accepted Proxy state",
+);
+assert.equal(
+  commandCheckpointProxyReads,
+  0,
+  "command checkpoint Proxy rejection invoked a data getter",
+);
 
 const isolatedGraph = new RunAssemblyGraph({
   parts: [

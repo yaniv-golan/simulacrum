@@ -300,9 +300,14 @@ try {
       const before = JSON.parse(window.render_game_to_text()).simulationTime,
         started = performance.now();
       window.advanceTime(1000);
-      const after = JSON.parse(window.render_game_to_text()).simulationTime;
+      // This metric owns fixed-step execution only. Keep the observer read
+      // outside the timed interval while still proving the requested amount of
+      // simulated time completed. Read-model cost belongs to presentation
+      // budgets and must not contaminate the physics-step release contract.
+      const elapsedMs = performance.now() - started,
+        after = JSON.parse(window.render_game_to_text()).simulationTime;
       return {
-        elapsedMs: performance.now() - started,
+        elapsedMs,
         simulatedDeltaS: after - before,
       };
     });

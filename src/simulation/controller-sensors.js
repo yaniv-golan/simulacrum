@@ -3,6 +3,10 @@ import { primaryGeometryAxisPart } from "../model/component-geometry-contract.js
 import { portDefinition } from "../model/ports.js";
 import { sensorDefinitionsForPart } from "../model/sensor-contracts.js";
 import { componentHasControlContract } from "../model/component-contracts.js";
+import {
+  issueInertPlainData,
+  requireInertPlainData,
+} from "../model/plain-data-contract.js";
 import { canonicalControllerBindings } from "../model/controller-bindings.js";
 import { finiteOr as finite } from "../model/finite-or.js";
 import { standardAtmosphere } from "./environment/atmosphere.js";
@@ -385,21 +389,59 @@ export class ControllerSensorBank {
   }
 
   exportState() {
-    return [...this.previousVelocity]
-      .sort(([left], [right]) =>
-        String(left).localeCompare(String(right), "en"),
+    return issueInertPlainData(
+      [...this.previousVelocity]
+        .sort(([left], [right]) =>
+          String(left).localeCompare(String(right), "en"),
+        )
+        .map(([sensorId, velocity]) => ({
+          sensorId,
+          velocity: structuredClone(velocity),
+        })),
+    );
+  }
+
+  validateState(state) {
+    state = requireInertPlainData(state, {
+      code: "INVALID_SENSOR_CHECKPOINT_INPUT",
+      message:
+        "Sensor checkpoint must be serialized JSON or an exported immutable state",
+    });
+    if (!Array.isArray(state))
+      throw new TypeError("sensor checkpoint must be an array");
+    const velocities = new Map();
+    for (const record of state) {
+      if (
+        !record ||
+        typeof record !== "object" ||
+        Array.isArray(record) ||
+        Object.keys(record).sort().join("\0") !== "sensorId\0velocity" ||
+        record.sensorId == null ||
+        velocities.has(record.sensorId) ||
+        !record.velocity ||
+        typeof record.velocity !== "object" ||
+        Array.isArray(record.velocity) ||
+        Object.keys(record.velocity).sort().join("\0") !== "x\0y\0z" ||
+        ["x", "y", "z"].some(
+          (axis) =>
+            typeof record.velocity[axis] !== "number" ||
+            !Number.isFinite(record.velocity[axis]),
+        )
       )
-      .map(([sensorId, velocity]) => ({
-        sensorId,
-        velocity: structuredClone(velocity),
-      }));
+        throw new TypeError(
+          "sensor checkpoint contains invalid velocity state",
+        );
+      velocities.set(record.sensorId, structuredClone(record.velocity));
+    }
+    return velocities;
   }
 
   importState(state) {
-    if (!Array.isArray(state))
-      throw new TypeError("sensor checkpoint must be an array");
     this.previousVelocity = new Map(
-      state.map((record) => [record.sensorId, vector(record.velocity)]),
+      [...this.validateState(state)].map(([sensorId, velocity]) => [
+        sensorId,
+        vector(velocity),
+      ]),
     );
   }
 }

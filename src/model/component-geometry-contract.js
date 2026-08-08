@@ -13,6 +13,7 @@ import {
   completeMassProperties,
 } from "./mechanism-geometry-compiler.js";
 import {
+  canonicalId,
   canonicalQuaternion,
   deepFreeze,
   DomainValidationError,
@@ -43,7 +44,8 @@ import { sha256Hex } from "./sha256.js";
 /** @typedef {{kind:"mechanism-deformation-v1",coordinates:MechanismDeformationCoordinateV1[]}} MechanismDeformationContractV1 */
 /** @typedef {{kind:"flexible-line-runtime-geometry-v1",endpointPortIds:string[],diameterM:number,maximumSegmentCount:number,materialKey:string,styleKey:"rope-v1",telemetryProjection:"completed-centerline-v1"}} FlexibleRuntimeGeometryContractV1 */
 /** @typedef {{xx:number,yy:number,zz:number,xy:number,xz:number,yz:number}} InertiaTensorV1 */
-/** @typedef {{sourceKind:string,massEvaluationPolicy:string,massKg:number,volumeM3:number,comPositionPartM:number[],inertiaTensorAtComPartKgM2:InertiaTensorV1,contributingSolidIds:string[],principalMomentsKgM2:number[],principalAxesPart:number[][],decompositionPolicy:string}} GeometryMassPropertiesV1 */
+/** @typedef {{sourcePartId:string|number,sourceConnectionId:string|number,sourcePortId:string,targetPartId:string|number,targetPortId:string,positionFramePartId:string|number,massKg:number,positionPartM:number[]}} EndpointPointMassV1 */
+/** @typedef {{sourceKind:string,massEvaluationPolicy:string,massKg:number,volumeM3:number,comPositionPartM:number[],inertiaTensorAtComPartKgM2:InertiaTensorV1,contributingSolidIds:string[],principalMomentsKgM2:number[],principalAxesPart:number[][],decompositionPolicy:string,endpointPointMasses?:EndpointPointMassV1[]}} GeometryMassPropertiesV1 */
 /** @typedef {{areaM2:number,dragCoefficient:number,liftSlope:number}} GeometryAerodynamicSurfaceV1 */
 /** @typedef {{heatLimit:number,specificHeat:number,emissivity:number,cd:number,ablative?:boolean,pyrolysisTemperatureK?:number,heatOfAblationJkg?:number}} GeometryAerothermalMaterialV1 */
 /** @typedef {{material:GeometryAerothermalMaterialV1,noseRadiusM:number}} GeometryAerothermalV1 */
@@ -2032,6 +2034,9 @@ export function validateGeometryDescriptorOrThrow(value) {
       "principalMomentsKgM2",
       "principalAxesPart",
       "decompositionPolicy",
+      ...(Object.hasOwn(descriptor.massProperties, "endpointPointMasses")
+        ? ["endpointPointMasses"]
+        : []),
     ],
     ["massProperties"],
   );
@@ -2047,6 +2052,64 @@ export function validateGeometryDescriptorOrThrow(value) {
   finiteVector3(descriptor.massProperties.comPositionPartM, {
     path: ["massProperties", "comPositionPartM"],
   });
+  if (Object.hasOwn(descriptor.massProperties, "endpointPointMasses")) {
+    if (!Array.isArray(descriptor.massProperties.endpointPointMasses))
+      fail("INVALID_GEOMETRY_MASS", "Endpoint point masses must be an array", [
+        "massProperties",
+        "endpointPointMasses",
+      ]);
+    for (const [
+      index,
+      point,
+    ] of descriptor.massProperties.endpointPointMasses.entries()) {
+      const pointPath = ["massProperties", "endpointPointMasses", index];
+      closedKeys(
+        point,
+        [
+          "sourcePartId",
+          "sourceConnectionId",
+          "sourcePortId",
+          "targetPartId",
+          "targetPortId",
+          "positionFramePartId",
+          "massKg",
+          "positionPartM",
+        ],
+        pointPath,
+      );
+      canonicalId(point.sourcePartId, { path: [...pointPath, "sourcePartId"] });
+      canonicalId(point.sourceConnectionId, {
+        path: [...pointPath, "sourceConnectionId"],
+      });
+      canonicalId(point.targetPartId, {
+        path: [...pointPath, "targetPartId"],
+      });
+      canonicalId(point.positionFramePartId, {
+        path: [...pointPath, "positionFramePartId"],
+      });
+      if (
+        typeof point.sourcePortId !== "string" ||
+        !point.sourcePortId ||
+        typeof point.targetPortId !== "string" ||
+        !point.targetPortId
+      )
+        fail(
+          "INVALID_GEOMETRY_MASS",
+          "Endpoint point mass requires non-empty source and target ports",
+          pointPath,
+        );
+      if (point.positionFramePartId !== point.targetPartId)
+        fail(
+          "INVALID_GEOMETRY_MASS",
+          "Endpoint point-mass position frame must be owned by its target part",
+          [...pointPath, "positionFramePartId"],
+        );
+      finiteNonNegative(point.massKg, [...pointPath, "massKg"]);
+      finiteVector3(point.positionPartM, {
+        path: [...pointPath, "positionPartM"],
+      });
+    }
+  }
   closedKeys(
     descriptor.massProperties.inertiaTensorAtComPartKgM2,
     ["xx", "yy", "zz", "xy", "xz", "yz"],

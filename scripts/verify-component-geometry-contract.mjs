@@ -23,7 +23,7 @@ import { mechanismComponentDefinition } from "../src/model/mechanism-component-d
 import { flexibleLinePreviewReadModel } from "../src/model/flexible-line-preview-read-model.js";
 import { componentMesh } from "../src/presentation/component-mesh-factory.js";
 import { worldPortFrame } from "../src/model/connection-frame-invariants.js";
-import { compileAssembly } from "../src/model/assembly-compiler.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import { supportMaterialResponse } from "../src/model/contact-material-pairs.js";
 
 assert.equal(COMPONENT_GEOMETRY_SCHEMA_VERSION, 2);

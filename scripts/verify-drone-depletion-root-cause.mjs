@@ -4,10 +4,10 @@ import {
   MaterialResourceNetwork,
   RunAssemblyGraph,
   TYPES,
-  compileAssembly,
   decodeBlueprintOrThrow,
   pressureNozzlePerformance,
 } from "../src/core/index.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import { sha256Hex } from "../src/model/sha256.js";
 
 const fixturePath = new URL(

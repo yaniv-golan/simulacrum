@@ -1,4 +1,27 @@
-import { deepFreeze } from "../model/primitives.js";
+import { deepFreeze, identityToken } from "../model/primitives.js";
+import {
+  issueInertPlainData,
+  requireInertPlainData,
+} from "../model/plain-data-contract.js";
+
+function checkpointKeysMatch(value, expectedKeys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort(),
+    expected = [...expectedKeys].sort();
+  return (
+    actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index])
+  );
+}
+
+function checkpointTreeIsFinite(value) {
+  if (value == null || typeof value === "string" || typeof value === "boolean")
+    return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (Array.isArray(value)) return value.every(checkpointTreeIsFinite);
+  if (typeof value !== "object") return false;
+  return Object.values(value).every(checkpointTreeIsFinite);
+}
 
 export class CommandBus {
   constructor() {
@@ -9,7 +32,10 @@ export class CommandBus {
   }
 
   static key(targetId, channel) {
-    return `${targetId}:${channel}`;
+    return JSON.stringify([
+      identityToken(targetId, { typedStrings: true }),
+      channel,
+    ]);
   }
 
   clearTick() {
@@ -22,7 +48,13 @@ export class CommandBus {
   writeRemote(targetId, channel, value) {
     const number = Number(value);
     if (targetId == null || !channel || !Number.isFinite(number)) return false;
-    this.remote.set(CommandBus.key(targetId, channel), {
+    let key;
+    try {
+      key = CommandBus.key(targetId, channel);
+    } catch {
+      return false;
+    }
+    this.remote.set(key, {
       targetId,
       channel,
       value: number,
@@ -40,8 +72,13 @@ export class CommandBus {
       !Number.isFinite(number)
     )
       return false;
-    const key = CommandBus.key(targetId, channel),
-      existing = this.script.get(key);
+    let key;
+    try {
+      key = CommandBus.key(targetId, channel);
+    } catch {
+      return false;
+    }
+    const existing = this.script.get(key);
     if (existing && existing.controllerId !== controllerId) {
       this.conflicts.add(key);
       return false;
@@ -90,32 +127,124 @@ export class CommandBus {
 
   exportState() {
     const state = this.entries();
-    return structuredClone(state);
+    return issueInertPlainData(state);
   }
 
-  importState(state) {
-    if (!state || typeof state !== "object")
+  validateState(state) {
+    const detachedState = requireInertPlainData(state, {
+      code: "INVALID_COMMAND_BUS_CHECKPOINT_PLAIN_DATA",
+      message:
+        "Command bus checkpoint must be serialized JSON or an exported immutable state",
+    });
+    if (
+      !checkpointKeysMatch(detachedState, [
+        "remote",
+        "script",
+        "conflicts",
+        "rejections",
+      ])
+    )
       throw new TypeError("command bus checkpoint must be an object");
-    this.clearTick();
-    for (const entry of state.remote || [])
-      if (!this.writeRemote(entry.targetId, entry.channel, entry.value))
+    if (
+      !Array.isArray(detachedState.remote || []) ||
+      !Array.isArray(detachedState.script || []) ||
+      !Array.isArray(detachedState.conflicts || []) ||
+      !Array.isArray(detachedState.rejections || []) ||
+      new Set(detachedState.conflicts).size !==
+        detachedState.conflicts.length ||
+      detachedState.conflicts.some((key) => typeof key !== "string") ||
+      !checkpointTreeIsFinite(detachedState.rejections)
+    )
+      throw new TypeError("command bus checkpoint contains invalid arrays");
+    const remote = new Map(),
+      script = new Map(),
+      conflicts = new Set(detachedState.conflicts || []);
+    for (const entry of detachedState.remote || []) {
+      if (
+        !checkpointKeysMatch(entry, ["targetId", "channel", "value"]) ||
+        entry.targetId == null ||
+        typeof entry.channel !== "string" ||
+        !entry.channel ||
+        typeof entry.value !== "number" ||
+        !Number.isFinite(entry.value)
+      )
         throw new TypeError(
           "command bus checkpoint contains invalid remote data",
         );
-    for (const entry of state.script || [])
+      let key;
+      try {
+        key = CommandBus.key(entry.targetId, entry.channel);
+      } catch {
+        throw new TypeError(
+          "command bus checkpoint contains invalid remote data",
+        );
+      }
+      if (remote.has(key))
+        throw new TypeError(
+          "command bus checkpoint contains invalid remote data",
+        );
+      remote.set(key, {
+        targetId: entry.targetId,
+        channel: entry.channel,
+        value: entry.value,
+      });
+    }
+    for (const entry of detachedState.script || []) {
       if (
-        !this.writeScript(
-          entry.controllerId,
-          entry.bindingId,
-          entry.targetId,
-          entry.channel,
-          entry.value,
-        )
+        !checkpointKeysMatch(entry, [
+          "controllerId",
+          "bindingId",
+          "targetId",
+          "channel",
+          "value",
+        ]) ||
+        entry?.controllerId == null ||
+        typeof entry.bindingId !== "string" ||
+        !entry.bindingId ||
+        entry.targetId == null ||
+        typeof entry.channel !== "string" ||
+        !entry.channel ||
+        typeof entry.value !== "number" ||
+        !Number.isFinite(entry.value)
       )
         throw new TypeError(
           "command bus checkpoint contains invalid script data",
         );
-    this.conflicts = new Set(state.conflicts || []);
-    this.rejections = structuredClone(state.rejections || []);
+      let key;
+      try {
+        key = CommandBus.key(entry.targetId, entry.channel);
+      } catch {
+        throw new TypeError(
+          "command bus checkpoint contains invalid script data",
+        );
+      }
+      if (script.has(key))
+        throw new TypeError(
+          "command bus checkpoint contains invalid script data",
+        );
+      script.set(key, {
+        controllerId: entry.controllerId,
+        bindingId: entry.bindingId,
+        targetId: entry.targetId,
+        channel: entry.channel,
+        value: entry.value,
+      });
+    }
+    if ([...conflicts].some((key) => !script.has(key)))
+      throw new TypeError("command bus checkpoint contains unknown conflicts");
+    return {
+      remote,
+      script,
+      conflicts,
+      rejections: structuredClone(detachedState.rejections || []),
+    };
+  }
+
+  importState(state) {
+    const validated = this.validateState(state);
+    this.remote = validated.remote;
+    this.script = validated.script;
+    this.conflicts = validated.conflicts;
+    this.rejections = validated.rejections;
   }
 }

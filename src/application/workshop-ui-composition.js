@@ -21,11 +21,11 @@ export function createWorkshopUiComposition({
   const engineering = installEngineeringOverlays({
       machine: stage.machine,
       effects: stage.effects,
-      catalog: shell.query(".catalog"),
+      catalogElement: shell.query(".catalog"),
+      componentCatalog: catalog,
       getSnapshot: () => ({
         parts: assembly.workspace.editorSnapshot(),
         connections: structuredClone(state.connections),
-        catalog,
       }),
       getParts: () => state.parts,
       onOpen: () => shell.chrome.setPrimaryPanel("catalog"),
@@ -35,6 +35,7 @@ export function createWorkshopUiComposition({
         parts: () => state.parts,
         connections: () => state.connections,
         running: () => state.running,
+        starting: () => state.simulationStarting,
         paused: () => state.simulationPaused,
         timeScale: () => state.timeScale,
       },

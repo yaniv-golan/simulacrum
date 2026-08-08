@@ -351,7 +351,7 @@ assert.throws(
 );
 
 const engineering = analyzeAssembly(
-  {
+  JSON.stringify({
     parts: [
       {
         id: 1,
@@ -380,7 +380,7 @@ const engineering = analyzeAssembly(
       },
     ],
     connections: [],
-  },
+  }),
   TYPES,
 );
 assert.equal(engineering.totalMass, 101, "engineering mass is inconsistent");

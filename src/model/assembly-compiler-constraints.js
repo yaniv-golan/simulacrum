@@ -4,7 +4,6 @@ import {
   cloneCompiledValue,
   compiledPortDefinition,
   compiledVector,
-  constraintId,
   endpointPort,
   isLinkageEndpoint,
   isPivotEndpoint,
@@ -13,6 +12,13 @@ import {
   worldPortFrame,
 } from "./assembly-compiler-shared.js";
 import { validateConnectionFrameInvariant } from "./connection-frame-invariants.js";
+
+function pushDirectConstraint(context, descriptor) {
+  context.constraints.push({
+    ...descriptor,
+    solverOrderClass: "direct-connection-v1",
+  });
+}
 
 function gearEndpoint(context, part) {
   const definition = componentDefinition(part, context.catalog),
@@ -45,8 +51,8 @@ function compileGear(context, connection, a, b) {
     });
   const teethA = endpointA.teeth,
     teethB = endpointB.teeth;
-  context.constraints.push({
-    id: constraintId("gear", connection),
+  pushDirectConstraint(context, {
+    id: context.constraintId("gear", connection),
     kind: "gear",
     sourceConnectionIds: [connection.id],
     a: a.id,
@@ -68,8 +74,8 @@ function compileGear(context, connection, a, b) {
 function compileMeasurement(context, connection, a, b, leftPort) {
   const sensor = leftPort.behavior === "rotary-measurement" ? a : b,
     target = sensor === a ? b : a;
-  context.constraints.push({
-    id: constraintId("sensor", connection),
+  pushDirectConstraint(context, {
+    id: context.constraintId("sensor", connection),
     kind: "measurement",
     sourceConnectionIds: [connection.id],
     a: a.id,
@@ -81,8 +87,8 @@ function compileMeasurement(context, connection, a, b, leftPort) {
 
 function compilePivot(context, connection, a, b, portA) {
   const lever = isPivotEndpoint(a, portA, context.catalog) ? a : b;
-  context.constraints.push({
-    id: constraintId("lever-pivot", connection),
+  pushDirectConstraint(context, {
+    id: context.constraintId("lever-pivot", connection),
     kind: "revolute",
     sourcePartId: lever.id,
     sourceConnectionIds: [connection.id],
@@ -97,8 +103,8 @@ function compilePivot(context, connection, a, b, portA) {
 }
 
 function compileLinkage(context, connection, a, b) {
-  context.constraints.push({
-    id: constraintId("linkage", connection),
+  pushDirectConstraint(context, {
+    id: context.constraintId("linkage", connection),
     kind: "linkage",
     sourceConnectionIds: [connection.id],
     a: a.id,
@@ -225,7 +231,7 @@ function rotaryDescriptor(
       ? worldMechanismFrame(frameOwner, coordinate.coordinateConfig.frameB)
       : attachmentFrame;
   return {
-    id: constraintId("shaft", connection),
+    id: context.constraintId("shaft", connection),
     kind: "revolute",
     sourcePartId: positionActuator?.id,
     sourceConnectionIds: [connection.id],
@@ -265,12 +271,12 @@ function compileRotary(context, connection, a, b, leftPort, rightPort) {
       rightPort,
       participants,
     );
-  context.constraints.push(descriptor);
+  pushDirectConstraint(context, descriptor);
   const { positionActuator } = participants,
     actuation = positionActuator?.mechanism?.config.actuation;
   if (positionActuator && actuation)
     context.actuators.push({
-      id: `actuator:${positionActuator.id}`,
+      id: context.partScopedId("actuator", positionActuator.id),
       kind: "rotary-actuator-v1",
       sourcePartId: positionActuator.id,
       constraintId: descriptor.id,
@@ -300,8 +306,8 @@ function compileLinearGuide(context, connection, a, b, leftPort, rightPort) {
     ),
     mechanismConfig = coordinateOwner.mechanism.config,
     range = mechanismConfig.travelRangeM;
-  context.constraints.push({
-    id: constraintId("linear-guide", connection),
+  pushDirectConstraint(context, {
+    id: context.constraintId("linear-guide", connection),
     kind: "linear-guide",
     sourcePartId: coordinateOwner.id,
     sourceConnectionIds: [connection.id],
@@ -319,13 +325,60 @@ function compileLinearGuide(context, connection, a, b, leftPort, rightPort) {
   });
 }
 
-function compileFixed(context, connection, a, b) {
-  context.constraints.push({
-    id: constraintId("fixed", connection),
+function fixedAttachmentFrame(context, connection, part, port, side) {
+  const structuralAnchor = connection[`anchor${side}`],
+    projected = worldPortFrame(
+      part,
+      context.geometryFor(part),
+      port.id,
+      structuralAnchor,
+    );
+  return {
+    portId: port.id,
+    positionPartM: compiledVector(
+      structuralAnchor ?? projected.portFrame.framePart.positionM,
+    ),
+    orientationPart: [...projected.orientationPart],
+    positionWorldM: [...projected.positionWorld],
+    orientationWorld: [...projected.orientationWorld],
+  };
+}
+
+function compileFixed(context, connection, a, b, leftPort, rightPort) {
+  const attachmentFrameA = fixedAttachmentFrame(
+      context,
+      connection,
+      a,
+      leftPort,
+      "A",
+    ),
+    attachmentFrameB = fixedAttachmentFrame(
+      context,
+      connection,
+      b,
+      rightPort,
+      "B",
+    );
+  pushDirectConstraint(context, {
+    id: context.constraintId("fixed", connection),
     kind: "fixed",
     sourceConnectionIds: [connection.id],
     a: a.id,
     b: b.id,
+    attachmentFrameA,
+    attachmentFrameB,
+    failureAttachments: [
+      {
+        connectionId: connection.id,
+        side: "A",
+        bodyPartId: a.id,
+      },
+      {
+        connectionId: connection.id,
+        side: "B",
+        bodyPartId: b.id,
+      },
+    ],
     breakForce: connection.capacity.ultimateForceN,
     breakTorque: connection.capacity.ultimateTorqueNm,
   });
@@ -368,6 +421,7 @@ function constraintFamily(context, connection, a, b, leftPort, rightPort) {
 function compileConnectionConstraint(context, connection) {
   if (
     context.consumedConnections.has(connection.id) ||
+    context.rejectedConnectionIds.has(connection.id) ||
     connection.failed ||
     !PHYSICAL_CONNECTION_KINDS.has(connection.kind)
   )
