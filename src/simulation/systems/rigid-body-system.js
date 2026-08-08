@@ -1,4 +1,5 @@
 import * as CANNON from "cannon-es";
+import { bodyRegistryBodyRecords } from "../body-registry.js";
 import { requestWorldEvidenceCapture } from "../cannon-world-adapter.js";
 import {
   boundedMultibodyFailureEvidence,
@@ -41,6 +42,7 @@ function heightfieldFeature(body, shape, worldPoint) {
 /** Integrates all rigid bodies and contacts through the session's world. */
 export class RigidBodySystem {
   phase = "integration";
+  checkpointOwner = "body-registry-projection";
 
   initialize(context) {
     const registry = context.bodyRegistry,
@@ -77,8 +79,19 @@ export class RigidBodySystem {
           descriptor = multibody.compiled.bodies.find(
             (candidate) => candidate.partId === partId,
           );
+        if (!descriptor)
+          throw new TypeError(
+            `Multibody part ${String(partId)} has no compiled body descriptor`,
+          );
+        if (typeof descriptor.id !== "string" || !descriptor.id.length)
+          throw new TypeError(
+            `Multibody part ${String(partId)} has no compiled body identity`,
+          );
+        const compiledBodyToken = descriptor.id.startsWith("body:")
+          ? descriptor.id.slice("body:".length)
+          : descriptor.id;
         register(
-          `cannon:part:${String(partId)}`,
+          `cannon:part:${compiledBodyToken}`,
           [partId],
           body,
           (multibody.constraintEntries || [])
@@ -91,7 +104,7 @@ export class RigidBodySystem {
             )
             .flatMap((entry) => entry.descriptor.sourceConnectionIds || []),
           pose,
-          descriptor?.massProperties || null,
+          descriptor.massProperties,
         );
       }
     if (multibody?.compiled)
@@ -126,19 +139,20 @@ export class RigidBodySystem {
       }
       adapter.integrate(dt, { tick: context.clock.tick });
       context.telemetry.integration = adapter.telemetry();
-      this.#syncBodyRegistry(context, dt);
     }
     if (services.multibodyRuntime?.compiled) {
       context.telemetry.mechanisms =
         services.multibodyRuntime.afterIntegration(dt);
     }
+    if (hasCannonBodies) this.#syncBodyRegistry(context, dt);
     if (captureEvidence && services.multibodyRuntime?.compiled) {
-      const contacts = context.bodyRegistry.snapshot().bodies.flatMap((body) =>
-          body.contacts.map((contact) => ({
-            bodyId: body.bodyId,
-            partIds: body.partIds,
-            ...contact,
-          })),
+      const contacts = bodyRegistryBodyRecords(context.bodyRegistry).flatMap(
+          (body) =>
+            body.contacts.map((contact) => ({
+              bodyId: body.bodyId,
+              partIds: body.partIds,
+              ...contact,
+            })),
         ),
         forceByConnection =
           services.multibodyRuntime.loadByConnection || new Map(),
@@ -165,39 +179,13 @@ export class RigidBodySystem {
         })),
       });
     }
-    if (services.articulatedController?.active())
-      context.telemetry.articulated =
-        services.articulatedController.afterIntegration(context, dt);
   }
 
   #syncBodyRegistry(context, dt) {
+    this.reconstructAfterPhysicsRestore(context, dt);
     const registry = context.bodyRegistry,
       world = context.services.worldAdapter.world;
     const multibody = context.services.multibodyRuntime;
-    for (const { bodyId, engineBody } of registry.engineEntries()) {
-      const partId = engineBody.userData?.partId,
-        pose = multibody?.bodyPose(partId) || {
-          position: engineBody.position,
-          quaternion: engineBody.quaternion,
-          velocity: engineBody.velocity,
-          angularVelocity: engineBody.angularVelocity,
-        };
-      registry.updateKinematics(bodyId, pose, dt);
-    }
-    for (const binding of registry.constraintBindings()) {
-      const pose = multibody?.constraintPoseForPart(binding.partId);
-      if (!pose) {
-        registry.updateConstraint(binding.constraintId, { detached: true });
-        continue;
-      }
-      registry.updateConstraint(binding.constraintId, {
-        pose,
-        angle: pose.angle,
-        angularVelocity: pose.angularVelocity,
-        reactionTorque: pose.reactionTorque,
-        detached: false,
-      });
-    }
     const tireRowsByContactId = new Map();
     for (const entry of multibody?.constraintEntries || []) {
       if (entry.kind !== "rolling-contact-v1") continue;
@@ -294,6 +282,36 @@ export class RigidBodySystem {
               : contact.bi.userData?.surface,
         });
       }
+    }
+  }
+
+  /** Rebuilds the registry kinematic read model from the physics owner. */
+  reconstructAfterPhysicsRestore(context, dt = 0) {
+    const registry = context.bodyRegistry,
+      multibody = context.services.multibodyRuntime;
+    for (const { bodyId, engineBody } of registry.engineEntries()) {
+      const partId = engineBody.userData?.partId,
+        pose = multibody?.bodyPose(partId) || {
+          position: engineBody.position,
+          quaternion: engineBody.quaternion,
+          velocity: engineBody.velocity,
+          angularVelocity: engineBody.angularVelocity,
+        };
+      registry.updateKinematics(bodyId, pose, dt);
+    }
+    for (const binding of registry.constraintBindings()) {
+      const pose = multibody?.constraintPoseForPart(binding.partId);
+      if (!pose) {
+        registry.updateConstraint(binding.constraintId, { detached: true });
+        continue;
+      }
+      registry.updateConstraint(binding.constraintId, {
+        pose,
+        angle: pose.angle,
+        angularVelocity: pose.angularVelocity,
+        reactionTorque: pose.reactionTorque,
+        detached: false,
+      });
     }
   }
 }

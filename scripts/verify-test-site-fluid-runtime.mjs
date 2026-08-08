@@ -34,7 +34,7 @@ function fluidFixture(x, z, y, speedMps = 0) {
       ],
       connections: [],
     };
-  runtime.start(assembly);
+  runtime.start(JSON.stringify(assembly));
   runtime.bodyByPart.get(1).velocity.set(speedMps, 0, 0);
   return runtime.applyFluidForces();
 }

@@ -17,6 +17,7 @@ function createScenario({ x, y, z, orientation = [0, 0, 0, 1] }) {
       world: physics.world,
       worldAdapter: physics.worldAdapter,
       material: physics.debrisMaterial,
+      materialForKey: physics.materialForKey,
       catalog: TYPES,
       groundBody: physics.groundBody,
       fieldBody: physics.fieldBody,
@@ -24,20 +25,23 @@ function createScenario({ x, y, z, orientation = [0, 0, 0, 1] }) {
       terrainHeightAt: environment.terrainHeightAt,
       pondAt: environment.pondAt,
     });
-  runtime.start({
-    revision: 1,
-    parts: [
-      {
-        id: 1,
-        type: "beam",
-        pos: [x, y, z],
-        orientation,
-        scale: { x: 1, y: 1, z: 1 },
-        config: { linearDamping: 0.01, angularDamping: 0.04 },
-      },
-    ],
-    connections: [],
-  });
+  runtime.start(
+    JSON.stringify({
+      revision: 1,
+      parts: [
+        {
+          id: 1,
+          type: "beam",
+          pos: [x, y, z],
+          orientation,
+          scale: { x: 1, y: 1, z: 1 },
+          config: { linearDamping: 0.01, angularDamping: 0.04 },
+        },
+      ],
+      connections: [],
+    }),
+  );
+  physics.worldAdapter.beginSession();
   return { physics, runtime, body: runtime.bodyByPart.get(1) };
 }
 

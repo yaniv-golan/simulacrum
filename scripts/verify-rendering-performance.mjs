@@ -70,9 +70,10 @@ async function loadDemo(name) {
 }
 async function exerciseMissionHeat() {
   await page.locator("#run-btn").dispatchEvent("click");
-  await page.waitForFunction(
-    () => window.simulacrum_performance().heatBindings > 0,
-  );
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.running && window.simulacrum_performance().heatBindings > 0;
+  });
   await page.evaluate(() => window.advanceTime(12));
   if (
     await page.evaluate(

@@ -34,12 +34,27 @@ function assertIncreasingTicks(frames, path) {
       );
 }
 
+function checkpointInputSource(checkpoint) {
+  const owner = checkpoint?.stateOwners?.find(
+    (record) => record.ownerId === "input-command-bus",
+  );
+  if (!owner) return null;
+  try {
+    const payload = JSON.parse(owner.payloadJson);
+    return typeof payload?.inputCursor?.sourceId === "string"
+      ? payload.inputCursor.sourceId
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function validateArtifact(wire) {
   decodeBlueprintOrThrow(wire.blueprint);
   decodeRunConfigurationOrThrow(wire.runConfiguration);
   decodeInputTraceOrThrow(wire.externalInputTrace);
   if (wire.replayAnchorCheckpoint)
-    decodeCheckpointOrThrow(wire.replayAnchorCheckpoint);
+    decodeCheckpointOrThrow(stableStringify(wire.replayAnchorCheckpoint));
 
   let deployment;
   try {
@@ -164,6 +179,12 @@ function validateArtifact(wire) {
         "FAILURE_EVIDENCE_REPLAY_ANCHOR_MISMATCH",
         "Replay anchor identities do not match the captured run",
         ["replayAnchorCheckpoint"],
+      );
+    if (checkpointInputSource(anchor) !== wire.externalInputTrace.sourceId)
+      fail(
+        "FAILURE_EVIDENCE_TRACE_SOURCE_MISMATCH",
+        "Replay input source must match the registered source in the anchor checkpoint",
+        ["externalInputTrace", "sourceId"],
       );
   } else {
     if (wire.replayAnchorCheckpoint !== null)

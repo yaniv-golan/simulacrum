@@ -7,6 +7,10 @@ import {
   immutableClone,
 } from "../model/primitives.js";
 import {
+  issueInertPlainData,
+  requireInertPlainData,
+} from "../model/plain-data-contract.js";
+import {
   batteryEnergyReadModel,
   runtimeBatteryEnergy,
 } from "./energy-ledger.js";
@@ -14,6 +18,56 @@ import { componentElectricalSource } from "../model/component-contracts.js";
 
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
 const loadTransactions = new WeakMap();
+const CONNECTION_CHECKPOINT_FIELDS = Object.freeze([
+  "id",
+  "stress",
+  "fatigue",
+  "failed",
+  "peakLoadN",
+  "peakTorqueNm",
+  "lastLoadN",
+  "lastTorqueNm",
+  "forceUtilization",
+  "torqueUtilization",
+  "failureReason",
+  "failureMode",
+  "failedAtS",
+]);
+const STRUCTURAL_EVENT_FIELDS = Object.freeze([
+  "type",
+  "graphRevision",
+  "failedConnectionIds",
+  "failedInternalEdgeIds",
+  "detachedPartIds",
+  "reason",
+  "mode",
+  "time",
+]);
+
+function checkpointKeysMatch(value, expectedKeys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort(),
+    expected = [...expectedKeys].sort();
+  return (
+    actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index])
+  );
+}
+
+function checkpointTreeIsFinite(value) {
+  if (value == null || typeof value === "string" || typeof value === "boolean")
+    return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (Array.isArray(value)) return value.every(checkpointTreeIsFinite);
+  if (typeof value !== "object") return false;
+  return Object.values(value).every(checkpointTreeIsFinite);
+}
+
+function uniqueKnownIds(values, knownIds) {
+  if (!Array.isArray(values)) return false;
+  const ids = new Set(values);
+  return ids.size === values.length && values.every((id) => knownIds.has(id));
+}
 
 /** Internal fixed-step batch boundary; intentionally absent from Core. */
 export function applyRunGraphLoads(runGraph, records = []) {
@@ -58,6 +112,7 @@ export class RunAssemblyGraph {
   #connections = new Map();
   #controllers = new Map();
   #events = [];
+  #checkpointInternalEdgeIds = new Set();
   #revision = 0;
   #graphRevision = 0;
   #indexRevision = -1;
@@ -114,6 +169,18 @@ export class RunAssemblyGraph {
 
   events() {
     return Object.freeze([...this.#events]);
+  }
+
+  /** Registers compiled flexible-edge identities for checkpoint validation. */
+  setCheckpointInternalEdgeIds(ids = []) {
+    if (!Array.isArray(ids) || new Set(ids).size !== ids.length)
+      throw new DomainValidationError(
+        "INVALID_RUN_GRAPH_INTERNAL_EDGE_IDS",
+        "Checkpoint internal-edge identities must be a unique array",
+      );
+    const validated = new Set();
+    for (const id of ids) validated.add(canonicalId(id));
+    this.#checkpointInternalEdgeIds = validated;
   }
 
   setPartState(id, patch) {
@@ -364,66 +431,298 @@ export class RunAssemblyGraph {
   }
 
   exportState() {
-    return structuredClone({
+    return issueInertPlainData({
+      version: 2,
       revision: this.#revision,
       graphRevision: this.#graphRevision,
-      parts: [...this.#parts.values()],
-      connections: [...this.#connections.values()],
+      parts: [...this.#parts.values()].map((part) => ({
+        id: part.id,
+        detached: part.detached,
+        ...(componentElectricalSource(
+          this.#startSnapshot.parts.find(
+            (candidate) => candidate.id === part.id,
+          ),
+        )
+          ? { energyJ: part.energyJ }
+          : {}),
+      })),
+      connections: [...this.#connections.values()].map((connection) => ({
+        id: connection.id,
+        stress: connection.stress,
+        fatigue: connection.fatigue,
+        failed: connection.failed,
+        peakLoadN: connection.peakLoadN,
+        peakTorqueNm: connection.peakTorqueNm,
+        lastLoadN: connection.lastLoadN ?? null,
+        lastTorqueNm: connection.lastTorqueNm ?? null,
+        forceUtilization: connection.forceUtilization ?? null,
+        torqueUtilization: connection.torqueUtilization ?? null,
+        failureReason: connection.failureReason ?? null,
+        failureMode: connection.failureMode ?? null,
+        failedAtS: connection.failedAtS ?? null,
+      })),
       controllers: [...this.#controllers].map(([id, state]) => ({ id, state })),
       events: this.#events,
     });
   }
 
-  importState(state) {
-    if (!state || typeof state !== "object")
+  validateState(state) {
+    state = requireInertPlainData(state, {
+      code: "INVALID_RUN_GRAPH_CHECKPOINT_INPUT",
+      message:
+        "Run-graph checkpoint must be serialized JSON or an exported immutable state",
+    });
+    if (
+      state?.version !== 2 ||
+      !checkpointKeysMatch(state, [
+        "version",
+        "revision",
+        "graphRevision",
+        "parts",
+        "connections",
+        "controllers",
+        "events",
+      ]) ||
+      !Array.isArray(state.parts) ||
+      !Array.isArray(state.connections) ||
+      !Array.isArray(state.controllers) ||
+      !Array.isArray(state.events)
+    )
       throw new DomainValidationError(
         "INVALID_RUN_GRAPH_CHECKPOINT",
-        "Run graph checkpoint must be an object",
+        "Run graph checkpoint must use the version 2 mutable-state projection",
       );
-    const startPartIds = new Set(
-        this.#startSnapshot.parts.map((part) => part.id),
+    const startParts = new Map(
+        this.#startSnapshot.parts.map((part) => [part.id, part]),
       ),
+      startPartIds = new Set(startParts.keys()),
       startConnectionIds = new Set(
         this.#startSnapshot.connections.map((connection) => connection.id),
       ),
-      parts = state.parts || [],
-      connections = state.connections || [];
+      parts = new Map(),
+      connections = new Map(),
+      controllers = new Map();
+    for (const record of state.parts) {
+      const startPart = startParts.get(record?.id),
+        expectedFields = componentElectricalSource(startPart)
+          ? ["id", "detached", "energyJ"]
+          : ["id", "detached"];
+      if (
+        !startPart ||
+        parts.has(record.id) ||
+        !checkpointKeysMatch(record, expectedFields) ||
+        typeof record.detached !== "boolean" ||
+        (Object.hasOwn(record, "energyJ") &&
+          (!Number.isFinite(record.energyJ) ||
+            record.energyJ < 0 ||
+            record.energyJ > this.#parts.get(record.id).capacityJ))
+      )
+        throw new DomainValidationError(
+          "RUN_GRAPH_CHECKPOINT_IDENTITY_MISMATCH",
+          "Run graph part checkpoint does not match the starting assembly",
+        );
+      parts.set(record.id, structuredClone(record));
+    }
+    for (const record of state.connections) {
+      const optionalNumbers = [
+          "lastLoadN",
+          "lastTorqueNm",
+          "forceUtilization",
+          "torqueUtilization",
+          "failedAtS",
+        ],
+        requiredNumbers = ["stress", "fatigue", "peakLoadN", "peakTorqueNm"];
+      if (
+        !startConnectionIds.has(record?.id) ||
+        connections.has(record.id) ||
+        !checkpointKeysMatch(record, CONNECTION_CHECKPOINT_FIELDS) ||
+        requiredNumbers.some(
+          (field) => !Number.isFinite(record[field]) || record[field] < 0,
+        ) ||
+        record.fatigue > 1 ||
+        optionalNumbers.some(
+          (field) =>
+            record[field] !== null &&
+            (!Number.isFinite(record[field]) || record[field] < 0),
+        ) ||
+        typeof record.failed !== "boolean" ||
+        !["failureReason", "failureMode"].every(
+          (field) =>
+            record[field] === null || typeof record[field] === "string",
+        ) ||
+        (record.failed
+          ? record.failureReason === null ||
+            record.failureMode === null ||
+            record.failedAtS === null
+          : record.failureReason !== null ||
+            record.failureMode !== null ||
+            record.failedAtS !== null)
+      )
+        throw new DomainValidationError(
+          "INVALID_RUN_GRAPH_CONNECTION_CHECKPOINT",
+          `Run graph connection checkpoint is invalid for ${String(record?.id)}`,
+        );
+      connections.set(record.id, structuredClone(record));
+    }
     if (
-      parts.length !== startPartIds.size ||
-      parts.some((part) => !startPartIds.has(part.id)) ||
-      connections.length !== startConnectionIds.size ||
-      connections.some((connection) => !startConnectionIds.has(connection.id))
+      parts.size !== startPartIds.size ||
+      [...startPartIds].some((id) => !parts.has(id)) ||
+      connections.size !== startConnectionIds.size ||
+      [...startConnectionIds].some((id) => !connections.has(id))
     )
       throw new DomainValidationError(
         "RUN_GRAPH_CHECKPOINT_IDENTITY_MISMATCH",
         "Run graph checkpoint does not match the starting assembly",
       );
+    for (const record of state.controllers) {
+      if (
+        !checkpointKeysMatch(record, ["id", "state"]) ||
+        !startPartIds.has(record.id) ||
+        controllers.has(record.id) ||
+        !record.state ||
+        typeof record.state !== "object" ||
+        Array.isArray(record.state) ||
+        !checkpointTreeIsFinite(record.state)
+      )
+        throw new DomainValidationError(
+          "INVALID_RUN_GRAPH_CONTROLLER_CHECKPOINT",
+          "Run graph controller checkpoint is invalid",
+        );
+      controllers.set(record.id, immutableClone(record.state));
+    }
+    if (
+      !Number.isSafeInteger(state.revision) ||
+      state.revision < 0 ||
+      !Number.isSafeInteger(state.graphRevision) ||
+      state.graphRevision < 0 ||
+      state.graphRevision > state.revision ||
+      state.events.length !== state.graphRevision
+    )
+      throw new DomainValidationError(
+        "INVALID_RUN_GRAPH_CHECKPOINT_REVISION",
+        "Run graph checkpoint revisions are invalid",
+      );
+    const events = state.events.map((event, index) => {
+      if (
+        !checkpointKeysMatch(event, STRUCTURAL_EVENT_FIELDS) ||
+        event.type !== "structural" ||
+        event.graphRevision !== index + 1 ||
+        !uniqueKnownIds(event.failedConnectionIds, startConnectionIds) ||
+        !uniqueKnownIds(
+          event.failedInternalEdgeIds,
+          this.#checkpointInternalEdgeIds,
+        ) ||
+        !uniqueKnownIds(event.detachedPartIds, startPartIds) ||
+        typeof event.reason !== "string" ||
+        typeof event.mode !== "string" ||
+        !Number.isFinite(event.time) ||
+        event.time < 0
+      )
+        throw new DomainValidationError(
+          "INVALID_RUN_GRAPH_EVENT_CHECKPOINT",
+          `Run graph structural event ${index} is invalid`,
+        );
+      return deepFreeze(structuredClone(event));
+    });
+    const replayedFailures = new Map(),
+      replayedDetachments = new Set();
+    for (const [index, event] of events.entries()) {
+      let changed = event.failedInternalEdgeIds.length > 0;
+      for (const connectionId of event.failedConnectionIds)
+        if (!replayedFailures.has(connectionId)) {
+          replayedFailures.set(connectionId, {
+            reason: event.reason,
+            mode: event.mode,
+            time: event.time,
+          });
+          changed = true;
+        }
+      const eventFailureIds = new Set(event.failedConnectionIds);
+      for (const partId of event.detachedPartIds) {
+        if (!replayedDetachments.has(partId)) {
+          replayedDetachments.add(partId);
+          changed = true;
+        }
+        const omittedIncidentFailure = this.#startSnapshot.connections.some(
+          (connection) =>
+            (connection.a === partId || connection.b === partId) &&
+            !eventFailureIds.has(connection.id),
+        );
+        if (omittedIncidentFailure)
+          throw new DomainValidationError(
+            "RUN_GRAPH_CHECKPOINT_EVENT_STATE_MISMATCH",
+            `Run graph structural event ${index} omits a connection failed by its detachment`,
+          );
+      }
+      if (!changed)
+        throw new DomainValidationError(
+          "RUN_GRAPH_CHECKPOINT_EVENT_STATE_MISMATCH",
+          `Run graph structural event ${index} does not represent a graph mutation`,
+        );
+    }
+    for (const [id, record] of connections) {
+      const failure = replayedFailures.get(id);
+      if (
+        record.failed !== Boolean(failure) ||
+        (failure &&
+          (record.failureReason !== failure.reason ||
+            record.failureMode !== failure.mode ||
+            record.failedAtS !== failure.time))
+      )
+        throw new DomainValidationError(
+          "RUN_GRAPH_CHECKPOINT_EVENT_STATE_MISMATCH",
+          `Run graph connection ${String(id)} does not match its structural event history`,
+        );
+    }
+    for (const [id, record] of parts)
+      if (record.detached !== replayedDetachments.has(id))
+        throw new DomainValidationError(
+          "RUN_GRAPH_CHECKPOINT_EVENT_STATE_MISMATCH",
+          `Run graph part ${String(id)} does not match its structural event history`,
+        );
+    return {
+      parts,
+      connections,
+      controllers,
+      events,
+      revision: state.revision,
+      graphRevision: state.graphRevision,
+    };
+  }
+
+  importState(state) {
+    const validated = this.validateState(state);
     this.#parts = new Map(
-      parts.map((part) => [part.id, deepFreeze(structuredClone(part))]),
+      [...this.#parts].map(([id, current]) => {
+        const saved = validated.parts.get(id),
+          next = { ...current, detached: saved.detached };
+        if (Object.hasOwn(saved, "energyJ"))
+          Object.assign(
+            next,
+            batteryEnergyReadModel({
+              capacityJ: current.capacityJ,
+              energyJ: saved.energyJ,
+            }),
+          );
+        return [id, deepFreeze(next)];
+      }),
     );
     this.#connections = new Map(
-      connections.map((connection) => [
-        connection.id,
-        deepFreeze(structuredClone(connection)),
-      ]),
+      [...this.#connections].map(([id, current]) => {
+        const saved = validated.connections.get(id),
+          next = { ...current };
+        for (const field of CONNECTION_CHECKPOINT_FIELDS)
+          if (field !== "id") {
+            if (saved[field] === null) delete next[field];
+            else next[field] = saved[field];
+          }
+        return [id, deepFreeze(next)];
+      }),
     );
-    this.#controllers = new Map(
-      (state.controllers || []).map(({ id, state: controllerState }) => [
-        id,
-        immutableClone(controllerState),
-      ]),
-    );
-    this.#events = (state.events || []).map((event) =>
-      deepFreeze(structuredClone(event)),
-    );
-    this.#revision = finiteNumber(state.revision, {
-      min: 0,
-      path: ["checkpoint", "revision"],
-    });
-    this.#graphRevision = finiteNumber(state.graphRevision, {
-      min: 0,
-      path: ["checkpoint", "graphRevision"],
-    });
+    this.#controllers = validated.controllers;
+    this.#events = validated.events;
+    this.#revision = validated.revision;
+    this.#graphRevision = validated.graphRevision;
     this.#indexRevision = -1;
     this.#snapshotRevision = -1;
     this.#snapshot = null;

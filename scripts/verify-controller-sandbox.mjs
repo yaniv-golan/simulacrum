@@ -6,6 +6,8 @@ import {
 } from "../src/scripting/controller-compilers.js";
 import { ControllerRuntimeManager } from "../src/scripting/controller-runtime-manager.js";
 import { ControllerRuntimeReadModel } from "../src/application/controller-runtime-read-model.js";
+import { CommandBus } from "../src/simulation/command-bus.js";
+import { ControllerSensorBank } from "../src/simulation/controller-sensors.js";
 import {
   compileVisualProgram,
   DEFAULT_VISUAL_PROGRAM,
@@ -66,6 +68,29 @@ assert.deepEqual(
     ),
   ].sort(),
   "controller ABI must expose every authored actuator channel",
+);
+
+const checkpointCommandBus = new CommandBus();
+checkpointCommandBus.writeRemote(3, "throttle", 0.5);
+checkpointCommandBus.writeScript(5, "brake", 3, "brake", 0.25);
+const commandBusCheckpoint = checkpointCommandBus.exportState(),
+  stringCommandCheckpoint = structuredClone(commandBusCheckpoint);
+stringCommandCheckpoint.remote[0].value = "0.5";
+assert.throws(
+  () => new CommandBus().importState(JSON.stringify(stringCommandCheckpoint)),
+  /invalid remote data/,
+  "command checkpoint accepted a coercible numeric string",
+);
+const checkpointSensorBank = new ControllerSensorBank(),
+  sensorCheckpoint = [{ sensorId: 2, velocity: { x: 1, y: 2, z: 3 } }],
+  stringSensorCheckpoint = structuredClone(sensorCheckpoint);
+checkpointSensorBank.importState(JSON.stringify(sensorCheckpoint));
+stringSensorCheckpoint[0].velocity.x = "1";
+assert.throws(
+  () =>
+    checkpointSensorBank.importState(JSON.stringify(stringSensorCheckpoint)),
+  /invalid velocity state/,
+  "sensor checkpoint accepted a coercible numeric string",
 );
 
 const baseIR = () => ({
@@ -806,6 +831,15 @@ assert.deepEqual(statuses.slice(0, 2), [
 assert.equal(manager.tick(1, 1 / 120, {}), false);
 assert.equal(manager.ready(1), false);
 assert.match(manager.status(1).status, /fuel exhausted/);
+const trappedControllerCheckpoint = manager
+  .exportState()
+  .find((record) => record.controllerId === 1);
+assert.equal(
+  trappedControllerCheckpoint.ready,
+  false,
+  "trapped controller did not retain checkpointable terminal state",
+);
+assert.match(trappedControllerCheckpoint.error, /fuel exhausted/);
 assert.equal(manager.tick(2, 1 / 120, {}), true);
 assert.equal(manager.commands(2).get("throttle"), 0.4);
 assert.equal(manager.ready(2), true, "one trap stopped another controller");
@@ -918,28 +952,262 @@ const controllerCheckpoint = statefulManager.exportState(),
   });
 restoredManager.attach(41, statefulPrepared, "STATEFUL");
 restoredManager.importState(controllerCheckpoint);
+const numericFirstManager = new ControllerRuntimeManager(),
+  stringFirstManager = new ControllerRuntimeManager();
+numericFirstManager.attach(1, statefulPrepared, "NUMERIC");
+numericFirstManager.attach("1", statefulPrepared, "STRING");
+stringFirstManager.attach("1", statefulPrepared, "STRING");
+stringFirstManager.attach(1, statefulPrepared, "NUMERIC");
+assert.deepEqual(
+  numericFirstManager.exportState(),
+  stringFirstManager.exportState(),
+  "controller checkpoint order depended on typed-equal attachment order",
+);
+assert.deepEqual(
+  numericFirstManager.exportState().map(({ controllerId }) => controllerId),
+  [1, "1"],
+  "controller checkpoint did not use the canonical typed ID order",
+);
+numericFirstManager.disposeAll();
+stringFirstManager.disposeAll();
+let controllerCheckpointGetterReads = 0;
+const accessorControllerCheckpoint = structuredClone(controllerCheckpoint);
+Object.defineProperty(accessorControllerCheckpoint[0], "ready", {
+  enumerable: true,
+  get() {
+    controllerCheckpointGetterReads++;
+    return true;
+  },
+});
+assert.throws(
+  () => restoredManager.importState(accessorControllerCheckpoint),
+  (error) => error?.code === "INVALID_CONTROLLER_CHECKPOINT_PLAIN_DATA",
+  "controller restore accepted executable checkpoint state",
+);
+assert.equal(
+  controllerCheckpointGetterReads,
+  0,
+  "controller checkpoint validation invoked an accessor before rejection",
+);
+const directStateEngine = statefulPrepared.instantiate(),
+  directEngineCheckpoint = structuredClone(directStateEngine.exportState());
+let watCheckpointGetterReads = 0;
+Object.defineProperty(directEngineCheckpoint[0], "value", {
+  enumerable: true,
+  get() {
+    watCheckpointGetterReads++;
+    return 0;
+  },
+});
+assert.throws(
+  () => directStateEngine.importState(directEngineCheckpoint),
+  (error) => error?.code === "INVALID_WAT_CHECKPOINT_PLAIN_DATA",
+  "WAT restore accepted executable global state",
+);
+assert.equal(
+  watCheckpointGetterReads,
+  0,
+  "WAT checkpoint validation invoked an accessor before rejection",
+);
+let watProxyGetterReads = 0;
+const proxiedEngineCheckpoint = new Proxy(directStateEngine.exportState(), {
+  get(target, key, receiver) {
+    watProxyGetterReads++;
+    return Reflect.get(target, key, receiver);
+  },
+});
+assert.throws(
+  () => directStateEngine.validateState(proxiedEngineCheckpoint),
+  (error) => error?.code === "INVALID_WAT_CHECKPOINT_PLAIN_DATA",
+  "WAT validation accepted Proxy state",
+);
+assert.equal(
+  watProxyGetterReads,
+  0,
+  "WAT proxy rejection invoked a data getter",
+);
+const validDirectEngineCheckpoint = directStateEngine.exportState();
+for (const [label, mutateState] of [
+  ["non-sequence root", () => ({})],
+  ["wrong global count", () => []],
+  ["null global", (state) => ((state[0] = null), state)],
+  ["primitive global", (state) => ((state[0] = 1), state)],
+  ["array global", (state) => ((state[0] = []), state)],
+  [
+    "missing name",
+    (state) => {
+      delete state[0].name;
+      return state;
+    },
+  ],
+  [
+    "missing value",
+    (state) => {
+      delete state[0].value;
+      return state;
+    },
+  ],
+  [
+    "extra global field",
+    (state) => {
+      state[0].extra = true;
+      return state;
+    },
+  ],
+  [
+    "wrong global identity",
+    (state) => {
+      state[0].name = "__sim_state_999";
+      return state;
+    },
+  ],
+  [
+    "nonnumeric global",
+    (state) => {
+      state[0].value = "0";
+      return state;
+    },
+  ],
+  [
+    "nonfinite global",
+    (state) => {
+      state[0].value = Number.POSITIVE_INFINITY;
+      return state;
+    },
+  ],
+]) {
+  const candidate = mutateState(structuredClone(validDirectEngineCheckpoint));
+  assert.throws(
+    () => directStateEngine.validateState(JSON.stringify(candidate)),
+    /state shape|program globals/,
+    `WAT checkpoint accepted ${label}`,
+  );
+  assert.deepEqual(
+    directStateEngine.exportState(),
+    validDirectEngineCheckpoint,
+    `rejected WAT ${label} changed live globals`,
+  );
+}
+directStateEngine.dispose();
 statefulManager.tick(41, 0.25, { speed: 3 });
 restoredManager.tick(41, 0.25, { speed: 3 });
 assert.deepEqual(restoredManager.exportState(), statefulManager.exportState());
 assert.deepEqual(restoredOutputs.get(41), statefulOutputs.get(41));
 assert.throws(
-  () => restoredManager.importState([]),
+  () => restoredManager.importState(JSON.stringify([])),
   /does not match attached programs/,
 );
-for (const mutateCheckpoint of [
-  (state) => (state[0].controllerId = 404),
-  (state) => (state[0].language = "wat"),
-  (state) => (state[0].policyVersion = "future-policy"),
+for (const [mutateCheckpoint, expectedError] of [
+  [(state) => (state[0].controllerId = 404), /identity mismatch/],
+  [(state) => (state[0].language = "wat"), /invalid runtime state/],
+  [
+    (state) => (state[0].policyVersion = "future-policy"),
+    /invalid runtime state/,
+  ],
+  [(state) => (state[0].commands[0][1] = "0.5"), /invalid commands/],
+  [(state) => delete state[0].ready, /invalid runtime state/],
+  [(state) => (state[0].bindingManifestIdentity = 1), /invalid runtime state/],
+  [(state) => (state[0].bindingManifestIdentity = ""), /invalid runtime state/],
+  [(state) => (state[0].programIdentity = 1), /invalid runtime state/],
+  [(state) => (state[0].programIdentity = ""), /invalid runtime state/],
+  [(state) => (state[0].ready = 1), /invalid runtime state/],
+  [(state) => (state[0].commands = {}), /invalid runtime state/],
+  [(state) => (state[0].tick = 0.5), /invalid runtime state/],
+  [(state) => (state[0].tick = -1), /invalid runtime state/],
+  [(state) => (state[0].lastTick = {}), /invalid runtime state/],
+  [(state) => (state[0].lastTick.dt = "0.25"), /invalid runtime state/],
+  [(state) => (state[0].lastTick.dt = 0), /invalid runtime state/],
+  [(state) => (state[0].error = 1), /invalid runtime state/],
+  [(state) => (state[0].error = ""), /invalid runtime state/],
+  [
+    (state) => {
+      state[0].ready = true;
+      state[0].error = "forged trap";
+    },
+    /invalid runtime state/,
+  ],
+  [
+    (state) => {
+      state[0].ready = false;
+      state[0].error = null;
+    },
+    /invalid runtime state/,
+  ],
+  [(state) => (state[0].commands[0] = null), /invalid commands/],
+  [(state) => (state[0].commands[0] = ["throttle"]), /invalid commands/],
+  [(state) => (state[0].commands[0][0] = 1), /invalid commands/],
+  [(state) => (state[0].commands[0][0] = ""), /invalid commands/],
+  [
+    (state) => (state[0].commands[0][1] = Number.POSITIVE_INFINITY),
+    /invalid commands/,
+  ],
+  [
+    (state) => state[0].commands.push([...state[0].commands[0]]),
+    /invalid commands/,
+  ],
+  [
+    (state) => (state[0].engineState[0].value = "1"),
+    /does not match program globals/,
+  ],
 ]) {
   const mismatchedCheckpoint = structuredClone(controllerCheckpoint);
   mutateCheckpoint(mismatchedCheckpoint);
   assert.throws(
-    () => restoredManager.importState(mismatchedCheckpoint),
-    /identity mismatch/,
+    () => restoredManager.importState(JSON.stringify(mismatchedCheckpoint)),
+    expectedError,
+  );
+  assert.deepEqual(
+    restoredManager.exportState(),
+    statefulManager.exportState(),
+    "rejected controller checkpoint mutated live runtime state",
   );
 }
+const outputBeforeDeferredImport = new Map(restoredOutputs.get(41)),
+  deferredCheckpoint = structuredClone(controllerCheckpoint);
+deferredCheckpoint[0].commands = [["throttle", 0.75]];
+restoredManager.importState(JSON.stringify(deferredCheckpoint), {
+  notify: false,
+});
+assert.deepEqual(
+  restoredOutputs.get(41),
+  outputBeforeDeferredImport,
+  "controller checkpoint import emitted callbacks before global commit",
+);
+restoredManager.publishState();
+assert.deepEqual(restoredOutputs.get(41), new Map([["throttle", 0.75]]));
+let rejectObserverPublication = false,
+  rejectedObserverCalls = 0;
+const observerManager = new ControllerRuntimeManager({
+  onCommands: () => {
+    if (rejectObserverPublication) {
+      rejectedObserverCalls++;
+      throw new Error("commands observer rejected");
+    }
+  },
+  onStatus: () => {
+    if (rejectObserverPublication) {
+      rejectedObserverCalls++;
+      throw new Error("status observer rejected");
+    }
+  },
+});
+observerManager.attach(41, statefulPrepared, "OBSERVER CONTAINMENT");
+observerManager.tick(41, 0.25, { speed: 2 });
+const observerCheckpoint = observerManager.exportState();
+rejectObserverPublication = true;
+assert.doesNotThrow(
+  () => observerManager.importState(observerCheckpoint),
+  "post-commit observer rejection escaped controller restore",
+);
+assert.equal(rejectedObserverCalls, 2);
+assert.doesNotThrow(
+  () => observerManager.publishState(),
+  "controller publication did not isolate observer failures",
+);
+assert.equal(rejectedObserverCalls, 4);
 statefulManager.disposeAll();
 restoredManager.disposeAll();
+observerManager.disposeAll();
 
 const defaultManager = new ControllerRuntimeManager();
 assert.throws(() => defaultManager.attach(1, null), /instantiate/);

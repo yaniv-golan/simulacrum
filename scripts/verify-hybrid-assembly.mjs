@@ -312,7 +312,12 @@ async function runScenario(blueprint, setup = null) {
   });
 }
 
-const wheeledFlight = await runScenario(wheeledRocket()),
+const articulatedAircraftBlueprint = articulatedAircraft(),
+  authoredJointPartIds = articulatedAircraftBlueprint.parts
+    .filter((part) => part.mechanism != null)
+    .map((part) => part.id)
+    .sort((left, right) => left - right),
+  wheeledFlight = await runScenario(wheeledRocket()),
   droneWithWheels = await runScenario(wheeledDrone(), async () => {
     const remoteHidden = await page
       .locator(".remote-console")
@@ -323,7 +328,7 @@ const wheeledFlight = await runScenario(wheeledRocket()),
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
   }),
-  articulatedWithAero = await runScenario(articulatedAircraft());
+  articulatedWithAero = await runScenario(articulatedAircraftBlueprint);
 
 console.log(
   JSON.stringify(
@@ -358,12 +363,15 @@ console.log(
         failures: droneWithWheels.failureAnalysis?.report,
       },
       articulatedWithAero: {
-        articulated:
-          articulatedWithAero.architecture.session?.systems.articulated?.active,
+        mechanismsActive:
+          articulatedWithAero.architecture.session?.systems.mechanisms?.active,
         flight:
           articulatedWithAero.architecture.session?.systems.flight?.active,
+        jointCount:
+          articulatedWithAero.architecture.session?.systems.mechanisms?.joints
+            ?.length,
         poseCount:
-          articulatedWithAero.architecture.session?.systems.articulated?.poses
+          articulatedWithAero.architecture.session?.systems.mechanisms?.poses
             ?.length,
         cd: articulatedWithAero.demo.missile?.cd,
       },
@@ -422,10 +430,29 @@ await conclude(browser, () => {
     false,
     "untrusted imported controller code executed without an explicit trust decision",
   );
+  const mechanismTelemetry =
+      articulatedWithAero.architecture.session?.systems.mechanisms,
+    measuredJoints = mechanismTelemetry?.joints || [];
   assert.equal(
-    articulatedWithAero.architecture.session?.systems.articulated?.active,
+    mechanismTelemetry?.active,
     true,
-    "aerodynamic articulated machine lost articulated constraints",
+    "aerodynamic jointed machine lost the generic multibody runtime",
+  );
+  assert.deepEqual(
+    measuredJoints
+      .map((joint) => joint.sourcePartId)
+      .sort((left, right) => left - right),
+    authoredJointPartIds,
+    "aerodynamic jointed machine did not preserve every authored hinge",
+  );
+  assert.ok(
+    measuredJoints.every(
+      (joint) =>
+        Number.isFinite(joint.angle) &&
+        Number.isFinite(joint.angularVelocity) &&
+        Number.isFinite(joint.reactionTorque),
+    ),
+    "aerodynamic jointed machine did not publish measured joint state",
   );
   assert.equal(
     articulatedWithAero.architecture.session?.systems.flight?.active,
@@ -433,9 +460,8 @@ await conclude(browser, () => {
     "aerodynamic articulated machine did not run flight/aero physics",
   );
   assert.ok(
-    articulatedWithAero.architecture.session.systems.articulated.poses.length >=
-      23,
-    "articulated pose graph did not advance",
+    mechanismTelemetry.poses.length >= 23,
+    "generic multibody pose graph did not advance",
   );
   assert.ok(
     Number.isFinite(articulatedWithAero.demo.missile?.cd) &&

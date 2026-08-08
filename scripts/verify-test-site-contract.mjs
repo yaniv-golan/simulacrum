@@ -12,11 +12,10 @@ import {
 } from "../src/model/test-site-shapes.js";
 import { DomainValidationError } from "../src/model/primitives.js";
 import { createSurfaceField } from "../src/simulation/environment/surface-field.js";
+import { createTestSiteCollisionBody } from "../src/simulation/environment/test-site-collision.js";
+import { CannonMaterialAdapter } from "../src/simulation/cannon-material-adapter.js";
 import {
-  createTestSiteCollisionBody,
-  installTestSiteContactMaterials,
-} from "../src/simulation/environment/test-site-collision.js";
-import {
+  CONTACT_MATERIAL_PAIRS,
   contactMaterialPair,
   supportMaterialResponse,
 } from "../src/model/contact-material-pairs.js";
@@ -96,6 +95,9 @@ expectDomainError((site) => {
   site.coordinateFrame = null;
 }, "INVALID_TEST_SITE_RECORD");
 expectDomainError((site) => {
+  site.districts[0] = Object.assign(Object.create(null), site.districts[0]);
+}, "INVALID_TEST_SITE_RECORD");
+expectDomainError((site) => {
   site.coordinateFrame.units = "cm";
 }, "INVALID_TEST_SITE_COORDINATE_FRAME");
 expectDomainError((site) => {
@@ -106,6 +108,9 @@ expectDomainError((site) => {
 }, "INVALID_TEST_SITE_LIST");
 expectDomainError((site) => {
   site.districts[0].label = " ";
+}, "INVALID_TEST_SITE_TEXT");
+expectDomainError((site) => {
+  site.districts[0].label = 42;
 }, "INVALID_TEST_SITE_TEXT");
 expectDomainError((site) => {
   site.footprint.centerM = [0];
@@ -181,6 +186,30 @@ expectDomainError((site) => {
   site.staticFixtures[0].collisionGeometry.kind = "sphere";
 }, "INVALID_TEST_SITE_COLLISION_GEOMETRY");
 expectDomainError((site) => {
+  site.staticFixtures[0].collisionGeometry = {
+    kind: "cylinder",
+    axis: "q",
+    radiusM: 1,
+    heightM: 1,
+    segments: 12,
+  };
+}, "INVALID_TEST_SITE_COLLISION_GEOMETRY");
+expectDomainError((site) => {
+  site.staticFixtures[0].collisionGeometry = {
+    kind: "cylinder",
+    axis: "y",
+    radiusM: 1,
+    heightM: 1,
+    segments: 12.5,
+  };
+}, "INVALID_TEST_SITE_COLLISION_GEOMETRY");
+expectDomainError((site) => {
+  site.staticFixtures[0].collisionGeometry = {
+    kind: "compound",
+    children: [],
+  };
+}, "INVALID_TEST_SITE_COLLISION_GEOMETRY");
+expectDomainError((site) => {
   site.staticFixtures[0].presentation.variant = 0.5;
 }, "INVALID_TEST_SITE_FIXTURE_PRESENTATION");
 expectDomainError((site) => {
@@ -198,6 +227,9 @@ expectDomainError((site) => {
 expectDomainError((site) => {
   site.vegetationRules[0].seed = 1.5;
 }, "INVALID_TEST_SITE_VEGETATION_SEED");
+expectDomainError((site) => {
+  site.vegetationRules[0].presentation.variant = 1.5;
+}, "INVALID_TEST_SITE_FIXTURE_PRESENTATION");
 expectDomainError((site) => {
   site.vegetationRules[0].zone.centerM = [230, 0];
 }, "TEST_SITE_SHAPE_OUTSIDE_FOOTPRINT");
@@ -395,6 +427,19 @@ expectDomainError((site) => {
     ringsM: [
       [
         [-2, -2],
+        [2, -2],
+      ],
+    ],
+    rotationRad: 0,
+  };
+}, "INVALID_TEST_SITE_POLYGON");
+expectDomainError((site) => {
+  site.surfaceRegions[0].shape = {
+    kind: "polygon",
+    centerM: [0, 0],
+    ringsM: [
+      [
+        [-2, -2],
         [-2, 2],
         [2, 2],
         [2, -2],
@@ -413,6 +458,17 @@ expectDomainError((site) => {
         [0, 0],
       ],
     ],
+    widthM: 8,
+    cap: "round",
+    join: "round",
+    rotationRad: 0,
+  };
+}, "INVALID_TEST_SITE_CORRIDOR");
+expectDomainError((site) => {
+  site.surfaceRegions[0].shape = {
+    kind: "corridor-network",
+    centerM: [0, 0],
+    pathsM: [[[0, 0]]],
     widthM: 8,
     cap: "round",
     join: "round",
@@ -750,20 +806,19 @@ assert.equal(secondFluid.districtId, "water-b");
 assert.equal(secondFluid.heightM, 0);
 
 const world = new CANNON.World(),
-  footMaterial = new CANNON.Material("test-foot"),
-  debrisMaterial = new CANNON.Material("test-debris"),
+  tireMaterial = new CANNON.Material("tire-rubber"),
+  structureMaterial = new CANNON.Material("generic-structure"),
   collision = createTestSiteCollisionBody({
     sampleAt: (x, z) => field.sample({ x, z }),
     footprint: WORKSHOP_TEST_SITE.footprint,
     fallbackMaterial: new CANNON.Material("test-ground"),
   });
 world.addBody(collision.body);
-installTestSiteContactMaterials({
-  world,
-  materialsByKey: collision.materialsByKey,
-  footMaterial,
-  debrisMaterial,
-});
+new CannonMaterialAdapter(world, [
+  [tireMaterial.name, tireMaterial],
+  [structureMaterial.name, structureMaterial],
+  ...collision.materialsByKey,
+]).install();
 assert.equal(collision.body.shapes.length, 1);
 assert.equal(collision.body.shapes[0].type, CANNON.Shape.types.HEIGHTFIELD);
 assert.equal(
@@ -791,25 +846,35 @@ assert.equal(
   "test-reserve:heightfield",
 );
 assert.equal(
-  collision.body.userData.contactMaterialAt(-92, 108, debrisMaterial.name)
+  collision.body.userData.contactMaterialAt(-92, 108, structureMaterial.name)
     .materialKey,
   "dry-asphalt",
 );
-assert.equal(world.contactmaterials.length, collision.materialsByKey.size * 2);
-const footAsphalt = world.getContactMaterial(
-    footMaterial,
+const registeredMaterialKeys = new Set([
+  tireMaterial.name,
+  structureMaterial.name,
+  ...collision.materialsByKey.keys(),
+]);
+assert.equal(
+  world.contactmaterials.length,
+  CONTACT_MATERIAL_PAIRS.filter(({ materials }) =>
+    materials.every((materialKey) => registeredMaterialKeys.has(materialKey)),
+  ).length,
+);
+const tireAsphalt = world.getContactMaterial(
+    tireMaterial,
     collision.materialsByKey.get("dry-asphalt"),
   ),
-  footMud = world.getContactMaterial(
-    footMaterial,
+  tireMud = world.getContactMaterial(
+    tireMaterial,
     collision.materialsByKey.get("saturated-mud"),
   );
 assert.ok(
-  footMud.contactEquationStiffness < footAsphalt.contactEquationStiffness,
-  "non-wheel mud contact did not use the authored compliant foundation",
+  tireMud.contactEquationStiffness < tireAsphalt.contactEquationStiffness,
+  "mud contact did not use the authored compliant foundation",
 );
 assert.equal(
-  footMud.contactEquationStiffness,
+  tireMud.contactEquationStiffness,
   supportMaterialResponse("saturated-mud").foundationStiffnessNPerM,
 );
 const softContact = testSiteSupportContact(4, {

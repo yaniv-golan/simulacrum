@@ -10,11 +10,13 @@ import {
   validateConnectionFrameInvariant,
   worldPortFrame,
 } from "./connection-frame-invariants.js";
+import { compareCanonicalIds } from "./primitives.js";
 
 function physicalEdgesFor(context, connector) {
   return context.connections.filter(
     (connection) =>
       PHYSICAL_CONNECTION_KINDS.has(connection.kind) &&
+      !context.rejectedConnectionIds.has(connection.id) &&
       !connection.failed &&
       (connection.a === connector.id || connection.b === connector.id),
   );
@@ -87,7 +89,10 @@ function compileEndpointPointMasses(
     points.push({
       sourcePartId: connector.id,
       sourceConnectionId: edge.id,
-      endpointPort: connectorPort(edge),
+      sourcePortId: connectorPort(edge),
+      targetPartId: neighbor.id,
+      targetPortId: attachments[index].neighborPort,
+      positionFramePartId: neighbor.id,
       massKg: massModel.totalMassKg * fractions[index],
       positionPartM: compiledVector(frame.framePart.positionM),
     });
@@ -146,9 +151,10 @@ function forceElementBase(
       })()
     : {};
   return {
-    id: `connector:${connector.id}`,
+    id: context.partScopedId("connector", connector.id),
     sourcePartId: connector.id,
     sourceConnectionIds: orderedEdges.map((edge) => edge.id),
+    solverOrderClass: "condensed-connector-v1",
     a: neighbors[0],
     b: neighbors[1],
     anchorA: worldPoint(
@@ -188,7 +194,7 @@ const FORCE_ELEMENT_COMPILERS = new Map([
       };
       context.constraints.push(descriptor);
       context.actuators.push({
-        id: `actuator:${connector.id}`,
+        id: context.partScopedId("actuator", connector.id),
         kind: "release-coupler-v1",
         sourcePartId: connector.id,
         constraintId: descriptor.id,
@@ -200,7 +206,7 @@ const FORCE_ELEMENT_COMPILERS = new Map([
               !connection.failed,
           )
           .map((connection) => connection.id)
-          .sort((left, right) => String(left).localeCompare(String(right))),
+          .sort(compareCanonicalIds),
         law: cloneCompiledValue(mechanismConfig.releaseLaw),
       });
     },
@@ -215,7 +221,7 @@ const FORCE_ELEMENT_COMPILERS = new Map([
       };
       context.constraints.push(descriptor);
       context.actuators.push({
-        id: `actuator:${connector.id}`,
+        id: context.partScopedId("actuator", connector.id),
         kind: "linear-actuator-v1",
         sourcePartId: connector.id,
         constraintId: descriptor.id,
@@ -247,7 +253,7 @@ const FORCE_ELEMENT_COMPILERS = new Map([
         };
       context.constraints.push(descriptor);
       context.forceElements.push({
-        id: `force:${connector.id}`,
+        id: context.partScopedId("force", connector.id),
         kind: "axial-spring-v1",
         sourcePartId: connector.id,
         constraintId: descriptor.id,
@@ -264,10 +270,10 @@ const FORCE_ELEMENT_COMPILERS = new Map([
         mechanism: cloneCompiledValue(mechanismConfig),
       });
       context.forceElements.push({
-        id: `force:${connector.id}`,
+        id: context.partScopedId("force", connector.id),
         kind: "axial-damper-v1",
         sourcePartId: connector.id,
-        constraintId: `connector:${connector.id}`,
+        constraintId: context.partScopedId("connector", connector.id),
         law: cloneCompiledValue(mechanismConfig),
       });
     },

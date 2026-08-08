@@ -107,6 +107,7 @@ function fixtureGroupBody(group, groundMaterial) {
   Object.assign(body, {
     userData: {
       externalBodyId: `environment:fixture-group:${group.key}`,
+      checkpointPolicy: "reconstruct-from-owner-v1",
       fixtureIds: Object.freeze(fixtureIds),
       districtId: group.districtId,
       surface: "test-site-fixtures",

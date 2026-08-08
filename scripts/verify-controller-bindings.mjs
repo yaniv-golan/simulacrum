@@ -643,6 +643,28 @@ const conflictedReceiver = runReceiverUnitStep({
 assert.equal(conflictedReceiver.state.valid, false);
 assert.equal(conflictedReceiver.state.conflict, true);
 assert.equal(conflictedReceiver.state.source, "conflict");
+const restoredReceiverContext = receiverUnitContext({
+    command: { value: 0.25, conflict: false, source: "replay" },
+  }),
+  incompleteTelemetry = Object.freeze({ status: "not-completed" });
+restoredReceiverContext.telemetry.commandReceivers = incompleteTelemetry;
+receiverSystem.afterCheckpointRestore(restoredReceiverContext);
+assert.deepEqual(restoredReceiverContext.commands.get(receiver.id), {
+  partId: 12,
+  channel: "command",
+  value: 0.25,
+  valid: true,
+  powered: true,
+  routedControllerIds: [13],
+  source: "replay",
+  conflict: false,
+  tick: 42,
+});
+assert.equal(
+  restoredReceiverContext.telemetry.commandReceivers,
+  incompleteTelemetry,
+  "checkpoint reconstruction published an incomplete receiver telemetry frame",
+);
 receiverSystem.dispose(onlineReceiver.context);
 assert.equal(
   onlineReceiver.context.commands.size,

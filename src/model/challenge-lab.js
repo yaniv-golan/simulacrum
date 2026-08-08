@@ -1,6 +1,6 @@
 import { physicalComponents } from "./physical-components.js";
 import { ChallengeBindingResolver } from "./challenge-binding-resolver.js";
-import { compileAssembly } from "./assembly-compiler.js";
+import { compileAssemblyFromIssuedRoots } from "./assembly-compiler.js";
 import { TYPES } from "./component-catalog.js";
 import {
   componentElectricalSource,
@@ -17,6 +17,10 @@ import {
 import { scoreChallengeResult } from "./challenge-score.js";
 import { resolveReferenceInitialControls } from "./challenge-reference-controls.js";
 import { finiteOr as finite } from "./finite-or.js";
+import {
+  projectPortableAuthoredConnection,
+  projectPortableAuthoredPart,
+} from "./authored-assembly-content.js";
 
 const PHYSICAL_KINDS = new Set(["mechanical", "mesh"]);
 
@@ -126,14 +130,36 @@ export class ChallengeRun {
 
   constructor(challenge, machine = {}) {
     this.challenge = structuredClone(challenge);
-    const startAssembly = structuredClone(machine),
-      compiled = compileAssembly(startAssembly, TYPES);
+    const startMachine = structuredClone(machine),
+      // Remote-control UI state is not compiled physical authority. Keep the
+      // evaluator's complete detached machine view, but give the compiler only
+      // the persisted assembly tree it owns.
+      startAssembly = {
+        revision: startMachine.revision ?? 0,
+        parts: (startMachine.parts || []).map((part) =>
+          projectPortableAuthoredPart({
+            ...part,
+            pos: Array.isArray(part.pos) ? part.pos : [0, 0, 0],
+            orientation: part.orientation || [0, 0, 0, 1],
+            scale: part.scale || { x: 1, y: 1, z: 1 },
+          }),
+        ),
+        connections: (startMachine.connections || []).map((connection) => ({
+          ...projectPortableAuthoredConnection(connection),
+          ...(connection.failed ? { failed: true } : {}),
+        })),
+      },
+      remoteProfiles = startMachine.remoteProfiles || {},
+      compiled = compileAssemblyFromIssuedRoots(
+        JSON.stringify(startAssembly),
+        TYPES,
+      );
     this.#referenceControls = resolveReferenceInitialControls(
       this.challenge,
-      startAssembly.remoteProfiles || {},
+      remoteProfiles,
     ).map((entry) => ({
       ...entry,
-      targetId: startAssembly.remoteProfiles[entry.profileId].controls.find(
+      targetId: remoteProfiles[entry.profileId].controls.find(
         (control) => control.id === entry.controlId,
       ).targetId,
     }));
@@ -152,7 +178,11 @@ export class ChallengeRun {
     this.status = "ready";
     this.solution = "UNRESOLVED";
     this.verificationEligible = true;
-    this.initial = machineMetrics(machine);
+    // Evaluation observes the complete detached machine view, including live
+    // energy and measured mass. The authored projection above exists only to
+    // delimit compiler authority; catalog defaults must not overwrite live
+    // evidence supplied to the evaluator.
+    this.initial = machineMetrics(startMachine);
     this.last = this.makeResult({
       criteria: this.challenge.payload
         ? [

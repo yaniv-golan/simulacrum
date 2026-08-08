@@ -59,7 +59,7 @@ function runDrop({
       parts: [ropePart(1, position, orientation)],
       connections: [],
     },
-    multibodyRuntime = startMultibodyRuntime(snapshot, {
+    multibodyRuntime = startMultibodyRuntime(JSON.stringify(snapshot), {
       world: physics.world,
       worldAdapter: physics.worldAdapter,
       material: physics.debrisMaterial,
@@ -145,7 +145,7 @@ for (const materialKey of ["dry-asphalt", "saturated-mud"]) {
       ],
       connections: [],
     },
-    multibodyRuntime = startMultibodyRuntime(snapshot, {
+    multibodyRuntime = startMultibodyRuntime(JSON.stringify(snapshot), {
       world: physics.world,
       worldAdapter: physics.worldAdapter,
       material: physics.debrisMaterial,

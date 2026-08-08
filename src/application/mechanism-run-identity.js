@@ -2,11 +2,17 @@ import {
   fingerprintExperimentBlueprint,
   fingerprintRunConfigurationValue,
 } from "../model/mechanism-artifact-identity.js";
-import { deepFreeze, stableStringify } from "../model/primitives.js";
+import {
+  deepFreeze,
+  detachPlainData,
+  DomainValidationError,
+  stableStringify,
+} from "../model/primitives.js";
 import { CONTACT_MATERIAL_PAIRS } from "../model/contact-material-pairs.js";
 import { sha256Hex } from "../model/sha256.js";
 import { fingerprintEvidenceDeployment } from "../model/failure-evidence-identity.js";
 import { CANNON_SOLVER_TRANSACTION_ID } from "../simulation/cannon-solver-transaction.js";
+import { compiledPhysicalSemanticsFingerprint } from "../model/compiled-physical-semantics.js";
 
 const encoder = new TextEncoder();
 
@@ -44,14 +50,35 @@ function identity(id, version, value) {
 }
 
 export function compiledTopologyFingerprint(compiled) {
-  return `sim-sha256-${sha256Hex(
-    stableStringify({
-      sourceRevision: compiled.sourceRevision,
-      bodies: compiled.bodies.map(({ id }) => id).sort(),
-      constraints: compiled.constraints.map(({ id }) => id).sort(),
-      contactRegions: compiled.contactRegions.map(({ id }) => id).sort(),
-    }),
-  )}`;
+  return compiledPhysicalSemanticsFingerprint(compiled);
+}
+
+function validatedSolverProfile(value) {
+  const profile = detachPlainData(value, {
+    code: "INVALID_RUN_SOLVER_PROFILE",
+    finiteNumbers: true,
+    message: "Run solver profile must be accessor-free plain data",
+    path: ["solverProfile"],
+  });
+  if (
+    !profile ||
+    typeof profile !== "object" ||
+    Array.isArray(profile) ||
+    Object.keys(profile).sort().join("\0") !==
+      ["fixedDt", "iterations", "tolerance"].sort().join("\0") ||
+    !Number.isFinite(profile.fixedDt) ||
+    profile.fixedDt <= 0 ||
+    !Number.isSafeInteger(profile.iterations) ||
+    profile.iterations < 1 ||
+    !Number.isFinite(profile.tolerance) ||
+    profile.tolerance < 0
+  )
+    throw new DomainValidationError(
+      "INVALID_RUN_SOLVER_PROFILE",
+      "Run identity requires the effective positive fixed step, iteration budget, and non-negative tolerance",
+      { path: ["solverProfile"] },
+    );
+  return Object.freeze(profile);
 }
 
 /** Creates the in-memory identity later validated at the portable export boundary. */
@@ -59,8 +86,10 @@ export function createWorkshopRunConfiguration({
   blueprint,
   compiled,
   environment,
+  solverProfile,
 }) {
   const { testSite, deployment, ...environmentState } = environment,
+    effectiveSolverProfile = validatedSolverProfile(solverProfile),
     topologyFingerprint = compiledTopologyFingerprint(compiled),
     blueprintFingerprint = fingerprintExperimentBlueprint(blueprint),
     testSiteFingerprint = fingerprintTestSiteDefinition(testSite),
@@ -77,7 +106,7 @@ export function createWorkshopRunConfiguration({
     configuration = deepFreeze({
       format: "simulacrum-run-configuration",
       version: 1,
-      fixedStepS: 1 / 120,
+      fixedStepS: effectiveSolverProfile.fixedDt,
       determinismTier: "same-build-bit-exact",
       seed: "workshop-session-v1",
       durationTicks: 1_000_000_000,
@@ -91,11 +120,7 @@ export function createWorkshopRunConfiguration({
           "1",
           CANNON_SOLVER_TRANSACTION_ID,
         ),
-        solverProfile: identity("solver/profile", "1", {
-          fixedDt: 1 / 120,
-          iterations: 18,
-          tolerance: 1e-8,
-        }),
+        solverProfile: identity("solver/profile", "2", effectiveSolverProfile),
         catalog: identity("component/catalog", "4", blueprint.parts),
         materials: identity("material/pairs", "1", materialMapFingerprint),
         environment: identity("earth/environment", "1", {

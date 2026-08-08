@@ -85,7 +85,7 @@ export function componentExample() {
     },
     descriptor = geometryDescriptorForType("ballastPod", catalog),
     topology = compileAssembly(
-      {
+      JSON.stringify({
         revision: 1,
         parts: [
           {
@@ -98,8 +98,8 @@ export function componentExample() {
           },
         ],
         connections: [],
-      },
-      catalog,
+      }),
+      JSON.stringify(catalog),
     ),
     nonGameSvg = renderDescriptorToSvg(descriptor);
   return { catalog, descriptor, topology, nonGameSvg };

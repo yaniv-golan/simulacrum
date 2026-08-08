@@ -18,8 +18,6 @@ function componentLabel(parts) {
   if (types.has("rocket") && types.has("wheel")) return "HYBRID VEHICLE";
   if (types.has("rocket")) return "FLIGHT VEHICLE";
   if (types.has("wheel")) return "GROUND VEHICLE";
-  if (parts.some((part) => part.rigRole === "pelvis"))
-    return "ARTICULATED MACHINE";
   return "PHYSICAL ASSEMBLY";
 }
 
@@ -118,27 +116,9 @@ export function physicalComponents(telemetry) {
       inWater = partIds.some(
         (id) => finite(fluidByPart[String(id)]?.submerged) > 0,
       ),
-      pelvis = componentParts.find((part) => part.rigRole === "pelvis"),
-      pelvisBody = pelvis ? bodiesById.get(bodyByPart.get(pelvis.id)) : null,
-      upY = pelvisBody
-        ? 1 -
-          2 *
-            (finite(pelvisBody.pose?.quaternion?.x) ** 2 +
-              finite(pelvisBody.pose?.quaternion?.z) ** 2)
-        : 1,
-      footHeights = componentParts
-        .filter((part) => ["footL", "footR"].includes(part.rigRole))
-        .map(
-          (part) => bodiesById.get(bodyByPart.get(part.id))?.pose?.position?.y,
-        )
-        .filter((value) => Number.isFinite(Number(value)))
-        .map(Number),
-      fallen = pelvisBody
-        ? upY < 0.35 ||
-          (footHeights.length > 0 &&
-            finite(pelvisBody.pose.position.y) <
-              Math.min(...footHeights) + 0.75)
-        : componentBodies.every((body) => finite(body.pose?.position?.y) < -5);
+      fallen = componentBodies.every(
+        (body) => finite(body.pose?.position?.y) < -5,
+      );
     components.push({
       id: String(indexed.id),
       partIds,

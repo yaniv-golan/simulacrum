@@ -157,7 +157,7 @@ function failureTickProbe({
     probeImpactor.allowSleep = false;
     probeWorld.addBody(probeImpactor);
   }
-  probeRuntime.start(probeAssembly);
+  probeRuntime.start(JSON.stringify(probeAssembly));
   const probeSession = new SimulationSession({
     systems: [
       new RigidBodySystem(),
@@ -261,7 +261,7 @@ impactor.linearDamping = 0;
 impactor.angularDamping = 0;
 impactor.allowSleep = false;
 world.addBody(impactor);
-runtime.start(assembly);
+runtime.start(JSON.stringify(assembly));
 
 assert.equal(
   runtime.compiled.constraints.filter((entry) => entry.kind === "fixed").length,

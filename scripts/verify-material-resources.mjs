@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import {
   AssemblyModel,
   boundsDimensions,
-  compileAssembly,
   geometryDescriptorForPart,
   MaterialResourceNetwork,
   MaterialResourceSystem,
@@ -16,6 +15,7 @@ import {
   pressureNozzlePerformance,
   resolveWireComponentConfig,
 } from "../src/core/index.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import { MaterialResourceCommitSystem } from "../src/simulation/systems/material-resource-system.js";
 
 const transform = Object.freeze({
@@ -26,7 +26,8 @@ const part = (id, type, pos, config = {}) => ({
   id,
   type,
   pos,
-  ...transform,
+  orientation: [...transform.orientation],
+  scale: { ...transform.scale },
   config: resolveWireComponentConfig({ type, config }),
 });
 const tank = part(1, "propellanttank", [0, 1.5, 0]),
@@ -137,7 +138,29 @@ assert.match(
 );
 assert.throws(() => connectedTelemetry.components.push({}), TypeError);
 const checkpoint = resources.exportState();
-resources.importState(checkpoint, runGraph);
+const importResourceState = (network, state, graph) =>
+  network.importState(JSON.stringify(state), graph);
+const targetCheckpoint = {
+    ...checkpoint,
+    stores: checkpoint.stores.map((record) => ({
+      ...record,
+      remainingMassKg: record.partId === tank.id ? 321 : record.remainingMassKg,
+    })),
+  },
+  beforeTargetProjection = resources.exportState(),
+  targetMassContributions = resources.massContributionsForState(
+    JSON.stringify(targetCheckpoint),
+  );
+assert.deepEqual(targetMassContributions, [
+  {
+    kind: "material-store-v1",
+    ...resources.stores()[0],
+    remainingMassKg: 321,
+  },
+]);
+assert.equal(Object.isFrozen(targetMassContributions), true);
+assert.deepEqual(resources.exportState(), beforeTargetProjection);
+importResourceState(resources, checkpoint, runGraph);
 assert.deepEqual(resources.exportState(), checkpoint);
 
 const atomicResources = new MaterialResourceNetwork(compiled).resolve(
@@ -223,7 +246,8 @@ const atomicCheckpoint = atomicResources.exportState(),
   restoredAtomicResources = new MaterialResourceNetwork(compiled).resolve(
     new RunAssemblyGraph(model.snapshot()),
   );
-restoredAtomicResources.importState(
+importResourceState(
+  restoredAtomicResources,
   atomicCheckpoint,
   new RunAssemblyGraph(model.snapshot()),
 );
@@ -238,7 +262,8 @@ assert.deepEqual(
 const exhaustedResources = new MaterialResourceNetwork(compiled).resolve(
   new RunAssemblyGraph(model.snapshot()),
 );
-exhaustedResources.importState(
+importResourceState(
+  exhaustedResources,
   {
     ...checkpoint,
     lastCommittedAllocationTick: null,
@@ -320,7 +345,8 @@ assert.equal(unreachableAllocation.componentId, null);
 assert.equal(unreachableAllocation.reason, "no reachable same-medium manifold");
 assert.throws(
   () =>
-    resources.importState(
+    importResourceState(
+      resources,
       {
         ...checkpoint,
         stores: checkpoint.stores.map((store) => ({
@@ -549,31 +575,41 @@ assert.equal(
 );
 
 assert.throws(
-  () => resources.importState(null, runGraph),
+  () => importResourceState(resources, null, runGraph),
   /must use version 2/,
 );
 assert.throws(
-  () => resources.importState({ ...checkpoint, stores: [] }, runGraph),
+  () => importResourceState(resources, { ...checkpoint, stores: [] }, runGraph),
   /store set changed/,
 );
-for (const patch of [
-  { mediumId: "water-v1" },
-  { capacityKg: checkpoint.stores[0].capacityKg + 1 },
-  { remainingMassKg: Number.NaN },
-  { remainingMassKg: -1 },
-])
+for (const patch of [{ mediumId: "water-v1" }, { capacityKg: 1 }])
   assert.throws(
     () =>
-      resources.importState(
+      importResourceState(
+        resources,
         {
           ...checkpoint,
           stores: [{ ...checkpoint.stores[0], ...patch }],
         },
         runGraph,
       ),
+    (error) => error?.code === "MATERIAL_RESOURCE_CHECKPOINT_IDENTITY_MISMATCH",
+  );
+for (const remainingMassKg of [Number.NaN, -1])
+  assert.throws(
+    () =>
+      importResourceState(
+        resources,
+        {
+          ...checkpoint,
+          stores: [{ ...checkpoint.stores[0], remainingMassKg }],
+        },
+        runGraph,
+      ),
     /does not match store/,
   );
-resources.importState(
+importResourceState(
+  resources,
   {
     ...checkpoint,
     stores: [{ ...checkpoint.stores[0], remainingMassKg: 0 }],
@@ -581,7 +617,7 @@ resources.importState(
   runGraph,
 );
 assert.equal(resources.remainingMass(tank.id), 0);
-resources.importState(checkpoint, runGraph);
+importResourceState(resources, checkpoint, runGraph);
 
 const secondTank = part(3, "propellanttank", [2, 1.5, 0]),
   multiSnapshot = {
@@ -597,13 +633,14 @@ const secondTank = part(3, "propellanttank", [2, 1.5, 0]),
 assert.equal(multiCheckpoint.stores.length, 2);
 assert.throws(
   () =>
-    multiResources.importState(
+    importResourceState(
+      multiResources,
       {
         ...multiCheckpoint,
         stores: multiCheckpoint.stores.map((store, index) =>
           index === 0
             ? { ...store, remainingMassKg: 1 }
-            : { ...store, mediumId: "wrong-v1" },
+            : { ...store, remainingMassKg: Number.NaN },
         ),
       },
       multiGraph,
@@ -618,7 +655,10 @@ assert.deepEqual(
 
 const branchedSnapshot = {
     parts: [tank, engine, part(4, "rocket", [2, 0, 0])],
-    connections: [feed, { ...feed, id: "feed-2", b: 4 }],
+    connections: [
+      structuredClone(feed),
+      { ...structuredClone(feed), id: "feed-2", b: 4 },
+    ],
   },
   branchedGraph = new RunAssemblyGraph(branchedSnapshot),
   branchedResources = new MaterialResourceNetwork(
@@ -707,7 +747,14 @@ assert.throws(
 
 const sharedStoreSnapshot = {
     parts: [tank, secondTank, engine],
-    connections: [feed, { ...feed, id: "feed-shared", a: secondTank.id }],
+    connections: [
+      structuredClone(feed),
+      {
+        ...structuredClone(feed),
+        id: "feed-shared",
+        a: secondTank.id,
+      },
+    ],
   },
   sharedStoreResources = new MaterialResourceNetwork(
     compileAssembly(sharedStoreSnapshot, TYPES),

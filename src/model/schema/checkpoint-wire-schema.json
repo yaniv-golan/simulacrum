@@ -69,7 +69,7 @@
           },
           "ownerVersion": {
             "type": "integer",
-            "enum": [1, 2]
+            "enum": [1, 2, 3]
           },
           "payloadJson": { "type": "string", "maxLength": 2000000 },
           "payloadByteLength": {
@@ -86,18 +86,51 @@
           {
             "if": {
               "properties": {
-                "ownerId": { "const": "material-resources" }
+                "ownerId": {
+                  "enum": ["session", "body-registry", "telemetry-event-ids"]
+                }
               },
               "required": ["ownerId"]
             },
             "then": {
               "properties": {
-                "ownerVersion": { "const": 2 }
+                "ownerVersion": { "const": 3 }
               }
             },
             "else": {
-              "properties": {
-                "ownerVersion": { "const": 1 }
+              "if": {
+                "properties": {
+                  "ownerId": {
+                    "enum": [
+                      "input-command-bus",
+                      "run-graph",
+                      "compiled-topology",
+                      "physics-world",
+                      "solver-contact",
+                      "tire-carcass",
+                      "structure-failure",
+                      "energy-power-signal",
+                      "material-resources",
+                      "pneumatic-gas",
+                      "thermal-ablation",
+                      "articulated-drive",
+                      "sensors",
+                      "controllers",
+                      "terrain-environment"
+                    ]
+                  }
+                },
+                "required": ["ownerId"]
+              },
+              "then": {
+                "properties": {
+                  "ownerVersion": { "const": 2 }
+                }
+              },
+              "else": {
+                "properties": {
+                  "ownerVersion": { "const": 1 }
+                }
               }
             }
           }

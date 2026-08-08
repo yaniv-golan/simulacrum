@@ -163,7 +163,8 @@ const guideRuntime = new MultibodyRuntime({
     catalog: TYPES,
   }),
   guideSnapshot = guideAssembly();
-guideRuntime.start(guideSnapshot);
+guideRuntime.start(JSON.stringify(guideSnapshot));
+guideRuntime.worldAdapter.beginSession(DT);
 const guideEntry = guideRuntime.constraintEntries.find(
   (entry) => entry.descriptor.kind === "linear-guide",
 );
@@ -240,13 +241,19 @@ const completedGuideTelemetry = guideRuntime.telemetry(),
   ),
   guideCheckpoint = guideRuntime.exportState(),
   guideWorldCheckpoint = guideRuntime.worldAdapter.exportState(),
-  replayWorld = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
-  replayRuntime = new MultibodyRuntime({ world: replayWorld, catalog: TYPES });
+  replayWorld = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) });
+replayWorld.solver.iterations = 60;
+replayWorld.solver.tolerance = 1e-10;
+const replayRuntime = new MultibodyRuntime({
+  world: replayWorld,
+  catalog: TYPES,
+});
 assert.ok(
   completedGuidePose?.deformedBodyBoundsWorldM,
   "completed linear-guide pose omitted authoritative deformed bounds",
 );
-replayRuntime.start(guideSnapshot);
+replayRuntime.start(JSON.stringify(guideSnapshot));
+replayRuntime.worldAdapter.beginSession(DT);
 replayRuntime.importState(guideCheckpoint);
 replayRuntime.worldAdapter.importState(guideWorldCheckpoint);
 const replayGuideState = replayRuntime
@@ -333,55 +340,24 @@ disposeObject3D(renderedGuide.mesh);
 replayRuntime.dispose();
 guideRuntime.dispose();
 
-function guidePermutationState(reverseRows) {
+function assertGuideEquationRowMutationRejected() {
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) });
   world.solver.iterations = 60;
   world.solver.tolerance = 1e-10;
   const runtime = new MultibodyRuntime({ world, catalog: TYPES });
-  runtime.start(guideAssembly());
+  runtime.start(JSON.stringify(guideAssembly()));
   const entry = runtime.constraintEntries.find(
     (candidate) => candidate.descriptor.kind === "linear-guide",
   );
-  if (reverseRows) entry.constraint.equations.reverse();
-  for (let tick = 0; tick < 600; tick++) {
-    runtime.bodyByPart
-      .get(3)
-      .applyForce(new CANNON.Vec3(80, 0, 120), new CANNON.Vec3(0, 0.5, 0));
-    runtime.stepActuators({ services: {} }, DT);
-    runtime.worldAdapter.integrate(DT, { tick: tick + 1 });
-    runtime.afterIntegration(DT);
-  }
-  const values = [2, 3].flatMap((id) => {
-    const body = runtime.bodyByPart.get(id);
-    return [
-      body.position.x,
-      body.position.y,
-      body.position.z,
-      body.quaternion.x,
-      body.quaternion.y,
-      body.quaternion.z,
-      body.quaternion.w,
-      body.velocity.x,
-      body.velocity.y,
-      body.velocity.z,
-      body.angularVelocity.x,
-      body.angularVelocity.y,
-      body.angularVelocity.z,
-    ];
-  });
-  runtime.dispose();
-  return values;
-}
-
-const canonicalRows = guidePermutationState(false),
-  reversedRows = guidePermutationState(true),
-  rowPermutationDistance = Math.hypot(
-    ...canonicalRows.map((value, index) => value - reversedRows[index]),
+  entry.constraint.equations.reverse();
+  assert.throws(
+    () => runtime.stepActuators({ services: {} }, DT),
+    (error) => error?.code === "MULTIBODY_LIVE_ENGINE_AUTHORITY_MISMATCH",
+    "linear-guide accepted an unauthorized sequential-solver row order",
   );
-assert.ok(
-  rowPermutationDistance <= 1e-10,
-  JSON.stringify({ rowPermutationDistance }),
-);
+  runtime.dispose();
+}
+assertGuideEquationRowMutationRejected();
 
 function runActuator(snapshot, command = null, externalForceN = 0) {
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) });
@@ -397,7 +373,7 @@ function runActuator(snapshot, command = null, externalForceN = 0) {
       commandBus,
       services: {},
     };
-  runtime.start(snapshot);
+  runtime.start(JSON.stringify(snapshot));
   if (command != null) commandBus.writeRemote(2, "linear_target", command);
   let telemetry;
   for (let tick = 0; tick < 360; tick++) {

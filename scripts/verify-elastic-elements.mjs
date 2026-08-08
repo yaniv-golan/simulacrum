@@ -81,7 +81,7 @@ function runOscillator(dt, { dampingNsPerM = 0, periods = 20 } = {}) {
   world.solver.iterations = 40;
   world.solver.tolerance = 1e-10;
   const runtime = new MultibodyRuntime({ world, catalog: TYPES, fixedDt: dt });
-  runtime.start(springAssembly({ dampingNsPerM }));
+  runtime.start(JSON.stringify(springAssembly({ dampingNsPerM })));
   const entry = runtime.constraintEntries.find(
       (candidate) => candidate.kind === "axial-force-v1",
     ),
@@ -211,7 +211,7 @@ offCenterSnapshot.parts[2].pos = [
     targetPortId: "END_B",
   }).positionM,
 ];
-offCenterRuntime.start(offCenterSnapshot);
+offCenterRuntime.start(JSON.stringify(offCenterSnapshot));
 offCenterRuntime.bodyByPart.get(3).position.x += 0.2;
 offCenterRuntime.stepActuators({ services: {} }, 1 / 120);
 const offCenterA = offCenterRuntime.bodyByPart.get(1),
@@ -235,7 +235,7 @@ const limitedWorld = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
   });
 limitedWorld.solver.iterations = 60;
 limitedWorld.solver.tolerance = 1e-10;
-limitedRuntime.start(springAssembly());
+limitedRuntime.start(JSON.stringify(springAssembly()));
 limitedRuntime.bodyByPart.get(3).position.x += 2;
 let limitedState;
 for (let tick = 0; tick < 240; tick++) {

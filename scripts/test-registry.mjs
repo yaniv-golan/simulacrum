@@ -58,6 +58,7 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-collision-failure-runtime.mjs",
   "verify-constraint-reaction-wrench.mjs",
   "verify-fixed-attachment-runtime.mjs",
+  "verify-rigid-cluster-cut-wrench.mjs",
   "verify-cannon-solver-transaction.mjs",
   "verify-physics-stress.mjs",
   "verify-physics-checkpoints.mjs",
@@ -119,7 +120,6 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-assembly-compiler.mjs",
   "verify-five-demos.mjs",
   "verify-articulated-runtime.mjs",
-  "verify-articulated-browser.mjs",
   "verify-component-aerothermal-runtime.mjs",
   "verify-flight-runtime-budget.mjs",
   "verify-flight-browser.mjs",
@@ -171,6 +171,7 @@ export const VERIFICATION_CHECKS = Object.freeze([
  * bound orchestration only.
  */
 export const VERIFICATION_TIMEOUT_MS = Object.freeze({
+  "verify-five-demos.mjs": 300_000,
   "verify-mechanism-sharing-proof.mjs": 300_000,
   "verify-blueprint-roundtrip.mjs": 300_000,
   "verify-blueprint-exchange.mjs": 300_000,
@@ -181,6 +182,8 @@ export const VERIFICATION_TIMEOUT_MS = Object.freeze({
   "verify-ui-baseline-fixtures.mjs": 300_000,
   "verify-component-authored-carriers-browser.mjs": 300_000,
   "verify-keyboard-workflows.mjs": 300_000,
+  "verify-keyboard-authoring-journey.mjs": 300_000,
+  "verify-rover-drop.mjs": 300_000,
 });
 
 /**

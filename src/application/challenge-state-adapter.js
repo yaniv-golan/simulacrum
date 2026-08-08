@@ -1,5 +1,9 @@
 import { canonicalizeQuaternion } from "../model/primitives.js";
 import { componentDefinition } from "../model/component-contracts.js";
+import {
+  projectPortableAuthoredConnection,
+  projectPortableAuthoredPart,
+} from "../model/authored-assembly-content.js";
 
 /** Converts live application objects into the DOM-free challenge read model. */
 export function createChallengeMachineView(
@@ -9,40 +13,33 @@ export function createChallengeMachineView(
   remoteProfiles = {},
 ) {
   return {
-    parts: parts.map((part) => ({
-      id: part.id,
-      type: part.type,
-      pos: Array.isArray(part.pos) ? [...part.pos] : [0, 0, 0],
-      orientation: canonicalizeQuaternion(part.orientation),
-      scale: Array.isArray(part.scale)
-        ? [...part.scale]
-        : [part.scale?.x ?? 1, part.scale?.y ?? 1, part.scale?.z ?? 1],
-      rigRole: part.rigRole || null,
-      mass:
-        part.mechanism?.massPropertySource?.massKg ??
-        part.config?.mass ??
-        componentDefinition(part, catalog)?.mass ??
-        0,
-      energyJ: part.energyJ,
-      storedEnergyWh: part.storedEnergyWh ?? part.energyWh,
-      config: structuredClone(part.config || {}),
-      mechanism: part.mechanism ? structuredClone(part.mechanism) : undefined,
+    parts: parts.map((part) => {
+      const authored = projectPortableAuthoredPart({
+          ...part,
+          pos: Array.isArray(part.pos) ? [...part.pos] : [0, 0, 0],
+          orientation: canonicalizeQuaternion(part.orientation),
+          scale: Array.isArray(part.scale)
+            ? [...part.scale]
+            : [part.scale?.x ?? 1, part.scale?.y ?? 1, part.scale?.z ?? 1],
+        }),
+        energyJ = part.energyJ,
+        storedEnergyWh = part.storedEnergyWh ?? part.energyWh;
+      return {
+        ...authored,
+        rigRole: part.rigRole || null,
+        mass:
+          part.mechanism?.massPropertySource?.massKg ??
+          part.config?.mass ??
+          componentDefinition(part, catalog)?.mass ??
+          0,
+        ...(energyJ == null ? {} : { energyJ }),
+        ...(storedEnergyWh == null ? {} : { storedEnergyWh }),
+      };
+    }),
+    connections: connections.map((connection) => ({
+      ...projectPortableAuthoredConnection(connection),
+      failed: Boolean(connection.failed),
     })),
-    connections: connections.map((connection) =>
-      structuredClone({
-        id: connection.id,
-        a: connection.a,
-        b: connection.b,
-        portA: connection.portA,
-        portB: connection.portB,
-        anchorA: connection.anchorA,
-        anchorB: connection.anchorB,
-        kind: connection.kind,
-        capacity: connection.capacity,
-        config: connection.config,
-        failed: Boolean(connection.failed),
-      }),
-    ),
     remoteProfiles: structuredClone(remoteProfiles),
   };
 }

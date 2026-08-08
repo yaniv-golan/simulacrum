@@ -5,13 +5,15 @@ import {
   MaterialResourceNetwork,
   RunAssemblyGraph,
   TYPES,
-  compileAssembly,
   deriveDynamicMassProperties,
   pressureNozzleContract,
   pressureNozzlePerformance,
   resolveWireComponentConfig,
 } from "../src/core/index.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import { CannonWorldAdapter } from "../src/simulation/cannon-world-adapter.js";
+import { AerothermalAblationOwner } from "../src/simulation/aerothermal-ablation-owner.js";
+import { dynamicMassContributorIdentity } from "../src/model/dynamic-mass-properties.js";
 import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
 import { RuntimeCheckpointCoordinator } from "../src/simulation/runtime-checkpoints.js";
 import { SimulationSession } from "../src/simulation/simulation-session.js";
@@ -26,6 +28,10 @@ import {
   MaterialResourceCommitSystem,
   MaterialResourceSystem,
 } from "../src/simulation/systems/material-resource-system.js";
+import {
+  planCheckpointMassProperties,
+  reconstructMassPropertiesAfterCheckpointOwners,
+} from "../src/simulation/systems/mass-property-commit-system.js";
 
 const DT = 1 / 120;
 const MEDIUM = "hydrogen-peroxide-90-v1";
@@ -34,17 +40,28 @@ const IDENTITIES = Object.freeze({
   blueprintFingerprint: `sim-sha256-${"b".repeat(64)}`,
   compiledTopologyFingerprint: `sim-sha256-${"c".repeat(64)}`,
 });
+const IDENTITIES_JSON = JSON.stringify(IDENTITIES);
 const transform = Object.freeze({
   orientation: [0, 0, 0, 1],
   scale: { x: 1, y: 1, z: 1 },
 });
+assert.equal(
+  typeof MassPropertyCommitSystem.prototype.reconstructAfterCheckpointOwners,
+  "undefined",
+  "coordinator-only checkpoint mass mutation leaked onto the public system class",
+);
+assert.equal(
+  typeof MassPropertyCommitSystem.prototype.planCheckpointMassProperties,
+  "undefined",
+  "package-internal checkpoint mass planning leaked onto the public system class",
+);
 
 function part(id, type, pos, config = {}) {
   return {
     id,
     type,
     pos,
-    ...transform,
+    ...structuredClone(transform),
     config: resolveWireComponentConfig({ type, config }),
   };
 }
@@ -452,6 +469,15 @@ assert.equal(emptyDynamic.dynamicMaterialStore, null);
 assert.throws(
   () =>
     deriveDynamicMassProperties(tankDescriptor, {
+      structuralMassKg: 0.001 - 1.7e-8,
+      materialStore: { ...store, remainingMassKg: 0 },
+    }),
+  /structural mass must be finite and between/,
+  "dynamic mass projection clamped an invalid structural mass upward",
+);
+assert.throws(
+  () =>
+    deriveDynamicMassProperties(tankDescriptor, {
       structuralMassKg: dryMass,
       materialStore: {
         ...halfStore,
@@ -572,11 +598,11 @@ for (const [field, row, column] of [
   );
 assert.deepEqual(asymmetric.contributingSolidIds, [
   "dry-solid",
-  "material-store:asymmetric-store",
+  dynamicMassContributorIdentity("material-store", "asymmetric-store"),
 ]);
 
 const gasContribution = {
-    id: "pneumatic-gas:asymmetric-store",
+    id: dynamicMassContributorIdentity("pneumatic-gas", "asymmetric-store"),
     massKg: 2,
     centerPartM: [1.2, -0.4, 0.6],
     inertiaTensorAtCenterKgM2: {
@@ -665,7 +691,7 @@ const unsupportedTank = part(10, "propellanttank", [0, 0, 0]),
     id: 11,
     type: "bearing",
     pos: [0, 0, 0],
-    ...transform,
+    ...structuredClone(transform),
     mechanism: structuredClone(TYPES.bearing.mechanism),
   },
   unsupported = compileAssembly(
@@ -747,7 +773,7 @@ function createRuntime({
         );
       },
     };
-  multibodyRuntime.start(assembly);
+  multibodyRuntime.start(JSON.stringify(assembly));
   const session = new SimulationSession({
       systems: [
         commandSystem,
@@ -845,6 +871,31 @@ assert.equal(initialization.appliedAfterIntegratedTick, null);
 assert.equal(initialization.timingPolicy, "before-first-integration-v1");
 assert.equal(initialization.committedPartCount, 1);
 near(tankBody.mass, dryMass + tank.config.initialUsableMassKg);
+const forgedDynamicContributorState = structuredClone(
+    idleRun.multibodyRuntime.exportState(),
+  ),
+  forgedDynamicContributorBody = forgedDynamicContributorState.bodies.find(
+    (body) => body.partId === tank.id,
+  );
+assert.deepEqual(
+  idleRun.multibodyRuntime.compiled.rigidClusters
+    .flatMap((cluster) => cluster.members)
+    .find((member) => member.partId === tank.id).runtimeMassContributorKinds,
+  ["material-store-v1"],
+  "dynamic-mass fixture unexpectedly owns pneumatic authority",
+);
+forgedDynamicContributorBody.massProperties.contributingSolidIds.push(
+  `pneumatic-gas:${tank.id}`,
+);
+assert.throws(
+  () =>
+    idleRun.multibodyRuntime.importState(
+      JSON.stringify(forgedDynamicContributorState),
+    ),
+  (error) => error?.code === "MULTIBODY_CHECKPOINT_PHYSICAL_AUTHORITY_MISMATCH",
+  "direct multibody restore accepted a dynamic contributor absent from compiled authority",
+);
+near(tankBody.mass, dryMass + tank.config.initialUsableMassKg);
 idleRun.session.stepFixed();
 const idleCommit = idleRun.session.telemetry().systems.massProperties;
 assert.equal(idleCommit.stage, "post-thermal");
@@ -853,11 +904,16 @@ assert.equal(idleCommit.appliedAfterIntegratedTick, 1);
 assert.equal(idleCommit.evaluatedPartCount, 1);
 assert.equal(idleCommit.committedPartCount, 0);
 assert.deepEqual(idleCommit.unchangedPartIds, [tank.id]);
-const checkpoint = idleRun.coordinator.capture(IDENTITIES);
+const checkpoint = idleRun.coordinator.capture(IDENTITIES_JSON);
 idleRun.session.context.massPropertyRuntime.lastTransaction = {
   transactionId: "stale-diagnostic",
 };
-idleRun.coordinator.restore(checkpoint, IDENTITIES);
+idleRun.coordinator.restore(checkpoint, IDENTITIES_JSON);
+assert.equal(
+  idleRun.session.context.massPropertyRuntime.lastTransaction.stage,
+  "checkpoint-restore",
+  "checkpoint restore reused pre-restore mass-property telemetry",
+);
 assert.deepEqual(
   {
     version: 1,
@@ -867,23 +923,73 @@ assert.deepEqual(
   idleRun.session.telemetry().systems.massProperties,
   "checkpoint restore left a stale mass-property diagnostic cache",
 );
+const targetMaterialState = structuredClone(
+    idleRun.session.context.materialResourceNetwork.exportState(),
+  ),
+  targetRemainingMassKg = store.capacityKg / 3;
+targetMaterialState.stores.find(
+  (record) => record.partId === tank.id,
+).remainingMassKg = targetRemainingMassKg;
+const liveMaterialBeforePlan =
+    idleRun.session.context.materialResourceNetwork.exportState(),
+  livePhysicsBeforePlan = idleRun.multibodyRuntime.exportState(),
+  liveRegistryBeforePlan =
+    idleRun.session.context.bodyRegistry.exportCheckpointState(),
+  targetMassPlan = planCheckpointMassProperties(idleRun.session.context, {
+    materialResources: { network: JSON.stringify(targetMaterialState) },
+    pneumatics: null,
+    aerothermal: null,
+  });
+assert.equal(
+  targetMassPlan.size,
+  idleRun.multibodyRuntime.compiled.bodies.length,
+);
+near(targetMassPlan.get(tank.id).massKg, dryMass + targetRemainingMassKg);
+assert.equal(Object.isFrozen(targetMassPlan.get(tank.id)), true);
+assert.deepEqual(
+  idleRun.session.context.materialResourceNetwork.exportState(),
+  liveMaterialBeforePlan,
+  "checkpoint mass planning mutated the live material owner",
+);
+assert.deepEqual(
+  idleRun.multibodyRuntime.exportState(),
+  livePhysicsBeforePlan,
+  "checkpoint mass planning mutated live physics",
+);
+assert.deepEqual(
+  idleRun.session.context.bodyRegistry.exportCheckpointState(),
+  liveRegistryBeforePlan,
+  "checkpoint mass planning mutated the body registry",
+);
 idleRun.session.stepFixed();
 const idleContext = idleRun.session.context,
   idleEngine = idleContext.pressureNozzleRuntime.engines.get(engineA.id),
   idleRecord = idleEngine.record,
   demandState = idleRun.demand.exportState(idleContext);
 assert.throws(
-  () => idleRun.demand.importState(idleContext, { version: 2, engines: [] }),
+  () =>
+    idleRun.demand.importState(
+      idleContext,
+      JSON.stringify({ version: 2, engines: [] }),
+    ),
   (error) => error?.code === "INVALID_PRESSURE_NOZZLE_CHECKPOINT",
 );
 assert.throws(
-  () => idleRun.demand.importState(idleContext, { version: 1, engines: [] }),
+  () =>
+    idleRun.demand.importState(
+      idleContext,
+      JSON.stringify({ version: 1, engines: [] }),
+    ),
   (error) => error?.code === "PRESSURE_NOZZLE_CHECKPOINT_IDENTITY_MISMATCH",
 );
 const nonFiniteDemandState = structuredClone(demandState);
 nonFiniteDemandState.engines[0].throttleState = Number.NaN;
 assert.throws(
-  () => idleRun.demand.importState(idleContext, nonFiniteDemandState),
+  () =>
+    idleRun.demand.importState(
+      idleContext,
+      JSON.stringify(nonFiniteDemandState),
+    ),
   (error) => error?.code === "INVALID_PRESSURE_NOZZLE_CHECKPOINT",
 );
 const allocationTick = idleRecord.allocationTick;
@@ -949,14 +1055,39 @@ function massFailureContext(commitMassProperties) {
     clock: { tick: 0 },
     services: {
       multibodyRuntime: {
-        compiled: { bodies: [tankDescriptor] },
+        compiled: {
+          bodies: [tankDescriptor],
+          rigidClusters: [
+            {
+              members: [
+                {
+                  partId: tank.id,
+                  runtimeMassContributorKinds: ["material-store-v1"],
+                },
+              ],
+            },
+          ],
+        },
         bodyByPart: new Map([[tank.id, body]]),
         commitMassProperties,
       },
     },
     materialResourceNetwork: {
-      stores: () => [
-        { ...store, partId: tank.id, remainingMassKg: store.capacityKg / 2 },
+      massContributions: () => [
+        {
+          kind: "material-store-v1",
+          partId: tank.id,
+          bodyId: tankDescriptor.id,
+          mediumId: store.mediumId,
+          capacityKg: store.capacityKg,
+          remainingMassKg: store.capacityKg / 2,
+          densityKgM3: store.densityKgM3,
+          specificAvailableEnergyJkg: store.specificAvailableEnergyJkg,
+          outletPortId: store.outletPortId,
+          fillLaw: store.fillLaw.kind,
+          storageSolid: structuredClone(store.storageSolid),
+          storageAxisPart: [...store.storageAxisPart],
+        },
       ],
     },
     bodyRegistry: {
@@ -966,78 +1097,567 @@ function massFailureContext(commitMassProperties) {
   };
 }
 
+function materialRecordFor(context) {
+  return context.materialResourceNetwork.massContributions()[0];
+}
+
+function expectMaterialOwnerRejection(mutator, message) {
+  const context = massFailureContext(() => []),
+    record = materialRecordFor(context);
+  mutator(record, context);
+  context.materialResourceNetwork.massContributions = () => [record];
+  assert.throws(
+    () => new MassPropertyCommitSystem().initialize(context),
+    (error) => error?.code === "MASS_PROPERTY_OWNER_COVERAGE_MISMATCH",
+    message,
+  );
+}
+
+expectMaterialOwnerRejection(
+  (record) => (record.partId = null),
+  "mutable-mass owner accepted a null canonical part identity",
+);
+expectMaterialOwnerRejection(
+  (record) => (record.partId = "unowned-part"),
+  "mutable-mass owner accepted an uncompiled part identity",
+);
+expectMaterialOwnerRejection(
+  (record) => (record.kind = "pneumatic-gas-v1"),
+  "mutable-mass owner accepted a changed contributor kind",
+);
+expectMaterialOwnerRejection(
+  (record) => (record.unownedField = true),
+  "mutable-mass owner accepted an extra authority field",
+);
+expectMaterialOwnerRejection(
+  (record) => (record.mediumId = `${record.mediumId}-forged`),
+  "mutable-mass owner accepted changed compiled static authority",
+);
+expectMaterialOwnerRejection(
+  (record) => (record.remainingMassKg = record.capacityKg + 1),
+  "mutable-mass owner accepted mass above compiled capacity",
+);
+expectMaterialOwnerRejection(
+  (record) => (record.remainingMassKg = Number.POSITIVE_INFINITY),
+  "mutable-mass owner accepted non-finite state",
+);
+expectMaterialOwnerRejection((record) => {
+  Object.defineProperty(record, "remainingMassKg", {
+    configurable: true,
+    enumerable: true,
+    get: () => record.capacityKg / 2,
+  });
+}, "mutable-mass owner accepted an accessor-backed record");
+expectMaterialOwnerRejection(
+  (record) => (record.storageSolid.cycle = record),
+  "mutable-mass owner accepted cyclic authority data",
+);
+
+function ablationFailureContext(mutator) {
+  const context = massFailureContext(() => []),
+    record = {
+      kind: "ablative-material-v1",
+      partId: tank.id,
+      initialStructuralMassKg: dryMass,
+      structuralMassKg: dryMass,
+      ablatedMassKg: 0,
+    };
+  context.materialResourceNetwork = null;
+  context.services.multibodyRuntime.compiled.rigidClusters[0].members[0].runtimeMassContributorKinds =
+    ["ablative-material-v1"];
+  mutator(record);
+  context.services.aerothermalAblationOwner = {
+    massContributions: () => [record],
+  };
+  return context;
+}
+
+for (const [label, mutator] of [
+  [
+    "initial structural authority",
+    (record) => (record.initialStructuralMassKg += 1),
+  ],
+  ["structural upper bound", (record) => (record.structuralMassKg += 1)],
+  ["negative ablated mass", (record) => (record.ablatedMassKg = -1)],
+  ["ablated upper bound", (record) => (record.ablatedMassKg = dryMass)],
+  [
+    "mass conservation",
+    (record) => {
+      record.structuralMassKg -= 1;
+      record.ablatedMassKg = 0;
+    },
+  ],
+]) {
+  assert.throws(
+    () =>
+      new MassPropertyCommitSystem().initialize(
+        ablationFailureContext(mutator),
+      ),
+    (error) => error?.code === "MASS_PROPERTY_OWNER_COVERAGE_MISMATCH",
+    `mutable-mass owner accepted invalid ablation ${label}`,
+  );
+}
+
+function pneumaticFailureContext(recordMutator, contributionMutator = null) {
+  const context = massFailureContext(() => []),
+    record = {
+      partId: tank.id,
+      kind: "ideal-gas-control-volume-v1",
+      massKg: 1,
+      internalEnergyJ: 1,
+      volumeM3: 1,
+    },
+    contribution = {
+      id: dynamicMassContributorIdentity("pneumatic-gas", tank.id),
+      massKg: record.massKg,
+      centerPartM: [0, 0, 0],
+      inertiaTensorAtCenterKgM2: {
+        xx: 0,
+        yy: 0,
+        zz: 0,
+        xy: 0,
+        xz: 0,
+        yz: 0,
+      },
+    };
+  context.materialResourceNetwork = null;
+  context.services.multibodyRuntime.compiled.rigidClusters[0].members[0].runtimeMassContributorKinds =
+    ["ideal-gas-control-volume-v1"];
+  recordMutator?.(record);
+  contribution.massKg = record.massKg;
+  contributionMutator?.(contribution);
+  context.pneumaticNetwork = {
+    massContributions: () => [record],
+    gasMassContributionForPart: () => contribution,
+  };
+  return { context, contribution, record };
+}
+
+for (const [label, mutator] of [
+  ["internal energy", (record) => (record.internalEnergyJ = 0)],
+  ["volume", (record) => (record.volumeM3 = 0)],
+]) {
+  const { context } = pneumaticFailureContext(mutator);
+  assert.throws(
+    () => new MassPropertyCommitSystem().initialize(context),
+    (error) => error?.code === "MASS_PROPERTY_OWNER_COVERAGE_MISMATCH",
+    `mutable-mass owner accepted nonpositive pneumatic ${label}`,
+  );
+}
+for (const [label, contributionMutator] of [
+  ["missing contribution", () => null],
+  ["mass disagreement", (contribution) => (contribution.massKg += 1)],
+  ["identity disagreement", (contribution) => (contribution.id = "forged")],
+]) {
+  const { context } = pneumaticFailureContext(
+    null,
+    label === "missing contribution" ? null : contributionMutator,
+  );
+  if (label === "missing contribution")
+    context.pneumaticNetwork.gasMassContributionForPart = () => null;
+  assert.throws(
+    () => new MassPropertyCommitSystem().initialize(context),
+    (error) => error?.code === "MASS_PROPERTY_OWNER_COVERAGE_MISMATCH",
+    `mutable-mass owner accepted pneumatic ${label}`,
+  );
+}
+{
+  const { context, contribution, record } = pneumaticFailureContext(),
+    extraContribution = structuredClone(contribution);
+  context.pneumaticNetwork.massProjectionForState = () => ({
+    records: [record],
+    contributions: [
+      { partId: tank.id, contribution },
+      { partId: "unowned-part", contribution: extraContribution },
+    ],
+  });
+  assert.throws(
+    () =>
+      planCheckpointMassProperties(context, {
+        materialResources: null,
+        pneumatics: null,
+        aerothermal: null,
+      }),
+    (error) => error?.code === "MASS_PROPERTY_OWNER_COVERAGE_MISMATCH",
+    "checkpoint mass plan accepted surplus pneumatic projection authority",
+  );
+}
+
+const missingCompiledMassOwner = massFailureContext(() => []);
+missingCompiledMassOwner.materialResourceNetwork = null;
+assert.throws(
+  () => new MassPropertyCommitSystem().initialize(missingCompiledMassOwner),
+  (error) => error?.code === "MASS_PROPERTY_OWNER_COVERAGE_MISMATCH",
+  "normal initialization accepted a missing compiled material-mass owner",
+);
+const nonSequenceMassOwner = massFailureContext(() => []);
+nonSequenceMassOwner.materialResourceNetwork.massContributions = () => ({});
+assert.throws(
+  () => new MassPropertyCommitSystem().initialize(nonSequenceMassOwner),
+  (error) => error?.code === "MASS_PROPERTY_OWNER_COVERAGE_MISMATCH",
+  "mutable-mass owner accepted a non-sequence projection",
+);
+const malformedStaticMassOwner = massFailureContext(() => []),
+  malformedStaticRecord =
+    malformedStaticMassOwner.materialResourceNetwork.massContributions()[0];
+delete malformedStaticRecord.storageAxisPart;
+malformedStaticMassOwner.materialResourceNetwork.massContributions = () => [
+  malformedStaticRecord,
+];
+assert.throws(
+  () => new MassPropertyCommitSystem().initialize(malformedStaticMassOwner),
+  (error) => error?.code === "MASS_PROPERTY_OWNER_COVERAGE_MISMATCH",
+  "mutable-mass owner accepted a changed static authority field set",
+);
+const nonphysicalMaterialMassOwner = massFailureContext(() => []),
+  nonphysicalMaterialRecord =
+    nonphysicalMaterialMassOwner.materialResourceNetwork.massContributions()[0];
+nonphysicalMaterialRecord.remainingMassKg = -1;
+nonphysicalMaterialMassOwner.materialResourceNetwork.massContributions = () => [
+  nonphysicalMaterialRecord,
+];
+assert.throws(
+  () => new MassPropertyCommitSystem().initialize(nonphysicalMaterialMassOwner),
+  (error) => error?.code === "MASS_PROPERTY_OWNER_COVERAGE_MISMATCH",
+  "mutable-mass owner accepted negative stored mass",
+);
+const nonphysicalAblationMassOwner = massFailureContext(() => []);
+nonphysicalAblationMassOwner.materialResourceNetwork = null;
+nonphysicalAblationMassOwner.services.multibodyRuntime.compiled.rigidClusters[0].members[0].runtimeMassContributorKinds =
+  ["ablative-material-v1"];
+nonphysicalAblationMassOwner.services.aerothermalAblationOwner = {
+  massContributions: () => [
+    {
+      kind: "ablative-material-v1",
+      partId: tank.id,
+      initialStructuralMassKg: dryMass,
+      structuralMassKg: 0,
+      ablatedMassKg: dryMass,
+    },
+  ],
+};
+assert.throws(
+  () => new MassPropertyCommitSystem().initialize(nonphysicalAblationMassOwner),
+  (error) => error?.code === "MASS_PROPERTY_OWNER_COVERAGE_MISMATCH",
+  "mutable-mass owner accepted zero remaining structural mass",
+);
+const ablationCheckpointOwner = new AerothermalAblationOwner({
+    physicalFlightModel: {
+      active: () => true,
+      parts: [
+        {
+          id: "ablation-conservation-probe",
+          baseStructuralMassKg: 10,
+          aerothermal: { material: { ablative: true } },
+        },
+      ],
+    },
+    aerodynamicForceOwner: {},
+  }),
+  liveAblationCheckpoint = ablationCheckpointOwner.exportState(),
+  fullyAblatedCheckpoint = structuredClone(liveAblationCheckpoint);
+fullyAblatedCheckpoint.parts[0].thermal.remainingMass = 0;
+fullyAblatedCheckpoint.parts[0].thermal.ablatedMass = 10;
+fullyAblatedCheckpoint.parts[0].thermal.consumed = true;
+assert.throws(
+  () =>
+    ablationCheckpointOwner.massContributionsForState(
+      JSON.stringify(fullyAblatedCheckpoint),
+    ),
+  (error) => error?.code === "INVALID_AEROTHERMAL_CHECKPOINT_STATE",
+  "target ablation projection accepted a state that requires created residual mass",
+);
+assert.deepEqual(
+  ablationCheckpointOwner.exportState(),
+  liveAblationCheckpoint,
+  "rejected target ablation projection mutated live thermal authority",
+);
+const belowResidualAblationCheckpoint = structuredClone(liveAblationCheckpoint);
+belowResidualAblationCheckpoint.parts[0].thermal.remainingMass = 0.001 - 1.7e-8;
+belowResidualAblationCheckpoint.parts[0].thermal.ablatedMass =
+  10 - belowResidualAblationCheckpoint.parts[0].thermal.remainingMass;
+belowResidualAblationCheckpoint.parts[0].thermal.consumed = true;
+assert.throws(
+  () =>
+    ablationCheckpointOwner.massContributionsForState(
+      JSON.stringify(belowResidualAblationCheckpoint),
+    ),
+  (error) => error?.code === "INVALID_AEROTHERMAL_CHECKPOINT_STATE",
+  "ablation checkpoint accepted a below-residual state that projection would increase",
+);
+const residualAblationCheckpoint = structuredClone(liveAblationCheckpoint);
+residualAblationCheckpoint.parts[0].thermal.remainingMass = 0.001;
+residualAblationCheckpoint.parts[0].thermal.ablatedMass = 9.999;
+residualAblationCheckpoint.parts[0].thermal.consumed = true;
+const [residualAblationContribution] =
+  ablationCheckpointOwner.massContributionsForState(
+    JSON.stringify(residualAblationCheckpoint),
+  );
+assert.equal(
+  residualAblationContribution.structuralMassKg +
+    residualAblationContribution.ablatedMassKg,
+  residualAblationContribution.initialStructuralMassKg,
+  "accepted target ablation projection did not conserve represented mass",
+);
+ablationCheckpointOwner.dispose();
+const tinyAblationPart = part("tiny-ablation", "heatshield", [0, 0, 0]),
+  tinyAblationAssembly = {
+    revision: 1,
+    parts: [tinyAblationPart],
+    connections: [],
+  },
+  tinyAblationWorld = new CANNON.World({
+    gravity: new CANNON.Vec3(0, 0, 0),
+  }),
+  tinyAblationWorldAdapter = new CannonWorldAdapter(tinyAblationWorld),
+  tinyAblationRuntime = new MultibodyRuntime({
+    world: tinyAblationWorld,
+    worldAdapter: tinyAblationWorldAdapter,
+    material: new CANNON.Material("tiny-ablation"),
+    catalog: TYPES,
+    fixedDt: DT,
+  });
+tinyAblationRuntime.start(JSON.stringify(tinyAblationAssembly));
+const tinyAblationDescriptor = tinyAblationRuntime.compiled.bodies[0],
+  tinyAblationInitialMassKg = tinyAblationDescriptor.massProperties.massKg,
+  tinyAblationStructuralMassKg = tinyAblationInitialMassKg - 5e-13,
+  tinyAblationMassKg = tinyAblationInitialMassKg - tinyAblationStructuralMassKg,
+  tinyAblationOwner = {
+    massContributions: () => [
+      {
+        kind: "ablative-material-v1",
+        partId: tinyAblationPart.id,
+        initialStructuralMassKg: tinyAblationInitialMassKg,
+        structuralMassKg: tinyAblationStructuralMassKg,
+        ablatedMassKg: tinyAblationMassKg,
+      },
+    ],
+  },
+  tinyAblationSession = new SimulationSession({
+    systems: [
+      new RigidBodySystem(),
+      new MassPropertyCommitSystem(),
+      new TelemetrySystem(),
+    ],
+  }).start(tinyAblationAssembly, {
+    world: tinyAblationWorld,
+    worldAdapter: tinyAblationWorldAdapter,
+    catalog: TYPES,
+    multibodyRuntime: tinyAblationRuntime,
+    compiledAssembly: tinyAblationRuntime.compiled,
+    aerothermalAblationOwner: tinyAblationOwner,
+  }),
+  tinyAblationTransaction =
+    tinyAblationSession.telemetry().systems.massProperties,
+  tinyAblationBody = tinyAblationRuntime.bodyByPart.get(tinyAblationPart.id);
+assert.notEqual(
+  tinyAblationStructuralMassKg,
+  tinyAblationInitialMassKg,
+  "tiny ablation fixture rounded away its nonzero owner delta",
+);
+assert.equal(
+  tinyAblationTransaction.committedPartCount,
+  1,
+  "nonzero accepted mass delta was suppressed by a tolerance",
+);
+assert.equal(tinyAblationBody.mass, tinyAblationStructuralMassKg);
+assert.equal(
+  tinyAblationBody.userData.massProperties.massKg,
+  tinyAblationStructuralMassKg,
+);
+assert.equal(
+  tinyAblationSession.context.bodyRegistry.bodyForPart(tinyAblationPart.id)
+    .massProperties.massKg,
+  tinyAblationStructuralMassKg,
+);
+tinyAblationSession.dispose();
+tinyAblationRuntime.dispose();
+tinyAblationWorldAdapter.dispose();
+const nonphysicalPneumaticMassOwner = massFailureContext(() => []);
+nonphysicalPneumaticMassOwner.materialResourceNetwork = null;
+nonphysicalPneumaticMassOwner.services.multibodyRuntime.compiled.rigidClusters[0].members[0].runtimeMassContributorKinds =
+  ["tire-chamber-v1"];
+nonphysicalPneumaticMassOwner.pneumaticNetwork = {
+  massContributions: () => [
+    {
+      partId: tank.id,
+      kind: "tire-chamber-v1",
+      massKg: 0,
+      internalEnergyJ: 1,
+      volumeM3: 1,
+    },
+  ],
+};
+assert.throws(
+  () =>
+    new MassPropertyCommitSystem().initialize(nonphysicalPneumaticMassOwner),
+  (error) => error?.code === "MASS_PROPERTY_OWNER_COVERAGE_MISMATCH",
+  "mutable-mass owner accepted nonpositive pneumatic mass",
+);
+const duplicateCompiledMassOwner = massFailureContext(() => []),
+  duplicateStore =
+    duplicateCompiledMassOwner.materialResourceNetwork.massContributions()[0];
+duplicateCompiledMassOwner.materialResourceNetwork.massContributions = () => [
+  duplicateStore,
+  structuredClone(duplicateStore),
+];
+assert.throws(
+  () => new MassPropertyCommitSystem().initialize(duplicateCompiledMassOwner),
+  (error) => error?.code === "MASS_PROPERTY_OWNER_COVERAGE_MISMATCH",
+  "normal initialization collapsed duplicate mutable-mass owner records",
+);
 const missingMassTarget = massFailureContext(() => []);
 missingMassTarget.bodyRegistry.bodyForPart = () => null;
 assert.throws(
   () => new MassPropertyCommitSystem().initialize(missingMassTarget),
   (error) => error?.code === "MASS_PROPERTY_TARGET_UNAVAILABLE",
 );
-let successfulMassCommit = null;
-const registryMassWrites = [],
-  successfulMassContext = massFailureContext((records) => {
-    successfulMassCommit = structuredClone(records);
-    return structuredClone(records);
-  });
-successfulMassContext.services.aerothermalAblationOwner = {
-  massContributions: () => [
-    {
-      partId: tank.id,
-      structuralMassKg: dryMass - 0.1,
-      ablatedMassKg: 0.1,
-    },
-  ],
-};
-successfulMassContext.bodyRegistry.setMassProperties = (...args) =>
-  registryMassWrites.push(structuredClone(args));
-const successfulMassSystem = new MassPropertyCommitSystem();
-successfulMassSystem.initialize(successfulMassContext);
-assert.equal(successfulMassCommit.length, 1);
-assert.equal(registryMassWrites.length, 1);
-assert.equal(registryMassWrites[0][0], "fake-tank");
-assert.equal(
-  successfulMassSystem.telemetry(successfulMassContext).records[0]
-    .ablatedMassKg,
-  0.1,
+
+function setRemainingMaterialMass(run, remainingMassKg) {
+  const state = structuredClone(
+    run.session.context.materialResourceNetwork.exportState(),
+  );
+  state.stores.find((record) => record.partId === tank.id).remainingMassKg =
+    remainingMassKg;
+  run.session.context.materialResourceNetwork.importState(
+    JSON.stringify(state),
+    run.session.context.runGraph,
+  );
+}
+
+function expectAtomicMassCommitFailure(configure, predicate, message) {
+  const run = createRuntime(),
+    context = run.session.context;
+  setRemainingMaterialMass(run, store.capacityKg / 2);
+  const runtimeBefore = run.multibodyRuntime.exportState(),
+    registryBefore = context.bodyRegistry.exportCheckpointState();
+  configure(context, run);
+  assert.throws(
+    () => new MassPropertyCommitSystem().step(context),
+    predicate,
+    message,
+  );
+  assert.deepEqual(
+    run.multibodyRuntime.exportState(),
+    runtimeBefore,
+    `${message}: multibody authority was not rolled back`,
+  );
+  assert.deepEqual(
+    context.bodyRegistry.exportCheckpointState(),
+    registryBefore,
+    `${message}: registry authority was not rolled back`,
+  );
+  run.dispose();
+}
+
+expectAtomicMassCommitFailure(
+  (context) => {
+    const bodyForPart = context.bodyRegistry.bodyForPart.bind(
+      context.bodyRegistry,
+    );
+    context.bodyRegistry.bodyForPart = (partId) => {
+      const record = bodyForPart(partId);
+      return record
+        ? {
+            ...record,
+            massProperties: {
+              ...record.massProperties,
+              massKg: record.massProperties.massKg + 1,
+            },
+          }
+        : null;
+    };
+  },
+  (error) => error?.code === "MASS_PROPERTY_TARGET_AUTHORITY_MISMATCH",
+  "mass commit accepted disagreement between runtime and registry authority",
 );
-assert.equal(
-  successfulMassSystem.telemetry(successfulMassContext).records[0]
-    .materialMassKg,
-  store.capacityKg / 2,
+
+expectAtomicMassCommitFailure(
+  (context) => {
+    const bodyForPart = context.bodyRegistry.bodyForPart.bind(
+      context.bodyRegistry,
+    );
+    context.bodyRegistry.bodyForPart = (partId) => {
+      const record = bodyForPart(partId);
+      return record ? { ...record, bodyId: "unregistered-body" } : null;
+    };
+  },
+  (error) => error?.code === "INVALID_BODY_MASS_PROPERTY_TRANSACTION",
+  "registry rejection did not roll back a committed multibody mass change",
 );
-let rollbackCalls = 0;
-const rollbackContext = massFailureContext(() => {
-  rollbackCalls++;
-  if (rollbackCalls === 1) throw new Error("commit failed");
-  return [];
-});
-assert.throws(
-  () => new MassPropertyCommitSystem().initialize(rollbackContext),
-  /commit failed/,
+
+expectAtomicMassCommitFailure(
+  (_context, run) => {
+    run.multibodyRuntime.bodyPose = () => null;
+  },
+  (error) => error?.code === "MASS_PROPERTY_KINEMATIC_TARGET_UNAVAILABLE",
+  "missing post-commit pose did not roll back both mass authorities",
 );
-assert.equal(rollbackCalls, 2);
-const failedRollbackContext = massFailureContext(() => {
-  throw new Error("transaction failed");
-});
-assert.throws(
-  () => new MassPropertyCommitSystem().initialize(failedRollbackContext),
-  (error) =>
-    error instanceof AggregateError &&
-    error.message.includes("rollback could not restore"),
+
+expectAtomicMassCommitFailure(
+  (context) => {
+    const updateKinematics = context.bodyRegistry.updateKinematics.bind(
+      context.bodyRegistry,
+    );
+    let rejectNextUpdate = true;
+    context.bodyRegistry.updateKinematics = (...args) => {
+      if (rejectNextUpdate) {
+        rejectNextUpdate = false;
+        throw new Error("synthetic late kinematic commit failure");
+      }
+      return updateKinematics(...args);
+    };
+  },
+  (error) => error?.message === "synthetic late kinematic commit failure",
+  "late kinematic failure did not roll back both mass authorities",
 );
+
+{
+  const run = createRuntime(),
+    context = run.session.context;
+  setRemainingMaterialMass(run, store.capacityKg / 2);
+  context.bodyRegistry.updateKinematics = () => {
+    throw new Error("synthetic rollback failure");
+  };
+  assert.throws(
+    () => new MassPropertyCommitSystem().step(context),
+    (error) =>
+      error instanceof AggregateError &&
+      error.errors.length === 2 &&
+      error.cause?.message === "synthetic rollback failure",
+    "rollback failure was not surfaced as a two-cause AggregateError",
+  );
+  run.dispose();
+}
+
+// Successful commits below use the same private owner ports as the hostile
+// atomicity probes above; duck-typed public mass setters are not authority.
 const emptyMassContext = { clock: { tick: 0 }, services: {} };
 const emptyMassSystem = new MassPropertyCommitSystem();
 emptyMassSystem.initialize(emptyMassContext);
 assert.equal(emptyMassSystem.telemetry(emptyMassContext).evaluatedPartCount, 0);
+assert.throws(
+  () => reconstructMassPropertiesAfterCheckpointOwners({}, emptyMassContext),
+  (error) => error?.code === "MASS_PROPERTY_CHECKPOINT_OWNER_MISSING",
+);
+assert.equal(
+  reconstructMassPropertiesAfterCheckpointOwners(
+    emptyMassSystem,
+    emptyMassContext,
+  ).stage,
+  "checkpoint-restore",
+);
 emptyMassSystem.dispose(emptyMassContext);
 assert.equal("massPropertyRuntime" in emptyMassContext, false);
-for (const telemetry of [null, { version: 2 }])
+for (const lastTransaction of [null, undefined])
   assert.throws(
     () =>
       new MassPropertyCommitSystem().afterCheckpointRestore({
-        massPropertyRuntime: { version: 1, lastTransaction: null },
-        telemetry: { systems: { massProperties: telemetry } },
+        massPropertyRuntime: { version: 1, lastTransaction },
+        telemetry: {},
       }),
-    (error) => error?.code === "MASS_PROPERTY_CHECKPOINT_TELEMETRY_MISSING",
+    (error) =>
+      error?.code === "MASS_PROPERTY_CHECKPOINT_RECONSTRUCTION_MISSING",
   );
 
 const poweredRun = createRuntime({ throttle: 1, gimbalX: 1 });
@@ -1075,13 +1695,14 @@ assert.ok(
   poweredRun.session.telemetry().systems.massProperties.committedPartCount > 0,
   "delivered propellant did not commit a next-tick mass change",
 );
-const poweredCheckpoint = poweredRun.coordinator.capture(IDENTITIES);
+const poweredCheckpoint = poweredRun.coordinator.capture(IDENTITIES_JSON);
 for (let index = 0; index < 8; index++) poweredRun.session.stepFixed();
-const expectedResumedCheckpoint = poweredRun.coordinator.capture(IDENTITIES);
-poweredRun.coordinator.restore(poweredCheckpoint, IDENTITIES);
+const expectedResumedCheckpoint =
+  poweredRun.coordinator.capture(IDENTITIES_JSON);
+poweredRun.coordinator.restore(poweredCheckpoint, IDENTITIES_JSON);
 for (let index = 0; index < 8; index++) poweredRun.session.stepFixed();
 assert.deepEqual(
-  poweredRun.coordinator.capture(IDENTITIES),
+  poweredRun.coordinator.capture(IDENTITIES_JSON),
   expectedResumedCheckpoint,
   "pressure-nozzle, material debit, mass frame, and telemetry diverged after exact checkpoint resume",
 );

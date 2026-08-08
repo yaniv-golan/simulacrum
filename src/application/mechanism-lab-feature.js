@@ -1,4 +1,4 @@
-import { compileAssembly } from "../model/assembly-compiler.js";
+import { compileAssemblyFromIssuedRoots } from "../model/assembly-compiler.js";
 import { installMechanismLab } from "../presentation/mechanism-lab.js";
 
 /** Binds the presentation workbench to one run without enlarging its owner. */
@@ -19,7 +19,10 @@ export function createRunMechanismLab({
     getSession: () => runtime.session,
     getCompiled: () =>
       runtime.multibodyRuntime?.compiled ||
-      compileAssembly(assembly.workspace.model.snapshot(), catalog),
+      compileAssemblyFromIssuedRoots(
+        assembly.workspace.model.snapshot(),
+        catalog,
+      ),
     getBlueprint: () =>
       runtime.runBlueprint ||
       persistence.serializeBlueprint("Mechanism experiment"),

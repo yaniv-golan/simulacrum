@@ -1,4 +1,4 @@
-import { compileAssembly } from "../model/assembly-compiler.js";
+import { compileAssemblyFromIssuedRoots } from "../model/assembly-compiler.js";
 import {
   componentControlContract,
   componentPropulsion,
@@ -33,7 +33,7 @@ export function createAssemblyCapabilityReader({
 
   function compiled() {
     if (cachedRevision === assembly.revision()) return cached;
-    const result = compileAssembly(assembly.snapshot(), catalog);
+    const result = compileAssemblyFromIssuedRoots(assembly.snapshot(), catalog);
     cachedRevision = assembly.revision();
     cached = compiledAssemblyCapabilities(result, catalog);
     return cached;

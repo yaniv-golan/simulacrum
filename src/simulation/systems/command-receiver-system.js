@@ -10,6 +10,14 @@ export class CommandReceiverSystem {
   }
 
   step(context) {
+    this.#resolve(context, true);
+  }
+
+  afterCheckpointRestore(context) {
+    this.#resolve(context, false);
+  }
+
+  #resolve(context, publishTelemetry) {
     const states = [];
     for (const receiver of context.runGraph
       .parts()
@@ -48,11 +56,12 @@ export class CommandReceiverSystem {
       context.commands.set(receiver.id, state);
       states.push(state);
     }
-    context.telemetry.commandReceivers = registerOwnedImmutable(
-      Object.freeze({
-        states: Object.freeze(states),
-      }),
-    );
+    if (publishTelemetry)
+      context.telemetry.commandReceivers = registerOwnedImmutable(
+        Object.freeze({
+          states: Object.freeze(states),
+        }),
+      );
   }
 
   dispose(context) {

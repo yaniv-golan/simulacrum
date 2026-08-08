@@ -1,4 +1,9 @@
 import { DomainValidationError } from "../model/primitives.js";
+import {
+  issueInertPlainData,
+  requireInertPlainData,
+} from "../model/plain-data-contract.js";
+import { minimumDynamicStructuralMass } from "../model/dynamic-mass-properties.js";
 import { registerOwnedImmutable } from "../model/owned-immutable-value.js";
 import {
   advanceThermalState,
@@ -6,6 +11,26 @@ import {
   thermalMass,
 } from "./thermal-model.js";
 import { vectorLength } from "./flight-vector-math.js";
+
+const THERMAL_CHECKPOINT_FIELDS = Object.freeze([
+  "temperatureK",
+  "heatFlux",
+  "heatLoadMJ",
+  "health",
+  "remainingMass",
+  "ablatedMass",
+  "consumed",
+]);
+
+function checkpointKeysMatch(value, expectedKeys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort(),
+    expected = [...expectedKeys].sort();
+  return (
+    actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index])
+  );
+}
 
 function physicalConnection(connection) {
   return ["mechanical", "mesh"].includes(connection.kind) && !connection.failed;
@@ -130,15 +155,48 @@ export class AerothermalAblationOwner {
   }
 
   massContributions() {
-    return this.#model.parts.map((part) => {
-      const thermal = this.#thermalByPart.get(part.id);
-      return {
-        partId: part.id,
-        initialStructuralMassKg: part.baseStructuralMassKg,
-        structuralMassKg: Math.max(0.001, thermalMass(thermal)),
-        ablatedMassKg: Math.max(0, Number(thermal.ablatedMass || 0)),
-      };
-    });
+    return this.#model.parts
+      .filter((part) => part.aerothermal.material.ablative === true)
+      .map((part) => {
+        const thermal = this.#thermalByPart.get(part.id);
+        return {
+          kind: "ablative-material-v1",
+          partId: part.id,
+          initialStructuralMassKg: part.baseStructuralMassKg,
+          structuralMassKg: thermalMass(thermal),
+          ablatedMassKg: thermal.ablatedMass,
+        };
+      });
+  }
+
+  /** Purely projects exact mutable-mass records from a validated checkpoint. */
+  massContributionsForState(checkpoint) {
+    const thermalByPart = this.validateState(checkpoint);
+    return this.#model.parts
+      .filter((part) => part.aerothermal.material.ablative === true)
+      .map((part) => {
+        const thermal = thermalByPart.get(part.id);
+        return {
+          kind: "ablative-material-v1",
+          partId: part.id,
+          initialStructuralMassKg: part.baseStructuralMassKg,
+          structuralMassKg: thermal.remainingMass,
+          ablatedMassKg: thermal.ablatedMass,
+        };
+      });
+  }
+
+  /** Rebuilds the registry's read model from this sole thermal-state owner. */
+  synchronizeBodyRegistry(bodyRegistry) {
+    for (const part of this.#model.parts) {
+      const bodyId = bodyRegistry.bodyForPart(part.id)?.bodyId;
+      if (bodyId)
+        bodyRegistry.setThermal(
+          bodyId,
+          ownedThermalSnapshot(part.id, this.#thermalByPart.get(part.id))
+            .bodyThermal,
+        );
+    }
   }
 
   telemetry(context = null) {
@@ -180,24 +238,89 @@ export class AerothermalAblationOwner {
   }
 
   exportState() {
-    return structuredClone({
-      version: 1,
+    return issueInertPlainData({
+      version: 2,
       parts: this.#model.parts.map((part) => ({
         id: part.id,
-        thermal: this.#thermalByPart.get(part.id),
+        thermal: Object.fromEntries(
+          THERMAL_CHECKPOINT_FIELDS.map((field) => [
+            field,
+            this.#thermalByPart.get(part.id)[field],
+          ]),
+        ),
       })),
     });
   }
 
   validateState(checkpoint) {
-    if (checkpoint?.version !== 1 || !Array.isArray(checkpoint.parts))
+    checkpoint = requireInertPlainData(checkpoint, {
+      code: "INVALID_AEROTHERMAL_CHECKPOINT_INPUT",
+      message:
+        "Aerothermal checkpoint must be serialized JSON or an exported immutable state",
+    });
+    if (
+      checkpoint?.version !== 2 ||
+      !checkpointKeysMatch(checkpoint, ["version", "parts"]) ||
+      !Array.isArray(checkpoint.parts)
+    )
       throw new DomainValidationError(
         "INVALID_AEROTHERMAL_CHECKPOINT",
-        "Aerothermal checkpoint must use version 1",
+        "Aerothermal checkpoint must use the version 2 mutable-state projection",
       );
-    const parts = new Map(
-      checkpoint.parts.map((record) => [record.id, record]),
-    );
+    const parts = new Map();
+    for (const record of checkpoint.parts) {
+      const part = this.#model.parts.find(
+          (candidate) => candidate.id === record?.id,
+        ),
+        thermal = record?.thermal,
+        initialMass = part?.baseStructuralMassKg;
+      if (!part) {
+        if (record?.id != null) parts.set(record.id, record);
+        continue;
+      }
+      const expectedConsumed = Boolean(
+          part.aerothermal.material.ablative &&
+          thermal?.remainingMass / initialMass <= 0.01,
+        ),
+        minimumRemainingMass = minimumDynamicStructuralMass(initialMass);
+      if (
+        !checkpointKeysMatch(record, ["id", "thermal"]) ||
+        !checkpointKeysMatch(thermal, THERMAL_CHECKPOINT_FIELDS) ||
+        ![
+          "temperatureK",
+          "heatFlux",
+          "heatLoadMJ",
+          "health",
+          "remainingMass",
+          "ablatedMass",
+        ].every((field) => Number.isFinite(thermal[field])) ||
+        thermal.temperatureK <= 0 ||
+        thermal.heatLoadMJ < 0 ||
+        thermal.health < 0 ||
+        thermal.health > 1 ||
+        thermal.remainingMass < minimumRemainingMass ||
+        thermal.remainingMass > initialMass ||
+        thermal.ablatedMass < 0 ||
+        thermal.ablatedMass > initialMass - minimumRemainingMass ||
+        thermal.ablatedMass !== initialMass - thermal.remainingMass ||
+        typeof thermal.consumed !== "boolean" ||
+        thermal.consumed !== expectedConsumed ||
+        (!part.aerothermal.material.ablative &&
+          (thermal.remainingMass !== initialMass ||
+            thermal.ablatedMass !== 0 ||
+            thermal.consumed))
+      )
+        throw new DomainValidationError(
+          "INVALID_AEROTHERMAL_CHECKPOINT_STATE",
+          `Aerothermal checkpoint contains physically invalid state for ${String(part.id)}`,
+        );
+      if (parts.has(record.id))
+        throw new DomainValidationError(
+          "AEROTHERMAL_CHECKPOINT_IDENTITY_MISMATCH",
+          "Aerothermal checkpoint contains duplicate part identities",
+        );
+      parts.set(record.id, structuredClone(thermal));
+    }
     if (
       parts.size !== this.#model.parts.length ||
       this.#model.parts.some((part) => !parts.has(part.id))
@@ -211,11 +334,16 @@ export class AerothermalAblationOwner {
 
   importState(checkpoint) {
     const parts = this.validateState(checkpoint);
-    for (const part of this.#model.parts)
+    for (const part of this.#model.parts) {
+      const initial = createThermalState(
+        part.aerothermal.material,
+        part.baseStructuralMassKg,
+      );
       this.#thermalByPart.set(
         part.id,
-        structuredClone(parts.get(part.id).thermal),
+        Object.assign(initial, structuredClone(parts.get(part.id))),
       );
+    }
     this.#telemetry = null;
   }
 

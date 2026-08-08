@@ -1,5 +1,5 @@
 import { assert } from "./lib/assert.mjs";
-import { compileAssembly } from "../src/model/assembly-compiler.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import { decodeBlueprint } from "../src/model/blueprint-decoder.js";
 import { TYPES } from "../src/model/component-catalog.js";
 import { builtInDemo } from "../src/model/demo-blueprints.js";
@@ -451,11 +451,15 @@ assert.equal(
   0,
   "sensor consumed same-step environment state",
 );
-const checkpoint = latencySession.exportState();
+const checkpoint = {
+  session: latencySession.exportState(),
+  telemetry: latencySession.exportTelemetryState(),
+};
 latencySession.stepFixed();
 const expectedResume = latencySession.telemetry();
 assert.equal(expectedResume.systems.sensors.sampledEnvironmentTime, 1 / 120);
-latencySession.importState(checkpoint);
+latencySession.importState(checkpoint.session);
+latencySession.importTelemetryState(checkpoint.telemetry);
 latencySession.resynchronizeAfterCheckpointRestore();
 latencySession.stepFixed();
 assert.deepEqual(latencySession.telemetry(), expectedResume);

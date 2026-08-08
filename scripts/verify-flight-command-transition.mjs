@@ -13,7 +13,7 @@ import {
 import { TYPES } from "../src/model/component-catalog.js";
 import { builtInDemo } from "../src/model/demo-blueprints.js";
 import { decodeBlueprintOrThrow } from "../src/model/blueprint-decoder.js";
-import { compileAssembly } from "../src/model/assembly-compiler.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import { compileVisualProgram } from "../src/model/visual-logic.js";
 import { rotateVectorByQuaternion } from "../src/model/primitives.js";
 import {

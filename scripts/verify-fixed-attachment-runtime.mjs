@@ -167,7 +167,7 @@ const capacity = {
     catalog: TYPES,
     fixedDt: DT,
   });
-runtime.start(assembly);
+runtime.start(JSON.stringify(assembly));
 
 const fixedDescriptors = runtime.compiled.constraints.filter(
   (descriptor) => descriptor.kind === "fixed",
@@ -245,26 +245,6 @@ for (const axis of ["x", "y", "z"])
     `common solver reference ${axis}`,
   );
 
-// Isolate the compiled pair from unrelated mission mechanisms and contacts.
-// The descriptor and runtime constraint above still came through the complete
-// production compiler/runtime path; only the physical oracle is now local.
-function isolateCompiledPair({ resetMotion = false } = {}) {
-  for (const otherConstraint of [...world.constraints])
-    if (otherConstraint !== constraint) world.removeConstraint(otherConstraint);
-  for (const body of [...world.bodies])
-    if (body !== constraint.bodyA && body !== constraint.bodyB)
-      world.removeBody(body);
-  if (!resetMotion) return;
-  for (const body of [constraint.bodyA, constraint.bodyB]) {
-    body.velocity.setZero();
-    body.angularVelocity.setZero();
-    body.force.setZero();
-    body.torque.setZero();
-    body.previousPosition.copy(body.position);
-    body.previousQuaternion.copy(body.quaternion);
-  }
-}
-
 function applyEndpointLoadProbe() {
   runtime.loadByConnection.clear();
   runtime.torqueByConnection.clear();
@@ -282,8 +262,6 @@ function applyEndpointLoadProbe() {
     ]),
   );
 }
-
-isolateCompiledPair({ resetMotion: true });
 
 for (let tick = 0; tick < 4; tick++) world.step(DT);
 close(
@@ -324,20 +302,10 @@ assert.ok(
   "separated endpoints collapsed to one wrench moment",
 );
 
-// Checkpoint import serializes principalToPart as the sole mass-frame
-// authority. A stale inverse left by an older runtime must not change endpoint
-// failure evidence after restore.
+// A valid checkpoint restore must preserve endpoint failure evidence exactly.
 runtime.importState(quiescentCheckpoint);
-isolateCompiledPair();
-const principalToPart = new CANNON.Quaternion();
-principalToPart.setFromAxisAngle(new CANNON.Vec3(0, 0, 1), Math.PI / 3);
-constraint.bodyA.userData.massFrame.principalToPart.copy(principalToPart);
-delete constraint.bodyA.userData.massFrame.partToPrincipal;
-const principalFrameCheckpoint = runtime.exportState(),
-  beforeRestore = applyEndpointLoadProbe();
-constraint.bodyA.userData.massFrame.partToPrincipal = new CANNON.Quaternion();
-runtime.importState(principalFrameCheckpoint);
-isolateCompiledPair();
+const beforeRestore = applyEndpointLoadProbe();
+runtime.importState(quiescentCheckpoint);
 const afterRestore = applyEndpointLoadProbe();
 for (const connectionId of separatedFixed.sourceConnectionIds) {
   close(
@@ -354,6 +322,66 @@ for (const connectionId of separatedFixed.sourceConnectionIds) {
   );
 }
 
+// The principal-axis frame is derived from mass properties, not an independent
+// mutable checkpoint knob. Reject a contradictory live frame before capture.
+runtime.importState(quiescentCheckpoint);
+const originalPrincipalToPart =
+    constraint.bodyA.userData.massFrame.principalToPart.clone(),
+  contradictoryPrincipalToPart = new CANNON.Quaternion();
+contradictoryPrincipalToPart.setFromAxisAngle(
+  new CANNON.Vec3(0, 0, 1),
+  Math.PI / 3,
+);
+constraint.bodyA.userData.massFrame.principalToPart.copy(
+  contradictoryPrincipalToPart,
+);
+assert.throws(
+  () => runtime.exportState(),
+  (error) => error?.code === "MULTIBODY_LIVE_ENGINE_AUTHORITY_MISMATCH",
+  "checkpoint capture accepted a principal-axis frame contradictory to mass authority",
+);
+constraint.bodyA.userData.massFrame.principalToPart.copy(
+  originalPrincipalToPart,
+);
+
+const hostileEquation = constraint.equations[0],
+  originalEquationEnabled = hostileEquation.enabled,
+  originalEquationEpsilon = hostileEquation.eps,
+  originalEquationMaxForce = hostileEquation.maxForce,
+  originalEquationBodyA = hostileEquation.bi;
+hostileEquation.enabled = !originalEquationEnabled;
+assert.throws(
+  () => runtime.exportState(),
+  (error) => error?.code === "MULTIBODY_LIVE_ENGINE_AUTHORITY_MISMATCH",
+  "checkpoint capture accepted a disabled compiled solver row",
+);
+hostileEquation.enabled = originalEquationEnabled;
+hostileEquation.eps = originalEquationEpsilon * 2;
+assert.throws(
+  () => runtime.exportState(),
+  (error) => error?.code === "MULTIBODY_LIVE_ENGINE_AUTHORITY_MISMATCH",
+  "checkpoint capture accepted mutated solver regularization",
+);
+hostileEquation.eps = originalEquationEpsilon;
+hostileEquation.maxForce = originalEquationMaxForce / 2;
+assert.throws(
+  () => runtime.exportState(),
+  (error) => error?.code === "MULTIBODY_LIVE_ENGINE_AUTHORITY_MISMATCH",
+  "checkpoint capture accepted a mutated solver row force bound",
+);
+hostileEquation.maxForce = originalEquationMaxForce;
+hostileEquation.bi = hostileEquation.bj;
+assert.throws(
+  () => runtime.exportState(),
+  (error) => error?.code === "MULTIBODY_LIVE_ENGINE_AUTHORITY_MISMATCH",
+  "checkpoint capture accepted a solver row rebound to another body",
+);
+hostileEquation.bi = originalEquationBodyA;
+assert.doesNotThrow(
+  () => runtime.exportState(),
+  "restoring exact equation authority did not restore checkpoint capture",
+);
+
 // Exercise the full structural consumer. Failing one flange of a rigid
 // two-ended component must separate the resulting physical body component,
 // while its other authored flange and all connections internal to the
@@ -366,7 +394,7 @@ function verifyStructuralFailureOwnership() {
       catalog: TYPES,
       fixedDt: DT,
     });
-  structureRuntime.start(assembly);
+  structureRuntime.start(JSON.stringify(assembly));
   const descriptor = structureRuntime.compiled.constraints.find(
       (candidate) =>
         candidate.kind === "fixed" &&

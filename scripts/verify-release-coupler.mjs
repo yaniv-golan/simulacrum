@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import * as CANNON from "cannon-es";
 import { MISSION_TS_SOURCE } from "../src/application/content.js";
-import { compileAssembly } from "../src/model/assembly-compiler.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import {
   decodeBlueprint,
   decodeBlueprintOrThrow,
@@ -16,14 +16,22 @@ import {
   instantiateSubassembly,
 } from "../src/model/subassemblies.js";
 import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
+import { PhysicalAssemblyIndex } from "../src/simulation/physical-assembly-index.js";
+import { createPhysicalFlightServices } from "../src/simulation/physical-flight-services.js";
 import { PowerNetwork } from "../src/simulation/power-network.js";
 import { RuntimeCheckpointCoordinator } from "../src/simulation/runtime-checkpoints.js";
 import { createSimulationContext } from "../src/simulation/simulation-context.js";
 import { SimulationSession } from "../src/simulation/simulation-session.js";
 import { CannonWorldAdapter } from "../src/simulation/cannon-world-adapter.js";
+import {
+  MaterialResourceCommitSystem,
+  MaterialResourceSystem,
+} from "../src/simulation/systems/material-resource-system.js";
+import { MassPropertyCommitSystem } from "../src/simulation/systems/mass-property-commit-system.js";
 import { PowerSystem } from "../src/simulation/systems/power-system.js";
 import { ReleaseCouplerSystem } from "../src/simulation/systems/release-coupler-system.js";
 import { RigidBodySystem } from "../src/simulation/systems/rigid-body-system.js";
+import { ThermalSystem } from "../src/simulation/systems/thermal-system.js";
 
 const FIXED_DT = 1 / 120;
 const CHECKPOINT_IDENTITIES = Object.freeze({
@@ -31,6 +39,7 @@ const CHECKPOINT_IDENTITIES = Object.freeze({
   blueprintFingerprint: `sim-sha256-${"2".repeat(64)}`,
   compiledTopologyFingerprint: `sim-sha256-${"3".repeat(64)}`,
 });
+const CHECKPOINT_IDENTITIES_JSON = JSON.stringify(CHECKPOINT_IDENTITIES);
 
 function missionBlueprint() {
   const blueprint = structuredClone(
@@ -149,18 +158,36 @@ function checkpointReleaseFixture(blueprint) {
     }),
     system = new ReleaseCouplerSystem();
   runtime.start(assembly);
-  const session = new SimulationSession({
-      systems: [new PowerSystem(), system, new RigidBodySystem()],
+  const physicalAssemblyIndex = new PhysicalAssemblyIndex(runtime.compiled),
+    flightServices = createPhysicalFlightServices({
+      multibodyRuntime: runtime,
+      physicalAssemblyIndex,
+      windAt: () => ({ x: 0, y: 0, z: 0 }),
+    }),
+    session = new SimulationSession({
+      systems: [
+        new PowerSystem(),
+        new MaterialResourceSystem(),
+        system,
+        new RigidBodySystem(),
+        new MaterialResourceCommitSystem(),
+        new ThermalSystem(),
+        new MassPropertyCommitSystem(),
+      ],
     }).start(assembly, {
       world,
       worldAdapter,
       catalog: TYPES,
       multibodyRuntime: runtime,
+      compiledAssembly: runtime.compiled,
+      physicalAssemblyIndex,
+      ...flightServices,
     }),
     coordinator = new RuntimeCheckpointCoordinator({
       session,
       multibodyRuntime: runtime,
       worldAdapter,
+      aerothermalAblationOwner: flightServices.aerothermalAblationOwner,
     });
   return {
     assembly,
@@ -206,6 +233,14 @@ function firstDifference(leftJson, rightJson) {
     return null;
   };
   return visit(JSON.parse(leftJson), JSON.parse(rightJson), "state");
+}
+
+function assertInvalidReleaseCheckpoint(system, context, candidate, label) {
+  assert.throws(
+    () => system.validateState(context, JSON.stringify(candidate)),
+    (error) => error?.code === "INVALID_RELEASE_COUPLER_CHECKPOINT",
+    label,
+  );
 }
 
 const blueprint = missionBlueprint(),
@@ -337,6 +372,14 @@ const releasedState = context.telemetry.releaseCouplers.states[0],
   ].sort();
 assert.equal(releasedState.released, true);
 assert.equal(releasedState.deliveredEnergyJ, descriptor.law.actuationEnergyJ);
+assert.deepEqual(
+  [...releasedState.failedConnectionIds].sort(),
+  expectedFailures,
+);
+assert.ok(
+  releasedState.detachedConstraints.includes(descriptor.constraintId),
+  "release telemetry omitted the detached authored latch constraint",
+);
 assert.deepEqual([...event.failedConnectionIds].sort(), expectedFailures);
 assert.equal(event.mode, "commanded-release");
 assert.equal(context.runGraph.events().length, 1);
@@ -385,7 +428,281 @@ assert.equal(
   "held command released twice",
 );
 assert.equal(context.telemetry.releaseCouplers.states[0].deliveredEnergyJ, 0);
+assert.equal(context.telemetry.releaseCouplers.states[0].requestedW, 0);
+assert.equal(context.telemetry.releaseCouplers.states[0].risingEdge, false);
+assert.equal(context.telemetry.releaseCouplers.states[0].released, true);
+
+const validCheckpoint = JSON.parse(JSON.stringify(system.exportState(context))),
+  validState = validCheckpoint.states[0],
+  invalidEnvelopes = [
+    null,
+    [],
+    {},
+    { version: 2, states: validCheckpoint.states },
+    { version: 1, states: validCheckpoint.states, extra: true },
+    { version: 1, states: {} },
+    { version: 1, states: [] },
+  ];
+for (const [index, candidate] of invalidEnvelopes.entries())
+  assertInvalidReleaseCheckpoint(
+    system,
+    context,
+    candidate,
+    `release checkpoint envelope mutant ${index} was accepted`,
+  );
+const invalidStates = [
+  null,
+  [],
+  { ...validState, extra: true },
+  { ...validState, partId: `${validState.partId}` },
+  { ...validState, previousCommand: null },
+  { ...validState, previousCommand: "0" },
+  { ...validState, previousCommand: -1.001 },
+  { ...validState, previousCommand: 1.001 },
+  { ...validState, accumulatedEnergyJ: null },
+  { ...validState, accumulatedEnergyJ: "0" },
+  { ...validState, accumulatedEnergyJ: -Number.EPSILON },
+  {
+    ...validState,
+    accumulatedEnergyJ: descriptor.law.actuationEnergyJ + Number.EPSILON * 16,
+  },
+];
+for (const [index, candidate] of invalidStates.entries())
+  assertInvalidReleaseCheckpoint(
+    system,
+    context,
+    { version: 1, states: [candidate] },
+    `release checkpoint state mutant ${index} was accepted`,
+  );
+const chargedCheckpoint = {
+  version: 1,
+  states: [
+    {
+      partId: descriptor.sourcePartId,
+      previousCommand: 0.25,
+      accumulatedEnergyJ: descriptor.law.actuationEnergyJ / 2,
+    },
+  ],
+};
+system.importState(context, JSON.stringify(chargedCheckpoint));
+assert.deepEqual(
+  JSON.parse(JSON.stringify(system.exportState(context))),
+  chargedCheckpoint,
+  "release checkpoint import did not retain exact actuator state",
+);
+system.initialize(context);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(system.exportState(context))).states,
+  [
+    {
+      partId: descriptor.sourcePartId,
+      previousCommand: 0,
+      accumulatedEnergyJ: 0,
+    },
+  ],
+  "release initialization did not reset prior actuator state",
+);
+for (const boundaryState of [
+  {
+    partId: descriptor.sourcePartId,
+    previousCommand: -1,
+    accumulatedEnergyJ: 0,
+  },
+  {
+    partId: descriptor.sourcePartId,
+    previousCommand: 1,
+    accumulatedEnergyJ: descriptor.law.actuationEnergyJ,
+  },
+])
+  assert.doesNotThrow(() =>
+    system.validateState(
+      context,
+      JSON.stringify({ version: 1, states: [boundaryState] }),
+    ),
+  );
 runtime.dispose();
+
+const syntheticSystem = new ReleaseCouplerSystem(),
+  syntheticContext = {
+    services: {
+      multibodyRuntime: {
+        compiled: {
+          actuators: [
+            {
+              id: "release:9",
+              kind: "release-coupler-v1",
+              sourcePartId: 9,
+              law: { actuationEnergyJ: 4 },
+            },
+            {
+              id: "ordinary:6",
+              kind: "rotary-position-actuator-v1",
+              sourcePartId: 6,
+              law: { actuationEnergyJ: 99 },
+            },
+            {
+              id: "release:3",
+              kind: "release-coupler-v1",
+              sourcePartId: 3,
+              law: { actuationEnergyJ: 2 },
+            },
+          ],
+        },
+      },
+    },
+  };
+syntheticSystem.initialize(syntheticContext);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(syntheticSystem.exportState(syntheticContext)))
+    .states,
+  [
+    { partId: 3, previousCommand: 0, accumulatedEnergyJ: 0 },
+    { partId: 9, previousCommand: 0, accumulatedEnergyJ: 0 },
+  ],
+  "release state authority did not filter and canonically order actuators",
+);
+assertInvalidReleaseCheckpoint(
+  syntheticSystem,
+  syntheticContext,
+  {
+    version: 1,
+    states: [
+      { partId: 9, previousCommand: 0, accumulatedEnergyJ: 0 },
+      { partId: 3, previousCommand: 0, accumulatedEnergyJ: 0 },
+    ],
+  },
+  "release checkpoint accepted noncanonical actuator order",
+);
+
+const threshold = releaseFixture(blueprint),
+  thresholdController = threshold.assembly.parts.find(
+    (part) => part.type === "computer",
+  ),
+  thresholdCoupler = threshold.assembly.parts.find(
+    (part) => part.type === "release-coupler",
+  ),
+  thresholdPowerNetwork = threshold.context.powerNetwork;
+threshold.context.powerNetwork = {
+  drawPower() {
+    assert.fail("an exact-threshold command requested latch power");
+  },
+};
+threshold.context.commandBus.writeScript(
+  thresholdController.id,
+  "coupler.release",
+  thresholdCoupler.id,
+  "release",
+  threshold.descriptor.law.commandThreshold,
+);
+threshold.system.step(threshold.context, FIXED_DT);
+assert.equal(
+  threshold.context.telemetry.releaseCouplers.states[0].requestedW,
+  0,
+);
+assert.equal(
+  threshold.context.telemetry.releaseCouplers.states[0].risingEdge,
+  false,
+);
+threshold.context.powerNetwork = thresholdPowerNetwork;
+threshold.context.commandBus.clearTick();
+threshold.context.commandBus.writeScript(
+  thresholdController.id,
+  "coupler.release",
+  thresholdCoupler.id,
+  "release",
+  threshold.descriptor.law.commandThreshold + 1e-6,
+);
+threshold.context.telemetry = {};
+threshold.system.step(threshold.context, FIXED_DT);
+assert.equal(
+  threshold.context.telemetry.releaseCouplers.states[0].risingEdge,
+  true,
+);
+assert.equal(threshold.context.runGraph.events().length, 1);
+threshold.runtime.dispose();
+
+const partial = releaseFixture(blueprint),
+  partialController = partial.assembly.parts.find(
+    (part) => part.type === "computer",
+  ),
+  partialCoupler = partial.assembly.parts.find(
+    (part) => part.type === "release-coupler",
+  );
+let partialDraws = 0;
+partial.context.powerNetwork = {
+  drawPower(_partId, requestedW) {
+    partialDraws++;
+    return partialDraws === 1 ? requestedW / 2 : requestedW;
+  },
+};
+partial.context.commandBus.writeScript(
+  partialController.id,
+  "coupler.release",
+  partialCoupler.id,
+  "release",
+  1,
+);
+partial.system.step(partial.context, FIXED_DT);
+const partialFirst = partial.context.telemetry.releaseCouplers.states[0];
+assert.equal(partialFirst.risingEdge, true);
+assert.equal(partialFirst.released, false);
+assert.ok(partialFirst.requestedW > 0);
+assert.equal(partialFirst.deliveredW, partialFirst.requestedW / 2);
+assert.equal(partialFirst.accumulatedEnergyJ, partialFirst.deliveredEnergyJ);
+partial.context.commandBus.clearTick();
+partial.context.commandBus.writeScript(
+  partialController.id,
+  "coupler.release",
+  partialCoupler.id,
+  "release",
+  1,
+);
+partial.context.telemetry = {};
+partial.system.step(partial.context, FIXED_DT);
+const partialSecond = partial.context.telemetry.releaseCouplers.states[0];
+assert.equal(partialSecond.risingEdge, false);
+assert.equal(
+  partialSecond.requestedW,
+  (partial.descriptor.law.actuationEnergyJ - partialFirst.accumulatedEnergyJ) /
+    FIXED_DT,
+);
+assert.equal(partialSecond.released, true);
+assert.equal(partial.context.runGraph.events().length, 1);
+partial.runtime.dispose();
+
+const interrupted = releaseFixture(blueprint),
+  interruptedController = interrupted.assembly.parts.find(
+    (part) => part.type === "computer",
+  ),
+  interruptedCoupler = interrupted.assembly.parts.find(
+    (part) => part.type === "release-coupler",
+  );
+interrupted.context.powerNetwork = {
+  drawPower(_partId, requestedW) {
+    return requestedW / 2;
+  },
+};
+interrupted.context.commandBus.writeScript(
+  interruptedController.id,
+  "coupler.release",
+  interruptedCoupler.id,
+  "release",
+  1,
+);
+interrupted.system.step(interrupted.context, FIXED_DT);
+assert.ok(
+  interrupted.context.telemetry.releaseCouplers.states[0].accumulatedEnergyJ >
+    0,
+);
+interrupted.context.commandBus.clearTick();
+interrupted.context.telemetry = {};
+interrupted.system.step(interrupted.context, FIXED_DT);
+assert.equal(
+  interrupted.context.telemetry.releaseCouplers.states[0].accumulatedEnergyJ,
+  0,
+  "dropping the release command retained partial latch energy",
+);
+interrupted.runtime.dispose();
 
 const checkpointRun = checkpointReleaseFixture(blueprint),
   checkpointController = checkpointRun.assembly.parts.find(
@@ -396,7 +713,7 @@ const checkpointRun = checkpointReleaseFixture(blueprint),
   );
 checkpointRun.session.stepFixed();
 const preReleaseCheckpoint = checkpointRun.coordinator.capture(
-  CHECKPOINT_IDENTITIES,
+  CHECKPOINT_IDENTITIES_JSON,
 );
 checkpointRun.session.context.commandBus.writeScript(
   checkpointController.id,
@@ -407,7 +724,10 @@ checkpointRun.session.context.commandBus.writeScript(
 );
 checkpointRun.session.stepFixed();
 const firstReleaseOutcome = checkpointObserved(checkpointRun);
-checkpointRun.coordinator.restore(preReleaseCheckpoint, CHECKPOINT_IDENTITIES);
+checkpointRun.coordinator.restore(
+  preReleaseCheckpoint,
+  CHECKPOINT_IDENTITIES_JSON,
+);
 checkpointRun.session.context.commandBus.writeScript(
   checkpointController.id,
   "coupler.release",
@@ -430,11 +750,14 @@ assert.equal(
   }),
 );
 const postReleaseCheckpoint = checkpointRun.coordinator.capture(
-  CHECKPOINT_IDENTITIES,
+  CHECKPOINT_IDENTITIES_JSON,
 );
 checkpointRun.session.stepFixed();
 const heldAfterRelease = checkpointObserved(checkpointRun);
-checkpointRun.coordinator.restore(postReleaseCheckpoint, CHECKPOINT_IDENTITIES);
+checkpointRun.coordinator.restore(
+  postReleaseCheckpoint,
+  CHECKPOINT_IDENTITIES_JSON,
+);
 checkpointRun.session.stepFixed();
 const restoredHeldOutcome = checkpointObserved(checkpointRun);
 assert.equal(

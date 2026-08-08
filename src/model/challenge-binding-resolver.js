@@ -1,5 +1,5 @@
 import { TYPES } from "./component-catalog.js";
-import { compileAssembly } from "./assembly-compiler.js";
+import { compileAssemblyFromIssuedRoots } from "./assembly-compiler.js";
 import { physicalComponents } from "./physical-components.js";
 import {
   componentDefinition,
@@ -23,7 +23,6 @@ function componentId(partIds) {
 }
 
 function rootPriority(part) {
-  if (part?.rigRole === "pelvis") return 0;
   if (componentIsPayload(part)) return 4;
   if (componentDefinition(part)?.cat === "structure") return 1;
   if (componentPropulsion(part)) return 2;
@@ -158,7 +157,9 @@ export class ChallengeBindingResolver {
     this.#assembly = structuredClone(
       assembly || { parts: [], connections: [] },
     );
-    this.#compiled = compiled || compileAssembly(this.#assembly, TYPES);
+    this.#compiled =
+      compiled ||
+      compileAssemblyFromIssuedRoots(JSON.stringify(this.#assembly), TYPES);
     this.#objective = /** @type {Record<string,any>} */ (
       structuredClone(objective || {})
     );

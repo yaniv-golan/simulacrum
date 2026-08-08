@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { compileAssembly } from "../src/model/assembly-compiler.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 
 const port = (id, behavior, multiplicity = "one") => ({
   id,

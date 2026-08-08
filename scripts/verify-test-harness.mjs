@@ -37,6 +37,7 @@ assert.deepEqual(selectVerificationChecks(VERIFICATION_CHECKS, ""), [
   ...VERIFICATION_CHECKS,
 ]);
 assert.deepEqual(Object.keys(VERIFICATION_TIMEOUT_MS), [
+  "verify-five-demos.mjs",
   "verify-mechanism-sharing-proof.mjs",
   "verify-blueprint-roundtrip.mjs",
   "verify-blueprint-exchange.mjs",
@@ -47,6 +48,8 @@ assert.deepEqual(Object.keys(VERIFICATION_TIMEOUT_MS), [
   "verify-ui-baseline-fixtures.mjs",
   "verify-component-authored-carriers-browser.mjs",
   "verify-keyboard-workflows.mjs",
+  "verify-keyboard-authoring-journey.mjs",
+  "verify-rover-drop.mjs",
 ]);
 assert.ok(
   Object.entries(VERIFICATION_TIMEOUT_MS).every(
@@ -616,6 +619,12 @@ const passedCoordinator = await runTestCoordinator({
   selectedChecks: ["alpha.mjs", "beta.mjs"],
   requestedChecks: ["beta", "alpha"],
   mode: "focused",
+  selection: {
+    environment: {
+      TEST_FILTER: "alpha,beta",
+      UI_FIXTURE_FILTER: "f4-rover-operate",
+    },
+  },
   suiteTimeoutMs: 100,
   aggregateTimeoutMs: 2_000,
   skipLifecycleHooks: true,
@@ -631,6 +640,12 @@ const passedCoordinator = await runTestCoordinator({
 });
 assert.equal(passedCoordinator.report.status, "passed");
 assert.equal(passedCoordinator.report.workspace.changedDuringRun, false);
+assert.deepEqual(passedCoordinator.report.selection, {
+  environment: {
+    TEST_FILTER: "alpha,beta",
+    UI_FIXTURE_FILTER: "f4-rover-operate",
+  },
+});
 assert.deepEqual(
   passedCoordinator.report.slowestCompletedSuites.map(({ suite }) => suite),
   ["beta", "alpha"],

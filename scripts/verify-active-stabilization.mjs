@@ -143,6 +143,16 @@ const FUEL_TRAP_SOURCE = `(module
 
 async function run(mode, scenario = null) {
   const snapshot = scenarioSnapshot(mode, scenario),
+    catalog = scenario?.payloadKg
+      ? {
+          ...TYPES,
+          plate: {
+            ...TYPES.plate,
+            mass: TYPES.plate.mass + scenario.payloadKg,
+          },
+        }
+      : TYPES,
+    runtimeCatalog = catalog === TYPES ? TYPES : JSON.stringify(catalog),
     world = new CANNON.World({
       gravity: new CANNON.Vec3(0, -9.80665, 0),
     }),
@@ -169,7 +179,7 @@ async function run(mode, scenario = null) {
       world,
       worldAdapter: adapter,
       material,
-      catalog: TYPES,
+      catalog: runtimeCatalog,
       groundBody: ground,
       fieldBody: ground,
       fixedDt: DT,
@@ -206,13 +216,14 @@ async function run(mode, scenario = null) {
       restitution: 0.02,
     }),
   );
-  runtime.start(snapshot);
+  runtime.start(JSON.stringify(snapshot));
   if (!["neutral", "power-loss", "sensor-loss", "signal-loss"].includes(mode))
     for (const controller of controllers) {
       const bindingManifest = controllerBindingManifest(
         controller,
         snapshot.parts,
         snapshot.connections,
+        catalog,
       );
       manager.attach(
         controller.id,
@@ -241,7 +252,7 @@ async function run(mode, scenario = null) {
   }).start(snapshot, {
     world,
     worldAdapter: adapter,
-    catalog: TYPES,
+    catalog,
     multibodyRuntime: runtime,
     readSensors,
     tickControllers: (dt, sensorSnapshot = {}) => {
@@ -287,10 +298,9 @@ async function run(mode, scenario = null) {
     }),
     controllerTelemetry: () => ({ onlineControllerIds: manager.ids() }),
     connectionValid: (connection) => !connection.failed,
-    partMass: (part) => TYPES[part.type]?.mass || 0,
+    partMass: (part) => catalog[part.type]?.mass || 0,
   });
   const chassisId = snapshot.parts.find((part) => part.type === "plate").id,
-    chassisBody = runtime.bodyByPart.get(chassisId),
     partById = new Map(snapshot.parts.map((part) => [part.id, part])),
     hubsByWheelSide = snapshot.parts
       .filter((part) => part.type === "motor")
@@ -327,10 +337,6 @@ async function run(mode, scenario = null) {
     travelDifferentials = [],
     actuatorStates = [],
     samples = [];
-  if (scenario?.payloadKg) {
-    chassisBody.mass += scenario.payloadKg;
-    chassisBody.updateMassProperties();
-  }
   if (scenario?.speedMPerS)
     for (const body of runtime.bodyByPart.values())
       body.velocity.x = scenario.speedMPerS;

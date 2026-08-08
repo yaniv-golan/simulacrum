@@ -6,10 +6,12 @@ import {
   decodeFailureEvidence,
   decodeFailureEvidenceOrThrow,
   encodeFailureEvidence,
+  failureEvidenceManifestDigest,
   fingerprintFailureEvidence,
 } from "../src/model/failure-evidence-artifacts.js";
 import {
   CHECKPOINT_STATE_OWNER_IDS,
+  CHECKPOINT_STATE_OWNER_VERSIONS,
   checkpointStateDigest,
   fingerprintExperimentBlueprint,
   fingerprintRunConfiguration,
@@ -71,7 +73,7 @@ const blueprint = JSON.parse(
     const payloadJson = stableStringify(fixture.stateOwnerPayloads[ownerId]);
     return {
       ownerId,
-      ownerVersion: ownerId === "material-resources" ? 2 : 1,
+      ownerVersion: CHECKPOINT_STATE_OWNER_VERSIONS[ownerId],
       payloadJson,
       payloadByteLength: new TextEncoder().encode(payloadJson).byteLength,
       payloadSha256: sha256Hex(payloadJson),
@@ -213,12 +215,13 @@ const runtime = {
       },
     },
     inputTraceRecorder: {
+      sourceId: "operator",
       inputsThrough: () => [
         {
           tick: 1,
           sequence: 0,
           sourceId: "operator",
-          targetId: "1",
+          targetId: 1,
           channelId: "throttle",
           value: 1,
         },
@@ -294,6 +297,17 @@ assert.equal(
     .code,
   "FAILURE_EVIDENCE_REPLAY_ANCHOR_REQUIRED",
 );
+const sourceSubstitution = structuredClone(artifact);
+sourceSubstitution.externalInputTrace.sourceId = "substituted-operator";
+for (const input of sourceSubstitution.externalInputTrace.inputs)
+  input.sourceId = sourceSubstitution.externalInputTrace.sourceId;
+sourceSubstitution.manifestDigest =
+  failureEvidenceManifestDigest(sourceSubstitution);
+assert.equal(
+  decodeFailureEvidence(sourceSubstitution).errors[0].code,
+  "FAILURE_EVIDENCE_TRACE_SOURCE_MISMATCH",
+  "failure evidence accepted an input source not bound by its replay anchor",
+);
 assert.equal(
   decodeFailureEvidence({
     ...artifact,
@@ -306,7 +320,14 @@ const player = new InputTracePlayer(artifact.externalInputTrace, {
   targetIds: [1],
 });
 assert.deepEqual(player.readCommandCandidates(1).remote, [
-  { targetId: 1, channel: "throttle", value: 1, active: true },
+  {
+    targetId: 1,
+    channel: "throttle",
+    sourceId: "operator",
+    value: 1,
+    active: true,
+    replayable: true,
+  },
 ]);
 assert.equal(player.readCommandCandidates(2).remote[0].value, 1);
 
@@ -403,7 +424,7 @@ const denseBlueprint = {
       runConfigurationFingerprint: denseRunConfigurationFingerprint,
       blueprintFingerprint: denseBlueprintFingerprint,
     },
-    inputTraceRecorder: { inputsThrough: () => [] },
+    inputTraceRecorder: { sourceId: "operator", inputsThrough: () => [] },
     failureEvidence: {
       ...runtime.failureEvidence,
       replayAnchor: null,

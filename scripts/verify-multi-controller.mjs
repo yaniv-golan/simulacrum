@@ -166,8 +166,14 @@ await page.waitForFunction(
 await page.click("#close-wasm");
 await page.click("#run-btn");
 await page.waitForFunction(() => {
-  const runtimes = JSON.parse(window.render_game_to_text()).script.runtimes;
-  return runtimes.length === 2 && runtimes.every((runtime) => runtime.ready);
+  const state = JSON.parse(window.render_game_to_text()),
+    runtimes = state.script.runtimes;
+  return (
+    state.running &&
+    !state.simulationStarting &&
+    runtimes.length === 2 &&
+    runtimes.every((runtime) => runtime.ready)
+  );
 });
 const before = JSON.parse(
   await page.evaluate(() => window.render_game_to_text()),
@@ -188,6 +194,16 @@ console.log(
 );
 
 await conclude(browser, () => {
+  assert.equal(
+    before.simulationStarting,
+    false,
+    "multi-controller measurement began during the startup transaction",
+  );
+  assert.equal(
+    before.running,
+    true,
+    "multi-controller simulation did not start",
+  );
   assert.equal(state.script.runtimes.length, 2, "controllers were collapsed");
   assert.ok(
     state.script.runtimes.every((runtime) => runtime.ready),

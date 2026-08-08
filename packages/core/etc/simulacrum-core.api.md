@@ -35,13 +35,6 @@ export const ACTUATOR_CHANNELS: Readonly<{
             unit: any;
             fanout: boolean;
         }>;
-        gait_speed: Readonly<{
-            minimum: any;
-            maximum: any;
-            failsafe: any;
-            unit: any;
-            fanout: boolean;
-        }>;
         collective: Readonly<{
             minimum: any;
             maximum: any;
@@ -86,20 +79,6 @@ export const ACTUATOR_CHANNELS: Readonly<{
             unit: any;
             fanout: boolean;
         }>;
-        stride: Readonly<{
-            minimum: any;
-            maximum: any;
-            failsafe: any;
-            unit: any;
-            fanout: boolean;
-        }>;
-        crouch: Readonly<{
-            minimum: any;
-            maximum: any;
-            failsafe: any;
-            unit: any;
-            fanout: boolean;
-        }>;
     }>;
     "linear-position-v1": Readonly<{
         linear_target: Readonly<{
@@ -125,13 +104,6 @@ export const ACTUATOR_CHANNELS: Readonly<{
         }>;
     }>;
     "reaction-wheel-v1": Readonly<{
-        balance: Readonly<{
-            minimum: any;
-            maximum: any;
-            failsafe: any;
-            unit: any;
-            fanout: boolean;
-        }>;
         yaw: Readonly<{
             minimum: any;
             maximum: any;
@@ -263,13 +235,6 @@ export const ACTUATOR_CHANNELS: Readonly<{
             unit: any;
             fanout: boolean;
         }>;
-        balance: Readonly<{
-            minimum: any;
-            maximum: any;
-            failsafe: any;
-            unit: any;
-            fanout: boolean;
-        }>;
     }>;
 }>;
 
@@ -292,7 +257,7 @@ export class AerodynamicSystem {
 export function alignSelection(parts: any, primaryId: any, axis: any): Map<any, any>;
 
 // @public (undocumented)
-export function analyzeAssembly(snapshot: any, catalog: any): {
+export function analyzeAssembly(snapshotInput: any, catalogInput: any): {
     totalMass: any;
     centerOfMass: any;
     displacedVolumeM3: number;
@@ -322,18 +287,6 @@ export function analyzeComponentPreflight(snapshot: any, input?: {
 }): any;
 
 // @public
-export class ArticulatedConstraintSystem {
-    // (undocumented)
-    dispose(context: any): void;
-    // (undocumented)
-    initialize(context: any): void;
-    // (undocumented)
-    phase: string;
-    // (undocumented)
-    step(context: any, dt: any): void;
-}
-
-// @public
 export class AssemblyModel {
     constructor(snapshot?: {});
     // (undocumented)
@@ -359,11 +312,19 @@ export class AssemblyModel {
     // (undocumented)
     removeParts(ids: any): boolean;
     // (undocumented)
-    replace(snapshot: any): any;
+    replace(snapshot: any): {
+        parts: any[];
+        connections: any[];
+        revision: number;
+    };
     // (undocumented)
     get revision(): number;
     // (undocumented)
-    snapshot(): any;
+    snapshot(): {
+        parts: any[];
+        connections: any[];
+        revision: number;
+    };
     // (undocumented)
     updatePart(id: any, update: any): any;
 }
@@ -427,6 +388,22 @@ export class BodyRegistry {
         engineBody: any;
     }[];
     // (undocumented)
+    exportCheckpointState(): {
+        schemaVersion: number;
+        tick: number;
+        bodies: {
+            bodyId: any;
+            acceleration: any;
+            contacts: any;
+            loads: any;
+            detached: any;
+        }[];
+        constraints: {
+            constraintId: any;
+            detached: any;
+        }[];
+    };
+    // (undocumented)
     exportState(): any;
     // (undocumented)
     importState(state: any): void;
@@ -442,7 +419,6 @@ export class BodyRegistry {
     registerPhysicalEntities(partId: any, entities: any): readonly any[];
     // (undocumented)
     removeConstraint(constraintId: any): boolean;
-    // (undocumented)
     get revision(): number;
     // (undocumented)
     setDetached(id: any, detached?: boolean): any;
@@ -458,6 +434,14 @@ export class BodyRegistry {
     updateConstraint(id: any, options?: {}): any;
     // (undocumented)
     updateKinematics(id: any, options?: {}, dt?: number): any;
+    // (undocumented)
+    validateState(state: any): {
+        bodies: Map<any, any>;
+        bodyByPart: Map<any, any>;
+        constraints: Map<any, any>;
+        constraintByPart: Map<any, any>;
+        tick: any;
+    };
 }
 
 // @public (undocumented)
@@ -532,7 +516,7 @@ export class CannonSolverTransaction {
 export class CannonWorldAdapter {
     constructor(world: any, transaction?: CannonSolverTransaction);
     // (undocumented)
-    beginSession(): Readonly<{
+    beginSession(fixedDt?: any): Readonly<{
         session: number;
         tick: number;
         integratedTick: number;
@@ -545,6 +529,7 @@ export class CannonWorldAdapter {
     dispose(): void;
     // (undocumented)
     exportState(): {
+        solverProfile: any;
         externalBodies: any;
         session: number;
         tick: number;
@@ -574,6 +559,20 @@ export class CannonWorldAdapter {
     }>;
     // (undocumented)
     transaction: CannonSolverTransaction;
+    // (undocumented)
+    validateState(state: any): {
+        bodies: Map<any, any>;
+        records: Map<any, any>;
+        session: any;
+        tick: any;
+        integratedTick: any;
+        integrationCount: any;
+        solverProfile: Readonly<{
+            fixedDt: number;
+            iterations: any;
+            tolerance: any;
+        }>;
+    };
     // (undocumented)
     world: any;
 }
@@ -1092,6 +1091,13 @@ export class CommandBus {
     // (undocumented)
     script: Map<any, any>;
     // (undocumented)
+    validateState(state: any): {
+        remote: Map<any, any>;
+        script: Map<any, any>;
+        conflicts: Set<any>;
+        rejections: any;
+    };
+    // (undocumented)
     writeRemote(targetId: any, channel: any, value: any): boolean;
     // (undocumented)
     writeScript(controllerId: any, bindingId: any, targetId: any, channel: any, value: any): boolean;
@@ -1099,6 +1105,8 @@ export class CommandBus {
 
 // @public
 export class CommandReceiverSystem {
+    // (undocumented)
+    afterCheckpointRestore(context: any): void;
     // (undocumented)
     dispose(context: any): void;
     // (undocumented)
@@ -1123,7 +1131,7 @@ export class CommandRoutingSystem {
 export function compatibleTargetPorts(sourcePart: any, sourcePort: any, targetPart: any, catalog: Record<string, any>, connections?: any[]): any;
 
 // @public
-export function compileAssembly(snapshot: any, catalog?: {}): Readonly<{
+export function compileAssembly(snapshotInput: string, catalogInput?: string): Readonly<{
     actuators: any[];
     contactRegions: {
         id: string;
@@ -1213,6 +1221,7 @@ export function compileAssembly(snapshot: any, catalog?: {}): Readonly<{
         partCount: any;
         bodyCount: number;
         constraintCount: number;
+        rigidClusterCount: number;
         collisionExclusionCount: number;
         forceElementPartCount: number;
     }>;
@@ -1272,7 +1281,7 @@ export function compileAssembly(snapshot: any, catalog?: {}): Readonly<{
         linearDamping: any;
         angularDamping: any;
     }[];
-    constraints: ({
+    constraints: (({
         kind: string;
         mechanism: any;
         id: string;
@@ -1488,7 +1497,10 @@ export function compileAssembly(snapshot: any, catalog?: {}): Readonly<{
         limits?: undefined;
         maxTorque?: undefined;
         restLength?: undefined;
+    }) & {
+        solverOrderClass: string;
     })[];
+    rigidClusters: RigidClusterDescriptorV1[];
     collisionExclusions: any[];
     forceElements: {
         id: string;
@@ -1709,7 +1721,7 @@ export function controllerBindingManifestIdentity(manifest: any): string;
 // @public
 export function controllerBindingOptions(controller: any, parts: any[], connections: any[], catalog?: Record<string, any>): readonly any[];
 
-// @public
+// @public (undocumented)
 export class ControllerRuntimeManager {
     // Warning: (ae-forgotten-export) The symbol "ControllerRuntimeManagerOptions" needs to be exported by the entry point index.d.ts
     constructor(input?: ControllerRuntimeManagerOptions);
@@ -1722,6 +1734,7 @@ export class ControllerRuntimeManager {
         policyVersion: any;
         bindingManifest: any;
         bindingManifestIdentity: any;
+        programIdentity: any;
         ready: boolean;
         commands: Map<any, any>;
         tick: number;
@@ -1738,29 +1751,28 @@ export class ControllerRuntimeManager {
     // (undocumented)
     exportState(): {
         controllerId: any;
-        label: any;
-        language: any;
-        policyVersion: any;
-        bindingManifest: any;
         bindingManifestIdentity: any;
+        programIdentity: any;
         ready: any;
         commands: any[];
         tick: any;
         lastTick: any;
-        status: any;
         error: any;
         engineState: any;
     }[];
     // (undocumented)
     ids(): any[];
     // (undocumented)
-    importState(state: any): void;
+    importState(state: any, input?: {
+        notify?: boolean;
+    }): void;
     // (undocumented)
     onCommands: (controllerId: number | string, commands: Map<string, number>) => void;
     // (undocumented)
     onStatus: (controllerId: number | string, status: string, online: boolean) => void;
     // (undocumented)
     onTrace: (event: object) => void;
+    publishState(): void;
     // (undocumented)
     ready(controllerId: any): boolean;
     // (undocumented)
@@ -1777,6 +1789,8 @@ export class ControllerRuntimeManager {
     };
     // (undocumented)
     tick(controllerId: any, dt: any, sensors: any): boolean;
+    // (undocumented)
+    validateState(state: any): Map<any, any>;
 }
 
 // @public
@@ -1806,6 +1820,8 @@ export class ControllerSensorBank {
     previousVelocity: Map<any, any>;
     // (undocumented)
     reset(): void;
+    // (undocumented)
+    validateState(state: any): Map<any, any>;
 }
 
 // @public (undocumented)
@@ -2105,6 +2121,18 @@ export const DRY_AIR_MEDIUM_ID: "dry-air-v1";
 export function encodeSharePayload(value: any): Promise<string>;
 
 // @public (undocumented)
+export type EndpointPointMassV1 = {
+    sourcePartId: string | number;
+    sourceConnectionId: string | number;
+    sourcePortId: string;
+    targetPartId: string | number;
+    targetPortId: string;
+    positionFramePartId: string | number;
+    massKg: number;
+    positionPartM: number[];
+};
+
+// @public (undocumented)
 export const ENVIRONMENT_BODY_FRAMES: readonly string[];
 
 // @public (undocumented)
@@ -2292,6 +2320,8 @@ export class FlexibleLineRuntime {
     // (undocumented)
     compiledLines: any[];
     // (undocumented)
+    connectionIdsUseTypedStrings: boolean;
+    // (undocumented)
     contactDissipationByPart: Map<any, any>;
     // (undocumented)
     dispose(): void;
@@ -2364,6 +2394,13 @@ export class FlexibleLineRuntime {
     start(compiledAssembly: any): this;
     // (undocumented)
     topologyRevision: number;
+    // (undocumented)
+    validateState(state: any): {
+        entities: Map<any, any>;
+        edges: Map<any, any>;
+        attachments: Map<any, any>;
+        contactDissipationByPart: Map<any, any>;
+    };
     // (undocumented)
     world: any;
 }
@@ -2758,6 +2795,7 @@ export type GeometryMassPropertiesV1 = {
     principalMomentsKgM2: number[];
     principalAxesPart: number[][];
     decompositionPolicy: string;
+    endpointPointMasses?: EndpointPointMassV1[];
 };
 
 // @public (undocumented)
@@ -2869,6 +2907,8 @@ export class MassPropertyCommitSystem {
     // (undocumented)
     afterCheckpointRestore(context: any): void;
     // (undocumented)
+    checkpointOwner: string;
+    // (undocumented)
     dispose(context: any): void;
     // (undocumented)
     initialize(context: any): void;
@@ -2925,9 +2965,20 @@ export class MaterialResourceNetwork {
     // (undocumented)
     evidenceIndex(): any;
     // (undocumented)
-    exportState(): any;
+    exportState(): {
+        version: number;
+        lastCommittedAllocationTick: any;
+        nextAllocationSequence: number;
+        stores: {
+            partId: any;
+            remainingMassKg: any;
+        }[];
+    };
     // (undocumented)
     importState(state: any, runGraph: any): void;
+    // (undocumented)
+    massContributions(): any;
+    massContributionsForState(state: any): any;
     // (undocumented)
     remainingMass(partId: any): any;
     // (undocumented)
@@ -2938,6 +2989,12 @@ export class MaterialResourceNetwork {
     stores(): any;
     // (undocumented)
     telemetry(): any;
+    // (undocumented)
+    validateState(state: any): {
+        stores: any[][];
+        lastCommittedAllocationTick: any;
+        nextAllocationSequence: any;
+    };
 }
 
 // @public
@@ -4011,7 +4068,11 @@ export class MotorEnergySettlementSystem {
     // (undocumented)
     dispose(): void;
     // (undocumented)
-    exportState(): any;
+    exportState(): {
+        version: number;
+        lastSettledTick: number;
+        totals: [any, any][];
+    };
     // (undocumented)
     importState(state: any): void;
     // (undocumented)
@@ -4024,6 +4085,11 @@ export class MotorEnergySettlementSystem {
     telemetry(): any;
     // (undocumented)
     totals: Map<any, any>;
+    // (undocumented)
+    validateState(state: any): {
+        lastSettledTick: any;
+        totals: Map<any, any>;
+    };
 }
 
 // @public
@@ -4032,15 +4098,15 @@ export class MultibodyRuntime {
         world: any;
         worldAdapter?: CannonWorldAdapter;
         material: any;
-        catalog?: {};
+        catalog?: string;
         fixedDt?: number;
-        surfaceHeightAt?: () => number;
+        surfaceHeightAt?: any;
         terrainHeightAt?: any;
-        pondAt?: (_x?: number, _z?: number) => any;
+        pondAt?: any;
         waterDensity?: number;
         groundBody?: any;
         fieldBody?: any;
-        materialForPart?: any;
+        materialForKey?: (materialKey: string) => any;
     });
     // (undocumented)
     activeLuminairePartIds: any[];
@@ -4169,6 +4235,7 @@ export class MultibodyRuntime {
             partCount: any;
             bodyCount: number;
             constraintCount: number;
+            rigidClusterCount: number;
             collisionExclusionCount: number;
             forceElementPartCount: number;
         }>;
@@ -4228,7 +4295,7 @@ export class MultibodyRuntime {
             linearDamping: any;
             angularDamping: any;
         }[];
-        constraints: ({
+        constraints: (({
             kind: string;
             mechanism: any;
             id: string;
@@ -4444,7 +4511,10 @@ export class MultibodyRuntime {
             limits?: undefined;
             maxTorque?: undefined;
             restLength?: undefined;
+        }) & {
+            solverOrderClass: string;
         })[];
+        rigidClusters: RigidClusterDescriptorV1[];
         collisionExclusions: any[];
         forceElements: {
             id: string;
@@ -4454,6 +4524,8 @@ export class MultibodyRuntime {
             law: any;
         }[];
     }>;
+    // (undocumented)
+    connectionIdsUseTypedStrings: boolean;
     // (undocumented)
     constraintEntries: any[];
     // (undocumented)
@@ -4481,6 +4553,7 @@ export class MultibodyRuntime {
     // (undocumented)
     exportState(): {
         version: number;
+        compiledPhysicalSemanticsFingerprint: string;
         fixedDt: number;
         sourceRevision: any;
         world: {
@@ -4661,7 +4734,7 @@ export class MultibodyRuntime {
     // (undocumented)
     material: any;
     // (undocumented)
-    materialForPart: any;
+    materialForKey: (materialKey: string) => any;
     // (undocumented)
     mobilityTelemetryFor(component: any, context?: any, _dt?: number): {
         active: boolean;
@@ -4789,7 +4862,7 @@ export class MultibodyRuntime {
     // (undocumented)
     phaseByPart: Map<any, any>;
     // (undocumented)
-    pondAt: (_x?: number, _z?: number) => any;
+    pondAt: any;
     // (undocumented)
     primaryBodyPose(): {
         position: {
@@ -4840,7 +4913,7 @@ export class MultibodyRuntime {
     // (undocumented)
     setTirePneumaticGasState(partId: any, state: any, carcassHeatJ?: number, ambientPressurePa?: any): boolean;
     // (undocumented)
-    start(snapshot: any): any;
+    start(snapshotInput: string): any;
     // (undocumented)
     stepActuators(context: any, dt: any): any;
     // (undocumented)
@@ -4860,6 +4933,7 @@ export class MultibodyRuntime {
             partCount: any;
             bodyCount: number;
             constraintCount: number;
+            rigidClusterCount: number;
             collisionExclusionCount: number;
             forceElementPartCount: number;
         }>;
@@ -5003,6 +5077,14 @@ export class MultibodyRuntime {
             reactionTorque?: undefined;
         })[];
         joints: {
+            mechanicalWorkJ?: any;
+            electricalEnergyJ?: any;
+            dissipatedEnergyJ?: any;
+            temperatureK?: any;
+            powered?: any;
+            saturated?: any;
+            thermalDerate?: any;
+            thermalShutdown?: any;
             id: any;
             sourcePartId: any;
             angle: any;
@@ -5054,6 +5136,8 @@ export class MultibodyRuntime {
     topologyRevision: number;
     // (undocumented)
     torqueByConnection: Map<any, any>;
+    // (undocumented)
+    validateState(state: any): any;
     // (undocumented)
     waterDensity: number;
     // (undocumented)
@@ -5307,6 +5391,39 @@ export class PneumaticNetwork {
     // (undocumented)
     lastTransfers: any[];
     // (undocumented)
+    massContributions(): {
+        partId: any;
+        kind: any;
+        massKg: any;
+        internalEnergyJ: any;
+        volumeM3: any;
+    }[];
+    massProjectionForState(snapshot: any): {
+        records: {
+            partId: any;
+            kind: any;
+            massKg: any;
+            internalEnergyJ: any;
+            volumeM3: any;
+        }[];
+        contributions: {
+            partId: any;
+            contribution: {
+                id: string;
+                massKg: any;
+                centerPartM: any[];
+                inertiaTensorAtCenterKgM2: {
+                    xx: number;
+                    yy: number;
+                    zz: number;
+                    xy: number;
+                    xz: number;
+                    yz: number;
+                };
+            };
+        }[];
+    };
+    // (undocumented)
     measurementForPart(partId: any, runGraph: any): {
         chamberPartId: any;
         absolutePressurePa: number;
@@ -5369,6 +5486,14 @@ export class PneumaticNetwork {
     };
     // (undocumented)
     transactionCursor: number;
+    // (undocumented)
+    validateState(snapshot: any): {
+        chamberStages: any;
+        deviceStages: any;
+        numericLedgerKeys: string[];
+        transactionCursor: any;
+        failureEvents: any;
+    };
 }
 
 // @public
@@ -5481,7 +5606,9 @@ export class PowerNetwork {
     // (undocumented)
     isPowered(partId: any): boolean;
     // (undocumented)
-    resolve(runGraph: any, fixedDt?: number): this;
+    resolve(runGraph: any, fixedDt?: number, input?: {
+        commitBaseline?: boolean;
+    }): this;
     // (undocumented)
     routeWitness(query: any, expectedNetworkResultDigest: any): any;
     // (undocumented)
@@ -5492,6 +5619,8 @@ export class PowerNetwork {
 
 // @public (undocumented)
 export class PowerSystem {
+    // (undocumented)
+    afterCheckpointRestore(context: any): void;
     // (undocumented)
     dispose(context: any): void;
     // (undocumented)
@@ -5510,6 +5639,7 @@ export function prepareControlIRController(ir: any, input?: {
     policyVersion: string;
     bindingManifest: readonly any[];
     bindingManifestIdentity: string;
+    programIdentity: any;
     instantiate(): Readonly<{
         tick(dt: any, nextSensors: any): Map<any, any>;
         exportState(): {
@@ -5517,6 +5647,7 @@ export function prepareControlIRController(ir: any, input?: {
             value: number;
         }[];
         importState(state: any): void;
+        validateState(state: any): any[];
         dispose(): void;
     }>;
 }>>;
@@ -5527,6 +5658,7 @@ export function prepareTypeScriptController(source: any, bindingManifest: any): 
     policyVersion: string;
     bindingManifest: readonly any[];
     bindingManifestIdentity: string;
+    programIdentity: any;
     instantiate(): Readonly<{
         tick(dt: any, nextSensors: any): Map<any, any>;
         exportState(): {
@@ -5534,6 +5666,7 @@ export function prepareTypeScriptController(source: any, bindingManifest: any): 
             value: number;
         }[];
         importState(state: any): void;
+        validateState(state: any): any[];
         dispose(): void;
     }>;
 }>>;
@@ -5544,6 +5677,7 @@ export function prepareWasmController(source: any, bindingManifest: any): Promis
     policyVersion: string;
     bindingManifest: readonly any[];
     bindingManifestIdentity: string;
+    programIdentity: any;
     instantiate(): Readonly<{
         tick(dt: any, nextSensors: any): Map<any, any>;
         exportState(): {
@@ -5551,6 +5685,7 @@ export function prepareWasmController(source: any, bindingManifest: any): Promis
             value: number;
         }[];
         importState(state: any): void;
+        validateState(state: any): any[];
         dispose(): void;
     }>;
 }>>;
@@ -5565,7 +5700,15 @@ export class PressureNozzleDemandSystem {
     // (undocumented)
     dispose(context: any): void;
     // (undocumented)
-    exportState(context: any): any;
+    exportState(context: any): {
+        version: number;
+        engines: {
+            partId: any;
+            throttleState: any;
+            gimbalXRad: any;
+            gimbalZRad: any;
+        }[];
+    };
     // (undocumented)
     importState(context: any, state: any): void;
     // (undocumented)
@@ -5576,6 +5719,8 @@ export class PressureNozzleDemandSystem {
     step(context: any, dt: any): void;
     // (undocumented)
     telemetry(context: any): any;
+    // (undocumented)
+    validateState(context: any, state: any): Map<any, any>;
 }
 
 // @public
@@ -5686,6 +5831,9 @@ export function readActuatorCommand(commandBus: any, part: any, channel: any, fa
 export function readShareUrl(value: any): Promise<any>;
 
 // @public
+export function reconstructTreeCutWrenches(clusterDescriptor: RigidClusterDescriptorV1, input: string): RigidClusterCutWrenchResultV1;
+
+// @public
 export class ReleaseCouplerSystem {
     // (undocumented)
     checkpointOwner: string;
@@ -5702,6 +5850,8 @@ export class ReleaseCouplerSystem {
     phase: string;
     // (undocumented)
     step(context: any, fixedDt: any): void;
+    // (undocumented)
+    validateState(context: any, checkpoint: any): Map<any, any>;
 }
 
 // @public (undocumented)
@@ -5805,12 +5955,197 @@ export function resolveWireComponentConfig(part: any, catalog?: any): any;
 // @public
 export class RigidBodySystem {
     // (undocumented)
+    checkpointOwner: string;
+    // (undocumented)
     initialize(context: any): void;
     // (undocumented)
     phase: string;
+    reconstructAfterPhysicsRestore(context: any, dt?: number): void;
     // (undocumented)
     step(context: any, dt: any): void;
 }
+
+// @public (undocumented)
+export type RigidClusterAttachmentFrameV1 = {
+    partId: RigidClusterIdentityV1;
+    side: "A" | "B";
+    portId: string;
+    sourceConnectionId: RigidClusterIdentityV1;
+    positionPartM: number[];
+    orientationPart: number[];
+    positionClusterM: number[];
+    orientationCluster: number[];
+};
+
+// @public (undocumented)
+export type RigidClusterBoundaryConstraintV1 = {
+    constraintId: string;
+    kind: string;
+    insidePartId: RigidClusterIdentityV1;
+    outsidePartId: RigidClusterIdentityV1;
+};
+
+// @public (undocumented)
+export function rigidClusterCutFramesWorld(clusterDescriptor: RigidClusterDescriptorV1, rootPose: string): RigidClusterCutFrameWorldV1[];
+
+// @public (undocumented)
+export type RigidClusterCutFrameWorldV1 = {
+    constraintId: string;
+    positionWorldM: number[];
+    source: "authored-child-attachment-v1";
+};
+
+// @public (undocumented)
+export type RigidClusterCutTopologyV1 = {
+    kind: "singleton-v1";
+    cycleRank: 0;
+    fixedConstraintEdges: never[];
+    cuts: never[];
+} | {
+    kind: "statically-indeterminate-loop-v1";
+    cycleRank: number;
+    fixedConstraintEdges: RigidClusterFixedConstraintEdgeV1[];
+    cuts: never[];
+} | {
+    kind: "tree-newton-euler-cuts-v1";
+    cycleRank: 0;
+    fixedConstraintEdges: RigidClusterFixedConstraintEdgeV1[];
+    cuts: RigidClusterCutV1[];
+};
+
+// @public (undocumented)
+export type RigidClusterCutV1 = {
+    constraintId: string;
+    parentPartId: RigidClusterIdentityV1;
+    childPartId: RigidClusterIdentityV1;
+    parentSide: "A" | "B";
+    childSide: "A" | "B";
+    subtreePartIds: RigidClusterIdentityV1[];
+    sourceConnectionIds: RigidClusterIdentityV1[];
+    failureAttachments: Array<{
+        connectionId: RigidClusterIdentityV1;
+        side: "A" | "B";
+        bodyPartId: RigidClusterIdentityV1;
+    }>;
+    parentAttachmentFrame: RigidClusterAttachmentFrameV1;
+    childAttachmentFrame: RigidClusterAttachmentFrameV1;
+};
+
+// @public (undocumented)
+export type RigidClusterCutWrenchResultV1 = {
+    available: true;
+    reason: null;
+    authority: "conditional-supplied-load-set-v1";
+    failureAuthority: false;
+    suppliedLoadSet: {
+        gravityWorldMps2: number[];
+        externalWrenches: RigidClusterExternalWrenchV1[];
+    };
+    wrenches: RigidClusterCutWrenchV1[];
+} | {
+    available: false;
+    reason: "invalid-cut-topology-v1" | "statically-indeterminate-loop-v1";
+    authority: "unavailable-v1";
+    failureAuthority: false;
+    wrenches: never[];
+};
+
+// @public (undocumented)
+export type RigidClusterCutWrenchV1 = {
+    constraintId: string;
+    parentPartId: RigidClusterIdentityV1;
+    childPartId: RigidClusterIdentityV1;
+    subtreePartIds: RigidClusterIdentityV1[];
+    applicationPointWorldM: number[];
+    forceWorldN: number[];
+    torqueWorldNm: number[];
+    forceMagnitudeN: number;
+    torqueMagnitudeNm: number;
+    balance: {
+        inertialForceWorldN: number[];
+        externalForceWorldN: number[];
+        inertialTorqueWorldNm: number[];
+        externalTorqueWorldNm: number[];
+    };
+};
+
+// @public (undocumented)
+export type RigidClusterDescriptorV1 = {
+    id: string;
+    kind: "fixed-rigid-cluster-v1";
+    rootPartId: RigidClusterIdentityV1;
+    rootBodyId: string;
+    memberPartIds: RigidClusterIdentityV1[];
+    memberBodyIds: string[];
+    members: Array<{
+        partId: RigidClusterIdentityV1;
+        bodyId: string;
+        positionClusterM: number[];
+        orientationCluster: number[];
+        massKg: number;
+        massPropertySourceBodyId: string;
+        geometrySourceBodyId: string;
+        runtimeMassContributorKinds: string[];
+    }>;
+    fixedConstraintIds: string[];
+    cutWrenchTopology: RigidClusterCutTopologyV1;
+    failureBoundaryConstraintIds: string[];
+    boundaryConstraints: RigidClusterBoundaryConstraintV1[];
+    boundaryConstraintIds: string[];
+    dynamicMassPartIds: RigidClusterIdentityV1[];
+    sourceMassKg: number;
+    massProperties: RigidClusterMassPropertiesV1;
+};
+
+// @public (undocumented)
+export type RigidClusterExternalWrenchV1 = {
+    loadId: RigidClusterIdentityV1;
+    partId: RigidClusterIdentityV1;
+    forceWorldN: number[];
+    applicationPointWorldM: number[];
+    coupleWorldNm: number[];
+};
+
+// @public (undocumented)
+export type RigidClusterFixedConstraintEdgeV1 = {
+    constraintId: string;
+    a: RigidClusterIdentityV1;
+    b: RigidClusterIdentityV1;
+    breakForceN: number;
+    breakTorqueNm: number;
+};
+
+// @public (undocumented)
+export type RigidClusterIdentityV1 = string | number;
+
+// @public (undocumented)
+export type RigidClusterMassPropertiesV1 = GeometryMassPropertiesV1 & {
+    sourceKind: "fixed-rigid-cluster-v1";
+    massEvaluationPolicy: "rotated-tensor-parallel-axis-v1";
+    memberMassPropertySources: Array<{
+        bodyId: string;
+        positionClusterM: number[];
+        orientationCluster: number[];
+        massProperties: GeometryMassPropertiesV1;
+    }>;
+};
+
+// @public (undocumented)
+export type RigidClusterMemberStateV1 = {
+    partId: RigidClusterIdentityV1;
+    massKg: number;
+    comPositionWorldM: number[];
+    linearAccelerationWorldMps2: number[];
+    angularVelocityWorldRadS: number[];
+    angularAccelerationWorldRadS2: number[];
+    inertiaTensorWorldKgM2: number[][];
+};
+
+// @public (undocumented)
+export type RigidClusterRootPoseV1 = {
+    positionWorldM: number[];
+    orientationWorld: number[];
+};
 
 // @public
 export class RollingContactSystem {
@@ -5874,10 +6209,29 @@ export class RunAssemblyGraph {
     events(): readonly any[];
     // (undocumented)
     exportState(): {
+        version: number;
         revision: number;
         graphRevision: number;
-        parts: any[];
-        connections: any[];
+        parts: {
+            energyJ?: any;
+            id: any;
+            detached: any;
+        }[];
+        connections: {
+            id: any;
+            stress: any;
+            fatigue: any;
+            failed: any;
+            peakLoadN: any;
+            peakTorqueNm: any;
+            lastLoadN: any;
+            lastTorqueNm: any;
+            forceUtilization: any;
+            torqueUtilization: any;
+            failureReason: any;
+            failureMode: any;
+            failedAtS: any;
+        }[];
         controllers: {
             id: any;
             state: any;
@@ -5896,6 +6250,7 @@ export class RunAssemblyGraph {
     parts(): readonly any[];
     // (undocumented)
     get revision(): number;
+    setCheckpointInternalEdgeIds(ids?: any[]): void;
     // (undocumented)
     setControllerState(id: any, state: any): any;
     // (undocumented)
@@ -5903,7 +6258,20 @@ export class RunAssemblyGraph {
     // (undocumented)
     snapshot(): any;
     // (undocumented)
-    startSnapshot(): any;
+    startSnapshot(): {
+        parts: any[];
+        connections: any[];
+        revision: number;
+    };
+    // (undocumented)
+    validateState(state: any): {
+        parts: Map<any, any>;
+        connections: Map<any, any>;
+        controllers: Map<any, any>;
+        events: any;
+        revision: any;
+        graphRevision: any;
+    };
 }
 
 // @public
@@ -5925,19 +6293,16 @@ export class RuntimeCheckpointCoordinator {
         sensorBank?: any;
         controllerManager?: any;
         aerothermalAblationOwner?: any;
-        articulatedDrive?: any;
         terrainState?: any;
         inputCursor?: any;
     });
     // (undocumented)
     aerothermalAblationOwner: any;
     // (undocumented)
-    articulatedDrive: any;
-    // (undocumented)
-    capture(input: {
-        runConfigurationFingerprint: any;
-        blueprintFingerprint: any;
-        compiledTopologyFingerprint: any;
+    capture(identityInput: string | {
+        runConfigurationFingerprint: string;
+        blueprintFingerprint: string;
+        compiledTopologyFingerprint: string;
     }): any;
     // (undocumented)
     controllerManager: any;
@@ -5948,10 +6313,10 @@ export class RuntimeCheckpointCoordinator {
     // (undocumented)
     multibodyRuntime: any;
     // (undocumented)
-    restore(input: any, input2: {
-        runConfigurationFingerprint: any;
-        blueprintFingerprint: any;
-        compiledTopologyFingerprint: any;
+    restore(input: string | Record<string, any>, identityInput: string | {
+        runConfigurationFingerprint: string;
+        blueprintFingerprint: string;
+        compiledTopologyFingerprint: string;
     }): any;
     // (undocumented)
     sensorBank: any;
@@ -6139,6 +6504,8 @@ export class SignalNetwork {
 // @public (undocumented)
 export class SignalSystem {
     // (undocumented)
+    afterCheckpointRestore(context: any): void;
+    // (undocumented)
     dispose(context: any): void;
     // (undocumented)
     initialize(context: any): void;
@@ -6160,6 +6527,10 @@ export class SimulationSession {
     });
     // (undocumented)
     accumulator: number;
+    // @internal
+    captureCheckpointRollbackBoundary(): Readonly<{}>;
+    // @internal
+    commitCheckpointRestore(): void;
     // (undocumented)
     context: {
         runGraph: any;
@@ -6202,35 +6573,26 @@ export class SimulationSession {
             time: number;
             fixedDt: number;
         };
-        environment: any;
-        sensors: {
-            kind: string;
-            entries: [any, any][];
-            value?: undefined;
-        } | {
-            kind: string;
-            value: any;
-            entries?: undefined;
-        };
-        commandValues: {
-            kind: string;
-            entries: [any, any][];
-            value?: undefined;
-        } | {
-            kind: string;
-            value: any;
-            entries?: undefined;
-        };
-        completedSensorSnapshot: any;
-        telemetry: any;
-        previousTelemetry: any;
+    };
+    // (undocumented)
+    exportTelemetryState(): {
+        version: number;
+        tick: number;
+        reconstruction: string;
+        poweredPartIds: any[];
     };
     // (undocumented)
     fixedDt: number;
     // (undocumented)
     importState(state: any): void;
     // (undocumented)
+    importTelemetryState(state: any): void;
+    // (undocumented)
     maxSubsteps: number;
+    // @internal (undocumented)
+    requireCheckpointBoundary(): any;
+    // @internal
+    restoreCheckpointRollbackBoundary(boundary: object): void;
     resynchronizeAfterCheckpointRestore(): void;
     // (undocumented)
     routeEvidence(token: any, query: any, expectedIdentity: any): any;
@@ -6246,6 +6608,17 @@ export class SimulationSession {
     telemetry(): any;
     // (undocumented)
     time: number;
+    // (undocumented)
+    validateState(state: any): {
+        accumulator: any;
+        time: any;
+        clock: any;
+    };
+    // (undocumented)
+    validateTelemetryState(state: any): {
+        tick: any;
+        poweredPartIds: any;
+    };
 }
 
 // @public
@@ -6293,7 +6666,20 @@ export function standardAtmosphere(altitudeM: any): {
 };
 
 // @public (undocumented)
-export function startMultibodyRuntime(snapshot: any, options: any): MultibodyRuntime;
+export function startMultibodyRuntime(snapshot: string, options: {
+    world: any;
+    worldAdapter?: CannonWorldAdapter;
+    material: any;
+    catalog?: string;
+    fixedDt?: number;
+    surfaceHeightAt?: any;
+    terrainHeightAt?: any;
+    pondAt?: any;
+    waterDensity?: number;
+    groundBody?: any;
+    fieldBody?: any;
+    materialForKey?: (materialKey: string) => any;
+}): MultibodyRuntime;
 
 // @public
 export class StructureSystem {
@@ -6304,13 +6690,15 @@ export class StructureSystem {
     // (undocumented)
     exportState(): {
         version: number;
-        initialBodyComponents: any;
-        overloadSeconds: [any, any][];
+        overloadSeconds: {
+            connectionId: any;
+            seconds: any;
+        }[];
     };
     // (undocumented)
     importState(state: any): void;
     // (undocumented)
-    initialBodyComponents: any;
+    initialBodyComponents: any[] | any[][];
     // (undocumented)
     initialize(context: any): void;
     // (undocumented)
@@ -6319,6 +6707,8 @@ export class StructureSystem {
     phase: string;
     // (undocumented)
     step(context: any, dt: any): void;
+    // (undocumented)
+    validateState(state: any): Map<any, any>;
 }
 
 // @public (undocumented)

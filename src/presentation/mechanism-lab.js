@@ -4,6 +4,12 @@ import { sha256Hex } from "../model/sha256.js";
 import { projectMechanismTelemetryChannels } from "./mechanism-telemetry-channels.js";
 import { escapeHtml as escapeMarkup } from "./html.js";
 const jsonCompatible = (value) => JSON.parse(JSON.stringify(value));
+const checkpointIdentityJson = (runIdentity) =>
+  JSON.stringify({
+    runConfigurationFingerprint: runIdentity.runConfigurationFingerprint,
+    blueprintFingerprint: runIdentity.blueprintFingerprint,
+    compiledTopologyFingerprint: runIdentity.compiledTopologyFingerprint,
+  });
 
 function differenceCount(left, right) {
   const a = stableStringify(left),
@@ -266,7 +272,9 @@ export function installMechanismLab({
     button.disabled = true;
     try {
       const coordinator = await runtime.prepareCheckpointCoordinator(),
-        captured = coordinator.capture(runtime.runIdentity),
+        captured = coordinator.capture(
+          checkpointIdentityJson(runtime.runIdentity),
+        ),
         exported = await createExperiment({
           blueprint: getBlueprint(),
           runConfiguration: runtime.runIdentity.configuration,
@@ -293,10 +301,9 @@ export function installMechanismLab({
     const runtime = getRuntime();
     if (!checkpoint || !runtime.checkpointCoordinator || !runtime.runIdentity)
       return;
-    runtime.checkpointCoordinator.restore(checkpoint, runtime.runIdentity);
-    const recaptured = runtime.checkpointCoordinator.capture(
-      runtime.runIdentity,
-    );
+    const identityJson = checkpointIdentityJson(runtime.runIdentity);
+    runtime.checkpointCoordinator.restore(checkpoint, identityJson);
+    const recaptured = runtime.checkpointCoordinator.capture(identityJson);
     if (recaptured.stateDigest === checkpoint.stateDigest) {
       restoreResult = "exact state digest match";
     } else {

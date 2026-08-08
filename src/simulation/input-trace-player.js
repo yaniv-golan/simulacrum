@@ -1,8 +1,15 @@
 import { decodeInputTraceOrThrow } from "../model/mechanism-artifacts.js";
-import { DomainValidationError } from "../model/primitives.js";
+import {
+  compareCompiledIds,
+  DomainValidationError,
+  identityToken,
+} from "../model/primitives.js";
 
 function key(targetId, channelId) {
-  return `${targetId}\0${channelId}`;
+  return JSON.stringify([
+    identityToken(targetId, { typedStrings: true }),
+    channelId,
+  ]);
 }
 
 /** Supplies only recorded external candidates at fixed input boundaries. */
@@ -10,7 +17,10 @@ export class InputTracePlayer {
   constructor(trace, { targetIds = [] } = {}) {
     this.trace = decodeInputTraceOrThrow(trace).wire;
     this.targetByWireId = new Map(
-      targetIds.map((value) => [String(value), value]),
+      targetIds.map((value) => [
+        identityToken(value, { typedStrings: true }),
+        value,
+      ]),
     );
     this.reset();
   }
@@ -39,14 +49,19 @@ export class InputTracePlayer {
     const remote = [...this.values.values()]
       .sort(
         (left, right) =>
-          left.targetId.localeCompare(right.targetId, "en") ||
+          compareCompiledIds(left.targetId, right.targetId) ||
           left.channelId.localeCompare(right.channelId, "en"),
       )
       .map((input) => ({
-        targetId: this.targetByWireId.get(input.targetId) ?? input.targetId,
+        targetId:
+          this.targetByWireId.get(
+            identityToken(input.targetId, { typedStrings: true }),
+          ) ?? input.targetId,
         channel: input.channelId,
+        sourceId: input.sourceId,
         value: input.value,
         active: input.value !== 0,
+        replayable: input.sourceId === this.trace.sourceId,
       }));
     return { remote, scripts: [] };
   }

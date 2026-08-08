@@ -7,7 +7,7 @@ import {
 export function fixedAttachmentExample() {
   const connectionId = "fixed-joint",
     compiled = compileAssembly(
-      {
+      JSON.stringify({
         revision: 1,
         parts: [
           {
@@ -39,7 +39,7 @@ export function fixedAttachmentExample() {
             },
           },
         ],
-      },
+      }),
       TYPES,
     ),
     constraint = compiled.constraints.find(

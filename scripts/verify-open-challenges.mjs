@@ -1,5 +1,6 @@
 import { assert, assertNoErrors, conclude } from "./lib/assert.mjs";
 import { createBrowserTest } from "./lib/browser-test.mjs";
+import { CHALLENGES } from "../src/application/content.js";
 
 const { browser, page, errors, baseUrl } = await createBrowserTest();
 await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
@@ -10,6 +11,11 @@ const browserState = {
   openContracts: await page.locator(".challenge-grid .open-contract").count(),
   emptyActions: await page.locator('[data-start-mode="empty"]').count(),
   currentActions: await page.locator('[data-start-mode="current"]').count(),
+  challengeIds: await page
+    .locator("[data-challenge][data-start-mode]")
+    .evaluateAll((elements) => [
+      ...new Set(elements.map((element) => element.dataset.challenge)),
+    ]),
   copy: await page.locator(".challenge-browser").innerText(),
 };
 await page.screenshot({ path: "artifacts/open-challenge-lab.png" });
@@ -130,12 +136,32 @@ console.log(
 await conclude(browser, () => {
   assert.equal(
     browserState.cards,
-    9,
+    CHALLENGES.length,
     "challenge lab did not render all contracts",
   );
-  assert.equal(browserState.openContracts, 4, "open contracts are missing");
-  assert.equal(browserState.emptyActions, 4, "empty-start actions are missing");
-  assert.equal(browserState.currentActions, 4, "BYOB actions are missing");
+  assert.deepEqual(
+    [...browserState.challengeIds].sort(),
+    CHALLENGES.map((challenge) => challenge.id).sort(),
+    "challenge lab rendered missing, duplicate, or unknown contract identities",
+  );
+  assert.equal(
+    browserState.openContracts,
+    CHALLENGES.filter((challenge) => challenge.category === "OPEN CONSTRUCTION")
+      .length,
+    "open contracts are missing",
+  );
+  assert.equal(
+    browserState.emptyActions,
+    CHALLENGES.filter((challenge) => challenge.startModes.includes("empty"))
+      .length,
+    "empty-start actions are missing",
+  );
+  assert.equal(
+    browserState.currentActions,
+    CHALLENGES.filter((challenge) => challenge.startModes.includes("current"))
+      .length,
+    "BYOB actions are missing",
+  );
   assert.match(browserState.copy, /WHEELS.*LEGS.*ROTOR.*HYBRID/s);
   assert.deepEqual(
     emptyStart.parts.map((part) => part.type),

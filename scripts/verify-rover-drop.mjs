@@ -80,7 +80,22 @@ async function runEgress({ id, throttle, maximumDurationS }) {
       new KeyboardEvent("keydown", { key: " ", code: "Space" }),
     ),
   );
-  await page.evaluate(() => window.advanceTime(1500));
+  let brakeElapsedS = 0,
+    brakeSettled = false;
+  for (; brakeElapsedS < 6; brakeElapsedS += 0.25) {
+    await page.evaluate(() => window.advanceTime(250));
+    const braking = await readState(),
+      mobility = braking.demo.mobility;
+    if (
+      Math.abs(Number(mobility?.signedSpeed || 0)) <= 0.15 &&
+      mobility?.physics?.grounded === true &&
+      mobility?.physics?.wheelContacts === 4
+    ) {
+      brakeSettled = true;
+      brakeElapsedS += 0.25;
+      break;
+    }
+  }
   await page.evaluate(() =>
     window.dispatchEvent(
       new KeyboardEvent("keyup", { key: " ", code: "Space" }),
@@ -95,6 +110,8 @@ async function runEgress({ id, throttle, maximumDurationS }) {
     throttle,
     completedAtS,
     fieldEntry,
+    brakeElapsedS,
+    brakeSettled,
     postFieldDistanceM: fieldEntry
       ? fieldEntry.z - samples.at(-1).position.z
       : 0,
@@ -130,6 +147,8 @@ console.log(
       throttle: scenario.throttle,
       completedAtS: scenario.completedAtS,
       fieldEntry: scenario.fieldEntry,
+      brakeElapsedS: scenario.brakeElapsedS,
+      brakeSettled: scenario.brakeSettled,
       postFieldDistanceM: scenario.postFieldDistanceM,
       sampleCount: scenario.samples.length,
       finalPosition: scenario.settled.demo.position,
@@ -180,6 +199,11 @@ await conclude(browser, () => {
     assert.ok(
       scenario.settled.demo.position.z < -48,
       `${scenario.id} rover rolled back onto the workshop edge after braking`,
+    );
+    assert.equal(
+      scenario.brakeSettled,
+      true,
+      `${scenario.id} rover did not converge to a grounded four-wheel stop within 6 s`,
     );
     assert.equal(
       scenario.settled.demo.mobility?.physics?.wheelContacts,

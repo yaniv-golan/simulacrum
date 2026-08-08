@@ -3,9 +3,15 @@ import { assert } from "./lib/assert.mjs";
 import { TYPES } from "../src/model/component-catalog.js";
 import { builtInDemo } from "../src/model/demo-blueprints.js";
 import { decodeBlueprintOrThrow } from "../src/model/blueprint-decoder.js";
-import { compileAssembly } from "../src/model/assembly-compiler.js";
+import {
+  compileAssembly,
+  compileAssemblyBoundary,
+} from "./lib/compile-assembly.mjs";
 import { geometryDescriptorForPart } from "../src/model/geometry-descriptors.js";
-import { rotateVectorByQuaternion } from "../src/model/primitives.js";
+import {
+  compareCompiledIds,
+  rotateVectorByQuaternion,
+} from "../src/model/primitives.js";
 import { CommandBus } from "../src/simulation/command-bus.js";
 import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
 import { PowerNetwork } from "../src/simulation/power-network.js";
@@ -223,7 +229,7 @@ const connectorAssembly = {
         portA: "TOP",
         portB: "BASE",
         anchorA: [1, 0, 0],
-        capacity: TEST_CAPACITY,
+        capacity: structuredClone(TEST_CAPACITY),
       },
       {
         id: "hinge-arm",
@@ -232,7 +238,7 @@ const connectorAssembly = {
         kind: "mechanical",
         portA: "ARM",
         portB: "A",
-        capacity: TEST_CAPACITY,
+        capacity: structuredClone(TEST_CAPACITY),
       },
       {
         id: "spring-a",
@@ -242,7 +248,7 @@ const connectorAssembly = {
         portA: "TOP",
         portB: "END_A",
         anchorA: [0, 0, 0],
-        capacity: TEST_CAPACITY,
+        capacity: structuredClone(TEST_CAPACITY),
       },
       {
         id: "spring-b",
@@ -251,11 +257,177 @@ const connectorAssembly = {
         kind: "mechanical",
         portA: "END_B",
         portB: "A",
-        capacity: TEST_CAPACITY,
+        capacity: structuredClone(TEST_CAPACITY),
       },
     ],
   },
   compiledConnectors = compileAssembly(connectorAssembly, TYPES);
+
+const reversedConnectors = compileAssembly(
+    {
+      ...structuredClone(connectorAssembly),
+      parts: structuredClone(connectorAssembly.parts).reverse(),
+      connections: structuredClone(connectorAssembly.connections).reverse(),
+    },
+    TYPES,
+  ),
+  connectorSolverOrderClasses = compiledConnectors.constraints.map(
+    (constraint) => constraint.solverOrderClass,
+  ),
+  connectorConstraintSourceKeys = compiledConnectors.constraints.map(
+    (constraint) =>
+      [...constraint.sourceConnectionIds].sort(compareCompiledIds)[0],
+  );
+
+const snapshotTrapCounts = {
+    get: 0,
+    getOwnPropertyDescriptor: 0,
+    getPrototypeOf: 0,
+    ownKeys: 0,
+  },
+  callerOwnedSnapshot = new Proxy(structuredClone(connectorAssembly), {
+    get(target, key, receiver) {
+      snapshotTrapCounts.get++;
+      return Reflect.get(target, key, receiver);
+    },
+    getOwnPropertyDescriptor(target, key) {
+      snapshotTrapCounts.getOwnPropertyDescriptor++;
+      return Reflect.getOwnPropertyDescriptor(target, key);
+    },
+    getPrototypeOf(target) {
+      snapshotTrapCounts.getPrototypeOf++;
+      return Reflect.getPrototypeOf(target);
+    },
+    ownKeys(target) {
+      snapshotTrapCounts.ownKeys++;
+      return Reflect.ownKeys(target);
+    },
+  });
+assert.throws(
+  () => compileAssemblyBoundary(callerOwnedSnapshot, TYPES),
+  (error) => error?.code === "INVALID_ASSEMBLY_PLAIN_DATA",
+  "compiler accepted a Proxy as snapshot authority",
+);
+assert.deepEqual(
+  snapshotTrapCounts,
+  { get: 0, getOwnPropertyDescriptor: 0, getPrototypeOf: 0, ownKeys: 0 },
+  "compiler invoked a Proxy trap while rejecting snapshot authority",
+);
+const callerOwnedPlainSnapshot = structuredClone(connectorAssembly),
+  detachedAuthorityCompilation = compileAssembly(
+    callerOwnedPlainSnapshot,
+    TYPES,
+  );
+callerOwnedPlainSnapshot.revision = 701;
+callerOwnedPlainSnapshot.parts[0].pos[0] = 701;
+assert.equal(
+  detachedAuthorityCompilation.sourceRevision,
+  connectorAssembly.revision,
+  "compiler source revision did not come from the detached authority graph",
+);
+const catalogTrapCounts = {
+    get: 0,
+    getOwnPropertyDescriptor: 0,
+    getPrototypeOf: 0,
+    ownKeys: 0,
+  },
+  callerOwnedCatalog = new Proxy(TYPES, {
+    get(target, key, receiver) {
+      catalogTrapCounts.get++;
+      return Reflect.get(target, key, receiver);
+    },
+    getOwnPropertyDescriptor(target, key) {
+      catalogTrapCounts.getOwnPropertyDescriptor++;
+      return Reflect.getOwnPropertyDescriptor(target, key);
+    },
+    getPrototypeOf(target) {
+      catalogTrapCounts.getPrototypeOf++;
+      return Reflect.getPrototypeOf(target);
+    },
+    ownKeys(target) {
+      catalogTrapCounts.ownKeys++;
+      return Reflect.ownKeys(target);
+    },
+  });
+assert.throws(
+  () =>
+    compileAssemblyBoundary(
+      JSON.stringify(connectorAssembly),
+      callerOwnedCatalog,
+    ),
+  (error) => error?.code === "INVALID_COMPONENT_CATALOG_PLAIN_DATA",
+  "compiler accepted a Proxy as catalog authority",
+);
+assert.deepEqual(
+  catalogTrapCounts,
+  { get: 0, getOwnPropertyDescriptor: 0, getPrototypeOf: 0, ownKeys: 0 },
+  "compiler invoked a Proxy trap while rejecting catalog authority",
+);
+const detachedCatalogCompilation = compileAssembly(
+  connectorAssembly,
+  structuredClone(TYPES),
+);
+assert.deepEqual(
+  detachedCatalogCompilation,
+  compiledConnectors,
+  "detached catalog authority changed canonical compiler output",
+);
+let catalogAccessorReads = 0;
+const accessorCatalog = { ...TYPES };
+Object.defineProperty(accessorCatalog, "plate", {
+  enumerable: true,
+  get() {
+    catalogAccessorReads++;
+    return TYPES.plate;
+  },
+});
+assert.throws(
+  () =>
+    compileAssemblyBoundary(JSON.stringify(connectorAssembly), accessorCatalog),
+  (error) =>
+    error?.code === "INVALID_COMPONENT_CATALOG_PLAIN_DATA" &&
+    error?.path?.join(".") === "catalog",
+  "compiler accepted an executable catalog accessor",
+);
+assert.equal(
+  catalogAccessorReads,
+  0,
+  "catalog detachment invoked an accessor before rejecting it",
+);
+assert.deepEqual(
+  reversedConnectors.constraints,
+  compiledConnectors.constraints,
+  "mixed-kind constraint execution order depended on authored array order",
+);
+assert.deepEqual(
+  connectorSolverOrderClasses,
+  ["condensed-connector-v1", "direct-connection-v1", "direct-connection-v1"],
+  "constraint execution did not preserve the explicit generic solver-order classes",
+);
+assert.deepEqual(
+  connectorConstraintSourceKeys,
+  ["spring-a", "hinge-arm", "hinge-base"],
+  "constraint execution did not preserve canonical authored source order within each explicit numerical class",
+);
+const renamedConnectorAssembly = structuredClone(connectorAssembly);
+for (const [index, id] of [
+  "a-direct-base",
+  "b-direct-arm",
+  "z-condensed-a",
+  "z-condensed-b",
+].entries())
+  renamedConnectorAssembly.connections[index].id = id;
+const renamedConnectorCompilation = compileAssembly(
+  renamedConnectorAssembly,
+  TYPES,
+);
+assert.deepEqual(
+  renamedConnectorCompilation.constraints.map(
+    (constraint) => constraint.solverOrderClass,
+  ),
+  connectorSolverOrderClasses,
+  "solver insertion phases depended on provenance identities rather than explicit physical class",
+);
 
 assert.equal(
   compiledConnectors.stats.forceElementPartCount,
@@ -347,7 +519,7 @@ const damperAssembly = {
         portA: "TOP",
         portB: "END_A",
         anchorA: [-1.2, 0, 0],
-        capacity: TEST_CAPACITY,
+        capacity: structuredClone(TEST_CAPACITY),
       },
       {
         id: "damper-b",
@@ -357,7 +529,7 @@ const damperAssembly = {
         portA: "END_B",
         portB: "TOP",
         anchorB: [-1.2, 0, 0],
-        capacity: TEST_CAPACITY,
+        capacity: structuredClone(TEST_CAPACITY),
       },
     ],
   },
@@ -381,7 +553,10 @@ assert.deepEqual(
     {
       sourcePartId: 2,
       sourceConnectionId: "damper-a",
-      endpointPort: "END_A",
+      sourcePortId: "END_A",
+      targetPartId: 1,
+      targetPortId: "TOP",
+      positionFramePartId: 1,
       massKg: 3,
       positionPartM: [-1.2, 0, 0],
     },
@@ -393,7 +568,7 @@ const massFrameWorld = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
     world: massFrameWorld,
     catalog: TYPES,
   }),
-  massFrameTelemetry = massFrameRuntime.start(damperAssembly),
+  massFrameTelemetry = massFrameRuntime.start(JSON.stringify(damperAssembly)),
   compiledMassBody = massFrameRuntime.compiled.bodies.find(
     (body) => body.partId === 1,
   ),
@@ -428,7 +603,7 @@ const exclusionWorld = new CANNON.World({
     world: exclusionWorld,
     catalog: TYPES,
   });
-exclusionRuntime.start(connectorAssembly);
+exclusionRuntime.start(JSON.stringify(connectorAssembly));
 assert.equal(
   exclusionRuntime.collisionExclusionConstraints.length,
   compiledConnectors.collisionExclusions.length,
@@ -498,7 +673,7 @@ const incomplete = compileAssembly(
         kind: "mechanical",
         portA: "TOP",
         portB: "END_A",
-        capacity: TEST_CAPACITY,
+        capacity: structuredClone(TEST_CAPACITY),
       },
     ],
   },
@@ -548,7 +723,7 @@ const axleDrivetrain = compileAssembly(
         kind: "mechanical",
         portA: "SHAFT",
         portB: "LEFT",
-        capacity: TEST_CAPACITY,
+        capacity: structuredClone(TEST_CAPACITY),
       },
       {
         id: "axle-wheel",
@@ -557,7 +732,7 @@ const axleDrivetrain = compileAssembly(
         kind: "mechanical",
         portA: "RIGHT",
         portB: "AXLE",
-        capacity: TEST_CAPACITY,
+        capacity: structuredClone(TEST_CAPACITY),
       },
     ],
   },
@@ -839,7 +1014,7 @@ const unpoweredRuntime = new MultibodyRuntime({
     (part) => part.type === "battery",
   ),
   unpoweredInitialEnergy = unpoweredGraph.part(unpoweredBattery.id).energyJ;
-unpoweredRuntime.start(unpoweredAssembly);
+unpoweredRuntime.start(JSON.stringify(unpoweredAssembly));
 unpoweredBus.writeRemote(unpoweredMotor.id, "throttle", 1);
 let unpoweredTelemetry;
 for (let step = 0; step < 120; step++) {
@@ -923,7 +1098,7 @@ const servoAssembly = {
         portA: "TOP",
         portB: "BASE",
         anchorA: [1.2, 0, 0],
-        capacity: TEST_CAPACITY,
+        capacity: structuredClone(TEST_CAPACITY),
       },
       {
         id: "servo-arm",
@@ -932,7 +1107,7 @@ const servoAssembly = {
         kind: "mechanical",
         portA: "ARM",
         portB: "A",
-        capacity: TEST_CAPACITY,
+        capacity: structuredClone(TEST_CAPACITY),
       },
       {
         id: "servo-power",
@@ -950,7 +1125,7 @@ const servoAssembly = {
         portA: "TOP",
         portB: "MOUNT",
         anchorA: [0.6, 0, 0],
-        capacity: TEST_CAPACITY,
+        capacity: structuredClone(TEST_CAPACITY),
       },
     ],
   },
@@ -964,20 +1139,29 @@ const servoAssembly = {
   }),
   servoGraph = new RunAssemblyGraph(servoAssembly),
   servoPower = new PowerNetwork(TYPES),
+  servoSettlement = new MotorEnergySettlementSystem(),
   servoBus = new CommandBus(),
   servoContext = {
     runGraph: servoGraph,
     powerNetwork: servoPower,
     commandBus: servoBus,
-    services: {},
+    clock: { tick: 0 },
+    telemetry: {},
+    services: {
+      multibodyRuntime: servoRuntime,
+      worldAdapter: servoRuntime.worldAdapter,
+    },
   };
-servoRuntime.start(servoAssembly);
+servoRuntime.start(JSON.stringify(servoAssembly));
 servoBus.writeRemote(202, "joint_target", 0.65);
 let servoTelemetry = null;
 for (let step = 0; step < 180; step++) {
+  servoContext.clock.tick = step + 1;
+  servoContext.telemetry = {};
   servoPower.resolve(servoGraph, 1 / 120);
   servoRuntime.stepActuators(servoContext, 1 / 120);
   servoRuntime.worldAdapter.integrate(1 / 120, { tick: step + 1 });
+  servoSettlement.step(servoContext, 1 / 120);
   servoTelemetry = servoRuntime.afterIntegration(1 / 120);
 }
 const servoJoint = servoTelemetry.joints.find(
@@ -990,6 +1174,7 @@ assert.ok(
   Math.abs(servoJoint.angle) > 0.2 && servoJoint.reactionTorque > 0,
   `powered hinge did not create torque-limited physical articulation: ${JSON.stringify({ joint: servoJoint, descriptor: servoEntry.descriptor, constraints: servoRuntime.constraintEntries.map((entry) => entry.descriptor), contacts: servoWorld.contacts.map((contact) => [contact.bi.userData?.partId, contact.bj.userData?.partId]), failures: servoTelemetry.failures, loads: servoTelemetry.connectionLoads })}`,
 );
+servoSettlement.dispose();
 servoRuntime.dispose();
 
 const springRuntime = new MultibodyRuntime({
@@ -997,7 +1182,7 @@ const springRuntime = new MultibodyRuntime({
   material: assemblyMaterial,
   catalog: TYPES,
 });
-springRuntime.start(connectorAssembly);
+springRuntime.start(JSON.stringify(connectorAssembly));
 const relaxedSpring = springRuntime.stepActuators({ services: {} }, 1 / 120);
 assert.ok(
   Math.abs(relaxedSpring.connectionLoads["spring-a"] || 0) < 1e-8,
@@ -1011,6 +1196,50 @@ assert.ok(
   "spring displacement produced no equal-and-opposite physical load",
 );
 springRuntime.dispose();
+
+const sharedPersistedOrientation = [0, 0, 0, 1];
+const expandedAliasCompilation = compileAssembly(
+  {
+    parts: [
+      {
+        id: "aliased-a",
+        type: "plate",
+        pos: [0, 0, 0],
+        orientation: sharedPersistedOrientation,
+        config: {},
+      },
+      {
+        id: "aliased-b",
+        type: "plate",
+        pos: [2, 0, 0],
+        orientation: sharedPersistedOrientation,
+        config: {},
+      },
+    ],
+    connections: [],
+  },
+  TYPES,
+);
+assert.deepEqual(
+  expandedAliasCompilation.parts[0].orientation,
+  expandedAliasCompilation.parts[1].orientation,
+);
+assert.notEqual(
+  expandedAliasCompilation.parts[0].orientation,
+  expandedAliasCompilation.parts[1].orientation,
+  "compiler retained caller alias identity instead of expanding persisted values",
+);
+sharedPersistedOrientation[3] = 0;
+assert.deepEqual(expandedAliasCompilation.parts[0].orientation, [0, 0, 0, 1]);
+const cyclicAssembly = { parts: [], connections: [] };
+cyclicAssembly.metadata = cyclicAssembly;
+assert.throws(
+  () => compileAssemblyBoundary(cyclicAssembly, TYPES),
+  (error) =>
+    error?.code === "INVALID_ASSEMBLY_PLAIN_DATA" &&
+    error?.path?.join(".") === "assembly",
+  "compiler accepted a cycle that persisted assembly data cannot encode",
+);
 
 console.log(
   `assembly compiler passed (${compiledGearbox.stats.bodyCount} bodies, ${compiledGearbox.stats.constraintCount} constraints, ratio ${observedRatio.toFixed(3)})`,

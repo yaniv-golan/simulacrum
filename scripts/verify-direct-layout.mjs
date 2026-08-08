@@ -22,7 +22,16 @@ await page.click("#tools-btn");
 const toolsVisible = await page.locator(".tools-menu").isVisible();
 const cameraGuide = await page.locator(".camera-help-card").innerText();
 await page.click("#workspace-focus");
-await page.waitForTimeout(220);
+await page.waitForFunction(() => {
+  const shell = document.querySelector(".shell"),
+    catalog = document.querySelector(".catalog"),
+    inspector = document.querySelector(".inspector");
+  return (
+    shell?.classList.contains("focus-workspace") &&
+    Number(getComputedStyle(catalog).opacity) < 0.01 &&
+    Number(getComputedStyle(inspector).opacity) < 0.01
+  );
+});
 const focused = await page.evaluate(() => ({
   active: document
     .querySelector(".shell")

@@ -6,9 +6,10 @@ import { analyzeCapabilityDispatch } from "./lib/capability-dispatch-analyzer.mj
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const REVIEWED_CAPABILITY_DISPATCH_BASELINE = Object.freeze({
-  commit: "unreleased-gearbox-clearance-pedestals-2026-08-04",
-  sites: 285,
-  sha256: "a591a638eb0731aa132a98335e3dc40324bf9f42351276f5330a5f2c8dd70a9b",
+  commit:
+    "unreleased-generic-physics-plant-m2-lifecycle-transaction-closure-2026-08-08",
+  sites: 288,
+  sha256: "28b7919519945772a5f08f52701679d80681e955ba39c6589c45a01c7552975f",
 });
 
 const POLICIES = Object.freeze([
@@ -91,7 +92,7 @@ const POLICIES = Object.freeze([
   },
   {
     pattern:
-      /^src\/simulation\/(?:actuator-contracts|articulated-assembly-controller|controller-sensors|power-network|run-assembly-graph|signal-network|systems\/command-routing-system)\.js$/,
+      /^src\/simulation\/(?:actuator-contracts|controller-sensors|power-network|run-assembly-graph|signal-network|systems\/command-routing-system)\.js$/,
     family: "actuation-networks-sensors-and-runtime-state",
     disposition: "REPLACE",
     owner: "simulation/capability-adapters",

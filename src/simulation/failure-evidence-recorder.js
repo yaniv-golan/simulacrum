@@ -1,4 +1,9 @@
-import { deepFreeze, DomainValidationError } from "../model/primitives.js";
+import {
+  deepFreeze,
+  DomainValidationError,
+  identitySetUsesTypedStrings,
+  identityToken,
+} from "../model/primitives.js";
 import {
   createFailureEvidencePolicy,
   failureEvidencePolicyFingerprint,
@@ -52,6 +57,85 @@ function uniqueRows(rows) {
   return [...byId.values()];
 }
 
+function identityProjector(values) {
+  const identities = values.filter((value) => value != null),
+    typedStrings = identitySetUsesTypedStrings(identities);
+  return (value) => identityToken(value, { typedStrings });
+}
+
+function frameIdentityProjectors(frame) {
+  const pre = frame.structurePreMutation,
+    post = frame.structurePostMutation,
+    topologies = [pre?.topology, post?.topology].filter(Boolean),
+    topologyConnections = topologies.flatMap((topology) =>
+      Array.isArray(topology.connections) ? topology.connections : [],
+    ),
+    connection = identityProjector([
+      ...(frame.connectionLoads || []).map((entry) => entry.connectionId),
+      ...(pre?.evaluations || []).map((entry) => entry.connectionId),
+      ...topologyConnections.map((entry) => entry.id),
+      ...(post?.event?.failedConnectionIds || []),
+    ]),
+    part = identityProjector([
+      ...topologyConnections.flatMap((entry) => [entry.a, entry.b]),
+      ...topologies.flatMap((topology) => topology.detachedPartIds || []),
+      ...(post?.event?.detachedPartIds || []),
+    ]);
+  return { connection, part };
+}
+
+function projectTopologyIdentities(topology, projectConnection, projectPart) {
+  if (!topology || !Array.isArray(topology.connections)) return topology;
+  return {
+    ...topology,
+    connections: topology.connections.map((entry) => ({
+      ...entry,
+      id: projectConnection(entry.id),
+      a: projectPart(entry.a),
+      b: projectPart(entry.b),
+    })),
+    detachedPartIds: (topology.detachedPartIds || []).map(projectPart),
+  };
+}
+
+function projectFrameIdentities(frame) {
+  const { connection, part } = frameIdentityProjectors(frame),
+    pre = frame.structurePreMutation,
+    post = frame.structurePostMutation;
+  return {
+    ...frame,
+    connectionLoads: (frame.connectionLoads || []).map((entry) => ({
+      ...entry,
+      connectionId: connection(entry.connectionId),
+    })),
+    structurePreMutation: pre
+      ? {
+          ...pre,
+          evaluations: (pre.evaluations || []).map((entry) => ({
+            ...entry,
+            connectionId: connection(entry.connectionId),
+          })),
+          topology: projectTopologyIdentities(pre.topology, connection, part),
+        }
+      : null,
+    structurePostMutation: post
+      ? {
+          ...post,
+          event: post.event
+            ? {
+                ...post.event,
+                failedConnectionIds: (post.event.failedConnectionIds || []).map(
+                  connection,
+                ),
+                detachedPartIds: (post.event.detachedPartIds || []).map(part),
+              }
+            : null,
+          topology: projectTopologyIdentities(post.topology, connection, part),
+        }
+      : null,
+  };
+}
+
 function nearConnectionIds(frame, policy) {
   return (frame.structurePreMutation?.evaluations || [])
     .filter(
@@ -61,7 +145,7 @@ function nearConnectionIds(frame, policy) {
           Number(entry.torqueUtilization || 0),
         ) >= policy.nearFailureUtilization,
     )
-    .map((entry) => String(entry.connectionId));
+    .map((entry) => entry.connectionId);
 }
 
 function compactRows(frame, policy, triggered, totalRowCount = null) {
@@ -87,7 +171,7 @@ function compactRows(frame, policy, triggered, totalRowCount = null) {
       continue;
     }
     for (const connectionId of connectionIds) {
-      const key = String(connectionId),
+      const key = connectionId,
         list = byConnection.get(key) || [];
       list.push(row);
       byConnection.set(key, list);
@@ -229,9 +313,7 @@ function boundedDiagnostic(frame, trigger) {
       .filter(
         (row) =>
           !failedConnectionId ||
-          (row.sourceConnectionIds || [])
-            .map(String)
-            .includes(String(failedConnectionId)),
+          (row.sourceConnectionIds || []).includes(failedConnectionId),
       )
       .sort(rowOrder),
     contribution = rows[0] || null,
@@ -244,7 +326,7 @@ function boundedDiagnostic(frame, trigger) {
       null,
     evaluation = failedConnectionId
       ? frame.structurePreMutation?.evaluations?.find(
-          (entry) => String(entry.connectionId) === String(failedConnectionId),
+          (entry) => entry.connectionId === failedConnectionId,
         ) || null
       : null;
   return {
@@ -271,7 +353,7 @@ function boundedDiagnostic(frame, trigger) {
       : null,
     connection: evaluation
       ? {
-          connectionId: String(evaluation.connectionId),
+          connectionId: evaluation.connectionId,
           loadN: evaluation.loadN,
           torqueNm: evaluation.torqueNm,
           ultimateForceN: evaluation.ultimateForceN,
@@ -437,12 +519,18 @@ export class FailureEvidenceRecorder {
         "UNKNOWN_FAILURE_EVIDENCE_TRIGGER",
         `Unknown failure-evidence trigger ${String(kind)}`,
       );
-    this.#frame(tick, timeS);
+    const frame = this.#frame(tick, timeS),
+      normalizedSubjectId =
+        subjectId == null
+          ? null
+          : kind === "structural-failure"
+            ? frameIdentityProjectors(frame).connection(subjectId)
+            : String(subjectId);
     const candidate = {
       kind,
       tick,
       timeS,
-      subjectId: subjectId == null ? null : String(subjectId),
+      subjectId: normalizedSubjectId,
       validity,
     };
     this.triggers.push(candidate);
@@ -464,9 +552,10 @@ export class FailureEvidenceRecorder {
   }
 
   completeTick({ tick, timeS, contextTelemetry = {} }) {
-    const frame = this.#frame(tick, timeS);
-    if (!frame) return this.telemetrySummary();
-    advanceStage(frame, "complete");
+    const sourceFrame = this.#frame(tick, timeS);
+    if (!sourceFrame) return this.telemetrySummary();
+    advanceStage(sourceFrame, "complete");
+    const frame = projectFrameIdentities(sourceFrame);
     const triggered = this.primaryTrigger?.tick === tick;
     let totalRowCount = null,
       retentionApplied = false;

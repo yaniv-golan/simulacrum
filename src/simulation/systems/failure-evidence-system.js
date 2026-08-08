@@ -1,4 +1,5 @@
 import { invalidMultibodyFailureEvidenceCandidate } from "../multibody-runtime.js";
+import { bodyRegistryBodyRecords } from "../body-registry.js";
 
 function compactMobilityTelemetry(mobility) {
   return {
@@ -133,8 +134,7 @@ export class FailureEvidenceSystem {
     for (const motorId of this.shaftHistoryByMotor.keys())
       if (!liveMotorIds.has(motorId)) this.shaftHistoryByMotor.delete(motorId);
 
-    const bodySnapshot = context.bodyRegistry.snapshot();
-    for (const body of bodySnapshot.bodies)
+    for (const body of bodyRegistryBodyRecords(context.bodyRegistry))
       for (const contact of body.contacts)
         if (
           contact.tireEvidence?.withinGeometricTolerance === false &&

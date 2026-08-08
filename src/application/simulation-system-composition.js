@@ -1,6 +1,5 @@
 import {
   AerodynamicSystem,
-  ArticulatedConstraintSystem,
   CommandReceiverSystem,
   CommandRoutingSystem,
   ComponentActuatorSystem,
@@ -50,7 +49,6 @@ export function createProductionSimulationSystems(compiledAssembly = null) {
     new CommandReceiverSystem(),
     new MaterialResourceSystem(),
     new PressureNozzleDemandSystem(),
-    new ArticulatedConstraintSystem(),
     new MechanismSystem(),
     new ComponentActuatorSystem(),
     new PneumaticSystem(),

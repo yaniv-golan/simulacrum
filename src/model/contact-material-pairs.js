@@ -44,6 +44,19 @@ const ROPE_FRICTION = Object.freeze({
   "painted-steel": 0.3,
 });
 
+const STRUCTURE_FRICTION = Object.freeze({
+  "workshop-steel": 0.68,
+  "short-grass": 0.4464,
+  "dry-asphalt": 0.6624,
+  "wet-asphalt": 0.4032,
+  "weathered-concrete": 0.6192,
+  "compacted-soil": 0.5184,
+  "loose-gravel": 0.36,
+  "dry-sand": 0.288,
+  "saturated-mud": 0.216,
+  "low-grip-polymer": 0.1152,
+});
+
 const freezePair = (pair) => {
   const supportMaterial = pair.materials.find((material) =>
       Object.hasOwn(SUPPORT_RESPONSE, material),
@@ -179,6 +192,12 @@ const pairs = new Map(
       lateralFrictionCoefficient: 0.72,
       restitutionCoefficient: 0.01,
     },
+    ...Object.entries(STRUCTURE_FRICTION).map(([material, friction]) => ({
+      materials: [material, "generic-structure"],
+      longitudinalFrictionCoefficient: friction,
+      lateralFrictionCoefficient: friction,
+      restitutionCoefficient: 0.02,
+    })),
     ...Object.entries(ROPE_FRICTION).map(([material, friction]) => ({
       materials: ["nylon-rope", material],
       longitudinalFrictionCoefficient: friction,

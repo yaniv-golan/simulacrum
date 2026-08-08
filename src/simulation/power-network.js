@@ -100,7 +100,7 @@ export class PowerNetwork {
     this.#catalog = catalog;
   }
 
-  resolve(runGraph, fixedDt = 1 / 120) {
+  resolve(runGraph, fixedDt = 1 / 120, { commitBaseline = true } = {}) {
     this.#telemetry = null;
     this.#allocationTelemetry.clear();
     this.#runGraph = runGraph;
@@ -220,7 +220,7 @@ export class PowerNetwork {
     // Electronics consume their explicit quiescent load even when actuators
     // are idle. Motors, lamps, joints, and gyros draw in their owning systems.
     for (const record of this.#consumers.values())
-      if (record.baselineW > 0)
+      if (commitBaseline && record.baselineW > 0)
         this.drawPower(record.id, record.baselineW, this.#fixedDt);
     const resultFacts = {
         poweredPartIds: [...this.#powered].sort(compareId),

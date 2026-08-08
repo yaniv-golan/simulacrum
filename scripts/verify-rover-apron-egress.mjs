@@ -73,7 +73,7 @@ function scenario({ id, throttle, steering, steeringTicks = maximumTicks }) {
   }))
     physics.world.addBody(body);
 
-  runtime.start(assembly);
+  runtime.start(JSON.stringify(assembly));
   let fieldEntryTick = null,
     currentAirborneTicks = 0,
     maximumAirborneTicks = 0,

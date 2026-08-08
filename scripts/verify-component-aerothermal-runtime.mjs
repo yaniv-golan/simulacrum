@@ -36,7 +36,7 @@ const assembly = {
     catalog: TYPES,
   });
 
-multibody.start(assembly);
+multibody.start(JSON.stringify(assembly));
 const body = multibody.bodyByPart.get(1),
   descriptor = multibody.compiled.bodies.find(
     (candidate) => candidate.partId === 1,

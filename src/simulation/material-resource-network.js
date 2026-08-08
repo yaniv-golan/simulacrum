@@ -1,4 +1,12 @@
-import { DomainValidationError, immutableClone } from "../model/primitives.js";
+import {
+  compareCanonicalIds,
+  DomainValidationError,
+  immutableClone,
+} from "../model/primitives.js";
+import {
+  issueInertPlainData,
+  requireInertPlainData,
+} from "../model/plain-data-contract.js";
 import { registerOwnedImmutable } from "../model/owned-immutable-value.js";
 import {
   createRouteEvidenceIndex,
@@ -7,8 +15,17 @@ import {
 } from "./route-evidence-index.js";
 
 const stableId = (value) => `${typeof value}:${String(value)}`;
-const compareId = (left, right) =>
-  stableId(left).localeCompare(stableId(right), "en");
+const compareId = compareCanonicalIds;
+
+function checkpointKeysMatch(value, expectedKeys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort(),
+    expected = [...expectedKeys].sort();
+  return (
+    actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index])
+  );
+}
 
 const canSource = (direction) =>
     direction === "source" || direction === "bidirectional",
@@ -307,6 +324,31 @@ export class MaterialResourceNetwork {
       [...this.#stores.values()].sort((left, right) =>
         compareId(left.partId, right.partId),
       ),
+    );
+  }
+
+  massContributions() {
+    return immutableClone(
+      [...this.#stores.values()]
+        .sort((left, right) => compareId(left.partId, right.partId))
+        .map((store) => ({
+          kind: "material-store-v1",
+          ...store,
+        })),
+    );
+  }
+
+  /** Purely projects exact mutable-mass records from a validated checkpoint. */
+  massContributionsForState(state) {
+    const validated = this.validateState(state);
+    return immutableClone(
+      validated.stores
+        .map(([store, remainingMassKg]) => ({
+          kind: "material-store-v1",
+          ...store,
+          remainingMassKg,
+        }))
+        .sort((left, right) => compareId(left.partId, right.partId)),
     );
   }
 
@@ -611,25 +653,33 @@ export class MaterialResourceNetwork {
   }
 
   exportState() {
-    return immutableClone({
+    return issueInertPlainData({
       version: 2,
-      graphRevision: this.#graphRevision,
       lastCommittedAllocationTick: this.#lastCommittedAllocationTick,
       nextAllocationSequence: this.#nextAllocationSequence,
       stores: [...this.#stores.values()]
         .sort((left, right) => compareId(left.partId, right.partId))
-        .map(({ partId, mediumId, capacityKg, remainingMassKg }) => ({
+        .map(({ partId, remainingMassKg }) => ({
           partId,
-          mediumId,
-          capacityKg,
           remainingMassKg,
         })),
     });
   }
 
-  importState(state, runGraph) {
+  validateState(state) {
+    state = requireInertPlainData(state, {
+      code: "INVALID_MATERIAL_RESOURCE_CHECKPOINT_INPUT",
+      message:
+        "Material-resource checkpoint must be serialized JSON or an exported immutable state",
+    });
     if (
       state?.version !== 2 ||
+      !checkpointKeysMatch(state, [
+        "version",
+        "lastCommittedAllocationTick",
+        "nextAllocationSequence",
+        "stores",
+      ]) ||
       !Array.isArray(state.stores) ||
       !Number.isSafeInteger(state.nextAllocationSequence) ||
       state.nextAllocationSequence < 0 ||
@@ -643,10 +693,22 @@ export class MaterialResourceNetwork {
         "INVALID_MATERIAL_RESOURCE_CHECKPOINT",
         "Material resource checkpoint must use version 2 with valid allocation counters",
       );
-    const records = new Map(
-      state.stores.map((record) => [record.partId, record]),
-    );
-    if (records.size !== this.#stores.size)
+    const records = new Map();
+    for (const record of state.stores) {
+      if (
+        !checkpointKeysMatch(record, ["partId", "remainingMassKg"]) ||
+        records.has(record.partId)
+      )
+        throw new DomainValidationError(
+          "MATERIAL_RESOURCE_CHECKPOINT_IDENTITY_MISMATCH",
+          "Material resource checkpoint store identities are not unique",
+        );
+      records.set(record.partId, record);
+    }
+    if (
+      state.stores.length !== this.#stores.size ||
+      records.size !== this.#stores.size
+    )
       throw new DomainValidationError(
         "MATERIAL_RESOURCE_CHECKPOINT_IDENTITY_MISMATCH",
         "Material resource checkpoint store set changed",
@@ -656,8 +718,6 @@ export class MaterialResourceNetwork {
       const record = records.get(store.partId);
       if (
         !record ||
-        record.mediumId !== store.mediumId ||
-        record.capacityKg !== store.capacityKg ||
         !Number.isFinite(record.remainingMassKg) ||
         record.remainingMassKg < 0 ||
         record.remainingMassKg > store.capacityKg
@@ -668,14 +728,23 @@ export class MaterialResourceNetwork {
         );
       validated.push([store, record.remainingMassKg]);
     }
-    for (const [store, remainingMassKg] of validated)
+    return {
+      stores: validated,
+      lastCommittedAllocationTick: state.lastCommittedAllocationTick,
+      nextAllocationSequence: state.nextAllocationSequence,
+    };
+  }
+
+  importState(state, runGraph) {
+    const validated = this.validateState(state);
+    for (const [store, remainingMassKg] of validated.stores)
       store.remainingMassKg = remainingMassKg;
     this.#graphRevision = -1;
     this.#componentByConsumerMedium.clear();
     this.#lastAllocation = [];
     this.#allocationEvidenceIndex = null;
-    this.#lastCommittedAllocationTick = state.lastCommittedAllocationTick;
-    this.#nextAllocationSequence = state.nextAllocationSequence;
+    this.#lastCommittedAllocationTick = validated.lastCommittedAllocationTick;
+    this.#nextAllocationSequence = validated.nextAllocationSequence;
     this.resolve(runGraph);
   }
 }

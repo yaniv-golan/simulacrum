@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { performance } from "node:perf_hooks";
 import * as CANNON from "cannon-es";
-import { compileAssembly } from "../src/model/assembly-compiler.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import { TYPES } from "../src/model/component-catalog.js";
 import { componentDefaults } from "../src/model/component-resolver.js";
 import { FlexibleLineRuntime } from "../src/simulation/flexible-line-runtime.js";

@@ -1,7 +1,19 @@
 import * as CANNON from "cannon-es";
 import { readActuatorCommand } from "../model/actuator-contracts.js";
-import { compileAssembly } from "../model/assembly-compiler.js";
-import { DomainValidationError } from "../model/primitives.js";
+import { compileAssemblyFromIssuedRoots } from "../model/assembly-compiler.js";
+import {
+  compareCanonicalIds,
+  compareCompiledIds,
+  deepFreeze,
+  DomainValidationError,
+  identitySetUsesTypedStrings,
+  identityToken,
+} from "../model/primitives.js";
+import {
+  issueInertPlainData,
+  requireInertPlainData,
+} from "../model/plain-data-contract.js";
+import { compiledPhysicalSemanticsFingerprint } from "../model/compiled-physical-semantics.js";
 import {
   registerCannonCollisionExclusion,
   unregisterCannonCollisionExclusion,
@@ -34,6 +46,8 @@ import {
   registerRollingSupport,
   unregisterRollingSupport,
 } from "./rolling-support-registration.js";
+import { validateMultibodyCheckpointState } from "./multibody-checkpoint-validation.js";
+import { canonicalCannonCheckpointQuaternion } from "./cannon-checkpoint-quaternion.js";
 import {
   boundsCenter,
   boundsDimensions,
@@ -42,6 +56,11 @@ import {
   projectBoundsToWorld,
 } from "../model/component-geometry-contract.js";
 import { geometryDescriptorForPart } from "../model/geometry-descriptors.js";
+import {
+  clonePlainMassPropertyData,
+  engineMassPropertiesProjection,
+  validateRuntimeMassPropertiesAuthority,
+} from "../model/assembly-compiler-mass-properties.js";
 
 const COORDINATE_KINDS = new Set([
   "revolute",
@@ -51,8 +70,557 @@ const COORDINATE_KINDS = new Set([
 const failureEvidenceByRuntime = new WeakMap();
 const fluidDescriptorsByRuntime = new WeakMap();
 const telemetryBodyDescriptorsByRuntime = new WeakMap();
+const constraintOrderPredecessorsByRuntime = new WeakMap();
+const constraintValueFieldsByRuntime = new WeakMap();
+const massPropertyCommittersByRuntime = new WeakMap();
+const engineAuthorityByRuntime = new WeakMap();
 const evidenceCapturingRuntimes = new WeakSet();
+const ENGINE_CONSTRAINT_VECTOR_FIELDS = Object.freeze([
+  "pivotA",
+  "pivotB",
+  "axisA",
+  "axisB",
+  "xA",
+  "yA",
+  "zA",
+  "xB",
+  "yB",
+  "zB",
+  "localAnchorA",
+  "localAnchorB",
+  "referenceA",
+  "referenceB",
+]);
+
+function engineVector(value) {
+  return value &&
+    [value.x, value.y, value.z].every(
+      (component) =>
+        typeof component === "number" && Number.isFinite(component),
+    )
+    ? plainVector(value)
+    : null;
+}
+
+function shapeGeometryAuthority(shape) {
+  if (shape instanceof CANNON.Box)
+    return {
+      kind: "box",
+      halfExtents: plainVector(shape.halfExtents),
+    };
+  if (shape instanceof CANNON.Sphere)
+    return { kind: "sphere", radius: shape.radius };
+  if (shape instanceof CANNON.ConvexPolyhedron)
+    return {
+      kind: shape instanceof CANNON.Cylinder ? "cylinder" : "convex",
+      vertices: shape.vertices.map(plainVector),
+      faces: shape.faces.map((face) => [...face]),
+      uniqueAxes: (shape.uniqueAxes || []).map(plainVector),
+      uniqueEdges: (shape.uniqueEdges || []).map(plainVector),
+    };
+  throw new DomainValidationError(
+    "MULTIBODY_ENGINE_AUTHORITY_UNSUPPORTED",
+    "Compiled collision shape lacks a closed engine-authority projection",
+  );
+}
+
+function sameVectorAuthority(value, expected) {
+  return Boolean(
+    value &&
+    expected &&
+    Object.is(value.x, expected.x) &&
+    Object.is(value.y, expected.y) &&
+    Object.is(value.z, expected.z),
+  );
+}
+
+function sameQuaternionAuthority(value, expected) {
+  return Boolean(
+    sameVectorAuthority(value, expected) && Object.is(value.w, expected.w),
+  );
+}
+
+function samePlainAuthority(value, expected) {
+  if (Object.is(value, expected)) return true;
+  if (
+    value == null ||
+    expected == null ||
+    typeof value !== "object" ||
+    typeof expected !== "object" ||
+    Array.isArray(value) !== Array.isArray(expected)
+  )
+    return false;
+  if (Array.isArray(expected))
+    return (
+      value.length === expected.length &&
+      expected.every((item, index) => samePlainAuthority(value[index], item))
+    );
+  const expectedKeys = Object.keys(expected),
+    valueKeys = Object.keys(value);
+  return (
+    valueKeys.length === expectedKeys.length &&
+    expectedKeys.every(
+      (key) =>
+        Object.hasOwn(value, key) &&
+        samePlainAuthority(value[key], expected[key]),
+    )
+  );
+}
+
+function sameVectorListAuthority(values, expected) {
+  return (
+    values.length === expected.length &&
+    expected.every((item, index) => sameVectorAuthority(values[index], item))
+  );
+}
+
+function sameQuaternionListAuthority(values, expected) {
+  return (
+    values.length === expected.length &&
+    expected.every((item, index) =>
+      sameQuaternionAuthority(values[index], item),
+    )
+  );
+}
+
+function sameShapeGeometryAuthority(shape, expected) {
+  if (expected.kind === "box")
+    return (
+      shape instanceof CANNON.Box &&
+      sameVectorAuthority(shape.halfExtents, expected.halfExtents)
+    );
+  if (expected.kind === "sphere")
+    return (
+      shape instanceof CANNON.Sphere && Object.is(shape.radius, expected.radius)
+    );
+  if (
+    !(shape instanceof CANNON.ConvexPolyhedron) ||
+    (shape instanceof CANNON.Cylinder ? "cylinder" : "convex") !==
+      expected.kind ||
+    !sameVectorListAuthority(shape.vertices, expected.vertices) ||
+    !sameVectorListAuthority(shape.uniqueAxes || [], expected.uniqueAxes) ||
+    !sameVectorListAuthority(shape.uniqueEdges || [], expected.uniqueEdges) ||
+    shape.faces.length !== expected.faces.length
+  )
+    return false;
+  return expected.faces.every(
+    (face, index) =>
+      shape.faces[index].length === face.length &&
+      face.every((vertexIndex, offset) =>
+        Object.is(shape.faces[index][offset], vertexIndex),
+      ),
+  );
+}
+
+function sameBodyPhysicalAuthority(body, expected) {
+  return (
+    Object.is(body.mass, expected.mass) &&
+    Object.is(body.invMass, expected.invMass) &&
+    sameVectorAuthority(body.inertia, expected.inertia) &&
+    sameVectorAuthority(body.invInertia, expected.invInertia) &&
+    sameQuaternionAuthority(
+      body.userData?.massFrame?.principalToPart,
+      expected.massFrame.principalToPart,
+    ) &&
+    sameVectorAuthority(
+      body.userData?.massFrame?.comPart,
+      expected.massFrame.comPart,
+    ) &&
+    body.userData?.massProperties === expected.massProperties &&
+    sameVectorListAuthority(body.shapeOffsets, expected.shapeOffsets) &&
+    sameQuaternionListAuthority(
+      body.shapeOrientations,
+      expected.shapeOrientations,
+    )
+  );
+}
+
+function sameConstraintVectorsAuthority(entry, expected) {
+  let actualCount = 0;
+  for (const field of ENGINE_CONSTRAINT_VECTOR_FIELDS) {
+    const value = entry.constraint?.[field] ?? entry[field];
+    if (value == null) {
+      if (Object.hasOwn(expected, field)) return false;
+      continue;
+    }
+    actualCount++;
+    if (
+      !Object.hasOwn(expected, field) ||
+      !sameVectorAuthority(value, expected[field])
+    )
+      return false;
+  }
+  return actualCount === Object.keys(expected).length;
+}
+
+function identityOccurrenceCount(values, expected) {
+  let count = 0;
+  for (const value of values) if (value === expected) count++;
+  return count;
+}
+
+function bodyPhysicalAuthority(body) {
+  return {
+    mass: body.mass,
+    invMass: body.invMass,
+    inertia: plainVector(body.inertia),
+    invInertia: plainVector(body.invInertia),
+    massFrame: {
+      principalToPart: plainQuaternion(body.userData.massFrame.principalToPart),
+      comPart: plainVector(body.userData.massFrame.comPart),
+    },
+    massProperties: body.userData.massProperties,
+    shapeOffsets: body.shapeOffsets.map(plainVector),
+    shapeOrientations: body.shapeOrientations.map(plainQuaternion),
+  };
+}
+
+function captureBodyEngineAuthority(body, descriptor) {
+  return {
+    body,
+    descriptor,
+    constructor: body.constructor,
+    material: body.material,
+    type: body.type,
+    collisionResponse: body.collisionResponse,
+    collisionFilterGroup: body.collisionFilterGroup,
+    collisionFilterMask: body.collisionFilterMask,
+    linearDamping: body.linearDamping,
+    angularDamping: body.angularDamping,
+    allowSleep: body.allowSleep,
+    fixedRotation: body.fixedRotation,
+    physical: bodyPhysicalAuthority(body),
+    shapes: body.shapes.map((shape) => ({
+      shape,
+      constructor: shape.constructor,
+      type: shape.type,
+      material: shape.material,
+      collisionResponse: shape.collisionResponse,
+      collisionFilterGroup: shape.collisionFilterGroup,
+      collisionFilterMask: shape.collisionFilterMask,
+      userData: structuredClone(shape.userData || null),
+      geometry: shapeGeometryAuthority(shape),
+    })),
+  };
+}
+
+function captureConstraintVectors(entry) {
+  const vectors = {};
+  for (const field of ENGINE_CONSTRAINT_VECTOR_FIELDS) {
+    const value = entry.constraint?.[field] ?? entry[field];
+    if (value != null) vectors[field] = engineVector(value);
+  }
+  return vectors;
+}
+
+function captureConstraintEquations(entry) {
+  if (entry.kind === "rolling-contact-v1" || !entry.constraint) return null;
+  return entry.constraint.equations.map((equation) => {
+    // Guide friction derives its Coulomb bound from the current transverse
+    // impulse and velocity through accessors. Every other owned row has either
+    // immutable bounds or an owner mutation followed by an authority refresh.
+    const ownsForceBounds = equation !== entry.constraint.guideFrictionEquation;
+    return {
+      equation,
+      constructor: equation.constructor,
+      bodyA: equation.bi,
+      bodyB: equation.bj,
+      enabled: equation.enabled,
+      spookA: equation.a,
+      spookB: equation.b,
+      epsilon: equation.eps,
+      restitution:
+        typeof equation.restitution === "number" ? equation.restitution : null,
+      targetVelocity:
+        typeof equation.targetVelocity === "number"
+          ? equation.targetVelocity
+          : null,
+      minForce: ownsForceBounds ? equation.minForce : null,
+      maxForce: ownsForceBounds ? equation.maxForce : null,
+    };
+  });
+}
+
+function captureConstraintEngineAuthority(entry) {
+  return {
+    entry,
+    descriptor: entry.descriptor,
+    constraint: entry.constraint || null,
+    constructor: entry.constraint?.constructor || null,
+    bodyA: entry.constraint?.bodyA || null,
+    bodyB: entry.constraint?.bodyB || null,
+    collideConnected: entry.constraint?.collideConnected ?? null,
+    distance: entry.constraint?.distance ?? null,
+    vectors: captureConstraintVectors(entry),
+    equations: captureConstraintEquations(entry),
+    active: entry.active !== false,
+  };
+}
+
+function captureMultibodyEngineAuthority(runtime) {
+  engineAuthorityByRuntime.set(runtime, {
+    bodies: new Map(
+      runtime.compiled.bodies.map((descriptor) => [
+        descriptor.partId,
+        captureBodyEngineAuthority(
+          runtime.bodyByPart.get(descriptor.partId),
+          descriptor,
+        ),
+      ]),
+    ),
+    constraints: new Map(
+      runtime.constraintEntries.map((entry) => [
+        entry.descriptor.id,
+        captureConstraintEngineAuthority(entry),
+      ]),
+    ),
+    exclusions: new Map(
+      runtime.collisionExclusionConstraints.map((entry) => [
+        entry.descriptor.id,
+        {
+          entry,
+          descriptor: entry.descriptor,
+          exclusion: entry.exclusion,
+          bodyA: entry.exclusion.bodyA,
+          bodyB: entry.exclusion.bodyB,
+          active: entry.active !== false,
+        },
+      ]),
+    ),
+  });
+}
+
+function refreshConstraintEquationAuthority(runtime, entry) {
+  const expected = engineAuthorityByRuntime
+    .get(runtime)
+    ?.constraints.get(entry.descriptor.id);
+  if (expected) expected.equations = captureConstraintEquations(entry);
+}
+
+function refreshBodyPhysicalAuthority(runtime, partId) {
+  const expected = engineAuthorityByRuntime.get(runtime)?.bodies.get(partId),
+    body = runtime.bodyByPart.get(partId);
+  if (expected && body === expected.body)
+    expected.physical = bodyPhysicalAuthority(body);
+}
+
+function refreshConstraintFrameAuthority(runtime, entry) {
+  const expected = engineAuthorityByRuntime
+    .get(runtime)
+    ?.constraints.get(entry.descriptor.id);
+  if (expected) expected.vectors = captureConstraintVectors(entry);
+}
+
+function refreshEngineActivityAuthority(runtime) {
+  const authority = engineAuthorityByRuntime.get(runtime);
+  if (!authority) return;
+  for (const [id, expected] of authority.constraints)
+    expected.active =
+      runtime.constraintEntries.find((entry) => entry.descriptor.id === id)
+        ?.active !== false;
+  for (const [id, expected] of authority.exclusions)
+    expected.active =
+      runtime.collisionExclusionConstraints.find(
+        (entry) => entry.descriptor.id === id,
+      )?.active !== false;
+}
+
+function engineAuthorityMismatch(message) {
+  throw new DomainValidationError(
+    "MULTIBODY_LIVE_ENGINE_AUTHORITY_MISMATCH",
+    message,
+  );
+}
+
+function validateLiveMultibodyEngineAuthority(
+  runtime,
+  { validateStaticGeometry = true } = {},
+) {
+  const authority = engineAuthorityByRuntime.get(runtime);
+  if (!authority || !runtime.compiled)
+    engineAuthorityMismatch("Live engine authority was not initialized");
+  if (
+    authority.bodies.size !== runtime.bodyByPart.size ||
+    authority.constraints.size !== runtime.constraintEntries.length ||
+    authority.exclusions.size !== runtime.collisionExclusionConstraints.length
+  )
+    engineAuthorityMismatch("Live engine owner identity sets changed");
+  for (const [partId, expected] of authority.bodies) {
+    const body = runtime.bodyByPart.get(partId);
+    if (
+      body !== expected.body ||
+      body?.constructor !== expected.constructor ||
+      body?.material !== expected.material ||
+      body?.type !== expected.type ||
+      body?.collisionResponse !== expected.collisionResponse ||
+      body?.collisionFilterGroup !== expected.collisionFilterGroup ||
+      body?.collisionFilterMask !== expected.collisionFilterMask ||
+      body?.linearDamping !== expected.linearDamping ||
+      body?.angularDamping !== expected.angularDamping ||
+      body?.allowSleep !== expected.allowSleep ||
+      body?.fixedRotation !== expected.fixedRotation ||
+      body?.userData?.partId !== partId ||
+      body?.userData?.compiledBodyId !== expected.descriptor.id ||
+      !sameBodyPhysicalAuthority(body, expected.physical) ||
+      identityOccurrenceCount(runtime.world.bodies, body) !== 1 ||
+      body.shapes.length !== expected.shapes.length
+    )
+      engineAuthorityMismatch(
+        `Live Cannon body authority changed for part ${String(partId)}`,
+      );
+    for (const [index, shapeExpected] of expected.shapes.entries()) {
+      const shape = body.shapes[index];
+      if (
+        shape !== shapeExpected.shape ||
+        shape.constructor !== shapeExpected.constructor ||
+        shape.type !== shapeExpected.type ||
+        shape.material !== shapeExpected.material ||
+        shape.collisionResponse !== shapeExpected.collisionResponse ||
+        shape.collisionFilterGroup !== shapeExpected.collisionFilterGroup ||
+        shape.collisionFilterMask !== shapeExpected.collisionFilterMask ||
+        (validateStaticGeometry &&
+          (!samePlainAuthority(
+            shape.userData || null,
+            shapeExpected.userData,
+          ) ||
+            !sameShapeGeometryAuthority(shape, shapeExpected.geometry)))
+      )
+        engineAuthorityMismatch(
+          `Live Cannon collision geometry changed for part ${String(partId)} shape ${index}`,
+        );
+    }
+  }
+  let constraintIndex = 0;
+  for (const [id, expected] of authority.constraints) {
+    const entry = runtime.constraintEntries[constraintIndex++];
+    if (
+      entry !== expected.entry ||
+      entry?.descriptor?.id !== id ||
+      entry?.descriptor !== expected.descriptor ||
+      (entry?.constraint || null) !== expected.constraint ||
+      (entry?.constraint?.constructor || null) !== expected.constructor ||
+      (entry?.constraint?.bodyA || null) !== expected.bodyA ||
+      (entry?.constraint?.bodyB || null) !== expected.bodyB ||
+      (entry?.constraint?.collideConnected ?? null) !==
+        expected.collideConnected ||
+      (entry?.constraint?.distance ?? null) !== expected.distance ||
+      !sameConstraintVectorsAuthority(entry, expected.vectors) ||
+      (entry.active !== false) !== expected.active
+    )
+      engineAuthorityMismatch(
+        `Live Cannon constraint authority changed for ${id}`,
+      );
+    const occurrences = expected.constraint
+      ? identityOccurrenceCount(runtime.world.constraints, expected.constraint)
+      : 0;
+    if (occurrences !== (expected.active && expected.constraint ? 1 : 0))
+      engineAuthorityMismatch(
+        `Live Cannon constraint activity changed for ${id}`,
+      );
+    const equations = entry.constraint?.equations || null;
+    if (
+      expected.equations !== null &&
+      (equations?.length !== expected.equations.length ||
+        equations.some(
+          (equation, index) =>
+            equation !== expected.equations[index].equation ||
+            equation.constructor !== expected.equations[index].constructor ||
+            equation.bi !== expected.equations[index].bodyA ||
+            equation.bj !== expected.equations[index].bodyB ||
+            equation.enabled !== expected.equations[index].enabled ||
+            equation.a !== expected.equations[index].spookA ||
+            equation.b !== expected.equations[index].spookB ||
+            equation.eps !== expected.equations[index].epsilon ||
+            (typeof equation.restitution === "number"
+              ? equation.restitution
+              : null) !== expected.equations[index].restitution ||
+            (typeof equation.targetVelocity === "number"
+              ? equation.targetVelocity
+              : null) !== expected.equations[index].targetVelocity ||
+            (expected.equations[index].minForce !== null &&
+              (equation.minForce !== expected.equations[index].minForce ||
+                equation.maxForce !== expected.equations[index].maxForce)),
+        ))
+    )
+      engineAuthorityMismatch(
+        `Live Cannon equation authority changed for ${id}`,
+      );
+  }
+  let exclusionIndex = 0;
+  for (const [id, expected] of authority.exclusions) {
+    const entry = runtime.collisionExclusionConstraints[exclusionIndex++];
+    if (
+      entry !== expected.entry ||
+      entry?.descriptor?.id !== id ||
+      entry?.descriptor !== expected.descriptor ||
+      entry?.exclusion !== expected.exclusion ||
+      entry?.exclusion?.bodyA !== expected.bodyA ||
+      entry?.exclusion?.bodyB !== expected.bodyB ||
+      (entry?.active !== false) !== expected.active
+    )
+      engineAuthorityMismatch(
+        `Live Cannon collision exclusion authority changed for ${id}`,
+      );
+  }
+}
+const CHECKPOINT_CONSTRAINT_SCALAR_FIELDS = Object.freeze([
+  "active",
+  "angle",
+  "rawAngle",
+  "velocity",
+  "reactionTorque",
+  "force",
+  "coordinateM",
+  "rateMPerS",
+  "transverseM",
+  "reactionForceN",
+  "appliedForceN",
+  "elasticPotentialJ",
+  "dampingWorkJ",
+  "dampingPowerW",
+  "frictionWorkJ",
+  "actuatorMechanicalWorkJ",
+  "actuatorElectricalEnergyJ",
+  "actuatorDissipatedEnergyJ",
+  "temperatureK",
+  "powered",
+  "saturated",
+  "thermalDerate",
+  "thermalShutdown",
+  "clutchEngaged",
+  "clutchCoordinateM",
+  "phaseA",
+  "phaseB",
+]);
+const ACTUATOR_AMBIENT_TEMPERATURE_K = 293.15;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+function coolRotaryActuator(entry, thermal, dt) {
+  const coolingW =
+    thermal.ambientConductanceWPerK *
+    (entry.temperatureK - ACTUATOR_AMBIENT_TEMPERATURE_K);
+  entry.temperatureK = Math.max(
+    Number.EPSILON,
+    entry.temperatureK - (coolingW * dt) / thermal.thermalMassJPerK,
+  );
+}
+
+function rotaryThermalAvailability(entry, thermal) {
+  const availability = clamp(
+    (thermal.shutdownTemperatureK - entry.temperatureK) /
+      (thermal.shutdownTemperatureK - thermal.derateTemperatureK),
+    0,
+    1,
+  );
+  entry.thermalDerate = availability;
+  entry.thermalShutdown = availability <= 0;
+  if (entry.thermalShutdown) entry.powered = false;
+  return availability;
+}
+
+function addRotaryActuatorHeat(entry, thermal, heatJ) {
+  entry.temperatureK += Math.max(0, heatJ) / thermal.thermalMassJPerK;
+}
 const plainVector = (value) => ({ x: value.x, y: value.y, z: value.z });
 const plainQuaternion = (value) => ({
   x: value.x,
@@ -60,6 +628,140 @@ const plainQuaternion = (value) => ({
   z: value.z,
   w: value.w,
 });
+const checkpointQuaternion = (value) => {
+  const result = canonicalCannonCheckpointQuaternion(value);
+  if (!result)
+    throw new DomainValidationError(
+      "INVALID_MULTIBODY_LIVE_QUATERNION",
+      "Live multibody orientation cannot be projected to checkpoint authority",
+    );
+  return result;
+};
+const cannonCheckpointQuaternion = (value) => {
+  const projection = checkpointQuaternion(value);
+  return new CANNON.Quaternion(
+    projection.x,
+    projection.y,
+    projection.z,
+    projection.w,
+  );
+};
+const canonicalizeLiveQuaternion = (value) => {
+  const projection = checkpointQuaternion(value);
+  value.set(projection.x, projection.y, projection.z, projection.w);
+  return value;
+};
+
+function connectionTelemetryProjection(values, typedStrings) {
+  const entries = [...values]
+    .map(([connectionId, value]) => [
+      identityToken(connectionId, { typedStrings }),
+      value,
+    ])
+    .sort(([left], [right]) => (left === right ? 0 : left < right ? -1 : 1));
+  if (new Set(entries.map(([key]) => key)).size !== entries.length)
+    throw new DomainValidationError(
+      "CONNECTION_TELEMETRY_IDENTITY_COLLISION",
+      "Connection telemetry identities must remain injective",
+    );
+  return Object.fromEntries(entries);
+}
+
+/**
+ * @template {string|number} K
+ * @template V
+ * @param {Iterable<[K,V]>} values
+ * @returns {Array<[K,V]>}
+ */
+function sortedIdentityEntries(values) {
+  return [...values].sort(([left], [right]) =>
+    compareCanonicalIds(left, right),
+  );
+}
+
+function fluidStateRecordsByPart(state) {
+  return new Map(
+    (state?.byPart || []).map((record) => [record.partId, record]),
+  );
+}
+
+function runtimeMassContributorKindsByPart(compiled) {
+  return new Map(
+    compiled.rigidClusters.flatMap((cluster) =>
+      cluster.members.map((member) => [
+        member.partId,
+        member.runtimeMassContributorKinds,
+      ]),
+    ),
+  );
+}
+
+function multibodyCheckpointValidationOptions(
+  runtime,
+  baseline,
+  expectedMassPropertiesByPart = null,
+) {
+  const compiledBodies = new Map(
+      runtime.compiled.bodies.map((descriptor) => [
+        descriptor.partId,
+        descriptor,
+      ]),
+    ),
+    dynamicMassContributorKindsByPart = runtimeMassContributorKindsByPart(
+      runtime.compiled,
+    );
+  return {
+    baseline,
+    compiledPartIds: new Set(runtime.compiled.parts.map((part) => part.id)),
+    compiledBodyPartIds: new Set(
+      runtime.compiled.bodies.map((descriptor) => descriptor.partId),
+    ),
+    compiledConnectionIds: new Set(
+      runtime.compiled.constraints.flatMap(
+        (constraint) => constraint.sourceConnectionIds || [],
+      ),
+    ),
+    constraintValueFieldsById: constraintValueFieldsByRuntime.get(runtime),
+    collisionExclusionActiveFor: (id, activeByConstraintId) => {
+      const exclusion = runtime.collisionExclusionConstraints.find(
+        (entry) => entry.descriptor.id === id,
+      );
+      if (!exclusion) return null;
+      return collisionExclusionRequired(
+        runtime.constraintEntries.map((entry) => ({
+          ...entry,
+          active: activeByConstraintId.get(entry.descriptor.id),
+        })),
+        exclusion.descriptor,
+      );
+    },
+    bodyAuthorityFor: (record) => {
+      const descriptor = compiledBodies.get(record.partId),
+        frame = physicsFrame({
+          ...descriptor,
+          massProperties: record.massProperties,
+        }),
+        shapeFrames = descriptor.geometry.collisionPrimitives.map((primitive) =>
+          shapeFrame(primitive, frame),
+        );
+      return {
+        compiledMassProperties: descriptor.massProperties,
+        expectedMassProperties:
+          expectedMassPropertiesByPart?.get(record.partId) ?? null,
+        dynamicMassContributorKinds:
+          dynamicMassContributorKindsByPart.get(record.partId) || [],
+        massFrame: {
+          principalToPart: checkpointQuaternion(frame.principalToPart),
+          comPart: plainVector(frame.comPart),
+        },
+        shapeOffsets: shapeFrames.map(({ offset }) => plainVector(offset)),
+        shapeOrientations: shapeFrames.map(({ orientation }) =>
+          checkpointQuaternion(orientation),
+        ),
+      };
+    },
+  };
+}
 
 const frameValuesEqual = (left, right, tolerance = 1e-12) =>
   Array.isArray(left) &&
@@ -139,7 +841,13 @@ function selectEvidenceRows(rows, { triggered, nearConnectionIds, policy }) {
       totalRowCount: unique.length,
     };
   }
-  const nearConnections = new Set((nearConnectionIds || []).map(String));
+  if (
+    (nearConnectionIds || []).some((identity) => typeof identity !== "string")
+  )
+    throw new TypeError(
+      "near-failure connection identities must use compiled string tokens",
+    );
+  const nearConnections = new Set(nearConnectionIds || []);
   const retainedCandidates = new WeakSet(),
     retainedFallbackKeys = new Set(),
     byConnection = new Map(),
@@ -412,12 +1120,16 @@ function quaternionFromPrincipalAxes(axes) {
 }
 
 function physicsFrame(descriptor) {
-  const partToWorld = cannonQuaternion(descriptor.orientation),
-    principalToPart = quaternionFromPrincipalAxes(
-      descriptor.massProperties.principalAxesPart,
+  const partToWorld = cannonCheckpointQuaternion(
+      cannonQuaternion(descriptor.orientation),
+    ),
+    principalToPart = cannonCheckpointQuaternion(
+      quaternionFromPrincipalAxes(descriptor.massProperties.principalAxesPart),
     ),
     partToPrincipal = principalToPart.conjugate(new CANNON.Quaternion()),
-    bodyToWorld = partToWorld.mult(principalToPart, new CANNON.Quaternion()),
+    bodyToWorld = cannonCheckpointQuaternion(
+      partToWorld.mult(principalToPart, new CANNON.Quaternion()),
+    ),
     comPart = cannonVector(descriptor.massProperties.comPositionPartM),
     position = partToWorld
       .vmult(comPart)
@@ -652,9 +1364,8 @@ function shapeFrame(descriptor, frame) {
       frame.comPart,
     );
   return {
-    orientation: frame.partToPrincipal.mult(
-      orientationPart,
-      new CANNON.Quaternion(),
+    orientation: cannonCheckpointQuaternion(
+      frame.partToPrincipal.mult(orientationPart, new CANNON.Quaternion()),
     ),
     offset: frame.partToPrincipal.vmult(offsetPart),
   };
@@ -728,6 +1439,7 @@ function partPoseForFrame(position, quaternion, massFrame) {
 
 function writePrincipalPose(partPose, frame, position, quaternion) {
   partPose.quaternion.mult(frame.principalToPart, quaternion);
+  canonicalizeLiveQuaternion(quaternion);
   const comWorld = partPose.quaternion.vmult(frame.comPart);
   partPose.position.vadd(comWorld, position);
 }
@@ -740,6 +1452,12 @@ function captureFixedConstraintFrame(entry) {
     vector = (body, value) => body.vectorToWorldFrame(value, new CANNON.Vec3());
   return {
     entry,
+    local: Object.fromEntries(
+      ["pivotA", "pivotB", "xA", "yA", "zA", "xB", "yB", "zB"].map((field) => [
+        field,
+        constraint[field].clone(),
+      ]),
+    ),
     points: {
       pivotA: point(bodyA, constraint.pivotA),
       pivotB: point(bodyB, constraint.pivotB),
@@ -753,6 +1471,200 @@ function captureFixedConstraintFrame(entry) {
       zB: vector(bodyB, constraint.zB),
     },
   };
+}
+
+function restoreFixedConstraintLocalFrame(snapshot) {
+  const constraint = snapshot.entry.constraint;
+  for (const [field, value] of Object.entries(snapshot.local))
+    constraint[field].copy(value);
+}
+
+function captureMassCommitBodyState(body) {
+  return {
+    body,
+    position: body.position.clone(),
+    previousPosition: body.previousPosition.clone(),
+    interpolatedPosition: body.interpolatedPosition.clone(),
+    quaternion: body.quaternion.clone(),
+    previousQuaternion: body.previousQuaternion.clone(),
+    interpolatedQuaternion: body.interpolatedQuaternion.clone(),
+    velocity: body.velocity.clone(),
+    torque: body.torque.clone(),
+    mass: body.mass,
+    invMass: body.invMass,
+    inertia: body.inertia.clone(),
+    invInertia: body.invInertia.clone(),
+    invInertiaWorld: [...body.invInertiaWorld.elements],
+    invMassSolve: body.invMassSolve,
+    invInertiaSolve: body.invInertiaSolve.clone(),
+    invInertiaWorldSolve: [...body.invInertiaWorldSolve.elements],
+    massFrame: body.userData.massFrame,
+    massProperties: body.userData.massProperties,
+    shapeOffsets: body.shapeOffsets.map((value) => value.clone()),
+    shapeOrientations: body.shapeOrientations.map((value) => value.clone()),
+    shapeBoundingSphereRadii: body.shapes.map(
+      (shape) => shape.boundingSphereRadius,
+    ),
+    boundingRadius: body.boundingRadius,
+    aabbLowerBound: body.aabb.lowerBound.clone(),
+    aabbUpperBound: body.aabb.upperBound.clone(),
+    aabbNeedsUpdate: body.aabbNeedsUpdate,
+  };
+}
+
+function restoreMassCommitBodyState(snapshot) {
+  const body = snapshot.body;
+  for (const field of [
+    "position",
+    "previousPosition",
+    "interpolatedPosition",
+    "quaternion",
+    "previousQuaternion",
+    "interpolatedQuaternion",
+    "velocity",
+    "torque",
+    "inertia",
+    "invInertia",
+    "invInertiaSolve",
+  ])
+    body[field].copy(snapshot[field]);
+  body.mass = snapshot.mass;
+  body.invMass = snapshot.invMass;
+  body.invMassSolve = snapshot.invMassSolve;
+  body.invInertiaWorld.elements.splice(
+    0,
+    body.invInertiaWorld.elements.length,
+    ...snapshot.invInertiaWorld,
+  );
+  body.invInertiaWorldSolve.elements.splice(
+    0,
+    body.invInertiaWorldSolve.elements.length,
+    ...snapshot.invInertiaWorldSolve,
+  );
+  body.userData.massFrame = snapshot.massFrame;
+  body.userData.massProperties = snapshot.massProperties;
+  snapshot.shapeOffsets.forEach((value, index) =>
+    body.shapeOffsets[index].copy(value),
+  );
+  snapshot.shapeOrientations.forEach((value, index) =>
+    body.shapeOrientations[index].copy(value),
+  );
+  snapshot.shapeBoundingSphereRadii.forEach((value, index) => {
+    body.shapes[index].boundingSphereRadius = value;
+  });
+  body.boundingRadius = snapshot.boundingRadius;
+  body.aabb.lowerBound.copy(snapshot.aabbLowerBound);
+  body.aabb.upperBound.copy(snapshot.aabbUpperBound);
+  body.aabbNeedsUpdate = snapshot.aabbNeedsUpdate;
+}
+
+/** Package-internal owner port; intentionally absent from Core exports. */
+export function commitOwnedMultibodyMassProperties(runtime, records) {
+  const commit = massPropertyCommittersByRuntime.get(runtime);
+  if (!commit)
+    throw new DomainValidationError(
+      "MASS_PROPERTY_OWNER_REQUIRED",
+      "Mass-property mutation requires the registered runtime owner port",
+    );
+  return commit(records);
+}
+
+function recordMultibodyMotorSettlement(
+  runtime,
+  partId,
+  deliveredW,
+  settlement = null,
+) {
+  runtime.motorElectricalWByPart.set(
+    partId,
+    (runtime.motorElectricalWByPart.get(partId) || 0) +
+      Math.max(0, Number(deliveredW) || 0),
+  );
+  const entry = runtime.constraintEntries.find(
+    (candidate) =>
+      candidate.descriptor.controlled &&
+      candidate.descriptor.sourcePartId === partId,
+  );
+  if (entry && settlement) {
+    entry.actuatorMechanicalWorkJ +=
+      settlement.positiveMechanicalWorkJ - settlement.absorbedMechanicalWorkJ;
+    entry.actuatorElectricalEnergyJ += Math.max(0, deliveredW) * settlement.dt;
+    entry.actuatorDissipatedEnergyJ += settlement.rejectedHeatJ;
+    entry.saturated = entry.saturated || settlement.saturated;
+    addRotaryActuatorHeat(
+      entry,
+      entry.descriptor.mechanism.actuation.thermalLimits,
+      settlement.rejectedHeatJ,
+    );
+    rotaryThermalAvailability(
+      entry,
+      entry.descriptor.mechanism.actuation.thermalLimits,
+    );
+  }
+  return runtime.lastTelemetry;
+}
+
+/** Package-internal solved motor-energy owner port; absent from Core exports. */
+export function settleOwnedMultibodyMotorEnergy(
+  runtime,
+  partId,
+  deliveredW,
+  settlement,
+) {
+  return recordMultibodyMotorSettlement(
+    runtime,
+    partId,
+    deliveredW,
+    settlement,
+  );
+}
+
+/** Package-internal checkpoint capture boundary; absent from Core exports. */
+export function exportValidatedMultibodyState(runtime) {
+  if (!runtime?.compiled)
+    throw new DomainValidationError(
+      "MULTIBODY_CHECKPOINT_NOT_RUNNING",
+      "Cannot validate multibody checkpoint state before runtime start",
+    );
+  const state = runtime.exportState();
+  return validateMultibodyCheckpointState(
+    state,
+    multibodyCheckpointValidationOptions(runtime, state),
+  );
+}
+
+/** Package-internal restore validator; intentionally absent from Core exports. */
+export function validateMultibodyStateForCheckpointRestore(
+  runtime,
+  state,
+  expectedMassPropertiesByPart = null,
+) {
+  if (!runtime?.compiled)
+    throw new DomainValidationError(
+      "INVALID_MULTIBODY_CHECKPOINT",
+      "Multibody checkpoint does not match the running runtime",
+    );
+  if (
+    expectedMassPropertiesByPart &&
+    (!(expectedMassPropertiesByPart instanceof Map) ||
+      expectedMassPropertiesByPart.size !== runtime.compiled.bodies.length ||
+      runtime.compiled.bodies.some(
+        (descriptor) => !expectedMassPropertiesByPart.has(descriptor.partId),
+      ))
+  )
+    throw new DomainValidationError(
+      "MULTIBODY_CHECKPOINT_MASS_AUTHORITY_COVERAGE_MISMATCH",
+      "Checkpoint mass authority must exactly cover compiled body identities",
+    );
+  const baseline = exportValidatedMultibodyState(runtime);
+  return validateMultibodyCheckpointState(state, {
+    ...multibodyCheckpointValidationOptions(
+      runtime,
+      baseline,
+      expectedMassPropertiesByPart,
+    ),
+    baseline,
+  });
 }
 
 function restoreFixedConstraintFrame(snapshot) {
@@ -854,16 +1766,69 @@ function collisionExclusionRequired(constraintEntries, descriptor) {
   });
 }
 
+function mergedManagedConstraintOrder(
+  currentConstraints,
+  managedConstraints,
+  activeManagedConstraints,
+  predecessorConstraints,
+) {
+  const result = [];
+  let activeIndex = 0,
+    insertionAfterLastManaged = 0,
+    foundManaged = false;
+  for (const constraint of currentConstraints) {
+    if (!managedConstraints.has(constraint)) {
+      result.push(constraint);
+      continue;
+    }
+    foundManaged = true;
+    if (activeIndex < activeManagedConstraints.length)
+      result.push(activeManagedConstraints[activeIndex++]);
+    insertionAfterLastManaged = result.length;
+  }
+  if (activeIndex < activeManagedConstraints.length) {
+    let insertionIndex = insertionAfterLastManaged;
+    if (!foundManaged) {
+      const predecessors = new Set(predecessorConstraints);
+      insertionIndex = 0;
+      for (let index = 0; index < result.length; index++)
+        if (predecessors.has(result[index])) insertionIndex = index + 1;
+    }
+    result.splice(
+      insertionIndex,
+      0,
+      ...activeManagedConstraints.slice(activeIndex),
+    );
+  }
+  return result;
+}
+
 /**
  * Cannon adapter for an engine-neutral compiled assembly. It owns one body
  * registry and one set of constraints for any construction topology.
  */
 export class MultibodyRuntime {
+  /**
+   * @param {{
+   *   world:any,
+   *   worldAdapter?:CannonWorldAdapter,
+   *   material:any,
+   *   catalog?:string,
+   *   fixedDt?:number,
+   *   surfaceHeightAt?:any,
+   *   terrainHeightAt?:any,
+   *   pondAt?:any,
+   *   waterDensity?:number,
+   *   groundBody?:any,
+   *   fieldBody?:any,
+   *   materialForKey?:(materialKey:string)=>any
+   * }} input
+   */
   constructor({
     world,
     worldAdapter = new CannonWorldAdapter(world),
     material,
-    catalog = {},
+    catalog = "{}",
     fixedDt = 1 / 120,
     surfaceHeightAt = () => 0,
     terrainHeightAt = surfaceHeightAt,
@@ -871,12 +1836,19 @@ export class MultibodyRuntime {
     waterDensity = 1000,
     groundBody = null,
     fieldBody = null,
-    materialForPart = null,
+    materialForKey = null,
   }) {
     this.world = world;
     this.worldAdapter = worldAdapter;
     this.material = material;
-    this.catalog = /** @type {any} */ (catalog);
+    this.catalog = /** @type {any} */ (
+      requireInertPlainData(catalog, {
+        code: "INVALID_COMPONENT_CATALOG_PLAIN_DATA",
+        message:
+          "Component catalog input must be serialized JSON or an exported immutable data root",
+        path: ["catalog"],
+      })
+    );
     this.fixedDt = fixedDt;
     this.surfaceHeightAt = surfaceHeightAt;
     this.terrainHeightAt = terrainHeightAt;
@@ -884,13 +1856,16 @@ export class MultibodyRuntime {
     this.waterDensity = waterDensity;
     this.groundBody = groundBody;
     this.fieldBody = fieldBody;
-    this.materialForPart = materialForPart;
+    this.materialForKey = materialForKey;
     this.compiled = null;
+    this.connectionIdsUseTypedStrings = false;
     this.geometryByPart = new Map();
     fluidDescriptorsByRuntime.set(this, []);
     telemetryBodyDescriptorsByRuntime.set(this, new Map());
     this.bodyByPart = new Map();
     this.constraintEntries = [];
+    constraintOrderPredecessorsByRuntime.set(this, []);
+    constraintValueFieldsByRuntime.set(this, new Map());
     this.collisionExclusionConstraints = [];
     this.phaseByPart = new Map();
     this.loadByConnection = new Map();
@@ -901,171 +1876,311 @@ export class MultibodyRuntime {
     this.activeLuminairePartIds = [];
     this.fluidState = null;
     this.topologyRevision = 0;
+    massPropertyCommittersByRuntime.set(this, (records) =>
+      this.#commitMassProperties(records),
+    );
   }
 
-  start(snapshot) {
-    this.dispose();
-    this.compiled = compileAssembly(snapshot, this.catalog);
-    for (const part of this.compiled.parts) {
-      const bodyGeometry = this.compiled.bodies.find(
-        (body) => body.partId === part.id,
-      )?.geometry;
-      this.geometryByPart.set(
-        part.id,
-        bodyGeometry || geometryDescriptorForPart(part, this.catalog),
+  /** @param {string} snapshotInput */
+  start(snapshotInput) {
+    if (
+      this.compiled ||
+      this.bodyByPart.size ||
+      this.constraintEntries.length ||
+      this.collisionExclusionConstraints.length
+    )
+      throw new DomainValidationError(
+        "MULTIBODY_RUNTIME_ALREADY_STARTED",
+        "A running multibody runtime must be disposed before it can start another assembly",
       );
-    }
-    for (const descriptor of this.compiled.bodies) {
-      const part = this.part(descriptor.partId),
-        frame = physicsFrame(descriptor),
-        bodyMaterial =
-          this.materialForPart?.(part, descriptor) || this.material;
-      const body = new CANNON.Body({
-        mass: descriptor.mass,
-        material: bodyMaterial,
-        position: frame.position,
-        quaternion: frame.bodyToWorld,
-      });
-      for (const [
-        primitiveIndex,
-        primitive,
-      ] of descriptor.geometry.collisionPrimitives.entries()) {
-        const { shape, offset, orientation } = shapeAndOrientation(
+    let engineInstallationStarted = false;
+    try {
+      const detachedSnapshot = /** @type {any} */ (
+        requireInertPlainData(snapshotInput, {
+          code: "INVALID_ASSEMBLY_PLAIN_DATA",
+          message:
+            "Assembly input must be serialized JSON or an exported immutable data root",
+          path: ["assembly"],
+        })
+      );
+      // Every constraint already present belongs to an earlier world owner.
+      // Keep those exact object identities as the stable insertion boundary for
+      // later reactivation after a checkpoint in which this owner's whole block
+      // was inactive. Owners started after this runtime remain after the block.
+      constraintOrderPredecessorsByRuntime.set(this, [
+        ...this.world.constraints,
+      ]);
+      this.compiled = compileAssemblyFromIssuedRoots(
+        detachedSnapshot,
+        this.catalog,
+      );
+      let engineMassByPart;
+      try {
+        engineMassByPart = new Map(
+          this.compiled.bodies.map((descriptor) => {
+            const projection = engineMassPropertiesProjection(
+              descriptor.massProperties,
+              descriptor.partId,
+            );
+            if (descriptor.mass !== projection.massKg)
+              throw new RangeError(
+                `Part ${String(descriptor.partId)} compiled scalar mass contradicts its mass properties`,
+              );
+            return [descriptor.partId, projection];
+          }),
+        );
+      } catch (cause) {
+        throw new DomainValidationError(
+          "INVALID_COMPILED_ENGINE_MASS_PROPERTIES",
+          "Compiled assembly cannot produce finite Cannon mass authority",
+          { cause },
+        );
+      }
+      this.connectionIdsUseTypedStrings = identitySetUsesTypedStrings(
+        (detachedSnapshot.connections || []).map(
+          (connection, index) => connection.id ?? `connection-${index}`,
+        ),
+      );
+      for (const part of this.compiled.parts) {
+        const bodyGeometry = this.compiled.bodies.find(
+          (body) => body.partId === part.id,
+        )?.geometry;
+        this.geometryByPart.set(
+          part.id,
+          bodyGeometry || geometryDescriptorForPart(part, this.catalog),
+        );
+      }
+      for (const descriptor of this.compiled.bodies) {
+        engineInstallationStarted = true;
+        const engineMass = engineMassByPart.get(descriptor.partId),
+          frame = physicsFrame(descriptor);
+        const body = new CANNON.Body({
+          mass: engineMass.massKg,
+          material: this.material,
+          position: frame.position,
+          quaternion: frame.bodyToWorld,
+        });
+        for (const [
+          primitiveIndex,
           primitive,
-          frame,
+        ] of descriptor.geometry.collisionPrimitives.entries()) {
+          const { shape, offset, orientation } = shapeAndOrientation(
+            primitive,
+            frame,
+          );
+          if (this.materialForKey)
+            shape.material = this.materialForKey(primitive.materialKey);
+          const evidenceShape = /** @type {any} */ (shape);
+          evidenceShape.userData = {
+            ...(evidenceShape.userData || {}),
+            shapeId: `part:${descriptor.id.startsWith("body:") ? descriptor.id.slice("body:".length) : descriptor.id}:shape:${primitiveIndex}`,
+          };
+          body.addShape(shape, offset, orientation || undefined);
+        }
+        const [ix, iy, iz] = engineMass.inertia;
+        body.invMass = engineMass.invMass;
+        body.inertia.set(ix, iy, iz);
+        body.invInertia.set(
+          engineMass.invInertia[0],
+          engineMass.invInertia[1],
+          engineMass.invInertia[2],
         );
-        const evidenceShape = /** @type {any} */ (shape);
-        evidenceShape.userData = {
-          ...(evidenceShape.userData || {}),
-          shapeId: `part:${String(descriptor.partId)}:shape:${primitiveIndex}`,
-        };
-        body.addShape(shape, offset, orientation || undefined);
-      }
-      const [ix, iy, iz] = descriptor.massProperties.principalMomentsKgM2;
-      body.inertia.set(ix, iy, iz);
-      body.invInertia.set(1 / ix, 1 / iy, 1 / iz);
-      body.updateInertiaWorld(true);
-      body.linearDamping = descriptor.linearDamping;
-      body.angularDamping = descriptor.angularDamping;
-      body.allowSleep = false;
-      body.collisionFilterGroup = 8;
-      // Compiled bodies collide with the environment and with other compiled
-      // bodies. Authored constraint topology supplies only the pair-specific
-      // exclusions required for rigid clusters and adjacent coordinates.
-      body.collisionFilterMask = 1 | 8;
-      const runtimeBody = /** @type {any} */ (body);
-      runtimeBody.userData = {
-        ...(runtimeBody.userData || {}),
-        partId: descriptor.partId,
-        massFrame: {
-          principalToPart: frame.principalToPart,
-          comPart: frame.comPart,
-        },
-        massProperties: structuredClone(descriptor.massProperties),
-      };
-      this.world.addBody(body);
-      this.bodyByPart.set(descriptor.partId, body);
-      telemetryBodyDescriptorsByRuntime.get(this).set(descriptor.partId, {
-        descriptor,
-        primaryAxisPart: cannonVector(
-          primaryGeometryAxisPart(descriptor.geometry),
-        ),
-      });
-      this.phaseByPart.set(descriptor.partId, 0);
-      const collisionBounds = descriptor.geometry.collisionBoundsPartM;
-      fluidDescriptorsByRuntime.get(this).push({
-        partId: descriptor.partId,
-        buoyancyCenterPart: cannonVector(boundsCenter(collisionBounds)),
-        halfHeightM: Math.max(
-          0.03,
-          (boundsDimensions(collisionBounds)[1] || 0.2) / 2,
-        ),
-        volumeM3: descriptor.geometry.displacementM3,
-      });
-    }
-    for (const descriptor of this.compiled.constraints)
-      this.createConstraint(descriptor);
-    const supportBody =
-      this.groundBody ||
-      this.fieldBody ||
-      this.world.bodies.find((body) => body.type === CANNON.Body.STATIC);
-    if (supportBody)
-      for (const descriptor of this.compiled.contactRegions || []) {
-        if (descriptor.kind !== "rolling-contact-v1") continue;
-        const body = this.bodyByPart.get(descriptor.sourcePartId);
-        if (!body) continue;
-        const constraint = new TireContactConstraint(
-          this.world,
-          body,
-          supportBody,
-          descriptor,
-          this.fixedDt,
-        );
-        registerRollingSupport(this.worldAdapter.transaction, {
-          wheelBody: body,
-          wheelShape: body.shapes[0],
-          descriptor,
-          constraint,
-        });
-        this.world.addConstraint(constraint);
-        this.constraintEntries.push({
-          descriptor: {
-            ...descriptor,
-            kind: "rolling-contact",
-            sourceConnectionIds: [],
+        body.updateInertiaWorld(true);
+        body.linearDamping = descriptor.linearDamping;
+        body.angularDamping = descriptor.angularDamping;
+        body.allowSleep = false;
+        body.collisionFilterGroup = 8;
+        // Compiled bodies collide with the environment and with other compiled
+        // bodies. Authored constraint topology supplies only the pair-specific
+        // exclusions required for rigid clusters and adjacent coordinates.
+        body.collisionFilterMask = 1 | 8;
+        const runtimeBody = /** @type {any} */ (body);
+        runtimeBody.userData = {
+          ...(runtimeBody.userData || {}),
+          partId: descriptor.partId,
+          compiledBodyId: descriptor.id,
+          massFrame: {
+            principalToPart: frame.principalToPart,
+            comPart: frame.comPart,
           },
-          kind: "rolling-contact-v1",
-          constraint,
+          massProperties: deepFreeze(
+            structuredClone(descriptor.massProperties),
+          ),
+        };
+        this.bodyByPart.set(descriptor.partId, body);
+        this.world.addBody(body);
+        telemetryBodyDescriptorsByRuntime.get(this).set(descriptor.partId, {
+          descriptor,
+          primaryAxisPart: cannonVector(
+            primaryGeometryAxisPart(descriptor.geometry),
+          ),
+        });
+        this.phaseByPart.set(descriptor.partId, 0);
+        const collisionBounds = descriptor.geometry.collisionBoundsPartM;
+        fluidDescriptorsByRuntime.get(this).push({
+          partId: descriptor.partId,
+          buoyancyCenterPart: cannonVector(boundsCenter(collisionBounds)),
+          halfHeightM: Math.max(
+            0.03,
+            (boundsDimensions(collisionBounds)[1] || 0.2) / 2,
+          ),
+          volumeM3: descriptor.geometry.displacementM3,
         });
       }
-    for (const entry of this.constraintEntries)
-      if (entry.constraint)
-        entry.constraint.simulacrumEvidence = Object.freeze({
-          constraintId: String(entry.descriptor.id),
-          sourceConnectionIds: Object.freeze(
-            [...new Set(entry.descriptor.sourceConnectionIds || [])]
-              .map(String)
-              .sort(),
-          ),
-          source:
-            entry.kind === "rolling-contact-v1" ? "tire-force" : "constraint",
-        });
-    for (const descriptor of this.compiled.collisionExclusions) {
-      const bodyA = this.bodyByPart.get(descriptor.a),
-        bodyB = this.bodyByPart.get(descriptor.b);
-      if (!bodyA || !bodyB) continue;
-      const exclusion = { bodyA, bodyB };
-      registerCannonCollisionExclusion(
-        this.worldAdapter.transaction,
-        exclusion,
+      for (const descriptor of this.compiled.constraints)
+        this.createConstraint(descriptor);
+      const supportBody =
+        this.groundBody ||
+        this.fieldBody ||
+        this.world.bodies.find((body) => body.type === CANNON.Body.STATIC);
+      if (supportBody)
+        for (const descriptor of this.compiled.contactRegions || []) {
+          if (descriptor.kind !== "rolling-contact-v1") continue;
+          const body = this.bodyByPart.get(descriptor.sourcePartId);
+          if (!body) continue;
+          const constraint = new TireContactConstraint(
+            this.world,
+            body,
+            supportBody,
+            descriptor,
+            this.fixedDt,
+          );
+          const entry = {
+            descriptor: {
+              ...descriptor,
+              kind: "rolling-contact",
+              sourceConnectionIds: [],
+            },
+            kind: "rolling-contact-v1",
+            constraint,
+          };
+          this.constraintEntries.push(entry);
+          registerRollingSupport(this.worldAdapter.transaction, {
+            wheelBody: body,
+            wheelShape: body.shapes[0],
+            descriptor,
+            constraint,
+          });
+          this.world.addConstraint(constraint);
+        }
+      constraintValueFieldsByRuntime.set(
+        this,
+        new Map(
+          this.constraintEntries.map((entry) => [
+            entry.descriptor.id,
+            Object.freeze(
+              CHECKPOINT_CONSTRAINT_SCALAR_FIELDS.filter(
+                (key) => key === "active" || Object.hasOwn(entry, key),
+              ),
+            ),
+          ]),
+        ),
       );
-      this.collisionExclusionConstraints.push({
-        descriptor,
-        exclusion,
-        active: true,
-      });
+      for (const entry of this.constraintEntries)
+        if (entry.constraint)
+          entry.constraint.simulacrumEvidence = Object.freeze({
+            constraintId: String(entry.descriptor.id),
+            sourceConnectionIds: Object.freeze(
+              [...new Set(entry.descriptor.sourceConnectionIds || [])]
+                .map((connectionId) =>
+                  identityToken(connectionId, {
+                    typedStrings: this.connectionIdsUseTypedStrings,
+                  }),
+                )
+                .sort(),
+            ),
+            source:
+              entry.kind === "rolling-contact-v1" ? "tire-force" : "constraint",
+          });
+      for (const descriptor of this.compiled.collisionExclusions) {
+        const bodyA = this.bodyByPart.get(descriptor.a),
+          bodyB = this.bodyByPart.get(descriptor.b);
+        if (!bodyA || !bodyB) continue;
+        const exclusion = { bodyA, bodyB };
+        this.collisionExclusionConstraints.push({
+          descriptor,
+          exclusion,
+          active: true,
+        });
+        registerCannonCollisionExclusion(
+          this.worldAdapter.transaction,
+          exclusion,
+        );
+      }
+      captureMultibodyEngineAuthority(this);
+      this.lastTelemetry = this.telemetry();
+      return this.lastTelemetry;
+    } catch (cause) {
+      try {
+        this.dispose();
+      } catch (rollbackError) {
+        throw new AggregateError(
+          [cause, rollbackError],
+          "Multibody startup failed and exact installation rollback failed",
+          { cause: rollbackError },
+        );
+      }
+      if (cause instanceof DomainValidationError || !engineInstallationStarted)
+        throw cause;
+      throw new DomainValidationError(
+        "MULTIBODY_START_ENGINE_INSTALL_FAILED",
+        "Multibody startup failed after validation; installed engine authority was removed",
+        { cause },
+      );
     }
-    this.lastTelemetry = this.telemetry();
-    return this.lastTelemetry;
   }
 
   /**
-   * Atomically replaces compiled mass frames while preserving every authored
-   * part pose, point velocity, collision primitive, and fixed-constraint frame.
+   * Legacy public surface retained for API compatibility. Physical mass is
+   * mutable only through the package-internal coordinated owner port.
+   * @returns {{partId:any,previousMassKg:any,massKg:any,massDeltaKg:number,comPositionPartM:any[],principalMomentsKgM2:any[],sourceKind:any}[]}
    */
   commitMassProperties(records) {
-    if (!this.compiled || !Array.isArray(records))
+    void records;
+    throw new DomainValidationError(
+      "MASS_PROPERTY_OWNER_REQUIRED",
+      "Direct mass-property mutation is unavailable; use the coordinated physical owner transaction",
+    );
+  }
+
+  #commitMassProperties(records) {
+    let detachedRecords;
+    try {
+      detachedRecords = clonePlainMassPropertyData(
+        records,
+        "mass-property transaction",
+      );
+    } catch (cause) {
+      throw new DomainValidationError(
+        "INVALID_MASS_PROPERTY_TRANSACTION",
+        "Mass-property transaction must be detached plain finite data",
+        { cause },
+      );
+    }
+    if (!this.compiled || !Array.isArray(detachedRecords))
       throw new DomainValidationError(
         "INVALID_MASS_PROPERTY_TRANSACTION",
         "Mass-property commit requires a running multibody runtime and records",
       );
-    const byPart = new Map();
-    for (const [index, record] of records.entries()) {
-      if (record?.partId == null || byPart.has(record.partId))
+    validateLiveMultibodyEngineAuthority(this);
+    const byPart = new Map(),
+      dynamicContributorKindsByPart = runtimeMassContributorKindsByPart(
+        this.compiled,
+      );
+    for (const [index, record] of detachedRecords.entries()) {
+      if (
+        !record ||
+        typeof record !== "object" ||
+        Array.isArray(record) ||
+        Object.keys(record).sort().join("\u0000") !==
+          ["massProperties", "partId"].join("\u0000") ||
+        record.partId == null ||
+        byPart.has(record.partId)
+      )
         throw new DomainValidationError(
           "INVALID_MASS_PROPERTY_TRANSACTION",
-          "Mass-property commit part IDs must be present and unique",
-          { path: ["records", index, "partId"] },
+          "Mass-property commit records must be field-exact with present unique part IDs",
+          { path: ["records", index] },
         );
       const body = this.bodyByPart.get(record.partId),
         descriptor = this.compiled.bodies.find(
@@ -1092,7 +2207,60 @@ export class MultibodyRuntime {
           `Part ${String(record.partId)} has invalid dynamic mass properties`,
           { path: ["records", index, "massProperties"] },
         );
-      byPart.set(record.partId, { body, descriptor, properties });
+      let detachedProperties, frame, primitiveFrames, invMass, invInertia;
+      try {
+        validateRuntimeMassPropertiesAuthority(properties, {
+          compiledProperties: descriptor.massProperties,
+          partId: record.partId,
+          dynamicMassContributorKinds:
+            dynamicContributorKindsByPart.get(record.partId) || [],
+        });
+        detachedProperties = deepFreeze(properties);
+        frame = physicsFrame({
+          ...descriptor,
+          massProperties: detachedProperties,
+        });
+        primitiveFrames = descriptor.geometry.collisionPrimitives.map(
+          (primitive) => shapeFrame(primitive, frame),
+        );
+        const engineMass = engineMassPropertiesProjection(
+          detachedProperties,
+          record.partId,
+        );
+        invMass = engineMass.invMass;
+        invInertia = engineMass.invInertia;
+        for (const value of [
+          frame.principalToPart,
+          frame.comPart,
+          ...primitiveFrames.flatMap((primitiveFrame) => [
+            primitiveFrame.offset,
+            primitiveFrame.orientation,
+          ]),
+        ])
+          if (
+            ![value.x, value.y, value.z, value.w]
+              .filter((entry) => entry !== undefined)
+              .every(Number.isFinite)
+          )
+            throw new RangeError(
+              `Part ${String(record.partId)} produces a non-finite engine frame`,
+            );
+      } catch (cause) {
+        throw new DomainValidationError(
+          "INVALID_MASS_PROPERTIES",
+          `Part ${String(record.partId)} has invalid or unauthorized dynamic mass properties`,
+          { path: ["records", index, "massProperties"], cause },
+        );
+      }
+      byPart.set(record.partId, {
+        body,
+        descriptor,
+        properties: detachedProperties,
+        frame,
+        primitiveFrames,
+        invMass,
+        invInertia,
+      });
     }
     const frameInvariantPartIds = new Set(
         [...byPart]
@@ -1123,91 +2291,147 @@ export class MultibodyRuntime {
     const constraintFrames = affectedEntries
         .filter((entry) => entry.descriptor.kind === "fixed")
         .map(captureFixedConstraintFrame),
+      plans = [...byPart].map(
+        ([
+          partId,
+          { body, properties, frame, primitiveFrames, invMass, invInertia },
+        ]) => {
+          const oldFrame = body.userData.massFrame,
+            currentPose = partPoseForFrame(
+              body.position,
+              body.quaternion,
+              oldFrame,
+            ),
+            previousPose = partPoseForFrame(
+              body.previousPosition,
+              body.previousQuaternion,
+              oldFrame,
+            ),
+            interpolatedPose = partPoseForFrame(
+              body.interpolatedPosition,
+              body.interpolatedQuaternion,
+              oldFrame,
+            ),
+            originOffset = currentPose.position.vsub(body.position),
+            originVelocity = body.angularVelocity
+              .cross(originOffset, new CANNON.Vec3())
+              .vadd(body.velocity),
+            previousMassKg = body.mass,
+            oldComPosition = body.position.clone();
+          return {
+            partId,
+            body,
+            properties,
+            frame,
+            primitiveFrames,
+            invMass,
+            invInertia,
+            currentPose,
+            previousPose,
+            interpolatedPose,
+            originVelocity,
+            previousMassKg,
+            oldComPosition,
+          };
+        },
+      ),
+      bodySnapshots = plans.map(({ body }) => captureMassCommitBodyState(body)),
       committed = [];
-    for (const [partId, { body, descriptor, properties }] of byPart) {
-      const oldFrame = body.userData.massFrame,
-        currentPose = partPoseForFrame(
-          body.position,
-          body.quaternion,
-          oldFrame,
-        ),
-        previousPose = partPoseForFrame(
+    // Every caller-controlled clone, provenance check, decomposition, frame
+    // derivation, and constraint-compatibility check completed above. The
+    // remaining phase is a deterministic assignment of the detached plans.
+    try {
+      for (const plan of plans) {
+        const {
+          partId,
+          body,
+          properties,
+          frame,
+          primitiveFrames,
+          invMass,
+          invInertia,
+          currentPose,
+          previousPose,
+          interpolatedPose,
+          originVelocity,
+          previousMassKg,
+          oldComPosition,
+        } = plan;
+        writePrincipalPose(currentPose, frame, body.position, body.quaternion);
+        writePrincipalPose(
+          previousPose,
+          frame,
           body.previousPosition,
           body.previousQuaternion,
-          oldFrame,
-        ),
-        interpolatedPose = partPoseForFrame(
+        );
+        writePrincipalPose(
+          interpolatedPose,
+          frame,
           body.interpolatedPosition,
           body.interpolatedQuaternion,
-          oldFrame,
-        ),
-        originOffset = currentPose.position.vsub(body.position),
-        originVelocity = body.angularVelocity
-          .cross(originOffset, new CANNON.Vec3())
-          .vadd(body.velocity),
-        frame = physicsFrame({ ...descriptor, massProperties: properties }),
-        previousMassKg = body.mass,
-        oldComPosition = body.position.clone();
-      writePrincipalPose(currentPose, frame, body.position, body.quaternion);
-      writePrincipalPose(
-        previousPose,
-        frame,
-        body.previousPosition,
-        body.previousQuaternion,
-      );
-      writePrincipalPose(
-        interpolatedPose,
-        frame,
-        body.interpolatedPosition,
-        body.interpolatedQuaternion,
-      );
-      const newComOffset = body.position.vsub(currentPose.position);
-      body.angularVelocity
-        .cross(newComOffset, body.velocity)
-        .vadd(originVelocity, body.velocity);
-      const torqueShift = oldComPosition
-        .vsub(body.position)
-        .cross(body.force, new CANNON.Vec3());
-      body.torque.vadd(torqueShift, body.torque);
-      body.mass = properties.massKg;
-      body.invMass = 1 / properties.massKg;
-      body.inertia.set(...properties.principalMomentsKgM2);
-      body.invInertia.set(
-        ...properties.principalMomentsKgM2.map((value) => 1 / value),
-      );
-      body.userData.massFrame = {
-        principalToPart: frame.principalToPart,
-        comPart: frame.comPart,
-      };
-      body.userData.massProperties = structuredClone(properties);
-      for (
-        let index = 0;
-        index < descriptor.geometry.collisionPrimitives.length;
-        index++
-      ) {
-        const primitiveFrame = shapeFrame(
-          descriptor.geometry.collisionPrimitives[index],
-          frame,
         );
-        body.shapeOffsets[index].copy(primitiveFrame.offset);
-        body.shapeOrientations[index].copy(primitiveFrame.orientation);
+        const newComOffset = body.position.vsub(currentPose.position);
+        body.angularVelocity
+          .cross(newComOffset, body.velocity)
+          .vadd(originVelocity, body.velocity);
+        const torqueShift = oldComPosition
+          .vsub(body.position)
+          .cross(body.force, new CANNON.Vec3());
+        body.torque.vadd(torqueShift, body.torque);
+        body.mass = properties.massKg;
+        body.invMass = invMass;
+        body.inertia.set(...properties.principalMomentsKgM2);
+        body.invInertia.set(...invInertia);
+        body.userData.massFrame = {
+          principalToPart: frame.principalToPart,
+          comPart: frame.comPart,
+        };
+        body.userData.massProperties = properties;
+        for (let index = 0; index < primitiveFrames.length; index++) {
+          const primitiveFrame = primitiveFrames[index];
+          body.shapeOffsets[index].copy(primitiveFrame.offset);
+          body.shapeOrientations[index].copy(primitiveFrame.orientation);
+        }
+        body.updateBoundingRadius();
+        body.aabbNeedsUpdate = true;
+        body.updateAABB();
+        body.updateInertiaWorld(true);
+        body.updateSolveMassProperties();
+        committed.push({
+          partId,
+          previousMassKg,
+          massKg: properties.massKg,
+          massDeltaKg: properties.massKg - previousMassKg,
+          comPositionPartM: [...properties.comPositionPartM],
+          principalMomentsKgM2: [...properties.principalMomentsKgM2],
+          sourceKind: properties.sourceKind,
+        });
       }
-      body.updateBoundingRadius();
-      body.aabbNeedsUpdate = true;
-      body.updateAABB();
-      body.updateInertiaWorld(true);
-      body.updateSolveMassProperties();
-      committed.push({
-        partId,
-        previousMassKg,
-        massKg: properties.massKg,
-        massDeltaKg: properties.massKg - previousMassKg,
-        comPositionPartM: [...properties.comPositionPartM],
-        principalMomentsKgM2: [...properties.principalMomentsKgM2],
-        sourceKind: properties.sourceKind,
-      });
+      for (const frame of constraintFrames) {
+        restoreFixedConstraintFrame(frame);
+        refreshConstraintFrameAuthority(this, frame.entry);
+      }
+      for (const { partId } of plans)
+        refreshBodyPhysicalAuthority(this, partId);
+    } catch (cause) {
+      try {
+        for (const snapshot of bodySnapshots)
+          restoreMassCommitBodyState(snapshot);
+        for (const frame of constraintFrames)
+          restoreFixedConstraintLocalFrame(frame);
+      } catch (rollbackError) {
+        throw new AggregateError(
+          [cause, rollbackError],
+          `Mass-property application failed and exact rollback failed: ${String(cause)}; rollback: ${String(rollbackError)}`,
+          { cause: rollbackError },
+        );
+      }
+      throw new DomainValidationError(
+        "MASS_PROPERTY_ENGINE_COMMIT_FAILED",
+        "Mass-property application failed after validation; live engine state was restored",
+        { cause },
+      );
     }
-    for (const frame of constraintFrames) restoreFixedConstraintFrame(frame);
     return committed;
   }
 
@@ -1235,8 +2459,8 @@ export class MultibodyRuntime {
       // finite-solver conditioning. Attachment frames are evidence/application
       // points; solved reactions are translated to them below.
       constraint.collideConnected = false;
-      this.world.addConstraint(constraint);
       this.constraintEntries.push({ descriptor, constraint });
+      this.world.addConstraint(constraint);
       return;
     }
     if (descriptor.kind === "revolute") {
@@ -1267,8 +2491,7 @@ export class MultibodyRuntime {
         ),
         collideConnected: false,
       });
-      this.world.addConstraint(constraint);
-      this.constraintEntries.push({
+      const entry = {
         descriptor,
         constraint,
         axisA,
@@ -1279,7 +2502,21 @@ export class MultibodyRuntime {
         rawAngle: 0,
         velocity: 0,
         reactionTorque: 0,
-      });
+        ...(descriptor.controlled
+          ? {
+              actuatorMechanicalWorkJ: 0,
+              actuatorElectricalEnergyJ: 0,
+              actuatorDissipatedEnergyJ: 0,
+              temperatureK: ACTUATOR_AMBIENT_TEMPERATURE_K,
+              powered: false,
+              saturated: false,
+              thermalDerate: 1,
+              thermalShutdown: false,
+            }
+          : {}),
+      };
+      this.constraintEntries.push(entry);
+      this.world.addConstraint(constraint);
       return;
     }
     if (
@@ -1311,8 +2548,7 @@ export class MultibodyRuntime {
             this.fixedDt,
           ),
         });
-      this.world.addConstraint(limitConstraint);
-      this.constraintEntries.push({
+      const entry = {
         descriptor,
         kind:
           descriptor.kind === "linear-actuator"
@@ -1336,9 +2572,13 @@ export class MultibodyRuntime {
         temperatureK: 293.15,
         powered: false,
         saturated: false,
+        thermalDerate: 1,
+        thermalShutdown: false,
         clutchEngaged: false,
         clutchCoordinateM: null,
-      });
+      };
+      this.constraintEntries.push(entry);
+      this.world.addConstraint(limitConstraint);
       return;
     }
     if (descriptor.kind === "linear-guide") {
@@ -1364,8 +2604,7 @@ export class MultibodyRuntime {
             this.fixedDt,
           ),
         });
-      this.world.addConstraint(constraint);
-      this.constraintEntries.push({
+      const entry = {
         descriptor,
         kind: "prismatic-coordinate-v1",
         constraint,
@@ -1385,7 +2624,9 @@ export class MultibodyRuntime {
         saturated: false,
         clutchEngaged: false,
         clutchCoordinateM: null,
-      });
+      };
+      this.constraintEntries.push(entry);
+      this.world.addConstraint(constraint);
       return;
     }
     if (descriptor.kind === "linkage") {
@@ -1399,8 +2640,8 @@ export class MultibodyRuntime {
         ),
       );
       constraint.collideConnected = false;
-      this.world.addConstraint(constraint);
       this.constraintEntries.push({ descriptor, constraint });
+      this.world.addConstraint(constraint);
       return;
     }
     if (descriptor.kind === "gear") {
@@ -1628,8 +2869,9 @@ export class MultibodyRuntime {
             ),
           )
         : 0,
+      fluidByPart = fluidStateRecordsByPart(this.fluidState),
       fluidParts = [...memberPartIds]
-        .map((partId) => this.fluidState?.byPart?.[String(partId)])
+        .map((partId) => fluidByPart.get(partId))
         .filter(Boolean),
       displacedVolumeM3 = fluidParts.reduce(
         (sum, state) => sum + state.volumeM3,
@@ -1774,7 +3016,7 @@ export class MultibodyRuntime {
       hydrodynamicDragN = 0,
       wetBodies = 0,
       waterDepth = 0;
-    const byPart = {};
+    const byPart = new Map();
     for (const descriptor of fluidDescriptorsByRuntime.get(this) || []) {
       const body = this.bodyByPart.get(descriptor.partId);
       if (!body) continue;
@@ -1786,14 +3028,14 @@ export class MultibodyRuntime {
         volume = descriptor.volumeM3,
         halfHeight = descriptor.halfHeightM;
       displacedVolumeM3 += volume;
-      byPart[String(descriptor.partId)] = {
+      byPart.set(descriptor.partId, {
         volumeM3: volume,
         submerged: 0,
         submergedVolumeM3: 0,
         buoyancyN: 0,
         dragN: 0,
         waterDepth: 0,
-      };
+      });
       if (!pond) continue;
       const submerged = clamp(
         (pond.waterY - (buoyancyCenter.y - halfHeight)) / (halfHeight * 2),
@@ -1826,14 +3068,14 @@ export class MultibodyRuntime {
         pond.waterY - this.terrainHeightAt(buoyancyCenter.x, buoyancyCenter.z),
       );
       waterDepth = Math.max(waterDepth, localWaterDepth);
-      byPart[String(descriptor.partId)] = {
+      byPart.set(descriptor.partId, {
         volumeM3: volume,
         submerged,
         submergedVolumeM3: volume * submerged,
         buoyancyN: lift,
         dragN: dragMagnitude,
         waterDepth: localWaterDepth,
-      };
+      });
     }
     this.fluidState = {
       active: true,
@@ -1848,7 +3090,10 @@ export class MultibodyRuntime {
       buoyancyN,
       hydrodynamicDragN,
       waterDepth,
-      byPart,
+      byPart: sortedIdentityEntries(byPart).map(([partId, record]) => ({
+        partId,
+        ...record,
+      })),
     };
     return { ...this.fluidState };
   }
@@ -2060,6 +3305,8 @@ export class MultibodyRuntime {
       entry.transverseM = state.transverseM;
       if (entry.constraint.holdEquation)
         entry.constraint.holdEquation.enabled = false;
+      if (entry.constraint.holdEquation)
+        refreshConstraintEquationAuthority(this, entry);
       let signedTensionN = 0,
         coordinateForceN = 0,
         frictionPowerW = 0,
@@ -2173,15 +3420,11 @@ export class MultibodyRuntime {
           electricalPowerW = deliveredElectricalW;
           powered = deliveryRatio > 0;
           signedTensionN = -coordinateForceN;
-          entry.actuatorMechanicalWorkJ +=
-            coordinateForceN * state.rateMPerS * dt;
+          const deliveredMechanicalPowerW = coordinateForceN * state.rateMPerS;
+          entry.actuatorMechanicalWorkJ += deliveredMechanicalPowerW * dt;
           entry.actuatorElectricalEnergyJ += deliveredElectricalW * dt;
           entry.actuatorDissipatedEnergyJ +=
-            Math.max(
-              0,
-              deliveredElectricalW -
-                Math.max(0, coordinateForceN * state.rateMPerS),
-            ) * dt;
+            Math.max(0, deliveredElectricalW - deliveredMechanicalPowerW) * dt;
           activeActuators += powered ? 1 : 0;
         } else {
           const unpowered = mechanism.unpoweredLaw;
@@ -2200,6 +3443,7 @@ export class MultibodyRuntime {
             entry.constraint.holdEquation.minForce = -capacityImpulseNs;
             entry.constraint.holdEquation.maxForce = capacityImpulseNs;
             entry.constraint.holdEquation.enabled = true;
+            refreshConstraintEquationAuthority(this, entry);
           }
           frictionPowerW = -signedTensionN * state.rateMPerS;
         }
@@ -2213,7 +3457,7 @@ export class MultibodyRuntime {
       if (thermal) {
         const heatInputW = Math.max(
             0,
-            electricalPowerW - Math.max(0, coordinateForceN * state.rateMPerS),
+            electricalPowerW - coordinateForceN * state.rateMPerS,
           ),
           coolingW =
             thermal.ambientConductanceWPerK * (entry.temperatureK - 293.15);
@@ -2232,6 +3476,13 @@ export class MultibodyRuntime {
 
   stepActuators(context, dt) {
     if (!this.compiled) return null;
+    // Static collision geometry has no runtime mutation port and is fully
+    // attested at installation, owner transactions, and checkpoint capture.
+    // The fixed-step guard still covers all mutable mass/frame, solver-row,
+    // policy, identity, ordering, membership, and activity authority.
+    validateLiveMultibodyEngineAuthority(this, {
+      validateStaticGeometry: false,
+    });
     this.loadByConnection.clear();
     this.torqueByConnection.clear();
     this.motorElectricalWByPart.clear();
@@ -2266,6 +3517,7 @@ export class MultibodyRuntime {
               : clamp(commandFor(motor, "throttle", 0), -1, 1);
           if (!brake && Math.abs(throttle) <= 1e-6) {
             constraint.disableMotor();
+            refreshConstraintEquationAuthority(this, entry);
             this.motorElectricalWByPart.set(motor.id, 0);
           } else {
             const targetSpeed =
@@ -2298,6 +3550,7 @@ export class MultibodyRuntime {
             const torqueImpulseNms = solverImpulseLimit(targetTorque, dt);
             constraint.motorEquation.maxForce = torqueImpulseNms;
             constraint.motorEquation.minForce = -torqueImpulseNms;
+            refreshConstraintEquationAuthority(this, entry);
             this.worldAdapter.transaction.registerMotorEnergyBudget({
               tick: context.clock.tick,
               equation: constraint.motorEquation,
@@ -2318,65 +3571,99 @@ export class MultibodyRuntime {
             });
             activeMotors++;
           }
-        } else constraint.disableMotor();
+        } else {
+          constraint.disableMotor();
+          refreshConstraintEquationAuthority(this, entry);
+        }
       } else if (descriptor.controlled && descriptor.sourcePartId) {
         const actuator = this.part(descriptor.sourcePartId),
-          allocation = context.powerNetwork?.allocationFor(actuator.id);
-        if (allocation?.operational) {
-          const controlledTarget = Number(entry.articulatedTarget),
-            hasControlledTarget =
-              entry.articulatedTarget != null &&
-              Number.isFinite(controlledTarget),
-            control = hasControlledTarget
-              ? 0
-              : clamp(commandFor(actuator, "joint_target", 0), -1, 1),
-            [low, high] = descriptor.limits || [-Math.PI, Math.PI],
-            center = ((actuator.config?.angle || 0) * Math.PI) / 180,
-            target = hasControlledTarget
-              ? clamp(controlledTarget, low, high)
-              : clamp(
-                  center + control * Math.min(high - center, center - low),
-                  low,
-                  high,
-                ),
+          allocation = context.powerNetwork?.allocationFor(actuator.id),
+          actuation = descriptor.mechanism.actuation,
+          thermal = actuation.thermalLimits;
+        coolRotaryActuator(entry, thermal, dt);
+        const thermalAvailability = rotaryThermalAvailability(entry, thermal);
+        entry.powered = false;
+        entry.saturated = thermalAvailability < 1;
+        if (allocation?.operational && thermalAvailability > 0) {
+          const control = clamp(commandFor(actuator, "joint_target", 0), -1, 1),
+            commandRange = actuation.commandRangeRad,
+            target =
+              commandRange.lower +
+              ((control + 1) / 2) * (commandRange.upper - commandRange.lower),
             error = target - entry.angle,
-            servoTorque = clamp(
-              error * descriptor.maxTorque * 4 -
-                entry.velocity * descriptor.damping,
-              -descriptor.maxTorque,
-              descriptor.maxTorque,
+            equilibriumSpeed = actuation.dampingNmsPerRad
+              ? (actuation.stiffnessNmPerRad * error) /
+                actuation.dampingNmsPerRad
+              : Math.sign(error) * actuation.maximumSpeedRadPerS,
+            targetSpeed = clamp(
+              equilibriumSpeed,
+              -actuation.maximumSpeedRadPerS,
+              actuation.maximumSpeedRadPerS,
             ),
-            requestedW = Math.min(
-              allocation.requestedW,
-              Math.max(
-                allocation.requestedW *
-                  0.02 *
-                  (hasControlledTarget
-                    ? clamp(Math.abs(error) / Math.max(0.05, high - low), 0, 1)
-                    : Math.abs(control)),
-                Math.abs(servoTorque * entry.velocity) / 0.82,
-              ),
+            unconstrainedServoTorque = actuation.dampingNmsPerRad
+              ? actuation.dampingNmsPerRad * (targetSpeed - entry.velocity)
+              : actuation.stiffnessNmPerRad * error,
+            powerLaw = actuation.powerLaw,
+            electricalEfficiency = powerLaw.electricalMotoringEfficiency,
+            availableBusW = Math.max(
+              0,
+              allocation.allocatedW - allocation.deliveredW,
             ),
-            deliveredW = context.powerNetwork.drawPower(
+            deliveredIdleW = context.powerNetwork.drawPower(
               actuator.id,
-              requestedW,
+              Math.min(availableBusW, powerLaw.idlePowerW),
               dt,
             ),
-            poweredTorque =
-              requestedW > 0
-                ? servoTorque * (deliveredW / requestedW)
-                : servoTorque;
+            mechanicalBusW = Math.max(0, availableBusW - deliveredIdleW),
+            torqueLimit = actuation.maximumTorqueNm * thermalAvailability,
+            poweredTorque = clamp(
+              unconstrainedServoTorque,
+              -torqueLimit,
+              torqueLimit,
+            );
+          entry.powered = true;
+          entry.saturated =
+            entry.saturated ||
+            targetSpeed !== equilibriumSpeed ||
+            poweredTorque !== unconstrainedServoTorque;
+          entry.actuatorElectricalEnergyJ += deliveredIdleW * dt;
+          entry.actuatorDissipatedEnergyJ += deliveredIdleW * dt;
+          addRotaryActuatorHeat(entry, thermal, deliveredIdleW * dt);
+          this.motorElectricalWByPart.set(actuator.id, deliveredIdleW);
           constraint.enableMotor();
           // Cannon's hinge motor speed is expressed in A-relative-to-B
           // convention, while our measured joint angle is B-relative-to-A.
           // Negate once at this engine boundary so authored/controller target
           // signs stay consistent with telemetry and joint limits.
-          constraint.setMotorSpeed(clamp(-error * 8, -8, 8));
-          const torqueImpulseNms = solverImpulseLimit(poweredTorque, dt);
+          constraint.setMotorSpeed(-targetSpeed);
+          const torqueImpulseNms = solverImpulseLimit(
+            Math.abs(poweredTorque),
+            dt,
+          );
           constraint.motorEquation.maxForce = torqueImpulseNms;
           constraint.motorEquation.minForce = -torqueImpulseNms;
+          refreshConstraintEquationAuthority(this, entry);
+          this.worldAdapter.transaction.registerMotorEnergyBudget({
+            tick: context.clock.tick,
+            equation: constraint.motorEquation,
+            partId: actuator.id,
+            constraintId: descriptor.id,
+            mode: "position-impedance",
+            allocatedBusW: mechanicalBusW,
+            mechanicalBudgetJ:
+              Math.min(
+                powerLaw.maximumMechanicalMotoringPowerW,
+                mechanicalBusW * electricalEfficiency,
+              ) * dt,
+            electricalEfficiency,
+            torqueImpulseLimitNms: torqueImpulseNms,
+          });
           targetTorque += poweredTorque;
-        } else constraint.disableMotor();
+          activeMotors++;
+        } else {
+          constraint.disableMotor();
+          refreshConstraintEquationAuthority(this, entry);
+        }
       }
       if (descriptor.limits) {
         const [low, high] = descriptor.limits,
@@ -2496,6 +3783,15 @@ export class MultibodyRuntime {
         this.bodyByPart.get(entry.descriptor.b),
       );
     }
+    // The exact checkpoint representation is also the fixed-step live
+    // representation. A restore therefore cannot perturb the uninterrupted
+    // trajectory merely because Cannon produced another near-unit encoding.
+    for (const body of this.bodyByPart.values()) {
+      canonicalizeLiveQuaternion(body.quaternion);
+      canonicalizeLiveQuaternion(body.previousQuaternion);
+      canonicalizeLiveQuaternion(body.interpolatedQuaternion);
+      body.updateInertiaWorld(true);
+    }
     for (const entry of this.constraintEntries) {
       if (
         entry.active === false ||
@@ -2558,7 +3854,11 @@ export class MultibodyRuntime {
             ),
             attachmentMetadata = {
               ...metadata,
-              sourceConnectionIds: [String(attachment.connectionId)],
+              sourceConnectionIds: [
+                identityToken(attachment.connectionId, {
+                  typedStrings: this.connectionIdsUseTypedStrings,
+                }),
+              ],
               applicationPointWorldM: {
                 x: applicationPoint.x,
                 y: applicationPoint.y,
@@ -2642,14 +3942,11 @@ export class MultibodyRuntime {
   }
 
   recordSettledMotorElectricalPower(partId, deliveredW) {
-    this.motorElectricalWByPart.set(
-      partId,
-      Math.max(0, Number(deliveredW) || 0),
-    );
-    return this.lastTelemetry;
+    return recordMultibodyMotorSettlement(this, partId, deliveredW);
   }
 
   applyConnectionFailures(connections) {
+    validateLiveMultibodyEngineAuthority(this);
     const failed = new Set(
         connections
           .filter((connection) => connection.failed)
@@ -2681,6 +3978,7 @@ export class MultibodyRuntime {
       );
     }
     if (detached.length) this.topologyRevision++;
+    refreshEngineActivityAuthority(this);
     return detached;
   }
 
@@ -2734,6 +4032,18 @@ export class MultibodyRuntime {
         angle: entry.angle,
         angularVelocity: entry.velocity,
         reactionTorque: entry.reactionTorque,
+        ...(entry.descriptor.controlled
+          ? {
+              mechanicalWorkJ: entry.actuatorMechanicalWorkJ,
+              electricalEnergyJ: entry.actuatorElectricalEnergyJ,
+              dissipatedEnergyJ: entry.actuatorDissipatedEnergyJ,
+              temperatureK: entry.temperatureK,
+              powered: entry.powered,
+              saturated: entry.saturated,
+              thermalDerate: entry.thermalDerate,
+              thermalShutdown: entry.thermalShutdown,
+            }
+          : {}),
       }));
     for (const entry of this.constraintEntries.filter(
       (candidate) =>
@@ -2868,8 +4178,14 @@ export class MultibodyRuntime {
       poses,
       joints,
       twoFrameMechanisms,
-      connectionLoads: Object.fromEntries(this.loadByConnection),
-      connectionTorques: Object.fromEntries(this.torqueByConnection),
+      connectionLoads: connectionTelemetryProjection(
+        this.loadByConnection,
+        this.connectionIdsUseTypedStrings,
+      ),
+      connectionTorques: connectionTelemetryProjection(
+        this.torqueByConnection,
+        this.connectionIdsUseTypedStrings,
+      ),
     };
   }
 
@@ -2879,14 +4195,17 @@ export class MultibodyRuntime {
         "MULTIBODY_CHECKPOINT_NOT_RUNNING",
         "Cannot checkpoint a multibody runtime before it starts",
       );
+    validateLiveMultibodyEngineAuthority(this);
     const bodyState = (partId, body) => ({
         partId,
         position: plainVector(body.position),
         previousPosition: plainVector(body.previousPosition),
         interpolatedPosition: plainVector(body.interpolatedPosition),
-        quaternion: plainQuaternion(body.quaternion),
-        previousQuaternion: plainQuaternion(body.previousQuaternion),
-        interpolatedQuaternion: plainQuaternion(body.interpolatedQuaternion),
+        quaternion: checkpointQuaternion(body.quaternion),
+        previousQuaternion: checkpointQuaternion(body.previousQuaternion),
+        interpolatedQuaternion: checkpointQuaternion(
+          body.interpolatedQuaternion,
+        ),
         velocity: plainVector(body.velocity),
         angularVelocity: plainVector(body.angularVelocity),
         force: plainVector(body.force),
@@ -2896,109 +4215,132 @@ export class MultibodyRuntime {
         inertia: plainVector(body.inertia),
         invInertia: plainVector(body.invInertia),
         massFrame: {
-          principalToPart: plainQuaternion(
+          principalToPart: checkpointQuaternion(
             body.userData.massFrame.principalToPart,
           ),
           comPart: plainVector(body.userData.massFrame.comPart),
         },
         massProperties: structuredClone(body.userData.massProperties),
         shapeOffsets: body.shapeOffsets.map(plainVector),
-        shapeOrientations: body.shapeOrientations.map(plainQuaternion),
+        shapeOrientations: body.shapeOrientations.map(checkpointQuaternion),
         sleepState: body.sleepState,
         timeLastSleepy: body.timeLastSleepy,
       }),
-      scalarEntryKeys = [
-        "active",
-        "angle",
-        "rawAngle",
-        "velocity",
-        "reactionTorque",
-        "force",
-        "coordinateM",
-        "rateMPerS",
-        "transverseM",
-        "reactionForceN",
-        "appliedForceN",
-        "elasticPotentialJ",
-        "dampingWorkJ",
-        "dampingPowerW",
-        "frictionWorkJ",
-        "actuatorMechanicalWorkJ",
-        "actuatorElectricalEnergyJ",
-        "actuatorDissipatedEnergyJ",
-        "temperatureK",
-        "powered",
-        "saturated",
-        "thermalDerate",
-        "thermalShutdown",
-        "clutchEngaged",
-        "clutchCoordinateM",
-        "phaseA",
-        "phaseB",
-      ],
-      entries = this.constraintEntries.map((entry) => ({
-        id: entry.descriptor.id,
-        kind: entry.kind || null,
-        values: {
-          active: entry.active !== false,
-          ...Object.fromEntries(
-            scalarEntryKeys
-              .filter((key) => key !== "active" && Object.hasOwn(entry, key))
-              .map((key) => [key, entry[key]]),
-          ),
-        },
-        tireState:
-          entry.kind === "rolling-contact-v1"
-            ? structuredClone(entry.constraint.state)
-            : null,
-        fixedFrame:
-          entry.descriptor.kind === "fixed" && entry.constraint
-            ? {
-                pivotA: plainVector(entry.constraint.pivotA),
-                pivotB: plainVector(entry.constraint.pivotB),
-                xA: plainVector(entry.constraint.xA),
-                yA: plainVector(entry.constraint.yA),
-                zA: plainVector(entry.constraint.zA),
-                xB: plainVector(entry.constraint.xB),
-                yB: plainVector(entry.constraint.yB),
-                zB: plainVector(entry.constraint.zB),
-              }
-            : null,
-      }));
-    return structuredClone({
-      version: 1,
+      constraintValueFields = constraintValueFieldsByRuntime.get(this),
+      entries = this.constraintEntries
+        .map((entry) => ({
+          id: entry.descriptor.id,
+          kind: entry.kind || null,
+          values: {
+            active: entry.active !== false,
+            ...Object.fromEntries(
+              constraintValueFields
+                .get(entry.descriptor.id)
+                .filter((key) => key !== "active" && Object.hasOwn(entry, key))
+                .map((key) => [key, entry[key]]),
+            ),
+          },
+          tireState:
+            entry.kind === "rolling-contact-v1"
+              ? structuredClone(entry.constraint.state)
+              : null,
+          fixedFrame:
+            entry.descriptor.kind === "fixed" && entry.constraint
+              ? {
+                  pivotA: plainVector(entry.constraint.pivotA),
+                  pivotB: plainVector(entry.constraint.pivotB),
+                  xA: plainVector(entry.constraint.xA),
+                  yA: plainVector(entry.constraint.yA),
+                  zA: plainVector(entry.constraint.zA),
+                  xB: plainVector(entry.constraint.xB),
+                  yB: plainVector(entry.constraint.yB),
+                  zB: plainVector(entry.constraint.zB),
+                }
+              : null,
+        }))
+        .sort((left, right) => compareCompiledIds(left.id, right.id));
+    return issueInertPlainData({
+      version: 2,
+      compiledPhysicalSemanticsFingerprint:
+        compiledPhysicalSemanticsFingerprint(this.compiled),
       fixedDt: this.fixedDt,
       sourceRevision: this.compiled.sourceRevision,
       world: {
         time: this.world.time,
         stepnumber: this.world.stepnumber,
       },
-      bodies: [...this.bodyByPart]
-        .sort(([left], [right]) =>
-          String(left).localeCompare(String(right), "en"),
-        )
-        .map(([partId, body]) => bodyState(partId, body)),
+      bodies: sortedIdentityEntries(this.bodyByPart).map(([partId, body]) =>
+        bodyState(partId, body),
+      ),
       entries,
-      exclusionStates: this.collisionExclusionConstraints.map((entry) => ({
-        id: entry.descriptor.id,
-        active: entry.active !== false,
-      })),
-      phaseByPart: [...this.phaseByPart],
-      loadByConnection: [...this.loadByConnection],
-      torqueByConnection: [...this.torqueByConnection],
-      motorElectricalWByPart: [...this.motorElectricalWByPart],
-      activeLuminairePartIds: this.activeLuminairePartIds,
+      exclusionStates: this.collisionExclusionConstraints
+        .map((entry) => ({
+          id: entry.descriptor.id,
+          active: entry.active !== false,
+        }))
+        .sort((left, right) => compareCompiledIds(left.id, right.id)),
+      phaseByPart: sortedIdentityEntries(this.phaseByPart),
+      loadByConnection: sortedIdentityEntries(this.loadByConnection),
+      torqueByConnection: sortedIdentityEntries(this.torqueByConnection),
+      motorElectricalWByPart: sortedIdentityEntries(
+        this.motorElectricalWByPart,
+      ),
+      activeLuminairePartIds: [...this.activeLuminairePartIds].sort(
+        compareCanonicalIds,
+      ),
       fluidState: this.fluidState,
       topologyRevision: this.topologyRevision,
       solverStatePolicy: "deterministic-cold-start-v1",
     });
   }
 
+  validateState(state) {
+    return validateMultibodyStateForCheckpointRestore(this, state);
+  }
+
   importState(state) {
-    if (!this.compiled || state?.version !== 1)
+    const baseline = exportValidatedMultibodyState(this),
+      validated = validateMultibodyCheckpointState(state, {
+        ...multibodyCheckpointValidationOptions(this, baseline),
+        baseline,
+      });
+    // The candidate is closed, detached, finite, physically consistent, and
+    // topology-exact before the first Cannon object is touched. The remaining
+    // phase contains no caller-controlled validation and commits the candidate
+    // in canonical solver order.
+    try {
+      this.#applyImportedState(validated);
+    } catch (restoreError) {
+      try {
+        this.#applyImportedState(baseline);
+      } catch (rollbackError) {
+        throw new AggregateError(
+          [restoreError, rollbackError],
+          "Multibody checkpoint import failed and exact rollback could not recover the live engine state",
+          { cause: rollbackError },
+        );
+      }
+      throw new DomainValidationError(
+        "MULTIBODY_CHECKPOINT_ENGINE_COMMIT_FAILED",
+        "Multibody checkpoint import failed after validation; live engine state was restored",
+        { cause: restoreError },
+      );
+    }
+  }
+
+  #applyImportedState(state) {
+    if (!this.compiled || state?.version !== 2)
       throw new DomainValidationError(
         "INVALID_MULTIBODY_CHECKPOINT",
         "Multibody checkpoint does not match the running runtime",
+      );
+    if (
+      state.compiledPhysicalSemanticsFingerprint !==
+      compiledPhysicalSemanticsFingerprint(this.compiled)
+    )
+      throw new DomainValidationError(
+        "MULTIBODY_CHECKPOINT_PHYSICAL_SEMANTICS_MISMATCH",
+        "Multibody checkpoint physical semantics do not match the running runtime",
       );
     if (
       state.fixedDt !== this.fixedDt ||
@@ -3009,16 +4351,107 @@ export class MultibodyRuntime {
         "MULTIBODY_CHECKPOINT_IDENTITY_MISMATCH",
         "Multibody checkpoint identities do not match the running runtime",
       );
-    const bodies = new Map(
-      state.bodies.map((record) => [record.partId, record]),
+    if (!Array.isArray(state.exclusionStates))
+      throw new DomainValidationError(
+        "MULTIBODY_CHECKPOINT_COLLISION_EXCLUSION_MISMATCH",
+        "Multibody checkpoint collision exclusion set is missing",
+      );
+    const exclusionStates = new Map();
+    for (const record of state.exclusionStates) {
+      if (
+        !record ||
+        typeof record.id !== "string" ||
+        typeof record.active !== "boolean" ||
+        exclusionStates.has(record.id)
+      )
+        throw new DomainValidationError(
+          "MULTIBODY_CHECKPOINT_COLLISION_EXCLUSION_MISMATCH",
+          "Multibody checkpoint collision exclusion identities are invalid",
+        );
+      exclusionStates.set(record.id, record.active);
+    }
+    if (
+      exclusionStates.size !== this.collisionExclusionConstraints.length ||
+      this.collisionExclusionConstraints.some(
+        (entry) => !exclusionStates.has(entry.descriptor.id),
+      )
+    )
+      throw new DomainValidationError(
+        "MULTIBODY_CHECKPOINT_COLLISION_EXCLUSION_MISMATCH",
+        "Multibody checkpoint collision exclusion set does not match compiled topology",
+      );
+    if (!Array.isArray(state.entries))
+      throw new DomainValidationError(
+        "MULTIBODY_CHECKPOINT_CONSTRAINT_MISMATCH",
+        "Multibody checkpoint constraint set is missing",
+      );
+    const entries = new Map(state.entries.map((record) => [record.id, record]));
+    if (
+      entries.size !== state.entries.length ||
+      entries.size !== this.constraintEntries.length ||
+      this.constraintEntries.some((entry) => !entries.has(entry.descriptor.id))
+    )
+      throw new DomainValidationError(
+        "MULTIBODY_CHECKPOINT_CONSTRAINT_MISMATCH",
+        "Multibody checkpoint constraint set does not match compiled topology",
+      );
+    const targetConstraintEntries = this.constraintEntries.map((entry) => {
+      const record = entries.get(entry.descriptor.id);
+      if ((entry.kind || null) !== record.kind)
+        throw new DomainValidationError(
+          "MULTIBODY_CHECKPOINT_CONSTRAINT_KIND_MISMATCH",
+          `Constraint ${entry.descriptor.id} changed kind`,
+        );
+      if (typeof record.values?.active !== "boolean")
+        throw new DomainValidationError(
+          "MULTIBODY_CHECKPOINT_CONSTRAINT_ACTIVITY_MISMATCH",
+          `Constraint ${entry.descriptor.id} has invalid activity state`,
+        );
+      return { ...entry, active: record.values.active };
+    });
+    if (
+      this.collisionExclusionConstraints.some(
+        (entry) =>
+          exclusionStates.get(entry.descriptor.id) !==
+          collisionExclusionRequired(targetConstraintEntries, entry.descriptor),
+      )
+    )
+      throw new DomainValidationError(
+        "MULTIBODY_CHECKPOINT_COLLISION_EXCLUSION_ACTIVITY_MISMATCH",
+        "Multibody checkpoint collision exclusions disagree with restored constraint topology",
+      );
+    if (!Array.isArray(state.bodies))
+      throw new DomainValidationError(
+        "MULTIBODY_CHECKPOINT_BODY_MISMATCH",
+        "Multibody checkpoint body set is missing",
+      );
+    const bodies = new Map();
+    for (const record of state.bodies) {
+      if (
+        !record ||
+        !Object.hasOwn(record, "partId") ||
+        bodies.has(record.partId)
+      )
+        throw new DomainValidationError(
+          "MULTIBODY_CHECKPOINT_BODY_MISMATCH",
+          "Multibody checkpoint body identities are invalid",
+        );
+      bodies.set(record.partId, record);
+    }
+    const compiledBodyPartIds = new Set(
+      this.compiled.bodies.map((descriptor) => descriptor.partId),
     );
     if (
+      bodies.size !== state.bodies.length ||
       bodies.size !== this.bodyByPart.size ||
-      [...this.bodyByPart.keys()].some((partId) => !bodies.has(partId))
+      bodies.size !== compiledBodyPartIds.size ||
+      compiledBodyPartIds.size !== this.compiled.bodies.length ||
+      [...this.bodyByPart.keys()].some((partId) => !bodies.has(partId)) ||
+      [...compiledBodyPartIds].some((partId) => !bodies.has(partId))
     )
       throw new DomainValidationError(
         "MULTIBODY_CHECKPOINT_BODY_MISMATCH",
-        "Multibody checkpoint body set does not match compiled topology",
+        "Multibody checkpoint body set does not match compiled and live topology",
       );
     const copyVector = (target, value) =>
         target.set(Number(value.x), Number(value.y), Number(value.z)),
@@ -3053,7 +4486,9 @@ export class MultibodyRuntime {
         record.massFrame.principalToPart,
       );
       copyVector(body.userData.massFrame.comPart, record.massFrame.comPart);
-      body.userData.massProperties = structuredClone(record.massProperties);
+      body.userData.massProperties = deepFreeze(
+        structuredClone(record.massProperties),
+      );
       if (
         record.shapeOffsets.length !== body.shapeOffsets.length ||
         record.shapeOrientations.length !== body.shapeOrientations.length
@@ -3074,22 +4509,8 @@ export class MultibodyRuntime {
       body.aabbNeedsUpdate = true;
       body.updateInertiaWorld(true);
     }
-    const entries = new Map(state.entries.map((record) => [record.id, record]));
-    if (
-      entries.size !== this.constraintEntries.length ||
-      this.constraintEntries.some((entry) => !entries.has(entry.descriptor.id))
-    )
-      throw new DomainValidationError(
-        "MULTIBODY_CHECKPOINT_CONSTRAINT_MISMATCH",
-        "Multibody checkpoint constraint set does not match compiled topology",
-      );
     for (const entry of this.constraintEntries) {
       const record = entries.get(entry.descriptor.id);
-      if ((entry.kind || null) !== record.kind)
-        throw new DomainValidationError(
-          "MULTIBODY_CHECKPOINT_CONSTRAINT_KIND_MISMATCH",
-          `Constraint ${entry.descriptor.id} changed kind`,
-        );
       Object.assign(entry, structuredClone(record.values));
       if (entry.descriptor.kind === "fixed") {
         if (!record.fixedFrame)
@@ -3113,14 +4534,23 @@ export class MultibodyRuntime {
         entry.constraint.state = structuredClone(record.tireState);
         entry.constraint.solvedContactRows = [];
       }
-      if (entry.constraint)
-        if (entry.active === false)
-          this.world.removeConstraint(entry.constraint);
-        else if (!this.world.constraints.includes(entry.constraint))
-          this.world.addConstraint(entry.constraint);
     }
-    const exclusionStates = new Map(
-      state.exclusionStates.map((record) => [record.id, record.active]),
+    const managedConstraints = new Set(
+        this.constraintEntries.map((entry) => entry.constraint).filter(Boolean),
+      ),
+      activeManagedConstraints = this.constraintEntries
+        .filter((entry) => entry.constraint && entry.active !== false)
+        .map((entry) => entry.constraint),
+      targetConstraintOrder = mergedManagedConstraintOrder(
+        this.world.constraints,
+        managedConstraints,
+        activeManagedConstraints,
+        constraintOrderPredecessorsByRuntime.get(this) || [],
+      );
+    this.world.constraints.splice(
+      0,
+      this.world.constraints.length,
+      ...targetConstraintOrder,
     );
     for (const entry of this.collisionExclusionConstraints) {
       entry.active = exclusionStates.get(entry.descriptor.id) !== false;
@@ -3157,6 +4587,11 @@ export class MultibodyRuntime {
     this.activeLuminairePartIds = [...state.activeLuminairePartIds];
     this.fluidState = structuredClone(state.fluidState);
     this.topologyRevision = state.topologyRevision;
+    for (const entry of this.constraintEntries)
+      refreshConstraintFrameAuthority(this, entry);
+    for (const partId of this.bodyByPart.keys())
+      refreshBodyPhysicalAuthority(this, partId);
+    refreshEngineActivityAuthority(this);
     this.lastTelemetry = this.telemetry(this.lastTelemetry?.activeMotors || 0);
   }
 
@@ -3178,6 +4613,8 @@ export class MultibodyRuntime {
       );
     for (const body of this.bodyByPart.values()) this.world.removeBody(body);
     this.constraintEntries.length = 0;
+    constraintOrderPredecessorsByRuntime.set(this, []);
+    constraintValueFieldsByRuntime.set(this, new Map());
     this.collisionExclusionConstraints.length = 0;
     this.bodyByPart.clear();
     this.geometryByPart.clear();
@@ -3194,9 +4631,27 @@ export class MultibodyRuntime {
     this.activeLuminairePartIds = [];
     this.fluidState = null;
     this.topologyRevision = 0;
+    engineAuthorityByRuntime.delete(this);
   }
 }
 
+/**
+ * @param {string} snapshot
+ * @param {{
+ *   world:any,
+ *   worldAdapter?:CannonWorldAdapter,
+ *   material:any,
+ *   catalog?:string,
+ *   fixedDt?:number,
+ *   surfaceHeightAt?:any,
+ *   terrainHeightAt?:any,
+ *   pondAt?:any,
+ *   waterDensity?:number,
+ *   groundBody?:any,
+ *   fieldBody?:any,
+ *   materialForKey?:(materialKey:string)=>any
+ * }} options
+ */
 export function startMultibodyRuntime(snapshot, options) {
   const runtime = new MultibodyRuntime(options);
   runtime.start(snapshot);

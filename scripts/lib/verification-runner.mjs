@@ -31,20 +31,25 @@ function attachTiming(error, timing) {
 
 /**
  * Run one verification script with bounded lifetime and durable output.
- * @param {{file: string, root: string, server: {baseUrl: string, marker: string}, artifactsDir: string, timeoutMs: number, signal?:AbortSignal, terminationGraceMs?:number}} options
+ * @param {{file: string, root: string, server: {baseUrl: string, marker: string}, artifactsDir: string, runId?:string|null, timeoutMs: number, signal?:AbortSignal, terminationGraceMs?:number}} options
  */
 export async function runVerificationSuite({
   file,
   root,
   server,
   artifactsDir,
+  runId = null,
   timeoutMs,
   signal,
   terminationGraceMs = 1_000,
 }) {
   const startedAt = performance.now(),
     suite = path.basename(file, ".mjs"),
-    output = [];
+    output = [],
+    latestLogPath = path.join(artifactsDir, `${suite}.log`),
+    outputLogPath = runId
+      ? path.join(artifactsDir, `${suite}-${runId}.log`)
+      : latestLogPath;
   if (signal?.aborted) {
     const timing = Object.freeze({
       suite,
@@ -128,15 +133,16 @@ export async function runVerificationSuite({
       failure ||= error;
     }
     await fs.mkdir(artifactsDir, { recursive: true });
-    await fs.writeFile(
-      path.join(artifactsDir, `${suite}.log`),
-      output.join(""),
-    );
+    const completeOutput = output.join("");
+    await fs.writeFile(outputLogPath, completeOutput);
+    if (outputLogPath !== latestLogPath)
+      await fs.writeFile(latestLogPath, completeOutput);
   }
   const timing = Object.freeze({
     suite,
     status,
     elapsedMs: elapsed(startedAt),
+    outputLogPath,
   });
   if (failure) throw attachTiming(failure, timing);
   return timing;

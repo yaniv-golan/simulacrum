@@ -2,7 +2,12 @@ import { geometryDescriptorForPart } from "./geometry-descriptors.js";
 import { portAxisPart } from "./component-geometry-contract.js";
 import { portDefinition } from "./ports.js";
 import { componentPorts } from "./component-contracts.js";
-import { canonicalQuaternion, rotateVectorByQuaternion } from "./primitives.js";
+import {
+  canonicalQuaternion,
+  detachPlainData,
+  rotateVectorByQuaternion,
+  scopedIdentity,
+} from "./primitives.js";
 export { worldPortFrame } from "./connection-frame-invariants.js";
 
 export const PHYSICAL_CONNECTION_KINDS = new Set(["mechanical", "mesh"]);
@@ -12,7 +17,14 @@ export const COORDINATE_CONSTRAINT_KINDS = new Set([
   "linear-actuator",
 ]);
 
-export const cloneCompiledValue = (value) => structuredClone(value);
+export const cloneCompiledValue = (value) =>
+  detachPlainData(value, {
+    code: "INVALID_ASSEMBLY_PLAIN_DATA",
+    finiteNumbers: true,
+    message:
+      "Assembly input must be accessor-free, acyclic, plain persisted data",
+    path: ["assembly"],
+  });
 
 export function compiledVector(value, fallback = [0, 0, 0]) {
   const source = Array.isArray(value) ? value : fallback;
@@ -116,6 +128,8 @@ export function worldPoint(part, positionPartM) {
   return compiledVector(part.pos).map((value, axis) => value + offset[axis]);
 }
 
-export function constraintId(kind, source) {
-  return `${kind}:${source.id ?? `${source.a}:${source.b}`}`;
+export function constraintId(kind, source, { typedStrings = false } = {}) {
+  return scopedIdentity(kind, source.id ?? `${source.a}:${source.b}`, {
+    typedStrings,
+  });
 }

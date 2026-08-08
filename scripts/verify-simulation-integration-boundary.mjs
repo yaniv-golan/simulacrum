@@ -2,7 +2,6 @@ import * as CANNON from "cannon-es";
 import { assert } from "./lib/assert.mjs";
 import { CannonWorldAdapter } from "../src/simulation/cannon-world-adapter.js";
 import { SimulationSession } from "../src/simulation/simulation-session.js";
-import { ArticulatedConstraintSystem } from "../src/simulation/systems/articulated-constraint-system.js";
 import { MechanismSystem } from "../src/simulation/systems/mechanism-system.js";
 import { RigidBodySystem } from "../src/simulation/systems/rigid-body-system.js";
 import { TelemetrySystem } from "../src/simulation/systems/telemetry-system.js";
@@ -50,7 +49,7 @@ const world = new CANNON.World({
 world.addBody(body);
 
 const multibodyRuntime = {
-    compiled: { bodies: [{ partId: 1 }] },
+    compiled: { bodies: [{ id: "body:1", partId: 1 }] },
     bodyByPart: new Map([[1, body]]),
     constraintEntries: [],
     hasArticulation: () => false,
@@ -70,7 +69,6 @@ const multibodyRuntime = {
   },
   session = new SimulationSession({
     systems: [
-      new ArticulatedConstraintSystem(),
       new MechanismSystem(),
       new RigidBodySystem(),
       new TelemetrySystem(),

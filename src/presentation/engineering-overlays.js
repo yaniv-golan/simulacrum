@@ -31,7 +31,8 @@ export function installEngineeringOverlays({
   root = document,
   machine,
   effects,
-  catalog,
+  catalogElement,
+  componentCatalog,
   getSnapshot,
   getParts,
   onOpen = () => {},
@@ -41,7 +42,7 @@ export function installEngineeringOverlays({
     "afterend",
     '<button id="engineering-btn" role="menuitem">⌖ <span>ENGINEERING<em>Mass, buoyancy & clearance</em></span></button>',
   );
-  catalog.insertAdjacentHTML(
+  catalogElement.insertAdjacentHTML(
     "afterend",
     `<aside class="engineering-panel glass hidden"><div class="engineering-head"><div><small>BUILD ANALYSIS</small><h2>Engineering overlays</h2></div><button id="close-engineering" aria-label="Close engineering overlays">×</button></div><p class="engineering-intro">Inspect the ordinary component geometry and material model. Overlays never change the machine.</p><div class="engineering-toggle-grid"><button data-engineering-overlay="com" class="active"><i class="com"></i><span><b>CENTER OF MASS</b><small>Mass-weighted balance point</small></span></button><button data-engineering-overlay="cob"><i class="cob"></i><span><b>CENTER OF BUOYANCY</b><small>Full-submersion displacement</small></span></button><button data-engineering-overlay="thrust" class="active"><i class="thrust"></i><span><b>THRUST AXIS</b><small>Nominal engine force line</small></span></button><button data-engineering-overlay="interference"><i class="interference"></i><span><b>INTERFERENCE</b><small>Unconnected solid overlap</small></span></button></div><div class="engineering-readout"><span><b id="analysis-mass">0 kg</b><small>TOTAL MASS</small></span><span><b id="analysis-volume">0 L</b><small>DISPLACEMENT</small></span><span><b id="analysis-thrust">0 kN</b><small>NOMINAL THRUST</small></span><span><b id="analysis-interference">0</b><small>INTERFERENCES</small></span></div><div class="engineering-legend"><span><i class="com"></i> COM</span><span><i class="cob"></i> COB</span><span><i class="thrust"></i> FORCE</span><span><i class="interference"></i> CLASH</span></div></aside>`,
   );
@@ -51,7 +52,10 @@ export function installEngineeringOverlays({
   overlayGroup.name = "engineeringOverlays";
   machine.add(overlayGroup);
   let interferenceHelpers = [],
-    lastAnalysis = analyzeAssembly({ parts: [], connections: [] }, {}),
+    lastAnalysis = analyzeAssembly(
+      JSON.stringify({ parts: [], connections: [] }),
+      componentCatalog,
+    ),
     running = false;
 
   function clear() {
@@ -75,7 +79,7 @@ export function installEngineeringOverlays({
   function refresh() {
     clear();
     const snapshot = getSnapshot();
-    lastAnalysis = analyzeAssembly(snapshot, snapshot.catalog);
+    lastAnalysis = analyzeAssembly(JSON.stringify(snapshot), componentCatalog);
     $("#analysis-mass").textContent = `${lastAnalysis.totalMass.toFixed(1)} kg`;
     $("#analysis-volume").textContent =
       `${(lastAnalysis.displacedVolumeM3 * 1000).toFixed(1)} L`;
@@ -153,7 +157,7 @@ export function installEngineeringOverlays({
 
   function open() {
     panel.classList.remove("hidden");
-    catalog.classList.add("engineering-replaced");
+    catalogElement.classList.add("engineering-replaced");
     $(".environment-panel")?.classList.add("hidden");
     $(".remote-console")?.classList.add("hidden");
     onOpen();
@@ -161,7 +165,7 @@ export function installEngineeringOverlays({
   }
   function close() {
     panel.classList.add("hidden");
-    catalog.classList.remove("engineering-replaced");
+    catalogElement.classList.remove("engineering-replaced");
     clear();
   }
 

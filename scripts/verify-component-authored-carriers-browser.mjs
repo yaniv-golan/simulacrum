@@ -9,6 +9,13 @@ import { createComponentInspectionCarrierBlueprint } from "./lib/component-inspe
 import { assertCanonicalVisualProductState } from "./lib/component-visual-product-assertions.mjs";
 
 const blueprint = createComponentInspectionCarrierBlueprint(),
+  carrierPartCount = blueprint.parts.length,
+  duplicatedCarrierPartCount = carrierPartCount * 2,
+  carrierIdentityPart = blueprint.parts.find((part) => part.extensions),
+  carrierExtensions = carrierIdentityPart.extensions,
+  hasCarrierExtensions = (part) =>
+    JSON.stringify(part?.authored?.extensions ?? part?.extensions) ===
+    JSON.stringify(carrierExtensions),
   extensionConnection = blueprint.connections.find(
     (connection) => connection.extensions,
   ),
@@ -61,16 +68,47 @@ try {
     .locator(`.exchange-item[data-fingerprint="${shared.fingerprint}"]`)
     .locator("[data-load-share]")
     .click();
-  await page.waitForFunction(
-    () => JSON.parse(window.render_game_to_text()).parts.length === 9,
-  );
-  await waitForPersistedPartCount(9);
+  try {
+    await page.waitForFunction(
+      ({ expectedCount, identityPartId, expectedExtensions }) => {
+        const state = JSON.parse(window.render_game_to_text()),
+          identityPart = state.parts.find(({ id }) => id === identityPartId);
+        return (
+          state.parts.length === expectedCount &&
+          JSON.stringify(identityPart?.authored?.extensions) ===
+            JSON.stringify(expectedExtensions)
+        );
+      },
+      {
+        expectedCount: carrierPartCount,
+        identityPartId: carrierIdentityPart.id,
+        expectedExtensions: carrierIdentityPart.extensions,
+      },
+    );
+  } catch (error) {
+    console.error(
+      JSON.stringify(
+        {
+          live: await textState(),
+          exchange: await page
+            .locator(`.exchange-item[data-fingerprint="${shared.fingerprint}"]`)
+            .allTextContents(),
+          errors,
+        },
+        null,
+        2,
+      ),
+    );
+    throw error;
+  }
+  await waitForPersistedPartCount(carrierPartCount);
   await assertCanonicalVisualProductState(page, "shared blueprint load");
 
   let persisted = await readBrowserStorageRoot(page, "workspace");
   assert.deepEqual(
-    persisted.blueprint.parts.find(({ id }) => id === 1).extensions,
-    blueprint.parts.find(({ id }) => id === 1).extensions,
+    persisted.blueprint.parts.find(({ id }) => id === carrierIdentityPart.id)
+      .extensions,
+    carrierExtensions,
     "blueprint load/workspace save dropped part extensions",
   );
   assert.deepEqual(
@@ -84,25 +122,32 @@ try {
   await page.locator("canvas").focus();
   await page.keyboard.press("Meta+KeyA");
   await page.waitForFunction(
-    () => JSON.parse(window.render_game_to_text()).selectedParts.length === 9,
+    (expected) =>
+      JSON.parse(window.render_game_to_text()).selectedParts.length ===
+      expected,
+    carrierPartCount,
   );
   await expandInspector();
   await page.locator("#duplicate-part").click();
   await page.waitForFunction(
-    () => JSON.parse(window.render_game_to_text()).parts.length === 18,
+    (expected) =>
+      JSON.parse(window.render_game_to_text()).parts.length === expected,
+    duplicatedCarrierPartCount,
   );
   let live = await textState();
   await assertCanonicalVisualProductState(page, "component duplication");
-  const persistedPlates = live.parts.filter(({ type }) => type === "plate");
+  const extensionCarriers = live.parts.filter(hasCarrierExtensions);
   assert.equal(
-    persistedPlates.length,
+    extensionCarriers.length,
     2,
-    `duplicate carrier plate mismatch: ${JSON.stringify(live.parts.map(({ id, type }) => ({ id, type })))}`,
+    `duplicate extension carrier mismatch: ${JSON.stringify(live.parts.map(({ id, type, authored }) => ({ id, type, extensions: authored.extensions })))}`,
   );
-  const duplicatePlate = persistedPlates.find(({ id }) => id !== 1);
+  const duplicatePlate = extensionCarriers.find(
+    ({ id }) => id !== carrierIdentityPart.id,
+  );
   assert.deepEqual(
     duplicatePlate.authored.extensions,
-    blueprint.parts.find(({ id }) => id === 1).extensions,
+    carrierExtensions,
     "duplicate dropped part extensions",
   );
   const duplicatedConnection = live.connections.find(
@@ -138,44 +183,56 @@ try {
     "mirror",
     `mirror did not commit: ${JSON.stringify({ selected: live.selectedParts, operation: live.lastTransformOperation })}`,
   );
-  assert.ok(live.parts.length > 18, "mirror did not add reflected components");
+  assert.ok(
+    live.parts.length > duplicatedCarrierPartCount,
+    "mirror did not add reflected components",
+  );
   assert.equal(
-    live.parts.filter(
-      ({ type, authored }) => type === "plate" && authored.extensions,
-    ).length,
+    live.parts.filter(hasCarrierExtensions).length,
     3,
-    "mirror did not preserve every plate extension carrier",
+    "mirror did not preserve every extension carrier",
   );
   await assertCanonicalVisualProductState(page, "component mirroring");
 
   await page.locator("canvas").focus();
   await page.keyboard.press("Meta+KeyZ");
   await page.waitForFunction(
-    () => JSON.parse(window.render_game_to_text()).parts.length === 18,
+    (expected) =>
+      JSON.parse(window.render_game_to_text()).parts.length === expected,
+    duplicatedCarrierPartCount,
   );
   await page.keyboard.press("Meta+KeyZ");
   await page.waitForFunction(
-    () => JSON.parse(window.render_game_to_text()).parts.length === 9,
+    (expected) =>
+      JSON.parse(window.render_game_to_text()).parts.length === expected,
+    carrierPartCount,
   );
   await assertCanonicalVisualProductState(page, "history undo");
   await page.keyboard.press("Meta+Shift+KeyZ");
   await page.waitForFunction(
-    () => JSON.parse(window.render_game_to_text()).parts.length === 18,
+    (expected) =>
+      JSON.parse(window.render_game_to_text()).parts.length === expected,
+    duplicatedCarrierPartCount,
   );
   live = await textState();
   assert.deepEqual(
     live.parts.find(({ id }) => id === duplicatePlate.id).authored.extensions,
-    blueprint.parts.find(({ id }) => id === 1).extensions,
+    carrierExtensions,
     "Undo/Redo dropped part extensions",
   );
   await page.keyboard.press("Meta+KeyZ");
   await page.waitForFunction(
-    () => JSON.parse(window.render_game_to_text()).parts.length === 9,
+    (expected) =>
+      JSON.parse(window.render_game_to_text()).parts.length === expected,
+    carrierPartCount,
   );
   await assertCanonicalVisualProductState(page, "history redo and undo");
   await page.keyboard.press("Meta+KeyA");
   await page.waitForFunction(
-    () => JSON.parse(window.render_game_to_text()).selectedParts.length === 9,
+    (expected) =>
+      JSON.parse(window.render_game_to_text()).selectedParts.length ===
+      expected,
+    carrierPartCount,
   );
 
   await expandLibrary();
@@ -185,8 +242,8 @@ try {
   const saved = await readBrowserStorageRoot(page, "subassemblyLibrary", []);
   assert.equal(saved.length, 1);
   assert.deepEqual(
-    saved[0].asset.parts.find(({ type }) => type === "plate").extensions,
-    blueprint.parts.find(({ id }) => id === 1).extensions,
+    saved[0].asset.parts.find(hasCarrierExtensions).extensions,
+    carrierExtensions,
     "My Parts save dropped extensions",
   );
 
@@ -201,27 +258,31 @@ try {
   await page.locator('.part-card[data-type="subassembly-0"]').click();
   await page.locator("#place-pending").click();
   await page.waitForFunction(
-    () => JSON.parse(window.render_game_to_text()).parts.length === 9,
+    (expected) =>
+      JSON.parse(window.render_game_to_text()).parts.length === expected,
+    carrierPartCount,
   );
-  await waitForPersistedPartCount(9);
+  await waitForPersistedPartCount(carrierPartCount);
   await assertCanonicalVisualProductState(page, "My Parts reuse");
   persisted = await readBrowserStorageRoot(page, "workspace");
   assert.deepEqual(
-    persisted.blueprint.parts.find(({ type }) => type === "plate").extensions,
-    blueprint.parts.find(({ id }) => id === 1).extensions,
+    persisted.blueprint.parts.find(hasCarrierExtensions).extensions,
+    carrierExtensions,
     "My Parts placement dropped extensions",
   );
 
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.locator("#sandbox-start").click();
   await page.waitForFunction(
-    () => JSON.parse(window.render_game_to_text()).parts.length === 9,
+    (expected) =>
+      JSON.parse(window.render_game_to_text()).parts.length === expected,
+    carrierPartCount,
   );
   await assertCanonicalVisualProductState(page, "workspace reload");
   persisted = await readBrowserStorageRoot(page, "workspace");
   assert.deepEqual(
-    persisted.blueprint.parts.find(({ type }) => type === "plate").extensions,
-    blueprint.parts.find(({ id }) => id === 1).extensions,
+    persisted.blueprint.parts.find(hasCarrierExtensions).extensions,
+    carrierExtensions,
     "workspace reload dropped extensions",
   );
   assertNoErrors(errors, "component authored carriers browser");

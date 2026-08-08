@@ -371,7 +371,8 @@ export function createFailureEvidenceArtifact({
           : null,
       externalInputTrace: {
         format: "simulacrum-input-trace",
-        version: 1,
+        version: 3,
+        sourceId: runtime.inputTraceRecorder.sourceId,
         runConfigurationFingerprint: runIdentity.runConfigurationFingerprint,
         startTick: 1,
         endTick: trigger.tick,

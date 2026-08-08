@@ -1,4 +1,10 @@
 import { readActuatorCommand } from "../model/actuator-contracts.js";
+import { compareCanonicalIds, identityToken } from "../model/primitives.js";
+import {
+  issueInertPlainData,
+  requireInertPlainData,
+} from "../model/plain-data-contract.js";
+import { dynamicMassContributorIdentity } from "../model/dynamic-mass-properties.js";
 import { standardAtmosphere } from "./environment/atmosphere.js";
 import {
   compressibleOrificeMassFlowKgS,
@@ -12,7 +18,102 @@ import {
 
 const EPSILON = 1e-12;
 const clamp = (value, lower, upper) => Math.max(lower, Math.min(upper, value));
-const nodeId = (partId, portId) => `${String(partId)}\0${portId}`;
+const nodePartPrefix = (partId) =>
+  `${identityToken(partId, { typedStrings: true })}\0`;
+const nodeId = (partId, portId) =>
+  `${nodePartPrefix(partId)}${identityToken(portId, { typedStrings: true })}`;
+const PNEUMATIC_CHAMBER_FAILURE_MODES = new Set([
+  "burst-v1",
+  "chamber-overtemperature-v1",
+  "puncture-v1",
+]);
+const PNEUMATIC_CHAMBER_CHECKPOINT_FIELDS = Object.freeze([
+  "partId",
+  "state",
+  "ambientPressurePa",
+  "ambientTemperatureK",
+  "massInKg",
+  "massOutKg",
+  "boundaryEnergyJ",
+  "mechanicalWorkJ",
+  "heatToCarcassJ",
+  "failureMode",
+  "leakAreaM2",
+  "damageImpulseNs",
+]);
+const PNEUMATIC_FAILURE_CHECKPOINT_FIELDS = Object.freeze([
+  "eventId",
+  "mode",
+  "partId",
+  "chamberPartId",
+  "connectionId",
+  "absolutePressurePa",
+  "internalEnergyJ",
+  "gasMassKg",
+  "leakAreaM2",
+  "transactionId",
+  "timeS",
+  "causal",
+]);
+
+function checkpointKeysMatch(value, expectedKeys) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort(),
+    expected = [...expectedKeys].sort();
+  return (
+    actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index])
+  );
+}
+
+function checkpointTreeIsFinite(value) {
+  if (value == null || typeof value === "string" || typeof value === "boolean")
+    return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (Array.isArray(value)) return value.every(checkpointTreeIsFinite);
+  if (typeof value !== "object") return false;
+  return Object.values(value).every(checkpointTreeIsFinite);
+}
+
+function gasMassContribution(record, massKg) {
+  const model = record.massModel,
+    centerPartM = [...model.centerPartM];
+  let inertiaTensorAtCenterKgM2;
+  if (model.kind === "elliptical-toroidal-gas-volume-v1") {
+    const radialMomentKgM2 =
+        massKg *
+        (model.majorRadiusM ** 2 / 2 +
+          (3 * model.radialSemiAxisM ** 2) / 8 +
+          model.axialSemiAxisM ** 2 / 4),
+      axialMomentKgM2 =
+        massKg *
+        (model.majorRadiusM ** 2 + (3 * model.radialSemiAxisM ** 2) / 4);
+    inertiaTensorAtCenterKgM2 = {
+      xx: radialMomentKgM2,
+      yy: radialMomentKgM2,
+      zz: axialMomentKgM2,
+      xy: 0,
+      xz: 0,
+      yz: 0,
+    };
+  } else if (model.kind === "box-gas-volume-v1") {
+    const [x, y, z] = model.sizeM;
+    inertiaTensorAtCenterKgM2 = {
+      xx: (massKg * (y * y + z * z)) / 12,
+      yy: (massKg * (x * x + z * z)) / 12,
+      zz: (massKg * (x * x + y * y)) / 12,
+      xy: 0,
+      xz: 0,
+      yz: 0,
+    };
+  } else throw new TypeError("Unsupported pneumatic gas mass model");
+  return {
+    id: dynamicMassContributorIdentity("pneumatic-gas", record.partId),
+    massKg,
+    centerPartM,
+    inertiaTensorAtCenterKgM2,
+  };
+}
 
 function approach(current, target, maximumDelta) {
   return current + clamp(target - current, -maximumDelta, maximumDelta);
@@ -134,6 +235,7 @@ export class PneumaticNetwork {
         this.chambers.set(body.partId, {
           partId: body.partId,
           bodyId: body.id,
+          massContributorKind: capability.kind,
           controlVolumeKind: reservoir ? "reservoir-v1" : "tire-chamber-v1",
           portId: chamber.portId,
           chamber,
@@ -283,7 +385,7 @@ export class PneumaticNetwork {
             nodes.has(nodeId(edge.b, edge.portB)),
         )
         .map(({ id }) => id)
-        .sort((left, right) => String(left).localeCompare(String(right))),
+        .sort(compareCanonicalIds),
     };
   }
 
@@ -291,7 +393,7 @@ export class PneumaticNetwork {
     const requests = [];
     for (const nodes of this.#components(adjacency)) {
       const chambers = this.#chambersIn(nodes).sort((left, right) =>
-          String(left.partId).localeCompare(String(right.partId)),
+          compareCanonicalIds(left.partId, right.partId),
         ),
         transport = this.#componentTransport(nodes, runGraph, valveTransports);
       if (chambers.length < 2 || !transport) continue;
@@ -380,10 +482,8 @@ export class PneumaticNetwork {
     }
     return transfers.sort(
       (left, right) =>
-        String(left.sourcePartId).localeCompare(String(right.sourcePartId)) ||
-        String(left.destinationPartId).localeCompare(
-          String(right.destinationPartId),
-        ),
+        compareCanonicalIds(left.sourcePartId, right.sourcePartId) ||
+        compareCanonicalIds(left.destinationPartId, right.destinationPartId),
     );
   }
 
@@ -392,15 +492,15 @@ export class PneumaticNetwork {
       const transport = this.#componentTransport(nodes, runGraph),
         partIds = [...this.chambers.keys(), ...this.devices.keys()]
           .filter((partId) =>
-            [...nodes].some((node) => node.startsWith(`${String(partId)}\0`)),
+            [...nodes].some((node) => node.startsWith(nodePartPrefix(partId))),
           )
-          .sort((left, right) => String(left).localeCompare(String(right)));
+          .sort(compareCanonicalIds);
       return {
         componentId: `pneumatic-component:${runGraph.graphRevision}:${index}`,
         partIds,
         chamberPartIds: this.#chambersIn(nodes)
           .map(({ partId }) => partId)
-          .sort((left, right) => String(left).localeCompare(String(right))),
+          .sort(compareCanonicalIds),
         connectionIds: transport?.connectionIds || [],
       };
     });
@@ -430,7 +530,7 @@ export class PneumaticNetwork {
           record.peakAbsolutePressurePa > record.maximumAbsolutePressurePa,
       )
       .sort((left, right) =>
-        String(left.connectionId).localeCompare(String(right.connectionId)),
+        compareCanonicalIds(left.connectionId, right.connectionId),
       );
   }
 
@@ -474,7 +574,7 @@ export class PneumaticNetwork {
 
   #recordFailure(record, mode, context = {}, causal = {}) {
     const event = {
-      eventId: `pneumatic-failure:${this.transactionCursor}:${String(record.partId)}:${mode}`,
+      eventId: `pneumatic-failure:${this.transactionCursor}:${identityToken(record.partId, { typedStrings: true })}:${mode}`,
       mode,
       partId: record.partId,
       chamberPartId: record.partId,
@@ -793,12 +893,12 @@ export class PneumaticNetwork {
             ? "command-conflict"
             : overheated
               ? "overtemperature"
-              : !powered && command > 0
-                ? "power-loss"
-                : !targets.length && command > 0
-                  ? "disconnected"
-                  : !activeTargets.length && command > 0
-                    ? "relief-or-backpressure"
+              : !targets.length && command > 0
+                ? "disconnected"
+                : !activeTargets.length && command > 0
+                  ? "relief-or-backpressure"
+                  : !powered && command > 0
+                    ? "power-loss"
                     : null,
       });
     }
@@ -1050,49 +1150,47 @@ export class PneumaticNetwork {
   }
 
   gasMassForPart(partId) {
-    return this.chambers.get(partId)?.state.massKg || 0;
+    return this.chambers.has(partId)
+      ? this.chambers.get(partId).state.massKg
+      : null;
+  }
+
+  massContributions() {
+    return [...this.chambers.values()]
+      .sort((left, right) => compareCanonicalIds(left.partId, right.partId))
+      .map((record) => ({
+        partId: record.partId,
+        kind: record.massContributorKind,
+        massKg: record.state.massKg,
+        internalEnergyJ: record.state.internalEnergyJ,
+        volumeM3: record.state.volumeM3,
+      }));
   }
 
   gasMassContributionForPart(partId) {
     const record = this.chambers.get(partId);
     if (!record) return null;
-    const massKg = record.state.massKg,
-      model = record.massModel,
-      centerPartM = [...model.centerPartM];
-    let inertiaTensorAtCenterKgM2;
-    if (model.kind === "elliptical-toroidal-gas-volume-v1") {
-      const radialMomentKgM2 =
-          massKg *
-          (model.majorRadiusM ** 2 / 2 +
-            (3 * model.radialSemiAxisM ** 2) / 8 +
-            model.axialSemiAxisM ** 2 / 4),
-        axialMomentKgM2 =
-          massKg *
-          (model.majorRadiusM ** 2 + (3 * model.radialSemiAxisM ** 2) / 4);
-      inertiaTensorAtCenterKgM2 = {
-        xx: radialMomentKgM2,
-        yy: radialMomentKgM2,
-        zz: axialMomentKgM2,
-        xy: 0,
-        xz: 0,
-        yz: 0,
-      };
-    } else if (model.kind === "box-gas-volume-v1") {
-      const [x, y, z] = model.sizeM;
-      inertiaTensorAtCenterKgM2 = {
-        xx: (massKg * (y * y + z * z)) / 12,
-        yy: (massKg * (x * x + z * z)) / 12,
-        zz: (massKg * (x * x + y * y)) / 12,
-        xy: 0,
-        xz: 0,
-        yz: 0,
-      };
-    } else throw new TypeError("Unsupported pneumatic gas mass model");
+    return gasMassContribution(record, record.state.massKg);
+  }
+
+  /** Purely projects gas mass and inertia from a validated checkpoint. */
+  massProjectionForState(snapshot) {
+    const { chamberStages } = this.validateState(snapshot),
+      ordered = [...chamberStages].sort((left, right) =>
+        compareCanonicalIds(left.record.partId, right.record.partId),
+      );
     return {
-      id: `pneumatic-gas:${partId}`,
-      massKg,
-      centerPartM,
-      inertiaTensorAtCenterKgM2,
+      records: ordered.map(({ record, saved }) => ({
+        partId: record.partId,
+        kind: record.massContributorKind,
+        massKg: saved.state.massKg,
+        internalEnergyJ: saved.state.internalEnergyJ,
+        volumeM3: saved.state.volumeM3,
+      })),
+      contributions: ordered.map(({ record, saved }) => ({
+        partId: record.partId,
+        contribution: gasMassContribution(record, saved.state.massKg),
+      })),
     };
   }
 
@@ -1203,7 +1301,7 @@ export class PneumaticNetwork {
   }
 
   exportState() {
-    return {
+    return issueInertPlainData({
       version: 1,
       transactionCursor: this.transactionCursor,
       failureEvents: structuredClone(this.failureEvents),
@@ -1227,12 +1325,24 @@ export class PneumaticNetwork {
           partId: device.partId,
           dynamicState: structuredClone(device.dynamicState),
         })),
-    };
+    });
   }
 
-  importState(snapshot) {
+  validateState(snapshot) {
+    snapshot = requireInertPlainData(snapshot, {
+      code: "INVALID_PNEUMATIC_CHECKPOINT_PLAIN_DATA",
+      message:
+        "Pneumatic checkpoint must be serialized JSON or an exported immutable state",
+    });
     if (
       snapshot?.version !== 1 ||
+      !checkpointKeysMatch(snapshot, [
+        "version",
+        "transactionCursor",
+        "failureEvents",
+        "chambers",
+        "devices",
+      ]) ||
       !Number.isSafeInteger(snapshot.transactionCursor) ||
       snapshot.transactionCursor < 0 ||
       !Array.isArray(snapshot.chambers) ||
@@ -1244,26 +1354,47 @@ export class PneumaticNetwork {
         (device) => device.dynamicState,
       ),
       chamberIds = new Set(snapshot.chambers.map(({ partId }) => partId)),
-      deviceIds = new Set(snapshot.devices.map(({ partId }) => partId));
+      deviceIds = new Set(snapshot.devices.map(({ partId }) => partId)),
+      failureEventIds = new Set(
+        snapshot.failureEvents.map(({ eventId }) => eventId),
+      );
     if (
       chamberIds.size !== this.chambers.size ||
+      snapshot.chambers.length !== this.chambers.size ||
       [...this.chambers.keys()].some((partId) => !chamberIds.has(partId)) ||
       deviceIds.size !== dynamicDevices.length ||
+      snapshot.devices.length !== dynamicDevices.length ||
       dynamicDevices.some(({ partId }) => !deviceIds.has(partId))
     )
       throw new TypeError("Pneumatic checkpoint identity mismatch");
     if (
       snapshot.failureEvents.length > 128 ||
+      failureEventIds.size !== snapshot.failureEvents.length ||
       snapshot.failureEvents.some(
         (event) =>
           !event ||
+          !checkpointKeysMatch(event, PNEUMATIC_FAILURE_CHECKPOINT_FIELDS) ||
           typeof event.eventId !== "string" ||
+          !PNEUMATIC_CHAMBER_FAILURE_MODES.has(event.mode) ||
           !this.chambers.has(event.chamberPartId) ||
-          !Number.isFinite(Number(event.absolutePressurePa)) ||
-          !Number.isFinite(Number(event.internalEnergyJ)) ||
-          !Number.isFinite(Number(event.gasMassKg)) ||
+          event.partId !== event.chamberPartId ||
+          (event.connectionId !== null &&
+            typeof event.connectionId !== "string" &&
+            !Number.isSafeInteger(event.connectionId)) ||
+          !Number.isFinite(event.absolutePressurePa) ||
+          event.absolutePressurePa <= 0 ||
+          !Number.isFinite(event.internalEnergyJ) ||
+          event.internalEnergyJ <= 0 ||
+          !Number.isFinite(event.gasMassKg) ||
+          event.gasMassKg <= 0 ||
+          !Number.isFinite(event.leakAreaM2) ||
+          event.leakAreaM2 < 0 ||
           !Number.isSafeInteger(event.transactionId) ||
-          event.transactionId < 0,
+          event.transactionId < 0 ||
+          event.transactionId > snapshot.transactionCursor ||
+          !Number.isFinite(event.timeS) ||
+          event.timeS < 0 ||
+          !checkpointTreeIsFinite(event.causal),
       )
     )
       throw new TypeError("Invalid pneumatic failure checkpoint history");
@@ -1286,50 +1417,76 @@ export class PneumaticNetwork {
           ...numericLedgerKeys.map((key) => saved[key]),
         ];
         if (
-          values.some((value) => !Number.isFinite(Number(value))) ||
-          Number(saved.state.massKg) <= 0 ||
-          Number(saved.state.internalEnergyJ) <= 0 ||
-          Number(saved.state.volumeM3) <= 0 ||
-          Number(saved.ambientPressurePa) <= 0 ||
-          Number(saved.ambientTemperatureK) <= 0 ||
-          Number(saved.leakAreaM2) < 0 ||
-          Number(saved.damageImpulseNs) < 0
+          !checkpointKeysMatch(saved, PNEUMATIC_CHAMBER_CHECKPOINT_FIELDS) ||
+          !checkpointKeysMatch(saved.state, [
+            "massKg",
+            "internalEnergyJ",
+            "volumeM3",
+          ]) ||
+          values.some((value) => !Number.isFinite(value)) ||
+          saved.state.massKg <= 0 ||
+          saved.state.internalEnergyJ <= 0 ||
+          saved.state.volumeM3 <= 0 ||
+          saved.ambientPressurePa <= 0 ||
+          saved.ambientTemperatureK <= 0 ||
+          saved.leakAreaM2 < 0 ||
+          saved.damageImpulseNs < 0 ||
+          (saved.failureMode !== null &&
+            !PNEUMATIC_CHAMBER_FAILURE_MODES.has(saved.failureMode))
         )
           throw new TypeError("Invalid pneumatic chamber checkpoint state");
-        return { record: this.chambers.get(saved.partId), saved };
+        return {
+          record: this.chambers.get(saved.partId),
+          saved: structuredClone(saved),
+        };
       }),
       deviceStages = snapshot.devices.map((saved) => {
         const device = this.devices.get(saved.partId),
           state = saved.dynamicState;
-        if (!device?.dynamicState || !state || typeof state !== "object")
+        if (
+          !checkpointKeysMatch(saved, ["partId", "dynamicState"]) ||
+          !device?.dynamicState ||
+          !checkpointKeysMatch(state, Object.keys(device.dynamicState))
+        )
           throw new TypeError("Invalid pneumatic device checkpoint state");
         if (
           device.kind === "three-way-valve-v1" &&
-          (!Number.isFinite(Number(state.position)) ||
-            Math.abs(Number(state.position)) > 1)
+          (!Number.isFinite(state.position) || Math.abs(state.position) > 1)
         )
           throw new TypeError("Invalid pneumatic valve checkpoint state");
         if (
           device.kind === "ambient-air-compressor-v1" &&
-          (!Number.isFinite(Number(state.spool)) ||
-            Number(state.spool) < 0 ||
-            Number(state.spool) > 1 ||
-            !Number.isFinite(Number(state.motorTemperatureK)) ||
-            Number(state.motorTemperatureK) <= 0 ||
+          (!Number.isFinite(state.spool) ||
+            state.spool < 0 ||
+            state.spool > 1 ||
+            !Number.isFinite(state.motorTemperatureK) ||
+            state.motorTemperatureK <= 0 ||
             typeof state.overheated !== "boolean")
         )
           throw new TypeError("Invalid pneumatic compressor checkpoint state");
-        return { device, state };
+        return { device, state: structuredClone(state) };
       });
+    return {
+      chamberStages,
+      deviceStages,
+      numericLedgerKeys,
+      transactionCursor: snapshot.transactionCursor,
+      failureEvents: structuredClone(snapshot.failureEvents),
+    };
+  }
+
+  importState(snapshot) {
+    const validated = this.validateState(snapshot),
+      { chamberStages, deviceStages, numericLedgerKeys } = validated;
     for (const { record, saved } of chamberStages) {
       record.state = structuredClone(saved.state);
-      for (const key of numericLedgerKeys) record[key] = Number(saved[key]);
+      for (const key of numericLedgerKeys) record[key] = saved[key];
       record.failureMode = saved.failureMode || null;
     }
     for (const { device, state } of deviceStages)
       device.dynamicState = structuredClone(state);
-    this.transactionCursor = snapshot.transactionCursor;
-    this.failureEvents = structuredClone(snapshot.failureEvents);
+    this.transactionCursor = validated.transactionCursor;
+    this.failureEvents = validated.failureEvents;
     this.lastFailureEvents = [];
   }
 }

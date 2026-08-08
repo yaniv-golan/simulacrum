@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import * as CANNON from "cannon-es";
 import {
   TYPES,
-  compileAssembly,
   geometryDescriptorForPart,
   resolveWireComponentConfig,
   rotorAerodynamicPerformance,
   validateRotorConfig,
 } from "../src/core/index.js";
+import { compileAssembly } from "./lib/compile-assembly.mjs";
 import { builtInDemo } from "../src/model/demo-blueprints.js";
 import { BodyRegistry } from "../src/simulation/body-registry.js";
 import { RunAssemblyGraph } from "../src/simulation/run-assembly-graph.js";

@@ -1,5 +1,9 @@
 import { readActuatorCommand } from "../../model/actuator-contracts.js";
 import { DomainValidationError } from "../../model/primitives.js";
+import {
+  issueInertPlainData,
+  requireInertPlainData,
+} from "../../model/plain-data-contract.js";
 
 function descriptors(context) {
   return (context.services.multibodyRuntime?.compiled?.actuators || [])
@@ -118,7 +122,7 @@ export class ReleaseCouplerSystem {
   }
 
   exportState(context) {
-    return {
+    return issueInertPlainData({
       version: 1,
       states: descriptors(context).map((descriptor) => {
         const state =
@@ -130,14 +134,23 @@ export class ReleaseCouplerSystem {
           accumulatedEnergyJ: state.accumulatedEnergyJ,
         };
       }),
-    };
+    });
   }
 
-  importState(context, checkpoint) {
+  validateState(context, checkpoint) {
+    checkpoint = requireInertPlainData(checkpoint, {
+      code: "INVALID_RELEASE_COUPLER_CHECKPOINT_INPUT",
+      message:
+        "Release-coupler checkpoint must be serialized JSON or an exported immutable state",
+    });
     const expected = descriptors(context),
       states = checkpoint?.states;
     if (
-      checkpoint?.version !== 1 ||
+      !checkpoint ||
+      typeof checkpoint !== "object" ||
+      Array.isArray(checkpoint) ||
+      Object.keys(checkpoint).sort().join("\0") !== "states\0version" ||
+      checkpoint.version !== 1 ||
       !Array.isArray(states) ||
       states.length !== expected.length
     )
@@ -150,6 +163,11 @@ export class ReleaseCouplerSystem {
       const descriptor = expected[index],
         state = states[index];
       if (
+        !state ||
+        typeof state !== "object" ||
+        Array.isArray(state) ||
+        Object.keys(state).sort().join("\0") !==
+          "accumulatedEnergyJ\0partId\0previousCommand" ||
         state?.partId !== descriptor.sourcePartId ||
         !Number.isFinite(state.previousCommand) ||
         state.previousCommand < -1 ||
@@ -168,6 +186,10 @@ export class ReleaseCouplerSystem {
         accumulatedEnergyJ: state.accumulatedEnergyJ,
       });
     }
-    this.#actuationByPart = restored;
+    return restored;
+  }
+
+  importState(context, checkpoint) {
+    this.#actuationByPart = this.validateState(context, checkpoint);
   }
 }

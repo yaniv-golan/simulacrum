@@ -1,3 +1,9 @@
+import {
+  identitySetUsesTypedStrings,
+  identityToken,
+  scopedIdentity,
+} from "../model/primitives.js";
+
 function vectorComponents(value) {
   return {
     x: Number(value?.x || 0),
@@ -46,9 +52,19 @@ function normalizedRowKind(value) {
 
 function bodyIdentity(body) {
   if (body?.userData?.partId != null)
-    return `part:${String(body.userData.partId)}`;
+    return scopedIdentity("part", body.userData.partId, {
+      typedStrings: true,
+    });
   if (body?.userData?.externalBodyId != null)
-    return String(body.userData.externalBodyId);
+    return scopedIdentity("external-body", body.userData.externalBodyId, {
+      typedStrings: true,
+    });
+  if (body?.userData?.compiledBodyId != null) {
+    const compiledBodyId = String(body.userData.compiledBodyId);
+    return compiledBodyId.startsWith("body:")
+      ? `part:${compiledBodyId.slice("body:".length)}`
+      : compiledBodyId;
+  }
   return null;
 }
 
@@ -88,7 +104,10 @@ export function assignConstraintEvidenceRows(
   constraint,
   { constraintId, sourceConnectionIds = [], tick, source = "constraint" } = {},
 ) {
-  const ordinals = new Map();
+  const ordinals = new Map(),
+    connectionIdsUseTypedStrings = identitySetUsesTypedStrings(
+      sourceConnectionIds || [],
+    );
   for (const equation of constraint?.equations || []) {
     const rowKind = normalizedRowKind(
         equation.simulacrumEvidenceRowKind ||
@@ -111,7 +130,13 @@ export function assignConstraintEvidenceRows(
       source: equation.simulacrumEvidenceSource || source,
       constraintId: constraintId ?? null,
       sourceConnectionIds: Object.freeze(
-        [...new Set(sourceConnectionIds || [])].map(String).sort(),
+        [...new Set(sourceConnectionIds || [])]
+          .map((identity) =>
+            identityToken(identity, {
+              typedStrings: connectionIdsUseTypedStrings,
+            }),
+          )
+          .sort(),
       ),
       sourceContactIds: Object.freeze(
         [...new Set(equation.simulacrumSourceContactIds || [])]

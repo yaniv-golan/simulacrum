@@ -196,13 +196,16 @@ assert.throws(
   (error) => error.code === "WIRE_BYTE_LIMIT",
 );
 const unstringifiable = read("blueprint");
+let toJSONCalls = 0;
 unstringifiable.toJSON = () => {
+  toJSONCalls++;
   throw new Error("cannot serialize");
 };
 assert.throws(
   () => validateWireInput(unstringifiable, "blueprint", validateBlueprintWire),
-  (error) => error.code === "INVALID_WIRE_JSON",
+  (error) => error.code === "INVALID_WIRE_PLAIN_DATA",
 );
+assert.equal(toJSONCalls, 0, "wire rejection invoked executable toJSON input");
 const rejectingValidator = () => false;
 rejectingValidator.errors = [
   {

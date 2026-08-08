@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { TYPES } from "../src/model/component-catalog.js";
 import { FailureEvidenceRecorder } from "../src/simulation/failure-evidence-recorder.js";
+import { BodyRegistry } from "../src/simulation/body-registry.js";
 import { SimulationSession } from "../src/simulation/simulation-session.js";
 import { FailureEvidenceSystem } from "../src/simulation/systems/failure-evidence-system.js";
 import { invalidConstraintReactionCandidate } from "../src/simulation/constraint-reaction-wrench.js";
@@ -134,6 +135,7 @@ const recorder = new FailureEvidenceRecorder({
     stallShaftProgressMinRad: 0.03,
   },
 });
+const emptyBodyRegistry = () => new BodyRegistry();
 assert.equal(recorder.acceptingEvidence(), false);
 recorder.beginRun({
   runIdentity: {
@@ -150,7 +152,7 @@ const context = {
   services: { failureEvidenceRecorder: recorder },
   telemetry: {},
   runGraph: { graphRevision: 0 },
-  bodyRegistry: { snapshot: () => ({ bodies: [] }) },
+  bodyRegistry: emptyBodyRegistry(),
 };
 for (let tick = 1; tick <= 3; tick++) {
   context.clock.tick = tick;
@@ -206,9 +208,7 @@ assert.equal(context.telemetry.failureEvidence.captureState, "captured");
 assert.equal(snapshot.exactFrames.length, 3);
 assert.ok(Object.isFrozen(snapshot));
 assert.equal(recorder.acceptingEvidence(), false);
-context.bodyRegistry.snapshot = () => {
-  throw new Error("frozen evidence should not rescan physical state");
-};
+context.bodyRegistry = {};
 failureSystem.step(context);
 assert.equal(context.telemetry.failureEvidence.captureState, "captured");
 failureSystem.dispose();
@@ -250,7 +250,7 @@ function runStallClassification({
       services: { failureEvidenceRecorder: candidateRecorder },
       telemetry: {},
       runGraph: { graphRevision: 0 },
-      bodyRegistry: { snapshot: () => ({ bodies: [] }) },
+      bodyRegistry: emptyBodyRegistry(),
     };
   candidateRecorder.beginRun({ runIdentity: { id: "classification" } });
   system.initialize(candidateContext);
@@ -349,31 +349,43 @@ function runContactInvariantClassification(forceN) {
       policy: { contactInvariantLoadFloorN: 1 },
     }),
     system = new FailureEvidenceSystem(),
+    bodyRegistry = new BodyRegistry(
+      {
+        parts: [
+          {
+            id: 42,
+            type: "plate",
+            pos: [0, 0, 0],
+            orientation: [0, 0, 0, 1],
+            scale: { x: 1, y: 1, z: 1 },
+            config: {},
+          },
+        ],
+        connections: [],
+      },
+      TYPES,
+    ),
     candidateContext = {
       clock: { tick: 1 },
       time: 1 / 120,
       services: { failureEvidenceRecorder: candidateRecorder },
       telemetry: { mobility: { assemblies: [] } },
       runGraph: { graphRevision: 0 },
-      bodyRegistry: {
-        snapshot: () => ({
-          bodies: [
-            {
-              contacts: [
-                {
-                  forceN,
-                  tireEvidence: {
-                    tirePartId: 42,
-                    withinGeometricTolerance: false,
-                    validity: "measured",
-                  },
-                },
-              ],
-            },
-          ],
-        }),
-      },
+      bodyRegistry,
     };
+  bodyRegistry.beginTick(1);
+  bodyRegistry.recordContact(bodyRegistry.bodyForPart(42).bodyId, {
+    point: { x: 0, y: 0, z: 0 },
+    normal: { x: 0, y: 1, z: 0 },
+    forceN,
+    relativeVelocity: { x: 0, y: 0, z: 0 },
+    forceWorldN: { x: 0, y: forceN, z: 0 },
+    tireEvidence: {
+      tirePartId: 42,
+      withinGeometricTolerance: false,
+      validity: "measured",
+    },
+  });
   candidateRecorder.beginRun({ runIdentity: { id: "contact-invariant" } });
   system.initialize(candidateContext);
   system.step(candidateContext);
@@ -413,7 +425,7 @@ const anomalyRecorder = new FailureEvidenceRecorder(),
       },
     },
     runGraph: { graphRevision: 1, events: () => [] },
-    bodyRegistry: { snapshot: () => ({ bodies: [] }) },
+    bodyRegistry: emptyBodyRegistry(),
   };
 anomalyRecorder.beginRun({ runIdentity: { id: "numerical" } });
 anomalySystem.initialize({

@@ -16,7 +16,7 @@ const airCourier = CHALLENGES.find(
   (challenge) => challenge.id === "air-courier",
 );
 
-const TEST_CAPACITY = Object.freeze({
+const testCapacity = () => ({
   ultimateForceN: 24_000,
   ultimateTorqueNm: 6_000,
 });
@@ -76,7 +76,7 @@ export function machine({
               portA: "MOUNT A",
               portB: "TOP",
               kind: "mechanical",
-              capacity: TEST_CAPACITY,
+              capacity: testCapacity(),
             },
           ]
         : []),
@@ -87,7 +87,7 @@ export function machine({
         portA: "TOP",
         portB: "MOUNT",
         kind: "mechanical",
-        capacity: TEST_CAPACITY,
+        capacity: testCapacity(),
       },
       {
         id: "actuator-mount",
@@ -96,7 +96,7 @@ export function machine({
         portA: "TOP",
         portB: kind === "wheel" ? "AXLE" : "MOUNT",
         kind: "mechanical",
-        capacity: TEST_CAPACITY,
+        capacity: testCapacity(),
       },
     ],
   };
@@ -269,6 +269,13 @@ assert.deepEqual(cargoRelay.startModes, ["empty", "current"]);
 const roverMachine = machine(),
   roverRun = new ChallengeRun(cargoRelay, roverMachine),
   roverFinalMachine = machine({ energy: 92 });
+const cyclicNonphysicalState = machine();
+cyclicNonphysicalState.remoteProfiles = {};
+cyclicNonphysicalState.remoteProfiles.uiState = cyclicNonphysicalState;
+assert.doesNotThrow(
+  () => new ChallengeRun(cargoRelay, cyclicNonphysicalState),
+  "challenge compiler consumed cyclic UI state outside physical assembly authority",
+);
 stepChallenge(roverRun, telemetry(roverMachine, 0), 0);
 const roverResult = stepChallenge(
   roverRun,
@@ -568,7 +575,7 @@ const articulatedMachine = {
         portA: "TOP",
         portB: "MOUNT A",
         kind: "mechanical",
-        capacity: TEST_CAPACITY,
+        capacity: testCapacity(),
       },
     ],
   },
@@ -593,7 +600,7 @@ const articulatedResult = stepChallenge(
   1,
 );
 assert.equal(articulatedResult.status, "running");
-assert.equal(articulatedResult.solution, "ARTICULATED MACHINE");
+assert.equal(articulatedResult.solution, "PHYSICAL ASSEMBLY");
 assert.equal(
   articulatedResult.criteria.find((entry) => entry.id === "stable")?.met,
   false,
@@ -682,7 +689,7 @@ function createHybridMachine() {
     portA: "TOP",
     portB: "AXLE",
     kind: "mechanical",
-    capacity: TEST_CAPACITY,
+    capacity: testCapacity(),
   });
   return assembly;
 }
