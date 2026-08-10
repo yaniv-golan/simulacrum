@@ -319,6 +319,7 @@ export class ControllerSensorBank {
       componentHasControlContract(part, "controller-target-v1"),
     )) {
       const readings = {},
+        validity = {},
         provenance = [],
         routed = routedSensors.get(controller.id) || new Map(),
         valuesBySensor = new Map();
@@ -357,6 +358,7 @@ export class ControllerSensorBank {
           ),
           value = valid ? finite(values[reading]) : 0;
         readings[binding.id] = value;
+        validity[binding.id] = valid ? 1 : 0;
         provenance.push({
           bindingId: binding.id,
           endpointPartId: binding.endpointPartId,
@@ -378,6 +380,7 @@ export class ControllerSensorBank {
         });
       }
       readings.__bindings = provenance;
+      readings.__validity = Object.freeze(validity);
       controllers[controller.id] = readings;
     }
     this.previousVelocity = nextVelocity;

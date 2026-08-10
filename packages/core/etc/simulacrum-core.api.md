@@ -1658,7 +1658,7 @@ export const CONNECTION_FRAME_TOLERANCES_V1: Readonly<{
 export function connectionUsesPort(connection: any, part: any, port: any): boolean;
 
 // @public (undocumented)
-export const CONTROL_IR_VERSION: 1;
+export const CONTROL_IR_VERSION: 2;
 
 // @public (undocumented)
 export const CONTROLLER_BINDING_DIRECTIONS: readonly string[];

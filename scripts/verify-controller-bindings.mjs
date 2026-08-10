@@ -724,29 +724,38 @@ const observed = [],
         poweredControllerIds: systems.power?.poweredPartIds || null,
       };
     },
-    tickControllers: (_dt, snapshot) =>
-      observed.push(snapshot.controllers?.[13]?.["pilot.command"] || 0),
+    tickControllers: (_dt, snapshot) => {
+      const readings = snapshot.controllers?.[13];
+      observed.push({
+        value: readings?.["pilot.command"] || 0,
+        valid: readings?.__validity?.["pilot.command"] || 0,
+      });
+    },
   });
 receiverSession.stepFixed();
-assert.equal(observed.at(-1), 0, "receiver leaked a same-step command");
-receiverSession.stepFixed();
-assert.equal(
+assert.deepEqual(
   observed.at(-1),
-  0.75,
-  "receiver command was not exposed exactly one completed step later",
+  { value: 0, valid: 0 },
+  "receiver leaked a same-step command or validity",
+);
+receiverSession.stepFixed();
+assert.deepEqual(
+  observed.at(-1),
+  { value: 0.75, valid: 1 },
+  "receiver command and validity were not exposed exactly one completed step later",
 );
 receiverSession.context.runGraph.failConnection("receiver-signal");
 receiverSession.stepFixed();
-assert.equal(
+assert.deepEqual(
   observed.at(-1),
-  0.75,
+  { value: 0.75, valid: 1 },
   "signal failure rewrote the prior snapshot",
 );
 receiverSession.stepFixed();
-assert.equal(
+assert.deepEqual(
   observed.at(-1),
-  0,
-  "signal loss retained a hidden receiver value",
+  { value: 0, valid: 0 },
+  "signal loss retained a hidden receiver value or stale validity",
 );
 
 const imu = part(31, "imu"),

@@ -4,7 +4,7 @@ import {
   validateControllerBindingManifest,
 } from "./controller-bindings.js";
 
-export const CONTROL_IR_VERSION = 1;
+export const CONTROL_IR_VERSION = 2;
 
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 const EXPRESSION_KINDS = new Set([
@@ -12,6 +12,7 @@ const EXPRESSION_KINDS = new Set([
   "local",
   "global",
   "read",
+  "valid",
   "unary",
   "binary",
   "conditional",
@@ -76,7 +77,7 @@ export function validateControlIR(input) {
       !["abs", "min", "max"].includes(expression.name)
     )
       throw new Error(`unknown numeric builtin ${expression.name}`);
-    if (expression.kind === "read")
+    if (["read", "valid"].includes(expression.kind))
       controllerBindingIndex(bindingManifest, expression.bindingId, "input");
     if (expression.value && typeof expression.value === "object")
       visitExpression(expression.value, depth + 1);
