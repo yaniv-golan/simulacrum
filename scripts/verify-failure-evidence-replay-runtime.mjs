@@ -3,6 +3,7 @@ import { createControllerSensorCapture } from "../src/application/controller-sen
 import { createFailureEvidenceArtifact } from "../src/application/failure-evidence-export.js";
 import { verifyFailureEvidenceReplay } from "../src/application/failure-evidence-replay.js";
 import { failureEvidenceManifestDigest } from "../src/model/failure-evidence-artifacts.js";
+import { controllerSensorFrameForId } from "../src/model/controller-sensor-frame-evidence.js";
 import { createWorkshopRunConfiguration } from "../src/application/mechanism-run-identity.js";
 import { createSimulationRunRuntime } from "../src/application/simulation-run-runtime.js";
 import { createTestSiteFixtureBodies } from "../src/application/test-site-fixture-feature.js";
@@ -93,7 +94,7 @@ const physics = {
       runtimeManager.tick(
         controller.id,
         dt,
-        sensors.controllers?.[controller.id] || {},
+        controllerSensorFrameForId(sensors.controllers, controller.id) || {},
       ),
     readCommandCandidates: () => ({
       remote: [

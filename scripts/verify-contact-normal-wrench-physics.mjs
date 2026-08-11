@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import * as CANNON from "cannon-es";
 import { TYPES } from "../src/model/component-catalog.js";
+import { controllerSensorFrameForId } from "../src/model/controller-sensor-frame-evidence.js";
 import { contactMaterialPair } from "../src/model/contact-material-pairs.js";
 import { CannonWorldAdapter } from "../src/simulation/cannon-world-adapter.js";
 import { observeContactNormalWrench } from "../src/simulation/contact-normal-wrench-observation.js";
@@ -165,14 +166,17 @@ const body = multibodyRuntime.bodyByPart.get(sensor.id),
     const telemetry = session.telemetry();
     return {
       telemetry,
-      readings: bank.capture({
-        parts,
-        connections,
-        bodies: telemetry.bodies,
-        signals,
-        fixedDt: DT,
-        time: telemetry.time,
-      })[controller.id],
+      readings: controllerSensorFrameForId(
+        bank.capture({
+          parts,
+          connections,
+          bodies: telemetry.bodies,
+          signals,
+          fixedDt: DT,
+          time: telemetry.time,
+        }),
+        controller.id,
+      ),
     };
   },
   close = (actual, expected, label, tolerance = 1e-8) =>

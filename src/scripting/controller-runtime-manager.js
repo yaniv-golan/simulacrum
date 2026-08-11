@@ -15,7 +15,11 @@ const CONTROLLER_CHECKPOINT_FIELDS = Object.freeze([
   "controllerId",
   "bindingManifestIdentity",
   "programIdentity",
+  "policyVersion",
+  "hostAbiIdentity",
   "ready",
+  "suspended",
+  "suspensionReason",
   "commands",
   "tick",
   "lastTick",
@@ -70,7 +74,10 @@ export class ControllerRuntimeManager {
         bindingManifestIdentity:
           preparedRuntime.bindingManifestIdentity || null,
         programIdentity: preparedRuntime.programIdentity || null,
+        hostAbiIdentity: preparedRuntime.hostAbiIdentity || null,
         ready: true,
+        suspended: false,
+        suspensionReason: null,
         commands: new Map(),
         tick: 0,
         lastTick: null,
@@ -84,6 +91,8 @@ export class ControllerRuntimeManager {
 
   #fail(runtime, error) {
     runtime.ready = false;
+    runtime.suspended = false;
+    runtime.suspensionReason = null;
     runtime.commands = new Map();
     runtime.error = error instanceof Error ? error.message : String(error);
     runtime.status = `TRAP: ${runtime.error}`;
@@ -94,6 +103,9 @@ export class ControllerRuntimeManager {
   tick(controllerId, dt, sensors) {
     const runtime = this.runtimes.get(controllerId);
     if (!runtime?.ready) return false;
+    const wasSuspended = runtime.suspended;
+    runtime.suspended = false;
+    runtime.suspensionReason = null;
     runtime.tick++;
     runtime.lastTick = {
       dt: Number(dt),
@@ -105,6 +117,10 @@ export class ControllerRuntimeManager {
           commands instanceof Map ? new Map(commands) : new Map(commands || []);
       runtime.commands = normalized;
       this.onCommands(runtime.controllerId, normalized);
+      if (wasSuspended) {
+        runtime.status = `${runtime.label} ONLINE`;
+        this.onStatus(runtime.controllerId, runtime.status, true);
+      }
       this.onTrace({
         controllerId: runtime.controllerId,
         tick: runtime.tick,
@@ -125,14 +141,28 @@ export class ControllerRuntimeManager {
   }
 
   ready(controllerId) {
-    return Boolean(this.runtimes.get(controllerId)?.ready);
+    const runtime = this.runtimes.get(controllerId);
+    return Boolean(runtime?.ready && !runtime.suspended);
+  }
+
+  suspend(controllerId, reason = "OFFLINE: CONTROLLER SUSPENDED") {
+    const runtime = this.runtimes.get(controllerId);
+    if (!runtime?.ready) return false;
+    if (runtime.suspended && runtime.suspensionReason === reason) return true;
+    runtime.suspended = true;
+    runtime.suspensionReason = reason;
+    runtime.commands = new Map();
+    runtime.status = reason;
+    this.onCommands(runtime.controllerId, runtime.commands);
+    this.onStatus(runtime.controllerId, runtime.status, false);
+    return true;
   }
 
   status(controllerId) {
     const runtime = this.runtimes.get(controllerId);
     return runtime
       ? {
-          ready: runtime.ready,
+          ready: runtime.ready && !runtime.suspended,
           status: runtime.status,
           error: runtime.error,
           language: runtime.language,
@@ -157,7 +187,11 @@ export class ControllerRuntimeManager {
           controllerId: runtime.controllerId,
           bindingManifestIdentity: runtime.bindingManifestIdentity,
           programIdentity: runtime.programIdentity,
+          policyVersion: runtime.policyVersion,
+          hostAbiIdentity: runtime.hostAbiIdentity,
           ready: runtime.ready,
+          suspended: runtime.suspended,
+          suspensionReason: runtime.suspensionReason,
           commands: [...runtime.commands].sort(([left], [right]) =>
             left.localeCompare(right, "en"),
           ),
@@ -190,7 +224,21 @@ export class ControllerRuntimeManager {
         !record.bindingManifestIdentity ||
         typeof record.programIdentity !== "string" ||
         !record.programIdentity ||
+        typeof record.policyVersion !== "string" ||
+        !record.policyVersion ||
+        !(
+          record.hostAbiIdentity === null ||
+          (typeof record.hostAbiIdentity === "string" &&
+            record.hostAbiIdentity.length > 0)
+        ) ||
         typeof record.ready !== "boolean" ||
+        typeof record.suspended !== "boolean" ||
+        !(
+          (record.suspended &&
+            typeof record.suspensionReason === "string" &&
+            record.suspensionReason.length > 0) ||
+          (!record.suspended && record.suspensionReason === null)
+        ) ||
         !Array.isArray(record.commands) ||
         !Number.isSafeInteger(record.tick) ||
         record.tick < 0 ||
@@ -206,7 +254,9 @@ export class ControllerRuntimeManager {
           record.error === null ||
           (typeof record.error === "string" && record.error.length > 0)
         ) ||
-        (record.ready ? record.error !== null : record.error === null)
+        (record.ready ? record.error !== null : record.error === null) ||
+        (!record.ready && record.suspended) ||
+        (record.suspended && record.commands.length > 0)
       )
         throw new Error("controller checkpoint contains invalid runtime state");
       for (const command of record.commands) {
@@ -235,7 +285,9 @@ export class ControllerRuntimeManager {
       if (
         !record ||
         record.bindingManifestIdentity !== runtime.bindingManifestIdentity ||
-        record.programIdentity !== runtime.programIdentity
+        record.programIdentity !== runtime.programIdentity ||
+        record.policyVersion !== runtime.policyVersion ||
+        record.hostAbiIdentity !== runtime.hostAbiIdentity
       )
         throw new Error("controller checkpoint identity mismatch");
       runtime.engine.validateState(record.engineState);
@@ -249,13 +301,17 @@ export class ControllerRuntimeManager {
       const record = byId.get(runtime.controllerId);
       runtime.engine.importState(record.engineState);
       runtime.ready = record.ready;
+      runtime.suspended = record.suspended;
+      runtime.suspensionReason = record.suspensionReason;
       runtime.commands = record.commands;
       runtime.tick = record.tick;
       runtime.lastTick = structuredClone(record.lastTick);
       runtime.error = record.error;
-      runtime.status = runtime.ready
-        ? `${runtime.label} ONLINE`
-        : `TRAP: ${runtime.error}`;
+      runtime.status = runtime.suspended
+        ? runtime.suspensionReason
+        : runtime.ready
+          ? `${runtime.label} ONLINE`
+          : `TRAP: ${runtime.error}`;
     }
     if (notify) this.publishState();
   }
@@ -273,7 +329,11 @@ export class ControllerRuntimeManager {
         // Post-commit observers are not checkpoint authorities.
       }
       try {
-        this.onStatus(runtime.controllerId, runtime.status, runtime.ready);
+        this.onStatus(
+          runtime.controllerId,
+          runtime.status,
+          runtime.ready && !runtime.suspended,
+        );
       } catch {
         // Continue publishing independent observers after one rejects.
       }

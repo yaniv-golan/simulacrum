@@ -2,12 +2,12 @@ import {
   compareCanonicalIds,
   deepFreeze,
   DomainValidationError,
-  stableStringify,
 } from "../model/primitives.js";
 import {
   issueInertPlainData,
   requireInertPlainData,
 } from "../model/plain-data-contract.js";
+import { poweredIdEvidenceSet } from "../model/powered-id-evidence.js";
 import { createSimulationContext } from "./simulation-context.js";
 import {
   createTelemetrySnapshot,
@@ -513,14 +513,7 @@ export class SimulationSession {
       state.tick < 0 ||
       !(
         state.poweredPartIds === null ||
-        (Array.isArray(state.poweredPartIds) &&
-          state.poweredPartIds.every(
-            (partId) =>
-              (typeof partId === "string" && partId.length > 0) ||
-              (typeof partId === "number" && Number.isSafeInteger(partId)),
-          ) &&
-          new Set(state.poweredPartIds.map(stableStringify)).size ===
-            state.poweredPartIds.length)
+        poweredIdEvidenceSet(state.poweredPartIds) !== null
       )
     )
       throw new DomainValidationError(

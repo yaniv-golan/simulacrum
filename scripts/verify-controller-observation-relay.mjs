@@ -4,6 +4,7 @@ import { createCommandCandidateReader } from "../src/application/command-candida
 import { ControllerRuntimeReadModel } from "../src/application/controller-runtime-read-model.js";
 import { TYPES } from "../src/model/component-catalog.js";
 import { controllerBindingManifest } from "../src/model/controller-bindings.js";
+import { controllerSensorFrameForId } from "../src/model/controller-sensor-frame-evidence.js";
 import { prepareTypeScriptController } from "../src/scripting/controller-compilers.js";
 import { ControllerRuntimeManager } from "../src/scripting/controller-runtime-manager.js";
 import { ControllerSensorBank } from "../src/simulation/controller-sensors.js";
@@ -284,15 +285,19 @@ const session = new SimulationSession({
   sensorBank = new ControllerSensorBank(),
   capture = (commandReceivers = null) => {
     const telemetry = session.telemetry();
-    return sensorBank.capture({
-      parts,
-      connections,
-      bodies: receiverBodies,
-      signals: telemetry.systems.signals,
-      commandReceivers: commandReceivers || telemetry.systems.commandReceivers,
-      fixedDt: 1 / 120,
-      time: telemetry.time,
-    })[consumer.id];
+    return controllerSensorFrameForId(
+      sensorBank.capture({
+        parts,
+        connections,
+        bodies: { ...receiverBodies, tick: telemetry.tick },
+        signals: telemetry.systems.signals,
+        commandReceivers:
+          commandReceivers || telemetry.systems.commandReceivers,
+        fixedDt: 1 / 120,
+        time: telemetry.time,
+      }),
+      consumer.id,
+    );
   };
 
 session.stepFixed();
@@ -387,6 +392,22 @@ assert.equal(
 );
 for (const binding of consumerBindings.slice(1))
   assert.equal(unavailable.__validity[binding.id], 1);
+
+const staleReceivers = {
+    states: currentReceivers.states.map((state) => ({
+      ...state,
+      tick: state.tick - 1,
+    })),
+  },
+  stale = capture(staleReceivers);
+for (const binding of consumerBindings) {
+  assert.equal(stale[binding.id], 0);
+  assert.equal(
+    stale.__validity[binding.id],
+    0,
+    "stale receiver state was relabeled as current physical evidence",
+  );
+}
 
 tickObserver(loadedFrame);
 session.stepFixed();

@@ -1,5 +1,6 @@
 import { validateControlIR } from "../model/control-program-ir.js";
 import { controllerBindingIndex } from "../model/controller-bindings.js";
+import { validatePointContactWrenchControllerSpec } from "../model/point-contact-wrench-controller-contract.js";
 
 function watName(name) {
   return `$${name}`;
@@ -10,9 +11,43 @@ function watNumber(value) {
   return String(value);
 }
 
+export function pointContactWrenchSpecsFromControlIR(input) {
+  const ir = validateControlIR(input),
+    specs = [],
+    indexes = new Map(),
+    visitStatements = (statements) => {
+      for (const statement of statements) {
+        if (statement.kind === "point-contact-wrench-write") {
+          const spec = validatePointContactWrenchControllerSpec(
+              statement.spec,
+              ir.bindingManifest,
+            ),
+            key = JSON.stringify(spec);
+          if (!indexes.has(key)) {
+            indexes.set(key, specs.length);
+            specs.push(spec);
+          }
+        }
+        if (statement.kind === "if") {
+          visitStatements(statement.then);
+          visitStatements(statement.else || []);
+        }
+      }
+    };
+  for (const fn of ir.functions) visitStatements(fn.body);
+  return Object.freeze(specs);
+}
+
 export function compileControlIRToWat(input) {
   const ir = validateControlIR(input),
-    functions = new Map(ir.functions.map((fn) => [fn.name, fn]));
+    functions = new Map(ir.functions.map((fn) => [fn.name, fn])),
+    pointContactWrenchSpecs = pointContactWrenchSpecsFromControlIR(ir),
+    pointContactWrenchSpecIndexes = new Map(
+      pointContactWrenchSpecs.map((spec, index) => [
+        JSON.stringify(spec),
+        index,
+      ]),
+    );
   const expression = (node) => {
     if (node.kind === "number") return `(f64.const ${watNumber(node.value)})`;
     if (node.kind === "local") return `(local.get ${watName(node.name)})`;
@@ -81,6 +116,19 @@ export function compileControlIRToWat(input) {
           return `(global.set ${watName(statement.name)} ${expression(statement.value)})`;
         if (statement.kind === "write")
           return `(call $write_binding (i32.const ${controllerBindingIndex(ir.bindingManifest, statement.bindingId, "output")}) ${expression(statement.value)})`;
+        if (statement.kind === "point-contact-wrench-write") {
+          const spec = validatePointContactWrenchControllerSpec(
+              statement.spec,
+              ir.bindingManifest,
+            ),
+            specIndex = pointContactWrenchSpecIndexes.get(JSON.stringify(spec));
+          return statement.outputBindingIds
+            .map(
+              (bindingId, outputIndex) =>
+                `(call $write_binding (i32.const ${controllerBindingIndex(ir.bindingManifest, bindingId, "output")}) (call $point_contact_wrench_output (i32.const ${specIndex}) (i32.const ${outputIndex})))`,
+            )
+            .join("\n    ");
+        }
         if (statement.kind === "expression")
           return `(drop ${expression(statement.value)})`;
         if (statement.kind === "if")
@@ -99,6 +147,10 @@ export function compileControlIRToWat(input) {
     '  (import "env" "read_binding_valid" (func $read_binding_valid (param i32) (result f64)))',
     '  (import "env" "write_binding" (func $write_binding (param i32 f64)))',
   ];
+  if (pointContactWrenchSpecs.length)
+    lines.push(
+      '  (import "env" "point_contact_wrench_output" (func $point_contact_wrench_output (param i32 i32) (result f64)))',
+    );
   for (const global of ir.globals || [])
     lines.push(
       `  (global ${watName(global.name)} ${global.mutable ? "(mut f64)" : "f64"} (f64.const ${watNumber(global.initial)}))`,

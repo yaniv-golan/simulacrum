@@ -1,5 +1,6 @@
 // Shared executable policy consumed by model, compiler, editor, and runtime.
-export const CONTROLLER_POLICY_VERSION = "control-wasm-v1-bindings";
+export const CONTROLLER_POLICY_VERSION =
+  "control-wasm-v2-point-contact-wrench-bindings";
 
 export const CONTROLLER_CHANNELS = Object.freeze([
   "command",

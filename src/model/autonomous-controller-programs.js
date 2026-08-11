@@ -1,4 +1,8 @@
 import { validateControllerBindingManifest } from "./controller-bindings.js";
+import {
+  validatePointContactWrenchControllerSpec,
+  validatePointContactWrenchOutputBindingIds,
+} from "./point-contact-wrench-controller-contract.js";
 
 function assertBindingId(value, label) {
   if (typeof value !== "string" || !value.trim())
@@ -8,6 +12,17 @@ function assertBindingId(value, label) {
 
 function assertFinite(value, label) {
   if (!Number.isFinite(value)) throw new TypeError(`${label} must be finite`);
+  return value;
+}
+
+function exactRecord(value, fields, label) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    Object.keys(value).sort().join("\0") !== [...fields].sort().join("\0")
+  )
+    throw new TypeError(`${label} has an invalid field set`);
   return value;
 }
 
@@ -314,5 +329,135 @@ function tick(api: ControlAPI, dt: number): void {
 ${body.join("\n")}
   api.write(${JSON.stringify(supportCountOutput)}, supportCount);
   api.write(${JSON.stringify(setConfidenceOutput)}, allEvidenceCoherent);
+}`;
+}
+
+/**
+ * Builds a restricted controller program that invokes the canonical bounded
+ * point-contact allocator through scalar value-plus-validity bindings. Rejected
+ * allocations publish explicit diagnostics and zero force demands.
+ *
+ * @param {{
+ *   allocationSpec?: object,
+ *   diagnosticOutputBindingIds?: {
+ *     authorityValid?: string,
+ *     solverConverged?: string,
+ *     accepted?: string,
+ *     rejectionCode?: string,
+ *     forceResidualNormN?: string,
+ *     momentResidualNormNm?: string,
+ *     saturated?: string,
+ *     residualClipped?: string,
+ *   },
+ *   contactForceOutputs?: Array<{
+ *     contactId?: string,
+ *     forceWorldOutputBindingIds?: string[],
+ *   }>,
+ *   bindingManifest?: object[],
+ * }} options
+ */
+export function pointContactWrenchAllocatorProgram({
+  allocationSpec,
+  diagnosticOutputBindingIds,
+  contactForceOutputs,
+  bindingManifest,
+} = {}) {
+  const manifest = validateControllerBindingManifest(bindingManifest),
+    spec = validatePointContactWrenchControllerSpec(allocationSpec, manifest),
+    diagnostics = exactRecord(
+      diagnosticOutputBindingIds,
+      [
+        "authorityValid",
+        "solverConverged",
+        "accepted",
+        "rejectionCode",
+        "forceResidualNormN",
+        "momentResidualNormNm",
+        "saturated",
+        "residualClipped",
+      ],
+      "allocation diagnostic outputs",
+    ),
+    diagnosticBindings = [
+      ["authorityValid", diagnostics.authorityValid],
+      ["solverConverged", diagnostics.solverConverged],
+      ["accepted", diagnostics.accepted],
+      ["rejectionCode", diagnostics.rejectionCode],
+      ["forceResidualNormN", diagnostics.forceResidualNormN],
+      ["momentResidualNormNm", diagnostics.momentResidualNormNm],
+      ["saturated", diagnostics.saturated],
+      ["residualClipped", diagnostics.residualClipped],
+    ].map(([label, value]) => [label, assertBindingId(value, label)]);
+  if (
+    !Array.isArray(contactForceOutputs) ||
+    contactForceOutputs.length !== spec.contacts.length
+  )
+    throw new TypeError(
+      "contact force outputs must match the allocation contact count",
+    );
+  const forceByContact = new Map();
+  for (const [index, raw] of contactForceOutputs.entries()) {
+    const output = exactRecord(
+        raw,
+        ["contactId", "forceWorldOutputBindingIds"],
+        `contact force output ${index}`,
+      ),
+      contactId = String(output.contactId || ""),
+      bindings = Array.isArray(output.forceWorldOutputBindingIds)
+        ? output.forceWorldOutputBindingIds.map((value, axis) =>
+            assertBindingId(
+              value,
+              `contact ${contactId} force output ${["x", "y", "z"][axis]}`,
+            ),
+          )
+        : [];
+    if (!spec.contacts.some((contact) => contact.contactId === contactId))
+      throw new Error(`unknown force-output contact ${contactId}`);
+    if (forceByContact.has(contactId))
+      throw new Error(`duplicate force-output contact ${contactId}`);
+    if (bindings.length !== 3)
+      throw new TypeError(
+        `contact ${contactId} force output must contain three binding IDs`,
+      );
+    forceByContact.set(contactId, bindings);
+  }
+  const orderedForceBindings = spec.contacts.map((contact) => {
+      return forceByContact.get(contact.contactId);
+    }),
+    allOutputBindings = [
+      ...diagnosticBindings,
+      ...spec.contacts.flatMap((contact, index) =>
+        orderedForceBindings[index].map((bindingId, axis) => [
+          `contact ${contact.contactId} force output ${["x", "y", "z"][axis]}`,
+          bindingId,
+        ]),
+      ),
+    ];
+  assertDistinctBindingIds(allOutputBindings);
+  const orderedOutputBindingIds = [
+      ...diagnosticBindings.map(([, outputBindingId]) => outputBindingId),
+      ...orderedForceBindings.flat(),
+    ],
+    validatedOutputBindingIds = validatePointContactWrenchOutputBindingIds(
+      spec,
+      orderedOutputBindingIds,
+      manifest,
+    ),
+    encodedSpec = JSON.stringify(JSON.stringify(spec)),
+    encodedOutputBindings = JSON.stringify(
+      JSON.stringify(validatedOutputBindingIds),
+    );
+  return `interface ControlAPI {
+  read(binding: string): number;
+  valid(binding: string): number;
+  write(binding: string, value: number): void;
+  writePointContactWrench(
+    specification: string,
+    outputBindings: string,
+  ): void;
+}
+function tick(api: ControlAPI, dt: number): void {
+  void dt;
+  api.writePointContactWrench(${encodedSpec}, ${encodedOutputBindings});
 }`;
 }

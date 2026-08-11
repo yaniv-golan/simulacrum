@@ -3,12 +3,13 @@ import {
   DEFAULT_VISUAL_PROGRAM,
 } from "../model/visual-logic.js";
 import { errorMessage } from "../model/primitives.js";
+import { poweredIdEvidenceSet } from "../model/powered-id-evidence.js";
 import { ControllerRuntimeManager } from "../scripting/controller-runtime-manager.js";
+import { prepareWasmController } from "../scripting/controller-compilers.js";
 import {
-  prepareControlIRController,
-  prepareTypeScriptController,
-  prepareWasmController,
-} from "../scripting/controller-compilers.js";
+  preparePhysicsControlIRController,
+  preparePhysicsTypeScriptController,
+} from "./controller-physics-compilers.js";
 import { createControllerDiagnostics } from "./controller-diagnostics.js";
 import {
   countControllerSignalOutputs,
@@ -17,6 +18,7 @@ import {
 import { createControllerSensorCapture } from "./controller-sensor-capture.js";
 import { ControllerRuntimeReadModel } from "./controller-runtime-read-model.js";
 import { controllerBindingManifest } from "../model/controller-bindings.js";
+import { controllerSensorFrameForId } from "../model/controller-sensor-frame-evidence.js";
 
 /**
  * @typedef {{ wat:string, typescript:string, visual:unknown, [language:string]:unknown }} ControllerSources
@@ -87,7 +89,7 @@ export function createControllerLifecycleFeature({
     for (const [id, value] of outputs) {
       const bindingId = String(id);
       if (bindingId && Number.isFinite(value))
-        commands[bindingId] = Math.max(-100_000, Math.min(100_000, value));
+        commands[bindingId] = Number(value);
     }
     return commands;
   };
@@ -240,7 +242,7 @@ export function createControllerLifecycleFeature({
       const generation = compileGeneration.get(controller.id);
       if (controller.id === workspace.scriptControllerId)
         view.query("#wasm-status").textContent = "COMPILING TYPESCRIPT";
-      const runtime = await prepareTypeScriptController(
+      const runtime = await preparePhysicsTypeScriptController(
         source,
         manifestFor(controller),
       );
@@ -266,7 +268,7 @@ export function createControllerLifecycleFeature({
           program || DEFAULT_VISUAL_PROGRAM,
           manifest,
         ),
-        runtime = await prepareControlIRController(compiled.ir);
+        runtime = await preparePhysicsControlIRController(compiled.ir);
       if (!compileIsCurrent(controller, generation)) return;
       controller.scriptSources.visual = structuredClone(compiled.program);
       if (controller.id === workspace.scriptControllerId)
@@ -298,7 +300,9 @@ export function createControllerLifecycleFeature({
       return;
     }
     if (!power.isPowered(controller)) {
-      stop("OFFLINE: CONNECT CONTROLLER POWER", controller.id);
+      const message = "OFFLINE: CONNECT CONTROLLER POWER";
+      if (!runtimeManager.suspend(controller.id, message))
+        setStatus(controller.id, message, false);
       if (controller.id === workspace.scriptControllerId) {
         editor.render();
         view.notify("Logic Controller needs a charged power connection");
@@ -321,21 +325,27 @@ export function createControllerLifecycleFeature({
   });
 
   function tick(dt, sensorSnapshot = {}) {
-    const poweredControllerIds = sensorSnapshot.poweredControllerIds;
+    const poweredControllerIds = poweredIdEvidenceSet(
+      sensorSnapshot.poweredControllerIds,
+    );
     for (const controllerId of runtimeManager.ids()) {
       const controller = workspace.parts.find(
           (part) => part.id === controllerId,
         ),
         powered = controller
-          ? poweredControllerIds
-            ? poweredControllerIds.includes(controllerId)
-            : power.isPowered(controller)
+          ? poweredControllerIds?.has(controllerId) === true
           : false;
-      if (!controller || !powered) {
+      if (!controller) {
         stop("OFFLINE: CONTROLLER LOST POWER", controllerId);
         continue;
       }
-      const connected = sensorSnapshot.controllers?.[controllerId] || {};
+      if (!powered) {
+        runtimeManager.suspend(controllerId, "OFFLINE: CONTROLLER LOST POWER");
+        continue;
+      }
+      const connected =
+        controllerSensorFrameForId(sensorSnapshot.controllers, controllerId) ||
+        {};
       runtimeManager.tick(controllerId, dt, connected);
     }
     setRuntimeView();

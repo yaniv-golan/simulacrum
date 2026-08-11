@@ -1100,8 +1100,60 @@ assert.throws(
 for (const [mutateCheckpoint, expectedError] of [
   [(state) => (state[0].controllerId = 404), /identity mismatch/],
   [(state) => (state[0].language = "wat"), /invalid runtime state/],
+  [(state) => (state[0].policyVersion = "future-policy"), /identity mismatch/],
+  [(state) => (state[0].policyVersion = 1), /invalid runtime state/],
+  [(state) => (state[0].policyVersion = ""), /invalid runtime state/],
+  [(state) => (state[0].hostAbiIdentity = 1), /invalid runtime state/],
+  [(state) => (state[0].hostAbiIdentity = ""), /invalid runtime state/],
   [
-    (state) => (state[0].policyVersion = "future-policy"),
+    (state) => (state[0].hostAbiIdentity = "forged-host-abi"),
+    /identity mismatch/,
+  ],
+  [(state) => delete state[0].suspended, /invalid runtime state/],
+  [(state) => delete state[0].suspensionReason, /invalid runtime state/],
+  [(state) => (state[0].suspended = 1), /invalid runtime state/],
+  [
+    (state) => {
+      state[0].suspended = 1;
+      state[0].suspensionReason = "OFFLINE";
+      state[0].commands = [];
+    },
+    /invalid runtime state/,
+  ],
+  [
+    (state) => {
+      state[0].suspended = true;
+      state[0].suspensionReason = null;
+    },
+    /invalid runtime state/,
+  ],
+  [
+    (state) => {
+      state[0].suspended = true;
+      state[0].suspensionReason = "";
+      state[0].commands = [];
+    },
+    /invalid runtime state/,
+  ],
+  [
+    (state) => (state[0].suspensionReason = "forged suspension"),
+    /invalid runtime state/,
+  ],
+  [
+    (state) => {
+      state[0].suspended = true;
+      state[0].suspensionReason = "OFFLINE";
+    },
+    /invalid runtime state/,
+  ],
+  [
+    (state) => {
+      state[0].ready = false;
+      state[0].error = "trap";
+      state[0].suspended = true;
+      state[0].suspensionReason = "OFFLINE";
+      state[0].commands = [];
+    },
     /invalid runtime state/,
   ],
   [(state) => (state[0].commands[0][1] = "0.5"), /invalid commands/],

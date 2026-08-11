@@ -33,6 +33,7 @@ const SCRIPTING_MODEL_CONTRACTS = new Set([
   "model/controller-policy.js",
   "model/finite-or.js",
   "model/plain-data-contract.js",
+  "model/point-contact-wrench-controller-contract.js",
 ]);
 
 const DELETED_RUNTIME_IDENTIFIERS = new Set([

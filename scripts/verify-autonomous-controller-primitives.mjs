@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { boundedEvidenceEstimatorProgram } from "../src/model/autonomous-controller-programs.js";
 import { TYPES } from "../src/model/component-catalog.js";
+import { controllerSensorFrameForId } from "../src/model/controller-sensor-frame-evidence.js";
 import {
   prepareTypeScriptController,
   prepareWasmController,
@@ -337,21 +338,24 @@ const part = (id, type, extra = {}) => ({
     captureSignals = signals,
     captureController = controller,
   ) =>
-    new ControllerSensorBank().capture({
-      parts: [navigation, captureController],
-      connections: [
-        {
-          id: "navigation-signal",
-          a: "navigation",
-          b: "estimator",
-          kind: "signal",
-          portA: "SIGNAL",
-          portB: "IN A",
-        },
-      ],
-      bodies: captureBodies,
-      signals: captureSignals,
-    })[captureController.id],
+    controllerSensorFrameForId(
+      new ControllerSensorBank().capture({
+        parts: [navigation, captureController],
+        connections: [
+          {
+            id: "navigation-signal",
+            a: "navigation",
+            b: "estimator",
+            kind: "signal",
+            portA: "SIGNAL",
+            portB: "IN A",
+          },
+        ],
+        bodies: captureBodies,
+        signals: captureSignals,
+      }),
+      captureController.id,
+    ),
   measuredZero = capture(),
   missingBody = capture({}),
   missingRoute = capture(bodies, {}),

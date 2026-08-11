@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { TYPES } from "../src/model/component-catalog.js";
 import { contactMaterialPair } from "../src/model/contact-material-pairs.js";
 import { SENSOR_PART_DEFINITIONS } from "../src/model/sensor-contracts.js";
+import { controllerSensorFrameForId } from "../src/model/controller-sensor-frame-evidence.js";
 import { observeContactNormalWrench } from "../src/simulation/contact-normal-wrench-observation.js";
 import { ControllerSensorBank } from "../src/simulation/controller-sensors.js";
 import {
@@ -1034,12 +1035,15 @@ const bindings = READING_KEYS.map((reading) => ({
   }),
   bank = new ControllerSensorBank(),
   capture = (samples, tick = 1) =>
-    bank.capture({
-      parts,
-      connections,
-      signals,
-      bodies: snapshot(samples, tick),
-    }).observer;
+    controllerSensorFrameForId(
+      bank.capture({
+        parts,
+        connections,
+        signals,
+        bodies: snapshot(samples, tick),
+      }),
+      "observer",
+    );
 
 let readings = capture(contacts);
 close(readings.contact_force_n, 30, "legacy summed normal force");

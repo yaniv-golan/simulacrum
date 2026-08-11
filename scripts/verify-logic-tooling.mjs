@@ -4,6 +4,7 @@ import {
   DEFAULT_VISUAL_PROGRAM,
 } from "../src/model/visual-logic.js";
 import { ControllerTraceBuffer } from "../src/model/controller-debugger.js";
+import { controllerSensorFrameForId } from "../src/model/controller-sensor-frame-evidence.js";
 import { ControllerSensorBank } from "../src/simulation/controller-sensors.js";
 import { normalizeBlueprint } from "../src/model/blueprints.js";
 import { componentDefaults } from "../src/model/component-resolver.js";
@@ -167,7 +168,10 @@ const controllerBindings = [
       },
     ],
   },
-  values = bank.capture({ parts, connections, bodies, signals })[1];
+  values = controllerSensorFrameForId(
+    bank.capture({ parts, connections, bodies, signals }),
+    1,
+  );
 assert.equal(values["imu.rate_z"], 0.6);
 assert.equal(values["imu.accel_x"], 240);
 assert.ok(Math.abs(values["air.static_pressure"] - 87715.57) < 0.01);

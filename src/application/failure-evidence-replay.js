@@ -11,8 +11,10 @@ import { createTestingPlaygroundEnvironment } from "./testing-playground-environ
 import { createWorkshopPhysicsWorld } from "./workshop-physics-world.js";
 import { decodeBlueprintOrThrow } from "../model/blueprint-decoder.js";
 import { controllerBindingManifest } from "../model/controller-bindings.js";
+import { controllerSensorFrameForId } from "../model/controller-sensor-frame-evidence.js";
 import { decodeFailureEvidenceOrThrow } from "../model/failure-evidence-artifacts.js";
 import { stableStringify } from "../model/primitives.js";
+import { poweredIdEvidenceSet } from "../model/powered-id-evidence.js";
 import {
   compileVisualProgram,
   DEFAULT_VISUAL_PROGRAM,
@@ -26,12 +28,12 @@ import { FailureEvidenceRecorder } from "../simulation/failure-evidence-recorder
 import { InputTraceRecorder } from "../simulation/input-trace-recorder.js";
 import { InputTracePlayer } from "../simulation/input-trace-player.js";
 import { RuntimeCheckpointCoordinator } from "../simulation/runtime-checkpoints.js";
-import { ControllerRuntimeManager } from "../scripting/controller-runtime-manager.js";
 import {
-  prepareControlIRController,
-  prepareTypeScriptController,
-  prepareWasmController,
-} from "../scripting/controller-compilers.js";
+  preparePhysicsControlIRController,
+  preparePhysicsTypeScriptController,
+} from "./controller-physics-compilers.js";
+import { ControllerRuntimeManager } from "../scripting/controller-runtime-manager.js";
+import { prepareWasmController } from "../scripting/controller-compilers.js";
 
 function ownerPayload(checkpoint, ownerId) {
   const owner = checkpoint.stateOwners.find(
@@ -89,7 +91,7 @@ async function prepareReplayController(controller, snapshot, state) {
     ),
     language = String(state.language || controller.scriptLanguage || "");
   if (language === "typescript")
-    return prepareTypeScriptController(
+    return preparePhysicsTypeScriptController(
       controller.scriptSources?.typescript || "",
       manifest,
     );
@@ -100,9 +102,31 @@ async function prepareReplayController(controller, snapshot, state) {
       controller.scriptSources?.visual || DEFAULT_VISUAL_PROGRAM,
       manifest,
     );
-    return prepareControlIRController(compiled.ir);
+    return preparePhysicsControlIRController(compiled.ir);
   }
   throw new Error(`unsupported replay controller language ${language}`);
+}
+
+export function advanceFailureEvidenceReplayControllers(
+  runtimeManager,
+  dt,
+  sensorSnapshot = {},
+) {
+  const poweredControllerIds = poweredIdEvidenceSet(
+    sensorSnapshot.poweredControllerIds,
+  );
+  for (const controllerId of runtimeManager.ids()) {
+    if (!poweredControllerIds?.has(controllerId)) {
+      runtimeManager.suspend(controllerId, "OFFLINE: CONTROLLER LOST POWER");
+      continue;
+    }
+    runtimeManager.tick(
+      controllerId,
+      dt,
+      controllerSensorFrameForId(sensorSnapshot.controllers, controllerId) ||
+        {},
+    );
+  }
 }
 
 async function createReplayControllers({
@@ -136,21 +160,11 @@ async function createReplayControllers({
       return sensorCapture(context, fixedDt);
     },
     tick(dt, sensorSnapshot = {}) {
-      const poweredControllerIds = sensorSnapshot.poweredControllerIds;
-      for (const controllerId of runtimeManager.ids()) {
-        if (
-          poweredControllerIds &&
-          !poweredControllerIds.includes(controllerId)
-        ) {
-          runtimeManager.dispose(controllerId);
-          continue;
-        }
-        runtimeManager.tick(
-          controllerId,
-          dt,
-          sensorSnapshot.controllers?.[controllerId] || {},
-        );
-      }
+      advanceFailureEvidenceReplayControllers(
+        runtimeManager,
+        dt,
+        sensorSnapshot,
+      );
     },
     readCommandCandidates() {
       return {

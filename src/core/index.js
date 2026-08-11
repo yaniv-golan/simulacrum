@@ -168,6 +168,7 @@ export { RuntimeCheckpointCoordinator } from "../simulation/runtime-checkpoints.
 export { CommandBus } from "../simulation/command-bus.js";
 export {
   ACTUATOR_CHANNELS,
+  COMMAND_SINK_SCALAR_LIMIT,
   acceptsActuatorChannel,
   actuatorChannel,
   clampActuatorCommand,

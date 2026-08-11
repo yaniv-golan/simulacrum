@@ -8,6 +8,7 @@ import {
   requireInertPlainData,
 } from "../model/plain-data-contract.js";
 import { canonicalControllerBindings } from "../model/controller-bindings.js";
+import { setControllerSensorFrame } from "../model/controller-sensor-frame-evidence.js";
 import { finiteOr as finite } from "../model/finite-or.js";
 import { standardAtmosphere } from "./environment/atmosphere.js";
 import { quaternionToAircraftDegrees } from "./attitude-math.js";
@@ -213,6 +214,10 @@ function valuesForSensor(sensor, context) {
     receiverState = (context.commandReceivers?.states || []).find(
       (state) => state.partId === sensor.id,
     ),
+    commandFresh =
+      receiverState?.valid === true &&
+      Number.isSafeInteger(context.bodyTick) &&
+      receiverState.tick === context.bodyTick,
     rangeContract = compiledSensor?.measurement,
     sensorAxis = rangeContract
       ? rotateVector(rangeContract.localAxisPart, pose.quaternion)
@@ -246,7 +251,7 @@ function valuesForSensor(sensor, context) {
     );
   return {
     readingValidity: {
-      command: receiverState?.valid === true,
+      command: commandFresh,
       contact_force_n: normalContactWrench.wrenchValid,
       contact_normal_force_part_x_n: normalContactWrench.wrenchValid,
       contact_normal_force_part_y_n: normalContactWrench.wrenchValid,
@@ -310,7 +315,7 @@ function valuesForSensor(sensor, context) {
     tire_gas_temperature_k: finite(tirePressure?.temperatureK),
     load_n: peakLoad,
     load_ratio: Number.isFinite(ratedLoad) ? peakLoad / ratedLoad : 0,
-    command: receiverState?.valid ? finite(receiverState.value) : 0,
+    command: commandFresh ? finite(receiverState.value) : 0,
     proximity_detected: proximity?.hit ? 1 : 0,
     proximity_range_m: finite(proximity?.rangeM),
     proximity_range_rate_mps: finite(proximity?.rangeRateMps),
@@ -353,6 +358,7 @@ export class ControllerSensorBank {
       nextVelocity = new Map(),
       partsById = new Map(parts.map((part) => [part.id, part])),
       indexes = bodyIndexes(bodies),
+      snapshotTick = bodySnapshotTick(bodies),
       compiledByPart = new Map(
         compiledBodies.map((body) => [body.partId, body.capabilities?.sensor]),
       ),
@@ -390,7 +396,7 @@ export class ControllerSensorBank {
             pneumatics,
             environmentBodies,
             compiledSensor: compiledByPart.get(sensor.id),
-            bodyTick: bodySnapshotTick(bodies),
+            bodyTick: snapshotTick,
             previousVelocity: this.previousVelocity.get(sensor.id) || {},
           });
           valuesBySensor.set(sensor.id, values);
@@ -429,7 +435,8 @@ export class ControllerSensorBank {
       }
       readings.__bindings = provenance;
       readings.__validity = Object.freeze(validity);
-      controllers[controller.id] = readings;
+      if (snapshotTick !== null) readings.__snapshotTick = snapshotTick;
+      setControllerSensorFrame(controllers, controller.id, readings);
     }
     this.previousVelocity = nextVelocity;
     return controllers;
