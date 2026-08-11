@@ -7,9 +7,9 @@ import { analyzeCapabilityDispatch } from "./lib/capability-dispatch-analyzer.mj
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const REVIEWED_CAPABILITY_DISPATCH_BASELINE = Object.freeze({
   commit:
-    "unreleased-generic-autonomous-controller-m3b-loaded-contact-observation-2026-08-11",
+    "unreleased-generic-contact-normal-wrench-observation-m3c-a-2026-08-11",
   sites: 288,
-  sha256: "7ce3324746ba8210022e94ab76835c6ee5729a18fa5c4d8ba96a5c8500d7a018",
+  sha256: "b2c2724a0145b5903940117a32e2cb598ddf8bfafdd252b0488d282e6e92abd5",
 });
 
 const POLICIES = Object.freeze([

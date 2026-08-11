@@ -115,6 +115,31 @@ const runConfiguration = {
   };
 checkpoint.stateDigest = checkpointStateDigest(checkpoint);
 
+const bodyRegistryOwnerIndex = checkpoint.stateOwners.findIndex(
+  ({ ownerId }) => ownerId === "body-registry",
+);
+assert.notEqual(bodyRegistryOwnerIndex, -1);
+for (const ownerVersion of [1, 2, 3]) {
+  const wrongBodyRegistryVersion = structuredClone(checkpoint);
+  wrongBodyRegistryVersion.stateOwners[bodyRegistryOwnerIndex].ownerVersion =
+    ownerVersion;
+  assert.equal(
+    validateCheckpointWire(wrongBodyRegistryVersion),
+    false,
+    `body-registry ownerVersion ${ownerVersion} bypassed its version-6 wire condition`,
+  );
+}
+for (const [ownerIndex, owner] of checkpoint.stateOwners.entries()) {
+  if (owner.ownerId === "body-registry") continue;
+  const bodyRegistryVersionOnOtherOwner = structuredClone(checkpoint);
+  bodyRegistryVersionOnOtherOwner.stateOwners[ownerIndex].ownerVersion = 6;
+  assert.equal(
+    validateCheckpointWire(bodyRegistryVersionOnOtherOwner),
+    false,
+    `non-body owner ${owner.ownerId} accepted body-registry ownerVersion 6`,
+  );
+}
+
 const experiment = {
   format: "simulacrum-experiment",
   version: 1,

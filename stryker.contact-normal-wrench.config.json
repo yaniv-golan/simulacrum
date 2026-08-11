@@ -1,0 +1,61 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "ignorePatterns": [
+    "/artifacts",
+    "/coverage",
+    "/dist",
+    "/output",
+    "/packages/core/dist",
+    "/temp"
+  ],
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node scripts/verify-contact-normal-wrench-observation.mjs && node scripts/verify-contact-normal-wrench-physics.mjs && node scripts/verify-cannon-solver-transaction.mjs"
+  },
+  "mutate": [
+    "src/simulation/contact-normal-wrench-observation.js:1-65",
+    "src/simulation/contact-normal-wrench-observation.js:101-259",
+    "src/simulation/controller-sensors.js:169-173",
+    "src/simulation/controller-sensors.js:379-379",
+    "src/simulation/body-registry.js:50-79",
+    "src/simulation/body-registry.js:374-398",
+    "src/simulation/body-registry.js:689-751",
+    "src/simulation/body-registry.js:794-799",
+    "src/simulation/body-registry.js:985-988",
+    "src/simulation/body-registry.js:1379-1401",
+    "src/simulation/body-registry.js:1650-1676",
+    "src/simulation/body-registry.js:1916-1919",
+    "src/simulation/cannon-solver-transaction.js:32-46",
+    "src/simulation/cannon-solver-transaction.js:247-284",
+    "src/simulation/cannon-solver-transaction.js:461-507",
+    "src/simulation/systems/rigid-body-system.js:44-61",
+    "src/simulation/systems/rigid-body-system.js:235-255",
+    "src/simulation/systems/rigid-body-system.js:309-316",
+    "src/simulation/systems/rigid-body-system.js:355-357",
+    "src/model/component-catalog.js:728-751",
+    "src/model/sensor-contracts.js:49-87"
+  ],
+  "coverageAnalysis": "off",
+  "mutator": {
+    "excludedMutations": [
+      "StringLiteral",
+      "ArrayDeclaration",
+      "ObjectLiteral",
+      "OptionalChaining",
+      "MethodExpression",
+      "ArrowFunction"
+    ]
+  },
+  "concurrency": 4,
+  "timeoutMS": 20000,
+  "tempDirName": "artifacts/stryker-contact-normal-wrench",
+  "reporters": ["clear-text", "json"],
+  "jsonReporter": {
+    "fileName": "artifacts/contact-normal-wrench-mutation.json"
+  },
+  "thresholds": {
+    "high": 90,
+    "low": 90,
+    "break": 90
+  }
+}

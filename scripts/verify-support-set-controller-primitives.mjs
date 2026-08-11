@@ -430,6 +430,18 @@ const part = (id, type, extra = {}) => ({
       reading: binding.reading,
     })),
   }),
+  contact = (forceN, x) => ({
+    tick: 1,
+    normalForceValid: true,
+    observationFrame: {
+      position: { x: 0, y: 0, z: 0 },
+      quaternion: { x: 0, y: 0, z: 0, w: 1 },
+    },
+    point: { x, y: 0, z: 0 },
+    normal: { x: 0, y: 1, z: 0 },
+    forceN,
+    forceWorldN: { x: 0, y: forceN, z: 0 },
+  }),
   body = (entry, contacts) => ({
     bodyId: entry.key + "-body",
     bound: true,
@@ -444,10 +456,11 @@ const part = (id, type, extra = {}) => ({
     loads: [],
   }),
   bodies = {
+    tick: 1,
     bodies: [
-      body(candidates[0], [{ forceN: 6 }, { forceN: 4 }]),
+      body(candidates[0], [contact(6, -0.1), contact(4, 0.1)]),
       body(candidates[1], []),
-      body(candidates[2], [{ forceN: 3 }]),
+      body(candidates[2], [contact(3, 0)]),
     ],
     bodyByPart: candidates.map((entry) => ({
       partId: entry.key + "-contact-sensor",

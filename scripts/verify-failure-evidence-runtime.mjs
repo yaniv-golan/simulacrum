@@ -375,6 +375,7 @@ function runContactInvariantClassification(forceN) {
     };
   bodyRegistry.beginTick(1);
   bodyRegistry.recordContact(bodyRegistry.bodyForPart(42).bodyId, {
+    normalForceValid: true,
     point: { x: 0, y: 0, z: 0 },
     normal: { x: 0, y: 1, z: 0 },
     forceN,

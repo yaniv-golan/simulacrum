@@ -354,7 +354,23 @@ function pooledMetadataRun() {
   adapter.integrate(1 / 120, { tick: 1 });
   assert.ok(world.contacts.length > 0, "metadata fixture did not contact");
   assert.ok(world.contacts.every((row) => row.simulacrumEvidence?.tick === 1));
+  assert.ok(
+    world.contacts.every(
+      (row) =>
+        row.simulacrumFrictionCoefficientValid === true &&
+        Math.abs(
+          row.simulacrumFrictionCoefficient -
+            world.defaultContactMaterial.friction,
+        ) < 1e-12,
+    ),
+    "contact did not retain the coefficient enforced by its friction rows",
+  );
   const capturedRows = new Set(world.contacts);
+  for (const row of [...world.contacts, ...world.frictionEquations]) {
+    row.surfaceLawParticipant = "bi";
+    row.simulacrumFrictionCoefficient = 999;
+    row.simulacrumFrictionCoefficientValid = "stale";
+  }
   adapter.integrate(1 / 120, { tick: 2 });
   assert.ok(
     [...world.contacts, ...transaction.oldContacts].some((row) =>
@@ -373,6 +389,24 @@ function pooledMetadataRun() {
     assert.equal(row.simulacrumTireEvidence, undefined);
     assert.equal(row.surfaceMaterialKey, undefined);
     assert.equal(row.surfaceShapeId, undefined);
+    assert.equal(row.surfaceFrictionCoefficient, undefined);
+    assert.equal(row.surfaceLawParticipant, undefined);
+  }
+  assert.ok(
+    world.contacts.every(
+      (row) =>
+        row.simulacrumFrictionCoefficientValid === true &&
+        row.simulacrumFrictionCoefficient !== 999,
+    ),
+    "reused contacts retained stale friction authority",
+  );
+  for (const row of [
+    ...world.frictionEquations,
+    ...transaction.oldContacts,
+    ...transaction.frictionEquationPool,
+  ]) {
+    assert.equal(row.simulacrumFrictionCoefficient, undefined);
+    assert.equal(row.simulacrumFrictionCoefficientValid, undefined);
   }
 
   registerRollingSupport(transaction, {
@@ -436,6 +470,253 @@ function pooledMetadataRun() {
 }
 
 pooledMetadataRun();
+
+function contactFrictionAuthorityRun({
+  gravity = new CANNON.Vec3(0, -9.80665, 0),
+  frictionGravity = null,
+  directFriction = null,
+  mutateRows = null,
+} = {}) {
+  const world = new CANNON.World({ gravity }),
+    groundMaterial = new CANNON.Material("friction-ground"),
+    bodyMaterial = new CANNON.Material("friction-body"),
+    groundShape = new CANNON.Plane(),
+    bodyShape = new CANNON.Sphere(0.25),
+    ground = new CANNON.Body({ type: CANNON.Body.STATIC }),
+    body = new CANNON.Body({
+      mass: 1,
+      position: new CANNON.Vec3(0, 0.24, 0),
+    });
+  if (directFriction) {
+    groundMaterial.friction = directFriction.ground;
+    bodyMaterial.friction = directFriction.body;
+  }
+  groundShape.material = groundMaterial;
+  bodyShape.material = bodyMaterial;
+  ground.addShape(groundShape);
+  body.addShape(bodyShape);
+  ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+  world.addBody(ground);
+  world.addBody(body);
+  if (frictionGravity) world.frictionGravity = frictionGravity;
+  const originalGetContacts = world.narrowphase.getContacts.bind(
+    world.narrowphase,
+  );
+  world.narrowphase.getContacts = (...args) => {
+    originalGetContacts(...args);
+    mutateRows?.({ world, contacts: args[3], friction: args[5] });
+  };
+  const adapter = new CannonWorldAdapter(world);
+  adapter.beginSession();
+  adapter.integrate(1 / 120, { tick: 1 });
+  assert.ok(world.contacts.length > 0, "friction-authority fixture missed");
+  const result = world.contacts.map((contact) => ({
+    coefficient: contact.simulacrumFrictionCoefficient,
+    valid: contact.simulacrumFrictionCoefficientValid,
+  }));
+  adapter.dispose();
+  return result;
+}
+
+function appendFrictionAttributionDecoys({ friction }) {
+  const source = friction[0],
+    unrelated = new CANNON.Body({ mass: 1 }),
+    decoy = ({ bi = source.bi, bj = source.bj, riX = 0, rjX = 0 }) => {
+      const row = new CANNON.FrictionEquation(bi, bj, source.maxForce);
+      row.ri.copy(source.ri);
+      row.rj.copy(source.rj);
+      row.t.copy(source.t);
+      row.ri.x += riX;
+      row.rj.x += rjX;
+      row.enabled = source.enabled;
+      row.minForce = source.minForce;
+      row.maxForce = source.maxForce;
+      return row;
+    };
+  friction.push(
+    decoy({ bi: unrelated }),
+    decoy({ bj: unrelated }),
+    decoy({ riX: 1 }),
+    decoy({ rjX: 1 }),
+  );
+}
+
+const directMaterialFriction = contactFrictionAuthorityRun({
+  directFriction: { ground: 0.4, body: 0.5 },
+  mutateRows: appendFrictionAttributionDecoys,
+});
+assert.ok(
+  directMaterialFriction.every(
+    ({ coefficient, valid }) =>
+      valid === true && Math.abs(coefficient - 0.2) < 1e-12,
+  ),
+  "direct Cannon material friction was not derived from enforced row bounds",
+);
+
+const swappedFrictionRows = contactFrictionAuthorityRun({
+  mutateRows: ({ friction }) => {
+    for (const row of friction) {
+      const body = row.bi,
+        anchor = row.ri.clone();
+      row.bi = row.bj;
+      row.bj = body;
+      row.ri.copy(row.rj);
+      row.rj.copy(anchor);
+    }
+    appendFrictionAttributionDecoys({ friction });
+  },
+});
+assert.ok(
+  swappedFrictionRows.every(({ valid }) => valid === true),
+  "equivalent swapped friction rows lost their contact attribution",
+);
+
+const generalBasisFrictionRows = contactFrictionAuthorityRun({
+  mutateRows: ({ contacts, friction }) => {
+    const inverseSqrt3 = 1 / Math.sqrt(3),
+      inverseSqrt2 = 1 / Math.sqrt(2),
+      inverseSqrt6 = 1 / Math.sqrt(6);
+    for (const contact of contacts)
+      contact.ni.set(inverseSqrt3, inverseSqrt3, inverseSqrt3);
+    friction[0].t.set(inverseSqrt2, -inverseSqrt2, 0);
+    friction[1].t.set(inverseSqrt6, inverseSqrt6, -2 * inverseSqrt6);
+  },
+});
+assert.ok(
+  generalBasisFrictionRows.every(({ valid }) => valid === true),
+  "a finite orthonormal 3D contact basis lost friction authority",
+);
+
+const contactBasisTolerance = 2 ** -20,
+  inclusiveBoundaryFrictionRows = [
+    {
+      label: "unit-tangent length",
+      mutateRows: ({ friction }) => {
+        friction[0].t.set(1 + contactBasisTolerance, 0, 0);
+        friction[1].t.set(0, 0, 1);
+      },
+    },
+    {
+      label: "tangent-normal orthogonality",
+      mutateRows: ({ contacts, friction }) => {
+        const orthogonalComponent = Math.sqrt(1 - contactBasisTolerance ** 2);
+        for (const contact of contacts) contact.ni.set(0, 1, 0);
+        friction[0].t.set(orthogonalComponent, contactBasisTolerance, 0);
+        friction[1].t.set(0, 0, 1);
+      },
+    },
+    {
+      label: "tangent-pair independence",
+      mutateRows: ({ contacts, friction }) => {
+        const independentComponent = Math.sqrt(1 - contactBasisTolerance ** 2);
+        for (const contact of contacts) contact.ni.set(0, 1, 0);
+        friction[0].t.set(1, 0, 0);
+        friction[1].t.set(contactBasisTolerance, 0, independentComponent);
+      },
+    },
+  ];
+for (const { label, mutateRows } of inclusiveBoundaryFrictionRows)
+  assert.ok(
+    contactFrictionAuthorityRun({ mutateRows }).every(
+      ({ valid }) => valid === true,
+    ),
+    `the inclusive ${label} tolerance boundary lost friction authority`,
+  );
+
+const invalidFrictionMutations = [
+  ({ friction }) => friction.pop(),
+  ({ friction }) => {
+    friction[0].enabled = false;
+  },
+  ({ friction }) => {
+    friction[0].minForce = friction[0].maxForce;
+  },
+  ({ friction }) => {
+    friction[0].maxForce *= 0.5;
+    friction[0].minForce = -friction[0].maxForce;
+  },
+  ({ friction }) => {
+    for (const row of friction) {
+      row.minForce = 1;
+      row.maxForce = -1;
+    }
+  },
+  ({ friction }) => {
+    friction[0].ri.x += 1;
+  },
+  ({ friction }) => {
+    friction[0].ri.x = Number.NaN;
+  },
+  ({ friction }) => {
+    friction[0].rj.x = undefined;
+  },
+  ({ contacts, friction }) => {
+    for (const contact of contacts) {
+      contact.ri.x = Number.POSITIVE_INFINITY;
+      contact.rj.x = Number.POSITIVE_INFINITY;
+    }
+    for (const row of friction) {
+      row.ri.x = Number.POSITIVE_INFINITY;
+      row.rj.x = Number.POSITIVE_INFINITY;
+    }
+  },
+  ({ friction }) => {
+    friction[0].t.set(0, 0, 0);
+  },
+  ({ friction }) => {
+    friction[1].t.copy(friction[0].t);
+  },
+  ({ contacts, friction }) => {
+    friction[0].t.copy(contacts[0].ni);
+  },
+  ({ friction }) => {
+    friction[0].t.scale(2, friction[0].t);
+  },
+  ({ contacts }) => {
+    contacts[0].bi.invMass = 0;
+    contacts[0].bj.invMass = 0;
+  },
+  ({ contacts, friction }) => {
+    const dynamic = contacts[0].bi.invMass ? contacts[0].bi : contacts[0].bj;
+    dynamic.invMass = 2;
+    for (const row of friction) {
+      row.minForce = -Number.MAX_VALUE;
+      row.maxForce = Number.MAX_VALUE;
+    }
+  },
+];
+for (const mutateRows of invalidFrictionMutations)
+  assert.ok(
+    contactFrictionAuthorityRun({ mutateRows }).every(
+      ({ coefficient, valid }) => valid === false && coefficient === 0,
+    ),
+    "malformed friction rows retained coefficient authority",
+  );
+assert.ok(
+  contactFrictionAuthorityRun({
+    frictionGravity: new CANNON.Vec3(),
+  }).every(({ coefficient, valid }) => valid === false && coefficient === 0),
+  "zero-gravity friction approximation invented coefficient authority",
+);
+assert.ok(
+  contactFrictionAuthorityRun({
+    mutateRows: ({ world }) => {
+      world.frictionGravity = new CANNON.Vec3();
+    },
+  }).every(({ coefficient, valid }) => valid === false && coefficient === 0),
+  "post-row zero-gravity authority retained a friction coefficient",
+);
+assert.ok(
+  contactFrictionAuthorityRun({
+    mutateRows: ({ friction }) => {
+      for (const row of friction) {
+        row.minForce = 0;
+        row.maxForce = 0;
+      }
+    },
+  }).every(({ coefficient, valid }) => valid === true && coefficient === 0),
+  "known zero friction bounds were not retained as valid authority",
+);
 
 function budgetedMotorRun() {
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),

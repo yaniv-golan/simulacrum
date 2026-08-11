@@ -125,6 +125,7 @@ registry.registerBody("vehicle", [1, 2, 3], {
   },
 });
 assert.equal(registry.snapshot().bodies.length, 1);
+assert.equal(registry.snapshot().schemaVersion, 2);
 assert.equal(registry.bodyForPart(1).bound, true);
 assert.equal(registry.bodyForPart(3).bodyId, "vehicle");
 assert.deepEqual(registry.engineBody("vehicle"), { opaque: true });
@@ -139,6 +140,7 @@ registry.updateKinematics(
   0.5,
 );
 registry.recordContact("vehicle", {
+  normalForceValid: true,
   point: { x: 1, y: 0, z: 3 },
   normal: { x: 0, y: 1, z: 0 },
   forceN: 900,
@@ -147,9 +149,20 @@ registry.recordContact("vehicle", {
   otherBodyId: "ground",
   surface: "field",
 });
+const exportedRegistryState = registry.exportState();
+assert.equal(exportedRegistryState.schemaVersion, 2);
+assert.throws(
+  () =>
+    registry.validateState(
+      JSON.stringify({ ...exportedRegistryState, schemaVersion: 1 }),
+    ),
+  /schema version 2/,
+  "body registry accepted the superseded public contact schema",
+);
 const cyclicFeatureId = { kind: "cyclic-test" };
 cyclicFeatureId.self = cyclicFeatureId;
 const cyclicContact = registry.recordContact("vehicle", {
+  normalForceValid: true,
   point: { x: 1, y: 0, z: 3 },
   normal: { x: 0, y: 1, z: 0 },
   featureId: cyclicFeatureId,
@@ -173,6 +186,7 @@ const body = registry.body("vehicle");
 assert.deepEqual(body.acceleration, { x: 8, y: 0, z: 0 });
 assert.equal(body.contacts[0].forceN, 900);
 assert.equal(body.contacts[0].impulseNs, 7.5);
+assert.equal(body.contacts[0].observationFrame, null);
 assert.deepEqual(body.contacts[0].relativeVelocity, {
   x: 0.5,
   y: -1.25,
@@ -181,6 +195,9 @@ assert.deepEqual(body.contacts[0].relativeVelocity, {
 assert.equal(body.contacts[0].otherBodyId, "ground");
 assert.equal(body.contacts[0].tick, 1);
 assert.equal(body.contacts[0].contactId, null);
+assert.equal(body.contacts[0].normalForceValid, true);
+assert.equal(body.contacts[0].materialKey, null);
+assert.equal(body.contacts[0].shapeId, null);
 assert.ok(Object.isFrozen(body.contacts[0]));
 assert.ok(Object.isFrozen(body.contacts[0].point));
 assert.deepEqual(body.contacts[0].forceWorldN, { x: 0, y: 0, z: 0 });

@@ -48,7 +48,42 @@ export const SENSOR_PART_DEFINITIONS = Object.freeze({
   ],
   contactsensor: [
     { key: "contact", label: "Contact state", unit: "bool" },
-    { key: "contact_force_n", label: "Contact force", unit: "N" },
+    { key: "contact_force_n", label: "Summed normal force", unit: "N" },
+    {
+      key: "contact_normal_force_part_x_n",
+      label: "Part-frame normal force X",
+      unit: "N",
+    },
+    {
+      key: "contact_normal_force_part_y_n",
+      label: "Part-frame normal force Y",
+      unit: "N",
+    },
+    {
+      key: "contact_normal_force_part_z_n",
+      label: "Part-frame normal force Z",
+      unit: "N",
+    },
+    {
+      key: "contact_normal_moment_part_x_nm",
+      label: "Part-frame normal moment X",
+      unit: "N*m",
+    },
+    {
+      key: "contact_normal_moment_part_y_nm",
+      label: "Part-frame normal moment Y",
+      unit: "N*m",
+    },
+    {
+      key: "contact_normal_moment_part_z_nm",
+      label: "Part-frame normal moment Z",
+      unit: "N*m",
+    },
+    {
+      key: "contact_min_friction_coefficient",
+      label: "Minimum contact friction coefficient",
+      unit: "ratio",
+    },
     { key: "water_contact", label: "Water contact", unit: "bool" },
   ],
   thermalprobe: [
