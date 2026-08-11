@@ -84,6 +84,41 @@ export const SENSOR_PART_DEFINITIONS = Object.freeze({
       label: "Minimum contact friction coefficient",
       unit: "ratio",
     },
+    {
+      key: "contact_resultant_point_world_x_m",
+      label: "Resultant contact point world X",
+      unit: "m",
+    },
+    {
+      key: "contact_resultant_point_world_y_m",
+      label: "Resultant contact point world Y",
+      unit: "m",
+    },
+    {
+      key: "contact_resultant_point_world_z_m",
+      label: "Resultant contact point world Z",
+      unit: "m",
+    },
+    {
+      key: "contact_resultant_normal_world_x",
+      label: "Resultant contact normal world X",
+      unit: "scalar",
+    },
+    {
+      key: "contact_resultant_normal_world_y",
+      label: "Resultant contact normal world Y",
+      unit: "scalar",
+    },
+    {
+      key: "contact_resultant_normal_world_z",
+      label: "Resultant contact normal world Z",
+      unit: "scalar",
+    },
+    {
+      key: "contact_resultant_normal_force_n",
+      label: "Resultant contact normal force",
+      unit: "N",
+    },
     { key: "water_contact", label: "Water contact", unit: "bool" },
   ],
   thermalprobe: [

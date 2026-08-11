@@ -13,10 +13,11 @@
     "command": "node scripts/verify-contact-normal-wrench-observation.mjs && node scripts/verify-contact-normal-wrench-physics.mjs && node scripts/verify-cannon-solver-transaction.mjs"
   },
   "mutate": [
-    "src/simulation/contact-normal-wrench-observation.js:1-65",
-    "src/simulation/contact-normal-wrench-observation.js:101-259",
+    "src/simulation/contact-normal-wrench-observation.js:1-361",
     "src/simulation/controller-sensors.js:169-173",
-    "src/simulation/controller-sensors.js:379-379",
+    "src/simulation/controller-sensors.js:258-264",
+    "src/simulation/controller-sensors.js:289-295",
+    "src/simulation/controller-sensors.js:393-393",
     "src/simulation/body-registry.js:50-79",
     "src/simulation/body-registry.js:374-398",
     "src/simulation/body-registry.js:689-751",
@@ -32,8 +33,8 @@
     "src/simulation/systems/rigid-body-system.js:235-255",
     "src/simulation/systems/rigid-body-system.js:309-316",
     "src/simulation/systems/rigid-body-system.js:355-357",
-    "src/model/component-catalog.js:728-751",
-    "src/model/sensor-contracts.js:49-87"
+    "src/model/component-catalog.js:728-759",
+    "src/model/sensor-contracts.js:49-123"
   ],
   "coverageAnalysis": "off",
   "mutator": {

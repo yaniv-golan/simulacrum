@@ -255,6 +255,13 @@ function valuesForSensor(sensor, context) {
       contact_normal_moment_part_y_nm: normalContactWrench.wrenchValid,
       contact_normal_moment_part_z_nm: normalContactWrench.wrenchValid,
       contact_min_friction_coefficient: normalContactWrench.frictionValid,
+      contact_resultant_point_world_x_m: normalContactWrench.pointContactValid,
+      contact_resultant_point_world_y_m: normalContactWrench.pointContactValid,
+      contact_resultant_point_world_z_m: normalContactWrench.pointContactValid,
+      contact_resultant_normal_world_x: normalContactWrench.pointContactValid,
+      contact_resultant_normal_world_y: normalContactWrench.pointContactValid,
+      contact_resultant_normal_world_z: normalContactWrench.pointContactValid,
+      contact_resultant_normal_force_n: normalContactWrench.pointContactValid,
     },
     bound:
       Boolean(host) && (!requiresPneumaticBinding || Boolean(tirePressure)),
@@ -279,6 +286,13 @@ function valuesForSensor(sensor, context) {
     contact_normal_moment_part_z_nm: normalContactWrench.momentPartNm.z,
     contact_min_friction_coefficient:
       normalContactWrench.minimumFrictionCoefficient,
+    contact_resultant_point_world_x_m: normalContactWrench.pointWorldM.x,
+    contact_resultant_point_world_y_m: normalContactWrench.pointWorldM.y,
+    contact_resultant_point_world_z_m: normalContactWrench.pointWorldM.z,
+    contact_resultant_normal_world_x: normalContactWrench.normalWorld.x,
+    contact_resultant_normal_world_y: normalContactWrench.normalWorld.y,
+    contact_resultant_normal_world_z: normalContactWrench.normalWorld.z,
+    contact_resultant_normal_force_n: normalContactWrench.normalForceSumN,
     water_contact: contacts.some((contact) =>
       String(contact.surface || "")
         .toLowerCase()

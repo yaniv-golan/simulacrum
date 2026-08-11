@@ -9,7 +9,7 @@ import {
   importBodyRegistryCheckpointStateForRestore,
 } from "../src/simulation/body-registry.js";
 
-const READING_KEYS = [
+const WRENCH_READING_KEYS = [
     "contact_force_n",
     "contact_normal_force_part_x_n",
     "contact_normal_force_part_y_n",
@@ -17,7 +17,20 @@ const READING_KEYS = [
     "contact_normal_moment_part_x_nm",
     "contact_normal_moment_part_y_nm",
     "contact_normal_moment_part_z_nm",
+  ],
+  POINT_CONTACT_READING_KEYS = [
+    "contact_resultant_point_world_x_m",
+    "contact_resultant_point_world_y_m",
+    "contact_resultant_point_world_z_m",
+    "contact_resultant_normal_world_x",
+    "contact_resultant_normal_world_y",
+    "contact_resultant_normal_world_z",
+    "contact_resultant_normal_force_n",
+  ],
+  READING_KEYS = [
+    ...WRENCH_READING_KEYS,
     "contact_min_friction_coefficient",
+    ...POINT_CONTACT_READING_KEYS,
   ],
   identityPose = {
     position: { x: 0, y: 0, z: 0 },
@@ -104,11 +117,18 @@ const contacts = [
   observed = observeContactNormalWrench({ contacts, pose: identityPose });
 assert.equal(observed.wrenchValid, true);
 assert.equal(observed.frictionValid, true);
+assert.equal(observed.pointContactValid, true);
 assert.equal(observed.activeContactCount, 2);
 assert.equal(observed.normalForceSumN, 30);
 closeVector(observed.forcePartN, { x: 0, y: 30, z: 0 }, "force");
 closeVector(observed.momentPartNm, { x: 0, y: 0, z: -10 }, "moment");
 close(observed.minimumFrictionCoefficient, 0.6624, "conservative friction");
+closeVector(
+  observed.pointWorldM,
+  { x: -1 / 3, y: 0, z: 0 },
+  "force-weighted resultant point",
+);
+closeVector(observed.normalWorld, { x: 0, y: 1, z: 0 }, "resultant normal");
 assert.equal(
   observeContactNormalWrench({
     contacts,
@@ -217,6 +237,68 @@ close(
   observed.minimumFrictionCoefficient,
   "rigid-transform friction invariance",
 );
+assert.equal(transformedObservation.pointContactValid, true);
+closeVector(
+  transformedObservation.pointWorldM,
+  {
+    ...rotate(observed.pointWorldM, orientation),
+    x: rotate(observed.pointWorldM, orientation).x + translation.x,
+    y: rotate(observed.pointWorldM, orientation).y + translation.y,
+    z: rotate(observed.pointWorldM, orientation).z + translation.z,
+  },
+  "resultant point world covariance",
+  1e-9,
+);
+closeVector(
+  transformedObservation.normalWorld,
+  rotate(observed.normalWorld, orientation),
+  "resultant normal world covariance",
+  1e-9,
+);
+
+const largeTranslation = { x: 9_000_000, y: -8_000_000, z: 7_000_000 },
+  largeTranslatedObservation = observeContactNormalWrench({
+    contacts: contacts.map((sample) =>
+      contact({
+        id: sample.contactId,
+        point: {
+          x: sample.point.x + largeTranslation.x,
+          y: sample.point.y + largeTranslation.y,
+          z: sample.point.z + largeTranslation.z,
+        },
+        normal: sample.normal,
+        forceN: sample.forceN,
+        materialKey: sample.materialKey,
+        otherMaterialKey: sample.otherMaterialKey,
+        observationFrame: {
+          position: largeTranslation,
+          quaternion: identityPose.quaternion,
+        },
+      }),
+    ),
+    pose: identityPose,
+  });
+assert.equal(
+  largeTranslatedObservation.pointContactValid,
+  true,
+  "large translation invalidated the same local point contact",
+);
+closeVector(
+  largeTranslatedObservation.pointWorldM,
+  {
+    x: largeTranslation.x - 1 / 3,
+    y: largeTranslation.y,
+    z: largeTranslation.z,
+  },
+  "large-translation resultant point",
+  4e-9,
+);
+closeVector(
+  largeTranslatedObservation.normalWorld,
+  observed.normalWorld,
+  "large-translation resultant normal",
+  1e-12,
+);
 
 const fullAxisContacts = [
     contact({
@@ -295,6 +377,143 @@ closeVector(
   "general rotation moment covariance",
   1e-9,
 );
+for (const [label, result] of [
+  ["full-axis", fullAxisObservation],
+  ["transformed full-axis", generalWorldObservation],
+]) {
+  assert.equal(
+    result.pointContactValid,
+    false,
+    `${label} mixed-normal patch was collapsed into one point contact`,
+  );
+  assert.deepEqual(result.pointWorldM, { x: 0, y: 0, z: 0 });
+  assert.deepEqual(result.normalWorld, { x: 0, y: 0, z: 0 });
+}
+
+const obliquePointContact = observeContactNormalWrench({
+  contacts: [
+    contact({
+      id: "oblique-point-contact",
+      point: { x: 2, y: 3, z: 5 },
+      normal: { x: 1 / 3, y: 2 / 3, z: 2 / 3 },
+      forceN: 9,
+    }),
+  ],
+  pose: identityPose,
+});
+assert.equal(obliquePointContact.pointContactValid, true);
+closeVector(
+  obliquePointContact.pointWorldM,
+  { x: 2, y: 3, z: 5 },
+  "oblique point contact point",
+);
+closeVector(
+  obliquePointContact.normalWorld,
+  { x: 1 / 3, y: 2 / 3, z: 2 / 3 },
+  "oblique point contact normal",
+);
+
+const obliquePointWorld = rotate(
+    obliquePointContact.pointWorldM,
+    generalOrientation,
+  ),
+  obliqueNormalWorld = rotate(
+    obliquePointContact.normalWorld,
+    generalOrientation,
+  ),
+  transformedObliquePointContact = observeContactNormalWrench({
+    contacts: [
+      contact({
+        id: "transformed-oblique-point-contact",
+        point: {
+          x: obliquePointWorld.x + generalTranslation.x,
+          y: obliquePointWorld.y + generalTranslation.y,
+          z: obliquePointWorld.z + generalTranslation.z,
+        },
+        normal: obliqueNormalWorld,
+        forceN: 9,
+        observationFrame: {
+          position: generalTranslation,
+          quaternion: generalOrientation,
+        },
+      }),
+    ],
+    pose: identityPose,
+  });
+assert.equal(transformedObliquePointContact.pointContactValid, true);
+closeVector(
+  transformedObliquePointContact.pointWorldM,
+  {
+    x: obliquePointWorld.x + generalTranslation.x,
+    y: obliquePointWorld.y + generalTranslation.y,
+    z: obliquePointWorld.z + generalTranslation.z,
+  },
+  "transformed oblique point",
+  1e-9,
+);
+closeVector(
+  transformedObliquePointContact.normalWorld,
+  obliqueNormalWorld,
+  "transformed oblique normal",
+  1e-9,
+);
+
+const samePointMixedNormals = observeContactNormalWrench({
+  contacts: [
+    contact({
+      id: "same-point-up",
+      point: { x: 0, y: 0, z: 0 },
+      normal: { x: 0, y: 1, z: 0 },
+      forceN: 1,
+    }),
+    contact({
+      id: "same-point-side",
+      point: { x: 0, y: 0, z: 0 },
+      normal: { x: 1, y: 0, z: 0 },
+      forceN: 1,
+    }),
+  ],
+  pose: identityPose,
+});
+assert.equal(samePointMixedNormals.wrenchValid, true);
+assert.equal(
+  samePointMixedNormals.pointContactValid,
+  false,
+  "coincident mixed normals bypassed resultant magnitude authority",
+);
+assert.deepEqual(samePointMixedNormals.pointWorldM, { x: 0, y: 0, z: 0 });
+assert.deepEqual(samePointMixedNormals.normalWorld, { x: 0, y: 0, z: 0 });
+
+const rowConsistencyOffset = 2 ** -31,
+  cancellingMomentErrors = observeContactNormalWrench({
+    contacts: [
+      {
+        ...contact({
+          id: "positive-lever-error",
+          point: { x: 1e9, y: 0, z: 0 },
+          forceN: 1,
+        }),
+        forceWorldN: { x: 0, y: 1 + rowConsistencyOffset, z: 0 },
+      },
+      {
+        ...contact({
+          id: "negative-lever-error",
+          point: { x: -1e9, y: 0, z: 0 },
+          forceN: 1,
+        }),
+        forceWorldN: { x: 0, y: 1 - rowConsistencyOffset, z: 0 },
+      },
+    ],
+    pose: identityPose,
+  });
+assert.equal(cancellingMomentErrors.wrenchValid, true);
+assert.equal(
+  cancellingMomentErrors.pointContactValid,
+  false,
+  "row-local force tolerance invented a resultant point contact",
+);
+assert.deepEqual(cancellingMomentErrors.pointWorldM, { x: 0, y: 0, z: 0 });
+assert.deepEqual(cancellingMomentErrors.normalWorld, { x: 0, y: 0, z: 0 });
 
 const withinUnitToleranceScale = 1 + 2 ** -21,
   normalizedPoseObservation = observeContactNormalWrench({
@@ -422,6 +641,7 @@ const zeroOnlyObservation = observeContactNormalWrench({
 });
 assert.equal(zeroOnlyObservation.wrenchValid, true);
 assert.equal(zeroOnlyObservation.frictionValid, false);
+assert.equal(zeroOnlyObservation.pointContactValid, false);
 assert.deepEqual(zeroOnlyObservation.forcePartN, { x: 0, y: 0, z: 0 });
 assert.deepEqual(zeroOnlyObservation.momentPartNm, { x: 0, y: 0, z: 0 });
 assert.equal(zeroOnlyObservation.activeContactCount, 0);
@@ -544,8 +764,11 @@ for (const invalid of [
   });
   assert.equal(result.wrenchValid, false);
   assert.equal(result.frictionValid, false);
+  assert.equal(result.pointContactValid, false);
   assert.deepEqual(result.forcePartN, { x: 0, y: 0, z: 0 });
   assert.deepEqual(result.momentPartNm, { x: 0, y: 0, z: 0 });
+  assert.deepEqual(result.pointWorldM, { x: 0, y: 0, z: 0 });
+  assert.deepEqual(result.normalWorld, { x: 0, y: 0, z: 0 });
 }
 
 for (const field of ["point", "normal", "forceWorldN"])
@@ -823,6 +1046,13 @@ close(readings.contact_force_n, 30, "legacy summed normal force");
 close(readings.contact_normal_force_part_y_n, 30, "sensor force Y");
 close(readings.contact_normal_moment_part_z_nm, -10, "sensor moment Z");
 close(readings.contact_min_friction_coefficient, 0.6624, "sensor friction");
+close(readings.contact_resultant_point_world_x_m, -1 / 3, "sensor point X");
+close(readings.contact_resultant_point_world_y_m, 0, "sensor point Y");
+close(readings.contact_resultant_point_world_z_m, 0, "sensor point Z");
+close(readings.contact_resultant_normal_world_x, 0, "sensor normal X");
+close(readings.contact_resultant_normal_world_y, 1, "sensor normal Y");
+close(readings.contact_resultant_normal_world_z, 0, "sensor normal Z");
+close(readings.contact_resultant_normal_force_n, 30, "sensor point force");
 for (const key of READING_KEYS) assert.equal(readings.__validity[key], 1);
 
 readings = capture([{ ...contacts[0], tick: 0 }]);
@@ -836,6 +1066,18 @@ readings = capture(contacts, null);
 for (const key of READING_KEYS) {
   assert.equal(readings[key], 0);
   assert.equal(readings.__validity[key], 0);
+}
+
+readings = capture(fullAxisContacts);
+for (const key of WRENCH_READING_KEYS)
+  assert.equal(readings.__validity[key], 1);
+for (const key of POINT_CONTACT_READING_KEYS) {
+  assert.equal(readings[key], 0);
+  assert.equal(
+    readings.__validity[key],
+    0,
+    `${key} accepted a mixed-normal patch`,
+  );
 }
 
 const legacyPermutationContacts = [
@@ -860,6 +1102,12 @@ const legacyPermutationContacts = [
 assert.equal(legacyForward.contact_force_n, legacyReverse.contact_force_n);
 assert.equal(legacyForward.__validity.contact_force_n, 1);
 assert.equal(legacyReverse.__validity.contact_force_n, 1);
+for (const key of POINT_CONTACT_READING_KEYS)
+  assert.equal(
+    legacyForward[key],
+    legacyReverse[key],
+    `${key} changed with contact insertion order`,
+  );
 
 readings = capture([
   contact({
@@ -881,25 +1129,35 @@ for (const key of READING_KEYS) {
 }
 
 readings = capture([]);
-for (const key of READING_KEYS.slice(0, 7)) {
+for (const key of WRENCH_READING_KEYS) {
   assert.equal(readings[key], 0);
   assert.equal(readings.__validity[key], 1);
 }
 assert.equal(readings.contact_min_friction_coefficient, 0);
 assert.equal(readings.__validity.contact_min_friction_coefficient, 0);
+for (const key of POINT_CONTACT_READING_KEYS) {
+  assert.equal(readings[key], 0);
+  assert.equal(readings.__validity[key], 0);
+}
 
 readings = capture([{ ...contacts[0], otherMaterialKey: null }]);
-for (const key of READING_KEYS.slice(0, 7))
+for (const key of WRENCH_READING_KEYS)
   assert.equal(readings.__validity[key], 1);
 assert.equal(readings.__validity.contact_min_friction_coefficient, 0);
 assert.equal(readings.contact_min_friction_coefficient, 0);
+for (const key of POINT_CONTACT_READING_KEYS)
+  assert.equal(readings.__validity[key], 1);
 
 readings = capture([validZeroContact]);
-for (const key of READING_KEYS.slice(0, 7)) {
+for (const key of WRENCH_READING_KEYS) {
   assert.equal(readings[key], 0);
   assert.equal(readings.__validity[key], 1);
 }
 assert.equal(readings.__validity.contact_min_friction_coefficient, 0);
+for (const key of POINT_CONTACT_READING_KEYS) {
+  assert.equal(readings[key], 0);
+  assert.equal(readings.__validity[key], 0);
+}
 
 readings = capture([{ ...validZeroContact, point: null }]);
 for (const key of READING_KEYS) {
