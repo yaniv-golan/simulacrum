@@ -47,6 +47,37 @@ const BODY_REGISTRY_AUTHORITY_FIELDS = Object.freeze([
   "thermal",
 ]);
 
+function contactNormalForceValidity(value, path) {
+  if (typeof value !== "boolean")
+    throw new DomainValidationError(
+      "INVALID_CONTACT_NORMAL_FORCE_VALIDITY",
+      "Contact normal-force validity must be boolean",
+      { path },
+    );
+  return value;
+}
+
+function contactFrictionCoefficientValidity(value, path) {
+  if (typeof value !== "boolean")
+    throw new DomainValidationError(
+      "INVALID_CONTACT_FRICTION_COEFFICIENT_VALIDITY",
+      "Contact friction-coefficient validity must be boolean",
+      { path },
+    );
+  return value;
+}
+
+function bodyRegistryTick(value, path) {
+  const tick = finiteNumber(value, { min: 0, path });
+  if (!Number.isSafeInteger(tick))
+    throw new DomainValidationError(
+      "INVALID_BODY_REGISTRY_TICK",
+      "Body-registry ticks must be non-negative safe integers",
+      { path },
+    );
+  return tick;
+}
+
 function revisionGraphValue(value, path = [], ancestors = new Map()) {
   if (value === null) return ["null"];
   if (typeof value === "boolean" || typeof value === "string")
@@ -179,7 +210,7 @@ function bodyRegistryStateRevision({
       typedKey(left[field]).localeCompare(typedKey(right[field]), "en");
   return `body-registry-sha256-${sha256Hex(
     revisionSerialization({
-      version: 2,
+      version: 3,
       tick,
       bodies: [...bodies].sort(compareBy("bodyId")).map(bodyRevisionRecord),
       bodyByPart: [...bodyByPart].sort((left, right) => {
@@ -354,12 +385,18 @@ const CONSTRAINT_CHECKPOINT_FIELDS = Object.freeze([
 const CONTACT_CHECKPOINT_FIELDS = Object.freeze([
   "tick",
   "contactId",
+  "normalForceValid",
+  "frictionCoefficientValid",
+  "frictionCoefficient",
+  "observationFrame",
   "point",
   "normal",
   "forceN",
   "impulseNs",
   "relativeVelocity",
   "forceWorldN",
+  "materialKey",
+  "shapeId",
   "otherBodyId",
   "otherMaterialKey",
   "otherShapeId",
@@ -649,13 +686,13 @@ function checkpointTireEvidence(value, path) {
   return value;
 }
 
-function checkpointContact(contact, path, expectedTick = null) {
+function checkpointContact(contact, path, expectedTick) {
   checkpointKeys(contact, CONTACT_CHECKPOINT_FIELDS, path);
   checkpointFinite(contact.tick, [...path, "tick"], {
     min: 0,
     integer: true,
   });
-  if (expectedTick !== null && contact.tick !== expectedTick)
+  if (contact.tick !== expectedTick)
     checkpointFailure(
       "Body contact evidence must belong to the checkpoint tick",
       [...path, "tick"],
@@ -665,8 +702,32 @@ function checkpointContact(contact, path, expectedTick = null) {
   checkpointFinite(contact.forceN, [...path, "forceN"], { min: 0 });
   checkpointFinite(contact.impulseNs, [...path, "impulseNs"], { min: 0 });
   checkpointNullableString(contact.contactId, [...path, "contactId"]);
+  if (typeof contact.normalForceValid !== "boolean")
+    checkpointFailure("Body contact normal-force validity must be boolean", [
+      ...path,
+      "normalForceValid",
+    ]);
+  if (typeof contact.frictionCoefficientValid !== "boolean")
+    checkpointFailure(
+      "Body contact friction-coefficient validity must be boolean",
+      [...path, "frictionCoefficientValid"],
+    );
+  checkpointFinite(
+    contact.frictionCoefficient,
+    [...path, "frictionCoefficient"],
+    { min: 0 },
+  );
+  if (!contact.frictionCoefficientValid && contact.frictionCoefficient !== 0)
+    checkpointFailure(
+      "Invalid body contact friction authority must use the canonical zero coefficient",
+      [...path, "frictionCoefficient"],
+    );
+  if (contact.observationFrame !== null)
+    checkpointPose(contact.observationFrame, [...path, "observationFrame"]);
   checkpointNullableString(contact.otherBodyId, [...path, "otherBodyId"]);
   for (const field of [
+    "materialKey",
+    "shapeId",
     "otherMaterialKey",
     "otherShapeId",
     "supportShapeId",
@@ -703,7 +764,13 @@ function checkpointLoad(load, path, knownConnectionIds = null) {
   return load;
 }
 
-function checkpointBody(body, expected, index, knownConnectionIds) {
+function checkpointBody(
+  body,
+  expected,
+  index,
+  knownConnectionIds,
+  expectedTick,
+) {
   const path = ["checkpoint", "bodies", index];
   checkpointKeys(body, BODY_CHECKPOINT_FIELDS, path);
   if (body.bodyId !== expected.bodyId)
@@ -725,7 +792,11 @@ function checkpointBody(body, expected, index, knownConnectionIds) {
   if (!Array.isArray(body.contacts) || !Array.isArray(body.loads))
     checkpointFailure("Body registry checkpoint samples must be arrays", path);
   for (const [contactIndex, contact] of body.contacts.entries())
-    checkpointContact(contact, [...path, "contacts", contactIndex]);
+    checkpointContact(
+      contact,
+      [...path, "contacts", contactIndex],
+      expectedTick,
+    );
   for (const [loadIndex, load] of body.loads.entries())
     checkpointLoad(load, [...path, "loads", loadIndex], knownConnectionIds);
   checkpointJson(body.thermal, [...path, "thermal"]);
@@ -912,7 +983,7 @@ export class BodyRegistry {
   }
 
   beginTick(tick = this.#tick + 1) {
-    this.#tick = finiteNumber(tick, { min: 0, path: ["tick"] });
+    this.#tick = bodyRegistryTick(tick, ["tick"]);
     for (const [id, body] of this.#bodies)
       this.#bodies.set(id, updateFrozenBody(body, { contacts: [], loads: [] }));
   }
@@ -1307,52 +1378,100 @@ export class BodyRegistry {
 
   recordContact(id, contact) {
     const body = this.#requireBody(id),
-      sample = freezeFreshBodyValue({
-        tick: finiteNumber(contact?.tick ?? this.#tick, {
-          min: 0,
+      tick = bodyRegistryTick(contact?.tick ?? this.#tick, [
+        "body",
+        id,
+        "contact",
+        "tick",
+      ]),
+      frictionCoefficientValid = contactFrictionCoefficientValidity(
+        contact?.frictionCoefficientValid ?? false,
+        ["body", id, "contact", "frictionCoefficientValid"],
+      );
+    if (tick !== this.#tick)
+      throw new DomainValidationError(
+        "BODY_CONTACT_TICK_MISMATCH",
+        "Body contact evidence must belong to the current registry tick",
+        {
           path: ["body", id, "contact", "tick"],
-        }),
-        contactId:
-          typeof contact?.contactId === "string" && contact.contactId
-            ? contact.contactId
-            : null,
-        point: vector(contact?.point, ["body", id, "contact", "point"]),
-        normal: vector(contact?.normal, ["body", id, "contact", "normal"]),
-        forceN: finiteNumber(contact?.forceN ?? contact?.force ?? 0, {
-          min: 0,
-          path: ["body", id, "contact", "forceN"],
-        }),
-        impulseNs: finiteNumber(contact?.impulseNs ?? 0, {
-          min: 0,
-          path: ["body", id, "contact", "impulseNs"],
-        }),
-        relativeVelocity: vector(contact?.relativeVelocity, [
-          "body",
-          id,
-          "contact",
-          "relativeVelocity",
-        ]),
-        forceWorldN: vector(contact?.forceWorldN, [
-          "body",
-          id,
-          "contact",
-          "forceWorldN",
-        ]),
-        otherBodyId: contact?.otherBodyId ?? null,
-        otherMaterialKey: contact?.otherMaterialKey ?? null,
-        otherShapeId: contact?.otherShapeId ?? null,
-        supportShapeId: contact?.supportShapeId ?? null,
-        surfaceRegionId: contact?.surfaceRegionId ?? null,
-        featureId: contact?.featureId
-          ? structuredClone(contact.featureId)
+          details: { contactTick: tick, registryTick: this.#tick },
+        },
+      );
+    const sample = freezeFreshBodyValue({
+      tick,
+      contactId:
+        typeof contact?.contactId === "string" && contact.contactId
+          ? contact.contactId
           : null,
-        featureValidity: evidenceValidity(contact?.featureValidity),
-        tireEvidence: contact?.tireEvidence
-          ? structuredClone(contact.tireEvidence)
-          : null,
-        validity: evidenceValidity(contact?.validity),
-        surface: contact?.surface ?? null,
-      });
+      normalForceValid: contactNormalForceValidity(contact?.normalForceValid, [
+        "body",
+        id,
+        "contact",
+        "normalForceValid",
+      ]),
+      frictionCoefficientValid,
+      frictionCoefficient: frictionCoefficientValid
+        ? finiteNumber(contact?.frictionCoefficient, {
+            min: 0,
+            path: ["body", id, "contact", "frictionCoefficient"],
+          })
+        : 0,
+      observationFrame:
+        contact?.observationFrame == null
+          ? null
+          : {
+              position: vector(contact.observationFrame.position, [
+                "body",
+                id,
+                "contact",
+                "observationFrame",
+                "position",
+              ]),
+              quaternion: quaternion(contact.observationFrame.quaternion, [
+                "body",
+                id,
+                "contact",
+                "observationFrame",
+                "quaternion",
+              ]),
+            },
+      point: vector(contact?.point, ["body", id, "contact", "point"]),
+      normal: vector(contact?.normal, ["body", id, "contact", "normal"]),
+      forceN: finiteNumber(contact?.forceN ?? contact?.force ?? 0, {
+        min: 0,
+        path: ["body", id, "contact", "forceN"],
+      }),
+      impulseNs: finiteNumber(contact?.impulseNs ?? 0, {
+        min: 0,
+        path: ["body", id, "contact", "impulseNs"],
+      }),
+      relativeVelocity: vector(contact?.relativeVelocity, [
+        "body",
+        id,
+        "contact",
+        "relativeVelocity",
+      ]),
+      forceWorldN: vector(contact?.forceWorldN, [
+        "body",
+        id,
+        "contact",
+        "forceWorldN",
+      ]),
+      materialKey: contact?.materialKey ?? null,
+      shapeId: contact?.shapeId ?? null,
+      otherBodyId: contact?.otherBodyId ?? null,
+      otherMaterialKey: contact?.otherMaterialKey ?? null,
+      otherShapeId: contact?.otherShapeId ?? null,
+      supportShapeId: contact?.supportShapeId ?? null,
+      surfaceRegionId: contact?.surfaceRegionId ?? null,
+      featureId: contact?.featureId ? structuredClone(contact.featureId) : null,
+      featureValidity: evidenceValidity(contact?.featureValidity),
+      tireEvidence: contact?.tireEvidence
+        ? structuredClone(contact.tireEvidence)
+        : null,
+      validity: evidenceValidity(contact?.validity),
+      surface: contact?.surface ?? null,
+    });
     this.#bodies.set(
       id,
       updateFrozenBody(body, { contacts: [...body.contacts, sample] }),
@@ -1515,7 +1634,7 @@ export class BodyRegistry {
     )
       return this.#snapshot;
     const projection = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       tick: this.#tick,
       bodies: Object.freeze([...this.#bodies.values()]),
       bodyByPart: Object.freeze(
@@ -1546,7 +1665,7 @@ export class BodyRegistry {
 
   exportCheckpointState() {
     return issueInertPlainData({
-      schemaVersion: 3,
+      schemaVersion: 6,
       tick: this.#tick,
       bodies: [...this.#bodies.values()].map((body) => ({
         bodyId: body.bodyId,
@@ -1569,7 +1688,7 @@ export class BodyRegistry {
         "Body registry checkpoint must be serialized JSON or an exported immutable state",
       path: ["checkpoint"],
     });
-    if (state?.schemaVersion !== 3 || !Array.isArray(state.bodies))
+    if (state?.schemaVersion !== 6 || !Array.isArray(state.bodies))
       throw new DomainValidationError(
         "BODY_REGISTRY_CHECKPOINT_MASS_AUTHORITY_MISMATCH",
         "Body-registry checkpoint must not duplicate derived mass authority",
@@ -1741,10 +1860,10 @@ export class BodyRegistry {
         "Body registry checkpoint must be serialized JSON or an exported immutable state",
       path: ["checkpoint"],
     });
-    if (state?.schemaVersion !== 1)
+    if (state?.schemaVersion !== 2)
       throw new DomainValidationError(
         "INVALID_BODY_REGISTRY_CHECKPOINT",
-        "Body registry checkpoint must use schema version 1",
+        "Body registry checkpoint must use schema version 2",
       );
     checkpointKeys(
       state,
@@ -1796,7 +1915,7 @@ export class BodyRegistry {
         );
       bodies.set(
         id,
-        checkpointBody(body, expected, index, this.#knownConnectionIds),
+        checkpointBody(body, expected, index, this.#knownConnectionIds, tick),
       );
     }
     const constraints = new Map();

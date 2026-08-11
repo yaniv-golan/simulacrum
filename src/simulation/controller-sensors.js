@@ -11,6 +11,7 @@ import { canonicalControllerBindings } from "../model/controller-bindings.js";
 import { finiteOr as finite } from "../model/finite-or.js";
 import { standardAtmosphere } from "./environment/atmosphere.js";
 import { quaternionToAircraftDegrees } from "./attitude-math.js";
+import { observeContactNormalWrench } from "./contact-normal-wrench-observation.js";
 import { measureEnvironmentProximity } from "./environment/environment-body-registry.js";
 
 const vector = (value = {}) => ({
@@ -44,6 +45,11 @@ function bodyIndexes(snapshot = {}) {
       (snapshot.bodyByPart || []).map((entry) => [entry.partId, entry.bodyId]),
     ),
   };
+}
+
+function bodySnapshotTick(snapshot = {}) {
+  const tick = /** @type {any} */ (snapshot).tick;
+  return Number.isSafeInteger(tick) && tick >= 0 ? tick : null;
 }
 
 function bodyForPart(partId, indexes) {
@@ -133,6 +139,7 @@ function valuesForSensor(sensor, context) {
       environmentBodies,
       compiledSensor,
       pneumatics,
+      bodyTick,
     } = context,
     host = fixedHostBody(sensor, partsById, connections, indexes),
     pose = host?.pose || {},
@@ -159,6 +166,11 @@ function valuesForSensor(sensor, context) {
     airspeed = Math.hypot(relativeAir.x, relativeAir.y, relativeAir.z),
     attitude = quaternionToAircraftDegrees(pose.quaternion),
     contacts = host?.contacts || [],
+    normalContactWrench = observeContactNormalWrench({
+      contacts,
+      pose,
+      expectedTick: bodyTick,
+    }),
     loads = host?.loads || [],
     peakLoad = loads.reduce(
       (maximum, load) => Math.max(maximum, finite(load.forceN)),
@@ -235,6 +247,14 @@ function valuesForSensor(sensor, context) {
   return {
     readingValidity: {
       command: receiverState?.valid === true,
+      contact_force_n: normalContactWrench.wrenchValid,
+      contact_normal_force_part_x_n: normalContactWrench.wrenchValid,
+      contact_normal_force_part_y_n: normalContactWrench.wrenchValid,
+      contact_normal_force_part_z_n: normalContactWrench.wrenchValid,
+      contact_normal_moment_part_x_nm: normalContactWrench.wrenchValid,
+      contact_normal_moment_part_y_nm: normalContactWrench.wrenchValid,
+      contact_normal_moment_part_z_nm: normalContactWrench.wrenchValid,
+      contact_min_friction_coefficient: normalContactWrench.frictionValid,
     },
     bound:
       Boolean(host) && (!requiresPneumaticBinding || Boolean(tirePressure)),
@@ -250,10 +270,15 @@ function valuesForSensor(sensor, context) {
     imu_accel_y: acceleration.y,
     imu_accel_z: acceleration.z,
     contact: contacts.length ? 1 : 0,
-    contact_force_n: contacts.reduce(
-      (sum, contact) => sum + finite(contact.forceN),
-      0,
-    ),
+    contact_force_n: normalContactWrench.normalForceSumN,
+    contact_normal_force_part_x_n: normalContactWrench.forcePartN.x,
+    contact_normal_force_part_y_n: normalContactWrench.forcePartN.y,
+    contact_normal_force_part_z_n: normalContactWrench.forcePartN.z,
+    contact_normal_moment_part_x_nm: normalContactWrench.momentPartNm.x,
+    contact_normal_moment_part_y_nm: normalContactWrench.momentPartNm.y,
+    contact_normal_moment_part_z_nm: normalContactWrench.momentPartNm.z,
+    contact_min_friction_coefficient:
+      normalContactWrench.minimumFrictionCoefficient,
     water_contact: contacts.some((contact) =>
       String(contact.surface || "")
         .toLowerCase()
@@ -351,6 +376,7 @@ export class ControllerSensorBank {
             pneumatics,
             environmentBodies,
             compiledSensor: compiledByPart.get(sensor.id),
+            bodyTick: bodySnapshotTick(bodies),
             previousVelocity: this.previousVelocity.get(sensor.id) || {},
           });
           valuesBySensor.set(sensor.id, values);

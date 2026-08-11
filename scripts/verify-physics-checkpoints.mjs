@@ -623,12 +623,18 @@ assertRejectedOwnerMutation(
 const forgedContactAtTick = (tick) => ({
   tick,
   contactId: "forged-contact",
+  normalForceValid: true,
+  frictionCoefficientValid: false,
+  frictionCoefficient: 0,
+  observationFrame: null,
   point: { x: 0, y: 0, z: 0 },
   normal: { x: 0, y: 1, z: 0 },
   forceN: 0,
   impulseNs: 0,
   relativeVelocity: { x: 0, y: 0, z: 0 },
   forceWorldN: { x: 0, y: 0, z: 0 },
+  materialKey: null,
+  shapeId: null,
   otherBodyId: null,
   otherMaterialKey: null,
   otherShapeId: null,
@@ -851,6 +857,11 @@ for (let tick = 1; tick <= FINAL_TICK; tick++) {
       checkpoint.stateOwners.map((owner) => owner.ownerId),
       CHECKPOINT_STATE_OWNER_IDS,
     );
+    const bodyRegistryOwner = checkpoint.stateOwners.find(
+      (owner) => owner.ownerId === "body-registry",
+    );
+    assert.equal(bodyRegistryOwner.ownerVersion, 6);
+    assert.equal(JSON.parse(bodyRegistryOwner.payloadJson).schemaVersion, 6);
   } else if (tick > SPLIT_TICK)
     expected.set(tick, observedState(uninterrupted));
 }

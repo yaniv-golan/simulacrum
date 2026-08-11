@@ -29,27 +29,29 @@ export const CHECKPOINT_STATE_OWNER_VERSIONS = Object.freeze(
   Object.fromEntries(
     CHECKPOINT_STATE_OWNER_IDS.map((ownerId) => [
       ownerId,
-      new Set(["session", "body-registry", "telemetry-event-ids"]).has(ownerId)
-        ? 3
-        : new Set([
-              "input-command-bus",
-              "run-graph",
-              "compiled-topology",
-              "physics-world",
-              "solver-contact",
-              "tire-carcass",
-              "structure-failure",
-              "energy-power-signal",
-              "material-resources",
-              "pneumatic-gas",
-              "thermal-ablation",
-              "articulated-drive",
-              "sensors",
-              "controllers",
-              "terrain-environment",
-            ]).has(ownerId)
-          ? 2
-          : 1,
+      ownerId === "body-registry"
+        ? 6
+        : new Set(["session", "telemetry-event-ids"]).has(ownerId)
+          ? 3
+          : new Set([
+                "input-command-bus",
+                "run-graph",
+                "compiled-topology",
+                "physics-world",
+                "solver-contact",
+                "tire-carcass",
+                "structure-failure",
+                "energy-power-signal",
+                "material-resources",
+                "pneumatic-gas",
+                "thermal-ablation",
+                "articulated-drive",
+                "sensors",
+                "controllers",
+                "terrain-environment",
+              ]).has(ownerId)
+            ? 2
+            : 1,
     ]),
   ),
 );

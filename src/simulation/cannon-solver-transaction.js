@@ -37,6 +37,10 @@ function clearSimulacrumEquationMetadata(equation) {
     "simulacrumTireEvidence",
     "surfaceMaterialKey",
     "surfaceShapeId",
+    "surfaceFrictionCoefficient",
+    "surfaceLawParticipant",
+    "simulacrumFrictionCoefficient",
+    "simulacrumFrictionCoefficientValid",
     "simulacrumRollingSupport",
   ])
     delete equation[key];
@@ -240,8 +244,43 @@ function compareVector(left, right, leftScale = 1, rightScale = 1) {
   return 0;
 }
 
-function sameVector(left, right) {
-  return compareVector(left, right) === 0;
+const CONTACT_BASIS_TOLERANCE = 2 ** -20;
+
+function finiteVectorComponents(value) {
+  return ["x", "y", "z"].every((component) =>
+    Number.isFinite(value?.[component]),
+  );
+}
+
+function sameFiniteVector(left, right) {
+  return (
+    finiteVectorComponents(left) &&
+    ["x", "y", "z"].every((component) => left[component] === right[component])
+  );
+}
+
+function vectorDot(left, right) {
+  return left.x * right.x + left.y * right.y + left.z * right.z;
+}
+
+function unitVector(value) {
+  return (
+    finiteVectorComponents(value) &&
+    Math.abs(Math.hypot(value.x, value.y, value.z) - 1) <=
+      CONTACT_BASIS_TOLERANCE
+  );
+}
+
+function independentContactTangents(contact, rows) {
+  return (
+    unitVector(contact.ni) &&
+    rows.every(
+      (row) =>
+        unitVector(row.t) &&
+        Math.abs(vectorDot(row.t, contact.ni)) <= CONTACT_BASIS_TOLERANCE,
+    ) &&
+    Math.abs(vectorDot(rows[0].t, rows[1].t)) <= CONTACT_BASIS_TOLERANCE
+  );
 }
 
 function contactRecordOrder(left, right) {
@@ -375,8 +414,8 @@ function annotateFrictionRows(world, tick) {
     return [...(contactsByBodyPair.get(equation.bi)?.get(equation.bj) || [])]
       .filter(
         (contact) =>
-          sameVector(equation.ri, contact.anchorA) &&
-          sameVector(equation.rj, contact.anchorB),
+          sameFiniteVector(equation.ri, contact.anchorA) &&
+          sameFiniteVector(equation.rj, contact.anchorB),
       )
       .map((contact) => contact.contactId)
       .sort((left, right) => left.localeCompare(right, "en"));
@@ -413,18 +452,70 @@ function resolveSurfaceLaw(body, otherBody, offset) {
 }
 
 function resolvedLawForEquation(equation) {
+  const bodyALaw = resolveSurfaceLaw(equation.bi, equation.bj, equation.ri);
+  if (bodyALaw) return { law: bodyALaw, participant: "bi" };
+  const bodyBLaw = resolveSurfaceLaw(equation.bj, equation.bi, equation.rj);
+  return bodyBLaw ? { law: bodyBLaw, participant: "bj" } : null;
+}
+
+function frictionEquationMatchesContact(equation, contact) {
   return (
-    resolveSurfaceLaw(equation.bi, equation.bj, equation.ri) ||
-    resolveSurfaceLaw(equation.bj, equation.bi, equation.rj)
+    (equation.bi === contact.bi &&
+      equation.bj === contact.bj &&
+      sameFiniteVector(equation.ri, contact.ri) &&
+      sameFiniteVector(equation.rj, contact.rj)) ||
+    (equation.bi === contact.bj &&
+      equation.bj === contact.bi &&
+      sameFiniteVector(equation.ri, contact.rj) &&
+      sameFiniteVector(equation.rj, contact.ri))
   );
+}
+
+function enforcedFrictionCoefficient(world, contact) {
+  const rows = world.frictionEquations.filter((equation) =>
+      frictionEquationMatchesContact(equation, contact),
+    ),
+    gravityMagnitude = (world.frictionGravity || world.gravity).length(),
+    inverseMass = contact.bi.invMass + contact.bj.invMass;
+  if (
+    rows.length !== 2 ||
+    !independentContactTangents(contact, rows) ||
+    !Number.isFinite(gravityMagnitude) ||
+    gravityMagnitude <= 0 ||
+    !Number.isFinite(inverseMass) ||
+    inverseMass <= 0 ||
+    rows.some(
+      (equation) =>
+        equation.enabled !== true ||
+        !Number.isFinite(equation.minForce) ||
+        !Number.isFinite(equation.maxForce) ||
+        equation.maxForce < 0 ||
+        equation.minForce !== -equation.maxForce,
+    ) ||
+    rows[0].maxForce !== rows[1].maxForce
+  )
+    return null;
+  const coefficient = (rows[0].maxForce * inverseMass) / gravityMagnitude;
+  return Number.isFinite(coefficient) && coefficient >= 0 ? coefficient : null;
+}
+
+function annotateEnforcedContactFriction(world) {
+  for (const contact of world.contacts) {
+    const coefficient = enforcedFrictionCoefficient(world, contact);
+    contact.simulacrumFrictionCoefficientValid = coefficient !== null;
+    contact.simulacrumFrictionCoefficient = coefficient ?? 0;
+  }
 }
 
 function applyResolvedSurfaceLaws(world, dt) {
   for (const contact of world.contacts) {
-    const law = resolvedLawForEquation(contact);
-    if (!law) continue;
+    const resolved = resolvedLawForEquation(contact);
+    if (!resolved) continue;
+    const { law, participant } = resolved;
     contact.surfaceMaterialKey = law.materialKey;
     contact.surfaceShapeId = law.shapeId;
+    contact.surfaceFrictionCoefficient = law.friction;
+    contact.surfaceLawParticipant = participant;
     contact.restitution = law.restitution;
     contact.setSpookParams(
       law.contactEquationStiffness,
@@ -434,13 +525,16 @@ function applyResolvedSurfaceLaws(world, dt) {
   }
   const gravityMagnitude = (world.frictionGravity || world.gravity).length();
   for (const equation of world.frictionEquations) {
-    const law = resolvedLawForEquation(equation);
-    if (!law) continue;
+    const resolved = resolvedLawForEquation(equation);
+    if (!resolved) continue;
+    const { law, participant } = resolved;
     const inverseMass = equation.bi.invMass + equation.bj.invMass,
       slipForce = inverseMass
         ? law.friction * gravityMagnitude * (1 / inverseMass)
         : 0;
     equation.surfaceMaterialKey = law.materialKey;
+    equation.surfaceFrictionCoefficient = law.friction;
+    equation.surfaceLawParticipant = participant;
     equation.minForce = -slipForce;
     equation.maxForce = slipForce;
     equation.setSpookParams(
@@ -449,6 +543,7 @@ function applyResolvedSurfaceLaws(world, dt) {
       dt,
     );
   }
+  annotateEnforcedContactFriction(world);
 }
 
 function stableBodyRanks(state, bodies) {

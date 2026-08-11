@@ -69,7 +69,7 @@
           },
           "ownerVersion": {
             "type": "integer",
-            "enum": [1, 2, 3]
+            "enum": [1, 2, 3, 6]
           },
           "payloadJson": { "type": "string", "maxLength": 2000000 },
           "payloadByteLength": {
@@ -86,50 +86,63 @@
           {
             "if": {
               "properties": {
-                "ownerId": {
-                  "enum": ["session", "body-registry", "telemetry-event-ids"]
-                }
+                "ownerId": { "const": "body-registry" }
               },
               "required": ["ownerId"]
             },
             "then": {
               "properties": {
-                "ownerVersion": { "const": 3 }
+                "ownerVersion": { "const": 6 }
               }
             },
             "else": {
               "if": {
                 "properties": {
                   "ownerId": {
-                    "enum": [
-                      "input-command-bus",
-                      "run-graph",
-                      "compiled-topology",
-                      "physics-world",
-                      "solver-contact",
-                      "tire-carcass",
-                      "structure-failure",
-                      "energy-power-signal",
-                      "material-resources",
-                      "pneumatic-gas",
-                      "thermal-ablation",
-                      "articulated-drive",
-                      "sensors",
-                      "controllers",
-                      "terrain-environment"
-                    ]
+                    "enum": ["session", "telemetry-event-ids"]
                   }
                 },
                 "required": ["ownerId"]
               },
               "then": {
                 "properties": {
-                  "ownerVersion": { "const": 2 }
+                  "ownerVersion": { "const": 3 }
                 }
               },
               "else": {
-                "properties": {
-                  "ownerVersion": { "const": 1 }
+                "if": {
+                  "properties": {
+                    "ownerId": {
+                      "enum": [
+                        "input-command-bus",
+                        "run-graph",
+                        "compiled-topology",
+                        "physics-world",
+                        "solver-contact",
+                        "tire-carcass",
+                        "structure-failure",
+                        "energy-power-signal",
+                        "material-resources",
+                        "pneumatic-gas",
+                        "thermal-ablation",
+                        "articulated-drive",
+                        "sensors",
+                        "controllers",
+                        "terrain-environment"
+                      ]
+                    }
+                  },
+                  "required": ["ownerId"]
+                },
+                "then": {
+                  "properties": {
+                    "ownerVersion": { "const": 2 }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "ownerVersion": { "const": 1 }
+                  }
                 }
               }
             }

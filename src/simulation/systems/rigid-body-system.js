@@ -6,7 +6,7 @@ import {
   requestMultibodyFailureEvidenceCapture,
 } from "../multibody-runtime.js";
 
-function heightfieldFeature(body, shape, worldPoint) {
+function heightfieldFeature(body, shape, worldPoint, solverFrame) {
   if (
     shape?.userData?.featureIdentityKind !== "heightfield-cell-triangle-v1" ||
     typeof shape.getIndexOfPosition !== "function" ||
@@ -16,7 +16,9 @@ function heightfieldFeature(body, shape, worldPoint) {
   const shapeIndex = body.shapes.indexOf(shape);
   if (shapeIndex < 0)
     return { featureId: null, featureValidity: "unavailable" };
-  const bodyPoint = body.pointToLocalFrame(worldPoint),
+  if (!solverFrame) return { featureId: null, featureValidity: "unavailable" };
+  const inverseBody = solverFrame.quaternion.conjugate(new CANNON.Quaternion()),
+    bodyPoint = inverseBody.vmult(worldPoint.vsub(solverFrame.position)),
     offset = body.shapeOffsets[shapeIndex] || new CANNON.Vec3(),
     orientation = body.shapeOrientations[shapeIndex] || new CANNON.Quaternion(),
     localPoint = bodyPoint.vsub(offset),
@@ -36,6 +38,52 @@ function heightfieldFeature(body, shape, worldPoint) {
       triangle: upper ? "upper" : "lower",
     },
     featureValidity: "derived",
+  };
+}
+
+function velocityAtSolverPoint(body, solverPosition, worldPoint) {
+  const offset = worldPoint.vsub(solverPosition),
+    rotational = new CANNON.Vec3();
+  body.angularVelocity.cross(offset, rotational);
+  return body.velocity.vadd(rotational);
+}
+
+function plainSolverPose(pose) {
+  return {
+    position: { x: pose.position.x, y: pose.position.y, z: pose.position.z },
+    quaternion: {
+      x: pose.quaternion.x,
+      y: pose.quaternion.y,
+      z: pose.quaternion.z,
+      w: pose.quaternion.w,
+    },
+  };
+}
+
+function attachedParticipantIdentity(body, shape) {
+  const shapeIndex = body.shapes.indexOf(shape);
+  if (shapeIndex < 0) return { materialKey: null, shapeId: null };
+  const physical = shape?.material?.name || body?.material?.name || null,
+    declared =
+      shape?.userData?.materialKey || body?.userData?.materialKey || null,
+    shapeId = shape?.userData?.shapeId ?? `body-shape:${String(shapeIndex)}`;
+  return {
+    materialKey:
+      physical && (!declared || declared === physical) ? physical : null,
+    shapeId,
+  };
+}
+
+function participantIdentity(body, shape, contact, participant) {
+  const attached = attachedParticipantIdentity(body, shape);
+  if (
+    attached.shapeId === null ||
+    contact.surfaceLawParticipant !== participant
+  )
+    return attached;
+  return {
+    materialKey: contact.surfaceMaterialKey ?? null,
+    shapeId: contact.surfaceShapeId ?? null,
   };
 }
 
@@ -132,6 +180,9 @@ export class RigidBodySystem {
       );
     if (hasCannonBodies && !adapter)
       throw new Error("RigidBodySystem requires the shared worldAdapter");
+    const solverFrames = hasCannonBodies
+      ? this.#captureSolverFrames(context)
+      : null;
     if (hasCannonBodies) {
       if (captureEvidence) {
         requestWorldEvidenceCapture(adapter);
@@ -144,7 +195,7 @@ export class RigidBodySystem {
       context.telemetry.mechanisms =
         services.multibodyRuntime.afterIntegration(dt);
     }
-    if (hasCannonBodies) this.#syncBodyRegistry(context, dt);
+    if (hasCannonBodies) this.#syncBodyRegistry(context, dt, solverFrames);
     if (captureEvidence && services.multibodyRuntime?.compiled) {
       const contacts = bodyRegistryBodyRecords(context.bodyRegistry).flatMap(
           (body) =>
@@ -181,7 +232,29 @@ export class RigidBodySystem {
     }
   }
 
-  #syncBodyRegistry(context, dt) {
+  #captureSolverFrames(context) {
+    const registry = context.bodyRegistry,
+      multibody = context.services.multibodyRuntime,
+      world = context.services.worldAdapter.world,
+      bodies = new Map(
+        world.bodies.map((body) => [
+          body,
+          {
+            position: body.position.clone(),
+            quaternion: body.quaternion.clone(),
+          },
+        ]),
+      ),
+      parts = new Map();
+    for (const { engineBody } of registry.engineEntries()) {
+      const partId = engineBody.userData?.partId,
+        pose = multibody?.bodyPose(partId) || engineBody;
+      parts.set(engineBody, plainSolverPose(pose));
+    }
+    return { bodies, parts };
+  }
+
+  #syncBodyRegistry(context, dt, solverFrames) {
     this.reconstructAfterPhysicsRestore(context, dt);
     const registry = context.bodyRegistry,
       world = context.services.worldAdapter.world;
@@ -204,6 +277,12 @@ export class RigidBodySystem {
       }
     }
     for (const contact of world.contacts || []) {
+      if (
+        contact.enabled !== true ||
+        contact.bi?.isTrigger === true ||
+        contact.bj?.isTrigger === true
+      )
+        continue;
       for (const [body, offset, normalScale] of [
         [contact.bi, contact.ri, -1],
         [contact.bj, contact.rj, 1],
@@ -211,24 +290,49 @@ export class RigidBodySystem {
         const bodyId = registry.bodyIdForEngineBody(body);
         if (!bodyId) continue;
         const otherBody = body === contact.bi ? contact.bj : contact.bi,
+          bodyShape = body === contact.bi ? contact.si : contact.sj,
           otherShape = body === contact.bi ? contact.sj : contact.si,
-          point = body.position.vadd(offset),
+          bodyParticipant = body === contact.bi ? "bi" : "bj",
+          otherParticipant = body === contact.bi ? "bj" : "bi",
+          bodyIdentity = participantIdentity(
+            body,
+            bodyShape,
+            contact,
+            bodyParticipant,
+          ),
+          otherIdentity = participantIdentity(
+            otherBody,
+            otherShape,
+            contact,
+            otherParticipant,
+          ),
+          bodySolverFrame = solverFrames.bodies.get(body),
+          otherSolverFrame = solverFrames.bodies.get(otherBody),
+          observationFrame = solverFrames.parts.get(body),
+          frictionCoefficientValid =
+            contact.simulacrumFrictionCoefficientValid === true &&
+            Number.isFinite(contact.simulacrumFrictionCoefficient) &&
+            contact.simulacrumFrictionCoefficient >= 0,
+          point = bodySolverFrame?.position.vadd(offset),
           otherOffset = body === contact.bi ? contact.rj : contact.ri,
-          otherPoint = otherBody.position.vadd(otherOffset),
-          velocity = body.velocity.clone(),
-          otherVelocity = otherBody.velocity.clone(),
+          otherPoint = otherSolverFrame?.position.vadd(otherOffset),
           evidence = contact.simulacrumEvidence || {},
-          forceN = Math.abs(contact.multiplier || 0),
+          solvedNormalForceN = contact.multiplier,
+          normalForceValid =
+            Number.isFinite(solvedNormalForceN) && solvedNormalForceN >= 0,
+          forceN = normalForceValid ? solvedNormalForceN : 0,
           normal = {
             x: contact.ni.x * normalScale,
             y: contact.ni.y * normalScale,
             z: contact.ni.z * normalScale,
           },
-          supportShapeId =
-            otherShape?.userData?.shapeId ||
-            (body === contact.bi ? evidence.shapeBId : evidence.shapeAId) ||
-            null,
-          feature = heightfieldFeature(otherBody, otherShape, otherPoint),
+          supportShapeId = otherIdentity.shapeId,
+          feature = heightfieldFeature(
+            otherBody,
+            otherShape,
+            otherPoint,
+            otherSolverFrame,
+          ),
           tireEvidence = contact.simulacrumTireEvidence
             ? {
                 ...contact.simulacrumTireEvidence,
@@ -236,15 +340,25 @@ export class RigidBodySystem {
                   tireRowsByContactId.get(evidence.contactId) || [],
               }
             : null;
-        velocity.set(0, 0, 0);
-        otherVelocity.set(0, 0, 0);
-        body.getVelocityAtWorldPoint(point, velocity);
-        otherBody.getVelocityAtWorldPoint(otherPoint, otherVelocity);
+        if (!bodySolverFrame || !otherSolverFrame || !observationFrame)
+          throw new Error("RigidBodySystem lost the solver-time contact frame");
+        const velocity = velocityAtSolverPoint(
+            body,
+            bodySolverFrame.position,
+            point,
+          ),
+          otherVelocity = velocityAtSolverPoint(
+            otherBody,
+            otherSolverFrame.position,
+            otherPoint,
+          );
         registry.recordContact(bodyId, {
+          observationFrame,
           point,
           normal,
           tick: evidence.tick ?? context.clock.tick,
           contactId: evidence.contactId ?? null,
+          normalForceValid,
           forceN,
           forceWorldN: {
             x: normal.x * forceN,
@@ -253,26 +367,28 @@ export class RigidBodySystem {
           },
           impulseNs: forceN * dt,
           relativeVelocity: velocity.vsub(otherVelocity),
+          frictionCoefficientValid,
+          frictionCoefficient: frictionCoefficientValid
+            ? contact.simulacrumFrictionCoefficient
+            : 0,
+          materialKey: bodyIdentity.materialKey,
+          shapeId: bodyIdentity.shapeId,
           otherBodyId:
             registry.bodyIdForEngineBody(otherBody) ||
             otherBody.userData?.externalBodyId ||
             null,
-          otherMaterialKey:
-            (typeof otherBody.userData?.contactMaterialAt === "function"
-              ? contact.surfaceMaterialKey
-              : null) ||
-            otherShape?.userData?.materialKey ||
-            otherBody.userData?.materialKey ||
-            otherShape?.material?.name ||
-            null,
-          otherShapeId:
-            (typeof otherBody.userData?.contactMaterialAt === "function"
-              ? contact.surfaceShapeId
-              : null) ||
-            otherShape?.userData?.shapeId ||
-            null,
+          otherMaterialKey: otherIdentity.materialKey,
+          otherShapeId: otherIdentity.shapeId,
           supportShapeId,
-          surfaceRegionId: contact.surfaceShapeId || null,
+          surfaceRegionId:
+            contact.surfaceLawParticipant === bodyParticipant
+              ? bodyIdentity.shapeId === contact.surfaceShapeId
+                ? contact.surfaceShapeId || null
+                : null
+              : contact.surfaceLawParticipant === otherParticipant &&
+                  otherIdentity.shapeId === contact.surfaceShapeId
+                ? contact.surfaceShapeId || null
+                : null,
           ...feature,
           tireEvidence,
           validity: evidence.validity || "unavailable",
