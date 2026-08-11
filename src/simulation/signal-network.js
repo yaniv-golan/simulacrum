@@ -2,7 +2,10 @@ import { portDefinition, portIds, portsCompatible } from "../model/ports.js";
 import { immutableClone } from "../model/primitives.js";
 import { registerOwnedImmutable } from "../model/owned-immutable-value.js";
 import { isSensorPart } from "../model/sensor-contracts.js";
-import { componentHasControlContract } from "../model/component-contracts.js";
+import {
+  componentControlContract,
+  componentHasControlContract,
+} from "../model/component-contracts.js";
 import { powerContract } from "../model/actuator-contracts.js";
 import {
   createRouteEvidenceIndex,
@@ -158,7 +161,8 @@ export class SignalNetwork {
               "controller-target-v1",
               this.#catalog,
             ) ||
-            isSensorPart(target)
+            (isSensorPart(target) &&
+              !componentControlContract(target, this.#catalog))
           )
             return false;
           const electrical = powerContract(target, this.#catalog);

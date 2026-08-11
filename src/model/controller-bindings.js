@@ -13,6 +13,14 @@ export const CONTROLLER_BINDING_DIRECTIONS = Object.freeze(["input", "output"]);
 const compareId = (left, right) =>
   String(left.id).localeCompare(String(right.id), "en");
 
+function outputAuthorityKey(binding) {
+  return stableStringify([
+    binding.endpointPartId,
+    binding.endpointPortId,
+    binding.channel,
+  ]);
+}
+
 function bindingError(code, message, controllerId, binding, details = {}) {
   throw new DomainValidationError(code, message, {
     path: ["parts", controllerId, "controllerBindings", binding?.id || null],
@@ -119,6 +127,7 @@ export function controllerBindingManifest(
     throw new TypeError("binding manifests require a Logic Controller");
   const bindings = canonicalControllerBindings(controller.controllerBindings),
     aliases = new Set(),
+    outputAuthorities = new Set(),
     partsById = new Map(parts.map((part) => [part.id, part])),
     outgoing = directedSignalEdges(parts, connections, catalog),
     controllerIds = new Set(
@@ -182,6 +191,20 @@ export function controllerBindingManifest(
           binding,
         );
     } else if (binding.direction === "output") {
+      const authority = outputAuthorityKey(binding);
+      if (outputAuthorities.has(authority))
+        bindingError(
+          "DUPLICATE_CONTROLLER_OUTPUT_AUTHORITY",
+          `Binding ${binding.id} duplicates an existing output endpoint and channel.`,
+          controller.id,
+          binding,
+          {
+            endpointPartId: binding.endpointPartId,
+            endpointPortId: binding.endpointPortId,
+            channel: binding.channel,
+          },
+        );
+      outputAuthorities.add(authority);
       if (!actuatorChannel(endpoint, binding.channel, catalog))
         bindingError(
           "UNSUPPORTED_CONTROLLER_CHANNEL",
@@ -312,7 +335,8 @@ export function controllerBindingManifestIdentity(manifest) {
 
 export function validateControllerBindingManifest(input) {
   const manifest = canonicalControllerBindings(input),
-    aliases = new Set();
+    aliases = new Set(),
+    outputAuthorities = new Set();
   for (const [index, binding] of manifest.entries()) {
     if (binding.index !== index)
       throw new Error(`binding ${binding.id} has an unstable ABI index`);
@@ -323,6 +347,12 @@ export function validateControllerBindingManifest(input) {
       throw new Error(`binding ${binding.id} has an invalid direction`);
     if (binding.direction === "input" ? !binding.reading : !binding.channel)
       throw new Error(`binding ${binding.id} is incomplete`);
+    if (binding.direction === "output") {
+      const authority = outputAuthorityKey(binding);
+      if (outputAuthorities.has(authority))
+        throw new Error(`binding ${binding.id} duplicates output authority`);
+      outputAuthorities.add(authority);
+    }
   }
   return manifest;
 }

@@ -10,15 +10,22 @@
   ],
   "testRunner": "command",
   "commandRunner": {
-    "command": "node scripts/verify-controller-sandbox.mjs && node scripts/verify-controller-bindings.mjs && node scripts/verify-autonomous-controller-primitives.mjs"
+    "command": "node scripts/verify-controller-sandbox.mjs && node scripts/verify-controller-bindings.mjs && node scripts/verify-autonomous-controller-primitives.mjs && node scripts/verify-support-set-controller-primitives.mjs && node scripts/verify-support-set-controller-physics.mjs && node scripts/verify-controller-observation-relay.mjs"
   },
   "mutate": [
     "src/model/autonomous-controller-programs.js",
+    "src/model/component-catalog.js:599-599",
+    "src/model/controller-bindings.js:16-22",
+    "src/model/controller-bindings.js:128-130",
+    "src/model/controller-bindings.js:193-209",
+    "src/model/controller-bindings.js:336-355",
     "src/model/control-program-ir.js:7-16",
     "src/model/control-program-ir.js:77-81",
     "src/simulation/controller-sensors.js:321-323",
-    "src/simulation/controller-sensors.js:356-362",
-    "src/simulation/controller-sensors.js:382-384",
+    "src/simulation/controller-sensors.js:235-238",
+    "src/simulation/controller-sensors.js:356-366",
+    "src/simulation/signal-network.js:157-169",
+    "src/simulation/systems/command-receiver-system.js:41-59",
     "src/scripting/control-ir-wat.js:20-23",
     "src/scripting/control-ir-wat.js:96-101",
     "src/scripting/typescript-control-compiler.js:326-354",

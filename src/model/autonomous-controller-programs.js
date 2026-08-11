@@ -1,3 +1,5 @@
+import { validateControllerBindingManifest } from "./controller-bindings.js";
+
 function assertBindingId(value, label) {
   if (typeof value !== "string" || !value.trim())
     throw new TypeError(`${label} must be a non-empty string`);
@@ -11,6 +13,88 @@ function assertFinite(value, label) {
 
 function numberLiteral(value) {
   return Object.is(value, -0) ? "-0" : String(value);
+}
+
+function contactCandidate(candidate, index) {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate))
+    throw new TypeError(`candidates[${index}] must be an object`);
+  return {
+    contactInputBindingId: assertBindingId(
+      candidate.contactInputBindingId,
+      `candidates[${index}].contactInputBindingId`,
+    ),
+    normalForceInputBindingId: assertBindingId(
+      candidate.normalForceInputBindingId,
+      `candidates[${index}].normalForceInputBindingId`,
+    ),
+    membershipOutputBindingId: assertBindingId(
+      candidate.membershipOutputBindingId,
+      `candidates[${index}].membershipOutputBindingId`,
+    ),
+    confidenceOutputBindingId: assertBindingId(
+      candidate.confidenceOutputBindingId,
+      `candidates[${index}].confidenceOutputBindingId`,
+    ),
+  };
+}
+
+function assertDistinctBindingIds(bindings) {
+  const seen = new Set();
+  for (const [label, bindingId] of bindings) {
+    if (seen.has(bindingId))
+      throw new Error(
+        `controller binding ID ${bindingId} is reused at ${label}`,
+      );
+    seen.add(bindingId);
+  }
+}
+
+function validateContactSetManifest(
+  contacts,
+  outputBindingIds,
+  bindingManifest,
+) {
+  const manifest = validateControllerBindingManifest(bindingManifest),
+    byId = new Map(manifest.map((binding) => [binding.id, binding])),
+    requireBinding = (bindingId, direction, label) => {
+      const binding = byId.get(bindingId);
+      if (!binding || binding.direction !== direction)
+        throw new Error(`${label} must name a declared ${direction} binding`);
+      return binding;
+    };
+  for (const [index, candidate] of contacts.entries()) {
+    const contact = requireBinding(
+        candidate.contactInputBindingId,
+        "input",
+        `candidates[${index}].contactInputBindingId`,
+      ),
+      force = requireBinding(
+        candidate.normalForceInputBindingId,
+        "input",
+        `candidates[${index}].normalForceInputBindingId`,
+      );
+    if (contact.reading !== "contact")
+      throw new Error(`candidates[${index}] contact input must read contact`);
+    if (force.reading !== "contact_force_n")
+      throw new Error(
+        `candidates[${index}] normal-force input must read contact_force_n`,
+      );
+    if (
+      contact.endpointPartId !== force.endpointPartId ||
+      contact.endpointPortId !== force.endpointPortId
+    )
+      throw new Error(
+        `candidates[${index}] contact and normal-force evidence must come from the same sensor endpoint`,
+      );
+  }
+  for (const [label, bindingId] of outputBindingIds) {
+    const binding = requireBinding(bindingId, "output", label);
+    if (binding.channel !== "command")
+      throw new Error(
+        `${label} must publish through the command relay channel`,
+      );
+  }
+  return manifest;
 }
 
 /**
@@ -93,5 +177,142 @@ function tick(api: ControlAPI, dt: number): void {
   }
   api.write(${JSON.stringify(estimateOutput)}, estimate);
   api.write(${JSON.stringify(confidenceOutput)}, evidenceValid ? 1 : 0);
+}`;
+}
+
+/**
+ * Builds an ordinary restricted controller program that owns a conservative
+ * set of coherently loaded contact candidates. Each candidate is independent:
+ * valid contact and solved normal-force evidence enters or exits membership
+ * through force hysteresis, while unavailable or contradictory evidence clears
+ * that candidate immediately. The program publishes observations only; it has
+ * no actuator, topology, gait, role, or sequencing authority.
+ *
+ * The scalar normal-force reading establishes loaded-contact membership only.
+ * It does not establish contact location, a support polygon, a friction cone,
+ * a feasible wrench, balance, or locomotion.
+ *
+ * @param {{
+ *   candidates?: Array<{
+ *     contactInputBindingId?: string,
+ *     normalForceInputBindingId?: string,
+ *     membershipOutputBindingId?: string,
+ *     confidenceOutputBindingId?: string,
+ *   }>,
+ *   supportCountOutputBindingId?: string,
+ *   setConfidenceOutputBindingId?: string,
+ *   bindingManifest?: object[],
+ *   enterForceN?: number,
+ *   exitForceN?: number,
+ * }} options
+ */
+export function loadBearingContactSetProgram({
+  candidates,
+  supportCountOutputBindingId,
+  setConfidenceOutputBindingId,
+  bindingManifest,
+  enterForceN,
+  exitForceN,
+} = {}) {
+  if (!Array.isArray(candidates) || candidates.length === 0)
+    throw new TypeError("candidates must be a non-empty array");
+  const contacts = candidates.map(contactCandidate),
+    supportCountOutput = assertBindingId(
+      supportCountOutputBindingId,
+      "supportCountOutputBindingId",
+    ),
+    setConfidenceOutput = assertBindingId(
+      setConfidenceOutputBindingId,
+      "setConfidenceOutputBindingId",
+    ),
+    enter = assertFinite(enterForceN, "enterForceN"),
+    exit = assertFinite(exitForceN, "exitForceN");
+  if (exit < 0) throw new Error("exitForceN must be non-negative");
+  if (enter <= exit)
+    throw new Error("enterForceN must be greater than exitForceN");
+  assertDistinctBindingIds([
+    ["supportCountOutputBindingId", supportCountOutput],
+    ["setConfidenceOutputBindingId", setConfidenceOutput],
+    ...contacts.flatMap((candidate, index) => [
+      [
+        `candidates[${index}].contactInputBindingId`,
+        candidate.contactInputBindingId,
+      ],
+      [
+        `candidates[${index}].normalForceInputBindingId`,
+        candidate.normalForceInputBindingId,
+      ],
+      [
+        `candidates[${index}].membershipOutputBindingId`,
+        candidate.membershipOutputBindingId,
+      ],
+      [
+        `candidates[${index}].confidenceOutputBindingId`,
+        candidate.confidenceOutputBindingId,
+      ],
+    ]),
+  ]);
+  validateContactSetManifest(
+    contacts,
+    [
+      ["supportCountOutputBindingId", supportCountOutput],
+      ["setConfidenceOutputBindingId", setConfidenceOutput],
+      ...contacts.flatMap((candidate, index) => [
+        [
+          `candidates[${index}].membershipOutputBindingId`,
+          candidate.membershipOutputBindingId,
+        ],
+        [
+          `candidates[${index}].confidenceOutputBindingId`,
+          candidate.confidenceOutputBindingId,
+        ],
+      ]),
+    ],
+    bindingManifest,
+  );
+
+  const state = contacts.map((_candidate, index) => `let member${index} = 0;`),
+    body = contacts.flatMap((candidate, index) => {
+      const contact = JSON.stringify(candidate.contactInputBindingId),
+        force = JSON.stringify(candidate.normalForceInputBindingId),
+        membership = JSON.stringify(candidate.membershipOutputBindingId),
+        confidence = JSON.stringify(candidate.confidenceOutputBindingId);
+      return [
+        `  const contact${index} = api.read(${contact});`,
+        `  const normalForce${index} = api.read(${force});`,
+        `  const coherent${index} =`,
+        `    api.valid(${contact}) > 0.5 &&`,
+        `    api.valid(${force}) > 0.5 &&`,
+        `    (contact${index} === 0 || contact${index} === 1) &&`,
+        `    normalForce${index} >= 0 &&`,
+        `    normalForce${index} - normalForce${index} === 0 &&`,
+        `    (contact${index} === 1 || normalForce${index} === 0);`,
+        `  if (!coherent${index}) {`,
+        `    member${index} = 0;`,
+        `    allEvidenceCoherent = 0;`,
+        `  } else if (contact${index} === 0 || normalForce${index} <= ${numberLiteral(exit)}) {`,
+        `    member${index} = 0;`,
+        `  } else if (normalForce${index} >= ${numberLiteral(enter)}) {`,
+        `    member${index} = 1;`,
+        `  }`,
+        `  supportCount += member${index};`,
+        `  api.write(${membership}, member${index});`,
+        `  api.write(${confidence}, coherent${index} ? 1 : 0);`,
+      ];
+    });
+
+  return `interface ControlAPI {
+  read(binding: string): number;
+  valid(binding: string): number;
+  write(binding: string, value: number): void;
+}
+${state.join("\n")}
+function tick(api: ControlAPI, dt: number): void {
+  void dt;
+  let supportCount = 0;
+  let allEvidenceCoherent = 1;
+${body.join("\n")}
+  api.write(${JSON.stringify(supportCountOutput)}, supportCount);
+  api.write(${JSON.stringify(setConfidenceOutput)}, allEvidenceCoherent);
 }`;
 }

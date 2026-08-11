@@ -233,6 +233,9 @@ function valuesForSensor(sensor, context) {
       "tire_pressure_absolute_pa",
     );
   return {
+    readingValidity: {
+      command: receiverState?.valid === true,
+    },
     bound:
       Boolean(host) && (!requiresPneumaticBinding || Boolean(tirePressure)),
     bodyId: host?.bodyId || null,
@@ -353,8 +356,13 @@ export class ControllerSensorBank {
           valuesBySensor.set(sensor.id, values);
           nextVelocity.set(sensor.id, values.velocity);
         }
-        const valid = Boolean(
-            routeOnline && readingSupported && values?.bound === true,
+        const readingEvidenceValid =
+            values?.readingValidity?.[reading] !== false,
+          valid = Boolean(
+            routeOnline &&
+            readingSupported &&
+            values?.bound === true &&
+            readingEvidenceValid,
           ),
           value = valid ? finite(values[reading]) : 0;
         readings[binding.id] = value;
