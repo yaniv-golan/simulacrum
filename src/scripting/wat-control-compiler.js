@@ -7,6 +7,13 @@ import {
   controllerBindingManifestIdentity,
   validateControllerBindingManifest,
 } from "../model/controller-bindings.js";
+import {
+  COMMAND_SINK_SCALAR_LIMIT,
+  POINT_CONTACT_WRENCH_HOST_ABI_VERSION,
+  pointContactWrenchControllerOutputCount,
+  validatePointContactWrenchControllerResult,
+  validatePointContactWrenchControllerSpec,
+} from "../model/point-contact-wrench-controller-contract.js";
 import { finiteOr } from "../model/finite-or.js";
 import {
   issueInertPlainData,
@@ -282,7 +289,10 @@ function instrumentFunction(form, cost) {
   ]);
 }
 
-function validateAndInstrument(module) {
+function validateAndInstrument(
+  module,
+  { allowPointContactWrench = false } = {},
+) {
   let childStart = 1;
   if (isAtom(module[1]) && module[1].value.startsWith("$")) childStart = 2;
   const children = module.slice(childStart),
@@ -364,14 +374,17 @@ function validateAndInstrument(module) {
       entry[1]?.kind !== "string" ||
       entry[2]?.kind !== "string" ||
       moduleName !== "env" ||
-      !["read_binding", "read_binding_valid", "write_binding"].includes(
-        fieldName,
-      ) ||
+      ![
+        "read_binding",
+        "read_binding_valid",
+        "write_binding",
+        ...(allowPointContactWrench ? ["point_contact_wrench_output"] : []),
+      ].includes(fieldName) ||
       head(descriptor) !== "func"
     )
       throw policyError(
         entry,
-        "only env.read_binding, env.read_binding_valid, and env.write_binding function imports are allowed",
+        "only env.read_binding, env.read_binding_valid, env.write_binding, and declared point-contact wrench controller imports are allowed",
       );
     if (importNames.has(fieldName))
       throw policyError(entry, `duplicate ${fieldName} import`);
@@ -399,6 +412,15 @@ function validateAndInstrument(module) {
       throw policyError(
         descriptor,
         "write_binding must have signature (i32, f32/f64) -> void",
+      );
+    if (
+      fieldName === "point_contact_wrench_output" &&
+      (signature.parameters.join(",") !== "i32,i32" ||
+        !["f32", "f64"].includes(signature.results.join(",")))
+    )
+      throw policyError(
+        descriptor,
+        "point_contact_wrench_output must have signature (i32, i32) -> f32 or f64",
       );
     importNames.set(fieldName, identifier);
   }
@@ -499,23 +521,161 @@ function validateAndInstrument(module) {
   return module;
 }
 
+function controllerSensorValid(sensors, bindingId) {
+  const validity = sensors?.__validity?.[bindingId],
+    value = sensors?.[bindingId];
+  return (
+    (validity === true || validity === 1) &&
+    typeof value === "number" &&
+    Number.isFinite(value)
+  );
+}
+
+function controllerSensorValue(sensors, bindingId) {
+  return controllerSensorValid(sensors, bindingId)
+    ? Number(sensors[bindingId])
+    : 0;
+}
+
+function pointContactAllocatorInput(spec, sensors) {
+  const tick = sensors?.__snapshotTick,
+    tickValid = Number.isSafeInteger(tick) && tick >= 0,
+    targetBindings = [
+      ...spec.targetWrenchBindings.forceN,
+      ...spec.targetWrenchBindings.momentNm,
+    ],
+    targetValid =
+      tickValid &&
+      targetBindings.every((bindingId) =>
+        controllerSensorValid(sensors, bindingId),
+      );
+  return {
+    tick: tickValid ? tick : 0,
+    targetFrame: spec.targetFrame,
+    targetWrenchFrame: {
+      valid: targetValid,
+      forceN: spec.targetWrenchBindings.forceN.map((bindingId) =>
+        controllerSensorValue(sensors, bindingId),
+      ),
+      momentNm: spec.targetWrenchBindings.momentNm.map((bindingId) =>
+        controllerSensorValue(sensors, bindingId),
+      ),
+    },
+    contacts: spec.contacts.map((contact) => {
+      const pointValid = contact.pointWorldBindings.every((bindingId) =>
+          controllerSensorValid(sensors, bindingId),
+        ),
+        normalValues = contact.normalWorldBindings.map((bindingId) =>
+          controllerSensorValue(sensors, bindingId),
+        ),
+        normalMagnitude = Math.hypot(...normalValues),
+        normalValid =
+          contact.normalWorldBindings.every((bindingId) =>
+            controllerSensorValid(sensors, bindingId),
+          ) &&
+          Number.isFinite(normalMagnitude) &&
+          Math.abs(normalMagnitude - 1) <= 2 ** -20,
+        frictionValue = controllerSensorValue(
+          sensors,
+          contact.frictionCoefficientBinding,
+        ),
+        frictionValid =
+          controllerSensorValid(sensors, contact.frictionCoefficientBinding) &&
+          frictionValue >= 0;
+      return {
+        contactId: contact.contactId,
+        tick: tickValid ? tick : 0,
+        geometryValid: tickValid && pointValid && normalValid,
+        frictionValid: tickValid && frictionValid,
+        limitValid: true,
+        pointWorldM: pointValid
+          ? contact.pointWorldBindings.map((bindingId) =>
+              controllerSensorValue(sensors, bindingId),
+            )
+          : [0, 0, 0],
+        normalWorld: normalValid ? normalValues : [0, 1, 0],
+        frictionCoefficient: frictionValid ? frictionValue : 0,
+        normalForceLimitN: contact.normalForceLimitN,
+        tangentialForceLimitN: contact.tangentialForceLimitN,
+      };
+    }),
+    acceptance: spec.acceptance,
+    solver: spec.solver,
+  };
+}
+
+function numericalAllocationFailure() {
+  return {
+    authorityValid: false,
+    solverConverged: false,
+    accepted: false,
+    reason: "numeric-range-error-v1",
+    residualWrenchFrame: { forceNormN: 0, momentNormNm: 0 },
+    saturated: false,
+  };
+}
+
+function pointContactOutput(result, outputIndex) {
+  if (outputIndex === 0) return result.authorityValid ? 1 : 0;
+  if (outputIndex === 1) return result.solverConverged ? 1 : 0;
+  if (outputIndex === 2) return result.accepted ? 1 : 0;
+  if (outputIndex === 3)
+    return (
+      {
+        "accepted-v1": 0,
+        "invalid-authority-v1": 1,
+        "solver-budget-exhausted-v1": 2,
+        "residual-tolerance-exceeded-v1": 3,
+      }[result.reason] ?? 4
+    );
+  if (outputIndex === 4)
+    return Math.min(
+      result.residualWrenchFrame.forceNormN,
+      COMMAND_SINK_SCALAR_LIMIT,
+    );
+  if (outputIndex === 5)
+    return Math.min(
+      result.residualWrenchFrame.momentNormNm,
+      COMMAND_SINK_SCALAR_LIMIT,
+    );
+  if (outputIndex === 6) return result.saturated ? 1 : 0;
+  if (outputIndex === 7)
+    return result.residualWrenchFrame.forceNormN > COMMAND_SINK_SCALAR_LIMIT ||
+      result.residualWrenchFrame.momentNormNm > COMMAND_SINK_SCALAR_LIMIT
+      ? 1
+      : 0;
+  const forceIndex = outputIndex - 8,
+    contactIndex = Math.floor(forceIndex / 3),
+    axis = forceIndex % 3;
+  return result.accepted
+    ? result.allocations[contactIndex].forceWorldN[axis]
+    : 0;
+}
+
 function createPreparedRuntime(
   module,
   language,
   bindingManifest,
   programIdentity,
+  pointContactWrenchSpecs,
+  pointContactWrenchHost,
 ) {
   const bindings = validateControllerBindingManifest(bindingManifest),
-    bindingManifestIdentity = controllerBindingManifestIdentity(bindings);
+    bindingManifestIdentity = controllerBindingManifestIdentity(bindings),
+    hostAbiIdentity = pointContactWrenchSpecs.length
+      ? pointContactWrenchHost.identity
+      : null;
   return Object.freeze({
     language,
     policyVersion: CONTROLLER_POLICY_VERSION,
     bindingManifest: bindings,
     bindingManifestIdentity,
     programIdentity,
+    hostAbiIdentity,
     instantiate() {
       let sensors = {},
         outputs = [],
+        pointContactWrenchResults = new Map(),
         fuel = 0,
         running = false,
         disposed = false;
@@ -566,6 +726,53 @@ function createPreparedRuntime(
                 throw new Error("controller output budget exceeded");
               outputs.push([binding.id, value]);
             },
+            point_contact_wrench_output(rawSpecIndex, rawOutputIndex) {
+              if (!running)
+                throw new Error(
+                  "point-contact wrench allocation outside controller tick",
+                );
+              const specIndex = Number(rawSpecIndex),
+                outputIndex = Number(rawOutputIndex),
+                spec = pointContactWrenchSpecs[specIndex];
+              if (
+                !Number.isSafeInteger(specIndex) ||
+                !spec ||
+                !Number.isSafeInteger(outputIndex) ||
+                outputIndex < 0 ||
+                outputIndex >= pointContactWrenchControllerOutputCount(spec)
+              )
+                throw new Error(
+                  "point-contact wrench controller index is out of range",
+                );
+              if (!pointContactWrenchResults.has(specIndex)) {
+                fuel -= 64 + spec.contacts.length * spec.solver.maxIterations;
+                if (fuel < 0) throw new Error("controller fuel exhausted");
+                try {
+                  const request = pointContactAllocatorInput(spec, sensors),
+                    allocation = pointContactWrenchHost.allocate(
+                      JSON.stringify(request),
+                    );
+                  pointContactWrenchResults.set(
+                    specIndex,
+                    validatePointContactWrenchControllerResult(
+                      allocation,
+                      spec,
+                      request,
+                    ),
+                  );
+                } catch (error) {
+                  if (!(error instanceof RangeError)) throw error;
+                  pointContactWrenchResults.set(
+                    specIndex,
+                    numericalAllocationFailure(),
+                  );
+                }
+              }
+              return pointContactOutput(
+                pointContactWrenchResults.get(specIndex),
+                outputIndex,
+              );
+            },
             consume_fuel(rawCost) {
               const cost = Number(rawCost);
               if (!running || !Number.isInteger(cost) || cost <= 0)
@@ -593,6 +800,7 @@ function createPreparedRuntime(
           if (disposed) throw new Error("controller runtime is disposed");
           sensors = nextSensors || {};
           outputs = [];
+          pointContactWrenchResults = new Map();
           fuel = CONTROLLER_LIMITS.fuelPerTick;
           running = true;
           try {
@@ -600,6 +808,7 @@ function createPreparedRuntime(
             return new Map(outputs);
           } catch (error) {
             outputs = [];
+            pointContactWrenchResults = new Map();
             throw error;
           } finally {
             running = false;
@@ -659,6 +868,7 @@ function createPreparedRuntime(
           running = false;
           sensors = {};
           outputs = [];
+          pointContactWrenchResults = new Map();
         },
       });
     },
@@ -667,18 +877,41 @@ function createPreparedRuntime(
 
 /**
  * @param {string} source
- * @param {{language?:string,enforceSourceLimit?:boolean,bindingManifest?:readonly object[]}} [options]
+ * @param {{language?:string,enforceSourceLimit?:boolean,bindingManifest?:readonly object[],pointContactWrenchSpecs?:readonly object[],pointContactWrenchHost?:{identity:string,allocate:(input:string)=>object},programIdentitySource?:string|null}} [options]
  */
 export async function compileWatController(
   source,
-  { language = "wat", enforceSourceLimit = true, bindingManifest } = {},
+  {
+    language = "wat",
+    enforceSourceLimit = true,
+    bindingManifest,
+    pointContactWrenchSpecs = [],
+    pointContactWrenchHost = null,
+    programIdentitySource = null,
+  } = {},
 ) {
-  const bindings = validateControllerBindingManifest(bindingManifest);
+  const bindings = validateControllerBindingManifest(bindingManifest),
+    validatedPointContactWrenchSpecs = Object.freeze(
+      pointContactWrenchSpecs.map((spec) =>
+        validatePointContactWrenchControllerSpec(spec, bindings),
+      ),
+    );
+  if (
+    validatedPointContactWrenchSpecs.length > 0 &&
+    (pointContactWrenchHost?.identity !==
+      POINT_CONTACT_WRENCH_HOST_ABI_VERSION ||
+      typeof pointContactWrenchHost?.allocate !== "function")
+  )
+    throw new Error(
+      "point-contact wrench controller needs a physical allocator host",
+    );
   if (enforceSourceLimit)
     assertControllerSourceSize(source, `${language.toUpperCase()} source`);
   else if (typeof source !== "string")
     throw new TypeError("generated WAT source must be text");
-  const syntaxTree = validateAndInstrument(parseWat(source)),
+  const syntaxTree = validateAndInstrument(parseWat(source), {
+      allowPointContactWrench: validatedPointContactWrenchSpecs.length > 0,
+    }),
     instrumentedSource = serializeWat(syntaxTree),
     wabt = await loadWabtRuntime(),
     parsed = wabt.parseWat("controller.wat", instrumentedSource, {
@@ -714,6 +947,7 @@ export async function compileWatController(
             "read_binding",
             "read_binding_valid",
             "write_binding",
+            "point_contact_wrench_output",
             "consume_fuel",
           ].includes(entry.name) ||
           entry.kind !== "function",
@@ -731,7 +965,18 @@ export async function compileWatController(
       module,
       language,
       bindings,
-      await sha256Identity(instrumentedSource),
+      await sha256Identity(
+        JSON.stringify({
+          version: 1,
+          policyVersion: CONTROLLER_POLICY_VERSION,
+          hostAbiIdentity: validatedPointContactWrenchSpecs.length
+            ? POINT_CONTACT_WRENCH_HOST_ABI_VERSION
+            : null,
+          program: programIdentitySource ?? instrumentedSource,
+        }),
+      ),
+      validatedPointContactWrenchSpecs,
+      pointContactWrenchHost,
     );
   } finally {
     parsed.destroy?.();

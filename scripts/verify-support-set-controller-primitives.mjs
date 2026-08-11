@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { loadBearingContactSetProgram } from "../src/model/autonomous-controller-programs.js";
 import { TYPES } from "../src/model/component-catalog.js";
+import { controllerSensorFrameForId } from "../src/model/controller-sensor-frame-evidence.js";
 import { prepareTypeScriptController } from "../src/scripting/controller-compilers.js";
 import { ControllerSensorBank } from "../src/simulation/controller-sensors.js";
 
@@ -488,12 +489,15 @@ const part = (id, type, extra = {}) => ({
   },
   bank = new ControllerSensorBank(),
   capture = (captureSignals = signals) =>
-    bank.capture({
-      parts: [...contactSensors, controller],
-      connections,
-      bodies,
-      signals: captureSignals,
-    })[controller.id],
+    controllerSensorFrameForId(
+      bank.capture({
+        parts: [...contactSensors, controller],
+        connections,
+        bodies,
+        signals: captureSignals,
+      }),
+      controller.id,
+    ),
   measured = capture();
 
 assert.ok(TYPES.contactsensor, "ordinary contact sensor contract is missing");

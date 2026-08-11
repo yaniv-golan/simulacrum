@@ -10,6 +10,7 @@ import { ControllerRuntimeManager } from "../src/scripting/controller-runtime-ma
 import { CannonWorldAdapter } from "../src/simulation/cannon-world-adapter.js";
 import { ControllerSensorBank } from "../src/simulation/controller-sensors.js";
 import { controllerBindingManifest } from "../src/model/controller-bindings.js";
+import { controllerSensorFrameForId } from "../src/model/controller-sensor-frame-evidence.js";
 import { MultibodyRuntime } from "../src/simulation/multibody-runtime.js";
 import { SimulationSession } from "../src/simulation/simulation-session.js";
 import { CommandRoutingSystem } from "../src/simulation/systems/command-routing-system.js";
@@ -266,7 +267,10 @@ async function run(mode, scenario = null) {
         manager.tick(
           controller.id,
           dt,
-          sensorSnapshot.controllers?.[controller.id] || {},
+          controllerSensorFrameForId(
+            sensorSnapshot.controllers,
+            controller.id,
+          ) || {},
         );
       }
     },

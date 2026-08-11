@@ -1,0 +1,84 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "ignorePatterns": [
+    "/artifacts",
+    "/coverage",
+    "/dist",
+    "/output",
+    "/packages/core/dist",
+    "/temp"
+  ],
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node scripts/verify-point-contact-wrench-controller.mjs && node scripts/verify-point-contact-wrench-controller-relay.mjs && node scripts/verify-controller-sandbox.mjs"
+  },
+  "mutate": [
+    "src/model/actuator-contracts.js:21-32",
+    "src/model/controller-sensor-frame-evidence.js",
+    "src/model/powered-id-evidence.js",
+    "src/model/point-contact-wrench-controller-contract.js",
+    "src/model/autonomous-controller-programs.js:359-463",
+    "src/model/control-program-ir.js:7-12",
+    "src/model/control-program-ir.js:26-34",
+    "src/model/control-program-ir.js:114-124",
+    "src/model/controller-policy.js:1-3",
+    "src/scripting/typescript-control-compiler.js:496-542",
+    "src/scripting/control-ir-wat.js:14-49",
+    "src/scripting/control-ir-wat.js:119-130",
+    "src/scripting/control-ir-wat.js:150-153",
+    "src/scripting/controller-compilers.js:13-83",
+    "src/scripting/wat-control-compiler.js:414-423",
+    "src/scripting/wat-control-compiler.js:524-653",
+    "src/scripting/wat-control-compiler.js:655-674",
+    "src/scripting/wat-control-compiler.js:729-775",
+    "src/scripting/wat-control-compiler.js:888-907",
+    "src/scripting/wat-control-compiler.js:912-914",
+    "src/scripting/wat-control-compiler.js:964-980",
+    "src/application/controller-physics-compilers.js",
+    "src/application/failure-evidence-replay.js:110-129",
+    "src/application/controller-lifecycle-feature.js:89-90",
+    "src/application/controller-lifecycle-feature.js:302-310",
+    "src/application/controller-lifecycle-feature.js:327-330",
+    "src/application/controller-lifecycle-feature.js:335-336",
+    "src/application/controller-lifecycle-feature.js:342-348",
+    "src/scripting/controller-runtime-manager.js:72-80",
+    "src/scripting/controller-runtime-manager.js:93-95",
+    "src/scripting/controller-runtime-manager.js:106-123",
+    "src/scripting/controller-runtime-manager.js:143-158",
+    "src/scripting/controller-runtime-manager.js:190-194",
+    "src/scripting/controller-runtime-manager.js:227-241",
+    "src/scripting/controller-runtime-manager.js:258-259",
+    "src/scripting/controller-runtime-manager.js:289-290",
+    "src/scripting/controller-runtime-manager.js:303-316",
+    "src/scripting/controller-runtime-manager.js:332-336",
+    "src/simulation/controller-sensors.js:50-53",
+    "src/simulation/controller-sensors.js:213-219",
+    "src/simulation/controller-sensors.js:251-254",
+    "src/simulation/controller-sensors.js:317-317",
+    "src/simulation/controller-sensors.js:356-356",
+    "src/simulation/controller-sensors.js:439-439"
+  ],
+  "coverageAnalysis": "off",
+  "mutator": {
+    "excludedMutations": [
+      "StringLiteral",
+      "ArrayDeclaration",
+      "ObjectLiteral",
+      "OptionalChaining",
+      "MethodExpression",
+      "ArrowFunction"
+    ]
+  },
+  "concurrency": 4,
+  "timeoutMS": 20000,
+  "tempDirName": "artifacts/stryker-point-contact-wrench-controller",
+  "reporters": ["clear-text", "json"],
+  "jsonReporter": {
+    "fileName": "artifacts/point-contact-wrench-controller-mutation.json"
+  },
+  "thresholds": {
+    "high": 90,
+    "low": 90,
+    "break": 90
+  }
+}

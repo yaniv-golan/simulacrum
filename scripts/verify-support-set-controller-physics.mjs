@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import * as CANNON from "cannon-es";
 import { loadBearingContactSetProgram } from "../src/model/autonomous-controller-programs.js";
 import { TYPES } from "../src/model/component-catalog.js";
+import { controllerSensorFrameForId } from "../src/model/controller-sensor-frame-evidence.js";
 import { prepareTypeScriptController } from "../src/scripting/controller-compilers.js";
 import { CannonWorldAdapter } from "../src/simulation/cannon-world-adapter.js";
 import { ControllerSensorBank } from "../src/simulation/controller-sensors.js";
@@ -191,14 +192,17 @@ const multibodyRuntime = {
   sensorBank = new ControllerSensorBank(),
   capture = () => {
     const telemetry = session.telemetry();
-    return sensorBank.capture({
-      parts,
-      connections,
-      bodies: telemetry.bodies,
-      signals,
-      fixedDt: DT,
-      time: telemetry.time,
-    })[controller.id];
+    return controllerSensorFrameForId(
+      sensorBank.capture({
+        parts,
+        connections,
+        bodies: telemetry.bodies,
+        signals,
+        fixedDt: DT,
+        time: telemetry.time,
+      }),
+      controller.id,
+    );
   },
   observe = (readings) => Object.fromEntries(observer.tick(DT, readings));
 

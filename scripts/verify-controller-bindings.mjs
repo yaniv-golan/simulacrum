@@ -9,6 +9,7 @@ import {
   validateControllerBindingManifest,
 } from "../src/model/controller-bindings.js";
 import { TYPES } from "../src/model/component-catalog.js";
+import { controllerSensorFrameForId } from "../src/model/controller-sensor-frame-evidence.js";
 import {
   quaternionFromEulerXYZ,
   rotateVectorByQuaternion,
@@ -753,7 +754,7 @@ const observed = [],
         controllers: sensorBank.capture({
           parts: previous.run?.parts || [],
           connections: previous.run?.connections || [],
-          bodies: receiverBodies,
+          bodies: { ...receiverBodies, tick: previous.tick },
           signals: systems.signals || {},
           commandReceivers: systems.commandReceivers || {},
           fixedDt,
@@ -763,7 +764,7 @@ const observed = [],
       };
     },
     tickControllers: (_dt, snapshot) => {
-      const readings = snapshot.controllers?.[13];
+      const readings = controllerSensorFrameForId(snapshot.controllers, 13);
       observed.push({
         value: readings?.["pilot.command"] || 0,
         valid: readings?.__validity?.["pilot.command"] || 0,
@@ -950,70 +951,73 @@ const rangeSensor = part(41, "rangesensor"),
       rangeEmitterPosition.z +
       worldRangeAxis[2] * (expectedSurfaceRangeM + targetRadiusM),
   },
-  rangeReadings = new ControllerSensorBank().capture({
-    parts: [rangeSensor, rangeController],
-    connections: [
-      connection("range-signal", 41, 42, "signal", "SIGNAL", "IN A"),
-    ],
-    bodies: {
-      bodies: [
-        {
-          bodyId: "range-body",
-          bound: true,
-          detached: false,
-          pose: {
-            position: rangeHostPosition,
-            quaternion: rangeQuaternionObject,
+  rangeReadings = controllerSensorFrameForId(
+    new ControllerSensorBank().capture({
+      parts: [rangeSensor, rangeController],
+      connections: [
+        connection("range-signal", 41, 42, "signal", "SIGNAL", "IN A"),
+      ],
+      bodies: {
+        bodies: [
+          {
+            bodyId: "range-body",
+            bound: true,
+            detached: false,
+            pose: {
+              position: rangeHostPosition,
+              quaternion: rangeQuaternionObject,
+            },
+            velocity: { x: 1, y: 2, z: -1 },
+            angularVelocity: { x: 0, y: 0, z: 0 },
           },
-          velocity: { x: 1, y: 2, z: -1 },
-          angularVelocity: { x: 0, y: 0, z: 0 },
-        },
-      ],
-      bodyByPart: [{ partId: 41, bodyId: "range-body" }],
-    },
-    signals: {
-      controllerSensors: [
-        {
-          controllerId: 42,
-          endpoints: [{ partId: 41, portIds: ["SIGNAL"] }],
-        },
-      ],
-    },
-    environmentBodies: {
-      schemaVersion: 1,
-      time: 0,
-      bodies: [
-        {
-          id: "environment:rotated-target",
-          frame: "earth-tangent-global-v1",
-          geometry: { kind: "sphere-v1", radiusM: targetRadiusM },
-          queryKinds: ["sensing"],
-          pose: {
-            position: rangeTargetPosition,
-            orientation: { x: 0, y: 0, z: 0, w: 1 },
+        ],
+        bodyByPart: [{ partId: 41, bodyId: "range-body" }],
+      },
+      signals: {
+        controllerSensors: [
+          {
+            controllerId: 42,
+            endpoints: [{ partId: 41, portIds: ["SIGNAL"] }],
           },
-          velocityMps: { x: 3, y: -2, z: 5 },
-        },
-      ],
-    },
-    compiledBodies: [
-      {
-        partId: 41,
-        capabilities: {
-          sensor: {
-            measurement: {
-              kind: "conical-range-v1",
-              localAxisPart: localRangeAxis,
-              emitterOffsetPartM: localEmitterOffset,
-              fieldOfViewDeg: 0.1,
-              maximumRangeM: 100,
-              rangeResolutionM: 0.01,
+        ],
+      },
+      environmentBodies: {
+        schemaVersion: 1,
+        time: 0,
+        bodies: [
+          {
+            id: "environment:rotated-target",
+            frame: "earth-tangent-global-v1",
+            geometry: { kind: "sphere-v1", radiusM: targetRadiusM },
+            queryKinds: ["sensing"],
+            pose: {
+              position: rangeTargetPosition,
+              orientation: { x: 0, y: 0, z: 0, w: 1 },
+            },
+            velocityMps: { x: 3, y: -2, z: 5 },
+          },
+        ],
+      },
+      compiledBodies: [
+        {
+          partId: 41,
+          capabilities: {
+            sensor: {
+              measurement: {
+                kind: "conical-range-v1",
+                localAxisPart: localRangeAxis,
+                emitterOffsetPartM: localEmitterOffset,
+                fieldOfViewDeg: 0.1,
+                maximumRangeM: 100,
+                rangeResolutionM: 0.01,
+              },
             },
           },
         },
-      },
-    ],
-  })[42];
+      ],
+    }),
+    42,
+  );
 assert.equal(rangeReadings["target.detected"], 1);
 assert.equal(
   rangeReadings["target.range"],

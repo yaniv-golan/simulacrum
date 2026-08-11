@@ -18,6 +18,7 @@ import { CannonWorldAdapter } from "../src/simulation/cannon-world-adapter.js";
 import { commitBodyRegistryMassProperties } from "../src/simulation/body-registry.js";
 import { ControllerSensorBank } from "../src/simulation/controller-sensors.js";
 import { controllerBindingManifest } from "../src/model/controller-bindings.js";
+import { controllerSensorFrameForId } from "../src/model/controller-sensor-frame-evidence.js";
 import { TerrainCollisionStream } from "../src/simulation/environment/terrain-collision-stream.js";
 import { PhysicalAssemblyIndex } from "../src/simulation/physical-assembly-index.js";
 import { createPhysicalFlightServices } from "../src/simulation/physical-flight-services.js";
@@ -1636,7 +1637,10 @@ async function createActiveRuntime() {
           controllerManager.tick(
             controller.id,
             dt,
-            sensorSnapshot.controllers?.[controller.id] || {},
+            controllerSensorFrameForId(
+              sensorSnapshot.controllers,
+              controller.id,
+            ) || {},
           );
       },
       readCommandCandidates: () => ({

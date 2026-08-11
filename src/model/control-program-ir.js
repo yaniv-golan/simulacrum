@@ -3,8 +3,12 @@ import {
   controllerBindingIndex,
   validateControllerBindingManifest,
 } from "./controller-bindings.js";
+import {
+  validatePointContactWrenchOutputBindingIds,
+  validatePointContactWrenchControllerSpec,
+} from "./point-contact-wrench-controller-contract.js";
 
-export const CONTROL_IR_VERSION = 2;
+export const CONTROL_IR_VERSION = 3;
 
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 const EXPRESSION_KINDS = new Set([
@@ -26,6 +30,7 @@ const STATEMENT_KINDS = new Set([
   "expression",
   "if",
   "return",
+  "point-contact-wrench-write",
 ]);
 
 function assertIdentifier(value, label) {
@@ -106,6 +111,17 @@ export function validateControlIR(input) {
         throw new Error(`unknown global ${statement.name}`);
       if (statement.kind === "write")
         controllerBindingIndex(bindingManifest, statement.bindingId, "output");
+      if (statement.kind === "point-contact-wrench-write") {
+        const spec = validatePointContactWrenchControllerSpec(
+          statement.spec,
+          bindingManifest,
+        );
+        validatePointContactWrenchOutputBindingIds(
+          spec,
+          statement.outputBindingIds,
+          bindingManifest,
+        );
+      }
       if (
         ["set-local", "set-global", "write", "expression", "return"].includes(
           statement.kind,

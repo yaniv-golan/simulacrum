@@ -7,6 +7,10 @@ import {
   controllerBindingIndex,
   validateControllerBindingManifest,
 } from "../model/controller-bindings.js";
+import {
+  validatePointContactWrenchOutputBindingIds,
+  validatePointContactWrenchControllerSpec,
+} from "../model/point-contact-wrench-controller-contract.js";
 
 function diagnosticError(ts, sourceFile, node, message) {
   const start = node?.getStart?.(sourceFile) ?? 0,
@@ -388,7 +392,7 @@ export async function compileTypeScriptToControlIR(source, bindingManifest) {
           ts,
           sourceFile,
           node,
-          "only declared helpers, api.read/valid, and Math.abs/min/max may be called",
+          "only declared helpers, approved api methods, and Math.abs/min/max may be called",
         );
       }
       throw diagnosticError(
@@ -487,6 +491,54 @@ export async function compileTypeScriptToControlIR(source, bindingManifest) {
           const assignment = assignmentStatement(expression);
           if (assignment) {
             result.push(assignment);
+            continue;
+          }
+          if (
+            ts.isCallExpression(expression) &&
+            ts.isPropertyAccessExpression(expression.expression) &&
+            ts.isIdentifier(expression.expression.expression) &&
+            expression.expression.expression.text === apiName &&
+            expression.expression.name.text === "writePointContactWrench"
+          ) {
+            const [encodedSpec, encodedOutputs] = expression.arguments;
+            if (
+              expression.arguments.length !== 2 ||
+              !ts.isStringLiteral(encodedSpec) ||
+              !ts.isStringLiteral(encodedOutputs)
+            )
+              throw diagnosticError(
+                ts,
+                sourceFile,
+                expression,
+                "api.writePointContactWrench needs literal specification and output-binding lists",
+              );
+            let spec, outputBindingIds;
+            try {
+              spec = validatePointContactWrenchControllerSpec(
+                JSON.parse(encodedSpec.text),
+                bindings,
+              );
+              outputBindingIds = JSON.parse(encodedOutputs.text);
+              validatePointContactWrenchOutputBindingIds(
+                spec,
+                outputBindingIds,
+                bindings,
+              );
+            } catch (error) {
+              throw diagnosticError(
+                ts,
+                sourceFile,
+                expression,
+                error instanceof Error
+                  ? error.message
+                  : "point-contact controller declaration is invalid",
+              );
+            }
+            result.push({
+              kind: "point-contact-wrench-write",
+              spec,
+              outputBindingIds,
+            });
             continue;
           }
           if (

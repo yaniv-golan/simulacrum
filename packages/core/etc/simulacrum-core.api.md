@@ -1053,6 +1053,9 @@ export function clampActuatorCommand(part: any, channel: string, value: unknown,
 export type CollisionPrimitiveV1 = BodyPrimitiveV1;
 
 // @public (undocumented)
+export const COMMAND_SINK_SCALAR_LIMIT: 1000000;
+
+// @public (undocumented)
 export class CommandBus {
     // (undocumented)
     clearTick(): void;
@@ -1658,7 +1661,7 @@ export const CONNECTION_FRAME_TOLERANCES_V1: Readonly<{
 export function connectionUsesPort(connection: any, part: any, port: any): boolean;
 
 // @public (undocumented)
-export const CONTROL_IR_VERSION: 2;
+export const CONTROL_IR_VERSION: 3;
 
 // @public (undocumented)
 export const CONTROLLER_BINDING_DIRECTIONS: readonly string[];
@@ -1681,7 +1684,7 @@ export const CONTROLLER_LIMITS: Readonly<{
 }>;
 
 // @public (undocumented)
-export const CONTROLLER_POLICY_VERSION: "control-wasm-v1-bindings";
+export const CONTROLLER_POLICY_VERSION: "control-wasm-v2-point-contact-wrench-bindings";
 
 // @public (undocumented)
 export const CONTROLLER_STYLES: Readonly<{
@@ -1735,7 +1738,10 @@ export class ControllerRuntimeManager {
         bindingManifest: any;
         bindingManifestIdentity: any;
         programIdentity: any;
+        hostAbiIdentity: any;
         ready: boolean;
+        suspended: boolean;
+        suspensionReason: any;
         commands: Map<any, any>;
         tick: number;
         lastTick: any;
@@ -1753,7 +1759,11 @@ export class ControllerRuntimeManager {
         controllerId: any;
         bindingManifestIdentity: any;
         programIdentity: any;
+        policyVersion: any;
+        hostAbiIdentity: any;
         ready: any;
+        suspended: any;
+        suspensionReason: any;
         commands: any[];
         tick: any;
         lastTick: any;
@@ -1779,7 +1789,7 @@ export class ControllerRuntimeManager {
     runtimes: Map<any, any>;
     // (undocumented)
     status(controllerId: any): {
-        ready: any;
+        ready: boolean;
         status: any;
         error: any;
         language: any;
@@ -1787,6 +1797,8 @@ export class ControllerRuntimeManager {
         bindingManifestIdentity: any;
         tick: any;
     };
+    // (undocumented)
+    suspend(controllerId: any, reason?: string): boolean;
     // (undocumented)
     tick(controllerId: any, dt: any, sensors: any): boolean;
     // (undocumented)
@@ -5640,6 +5652,7 @@ export function prepareControlIRController(ir: any, input?: {
     bindingManifest: readonly any[];
     bindingManifestIdentity: string;
     programIdentity: any;
+    hostAbiIdentity: any;
     instantiate(): Readonly<{
         tick(dt: any, nextSensors: any): Map<any, any>;
         exportState(): {
@@ -5659,6 +5672,7 @@ export function prepareTypeScriptController(source: any, bindingManifest: any): 
     bindingManifest: readonly any[];
     bindingManifestIdentity: string;
     programIdentity: any;
+    hostAbiIdentity: any;
     instantiate(): Readonly<{
         tick(dt: any, nextSensors: any): Map<any, any>;
         exportState(): {
@@ -5678,6 +5692,7 @@ export function prepareWasmController(source: any, bindingManifest: any): Promis
     bindingManifest: readonly any[];
     bindingManifestIdentity: string;
     programIdentity: any;
+    hostAbiIdentity: any;
     instantiate(): Readonly<{
         tick(dt: any, nextSensors: any): Map<any, any>;
         exportState(): {

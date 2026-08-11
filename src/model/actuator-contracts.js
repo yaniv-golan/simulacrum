@@ -15,13 +15,20 @@ const range = (minimum, maximum, options = {}) =>
     fanout: Boolean(options.fanout),
   });
 
+// The ordinary command receiver is the scalar relay boundary shared by remote
+// and restricted-controller commands. Producers must either stay within this
+// envelope or expose any lossy encoding explicitly.
+export const COMMAND_SINK_SCALAR_LIMIT = 1_000_000;
+
 /**
  * Component-level command contract. A command is valid only for the addressed
  * component type; fanout is deliberate and remains target/controller scoped.
  */
 export const ACTUATOR_CHANNELS = Object.freeze({
   "command-sink-v1": Object.freeze({
-    command: range(-1_000_000, 1_000_000, { unit: "scalar" }),
+    command: range(-COMMAND_SINK_SCALAR_LIMIT, COMMAND_SINK_SCALAR_LIMIT, {
+      unit: "scalar",
+    }),
   }),
   "rotary-drive-v1": Object.freeze({
     throttle: range(-1, 1, { fanout: true }),
