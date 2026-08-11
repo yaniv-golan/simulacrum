@@ -1,0 +1,52 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "ignorePatterns": [
+    "/artifacts",
+    "/coverage",
+    "/dist",
+    "/output",
+    "/packages/core/dist",
+    "/temp"
+  ],
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node scripts/verify-controller-sandbox.mjs && node scripts/verify-controller-bindings.mjs && node scripts/verify-autonomous-controller-primitives.mjs"
+  },
+  "mutate": [
+    "src/model/autonomous-controller-programs.js",
+    "src/model/control-program-ir.js:7-16",
+    "src/model/control-program-ir.js:77-81",
+    "src/simulation/controller-sensors.js:321-323",
+    "src/simulation/controller-sensors.js:356-362",
+    "src/simulation/controller-sensors.js:382-384",
+    "src/scripting/control-ir-wat.js:20-23",
+    "src/scripting/control-ir-wat.js:96-101",
+    "src/scripting/typescript-control-compiler.js:326-354",
+    "src/scripting/wat-control-compiler.js:360-403",
+    "src/scripting/wat-control-compiler.js:535-546",
+    "src/scripting/wat-control-compiler.js:704-717"
+  ],
+  "coverageAnalysis": "off",
+  "mutator": {
+    "excludedMutations": [
+      "StringLiteral",
+      "ArrayDeclaration",
+      "ObjectLiteral",
+      "OptionalChaining",
+      "MethodExpression",
+      "ArrowFunction"
+    ]
+  },
+  "concurrency": 4,
+  "timeoutMS": 10000,
+  "tempDirName": "artifacts/stryker-autonomous-controllers",
+  "reporters": ["clear-text", "json"],
+  "jsonReporter": {
+    "fileName": "artifacts/autonomous-controllers-mutation.json"
+  },
+  "thresholds": {
+    "high": 80,
+    "low": 80,
+    "break": 80
+  }
+}

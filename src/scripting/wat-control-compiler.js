@@ -364,12 +364,14 @@ function validateAndInstrument(module) {
       entry[1]?.kind !== "string" ||
       entry[2]?.kind !== "string" ||
       moduleName !== "env" ||
-      !["read_binding", "write_binding"].includes(fieldName) ||
+      !["read_binding", "read_binding_valid", "write_binding"].includes(
+        fieldName,
+      ) ||
       head(descriptor) !== "func"
     )
       throw policyError(
         entry,
-        "only env.read_binding and env.write_binding function imports are allowed",
+        "only env.read_binding, env.read_binding_valid, and env.write_binding function imports are allowed",
       );
     if (importNames.has(fieldName))
       throw policyError(entry, `duplicate ${fieldName} import`);
@@ -379,13 +381,13 @@ function validateAndInstrument(module) {
       ),
       signature = functionSignature(descriptor);
     if (
-      fieldName === "read_binding" &&
+      ["read_binding", "read_binding_valid"].includes(fieldName) &&
       (signature.parameters.join(",") !== "i32" ||
         !["f32", "f64"].includes(signature.results.join(",")))
     )
       throw policyError(
         descriptor,
-        "read_binding must have signature (i32) -> f32 or f64",
+        `${fieldName} must have signature (i32) -> f32 or f64`,
       );
     if (
       fieldName === "write_binding" &&
@@ -529,6 +531,18 @@ function createPreparedRuntime(
                 ? sensors[index]
                 : sensors?.[binding.id];
               return finiteOr(value);
+            },
+            read_binding_valid(index) {
+              if (!running)
+                throw new Error(
+                  "binding validity read outside controller tick",
+                );
+              const binding = bindings[index];
+              if (!binding || binding.direction !== "input")
+                throw new Error(`input binding index ${index} is out of range`);
+              if (Array.isArray(sensors)) return 0;
+              const value = sensors?.__validity?.[binding.id];
+              return value === true || value === 1 ? 1 : 0;
             },
             write_binding(index, rawValue) {
               if (!running)
@@ -691,9 +705,12 @@ export async function compileWatController(
       imports.some(
         (entry) =>
           entry.module !== "env" ||
-          !["read_binding", "write_binding", "consume_fuel"].includes(
-            entry.name,
-          ) ||
+          ![
+            "read_binding",
+            "read_binding_valid",
+            "write_binding",
+            "consume_fuel",
+          ].includes(entry.name) ||
           entry.kind !== "function",
       )
     )

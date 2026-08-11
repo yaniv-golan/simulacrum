@@ -19,6 +19,8 @@ export function compileControlIRToWat(input) {
     if (node.kind === "global") return `(global.get ${watName(node.name)})`;
     if (node.kind === "read")
       return `(call $read_binding (i32.const ${controllerBindingIndex(ir.bindingManifest, node.bindingId, "input")}))`;
+    if (node.kind === "valid")
+      return `(call $read_binding_valid (i32.const ${controllerBindingIndex(ir.bindingManifest, node.bindingId, "input")}))`;
     if (node.kind === "unary") {
       const value = expression(node.value);
       if (node.operator === "plus") return value;
@@ -94,6 +96,7 @@ export function compileControlIRToWat(input) {
   const lines = [
     "(module",
     '  (import "env" "read_binding" (func $read_binding (param i32) (result f64)))',
+    '  (import "env" "read_binding_valid" (func $read_binding_valid (param i32) (result f64)))',
     '  (import "env" "write_binding" (func $write_binding (param i32 f64)))',
   ];
   for (const global of ir.globals || [])

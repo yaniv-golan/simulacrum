@@ -99,6 +99,7 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-electric-multirotor-qualification-contract.mjs",
   "verify-electric-multirotor-endurance.mjs",
   "verify-rotor-aerodynamics.mjs",
+  "verify-autonomous-controller-primitives.mjs",
   "verify-controller-sandbox.mjs",
   "verify-controller-bindings.mjs",
   "verify-flight-command-transition.mjs",

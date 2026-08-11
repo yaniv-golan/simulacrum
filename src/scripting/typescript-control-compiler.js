@@ -330,7 +330,7 @@ export async function compileTypeScriptToControlIR(source, bindingManifest) {
           if (
             ts.isIdentifier(owner) &&
             owner.text === apiName &&
-            method === "read"
+            ["read", "valid"].includes(method)
           ) {
             const key = node.arguments[0];
             if (node.arguments.length !== 1 || !ts.isStringLiteral(key))
@@ -338,7 +338,7 @@ export async function compileTypeScriptToControlIR(source, bindingManifest) {
                 ts,
                 sourceFile,
                 node,
-                "api.read needs one literal input binding ID",
+                `api.${method} needs one literal input binding ID`,
               );
             try {
               controllerBindingIndex(bindings, key.text, "input");
@@ -350,7 +350,7 @@ export async function compileTypeScriptToControlIR(source, bindingManifest) {
                 `unknown input binding ${key.text}`,
               );
             }
-            return { kind: "read", bindingId: key.text };
+            return { kind: method, bindingId: key.text };
           }
           if (ts.isIdentifier(owner) && owner.text === "Math") {
             if (!["abs", "min", "max"].includes(method))
@@ -388,7 +388,7 @@ export async function compileTypeScriptToControlIR(source, bindingManifest) {
           ts,
           sourceFile,
           node,
-          "only declared helpers, api.read, and Math.abs/min/max may be called",
+          "only declared helpers, api.read/valid, and Math.abs/min/max may be called",
         );
       }
       throw diagnosticError(
