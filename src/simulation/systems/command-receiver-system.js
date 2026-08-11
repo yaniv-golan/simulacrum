@@ -42,11 +42,16 @@ export class CommandReceiverSystem {
         command = online
           ? context.commandBus.read(receiver.id, "command", 0)
           : { value: 0, conflict: false, source: "none" },
+        sourcePresent = Boolean(
+          command.source &&
+          command.source !== "default" &&
+          command.source !== "none",
+        ),
         state = Object.freeze({
           partId: receiver.id,
           channel: "command",
           value: Number(command.value || 0),
-          valid: online && !command.conflict,
+          valid: online && sourcePresent && !command.conflict,
           powered,
           routedControllerIds: Object.freeze([...routedControllers]),
           source: command.source,

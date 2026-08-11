@@ -151,6 +151,12 @@ expectInvalid(
   (invalid) => (invalid.controllerBindings[1].id = "motor.0"),
   /Duplicate controller binding/,
 );
+expectInvalid((invalid) => {
+  invalid.controllerBindings.push({
+    ...structuredClone(invalid.controllerBindings[0]),
+    id: "motor.duplicate-authority",
+  });
+}, /duplicates an existing output endpoint and channel/);
 expectInvalid(
   (_invalid, _parts, invalidConnections) =>
     invalidConnections.splice(
@@ -200,6 +206,20 @@ assert.deepEqual(
   ]),
   manifest,
   "dangling signal metadata entered the binding graph",
+);
+
+const duplicateAuthorityManifest = [
+  ...structuredClone(manifest),
+  {
+    ...structuredClone(manifest[0]),
+    id: "motor.duplicate-direct-manifest",
+  },
+]
+  .sort((left, right) => left.id.localeCompare(right.id, "en"))
+  .map((binding, index) => ({ ...binding, index }));
+assert.throws(
+  () => validateControllerBindingManifest(duplicateAuthorityManifest),
+  /duplicates output authority/,
 );
 
 const remapped = remapControllerBindings(
@@ -619,6 +639,24 @@ assert.deepEqual(onlineReceiver.state, {
   conflict: false,
   tick: 42,
 });
+const validZeroReceiver = runReceiverUnitStep({
+  command: { value: 0, conflict: false, source: "remote" },
+});
+assert.equal(validZeroReceiver.state.value, 0);
+assert.equal(validZeroReceiver.state.valid, true);
+for (const command of [
+  { value: 0, conflict: false, source: "default" },
+  { value: 0, conflict: false, source: "none" },
+  { value: 0, conflict: false },
+]) {
+  const sourceAbsent = runReceiverUnitStep({ command });
+  assert.equal(
+    sourceAbsent.state.valid,
+    false,
+    "a receiver without a current command source published valid evidence",
+  );
+  assert.equal(sourceAbsent.state.value, 0);
+}
 assert.ok(Object.isFrozen(onlineReceiver.state.routedControllerIds));
 assert.throws(
   () => onlineReceiver.state.routedControllerIds.push(99),

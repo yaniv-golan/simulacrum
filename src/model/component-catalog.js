@@ -591,11 +591,12 @@ const TYPE_DEFINITIONS = {
     icon: "⌁",
     mass: 2.5,
     color: 0x6fb7c8,
-    desc: "Powered remote-command input for Logic Controllers",
+    desc: "Powered remote or routed command input for Logic Controllers",
     size: [0.5, 0.22, 0.5],
     ports: [
       port("MOUNT", "mechanical", "fixed", "bidirectional", "one"),
       port("POWER", "power", "electrical-network", "sink", "one"),
+      port("CONTROL", "signal", "signal-network", "sink", "one"),
       port("SIGNAL", "signal", "signal-network", "source", "many"),
     ],
     channel: "command",

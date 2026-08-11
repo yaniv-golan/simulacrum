@@ -211,6 +211,23 @@ assert.equal(
   watRuntime.tick(0.1, { "sensor.value": 0 }).get("estimate.value"),
   0,
 );
+for (const malformedMeasurement of [
+  Number.NaN,
+  Number.POSITIVE_INFINITY,
+  "0",
+  true,
+  null,
+])
+  assert.equal(
+    watRuntime
+      .tick(0.1, {
+        "sensor.value": malformedMeasurement,
+        __validity: { "sensor.value": 1 },
+      })
+      .get("estimate.value"),
+    0,
+    "non-numeric or non-finite evidence retained physical validity",
+  );
 for (const malformedValidity of [
   -1,
   0.5,
@@ -339,8 +356,16 @@ const part = (id, type, extra = {}) => ({
   missingBody = capture({}),
   missingRoute = capture(bodies, {}),
   unsupportedReadingController = structuredClone(controller),
+  mixedReadingController = structuredClone(controller),
   outputBindingController = structuredClone(controller);
 unsupportedReadingController.controllerBindings[0].reading = "telepathy";
+mixedReadingController.controllerBindings.push({
+  id: "z.unsupported",
+  direction: "input",
+  endpointPartId: "navigation",
+  endpointPortId: "SIGNAL",
+  reading: "telepathy",
+});
 outputBindingController.controllerBindings.push({
   id: "output-is-not-a-reading",
   direction: "output",
@@ -353,6 +378,7 @@ const unsupportedReading = capture(
     signals,
     unsupportedReadingController,
   ),
+  mixedReadings = capture(bodies, signals, mixedReadingController),
   outputFiltered = capture(bodies, signals, outputBindingController);
 
 assert.equal(measuredZero["sensor.value"], 0);
@@ -365,6 +391,8 @@ assert.ok(Object.isFrozen(measuredZero.__validity));
 assert.equal(missingBody.__validity["sensor.value"], 0);
 assert.equal(missingRoute.__validity["sensor.value"], 0);
 assert.equal(unsupportedReading.__validity["sensor.value"], 0);
+assert.equal(mixedReadings.__validity["sensor.value"], 1);
+assert.equal(mixedReadings.__validity["z.unsupported"], 0);
 assert.equal(
   Object.hasOwn(outputFiltered.__validity, "output-is-not-a-reading"),
   false,

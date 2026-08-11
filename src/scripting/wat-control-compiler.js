@@ -541,8 +541,13 @@ function createPreparedRuntime(
               if (!binding || binding.direction !== "input")
                 throw new Error(`input binding index ${index} is out of range`);
               if (Array.isArray(sensors)) return 0;
-              const value = sensors?.__validity?.[binding.id];
-              return value === true || value === 1 ? 1 : 0;
+              const evidenceValidity = sensors?.__validity?.[binding.id],
+                measurement = sensors?.[binding.id];
+              return (evidenceValidity === true || evidenceValidity === 1) &&
+                typeof measurement === "number" &&
+                Number.isFinite(measurement)
+                ? 1
+                : 0;
             },
             write_binding(index, rawValue) {
               if (!running)
