@@ -13,7 +13,7 @@ import { TelemetrySystem } from "../src/simulation/systems/telemetry-system.js";
 
 const DT = 1 / 120,
   AUTHORED_YAW_RAD = 0.43,
-  READING_KEYS = [
+  WRENCH_READING_KEYS = [
     "contact_force_n",
     "contact_normal_force_part_x_n",
     "contact_normal_force_part_y_n",
@@ -21,7 +21,20 @@ const DT = 1 / 120,
     "contact_normal_moment_part_x_nm",
     "contact_normal_moment_part_y_nm",
     "contact_normal_moment_part_z_nm",
+  ],
+  POINT_CONTACT_READING_KEYS = [
+    "contact_resultant_point_world_x_m",
+    "contact_resultant_point_world_y_m",
+    "contact_resultant_point_world_z_m",
+    "contact_resultant_normal_world_x",
+    "contact_resultant_normal_world_y",
+    "contact_resultant_normal_world_z",
+    "contact_resultant_normal_force_n",
+  ],
+  READING_KEYS = [
+    ...WRENCH_READING_KEYS,
     "contact_min_friction_coefficient",
+    ...POINT_CONTACT_READING_KEYS,
   ],
   part = (id, type) => ({
     id,
@@ -256,7 +269,23 @@ for (const axis of ["x", "y", "z"]) {
     direct.momentPartNm[axis],
     `production moment relay ${axis}`,
   );
+  close(
+    readings[`contact_resultant_point_world_${axis}_m`],
+    direct.pointWorldM[axis],
+    `production point-contact relay point ${axis}`,
+  );
+  close(
+    readings[`contact_resultant_normal_world_${axis}`],
+    direct.normalWorld[axis],
+    `production point-contact relay normal ${axis}`,
+  );
 }
+assert.equal(direct.pointContactValid, true);
+close(
+  readings.contact_resultant_normal_force_n,
+  direct.normalForceSumN,
+  "production point-contact relay force",
+);
 close(readings.contact_min_friction_coefficient, 0.68, "steel friction law");
 for (const key of READING_KEYS) assert.equal(readings.__validity[key], 1);
 
@@ -398,7 +427,7 @@ function expectUnsolvedContactExcluded(apply, restore, predicate, label) {
     0,
     `${label} entered the solved-contact registry`,
   );
-  for (const key of READING_KEYS.slice(0, 7)) {
+  for (const key of WRENCH_READING_KEYS) {
     assert.equal(excluded.readings[key], 0);
     assert.equal(excluded.readings.__validity[key], 1);
   }
@@ -406,6 +435,10 @@ function expectUnsolvedContactExcluded(apply, restore, predicate, label) {
     excluded.readings.__validity.contact_min_friction_coefficient,
     0,
   );
+  for (const key of POINT_CONTACT_READING_KEYS) {
+    assert.equal(excluded.readings[key], 0);
+    assert.equal(excluded.readings.__validity[key], 0);
+  }
   restore();
   session.stepFixed(1);
   assert.equal(
@@ -549,12 +582,16 @@ assert.equal(
 placeBody(2);
 session.stepFixed(2);
 ({ readings } = capture());
-for (const key of READING_KEYS.slice(0, 7)) {
+for (const key of WRENCH_READING_KEYS) {
   assert.equal(readings[key], 0);
   assert.equal(readings.__validity[key], 1);
 }
 assert.equal(readings.contact_min_friction_coefficient, 0);
 assert.equal(readings.__validity.contact_min_friction_coefficient, 0);
+for (const key of POINT_CONTACT_READING_KEYS) {
+  assert.equal(readings[key], 0);
+  assert.equal(readings.__validity[key], 0);
+}
 
 floorShape.material = asphaltMaterial;
 floor.material = asphaltMaterial;

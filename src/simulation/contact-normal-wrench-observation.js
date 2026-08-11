@@ -43,6 +43,17 @@ function inverseRotate(value, quaternion) {
   };
 }
 
+function rotate(value, quaternion) {
+  const tx = 2 * (quaternion.y * value.z - quaternion.z * value.y),
+    ty = 2 * (quaternion.z * value.x - quaternion.x * value.z),
+    tz = 2 * (quaternion.x * value.y - quaternion.y * value.x);
+  return {
+    x: value.x + quaternion.w * tx + (quaternion.y * tz - quaternion.z * ty),
+    y: value.y + quaternion.w * ty + (quaternion.z * tx - quaternion.x * tz),
+    z: value.z + quaternion.w * tz + (quaternion.x * ty - quaternion.y * tx),
+  };
+}
+
 const cross = (left, right) => ({
   x: left.y * right.z - left.z * right.y,
   y: left.z * right.x - left.x * right.z,
@@ -122,9 +133,12 @@ function invalidObservation() {
   return {
     wrenchValid: false,
     frictionValid: false,
+    pointContactValid: false,
     normalForceSumN: 0,
     forcePartN: ZERO,
     momentPartNm: ZERO,
+    pointWorldM: ZERO,
+    normalWorld: ZERO,
     minimumFrictionCoefficient: 0,
     activeContactCount: 0,
   };
@@ -154,9 +168,12 @@ export function observeContactNormalWrench({
     return {
       wrenchValid: true,
       frictionValid: false,
+      pointContactValid: false,
       normalForceSumN: 0,
       forcePartN: { ...ZERO },
       momentPartNm: { ...ZERO },
+      pointWorldM: { ...ZERO },
+      normalWorld: { ...ZERO },
       minimumFrictionCoefficient: 0,
       activeContactCount: 0,
     };
@@ -194,7 +211,9 @@ export function observeContactNormalWrench({
   const active = validated.filter(({ contact }) => contact.forceN > 0);
 
   const forcePartN = { x: 0, y: 0, z: 0 },
-    momentPartNm = { x: 0, y: 0, z: 0 };
+    resultantForceWorldN = { x: 0, y: 0, z: 0 },
+    momentPartNm = { x: 0, y: 0, z: 0 },
+    forceWeightedPointPartM = { x: 0, y: 0, z: 0 };
   let minimumFrictionCoefficient = Infinity,
     frictionValid = true,
     normalForceSumN = 0;
@@ -213,7 +232,9 @@ export function observeContactNormalWrench({
       momentPart = cross(pointPartM, forcePart);
     for (const axis of ["x", "y", "z"]) {
       forcePartN[axis] += forcePart[axis];
+      resultantForceWorldN[axis] += forceWorldN[axis];
       momentPartNm[axis] += momentPart[axis];
+      forceWeightedPointPartM[axis] += pointPartM[axis] * contact.forceN;
     }
     normalForceSumN += contact.forceN;
 
@@ -251,18 +272,78 @@ export function observeContactNormalWrench({
 
   if (
     !Number.isFinite(normalForceSumN) ||
-    ![...Object.values(forcePartN), ...Object.values(momentPartNm)].every(
-      Number.isFinite,
-    )
+    ![
+      ...Object.values(forcePartN),
+      ...Object.values(resultantForceWorldN),
+      ...Object.values(momentPartNm),
+      ...Object.values(forceWeightedPointPartM),
+    ].every(Number.isFinite)
   )
     return invalidObservation();
+
+  let pointContactValid = false;
+  /** @type {{x: number, y: number, z: number}} */
+  let pointWorldM = { ...ZERO };
+  /** @type {{x: number, y: number, z: number}} */
+  let normalWorld = { ...ZERO };
+  if (normalForceSumN > 0) {
+    const forceMagnitudeN = Math.hypot(...Object.values(resultantForceWorldN)),
+      forceScaleN = Math.max(1, forceMagnitudeN, normalForceSumN),
+      magnitudeCoherent =
+        Number.isFinite(forceMagnitudeN) &&
+        Math.abs(forceMagnitudeN - normalForceSumN) <=
+          CONSISTENCY_TOLERANCE * forceScaleN;
+    if (magnitudeCoherent) {
+      const pointPartM = {
+          x: forceWeightedPointPartM.x / normalForceSumN,
+          y: forceWeightedPointPartM.y / normalForceSumN,
+          z: forceWeightedPointPartM.z / normalForceSumN,
+        },
+        pointOffsetWorldM = rotate(pointPartM, frame.quaternion);
+      pointWorldM = {
+        x: frame.position.x + pointOffsetWorldM.x,
+        y: frame.position.y + pointOffsetWorldM.y,
+        z: frame.position.z + pointOffsetWorldM.z,
+      };
+      normalWorld = {
+        x: resultantForceWorldN.x / forceMagnitudeN,
+        y: resultantForceWorldN.y / forceMagnitudeN,
+        z: resultantForceWorldN.z / forceMagnitudeN,
+      };
+      const normalPart = inverseRotate(normalWorld, frame.quaternion),
+        equivalentMomentPartNm = cross(pointPartM, {
+          x: normalPart.x * normalForceSumN,
+          y: normalPart.y * normalForceSumN,
+          z: normalPart.z * normalForceSumN,
+        });
+      pointContactValid = ["x", "y", "z"].every((axis) => {
+        const difference = equivalentMomentPartNm[axis] - momentPartNm[axis],
+          scale = Math.max(
+            1,
+            Math.abs(equivalentMomentPartNm[axis]),
+            Math.abs(momentPartNm[axis]),
+          );
+        return (
+          Number.isFinite(difference) &&
+          Math.abs(difference) <= CONSISTENCY_TOLERANCE * scale
+        );
+      });
+    }
+  }
+  if (!pointContactValid) {
+    pointWorldM = { ...ZERO };
+    normalWorld = { ...ZERO };
+  }
 
   return {
     wrenchValid: true,
     frictionValid: frictionValid && Number.isFinite(minimumFrictionCoefficient),
+    pointContactValid,
     normalForceSumN,
     forcePartN,
     momentPartNm,
+    pointWorldM,
+    normalWorld,
     minimumFrictionCoefficient: Number.isFinite(minimumFrictionCoefficient)
       ? minimumFrictionCoefficient
       : 0,
