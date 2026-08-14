@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Replaces the unused normalized `linear_force` controller channel with the
+  absolute SI `linear_force_n` demand. Generic force-command actuators now
+  distinguish requested, force-speed-limited, thermal-limited, electrically
+  delivered, passive, and residual axial force; reject out-of-range commands
+  instead of clipping them; require current-tick route authority; and preserve
+  the complete settlement evidence through telemetry and checkpoint restore.
+  The controller policy advances to
+  `control-wasm-v3-absolute-axial-effort`. This is an intentional pre-1.0 API
+  cutover with no compatibility alias or demo-specific dispatch.
+
 - Close the first-principles rigid-cluster mass/checkpoint authority boundary:
   the existing public runtime/registry mass setters now fail closed while the
   package-internal transaction accepts projections only from the coordinated

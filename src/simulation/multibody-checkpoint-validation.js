@@ -11,6 +11,7 @@ import {
 } from "../model/primitives.js";
 import { requireInertPlainData } from "../model/plain-data-contract.js";
 import { isCanonicalCannonCheckpointQuaternion } from "./cannon-checkpoint-quaternion.js";
+import { AXIAL_EFFORT_SATURATION_MASK } from "./axial-effort-settlement.js";
 
 const BODY_FIELDS = Object.freeze([
   "partId",
@@ -63,7 +64,16 @@ const CONSTRAINT_VALUE_FIELDS = Object.freeze([
   "rateMPerS",
   "transverseM",
   "reactionForceN",
+  "requestedForceN",
+  "capacityLimitedForceN",
   "appliedForceN",
+  "passiveForceN",
+  "effortRateSampleMPerS",
+  "residualForceN",
+  "commandTick",
+  "commandSource",
+  "commandValidity",
+  "saturationCauseMask",
   "elasticPotentialJ",
   "dampingWorkJ",
   "dampingPowerW",
@@ -88,11 +98,22 @@ const CONSTRAINT_BOOLEAN_FIELDS = new Set([
   "thermalShutdown",
   "clutchEngaged",
 ]);
+const CONSTRAINT_STRING_VALUES = Object.freeze({
+  commandSource: new Set(["default", "none", "remote", "script"]),
+  commandValidity: new Set([
+    "conflict",
+    "current",
+    "missing",
+    "out-of-range",
+    "stale",
+  ]),
+});
 const CONSTRAINT_NONNEGATIVE_FIELDS = new Set([
   "reactionTorque",
   "force",
   "transverseM",
   "reactionForceN",
+  "saturationCauseMask",
   "elasticPotentialJ",
   "actuatorElectricalEnergyJ",
   "actuatorDissipatedEnergyJ",
@@ -439,6 +460,8 @@ function validateConstraint(
   expected,
   index,
   constraintValueFieldsById,
+  committedTick,
+  physicalAuthority,
 ) {
   const code = "INVALID_MULTIBODY_CHECKPOINT_CONSTRAINT_STATE",
     path = ["entries", index];
@@ -463,7 +486,18 @@ function validateConstraint(
           "values",
           field,
         ]);
-    } else if (field === "clutchCoordinateM" && value === null) continue;
+    } else if (CONSTRAINT_STRING_VALUES[field]) {
+      if (!CONSTRAINT_STRING_VALUES[field].has(value))
+        invalid(code, "Checkpoint constraint string is invalid", [
+          ...path,
+          "values",
+          field,
+        ]);
+    } else if (
+      (field === "clutchCoordinateM" || field === "commandTick") &&
+      value === null
+    )
+      continue;
     else {
       const fieldPath = [...path, "values", field];
       finite(value, code, fieldPath, {
@@ -485,6 +519,22 @@ function validateConstraint(
         invalid(
           code,
           "Checkpoint thermal derate must be within [0, 1]",
+          fieldPath,
+        );
+      if (
+        field === "commandTick" &&
+        (!Number.isSafeInteger(value) || value < 0)
+      )
+        invalid(code, "Checkpoint command tick is invalid", fieldPath);
+      if (
+        field === "saturationCauseMask" &&
+        (!Number.isSafeInteger(value) ||
+          value < 0 ||
+          (value & ~AXIAL_EFFORT_SATURATION_MASK) !== 0)
+      )
+        invalid(
+          code,
+          "Checkpoint axial-effort saturation mask is invalid",
           fieldPath,
         );
     }
@@ -531,6 +581,64 @@ function validateConstraint(
       "values",
       "powered",
     ]);
+  if (Object.hasOwn(record.values, "requestedForceN")) {
+    const values = record.values,
+      toleranceN = Math.max(
+        1e-9,
+        1e-10 *
+          Math.max(
+            1,
+            Math.abs(values.requestedForceN),
+            Math.abs(values.capacityLimitedForceN),
+            Math.abs(values.appliedForceN),
+            Math.abs(values.residualForceN),
+          ),
+      ),
+      near = (left, right) => Math.abs(left - right) <= toleranceN,
+      sameDirection = (bounded, requested) =>
+        near(bounded, 0) || Math.sign(bounded) === Math.sign(requested);
+    if (
+      !near(
+        values.residualForceN,
+        values.requestedForceN - values.appliedForceN,
+      ) ||
+      Math.abs(values.capacityLimitedForceN) >
+        Math.abs(values.requestedForceN) + toleranceN ||
+      Math.abs(values.appliedForceN) >
+        Math.abs(values.capacityLimitedForceN) + toleranceN ||
+      !sameDirection(values.capacityLimitedForceN, values.requestedForceN) ||
+      !sameDirection(values.appliedForceN, values.requestedForceN)
+    )
+      invalid(
+        code,
+        "Checkpoint axial-effort requested, capacity, applied, and residual forces are inconsistent",
+        [...path, "values", "residualForceN"],
+      );
+    const current = values.commandValidity === "current",
+      saturated = !near(values.residualForceN, 0),
+      measuredRateMPerS = physicalAuthority?.kinematics?.rateMPerS;
+    if (
+      !Number.isFinite(measuredRateMPerS) ||
+      !near(values.rateMPerS, measuredRateMPerS) ||
+      (current &&
+        (!["remote", "script"].includes(values.commandSource) ||
+          !Number.isSafeInteger(values.commandTick) ||
+          values.commandTick !== committedTick)) ||
+      (!current &&
+        (!near(values.requestedForceN, 0) ||
+          !near(values.capacityLimitedForceN, 0) ||
+          !near(values.appliedForceN, 0) ||
+          !near(values.residualForceN, 0) ||
+          values.powered)) ||
+      values.saturated !== saturated ||
+      saturated !== (values.saturationCauseMask !== 0)
+    )
+      invalid(
+        code,
+        "Checkpoint axial-effort command authority or saturation evidence is inconsistent",
+        [...path, "values", "commandValidity"],
+      );
+  }
   if (expected.fixedFrame == null) {
     if (record.fixedFrame !== null)
       invalid(code, "Checkpoint constraint gained a fixed frame", path);
@@ -793,6 +901,7 @@ export function validateMultibodyCheckpointState(
     bodyAuthorityFor,
     constraintValueFieldsById,
     collisionExclusionActiveFor,
+    constraintKinematicsFor,
   },
 ) {
   const code = "INVALID_MULTIBODY_CHECKPOINT";
@@ -811,6 +920,17 @@ export function validateMultibodyCheckpointState(
       "MULTIBODY_CHECKPOINT_PHYSICAL_SEMANTICS_MISMATCH",
       "Checkpoint physical semantics identity changed",
       ["compiledPhysicalSemanticsFingerprint"],
+    );
+  if (
+    typeof state.axialEffortEnergyProjectionDigest !== "string" ||
+    !/^axial-effort-energy-sha256-[0-9a-f]{64}$/.test(
+      state.axialEffortEnergyProjectionDigest,
+    )
+  )
+    invalid(
+      "MULTIBODY_CHECKPOINT_AXIAL_ENERGY_PROJECTION_MISMATCH",
+      "Checkpoint axial-effort energy projection changed",
+      ["axialEffortEnergyProjectionDigest"],
     );
   if (
     state.version !== baseline.version ||
@@ -889,7 +1009,14 @@ export function validateMultibodyCheckpointState(
         ["entries", index, "id"],
       );
     entryIds.add(record.id);
-    validateConstraint(record, expected, index, constraintValueFieldsById);
+    validateConstraint(
+      record,
+      expected,
+      index,
+      constraintValueFieldsById,
+      state.world.stepnumber,
+      { kinematics: constraintKinematicsFor(record.id, state.bodies) },
+    );
     activeByConstraintId.set(record.id, record.values.active);
   }
 

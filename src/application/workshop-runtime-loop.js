@@ -10,6 +10,8 @@
  *   updateEnvironment:()=>void, updateWater:(time:number)=>void,
  *   updateCamera:(dt:number)=>void, updateDetail:()=>void,
  *   updateBatch:()=>void, updateConnections?:()=>void, render:()=>void,
+ *   resourceSnapshot?:()=>{scene:{liveGeometries:number},
+ *     earth:{activeChunks:number,ownedGeometries:number}},
  * }} RuntimePresentationPort
  */
 

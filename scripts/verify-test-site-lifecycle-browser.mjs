@@ -3,8 +3,7 @@ import { createBrowserTest } from "./lib/browser-test.mjs";
 import { componentDefaults } from "../src/model/component-resolver.js";
 import { createSharePackage } from "../src/model/share-packages.js";
 
-const MAX_STABLE_GEOMETRIES = 290,
-  largeParts = Array.from({ length: 129 }, (_, index) => ({
+const largeParts = Array.from({ length: 129 }, (_, index) => ({
     id: index + 1,
     type: "beam",
     pos: [
@@ -39,17 +38,21 @@ const MAX_STABLE_GEOMETRIES = 290,
   }),
   click = (selector) => page.locator(selector).dispatchEvent("click"),
   state = () => page.evaluate(() => JSON.parse(window.render_game_to_text())),
-  resources = () => page.evaluate(() => window.simulacrum_performance()),
-  stableResources = async () => {
+  stableSnapshot = async () => {
     let previous = null,
       repeats = 0,
       latest = null;
     for (let attempt = 0; attempt < 60; attempt++) {
-      latest = await resources();
+      latest = await page.evaluate(() => ({
+        resources: window.simulacrum_performance(),
+        state: JSON.parse(window.render_game_to_text()),
+      }));
       const signature = [
-        latest.renderer.geometries,
-        latest.renderer.textures,
-        latest.renderer.programs,
+        latest.resources.renderer.geometries,
+        latest.resources.renderer.textures,
+        latest.resources.renderer.programs,
+        latest.resources.scene.liveGeometries,
+        latest.resources.earth.ownedGeometries,
       ].join(":");
       repeats = signature === previous ? repeats + 1 : 0;
       previous = signature;
@@ -57,7 +60,7 @@ const MAX_STABLE_GEOMETRIES = 290,
       await page.waitForTimeout(200);
     }
     throw new Error(
-      `renderer resources did not settle: ${JSON.stringify(latest?.renderer)}`,
+      `renderer resources did not settle: ${JSON.stringify(latest?.resources?.renderer)}`,
     );
   },
   walkCamera = (key, code, count) =>
@@ -205,21 +208,28 @@ async function exerciseLifecycle() {
   await loadLargeAssembly();
   await loadCart();
   await click("#view-home");
-  return { earth, resources: await stableResources() };
+  return { traversal: earth, ...(await stableSnapshot()) };
 }
 
 await exerciseLifecycle();
-const baseline = await stableResources(),
+const baseline = await stableSnapshot(),
   samples = [];
 for (let cycle = 0; cycle < 2; cycle++) samples.push(await exerciseLifecycle());
 
 console.log(
   JSON.stringify({
-    baseline: { renderer: baseline.renderer, shared: baseline.shared },
+    baseline: {
+      renderer: baseline.resources.renderer,
+      shared: baseline.resources.shared,
+      liveSceneGeometries: baseline.resources.scene.liveGeometries,
+      earthOwnedGeometries: baseline.resources.earth.ownedGeometries,
+    },
     samples: samples.map((sample) => ({
-      farOffset: sample.earth.farOffset,
-      returnedOffset: sample.earth.returned.globalOffsetM,
-      activeChunks: sample.earth.returned.activeChunks,
+      farOffset: sample.traversal.farOffset,
+      returnedOffset: sample.traversal.returned.globalOffsetM,
+      activeChunks: sample.state.environment.earth.activeChunks,
+      earthOwnedGeometries: sample.resources.earth.ownedGeometries,
+      liveSceneGeometries: sample.resources.scene.liveGeometries,
       renderer: sample.resources.renderer,
       shared: sample.resources.shared,
     })),
@@ -228,20 +238,37 @@ console.log(
 await conclude(browser, () => {
   assertNoErrors(errors, "test-site lifecycle browser check");
   for (const sample of samples) {
-    assert.equal(sample.earth.returned.activeChunks, 49);
-    assert.notDeepEqual(sample.earth.farOffset, { east: 0, north: 0 });
-    assert.ok(
-      sample.resources.renderer.geometries <= MAX_STABLE_GEOMETRIES,
-      `renderer geometries exceeded the bounded 49-chunk geography envelope: ${sample.resources.renderer.geometries}`,
+    assert.equal(sample.state.environment.earth.activeChunks, 49);
+    assert.equal(sample.resources.earth.activeChunks, 49);
+    assert.notDeepEqual(sample.traversal.farOffset, { east: 0, north: 0 });
+    assert.equal(
+      sample.resources.shared.owned.earthChunkGeometries,
+      sample.resources.earth.ownedGeometries,
+      "tracked Earth geometry ownership retained resources outside the active chunks",
     );
+    assert.ok(
+      sample.resources.renderer.geometries -
+        sample.resources.scene.liveGeometries <=
+        baseline.resources.renderer.geometries -
+          baseline.resources.scene.liveGeometries,
+      "renderer-resident geometry grew without a live scene owner",
+    );
+    const withoutEarthOwnership = (snapshot) => ({
+      ...snapshot,
+      owned: Object.fromEntries(
+        Object.entries(snapshot.owned).filter(
+          ([key]) => key !== "earthChunkGeometries",
+        ),
+      ),
+    });
     assert.deepEqual(
-      sample.resources.shared,
-      baseline.shared,
+      withoutEarthOwnership(sample.resources.shared),
+      withoutEarthOwnership(baseline.resources.shared),
       "shared component geometry cache grew after warm-up",
     );
     for (const key of ["textures", "programs"])
       assert.ok(
-        sample.resources.renderer[key] <= baseline.renderer[key] + 2,
+        sample.resources.renderer[key] <= baseline.resources.renderer[key] + 2,
         `renderer ${key} grew after a combined reserve lifecycle`,
       );
     assert.equal(sample.resources.heatBindings, 0);

@@ -23,24 +23,24 @@ const NON_RIGID_CANONICAL_GOLDEN_DIGESTS = Object.freeze({
     bytes: 153_462,
   },
   "demo:cart": {
-    sha256: "deaa37c46a34bc790b7e22f7f1f26e5c3a8b7587db2aa7e50b599068e0dbd9a2",
-    bytes: 288_255,
+    sha256: "b6a568bb2031dffa8b7673afebeccd23c12b8782ccf153f5ab70600b7707be3c",
+    bytes: 288_355,
   },
   "covariance:transformed-cart": {
-    sha256: "5069c20e268f29d25b3effd15e6e2a39f23efd4fb8653d522e8c8da49fb959c6",
-    bytes: 296_576,
+    sha256: "32a32bc9088ecccd92a057c361455c7a62a17471d5f6e3e5dad69892b2939771",
+    bytes: 296_676,
   },
   "demo:humanoid": {
     sha256: "d0d64f84a89a2557d38d5b72c12cb8add4792aa467dd73c089329752d09cf51b",
     bytes: 230_505,
   },
   "demo:drone": {
-    sha256: "d901fa435a06c16c50ca43408b53f6e41e014e4775f8d4995b946418624adc0d",
-    bytes: 248_482,
+    sha256: "beaa9a5d2a2d9a8202bb877b5e103250951a1da1e0ba221be49fa1d1374067f4",
+    bytes: 248_607,
   },
   "demo:mission": {
-    sha256: "32f77067b8191621b260ed66c59ce7074f36afc6c5a6e169fb191b8c7795e6b6",
-    bytes: 789_885,
+    sha256: "e194d2880d1fd4135985d1229f13f121eb7867829232029af01b53f3a5625497",
+    bytes: 790_085,
   },
   "mechanism:Rigid axle suspension": {
     sha256: "c407d9fc586b141f3566e3495b4cb3e03fcb98817009003f35d40aa7cc9e7d80",
@@ -67,8 +67,8 @@ const NON_RIGID_CANONICAL_GOLDEN_DIGESTS = Object.freeze({
     bytes: 323_027,
   },
   "hybrid:wheeled-rocket": {
-    sha256: "1bd09f1ac2e87a2c81d9702c2f9b142e34b71470f56785e076a961b199f29651",
-    bytes: 300_747,
+    sha256: "2da3abab14e80c88820b7a92d3840f5805319e2a235b154a200d7cc7f94da49e",
+    bytes: 300_847,
   },
   "diagnostic:dangling-connection": {
     sha256: "57e0e3ce2d98210f5badbdfdf08ce69602edc96dddc5fc66154f9ae17dfa9fb0",
@@ -86,24 +86,24 @@ const GOLDEN_DIGESTS = Object.freeze({
     bytes: 174_930,
   },
   "demo:cart": {
-    sha256: "f03dce27027bb1e7f8c0fe49ffb1109eee903d6f8075cbee19d170d592f26a89",
-    bytes: 340_974,
+    sha256: "8153161b528e797b0e47bc29d06b410766cdb52ad9c8cf20374d73606ee553bd",
+    bytes: 341_074,
   },
   "covariance:transformed-cart": {
-    sha256: "2ca71f4987df25cb861148180d57bfef036d80de6d0854d19d9b453fa0f9ca97",
-    bytes: 351_260,
+    sha256: "e4500b0f1b65e8b15f791f9e3322e733c0ab79a2025838bdb8e12f767983f093",
+    bytes: 351_360,
   },
   "demo:humanoid": {
     sha256: "6d27f7bcfe6b2e5aa640d3fa7e9e38e21d6b1a2c36d8c66117fdcc536ab0fa3b",
     bytes: 285_586,
   },
   "demo:drone": {
-    sha256: "656615eda31f7c338ade0e01560b5a566024fe43dfd04b0e3cd03b7148099faf",
-    bytes: 292_122,
+    sha256: "a24d7120edba1fda9e75f48ed805154dd744adb428c0fd1f7bfc395e58a70ff9",
+    bytes: 292_247,
   },
   "demo:mission": {
-    sha256: "b7d27bd0e50e4498563547caf1ab10d0e3b519ac8aeb94d08633171fbb73d065",
-    bytes: 852_104,
+    sha256: "9dd0c1b2bc8838e45bc9056371b523492ae9cab6aa8f2983d86afde6f7a5b947",
+    bytes: 852_304,
   },
   "mechanism:Rigid axle suspension": {
     sha256: "3e82916f473f3d1ba201e668077a3110fce109c96ad635be131b2fdc8cc806d5",
@@ -130,8 +130,8 @@ const GOLDEN_DIGESTS = Object.freeze({
     bytes: 370_708,
   },
   "hybrid:wheeled-rocket": {
-    sha256: "967daf699c35ae61390598c4a213bb3559553b450ba979fcc8a10e9960fee639",
-    bytes: 356_869,
+    sha256: "7b9df5187ca46e9f6b854e255b5fca8811539643286d86b69f93202daa939d44",
+    bytes: 356_969,
   },
   "diagnostic:dangling-connection": {
     sha256: "90b558c94dedc8cfdf58b5084bb3ab2a5cb93fb592f5dbdd7badd036e1defc3c",

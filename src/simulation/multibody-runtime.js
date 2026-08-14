@@ -1,5 +1,8 @@
 import * as CANNON from "cannon-es";
-import { readActuatorCommand } from "../model/actuator-contracts.js";
+import {
+  actuatorChannel,
+  readActuatorCommand,
+} from "../model/actuator-contracts.js";
 import { compileAssemblyFromIssuedRoots } from "../model/assembly-compiler.js";
 import {
   compareCanonicalIds,
@@ -8,12 +11,14 @@ import {
   DomainValidationError,
   identitySetUsesTypedStrings,
   identityToken,
+  stableStringify,
 } from "../model/primitives.js";
 import {
   issueInertPlainData,
   requireInertPlainData,
 } from "../model/plain-data-contract.js";
 import { compiledPhysicalSemanticsFingerprint } from "../model/compiled-physical-semantics.js";
+import { sha256Hex } from "../model/sha256.js";
 import {
   registerCannonCollisionExclusion,
   unregisterCannonCollisionExclusion,
@@ -33,6 +38,13 @@ import {
   springResponse,
   stopResponse,
 } from "./two-frame-mechanisms.js";
+import {
+  AXIAL_EFFORT_SATURATION_CAUSES,
+  axialEffortSaturationCauses,
+  resolveAbsoluteAxialEffortDemand,
+  settleAbsoluteAxialEffortDelivery,
+} from "./axial-effort-settlement.js";
+import { commandBusCurrentTick } from "./command-bus.js";
 import {
   constraintReactionContributionCandidates,
   constraintReactionCandidateRowId,
@@ -574,7 +586,16 @@ const CHECKPOINT_CONSTRAINT_SCALAR_FIELDS = Object.freeze([
   "rateMPerS",
   "transverseM",
   "reactionForceN",
+  "requestedForceN",
+  "capacityLimitedForceN",
   "appliedForceN",
+  "passiveForceN",
+  "effortRateSampleMPerS",
+  "residualForceN",
+  "commandTick",
+  "commandSource",
+  "commandValidity",
+  "saturationCauseMask",
   "elasticPotentialJ",
   "dampingWorkJ",
   "dampingPowerW",
@@ -591,6 +612,13 @@ const CHECKPOINT_CONSTRAINT_SCALAR_FIELDS = Object.freeze([
   "clutchCoordinateM",
   "phaseA",
   "phaseB",
+]);
+const FORCE_COMMAND_DERIVED_CHECKPOINT_FIELDS = new Set([
+  "actuatorMechanicalWorkJ",
+  "actuatorElectricalEnergyJ",
+  "actuatorDissipatedEnergyJ",
+  "passiveForceN",
+  "effortRateSampleMPerS",
 ]);
 const ACTUATOR_AMBIENT_TEMPERATURE_K = 293.15;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -722,6 +750,51 @@ function multibodyCheckpointValidationOptions(
       ),
     ),
     constraintValueFieldsById: constraintValueFieldsByRuntime.get(runtime),
+    constraintKinematicsFor: (id, bodyRecords) => {
+      const entry = runtime.constraintEntries.find(
+        (candidate) => candidate.descriptor.id === id,
+      );
+      if (
+        !entry ||
+        entry.descriptor.mechanism?.commandLaw?.kind !== "force-command-v1"
+      )
+        return null;
+      const recordsByPart = new Map(
+          bodyRecords.map((record) => [record.partId, record]),
+        ),
+        checkpointBody = (partId) => {
+          const record = recordsByPart.get(partId),
+            body = new CANNON.Body({ mass: record.mass });
+          body.position.set(
+            record.position.x,
+            record.position.y,
+            record.position.z,
+          );
+          body.quaternion.set(
+            record.quaternion.x,
+            record.quaternion.y,
+            record.quaternion.z,
+            record.quaternion.w,
+          );
+          body.velocity.set(
+            record.velocity.x,
+            record.velocity.y,
+            record.velocity.z,
+          );
+          body.angularVelocity.set(
+            record.angularVelocity.x,
+            record.angularVelocity.y,
+            record.angularVelocity.z,
+          );
+          return body;
+        };
+      return axialState(
+        checkpointBody(entry.descriptor.a),
+        checkpointBody(entry.descriptor.b),
+        entry.localAnchorA,
+        entry.localAnchorB,
+      );
+    },
     collisionExclusionActiveFor: (id, activeByConstraintId) => {
       const exclusion = runtime.collisionExclusionConstraints.find(
         (entry) => entry.descriptor.id === id,
@@ -1569,6 +1642,23 @@ export function commitOwnedMultibodyMassProperties(runtime, records) {
   return commit(records);
 }
 
+function settledMotorEntry(runtime, partId) {
+  return runtime.constraintEntries.find(
+    (candidate) =>
+      candidate.descriptor.sourcePartId === partId &&
+      (candidate.descriptor.controlled ||
+        candidate.descriptor.mechanism?.commandLaw?.kind ===
+          "force-command-v1"),
+  );
+}
+
+function settledMotorThermalLimits(entry) {
+  if (!entry) return null;
+  return entry.descriptor.mechanism?.commandLaw?.kind === "force-command-v1"
+    ? entry.descriptor.mechanism.thermalLimits || null
+    : entry.descriptor.mechanism?.actuation?.thermalLimits || null;
+}
+
 function recordMultibodyMotorSettlement(
   runtime,
   partId,
@@ -1580,27 +1670,43 @@ function recordMultibodyMotorSettlement(
     (runtime.motorElectricalWByPart.get(partId) || 0) +
       Math.max(0, Number(deliveredW) || 0),
   );
-  const entry = runtime.constraintEntries.find(
-    (candidate) =>
-      candidate.descriptor.controlled &&
-      candidate.descriptor.sourcePartId === partId,
-  );
+  const entry = settledMotorEntry(runtime, partId);
   if (entry && settlement) {
     entry.actuatorMechanicalWorkJ +=
       settlement.positiveMechanicalWorkJ - settlement.absorbedMechanicalWorkJ;
     entry.actuatorElectricalEnergyJ += Math.max(0, deliveredW) * settlement.dt;
     entry.actuatorDissipatedEnergyJ += settlement.rejectedHeatJ;
-    entry.saturated = entry.saturated || settlement.saturated;
-    addRotaryActuatorHeat(
-      entry,
-      entry.descriptor.mechanism.actuation.thermalLimits,
-      settlement.rejectedHeatJ,
-    );
-    rotaryThermalAvailability(
-      entry,
-      entry.descriptor.mechanism.actuation.thermalLimits,
-    );
+    const forceCommand =
+      entry.descriptor.mechanism?.commandLaw?.kind === "force-command-v1";
+    if (forceCommand) {
+      const record = settlement.record,
+        acceptedForceN = record.acceptedImpulseNs / settlement.dt,
+        thermalLimitedForceN = record.thermalLimitedImpulseNs / settlement.dt;
+      entry.capacityLimitedForceN = thermalLimitedForceN;
+      entry.appliedForceN = acceptedForceN;
+      entry.residualForceN = entry.requestedForceN - acceptedForceN;
+      if (record.forceSpeedSaturated)
+        entry.saturationCauseMask |=
+          AXIAL_EFFORT_SATURATION_CAUSES.FORCE_SPEED_CAPACITY;
+      if (record.thermalSaturated)
+        entry.saturationCauseMask |=
+          AXIAL_EFFORT_SATURATION_CAUSES.THERMAL_DERATE;
+      if (record.energySaturated)
+        entry.saturationCauseMask |=
+          AXIAL_EFFORT_SATURATION_CAUSES.POWER_ALLOCATION;
+      entry.saturated = Math.abs(entry.residualForceN) > 1e-9;
+    } else {
+      entry.saturated = entry.saturated || settlement.saturated;
+    }
+    const thermal = settledMotorThermalLimits(entry);
+    if (thermal) {
+      addRotaryActuatorHeat(entry, thermal, settlement.rejectedHeatJ);
+      rotaryThermalAvailability(entry, thermal);
+    }
   }
+  runtime.lastTelemetry = runtime.telemetry(
+    runtime.lastTelemetry?.activeMotors || 0,
+  );
   return runtime.lastTelemetry;
 }
 
@@ -1611,12 +1717,85 @@ export function settleOwnedMultibodyMotorEnergy(
   deliveredW,
   settlement,
 ) {
-  return recordMultibodyMotorSettlement(
-    runtime,
-    partId,
-    deliveredW,
-    settlement,
+  const rejectedHeatClaimed = Boolean(
+      settlement &&
+      settledMotorThermalLimits(settledMotorEntry(runtime, partId)),
+    ),
+    telemetry = recordMultibodyMotorSettlement(
+      runtime,
+      partId,
+      deliveredW,
+      settlement,
+    );
+  return Object.freeze({ telemetry, rejectedHeatClaimed });
+}
+
+/** Package-internal canonical identity set for the cumulative motor ledger. */
+export function multibodyMotorEnergyOwnerIds(runtime) {
+  if (!Array.isArray(runtime?.constraintEntries))
+    throw new DomainValidationError(
+      "MULTIBODY_MOTOR_ENERGY_OWNER_NOT_RUNNING",
+      "Motor-energy owner identities require a running multibody runtime",
+    );
+  const ids = new Map();
+  for (const entry of runtime.constraintEntries) {
+    const descriptor = entry.descriptor,
+      partId =
+        descriptor.motorId ??
+        (descriptor.controlled ||
+        descriptor.mechanism?.commandLaw?.kind === "force-command-v1"
+          ? descriptor.sourcePartId
+          : null);
+    if (partId == null) continue;
+    ids.set(`${typeof partId}:${String(partId)}`, partId);
+  }
+  return Object.freeze([...ids.values()].sort(compareCanonicalIds));
+}
+
+export function multibodyAxialEffortEnergyProjectionDigest(runtime) {
+  const records = runtime.constraintEntries
+    .filter(
+      (entry) =>
+        entry.descriptor.mechanism?.commandLaw?.kind === "force-command-v1",
+    )
+    .map((entry) => ({
+      partId: entry.descriptor.sourcePartId,
+      electricalEnergyJ: entry.actuatorElectricalEnergyJ,
+      netMechanicalWorkJ: entry.actuatorMechanicalWorkJ,
+      rejectedHeatJ: entry.actuatorDissipatedEnergyJ,
+    }))
+    .sort((left, right) => compareCanonicalIds(left.partId, right.partId));
+  return `axial-effort-energy-sha256-${sha256Hex(stableStringify(records))}`;
+}
+
+/**
+ * Reconstructs the multibody telemetry projection from the single checkpoint
+ * owner of cumulative motor energy. The physics checkpoint intentionally does
+ * not serialize a second mutable copy of these historical totals.
+ */
+export function reconstructOwnedMultibodyMotorEnergy(runtime, state) {
+  const expectedOwnerIds = multibodyMotorEnergyOwnerIds(runtime),
+    totals = state?.totals || [],
+    actualOwnerIds = totals.map(([partId]) => partId);
+  if (stableStringify(actualOwnerIds) !== stableStringify(expectedOwnerIds))
+    throw new DomainValidationError(
+      "MULTIBODY_MOTOR_ENERGY_OWNER_IDENTITY_MISMATCH",
+      "Motor-energy reconstruction requires one exact total for every live motor owner",
+    );
+  const totalsByPart = new Map(totals);
+  for (const entry of runtime.constraintEntries) {
+    if (entry.descriptor.mechanism?.commandLaw?.kind !== "force-command-v1")
+      continue;
+    const ownerTotals = totalsByPart.get(entry.descriptor.sourcePartId);
+    entry.actuatorMechanicalWorkJ =
+      ownerTotals.positiveMechanicalWorkJ - ownerTotals.absorbedMechanicalWorkJ;
+    entry.actuatorElectricalEnergyJ = ownerTotals.electricalEnergyJ;
+    entry.actuatorDissipatedEnergyJ = ownerTotals.rejectedHeatJ;
+  }
+  runtime.lastTelemetry = runtime.telemetry(
+    runtime.lastTelemetry?.activeMotors || 0,
   );
+  return runtime.lastTelemetry;
 }
 
 /** Package-internal checkpoint capture boundary; absent from Core exports. */
@@ -2070,7 +2249,13 @@ export class MultibodyRuntime {
             entry.descriptor.id,
             Object.freeze(
               CHECKPOINT_CONSTRAINT_SCALAR_FIELDS.filter(
-                (key) => key === "active" || Object.hasOwn(entry, key),
+                (key) =>
+                  (key === "active" || Object.hasOwn(entry, key)) &&
+                  !(
+                    entry.descriptor.mechanism?.commandLaw?.kind ===
+                      "force-command-v1" &&
+                    FORCE_COMMAND_DERIVED_CHECKPOINT_FIELDS.has(key)
+                  ),
               ),
             ),
           ]),
@@ -2543,6 +2728,8 @@ export class MultibodyRuntime {
           ],
           holdingClutch:
             descriptor.mechanism.unpoweredLaw?.kind === "holding-clutch-v1",
+          absoluteEffort:
+            descriptor.mechanism.commandLaw?.kind === "force-command-v1",
           maximumConstraintImpulse: solverImpulseLimit(
             Math.max(1, descriptor.breakForce || 24000) * 100,
             this.fixedDt,
@@ -2576,6 +2763,19 @@ export class MultibodyRuntime {
         thermalShutdown: false,
         clutchEngaged: false,
         clutchCoordinateM: null,
+        ...(descriptor.mechanism.commandLaw?.kind === "force-command-v1"
+          ? {
+              requestedForceN: 0,
+              capacityLimitedForceN: 0,
+              passiveForceN: 0,
+              effortRateSampleMPerS: 0,
+              residualForceN: 0,
+              commandTick: null,
+              commandSource: "none",
+              commandValidity: "stale",
+              saturationCauseMask: 0,
+            }
+          : {}),
       };
       this.constraintEntries.push(entry);
       this.world.addConstraint(limitConstraint);
@@ -3305,7 +3505,12 @@ export class MultibodyRuntime {
       entry.transverseM = state.transverseM;
       if (entry.constraint.holdEquation)
         entry.constraint.holdEquation.enabled = false;
-      if (entry.constraint.holdEquation)
+      if (entry.constraint.effortEquation) {
+        entry.constraint.effortEquation.enabled = false;
+        entry.constraint.effortEquation.minForce = 0;
+        entry.constraint.effortEquation.maxForce = 0;
+      }
+      if (entry.constraint.holdEquation || entry.constraint.effortEquation)
         refreshConstraintEquationAuthority(this, entry);
       let signedTensionN = 0,
         coordinateForceN = 0,
@@ -3319,8 +3524,9 @@ export class MultibodyRuntime {
       } else {
         const actuator = this.part(descriptor.sourcePartId),
           allocation = context.powerNetwork?.allocationFor(actuator.id),
-          law = mechanism.commandLaw;
-        const thermal = mechanism.thermalLimits,
+          law = mechanism.commandLaw,
+          forceCommand = law.kind === "force-command-v1",
+          thermal = mechanism.thermalLimits,
           thermalAvailability = thermal
             ? mechanismClamp(
                 (thermal.shutdownTemperatureK - entry.temperatureK) /
@@ -3334,99 +3540,182 @@ export class MultibodyRuntime {
             : 1;
         entry.thermalDerate = thermalAvailability;
         entry.thermalShutdown = thermalAvailability <= 0;
-        if (allocation?.operational && thermalAvailability > 0) {
+        const unconstrainedCapacity = forceSpeedCapacity(
+            mechanism.forceSpeedEnvelope,
+            state.rateMPerS,
+          ),
+          capacity = {
+            extendN: unconstrainedCapacity.extendN * thermalAvailability,
+            retractN: unconstrainedCapacity.retractN * thermalAvailability,
+          },
+          absoluteDemand = forceCommand
+            ? resolveAbsoluteAxialEffortDemand({
+                command: context.commandBus
+                  ? context.commandBus.read(actuator.id, "linear_force_n", 0)
+                  : { value: 0, conflict: false, source: "default" },
+                commandTick: commandBusCurrentTick(context.commandBus),
+                fixedTick: context.clock?.tick,
+                minimumForceN:
+                  actuatorChannel(actuator, "linear_force_n", this.catalog)
+                    ?.minimum ?? Number.NaN,
+                maximumForceN:
+                  actuatorChannel(actuator, "linear_force_n", this.catalog)
+                    ?.maximum ?? Number.NaN,
+                speedExtendCapacityN: unconstrainedCapacity.extendN,
+                speedRetractCapacityN: unconstrainedCapacity.retractN,
+                thermalAvailability,
+              })
+            : null;
+        if (absoluteDemand) {
+          entry.requestedForceN = absoluteDemand.requestedForceN;
+          entry.capacityLimitedForceN = absoluteDemand.capacityLimitedForceN;
+          entry.commandTick = absoluteDemand.commandTick;
+          entry.commandSource = absoluteDemand.commandSource;
+          entry.commandValidity = absoluteDemand.commandValidity;
+          entry.saturationCauseMask = absoluteDemand.saturationCauseMask;
+          entry.passiveForceN = 0;
+          entry.effortRateSampleMPerS = state.rateMPerS;
+          entry.residualForceN = 0;
+        }
+        const hasActiveAuthority =
+          allocation?.operational &&
+          thermalAvailability > 0 &&
+          (!forceCommand || absoluteDemand.commandValidity === "current");
+        if (hasActiveAuthority) {
           entry.clutchEngaged = false;
           entry.clutchCoordinateM = null;
-          const normalizedPosition = mechanismClamp(
-              (state.coordinateM - mechanism.lengthRangeM.lower) /
-                (mechanism.lengthRangeM.upper - mechanism.lengthRangeM.lower),
-              0,
-              1,
-            ),
-            command = context.commandBus
-              ? law.kind === "position-impedance-v1"
-                ? readActuatorCommand(
-                    context.commandBus,
-                    actuator,
-                    "linear_target",
-                    normalizedPosition,
-                  ).value
-                : law.kind === "velocity-servo-v1"
+          if (forceCommand) {
+            const equation = entry.constraint.effortEquation;
+            if (!equation)
+              throw new DomainValidationError(
+                "MISSING_AXIAL_EFFORT_EQUATION",
+                "Absolute axial effort requires an owned solver equation",
+              );
+            const requestedImpulseNs = absoluteDemand.requestedForceN * dt,
+              availableBusW = Math.max(
+                0,
+                allocation.allocatedW - allocation.deliveredW,
+              ),
+              idleElectricalW = Math.min(
+                availableBusW,
+                mechanism.powerLaw.idlePowerW,
+              ),
+              mechanicalBusW = Math.max(0, availableBusW - idleElectricalW);
+            equation.minForce = requestedImpulseNs;
+            equation.maxForce = requestedImpulseNs;
+            equation.enabled = true;
+            refreshConstraintEquationAuthority(this, entry);
+            this.worldAdapter.transaction.registerMotorEnergyBudget({
+              tick: context.clock.tick,
+              equation,
+              partId: actuator.id,
+              constraintId: descriptor.id,
+              mode: "absolute-axial-effort",
+              allocatedBusW: availableBusW,
+              mechanicalBudgetJ:
+                Math.min(
+                  mechanism.powerLaw.maximumMechanicalMotoringPowerW,
+                  mechanicalBusW *
+                    mechanism.powerLaw.electricalMotoringEfficiency,
+                ) * dt,
+              electricalEfficiency:
+                mechanism.powerLaw.electricalMotoringEfficiency,
+              torqueImpulseLimitNms: null,
+              requestedImpulseNs,
+              forceSpeedEnvelope: mechanism.forceSpeedEnvelope.points,
+              thermalAvailability,
+              idleElectricalW,
+            });
+            powered = true;
+            saturated = absoluteDemand.saturationCauseMask !== 0;
+            activeActuators++;
+          } else {
+            const normalizedPosition = mechanismClamp(
+                (state.coordinateM - mechanism.lengthRangeM.lower) /
+                  (mechanism.lengthRangeM.upper - mechanism.lengthRangeM.lower),
+                0,
+                1,
+              ),
+              command = context.commandBus
+                ? law.kind === "position-impedance-v1"
                   ? readActuatorCommand(
+                      context.commandBus,
+                      actuator,
+                      "linear_target",
+                      normalizedPosition,
+                    ).value
+                  : readActuatorCommand(
                       context.commandBus,
                       actuator,
                       "linear_velocity",
                       0,
                     ).value
-                  : readActuatorCommand(
-                      context.commandBus,
-                      actuator,
-                      "linear_force",
-                      0,
-                    ).value
-              : law.kind === "position-impedance-v1"
-                ? normalizedPosition
-                : 0,
-            unconstrainedCapacity = forceSpeedCapacity(
-              mechanism.forceSpeedEnvelope,
-              state.rateMPerS,
-            ),
-            capacity = {
-              extendN: unconstrainedCapacity.extendN * thermalAvailability,
-              retractN: unconstrainedCapacity.retractN * thermalAvailability,
-            };
-          if (law.kind === "position-impedance-v1") {
-            const targetM =
-              mechanism.lengthRangeM.lower +
-              mechanismClamp(command, 0, 1) *
-                (mechanism.lengthRangeM.upper - mechanism.lengthRangeM.lower);
-            coordinateForceN =
-              law.stiffnessNPerM * (targetM - state.coordinateM) -
-              law.dampingNsPerM * state.rateMPerS;
-          } else if (law.kind === "velocity-servo-v1") {
-            const maximumSpeedMPerS =
-              mechanism.forceSpeedEnvelope.points.at(-1).absSpeedMPerS;
-            coordinateForceN =
-              law.velocityGainNsPerM *
-              (mechanismClamp(command, -1, 1) * maximumSpeedMPerS -
-                state.rateMPerS);
-          } else
-            coordinateForceN =
-              mechanismClamp(command, -1, 1) *
-              (command >= 0 ? capacity.extendN : capacity.retractN);
-          const unclampedForceN = coordinateForceN;
-          coordinateForceN = mechanismClamp(
-            coordinateForceN,
-            -capacity.retractN,
-            capacity.extendN,
-          );
-          saturated =
-            thermalAvailability < 1 ||
-            Math.abs(coordinateForceN - unclampedForceN) > 1e-9;
-          const mechanicalPowerW = coordinateForceN * state.rateMPerS,
-            requestedElectricalW =
-              mechanism.powerLaw.idlePowerW +
-              Math.max(0, mechanicalPowerW) /
-                mechanism.powerLaw.electricalMotoringEfficiency,
-            deliveredElectricalW = context.powerNetwork.drawPower(
-              actuator.id,
-              requestedElectricalW,
-              dt,
-            ),
-            deliveryRatio = requestedElectricalW
-              ? Math.min(1, deliveredElectricalW / requestedElectricalW)
-              : 1;
-          coordinateForceN *= deliveryRatio;
-          electricalPowerW = deliveredElectricalW;
-          powered = deliveryRatio > 0;
-          signedTensionN = -coordinateForceN;
-          const deliveredMechanicalPowerW = coordinateForceN * state.rateMPerS;
-          entry.actuatorMechanicalWorkJ += deliveredMechanicalPowerW * dt;
-          entry.actuatorElectricalEnergyJ += deliveredElectricalW * dt;
-          entry.actuatorDissipatedEnergyJ +=
-            Math.max(0, deliveredElectricalW - deliveredMechanicalPowerW) * dt;
-          activeActuators += powered ? 1 : 0;
+                : law.kind === "position-impedance-v1"
+                  ? normalizedPosition
+                  : 0;
+            if (law.kind === "position-impedance-v1") {
+              const targetM =
+                mechanism.lengthRangeM.lower +
+                mechanismClamp(command, 0, 1) *
+                  (mechanism.lengthRangeM.upper - mechanism.lengthRangeM.lower);
+              coordinateForceN =
+                law.stiffnessNPerM * (targetM - state.coordinateM) -
+                law.dampingNsPerM * state.rateMPerS;
+            } else if (law.kind === "velocity-servo-v1") {
+              const maximumSpeedMPerS =
+                mechanism.forceSpeedEnvelope.points.at(-1).absSpeedMPerS;
+              coordinateForceN =
+                law.velocityGainNsPerM *
+                (mechanismClamp(command, -1, 1) * maximumSpeedMPerS -
+                  state.rateMPerS);
+            }
+            const unclampedForceN = coordinateForceN;
+            coordinateForceN = mechanismClamp(
+              coordinateForceN,
+              -capacity.retractN,
+              capacity.extendN,
+            );
+            saturated =
+              thermalAvailability < 1 ||
+              Math.abs(coordinateForceN - unclampedForceN) > 1e-9;
+            const mechanicalPowerW = coordinateForceN * state.rateMPerS,
+              requestedElectricalW =
+                mechanism.powerLaw.idlePowerW +
+                Math.max(0, mechanicalPowerW) /
+                  mechanism.powerLaw.electricalMotoringEfficiency,
+              deliveredElectricalW = context.powerNetwork.drawPower(
+                actuator.id,
+                requestedElectricalW,
+                dt,
+              ),
+              deliveryRatio = requestedElectricalW
+                ? Math.min(1, deliveredElectricalW / requestedElectricalW)
+                : 1;
+            coordinateForceN *= deliveryRatio;
+            electricalPowerW = deliveredElectricalW;
+            powered = deliveryRatio > 0;
+            signedTensionN = -coordinateForceN;
+            const deliveredMechanicalPowerW =
+              coordinateForceN * state.rateMPerS;
+            entry.actuatorMechanicalWorkJ += deliveredMechanicalPowerW * dt;
+            entry.actuatorElectricalEnergyJ += deliveredElectricalW * dt;
+            entry.actuatorDissipatedEnergyJ +=
+              Math.max(0, deliveredElectricalW - deliveredMechanicalPowerW) *
+              dt;
+            activeActuators += powered ? 1 : 0;
+          }
         } else {
+          if (absoluteDemand) {
+            const settlement = settleAbsoluteAxialEffortDelivery({
+              demand: absoluteDemand,
+              powerOperational: Boolean(allocation?.operational),
+              requestedElectricalW: 0,
+              deliveredElectricalW: 0,
+            });
+            entry.residualForceN = settlement.residualForceN;
+            entry.saturationCauseMask = settlement.saturationCauseMask;
+            saturated = settlement.saturated;
+          }
           const unpowered = mechanism.unpoweredLaw;
           if (unpowered.kind === "viscous-drag-v1")
             signedTensionN = unpowered.dampingNsPerM * state.rateMPerS;
@@ -3449,7 +3738,10 @@ export class MultibodyRuntime {
         }
       }
       if (signedTensionN) applyAxialForce(bodyA, bodyB, state, signedTensionN);
-      entry.appliedForceN = coordinateForceN || -signedTensionN;
+      if (Object.hasOwn(entry, "requestedForceN")) {
+        entry.appliedForceN = coordinateForceN;
+        entry.passiveForceN = signedTensionN ? -signedTensionN : 0;
+      } else entry.appliedForceN = coordinateForceN || -signedTensionN;
       entry.powered = powered;
       entry.saturated = saturated;
       entry.frictionWorkJ += Math.min(0, frictionPowerW) * dt;
@@ -3465,7 +3757,7 @@ export class MultibodyRuntime {
           ((heatInputW - coolingW) * dt) / thermal.thermalMassJPerK;
       }
       const transmittedForceN = Math.max(
-        Math.abs(entry.appliedForceN),
+        Math.abs(entry.appliedForceN + (entry.passiveForceN || 0)),
         entry.reactionForceN,
       );
       for (const id of descriptor.sourceConnectionIds)
@@ -4153,7 +4445,7 @@ export class MultibodyRuntime {
                 forceN:
                   entry.kind === "axial-force-v1"
                     ? entry.force
-                    : entry.appliedForceN,
+                    : entry.appliedForceN + (entry.passiveForceN || 0),
                 reactionForceN: entry.reactionForceN || 0,
                 transverseM: entry.transverseM || 0,
                 elasticPotentialJ: entry.elasticPotentialJ || 0,
@@ -4167,6 +4459,23 @@ export class MultibodyRuntime {
                 saturated: Boolean(entry.saturated),
                 thermalDerate: entry.thermalDerate ?? 1,
                 thermalShutdown: Boolean(entry.thermalShutdown),
+                ...(Object.hasOwn(entry, "requestedForceN")
+                  ? {
+                      demandUnit: "N",
+                      commandTick: entry.commandTick,
+                      commandSource: entry.commandSource,
+                      commandValidity: entry.commandValidity,
+                      requestedForceN: entry.requestedForceN,
+                      capacityLimitedForceN: entry.capacityLimitedForceN,
+                      appliedForceN: entry.appliedForceN,
+                      passiveForceN: entry.passiveForceN,
+                      effortRateSampleMPerS: entry.effortRateSampleMPerS,
+                      residualForceN: entry.residualForceN,
+                      saturationCauses: axialEffortSaturationCauses(
+                        entry.saturationCauseMask,
+                      ),
+                    }
+                  : {}),
               };
             })
         );
@@ -4263,6 +4572,8 @@ export class MultibodyRuntime {
       version: 2,
       compiledPhysicalSemanticsFingerprint:
         compiledPhysicalSemanticsFingerprint(this.compiled),
+      axialEffortEnergyProjectionDigest:
+        multibodyAxialEffortEnergyProjectionDigest(this),
       fixedDt: this.fixedDt,
       sourceRevision: this.compiled.sourceRevision,
       world: {
@@ -4511,7 +4822,27 @@ export class MultibodyRuntime {
     }
     for (const entry of this.constraintEntries) {
       const record = entries.get(entry.descriptor.id);
+      if (entry.descriptor.mechanism?.commandLaw?.kind === "force-command-v1") {
+        entry.actuatorMechanicalWorkJ = 0;
+        entry.actuatorElectricalEnergyJ = 0;
+        entry.actuatorDissipatedEnergyJ = 0;
+      }
       Object.assign(entry, structuredClone(record.values));
+      if (entry.descriptor.mechanism?.commandLaw?.kind === "force-command-v1") {
+        const state = axialState(
+            this.bodyByPart.get(entry.descriptor.a),
+            this.bodyByPart.get(entry.descriptor.b),
+            entry.localAnchorA,
+            entry.localAnchorB,
+          ),
+          unpoweredLaw = entry.descriptor.mechanism.unpoweredLaw;
+        entry.effortRateSampleMPerS = state.rateMPerS;
+        entry.passiveForceN = entry.powered
+          ? 0
+          : unpoweredLaw?.kind === "viscous-drag-v1"
+            ? -unpoweredLaw.dampingNsPerM * state.rateMPerS
+            : 0;
+      }
       if (entry.descriptor.kind === "fixed") {
         if (!record.fixedFrame)
           throw new DomainValidationError(

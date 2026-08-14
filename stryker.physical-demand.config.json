@@ -1,0 +1,74 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "ignorePatterns": [
+    "/artifacts",
+    "/coverage",
+    "/dist",
+    "/output",
+    "/packages/core/dist",
+    "/temp"
+  ],
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node scripts/verify-physical-demand-application.mjs && node scripts/verify-power-signal-command-networks.mjs && node scripts/verify-controller-observation-relay.mjs && node scripts/verify-cannon-solver-transaction.mjs"
+  },
+  "mutate": [
+    "src/model/actuator-contracts.js:48-52",
+    "src/model/actuator-contracts.js:115-140",
+    "src/simulation/axial-effort-settlement.js",
+    "src/simulation/command-bus.js:26-50",
+    "src/simulation/command-bus.js:253-272",
+    "src/simulation/signal-network.js:145-180",
+    "src/simulation/signal-network.js:195-210",
+    "src/simulation/systems/command-routing-system.js:68-69",
+    "src/simulation/systems/command-routing-system.js:98-108",
+    "src/simulation/systems/command-routing-system.js:161-171",
+    "src/simulation/two-frame-mechanisms.js:575-584",
+    "src/simulation/two-frame-mechanisms.js:624-628",
+    "src/simulation/cannon-solver-transaction.js:581-613",
+    "src/simulation/cannon-solver-transaction.js:616-743",
+    "src/simulation/cannon-solver-transaction.js:737-786",
+    "src/simulation/cannon-solver-transaction.js:915-964",
+    "src/simulation/cannon-solver-transaction.js:977-1014",
+    "src/simulation/cannon-solver-transaction.js:1035-1073",
+    "src/simulation/cannon-solver-transaction.js:1229-1293",
+    "src/simulation/systems/motor-energy-settlement-system.js:38-101",
+    "src/simulation/systems/motor-energy-settlement-system.js:104-204",
+    "src/simulation/systems/motor-energy-settlement-system.js:239-346",
+    "src/simulation/multibody-checkpoint-validation.js:584-641",
+    "src/simulation/multibody-checkpoint-validation.js:924-934",
+    "src/simulation/runtime-checkpoints.js:110-185",
+    "src/simulation/multibody-runtime.js:1645-1660",
+    "src/simulation/multibody-runtime.js:1673-1705",
+    "src/simulation/multibody-runtime.js:1714-1730",
+    "src/simulation/multibody-runtime.js:1734-1794",
+    "src/simulation/multibody-runtime.js:3561-3641",
+    "src/simulation/multibody-runtime.js:3718-3728",
+    "src/simulation/multibody-runtime.js:4472-4488",
+    "src/simulation/multibody-runtime.js:4585-4586",
+    "src/simulation/multibody-runtime.js:4835-4855"
+  ],
+  "coverageAnalysis": "off",
+  "mutator": {
+    "excludedMutations": [
+      "StringLiteral",
+      "ArrayDeclaration",
+      "ObjectLiteral",
+      "OptionalChaining",
+      "MethodExpression",
+      "ArrowFunction"
+    ]
+  },
+  "concurrency": 4,
+  "timeoutMS": 30000,
+  "tempDirName": "artifacts/stryker-physical-demand",
+  "reporters": ["clear-text", "json"],
+  "jsonReporter": {
+    "fileName": "artifacts/physical-demand-mutation.json"
+  },
+  "thresholds": {
+    "high": 90,
+    "low": 90,
+    "break": 90
+  }
+}

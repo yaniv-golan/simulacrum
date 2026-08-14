@@ -2,7 +2,6 @@ import { sharedRenderResourceStats } from "../presentation/render-resources.js";
 import { componentVisualDiagnostics } from "../presentation/component-visual-diagnostics.js";
 import { installDebugReadModelFeature } from "./debug-read-model-feature.js";
 import { installWorkshopRuntimeLoop } from "./workshop-runtime-loop.js";
-
 /** Installs the frame loop, diagnostics read model, resize, and initial paint. */
 export function installWorkshopRuntimeSubsystem({
   target,
@@ -49,6 +48,7 @@ export function installWorkshopRuntimeSubsystem({
         shadowMapType: presentation.renderer.shadowMap.type,
       },
       shared: sharedRenderResourceStats(),
+      ...presentation.resourceSnapshot(),
       parts: state.parts.length,
       heatBindings: state.parts.reduce(
         (sum, part) => sum + (part.ambientHeatBindings?.length || 0),

@@ -1,3 +1,5 @@
+import { trackOwnedRenderResource } from "./presentation/render-resources.js";
+
 export function createEarthStreamer({
   THREE,
   CANNON,
@@ -261,6 +263,12 @@ export function createEarthStreamer({
       crowns.instanceMatrix.needsUpdate = true;
       chunkGroup.add(trunks, crowns);
     }
+    const ownedGeometries = new Set();
+    chunkGroup.traverse((object) => {
+      if (object.geometry) ownedGeometries.add(object.geometry);
+    });
+    for (const geometry of ownedGeometries)
+      trackOwnedRenderResource(geometry, "earthChunkGeometries");
     group.add(chunkGroup);
     return {
       key: `${chunkX},${chunkZ}`,
@@ -334,6 +342,15 @@ export function createEarthStreamer({
     centerKey = "";
   }
 
+  function geometryResources() {
+    const geometries = new Set();
+    for (const chunk of chunks.values())
+      chunk.group.traverse((object) => {
+        if (object.geometry) geometries.add(object.geometry);
+      });
+    return [...geometries];
+  }
+
   function update(
     originEastM,
     originNorthM,
@@ -402,5 +419,5 @@ export function createEarthStreamer({
     };
   }
 
-  return { group, chunks, update, clear };
+  return { group, chunks, update, clear, geometryResources };
 }

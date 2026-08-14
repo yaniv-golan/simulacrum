@@ -176,6 +176,19 @@ export function createWorldPresentationSubsystem({
     updateCamera,
     horizonEnvironment,
     streamer,
+    resourceSnapshot: () => {
+      const geometries = new Set();
+      scene.world.traverse((object) => {
+        if (object.geometry) geometries.add(object.geometry);
+      });
+      return {
+        scene: { liveGeometries: geometries.size },
+        earth: {
+          activeChunks: streamer.chunks.size,
+          ownedGeometries: streamer.geometryResources().length,
+        },
+      };
+    },
     updateEarth: streaming.update,
     setTimeOfDay: worldEnvironment.setTimeOfDay,
     setWindEnabled: worldEnvironment.setWindEnabled,

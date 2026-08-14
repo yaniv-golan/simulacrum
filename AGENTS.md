@@ -98,6 +98,41 @@ coordinator growth.
    validation changes. Put change history in the commit and pull-request
    description rather than a repository work diary.
 
+### Efficient completion order
+
+For substantial or high-risk work, preserve correctness while avoiding stale
+expensive evidence:
+
+1. Iterate with the smallest owning pure verifier or exact `test:focused`
+   selection. Do not run the full registry during source exploration.
+2. When focused contracts are green, run the requested fresh adversarial
+   review before mutation, repository-wide checks, or the full registry. Repair
+   every material finding and repeat focused verification/review until the
+   source is closed. Give the reviewer a bounded packet: base/source identity,
+   changed files and symbols, explicit invariants and nonclaims, exact focused
+   commands/results, evidence hashes, a small probe budget, and a verdict time
+   box. The reviewer may expand scope only for a concrete material lead.
+3. After the final production-source change, run targeted coverage and mutation
+   once, then `npm run check`, `npm run build`, and `git diff --check`. A test or
+   documentation-only repair may reuse production evidence only when the source
+   digest proves production code is unchanged and the report says so.
+4. Run the complete registered suite exactly once on the final source tree.
+   Never present an earlier prefix plus later spot checks as an uninterrupted
+   green run.
+5. `TEST_SHARD_INDEX`/`TEST_SHARD_COUNT` provide stable disjoint registry
+   selection, but parallel local shards are completion evidence only when all
+   shards use the same source/build digest, retain separate timing artifacts,
+   cover every registered suite exactly once, and do not race shared build or
+   server lifecycle state. Until a coordinator satisfies those conditions,
+   prefer one final serial `npm test` over unsafe parallelism.
+
+Mutation configurations that use line ranges must be re-anchored by enclosing
+symbol after source edits. Before launching Stryker, inspect every changed range
+and confirm it still names the intended contract. Prefer extracting critical
+decisions into small dedicated modules or pure helpers that can be mutated by
+whole-file/symbol scope; never lower a threshold or omit a material branch to
+recover wall-clock time.
+
 ## Verification matrix
 
 | Change                                                   | Minimum focused verification                                                    |

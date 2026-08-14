@@ -25,13 +25,18 @@ import {
   acceptsActuatorChannel,
   actuatorChannels,
   actuatorChannel,
+  actuatorCommandValueIsAdmissible,
   clampActuatorCommand,
   powerContract,
   readActuatorCommand,
   sourcePowerContract,
   targetTypesForChannel,
 } from "../src/model/actuator-contracts.js";
-import { CommandBus } from "../src/simulation/command-bus.js";
+import {
+  beginCommandBusTick,
+  commandBusCurrentTick,
+  CommandBus,
+} from "../src/simulation/command-bus.js";
 import {
   batteryEnergyReadModel,
   JOULES_PER_WATT_HOUR,
@@ -159,6 +164,97 @@ for (const channel of ["target_x", "target_z"])
 assert.equal(clampActuatorCommand({ type: "motor" }, "throttle", 2), 1);
 assert.equal(clampActuatorCommand({ type: "hinge" }, "joint_target", NaN), 0);
 assert.equal(clampActuatorCommand({ type: "plate" }, "throttle", 1), null);
+const axialEffortChannel = actuatorChannel(
+  part(1, "linear-actuator"),
+  "linear_force_n",
+);
+assert.deepEqual(
+  {
+    minimum: axialEffortChannel.minimum,
+    maximum: axialEffortChannel.maximum,
+    failsafe: axialEffortChannel.failsafe,
+    unit: axialEffortChannel.unit,
+  },
+  { minimum: -1_000_000, maximum: 1_000_000, failsafe: 0, unit: "N" },
+);
+assert.equal(
+  clampActuatorCommand(part(1, "linear-actuator"), "linear_force_n", 1_000_001),
+  0,
+);
+assert.equal(
+  clampActuatorCommand(
+    part(1, "linear-actuator"),
+    "linear_force_n",
+    -1_000_001,
+  ),
+  0,
+);
+assert.equal(
+  clampActuatorCommand(part(1, "linear-actuator"), "linear_force_n", 1_000_000),
+  1_000_000,
+);
+assert.equal(
+  clampActuatorCommand(
+    part(1, "linear-actuator"),
+    "linear_force_n",
+    -1_000_000,
+  ),
+  -1_000_000,
+);
+assert.equal(
+  actuatorCommandValueIsAdmissible(
+    part(1, "linear-actuator"),
+    "linear_force_n",
+    1_000_000,
+  ),
+  true,
+);
+assert.equal(
+  actuatorCommandValueIsAdmissible(
+    part(1, "linear-actuator"),
+    "linear_force_n",
+    1_000_001,
+  ),
+  false,
+);
+assert.equal(
+  actuatorCommandValueIsAdmissible(
+    part(1, "linear-actuator"),
+    "linear_force_n",
+    -1_000_000,
+  ),
+  true,
+);
+assert.equal(
+  actuatorCommandValueIsAdmissible(
+    part(1, "linear-actuator"),
+    "linear_force_n",
+    -1_000_001,
+  ),
+  false,
+);
+assert.equal(
+  actuatorCommandValueIsAdmissible(
+    part(1, "linear-actuator"),
+    "linear_force_n",
+    Number.NaN,
+  ),
+  false,
+);
+assert.equal(
+  actuatorCommandValueIsAdmissible(part(1, "plate"), "linear_force_n", 0),
+  false,
+);
+assert.equal(
+  actuatorCommandValueIsAdmissible(part(1, "motor"), "throttle", 2),
+  true,
+  "ordinary normalized controls lost their declared routing clamp",
+);
+assert.equal(
+  actuatorChannel(part(1, "linear-actuator"), "linear_force"),
+  null,
+  "the obsolete capacity-normalized effort surface remained authoritative",
+);
 const conflictBus = new CommandBus();
 conflictBus.writeScript("a", "drive", 1, "throttle", 1);
 conflictBus.writeScript("b", "drive", 1, "throttle", -1);
@@ -448,8 +544,8 @@ assert.equal(
 );
 assert.deepEqual(
   signals.controllersForTarget(4),
-  [],
-  "signal route stayed online to an unpowered actuator",
+  [3],
+  "actuator power loss incorrectly erased the independent signal route",
 );
 assert.equal(
   signals.routeWitness(
@@ -461,8 +557,8 @@ assert.equal(
     },
     signals.evidenceIndex().networkResultDigest,
   ).status,
-  "invalid",
-  "signal evidence contradicted runtime target availability",
+  "resolved",
+  "signal evidence was incorrectly conditioned on actuator power",
 );
 
 const shortageGraph = new RunAssemblyGraph({
@@ -1332,6 +1428,13 @@ for (const invalid of [
   );
 
 const bus = new CommandBus();
+assert.equal(commandBusCurrentTick(bus), null);
+assert.throws(() => beginCommandBusTick({}, 1), /package-owned command bus/);
+assert.throws(() => beginCommandBusTick(bus, -1), /non-negative safe integer/);
+beginCommandBusTick(bus, 12);
+assert.equal(commandBusCurrentTick(bus), 12);
+beginCommandBusTick(bus, 0);
+assert.equal(commandBusCurrentTick(bus), 0);
 assert.equal(bus.writeRemote(1, "throttle", 0.3), true);
 assert.deepEqual(bus.read(1, "throttle"), {
   value: 0.3,
@@ -1355,6 +1458,7 @@ assert.equal(bus.read(2, "throttle", -1).value, -1);
 bus.reject({ targetId: 99 }, "test rejection");
 assert.equal(bus.entries().rejections[0].reason, "test rejection");
 bus.clearTick();
+assert.equal(commandBusCurrentTick(bus), null);
 assert.deepEqual(bus.read(2, "throttle", 0.2), {
   value: 0.2,
   conflict: false,
@@ -1430,6 +1534,7 @@ assert.equal(checkpointBus.read(4, "throttle").value, 0.25);
 const restoredBus = new CommandBus();
 restoredBus.writeRemote(88, "lights", 1);
 restoredBus.importState(checkpointBus.exportState());
+assert.equal(commandBusCurrentTick(restoredBus), null);
 assert.deepEqual(restoredBus.entries(), checkpointBus.entries());
 assert.deepEqual(restoredBus.read(5, "joint_target", -1), {
   value: -1,

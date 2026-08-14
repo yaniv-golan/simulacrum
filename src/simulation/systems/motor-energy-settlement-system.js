@@ -1,12 +1,18 @@
 import {
+  canonicalId,
+  compareCanonicalIds,
   DomainValidationError,
   immutableClone,
+  stableStringify,
 } from "../../model/primitives.js";
 import {
   issueInertPlainData,
   requireInertPlainData,
 } from "../../model/plain-data-contract.js";
-import { settleOwnedMultibodyMotorEnergy } from "../multibody-runtime.js";
+import {
+  multibodyMotorEnergyOwnerIds,
+  settleOwnedMultibodyMotorEnergy,
+} from "../multibody-runtime.js";
 
 const checkpointKeysMatch = (value, expected) =>
   Boolean(
@@ -22,15 +28,77 @@ const totalFields = Object.freeze([
   "absorbedMechanicalWorkJ",
   "rejectedHeatJ",
 ]);
+const zeroTotals = () => ({
+  electricalEnergyJ: 0,
+  positiveMechanicalWorkJ: 0,
+  absorbedMechanicalWorkJ: 0,
+  rejectedHeatJ: 0,
+});
+
+function canonicalOwnerIds(ownerIds) {
+  if (!Array.isArray(ownerIds))
+    throw new DomainValidationError(
+      "MOTOR_ENERGY_OWNER_AUTHORITY_REQUIRED",
+      "Motor-energy state requires the live canonical motor-owner identities",
+    );
+  let ids;
+  try {
+    ids = ownerIds.map((partId, index) =>
+      canonicalId(partId, { path: ["ownerIds", index] }),
+    );
+    ids.sort(compareCanonicalIds);
+  } catch (cause) {
+    throw new DomainValidationError(
+      "INVALID_MOTOR_ENERGY_OWNER_IDENTITIES",
+      "Motor-energy owner identities must be canonical",
+      { cause },
+    );
+  }
+  if (
+    ids.some(
+      (partId, index) =>
+        index > 0 && compareCanonicalIds(ids[index - 1], partId) === 0,
+    )
+  )
+    throw new DomainValidationError(
+      "INVALID_MOTOR_ENERGY_OWNER_IDENTITIES",
+      "Motor-energy owner identities must be unique",
+    );
+  return ids;
+}
 
 /** Settles solver-metered motor-row work against the current power allocation. */
 export class MotorEnergySettlementSystem {
   phase = "integration";
   checkpointOwner = "motor-energy-settlement";
 
-  constructor() {
+  constructor({ ownerIds = null } = {}) {
     this.totals = new Map();
     this.lastSettledTick = 0;
+    this.ownerIds = null;
+    if (ownerIds) this.bindOwnerIds(ownerIds);
+  }
+
+  bindOwnerIds(ownerIds) {
+    const canonical = canonicalOwnerIds(ownerIds);
+    if (
+      this.ownerIds &&
+      stableStringify(this.ownerIds) !== stableStringify(canonical)
+    )
+      throw new DomainValidationError(
+        "MOTOR_ENERGY_OWNER_IDENTITY_CHANGED",
+        "Motor-energy owner identities cannot change during a run",
+      );
+    this.ownerIds = Object.freeze(canonical);
+    for (const partId of canonical)
+      if (!this.totals.has(partId)) this.totals.set(partId, zeroTotals());
+    for (const partId of this.totals.keys())
+      if (!canonical.includes(partId))
+        throw new DomainValidationError(
+          "MOTOR_ENERGY_OWNER_IDENTITY_MISMATCH",
+          "Motor-energy totals contain a non-owner identity",
+        );
+    return this.ownerIds;
   }
 
   step(context, dt) {
@@ -38,23 +106,29 @@ export class MotorEnergySettlementSystem {
       transaction = context.services.worldAdapter?.transaction,
       tick = context.clock.tick,
       pending = transaction?.motorEnergyRecordsForTick?.(tick);
+    this.bindOwnerIds(
+      context.services.motorEnergyOwnerIds ??
+        multibodyMotorEnergyOwnerIds(runtime),
+    );
     if (!pending) {
+      this.lastSettledTick = tick;
       context.telemetry.motorEnergy = this.telemetry();
       return;
     }
     const settled = [];
     for (const record of pending.records) {
-      const requestedElectricalW =
-          record.positiveMechanicalWorkJ > 0
-            ? record.positiveMechanicalWorkJ / record.electricalEfficiency / dt
-            : 0,
+      const idleElectricalW = record.idleElectricalW || 0,
+        requestedElectricalW =
+          idleElectricalW +
+          record.positiveMechanicalWorkJ / record.electricalEfficiency / dt,
         deliveredElectricalW = context.powerNetwork.drawPower(
           record.partId,
           requestedElectricalW,
           dt,
         ),
         deliveredMechanicalCapacityJ =
-          deliveredElectricalW * dt * record.electricalEfficiency;
+          Math.max(0, deliveredElectricalW * dt - idleElectricalW * dt) *
+          record.electricalEfficiency;
       if (
         deliveredMechanicalCapacityJ +
           Math.max(1e-9, record.mechanicalBudgetJ * 1e-10) <
@@ -63,29 +137,40 @@ export class MotorEnergySettlementSystem {
         throw new DomainValidationError(
           "MOTOR_ENERGY_SETTLEMENT_SHORTFALL",
           `Reserved electrical energy for motor ${String(record.partId)} did not cover solved work`,
+          {
+            details: {
+              tick,
+              record,
+              requestedElectricalW,
+              deliveredElectricalW,
+              deliveredMechanicalCapacityJ,
+              shortfallJ:
+                record.positiveMechanicalWorkJ - deliveredMechanicalCapacityJ,
+            },
+          },
         );
       const conversionLossJ = Math.max(
           0,
           deliveredElectricalW * dt - record.positiveMechanicalWorkJ,
         ),
         rejectedHeatJ = conversionLossJ + record.absorbedMechanicalWorkJ,
-        previous = this.totals.get(record.partId) || {
-          electricalEnergyJ: 0,
-          positiveMechanicalWorkJ: 0,
-          absorbedMechanicalWorkJ: 0,
-          rejectedHeatJ: 0,
-        },
-        next = {
-          electricalEnergyJ:
-            previous.electricalEnergyJ + deliveredElectricalW * dt,
-          positiveMechanicalWorkJ:
-            previous.positiveMechanicalWorkJ + record.positiveMechanicalWorkJ,
-          absorbedMechanicalWorkJ:
-            previous.absorbedMechanicalWorkJ + record.absorbedMechanicalWorkJ,
-          rejectedHeatJ: previous.rejectedHeatJ + rejectedHeatJ,
-        };
+        previous = this.totals.get(record.partId);
+      if (!previous)
+        throw new DomainValidationError(
+          "MOTOR_ENERGY_RECORD_OWNER_MISMATCH",
+          `Solved motor record identifies non-owner part ${String(record.partId)}`,
+        );
+      const next = {
+        electricalEnergyJ:
+          previous.electricalEnergyJ + deliveredElectricalW * dt,
+        positiveMechanicalWorkJ:
+          previous.positiveMechanicalWorkJ + record.positiveMechanicalWorkJ,
+        absorbedMechanicalWorkJ:
+          previous.absorbedMechanicalWorkJ + record.absorbedMechanicalWorkJ,
+        rejectedHeatJ: previous.rejectedHeatJ + rejectedHeatJ,
+      };
       this.totals.set(record.partId, next);
-      context.telemetry.mechanisms = settleOwnedMultibodyMotorEnergy(
+      const settlementReceipt = settleOwnedMultibodyMotorEnergy(
         runtime,
         record.partId,
         deliveredElectricalW,
@@ -95,8 +180,10 @@ export class MotorEnergySettlementSystem {
           absorbedMechanicalWorkJ: record.absorbedMechanicalWorkJ,
           rejectedHeatJ,
           saturated: record.saturated,
+          record,
         },
       );
+      context.telemetry.mechanisms = settlementReceipt.telemetry;
       settled.push({
         ...record,
         requestedElectricalW,
@@ -104,12 +191,10 @@ export class MotorEnergySettlementSystem {
         conversionLossJ,
         rejectedHeatJ,
       });
-      // Position-impedance actuators own an authored winding thermal state in
-      // MultibodyRuntime; recordSettledMotorElectricalPower deposits this heat
-      // there. Drive motors have no internal thermal owner, so their rejected
-      // heat belongs to the assembly heat collector instead. Never deposit the
-      // same joules in both thermal masses.
-      if (rejectedHeatJ > 0 && record.mode !== "position-impedance")
+      // The mechanism settlement receipt, rather than a command-mode name,
+      // identifies whether an authored actuator thermal mass consumed these
+      // joules. Only unclaimed heat belongs to the assembly collector.
+      if (rejectedHeatJ > 0 && !settlementReceipt.rejectedHeatClaimed)
         context.services.heatInputCollector?.submit({
           tick,
           partId: record.partId,
@@ -152,9 +237,15 @@ export class MotorEnergySettlementSystem {
   }
 
   exportState() {
+    if (!this.ownerIds)
+      throw new DomainValidationError(
+        "MOTOR_ENERGY_OWNER_AUTHORITY_REQUIRED",
+        "Motor-energy export requires bound live owner identities",
+      );
     return issueInertPlainData({
-      version: 1,
+      version: 2,
       lastSettledTick: this.lastSettledTick,
+      ownerIds: this.ownerIds,
       totals: [...this.totals],
     });
   }
@@ -166,15 +257,31 @@ export class MotorEnergySettlementSystem {
         "Motor-energy checkpoint must be serialized JSON or an exported immutable state",
     });
     if (
-      !checkpointKeysMatch(state, ["version", "lastSettledTick", "totals"]) ||
-      state.version !== 1 ||
+      !checkpointKeysMatch(state, [
+        "version",
+        "lastSettledTick",
+        "ownerIds",
+        "totals",
+      ]) ||
+      state.version !== 2 ||
       !Number.isSafeInteger(state.lastSettledTick) ||
       state.lastSettledTick < 0 ||
       !Array.isArray(state.totals)
     )
       throw new DomainValidationError(
         "INVALID_MOTOR_ENERGY_SETTLEMENT_CHECKPOINT",
-        "Motor energy settlement checkpoint must use version 1",
+        "Motor energy settlement checkpoint must use version 2",
+      );
+    const ownerIds = canonicalOwnerIds(state.ownerIds),
+      expectedOwnerIds = this.ownerIds;
+    if (
+      stableStringify(ownerIds) !== stableStringify(state.ownerIds) ||
+      !expectedOwnerIds ||
+      stableStringify(ownerIds) !== stableStringify(expectedOwnerIds)
+    )
+      throw new DomainValidationError(
+        "MOTOR_ENERGY_OWNER_IDENTITY_MISMATCH",
+        "Motor-energy checkpoint identities must exactly match the live owner set",
       );
     const totals = new Map();
     for (const entry of state.totals) {
@@ -207,27 +314,33 @@ export class MotorEnergySettlementSystem {
           Math.abs(expectedRejectedHeatJ),
         ),
         toleranceJ = Math.max(1e-9, scaleJ * 1e-10);
-      if (
-        expectedRejectedHeatJ < -toleranceJ ||
-        Math.abs(values.rejectedHeatJ - expectedRejectedHeatJ) > toleranceJ
-      )
+      if (Math.abs(values.rejectedHeatJ - expectedRejectedHeatJ) > toleranceJ)
         throw new DomainValidationError(
           "INVALID_MOTOR_ENERGY_SETTLEMENT_CHECKPOINT",
           "Motor energy settlement totals must conserve electrical input as positive work plus rejected heat minus absorbed work",
         );
       totals.set(partId, structuredClone(values));
     }
-    return { lastSettledTick: state.lastSettledTick, totals };
+    if (
+      stableStringify([...totals.keys()]) !== stableStringify(expectedOwnerIds)
+    )
+      throw new DomainValidationError(
+        "MOTOR_ENERGY_OWNER_IDENTITY_MISMATCH",
+        "Motor-energy checkpoint requires exactly one total for every live owner",
+      );
+    return { lastSettledTick: state.lastSettledTick, ownerIds, totals };
   }
 
   importState(state) {
     const validated = this.validateState(state);
     this.lastSettledTick = validated.lastSettledTick;
+    this.ownerIds = Object.freeze(validated.ownerIds);
     this.totals = validated.totals;
   }
 
   dispose() {
     this.totals.clear();
     this.lastSettledTick = 0;
+    this.ownerIds = null;
   }
 }

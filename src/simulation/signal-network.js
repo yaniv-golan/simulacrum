@@ -142,16 +142,18 @@ export class SignalNetwork {
       )
       .sort((a, b) => compareId(a.id, b.id));
     for (const controller of controllers) {
-      const reachable = reachableRoutes(
-          controller.id,
-          outgoing,
-          (id) =>
+      const reachable = reachableRoutes(controller.id, outgoing, (id) => {
+          const target = byId.get(id),
+            electrical = powerContract(target, this.#catalog);
+          return (
             !componentHasControlContract(
-              byId.get(id),
+              target,
               "controller-target-v1",
               this.#catalog,
-            ),
-        ),
+            ) &&
+            (!electrical || powerNetwork.isPowered(target.id))
+          );
+        }),
         targets = [...reachable.keys()].filter((id) => {
           const target = byId.get(id);
           if (
@@ -165,8 +167,17 @@ export class SignalNetwork {
               !componentControlContract(target, this.#catalog))
           )
             return false;
-          const electrical = powerContract(target, this.#catalog);
-          return !electrical || powerNetwork.isPowered(target.id);
+          const electrical = powerContract(target, this.#catalog),
+            controlContract = componentControlContract(target, this.#catalog);
+          // A terminal actuator can retain routed demand while unpowered so its
+          // physical owner can publish an explicit power residual. A command
+          // relay is different: without its own power it neither participates
+          // as a powered target nor propagates the route downstream.
+          return (
+            !electrical ||
+            powerNetwork.isPowered(target.id) ||
+            controlContract !== "command-sink-v1"
+          );
         });
       const routedTargets = new Set([controller.id, ...targets]);
       this.#targetsByController.set(controller.id, routedTargets);
@@ -185,16 +196,18 @@ export class SignalNetwork {
       const electrical = powerContract(sensor, this.#catalog);
       if (sensor.detached || (electrical && !powerNetwork.isPowered(sensor.id)))
         continue;
-      const reachable = reachableRoutes(
-        sensor.id,
-        outgoing,
-        (id) =>
+      const reachable = reachableRoutes(sensor.id, outgoing, (id) => {
+        const target = byId.get(id),
+          electrical = powerContract(target, this.#catalog);
+        return (
           !componentHasControlContract(
-            byId.get(id),
+            target,
             "controller-target-v1",
             this.#catalog,
-          ),
-      );
+          ) &&
+          (!electrical || powerNetwork.isPowered(target.id))
+        );
+      });
       for (const controller of controllers)
         if (reachable.has(controller.id)) {
           if (!this.#sensorsByController.has(controller.id))
