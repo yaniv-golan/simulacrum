@@ -353,7 +353,19 @@ function captureConstraintEquations(entry) {
   });
 }
 
+function constraintEffortEquation(entry) {
+  if (!entry.constraint) return null;
+  return entry.constraint.effortEquation || null;
+}
+
 function captureConstraintEngineAuthority(entry) {
+  const effortEquation = constraintEffortEquation(entry),
+    expectsAbsoluteEffort =
+      entry.descriptor.mechanism?.commandLaw?.kind === "force-command-v1";
+  if (Boolean(effortEquation) !== expectsAbsoluteEffort)
+    engineAuthorityMismatch(
+      `Live Cannon absolute-effort row disagrees with compiled command law for ${entry.descriptor.id}`,
+    );
   return {
     entry,
     descriptor: entry.descriptor,
@@ -363,6 +375,7 @@ function captureConstraintEngineAuthority(entry) {
     bodyB: entry.constraint?.bodyB || null,
     collideConnected: entry.constraint?.collideConnected ?? null,
     distance: entry.constraint?.distance ?? null,
+    effortEquation,
     vectors: captureConstraintVectors(entry),
     equations: captureConstraintEquations(entry),
     active: entry.active !== false,
@@ -444,7 +457,7 @@ function engineAuthorityMismatch(message) {
   );
 }
 
-function validateLiveMultibodyEngineAuthority(
+export function validateLiveMultibodyEngineAuthority(
   runtime,
   { validateStaticGeometry = true } = {},
 ) {
@@ -516,6 +529,7 @@ function validateLiveMultibodyEngineAuthority(
       (entry?.constraint?.collideConnected ?? null) !==
         expected.collideConnected ||
       (entry?.constraint?.distance ?? null) !== expected.distance ||
+      constraintEffortEquation(entry) !== expected.effortEquation ||
       !sameConstraintVectorsAuthority(entry, expected.vectors) ||
       (entry.active !== false) !== expected.active
     )
@@ -1217,7 +1231,7 @@ function physicsFrame(descriptor) {
   };
 }
 
-function partFrame(body) {
+export function partFrame(body) {
   const frame = body.userData.massFrame,
     partToPrincipal = frame.principalToPart.conjugate(new CANNON.Quaternion()),
     quaternion = body.quaternion.mult(partToPrincipal, new CANNON.Quaternion()),
@@ -1912,7 +1926,7 @@ function solverImpulseLimit(rate, dt) {
   return Math.abs(rate) * dt;
 }
 
-function activeFixedCluster(constraintEntries, seed) {
+export function activeFixedCluster(constraintEntries, seed) {
   const cluster = new Set([seed]),
     pending = [seed];
   while (pending.length) {
