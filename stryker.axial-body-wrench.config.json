@@ -1,0 +1,42 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "ignorePatterns": [
+    "/artifacts",
+    "/coverage",
+    "/dist",
+    "/output",
+    "/packages/core/dist",
+    "/temp"
+  ],
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node scripts/verify-axial-body-wrench-allocation.mjs"
+  },
+  "mutate": [
+    "src/simulation/axial-body-wrench-allocation.js",
+    "src/simulation/axial-body-wrench-runtime.js",
+    "src/simulation/multibody-runtime.js:356-359",
+    "src/simulation/multibody-runtime.js:532-532"
+  ],
+  "coverageAnalysis": "off",
+  "mutator": {
+    "excludedMutations": [
+      "StringLiteral",
+      "ArrayDeclaration",
+      "ObjectLiteral",
+      "ArrowFunction"
+    ]
+  },
+  "concurrency": 4,
+  "timeoutMS": 30000,
+  "tempDirName": "artifacts/stryker-axial-body-wrench",
+  "reporters": ["clear-text", "json"],
+  "jsonReporter": {
+    "fileName": "artifacts/axial-body-wrench-mutation.json"
+  },
+  "thresholds": {
+    "high": 90,
+    "low": 90,
+    "break": 90
+  }
+}

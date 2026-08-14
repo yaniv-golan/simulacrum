@@ -108,6 +108,7 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-point-contact-wrench-controller.mjs",
   "verify-point-contact-wrench-controller-relay.mjs",
   "verify-physical-demand-application.mjs",
+  "verify-axial-body-wrench-allocation.mjs",
   "verify-controller-observation-relay.mjs",
   "verify-controller-sandbox.mjs",
   "verify-controller-bindings.mjs",
