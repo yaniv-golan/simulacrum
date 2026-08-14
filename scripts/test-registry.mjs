@@ -107,6 +107,7 @@ export const VERIFICATION_CHECKS = Object.freeze([
   "verify-point-contact-wrench-allocator.mjs",
   "verify-point-contact-wrench-controller.mjs",
   "verify-point-contact-wrench-controller-relay.mjs",
+  "verify-physical-demand-application.mjs",
   "verify-controller-observation-relay.mjs",
   "verify-controller-sandbox.mjs",
   "verify-controller-bindings.mjs",
@@ -182,6 +183,7 @@ export const VERIFICATION_CHECKS = Object.freeze([
 export const VERIFICATION_TIMEOUT_MS = Object.freeze({
   "verify-five-demos.mjs": 300_000,
   "verify-mechanism-sharing-proof.mjs": 300_000,
+  "verify-component-visual-realism-browser.mjs": 300_000,
   "verify-blueprint-roundtrip.mjs": 300_000,
   "verify-blueprint-exchange.mjs": 300_000,
   "verify-editor-tools.mjs": 300_000,

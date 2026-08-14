@@ -39,6 +39,7 @@ assert.deepEqual(selectVerificationChecks(VERIFICATION_CHECKS, ""), [
 assert.deepEqual(Object.keys(VERIFICATION_TIMEOUT_MS), [
   "verify-five-demos.mjs",
   "verify-mechanism-sharing-proof.mjs",
+  "verify-component-visual-realism-browser.mjs",
   "verify-blueprint-roundtrip.mjs",
   "verify-blueprint-exchange.mjs",
   "verify-editor-tools.mjs",

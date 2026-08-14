@@ -10,10 +10,10 @@ import {
 // Audited sources shipped by this checkout. A source or policy edit changes its
 // digest and therefore fails closed until this list is reviewed and updated.
 export const AUDITED_BUILT_IN_DIGESTS = Object.freeze([
-  "52131eab0885a4f0e316492dd02f0f64f2345d2c9ad4227cfe1dae71e6036f6f",
-  "64a5a94c759f366099e3e13576d95ccfae7e60e97fdbdd028fd3f89ccfc4b59b",
-  "c555990a71a6a0b7890008d97e1e8c1af7623d3a39edc420f90d352f311748ba",
-  "f54424f10c1ba8433742cd583f106bd2e3c43b324d92061dc0a4a71b563f2c49",
+  "42cd27e75c2545df989906d06714448122fd96526f35a45469bdcb996dc80b4d",
+  "b1e001eb079e0e58048f26f64590a80cfa7df0ab22f4cbfb13713fc6c0ee514f",
+  "b7c3e6d1f57ae91e2e9096373dec72eba128071350834157206d646ae228e22a",
+  "cc6446b1a5a460d2b6f1ad9f45ddfa3bccb5a2f41189027fb985b5a10fe3995f",
 ]);
 
 export function descriptorForController(controller) {

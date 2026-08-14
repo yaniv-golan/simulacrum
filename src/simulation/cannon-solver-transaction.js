@@ -18,7 +18,7 @@ import {
 } from "./rolling-support-registration.js";
 
 export const CANNON_SOLVER_TRANSACTION_ID =
-  "simulacrum-owned-cannon-solver-transaction-v3-rolling-support";
+  "simulacrum-owned-cannon-solver-transaction-v4-coupled-motor-envelopes";
 
 const collideEvent = {
   type: CANNON.Body.COLLIDE_EVENT_NAME,
@@ -578,24 +578,240 @@ function recordDigest(records) {
   return `motor-energy-sha256-${sha256Hex(stableStringify(records))}`;
 }
 
-function energyForIncrement(speed, inverseMass, impulse) {
-  return speed * impulse + 0.5 * inverseMass * impulse * impulse;
+/**
+ * Attributes one row's work along the simultaneous-impulse path from the
+ * pre-solve to post-solve generalized velocity. Scaling every solved impulse
+ * from zero to its final value makes that velocity path linear, partitions all
+ * cross terms exactly, and sums over rows to the system kinetic-energy change.
+ */
+export function impulseWorkAttribution(
+  initialGeneralizedSpeed,
+  finalGeneralizedSpeed,
+  acceptedImpulse,
+) {
+  const impulseMagnitude = Math.abs(acceptedImpulse),
+    direction = Math.sign(acceptedImpulse),
+    initialDirectionalSpeed = direction * initialGeneralizedSpeed,
+    finalDirectionalSpeed = direction * finalGeneralizedSpeed,
+    speedDelta = finalDirectionalSpeed - initialDirectionalSpeed,
+    positiveMechanicalWorkJ = speedDelta
+      ? (impulseMagnitude *
+          (Math.max(0, finalDirectionalSpeed) ** 2 -
+            Math.max(0, initialDirectionalSpeed) ** 2)) /
+        (2 * speedDelta)
+      : impulseMagnitude * Math.max(0, initialDirectionalSpeed),
+    absorbedMechanicalWorkJ = speedDelta
+      ? (impulseMagnitude *
+          (Math.max(0, -initialDirectionalSpeed) ** 2 -
+            Math.max(0, -finalDirectionalSpeed) ** 2)) /
+        (2 * speedDelta)
+      : impulseMagnitude * Math.max(0, -initialDirectionalSpeed);
+  return {
+    signedWorkJ: positiveMechanicalWorkJ - absorbedMechanicalWorkJ,
+    positiveMechanicalWorkJ,
+    absorbedMechanicalWorkJ,
+  };
 }
 
-function impulseAtEnergyLimit(speed, inverseMass, requestedImpulse, energyJ) {
-  if (!(inverseMass > 0) || !(energyJ >= 0)) return 0;
-  const discriminant = Math.max(0, speed * speed + 2 * inverseMass * energyJ),
-    root = Math.sqrt(discriminant),
-    candidates = [(-speed - root) / inverseMass, (-speed + root) / inverseMass],
-    lower = Math.min(0, requestedImpulse) - 1e-12,
-    upper = Math.max(0, requestedImpulse) + 1e-12,
-    admissible = candidates.filter(
-      (candidate) => candidate >= lower && candidate <= upper,
+function impulseAtPositiveWorkLimit(
+  initialGeneralizedSpeed,
+  coupledFinalSpeed,
+  inverseMass,
+  requestedImpulse,
+  positiveEnergyJ,
+) {
+  const direction = Math.sign(requestedImpulse),
+    requestedMagnitude = Math.abs(requestedImpulse),
+    workAtMagnitude = (magnitude) =>
+      impulseWorkAttribution(
+        initialGeneralizedSpeed,
+        coupledFinalSpeed + direction * magnitude * inverseMass,
+        direction * magnitude,
+      ).positiveMechanicalWorkJ;
+  let lower = 0,
+    upper = requestedMagnitude;
+  for (let iteration = 0; iteration < 64; iteration++) {
+    const middle = (lower + upper) / 2;
+    if (workAtMagnitude(middle) <= positiveEnergyJ) lower = middle;
+    else upper = middle;
+  }
+  return direction * lower;
+}
+
+const motorEnergyToleranceJ = (budgetJ) => Math.max(1e-9, budgetJ * 1e-10);
+const motorImpulseToleranceNs = (impulseNs) =>
+  Math.max(1e-12, Math.abs(impulseNs) * 1e-10);
+// The work attribution traverses several coupled dot products. Reserve a
+// generic forward-error margin so a hard energy ceiling remains one-sided
+// after later rows in the same Gauss-Seidel pass perturb generalized speed.
+const coupledWorkRoundoffScale = 32 * Math.sqrt(Number.EPSILON);
+
+export function couplingEnergyReserveAfterViolation(
+  budgetJ,
+  currentReserveJ,
+  positiveWorkJ,
+  previousPositiveWorkJ,
+) {
+  const hasPreviousCoupledWork = previousPositiveWorkJ != null,
+    couplingWorkVariationJ = hasPreviousCoupledWork
+      ? Math.abs(positiveWorkJ - previousPositiveWorkJ)
+      : 0,
+    correctionJ = Math.max(
+      coupledWorkRoundoffScale * Math.max(1, budgetJ),
+      hasPreviousCoupledWork
+        ? couplingWorkVariationJ +
+            Math.max(0, positiveWorkJ - budgetJ) +
+            motorEnergyToleranceJ(budgetJ)
+        : 0,
     );
-  if (!admissible.length) return 0;
-  return admissible.reduce((selected, candidate) =>
-    Math.abs(candidate) > Math.abs(selected) ? candidate : selected,
+  return Math.min(budgetJ, currentReserveJ + correctionJ);
+}
+
+function refreshMotorEnvelopeState(equations, motorRows, lambda, dt) {
+  let valid = true;
+  for (const row of motorRows) {
+    const equation = equations[row.equationIndex],
+      acceptedImpulse = lambda[row.equationIndex],
+      finalSpeed = row.preGeneralizedSpeedRadS + equation.computeGWlambda(),
+      coupledFinalSpeed =
+        finalSpeed - row.generalizedInverseMass * acceptedImpulse;
+    let admissibleImpulse = acceptedImpulse;
+    if (row.forceSpeedEnvelope) {
+      const forceSpeedLimit = forceSpeedLimitedImpulse(
+          row.requestedImpulseNs,
+          coupledFinalSpeed,
+          row.generalizedInverseMass,
+          dt,
+          row.forceSpeedEnvelope,
+          1,
+        ),
+        thermalLimit = forceSpeedLimitedImpulse(
+          row.requestedImpulseNs,
+          coupledFinalSpeed,
+          row.generalizedInverseMass,
+          dt,
+          row.forceSpeedEnvelope,
+          row.thermalAvailability,
+        );
+      row.forceSpeedLimitedImpulseNs = forceSpeedLimit;
+      row.thermalLimitedImpulseNs = thermalLimit;
+      row.forceSpeedSaturated =
+        Math.abs(forceSpeedLimit - row.requestedImpulseNs) > 1e-12;
+      row.thermalSaturated = Math.abs(thermalLimit - forceSpeedLimit) > 1e-12;
+      admissibleImpulse = thermalLimit;
+    }
+    const work = impulseWorkAttribution(
+        row.preGeneralizedSpeedRadS,
+        finalSpeed,
+        acceptedImpulse,
+      ),
+      oppositeDirection =
+        acceptedImpulse !== 0 &&
+        Math.sign(acceptedImpulse) !== Math.sign(admissibleImpulse),
+      impulseExceeded =
+        Math.abs(acceptedImpulse) >
+        Math.abs(admissibleImpulse) +
+          motorImpulseToleranceNs(admissibleImpulse),
+      energyExceeded =
+        work.positiveMechanicalWorkJ >
+        row.mechanicalBudgetJ + motorEnergyToleranceJ(row.mechanicalBudgetJ),
+      previousPositiveWorkJ = row.lastCoupledPositiveWorkJ;
+    row.lastCoupledPositiveWorkJ = work.positiveMechanicalWorkJ;
+    if (energyExceeded)
+      row.couplingEnergyReserveJ = couplingEnergyReserveAfterViolation(
+        row.mechanicalBudgetJ,
+        row.couplingEnergyReserveJ,
+        work.positiveMechanicalWorkJ,
+        previousPositiveWorkJ,
+      );
+    row.finalEnvelopeViolation =
+      oppositeDirection || impulseExceeded || energyExceeded
+        ? {
+            partId: row.partId,
+            constraintId: row.constraintId,
+            acceptedImpulse,
+            admissibleImpulse,
+            positiveMechanicalWorkJ: work.positiveMechanicalWorkJ,
+            mechanicalBudgetJ: row.mechanicalBudgetJ,
+            oppositeDirection,
+            impulseExceeded,
+            energyExceeded,
+          }
+        : null;
+    if (row.finalEnvelopeViolation) valid = false;
+  }
+  return valid;
+}
+
+export function coupledSolveCanAccept({
+  motorEnvelopesValid,
+  ordinaryRowsConverged,
+  authoredIterationBudgetComplete,
+}) {
+  return Boolean(
+    motorEnvelopesValid &&
+    (ordinaryRowsConverged || authoredIterationBudgetComplete),
   );
+}
+
+export function fillCoupledSolveOrder(rows, target = []) {
+  target.length = 0;
+  for (let index = 0; index < rows.length; index++)
+    if (rows[index]) target.push(index);
+  for (let index = 0; index < rows.length; index++)
+    if (!rows[index]) target.push(index);
+  return target;
+}
+
+export function forceCapacityAtSpeed(points, speedMPerS, positiveDirection) {
+  const absoluteSpeed = Math.abs(speedMPerS),
+    field = positiveDirection ? "maxExtendForceN" : "maxRetractForceN";
+  if (absoluteSpeed <= points[0].absSpeedMPerS) return points[0][field];
+  for (let index = 1; index < points.length; index++) {
+    const lower = points[index - 1],
+      upper = points[index];
+    if (absoluteSpeed > upper.absSpeedMPerS) continue;
+    const span = upper.absSpeedMPerS - lower.absSpeedMPerS,
+      ratio = span > 0 ? (absoluteSpeed - lower.absSpeedMPerS) / span : 1;
+    return lower[field] + (upper[field] - lower[field]) * ratio;
+  }
+  return 0;
+}
+
+/**
+ * Solves the authored force-speed inequality against this row's predicted
+ * post-impulse speed. The bound is implicit: a large impulse cannot claim the
+ * rest-speed force capacity while accelerating through the no-load speed in
+ * the same fixed tick.
+ */
+export function forceSpeedLimitedImpulse(
+  requestedImpulseNs,
+  baseSpeedMPerS,
+  inverseMass,
+  dt,
+  points,
+  thermalAvailability,
+) {
+  if (!requestedImpulseNs || !(inverseMass > 0)) return 0;
+  const direction = Math.sign(requestedImpulseNs),
+    requestedMagnitude = Math.abs(requestedImpulseNs),
+    admissible = (magnitude) => {
+      const finalSpeed = baseSpeedMPerS + direction * magnitude * inverseMass,
+        capacityImpulse =
+          forceCapacityAtSpeed(points, finalSpeed, direction > 0) *
+          thermalAvailability *
+          dt;
+      return magnitude <= capacityImpulse + 1e-12;
+    };
+  if (admissible(requestedMagnitude)) return requestedImpulseNs;
+  let lower = 0,
+    upper = requestedMagnitude;
+  for (let iteration = 0; iteration < 64; iteration++) {
+    const middle = (lower + upper) / 2;
+    if (admissible(middle)) lower = middle;
+    else upper = middle;
+  }
+  return direction * lower;
 }
 
 /**
@@ -612,10 +828,12 @@ function solveEnergyBudgetedRows(solver, h, world, registrations, scratch) {
   const equations = solver.equations,
     bodies = world.bodies,
     rows = scratch.rows,
-    motorRows = scratch.motorRows;
+    motorRows = scratch.motorRows,
+    solveOrder = scratch.solveOrder;
   rows.length = equations.length;
   rows.fill(null);
   motorRows.length = 0;
+  solveOrder.length = 0;
   for (let index = 0; index < equations.length; index++) {
     const equation = equations[index],
       registration = registrations.get(equation);
@@ -624,10 +842,19 @@ function solveEnergyBudgetedRows(solver, h, world, registrations, scratch) {
       ...registration,
       equationIndex: index,
       signedWorkJ: 0,
+      positiveMechanicalWorkJ: 0,
+      absorbedMechanicalWorkJ: 0,
       preGeneralizedSpeedRadS: 0,
       finalGeneralizedSpeedRadS: 0,
       generalizedInverseMass: 0,
       acceptedImpulseNms: 0,
+      forceSpeedLimitedImpulseNs: registration.requestedImpulseNs ?? null,
+      thermalLimitedImpulseNs: registration.requestedImpulseNs ?? null,
+      forceSpeedSaturated: false,
+      thermalSaturated: false,
+      energySaturated: false,
+      couplingEnergyReserveJ: 0,
+      lastCoupledPositiveWorkJ: null,
       saturated: false,
     };
     rows[index] = row;
@@ -640,6 +867,12 @@ function solveEnergyBudgetedRows(solver, h, world, registrations, scratch) {
           "MOTOR_ENERGY_EQUATION_MISSING",
           `Registered motor equation for part ${String(registration.partId)} is not in the solve`,
         );
+  // Motor rows are evaluated first inside every complete Gauss-Seidel pass.
+  // Every ordinary row therefore observes every motor correction in that pass;
+  // final envelope auditing then catches ordinary-row changes that make a motor
+  // inadmissible. This makes the physical result independent of where a
+  // constraint happened to append its equations to Cannon's flat list.
+  fillCoupledSolveOrder(rows, solveOrder);
   if (equations.length)
     for (const body of bodies) body.updateSolveMassProperties();
   const lambda = scratch.lambda,
@@ -665,12 +898,25 @@ function solveEnergyBudgetedRows(solver, h, world, registrations, scratch) {
     body.vlambda.set(0, 0, 0);
     body.wlambda.set(0, 0, 0);
   }
-  const toleranceSquared = solver.tolerance * solver.tolerance;
+  const toleranceSquared = solver.tolerance * solver.tolerance,
+    requiredFullPasses = Math.max(2, solver.iterations),
+    maximumCoupledIterations = Math.max(
+      requiredFullPasses,
+      solver.iterations * 4,
+    );
   let iterations = 0,
-    finalResidual = 0;
-  for (; iterations < solver.iterations; iterations++) {
-    let deltaTotal = 0;
-    for (let index = 0; index < equations.length; index++) {
+    finalResidual = 0,
+    finalMotorEnvelopesValid = false,
+    finalMotorResidual = 0,
+    finalLargestDelta = null,
+    finalOrdinaryRowsConverged = false,
+    finalAuthoredIterationBudgetComplete = false,
+    accepted = false;
+  for (; iterations < maximumCoupledIterations; iterations++) {
+    let deltaTotal = 0,
+      motorDeltaTotal = 0,
+      largestDelta = null;
+    for (const index of solveOrder) {
       const equation = equations[index],
         previousImpulse = lambda[index];
       let deltaImpulse =
@@ -683,46 +929,122 @@ function solveEnergyBudgetedRows(solver, h, world, registrations, scratch) {
       else if (previousImpulse + deltaImpulse > equation.maxForce)
         deltaImpulse = equation.maxForce - previousImpulse;
       const row = rows[index];
-      if (row && deltaImpulse) {
-        const generalizedSpeed =
-            row.preGeneralizedSpeedRadS + equation.computeGWlambda(),
-          generalizedInverseMass = row.generalizedInverseMass,
-          proposedEnergyJ = energyForIncrement(
-            generalizedSpeed,
-            generalizedInverseMass,
-            deltaImpulse,
-          ),
-          remainingPositiveJ = Math.max(
-            0,
-            row.mechanicalBudgetJ - row.signedWorkJ,
-          );
-        if (proposedEnergyJ > remainingPositiveJ + 1e-12) {
-          deltaImpulse = impulseAtEnergyLimit(
-            generalizedSpeed,
-            generalizedInverseMass,
-            deltaImpulse,
-            remainingPositiveJ,
-          );
-          row.saturated = true;
+      if (row) {
+        let generalizedSpeed =
+          row.preGeneralizedSpeedRadS + equation.computeGWlambda();
+        if (row.forceSpeedEnvelope) {
+          const baseSpeed =
+              generalizedSpeed - row.generalizedInverseMass * previousImpulse,
+            thermalLimitedImpulseNs = forceSpeedLimitedImpulse(
+              row.requestedImpulseNs,
+              baseSpeed,
+              row.generalizedInverseMass,
+              h,
+              row.forceSpeedEnvelope,
+              row.thermalAvailability,
+            );
+          deltaImpulse = thermalLimitedImpulseNs - previousImpulse;
+          generalizedSpeed =
+            row.preGeneralizedSpeedRadS + equation.computeGWlambda();
         }
-        row.signedWorkJ += energyForIncrement(
-          generalizedSpeed,
-          generalizedInverseMass,
-          deltaImpulse,
-        );
+        const generalizedInverseMass = row.generalizedInverseMass,
+          coupledFinalSpeed =
+            generalizedSpeed - generalizedInverseMass * previousImpulse,
+          proposedImpulse = previousImpulse + deltaImpulse,
+          proposedFinalSpeed =
+            coupledFinalSpeed + generalizedInverseMass * proposedImpulse,
+          availableMechanicalBudgetJ = Math.max(
+            0,
+            row.mechanicalBudgetJ - row.couplingEnergyReserveJ,
+          ),
+          proposedPositiveWorkJ = impulseWorkAttribution(
+            row.preGeneralizedSpeedRadS,
+            proposedFinalSpeed,
+            proposedImpulse,
+          ).positiveMechanicalWorkJ;
+        if (proposedPositiveWorkJ > availableMechanicalBudgetJ + 1e-12) {
+          const limitedImpulse = impulseAtPositiveWorkLimit(
+            row.preGeneralizedSpeedRadS,
+            coupledFinalSpeed,
+            generalizedInverseMass,
+            proposedImpulse,
+            availableMechanicalBudgetJ,
+          );
+          deltaImpulse = limitedImpulse - previousImpulse;
+          row.saturated = true;
+          row.energySaturated = true;
+        }
       }
       lambda[index] += deltaImpulse;
       deltaTotal += Math.abs(deltaImpulse);
+      if (row) motorDeltaTotal += Math.abs(deltaImpulse);
+      if (!largestDelta || Math.abs(deltaImpulse) > largestDelta.magnitude)
+        largestDelta = {
+          equationIndex: index,
+          magnitude: Math.abs(deltaImpulse),
+          motor: Boolean(row),
+        };
       equation.addToWlambda(deltaImpulse);
     }
     finalResidual = deltaTotal;
-    if (deltaTotal * deltaTotal < toleranceSquared) break;
+    finalMotorResidual = motorDeltaTotal;
+    finalLargestDelta = largestDelta;
+    const motorEnvelopesValid = refreshMotorEnvelopeState(
+      equations,
+      motorRows,
+      lambda,
+      h,
+    );
+    finalMotorEnvelopesValid = motorEnvelopesValid;
+    const ordinaryRowsConverged = deltaTotal * deltaTotal < toleranceSquared,
+      authoredIterationBudgetComplete = iterations + 1 >= requiredFullPasses;
+    finalOrdinaryRowsConverged = ordinaryRowsConverged;
+    finalAuthoredIterationBudgetComplete = authoredIterationBudgetComplete;
+    if (
+      coupledSolveCanAccept({
+        motorEnvelopesValid,
+        ordinaryRowsConverged,
+        authoredIterationBudgetComplete,
+      })
+    ) {
+      accepted = true;
+      break;
+    }
   }
+  if (!accepted)
+    throw new DomainValidationError(
+      "COUPLED_MOTOR_ENVELOPE_DID_NOT_CONVERGE",
+      "Motor rows did not settle while every ordinary constraint row was being re-solved",
+      {
+        details: {
+          iterations,
+          maximumIterations: maximumCoupledIterations,
+          residual: finalResidual,
+          tolerance: solver.tolerance,
+          motorEnvelopesValid: finalMotorEnvelopesValid,
+          motorResidual: finalMotorResidual,
+          ordinaryRowsConverged: finalOrdinaryRowsConverged,
+          authoredIterationBudgetComplete: finalAuthoredIterationBudgetComplete,
+          motorViolations: motorRows
+            .map((row) => row.finalEnvelopeViolation)
+            .filter(Boolean),
+          largestDelta: finalLargestDelta,
+        },
+      },
+    );
   for (const row of motorRows) {
     const equation = equations[row.equationIndex];
     row.acceptedImpulseNms = lambda[row.equationIndex];
     row.finalGeneralizedSpeedRadS =
       row.preGeneralizedSpeedRadS + equation.computeGWlambda();
+    const work = impulseWorkAttribution(
+      row.preGeneralizedSpeedRadS,
+      row.finalGeneralizedSpeedRadS,
+      row.acceptedImpulseNms,
+    );
+    row.signedWorkJ = work.signedWorkJ;
+    row.positiveMechanicalWorkJ = work.positiveMechanicalWorkJ;
+    row.absorbedMechanicalWorkJ = work.absorbedMechanicalWorkJ;
   }
   for (const body of bodies) {
     body.vlambda.vmul(body.linearFactor, body.vlambda);
@@ -736,6 +1058,8 @@ function solveEnergyBudgetedRows(solver, h, world, registrations, scratch) {
   return {
     iterations,
     residual: finalResidual,
+    ordinaryRowsConverged: finalOrdinaryRowsConverged,
+    authoredIterationBudgetComplete: finalAuthoredIterationBudgetComplete,
     records: motorRows.map((row) => ({
       tick: row.tick,
       partId: row.partId,
@@ -744,21 +1068,38 @@ function solveEnergyBudgetedRows(solver, h, world, registrations, scratch) {
       electricalEfficiency: row.electricalEfficiency,
       allocatedBusW: row.allocatedBusW,
       mechanicalBudgetJ: row.mechanicalBudgetJ,
-      torqueImpulseLimitNms: row.torqueImpulseLimitNms,
+      ...(row.forceSpeedEnvelope
+        ? { idleElectricalW: row.idleElectricalW }
+        : { torqueImpulseLimitNms: row.torqueImpulseLimitNms }),
       acceptedImpulseNms: row.acceptedImpulseNms,
+      ...(row.forceSpeedEnvelope
+        ? {
+            requestedImpulseNs: row.requestedImpulseNs,
+            forceSpeedLimitedImpulseNs: row.forceSpeedLimitedImpulseNs,
+            thermalLimitedImpulseNs: row.thermalLimitedImpulseNs,
+            acceptedImpulseNs: row.acceptedImpulseNms,
+            forceSpeedSaturated: row.forceSpeedSaturated,
+            thermalSaturated: row.thermalSaturated,
+            energySaturated: row.energySaturated,
+          }
+        : {}),
       signedWorkJ: row.signedWorkJ,
-      positiveMechanicalWorkJ: Math.max(0, row.signedWorkJ),
-      absorbedMechanicalWorkJ: Math.max(0, -row.signedWorkJ),
+      positiveMechanicalWorkJ: row.positiveMechanicalWorkJ,
+      absorbedMechanicalWorkJ: row.absorbedMechanicalWorkJ,
       unusedMechanicalBudgetJ: Math.max(
         0,
-        row.mechanicalBudgetJ - Math.max(0, row.signedWorkJ),
+        row.mechanicalBudgetJ - row.positiveMechanicalWorkJ,
       ),
+      couplingEnergyReserveJ: row.couplingEnergyReserveJ,
       preGeneralizedSpeedRadS: row.preGeneralizedSpeedRadS,
       finalGeneralizedSpeedRadS: row.finalGeneralizedSpeedRadS,
       generalizedInverseMass: row.generalizedInverseMass,
-      saturated: row.saturated,
+      saturated:
+        row.saturated || row.forceSpeedSaturated || row.thermalSaturated,
       iterations,
       residual: finalResidual,
+      ordinaryRowsConverged: finalOrdinaryRowsConverged,
+      authoredIterationBudgetComplete: finalAuthoredIterationBudgetComplete,
     })),
   };
 }
@@ -811,6 +1152,7 @@ export class CannonSolverTransaction {
         motorRows: [],
         rightHandSide: [],
         rows: [],
+        solveOrder: [],
       },
       canonicalContactPool: [],
       canonicalContactAllocations: 0,
@@ -894,6 +1236,10 @@ export class CannonSolverTransaction {
     mechanicalBudgetJ,
     electricalEfficiency,
     torqueImpulseLimitNms,
+    requestedImpulseNs = null,
+    forceSpeedEnvelope = null,
+    thermalAvailability = 1,
+    idleElectricalW = 0,
   }) {
     const state = privateStateByTransaction.get(this);
     if (!equation || typeof equation.computeGiMGt !== "function")
@@ -917,6 +1263,32 @@ export class CannonSolverTransaction {
         "A motor equation may be registered only once per tick",
       );
     state.activeTick = tick;
+    const axialEffort = requestedImpulseNs !== null;
+    if (
+      axialEffort &&
+      (!Number.isFinite(requestedImpulseNs) ||
+        !Number.isFinite(thermalAvailability) ||
+        thermalAvailability < 0 ||
+        thermalAvailability > 1 ||
+        !Array.isArray(forceSpeedEnvelope) ||
+        forceSpeedEnvelope.length < 2 ||
+        forceSpeedEnvelope.some(
+          (point, index) =>
+            !Number.isFinite(point?.absSpeedMPerS) ||
+            point.absSpeedMPerS < 0 ||
+            (index > 0 &&
+              point.absSpeedMPerS <=
+                forceSpeedEnvelope[index - 1].absSpeedMPerS) ||
+            !Number.isFinite(point?.maxExtendForceN) ||
+            point.maxExtendForceN < 0 ||
+            !Number.isFinite(point?.maxRetractForceN) ||
+            point.maxRetractForceN < 0,
+        ))
+    )
+      throw new DomainValidationError(
+        "INVALID_MOTOR_ENERGY_BUDGET",
+        "Axial effort registration requires an ordered finite force-speed envelope",
+      );
     state.motorRegistrations.set(equation, {
       tick,
       equation,
@@ -932,10 +1304,29 @@ export class CannonSolverTransaction {
         0.01,
         Math.min(1, Number(electricalEfficiency) || 0),
       ),
-      torqueImpulseLimitNms: finiteNonNegative(
-        torqueImpulseLimitNms,
-        "torqueImpulseLimitNms",
-      ),
+      ...(axialEffort
+        ? {
+            requestedImpulseNs: Number(requestedImpulseNs),
+            forceSpeedEnvelope: forceSpeedEnvelope.map((point) => ({
+              absSpeedMPerS: Number(point.absSpeedMPerS),
+              maxExtendForceN: Number(point.maxExtendForceN),
+              maxRetractForceN: Number(point.maxRetractForceN),
+            })),
+            thermalAvailability: finiteNonNegative(
+              thermalAvailability,
+              "thermalAvailability",
+            ),
+            idleElectricalW: finiteNonNegative(
+              idleElectricalW,
+              "idleElectricalW",
+            ),
+          }
+        : {
+            torqueImpulseLimitNms: finiteNonNegative(
+              torqueImpulseLimitNms,
+              "torqueImpulseLimitNms",
+            ),
+          }),
     });
   }
 

@@ -1,10 +1,12 @@
 import {
   acceptsActuatorChannel,
+  actuatorCommandValueIsAdmissible,
   actuatorChannel,
   clampActuatorCommand,
 } from "../../model/actuator-contracts.js";
 import { componentControlContract } from "../../model/component-contracts.js";
 import { portIds } from "../../model/ports.js";
+import { beginCommandBusTick } from "../command-bus.js";
 
 function candidatesFrom(services) {
   const candidates = services.readCommandCandidates?.() || {};
@@ -64,7 +66,7 @@ export class CommandRoutingSystem {
         supported: false,
         reasonCode: "UNREGISTERED_EXTERNAL_INPUT_SOURCE",
       });
-    bus.clearTick();
+    beginCommandBusTick(bus, context.clock.tick);
     context.services.inputTraceRecorder?.recordTick(
       context.clock.tick,
       remote.map((candidate) => ({
@@ -91,6 +93,17 @@ export class CommandRoutingSystem {
         )
       ) {
         bus.reject(candidate, "channel is not accepted by target type");
+        continue;
+      }
+      if (
+        !actuatorCommandValueIsAdmissible(
+          target,
+          candidate.channel,
+          candidate.value,
+          context.services.catalog,
+        )
+      ) {
+        bus.reject(candidate, "command is outside target channel range");
         continue;
       }
       const controllers =
@@ -143,6 +156,17 @@ export class CommandRoutingSystem {
         )
       ) {
         bus.reject(candidate, "binding channel is not accepted by endpoint");
+        continue;
+      }
+      if (
+        !actuatorCommandValueIsAdmissible(
+          target,
+          candidate.channel,
+          candidate.value,
+          context.services.catalog,
+        )
+      ) {
+        bus.reject(candidate, "command is outside target channel range");
         continue;
       }
       if (

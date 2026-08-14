@@ -126,6 +126,7 @@ const controllerBindings = [
   }),
   boundIds = [2, 3, 5, 6, 7],
   bodies = {
+    tick: 1,
     bodies: [
       body("imu-body", 2, {
         pose: {
@@ -147,7 +148,22 @@ const controllerBindings = [
       body("thermal-body", 6, {
         thermal: { temperatureK: 500, heatFluxWm2: 123000 },
       }),
-      body("contact-body", 7, { contacts: [{ forceN: 88 }] }),
+      body("contact-body", 7, {
+        contacts: [
+          {
+            tick: 1,
+            normalForceValid: true,
+            forceN: 88,
+            point: { x: 0, y: 0, z: 0 },
+            normal: { x: 0, y: 1, z: 0 },
+            forceWorldN: { x: 0, y: 88, z: 0 },
+            observationFrame: {
+              position: { x: 0, y: 0, z: 0 },
+              quaternion: { x: 0, y: 0, z: 0, w: 1 },
+            },
+          },
+        ],
+      }),
     ],
     bodyByPart: [
       { partId: 2, bodyId: "imu-body" },

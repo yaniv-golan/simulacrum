@@ -572,6 +572,16 @@ export class AxialLimitConstraint extends CANNON.Constraint {
       this.holdEquation.enabled = false;
       this.equations.push(this.holdEquation);
     }
+    // Absolute effort is a solved equal-and-opposite impulse. Keeping it in the
+    // owned equation set lets the solver meter work against the electrical
+    // budget instead of injecting an unobserved external force.
+    this.effortEquation = options.absoluteEffort
+      ? new CANNON.FrictionEquation(bodyA, bodyB, 0)
+      : null;
+    if (this.effortEquation) {
+      this.effortEquation.enabled = false;
+      this.equations.push(this.effortEquation);
+    }
     this.collideConnected = false;
   }
 
@@ -610,6 +620,11 @@ export class AxialLimitConstraint extends CANNON.Constraint {
       this.holdEquation.t.copy(this.lastAxisWorld);
       this.holdEquation.ri.copy(ri);
       this.holdEquation.rj.copy(rj);
+    }
+    if (this.effortEquation) {
+      this.effortEquation.t.copy(this.lastAxisWorld);
+      this.effortEquation.ri.copy(ri);
+      this.effortEquation.rj.copy(rj);
     }
   }
 

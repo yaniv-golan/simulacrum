@@ -60,6 +60,7 @@ jobs:
           - networks
           - propulsion
           - controllers
+          - physical-demand
           - sharing
           - challenges-failures
     steps:

@@ -5,6 +5,12 @@ import {
   CANNON_SOLVER_TRANSACTION_ID,
   CannonSolverTransaction,
   cannonSolverTransactionResourceState,
+  coupledSolveCanAccept,
+  couplingEnergyReserveAfterViolation,
+  fillCoupledSolveOrder,
+  forceCapacityAtSpeed,
+  forceSpeedLimitedImpulse,
+  impulseWorkAttribution,
 } from "../src/simulation/cannon-solver-transaction.js";
 import {
   CannonWorldAdapter,
@@ -24,6 +30,65 @@ const source = fs.readFileSync(
   "utf8",
 );
 assert.doesNotMatch(source, /\bworld\.(?:step|internalStep)\s*\(/);
+
+for (const [input, expected] of [
+  [
+    {
+      motorEnvelopesValid: true,
+      ordinaryRowsConverged: true,
+      authoredIterationBudgetComplete: false,
+    },
+    true,
+  ],
+  [
+    {
+      motorEnvelopesValid: true,
+      ordinaryRowsConverged: false,
+      authoredIterationBudgetComplete: true,
+    },
+    true,
+  ],
+  [
+    {
+      motorEnvelopesValid: true,
+      ordinaryRowsConverged: false,
+      authoredIterationBudgetComplete: false,
+    },
+    false,
+  ],
+  [
+    {
+      motorEnvelopesValid: false,
+      ordinaryRowsConverged: true,
+      authoredIterationBudgetComplete: true,
+    },
+    false,
+  ],
+])
+  assert.equal(coupledSolveCanAccept(input), expected, input);
+assert.deepEqual(fillCoupledSolveOrder([null, {}, null, {}]), [1, 3, 0, 2]);
+assert.deepEqual(fillCoupledSolveOrder([{}, {}], [99, 100]), [0, 1]);
+assert.deepEqual(fillCoupledSolveOrder([], [99]), []);
+
+{
+  const budgetJ = 10,
+    firstReserveJ = couplingEnergyReserveAfterViolation(budgetJ, 0, 10.5, null),
+    secondReserveJ = couplingEnergyReserveAfterViolation(
+      budgetJ,
+      firstReserveJ,
+      10.2,
+      10.5,
+    );
+  assert.equal(firstReserveJ, 32 * Math.sqrt(Number.EPSILON) * budgetJ);
+  assert.ok(Math.abs(secondReserveJ - (firstReserveJ + 0.5 + 1e-9)) < 1e-12, {
+    firstReserveJ,
+    secondReserveJ,
+  });
+  assert.equal(
+    couplingEnergyReserveAfterViolation(budgetJ, 9.9, 20, 10),
+    budgetJ,
+  );
+}
 
 {
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) });
@@ -55,7 +120,7 @@ assert.doesNotMatch(source, /\bworld\.(?:step|internalStep)\s*\(/);
     iterations: 30,
     tolerance: 2e-4,
   });
-  world.solver.iterations = 1;
+  world.solver.iterations = 30;
   world.solver.tolerance = 0.5;
   assert.throws(
     () => adapter.exportState(),
@@ -775,6 +840,7 @@ function budgetedMotorRun() {
   assert.ok(record.positiveMechanicalWorkJ <= 1 + 1e-9, record);
   assert.ok(record.positiveMechanicalWorkJ >= 1 - 1e-8, record);
   assert.ok(record.saturated, record);
+  assert.equal(record.couplingEnergyReserveJ, 0);
   assert.ok(record.acceptedImpulseNms > 0, record);
   assert.ok(Number.isFinite(record.generalizedInverseMass), record);
   transaction.acknowledgeMotorEnergySettlement({
@@ -803,6 +869,590 @@ assert.deepEqual(
   budgetedMotorRun(),
   "energy-budgeted motor row is nondeterministic",
 );
+
+const forceSpeedEnvelope = Object.freeze([
+  Object.freeze({
+    absSpeedMPerS: 0,
+    maxExtendForceN: 100,
+    maxRetractForceN: 80,
+  }),
+  Object.freeze({
+    absSpeedMPerS: 1,
+    maxExtendForceN: 0,
+    maxRetractForceN: 0,
+  }),
+]);
+assert.equal(forceCapacityAtSpeed(forceSpeedEnvelope, 0, true), 100);
+assert.equal(forceCapacityAtSpeed(forceSpeedEnvelope, 0, false), 80);
+assert.equal(forceCapacityAtSpeed(forceSpeedEnvelope, 0.5, true), 50);
+assert.equal(forceCapacityAtSpeed(forceSpeedEnvelope, -0.5, false), 40);
+assert.equal(forceCapacityAtSpeed(forceSpeedEnvelope, 1, true), 0);
+assert.equal(forceCapacityAtSpeed(forceSpeedEnvelope, 2, false), 0);
+const interpolationEnvelope = Object.freeze([
+  forceSpeedEnvelope[0],
+  Object.freeze({
+    absSpeedMPerS: 1,
+    maxExtendForceN: 50,
+    maxRetractForceN: 20,
+  }),
+  Object.freeze({
+    absSpeedMPerS: 3,
+    maxExtendForceN: 0,
+    maxRetractForceN: 0,
+  }),
+]);
+assert.equal(forceCapacityAtSpeed(interpolationEnvelope, 1.5, true), 37.5);
+assert.equal(forceCapacityAtSpeed(interpolationEnvelope, -1.5, false), 15);
+assert.equal(forceCapacityAtSpeed(interpolationEnvelope, 4, true), 0);
+const nonzeroTerminalEnvelope = Object.freeze([
+  Object.freeze({
+    absSpeedMPerS: 0,
+    maxExtendForceN: 100,
+    maxRetractForceN: 80,
+  }),
+  Object.freeze({
+    absSpeedMPerS: 1,
+    maxExtendForceN: 50,
+    maxRetractForceN: 20,
+  }),
+]);
+assert.equal(forceCapacityAtSpeed(nonzeroTerminalEnvelope, 1, true), 50);
+assert.equal(forceCapacityAtSpeed(nonzeroTerminalEnvelope, 1, false), 20);
+assert.equal(forceCapacityAtSpeed(nonzeroTerminalEnvelope, 1.000001, true), 0);
+assert.equal(forceCapacityAtSpeed(nonzeroTerminalEnvelope, 2, false), 0);
+const nearImpulse = (actual, expected) =>
+  assert.ok(Math.abs(actual - expected) <= 1e-10, { actual, expected });
+nearImpulse(
+  forceSpeedLimitedImpulse(100, 0, 1, 0.1, forceSpeedEnvelope, 1),
+  10 / 11,
+);
+nearImpulse(
+  forceSpeedLimitedImpulse(-100, 0, 1, 0.1, forceSpeedEnvelope, 1),
+  -8 / 9,
+);
+nearImpulse(
+  forceSpeedLimitedImpulse(100, 0, 1, 0.1, forceSpeedEnvelope, 0.5),
+  5 / 6,
+);
+assert.equal(
+  forceSpeedLimitedImpulse(0.25, 0, 1, 0.1, forceSpeedEnvelope, 1),
+  0.25,
+);
+assert.equal(forceSpeedLimitedImpulse(0, 0, 1, 0.1, forceSpeedEnvelope, 1), 0);
+assert.equal(
+  forceSpeedLimitedImpulse(100, 0, 0, 0.1, forceSpeedEnvelope, 1),
+  0,
+);
+nearImpulse(
+  forceSpeedLimitedImpulse(5, 0, 1, 1, nonzeroTerminalEnvelope, 1),
+  1,
+);
+assert.deepEqual(impulseWorkAttribution(-1, 1, 2), {
+  signedWorkJ: 0,
+  positiveMechanicalWorkJ: 0.5,
+  absorbedMechanicalWorkJ: 0.5,
+});
+assert.deepEqual(impulseWorkAttribution(0, 1, 0), {
+  signedWorkJ: 0,
+  positiveMechanicalWorkJ: 0,
+  absorbedMechanicalWorkJ: 0,
+});
+assert.deepEqual(impulseWorkAttribution(1, 0, 0), {
+  signedWorkJ: 0,
+  positiveMechanicalWorkJ: 0,
+  absorbedMechanicalWorkJ: 0,
+});
+assert.deepEqual(impulseWorkAttribution(1, 2, 1), {
+  signedWorkJ: 1.5,
+  positiveMechanicalWorkJ: 1.5,
+  absorbedMechanicalWorkJ: 0,
+});
+assert.deepEqual(impulseWorkAttribution(-2, -1, 1), {
+  signedWorkJ: -1.5,
+  positiveMechanicalWorkJ: 0,
+  absorbedMechanicalWorkJ: 1.5,
+});
+assert.deepEqual(impulseWorkAttribution(2, 1, -1), {
+  signedWorkJ: -1.5,
+  positiveMechanicalWorkJ: 0,
+  absorbedMechanicalWorkJ: 1.5,
+});
+assert.deepEqual(impulseWorkAttribution(-1, -1, 1), {
+  signedWorkJ: -1,
+  positiveMechanicalWorkJ: 0,
+  absorbedMechanicalWorkJ: 1,
+});
+assert.deepEqual(impulseWorkAttribution(0, 2, 1), {
+  signedWorkJ: 1,
+  positiveMechanicalWorkJ: 1,
+  absorbedMechanicalWorkJ: 0,
+});
+const reversalWork = impulseWorkAttribution(
+  -1,
+  Math.sqrt(0.2),
+  1 + Math.sqrt(0.2),
+);
+nearImpulse(reversalWork.signedWorkJ, -0.4);
+nearImpulse(reversalWork.positiveMechanicalWorkJ, 0.1);
+nearImpulse(reversalWork.absorbedMechanicalWorkJ, 0.5);
+
+{
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
+    support = new CANNON.Body({ type: CANNON.Body.STATIC }),
+    slider = new CANNON.Body({ mass: 1, linearDamping: 0 }),
+    constraint = new CANNON.Constraint(support, slider),
+    equation = new CANNON.FrictionEquation(support, slider, 3),
+    transaction = new CannonSolverTransaction(world),
+    adapter = new CannonWorldAdapter(world, transaction);
+  world.solver.iterations = 30;
+  equation.t.set(1, 0, 0);
+  equation.minForce = 3;
+  equation.maxForce = 3;
+  constraint.update = () => {};
+  constraint.equations.push(equation);
+  slider.velocity.set(-1, 0, 0);
+  world.addBody(support);
+  world.addBody(slider);
+  world.addConstraint(constraint);
+  adapter.beginSession(1);
+  transaction.registerMotorEnergyBudget({
+    tick: 1,
+    equation,
+    partId: "reversing-slider",
+    constraintId: "reversing-slider-row",
+    mode: "absolute-axial-effort",
+    allocatedBusW: 1,
+    mechanicalBudgetJ: 0.1,
+    electricalEfficiency: 1,
+    requestedImpulseNs: 3,
+    forceSpeedEnvelope: Object.freeze([
+      Object.freeze({
+        absSpeedMPerS: 0,
+        maxExtendForceN: 100,
+        maxRetractForceN: 100,
+      }),
+      Object.freeze({
+        absSpeedMPerS: 10,
+        maxExtendForceN: 100,
+        maxRetractForceN: 100,
+      }),
+    ]),
+    thermalAvailability: 1,
+    idleElectricalW: 0,
+  });
+  adapter.integrate(1, { tick: 1 });
+  const pending = transaction.motorEnergyRecordsForTick(1),
+    [record] = pending.records;
+  nearImpulse(record.acceptedImpulseNs, 1 + Math.sqrt(0.2));
+  nearImpulse(record.preGeneralizedSpeedRadS, -1);
+  nearImpulse(record.finalGeneralizedSpeedRadS, Math.sqrt(0.2));
+  nearImpulse(record.signedWorkJ, -0.4);
+  nearImpulse(record.positiveMechanicalWorkJ, 0.1);
+  nearImpulse(record.absorbedMechanicalWorkJ, 0.5);
+  nearImpulse(record.unusedMechanicalBudgetJ, 0);
+  assert.equal(record.forceSpeedSaturated, false);
+  assert.equal(record.thermalSaturated, false);
+  assert.equal(record.energySaturated, true);
+  transaction.acknowledgeMotorEnergySettlement({
+    tick: 1,
+    recordDigest: pending.recordDigest,
+  });
+}
+
+{
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
+    support = new CANNON.Body({ type: CANNON.Body.STATIC }),
+    slider = new CANNON.Body({ mass: 1, linearDamping: 0 }),
+    constraint = new CANNON.Constraint(support, slider),
+    ordinaryEquation = new CANNON.FrictionEquation(support, slider, 10),
+    motorEquation = new CANNON.FrictionEquation(support, slider, 1),
+    transaction = new CannonSolverTransaction(world),
+    adapter = new CannonWorldAdapter(world, transaction);
+  world.solver.iterations = 1;
+  world.solver.tolerance = 1e-12;
+  for (const equation of [ordinaryEquation, motorEquation])
+    equation.t.set(1, 0, 0);
+  ordinaryEquation.minForce = -10;
+  ordinaryEquation.maxForce = 10;
+  motorEquation.minForce = 1;
+  motorEquation.maxForce = 1;
+  constraint.update = () => {};
+  constraint.equations.push(ordinaryEquation, motorEquation);
+  world.addBody(support);
+  world.addBody(slider);
+  world.addConstraint(constraint);
+  adapter.beginSession(1);
+  transaction.registerMotorEnergyBudget({
+    tick: 1,
+    equation: motorEquation,
+    partId: "ordinary-before-motor-probe",
+    constraintId: "ordinary-before-motor-row",
+    mode: "absolute-axial-effort",
+    allocatedBusW: 100,
+    mechanicalBudgetJ: 100,
+    electricalEfficiency: 1,
+    requestedImpulseNs: 1,
+    forceSpeedEnvelope: [
+      {
+        absSpeedMPerS: 0,
+        maxExtendForceN: 2,
+        maxRetractForceN: 2,
+      },
+      {
+        absSpeedMPerS: 1,
+        maxExtendForceN: 0,
+        maxRetractForceN: 0,
+      },
+    ],
+    thermalAvailability: 1,
+    idleElectricalW: 0,
+  });
+  adapter.integrate(1, { tick: 1 });
+  const pending = transaction.motorEnergyRecordsForTick(1),
+    [record] = pending.records;
+  nearImpulse(record.acceptedImpulseNs, 1);
+  assert.equal(record.ordinaryRowsConverged, false);
+  assert.equal(record.authoredIterationBudgetComplete, true);
+  assert.ok(record.iterations >= world.solver.iterations, record);
+  assert.ok(Math.abs(ordinaryEquation.computeGW()) < 1, record);
+  assert.ok(
+    Math.abs(ordinaryEquation.computeGW()) > world.solver.tolerance,
+    "one authored ordinary iteration was mislabeled as strict convergence",
+  );
+  transaction.acknowledgeMotorEnergySettlement({
+    tick: 1,
+    recordDigest: pending.recordDigest,
+  });
+}
+
+{
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
+    support = new CANNON.Body({ type: CANNON.Body.STATIC }),
+    slider = new CANNON.Body({ mass: 1, linearDamping: 0 }),
+    constraint = new CANNON.Constraint(support, slider),
+    equation = new CANNON.FrictionEquation(support, slider, 2),
+    transaction = new CannonSolverTransaction(world),
+    adapter = new CannonWorldAdapter(world, transaction),
+    dt = 0.1,
+    flatEnvelope = Object.freeze([
+      Object.freeze({
+        absSpeedMPerS: 0,
+        maxExtendForceN: 100,
+        maxRetractForceN: 100,
+      }),
+      Object.freeze({
+        absSpeedMPerS: 10,
+        maxExtendForceN: 100,
+        maxRetractForceN: 100,
+      }),
+    ]);
+  equation.t.set(1, 0, 0);
+  equation.minForce = 1;
+  equation.maxForce = 1;
+  constraint.update = () => {};
+  constraint.equations.push(equation);
+  world.addBody(support);
+  world.addBody(slider);
+  world.addConstraint(constraint);
+  adapter.beginSession(dt);
+  transaction.registerMotorEnergyBudget({
+    tick: 1,
+    equation,
+    partId: "thermal-only-slider",
+    constraintId: "thermal-only-row",
+    mode: "absolute-axial-effort",
+    allocatedBusW: 100,
+    mechanicalBudgetJ: 100,
+    electricalEfficiency: 1,
+    requestedImpulseNs: 1,
+    forceSpeedEnvelope: flatEnvelope,
+    thermalAvailability: 0.05,
+    idleElectricalW: 0,
+  });
+  adapter.integrate(dt, { tick: 1 });
+  const pending = transaction.motorEnergyRecordsForTick(1),
+    [record] = pending.records;
+  nearImpulse(record.forceSpeedLimitedImpulseNs, 1);
+  nearImpulse(record.thermalLimitedImpulseNs, 0.5);
+  nearImpulse(record.acceptedImpulseNs, 0.5);
+  assert.equal(record.forceSpeedSaturated, false);
+  assert.equal(record.thermalSaturated, true);
+  assert.equal(record.energySaturated, false);
+  assert.equal(record.saturated, true);
+  transaction.acknowledgeMotorEnergySettlement({
+    tick: 1,
+    recordDigest: pending.recordDigest,
+  });
+}
+
+{
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
+    support = new CANNON.Body({ type: CANNON.Body.STATIC }),
+    slider = new CANNON.Body({ mass: 1, linearDamping: 0 }),
+    constraint = new CANNON.Constraint(support, slider),
+    motorEquation = new CANNON.FrictionEquation(support, slider, 2),
+    coupledEquation = new CANNON.FrictionEquation(support, slider, 1),
+    transaction = new CannonSolverTransaction(world),
+    adapter = new CannonWorldAdapter(world, transaction);
+  world.solver.iterations = 1;
+  for (const equation of [motorEquation, coupledEquation])
+    equation.t.set(1, 0, 0);
+  motorEquation.minForce = 1;
+  motorEquation.maxForce = 1;
+  coupledEquation.minForce = 1;
+  coupledEquation.maxForce = 1;
+  constraint.update = () => {};
+  // Equation ordering is not physical authority. An ordinary row that appears
+  // before a constrained motor row must be revisited after the motor changes
+  // the shared bodies' generalized velocity.
+  constraint.equations.push(coupledEquation, motorEquation);
+  world.addBody(support);
+  world.addBody(slider);
+  world.addConstraint(constraint);
+  adapter.beginSession(1);
+  transaction.registerMotorEnergyBudget({
+    tick: 1,
+    equation: motorEquation,
+    partId: "coupled-force-speed-slider",
+    constraintId: "coupled-force-speed-row",
+    mode: "absolute-axial-effort",
+    allocatedBusW: 100,
+    mechanicalBudgetJ: 100,
+    electricalEfficiency: 1,
+    requestedImpulseNs: 1,
+    forceSpeedEnvelope: nonzeroTerminalEnvelope,
+    thermalAvailability: 1,
+    idleElectricalW: 0,
+  });
+  adapter.integrate(1, { tick: 1 });
+  const pending = transaction.motorEnergyRecordsForTick(1),
+    [record] = pending.records;
+  nearImpulse(record.acceptedImpulseNs, 0);
+  nearImpulse(record.forceSpeedLimitedImpulseNs, 0);
+  nearImpulse(record.thermalLimitedImpulseNs, 0);
+  nearImpulse(slider.velocity.x, 1);
+  nearImpulse(coupledEquation.multiplier, 1);
+  assert.ok(record.iterations >= 1, record);
+  assert.equal(record.forceSpeedSaturated, true);
+  assert.equal(record.thermalSaturated, false);
+  assert.equal(record.energySaturated, false);
+  assert.equal(record.couplingEnergyReserveJ, 0);
+  assert.equal(record.saturated, true);
+  transaction.acknowledgeMotorEnergySettlement({
+    tick: 1,
+    recordDigest: pending.recordDigest,
+  });
+}
+
+{
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
+    support = new CANNON.Body({ type: CANNON.Body.STATIC }),
+    slider = new CANNON.Body({ mass: 1, linearDamping: 0 }),
+    constraint = new CANNON.Constraint(support, slider),
+    motorEquation = new CANNON.FrictionEquation(support, slider, 2),
+    coupledEquation = new CANNON.FrictionEquation(support, slider, 1),
+    transaction = new CannonSolverTransaction(world),
+    adapter = new CannonWorldAdapter(world, transaction);
+  world.solver.iterations = 1;
+  for (const equation of [motorEquation, coupledEquation])
+    equation.t.set(1, 0, 0);
+  motorEquation.minForce = 1;
+  motorEquation.maxForce = 1;
+  coupledEquation.minForce = 1;
+  coupledEquation.maxForce = 1;
+  constraint.update = () => {};
+  constraint.equations.push(motorEquation, coupledEquation);
+  world.addBody(support);
+  world.addBody(slider);
+  world.addConstraint(constraint);
+  adapter.beginSession(1);
+  transaction.registerMotorEnergyBudget({
+    tick: 1,
+    equation: motorEquation,
+    partId: "coupled-slider",
+    constraintId: "coupled-slider-motor-row",
+    mode: "motoring",
+    allocatedBusW: 0.5,
+    mechanicalBudgetJ: 0.5,
+    electricalEfficiency: 1,
+    torqueImpulseLimitNms: 1,
+  });
+  adapter.integrate(1, { tick: 1 });
+  const pending = transaction.motorEnergyRecordsForTick(1),
+    [record] = pending.records,
+    finalSpeed = slider.velocity.x,
+    coupledWorkJ = (record.preGeneralizedSpeedRadS + finalSpeed) / 2;
+  assert.ok(record.positiveMechanicalWorkJ <= 0.5 + 1e-9, record);
+  assert.ok(
+    record.positiveMechanicalWorkJ >= 0.5 - 1e-6,
+    JSON.stringify(record),
+  );
+  assert.ok(record.acceptedImpulseNms < 1, record);
+  nearImpulse(coupledEquation.multiplier, 1);
+  assert.ok(record.iterations >= 1, record);
+  assert.ok(record.couplingEnergyReserveJ > 0, record);
+  nearImpulse(record.signedWorkJ + coupledWorkJ, (finalSpeed * finalSpeed) / 2);
+  transaction.acknowledgeMotorEnergySettlement({
+    tick: 1,
+    recordDigest: pending.recordDigest,
+  });
+}
+
+{
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) }),
+    bodyA = new CANNON.Body({ mass: 1 }),
+    bodyB = new CANNON.Body({ mass: 1 }),
+    equation = new CANNON.FrictionEquation(bodyA, bodyB, 0),
+    valid = {
+      tick: 1,
+      equation,
+      partId: "axial-registration",
+      constraintId: "axial-registration-row",
+      mode: "absolute-axial-effort",
+      allocatedBusW: 100,
+      mechanicalBudgetJ: 1,
+      electricalEfficiency: 0.8,
+      requestedImpulseNs: 1,
+      forceSpeedEnvelope,
+      thermalAvailability: 1,
+      idleElectricalW: 2,
+    },
+    invalidRegistrations = [
+      { requestedImpulseNs: Number.NaN },
+      { thermalAvailability: Number.NaN },
+      { thermalAvailability: -0.1 },
+      { thermalAvailability: 1.1 },
+      { forceSpeedEnvelope: null },
+      { forceSpeedEnvelope: [forceSpeedEnvelope[0]] },
+      {
+        forceSpeedEnvelope: [
+          { ...forceSpeedEnvelope[0], absSpeedMPerS: Number.NaN },
+          forceSpeedEnvelope[1],
+        ],
+      },
+      {
+        forceSpeedEnvelope: [
+          { ...forceSpeedEnvelope[0], absSpeedMPerS: -1 },
+          forceSpeedEnvelope[1],
+        ],
+      },
+      {
+        forceSpeedEnvelope: [
+          forceSpeedEnvelope[0],
+          { ...forceSpeedEnvelope[1], absSpeedMPerS: 0 },
+        ],
+      },
+      {
+        forceSpeedEnvelope: [
+          { ...forceSpeedEnvelope[0], maxExtendForceN: Number.NaN },
+          forceSpeedEnvelope[1],
+        ],
+      },
+      {
+        forceSpeedEnvelope: [
+          { ...forceSpeedEnvelope[0], maxExtendForceN: -1 },
+          forceSpeedEnvelope[1],
+        ],
+      },
+      {
+        forceSpeedEnvelope: [
+          { ...forceSpeedEnvelope[0], maxRetractForceN: Number.NaN },
+          forceSpeedEnvelope[1],
+        ],
+      },
+      {
+        forceSpeedEnvelope: [
+          { ...forceSpeedEnvelope[0], maxRetractForceN: -1 },
+          forceSpeedEnvelope[1],
+        ],
+      },
+    ];
+  world.addBody(bodyA);
+  world.addBody(bodyB);
+  for (const invalidEquation of [null, {}]) {
+    const transaction = new CannonSolverTransaction(world);
+    assert.throws(
+      () =>
+        transaction.registerMotorEnergyBudget({
+          ...valid,
+          equation: invalidEquation,
+        }),
+      (error) => error?.code === "INVALID_MOTOR_ENERGY_EQUATION",
+    );
+    transaction.dispose();
+  }
+  for (const mutation of invalidRegistrations) {
+    const transaction = new CannonSolverTransaction(world);
+    assert.throws(
+      () =>
+        transaction.registerMotorEnergyBudget({
+          ...valid,
+          ...mutation,
+        }),
+      (error) => error?.code === "INVALID_MOTOR_ENERGY_BUDGET",
+      mutation,
+    );
+    transaction.dispose();
+  }
+  const zeroThermalTransaction = new CannonSolverTransaction(world);
+  assert.doesNotThrow(() =>
+    zeroThermalTransaction.registerMotorEnergyBudget({
+      ...valid,
+      thermalAvailability: 0,
+    }),
+  );
+  zeroThermalTransaction.dispose();
+
+  const authorityConstraint = new CANNON.Constraint(bodyA, bodyB),
+    authorityEquation = new CANNON.FrictionEquation(bodyA, bodyB, 1),
+    otherEquation = new CANNON.FrictionEquation(bodyA, bodyB, 1),
+    authorityTransaction = new CannonSolverTransaction(world),
+    authorityAdapter = new CannonWorldAdapter(world, authorityTransaction);
+  authorityEquation.t.set(1, 0, 0);
+  authorityEquation.minForce = 0;
+  authorityEquation.maxForce = 1;
+  authorityConstraint.update = () => {};
+  authorityConstraint.equations.push(authorityEquation);
+  world.addConstraint(authorityConstraint);
+  authorityAdapter.beginSession(1);
+  authorityTransaction.registerMotorEnergyBudget({
+    ...valid,
+    equation: authorityEquation,
+  });
+  assert.throws(
+    () =>
+      authorityTransaction.registerMotorEnergyBudget({
+        ...valid,
+        equation: authorityEquation,
+      }),
+    (error) => error?.code === "DUPLICATE_MOTOR_ENERGY_EQUATION",
+  );
+  assert.throws(
+    () =>
+      authorityTransaction.registerMotorEnergyBudget({
+        ...valid,
+        tick: 2,
+        equation: otherEquation,
+      }),
+    (error) => error?.code === "MOTOR_ENERGY_TICK_MISMATCH",
+  );
+  authorityAdapter.integrate(1, { tick: 1 });
+  const pending = authorityTransaction.motorEnergyRecordsForTick(1);
+  assert.throws(
+    () =>
+      authorityTransaction.registerMotorEnergyBudget({
+        ...valid,
+        tick: 2,
+        equation: otherEquation,
+      }),
+    (error) => error?.code === "MOTOR_ENERGY_SETTLEMENT_PENDING",
+  );
+  authorityTransaction.acknowledgeMotorEnergySettlement({
+    tick: 1,
+    recordDigest: pending.recordDigest,
+  });
+  authorityTransaction.dispose();
+}
 
 const heightfieldCandidate = createYUpHeightfieldCandidateFilter({
     heights: [

@@ -81,7 +81,8 @@ async function runEgress({ id, throttle, maximumDurationS }) {
     ),
   );
   let brakeElapsedS = 0,
-    brakeSettled = false;
+    brakeSettled = false,
+    stableBrakeS = 0;
   for (; brakeElapsedS < 6; brakeElapsedS += 0.25) {
     await page.evaluate(() => window.advanceTime(250));
     const braking = await readState(),
@@ -91,16 +92,40 @@ async function runEgress({ id, throttle, maximumDurationS }) {
       mobility?.physics?.grounded === true &&
       mobility?.physics?.wheelContacts === 4
     ) {
-      brakeSettled = true;
-      brakeElapsedS += 0.25;
-      break;
-    }
+      stableBrakeS += 0.25;
+      if (stableBrakeS >= 0.5) {
+        brakeSettled = true;
+        brakeElapsedS += 0.25;
+        break;
+      }
+    } else stableBrakeS = 0;
   }
   await page.evaluate(() =>
     window.dispatchEvent(
       new KeyboardEvent("keyup", { key: " ", code: "Space" }),
     ),
   );
+  let passiveSettled = false,
+    passiveSettleElapsedS = 0,
+    stablePassiveS = 0;
+  if (brakeSettled)
+    for (; passiveSettleElapsedS < 4; passiveSettleElapsedS += 0.25) {
+      await page.evaluate(() => window.advanceTime(250));
+      const passive = await readState(),
+        mobility = passive.demo.mobility;
+      if (
+        Math.abs(Number(mobility?.signedSpeed || 0)) <= 0.15 &&
+        mobility?.physics?.grounded === true &&
+        mobility?.physics?.wheelContacts === 4
+      ) {
+        stablePassiveS += 0.25;
+        if (stablePassiveS >= 0.5) {
+          passiveSettled = true;
+          passiveSettleElapsedS += 0.25;
+          break;
+        }
+      } else stablePassiveS = 0;
+    }
   const settled = await readState(),
     transitionSamples = samples.filter(
       ({ position }) => position.z <= -18 && position.z >= -48,
@@ -112,6 +137,8 @@ async function runEgress({ id, throttle, maximumDurationS }) {
     fieldEntry,
     brakeElapsedS,
     brakeSettled,
+    passiveSettleElapsedS,
+    passiveSettled,
     postFieldDistanceM: fieldEntry
       ? fieldEntry.z - samples.at(-1).position.z
       : 0,
@@ -149,6 +176,8 @@ console.log(
       fieldEntry: scenario.fieldEntry,
       brakeElapsedS: scenario.brakeElapsedS,
       brakeSettled: scenario.brakeSettled,
+      passiveSettleElapsedS: scenario.passiveSettleElapsedS,
+      passiveSettled: scenario.passiveSettled,
       postFieldDistanceM: scenario.postFieldDistanceM,
       sampleCount: scenario.samples.length,
       finalPosition: scenario.settled.demo.position,
@@ -204,6 +233,11 @@ await conclude(browser, () => {
       scenario.brakeSettled,
       true,
       `${scenario.id} rover did not converge to a grounded four-wheel stop within 6 s`,
+    );
+    assert.equal(
+      scenario.passiveSettled,
+      true,
+      `${scenario.id} rover did not sustain a passive four-wheel stop after brake release`,
     );
     assert.equal(
       scenario.settled.demo.mobility?.physics?.wheelContacts,

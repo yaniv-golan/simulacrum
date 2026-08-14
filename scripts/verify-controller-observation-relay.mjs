@@ -513,6 +513,86 @@ assert.equal(
   "an unpowered observation receiver became a command target",
 );
 
+const relayPort = signalPort("RELAY", "bidirectional", "many"),
+  relayCatalog = {
+    ...TYPES,
+    poweredrelay: {
+      name: "Powered relay fixture",
+      ports: [relayPort],
+      electricalContract: {
+        kind: "fixed-load-v1",
+        requestW: 1,
+        minimumW: 1,
+        baselineW: 1,
+      },
+    },
+    passiverelay: { name: "Passive relay fixture", ports: [relayPort] },
+  },
+  routeThroughRelay = (relayType, relayPowered) => {
+    const relay = part("ordinary-relay", relayType),
+      sourceSensor = part("relay-source-sensor", "contactsensor"),
+      commandTarget = part("relay-command-target", "headlight"),
+      parts = [producer, relay, boundaryConsumer, sourceSensor, commandTarget],
+      connections = [
+        {
+          id: "producer-to-relay",
+          a: producer.id,
+          b: relay.id,
+          kind: "signal",
+          portA: "OUT",
+          portB: "RELAY",
+        },
+        {
+          id: "relay-to-consumer",
+          a: relay.id,
+          b: commandTarget.id,
+          kind: "signal",
+          portA: "RELAY",
+          portB: "SIGNAL",
+        },
+        {
+          id: "sensor-to-relay",
+          a: sourceSensor.id,
+          b: relay.id,
+          kind: "signal",
+          portA: "SIGNAL",
+          portB: "RELAY",
+        },
+        {
+          id: "relay-to-sensor-consumer",
+          a: relay.id,
+          b: boundaryConsumer.id,
+          kind: "signal",
+          portA: "RELAY",
+          portB: "IN B",
+        },
+      ];
+    return new SignalNetwork(relayCatalog).resolve(graph(parts, connections), {
+      isPowered: (partId) => partId !== relay.id || relayPowered,
+    });
+  };
+for (const [relayType, relayPowered, expected] of [
+  ["poweredrelay", true, true],
+  ["poweredrelay", false, false],
+  ["passiverelay", false, true],
+]) {
+  const relayNetwork = routeThroughRelay(relayType, relayPowered);
+  assert.equal(
+    relayNetwork.hasRoute(producer.id, "relay-command-target", "SIGNAL"),
+    expected,
+    `${relayType} controller route power semantics diverged`,
+  );
+  assert.equal(
+    relayNetwork.hasSensorRoute(
+      boundaryConsumer.id,
+      "relay-source-sensor",
+      "SIGNAL",
+    ),
+    expected,
+    `${relayType} sensor route power semantics diverged`,
+  );
+}
+
 const graphRevisionBefore = session.context.runGraph.graphRevision;
 session.context.runGraph.applyStructuralEvent({
   failedConnectionIds: [

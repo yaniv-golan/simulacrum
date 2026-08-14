@@ -500,7 +500,9 @@ assert.ok(
   hostile.totals[0][1].electricalEnergyJ += 1;
   assert.throws(
     () =>
-      new MotorEnergySettlementSystem().validateState(JSON.stringify(hostile)),
+      new MotorEnergySettlementSystem({
+        ownerIds: hostile.ownerIds,
+      }).validateState(JSON.stringify(hostile)),
     (error) => error?.code === "INVALID_MOTOR_ENERGY_SETTLEMENT_CHECKPOINT",
     "motor-energy checkpoint accepted a non-conserving cumulative ledger",
   );

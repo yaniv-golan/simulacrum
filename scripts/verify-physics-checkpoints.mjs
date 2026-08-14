@@ -326,6 +326,24 @@ assert.doesNotThrow(
   () => midStepRun.coordinator.capture(IDENTITIES_JSON),
   "checkpoint capture remained unavailable after the complete fixed step committed",
 );
+const staleMotorBoundaryCheckpoint = structuredClone(
+  midStepRun.coordinator.capture(IDENTITIES_JSON),
+);
+mutateOwnerPayload(
+  staleMotorBoundaryCheckpoint,
+  "energy-power-signal",
+  (payload) => payload.motorEnergySettlement.lastSettledTick--,
+);
+assert.throws(
+  () =>
+    restoreCheckpoint(
+      midStepRun.coordinator,
+      staleMotorBoundaryCheckpoint,
+      IDENTITIES,
+    ),
+  (error) => error?.code === "CHECKPOINT_OWNER_TIME_MISMATCH",
+  "checkpoint accepted a stale motor-energy settlement boundary",
+);
 midStepRun.dispose();
 
 let reentrantRestoreRun = null,

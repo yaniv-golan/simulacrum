@@ -24,7 +24,6 @@ export function installWorkshopRuntimeComposition({
 }) {
   const world = editor.world,
     cameraController = world.cameraController,
-    streamer = world.streamer,
     directControl = assembly.controls.directControl;
   return installWorkshopRuntimeSubsystem({
     target,
@@ -61,6 +60,7 @@ export function installWorkshopRuntimeComposition({
       camera: stage.camera,
       batchSnapshot: () => stage.largeAssemblyBatcher.snapshot(),
       detailSnapshot: () => stage.componentDetail.snapshot(),
+      resourceSnapshot: world.resourceSnapshot,
       environmentCapture: world.applyCapturePreset,
     },
     environment: {
@@ -68,7 +68,7 @@ export function installWorkshopRuntimeComposition({
       localSurfaceSample: stage.earth.surfaceSampleAt,
       detailLod: world.detailLodSnapshot,
       reflectionEnvironment: stage.reflectionEnvironment.snapshot,
-      chunks: () => [...streamer.chunks.values()],
+      chunks: () => [...world.streamer.chunks.values()],
       skyColor: () => `#${stage.scene.background.getHexString()}`,
       starOpacity: () => stage.starMaterial.opacity,
       moonOpacity: () => stage.moonMaterial.opacity,

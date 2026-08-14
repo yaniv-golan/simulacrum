@@ -23,12 +23,15 @@ function checkpointTreeIsFinite(value) {
   return Object.values(value).every(checkpointTreeIsFinite);
 }
 
+const currentTickByBus = new WeakMap();
+
 export class CommandBus {
   constructor() {
     this.remote = new Map();
     this.script = new Map();
     this.conflicts = new Set();
     this.rejections = [];
+    currentTickByBus.set(this, null);
   }
 
   static key(targetId, channel) {
@@ -43,6 +46,7 @@ export class CommandBus {
     this.script.clear();
     this.conflicts.clear();
     this.rejections = [];
+    currentTickByBus.set(this, null);
   }
 
   writeRemote(targetId, channel, value) {
@@ -246,5 +250,23 @@ export class CommandBus {
     this.script = validated.script;
     this.conflicts = validated.conflicts;
     this.rejections = validated.rejections;
+    // Checkpointed rows are historical evidence, not authority for the next
+    // fixed step. CommandRoutingSystem must establish a fresh tick epoch.
+    currentTickByBus.set(this, null);
   }
+}
+
+/** @internal Establishes the command epoch owned by CommandRoutingSystem. */
+export function beginCommandBusTick(commandBus, tick) {
+  if (!(commandBus instanceof CommandBus))
+    throw new TypeError("Command tick requires a package-owned command bus");
+  if (!Number.isSafeInteger(tick) || tick < 0)
+    throw new RangeError("Command tick must be a non-negative safe integer");
+  commandBus.clearTick();
+  currentTickByBus.set(commandBus, tick);
+}
+
+/** @internal Reads transient epoch evidence; it is never checkpoint authority. */
+export function commandBusCurrentTick(commandBus) {
+  return currentTickByBus.get(commandBus) ?? null;
 }

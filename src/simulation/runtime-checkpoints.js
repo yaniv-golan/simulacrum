@@ -24,6 +24,8 @@ import {
 } from "./body-registry.js";
 import {
   exportValidatedMultibodyState,
+  multibodyMotorEnergyOwnerIds,
+  reconstructOwnedMultibodyMotorEnergy,
   validateMultibodyStateForCheckpointRestore,
 } from "./multibody-runtime.js";
 import {
@@ -97,6 +99,87 @@ function checkpointKeysMatch(value, expectedKeys) {
     actual.length === expected.length &&
     actual.every((key, index) => key === expected[index])
   );
+}
+
+/**
+ * Package-internal cross-owner consistency check for axial-effort cumulative
+ * energy. Checkpoints are unsigned portable state: this rejects incomplete or
+ * internally inconsistent rewrites, but is not authentication against a
+ * producer that rewrites every value and digest together.
+ */
+export function validateAxialEffortEnergyOwnerConsistency(
+  multibodyRuntime,
+  physics,
+  motorEnergySettlement,
+) {
+  const forceCommandEntries = multibodyRuntime.constraintEntries.filter(
+    (entry) =>
+      entry.descriptor.mechanism?.commandLaw?.kind === "force-command-v1",
+  );
+  if (motorEnergySettlement?.kind === "no-motor-energy-settlement-runtime-v1") {
+    if (forceCommandEntries.length)
+      throw new DomainValidationError(
+        "CHECKPOINT_AXIAL_EFFORT_ENERGY_OWNER_MISSING",
+        "Axial-effort checkpoints require the motor-settlement energy owner",
+      );
+    return;
+  }
+  const expectedOwnerIds = multibodyMotorEnergyOwnerIds(multibodyRuntime),
+    totals = Array.isArray(motorEnergySettlement?.totals)
+      ? motorEnergySettlement.totals
+      : [],
+    actualOwnerIds = totals.map((record) => record?.[0]);
+  if (
+    motorEnergySettlement?.version !== 2 ||
+    stableStringify(motorEnergySettlement.ownerIds) !==
+      stableStringify(expectedOwnerIds) ||
+    stableStringify(actualOwnerIds) !== stableStringify(expectedOwnerIds)
+  )
+    throw new DomainValidationError(
+      "CHECKPOINT_MOTOR_ENERGY_OWNER_IDENTITY_MISMATCH",
+      "Motor-energy checkpoint identities must exactly match every live actuator owner",
+    );
+  const physicsById = new Map(
+      physics.entries.map((record) => [record.id, record.values]),
+    ),
+    duplicateFields = [
+      "actuatorMechanicalWorkJ",
+      "actuatorElectricalEnergyJ",
+      "actuatorDissipatedEnergyJ",
+    ];
+  for (const entry of forceCommandEntries) {
+    const values = physicsById.get(entry.descriptor.id);
+    if (
+      !values ||
+      duplicateFields.some((field) => Object.hasOwn(values, field))
+    )
+      throw new DomainValidationError(
+        "CHECKPOINT_AXIAL_EFFORT_ENERGY_OWNER_DUPLICATED",
+        `Axial-effort cumulative energy must be serialized only by the motor-settlement owner for part ${String(entry.descriptor.sourcePartId)}`,
+      );
+  }
+  const forceOwnerIds = forceCommandEntries
+      .map((entry) => entry.descriptor.sourcePartId)
+      .sort(compareCanonicalIds),
+    totalsByPart = new Map(totals),
+    projectionRecords = forceOwnerIds.map((partId) => {
+      const values = totalsByPart.get(partId);
+      return {
+        partId,
+        electricalEnergyJ: values.electricalEnergyJ,
+        netMechanicalWorkJ:
+          values.positiveMechanicalWorkJ - values.absorbedMechanicalWorkJ,
+        rejectedHeatJ: values.rejectedHeatJ,
+      };
+    }),
+    ownerProjectionDigest = `axial-effort-energy-sha256-${sha256Hex(
+      stableStringify(projectionRecords),
+    )}`;
+  if (physics.axialEffortEnergyProjectionDigest !== ownerProjectionDigest)
+    throw new DomainValidationError(
+      "CHECKPOINT_AXIAL_EFFORT_ENERGY_PROJECTION_MISMATCH",
+      "Motor-energy totals disagree with the separately captured multibody energy projection",
+    );
 }
 
 function requireCheckpointIdentities(input) {
@@ -260,6 +343,13 @@ export class RuntimeCheckpointCoordinator {
     return this.session.systems.find(
       (system) => system.checkpointOwner === "motor-energy-settlement",
     );
+  }
+
+  #bindMotorEnergyOwnerIdentities() {
+    const owner = this.#motorEnergySettlementSystem();
+    if (owner)
+      owner.bindOwnerIds(multibodyMotorEnergyOwnerIds(this.multibodyRuntime));
+    return owner;
   }
 
   #massPropertyCommitSystem() {
@@ -444,7 +534,7 @@ export class RuntimeCheckpointCoordinator {
       telemetry: this.session.exportTelemetryState(),
       worldAdapter: this.worldAdapter.exportState(),
       motorEnergySettlement:
-        this.#motorEnergySettlementSystem()?.exportState() ??
+        this.#bindMotorEnergyOwnerIdentities()?.exportState() ??
         NO_MOTOR_ENERGY_RUNTIME,
     };
   }
@@ -492,6 +582,10 @@ export class RuntimeCheckpointCoordinator {
     this.terrainState?.importState?.(state.terrain);
     this.worldAdapter.importState(state.worldAdapter);
     this.#motorEnergySettlementSystem()?.importState(
+      state.motorEnergySettlement,
+    );
+    reconstructOwnedMultibodyMotorEnergy(
+      this.multibodyRuntime,
       state.motorEnergySettlement,
     );
     resynchronizeSimulationSessionAfterCheckpointRestore(
@@ -644,12 +738,17 @@ export class RuntimeCheckpointCoordinator {
       }),
     );
     const motorEnergy = assertAbsentOwnerState(
-      this.#motorEnergySettlementSystem(),
+      this.#bindMotorEnergyOwnerIdentities(),
       state.motorEnergySettlement,
       NO_MOTOR_ENERGY_RUNTIME,
       "Motor-energy settlement runtime",
     );
     motorEnergy?.validateState(state.motorEnergySettlement);
+    validateAxialEffortEnergyOwnerConsistency(
+      this.multibodyRuntime,
+      state.physics,
+      state.motorEnergySettlement,
+    );
   }
 
   #validatePneumaticTireConsistency(state) {
@@ -795,7 +894,7 @@ export class RuntimeCheckpointCoordinator {
             flexible.lastDissipationTick <= committedTick)) &&
         (motorEnergy?.kind === "no-motor-energy-settlement-runtime-v1" ||
           (Number.isSafeInteger(motorEnergy?.lastSettledTick) &&
-            motorEnergy.lastSettledTick <= committedTick)) &&
+            motorEnergy.lastSettledTick === committedTick)) &&
         Number.isFinite(expectedTime) &&
         session?.clock?.time === expectedTime &&
         session?.time === expectedTime &&
@@ -882,7 +981,7 @@ export class RuntimeCheckpointCoordinator {
           reconstruction: "resolve-from-run-graph-before-next-actuator-v1",
           graphRevision: runGraph.graphRevision,
           motorEnergySettlement:
-            this.#motorEnergySettlementSystem()?.exportState() ??
+            this.#bindMotorEnergyOwnerIdentities()?.exportState() ??
             NO_MOTOR_ENERGY_RUNTIME,
         },
         "release-couplers":

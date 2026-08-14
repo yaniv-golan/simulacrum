@@ -45,7 +45,11 @@ export const ACTUATOR_CHANNELS = Object.freeze({
   "linear-position-v1": Object.freeze({
     linear_target: range(0, 1, { unit: "normalized stroke" }),
     linear_velocity: range(-1, 1, { unit: "normalized speed" }),
-    linear_force: range(-1, 1, { unit: "normalized force" }),
+    linear_force_n: range(
+      -COMMAND_SINK_SCALAR_LIMIT,
+      COMMAND_SINK_SCALAR_LIMIT,
+      { unit: "N" },
+    ),
   }),
   "reaction-wheel-v1": Object.freeze({
     yaw: range(-1, 1, { fanout: true }),
@@ -108,7 +112,32 @@ export function clampActuatorCommand(part, channel, value, catalog = TYPES) {
   if (!contract) return null;
   const number = Number(value);
   if (!Number.isFinite(number)) return contract.failsafe;
+  if (
+    channel === "linear_force_n" &&
+    (number < contract.minimum || number > contract.maximum)
+  )
+    return contract.failsafe;
   return Math.max(contract.minimum, Math.min(contract.maximum, number));
+}
+
+/**
+ * Absolute effort demands fail closed instead of hiding excess by clipping.
+ * @param {any} part
+ * @param {string} channel
+ * @param {unknown} value
+ * @param {Record<string, any>} [catalog]
+ */
+export function actuatorCommandValueIsAdmissible(
+  part,
+  channel,
+  value,
+  catalog = TYPES,
+) {
+  const contract = actuatorChannel(part, channel, catalog),
+    number = Number(value);
+  if (!contract || !Number.isFinite(number)) return false;
+  if (channel !== "linear_force_n") return true;
+  return number >= contract.minimum && number <= contract.maximum;
 }
 
 /** Reads one addressed channel and applies its declared conflict failsafe. */

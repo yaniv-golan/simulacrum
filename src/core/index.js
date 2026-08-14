@@ -170,6 +170,7 @@ export {
   ACTUATOR_CHANNELS,
   COMMAND_SINK_SCALAR_LIMIT,
   acceptsActuatorChannel,
+  actuatorCommandValueIsAdmissible,
   actuatorChannel,
   clampActuatorCommand,
   powerContract,

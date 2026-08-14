@@ -95,7 +95,7 @@ export const ACTUATOR_CHANNELS: Readonly<{
             unit: any;
             fanout: boolean;
         }>;
-        linear_force: Readonly<{
+        linear_force_n: Readonly<{
             minimum: any;
             maximum: any;
             failsafe: any;
@@ -240,6 +240,9 @@ export const ACTUATOR_CHANNELS: Readonly<{
 
 // @public (undocumented)
 export function actuatorChannel(part: any, channel: string, catalog?: Record<string, any>): any;
+
+// @public
+export function actuatorCommandValueIsAdmissible(part: any, channel: string, value: unknown, catalog?: Record<string, any>): boolean;
 
 // @public
 export class AerodynamicSystem {
@@ -451,7 +454,7 @@ export function boundsCenter(bounds: any): number[];
 export function boundsDimensions(bounds: any): number[];
 
 // @public (undocumented)
-export const CANNON_SOLVER_TRANSACTION_ID: "simulacrum-owned-cannon-solver-transaction-v3-rolling-support";
+export const CANNON_SOLVER_TRANSACTION_ID: "simulacrum-owned-cannon-solver-transaction-v4-coupled-motor-envelopes";
 
 // @public
 export class CannonMaterialAdapter {
@@ -505,6 +508,10 @@ export class CannonSolverTransaction {
         mechanicalBudgetJ: any;
         electricalEfficiency: any;
         torqueImpulseLimitNms: any;
+        requestedImpulseNs?: any;
+        forceSpeedEnvelope?: any;
+        thermalAvailability?: number;
+        idleElectricalW?: number;
     }): void;
     // (undocumented)
     step(dt: any): void;
@@ -521,7 +528,7 @@ export class CannonWorldAdapter {
         tick: number;
         integratedTick: number;
         integrationCount: number;
-        transactionId: "simulacrum-owned-cannon-solver-transaction-v3-rolling-support";
+        transactionId: "simulacrum-owned-cannon-solver-transaction-v4-coupled-motor-envelopes";
     }>;
     // (undocumented)
     beginTick(tick?: number): void;
@@ -535,7 +542,7 @@ export class CannonWorldAdapter {
         tick: number;
         integratedTick: number;
         integrationCount: number;
-        transactionId: "simulacrum-owned-cannon-solver-transaction-v3-rolling-support";
+        transactionId: "simulacrum-owned-cannon-solver-transaction-v4-coupled-motor-envelopes";
     };
     // (undocumented)
     importState(state: any): void;
@@ -547,7 +554,7 @@ export class CannonWorldAdapter {
         tick: number;
         integratedTick: number;
         integrationCount: number;
-        transactionId: "simulacrum-owned-cannon-solver-transaction-v3-rolling-support";
+        transactionId: "simulacrum-owned-cannon-solver-transaction-v4-coupled-motor-envelopes";
     }>;
     // (undocumented)
     telemetry(): Readonly<{
@@ -555,7 +562,7 @@ export class CannonWorldAdapter {
         tick: number;
         integratedTick: number;
         integrationCount: number;
-        transactionId: "simulacrum-owned-cannon-solver-transaction-v3-rolling-support";
+        transactionId: "simulacrum-owned-cannon-solver-transaction-v4-coupled-motor-envelopes";
     }>;
     // (undocumented)
     transaction: CannonSolverTransaction;
@@ -1684,7 +1691,7 @@ export const CONTROLLER_LIMITS: Readonly<{
 }>;
 
 // @public (undocumented)
-export const CONTROLLER_POLICY_VERSION: "control-wasm-v2-point-contact-wrench-bindings";
+export const CONTROLLER_POLICY_VERSION: "control-wasm-v3-absolute-axial-effort";
 
 // @public (undocumented)
 export const CONTROLLER_STYLES: Readonly<{
@@ -4075,6 +4082,11 @@ export class MobilityTelemetrySystem {
 
 // @public
 export class MotorEnergySettlementSystem {
+    constructor(input?: {
+        ownerIds?: any;
+    });
+    // (undocumented)
+    bindOwnerIds(ownerIds: any): any;
     // (undocumented)
     checkpointOwner: string;
     // (undocumented)
@@ -4083,12 +4095,15 @@ export class MotorEnergySettlementSystem {
     exportState(): {
         version: number;
         lastSettledTick: number;
+        ownerIds: any;
         totals: [any, any][];
     };
     // (undocumented)
     importState(state: any): void;
     // (undocumented)
     lastSettledTick: number;
+    // (undocumented)
+    ownerIds: any;
     // (undocumented)
     phase: string;
     // (undocumented)
@@ -4100,6 +4115,7 @@ export class MotorEnergySettlementSystem {
     // (undocumented)
     validateState(state: any): {
         lastSettledTick: any;
+        ownerIds: (string | number)[];
         totals: Map<any, any>;
     };
 }
@@ -4566,6 +4582,7 @@ export class MultibodyRuntime {
     exportState(): {
         version: number;
         compiledPhysicalSemanticsFingerprint: string;
+        axialEffortEnergyProjectionDigest: string;
         fixedDt: number;
         sourceRevision: any;
         world: {

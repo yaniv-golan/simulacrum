@@ -1,6 +1,6 @@
 // Shared executable policy consumed by model, compiler, editor, and runtime.
 export const CONTROLLER_POLICY_VERSION =
-  "control-wasm-v2-point-contact-wrench-bindings";
+  "control-wasm-v3-absolute-axial-effort";
 
 export const CONTROLLER_CHANNELS = Object.freeze([
   "command",
@@ -20,7 +20,7 @@ export const CONTROLLER_CHANNELS = Object.freeze([
   "alt_hold",
   "linear_target",
   "linear_velocity",
-  "linear_force",
+  "linear_force_n",
   "joint_target",
   "inflate",
   "position",
