@@ -13,7 +13,7 @@
     "command": "node scripts/verify-model-boundaries.mjs"
   },
   "mutate": [
-    "src/model/blueprint-decoder.js:473-565",
+    "src/model/blueprint-decoder.js",
     "src/application/browser-storage.js",
     "src/application/blueprint-load-transaction.js"
   ],
