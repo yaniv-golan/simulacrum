@@ -32,5 +32,5 @@ assert.ok(
 );
 
 console.log(
-  `module graph passed (${result.files.length} modules, ${edgeCount} parsed static/dynamic edges, no cycles, coordinator ${coordinatorLines} lines)`,
+  `module graph passed (${result.files.length} modules, ${edgeCount} parsed static/dynamic edges, no cycles, coordinator ${coordinatorLines} lines, origin analysis skipped for ${result.generatedModules.length} generated modules)`,
 );

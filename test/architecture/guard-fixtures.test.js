@@ -115,6 +115,84 @@ const cases = [
     },
     expected: ["UNSAFE_SCRIPTING_API"],
   },
+  {
+    name: "deleted runtime authority identifier",
+    files: {
+      "simulation/legacy.js":
+        "export const resolve = (parts) => poweredBattery(parts);",
+    },
+    expected: ["DELETED_RUNTIME_AUTHORITY"],
+  },
+  {
+    name: "simulation reads mesh state",
+    files: {
+      "simulation/projection.js": "export const read = (part) => part.mesh;",
+    },
+    expected: ["FORBIDDEN_RENDER_STATE"],
+  },
+  {
+    name: "non-owner calls world.step through a member chain",
+    files: {
+      "simulation/other-runtime.js":
+        "export const advance = (runtime) => runtime.world.step(1 / 120);",
+    },
+    expected: ["WORLD_STEP_OWNER"],
+  },
+  {
+    name: "non-owner calls adapter.integrate through a member chain",
+    files: {
+      "simulation/other-system.js":
+        "export const advance = (context) => context.adapter.integrate(1 / 120);",
+    },
+    expected: ["INTEGRATION_OWNER"],
+  },
+  {
+    name: "model imports a physics engine",
+    files: {
+      "model/body.js":
+        'import * as CANNON from "cannon-es"; export const body = CANNON;',
+    },
+    expected: ["MODEL_ENGINE_DEPENDENCY"],
+  },
+  {
+    name: "local import target does not exist",
+    files: {
+      "model/consumer.js":
+        'import { value } from "./absent.js"; export const consume = value;',
+    },
+    expected: ["MISSING_LOCAL_IMPORT"],
+  },
+  {
+    name: "unparsable module",
+    files: { "model/broken.js": "export const = ;" },
+    expected: ["PARSE_ERROR"],
+  },
+  {
+    name: "parallel command authority",
+    files: {
+      "application/panel.js":
+        "const state = { commands: [] }; export const read = () => state.commands.length;",
+    },
+    expected: ["PARALLEL_COMMAND_AUTHORITY"],
+  },
+  {
+    name: "generated module still resolves imports without origin analysis",
+    files: {
+      "model/generated/wire-validators.js":
+        'import { value } from "./absent.js"; export const validate = value;',
+    },
+    expected: ["MISSING_LOCAL_IMPORT"],
+  },
+  {
+    name: "generated module still participates in cycle detection",
+    files: {
+      "model/generated/wire-validators.js":
+        'export { peer } from "../peer.js";',
+      "model/peer.js":
+        'export { validate as peer } from "./generated/wire-validators.js";',
+    },
+    expected: ["MODULE_CYCLE"],
+  },
 ];
 
 export async function verifyArchitectureGuardFixtures() {
