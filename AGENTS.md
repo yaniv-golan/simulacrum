@@ -43,6 +43,12 @@ known contradiction.
 - Preserve unrelated user changes. Do not delete a path merely because a text
   search looks unused; check public exports, dynamic imports, wire formats,
   compatibility loaders, tests, and generated artifacts first.
+- `docs/internal/` must stay ignored permanently. Never commit it, never
+  `git add -f` a path inside it, never remove it from `.gitignore`, and never
+  copy its contents into a tracked path. This repository is public: internal
+  plans, handovers, audits, coordination task IDs, worktree inventories, and
+  local filesystem paths must never enter public history. Keep durable copies
+  outside the repository.
 
 ## Ownership and dependency direction
 
@@ -173,8 +179,9 @@ materials, deployment, route evaluation, or course evidence.
   changelog, and apply the versioning policy in `packages/core/SEMVER.md`.
 - Do not commit generated `dist`, `coverage`, `artifacts`, `output`,
   `packages/core/dist`, `.api-types`, or `temp` contents.
-- `docs/internal/` is intentionally ignored and suitable only for local audits
-  and plans. Durable contributor guidance belongs in tracked documentation.
+- `docs/internal/` is permanently ignored and suitable only for local audits
+  and plans; see the non-negotiable rule above. Nothing in it is ever committed.
+  Durable contributor guidance belongs in tracked documentation.
 
 ## Definition of done
 
