@@ -13,7 +13,7 @@
     "command": "node scripts/verify-contact-normal-wrench-observation.mjs && node scripts/verify-contact-normal-wrench-physics.mjs && node scripts/verify-cannon-solver-transaction.mjs"
   },
   "mutate": [
-    "src/simulation/contact-normal-wrench-observation.js:1-361",
+    "src/simulation/contact-normal-wrench-observation.js",
     "src/simulation/controller-sensors.js:169-173",
     "src/simulation/controller-sensors.js:258-264",
     "src/simulation/controller-sensors.js:289-295",
