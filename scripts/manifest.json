@@ -5,11 +5,40 @@
     "L1b": "L1a + Stable Walker contract: df>=1.00 m/120 s, efficiency>=0.70, maxCrossTrack<=0.15 m, |dl|<=0.15 m, reverse<=0.10 m, tilt<=0.45 rad after 5 s, no fall/damage/non-finite/saturation/forbidden non-pad support. THE OPEN PROBLEM.",
     "L1c": "L1b + tracking over W=max(30 s,10L/v): velocity MAE<=max(0.005 m/s,0.15v), step MAE<=max(0.015 m,0.20L).",
     "L1d": "Robustness under declared variation with held-out qualification cases. The completion condition.",
-    "L2": "Rename every part/component/blueprint/role id => telemetry identical modulo the id mapping.",
-    "D1": "Same blueprint + input trace => identical deterministic-projection hash, two processes, both clocks.",
+    "L2": "Two runs of the same inputs under TWO DIFFERENT recorded renamings produce an identical deterministicProjection(frame) after remapping references. Distinct from D1: D1 fixes the renaming seed and varies nothing, so it cannot catch identity dependence.",
+    "D1": "Same blueprint, input trace AND renaming seed => identical deterministicProjection(frame) hash, two processes, both clocks. The projection excludes wall-clock timings, identifier mappings and diagnostic metadata.",
     "P1": "Named scene on a named machine holds >=30 fps interactively. Measure before setting.",
     "S1": "A hostile controller cannot escape, hang, or read undeclared state."
   },
   "rules": [],
-  "milestones": ["M0","M1","M2","M3","M4","M4b","M5","M6","M7","M8","M9"]
+  "milestones": [
+    "M0",
+    "M1",
+    "M2",
+    "M3",
+    "M4",
+    "M4b",
+    "M5",
+    "M6",
+    "M7",
+    "M8",
+    "M9"
+  ],
+  "checks": [
+    {
+      "id": "layers",
+      "dueAt": "M0",
+      "description": "module graph: layer ownership and allowed import edges"
+    },
+    {
+      "id": "tick-order",
+      "dueAt": "M1",
+      "description": "nine phases, frozen order"
+    },
+    {
+      "id": "identity",
+      "dueAt": "M2",
+      "description": "per-shape material admission invariant"
+    }
+  ]
 }

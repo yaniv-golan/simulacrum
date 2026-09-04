@@ -120,14 +120,18 @@ performance number.
 | M2 | physics door + library ADR, component/port model, schema + generated validators, assembly compiler, **G2 decided**, **command surface** | schema rejects every malformed fixture; one library importer; no live library object escapes |
 | M3 | power/signal networks, actuators, sensors, command bus; a powered wheel turns *(host-side test double for the controller — sandbox is M4)* | controllers cannot read live state |
 | M4 | WASM sandbox: fuel, digest gate, host-import boundary | **S1**, under a real attack |
-| M4b | **locomotion feasibility probe.** Ships its own prerequisites: **flat-ground contact and friction**, the **Hinge Joint**, and the **6-Axis IMU / Balance Gyro** — these move here from M5/M7. Excludes tires, uneven terrain, the site and the full contact-material law. Stages: loaded standing → weight transfer → swing clearance → alternating contact → stopping | **A named blocker is a completed experiment, not permission to proceed.** Exit requires a recorded **decision**: fix the plant, revise the decomposition, change the physics library, or demonstrate the stage. Listing five blockers and moving on to breadth is the substitution this whole document exists to prevent |
+| M4b | **locomotion feasibility probe.** Ships its own prerequisites: **flat-ground contact and friction**, the **Hinge Joint**, and the **6-Axis IMU / Balance Gyro** — these move here from M5/M7. Excludes tires, uneven terrain, the site and the full contact-material law. Stages: loaded standing → weight transfer → swing clearance → alternating contact → stopping | **Exit requires every stage demonstrated.** A named blocker is a completed experiment; a recorded decision is not a completed repair. Where a stage fails, carry out the chosen repair — plant, decomposition, or physics library — and **rerun the probe**. A decision authorises work on that repair, never progress to M5. Listing blockers and moving on to breadth is the substitution this whole document exists to prevent |
 | M5 | terrain, contacts, friction, **contact-material law**, tire law; rover drives repeatably | rover bar green (set distance/repeats from your own measurement); **P1** |
 | M6 | terrain fixture set — named friction lanes, fingerprinted site, run matrix; full failure recorder; challenge evaluation in the telemetry tail | an induced stall replays to the same failure on a named lane |
 | M7 | **locomotion** — legged machine, ordinary player-authored controller programs. The five-regulator decomposition is the leading **candidate**, not a requirement; the prime rule constrains *authority* (no engine gait owner, no pose write, no hidden support force, no role-selected traction), not program count | **L1b**. After two failures stop and re-derive the decomposition from measurement rather than iterating |
 | M8 | editor, panels, camera, catalog breadth, demos as blueprints | **L2** |
 | M9 | **L1c then L1d** — tracking, then the robustness contract | **L1d. This is the completion condition, not L2.** |
 
-**Current: M0. Gate: `npm run gate:M0` — it refuses when the checks *it owns* are red.**
+**Current: M0. Gate: `npm run gate:M0` — it EXECUTES the checks due at or before M0 and exits
+nonzero if any is not green.** Checks carry a `dueAt` milestone in the manifest; a gate never runs
+or waits on a check above its own row. A gate that prints an instruction and exits zero is a false
+green — see the `npm run a b c` note above; the same trap has now appeared three times in this
+project.
 The eight bars are deliberately red until their milestone; a gate never waits on a bar above its
 own row. Do not proceed past a
 refusing gate. Parts and UI features carry a `milestone` field; the build **rejects** anything
@@ -145,7 +149,7 @@ above the current milestone. The manifest owns the current milestone; this line 
 
 | tier | command | budget |
 |---|---|---|
-| structural gates | `npm run gate:structural` (ONE aggregate script) | < 5 s, every commit |
+| structural gates | `npm run gate:structural` (ONE aggregate script; `npm run gate` runs it too and **propagates its failure**) | < 5 s, every commit |
 | unit + property | `npm run test:unit` | < 30 s, every commit — **affected set only**, derived from the module graph, never named by hand |
 | analytical + conservation + short-horizon contact | `npm run test:physics` | < 60 s, every commit |
 | long-horizon contact stability (10⁴ steps) | `npm run test:physics:long` | merge + nightly — ~50 s alone |
