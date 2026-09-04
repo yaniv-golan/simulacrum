@@ -8,7 +8,11 @@
     "L2": "Two runs of the same inputs under TWO DIFFERENT recorded renamings produce an identical deterministicProjection(frame) after remapping references. Distinct from D1: D1 fixes the renaming seed and varies nothing, so it cannot catch identity dependence.",
     "D1": "Same blueprint, input trace AND renaming seed => identical deterministicProjection(frame) hash, two processes, both clocks. The projection excludes wall-clock timings, identifier mappings and diagnostic metadata.",
     "P1": "Named scene on a named machine holds >=30 fps interactively. Measure before setting.",
-    "S1": "A hostile controller cannot escape, hang, or read undeclared state."
+    "S1": "A hostile controller cannot escape, hang, or read undeclared state.",
+    "F1": "A target player, unassisted and untutored, builds something that moves within 15 minutes of first launch, and wants to build a second thing. Judged by watching a person.",
+    "F2": "Build-loop latency: place -> connect -> run under 2 s, with no compile step the player can perceive.",
+    "F3": "A player who did not build the machine can say why it failed from the post-mortem alone.",
+    "F4": "Ten minutes of unassisted play yields one moment of visible delight and no moment of 'I don't know what this wants from me'."
   },
   "rules": [],
   "milestones": [
@@ -16,6 +20,7 @@
     "M1",
     "M2",
     "M3",
+    "M3b",
     "M4",
     "M4b",
     "M5",

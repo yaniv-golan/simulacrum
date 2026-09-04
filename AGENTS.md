@@ -74,9 +74,26 @@ rated capacity and drag. Enforced: `gate:structural`.
 > gate:tick-order gate:identity` exits **0**. Use one aggregate script, or `&&` between separate
 > `npm run` invocations.
 
+## Who this is for
+
+**A smart 14–17-year-old who has outgrown block-based builders** (Trailmakers, Besiege, Scrap
+Mechanic) and hit the same ceiling every time: **the parts are magic.** Here the motor has torque,
+current, copper heat and a rated capacity; power comes from cells that deplete; a misaligned hub
+stops transmitting torque; controllers are real programs reading real sensors; things break and
+tell you why; and walking machines are the point.
+
+Every expensive invariant below is downstream of that. **When a rule feels costly, ask whether
+removing it puts a magic part back in the box.**
+
+**The simulation is uncompromising; the interface is generous.** The strict-schema and
+no-compatibility-reader rules govern *machine formats*, never the player's experience: the editor
+snaps, suggests and explains; a saved machine never stops loading; every reason code also renders
+as a sentence a person can act on; failure is legible and enjoyable, not punishing.
+
 ## The bars
 
-Each is a command. Run it; it is red until it is green.
+Each is a command. Run it; it is red until it is green. **F1–F4 are judged by watching a real
+target player** — a weaker instrument than the rest, measuring what the rest cannot.
 
 | bar | command | asserts |
 |---|---|---|
@@ -119,12 +136,13 @@ performance number.
 | M1 | fixed-step session, 9 phases, one integrator, telemetry, `step(n)`, **minimal failure bundle** | **D1** |
 | M2 | physics door + library ADR, component/port model, schema + generated validators, assembly compiler, **G2 decided**, **command surface** | schema rejects every malformed fixture; one library importer; no live library object escapes |
 | M3 | power/signal networks, actuators, sensors, command bus; a powered wheel turns *(host-side test double for the controller — sandbox is M4)* | controllers cannot read live state |
+| M3b | **first playable loop** — place, connect, power, run, watch it move and fail. Minimum editor: no panels, no camera polish, no catalog breadth | **F1 and F2, run with a real target player.** A red F1 here costs far less than a red F1 at M8 |
 | M4 | WASM sandbox: fuel, digest gate, host-import boundary | **S1**, under a real attack |
 | M4b | **locomotion feasibility probe.** Ships its own prerequisites: **flat-ground contact and friction**, the **Hinge Joint**, and the **6-Axis IMU / Balance Gyro** — these move here from M5/M7. Excludes tires, uneven terrain, the site and the full contact-material law. Stages: loaded standing → weight transfer → swing clearance → alternating contact → stopping | **Exit requires every stage demonstrated.** A named blocker is a completed experiment; a recorded decision is not a completed repair. Where a stage fails, carry out the chosen repair — plant, decomposition, or physics library — and **rerun the probe**. A decision authorises work on that repair, never progress to M5. Listing blockers and moving on to breadth is the substitution this whole document exists to prevent |
 | M5 | terrain, contacts, friction, **contact-material law**, tire law; rover drives repeatably | rover bar green (set distance/repeats from your own measurement); **P1** |
 | M6 | terrain fixture set — named friction lanes, fingerprinted site, run matrix; full failure recorder; challenge evaluation in the telemetry tail | an induced stall replays to the same failure on a named lane |
 | M7 | **locomotion** — legged machine, ordinary player-authored controller programs. The five-regulator decomposition is the leading **candidate**, not a requirement; the prime rule constrains *authority* (no engine gait owner, no pose write, no hidden support force, no role-selected traction), not program count | **L1b**. After two failures stop and re-derive the decomposition from measurement rather than iterating |
-| M8 | editor, panels, camera, catalog breadth, demos as blueprints | **L2** |
+| M8 | editor, panels, camera, catalog breadth, demos as blueprints | **L2**, and **F3/F4** |
 | M9 | **L1c then L1d** — tracking, then the robustness contract | **L1d. This is the completion condition, not L2.** |
 
 **Current: M0. Gate: `npm run gate:M0` — it EXECUTES the checks due at or before M0 and exits
