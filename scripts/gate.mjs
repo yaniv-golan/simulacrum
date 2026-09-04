@@ -13,6 +13,7 @@ const manifest = JSON.parse(
   readFileSync(new URL("./manifest.json", import.meta.url), "utf8"),
 );
 const target = process.argv[2] ?? manifest.milestone;
+const OBLIGATION_TIMEOUT_MS = 120_000;
 
 if (!manifest.milestones.includes(target)) {
   console.error(`unknown milestone: ${target}`);
@@ -67,7 +68,19 @@ for (const milestone of order.filter(dueAt)) {
       continue;
     }
     try {
-      await fn();
+      // Every obligation has an enforced deadline. The registry promised this;
+      // the gate performed an unrestricted await, so a check waiting on a live
+      // server could hold the gate open indefinitely.
+      let timer;
+      await Promise.race([
+        Promise.resolve().then(fn),
+        new Promise((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error(`timed out after ${OBLIGATION_TIMEOUT_MS} ms`)),
+            OBLIGATION_TIMEOUT_MS,
+          );
+        }),
+      ]).finally(() => clearTimeout(timer));
       console.log(`ok     ${ob.id} (${milestone})`);
     } catch (error) {
       unmet += 1;

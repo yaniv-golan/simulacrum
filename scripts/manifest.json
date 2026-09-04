@@ -39,7 +39,7 @@
     "P1": {
       "dueAt": "M5",
       "human": false,
-      "contract": "Named scene on a named machine holds >=30 fps interactively. Measure before setting."
+      "contract": "BOTH must hold on a named scene and machine, over a stated measurement duration: >=30 rendered fps AND 120 completed simulation ticks per wall-clock second, with a declared overload policy. A responsive renderer over a simulation accruing debt is not a pass. Measure before setting any budget."
     },
     "S1": {
       "dueAt": "M4",
@@ -201,6 +201,21 @@
     ],
     "M5": [
       {
+        "id": "course-dimensions-frozen",
+        "how": "plate height, ramp slope, approach distance, L, circle bound, ramp-foot capture radius and return tolerance are committed BEFORE the L0 attempt and not changed to accommodate the machine",
+        "check": null
+      },
+      {
+        "id": "course-evaluator-minimum",
+        "how": "the six-segment evaluator, machine bindings, measurement frames and position-based state machine exist and run -- L0 is an M5 gate and cannot be met by an M6 evaluator",
+        "check": null
+      },
+      {
+        "id": "ascent-power-margin",
+        "how": "the motor and battery models supply the torque and energy S5 demands at the frozen slope; ascent is the first segment that can fail for power rather than control",
+        "check": null
+      },
+      {
         "id": "rover-repeatable",
         "how": "rover drives over uneven ground repeatably; distance/repeats set from first measurement",
         "check": null
@@ -223,18 +238,8 @@
         "check": null
       },
       {
-        "id": "course-dimensions-recorded",
-        "how": "plate height, ramp slope, approach distance, circle radius bound and return tolerance are recorded in the repo",
-        "check": null
-      },
-      {
-        "id": "course-evaluator",
-        "how": "The Course evaluator implements all six segments including S5 ASCENT, the machine bindings (root, pads, supportEligible, W0), the measurement frames, and the segment state machine",
-        "check": null
-      },
-      {
-        "id": "ascent-power-margin",
-        "how": "the motor and battery models can be shown to supply the torque and energy S5 demands at the frozen ramp slope -- ascent is the first segment that can fail for power rather than control",
+        "id": "course-evaluator-legged-annex",
+        "how": "the legged annex predicates (touchdowns, alternation, stance slip) and support-eligibility validation for legged fixtures",
         "check": null
       }
     ],

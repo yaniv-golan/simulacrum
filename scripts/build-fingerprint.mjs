@@ -11,17 +11,20 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
+// Allowlist plus a conservative fallback: anything at the repo root that is not
+// explicitly excluded counts, because a root-level config.json imported by
+// src/main.js previously changed with no effect on the fingerprint.
 const APP_PREFIXES = ["src/", "public/", "assets/", "styles/"];
+const NON_APP_PREFIXES = ["docs/", "assessments/", "scripts/", ".github/", "test/"];
 const APP_FILES = ["package.json", "package-lock.json", "index.html"];
 const APP_PATTERNS = [/^vite\.config\.[cm]?[jt]s$/, /^tsconfig(\..+)?\.json$/];
 
 function isAppInput(path) {
   if (path.endsWith(".md")) return false;
-  return (
-    APP_PREFIXES.some((p) => path.startsWith(p)) ||
-    APP_FILES.includes(path) ||
-    APP_PATTERNS.some((re) => re.test(path))
-  );
+  if (APP_PREFIXES.some((p) => path.startsWith(p))) return true;
+  if (APP_FILES.includes(path) || APP_PATTERNS.some((re) => re.test(path))) return true;
+  // Conservative fallback: an unclassified root-level file is treated as an input.
+  return !path.includes("/") && !NON_APP_PREFIXES.some((p) => path.startsWith(p));
 }
 
 function listFiles() {
@@ -52,8 +55,19 @@ export function appFingerprint() {
   return `app-${hash.digest("hex").slice(0, 16)}`;
 }
 
-export function protocolHash(barContract) {
-  return `proto-${createHash("sha256").update(barContract).digest("hex").slice(0, 12)}`;
+// Hashes the WHOLE protocol a participant was judged against, not just the
+// one-line contract: the rubric, fixtures, required evidence and scoring rules
+// live in assessments/protocol/<bar>.md. Editing the rubric must invalidate
+// existing evidence -- hashing only the short contract string left a pass green
+// after the instructions changed underneath it.
+export function protocolHash(barId, barContract) {
+  const hash = createHash("sha256").update(barId).update("\0").update(barContract).update("\0");
+  try {
+    hash.update(readFileSync(new URL(`../assessments/protocol/${barId}.md`, import.meta.url)));
+  } catch {
+    hash.update("<no protocol document>");
+  }
+  return `proto-${hash.digest("hex").slice(0, 12)}`;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) console.log(appFingerprint());

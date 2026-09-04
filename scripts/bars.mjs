@@ -1,7 +1,7 @@
 // A bar is red until implemented. Human bars are satisfied only by an evidence
 // record that passes a STRICT schema: a partial record used to print GREEN with
 // "assessed undefined, participant undefined".
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { appFingerprint, protocolHash } from "./build-fingerprint.mjs";
 
 const manifest = JSON.parse(
@@ -9,7 +9,8 @@ const manifest = JSON.parse(
 );
 
 const REQUIRED_FIELDS = [
-  "bar", "verdict", "app", "protocol", "servedBuild", "participant", "assessor", "date", "notes",
+  "bar", "verdict", "app", "protocol", "servedBuild", "participant", "assessor", "date",
+  "notes", "recordedAt",
 ];
 
 function validate(record, id) {
@@ -26,14 +27,23 @@ export function evaluateBar(id) {
   if (!bar) throw new Error(`unknown bar: ${id}`);
   if (!bar.human) return { id, state: "RED", why: "not implemented" };
 
-  const path = new URL(`../assessments/${id}.json`, import.meta.url);
-  if (!existsSync(path)) return { id, state: "RED", why: "no recorded assessment" };
+  // The APPEND-ONLY SESSION LOG is authoritative, not assessments/<id>.json.
+  // Restoring an older index file resurrected a superseded pass while the newer
+  // failure sat in the log; the index is now a convenience view only.
+  const sessionsDir = new URL("../assessments/sessions/", import.meta.url);
+  if (!existsSync(sessionsDir)) return { id, state: "RED", why: "no recorded assessment" };
 
   let record;
   try {
-    record = JSON.parse(readFileSync(path, "utf8"));
+    const applicable = readdirSync(sessionsDir)
+      .filter((f) => f.endsWith(".json"))
+      .map((f) => JSON.parse(readFileSync(new URL(f, sessionsDir), "utf8")))
+      .filter((r) => r.bar === id)
+      .sort((a, b) => (a.recordedAt < b.recordedAt ? -1 : 1));
+    if (applicable.length === 0) return { id, state: "RED", why: "no recorded assessment" };
+    record = applicable.at(-1); // the most recent session wins
   } catch (error) {
-    return { id, state: "RED", why: `evidence unreadable: ${error.message}` };
+    return { id, state: "RED", why: `session log unreadable: ${error.message}` };
   }
 
   const invalid = validate(record, id);
@@ -45,7 +55,7 @@ export function evaluateBar(id) {
   if (record.servedBuild !== record.app)
     return { id, state: "RED", why: "the served build the participant used does not match the evidence" };
 
-  const proto = protocolHash(bar.contract);
+  const proto = protocolHash(id, bar.contract);
   if (record.protocol !== proto)
     return { id, state: "RED", why: "the bar contract changed since this assessment" };
 
