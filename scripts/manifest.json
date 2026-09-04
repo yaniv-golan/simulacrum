@@ -1,18 +1,66 @@
 {
   "milestone": "M0",
   "bars": {
-    "L1a": "1 m level, upright, >=8 strict alternating touchdowns, terminal stable hold (5 s). Never observed passing.",
-    "L1b": "L1a + Stable Walker contract: df>=1.00 m/120 s, efficiency>=0.70, maxCrossTrack<=0.15 m, |dl|<=0.15 m, reverse<=0.10 m, tilt<=0.45 rad after 5 s, no fall/damage/non-finite/saturation/forbidden non-pad support. THE OPEN PROBLEM.",
-    "L1c": "L1b + tracking over W=max(30 s,10L/v): velocity MAE<=max(0.005 m/s,0.15v), step MAE<=max(0.015 m,0.20L).",
-    "L1d": "Robustness under declared variation with held-out qualification cases. The completion condition.",
-    "L2": "Two runs of the same inputs under TWO DIFFERENT recorded renamings produce an identical deterministicProjection(frame) after remapping references. Distinct from D1: D1 fixes the renaming seed and varies nothing, so it cannot catch identity dependence.",
-    "D1": "Same blueprint, input trace AND renaming seed => identical deterministicProjection(frame) hash, two processes, both clocks. The projection excludes wall-clock timings, identifier mappings and diagnostic metadata.",
-    "P1": "Named scene on a named machine holds >=30 fps interactively. Measure before setting.",
-    "S1": "A hostile controller cannot escape, hang, or read undeclared state.",
-    "F1": "A target player, unassisted and untutored, builds something that moves within 15 minutes of first launch, and wants to build a second thing. Judged by watching a person.",
-    "F2": "Build-loop latency: place -> connect -> run under 2 s, with no compile step the player can perceive.",
-    "F3": "A player who did not build the machine can say why it failed from the post-mortem alone.",
-    "F4": "Ten minutes of unassisted play yields one moment of visible delight and no moment of 'I don't know what this wants from me'."
+    "L1a": {
+      "dueAt": "M7",
+      "human": false,
+      "contract": "1 m level, upright, >=8 strict alternating touchdowns, terminal stable hold (5 s). Never observed passing."
+    },
+    "L1b": {
+      "dueAt": "M7",
+      "human": false,
+      "contract": "L1a + Stable Walker contract: df>=1.00 m/120 s, efficiency>=0.70, maxCrossTrack<=0.15 m, |dl|<=0.15 m, reverse<=0.10 m, tilt<=0.45 rad after 5 s, no fall/damage/non-finite/saturation/forbidden non-pad support. THE OPEN PROBLEM."
+    },
+    "L1c": {
+      "dueAt": "M9",
+      "human": false,
+      "contract": "L1b + tracking over W=max(30 s,10L/v): velocity MAE<=max(0.005 m/s,0.15v), step MAE<=max(0.015 m,0.20L)."
+    },
+    "L1d": {
+      "dueAt": "M9",
+      "human": false,
+      "contract": "Robustness under declared variation with held-out qualification cases. The completion condition."
+    },
+    "L2": {
+      "dueAt": "M8",
+      "human": false,
+      "contract": "Two runs of the same inputs under TWO DIFFERENT recorded renamings produce an identical deterministicProjection(frame) after remapping references. Distinct from D1: D1 fixes the renaming seed and varies nothing, so it cannot catch identity dependence."
+    },
+    "D1": {
+      "dueAt": "M1",
+      "human": false,
+      "contract": "Same blueprint, input trace AND renaming seed => identical deterministicProjection(frame) hash, two processes, both clocks. The projection excludes wall-clock timings, identifier mappings and diagnostic metadata."
+    },
+    "P1": {
+      "dueAt": "M5",
+      "human": false,
+      "contract": "Named scene on a named machine holds >=30 fps interactively. Measure before setting."
+    },
+    "S1": {
+      "dueAt": "M4",
+      "human": false,
+      "contract": "A hostile controller cannot escape, hang, or read undeclared state."
+    },
+    "F1": {
+      "dueAt": "M3b",
+      "human": true,
+      "contract": "A target player, unassisted and untutored, builds something that moves within 15 minutes of first launch, and wants to build a second thing. Judged by watching a person."
+    },
+    "F2": {
+      "dueAt": "M3b",
+      "human": false,
+      "contract": "Build-loop latency: place -> connect -> run under 2 s, with no compile step the player can perceive."
+    },
+    "F3": {
+      "dueAt": "M8",
+      "human": true,
+      "contract": "A player who did not build the machine can say why it failed from the post-mortem alone."
+    },
+    "F4": {
+      "dueAt": "M8",
+      "human": true,
+      "contract": "Ten minutes of unassisted play yields one moment of visible delight and no moment of 'I don't know what this wants from me'."
+    }
   },
   "rules": [],
   "milestones": [

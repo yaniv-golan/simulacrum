@@ -8,7 +8,9 @@
     "type": "git",
     "url": "https://github.com/yaniv-golan/simulacrum.git"
   },
-  "engines": { "node": ">=24.18 <25" },
+  "engines": {
+    "node": ">=24.18 <25"
+  },
   "type": "module",
   "scripts": {
     "bars": "node scripts/bars.mjs",
@@ -23,6 +25,11 @@
     "gate:structural": "node scripts/gate-structural.mjs",
     "gate:M0": "node scripts/gate.mjs M0",
     "gate": "node scripts/gate.mjs",
-    "rules": "node scripts/rules.mjs"
+    "rules": "node scripts/rules.mjs",
+    "bar:F1": "node scripts/bars.mjs F1",
+    "bar:F2": "node scripts/bars.mjs F2",
+    "bar:F3": "node scripts/bars.mjs F3",
+    "bar:F4": "node scripts/bars.mjs F4",
+    "assess": "node scripts/assess.mjs"
   }
 }
