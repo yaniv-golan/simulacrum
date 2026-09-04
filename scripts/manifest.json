@@ -4,22 +4,22 @@
     "L1a": {
       "dueAt": "M7",
       "human": false,
-      "contract": "1 m level, upright, >=8 strict alternating touchdowns, terminal stable hold (5 s). Never observed passing."
+      "contract": "THE COURSE, prefix 0: from stable hold, stay upright while stepping -- strict alternating touchdowns and stable hold (5 s continuous, both pads >=0.10 W0, total >=0.80 W0, speed <=0.01 m/s, tilt <=0.20 rad). Never achieved: the one observed run held 1.325 s of the required 5 s."
     },
     "L1b": {
       "dueAt": "M7",
       "human": false,
-      "contract": "L1a + Stable Walker contract: df>=1.00 m/120 s, efficiency>=0.70, maxCrossTrack<=0.15 m, |dl|<=0.15 m, reverse<=0.10 m, tilt<=0.45 rad after 5 s, no fall/damage/non-finite/saturation/forbidden non-pad support. THE OPEN PROBLEM."
+      "contract": "THE COURSE, segment S1 (Approach): walk from stable hold to the ramp entry. >=4 strict alternating touchdowns, cross-track <=0.15 m, path efficiency >=0.70, stance slip <=0.02 m. THE KNOWN OPEN PROBLEM -- best observed efficiency 0.449."
     },
     "L1c": {
       "dueAt": "M9",
       "human": false,
-      "contract": "L1b + tracking over W=max(30 s,10L/v): velocity MAE<=max(0.005 m/s,0.15v), step MAE<=max(0.015 m,0.20L)."
+      "contract": "THE COURSE, segments S2+S3 (Descent, Advance): walk down the ramp without falling and with no forbidden support, >=2 touchdowns on the ramp, stance slip <=0.06 m, arrive with both pads on the ground; then >=5 further strict alternating steps, each forward projection >0.02 m."
     },
     "L1d": {
       "dueAt": "M9",
       "human": false,
-      "contract": "Robustness under declared variation with held-out qualification cases. The completion condition."
+      "contract": "THE COURSE, complete and unbroken (S1-S5), then held under declared variation: start pose +/-0.10 m and +/-0.15 rad, mass +/-10% plus an off-centre payload, ramp slope range, named friction lanes, one bounded disturbance during S3, and the mirrored machine. Held-out cases separate from tuning cases. S4: heading sweep >=350 deg, max path radius <=2.0 m. S5: within 0.30 m of the S4 start, stable hold 5 s. Whole run <=180 s, no fall/damage/non-finite/forbidden support/saturation."
     },
     "L2": {
       "dueAt": "M8",
@@ -176,8 +176,13 @@
         "check": null
       },
       {
-        "id": "acceptance-evaluator",
-        "how": "BLOCKER: the scoped locomotion evaluator artifact exists (predicates, measurements, domain, bindings, exclusions)",
+        "id": "course-dimensions-recorded",
+        "how": "plate height, ramp slope, approach distance, circle radius bound and return tolerance are recorded in the repo",
+        "check": null
+      },
+      {
+        "id": "course-evaluator",
+        "how": "The Course evaluator is implemented: inherited measurement definitions (unload, clearance, touchdown, step, alternation, stance slip, fall, stable hold, forbidden support) plus the five segment predicates",
         "check": null
       }
     ],

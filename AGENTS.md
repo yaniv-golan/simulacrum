@@ -143,8 +143,33 @@ diagnostic metadata; those ride alongside, outside the digest.
 **L1a–L1c thresholds are the prior attempt's frozen acceptance *requirements* — documented
 contract, NOT evidence of reachability.** No rung was ever observed passing. Change one only with
 a written reason; two revisions of the brief invented replacements and were wrong both times.
-**BLOCKER — the acceptance evaluator is not yet specified and cannot be inferred from the numbers
-above.** Before M7 someone must supply one scoped artifact containing: the physical predicates,
+**The acceptance evaluator is specified: THE COURSE.**
+
+> From stable hold on the build plate, walk to the plate edge; walk down the ramp without falling;
+> advance five further steps; then walk a tight closed circle back to where the circle began, and
+> settle into stable hold.
+
+Five segments, one unbroken run, ≤ 180 s. No fall, no damage, no non-finite state, **no forbidden
+support** (it may not slide, sit or brace — including on the ramp), no saturation failure. The
+ladder's rungs are prefixes of it: **L1a** upright stepping, **L1b** the straight approach *(the
+known open problem — efficiency 0.449 against a 0.70 requirement)*, **L1c** the ramp and five
+steps, **L1d** the turn, the return, and robustness under declared variation.
+
+Measurement definitions — unload, clearance, touchdown, step, strict alternation, stance slip,
+fall, stable hold, forbidden support — are inherited verbatim from the prior attempt. **The legacy
+qualification apparatus is excluded**: no 441-state matrix, no 21×21 grid, no 1,680-edge sweep, no
+400 command pairs, no emergency-stop or crouch or balance-toggle suites. One scenario; passing it
+is the bar.
+
+**Assumed reading, confirm it:** the circle closes where the circle began, at the bottom of the
+ramp. Returning to the *plate* would require climbing back up, which is a materially different
+capability and should be a deliberate choice.
+
+**Set the course dimensions from what you build** — plate height, ramp slope, approach distance,
+circle radius bound, return tolerance — and **record them in the repo. A course whose dimensions
+are not written down is not a bar.**
+
+**Formerly a blocker; superseded.** For reference, the unresolved version read: Before M7 someone must supply one scoped artifact containing: the physical predicates,
 the measurement definitions (what counts as a touchdown, an unload, a clearance, a settle), the
 scenario and command domain actually selected, the required part bindings, and **an explicit list
 of what is excluded from the legacy qualification apparatus** (the prior attempt's version carried
