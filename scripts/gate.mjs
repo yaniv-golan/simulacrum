@@ -1,12 +1,13 @@
-// The milestone gate EXECUTES the checks it owns and propagates their failure.
-// It never prints an instruction to run something else and then exits zero:
-// that is a false green, and it is the defect this project's own notes warn
-// about most often.
+// The milestone gate EXECUTES what it owns and propagates failure. It never
+// prints an instruction and exits zero.
 //
-// Bars above the current milestone are deliberately red and are never waited on.
+// Structural checks, bars and exit obligations are ALL CUMULATIVE: a later gate
+// re-checks everything due at or before it. Obligations previously read only
+// `[target]`, so an M1 gate passed with an unmet M0 obligation.
 import { readFileSync } from "node:fs";
 import { runStructuralChecks } from "./gate-structural.mjs";
 import { evaluateBar } from "./bars.mjs";
+import { CHECKS } from "./checks.mjs";
 
 const manifest = JSON.parse(
   readFileSync(new URL("./manifest.json", import.meta.url), "utf8"),
@@ -18,48 +19,59 @@ if (!manifest.milestones.includes(target)) {
   process.exit(2);
 }
 if (target !== manifest.milestone) {
-  console.error(
-    `current milestone is ${manifest.milestone}; refusing to gate ${target}`,
-  );
+  console.error(`current milestone is ${manifest.milestone}; refusing to gate ${target}`);
   process.exit(1);
 }
 
-console.log(`milestone ${target} (owned by scripts/manifest.json)\n`);
-const { failed, ran } = runStructuralChecks(target);
-
-// Bars due at or before the target are GATED. A milestone gate that ignores its
-// own bars can declare locomotion complete without running locomotion.
 const order = manifest.milestones;
 const cutoff = order.indexOf(target);
-const dueBars = Object.entries(manifest.bars).filter(
-  ([, bar]) => order.indexOf(bar.dueAt) <= cutoff,
-);
+const dueAt = (m) => order.indexOf(m) <= cutoff;
+
+console.log(`milestone ${target} (owned by scripts/manifest.json)\n`);
+const { failed, ran } = await runStructuralChecks(target);
 
 let redBars = 0;
-for (const [id, bar] of dueBars) {
+let dueBarCount = 0;
+for (const [id, bar] of Object.entries(manifest.bars)) {
+  if (!dueAt(bar.dueAt)) {
+    console.log(`--    bar:${id.padEnd(4)} deferred to ${bar.dueAt}`);
+    continue;
+  }
+  dueBarCount += 1;
   const { state, why } = evaluateBar(id);
   if (state === "RED") redBars += 1;
   console.log(`${state.padEnd(5)} bar:${id.padEnd(4)} due ${bar.dueAt} -- ${why}`);
 }
-for (const [id, bar] of Object.entries(manifest.bars)) {
-  if (!dueBars.some(([dueId]) => dueId === id))
-    console.log(`--    bar:${id.padEnd(4)} deferred to ${bar.dueAt}`);
-}
 
-// Milestone exit obligations that are not bars. An unregistered or unimplemented
-// obligation REFUSES: a prose hard stop that the gate cannot see is not a stop.
-const obligations = manifest.exitObligations?.[target] ?? null;
+// Every obligation due at or before the target, not only this milestone's.
 let unmet = 0;
-if (obligations === null) {
-  console.error(`\nUNREGISTERED: ${target} declares no exit obligations. Register them or fix the manifest.`);
-  unmet += 1;
-} else {
+let obligationCount = 0;
+for (const milestone of order.filter(dueAt)) {
+  const obligations = manifest.exitObligations?.[milestone];
+  if (obligations === undefined) {
+    unmet += 1;
+    console.error(`UNREG  ${milestone} declares no exit obligations -- register them`);
+    continue;
+  }
   for (const ob of obligations) {
+    obligationCount += 1;
     if (!ob.check) {
       unmet += 1;
-      console.error(`UNMET  ${ob.id} -- no check registered: ${ob.how}`);
-    } else {
-      console.log(`ok     ${ob.id}`);
+      console.error(`UNMET  ${ob.id} (${milestone}) -- no check registered: ${ob.how}`);
+      continue;
+    }
+    const fn = CHECKS[ob.check];
+    if (typeof fn !== "function") {
+      unmet += 1;
+      console.error(`BADREF ${ob.id} (${milestone}) -- check "${ob.check}" is not in the registry`);
+      continue;
+    }
+    try {
+      await fn();
+      console.log(`ok     ${ob.id} (${milestone})`);
+    } catch (error) {
+      unmet += 1;
+      console.error(`FAIL   ${ob.id} (${milestone}): ${error.message}`);
     }
   }
 }
@@ -67,7 +79,7 @@ if (obligations === null) {
 if (failed > 0 || redBars > 0 || unmet > 0) {
   console.error(
     `\nREFUSED at ${target}: ${failed} of ${ran} structural check(s) not green; ` +
-      `${redBars} of ${dueBars.length} due bar(s) red; ${unmet} exit obligation(s) unmet.`,
+      `${redBars} of ${dueBarCount} due bar(s) red; ${unmet} of ${obligationCount} obligation(s) unmet.`,
   );
   process.exit(1);
 }
