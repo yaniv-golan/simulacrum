@@ -14,12 +14,12 @@
     "L1c": {
       "dueAt": "M9",
       "human": false,
-      "contract": "THE COURSE, segments S2+S3 (Descent, Advance): walk down the ramp without falling and with no forbidden support, >=2 touchdowns on the ramp, stance slip <=0.06 m, arrive with both pads on the ground; then >=5 further strict alternating steps, each forward projection >0.02 m."
+      "contract": "THE COURSE, segments S2+S3 (Descent, Advance): walk DOWN the ramp with no fall and no forbidden support, >=2 touchdowns on the ramp, stance slip <=0.06 m, arrive with both pads on the ground; then >=5 further strict alternating steps, each forward projection >0.02 m."
     },
     "L1d": {
       "dueAt": "M9",
       "human": false,
-      "contract": "THE COURSE, complete and unbroken (S1-S5), then held under declared variation: start pose +/-0.10 m and +/-0.15 rad, mass +/-10% plus an off-centre payload, ramp slope range, named friction lanes, one bounded disturbance during S3, and the mirrored machine. Held-out cases separate from tuning cases. S4: heading sweep >=350 deg, max path radius <=2.0 m. S5: within 0.30 m of the S4 start, stable hold 5 s. Whole run <=180 s, no fall/damage/non-finite/forbidden support/saturation."
+      "contract": "THE COURSE, segments S4+S5+S6 then the complete unbroken circuit under declared variation. S4 turnaround loop: heading sweep >=350 deg, arc length >=3.0 m, enclosed area >=0.8 m2, max distance from path centroid <=2.0 m, ending within 0.40 m of the ramp foot facing up-ramp. S5 ASCENT: walk back UP the ramp onto the plate, no fall, no forbidden support, no saturation failure -- this is where an underpowered machine fails, and no precedent for it exists in the record. S6: within 0.30 m and 0.35 rad of the S1 START POSE ON THE PLATE, stable hold 5 s. Whole circuit <=240 s. THE COMPLETION CONDITION."
     },
     "L2": {
       "dueAt": "M8",
@@ -219,7 +219,12 @@
       },
       {
         "id": "course-evaluator",
-        "how": "The Course evaluator is implemented: inherited measurement definitions (unload, clearance, touchdown, step, alternation, stance slip, fall, stable hold, forbidden support) plus the five segment predicates",
+        "how": "The Course evaluator implements all six segments including S5 ASCENT, the machine bindings (root, pads, supportEligible, W0), the measurement frames, and the segment state machine",
+        "check": null
+      },
+      {
+        "id": "ascent-power-margin",
+        "how": "the motor and battery models can be shown to supply the torque and energy S5 demands at the frozen ramp slope -- ascent is the first segment that can fail for power rather than control",
         "check": null
       }
     ],

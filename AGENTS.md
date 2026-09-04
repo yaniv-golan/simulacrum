@@ -130,7 +130,7 @@ instrument than the rest, measuring what the rest cannot.
 | L1a | `npm run bar:L1a` | **The Course, prefix 0.** From stable hold: stay upright while stepping — strict alternating touchdowns, then **terminal stable hold (5 s continuous)**. **Never observed passing**: the one unpreserved run held 1.325 s of the required 5 s and reported no valid settle. |
 | **L1b** | `npm run bar:L1b` | **The Course, S1 (Approach). THE OPEN PROBLEM.** Walk from stable hold to the ramp entry: ≥4 strict alternating touchdowns, cross-track ≤ 0.15 m, path efficiency **≥ 0.70**, stance slip ≤ 0.02 m. Best observed efficiency: **0.449**. |
 | L1c | `npm run bar:L1c` | **The Course, S2+S3 (Descent, Advance).** Down the ramp with no fall and **no forbidden support**, ≥2 touchdowns on the ramp, stance slip ≤ 0.06 m, arriving with both pads on the ground; then ≥5 further strict alternating steps, each forward projection > 0.02 m. |
-| L1d | `npm run bar:L1d` | **The Course, complete and unbroken (S1–S5), then held under declared variation.** S4: heading sweep ≥ 350°, max path radius ≤ 2.0 m. S5: within 0.30 m of the S4 start, stable hold 5 s. Whole run ≤ 180 s. Variation and held-out cases per the Course spec. **The completion condition.** |
+| L1d | `npm run bar:L1d` | **The Course, S4+S5+S6, then the complete unbroken circuit under declared variation.** S4 turnaround: sweep ≥ 350°, arc ≥ 3.0 m, enclosed area ≥ 0.8 m², ending within 0.40 m of the ramp foot facing up-ramp. **S5 ascent** — back up the ramp, no forbidden support, no saturation failure. S6: within 0.30 m and 0.35 rad of the **S1 start pose on the plate**, stable hold 5 s. Circuit ≤ 240 s. **The completion condition, and beyond anything the previous attempt reached.** |
 | L2 | `npm run bar:L2` | Two runs of the same inputs under **two different recorded renamings** produce an identical `deterministicProjection(frame)` after remapping references. **Distinct from D1.** |
 | D1 | `npm run bar:D1` | Same blueprint, input trace **and renaming seed** ⇒ identical `deterministicProjection(frame)` hash, two processes, both clocks |
 | P1 | `npm run bar:P1` | **Both** must hold on a named scene and machine: ≥ 30 fps rendered **and** 120 completed simulation ticks per wall-clock second, with a declared overload policy. A responsive renderer over a simulation accruing debt is not a pass. |
@@ -159,10 +159,10 @@ a written reason; two revisions of the brief invented replacements and were wron
 **The acceptance evaluator is specified: THE COURSE.**
 
 > From stable hold on the build plate, walk to the plate edge; walk down the ramp without falling;
-> advance five further steps; then walk a tight closed circle back to where the circle began, and
-> settle into stable hold.
+> advance five further steps; walk a tight closed circle that brings you back to the foot of the
+> ramp; **walk back up the ramp onto the plate**; and settle into stable hold where you started.
 
-Five segments, one unbroken run, ≤ 180 s. No fall, no damage, no non-finite state, **no forbidden
+**A closed circuit — down, around, and back up.** Six segments, one unbroken run, ≤ 240 s. No fall, no damage, no non-finite state, **no forbidden
 support** (it may not slide, sit or brace — including on the ramp), no saturation failure. The
 ladder's rungs are prefixes of it: **L1a** upright stepping, **L1b** the straight approach *(the
 known open problem — efficiency 0.449 against a 0.70 requirement)*, **L1c** the ramp and five
@@ -174,9 +174,14 @@ qualification apparatus is excluded**: no 441-state matrix, no 21×21 grid, no 1
 400 command pairs, no emergency-stop or crouch or balance-toggle suites. One scenario; passing it
 is the bar.
 
-**Assumed reading, confirm it:** the circle closes where the circle began, at the bottom of the
-ramp. Returning to the *plate* would require climbing back up, which is a materially different
-capability and should be a deliberate choice.
+**S5, the ascent, is the hard new part.** It is not descent reversed: the stance leg lifts the whole
+COM through the slope while the swing leg clears a rising surface, required friction *rises* with
+slope, and it is the first segment that can fail for **power** rather than control — so it couples
+the acceptance contract to the motor and battery models. Nothing in the record suggests ascent was
+ever attempted. Diagnose an S5 failure as torque or charge before touching the gait.
+
+The closed circuit buys a real thing: **accumulated error becomes one number**, measured against
+the original start pose over descent, turnaround and ascent.
 
 **Set the course dimensions from what you build** — plate height, ramp slope, approach distance,
 circle radius bound, return tolerance — and **record them in the repo. A course whose dimensions
