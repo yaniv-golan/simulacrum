@@ -40,8 +40,16 @@ function sessions() {
 }
 
 // F1 measures FIRST-launch experience: a participant cannot be novice twice.
-if (id === "F1" && sessions().some((s) => s.bar === "F1" && s.participant === participant))
-  fail(`F1 is a first-launch bar and ${participant} has assessed it before. Use a new participant.`);
+// F1 measures FIRST-launch experience. Any prior recorded exposure disqualifies,
+// not only a prior F1: a ten-minute F4 participant is no longer a novice.
+if (id === "F1") {
+  const prior = sessions().find((s) => s.participant === participant);
+  if (prior)
+    fail(
+      `F1 is a first-launch bar and ${participant} already has a recorded session (${prior.bar}, ` +
+        `${prior.date}). A participant with any prior exposure cannot supply novice evidence.`,
+    );
+}
 
 const app = appFingerprint();
 const record = {

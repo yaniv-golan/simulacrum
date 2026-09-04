@@ -9,7 +9,7 @@
     "L1a": {
       "dueAt": "M7",
       "human": false,
-      "contract": "THE COURSE, prefix 0: from stable hold, stay upright while stepping -- strict alternating touchdowns and stable hold (5 s continuous, both pads >=0.10 W0, total >=0.80 W0, speed <=0.01 m/s, tilt <=0.20 rad). Never achieved: the one observed run held 1.325 s of the required 5 s."
+      "contract": "STANDALONE (not a Course segment). From stable hold on level ground: >=8 strict alternating touchdowns each with positive forward projection, net displacement >=1 x L, within 60 s, then TERMINAL STABLE HOLD (5 s), with no fall, damage or forbidden support. Never observed passing: the one unpreserved run held 1.325 s of the required 5 s."
     },
     "L1b": {
       "dueAt": "M7",
@@ -17,7 +17,7 @@
       "contract": "THE COURSE, segment S1 (Approach): walk from stable hold to the ramp entry. >=4 strict alternating touchdowns, cross-track <=0.15 m, path efficiency >=0.70, stance slip <=0.02 m. THE KNOWN OPEN PROBLEM -- best observed efficiency 0.449."
     },
     "L1c": {
-      "dueAt": "M9",
+      "dueAt": "M7",
       "human": false,
       "contract": "THE COURSE, segments S2+S3 (Descent, Advance): walk DOWN the ramp with no fall and no forbidden support, >=2 touchdowns on the ramp, stance slip <=0.06 m, arrive with both pads on the ground; then >=5 further strict alternating steps, each forward projection >0.02 m."
     },
@@ -122,6 +122,11 @@
       {
         "id": "minimal-failure-bundle",
         "how": "a bundle replays to the same failure",
+        "check": null
+      },
+      {
+        "id": "physics-library-adr",
+        "how": "the physics-library choice is recorded as an ADR with its reasoning; stepping, determinism and checkpoints all depend on it, so it cannot wait for M2",
         "check": null
       }
     ],
@@ -228,6 +233,11 @@
       {
         "id": "course-mode-independent",
         "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "check": null
+      },
+      {
+        "id": "course-predicates-falsified",
+        "how": "every Course predicate has BOTH a trace it accepts and a deliberately-wrong trace it rejects -- an evaluator nobody has seen reject anything is not known to work (the same rule as 'never trust a test you have not seen fail', applied to the evaluator)",
         "check": null
       }
     ],

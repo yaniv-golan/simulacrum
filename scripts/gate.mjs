@@ -8,6 +8,17 @@ import { readFileSync } from "node:fs";
 import { runStructuralChecks } from "./gate-structural.mjs";
 import { evaluateBar } from "./bars.mjs";
 import { CHECKS } from "./checks.mjs";
+import { execFileSync } from "node:child_process";
+
+function runCheckInSubprocess(checkId, timeoutMs) {
+  execFileSync(
+    process.execPath,
+    ["--input-type=module", "-e",
+     `import {CHECKS} from ${JSON.stringify(new URL("./checks.mjs", import.meta.url).href)};` +
+     `await CHECKS[${JSON.stringify(checkId)}]();`],
+    { timeout: timeoutMs, killSignal: "SIGKILL", stdio: "pipe" },
+  );
+}
 
 const manifest = JSON.parse(
   readFileSync(new URL("./manifest.json", import.meta.url), "utf8"),
@@ -68,19 +79,11 @@ for (const milestone of order.filter(dueAt)) {
       continue;
     }
     try {
-      // Every obligation has an enforced deadline. The registry promised this;
-      // the gate performed an unrestricted await, so a check waiting on a live
-      // server could hold the gate open indefinitely.
-      let timer;
-      await Promise.race([
-        Promise.resolve().then(fn),
-        new Promise((_, reject) => {
-          timer = setTimeout(
-            () => reject(new Error(`timed out after ${OBLIGATION_TIMEOUT_MS} ms`)),
-            OBLIGATION_TIMEOUT_MS,
-          );
-        }),
-      ]).finally(() => clearTimeout(timer));
+      // Deadlines are enforced EXTERNALLY, in a child process. Promise.race
+      // shares an event loop with the check, so a synchronous loop simply
+      // prevents the timer firing: an 80 ms blocking check passed a 10 ms
+      // deadline. Only a separate process can be killed.
+      await runCheckInSubprocess(ob.check, OBLIGATION_TIMEOUT_MS);
       console.log(`ok     ${ob.id} (${milestone})`);
     } catch (error) {
       unmet += 1;

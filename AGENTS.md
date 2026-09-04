@@ -43,7 +43,7 @@ Enforced: `gate:structural`.
 - One fixed 1/120 s session path for real-time and deterministic advancement. No second stepper.
 - Telemetry is the single read model. Never a second UI-only truth.
 - SI units in `model/` and `simulation/`.
-- **One strict *runtime* schema. Never infer a missing field.** Player saves carry a version and
+- **One strict *runtime* schema — and exactly one migration boundary outside it. Never infer a missing field.** Player saves carry a version and
   are migrated into that shape **at load**, by a named, tested migration per version step — a
   bounded listed set, not open-ended compatibility branching. Declare the supported range: below
   the floor, refuse with an explicit message; **above the current version, refuse — never guess
@@ -214,8 +214,8 @@ performance number.
 | | deliverable | stop rule |
 |---|---|---|
 | M0 | skeleton, manifest, layer/tick/identity gates, runner, CI < 3 min, all eight bars red-and-named | structural gate green; a layer violation turns it red |
-| M1 | fixed-step session, 9 phases, one integrator, telemetry, `step(n)`, **minimal failure bundle** | **D1** |
-| M2 | physics door + library ADR, component/port model, schema + generated validators, assembly compiler, **G2 decided**, **command surface** | schema rejects every malformed fixture; one library importer; no live library object escapes |
+| M1 | **the physics-library ADR** — it lands here, not M2: stepping, determinism and checkpoints all depend on it, so choosing later means throwaway work or an accidental commitment. Then fixed-step session, 9 phases, one integrator, telemetry, `step(n)`, **minimal failure bundle** | **D1** |
+| M2 | narrow physics door (ADR taken at M1), component/port model, schema + generated validators, assembly compiler, **G2 decided**, **command surface** | schema rejects every malformed fixture; one library importer; no live library object escapes |
 | M3 | power/signal networks, actuators, sensors, command bus; a powered wheel turns *(host-side test double for the controller — sandbox is M4)* | controllers cannot read live state |
 | M3b | **first playable loop** — place, connect, power, run, watch it move and fail. Minimum editor: no panels, no camera polish, no catalog breadth | **F1 and F2, run with a real target player.** A red F1 here costs far less than a red F1 at M8 |
 | M4 | WASM sandbox: fuel, digest gate, host-import boundary | **S1**, under a real attack |
@@ -225,7 +225,7 @@ performance number.
 | M7 | **locomotion** — legged machine, ordinary player-authored controller programs. The five-regulator decomposition is the leading **candidate**, not a requirement; the prime rule constrains *authority* (no engine gait owner, no pose write, no hidden support force, no role-selected traction), not program count | **L1b**. After two failures stop and re-derive the decomposition from measurement rather than iterating |
 | M8 | editor, panels, camera, catalog breadth, demos as blueprints | **L2**, and **F3/F4** |
 | M8b | **WebMCP: a player's own browser agent helping them play.** A thin adapter over the M2 command surface. Diagnostic tools first — `explain_failure`, `diagnose_power`, `diagnose_connection`, `describe_machine`, `find_part`, `read_telemetry`; build verbs supported but never the fast path, because **building is the game** | **F5**, plus: F1 still passes with the tools **unregistered**; no player content in any tool description; tools registered statically; no capability the player's UI lacks |
-| M9 | **L1c then L1d** — tracking, then the robustness contract | **L1d. This is the completion condition, not L2.** |
+| M9 | **L1d** — the complete unbroken circuit S1–S6 including ascent, then the robustness contract under the frozen variation protocol. *(L1c is an M7 bar; command tracking is not part of the Course.)* | **L1d. This is the completion condition, not L2.** |
 
 **Current: M0. Gate: `npm run gate:M0` — it EXECUTES the checks due at or before M0 and exits
 nonzero if any is not green.** Checks carry a `dueAt` milestone in the manifest; a gate never runs

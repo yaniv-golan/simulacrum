@@ -35,19 +35,28 @@ export function evaluateBar(id) {
 
   let record;
   try {
-    const applicable = readdirSync(sessionsDir)
+    const all = readdirSync(sessionsDir)
       .filter((f) => f.endsWith(".json"))
       .map((f) => JSON.parse(readFileSync(new URL(f, sessionsDir), "utf8")))
-      .filter((r) => r.bar === id)
-      .sort((a, b) => (a.recordedAt < b.recordedAt ? -1 : 1));
-    if (applicable.length === 0) return { id, state: "RED", why: "no recorded assessment" };
-    record = applicable.at(-1); // the most recent session wins
+      .filter((r) => r?.bar === id);
+    if (all.length === 0) return { id, state: "RED", why: "no recorded assessment" };
+
+    // Validate BEFORE ordering. Sorting first let a record with
+    // recordedAt "zz-invalid-timestamp" sort last and mask a newer failure.
+    const invalidRecord = all.find((r) => validate(r, id) !== null);
+    if (invalidRecord)
+      return { id, state: "RED", why: `invalid session record: ${validate(invalidRecord, id)}` };
+
+    const timed = all.map((r) => ({ r, t: Date.parse(r.recordedAt) }));
+    const unparsable = timed.find((x) => Number.isNaN(x.t));
+    if (unparsable)
+      return { id, state: "RED", why: `unparsable recordedAt: ${unparsable.r.recordedAt}` };
+
+    timed.sort((a, b) => a.t - b.t || (a.r.participant < b.r.participant ? -1 : 1));
+    record = timed.at(-1).r; // most recent valid session wins
   } catch (error) {
     return { id, state: "RED", why: `session log unreadable: ${error.message}` };
   }
-
-  const invalid = validate(record, id);
-  if (invalid) return { id, state: "RED", why: invalid };
 
   const app = appFingerprint();
   if (record.app !== app)
@@ -55,7 +64,12 @@ export function evaluateBar(id) {
   if (record.servedBuild !== record.app)
     return { id, state: "RED", why: "the served build the participant used does not match the evidence" };
 
-  const proto = protocolHash(id, bar.contract);
+  let proto;
+  try {
+    proto = protocolHash(id, bar.contract);
+  } catch {
+    return { id, state: "RED", why: `no assessment protocol at assessments/protocol/${id}.md` };
+  }
   if (record.protocol !== proto)
     return { id, state: "RED", why: "the bar contract changed since this assessment" };
 
