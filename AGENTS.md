@@ -117,21 +117,34 @@ as a sentence a person can act on; failure is legible and enjoyable, not punishi
 ## The bars
 
 Each is a command. Run it; it is red until it is green. **F1, F3 and F4 are judged by watching a real target
-player; F2 is instrumented.** Record a human verdict with `npm run assess -- F1 pass "notes"`; it
+player; F2 is instrumented.** Record a human verdict with `npm run assess -- <bar> <pass|fail> <participant> <servedBuild> "notes"`
+(the servedBuild is the id the **running application** shows, not your checkout); it
 is tied to the **player-facing build fingerprint** (`npm run build-fingerprint`), so committing the
 evidence or editing a doc preserves it while touching `src/` invalidates it. F1 measures
-first-launch experience, so each F1 record needs a **participant who has not assessed it before** — a weaker instrument than the rest, measuring what the rest cannot.
+first-launch experience, so each F1 record needs a **participant who has not assessed it before**;
+sessions are append-only so that history cannot be erased by overwriting. Human bars are a weaker
+instrument than the rest, measuring what the rest cannot.
 
 | bar | command | asserts |
 |---|---|---|
-| L1a | `npm run bar:L1a` | 1 m, level, upright, ≥8 strict alternating touchdowns, **terminal stable hold (5 s)**. Precondition for L1b, not a milestone. **Never observed passing.** The one unpreserved run reached 1.125 m with alternating touchdowns but only **1.325 s** of stable hold and no valid settle. Progress and alternation were observed; the rung was not. |
-| **L1b** | `npm run bar:L1b` | **THE OPEN PROBLEM.** `df ≥ 1.00 m` within 120 s; efficiency **≥ 0.70**; `maxCrossTrack ≤ 0.15 m`; `\|dl\| ≤ 0.15 m`; reverse ≤ 0.10 m; tilt ≤ 0.45 rad at every tick after 5 s; ≥8 strict alternating touchdowns; terminal stable hold; **and no fall, damage, non-finite state, saturation failure, or forbidden non-pad support.** Best observed efficiency: 0.449. |
-| L1c | `npm run bar:L1c` | L1b **plus tracking** over the scored window `W = max(30 s, 10L/v)`: velocity MAE ≤ max(0.005 m/s, 0.15v), step MAE ≤ max(0.015 m, 0.20L) |
-| L1d | `npm run bar:L1d` | **Robustness, not repetition.** Under D1, ten identical runs give one trajectory — that is repeatability. Define and hold out *variation*: initial pose and velocity, physical parameters, disturbances, command transitions, terrain. Separate tuning cases from held-out qualification cases. **This is the actual completion condition; write its contract before M7.** |
-| L2 | `npm run bar:L2` | Two runs of the same inputs under **two different recorded renamings** produce an identical `deterministicProjection(frame)` after remapping references. **Distinct from D1** — see below. |
+| L1a | `npm run bar:L1a` | **The Course, prefix 0.** From stable hold: stay upright while stepping — strict alternating touchdowns, then **terminal stable hold (5 s continuous)**. **Never observed passing**: the one unpreserved run held 1.325 s of the required 5 s and reported no valid settle. |
+| **L1b** | `npm run bar:L1b` | **The Course, S1 (Approach). THE OPEN PROBLEM.** Walk from stable hold to the ramp entry: ≥4 strict alternating touchdowns, cross-track ≤ 0.15 m, path efficiency **≥ 0.70**, stance slip ≤ 0.02 m. Best observed efficiency: **0.449**. |
+| L1c | `npm run bar:L1c` | **The Course, S2+S3 (Descent, Advance).** Down the ramp with no fall and **no forbidden support**, ≥2 touchdowns on the ramp, stance slip ≤ 0.06 m, arriving with both pads on the ground; then ≥5 further strict alternating steps, each forward projection > 0.02 m. |
+| L1d | `npm run bar:L1d` | **The Course, complete and unbroken (S1–S5), then held under declared variation.** S4: heading sweep ≥ 350°, max path radius ≤ 2.0 m. S5: within 0.30 m of the S4 start, stable hold 5 s. Whole run ≤ 180 s. Variation and held-out cases per the Course spec. **The completion condition.** |
+| L2 | `npm run bar:L2` | Two runs of the same inputs under **two different recorded renamings** produce an identical `deterministicProjection(frame)` after remapping references. **Distinct from D1.** |
 | D1 | `npm run bar:D1` | Same blueprint, input trace **and renaming seed** ⇒ identical `deterministicProjection(frame)` hash, two processes, both clocks |
-| P1 | `npm run bar:P1` | named scene on named machine holds ≥ 30 fps interactively |
+| P1 | `npm run bar:P1` | **Both** must hold on a named scene and machine: ≥ 30 fps rendered **and** 120 completed simulation ticks per wall-clock second, with a declared overload policy. A responsive renderer over a simulation accruing debt is not a pass. |
 | S1 | `npm run bar:S1` | a hostile controller cannot escape, hang, or read undeclared state |
+| **F1** | `npm run bar:F1` *(human)* | a target player, unassisted and untutored, builds something that moves within **15 minutes** of first launch — and wants to build a second thing |
+| **F2** | `npm run bar:F2` | **instrumented.** Application response across one place → connect → run cycle on a named scene and machine — input event to reflecting frame, plus Run to first tick, **human time excluded**. p95 < **2 s**, no single stall > 500 ms. 2 s is a product requirement, not a measurement. |
+| **F3** | `npm run bar:F3` *(human)* | a player who did **not** build the machine can say why it failed from the post-mortem alone. **Use failures whose cause is independently known**, and score identifying the cause — not repeating the sentence on screen. |
+| **F4** | `npm run bar:F4` *(human)* | ten minutes of unassisted play yields one moment of visible delight and no moment of "I don't know what this wants from me" |
+| **F5** | `npm run bar:F5` *(human)* | a player using their **own** browser agent gets an actionable answer to "why isn't this working" without leaving the game |
+
+**The locomotion bars are prefixes of one contract — The Course.** There is no second ladder;
+if you find velocity/stride tracking language anywhere, it is stale. The Course's own spec is the
+authority for every predicate, and its free parameters must be **frozen before qualification**,
+not fitted to the machine after watching it.
 
 **D1 and L2 are different tests and neither implies the other.** D1 fixes the seed and varies
 nothing; L2 varies the renaming and fixes everything else. A deterministic implementation that
