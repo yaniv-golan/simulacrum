@@ -106,6 +106,11 @@
         "id": "ci-under-3min",
         "how": "CI runs the every-commit tier in under 3 minutes",
         "check": null
+      },
+      {
+        "id": "manifest-validates",
+        "how": "every check and obligation names a ruleId or barId it enforces; unowned entries are rejected; rules[] is non-empty",
+        "check": null
       }
     ],
     "M1": [
@@ -130,6 +135,11 @@
         "id": "no-live-object-escape",
         "how": "no live library object is reachable from any export (G2)",
         "check": null
+      },
+      {
+        "id": "milestone-breadth-reject",
+        "how": "parts and UI features carry a milestone field and the build rejects anything above the current milestone",
+        "check": null
       }
     ],
     "M3": [
@@ -137,11 +147,27 @@
         "id": "no-live-state-reads",
         "how": "controllers demonstrably cannot read live state",
         "check": null
+      },
+      {
+        "id": "identity-invariance-minimal",
+        "how": "renaming every part/component/blueprint/role id leaves the deterministic projection unchanged, on the scenarios that exist at M3 -- built BEFORE there is a contact law to corrupt (L2 at M8 expands the scenario set, it does not introduce the check)",
+        "check": null
       }
     ],
-    "M3b": [],
+    "M3b": [
+      {
+        "id": "production-control-path",
+        "how": "default keyboard control runs through the ordinary command bus and Command Receivers; M3's host-side test double does not ship",
+        "check": null
+      }
+    ],
     "M4": [],
     "M4b": [
+      {
+        "id": "probe-instrumentation",
+        "how": "per-pad normal force, sole clearance, touchdown/unload events, COM and support-polygon margin are measured -- a probe that cannot measure clearance cannot demonstrate it",
+        "check": null
+      },
       {
         "id": "stage-loaded-standing",
         "how": "demonstrated after any repair, probe rerun",
@@ -172,6 +198,11 @@
       {
         "id": "rover-repeatable",
         "how": "rover drives over uneven ground repeatably; distance/repeats set from first measurement",
+        "check": null
+      },
+      {
+        "id": "structural-failure-model",
+        "how": "rated capacity per joint, transmitted-load computation and a break event exist; a phase that computes nothing does not satisfy 'no damage'",
         "check": null
       }
     ],

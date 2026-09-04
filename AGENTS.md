@@ -267,7 +267,10 @@ is a ceiling.)*
 
 Before tuning a control law, the failure bundle must report the engine-invariant battery green.
 **Green means no known defect fired — it does not prove the engine is sound.**
-If mirrored behavior is asymmetric or renaming changes physics, **the bug is in the engine.**
+If renaming changes physics, **the bug is in the engine** — only L2 produces that. A failed
+**mirror** test does not uniquely implicate the engine: a mirrored controller, a command sign, a
+sensor axis or an asymmetric fixture all look the same. Validate the transformation on a passive
+machine first.
 
 ## Runtime surface
 
