@@ -62,9 +62,10 @@ assert(shape.materialHandle === handleFor(
 
 Physical properties are a function of the geometry definition or a player-authored,
 Inspector-visible choice — **and nothing else.** Not role, not rig position, not blueprint, not
-name. Two conditions, asserted separately: **composition may never write `authoredMaterial`**
-(a demo factory setting it on `footL` would pass the equality), and every material row is
-player-selectable. Back it with a property test: perturb role, blueprint id, name and rig
+name. Two conditions, asserted separately: **`authoredMaterial` may be copied, never derived** —
+loading a blueprint or instantiating a saved subassembly must reproduce the stored selection
+exactly, but nothing may *compute* a material from `rigRole`, part name, blueprint id or rig
+position — and every material row is player-selectable. Back it with a property test: perturb role, blueprint id, name and rig
 position; assert every handle is unchanged. The same rule governs mass, inertia, rated torque,
 rated capacity and drag. Enforced: `gate:structural`.
 
@@ -83,17 +84,29 @@ Each is a command. Run it; it is red until it is green.
 | **L1b** | `npm run bar:L1b` | **THE OPEN PROBLEM.** `df ≥ 1.00 m` within 120 s; efficiency **≥ 0.70**; `maxCrossTrack ≤ 0.15 m`; `\|dl\| ≤ 0.15 m`; reverse ≤ 0.10 m; tilt ≤ 0.45 rad at every tick after 5 s; ≥8 strict alternating touchdowns; terminal stable hold; **and no fall, damage, non-finite state, saturation failure, or forbidden non-pad support.** Best observed efficiency: 0.449. |
 | L1c | `npm run bar:L1c` | L1b **plus tracking** over the scored window `W = max(30 s, 10L/v)`: velocity MAE ≤ max(0.005 m/s, 0.15v), step MAE ≤ max(0.015 m, 0.20L) |
 | L1d | `npm run bar:L1d` | **Robustness, not repetition.** Under D1, ten identical runs give one trajectory — that is repeatability. Define and hold out *variation*: initial pose and velocity, physical parameters, disturbances, command transitions, terrain. Separate tuning cases from held-out qualification cases. **This is the actual completion condition; write its contract before M7.** |
-| L2 | `npm run bar:L2` | rename every part/component/blueprint/role id ⇒ telemetry identical **modulo the id mapping** |
-| D1 | `npm run bar:D1` | same blueprint + input trace ⇒ identical trace hash, two processes, both clocks |
+| L2 | `npm run bar:L2` | Two runs of the same inputs under **two different recorded renamings** produce an identical `deterministicProjection(frame)` after remapping references. **Distinct from D1** — see below. |
+| D1 | `npm run bar:D1` | Same blueprint, input trace **and renaming seed** ⇒ identical `deterministicProjection(frame)` hash, two processes, both clocks |
 | P1 | `npm run bar:P1` | named scene on named machine holds ≥ 30 fps interactively |
 | S1 | `npm run bar:S1` | a hostile controller cannot escape, hang, or read undeclared state |
+
+**D1 and L2 are different tests and neither implies the other.** D1 fixes the seed and varies
+nothing; L2 varies the renaming and fixes everything else. A deterministic implementation that
+branches on a material id stays perfectly deterministic under a fixed seed, so **D1 cannot catch
+identity dependence** — only L2 can. Both hash `deterministicProjection(frame)`, a declared subset
+of the read model in `model/` that excludes wall-clock timings, identifier mappings and other
+diagnostic metadata; those ride alongside, outside the digest.
 
 **L1a–L1c thresholds are the prior attempt's frozen acceptance *requirements* — documented
 contract, NOT evidence of reachability.** No rung was ever observed passing. Change one only with
 a written reason; two revisions of the brief invented replacements and were wrong both times.
-**The complete evaluator contract — touchdown load thresholds, unload and clearance windows,
-stable-hold speed and angular limits, the scoring window and command domain — is a handoff
-artifact you must obtain and implement in full.** Without it a machine can brace on its torso,
+**BLOCKER — the acceptance evaluator is not yet specified and cannot be inferred from the numbers
+above.** Before M7 someone must supply one scoped artifact containing: the physical predicates,
+the measurement definitions (what counts as a touchdown, an unload, a clearance, a settle), the
+scenario and command domain actually selected, the required part bindings, and **an explicit list
+of what is excluded from the legacy qualification apparatus** (the prior attempt's version carried
+441 command pairs, named pad bindings, a frozen site fingerprint and legacy checkpoint/proof
+requirements — most of which the rebuild will not inherit). *"Implement it in full"* without that
+scope means either importing the whole legacy apparatus or quietly picking convenient fragments. Without it a machine can brace on its torso,
 count contact chatter as steps, or score over a convenient interval, and still print green. **P1's budget and scene
 are yours**: measure first, then record the machine and scene in the repo. Never inherit a
 performance number.
@@ -107,10 +120,10 @@ performance number.
 | M2 | physics door + library ADR, component/port model, schema + generated validators, assembly compiler, **G2 decided**, **command surface** | schema rejects every malformed fixture; one library importer; no live library object escapes |
 | M3 | power/signal networks, actuators, sensors, command bus; a powered wheel turns *(host-side test double for the controller — sandbox is M4)* | controllers cannot read live state |
 | M4 | WASM sandbox: fuel, digest gate, host-import boundary | **S1**, under a real attack |
-| M4b | **locomotion feasibility probe** on flat ground, before the rover and site: loaded standing → weight transfer → swing clearance → alternating contact → stopping | each stage demonstrated, or named as the blocker |
+| M4b | **locomotion feasibility probe.** Ships its own prerequisites: **flat-ground contact and friction**, the **Hinge Joint**, and the **6-Axis IMU / Balance Gyro** — these move here from M5/M7. Excludes tires, uneven terrain, the site and the full contact-material law. Stages: loaded standing → weight transfer → swing clearance → alternating contact → stopping | **A named blocker is a completed experiment, not permission to proceed.** Exit requires a recorded **decision**: fix the plant, revise the decomposition, change the physics library, or demonstrate the stage. Listing five blockers and moving on to breadth is the substitution this whole document exists to prevent |
 | M5 | terrain, contacts, friction, **contact-material law**, tire law; rover drives repeatably | rover bar green (set distance/repeats from your own measurement); **P1** |
 | M6 | terrain fixture set — named friction lanes, fingerprinted site, run matrix; full failure recorder; challenge evaluation in the telemetry tail | an induced stall replays to the same failure on a named lane |
-| M7 | **locomotion** — five disjoint controller programs, legged machine | **L1b**. After two failures stop and re-derive; a third means the diagnosis is wrong |
+| M7 | **locomotion** — legged machine, ordinary player-authored controller programs. The five-regulator decomposition is the leading **candidate**, not a requirement; the prime rule constrains *authority* (no engine gait owner, no pose write, no hidden support force, no role-selected traction), not program count | **L1b**. After two failures stop and re-derive the decomposition from measurement rather than iterating |
 | M8 | editor, panels, camera, catalog breadth, demos as blueprints | **L2** |
 | M9 | **L1c then L1d** — tracking, then the robustness contract | **L1d. This is the completion condition, not L2.** |
 
