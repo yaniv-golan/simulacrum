@@ -82,8 +82,28 @@ current, copper heat and a rated capacity; power comes from cells that deplete; 
 stops transmitting torque; controllers are real programs reading real sensors; things break and
 tell you why; and walking machines are the point.
 
-Every expensive invariant below is downstream of that. **When a rule feels costly, ask whether
-removing it puts a magic part back in the box.**
+**But realism is the risk, not the product.** Stormworks already built the deep, realistic
+version, and players bounce off it for exactly the reasons above: *"too complicated," "takes too
+long to do anything," "having to deal with lua programming even to make a simple boat motor
+working."* Trailmakers wins the same audience by being *"simple and addicting… much more
+forgiving."*
+
+> **Trailmakers-fast at minute one; Stormworks-deep at hour ten. The depth is optional and
+> progressively revealed, never a toll gate.**
+
+Build every promise twice: a forgiving default that works without understanding it, and the real
+model underneath, visible when you look. Connect a motor to a cell and it spins — torque, current
+and heat are *shown*, not required. Keys drive the machine by default; visual logic and TypeScript
+are for when you want them. **Never require code to make a wheel turn.**
+
+**When a rule feels costly, ask whether removing it puts a magic part back in the box. When a rule
+feels rigorous, ask whether it is a toll gate.**
+
+Three loops to protect, in players' words: *the machine you designed rumbling to life and doing
+what you pictured*; **failure as the teacher** — intuition earned *"not through equations but
+through hundreds of attempts in a consequence-free sandbox"*, which is why the post-mortem is a
+headline feature and fast restart beats pretty graphics; and **returning to optimise** an old
+design once you know more.
 
 **The simulation is uncompromising; the interface is generous.** The strict-schema and
 no-compatibility-reader rules govern *machine formats*, never the player's experience: the editor
