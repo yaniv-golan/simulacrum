@@ -195,6 +195,7 @@ performance number.
 | M6 | terrain fixture set — named friction lanes, fingerprinted site, run matrix; full failure recorder; challenge evaluation in the telemetry tail | an induced stall replays to the same failure on a named lane |
 | M7 | **locomotion** — legged machine, ordinary player-authored controller programs. The five-regulator decomposition is the leading **candidate**, not a requirement; the prime rule constrains *authority* (no engine gait owner, no pose write, no hidden support force, no role-selected traction), not program count | **L1b**. After two failures stop and re-derive the decomposition from measurement rather than iterating |
 | M8 | editor, panels, camera, catalog breadth, demos as blueprints | **L2**, and **F3/F4** |
+| M8b | **WebMCP: a player's own browser agent helping them play.** A thin adapter over the M2 command surface. Diagnostic tools first — `explain_failure`, `diagnose_power`, `diagnose_connection`, `describe_machine`, `find_part`, `read_telemetry`; build verbs supported but never the fast path, because **building is the game** | **F5**, plus: F1 still passes with the tools **unregistered**; no player content in any tool description; tools registered statically; no capability the player's UI lacks |
 | M9 | **L1c then L1d** — tracking, then the robustness contract | **L1d. This is the completion condition, not L2.** |
 
 **Current: M0. Gate: `npm run gate:M0` — it EXECUTES the checks due at or before M0 and exits

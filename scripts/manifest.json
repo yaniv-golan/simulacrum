@@ -60,6 +60,11 @@
       "dueAt": "M8",
       "human": true,
       "contract": "Ten minutes of unassisted play yields one moment of visible delight and no moment of 'I don't know what this wants from me'."
+    },
+    "F5": {
+      "dueAt": "M8b",
+      "human": true,
+      "contract": "A player, using their own browser agent, gets an actionable answer to 'why isn't this working' without leaving the game. Judged by watching a person."
     }
   },
   "rules": [],
@@ -75,6 +80,7 @@
     "M6",
     "M7",
     "M8",
+    "M8b",
     "M9"
   ],
   "checks": [
@@ -188,6 +194,33 @@
     ],
     "M7": [],
     "M8": [],
-    "M9": []
+    "M9": [],
+    "M8b": [
+      {
+        "id": "f1-holds-without-agent",
+        "how": "F1 still passes with the WebMCP tools unregistered -- the agent is an accelerator, never a crutch",
+        "check": null
+      },
+      {
+        "id": "no-player-content-in-tool-descriptions",
+        "how": "no tool name or description interpolates player-authored content (part names, blueprint titles, error strings)",
+        "check": null
+      },
+      {
+        "id": "tools-registered-statically",
+        "how": "the tool set is registered once; no third-party script can add or modify tools (mid-session tool injection)",
+        "check": null
+      },
+      {
+        "id": "no-privileged-agent-capability",
+        "how": "no tool exposes a capability the player's own UI does not -- the agent is a player",
+        "check": null
+      },
+      {
+        "id": "results-use-closed-enum-codes",
+        "how": "tool results carry closed-enum reason codes; player-authored strings appear only in delimited data fields",
+        "check": null
+      }
+    ]
   }
 }
