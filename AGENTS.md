@@ -146,8 +146,9 @@ above the current milestone. The manifest owns the current milestone; this line 
 | tier | command | budget |
 |---|---|---|
 | structural gates | `npm run gate:structural` (ONE aggregate script) | < 5 s, every commit |
-| unit + property | `npm run test:unit` | < 30 s, every commit |
-| analytical + conservation + contact | `npm run test:physics` | < 60 s, every commit |
+| unit + property | `npm run test:unit` | < 30 s, every commit — **affected set only**, derived from the module graph, never named by hand |
+| analytical + conservation + short-horizon contact | `npm run test:physics` | < 60 s, every commit |
+| long-horizon contact stability (10⁴ steps) | `npm run test:physics:long` | merge + nightly — ~50 s alone |
 | symmetry + identity invariance | `npm run test:invariance` | every commit |
 | determinism | `npm run test:determinism` | every commit |
 | per-phase timing | `npm run perf` | every commit, trend stored |
@@ -155,7 +156,15 @@ above the current milestone. The manifest owns the current milestone; this line 
 | browser + visual | `npm run test:browser` | merge |
 | mutation, critical modules only | `npm run mutation` | weekly |
 
-The every-commit half must stay under a few minutes. If it creeps, people stop running it.
+**The every-commit tier stays under a few minutes, measured, and the gate reports its own wall
+clock.** When it cannot, move a test to a slower tier or make the simulation faster — **never**
+delete the assertion or stop running the tier.
+
+**Simulation speed is the multiplier on this entire loop.** The previous attempt ran 12,705 ms for
+1,000 ms of simulation where its own mainline ran 608.8 ms — a 21× regression from one mechanism,
+which silently multiplied the cost of every scenario, determinism and invariance run for months
+before anyone found it. Treat a simulation-speed regression as a process emergency: that is what
+the per-phase timings are for.
 
 ## Debugging
 
