@@ -43,7 +43,11 @@ Enforced: `gate:structural`.
 - One fixed 1/120 s session path for real-time and deterministic advancement. No second stepper.
 - Telemetry is the single read model. Never a second UI-only truth.
 - SI units in `model/` and `simulation/`.
-- Strict schema, one version, no compatibility readers. Never infer a missing field.
+- **One strict *runtime* schema. Never infer a missing field.** Player saves carry a version and
+  are migrated into that shape **at load**, by a named, tested migration per version step — a
+  bounded listed set, not open-ended compatibility branching. Declare the supported range: below
+  the floor, refuse with an explicit message; **above the current version, refuse — never guess
+  forward.** Migration lives outside the runtime boundary; inside it there is exactly one shape.
 - **No live physics-library object crosses the `simulation/physics/` boundary.** Export values or
   immutable views. This is what makes the abort contract sound.
 - Debug read models are generic. No demo-named surface.
@@ -114,7 +118,9 @@ as a sentence a person can act on; failure is legible and enjoyable, not punishi
 
 Each is a command. Run it; it is red until it is green. **F1, F3 and F4 are judged by watching a real target
 player; F2 is instrumented.** Record a human verdict with `npm run assess -- F1 pass "notes"`; it
-is tied to a commit and invalidated by the next one — a weaker instrument than the rest, measuring what the rest cannot.
+is tied to the **player-facing build fingerprint** (`npm run build-fingerprint`), so committing the
+evidence or editing a doc preserves it while touching `src/` invalidates it. F1 measures
+first-launch experience, so each F1 record needs a **participant who has not assessed it before** — a weaker instrument than the rest, measuring what the rest cannot.
 
 | bar | command | asserts |
 |---|---|---|
@@ -191,7 +197,7 @@ above the current milestone. The manifest owns the current milestone; this line 
 | structural gates | `npm run gate:structural` (ONE aggregate script; `npm run gate` runs it too and **propagates its failure**) | < 5 s, every commit |
 | unit + property | `npm run test:unit` | < 30 s, every commit — **affected set only**, derived from the module graph, never named by hand |
 | analytical + conservation + short-horizon contact | `npm run test:physics` | < 60 s, every commit |
-| long-horizon contact stability (10⁴ steps) | `npm run test:physics:long` | merge + nightly — ~50 s alone |
+| long-horizon contact stability (10⁴ steps) | `npm run test:physics:long` | merge + nightly **until measured** — its wall clock is unknown, and applying another scene's ratio to it is a cross-scene transfer, not a measurement |
 | symmetry + identity invariance | `npm run test:invariance` | every commit |
 | determinism | `npm run test:determinism` | every commit |
 | per-phase timing | `npm run perf` | every commit, trend stored |

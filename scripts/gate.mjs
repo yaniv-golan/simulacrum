@@ -46,10 +46,28 @@ for (const [id, bar] of Object.entries(manifest.bars)) {
     console.log(`--    bar:${id.padEnd(4)} deferred to ${bar.dueAt}`);
 }
 
-if (failed > 0 || redBars > 0) {
+// Milestone exit obligations that are not bars. An unregistered or unimplemented
+// obligation REFUSES: a prose hard stop that the gate cannot see is not a stop.
+const obligations = manifest.exitObligations?.[target] ?? null;
+let unmet = 0;
+if (obligations === null) {
+  console.error(`\nUNREGISTERED: ${target} declares no exit obligations. Register them or fix the manifest.`);
+  unmet += 1;
+} else {
+  for (const ob of obligations) {
+    if (!ob.check) {
+      unmet += 1;
+      console.error(`UNMET  ${ob.id} -- no check registered: ${ob.how}`);
+    } else {
+      console.log(`ok     ${ob.id}`);
+    }
+  }
+}
+
+if (failed > 0 || redBars > 0 || unmet > 0) {
   console.error(
     `\nREFUSED at ${target}: ${failed} of ${ran} structural check(s) not green; ` +
-      `${redBars} of ${dueBars.length} due bar(s) red.`,
+      `${redBars} of ${dueBars.length} due bar(s) red; ${unmet} exit obligation(s) unmet.`,
   );
   process.exit(1);
 }

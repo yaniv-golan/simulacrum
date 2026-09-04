@@ -1,22 +1,20 @@
 // Every bar is red until implemented. Bars carry a dueAt milestone and, for the
 // player bars, a `human: true` flag: those are satisfied by a recorded
-// assessment tied to a tree hash, never by a script pretending to judge fun.
+// assessment tied to a PLAYER-FACING BUILD FINGERPRINT -- not a commit, which
+// left uncommitted source edits green and invalidated evidence the moment the
+// evidence itself was committed.
 import { readFileSync, existsSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { buildFingerprint } from "./build-fingerprint.mjs";
 
 const manifest = JSON.parse(
   readFileSync(new URL("./manifest.json", import.meta.url), "utf8"),
 );
 
-function treeHash() {
-  return execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
-}
-
 function assessmentFor(id) {
   const path = new URL(`../assessments/${id}.json`, import.meta.url);
   if (!existsSync(path)) return null;
   const record = JSON.parse(readFileSync(path, "utf8"));
-  return record.commit === treeHash() ? record : { ...record, stale: true };
+  return record.build === buildFingerprint() ? record : { ...record, stale: true };
 }
 
 export function evaluateBar(id) {
@@ -26,9 +24,17 @@ export function evaluateBar(id) {
     const record = assessmentFor(id);
     if (!record) return { id, state: "RED", why: "no recorded assessment" };
     if (record.stale)
-      return { id, state: "RED", why: `assessment is for ${record.commit.slice(0, 7)}, not HEAD` };
+      return {
+        id,
+        state: "RED",
+        why: `assessment is for ${record.build}, current build is ${buildFingerprint()}`,
+      };
     return record.verdict === "pass"
-      ? { id, state: "GREEN", why: `assessed ${record.date} by ${record.assessor}` }
+      ? {
+          id,
+          state: "GREEN",
+          why: `assessed ${record.date}, participant ${record.participant}`,
+        }
       : { id, state: "RED", why: `assessed FAIL ${record.date}: ${record.notes ?? ""}` };
   }
   return { id, state: "RED", why: "not implemented" };

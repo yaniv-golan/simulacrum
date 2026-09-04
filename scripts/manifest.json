@@ -93,5 +93,96 @@
       "dueAt": "M2",
       "description": "per-shape material admission invariant"
     }
-  ]
+  ],
+  "exitObligations": {
+    "M0": [
+      {
+        "id": "ci-under-3min",
+        "how": "CI runs the every-commit tier in under 3 minutes",
+        "check": null
+      }
+    ],
+    "M1": [
+      {
+        "id": "minimal-failure-bundle",
+        "how": "a bundle replays to the same failure",
+        "check": null
+      }
+    ],
+    "M2": [
+      {
+        "id": "schema-rejects-malformed",
+        "how": "every malformed fixture is rejected with a specific error",
+        "check": null
+      },
+      {
+        "id": "single-library-importer",
+        "how": "exactly one module imports the physics library",
+        "check": null
+      },
+      {
+        "id": "no-live-object-escape",
+        "how": "no live library object is reachable from any export (G2)",
+        "check": null
+      }
+    ],
+    "M3": [
+      {
+        "id": "no-live-state-reads",
+        "how": "controllers demonstrably cannot read live state",
+        "check": null
+      }
+    ],
+    "M3b": [],
+    "M4": [],
+    "M4b": [
+      {
+        "id": "stage-loaded-standing",
+        "how": "demonstrated after any repair, probe rerun",
+        "check": null
+      },
+      {
+        "id": "stage-weight-transfer",
+        "how": "demonstrated after any repair, probe rerun",
+        "check": null
+      },
+      {
+        "id": "stage-swing-clearance",
+        "how": "demonstrated after any repair, probe rerun",
+        "check": null
+      },
+      {
+        "id": "stage-alternating-contact",
+        "how": "demonstrated after any repair, probe rerun",
+        "check": null
+      },
+      {
+        "id": "stage-stopping",
+        "how": "demonstrated after any repair, probe rerun",
+        "check": null
+      }
+    ],
+    "M5": [
+      {
+        "id": "rover-repeatable",
+        "how": "rover drives over uneven ground repeatably; distance/repeats set from first measurement",
+        "check": null
+      }
+    ],
+    "M6": [
+      {
+        "id": "induced-stall-replays",
+        "how": "an induced stall produces a bundle that replays to the same failure on a named lane",
+        "check": null
+      },
+      {
+        "id": "acceptance-evaluator",
+        "how": "BLOCKER: the scoped locomotion evaluator artifact exists (predicates, measurements, domain, bindings, exclusions)",
+        "check": null
+      }
+    ],
+    "M7": [],
+    "M8": [],
+    "M9": []
+  }
 }
