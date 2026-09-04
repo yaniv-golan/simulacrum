@@ -49,7 +49,7 @@
     "F2": {
       "dueAt": "M3b",
       "human": false,
-      "contract": "Build-loop latency: place -> connect -> run under 2 s, with no compile step the player can perceive."
+      "contract": "Instrumented: application response time across one place -> connect -> run cycle on a named reference scene and machine (input event to reflecting frame, plus Run to first tick), human thinking time excluded. p95 under 2 s, no single stall over 500 ms."
     },
     "F3": {
       "dueAt": "M8",

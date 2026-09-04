@@ -107,13 +107,14 @@ design once you know more.
 
 **The simulation is uncompromising; the interface is generous.** The strict-schema and
 no-compatibility-reader rules govern *machine formats*, never the player's experience: the editor
-snaps, suggests and explains; a saved machine never stops loading; every reason code also renders
+snaps, suggests and explains; a saved machine above the supported version floor always loads; every reason code also renders
 as a sentence a person can act on; failure is legible and enjoyable, not punishing.
 
 ## The bars
 
-Each is a command. Run it; it is red until it is green. **F1–F4 are judged by watching a real
-target player** — a weaker instrument than the rest, measuring what the rest cannot.
+Each is a command. Run it; it is red until it is green. **F1, F3 and F4 are judged by watching a real target
+player; F2 is instrumented.** Record a human verdict with `npm run assess -- F1 pass "notes"`; it
+is tied to a commit and invalidated by the next one — a weaker instrument than the rest, measuring what the rest cannot.
 
 | bar | command | asserts |
 |---|---|---|
@@ -202,11 +203,12 @@ above the current milestone. The manifest owns the current milestone; this line 
 clock.** When it cannot, move a test to a slower tier or make the simulation faster — **never**
 delete the assertion or stop running the tier.
 
-**Simulation speed is the multiplier on this entire loop.** The previous attempt ran 12,705 ms for
-1,000 ms of simulation where its own mainline ran 608.8 ms — a 21× regression from one mechanism,
-which silently multiplied the cost of every scenario, determinism and invariance run for months
-before anyone found it. Treat a simulation-speed regression as a process emergency: that is what
-the per-phase timings are for.
+**Simulation speed is the multiplier on this entire loop.** Stubbing one mechanism took the
+previous attempt's gate from 12,705.5 ms to 3,330.9 ms — **3.8×, measured** — and it had silently
+multiplied the cost of every scenario, determinism and invariance run for months. Treat a
+simulation-speed regression as a process emergency: that is what the per-phase timings are for.
+*(Do not quote a cross-tree ratio as a cause; only stub-and-remeasure isolates one, and even that
+is a ceiling.)*
 
 ## Debugging
 
