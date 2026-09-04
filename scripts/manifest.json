@@ -1,6 +1,11 @@
 {
   "milestone": "M0",
   "bars": {
+    "L0": {
+      "dueAt": "M5",
+      "human": false,
+      "contract": "THE COURSE, complete circuit S1-S6, driven by the WHEELED ROVER under the wheeled annex. Proves the course dimensions, the evaluator, the ramp, the terrain and the instrumentation are correct and achievable BEFORE the gait is the variable. If the rover cannot complete it, the fault is the course or the engine, not the legs."
+    },
     "L1a": {
       "dueAt": "M7",
       "human": false,
@@ -203,6 +208,11 @@
       {
         "id": "structural-failure-model",
         "how": "rated capacity per joint, transmitted-load computation and a break event exist; a phase that computes nothing does not satisfy 'no damage'",
+        "check": null
+      },
+      {
+        "id": "course-mode-independent",
+        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null
       }
     ],

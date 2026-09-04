@@ -127,6 +127,7 @@ instrument than the rest, measuring what the rest cannot.
 
 | bar | command | asserts |
 |---|---|---|
+| **L0** | `npm run bar:L0` | **The Course, complete circuit, driven by the WHEELED ROVER.** Due M5. Proves the course, evaluator, ramp, terrain and instrumentation before the gait is the variable. **If the rover cannot complete it, the fault is the course or the engine — not the legs**, and that answer is worth having before M7 spends itself finding out. |
 | L1a | `npm run bar:L1a` | **The Course, prefix 0.** From stable hold: stay upright while stepping — strict alternating touchdowns, then **terminal stable hold (5 s continuous)**. **Never observed passing**: the one unpreserved run held 1.325 s of the required 5 s and reported no valid settle. |
 | **L1b** | `npm run bar:L1b` | **The Course, S1 (Approach). THE OPEN PROBLEM.** Walk from stable hold to the ramp entry: ≥4 strict alternating touchdowns, cross-track ≤ 0.15 m, path efficiency **≥ 0.70**, stance slip ≤ 0.02 m. Best observed efficiency: **0.449**. |
 | L1c | `npm run bar:L1c` | **The Course, S2+S3 (Descent, Advance).** Down the ramp with no fall and **no forbidden support**, ≥2 touchdowns on the ramp, stance slip ≤ 0.06 m, arriving with both pads on the ground; then ≥5 further strict alternating steps, each forward projection > 0.02 m. |
@@ -140,6 +141,16 @@ instrument than the rest, measuring what the rest cannot.
 | **F3** | `npm run bar:F3` *(human)* | a player who did **not** build the machine can say why it failed from the post-mortem alone. **Use failures whose cause is independently known**, and score identifying the cause — not repeating the sentence on screen. |
 | **F4** | `npm run bar:F4` *(human)* | ten minutes of unassisted play yields one moment of visible delight and no moment of "I don't know what this wants from me" |
 | **F5** | `npm run bar:F5` *(human)* | a player using their **own** browser agent gets an actionable answer to "why isn't this working" without leaving the game |
+
+**The Course is locomotion-mode independent, and that is deliberate.** Its circuit predicates name
+no gait: an evaluator only a legged machine can satisfy is an evaluator keyed on machine type — the
+same defect class as a friction law keyed on `rigRole`. Gait-specific predicates (touchdowns,
+alternation, stance slip; wheel contact, slip ratio) live in a **legged annex** and a **wheeled
+annex**. Passing means the circuit plus your mode's annex.
+
+**Run L0 first.** The rover exists at M5; the walker does not until M7. Proving the apparatus with
+the rover is the cheapest de-risking in the plan, and the previous attempt's central failure was
+debugging locomotion and apparatus simultaneously without being able to tell them apart.
 
 **The locomotion bars are prefixes of one contract — The Course.** There is no second ladder;
 if you find velocity/stride tracking language anywhere, it is stale. The Course's own spec is the
@@ -209,7 +220,7 @@ performance number.
 | M3b | **first playable loop** — place, connect, power, run, watch it move and fail. Minimum editor: no panels, no camera polish, no catalog breadth | **F1 and F2, run with a real target player.** A red F1 here costs far less than a red F1 at M8 |
 | M4 | WASM sandbox: fuel, digest gate, host-import boundary | **S1**, under a real attack |
 | M4b | **locomotion feasibility probe.** Ships its own prerequisites: **flat-ground contact and friction**, the **Hinge Joint**, and the **6-Axis IMU / Balance Gyro** — these move here from M5/M7. Excludes tires, uneven terrain, the site and the full contact-material law. Stages: loaded standing → weight transfer → swing clearance → alternating contact → stopping | **Exit requires every stage demonstrated.** A named blocker is a completed experiment; a recorded decision is not a completed repair. Where a stage fails, carry out the chosen repair — plant, decomposition, or physics library — and **rerun the probe**. A decision authorises work on that repair, never progress to M5. Listing blockers and moving on to breadth is the substitution this whole document exists to prevent |
-| M5 | terrain, contacts, friction, **contact-material law**, tire law; rover drives repeatably | rover bar green (set distance/repeats from your own measurement); **P1** |
+| M5 | terrain, contacts, friction, **contact-material law**, tire law, minimum structural failure; the ramp and plate; rover drives repeatably | **L0 — the rover completes the whole Course** | rover bar green (set distance/repeats from your own measurement); **P1** |
 | M6 | terrain fixture set — named friction lanes, fingerprinted site, run matrix; full failure recorder; challenge evaluation in the telemetry tail | an induced stall replays to the same failure on a named lane |
 | M7 | **locomotion** — legged machine, ordinary player-authored controller programs. The five-regulator decomposition is the leading **candidate**, not a requirement; the prime rule constrains *authority* (no engine gait owner, no pose write, no hidden support force, no role-selected traction), not program count | **L1b**. After two failures stop and re-derive the decomposition from measurement rather than iterating |
 | M8 | editor, panels, camera, catalog breadth, demos as blueprints | **L2**, and **F3/F4** |

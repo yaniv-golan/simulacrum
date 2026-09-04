@@ -32,6 +32,7 @@
     "bar:F4": "node scripts/bars.mjs F4",
     "assess": "node scripts/assess.mjs",
     "build-fingerprint": "node scripts/build-fingerprint.mjs",
-    "bar:F5": "node scripts/bars.mjs F5"
+    "bar:F5": "node scripts/bars.mjs F5",
+    "bar:L0": "node scripts/bars.mjs L0"
   }
 }
