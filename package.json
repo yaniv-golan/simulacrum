@@ -1,0 +1,28 @@
+{
+  "name": "simulacrum-foundry",
+  "version": "2.0.0-alpha.0",
+  "description": "A component-driven Three.js engineering construction sandbox.",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yaniv-golan/simulacrum.git"
+  },
+  "engines": { "node": ">=24.18 <25" },
+  "type": "module",
+  "scripts": {
+    "bars": "node scripts/bars.mjs",
+    "bar:L1a": "node scripts/bars.mjs L1a",
+    "bar:L1b": "node scripts/bars.mjs L1b",
+    "bar:L1c": "node scripts/bars.mjs L1c",
+    "bar:L1d": "node scripts/bars.mjs L1d",
+    "bar:L2": "node scripts/bars.mjs L2",
+    "bar:D1": "node scripts/bars.mjs D1",
+    "bar:P1": "node scripts/bars.mjs P1",
+    "bar:S1": "node scripts/bars.mjs S1",
+    "gate:structural": "node scripts/gate-structural.mjs",
+    "gate:M0": "node scripts/gate.mjs M0",
+    "gate": "node scripts/gate.mjs",
+    "rules": "node scripts/rules.mjs"
+  }
+}

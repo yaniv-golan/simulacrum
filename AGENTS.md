@@ -1,0 +1,193 @@
+# Working on Simulacrum
+
+## The prime rule
+
+Behavior must emerge from components, configuration, transforms, connections, controller
+commands, the environment, and physical laws. **Never dispatch simulation behavior from demo
+identity, and never add demo-only physics.** Built-in demos are ordinary blueprints.
+
+**Corollary — ask what a layer may *know*, not only what it may corrupt.** Most guards defend
+against unauthorized writes. The defect that cost the previous attempt its central milestone was
+an unauthorized *read*. Pass the least information that suffices.
+
+## Layers and allowed import edges
+
+| layer | owns | may import |
+|---|---|---|
+| `model/` | pure data, catalog, ports, blueprints, schema, analysis | — |
+| `simulation/` | fixed-step physics, networks, constraints, environment, failure, telemetry | `model/` |
+| `simulation/physics/` | **the only importer of the physics library** | `model/` |
+| `simulation/physics/law/` | contact, friction, motor, drag laws | **nothing** — numbers in, numbers out |
+| `scripting/` | restricted compilation, isolated controller execution | `model/` |
+| `presentation/` | Three.js, camera, input, panels | `model/` + the telemetry **type**; the telemetry value is injected |
+| `application/` | use cases, composition, lifecycle | all of the above |
+| `core/` | stable **DOM-free** public facade | `model/`, `simulation/`, `scripting/` — **never `presentation/` or `application/`** |
+
+No cycles. `presentation/` and `simulation/` never import each other; `simulation/` never imports
+`scripting/`. Telemetry is produced by `simulation/` and **injected** into presentation; controller
+programs are **injected** into phase 2. Both couplings are runtime, never import edges.
+Enforced: `gate:structural`.
+
+## The tick order — frozen, nine phases, reordering is a build failure
+
+1 sensor snapshot · 2 controller commands · 3 power/signals · 4 actuators/constraints ·
+5 environment/forces · 6 integration and contacts · 7 structure/failure · 8 thermal/ablation ·
+9 telemetry. Enforced: `gate:structural`.
+
+## Invariants
+
+- One integration per tick. One place advances the clock.
+- Single owner per piece of state. Every mutable value has exactly one writing system.
+- Controllers read the **previous completed** sensor snapshot — sampled at tick `t`, consumed at
+  `t+1`, exactly one tick of latency. Never live state.
+- One fixed 1/120 s session path for real-time and deterministic advancement. No second stepper.
+- Telemetry is the single read model. Never a second UI-only truth.
+- SI units in `model/` and `simulation/`.
+- Strict schema, one version, no compatibility readers. Never infer a missing field.
+- **No live physics-library object crosses the `simulation/physics/` boundary.** Export values or
+  immutable views. This is what makes the abort contract sound.
+- Debug read models are generic. No demo-named surface.
+
+## Identity blindness
+
+Physical laws receive **numeric handles and numbers** — never entities, names, roles, ids or
+`userData`. One boundary converts identity into physics, and it asserts:
+
+```js
+// Per SHAPE — materials are per geometry primitive, not per part.
+assert(shape.materialHandle === handleFor(
+         part.authoredMaterial?.[primitive.id]     // player choice: serialized, Inspector-visible
+         ?? geometryDefinition[part.type][primitive.id].materialKey));
+```
+
+Physical properties are a function of the geometry definition or a player-authored,
+Inspector-visible choice — **and nothing else.** Not role, not rig position, not blueprint, not
+name. Two conditions, asserted separately: **composition may never write `authoredMaterial`**
+(a demo factory setting it on `footL` would pass the equality), and every material row is
+player-selectable. Back it with a property test: perturb role, blueprint id, name and rig
+position; assert every handle is unchanged. The same rule governs mass, inertia, rated torque,
+rated capacity and drag. Enforced: `gate:structural`.
+
+> **Never write `npm run a b c`.** npm runs only the first script and passes the rest as
+> *arguments*. Verified: with three scripts exiting 0, 17 and 23, `npm run gate:layers
+> gate:tick-order gate:identity` exits **0**. Use one aggregate script, or `&&` between separate
+> `npm run` invocations.
+
+## The bars
+
+Each is a command. Run it; it is red until it is green.
+
+| bar | command | asserts |
+|---|---|---|
+| L1a | `npm run bar:L1a` | 1 m, level, upright, ≥8 strict alternating touchdowns, **terminal stable hold (5 s)**. Precondition for L1b, not a milestone. **Never observed passing.** The one unpreserved run reached 1.125 m with alternating touchdowns but only **1.325 s** of stable hold and no valid settle. Progress and alternation were observed; the rung was not. |
+| **L1b** | `npm run bar:L1b` | **THE OPEN PROBLEM.** `df ≥ 1.00 m` within 120 s; efficiency **≥ 0.70**; `maxCrossTrack ≤ 0.15 m`; `\|dl\| ≤ 0.15 m`; reverse ≤ 0.10 m; tilt ≤ 0.45 rad at every tick after 5 s; ≥8 strict alternating touchdowns; terminal stable hold; **and no fall, damage, non-finite state, saturation failure, or forbidden non-pad support.** Best observed efficiency: 0.449. |
+| L1c | `npm run bar:L1c` | L1b **plus tracking** over the scored window `W = max(30 s, 10L/v)`: velocity MAE ≤ max(0.005 m/s, 0.15v), step MAE ≤ max(0.015 m, 0.20L) |
+| L1d | `npm run bar:L1d` | **Robustness, not repetition.** Under D1, ten identical runs give one trajectory — that is repeatability. Define and hold out *variation*: initial pose and velocity, physical parameters, disturbances, command transitions, terrain. Separate tuning cases from held-out qualification cases. **This is the actual completion condition; write its contract before M7.** |
+| L2 | `npm run bar:L2` | rename every part/component/blueprint/role id ⇒ telemetry identical **modulo the id mapping** |
+| D1 | `npm run bar:D1` | same blueprint + input trace ⇒ identical trace hash, two processes, both clocks |
+| P1 | `npm run bar:P1` | named scene on named machine holds ≥ 30 fps interactively |
+| S1 | `npm run bar:S1` | a hostile controller cannot escape, hang, or read undeclared state |
+
+**L1a–L1c thresholds are the prior attempt's frozen acceptance *requirements* — documented
+contract, NOT evidence of reachability.** No rung was ever observed passing. Change one only with
+a written reason; two revisions of the brief invented replacements and were wrong both times.
+**The complete evaluator contract — touchdown load thresholds, unload and clearance windows,
+stable-hold speed and angular limits, the scoring window and command domain — is a handoff
+artifact you must obtain and implement in full.** Without it a machine can brace on its torso,
+count contact chatter as steps, or score over a convenient interval, and still print green. **P1's budget and scene
+are yours**: measure first, then record the machine and scene in the repo. Never inherit a
+performance number.
+
+## Milestones
+
+| | deliverable | stop rule |
+|---|---|---|
+| M0 | skeleton, manifest, layer/tick/identity gates, runner, CI < 3 min, all eight bars red-and-named | structural gate green; a layer violation turns it red |
+| M1 | fixed-step session, 9 phases, one integrator, telemetry, `step(n)`, **minimal failure bundle** | **D1** |
+| M2 | physics door + library ADR, component/port model, schema + generated validators, assembly compiler, **G2 decided**, **command surface** | schema rejects every malformed fixture; one library importer; no live library object escapes |
+| M3 | power/signal networks, actuators, sensors, command bus; a powered wheel turns *(host-side test double for the controller — sandbox is M4)* | controllers cannot read live state |
+| M4 | WASM sandbox: fuel, digest gate, host-import boundary | **S1**, under a real attack |
+| M4b | **locomotion feasibility probe** on flat ground, before the rover and site: loaded standing → weight transfer → swing clearance → alternating contact → stopping | each stage demonstrated, or named as the blocker |
+| M5 | terrain, contacts, friction, **contact-material law**, tire law; rover drives repeatably | rover bar green (set distance/repeats from your own measurement); **P1** |
+| M6 | terrain fixture set — named friction lanes, fingerprinted site, run matrix; full failure recorder; challenge evaluation in the telemetry tail | an induced stall replays to the same failure on a named lane |
+| M7 | **locomotion** — five disjoint controller programs, legged machine | **L1b**. After two failures stop and re-derive; a third means the diagnosis is wrong |
+| M8 | editor, panels, camera, catalog breadth, demos as blueprints | **L2** |
+| M9 | **L1c then L1d** — tracking, then the robustness contract | **L1d. This is the completion condition, not L2.** |
+
+**Current: M0. Gate: `npm run gate:M0` — it refuses when the checks *it owns* are red.**
+The eight bars are deliberately red until their milestone; a gate never waits on a bar above its
+own row. Do not proceed past a
+refusing gate. Parts and UI features carry a `milestone` field; the build **rejects** anything
+above the current milestone. The manifest owns the current milestone; this line is printed by
+`npm run gate`, not hand-edited.
+
+## Verification — match the oracle to the claim
+
+| claim | right oracle |
+|---|---|
+| the physics is right | analytical closed form, conservation drift, or symmetry — never a recorded number |
+| it is deterministic | two clocks, two processes, hashed per-tick traces |
+| it renders truthfully | rendered transform == simulated transform; then the text mirror; pixels last |
+| it is fast enough | per-phase timing recorded **inside** the engine |
+
+| tier | command | budget |
+|---|---|---|
+| structural gates | `npm run gate:structural` (ONE aggregate script) | < 5 s, every commit |
+| unit + property | `npm run test:unit` | < 30 s, every commit |
+| analytical + conservation + contact | `npm run test:physics` | < 60 s, every commit |
+| symmetry + identity invariance | `npm run test:invariance` | every commit |
+| determinism | `npm run test:determinism` | every commit |
+| per-phase timing | `npm run perf` | every commit, trend stored |
+| scenarios / bars | `npm run test:scenario` | merge + nightly |
+| browser + visual | `npm run test:browser` | merge |
+| mutation, critical modules only | `npm run mutation` | weekly |
+
+The every-commit half must stay under a few minutes. If it creeps, people stop running it.
+
+## Debugging
+
+| need | command |
+|---|---|
+| capture a failure | bundle is automatic; it must be diagnosable by someone who was not there |
+| replay it | `npm run replay <bundle>` |
+| **why does this run differ from that one** | `npm run diff <runA> <runB>` — reports the first divergent tick and quantity |
+| step one tick | `.` in the client, or `step(1)` |
+| sweep a parameter | `npm run sweep <param> <range>` |
+
+Before tuning a control law, the failure bundle must report the engine-invariant battery green.
+**Green means no known defect fired — it does not prove the engine is sound.**
+If mirrored behavior is asymmetric or renaming changes physics, **the bug is in the engine.**
+
+## Runtime surface
+
+One command surface; the UI is a client of it. An agent is a player: it gets the player's surface
+with the player's constraints, and nothing more.
+
+`observe(scope, detail, sinceTick)` · `act(command) -> {ok, reasonCode}` · `step(n)` ·
+`runUntil(predicate, maxTicks)` · `checkpoint()` / `restore(h)`
+
+`step(n)` is the primitive at **tick** granularity. Rejections carry a reason code from a **closed enum in `model/`** plus the
+offending path — never prose. Every actuator and law reports why it did not do what it was asked.
+
+## Definition of done for a commit
+
+- Small enough to review line by line.
+- Every new test has been **seen failing**.
+- No gate entry without a `ruleId` or `barId` it enforces — unowned entries are rejected.
+- No second hand-maintained list of facts the build already knows.
+- Nothing above the current milestone.
+
+## Rules and their enforcement
+
+`npm run rules` prints `ruleId | rule | enforcedBy` from the manifest. The manifest is the only
+authored copy; this file does not restate it. A rule with no check prints **UNENFORCED** — that is
+honest; pretending is not.
+
+## Pointers
+
+- Rationale, evidence, milestone detail, gotchas: `2026-09-04-simulacrum-rewrite-brief.md`
+  (~1,500 lines — read it when **designing**, not when editing)
+- The rebuild brief and its four companion analyses are **held outside this repository** and are
+  not in any clone. Ask the maintainer for them.
+  **Never write a local filesystem path, internal document name, or workstream label into this
+  file — it is public.** That rule is why those documents live outside the repo in the first place.

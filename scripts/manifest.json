@@ -1,0 +1,15 @@
+{
+  "milestone": "M0",
+  "bars": {
+    "L1a": "1 m level, upright, >=8 strict alternating touchdowns, terminal stable hold (5 s). Never observed passing.",
+    "L1b": "L1a + Stable Walker contract: df>=1.00 m/120 s, efficiency>=0.70, maxCrossTrack<=0.15 m, |dl|<=0.15 m, reverse<=0.10 m, tilt<=0.45 rad after 5 s, no fall/damage/non-finite/saturation/forbidden non-pad support. THE OPEN PROBLEM.",
+    "L1c": "L1b + tracking over W=max(30 s,10L/v): velocity MAE<=max(0.005 m/s,0.15v), step MAE<=max(0.015 m,0.20L).",
+    "L1d": "Robustness under declared variation with held-out qualification cases. The completion condition.",
+    "L2": "Rename every part/component/blueprint/role id => telemetry identical modulo the id mapping.",
+    "D1": "Same blueprint + input trace => identical deterministic-projection hash, two processes, both clocks.",
+    "P1": "Named scene on a named machine holds >=30 fps interactively. Measure before setting.",
+    "S1": "A hostile controller cannot escape, hang, or read undeclared state."
+  },
+  "rules": [],
+  "milestones": ["M0","M1","M2","M3","M4","M4b","M5","M6","M7","M8","M9"]
+}

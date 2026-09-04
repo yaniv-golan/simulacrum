@@ -1,0 +1,19 @@
+# ---------------------------------------------------------------------------
+# docs/internal/ MUST stay ignored permanently. This repository is public.
+# Internal plans, handovers, audits, coordination IDs, worktree inventories and
+# local filesystem paths must never enter public history. Never `git add -f` a
+# path inside it, never remove this line, never copy its contents into a
+# tracked file. Keep durable copies outside the repository.
+# ---------------------------------------------------------------------------
+docs/internal/
+
+node_modules
+dist/
+build/
+output/
+artifacts/
+coverage/
+.coverage*/
+temp/
+.DS_Store
+*.log
