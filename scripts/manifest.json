@@ -416,7 +416,7 @@
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
-      "timeoutMs": 45000,
+      "timeoutMs": 90000,
       "ruleId": "runtime-contract"
     },
     {

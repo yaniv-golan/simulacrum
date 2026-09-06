@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { explainFailure } from '../model/messages.mjs';
-import { surfaceRegions, resolveSurfaceEndpoint } from '../model/surfaces.mjs';
+import { surfaceRegions } from '../model/surfaces.mjs';
 import { inspectSurfaceMount } from '../model/assembly.mjs';
 import { mechanicalGroup } from '../model/editing.mjs';
 
@@ -113,7 +113,7 @@ export function createSurfaceControls({
     update();
   }
 
-  const change = action('Change surface', () => {
+  action('Change surface', () => {
     if (state) {
       state.locked = false;
       state.target = null;
@@ -431,9 +431,9 @@ export function createSurfaceControls({
           preview.add(box);
         }
       }
-      for (const [axis, direction, tint] of [
-        ['Along', tu, 0xffc778],
-        ['Across', tv, 0x8bcfff],
+      for (const [direction, tint] of [
+        [tu, 0xffc778],
+        [tv, 0x8bcfff],
       ]) {
         const arrow = new THREE.ArrowHelper(direction, targetCenter, 0.16, tint, 0.025, 0.015);
         preview.add(arrow);

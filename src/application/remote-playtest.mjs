@@ -41,7 +41,6 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
     active = false,
     busy = false,
     queued = 0,
-    screen = null,
     voice = null,
     video = null,
     timer = null,
@@ -433,7 +432,7 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
       await video.play();
       if (disposed) return;
       const initialCheckpoint = checkpoint();
-      screen = media(stream, 'screen', 'tab');
+      media(stream, 'screen', 'tab');
       active = true;
       ready = true;
       captureError = '';
