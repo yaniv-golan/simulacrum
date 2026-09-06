@@ -90,3 +90,11 @@ export function createPart(type,id,position){
  const part={id,type,name:CATALOG[type].name,position:structuredClone(position),rotation:[0,0,0,1],authoredMaterial:{},parameters:Object.fromEntries(Object.entries(CATALOG[type].parameterDefinitions).map(([key,definition])=>[key,definition.default]))};
  authored({version:3,id:'factory',name:'Factory',parts:[part],connections:[]});return part;
 }
+
+// Names identify parts to players only; ids retain connection ownership.
+export function availablePartName(parts, requested) {
+ const used=new Set(parts.map(part=>part.name));
+ if(!used.has(requested))return requested;
+ const base=requested.replace(/-\d+$/, '');
+ for(let n=Math.max(1,...parts.map(part=>part.name.startsWith(base+'-')?(/^[0-9]{1,8}$/.test(part.name.slice(base.length+1))?Number(part.name.slice(base.length+1)):1):1))+1;;n++){const suffix=`-${n}`,candidate=base.slice(0,128-suffix.length)+suffix;if(!used.has(candidate))return candidate;}
+}

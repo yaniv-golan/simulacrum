@@ -81,3 +81,5 @@ Escape cancels and Undo restores the whole edit. With **Surface snap** enabled,
 dragging a part onto a compatible face previews attachment on release. Orbiting
 can reveal underside faces. Bases must fit and have clearance; a thin chassis
 edge may be too small for a motor base, so use its top face near that edge.
+
+Select a part and choose **Rename** beside its name in the inspector. Save name applies it everywhere; Escape cancels. Names persist in saves and support Undo/Redo. Added parts and copies receive distinct names, such as Chassis, Chassis-2 and Chassis-3.

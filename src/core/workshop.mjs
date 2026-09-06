@@ -1,7 +1,7 @@
 import { resolveSurfaceEndpoint } from '../model/surfaces.mjs';
 import { transformGroup } from '../model/editing.mjs';
 import { CATALOG } from '../model/catalog.mjs';
-import { createEmptyBlueprint, createPart, loadSave } from '../model/blueprint.mjs';
+import { createEmptyBlueprint, createPart, loadSave, availablePartName } from '../model/blueprint.mjs';
 import { compileAssembly, snapConnection, proposeSurfaceMount } from '../model/assembly.mjs';
 import { immutableCopy } from '../model/observation.mjs';
 import { isReasonCode } from '../model/reasons.mjs';
@@ -65,10 +65,15 @@ export async function createWorkshop(input=createEmptyBlueprint('machine','My ma
    switch(command.type) {
     case 'insert':
      if(keys!=='part,type')return result(false,'INVALID_COMMAND','command');
-     next.parts.push(command.part);break;
+     next.parts.push({...command.part,name:availablePartName(next.parts,command.part.name)});break;
     case 'place':
      if(keys!=='id,partType,position,type')return result(false,'INVALID_COMMAND','command');
-     next.parts.push(createPart(command.partType,command.id,command.position));break;
+     {const part=createPart(command.partType,command.id,command.position);part.name=availablePartName(next.parts,part.name);next.parts.push(part);}break;
+    case 'rename': {
+     if(keys!=='id,name,type'||typeof command.name!=='string'||!command.name.trim()||command.name.trim().length>128)return result(false,'INVALID_COMMAND','name');
+     const part=next.parts.find(part=>part.id===command.id);if(!part)return result(false,'UNKNOWN_PART','id');
+     part.name=command.name.trim();break;
+    }
     case 'delete':
      if(keys!=='id,type')return result(false,'INVALID_COMMAND','command');
      if(!next.parts.some(part=>part.id===command.id))return result(false,'UNKNOWN_PART','id');
@@ -88,7 +93,7 @@ export async function createWorkshop(input=createEmptyBlueprint('machine','My ma
      const allowed=['type','part','sourceRegion','targetPart','targetRegion','u','v','twist','id','replaceConnection','attach','insertPart','expectedCursor'];
      if(Object.keys(command).some(key=>!allowed.includes(key))||typeof command.id!=='string'||(command.attach!==undefined&&typeof command.attach!=='boolean'))return result(false,'INVALID_COMMAND','command');
      if(command.expectedCursor!==undefined&&!sameData(command.expectedCursor,session.observe().cursor))return result(false,'STALE_PROPOSAL','expectedCursor');
-     next=proposeSurfaceMount(next,command).blueprint;break;
+     next=proposeSurfaceMount(next,command.insertPart?{...command,insertPart:{...command.insertPart,name:availablePartName(next.parts,command.insertPart.name)}}:command).blueprint;break;
     }
     case 'connect': {
      if(keys!=='a,b,id,type')return result(false,'INVALID_COMMAND','command');

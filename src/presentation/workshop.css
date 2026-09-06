@@ -165,3 +165,6 @@ body:has(.playtest-panel) .snap-notice{bottom:108px}@media(max-width:760px){body
 .surface-precise summary { cursor: pointer; padding: 8px 0; }
 .inspector .connections-heading { margin: 8px 0 4px; }
 .inspector .part-settings > summary { padding: 8px 0; }
+
+.part-identity > button,.part-name-editor{grid-column:2;justify-self:start}
+.part-name-editor{display:flex;flex-wrap:wrap;gap:6px;min-width:0;width:100%}.part-name-editor input{width:100%;min-width:0;box-sizing:border-box}.part-identity h2{overflow-wrap:anywhere}

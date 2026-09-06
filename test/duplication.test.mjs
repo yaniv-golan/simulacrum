@@ -14,7 +14,7 @@ test('duplicate preserves authored choices without mutating the original or copy
  blueprint.parts.push(createPart('powerCell','cell',[4,2,0]));
  blueprint.connections.push({id:'wire',kind:'power',a:{part:'original',port:'power'},b:{part:'cell',port:'power'}});
  const before=structuredClone(blueprint),copy=duplicatePart(blueprint,'original','copy',[0,0,-8]);
- assert.deepEqual(copy,{...original,id:'copy',name:'Custom motor Copy',position:[0,2,-1]});
+ assert.deepEqual(copy,{...original,id:'copy',name:'Custom motor-2',position:[0,2,-1]});
  assert.deepEqual(blueprint,before);
  assert.equal(validateBlueprint({...blueprint,parts:[...blueprint.parts,copy]}).ok,true);
  copy.parameters.currentLimit=9;copy.authoredMaterial.body='steel';copy.rotation[0]=.2;
@@ -53,7 +53,7 @@ test('occupied search limit and blueprint position bounds never produce an overl
 test('long names still produce a valid authored copy and tiny finite directions normalize',()=>{
  const blueprint=fixture();blueprint.parts[0].name='x'.repeat(128);
  const copy=duplicatePart(blueprint,'original','copy',[1e-300,0,0]);
- assert.ok(copy.name.endsWith(' Copy'));assert.equal(copy.name.length,128);
+ assert.ok(copy.name.endsWith('-2'));assert.equal(copy.name.length,128);
  assert.deepEqual(copy.position,[1,2,0]);
  assert.equal(validateBlueprint({...blueprint,parts:[...blueprint.parts,copy]}).ok,true);
 });

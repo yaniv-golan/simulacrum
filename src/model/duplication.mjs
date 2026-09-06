@@ -1,5 +1,5 @@
 import { CATALOG } from './catalog.mjs';
-import { validateBlueprint } from './blueprint.mjs';
+import { validateBlueprint, availablePartName } from './blueprint.mjs';
 
 function reject(reasonCode,path=''){throw Object.assign(new TypeError(reasonCode),{reasonCode,path});}
 function validate(blueprint){const result=validateBlueprint(blueprint);if(!result.ok)reject(result.reasonCode,result.path);}
@@ -38,7 +38,7 @@ export function duplicatePart(blueprint,id,newId,direction){
  const scale=Math.max(...direction.map(Math.abs));
  if(scale===0)reject('INVALID_VECTOR','direction');
  const scaled=direction.map(value=>value/scale),length=Math.hypot(...scaled),unit=scaled.map(value=>value/length);
- const copy=structuredClone(original);copy.id=newId;copy.name=`${original.name.slice(0,123)} Copy`;
+ const copy=structuredClone(original);copy.id=newId;copy.name=availablePartName(blueprint.parts,original.name);
  validate({...blueprint,parts:[...blueprint.parts,copy]});
  const occupied=blueprint.parts.map(bounds);
  for(let distance=1;distance<=100;distance++){
