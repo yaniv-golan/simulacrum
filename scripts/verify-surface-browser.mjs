@@ -1,14 +1,17 @@
+import {createBrowserEvidence} from './browser-evidence.mjs';
 import {chromium} from 'playwright';
 import * as THREE from 'three';
 import assert from 'node:assert/strict';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {createEmptyBlueprint,createPart} from '../src/model/blueprint.mjs';
+const browserEvidence=createBrowserEvidence();
+
 const out='artifacts/surface-browser';mkdirSync(out,{recursive:true});
 const fixture={...createEmptyBlueprint('surface-test','Surface test'),parts:[createPart('chassis','base',[0,.35,0]),createPart('poweredMotor','motor',[.45,.35,0])]};writeFileSync(`${out}/fixture.json`,JSON.stringify(fixture));
 const browser=await chromium.launch(),page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];
 page.on('pageerror',e=>errors.push(e.message));page.on('requestfailed',r=>errors.push(r.url()));
 try{
- await page.goto(process.argv[2]??'http://127.0.0.1:4173/');
+ await browserEvidence.goto(page,process.argv[2]??'http://127.0.0.1:4173/');
  await page.locator('[data-part-type=poweredMotor]').click();
  assert.equal(await page.getByRole('button',{name:'Snap to surface',exact:true}).count(),1,'selected motor must expose surface placement');
  await page.locator('input[type=file]').setInputFiles(`${out}/fixture.json`);
@@ -41,6 +44,6 @@ try{
  const rendered=await page.evaluate(()=>window.workshopProbe.readRenderedTransforms());const observation=await page.evaluate(()=>window.workshopProbe.observe().frames[0]);for(const [i,p] of observation.metadata.blueprint.parts.entries()){assert.deepEqual(rendered.find(r=>r.id===p.id).position,observation.physics[i].position);}
  await page.getByRole('button',{name:'Detach',exact:true}).click();await page.getByRole('button',{name:'Snap to surface',exact:true}).click();await page.getByLabel('Target surface').selectOption(JSON.stringify(['base','top']));await page.getByLabel('Attach after snapping').uncheck();await page.locator('[data-command=apply-surface]').click();assert.equal((await read()).connections.length,0);
  assert.deepEqual(errors,[]);
- writeFileSync(`${out}/result.json`,JSON.stringify({build:await page.locator('meta[name=build-id]').getAttribute('content'),checks:['surface control','read-only preview','invalid overhang','top attachment','adjust and undo','cancel','underside attachment','render agrees with physics','place without attachment'],errors},null,2));
+ browserEvidence.assertUnchanged();writeFileSync(`${out}/result.json`,JSON.stringify({...browserEvidence.identity,build:await page.locator('meta[name=build-id]').getAttribute('content'),checks:['surface control','read-only preview','invalid overhang','top attachment','adjust and undo','cancel','underside attachment','render agrees with physics','place without attachment'],errors},null,2));
  console.log('surface browser passed');
-}finally{await browser.close();}
+}finally{try{browserEvidence.assertUnchanged();}finally{await browser.close();}}

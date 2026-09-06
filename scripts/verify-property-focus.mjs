@@ -1,6 +1,9 @@
+import {createBrowserEvidence} from './browser-evidence.mjs';
 import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
 import {mkdirSync,writeFileSync} from 'node:fs';
+const browserEvidence=createBrowserEvidence();
+
 const out=process.argv[3]??'artifacts/property-focus';mkdirSync(out,{recursive:true});
 const browser=await chromium.launch(),page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];
 page.on('pageerror',error=>errors.push(error.message));page.setDefaultTimeout(6000);
@@ -8,7 +11,7 @@ const active=()=>page.evaluate(()=>({tag:document.activeElement.tagName,label:do
 const parameter=key=>page.evaluate(key=>window.workshopProbe.observe().frames[0].metadata.blueprint.parts.find(part=>part.type==='poweredMotor').parameters[key],key);
 let build;
 try{
- await page.goto(process.argv[2]??'http://127.0.0.1:4173/');await page.waitForFunction(()=>window.workshopProbe);build=await page.locator('meta[name=build-id]').getAttribute('content');
+ await browserEvidence.goto(page,process.argv[2]??'http://127.0.0.1:4173/');await page.waitForFunction(()=>window.workshopProbe);build=await page.locator('meta[name=build-id]').getAttribute('content');
  await page.locator('[data-part-type=poweredMotor]').click();
  const duty=page.getByRole('spinbutton',{name:'Drive setting',exact:true});
  await duty.fill('.5');await duty.press('Tab');await page.waitForFunction(()=>window.workshopProbe.observe().frames[0].metadata.blueprint.parts[0].parameters.defaultDuty===.5);
@@ -22,5 +25,5 @@ try{
  await resistance.fill('2');await resistance.press('Shift+Tab');assert.equal(await parameter('resistance'),2);assert.equal((await active()).label,'torqueConstant','engineering reverse Tab preserves previous field');
  await torque.fill('.3');await torque.press('Shift+Tab');assert.equal((await active()).text,'Engineering details','reverse Tab can restore a summary without an aria-label');
  assert.equal(await page.locator('.part-settings').evaluate(element=>element.open),true,'editing preserves open engineering section');
- assert.deepEqual(errors,[]);await page.screenshot({path:`${out}/focus.png`});writeFileSync(`${out}/result.json`,JSON.stringify({build,errors,checks:['edited primary Tab to slider then preset','edited primary Shift+Tab to Delete','unchanged native Tab','engineering next and previous fields','engineering summary focus and open state']},null,2));console.log('property focus browser passed');
-}catch(error){await page.screenshot({path:`${out}/failed.png`});writeFileSync(`${out}/failure.json`,JSON.stringify({build,errors,message:error.message,active:await active()},null,2));throw error;}finally{await browser.close();}
+ assert.deepEqual(errors,[]);await page.screenshot({path:`${out}/focus.png`});browserEvidence.assertUnchanged();writeFileSync(`${out}/result.json`,JSON.stringify({...browserEvidence.identity,build,errors,checks:['edited primary Tab to slider then preset','edited primary Shift+Tab to Delete','unchanged native Tab','engineering next and previous fields','engineering summary focus and open state']},null,2));console.log('property focus browser passed');
+}catch(error){await page.screenshot({path:`${out}/failed.png`});writeFileSync(`${out}/failure.json`,JSON.stringify({build,errors,message:error.message,active:await active()},null,2));throw error;}finally{try{browserEvidence.assertUnchanged();}finally{await browser.close();}}

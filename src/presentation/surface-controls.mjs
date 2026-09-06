@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { explainFailure } from '../model/messages.mjs';
 import { surfaceRegions, resolveSurfaceEndpoint } from '../model/surfaces.mjs';
 import { inspectSurfaceMount } from '../model/assembly.mjs';
 import { mechanicalGroup } from '../model/editing.mjs';
@@ -66,7 +67,7 @@ export function createSurfaceControls({scene,camera,renderer,orbit,getFrame,getC
    if(assessment.obstructingPartId){const obstacle=getMeshes().get(assessment.obstructingPartId);if(obstacle){const box=new THREE.BoxHelper(obstacle,0xff836f);box.material.depthTest=false;preview.add(box);}}
    for(const [axis,direction,tint] of [['Along',tu,0xffc778],['Across',tv,0x8bcfff]]){const arrow=new THREE.ArrowHelper(direction,targetCenter,.16,tint,.025,.015);preview.add(arrow);}
 
-  }catch(e){status.textContent=reasons[e.reasonCode]??e.message;drawInvalidTarget();}
+  }catch(e){status.textContent=reasons[e.reasonCode]??explainFailure(e);drawInvalidTarget();}
  }
  function drawInvalidTarget(){const p=bp().parts.find(p=>p.id===state.target?.part),r=p&&surfaceRegions(p).find(r=>r.id===state.target.region);if(!r)return;const m=new THREE.Mesh(new THREE.PlaneGeometry(r.halfSize[0]*2,r.halfSize[1]*2),new THREE.MeshBasicMaterial({color:0xff836f,transparent:true,opacity:.25,side:THREE.DoubleSide,depthTest:false}));m.position.copy(vec(r.position).applyQuaternion(quat(p.rotation)).add(vec(p.position)));m.quaternion.copy(quat(p.rotation).multiply(quat(r.rotation)).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),Math.PI/2)));preview.add(m);}
  function turn(degrees){if(state)state.manualHeading=true;angle.value=String(Number(angle.value)+degrees);update();}

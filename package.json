@@ -37,12 +37,16 @@
     "test:unit": "node scripts/test-affected.mjs",
     "test:all": "node scripts/test-affected.mjs --all",
     "ci": "node scripts/ci.mjs",
-    "test:browser": "node scripts/verify-browser.mjs",
+    "test:browser": "node scripts/verify-browser-suite.mjs all",
     "test:determinism": "node scripts/verify-m1.mjs",
     "replay": "node scripts/replay.mjs",
     "dev": "vite --host 127.0.0.1",
     "build": "node scripts/check-breadth-cli.mjs && vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 127.0.0.1",
+    "test:browser:smoke": "node scripts/verify-browser-suite.mjs smoke",
+    "test:performance": "node scripts/verify-browser-suite.mjs performance",
+    "format": "prettier --write src scripts test",
+    "format:check": "prettier --check src scripts test"
   },
   "devDependencies": {
     "acorn": "^8.18.0",
@@ -51,6 +55,7 @@
     "fast-check": "^4.9.0",
     "parse5": "^8.0.1",
     "playwright": "^1.63.0",
+    "prettier": "3.6.2",
     "vite": "^8.2.2"
   },
   "dependencies": {

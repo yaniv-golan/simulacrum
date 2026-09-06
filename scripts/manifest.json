@@ -78,55 +78,39 @@
   "rules": [
     {
       "id": "layers",
-      "rule": "Layer imports follow the module graph and physical laws receive no identity.",
-      "enforcedBy": [
-        "layers"
-      ]
+      "rule": "Layer imports follow the module graph and physical laws receive no identity."
     },
     {
       "id": "tick-order",
-      "rule": "Nine ordered phases, one integration, previous completed sensors.",
-      "enforcedBy": []
+      "rule": "Nine ordered phases, one integration, previous completed sensors."
     },
     {
       "id": "identity",
-      "rule": "Physical properties derive only from authored geometry and player selections.",
-      "enforcedBy": []
+      "rule": "Physical properties derive only from authored geometry and player selections."
     },
     {
       "id": "gate-integrity",
-      "rule": "Checks execute, deadlines interrupt, owners and references validate.",
-      "enforcedBy": [
-        "manifest-validates",
-        "tooling-tests"
-      ]
+      "rule": "Checks execute, deadlines interrupt, owners and references validate."
     },
     {
       "id": "iteration-budget",
-      "rule": "The local CI command finishes in less than 180 seconds.",
-      "enforcedBy": [
-        "ci-under-3min"
-      ]
+      "rule": "The local CI command finishes in less than 180 seconds."
     },
     {
       "id": "runtime-contract",
-      "rule": "Runtime v1 governs values, cursor epochs, bounded replay and current save-format admission.",
-      "enforcedBy": []
+      "rule": "Runtime v1 governs values, cursor epochs, bounded replay and current save-format admission."
     },
     {
       "id": "physical-feasibility",
-      "rule": "All five measured physical stages must pass before expanding terrain.",
-      "enforcedBy": []
+      "rule": "All five measured physical stages must pass before expanding terrain."
     },
     {
       "id": "course-contract",
-      "rule": "Course v1 and its annexes require frozen fixtures and unbroken qualification.",
-      "enforcedBy": []
+      "rule": "Course v1 and its annexes require frozen fixtures and unbroken qualification."
     },
     {
       "id": "player-authority",
-      "rule": "Players and their agents share one command surface and physical constraints.",
-      "enforcedBy": []
+      "rule": "Players and their agents share one command surface and physical constraints."
     }
   ],
   "milestones": [
@@ -149,7 +133,9 @@
       "id": "layers",
       "dueAt": "M0",
       "description": "module graph: layer ownership and allowed import edges",
-      "ruleId": "layers"
+      "ruleId": "layers",
+      "module": "scripts/module-graph.mjs",
+      "export": "checkLayers"
     },
     {
       "id": "tick-order",
@@ -393,5 +379,223 @@
   },
   "physicsPackages": [
     "@dimforge/rapier3d-deterministic-compat"
+  ],
+  "browserChecks": [
+    {
+      "id": "qualify-workshop",
+      "script": "scripts/qualify-workshop.mjs",
+      "environment": "workshop",
+      "tier": "performance",
+      "smoke": false,
+      "timeoutMs": 90000,
+      "barId": "F2"
+    },
+    {
+      "id": "verify-attachment-status",
+      "script": "scripts/verify-attachment-status.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-browser",
+      "script": "scripts/verify-browser.mjs",
+      "environment": "probe",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-camera-recovery",
+      "script": "scripts/verify-camera-recovery.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-direct-edit-browser",
+      "script": "scripts/verify-direct-edit-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-edit-cycles",
+      "script": "scripts/verify-edit-cycles.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-energy-browser",
+      "script": "scripts/verify-energy-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-exploded-browser",
+      "script": "scripts/verify-exploded-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-feedback-receipts",
+      "script": "scripts/verify-feedback-receipts.mjs",
+      "environment": "self",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 150000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-guide-feedback",
+      "script": "scripts/verify-guide-feedback.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-inspector-browser",
+      "script": "scripts/verify-inspector-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-manipulation-browser",
+      "script": "scripts/verify-manipulation-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-motion-diagnostics",
+      "script": "scripts/verify-motion-diagnostics.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-port-explanations",
+      "script": "scripts/verify-port-explanations.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-property-focus",
+      "script": "scripts/verify-property-focus.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-recording-browser",
+      "script": "scripts/verify-recording-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-remote-playtest",
+      "script": "scripts/verify-remote-playtest.mjs",
+      "environment": "self",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-selection-browser",
+      "script": "scripts/verify-selection-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-snap-intent",
+      "script": "scripts/verify-snap-intent.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-socket-preview",
+      "script": "scripts/verify-socket-preview.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-starter-browser",
+      "script": "scripts/verify-starter-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-surface-browser",
+      "script": "scripts/verify-surface-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-ui-lifecycle-browser",
+      "script": "scripts/verify-ui-lifecycle-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-workshop",
+      "script": "scripts/verify-workshop.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    }
   ]
 }

@@ -33,8 +33,8 @@ test('malformed schema and semantic witnesses fail with actionable paths',()=>{
 test('a fixed attachment port cannot silently acquire a second connection',()=>{
  const b=valid();b.parts.push(createPart('beam','c',[.4,0,0]));b.connections.push({id:'other',kind:'fixed',a:{part:'c',surface:{region:'right',u:0,v:0,twist:0}},b:{part:'b',surface:{region:'left',u:0,v:0,twist:0}}});assert.equal(validateBlueprint(b).reasonCode,'PORT_OCCUPIED');
 });
-test('save versions have an explicit floor and ceiling; no missing-field inference',()=>{
- for(const version of [0,-1])assert.equal(loadSave({...valid(),version}).reasonCode,'SAVE_VERSION_BELOW_FLOOR');
+test('save versions explicitly refuse unsupported formats; no missing-field inference',()=>{
+ for(const version of [0,-1])assert.equal(loadSave({...valid(),version}).reasonCode,'SAVE_VERSION_UNSUPPORTED_OLD');
  assert.equal(loadSave({...valid(),version:4}).reasonCode,'SAVE_VERSION_FUTURE');
  const missing=valid();delete missing.version;assert.equal(loadSave(missing).ok,false);assert.equal(loadSave('{broken').reasonCode,'INVALID_JSON');
  const b=valid();assert.deepEqual(loadSave(JSON.stringify(b)).blueprint,b);const loaded=loadSave(b);loaded.blueprint.parts[0].name='Changed';assert.notEqual(b.parts[0].name,'Changed');
@@ -70,7 +70,7 @@ test('current runtime requires parameters and rejects unknown or out-of-range ra
  const motor=createPart('poweredMotor','motor',[0,0,0]);const machine=createEmptyBlueprint('m','Motor');machine.parts.push(motor);
  delete motor.parameters.resistance;assert.equal(validateBlueprint(machine).ok,false);motor.parameters.resistance=1;motor.parameters.secretTorque=100;assert.equal(validateBlueprint(machine).ok,false);delete motor.parameters.secretTorque;motor.parameters.currentLimit=0;assert.equal(validateBlueprint(machine).ok,false);
 });
-test('only the current save format is admitted',()=>{for(const version of [1,2])assert.equal(loadSave({...valid(),version}).reasonCode,'SAVE_VERSION_BELOW_FLOOR');assert.equal(loadSave(valid()).ok,true);});
+test('only the current save format is admitted',()=>{for(const version of [1,2])assert.equal(loadSave({...valid(),version}).reasonCode,'SAVE_VERSION_UNSUPPORTED_OLD');assert.equal(loadSave(valid()).ok,true);});
 test('power ports permit fanout and signal ports enforce authored direction',()=>{
  const b=createEmptyBlueprint('wiring','Wiring');b.parts.push(createPart('powerCell','cell',[0,0,0]),createPart('poweredMotor','m1',[0,0,0]),createPart('poweredMotor','m2',[0,0,0]));
  b.connections.push({id:'p1',kind:'power',a:{part:'cell',port:'power'},b:{part:'m1',port:'power'}},{id:'p2',kind:'power',a:{part:'cell',port:'power'},b:{part:'m2',port:'power'}});assert.equal(validateBlueprint(b).ok,true);

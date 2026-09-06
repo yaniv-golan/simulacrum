@@ -1,8 +1,8 @@
 import { resolveSurfaceEndpoint, validateSurfacePair, validateSurfaceGeometry } from './surfaces.mjs';
 import validateSchema from './generated/blueprint-validator.mjs';
 import { CATALOG, MATERIALS } from './catalog.mjs';
-export const BLUEPRINT_REASON_CODES=Object.freeze(['OK','INVALID_BLUEPRINT','INVALID_JSON','SAVE_VERSION_BELOW_FLOOR','SAVE_VERSION_FUTURE','UNKNOWN_PART_TYPE','DUPLICATE_ID','UNKNOWN_PART','UNKNOWN_PORT','SELF_CONNECTION','PORT_OCCUPIED','UNKNOWN_MATERIAL','INVALID_ROTATION','INCOMPATIBLE_PORT_DIRECTION']);
-export const SAVE_VERSION_RANGE=Object.freeze({floor:3,current:3});
+export const BLUEPRINT_REASON_CODES=Object.freeze(['OK','INVALID_BLUEPRINT','INVALID_JSON','SAVE_VERSION_UNSUPPORTED_OLD','SAVE_VERSION_FUTURE','UNKNOWN_PART_TYPE','DUPLICATE_ID','UNKNOWN_PART','UNKNOWN_PORT','SELF_CONNECTION','PORT_OCCUPIED','UNKNOWN_MATERIAL','INVALID_ROTATION','INCOMPATIBLE_PORT_DIRECTION']);
+export const CURRENT_SAVE_VERSION=3;
 export const QUATERNION_NORM_TOLERANCE=1e-8;
 const result=(reasonCode,path='')=>({ok:reasonCode==='OK',reasonCode,path});
 const escape=key=>String(key).replaceAll('~','~0').replaceAll('/','~1');
@@ -76,19 +76,19 @@ export function loadSave(input){
  if(typeof input==='string'){try{parsed=JSON.parse(input);}catch{return result('INVALID_JSON');}}
  const bad=invalidData(parsed);if(bad!==null)return result('INVALID_BLUEPRINT',bad);
  if(parsed&&typeof parsed==='object'&&Number.isInteger(parsed.version)){
-  if(parsed.version<SAVE_VERSION_RANGE.floor)return result('SAVE_VERSION_BELOW_FLOOR','/version');
-  if(parsed.version>SAVE_VERSION_RANGE.current)return result('SAVE_VERSION_FUTURE','/version');
+  if(parsed.version<CURRENT_SAVE_VERSION)return result('SAVE_VERSION_UNSUPPORTED_OLD','/version');
+  if(parsed.version>CURRENT_SAVE_VERSION)return result('SAVE_VERSION_FUTURE','/version');
  }
  const validation=validateBlueprint(parsed);
  if(validation.ok)try{validateSurfaceGeometry(parsed);}catch(error){return result(error.reasonCode,error.path??'connections');}
  return validation.ok?{...validation,blueprint:structuredClone(parsed)}:validation;
 }
 function authored(value){const validation=validateBlueprint(value);if(!validation.ok)throw Object.assign(new TypeError(validation.reasonCode),{reasonCode:validation.reasonCode,path:validation.path});return value;}
-export function createEmptyBlueprint(id,name){return authored({version:3,id,name,parts:[],connections:[]});}
+export function createEmptyBlueprint(id,name){return authored({version:CURRENT_SAVE_VERSION,id,name,parts:[],connections:[]});}
 export function createPart(type,id,position){
  if(!Object.hasOwn(CATALOG,type))throw Object.assign(new TypeError('UNKNOWN_PART_TYPE'),{reasonCode:'UNKNOWN_PART_TYPE',path:'/type'});
  const part={id,type,name:CATALOG[type].name,position:structuredClone(position),rotation:[0,0,0,1],authoredMaterial:{},parameters:Object.fromEntries(Object.entries(CATALOG[type].parameterDefinitions).map(([key,definition])=>[key,definition.default]))};
- authored({version:3,id:'factory',name:'Factory',parts:[part],connections:[]});return part;
+ authored({version:CURRENT_SAVE_VERSION,id:'factory',name:'Factory',parts:[part],connections:[]});return part;
 }
 
 // Names identify parts to players only; ids retain connection ownership.

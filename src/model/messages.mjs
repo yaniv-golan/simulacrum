@@ -5,9 +5,9 @@ const messages={
  SURFACE_OVERLAP:'This placement overlaps another part. Slide or rotate it until clear.',
  MOUNT_HELD_BY_ANOTHER_CONNECTION:'Another attachment holds this group. Disconnect that attachment before adjusting this mount.',
  STALE_PROPOSAL:'The machine changed. Choose the mounting position again.',
- OK:'Ready.', INVALID_BLUEPRINT:'This machine has invalid or missing settings. Check the indicated field.',
+ OK:'Ready.', INVALID_BLUEPRINT:'This machine has invalid or missing settings. Check its parts and connections.',
  INVALID_JSON:'This file is not valid JSON. Choose a saved machine file.',
- SAVE_VERSION_BELOW_FLOOR:'This save is too old for this workshop. Open it in its original version.',
+ SAVE_VERSION_UNSUPPORTED_OLD:'This workshop only opens the current save format. Choose a machine saved by this version.',
  SAVE_VERSION_FUTURE:'This save needs a newer workshop version.',
  UNKNOWN_PART_TYPE:'Choose a part from the available parts.', DUPLICATE_ID:'Two items have the same identifier. Give each a unique identifier.',
  UNKNOWN_PART:'That part is no longer here. Select another part.', UNKNOWN_PORT:'That connector is not on this part. Choose a listed connector.',
@@ -47,4 +47,36 @@ const messages={
  NO_SHAFT:'Connect the motor shaft to a wheel or axle.', DEPLETED:'The cell is empty. Return to Build to recharge and try a larger capacity.',
 };
 for(const code of REASON_CODES)if(!messages[code])throw Error(`missing player message: ${code}`);
-export function explainReason(code){return messages[code]??'The action could not finish. Return to Build and try again.';}
+export function explainReason(code){return Object.hasOwn(messages,code)?messages[code]:'The action could not finish. Return to Build and try again.';}
+
+const fieldLabels={version:'Save format',name:'Name',id:'Identifier',type:'Part type',position:'Position',rotation:'Orientation',parameters:'Settings',authoredMaterial:'Material',defaultDuty:'Drive setting',currentLimit:'Current limit',torqueConstant:'Torque per amp',capacityJ:'Stored energy',internalResistance:'Cell resistance',port:'Connector',part:'Part',surface:'Mounting surface',region:'Surface',u:'Along surface',v:'Across surface',twist:'Turn',mode:'Mode',command:'Action',key:'Setting',primitive:'Shape'};
+const ownValue=(object,key)=>object!==null&&(typeof object==='object'||typeof object==='function')?Object.getOwnPropertyDescriptor(object,key)?.value:undefined;
+function safePath(value){
+ if(typeof value!=='string'||value.length>256||/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/.test(value))return '';
+ // Error paths describe authored fields, never filesystem paths or stack traces.
+ return /^(?:\/(?:parts|connections|version|id|name)(?:\/.*)?|(?:command|mode|name|id|key|primitive|connections|a|b)(?:[./].*)?)$/.test(value)?value:'';
+}
+/** A closed result envelope also accepts known reason-code Error messages. */
+export function normalizeFailure(error,fallback='INVALID_COMMAND'){
+ const candidate=ownValue(error,'reasonCode')??ownValue(error,'message');
+ const known=candidate!=='OK'&&REASON_CODES.includes(candidate);
+ const reasonCode=known?candidate:REASON_CODES.includes(fallback)&&fallback!=='OK'?fallback:'INVALID_COMMAND';
+ return {ok:false,reasonCode,path:known?safePath(ownValue(error,'path')):''};
+}
+/** Display only the admitted code, authored location and optional player part name. */
+export function explainFailure(error,blueprint){
+ const failure=normalizeFailure(error),message=explainReason(failure.reasonCode),path=failure.path;
+ if(!path)return message;
+ const tokens=path.replace(/^\//,'').split('/').map(token=>token.replaceAll('~1','/').replaceAll('~0','~'));
+ const index=Number(tokens[1]);let subject='',fieldStart=0;
+ if(['parts','connections'].includes(tokens[0])&&/^\d+$/.test(tokens[1]??'')&&Number.isSafeInteger(index)){
+  subject=`${tokens[0]==='parts'?'Part':'Connection'} ${index+1}`;fieldStart=2;
+  if(tokens[0]==='parts'){
+   const name=ownValue(ownValue(ownValue(blueprint,'parts'),String(index)),'name');
+   if(typeof name==='string'&&name.trim())subject=name.replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g,' ').trim().slice(0,128);
+  }
+ }
+ const fields=tokens.slice(fieldStart),specific=[...fields].reverse().find(token=>Object.hasOwn(fieldLabels,token)),label=specific?fieldLabels[specific]:fields.filter(token=>!/^\d+$/.test(token)).join(' · ');
+ const location=[subject,label].filter(Boolean).join(' · ');
+ return `${message} ${location?`${location} `:''}(${path}).`;
+}

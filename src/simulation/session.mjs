@@ -39,7 +39,7 @@ export async function createSession(configuration, identity = {}, metadata = {},
   let energy=emptyEnergy();
   const total=e=>e.kineticJ+e.potentialJ;
   const frame=(physics,timings={})=>({tick,status,physics,metadata,energy:copy(energy),power:power.read(),sensors:copy(sensors),phaseTimings:timings,phaseStatus:Object.fromEntries(PHASES.map(p=>[p,['sensor-snapshot','controller-commands','power-signals','actuators-constraints','environment-forces','integration-contacts','structure-failure','thermal-ablation','telemetry'].includes(p)?'active':'inactive-no-components']))});
-  const observations=createObservationStore(frame(initial),{sessionId:`session-${++sessionSequence}`});
+  const observations=createObservationStore(frame(initial),{sessionId:`session-${++sessionSequence}`,clock:()=>performance.now()});
   function checkpoint() {
     if(status==='failed')throw Error('SESSION_FAILED');
     return copy({version:2,tick,accumulator,sequence,pending,sensors,energy,power:power.snapshot(),physics:Array.from(world.snapshot()),configuration:config,identity,metadata});
@@ -64,7 +64,7 @@ export async function createSession(configuration, identity = {}, metadata = {},
     if(!Number.isSafeInteger(count)||count<0||count>28800||tick+count>Number.MAX_SAFE_INTEGER)throw Error('INVALID_TICK_COUNT');
     if(status==='failed')throw Error('SESSION_FAILED');
     for(let n=0;n<count;n++) {
-      const timings={},next=tick+1;const startEnergy=world.mechanicalEnergy();let actuatorWorkJ=0,externalWorkJ=0,integrationDeltaJ=0;
+      const startedAt=performance.now(),timings={},next=tick+1;const startEnergy=world.mechanicalEnergy();let actuatorWorkJ=0,externalWorkJ=0,integrationDeltaJ=0;
       try {
         for(const phase of PHASES) {
           const start=performance.now();
@@ -98,8 +98,12 @@ export async function createSession(configuration, identity = {}, metadata = {},
           }
           timings[phase]=performance.now()-start;
         }
-        observations.publish(frame(world.read(),timings));
-        if(tick%1200===0){previousInterval={anchor,inputs:history};anchor=checkpoint();history=[];}
+        // Prepare the next replay anchor inside the measured tick, but retain
+        // the old interval until the completed observation has been admitted.
+        let nextAnchor,checkpointMs=0;
+        if(tick%1200===0){const start=performance.now();nextAnchor=checkpoint();checkpointMs=performance.now()-start;}
+        observations.publish(frame(world.read(),timings),{timing:{startedAt,phaseMs:Object.values(timings).reduce((sum,value)=>sum+value,0),checkpointMs}});
+        if(nextAnchor){previousInterval={anchor,inputs:history};anchor=nextAnchor;history=[];}
       } catch(error) {
         status='failed';
         failure=copy({version:1,identity,anchor:previousInterval?.anchor??anchor,inputs:[...(previousInterval?.inputs??[]),...history],failedTick:next,reasonCode:['NON_FINITE_STATE','INVARIANT_VIOLATION','ENERGY_INVARIANT'].includes(error.message)?error.message:'PHYSICS_FAILURE',completed:observations.observe().frames.at(-1)});
@@ -158,15 +162,20 @@ export async function createSession(configuration, identity = {}, metadata = {},
     } finally {candidate?.dispose();replacing=false;}
   }
   function restore(input) {
-    const cp=copy(input),invalid=()=>{throw Error('INVALID_CHECKPOINT');};
+    const invalid=()=>{throw Error('INVALID_CHECKPOINT');};
+    let cp;try{cp=copy(immutableCopy(input));}catch{invalid();}
     const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===keys.sort().join(',');
     let restoredMetadata;try{restoredMetadata=immutableCopy(cp.metadata);}catch{invalid();}
     const vector=(v,n)=>Array.isArray(v)&&v.length===n&&v.every(Number.isFinite);
     if(!exact(cp,['version','tick','accumulator','sequence','pending','sensors','energy','power','physics','configuration','identity','metadata'])||cp.version!==2||!Number.isSafeInteger(cp.tick)||cp.tick<0||cp.tick===Number.MAX_SAFE_INTEGER||!Number.isFinite(cp.accumulator)||cp.accumulator<0||cp.accumulator>=DT*1000||!Number.isSafeInteger(cp.sequence)||cp.sequence<0||!Array.isArray(cp.physics)||cp.physics.length>32*1024*1024||!cp.physics.every(x=>Number.isInteger(x)&&x>=0&&x<=255)||!Array.isArray(cp.pending)||cp.pending.length>64||JSON.stringify(cp.configuration)!==JSON.stringify(config)||JSON.stringify(cp.identity)!==JSON.stringify(identity))invalid();
     if(!exact(cp.energy,['kineticJ','potentialJ','actuatorWorkJ','externalWorkJ','integrationDeltaJ','balanceResidualJ'])||!Object.values(cp.energy).every(Number.isFinite))invalid();
     if(!exact(cp.sensors,['tick','bodies','readings'])||cp.sensors.tick!==Math.max(0,cp.tick-1)||!Array.isArray(cp.sensors.bodies)||cp.sensors.bodies.length!==initial.length)invalid();
-    for(const [index,body] of cp.sensors.bodies.entries())if(!exact(body,['position','rotation','velocity','angularVelocity','mass'])||!vector(body.position,3)||!vector(body.rotation,4)||!vector(body.velocity,3)||!vector(body.angularVelocity,3)||body.mass!==initial[index].mass)invalid();
-    if(JSON.stringify(cp.sensors.readings)!==JSON.stringify(sampleSensors(cp.sensors.tick,cp.sensors.bodies,config.power).readings))invalid();
+    // Completed Float32 physics rotations permit ordinary library roundoff,
+    // never arbitrary finite quaternions that overflow sensor calculations.
+    for(const [index,body] of cp.sensors.bodies.entries())if(!exact(body,['position','rotation','velocity','angularVelocity','mass'])||!vector(body.position,3)||!vector(body.rotation,4)||Math.abs(Math.hypot(...body.rotation)-1)>1e-5||!vector(body.velocity,3)||!vector(body.angularVelocity,3)||body.mass!==initial[index].mass)invalid();
+    const expectedReadings=sampleSensors(cp.sensors.tick,cp.sensors.bodies,config.power).readings;
+    if(!Array.isArray(cp.sensors.readings)||cp.sensors.readings.length!==expectedReadings.length)invalid();
+    for(const [index,reading] of cp.sensors.readings.entries())if(!exact(reading,['node','speed'])||!Number.isFinite(reading.speed)||!Number.isFinite(expectedReadings[index].speed)||reading.node!==expectedReadings[index].node||reading.speed!==expectedReadings[index].speed)invalid();
     for(const [index,event] of cp.pending.entries())if(!exact(event,['tick','sequence','command'])||event.tick!==cp.tick+1||event.sequence!==cp.sequence-cp.pending.length+index||event.sequence<0||!validCommand(event.command))invalid();
     const candidatePower=createPowerNetwork(config.power);candidatePower.restore(cp.power);
     // All session-owned fields are admitted before the physics door validates and

@@ -1,8 +1,8 @@
 import { CATALOG } from './catalog.mjs';
+import { normalizeQuaternion, multiplyQuaternion, rotateVector } from './transforms.mjs';
+export { multiplyQuaternion, rotateVector } from './transforms.mjs';
 // M3b planar mounting. Frames use X outward, Y along u, Z along v; SI metres/radians.
 export const SURFACE_REASON_CODES=Object.freeze(['UNKNOWN_SURFACE','SURFACE_OUT_OF_BOUNDS','SURFACE_OVERLAP','MOUNT_HELD_BY_ANOTHER_CONNECTION','STALE_PROPOSAL']);
-export const multiplyQuaternion=(a,b)=>{const [x,y,z,w]=a,[X,Y,Z,W]=b;return [w*X+x*W+y*Z-z*Y,w*Y-x*Z+y*W+z*X,w*Z+x*Y-y*X+z*W,w*W-x*X-y*Y-z*Z];};
-export const rotateVector=(q,v)=>multiplyQuaternion(multiplyQuaternion(q,[...v,0]),[-q[0],-q[1],-q[2],q[3]]).slice(0,3);
 function reject(reasonCode){throw Object.assign(Error(reasonCode),{reasonCode,path:'surface'});}
 export function surfaceRegions(partOrType){
  const type=typeof partOrType==='string'?partOrType:partOrType.type,definition=CATALOG[type];
@@ -42,7 +42,7 @@ export function placementEnvelopes(part){
 
 export function surfaceConnectionAligned(blueprint,edge){
  if(!edge.a.surface||!edge.b.surface)return true;
- const world=endpoint=>{const part=blueprint.parts.find(p=>p.id===endpoint.part),frame=resolveSurfaceEndpoint(part,endpoint),offset=rotateVector(part.rotation,frame.position);return {position:part.position.map((v,i)=>v+offset[i]),rotation:multiplyQuaternion(part.rotation,frame.rotation)};};
+ const world=endpoint=>{const part=blueprint.parts.find(p=>p.id===endpoint.part),frame=resolveSurfaceEndpoint(part,endpoint),rotation=normalizeQuaternion(part.rotation),offset=rotateVector(rotation,frame.position);return {position:part.position.map((v,i)=>v+offset[i]),rotation:normalizeQuaternion(multiplyQuaternion(rotation,frame.rotation))};};
  const a=world(edge.a),b=world(edge.b),expected=multiplyQuaternion(a.rotation,[0,1,0,0]);
  return Math.hypot(...a.position.map((v,i)=>v-b.position[i]))<=1e-6&&1-Math.min(1,Math.abs(expected.reduce((sum,v,i)=>sum+v*b.rotation[i],0)))<=1e-10;
 }

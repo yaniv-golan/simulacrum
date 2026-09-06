@@ -1,8 +1,8 @@
 // M3b: private, bounded remote playtest capture. Receipts order completed uploads at the server.
 import { createServer } from 'node:http';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
-import { mkdirSync, realpathSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { appendFile, writeFile, stat, realpath, readFile, unlink } from 'node:fs/promises';
+import { mkdirSync, realpathSync, readdirSync, readFileSync, statSync, writeFileSync, truncateSync, unlinkSync } from 'node:fs';
+import { appendFile, writeFile, stat, realpath, readFile, rename, open } from 'node:fs/promises';
 import { resolve, relative, sep, extname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -13,6 +13,7 @@ const digest = data => createHash('sha256').update(data).digest('hex');
 const inside = (root, path) => { const r = relative(root, path); return r === '' || (!r.startsWith(`..${sep}`) && r !== '..' && !r.startsWith(sep)); };
 const fail = (status, message) => Object.assign(new Error(message), { status });
 function send(res, status, value) { res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(value)); }
+async function syncPath(path) { const handle = await open(path, 'r'); try { await handle.sync(); } finally { await handle.close(); } }
 async function body(req, limit) {
   if (Number(req.headers['content-length']) > limit) { req.resume(); throw fail(413, 'Request too large'); }
   const chunks = []; let size = 0;
@@ -37,15 +38,36 @@ export function createPlaytestServer({ publicDir = process.env.PLAYTEST_PUBLIC_D
     if (!entry.isDirectory() || !/^[a-f0-9]{32}$/.test(entry.name)) continue;
     const dir = join(privateRoot, entry.name);
     const session = { dir, bytes: 0, sequence: 0, writes: new Map() };
-    for (const file of readdirSync(dir)) session.bytes += statSync(join(dir, file)).size;
     const log = join(dir, 'events.ndjson');
-    let content = ''; try { content = readFileSync(log, 'utf8'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
-    for (const line of content.split('\n').filter(Boolean)) {
+    let bytes = Buffer.alloc(0);
+    try { bytes = readFileSync(log); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    const boundary = bytes.lastIndexOf(10) + 1;
+    // A receipt is issued only after the whole newline-terminated record is flushed.
+    // Preserve a torn suffix separately, validate the committed prefix, then repair
+    // only that suffix. A malformed complete record is never silently discarded.
+    const committed = bytes.subarray(0, boundary);
+    for (const line of committed.toString('utf8').split('\n').filter(Boolean)) {
       const record = JSON.parse(line);
       const key = record.media ? `media:${record.media.kind}:${record.media.clip}:${record.media.seq}` : `event:${record.event.id}`;
       if (!record.uploadHash || record.receipt.sequence !== session.sequence + 1) throw Error('Invalid capture journal');
+      if (record.media) {
+        if (!/^[A-Za-z0-9_-]+\.bin$/.test(record.media.file)) throw Error('Invalid capture journal media');
+        const mediaBytes = readFileSync(join(dir, record.media.file));
+        if (mediaBytes.length !== record.media.bytes || digest(mediaBytes) !== record.media.sha256) throw Error('Invalid capture journal media');
+      }
       session.sequence = record.receipt.sequence;
       session.writes.set(key, { hash: record.uploadHash, receipt: record.receipt });
+    }
+    if (boundary !== bytes.length) {
+      const tail = bytes.subarray(boundary);
+      writeFileSync(join(dir, `journal-incomplete-${digest(tail)}.bin`), tail, { mode: 0o600, flush: true });
+      truncateSync(log, boundary);
+    }
+    // These files have not been renamed into place or journaled; no receipt can
+    // refer to them. A retry supplies the complete bytes again.
+    for (const file of readdirSync(dir)) {
+      if (/^(screen|voice)-[A-Za-z0-9_-]+-[0-9]+\.bin\.pending$/.test(file)) unlinkSync(join(dir, file));
+      else session.bytes += statSync(join(dir, file)).size;
     }
     sessions.set(entry.name, session);
   }
@@ -76,7 +98,8 @@ export function createPlaytestServer({ publicDir = process.env.PLAYTEST_PUBLIC_D
           const sessionId = randomBytes(16).toString('hex'); const dir = join(privateRoot, sessionId);
           const record = JSON.stringify({ sessionId, receivedAt: new Date().toISOString(), metadata });
           if (Buffer.byteLength(record) > maxSessionBytes) throw fail(413, 'Session storage limit reached');
-          mkdirSync(dir, { mode: 0o700 }); await writeFile(join(dir, 'session.json'), record, { flag: 'wx', mode: 0o600 });
+          mkdirSync(dir, { mode: 0o700 }); await writeFile(join(dir, 'session.json'), record, { flag: 'wx', mode: 0o600, flush: true });
+          await syncPath(dir); await syncPath(privateRoot);
           sessions.set(sessionId, { dir, bytes: Buffer.byteLength(record), sequence: 0, writes: new Map() }); sessionCount++;
           send(res, 201, { sessionId });
         }); return;
@@ -96,16 +119,39 @@ export function createPlaytestServer({ publicDir = process.env.PLAYTEST_PUBLIC_D
         if (!media) { event = json(bytes); if (!safeId.test(event.id || '')) throw fail(400, 'Event id required'); key = `event:${event.id}`; }
         const hash = digest(Buffer.concat([Buffer.from(media ? media.mime : ''), bytes]));
         await serialized(async () => {
+          if (session.failed) throw fail(503, 'Capture journal needs recovery');
           const prior = session.writes.get(key);
           if (prior) { if (prior.hash !== hash) throw fail(409, 'Identity already has different content'); send(res, 200, prior.receipt); return; }
           const receipt = { sequence: session.sequence + 1, receivedAt: new Date().toISOString() };
           if (media) { media.bytes = bytes.length; media.sha256 = digest(bytes); }
           const line = JSON.stringify({ receipt, uploadHash: hash, ...(media ? { media } : { event }) }) + '\n';
-          const added = Buffer.byteLength(line) + (media ? bytes.length : 0);
+          const mediaPath = media && join(session.dir, media.file);
+          let existing = null;
+          if (media) {
+            try { existing = await readFile(mediaPath); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+          }
+          // No journal key means these bytes were never acknowledged. Reuse an
+          // exact orphan, or atomically replace a partial uncommitted file. Credit
+          // its existing bytes so recovery cannot charge the same chunk twice.
+          const added = Buffer.byteLength(line) + (media ? bytes.length - (existing?.length ?? 0) : 0);
           if (session.bytes + added > maxSessionBytes) throw fail(413, 'Session storage limit reached');
-          if (media) await writeFile(join(session.dir, media.file), bytes, { flag: 'wx', mode: 0o600 });
-          try { await appendFile(join(session.dir, 'events.ndjson'), line, { mode: 0o600 }); }
-          catch (error) { if (media) await unlink(join(session.dir, media.file)); throw error; }
+          try {
+            if (media && (!existing || !existing.equals(bytes))) {
+              await writeFile(`${mediaPath}.pending`, bytes, { mode: 0o600, flush: true });
+              await rename(`${mediaPath}.pending`, mediaPath);
+            }
+            // Persist the media rename before the journal can commit a receipt.
+            if (media && existing?.equals(bytes)) await syncPath(mediaPath);
+            await syncPath(session.dir);
+            await appendFile(join(session.dir, 'events.ndjson'), line, { mode: 0o600, flush: true });
+            await syncPath(session.dir);
+          } catch (error) {
+            // An append may have completed partly or fully. Never append another
+            // record using stale in-memory sequence/accounting: restart validates
+            // the journal prefix and reconciles unacknowledged media first.
+            session.failed = true;
+            throw error;
+          }
           session.bytes += added; session.sequence++; session.writes.set(key, { hash, receipt }); send(res, 201, receipt);
         }); return;
       }

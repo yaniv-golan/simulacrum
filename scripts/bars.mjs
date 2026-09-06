@@ -2,7 +2,6 @@
 // record that passes a STRICT schema: a partial record used to print GREEN with
 // "assessed undefined, participant undefined".
 import { readFileSync, existsSync, readdirSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import { appFingerprint, protocolHash } from "./build-fingerprint.mjs";
 
 const manifest = JSON.parse(
@@ -27,13 +26,15 @@ function validate(record, id) {
   return null;
 }
 
-export function evaluateBar(id) {
+export async function evaluateBar(id) {
   const bar = manifest.bars[id];
   if (!bar) throw new Error(`unknown bar: ${id}`);
   if (!bar.human) {
     if (!bar.check) return { id, state: "RED", why: "not implemented" };
     try {
-      execFileSync(process.execPath, ["--input-type=module", "-e", `const {CHECKS}=await import('./scripts/checks.mjs'); if(typeof CHECKS[${JSON.stringify(bar.check)}]!=='function')throw Error('unknown check'); await CHECKS[${JSON.stringify(bar.check)}]();`], { timeout: 120000, killSignal: 'SIGKILL', stdio: 'pipe' });
+      const {runModuleCheck}=await import('./run-check.mjs');
+      const {checkDeadline}=await import('./checks.mjs');
+      await runModuleCheck(new URL('./check-entry.mjs',import.meta.url).pathname,'check',[bar.check],{timeoutMs:checkDeadline(bar.check)});
       return { id, state: 'GREEN', why: `executed ${bar.check}` };
     } catch(error) { return { id, state: 'RED', why: `check failed: ${error.message}` }; }
   }
@@ -106,7 +107,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   let red = 0;
   for (const id of ids) {
     const bar = manifest.bars[id];
-    const { state, why } = evaluateBar(id);
+    const { state, why } = await evaluateBar(id);
     if (state === "RED") red += 1;
     console.error(
       `${state.padEnd(5)} ${id.padEnd(4)} ${bar.human ? "[human]" : "       "} due ${bar.dueAt.padEnd(3)} -- ${why}`,

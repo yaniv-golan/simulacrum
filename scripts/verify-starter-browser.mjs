@@ -1,15 +1,18 @@
+import {createBrowserEvidence} from './browser-evidence.mjs';
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { sourceIdentity } from './source-identity.mjs';
 import { appFingerprint } from './build-fingerprint.mjs';
+const browserEvidence=createBrowserEvidence();
+
 const source=sourceIdentity(),build=appFingerprint(),errors=[],samples=[];
 const browser=await chromium.launch(),page=await browser.newPage({viewport:{width:1440,height:900}});
 page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});page.on('requestfailed',r=>errors.push(r.url()));page.on('response',r=>{if(r.status()>=400)errors.push(`${r.status()} ${r.url()}`);});
 const frame=()=>page.evaluate(()=>window.workshopProbe.observe().frames[0]);
 mkdirSync('artifacts/starter-browser',{recursive:true});
 try{
- await page.goto(process.argv[2]??'http://127.0.0.1:4173/');await page.waitForFunction(()=>window.workshopProbe);
+ await browserEvidence.goto(page,process.argv[2]??'http://127.0.0.1:4173/');await page.waitForFunction(()=>window.workshopProbe);
  assert.equal(await page.locator('meta[name=build-id]').getAttribute('content'),build);
  await page.locator('[data-command=start-guide]').click();
  for(let i=0;i<16;i++){await page.locator('[data-command=guide-step]').click();await page.waitForFunction(n=>{const m=window.workshopProbe.observe().frames[0].metadata;return m.blueprint.parts.length+m.blueprint.connections.length===n;},i+1);}
@@ -36,5 +39,5 @@ try{
  const wire=before.connections.find(c=>c.kind==='power');await page.locator('.port-button[data-port-id=power]').click();await page.locator(`[data-disconnect-id="${wire.id}"]`).click();assert.equal((await frame()).metadata.blueprint.connections.length,7);
  await page.locator('[data-command=undo]').click();assert.deepEqual((await frame()).metadata.blueprint,before);
  assert.deepEqual(errors,[]);assert.deepEqual(sourceIdentity(),source);assert.equal(appFingerprint(),build);
- writeFileSync('artifacts/starter-browser/qualification.json',JSON.stringify({source,build,browser:browser.version(),errors,built,samples,last,travel,finalTenSecondsDisplacement:moving,checks:['guided ordinary authoring','undo redo','thirty second production-clock travel','connected group transform','keyboard undo','disconnect repair']},null,2));console.log(`starter browser passed: ${travel.toFixed(3)}m net travel; ${moving.toFixed(3)}m final interval`);
-}catch(error){await page.screenshot({path:'artifacts/starter-browser/failed.png'}).catch(()=>{});writeFileSync('artifacts/starter-browser/failure.json',JSON.stringify({source,build,errors,samples,message:error.message},null,2));throw error;}finally{await browser.close();}
+ browserEvidence.assertUnchanged();writeFileSync('artifacts/starter-browser/qualification.json',JSON.stringify({...browserEvidence.identity,source,build,browser:browser.version(),errors,built,samples,last,travel,finalTenSecondsDisplacement:moving,checks:['guided ordinary authoring','undo redo','thirty second production-clock travel','connected group transform','keyboard undo','disconnect repair']},null,2));console.log(`starter browser passed: ${travel.toFixed(3)}m net travel; ${moving.toFixed(3)}m final interval`);
+}catch(error){await page.screenshot({path:'artifacts/starter-browser/failed.png'}).catch(()=>{});writeFileSync('artifacts/starter-browser/failure.json',JSON.stringify({source,build,errors,samples,message:error.message},null,2));throw error;}finally{try{browserEvidence.assertUnchanged();}finally{await browser.close();}}

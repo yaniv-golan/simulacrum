@@ -1,15 +1,19 @@
+import {createFixtureEvidence} from './browser-evidence.mjs';
 // M3b: feedback receipts must follow server acknowledgement and final media flush.
 import {chromium} from 'playwright';
 import {createServer} from 'node:http';
 import {readFileSync,mkdirSync,writeFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
+const browserEvidence=createFixtureEvidence({name:'feedback-receipts',build:'receipt-test',files:[process.env.FEEDBACK_SOURCE||'src/application/remote-playtest.mjs','src/presentation/workshop.css','scripts/verify-feedback-receipts.mjs']});
+
 const source=readFileSync(process.env.FEEDBACK_SOURCE||'src/application/remote-playtest.mjs'),css=readFileSync('src/presentation/workshop.css');
-const server=createServer((req,res)=>{res.setHeader('Content-Type',req.url==='/remote.mjs'?'text/javascript':req.url==='/style.css'?'text/css':'text/html');res.end(req.url==='/remote.mjs'?source:req.url==='/style.css'?css:'<link rel="stylesheet" href="/style.css"><meta name="build-id" content="receipt-test"><script type="module">import {mountRemotePlaytest} from "/remote.mjs";await mountRemotePlaytest({context:()=>({}),checkpoint:()=>({})});</script>');});
+const server=createServer((req,res)=>{res.setHeader('Content-Type',req.url==='/remote.mjs'?'text/javascript':req.url==='/style.css'?'text/css':'text/html');res.end(req.url==='/remote.mjs'?source:req.url==='/style.css'?css:'<link rel="stylesheet" href="/style.css"><meta name="build-id" content="receipt-test"><script type="module">import {mountRemotePlaytest} from "/remote.mjs";window.mountCapture=()=>mountRemotePlaytest({context:()=>({}),checkpoint:()=>({})});window.remoteCapture=await window.mountCapture();</script>');});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const browser=await chromium.launch({channel:'chrome',headless:true});
 try{
  const page=await browser.newPage(),errors=[];page.setDefaultTimeout(5000);page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>{
+  window.originalConsoleError=console.error;
   const originalTimeout=window.setTimeout;window.setTimeout=(callback,delay,...args)=>originalTimeout(callback,delay===15000?100:delay,...args);
   const originalFetch=window.fetch;window.hungUploads=0;window.fetch=async(url,options)=>{if(window.hangNext&&String(url).endsWith('/event')&&JSON.parse(await options.body.text()).kind==='feedback-text'){window.hangNext=false;window.hungUploads++;return new Promise((resolve,reject)=>options.signal?.addEventListener('abort',()=>reject(new DOMException('Timed out','AbortError')),{once:true}));}return originalFetch(url,options);};
   const canvas=document.createElement('canvas');canvas.width=100;canvas.height=100;canvas.getContext('2d').fillRect(0,0,100,100);
@@ -29,7 +33,7 @@ try{
   if(statusCode!==200)return route.fulfill({status:statusCode,json:{error:'test failure'}});
   return route.fulfill({json:badReceipt?{}:{sequence:++sequence,receivedAt:new Date().toISOString()}});
  });
- await page.goto(`http://127.0.0.1:${server.address().port}`);
+ await browserEvidence.goto(page,`http://127.0.0.1:${server.address().port}`);
  await page.getByRole('button',{name:'Share workshop tab & start'}).click();
  await page.waitForFunction(()=>document.querySelector('[data-status-main]')?.textContent==='● Recording tab');
  const panel=page.locator('.playtest-panel'),geometry=()=>panel.evaluate(el=>[el,...el.querySelectorAll('button')].map(n=>{const r=n.getBoundingClientRect();return [r.x,r.y,r.width,r.height];}));const initial=await geometry();assert.equal(await page.locator('[data-status-detail]').textContent(),'Video and actions are sent automatically.');
@@ -88,7 +92,7 @@ try{
  await page.waitForFunction(()=>document.querySelector('[data-completion-status]').textContent.includes('You can close this tab'));
  // Real IndexedDB persists across a same-origin document reload; media capture remains mocked.
  const outbox=()=>page.evaluate(async()=>{const db=await new Promise((resolve,reject)=>{const request=indexedDB.open('simulacrum-playtest-outbox',1);request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});try{return await new Promise((resolve,reject)=>{const request=db.transaction('items','readonly').objectStore('items').getAll();request.onsuccess=()=>resolve(request.result.map(({id,url,body,type})=>({id,url,size:body.size,type})));request.onerror=()=>reject(request.error);});}finally{db.close();}});
- await page.reload();
+ await browserEvidence.reload(page);
  await page.getByRole('button',{name:'Share workshop tab & start'}).click();
  await page.waitForFunction(()=>document.querySelector('[data-status-main]')?.textContent==='● Recording tab');
  await page.getByRole('button',{name:'Give feedback',exact:true}).click();
@@ -101,7 +105,7 @@ try{
  const savedBody=await page.evaluate(async text=>{const db=await new Promise(resolve=>{const request=indexedDB.open('simulacrum-playtest-outbox',1);request.onsuccess=()=>resolve(request.result);});const rows=await new Promise(resolve=>{const request=db.transaction('items').objectStore('items').getAll();request.onsuccess=()=>resolve(request.result);});db.close();for(const row of rows){const body=await row.body.text();if(body.includes(text))return {id:row.id,url:row.url,body};}return null;},recoveryComment);
  assert.ok(savedBody,'written feedback body committed to real IndexedDB before reload');
  const sessionsBeforeReload=sessionPosts,uploadsBeforeReload=uploads.length;
- await page.reload();
+ await browserEvidence.reload(page);
  await page.waitForFunction(()=>document.querySelector('[data-status-detail]')?.textContent.includes('retrying automatically'));
  assert.ok((await outbox()).some(row=>row.id===savedBody.id),'outage cannot delete the persisted comment');
  assert.equal(await page.evaluate(()=>window.captureRequests),0,'reload never silently requests display capture');
@@ -128,7 +132,32 @@ try{
  const receivedNotice=await page.locator('[data-recovery]').innerText();
  assert.match(receivedNotice,/recording has not resumed/i);
  await page.screenshot({path:'artifacts/reload-recovery/received-after-reload.png'});
- writeFileSync('artifacts/reload-recovery/result.json',JSON.stringify({outageNotice,receivedNotice,commentBody:savedBody,sessionPosts,captureRequestsAfterReload:await page.evaluate(()=>window.captureRequests),remainingOutbox:await outbox(),bounds:'Real Chromium IndexedDB and same-origin reload; mocked API receipts and capture. No human usability or actual capture permission claim.'},null,2));
+ browserEvidence.assertUnchanged();writeFileSync('artifacts/reload-recovery/result.json',JSON.stringify({...browserEvidence.identity,outageNotice,receivedNotice,commentBody:savedBody,sessionPosts,captureRequestsAfterReload:await page.evaluate(()=>window.captureRequests),remainingOutbox:await outbox(),bounds:'Real Chromium IndexedDB and same-origin reload; mocked API receipts and capture. No human usability or actual capture permission claim.'},null,2));
+ // Dispose must release the mount while preserving delayed final MediaRecorder
+ // bytes in real IndexedDB; a remount drains them without resuming capture.
+ await page.getByRole('button',{name:'Share workshop tab & start'}).click();
+ await page.waitForFunction(()=>window.remoteCapture.active());
+ statusCode=503;
+ await page.evaluate(()=>window.remoteCapture.dispose());
+ assert.equal(await page.locator('.playtest-panel, .playtest-dialog').count(),0);
+ assert.equal(await page.evaluate(()=>console.error===window.originalConsoleError),true);
+ assert.equal(await page.evaluate(()=>window.remoteCapture.active()),false);
+ assert.equal(await page.evaluate(()=>window.pendingRecorders.length),1);
+ await page.evaluate(()=>window.flushRecorders());
+ await page.waitForFunction(async()=>{
+  const db=await new Promise(resolve=>{const r=indexedDB.open('simulacrum-playtest-outbox',1);r.onsuccess=()=>resolve(r.result);});
+  try{return await new Promise(resolve=>{const r=db.transaction('items').objectStore('items').getAll();r.onsuccess=()=>resolve(r.result.some(row=>row.url.includes('/media?')));});}finally{db.close();}
+ });
+ const beforeRemount=await page.evaluate(()=>window.captureRequests);
+ statusCode=200;
+ await page.evaluate(async()=>{window.remoteCapture=await window.mountCapture();});
+ await page.waitForFunction(()=>document.querySelector('[data-recovery]')?.textContent.includes('received by Yaniv'));
+ assert.deepEqual(await outbox(),[]);
+ assert.equal(await page.evaluate(()=>window.captureRequests),beforeRemount);
+ assert.equal(await page.locator('.playtest-panel').count(),1);
+ await page.evaluate(()=>window.remoteCapture.dispose());
+ assert.equal(await page.locator('.playtest-panel, .playtest-dialog').count(),0);
+ assert.equal(await page.evaluate(()=>console.error===window.originalConsoleError),true);
  assert.deepEqual(errors,[]);
- console.log('feedback receipt checks passed: delayed/malformed acknowledgement, 401/403/404/413/503 recovery, hung upload timeout/recovery, retained comments, X/Escape microphone stop, final media flush, outbox read failure, real IndexedDB reload/outage recovery');
-}finally{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
+ console.log('feedback receipt checks passed: delayed/malformed acknowledgement, 401/403/404/413/503 recovery, hung upload timeout/recovery, retained comments, X/Escape microphone stop, final media flush, outbox read failure, real IndexedDB reload/outage recovery, disposal/final-flush/remount recovery');
+}finally{try{browserEvidence.assertUnchanged();}finally{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}}

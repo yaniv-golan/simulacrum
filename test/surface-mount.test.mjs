@@ -15,7 +15,7 @@ test('invalid region and hanging mounting pad refuse without mutation',()=>{
  assert.throws(()=>proposeSurfaceMount(bp,{part:'motor',sourceRegion:'bottom',targetPart:'base',targetRegion:'top',u:4,v:0,twist:0,id:'mount'}),/SURFACE_OUT_OF_BOUNDS/);
  assert.throws(()=>proposeSurfaceMount(bp,{part:'motor',sourceRegion:'shaft',targetPart:'base',targetRegion:'top',u:0,v:0,twist:0,id:'mount'}),/UNKNOWN_SURFACE/);assert.deepEqual(bp,before);
 });
-test('old save versions refuse without migration',()=>{const bp=fixture();for(const version of [1,2]){bp.version=version;assert.equal(loadSave(bp).reasonCode,'SAVE_VERSION_BELOW_FLOOR');}});
+test('old save versions refuse without migration',()=>{const bp=fixture();for(const version of [1,2]){bp.version=version;assert.equal(loadSave(bp).reasonCode,'SAVE_VERSION_UNSUPPORTED_OLD');}});
 test('loaded surface pad cannot overhang even with its endpoint inside the face',()=>{
  const out=proposeSurfaceMount(fixture(),{part:'motor',sourceRegion:'bottom',targetPart:'base',targetRegion:'top',id:'mount'}).blueprint;
  out.connections[0].a.surface.u=.13;assert.equal(validateBlueprint(out).reasonCode,'SURFACE_OUT_OF_BOUNDS');

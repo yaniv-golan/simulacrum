@@ -1,3 +1,4 @@
+import {createBrowserEvidence} from './browser-evidence.mjs';
 import { chromium } from 'playwright';
 import { createSession } from '../src/simulation/session.mjs';
 import { deterministicProjection } from '../src/model/tick.mjs';
@@ -5,6 +6,8 @@ import { appFingerprint } from './build-fingerprint.mjs';
 import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
+const browserEvidence=createBrowserEvidence();
+
 const identity=appFingerprint();
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1000,height:700}}),errors=[];
@@ -13,7 +16,7 @@ page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
 page.on('requestfailed',r=>errors.push(`${r.url()}: ${r.failure()?.errorText}`));
 page.on('response',r=>{if(r.status()>=400)errors.push(`${r.status()} ${r.url()}`);});
 try {
- await page.goto(process.argv[2]??'http://127.0.0.1:5173/test/browser/');
+ await browserEvidence.goto(page,process.argv[2]??'http://127.0.0.1:5173/test/browser/');
  await page.waitForFunction(()=>window.probe);
  await page.click('#start-btn');
  await page.waitForFunction(()=>window.probe.session.observe().cursor.tick>=120);
@@ -30,8 +33,8 @@ try {
   assert.equal(appFingerprint(),identity,'source changed during browser verification');
   mkdirSync('artifacts/browser-m1',{recursive:true});
   await page.screenshot({path:'artifacts/browser-m1/raf.png'});
-  const result={app:identity,runtime:process.version,browser:browser.version(),ticks:120,clock:'real-requestAnimationFrame',digest:createHash('sha256').update(JSON.stringify(actual)).digest('hex'),errors};
-  writeFileSync('artifacts/browser-m1/raf.json',JSON.stringify(result,null,2)+'\n');
+  const result={...browserEvidence.identity,app:identity,runtime:process.version,browser:browser.version(),ticks:120,clock:'real-requestAnimationFrame',digest:createHash('sha256').update(JSON.stringify(actual)).digest('hex'),errors};
+  browserEvidence.assertUnchanged();writeFileSync('artifacts/browser-m1/raf.json',JSON.stringify(result,null,2)+'\n');
   console.log(JSON.stringify(result));
  } finally {reference.dispose();}
-} finally {await browser.close();}
+} finally {try{browserEvidence.assertUnchanged();}finally{await browser.close();}}

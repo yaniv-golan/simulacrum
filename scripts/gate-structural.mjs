@@ -6,13 +6,12 @@ import { fileURLToPath } from 'node:url';
 import { runModuleCheck } from './run-check.mjs';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const manifest=JSON.parse(readFileSync(new URL('./manifest.json',import.meta.url),'utf8'));
-const implementations={layers:{module:'scripts/module-graph.mjs',export:'checkLayers'}};
 export async function runStructuralChecks(target=manifest.milestone) {
  const cutoff=manifest.milestones.indexOf(target);if(cutoff<0)throw new Error(`unknown milestone: ${target}`);
  const due=manifest.checks.filter(check=>{if(!manifest.milestones.includes(check.dueAt))throw new Error(`invalid dueAt for ${check.id}`);return manifest.milestones.indexOf(check.dueAt)<=cutoff;});
  let failed=0;
  for(const check of due){
-  const implementation=check.module?check:implementations[check.id];
+  const implementation=check.module?check:null;
   if(!implementation){failed++;console.error(`STUB  gate:${check.id} -- not written; due ${check.dueAt}`);continue;}
   try{await runModuleCheck(resolve(root,implementation.module),implementation.export??'check',check.args??[root,{physicsPackages:manifest.physicsPackages??[]}],{cwd:root,timeoutMs:check.timeoutMs??5000});console.log(`ok    gate:${check.id}`);}
   catch(error){failed++;console.error(`FAIL  gate:${check.id}: ${error.message}`);}

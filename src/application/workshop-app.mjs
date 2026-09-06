@@ -1,6 +1,6 @@
 import { createWorkshop } from '../core/workshop.mjs';
 import { createEmptyBlueprint, loadSave } from '../model/blueprint.mjs';
-import { explainReason } from '../model/messages.mjs';
+import { explainFailure, normalizeFailure } from '../model/messages.mjs';
 import { starterSteps } from './starter-guide.mjs';
 import { createInteractionRecorder } from './interaction-recorder.mjs';
 import { mountRemotePlaytest } from './remote-playtest.mjs';
@@ -38,7 +38,7 @@ export async function mountWorkshopApp(root) {
  const frame=()=>workshop.observe().frames[0];
  function record(entry){metrics.push(entry);if(metrics.length>1000)metrics.shift();}
  function cancelRun(cause){if(runMeasurement){record({...runMeasurement,kind:'run-first-tick',outcome:'cancelled',cause,durationMs:null,completedAt:performance.now()});runMeasurement=null;}}
- function stopped(error){clock?.pause();cancelRun('failure');view?.setMessage(explainReason(error.reasonCode??error.message??'SESSION_FAILED'));}
+ function stopped(error){clock?.pause();cancelRun('failure');view?.setMessage(explainFailure(normalizeFailure(error,'SESSION_FAILED'),frame()?.metadata.blueprint));}
  function render() {
   if(disposed)return;
   const observation=workshop.observe();
@@ -99,7 +99,7 @@ export async function mountWorkshopApp(root) {
    if(command.type==='undo')editMessage='Last edit undone. Choose Redo to apply it again.';
    if(command.type==='redo')editMessage='Edit reapplied. Choose Undo to reverse it.';
    logInteraction('command-execute',{command,trigger:lastRecordedInput});const result=await workshop.act(command);
-   if(!result.ok){view.setMessage(explainReason(result.reasonCode));return result;}
+   if(!result.ok){view.setMessage(explainFailure(result,frame().metadata.blueprint));return result;}
    if(command.type==='place')placementSequence++;
    if(command.type==='run') {
     cancelRun('replaced');runMeasurement={attempt:++runSequence,...timing,buildId,machine:frame().metadata.blueprint.id,startTick:workshop.observe().cursor.tick};
@@ -110,7 +110,7 @@ export async function mountWorkshopApp(root) {
    if(['place','connect','run'].includes(command.type))reflection(command.type,timing);
    view.setMessage(command.type==='run'?'Running. Watch the motor current, charge and movement.':command.type==='pause'?'Paused. Step one tick or choose Run to continue.':command.type==='build'?'Build mode. Your machine is reset and ready to edit.':editMessage);
    return result;
-  }catch(error){stopped(error);render();return {ok:false,reasonCode:error.reasonCode??error.message??'SESSION_FAILED',path:error.path??''};}
+  }catch(error){stopped(error);render();return normalizeFailure(error,'SESSION_FAILED');}
  }
  function downloadJSON(value,filename) {
   const blob=new Blob([JSON.stringify(value,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob);
@@ -142,11 +142,11 @@ export async function mountWorkshopApp(root) {
  async function onLoad(file) {
   if(!file)return;
   try{
-   const loaded=loadSave(await file.text());
-   if(!loaded.ok){view.setMessage(explainReason(loaded.reasonCode));return loaded;}
+   const text=await file.text(),loaded=loadSave(text);
+   if(!loaded.ok){let candidate;try{candidate=JSON.parse(text);}catch{}view.setMessage(explainFailure(loaded,candidate));return loaded;}
    clock.pause();cancelRun('paused');
    if(frame().metadata.mode!=='build'){
-    const result=await workshop.act({type:'build'});if(!result.ok){view.setMessage(explainReason(result.reasonCode));return result;}
+    const result=await workshop.act({type:'build'});if(!result.ok){view.setMessage(explainFailure(result,frame().metadata.blueprint));return result;}
    }
    const result=await onCommand({type:'load',save:loaded.blueprint});
    if(result.ok){placementSequence=loaded.blueprint.parts.length;view.setMessage('Machine opened. Choose Run to try it.');}
@@ -174,4 +174,4 @@ export async function mountWorkshopApp(root) {
 }
 
 const root=document.getElementById('app');
-if(root)mountWorkshopApp(root).catch(error=>{root.textContent=`The workshop could not start: ${explainReason(error.reasonCode??error.message)}`;console.error(error);});
+if(root)mountWorkshopApp(root).catch(error=>{root.textContent=`The workshop could not start: ${explainFailure(normalizeFailure(error,'SESSION_FAILED'))}`;console.error(error);});

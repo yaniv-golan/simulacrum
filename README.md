@@ -30,7 +30,8 @@ The right-hand inspector keeps the selected part, its main control and connectio
 
 Connected ports remain selectable for inspection in Build, Run and Paused; return to Build to change connections or settings. A fixed mount prevents relative movement; a wheel axle attaches a wheel to a motor or bearing while allowing the intended rotation. The axle connection itself holds the wheel, so it does not need a separate fixed mount.
 
-Attached parts move together; disconnect first to reposition one part separately.
+Move and Rotate move attached parts together. Use **Adjust mount** to reposition a
+surface-mounted group on its receiving part; detach to move it freely.
 Undo/Redo and Ctrl/Cmd+Z reverse edits. **Follow motion** keeps a running machine
 in view; **F** frames it. Build resets and reframes the machine for editing.
 Save and Load preserve authored machines. A falling-body
@@ -40,10 +41,19 @@ For a stable local playtest, use `npm run build` followed by `npm run preview`.
 The running page displays its build identifier. Use that identifier when recording
 a human assessment; automated browser success is not human evidence.
 
-Run `npx playwright install chromium` once before browser checks. `npm run gate`
+Run `npx playwright install chromium chrome` once before browser checks. `npm run gate`
 executes the current cumulative milestone gate, including required browser checks.
 `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all
-unit/property tests. `npm run replay -- <bundle.json>` verifies a failure bundle
+unit/property tests. `npm run ci` runs the automated structural and unit checks
+within the 180-second development budget, independently of human milestone approval.
+`npm run test:browser` builds once and runs every manifest-registered browser check
+serially, including performance qualification. `npm run test:browser:smoke` runs the
+construction smoke subset; `npm run test:performance` runs the isolated performance
+checks. Browser reports bind the served build and current source and include each
+check's duration and output. CI runs the complete browser suite; Linux needs Xvfb
+for tab-capture checks. The milestone gate still requires real human evidence.
+`npm run format` applies the pinned formatter; generated validators are excluded.
+`npm run replay -- <bundle.json>` verifies a failure bundle
 against the current implementation and runtime. Generated validation is refreshed
 with `node scripts/generate-schema.mjs` and checked by the gate.
 

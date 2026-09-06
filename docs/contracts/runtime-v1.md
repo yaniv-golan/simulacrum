@@ -11,7 +11,9 @@ snapshot from t-1. Tick zero has a declared initial snapshot.
 
 `observe(scope, detail, cursor)` returns immutable values and a cursor
 `{session, epoch, revision, tick}`. Revision increases for each published tick and
-accepted paused edit, even if tick does not change. Restore starts a new epoch and
+accepted edit that changes state, even if tick does not change. A no-op edit does
+not publish a new revision. Renaming changes metadata without rebuilding the physical
+session. Restore starts a new epoch and
 publishes a full snapshot; tick may go backwards, revision never does. A foreign
 session, old epoch, future revision or expired delta window returns `RESYNC_REQUIRED`
 with a full snapshot. Tick alone is never an observation cursor. Rejected commands
@@ -61,7 +63,10 @@ substitute for embedded inputs or preserved executable builds.
 Determinism initially means the same runtime and library binary across two processes
 and both clock drivers. A declared model projection includes authoritative state and
 excludes wall-clock timing and diagnostic labels. Per-phase timings remain in the
-same telemetry frame outside that projection. Performance and cross-runtime portability
+same telemetry frame outside that projection. `tickTiming` also measures completed-tick
+publication and periodic checkpoint work, with their total and remaining overhead.
+Immutable static model metadata is shared only after admission by the immutable-copy
+owner; a caller-frozen object is still copied and validated. Performance and cross-runtime portability
 are distinct claims, measured separately.
 
 ## Delivery order

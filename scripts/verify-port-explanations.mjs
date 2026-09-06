@@ -1,12 +1,15 @@
+import {createBrowserEvidence} from './browser-evidence.mjs';
 import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
 import {mkdirSync,writeFileSync} from 'node:fs';
+const browserEvidence=createBrowserEvidence();
+
 const browser=await chromium.launch(),page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];
 page.setDefaultTimeout(6000);page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});page.on('requestfailed',r=>errors.push(r.url()));mkdirSync('artifacts/feedback-fixes',{recursive:true});
 const read=()=>page.evaluate(()=>window.workshopProbe.observe().frames[0].metadata.blueprint);
 async function select(name){if(!await page.locator('.machine-picker').evaluate(el=>el.open))await page.locator('.machine-picker > summary').click();await page.locator('.part-list-item').filter({hasText:new RegExp(`^${name}$`)}).click();}
 try{
- await page.goto(process.argv[2]??'http://127.0.0.1:4173/');await page.locator('[data-command=start-guide]').click();for(let i=0;i<16;i++)await page.locator('[data-command=guide-step]').click();await page.getByRole('button',{name:'Leave guide',exact:true}).click();await select('Motor');const before=await read();
+ await browserEvidence.goto(page,process.argv[2]??'http://127.0.0.1:4173/');await page.locator('[data-command=start-guide]').click();for(let i=0;i<16;i++)await page.locator('[data-command=guide-step]').click();await page.getByRole('button',{name:'Leave guide',exact:true}).click();await select('Motor');const before=await read();
  assert.equal(await page.locator('.port-button[data-port-id=mount]').count(),0,'surface mounting must not expose a duplicate fixed socket');
  assert.match(await page.locator('.mount-relationship').innerText(),/Bolted to Chassis/);
  assert.equal(await page.getByRole('button',{name:'Adjust mount',exact:true}).isEnabled(),true);assert.equal(await page.getByRole('button',{name:'Detach',exact:true}).isEnabled(),true);
@@ -15,5 +18,5 @@ try{
  await select('Drive wheel');assert.equal(await page.locator('.port-button[data-port-id=mount]').count(),0);await page.locator('.port-button[data-port-id=axle]').click();assert.match(await page.locator('.port-explanation').textContent(),/holds the wheel too; no separate fixed mount/);await page.screenshot({path:'artifacts/feedback-fixes/wheel-ports.png'});assert.deepEqual(await read(),before);
  await select('Motor');await page.getByRole('button',{name:'Adjust mount',exact:true}).click();assert.equal(await page.locator('.surface-placement').isVisible(),true);assert.deepEqual(await read(),before,'mount adjustment begins as read-only preview');await page.locator('.surface-placement').getByRole('button',{name:'Cancel',exact:true}).click();assert.deepEqual(await read(),before);
  await page.getByRole('button',{name:'Detach',exact:true}).click();const detached=await read(),motor=before.parts.find(p=>p.name==='Motor'),surface=before.connections.find(c=>c.kind==='fixed'&&(c.a.part===motor.id||c.b.part===motor.id));assert.ok(surface?.a.surface&&surface?.b.surface);assert.deepEqual(detached.parts,before.parts,'detach does not move parts');assert.deepEqual(detached.connections,before.connections.filter(c=>c.id!==surface.id),'detach removes only the surface relationship, preserving shaft and power');await page.locator('[data-command=undo]').click();assert.deepEqual(await read(),before);
- assert.deepEqual(errors,[]);writeFileSync('artifacts/feedback-fixes/ports.json',JSON.stringify({build:await page.locator('meta[name=build-id]').getAttribute('content'),errors,checks:['occupied shaft and power ports inspect without mutation','occupied ports cannot add another attachment','surface attachment has status, adjust and detach without duplicate sockets','adjust cancel preserves blueprint','detach preserves shaft and power; undo restores exact blueprint','rotating wheel attachment explained']},null,2));console.log('port explanation browser passed');
-}finally{await browser.close();}
+ assert.deepEqual(errors,[]);browserEvidence.assertUnchanged();writeFileSync('artifacts/feedback-fixes/ports.json',JSON.stringify({...browserEvidence.identity,build:await page.locator('meta[name=build-id]').getAttribute('content'),errors,checks:['occupied shaft and power ports inspect without mutation','occupied ports cannot add another attachment','surface attachment has status, adjust and detach without duplicate sockets','adjust cancel preserves blueprint','detach preserves shaft and power; undo restores exact blueprint','rotating wheel attachment explained']},null,2));console.log('port explanation browser passed');
+}finally{try{browserEvidence.assertUnchanged();}finally{await browser.close();}}

@@ -1,12 +1,15 @@
+import {createBrowserEvidence} from './browser-evidence.mjs';
 import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {appFingerprint} from './build-fingerprint.mjs';
+const browserEvidence=createBrowserEvidence();
+
 const browser=await chromium.launch(),page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];
 page.setDefaultTimeout(6000);page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});page.on('requestfailed',r=>errors.push(r.url()));page.on('response',r=>{if(r.status()>=400)errors.push(`${r.status()} ${r.url()}`);});
 const directory='artifacts/motion-diagnostics';mkdirSync(directory,{recursive:true});
 try{
- await page.goto(process.argv[2]??'http://127.0.0.1:4173/');
+ await browserEvidence.goto(page,process.argv[2]??'http://127.0.0.1:4173/');
  await page.locator('[data-part-type=poweredMotor]').click();
  await page.locator('[data-command=check-machine]').click();
  const dialog=page.getByRole('dialog',{name:'Check machine'});
@@ -22,5 +25,5 @@ try{
  await page.locator('[data-command=check-machine]').click();assert.equal(await dialog.locator('[data-diagnostic-code=COMMAND_OFF]').count(),1);await dialog.getByRole('button',{name:'Inspect Motor',exact:true}).click();
  assert.equal(await drive.inputValue(),'0');
  assert.deepEqual(errors,[]);const build=await page.locator('meta[name=build-id]').getAttribute('content');assert.equal(build,appFingerprint());
- writeFileSync(`${directory}/browser.json`,JSON.stringify({build,errors,checks:['both missing connections explained','Inspect opens actual power port','ready guided build has no false blocker','zero command points to editable motor']},null,2));console.log('motion diagnostic browser passed');
-}finally{await browser.close();}
+ browserEvidence.assertUnchanged();writeFileSync(`${directory}/browser.json`,JSON.stringify({...browserEvidence.identity,build,errors,checks:['both missing connections explained','Inspect opens actual power port','ready guided build has no false blocker','zero command points to editable motor']},null,2));console.log('motion diagnostic browser passed');
+}finally{try{browserEvidence.assertUnchanged();}finally{await browser.close();}}

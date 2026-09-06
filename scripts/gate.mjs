@@ -8,22 +8,15 @@ import { readManifest } from "./validate-manifest.mjs";
 const gateStarted = performance.now();
 import { runStructuralChecks } from "./gate-structural.mjs";
 import { evaluateBar } from "./bars.mjs";
-import { CHECKS } from "./checks.mjs";
-import { execFileSync } from "node:child_process";
+import { CHECKS, checkDeadline } from "./checks.mjs";
+import {runModuleCheck} from './run-check.mjs';
+import {prepareBrowserBuild} from './verify-browser-suite.mjs';
 
-function runCheckInSubprocess(checkId, timeoutMs) {
-  execFileSync(
-    process.execPath,
-    ["--input-type=module", "-e",
-     `import {CHECKS} from ${JSON.stringify(new URL("./checks.mjs", import.meta.url).href)};` +
-     `await CHECKS[${JSON.stringify(checkId)}]();`],
-    { timeout: timeoutMs, killSignal: "SIGKILL", stdio: "pipe" },
-  );
-}
+function runCheckInSubprocess(checkId,timeoutMs){return runModuleCheck(new URL('./check-entry.mjs',import.meta.url).pathname,'check',[checkId],{timeoutMs});}
 
 const manifest = readManifest();
 const target = process.argv[2] ?? manifest.milestone;
-const OBLIGATION_TIMEOUT_MS = 190_000;
+
 
 if (!manifest.milestones.includes(target)) {
   console.error(`unknown milestone: ${target}`);
@@ -38,6 +31,8 @@ const order = manifest.milestones;
 const cutoff = order.indexOf(target);
 const dueAt = (m) => order.indexOf(m) <= cutoff;
 
+if(manifest.milestones.indexOf(target)>=manifest.milestones.indexOf('M3b'))await prepareBrowserBuild();
+
 console.log(`milestone ${target} (owned by scripts/manifest.json)\n`);
 const { failed, ran } = await runStructuralChecks(target);
 
@@ -49,7 +44,7 @@ for (const [id, bar] of Object.entries(manifest.bars)) {
     continue;
   }
   dueBarCount += 1;
-  const { state, why } = evaluateBar(id);
+  const { state, why } = await evaluateBar(id);
   if (state === "RED") redBars += 1;
   console.log(`${state.padEnd(5)} bar:${id.padEnd(4)} due ${bar.dueAt} -- ${why}`);
 }
@@ -82,7 +77,7 @@ for (const milestone of order.filter(dueAt)) {
       // shares an event loop with the check, so a synchronous loop simply
       // prevents the timer firing: an 80 ms blocking check passed a 10 ms
       // deadline. Only a separate process can be killed.
-      await runCheckInSubprocess(ob.check, OBLIGATION_TIMEOUT_MS);
+      await runCheckInSubprocess(ob.check, checkDeadline(ob.check));
       console.log(`ok     ${ob.id} (${milestone})`);
     } catch (error) {
       unmet += 1;

@@ -120,6 +120,14 @@ export async function createWorkshop(input=createEmptyBlueprint('machine','My ma
     }
     default:return result(false,'INVALID_COMMAND','command.type');
    }
+   // No-op commands preserve both editor history and the observation cursor.
+   // Rename changes only authored metadata; the physical owners remain intact.
+   if(command.type!=='load'&&sameData(current.blueprint,next))return result(true);
+   if(command.type==='rename'){
+    const validated=loadSave(next);if(!validated.ok)return validated;
+    session.setMetadata({...current,blueprint:next,editing:{undoCount:Math.min(historyLimit,past.length+1),redoCount:0}});
+    retain(past,current.blueprint);future.length=0;return result(true);
+   }
    const nextCompiled=compileAssembly(next);
    const editing=command.type==='load'?{undoCount:0,redoCount:0}:sameData(current.blueprint,next)?current.editing:{undoCount:Math.min(historyLimit,past.length+1),redoCount:0};
    await session.replaceConfiguration(nextCompiled.configuration,{blueprint:next,mapping:nextCompiled.mapping,connections:nextCompiled.connections,mode:current.mode,editing});

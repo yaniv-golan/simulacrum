@@ -20,7 +20,7 @@ export function validateManifest(m) {
     if (typeof b.human !== 'boolean' || !b.contract?.trim()) throw new Error(`invalid bar ${id}`);
   }
   const own = x => {
-    if (!(rules.has(x.ruleId) || bars.has(x.barId))) throw new Error(`missing or unknown owner: ${x.id}`);
+    if ((Number(rules.has(x.ruleId))+Number(bars.has(x.barId))!==1)||(x.ruleId!==undefined&&!rules.has(x.ruleId))||(x.barId!==undefined&&!bars.has(x.barId))) throw new Error(`missing or unknown owner: ${x.id}`);
   };
   for (const x of m.checks) { milestone(x.dueAt); own(x); }
   const obligations = [];
@@ -28,6 +28,9 @@ export function validateManifest(m) {
     if (!Array.isArray(m.exitObligations[key])) throw new Error(`missing obligations: ${key}`);
     for (const x of m.exitObligations[key]) { own(x); obligations.push(x.id); }
   }
+  const browser=m.browserChecks??[];
+  unique(browser.map(x=>x.id),'browser check');unique(browser.map(x=>x.script),'browser script');
+  for(const x of browser){own(x);if(!/^scripts\/[a-z0-9-]+\.mjs$/.test(x.script)||!['browser','performance'].includes(x.tier)||!['workshop','self','probe'].includes(x.environment)||typeof x.smoke!=='boolean'||!Number.isSafeInteger(x.timeoutMs)||x.timeoutMs<=0)throw Error(`invalid browser check: ${x.id}`);}
   unique(obligations, 'obligation');
   for (const key of Object.keys(m.exitObligations)) milestone(key);
   return m;

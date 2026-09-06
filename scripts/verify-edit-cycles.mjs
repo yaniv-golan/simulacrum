@@ -1,8 +1,11 @@
+import {createBrowserEvidence} from './browser-evidence.mjs';
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { sourceIdentity } from './source-identity.mjs';
 import { appFingerprint } from './build-fingerprint.mjs';
+const browserEvidence=createBrowserEvidence();
+
 
 const out = 'artifacts/edit-cycles';
 mkdirSync(out, { recursive: true });
@@ -23,7 +26,7 @@ function agree(state) {
 }
 let served;
 try {
-  await page.goto(process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await browserEvidence.goto(page,process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.waitForFunction(() => window.workshopProbe);
   served = await page.locator('meta[name=build-id]').getAttribute('content');
   assert.equal(served, build);
@@ -80,17 +83,17 @@ try {
     const counters = await cdp.send('Memory.getDOMCounters');
     const metrics = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(m => [m.name, m.value]));
     samples.push({ cycle, tick: paused.frame.tick ?? null, cursor: await page.evaluate(() => window.workshopProbe.observe().cursor), counters, liveDomNodes: await page.locator('*').count(), jsHeapUsedSize: metrics.JSHeapUsedSize, jsHeapTotalSize: metrics.JSHeapTotalSize, paused, state });
-    writeFileSync(`${out}/progress.json`, JSON.stringify({ source, build, served, errors, samples }, null, 2));
+    browserEvidence.assertUnchanged();writeFileSync(`${out}/progress.json`, JSON.stringify({...browserEvidence.identity, source, build, served, errors, samples }, null, 2));
   }
   assert.deepEqual(errors, []);
   assert.equal(appFingerprint(), build, 'application source unchanged during probe');
   await page.screenshot({ path: `${out}/completed.png` });
-  writeFileSync(`${out}/result.json`, JSON.stringify({ source, finalSource: sourceIdentity(), build, served, browser: browser.version(), errors, samples, scope: '12 cycles; raw heap and DOM counters, no leak threshold or forced GC; first 2 cycles warmup; source may contain concurrent verifier-only edits' }, null, 2));
+  browserEvidence.assertUnchanged();writeFileSync(`${out}/result.json`, JSON.stringify({...browserEvidence.identity, source, finalSource: sourceIdentity(), build, served, browser: browser.version(), errors, samples, scope: '12 cycles; raw heap and DOM counters, no leak threshold or forced GC; first 2 cycles warmup; source must remain unchanged' }, null, 2));
   console.log(JSON.stringify(samples.map(({ cycle, counters, liveDomNodes, jsHeapUsedSize }) => ({ cycle, counters, liveDomNodes, jsHeapUsedSize })), null, 2));
 } catch (error) {
   await page.screenshot({ path: `${out}/failed.png` }).catch(() => {});
   writeFileSync(`${out}/failure.json`, JSON.stringify({ source, build, served, errors, samples, message: error.message, stack: error.stack }, null, 2));
   throw error;
-} finally {
+} finally {try{browserEvidence.assertUnchanged();}finally{
   await browser.close();
-}
+}}

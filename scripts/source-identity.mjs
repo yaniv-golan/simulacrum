@@ -4,6 +4,10 @@ import { createHash } from 'node:crypto';
 export function sourceIdentity() {
  const files=execFileSync('git',['ls-files','-z','--cached','--others','--exclude-standard'],{encoding:'utf8'}).split('\0').filter(Boolean).sort();
  const hash=createHash('sha256');
- for(const path of files)hash.update(path).update('\0').update(readFileSync(path)).update('\0');
+ for(const path of files){
+  hash.update(path).update('\0');
+  try{hash.update(readFileSync(path));}catch(error){if(error.code!=='ENOENT')throw error;hash.update('\0DELETED\0');}
+  hash.update('\0');
+ }
  return {head:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),workingTreeDigest:hash.digest('hex')};
 }

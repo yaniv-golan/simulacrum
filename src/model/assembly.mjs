@@ -3,6 +3,7 @@ import { CATALOG, MATERIALS } from './catalog.mjs';
 import { validateBlueprint } from './blueprint.mjs';
 import { BUILD_ENVIRONMENT } from './environment.mjs';
 import { immutableCopy } from './observation.mjs';
+import { normalizeQuaternion as normalize, multiplyQuaternion as multiply, rotateVector as rotate } from './transforms.mjs';
 
 export const ASSEMBLY_REASON_CODES = Object.freeze(['INCOMPATIBLE_CONNECTION_LOOP','INVALID_GRAVITY','INVALID_GROUND','INVALID_ENDPOINT','SELF_CONNECTION','PORT_OCCUPIED','MISALIGNED','UNSUPPORTED_SHAFT_TOPOLOGY']);
 function reject(reasonCode,path) { const error=new Error(reasonCode);error.reasonCode=reasonCode;error.path=path;throw error; }
@@ -10,12 +11,6 @@ function validate(blueprint) {const result=validateBlueprint(blueprint);if(!resu
 const add=(a,b)=>a.map((x,i)=>x+b[i]);
 const subtract=(a,b)=>a.map((x,i)=>x-b[i]);
 const inverse=q=>[-q[0],-q[1],-q[2],q[3]];
-function multiply(a,b) {
- const [x,y,z,w]=a,[X,Y,Z,W]=b;
- return [w*X+x*W+y*Z-z*Y,w*Y-x*Z+y*W+z*X,w*Z+x*Y-y*X+z*W,w*W-x*X-y*Y-z*Z];
-}
-const rotate=(q,v)=>multiply(multiply(q,[...v,0]),inverse(q)).slice(0,3);
-const normalize=q=>{const norm=Math.hypot(...q);return q.map(v=>v/norm);};
 function endpoint(blueprint,binding,path) {
  if(!binding||typeof binding!=='object'||!['part,port','part,surface'].includes(Object.keys(binding).sort().join(',')))reject('INVALID_ENDPOINT',path);
  const index=blueprint.parts.findIndex(p=>p.id===binding.part);
@@ -123,7 +118,7 @@ export function proposeSurfaceMount(blueprint,options={}){
 }
 function surfaceMountCandidate(blueprint,{part,sourceRegion,targetPart,targetRegion,u=0,v=0,twist=0,id,replaceConnection,attach=true,insertPart}={},observe){
  validate(blueprint);
- let next=structuredClone(blueprint);next.version=3;
+ let next=structuredClone(blueprint);
  if(insertPart){if(insertPart.id!==part)reject('INVALID_ENDPOINT','insertPart');next.parts.push(structuredClone(insertPart));validate(next);}
  if(replaceConnection){const connection=next.connections.find(c=>c.id===replaceConnection);if(!connection||connection.kind!=='fixed'||![connection.a.part,connection.b.part].includes(part))reject('INVALID_ENDPOINT','replaceConnection');next.connections=next.connections.filter(c=>c.id!==replaceConnection);}
  const source=next.parts.find(p=>p.id===part),target=next.parts.find(p=>p.id===targetPart);

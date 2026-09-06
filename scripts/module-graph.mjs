@@ -18,7 +18,7 @@ function walk(node, visit) {
  if(typeof node.type==='string') visit(node);
  for(const [key,value] of Object.entries(node)) {if(key==='start'||key==='end') continue; if(Array.isArray(value)) value.forEach(child=>walk(child,visit)); else if(value && typeof value==='object') walk(value,visit);}
 }
-export function buildModuleGraph(root=process.cwd(), {dataDependencies={},entrypoints}={}) {
+export function buildModuleGraph(root=process.cwd(), {dataDependencies={},entrypoints,purpose='resources'}={}) {
  root=realpathSync(resolve(root)); const files=listProjectFiles(root); const nodes=new Map(); const errors=[];
  // Runtime services are dependencies of the served build, but are not browser imports.
  // Exact dynamic argument declarations are a reviewable contract, not value-flow proof.
@@ -56,7 +56,7 @@ export function buildModuleGraph(root=process.cwd(), {dataDependencies={},entryp
    return target;
  }
  for(let i=0;i<pending.length;i++) {
-   const path=pending[i]; if(lstatSync(resolve(root,path)).isSymbolicLink()) continue; const info={dependencies:new Set(),imports:[],dom:false}; nodes.set(path,info);
+   const path=pending[i]; const tooling=purpose==='test-selection'&&(path.startsWith('scripts/')||path.startsWith('test/')); if(lstatSync(resolve(root,path)).isSymbolicLink()) continue; const info={dependencies:new Set(),imports:[],dom:false}; nodes.set(path,info);
    const add=(specifier,kind)=>{const target=targetFor(path,specifier);info.imports.push({specifier,target,kind,typeOnly:false});if(target)info.dependencies.add(target);};
    const resource=value=>{
      value=value.trim();
@@ -111,6 +111,20 @@ export function buildModuleGraph(root=process.cwd(), {dataDependencies={},entryp
      if(node.type==='ImportExpression') {if(node.source.type==='Literal'&&typeof node.source.value==='string')add(node.source.value,'module');else errors.push(`${path}: nonliteral dynamic import`);}
      if(node.type==='CallExpression'&&node.callee.type==='Identifier'&&['require','eval','Function'].includes(node.callee.name)) errors.push(`${path}: unsupported loader or dynamic code ${node.callee.name}`);
      if(node.type==='NewExpression'&&node.callee.name==='Function')errors.push(`${path}: unsupported dynamic code Function`);
+     // Node tooling can inspect generated files, directories and subprocesses.
+     // These are opaque whole-project inputs for its consuming tests, not broken
+     // browser asset URLs. Resource/fingerprint analysis remains strict.
+     if(tooling&&node.type==='CallExpression'&&['readFileSync','readFile','readdirSync','cpSync','execFileSync','execFile','spawnSync','spawn'].includes(node.callee.name))info.opaqueInputs=true;
+     if(tooling&&node.type==='CallExpression'&&node.callee.name==='fetch'&&!runtime){info.opaqueInputs=true;return;}
+     if(tooling&&node.type==='NewExpression'&&node.callee.name==='URL') {
+       const value=node.arguments[0];
+       if(value?.type==='Literal'&&typeof value.value==='string'&&(value.value.startsWith('.')||value.value.startsWith('/'))) {
+         const target=resolve(root,dirname(path),value.value);
+         if(existsSync(target)&&statSync(target).isFile())add(value.value,'data');
+         else info.opaqueInputs=true;
+       }else info.opaqueInputs=true;
+       return;
+     }
      if((node.type==='NewExpression'&&node.callee.name==='URL')||(node.type==='CallExpression'&&node.callee.name==='fetch')) {
        const value=node.arguments[0];
        const argument=value?script.slice(value.start,value.end):'';
@@ -163,6 +177,6 @@ export function affectedTests(graph,changed) {
  const tests=graph.files.filter(path=>/\.test\.(m?js|cjs)$/.test(path));
  if(!changed?.length || graph.errors.length || changed.some(path=>!graph.nodes.has(path)))return tests;
  const changedSet=new Set(changed);
- function affected(path,seen=new Set()){if(changedSet.has(path))return true;if(seen.has(path))return false;seen.add(path);return [...graph.nodes.get(path)?.dependencies??[]].some(dependency=>affected(dependency,seen));}
+ function affected(path,seen=new Set()){if(changedSet.has(path)||graph.nodes.get(path)?.opaqueInputs)return true;if(seen.has(path))return false;seen.add(path);return [...graph.nodes.get(path)?.dependencies??[]].some(dependency=>affected(dependency,seen));}
  return tests.filter(path=>affected(path));
 }
