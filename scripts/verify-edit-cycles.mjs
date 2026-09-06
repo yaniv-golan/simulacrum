@@ -14,6 +14,8 @@ const source = sourceIdentity(),
   samples = [];
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+page.setDefaultTimeout(10000);
+const startedAt = performance.now();
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => {
   if (m.type() === 'error') errors.push(m.text());
@@ -64,9 +66,14 @@ try {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Performance.enable');
   for (let cycle = 1; cycle <= 12; cycle++) {
+    console.log(`cycle ${cycle} start ${Math.round(performance.now() - startedAt)}ms`);
     const before = (await observe()).frame.metadata.blueprint;
     await page.locator('[data-command=run]').click();
-    await page.waitForFunction(() => window.workshopProbe.observe().cursor.tick >= 120);
+    await page.waitForFunction(() => {
+      const state = window.workshopProbe.observe();
+      return state.cursor.tick >= 120 || state.frames[0].status === 'failed';
+    });
+    assert.equal((await observe()).frame.status, 'ready', `cycle ${cycle} failed before 120 ticks`);
     await page.locator('[data-command=pause]').click();
     const paused = await observe();
     agree(paused);
@@ -190,7 +197,16 @@ try {
   writeFileSync(
     `${out}/failure.json`,
     JSON.stringify(
-      { source, build, served, errors, samples, message: error.message, stack: error.stack },
+      {
+        source,
+        build,
+        served,
+        errors,
+        samples,
+        current: await observe().catch(() => null),
+        message: error.message,
+        stack: error.stack,
+      },
       null,
       2,
     ),
