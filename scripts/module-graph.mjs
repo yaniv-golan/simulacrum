@@ -137,7 +137,7 @@ export function buildModuleGraph(root=process.cwd(), {dataDependencies={},entryp
  return {root,nodes,files,errors};
 }
 export function validateLayers(graph,{physicsPackages=[]}={}) {
- const errors=graph.errors.filter(error=>error.startsWith('src/')||error.startsWith('package.json:')); 
+ const errors=graph.errors.filter(error=>error.startsWith('src/')||error.startsWith('package.json:'));
  const allowed={model:[],simulation:['model'],scripting:['model'],presentation:['model'],application:['model','simulation','scripting','presentation','core'],core:['model','simulation','scripting']};
  const layer=path=>path.startsWith('src/')?path.split('/')[1]:null;
  for(const [path,node] of graph.nodes) {

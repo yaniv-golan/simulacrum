@@ -56,4 +56,3 @@ export function appFingerprint() {
   }
   return `app-${hash.digest("hex").slice(0, 16)}`;
 }
-

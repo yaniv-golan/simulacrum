@@ -12,7 +12,7 @@ test('a rejected rigid mount cannot be blamed for locking a turning wheel',async
  try{await workshop.act({type:'run'});workshop.step(240);const frame=workshop.observe().frames[0];
  assert.equal(frame.metadata.connections.find(c=>c.id==='misaligned-lock').reasonCode,'MISALIGNED');
  assert.ok(!codes(frame).includes('RIGIDLY_LOCKED'),'a non-admitted constraint does not lock the axle');
- assert.ok(codes(frame).includes('MOUNT_ALIGNMENT')); 
+ assert.ok(codes(frame).includes('MOUNT_ALIGNMENT'));
  }finally{workshop.dispose();}
 });
 test('production telemetry distinguishes healthy, disconnected, stopped and depleted motors',async()=>{
