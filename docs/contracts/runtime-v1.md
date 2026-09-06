@@ -100,12 +100,37 @@ joint-connected assembly admits at most one powered motor. Coupled electrical
 allocation must be implemented before the multi-joint M4b plant; a bare-body
 inertia estimate does not bound acceleration under multiple coupled actuators.
 
-The driver holds a bounded current for a tick, reducing effective motor voltage
-and dissipating surplus energy. Post-integration shaft work is measured from
-torque and midpoint relative speed. Copper, cell and driver dissipation are
-separate quantities. An allocation that cannot pay for measured work and
-resistive heat fails the energy invariant; no pose or force correction conceals
-the failure. This accounting is not proof of total-world contact conservation.
+The DC drive uses first-order operator splitting on the fixed 1/120 s path:
+allocate bounded current from completed shaft speed, apply an equal/opposite
+angular kick J = torque × dt, then integrate environment, contacts and joints
+once. This is an approximation to continuous motor action, not a solved
+continuous-current constraint. For the frozen application axis, the physics door
+returns measured pre/post-kick speed and full-inertia kinetic energies. Kick work
+is J × (speedBefore + speedAfter) / 2 and must agree with the independently
+measured kinetic-energy change. Electrical allocation must fund kick work plus
+copper and cell losses, with voltage headroom at the kick endpoint. Current,
+voltage, charge limits and the existing energy tolerance remain enforced. No
+later contact motion can rewrite the electrical allocation or motor work.
+
+The completed observation's `energy` ledger separately reports kinetic and
+gravitational potential energy (world center of mass), actuator work, external
+impulse work, signed `integrationDeltaJ`, and `balanceResidualJ`, all in joules.
+`integrationDeltaJ` is the measured mechanical-energy change during the single
+integration call; it includes contact/constraint dissipation, stabilization and
+gravity-integration error. It is **not driver heat**, and a positive value is
+visible numerical energy injection, not a certified physical source. The balance
+remainder exposes kick roundoff. These diagnostics do not certify conservative
+contact behavior. Rapier's temporal solver iteration count is frozen at four;
+there is still exactly one production world.step per tick. Analytical freefall
+and passive attached-inertia tests check separate integration effects.
+
+Electrical funding uses the existing per-transfer Float32 tolerance. The
+independent kinetic-energy subtraction check scales that same relative roundoff
+factor by the endpoint kinetic energies, because subtraction at high spin can
+lose precision even when the work is small. It does not enlarge the electrical
+funding tolerance. Completed checkpoints use version 2 and include this ledger;
+older checkpoint versions are rejected, without migration. Machine save format
+remains 3.
 
 M3 controller tests inject trusted host doubles at phase 2. Each sees only frozen
 readings from sensors wired to its component and may command only wired receivers.

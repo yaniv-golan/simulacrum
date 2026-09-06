@@ -58,7 +58,7 @@ plus real participant evidence for the human product bars.
 At this stage each power circuit admits one cell and one motor, and a mechanically
 connected assembly admits one motor. Coupled actuator allocation is required before
 the multi-joint feasibility stage. Motor drivers account for charge, copper/cell
-heat and measured shaft work. The current ground contact is not Course qualification.
+heat and measured discrete shaft-kick work before contacts. The completed energy ledger separately exposes integration energy changes; these are not motor heat. The current ground contact is not Course qualification.
 
 MIT licensed. Product features are not partitioned into paid add-ons.
 

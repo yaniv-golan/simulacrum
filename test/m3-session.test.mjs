@@ -23,7 +23,12 @@ test('numeric power bindings reject ghost components and mismatched joint axes',
 });
 test('attached passive inertia does not disappear from measured circuit energy',async()=>{
  const c=motorConfiguration();c.bodies.push({...body(),position:[.2,0,0]});c.joints.push({kind:'fixed',a:1,b:3,anchorA:[.2,0,0],anchorB:[0,0,0],rotationA:[0,0,0,1],rotationB:[0,0,0,1]});
- const s=await createSession(c);try{s.step(1);const f=s.observe().frames[0];const kinetic=f.physics.reduce((sum,b)=>sum+.5*b.mass*b.velocity.reduce((a,v)=>a+v*v,0)+.5*(b.mass*.02/3)*b.angularVelocity.reduce((a,v)=>a+v*v,0),0);const dissipated=f.power.cells[0].heatJ+f.power.motors[0].heatJ+(f.power.motors[0].driverHeatJ??0);assert.ok(Math.abs(1000-f.power.cells[0].energyJ-kinetic-dissipated)<1e-7);}finally{s.dispose();}
+ const s=await createSession(c);try{s.step(1);const f=s.observe().frames[0];const kinetic=f.physics.reduce((sum,b)=>sum+.5*b.mass*b.velocity.reduce((a,v)=>a+v*v,0)+.5*(b.mass*.02/3)*b.angularVelocity.reduce((a,v)=>a+v*v,0),0);const dissipated=f.power.cells[0].heatJ+f.power.motors[0].heatJ+(f.power.motors[0].driverHeatJ??0);const impulse=f.power.motors[0].torque/120,I=.02/3;
+ // Rotor and identical passive load share momentum: K=.5*J²/I + .5*J²/(2I).
+ assert.ok(Math.abs(kinetic-.75*impulse**2/I)<1e-7);
+ assert.ok(Math.abs(f.energy.integrationDeltaJ+.25*impulse**2/I)<1e-7);
+ assert.ok(Math.abs(1000-f.power.cells[0].energyJ-kinetic-dissipated+f.energy.integrationDeltaJ)<1e-7);
+ assert.ok(Math.abs(f.energy.balanceResidualJ)<1e-7);}finally{s.dispose();}
 });
 test('coupled active motors are explicitly unsupported until coupled electrical allocation exists',async()=>{
  const c=motorConfiguration();c.bodies.push({...body(),position:[0,0,0]},{...body(),position:[20,0,0]});c.joints.push({kind:'revolute',a:3,b:1,anchorA:[0,0,0],anchorB:[0,0,0],axisA:[1,0,0],axisB:[1,0,0]});c.power.cells.push({...c.power.cells[0],node:4});c.power.motors.push({...c.power.motors[0],node:3,body:3,joint:1});c.power.wires.push([4,3]);await assert.rejects(createSession(c),/UNSUPPORTED_ACTUATOR_COUPLING/);

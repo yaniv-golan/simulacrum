@@ -71,24 +71,27 @@ export function createPowerNetwork(configuration) {
    }
    validateState(next);pending={dt,next,allocations};return {torques};
   },
-  completeStep(dt,speedsAfter) {
+  completeStep(dt,receipts) {
    if(!pending||dt!==pending.dt)fail('INVALID_POWER_STEP');
-   if(!Array.isArray(speedsAfter)||speedsAfter.length!==config.motors.length||new Set(speedsAfter.map(s=>s.node)).size!==config.motors.length)fail('INVALID_MOTOR_SAMPLE');
+   if(!Array.isArray(receipts)||receipts.length!==config.motors.length||new Set(receipts.map(s=>s.node)).size!==config.motors.length)fail('INVALID_MOTOR_SAMPLE');
    const next=clone(pending.next);
    for(const [i,motor] of config.motors.entries()) {
-    const sample=speedsAfter.find(s=>s.node===motor.node);
-    if(!sample||!exact(sample,'node,speed')||!finite(sample.speed))fail('INVALID_MOTOR_SAMPLE');
+    const sample=receipts.find(s=>s.node===motor.node);
+    if(!sample||!exact(sample,'node,speedBefore,speedAfter,workJ,kineticDeltaJ,kineticBeforeJ,kineticAfterJ')||!finite(sample.speedBefore,sample.speedAfter,sample.workJ,sample.kineticDeltaJ,sample.kineticBeforeJ,sample.kineticAfterJ)||sample.kineticBeforeJ<0||sample.kineticAfterJ<0)fail('INVALID_MOTOR_SAMPLE');
     const allocation=pending.allocations[i],record=next.motors[i];
-    // Measure actual shaft work from the committed endpoint velocities. This
-    // quadrature is explicit; it is not an assertion about all world KE changes.
-    const work=allocation.torque*(allocation.speed+sample.speed)*dt/2;
+    // The physics door measures the discrete kick before contacts/gravity.
+    // The independent full-inertia KE receipt must agree with impulse work.
+    const work=sample.workJ,expectedWork=allocation.torque*(sample.speedBefore+sample.speedAfter)*dt/2;
+    const workTolerance=ENERGY_ABSOLUTE_TOLERANCE+ENERGY_RELATIVE_TOLERANCE*Math.max(Math.abs(work),Math.abs(expectedWork),allocation.electricalEnergy);
+    const receiptTolerance=ENERGY_ABSOLUTE_TOLERANCE+ENERGY_RELATIVE_TOLERANCE*Math.max(Math.abs(work),Math.abs(sample.kineticDeltaJ),sample.kineticBeforeJ,sample.kineticAfterJ,allocation.electricalEnergy);
+    if(Math.abs(sample.kineticDeltaJ-(sample.kineticAfterJ-sample.kineticBeforeJ))>receiptTolerance||Math.abs(work-expectedWork)>workTolerance||Math.abs(work-sample.kineticDeltaJ)>receiptTolerance||Math.abs(sample.speedBefore-allocation.speed)>ENERGY_RELATIVE_TOLERANCE*Math.max(1,Math.abs(allocation.speed)))fail('ENERGY_INVARIANT');
     const residual=allocation.electricalEnergy-allocation.cellHeat-allocation.copperHeat-work;
     const tolerance=ENERGY_ABSOLUTE_TOLERANCE+ENERGY_RELATIVE_TOLERANCE*Math.max(Math.abs(allocation.electricalEnergy),Math.abs(work),allocation.cellHeat+allocation.copperHeat);
     // The driver cannot supply extra voltage at either measured endpoint, even
     // when its averaged heat is positive. Express headroom in joules to use the
-    // same explicit Float32 error budget; this is an endpoint test, not a claim
-    // about unseen interior velocity extrema under arbitrary external forces.
-    const endpointWork=allocation.torque*sample.speed*dt;
+    // same explicit Float32 error budget at the kick endpoint. Later contact
+    // redistribution belongs to the integration ledger, not the driver.
+    const endpointWork=allocation.torque*sample.speedAfter*dt;
     const headroom=allocation.electricalEnergy-allocation.cellHeat-allocation.copperHeat-endpointWork;
     const endpointTolerance=ENERGY_ABSOLUTE_TOLERANCE+ENERGY_RELATIVE_TOLERANCE*Math.max(Math.abs(allocation.electricalEnergy),Math.abs(endpointWork),allocation.cellHeat+allocation.copperHeat);
     if(!finite(work,residual,headroom)||residual< -tolerance||headroom< -endpointTolerance)fail('ENERGY_INVARIANT');

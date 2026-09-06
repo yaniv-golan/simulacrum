@@ -54,7 +54,7 @@ export async function createPhysicsWorld(configuration){
  await (initialization??=RAPIER.init());
  let world=new RAPIER.World(xyz(gravity)),handles=[];const jointHandles=[];
  try{
-  world.timestep=DT;
+  world.timestep=DT;world.integrationParameters.numSolverIterations=4; // Frozen temporal solver subdivision.
   for(const body of descriptions){
    const descriptor=(body.fixed?RAPIER.RigidBodyDesc.fixed():RAPIER.RigidBodyDesc.dynamic()).setTranslation(...body.position).setRotation(xyzw(body.rotation)).setLinvel(...body.velocity).setCanSleep(false);
    const rigidBody=world.createRigidBody(descriptor);
@@ -86,7 +86,7 @@ export async function createPhysicsWorld(configuration){
   candidate.impulseJoints.forEach(joint=>connections.push({handle:joint.handle,a:mapping.indexOf(joint.body1().handle),b:mapping.indexOf(joint.body2().handle),type:joint.type(),anchorA:array(joint.anchor1()),anchorB:array(joint.anchor2()),rotationA:rotationArray(joint.frameX1()),rotationB:rotationArray(joint.frameX2()),contactsEnabled:joint.contactsEnabled()}));
   connections.sort((a,b)=>a.handle-b.handle);
   if(connections.some(joint=>joint.a<0||joint.b<0))throw new Error('invalid snapshot joint bindings');
-  return {gravity:array(candidate.gravity).map(Math.fround),timestep:candidate.timestep,joints:connections,bodies:mapping.map(handle=>{
+  return {gravity:array(candidate.gravity).map(Math.fround),timestep:candidate.timestep,solverIterations:candidate.integrationParameters.numSolverIterations,joints:connections,bodies:mapping.map(handle=>{
    const body=candidate.getRigidBody(handle);if(!body||body.numColliders()!==1)throw new Error('snapshot collider count mismatch');
    const collider=body.collider(0),rotation=collider.rotationWrtParent();
    return {type:body.bodyType(),mass:body.mass(),localCom:array(body.localCom()),principalInertia:array(body.principalInertia()),inertiaFrame:rotationArray(body.principalInertiaLocalFrame()),gravityScale:body.gravityScale(),linearDamping:body.linearDamping(),angularDamping:body.angularDamping(),shape:collider.shapeType(),halfExtents:dimensions(collider),colliderMass:collider.mass(),friction:collider.friction(),restitution:collider.restitution(),offset:array(collider.translationWrtParent()),rotation:[rotation.x,rotation.y,rotation.z,rotation.w]};
@@ -101,13 +101,22 @@ export async function createPhysicsWorld(configuration){
  function assertFinite(states){for(const state of states)if(!Object.values(state).flat().every(Number.isFinite))throw new Error('non-finite physics state');}
  function bodyAt(index){alive();if(!Number.isInteger(index)||index<0||index>=handles.length)throw new TypeError('invalid body index');return world.getRigidBody(handles[index]);}
  function getAxisInverseInertia(index,axisWorld){const body=bodyAt(index),[x,y,z]=unit(axisWorld),m=body.effectiveWorldInvInertia();return x*x*m.m11+y*y*m.m22+z*z*m.m33+2*x*y*m.m12+2*x*z*m.m13+2*y*z*m.m23;}
+ function kinetic(body){
+  if(body.isFixed())return 0;
+  const v=array(body.linvel()),q=multiply(rotationArray(body.rotation()),rotationArray(body.principalInertiaLocalFrame())),w=rotate(conjugate(q),array(body.angvel())),inertia=array(body.principalInertia());
+  return .5*body.mass()*v.reduce((sum,n)=>sum+n*n,0)+.5*w.reduce((sum,n,i)=>sum+inertia[i]*n*n,0);
+ }
+ function energyOf(candidate,mapping){let kineticJ=0,potentialJ=0;for(const handle of mapping){const b=candidate.getRigidBody(handle);if(b.isFixed())continue;kineticJ+=kinetic(b);potentialJ-=b.mass()*array(b.worldCom()).reduce((sum,x,i)=>sum+x*gravity[i],0);}return {kineticJ,potentialJ};}
  return Object.freeze({
+  mechanicalEnergy(){alive();return energyOf(world,handles);},
   getAxisInverseInertia,
   applyTorquePair(a,b,axisWorld,torqueNm){
    const bodyA=bodyAt(a),bodyB=bodyAt(b),axis=unit(axisWorld);
    if(a===b||!Number.isFinite(torqueNm)||!Number.isFinite(Math.fround(torqueNm*DT)))throw new TypeError('invalid torque allocation');
-   const impulse=axis.map(value=>value*torqueNm*DT);
+   const speed=()=>axis.reduce((sum,v,i)=>sum+v*(array(bodyB.angvel())[i]-array(bodyA.angvel())[i]),0);
+   const speedBefore=speed(),before=kinetic(bodyA)+kinetic(bodyB),impulse=axis.map(value=>value*torqueNm*DT);
    bodyA.applyTorqueImpulse(xyz(impulse.map(value=>-value)),true);bodyB.applyTorqueImpulse(xyz(impulse),true);
+   const speedAfter=speed();return {speedBefore,speedAfter,workJ:torqueNm*DT*(speedBefore+speedAfter)/2,kineticBeforeJ:before,kineticAfterJ:kinetic(bodyA)+kinetic(bodyB),kineticDeltaJ:kinetic(bodyA)+kinetic(bodyB)-before};
   },
   jointState(index){
    alive();if(!Number.isInteger(index)||index<0||index>=joints.length||joints[index].kind!=='revolute')throw new TypeError('joint has no angular degree of freedom');
@@ -121,12 +130,13 @@ export async function createPhysicsWorld(configuration){
   step(){alive();world.step();assertFinite(readWorld(world,handles));},
   read(){alive();return readWorld(world,handles);},
   snapshot(){alive();return encode(world.takeSnapshot(),handles,JSON.parse(configurationIdentity));},
-  restore(bytes){
+  restore(bytes,expectedEnergy){
    alive();const decoded=decode(bytes);if(JSON.stringify(decoded.configuration)!==configurationIdentity)throw new Error('snapshot configuration mismatch');let candidate;
    try{
     candidate=RAPIER.World.restoreSnapshot(decoded.payload);if(!candidate)throw new Error('invalid library snapshot');
     if(candidate.bodies.len()!==decoded.handles.length||candidate.colliders.len()!==decoded.handles.length||candidate.impulseJoints.len()!==joints.length||candidate.multibodyJoints.len()!==0||candidate.timestep!==world.timestep)throw new Error('snapshot topology or step mismatch');
     assertFinite(readWorld(candidate,decoded.handles));
+    if(expectedEnergy){record(expectedEnergy,['kineticJ','potentialJ']);const measured=energyOf(candidate,decoded.handles);if(expectedEnergy.kineticJ!==measured.kineticJ||expectedEnergy.potentialJ!==measured.potentialJ)throw new Error('snapshot energy mismatch');}
     if(JSON.stringify(plant(candidate,decoded.handles))!==originalPlant)throw new Error('snapshot physical plant mismatch');
    }catch(error){candidate?.free();throw error;}
    const previous=world;world=candidate;handles=[...decoded.handles];previous.free();

@@ -34,12 +34,15 @@ export async function createSession(configuration, identity = {}, metadata = {},
   let tick=0,accumulator=0,sequence=0,pending=[],history=[],status='ready',failure=null;
   let initial=world.read();
   let sensors=sampleSensors(0,copy(initial),config.power);
-  let torques=[];
-  const frame=(physics,timings={})=>({tick,status,physics,metadata,power:power.read(),sensors:copy(sensors),phaseTimings:timings,phaseStatus:Object.fromEntries(PHASES.map(p=>[p,['sensor-snapshot','controller-commands','power-signals','actuators-constraints','environment-forces','integration-contacts','structure-failure','thermal-ablation','telemetry'].includes(p)?'active':'inactive-no-components']))});
+  let torques=[],receipts=[];
+  const emptyEnergy=(mechanical=world.mechanicalEnergy())=>({...mechanical,actuatorWorkJ:0,externalWorkJ:0,integrationDeltaJ:0,balanceResidualJ:0});
+  let energy=emptyEnergy();
+  const total=e=>e.kineticJ+e.potentialJ;
+  const frame=(physics,timings={})=>({tick,status,physics,metadata,energy:copy(energy),power:power.read(),sensors:copy(sensors),phaseTimings:timings,phaseStatus:Object.fromEntries(PHASES.map(p=>[p,['sensor-snapshot','controller-commands','power-signals','actuators-constraints','environment-forces','integration-contacts','structure-failure','thermal-ablation','telemetry'].includes(p)?'active':'inactive-no-components']))});
   const observations=createObservationStore(frame(initial),{sessionId:`session-${++sessionSequence}`});
   function checkpoint() {
     if(status==='failed')throw Error('SESSION_FAILED');
-    return copy({version:1,tick,accumulator,sequence,pending,sensors,power:power.snapshot(),physics:Array.from(world.snapshot()),configuration:config,identity,metadata});
+    return copy({version:2,tick,accumulator,sequence,pending,sensors,energy,power:power.snapshot(),physics:Array.from(world.snapshot()),configuration:config,identity,metadata});
   }
   let anchor=checkpoint(),previousInterval=null;
   function publish() {observations.publish(frame(world.read()));}
@@ -61,7 +64,7 @@ export async function createSession(configuration, identity = {}, metadata = {},
     if(!Number.isSafeInteger(count)||count<0||count>28800||tick+count>Number.MAX_SAFE_INTEGER)throw Error('INVALID_TICK_COUNT');
     if(status==='failed')throw Error('SESSION_FAILED');
     for(let n=0;n<count;n++) {
-      const timings={},next=tick+1;
+      const timings={},next=tick+1;const startEnergy=world.mechanicalEnergy();let actuatorWorkJ=0,externalWorkJ=0,integrationDeltaJ=0;
       try {
         for(const phase of PHASES) {
           const start=performance.now();
@@ -81,17 +84,17 @@ export async function createSession(configuration, identity = {}, metadata = {},
               torques=power.step(DT,config.power.motors.map((m,i)=>({node:m.node,speed:states[i].speed})),[...commands.values()],config.power.motors.map((m,i)=>({node:m.node,inertia:states[i].effectiveInverseInertia>0?1/states[i].effectiveInverseInertia:0}))).torques;
               break;
             }
-            case 'actuators-constraints': for(const torque of torques)if(torque.value!==0)world.applyTorquePair(torque.body,torque.rotor,rotate(sensors.bodies[torque.body].rotation,torque.axis),torque.value);break;
-            case 'environment-forces': for(const event of pending)if(event.command.type==='impulse')world.applyImpulse(event.command.body,event.command.value);break;
-            case 'integration-contacts': world.step();break;
+            case 'actuators-constraints': receipts=torques.map((torque,i)=>{const r=torque.joint<0?{speedBefore:0,speedAfter:0,workJ:0,kineticDeltaJ:0,kineticBeforeJ:0,kineticAfterJ:0}:world.applyTorquePair(torque.body,torque.rotor,rotate(sensors.bodies[torque.body].rotation,torque.axis),torque.value);actuatorWorkJ+=r.workJ;return {node:config.power.motors[i].node,...r};});break;
+            case 'environment-forces': {const before=world.mechanicalEnergy();for(const event of pending)if(event.command.type==='impulse')world.applyImpulse(event.command.body,event.command.value);externalWorkJ=total(world.mechanicalEnergy())-total(before);break;}
+            case 'integration-contacts': {const before=world.mechanicalEnergy();world.step();integrationDeltaJ=total(world.mechanicalEnergy())-total(before);break;}
             case 'structure-failure': {
               const bodies=world.read();
               if(!finiteTree(bodies))throw Error('NON_FINITE_STATE');
               if(bodies.length!==initial.length||bodies.some((body,i)=>body.mass!==initial[i].mass))throw Error('INVARIANT_VIOLATION');
               break;
             }
-            case 'thermal-ablation': power.completeStep(DT,config.power.motors.map(m=>({node:m.node,speed:m.joint<0?0:world.jointState(m.joint).speed})));break;
-            case 'telemetry': tick=next;pending=[];break;
+            case 'thermal-ablation': power.completeStep(DT,receipts);break;
+            case 'telemetry': energy={...world.mechanicalEnergy(),actuatorWorkJ,externalWorkJ,integrationDeltaJ,balanceResidualJ:total(world.mechanicalEnergy())-total(startEnergy)-actuatorWorkJ-externalWorkJ-integrationDeltaJ};tick=next;pending=[];break;
           }
           timings[phase]=performance.now()-start;
         }
@@ -144,12 +147,12 @@ export async function createSession(configuration, identity = {}, metadata = {},
       candidate=await createPhysicsWorld(physicalConfig(nextConfig));
       if(disposed)throw Error('SESSION_DISPOSED');
       const nextInitial=immutableCopy(candidate.read()),nextSensors=sampleSensors(0,copy(nextInitial),nextConfig.power);
-      const nextFrame={...frame(nextInitial),tick:0,status:'ready',metadata:nextMetadata,sensors:nextSensors,power:nextPower.read()};
-      const nextAnchor=copy({version:1,tick:0,accumulator:0,sequence:0,pending:[],sensors:nextSensors,power:nextPower.snapshot(),physics:Array.from(candidate.snapshot()),configuration:nextConfig,identity,metadata:nextMetadata});
+      const nextFrame={...frame(nextInitial),tick:0,status:'ready',metadata:nextMetadata,sensors:nextSensors,energy:emptyEnergy(candidate.mechanicalEnergy()),power:nextPower.read()};
+      const nextAnchor=copy({version:2,tick:0,accumulator:0,sequence:0,pending:[],sensors:nextSensors,energy:emptyEnergy(candidate.mechanicalEnergy()),power:nextPower.snapshot(),physics:Array.from(candidate.snapshot()),configuration:nextConfig,identity,metadata:nextMetadata});
       // Publication validates the complete replacement before any owner changes.
       // No callbacks run between this publication and the synchronous owner swap.
       observations.publish(nextFrame,{restored:true});
-      const previous=world;world=candidate;candidate=null;config=nextConfig;power=nextPower;dispatcher=nextDispatcher;torques=[];initial=nextInitial;metadata=nextMetadata;
+      const previous=world;world=candidate;candidate=null;config=nextConfig;power=nextPower;dispatcher=nextDispatcher;torques=[];receipts=[];energy=emptyEnergy();initial=nextInitial;metadata=nextMetadata;
       tick=0;accumulator=0;sequence=0;pending=[];history=[];status='ready';failure=null;sensors=nextSensors;anchor=nextAnchor;previousInterval=null;
       previous.dispose();return observations.observe();
     } finally {candidate?.dispose();replacing=false;}
@@ -159,7 +162,8 @@ export async function createSession(configuration, identity = {}, metadata = {},
     const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===keys.sort().join(',');
     let restoredMetadata;try{restoredMetadata=immutableCopy(cp.metadata);}catch{invalid();}
     const vector=(v,n)=>Array.isArray(v)&&v.length===n&&v.every(Number.isFinite);
-    if(!exact(cp,['version','tick','accumulator','sequence','pending','sensors','power','physics','configuration','identity','metadata'])||cp.version!==1||!Number.isSafeInteger(cp.tick)||cp.tick<0||cp.tick===Number.MAX_SAFE_INTEGER||!Number.isFinite(cp.accumulator)||cp.accumulator<0||cp.accumulator>=DT*1000||!Number.isSafeInteger(cp.sequence)||cp.sequence<0||!Array.isArray(cp.physics)||cp.physics.length>32*1024*1024||!cp.physics.every(x=>Number.isInteger(x)&&x>=0&&x<=255)||!Array.isArray(cp.pending)||cp.pending.length>64||JSON.stringify(cp.configuration)!==JSON.stringify(config)||JSON.stringify(cp.identity)!==JSON.stringify(identity))invalid();
+    if(!exact(cp,['version','tick','accumulator','sequence','pending','sensors','energy','power','physics','configuration','identity','metadata'])||cp.version!==2||!Number.isSafeInteger(cp.tick)||cp.tick<0||cp.tick===Number.MAX_SAFE_INTEGER||!Number.isFinite(cp.accumulator)||cp.accumulator<0||cp.accumulator>=DT*1000||!Number.isSafeInteger(cp.sequence)||cp.sequence<0||!Array.isArray(cp.physics)||cp.physics.length>32*1024*1024||!cp.physics.every(x=>Number.isInteger(x)&&x>=0&&x<=255)||!Array.isArray(cp.pending)||cp.pending.length>64||JSON.stringify(cp.configuration)!==JSON.stringify(config)||JSON.stringify(cp.identity)!==JSON.stringify(identity))invalid();
+    if(!exact(cp.energy,['kineticJ','potentialJ','actuatorWorkJ','externalWorkJ','integrationDeltaJ','balanceResidualJ'])||!Object.values(cp.energy).every(Number.isFinite))invalid();
     if(!exact(cp.sensors,['tick','bodies','readings'])||cp.sensors.tick!==Math.max(0,cp.tick-1)||!Array.isArray(cp.sensors.bodies)||cp.sensors.bodies.length!==initial.length)invalid();
     for(const [index,body] of cp.sensors.bodies.entries())if(!exact(body,['position','rotation','velocity','angularVelocity','mass'])||!vector(body.position,3)||!vector(body.rotation,4)||!vector(body.velocity,3)||!vector(body.angularVelocity,3)||body.mass!==initial[index].mass)invalid();
     if(JSON.stringify(cp.sensors.readings)!==JSON.stringify(sampleSensors(cp.sensors.tick,cp.sensors.bodies,config.power).readings))invalid();
@@ -168,7 +172,7 @@ export async function createSession(configuration, identity = {}, metadata = {},
     // All session-owned fields are admitted before the physics door validates and
     // atomically swaps its opaque snapshot. The resulting frame contains only
     // validated finite values, so publication cannot discover a late schema error.
-    world.restore(Uint8Array.from(cp.physics));power=candidatePower;torques=[];metadata=restoredMetadata;tick=cp.tick;accumulator=cp.accumulator;sequence=cp.sequence;pending=cp.pending;sensors=cp.sensors;status='ready';failure=null;history=[];previousInterval=null;anchor=checkpoint();
+    world.restore(Uint8Array.from(cp.physics),{kineticJ:cp.energy.kineticJ,potentialJ:cp.energy.potentialJ});power=candidatePower;torques=[];receipts=[];energy=copy(cp.energy);metadata=restoredMetadata;tick=cp.tick;accumulator=cp.accumulator;sequence=cp.sequence;pending=cp.pending;sensors=cp.sensors;status='ready';failure=null;history=[];previousInterval=null;anchor=checkpoint();
     observations.publish(frame(world.read()),{restored:true});
   }
   return Object.freeze({act,step,advanceTime,runUntil,checkpoint,restore,replaceConfiguration,setMetadata,observe:observations.observe,failureBundle:()=>copy(failure),dispose:()=>{disposed=true;world.dispose();}});

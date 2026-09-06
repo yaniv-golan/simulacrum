@@ -1,0 +1,121 @@
+{
+  "version": 3,
+  "id": "machine",
+  "name": "My machine",
+  "parts": [
+    {
+      "id": "wheel",
+      "type": "gripWheel",
+      "name": "Grip Wheel",
+      "position": [
+        -1.3250000000000002,
+        0.3,
+        0
+      ],
+      "rotation": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "authoredMaterial": {},
+      "parameters": {}
+    },
+    {
+      "id": "motor",
+      "type": "poweredMotor",
+      "name": "Powered Motor",
+      "position": [
+        -1.1800000000000002,
+        0.3,
+        0
+      ],
+      "rotation": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "authoredMaterial": {},
+      "parameters": {
+        "torqueConstant": 0.1,
+        "resistance": 1,
+        "currentLimit": 10,
+        "defaultDuty": 0.4
+      }
+    },
+    {
+      "id": "cell",
+      "type": "powerCell",
+      "name": "Power Cell",
+      "position": [
+        -1,
+        0.3,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "authoredMaterial": {
+        "body": "aluminium"
+      },
+      "parameters": {
+        "voltage": 24,
+        "capacityJ": 36000,
+        "internalResistance": 0.1,
+        "currentLimit": 20
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "drive",
+      "kind": "shaft",
+      "a": {
+        "part": "motor",
+        "port": "shaft"
+      },
+      "b": {
+        "part": "wheel",
+        "port": "axle"
+      }
+    },
+    {
+      "id": "mount",
+      "kind": "fixed",
+      "a": {
+        "part": "cell",
+        "surface": {
+          "region": "left",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "motor",
+        "surface": {
+          "region": "left",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "power",
+      "kind": "power",
+      "a": {
+        "part": "cell",
+        "port": "power"
+      },
+      "b": {
+        "part": "motor",
+        "port": "power"
+      }
+    }
+  ]
+}

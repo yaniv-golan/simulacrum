@@ -1,8 +1,7 @@
-/** Constant-current DC drive allocation; all inputs are numeric SI quantities.
- * Use the isolated pair's endpoint speed to reserve voltage headroom across the
- * step. The finite-step driver reduces effective voltage and dissipates the
- * remainder. Constrained or externally forced motion is reconciled afterwards;
- * this isolated inertia bound does not certify arbitrary coupled mechanisms.
+/** First-order split DC drive allocation; numeric SI inputs only.
+ * Reserve voltage at the endpoint of the discrete angular kick. The physics
+ * door measures that kick before contacts and gravity are integrated. This is
+ * a finite-step approximation, not a coupled continuous-current solver.
  */
 export function motorStep(voltage,speed,torqueConstant,resistance,currentLimit,inertia,dt) {
  if(![voltage,speed,torqueConstant,resistance,currentLimit,inertia,dt].every(Number.isFinite)||torqueConstant<=0||resistance<=0||currentLimit<0||inertia<=0||dt<=0)throw new RangeError('invalid motor numbers');
