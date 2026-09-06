@@ -20,6 +20,7 @@ page.on('response', (response) => {
   if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`);
 });
 page.setDefaultTimeout(10000);
+const idleChecks = [];
 const read = () =>
   page.evaluate(() => ({
     blueprint: window.workshopProbe.observe().frames[0].metadata.blueprint,
@@ -113,6 +114,84 @@ try {
     cameraBefore,
     'orbit resumes after surface cancellation',
   );
+  // Count actual main-scene GPU submissions, not RAF callbacks or simulation ticks.
+  const frames = () =>
+    page.evaluate(() => window.workshopProbe.readInteractionState().rendering.frames);
+  async function idle(settleMs = 0) {
+    // OrbitControls damping still changes the camera after pointerup.
+    if (settleMs) await page.waitForTimeout(settleMs);
+    await page.evaluate(() => {
+      window.__idleRenderProbe = null;
+    });
+    await page.waitForFunction(
+      () => {
+        const frames = window.workshopProbe.readInteractionState().rendering.frames,
+          now = performance.now();
+        if (!window.__idleRenderProbe || window.__idleRenderProbe.frames !== frames)
+          window.__idleRenderProbe = { frames, since: now };
+        return now - window.__idleRenderProbe.since >= 350;
+      },
+      null,
+      { timeout: 5000 },
+    );
+    const before = await frames();
+    await page.waitForTimeout(350);
+    assert.equal(await frames(), before, 'settled build mode does not submit duplicate GPU frames');
+    idleChecks.push({ before, after: await frames() });
+  }
+  async function draws(action) {
+    const before = await frames();
+    await action();
+    await page.waitForFunction(
+      (before) => window.workshopProbe.readInteractionState().rendering.frames > before,
+      before,
+    );
+  }
+  await idle(2000);
+  const idlePixels = await canvas.screenshot({ path: `${out}/idle-before.png` });
+  await page.waitForTimeout(350);
+  assert.deepEqual(
+    await canvas.screenshot({ path: `${out}/idle-after.png` }),
+    idlePixels,
+    'idle canvas pixels are preserved exactly',
+  );
+  await draws(async () => {
+    await page.mouse.move(
+      currentBox.x + currentBox.width - 65,
+      currentBox.y + currentBox.height - 65,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      currentBox.x + currentBox.width - 120,
+      currentBox.y + currentBox.height - 100,
+      { steps: 8 },
+    );
+    await page.mouse.up();
+  });
+  await idle(2000);
+  const parts = (await read()).blueprint.parts;
+  const motor = parts.find((part) => part.type === 'poweredMotor');
+  await draws(async () => {
+    if (!(await page.locator('.machine-picker').evaluate((element) => element.open)))
+      await page.locator('.machine-picker > summary').click();
+    await page.locator(`.part-list [data-part-id="${motor.id}"]`).click();
+  });
+  await idle();
+  const beforePreview = (await read()).blueprint;
+  await draws(async () => {
+    await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
+    await page
+      .getByLabel('Target surface', { exact: true })
+      .selectOption(JSON.stringify([base.id, 'top']));
+  });
+  assert.ok((await read()).ui.surfacePlacement.previewParts.length);
+  assert.deepEqual((await read()).blueprint, beforePreview, 'rendered preview remains read only');
+  await draws(() => page.keyboard.press('Escape'));
+  await idle();
+  await draws(() => page.locator('[data-command=run]').click());
+  await page.waitForFunction(() => window.workshopProbe.observe().frames[0].tick >= 2);
+  await page.locator('[data-command=pause]').click();
+  await idle();
   assert.deepEqual(errors, []);
   assert.deepEqual(sourceIdentity(), source, 'verification source unchanged');
   assert.equal(appFingerprint(), expectedBuild, 'app source unchanged during browser run');
@@ -124,6 +203,7 @@ try {
         source,
         build,
         errors,
+        idleChecks,
         checks: [
           'outside drag cancellation',
           'different candidate after cancellation',
@@ -131,13 +211,16 @@ try {
           'Escape cancellation',
           'explicit surface pointercancel',
           'orbit recovery',
+          'idle GPU submissions stop',
+          'camera selection and surface changes invalidate',
+          'run resumes rendering and pause settles',
         ],
       },
       null,
       2,
     ),
   );
-  console.log('PASS UI drag lifecycle and orbit recovery');
+  console.log('PASS UI drag lifecycle, orbit recovery and demand rendering');
 } finally {
   await browser.close();
 }

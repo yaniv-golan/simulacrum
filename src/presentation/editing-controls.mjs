@@ -14,12 +14,14 @@ export function createEditingControls({
   getMode,
   getMeshes,
   onCommit,
+  onInvalidate = () => {},
   getViewportInsets = () => ({}),
 }) {
   const proxy = new THREE.Object3D(),
     preview = new THREE.Group();
   scene.add(proxy, preview);
   const gizmo = new TransformControls(camera, renderer.domElement);
+  gizmo.addEventListener('change', onInvalidate);
   scene.add(gizmo.getHelper());
   gizmo.setTranslationSnap(0.025);
   gizmo.setRotationSnap(Math.PI / 12);
@@ -153,6 +155,7 @@ export function createEditingControls({
     isDragging: () => dragging,
     isHandleActive: () => gizmo.axis !== null,
     dispose() {
+      gizmo.removeEventListener('change', onInvalidate);
       gizmo.dispose();
       scene.remove(gizmo.getHelper(), proxy, preview);
       clearPreview();

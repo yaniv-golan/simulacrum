@@ -113,6 +113,31 @@ export function createWorkshopView(
     inputTime = performance.now(),
     drivingReceiver = null,
     surface;
+  // RAF still owns control damping and animation; GPU work follows scene invalidation.
+  let renderedFrames = 0,
+    sceneDirty = true;
+  const invalidateScene = () => {
+    sceneDirty = true;
+  };
+  const sceneInputEvents = [
+    'click',
+    'change',
+    'input',
+    'pointerdown',
+    'pointermove',
+    'pointerup',
+    'pointercancel',
+    'pointerenter',
+    'pointerleave',
+    'dragstart',
+    'dragover',
+    'dragleave',
+    'drop',
+    'dragend',
+    'focus',
+    'blur',
+  ];
+  for (const type of sceneInputEvents) root.addEventListener(type, invalidateScene, true);
   const captureInput = (event) => {
     inputTime = event.timeStamp;
   };
@@ -479,6 +504,8 @@ export function createWorkshopView(
     explodeCameraTween = null;
     if (!exploded) explodeCamera = null;
   });
+  controls.addEventListener('change', invalidateScene);
+  renderer.domElement.addEventListener('webglcontextrestored', invalidateScene);
   controls.enableDamping = true;
   controls.minDistance = 0.3;
   controls.maxDistance = 15;
@@ -556,6 +583,7 @@ export function createWorkshopView(
       return { top, bottom, left: 24, right: 24 };
     },
     onCommit: send,
+    onInvalidate: invalidateScene,
   });
   surface = createSurfaceControls({
     scene,
@@ -571,6 +599,7 @@ export function createWorkshopView(
     createMesh: createPartMesh,
   });
   function beginSurface(part, options) {
+    invalidateScene();
     endDirectDrag(false);
     if (exploded) setExploded(false, true);
     editing.cancel();
@@ -738,6 +767,7 @@ export function createWorkshopView(
   viewport.append(help);
 
   function setTool(value) {
+    invalidateScene();
     surface?.cancel(false);
     if (exploded) setExploded(false, true);
     onInteraction?.('tool', { from: activeTool, to: value });
@@ -797,6 +827,7 @@ export function createWorkshopView(
         : 'Power and signal wires do not attach parts physically.';
   }
   function select(id) {
+    invalidateScene();
     surface?.cancel(false);
     showGuideConnection(null);
     onInteraction?.('selection', { from: selected, to: id });
@@ -997,6 +1028,7 @@ export function createWorkshopView(
     controls.enabled = true;
   }
   function cancelInteraction() {
+    invalidateScene();
     endDirectDrag(false);
     releaseSurfacePointer();
     surface?.cancel(false);
@@ -2199,6 +2231,7 @@ export function createWorkshopView(
   }
   function showGuideConnection(edge, completed = false) {
     if (edge && !completed && guideVisual?.id === edge.id && !guideVisual.completed) return;
+    invalidateScene();
     for (const child of [...guideCues.children]) {
       guideCues.remove(child);
       disposePart(child);
@@ -2275,6 +2308,7 @@ export function createWorkshopView(
     onInteraction?.('trace-connection', { id });
   }
   function applyExploded() {
+    invalidateScene();
     for (const [id, mesh] of meshes)
       mesh.parent.position
         .copy(explodeTarget.get(id) ?? new THREE.Vector3())
@@ -2365,6 +2399,7 @@ export function createWorkshopView(
     onInteraction?.('exploded-view', { active: on, amount: explodeAmount });
   }
   function render(next) {
+    invalidateScene();
     const previousCount = frame?.metadata.blueprint.parts.length ?? 0;
     const previousMode = frame?.metadata.mode;
     frame = next;
@@ -2439,6 +2474,7 @@ export function createWorkshopView(
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     renderer.setSize(width, height, false);
+    invalidateScene();
   });
   resize.observe(stage);
   function cameraAxes() {
@@ -2479,6 +2515,7 @@ export function createWorkshopView(
     }
   }
   const keydown = (event) => {
+    invalidateScene();
     if (document.querySelector('dialog[open]')) return;
     inputTime = event.timeStamp;
     const key = event.key.toLowerCase();
@@ -2644,6 +2681,7 @@ export function createWorkshopView(
     }
   };
   const keyup = (event) => {
+    invalidateScene();
     inputTime = event.timeStamp;
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) stopKeys();
   };
@@ -2662,9 +2700,12 @@ export function createWorkshopView(
     for (const cue of guideCues.children)
       if (cue.userData.guideMarker) {
         const elapsed = performance.now() - guidePulseStarted;
-        cue.scale.setScalar(
-          guideVisual?.completed && elapsed < 1800 ? 1 + 0.35 * Math.sin(elapsed / 120) ** 2 : 1,
-        );
+        const scale =
+          guideVisual?.completed && elapsed < 1800 ? 1 + 0.35 * Math.sin(elapsed / 120) ** 2 : 1;
+        if (cue.scale.x !== scale) {
+          cue.scale.setScalar(scale);
+          invalidateScene();
+        }
       }
     if (follow.checked && frame?.metadata.mode === 'run' && meshes.size) {
       const center = new THREE.Vector3();
@@ -2685,6 +2726,7 @@ export function createWorkshopView(
       applyExploded();
     }
     if (explodeCameraTween) {
+      invalidateScene();
       const tween = explodeCameraTween,
         progress = Math.min(1, (performance.now() - tween.started) / 450),
         eased = progress * progress * (3 - 2 * progress);
@@ -2753,7 +2795,11 @@ export function createWorkshopView(
     inspectionFill.target.position.copy(controls.target);
     ground.visible = camera.position.y > groundData.position[1] + groundData.halfExtents[1] + 0.005;
     grid.visible = ground.visible;
-    renderer.render(scene, camera);
+    if (sceneDirty) {
+      sceneDirty = false;
+      renderer.render(scene, camera);
+      renderedFrames++;
+    }
     animation = requestAnimationFrame(draw);
   }
   draw();
@@ -2762,6 +2808,7 @@ export function createWorkshopView(
     setMessage,
     setRecordingState,
     readInteractionState: () => ({
+      rendering: { frames: renderedFrames },
       selected,
       sourcePort,
       previewEndpoint,
@@ -2794,6 +2841,9 @@ export function createWorkshopView(
       showGuideConnection(null);
       cancelAnimationFrame(animation);
       for (const type of ['click', 'change']) root.removeEventListener(type, captureInput, true);
+      for (const type of sceneInputEvents) root.removeEventListener(type, invalidateScene, true);
+      controls.removeEventListener('change', invalidateScene);
+      renderer.domElement.removeEventListener('webglcontextrestored', invalidateScene);
       resize.disconnect();
       window.removeEventListener('keydown', keydown);
       window.removeEventListener('keyup', keyup);
