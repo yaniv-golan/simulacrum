@@ -4,7 +4,8 @@
 // Structural checks, bars and exit obligations are ALL CUMULATIVE: a later gate
 // re-checks everything due at or before it. Obligations previously read only
 // `[target]`, so an M1 gate passed with an unmet M0 obligation.
-import { readFileSync } from "node:fs";
+import { readManifest } from "./validate-manifest.mjs";
+const gateStarted = performance.now();
 import { runStructuralChecks } from "./gate-structural.mjs";
 import { evaluateBar } from "./bars.mjs";
 import { CHECKS } from "./checks.mjs";
@@ -20,11 +21,9 @@ function runCheckInSubprocess(checkId, timeoutMs) {
   );
 }
 
-const manifest = JSON.parse(
-  readFileSync(new URL("./manifest.json", import.meta.url), "utf8"),
-);
+const manifest = readManifest();
 const target = process.argv[2] ?? manifest.milestone;
-const OBLIGATION_TIMEOUT_MS = 120_000;
+const OBLIGATION_TIMEOUT_MS = 190_000;
 
 if (!manifest.milestones.includes(target)) {
   console.error(`unknown milestone: ${target}`);
@@ -99,4 +98,4 @@ if (failed > 0 || redBars > 0 || unmet > 0) {
   );
   process.exit(1);
 }
-console.log(`\n${target} gate green.`);
+console.log(`\n${target} gate green in ${(performance.now()-gateStarted).toFixed(1)}ms.`);

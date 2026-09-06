@@ -33,6 +33,48 @@
     "assess": "node scripts/assess.mjs",
     "build-fingerprint": "node scripts/build-fingerprint.mjs",
     "bar:F5": "node scripts/bars.mjs F5",
-    "bar:L0": "node scripts/bars.mjs L0"
+    "bar:L0": "node scripts/bars.mjs L0",
+    "test:unit": "node scripts/test-affected.mjs",
+    "test:all": "node scripts/test-affected.mjs --all",
+    "ci": "node scripts/ci.mjs",
+    "test:browser": "node scripts/verify-browser.mjs",
+    "test:determinism": "node scripts/verify-m1.mjs",
+    "replay": "node scripts/replay.mjs",
+    "dev": "vite --host 127.0.0.1",
+    "build": "node scripts/check-breadth-cli.mjs && vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "devDependencies": {
+    "acorn": "^8.18.0",
+    "ajv": "^8.20.0",
+    "css-tree": "^3.2.1",
+    "fast-check": "^4.9.0",
+    "parse5": "^8.0.1",
+    "playwright": "^1.63.0",
+    "vite": "^8.2.2"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-deterministic-compat": "0.20.0",
+    "three": "^0.185.1"
+  },
+  "moduleGraph": {
+    "runtimeNetworkDependencies": {
+      "src/application/remote-playtest.mjs": {
+        "namespace": "/api/playtest/",
+        "service": "../../scripts/playtest-server.mjs",
+        "dynamicFetchArguments": [
+          "next.url"
+        ]
+      }
+    },
+    "runtimeURLArguments": {
+      "scripts/playtest-server.mjs": [
+        "req.url",
+        "req.headers.origin"
+      ],
+      "src/application/remote-playtest.mjs": [
+        "next.url"
+      ]
+    }
   }
 }

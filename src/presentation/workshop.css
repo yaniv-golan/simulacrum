@@ -1,0 +1,167 @@
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#e8eef0;background:#111a20;font-synthesis:none;color-scheme:dark}*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}button{cursor:pointer;color:inherit;background:#24343f;border:1px solid #3a4d58;border-radius:7px;padding:9px 13px;transition:background .15s,border-color .15s}button:hover:not(:disabled){background:#344953;border-color:#9db1b9}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid #ffc27a;outline-offset:3px}button:disabled{opacity:.38;cursor:default}button.primary{background:#f2b46a;color:#222a2e;border-color:#f2b46a;font-weight:700}button.primary:hover:not(:disabled){background:#ffcb8d}.workshop{height:100dvh;min-height:570px;display:flex;flex-direction:column;overflow:hidden}.workshop-header{height:74px;flex:none;border-bottom:1px solid #31434e;display:flex;align-items:center;justify-content:space-between;padding:0 24px;gap:20px;background:#17232b}.brand{display:flex;align-items:center;gap:11px;flex-wrap:wrap}.brand-mark{display:grid;place-items:center;background:#f2b46a;color:#17232b;font-weight:900;border-radius:8px;width:34px;height:34px;font-size:23px;transform:rotate(-4deg)}.brand-name{letter-spacing:.19em;font-size:14px;font-weight:800}.brand-subtitle{font-size:12px;color:#8fa5b0;border-left:1px solid #42535d;padding-left:12px}.modebar,.filebar{display:flex;gap:7px}.modebar{padding:5px;background:#111c23;border-radius:10px}.modebar button{min-width:79px}.modebar button.active{border-color:#f2b46a;color:#f2b46a}.filebar button{font-size:12px;background:transparent;border-color:transparent;padding:8px}.workshop-body{flex:1;min-height:0;display:grid;grid-template-columns:255px minmax(300px,1fr) 278px}.parts-panel,.inspector{padding:24px 20px;overflow-y:auto;background:#17232b}.parts-panel{border-right:1px solid #31434e}.inspector{border-left:1px solid #31434e;padding:24px 18px}.eyebrow{font-size:10px;letter-spacing:.17em;color:#9cb0ba;font-weight:700;margin-bottom:14px}h1{font-size:26px;line-height:1.17;letter-spacing:-.04em;margin:0 0 13px;max-width:200px;font-weight:650}h2{font-size:20px;margin:0 0 12px;letter-spacing:-.025em}h3{font-size:12px;letter-spacing:.04em;margin:20px 0 8px;font-weight:650}.intro,.muted{font-size:13px;line-height:1.65;color:#9aafb9}.intro{margin:0 0 23px}.small{font-size:12px}.palette{display:flex;flex-direction:column;gap:9px}.part-card{display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:12px;font-size:13px;border-color:#3b4d56;background:#20303a}.part-symbol{width:31px;height:31px;border-radius:6px;display:grid;place-items:center;font-size:24px;background:#344650;color:#ccdae0}.part-symbol.powerCell{background:#554935;color:#ffd190}.part-symbol.poweredMotor{background:#324a54;color:#aad6de}.part-symbol.gripWheel{background:#293e37;color:#a9c8ba}.add-symbol{margin-left:auto;color:#9bb0bc;font-size:20px}.more-parts{margin:14px 0 27px}.more-parts summary,.part-settings summary{cursor:pointer;color:#bccbd2;font-size:12px;padding:10px 0}.more-part{display:block;width:100%;text-align:left;margin:6px 0;background:transparent;font-size:12px}.section-label{font-size:10px;letter-spacing:.14em;color:#8fa5b0;margin:0 0 10px}.part-list{display:flex;flex-direction:column;gap:4px}.part-list-item{padding:9px 10px;text-align:left;font-size:12px;background:transparent;border-color:transparent;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.part-list-item.selected{background:#3b3930;border-color:#8d795b;color:#ffd49d}.viewport{position:relative;min-width:0;overflow:hidden}.stage{position:absolute;inset:0}.stage canvas{width:100%;height:100%;display:block;touch-action:none}.viewport-caption{position:absolute;top:22px;left:24px;right:20px;font-size:11px;letter-spacing:.02em;color:#afc2ca;display:flex;gap:9px;align-items:center;pointer-events:none}.live-dot{width:6px;height:6px;border-radius:50%;background:#a5cbb6;box-shadow:0 0 10px #a5cbb644}.canvas-hint{position:absolute;bottom:22px;left:0;width:100%;text-align:center;font-size:11px;color:#90a8b3;pointer-events:none}.empty-hint{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:80%;max-width:320px}.empty-hint[hidden]{display:none}.empty-glyph{margin:0 auto 18px;width:52px;height:52px;border:1px dashed #637d8a;border-radius:12px;color:#f2b46a;font-size:28px;line-height:47px}.empty-hint h2{font-size:20px;color:#d4e0e6}.empty-hint p{font-size:13px;color:#95acb7}.part-kind{font-size:11px;color:#91a8b3;margin-top:-6px}.part-live{margin:18px 0;padding:13px;background:#102028;border:1px solid #304650;border-radius:8px;font-size:12px;line-height:1.8;color:#bdd0d8}.part-live strong{font-size:17px;color:#f2c181;font-weight:650}.diagnosis{color:#afc7bd;margin-top:8px}.port-list{display:flex;flex-direction:column;gap:6px}.port-button{padding:8px 10px;font-size:11px;text-align:left;border-left-width:3px}.port-button.power{border-left-color:#f2b46a}.port-button.shaft{border-left-color:#a7b4ce}.port-button.fixed{border-left-color:#a1adb3}.port-button.signal{border-left-color:#72d7cc}.connection-targets{border:1px solid #66543b;background:#2c302d;border-radius:8px;padding:0 10px 10px;margin-top:14px}.connection-targets h3{margin-top:12px;line-height:1.5;color:#f2c181}.target-button{font-size:11px;display:block;width:100%;text-align:left;margin:5px 0;border-color:#70664e;background:#3c3f34}.quiet{border:0;background:transparent;font-size:11px;padding-left:0}.danger{color:#d5a8a1}.part-settings{margin:18px 0;border-top:1px solid #334851;border-bottom:1px solid #334851;padding:3px 0}.setting{display:grid;grid-template-columns:1fr 80px;gap:6px;align-items:center;font-size:11px;margin:10px 0;color:#b3c3cb}.setting input,.setting select{min-width:0;width:100%;font-size:11px;background:#102028;border:1px solid #465963;color:#e2ebef;border-radius:4px;padding:6px}.unit{grid-column:1/-1;font-size:10px;color:#8098a4;text-align:right}.drive-buttons{display:flex;gap:4px;flex-wrap:wrap}.drive-buttons button{font-size:11px;padding:7px 9px}.workshop-footer{height:38px;flex:none;padding:0 20px;display:flex;align-items:center;gap:18px;border-top:1px solid #31434e;background:#121d24;font-size:11px;color:#9bb1bd}.mode-label{letter-spacing:.1em;color:#f2bd7c;font-size:10px;font-weight:800;min-width:45px}.tick-label{font-variant-numeric:tabular-nums;min-width:60px;color:#7d96a3}.status-message{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.shortcuts{margin-left:auto;white-space:nowrap;color:#718b99}.build-id{position:absolute;right:8px;bottom:5px;font-size:8px;color:#718b99;pointer-events:none}@media(max-width:1100px){.workshop-body{grid-template-columns:215px minmax(240px,1fr) 245px}.brand-subtitle{display:none}.workshop-header{padding:0 16px}.parts-panel{padding:20px 15px}.inspector{padding:20px 14px}.shortcuts{display:none}}@media(max-width:780px){.workshop-header{height:110px;flex-wrap:wrap;gap:0 12px;padding:12px}.brand{flex:1}.brand-name{font-size:12px}.modebar{order:3;width:100%;justify-content:center}.modebar button{padding:6px 18px}.workshop-body{grid-template-columns:165px minmax(180px,1fr);grid-template-rows:minmax(280px,1fr) 220px}.parts-panel{grid-row:1/3;padding:18px 12px}.inspector{grid-column:2;grid-row:2;border-top:1px solid #31434e;border-left:0}.viewport{grid-column:2;grid-row:1}h1{font-size:21px}.intro{font-size:11px}.part-card{font-size:11px;padding:9px 7px;gap:6px}.part-symbol{width:22px;height:25px;font-size:19px}.add-symbol{display:none}.viewport-caption{left:14px;top:15px;font-size:10px}.canvas-hint{font-size:9px;padding:0 12px}.empty-hint h2{font-size:17px}.empty-hint p{font-size:11px}.workshop-footer{padding:0 10px;gap:10px;font-size:10px}.filebar{gap:0}.filebar button{padding:6px;font-size:11px}}
+/* Selection and its details share one panel. The left rail only adds parts. */
+.inspector-panel{min-height:0;overflow-y:auto;background:#17232b;border-left:1px solid #31434e}.inspector-panel .inspector{border-left:0;overflow:visible;padding-top:20px}.selection-header{padding:20px 18px 10px;display:flex;align-items:center;gap:8px;justify-content:space-between}.selection-header .section-label{margin:0}.clear-selection{padding:5px 0;font-size:10px;background:transparent;border:0;color:#edc78f}.inspector-panel .part-list{margin:0 14px;padding-bottom:12px;max-height:172px;overflow-y:auto;border-bottom:1px solid #354a55;gap:3px}.part-list-item.selected{border-left:3px solid #ffc778;background:#4a4031;color:#ffe1b3;font-weight:650}.port-button{display:grid;grid-template-columns:1fr auto;gap:4px 7px}.port-button.connected{border-color:#588f85;border-left-color:#7ed5b8}.port-button.connected:disabled{opacity:.88}.port-title{font-weight:650}.port-state{font-size:9px;align-self:center;color:#a5b8c1}.connected .port-state{color:#9ee5c9}.port-peer{grid-column:1/-1;color:#d3e7de;line-height:1.5;font-size:11px}.port-hint{grid-column:1/-1;color:#98b7b1;font-size:10px;margin-top:3px}.connection-preview{font-size:11px;line-height:1.6;color:#d8ccb3;margin:5px 0 12px}.target-button{line-height:1.5;white-space:normal;font-size:11px;padding:9px}.selection-label{position:absolute;transform:translate(-50%,-100%);padding:6px 11px;background:#ffcc86;color:#17232b;border:1px solid #ffe0ae;border-radius:6px;box-shadow:0 3px 14px #0005;font-size:12px;font-weight:700;pointer-events:none;max-width:230px;text-align:center}.selection-label[hidden]{display:none}.selection-label:after{content:'';position:absolute;left:calc(50% - 4px);bottom:-5px;width:8px;height:8px;background:#ffcc86;transform:rotate(45deg)}@media(max-width:780px){.inspector-panel{grid-column:2;grid-row:2;border-top:1px solid #31434e;border-left:0}.inspector-panel .inspector{grid-column:auto;grid-row:auto;border-top:0}.selection-header{padding:12px 14px 8px}.inspector-panel .part-list{max-height:90px}.selection-label{font-size:10px}}
+
+.selection-header{position:sticky;top:0;z-index:2;background:#17232b;border-bottom:1px solid #31434e}
+.edit-toolbar{position:absolute;left:16px;top:50px;display:flex;gap:5px;flex-wrap:wrap;z-index:3}.edit-toolbar button{font-size:11px;padding:7px 10px;background:#17232bee}.edit-toolbar .active{border-color:#f2b46a;color:#ffd49d}.placement-settings{border-top:1px solid #354a55;margin-top:14px;padding-top:10px}.placement-settings summary{cursor:pointer;font-size:12px;color:#d2e0e6}.disconnect-list{display:flex;flex-direction:column;align-items:flex-start;margin-top:8px}.disconnect-list button{color:#e5b7a4;text-align:left;white-space:normal}.starter-guide{border:1px solid #627b77;background:#20352f;border-radius:8px;padding:12px;margin:0 0 18px}.starter-guide h2{font-size:16px}.starter-guide p{font-size:12px;line-height:1.5;color:#b4ccc4}.starter-guide button{width:100%;margin-top:7px}.guide-progress{font-size:11px;color:#a9dcc6}.part-mass{font-size:12px;color:#c3d3da;margin-top:10px}
+.parameter-help{grid-column:1/-1;color:#96b8ad;font-size:10px;line-height:1.5}.machine-health{position:absolute;bottom:48px;left:20px;right:20px;background:#4a3424ef;border-color:#d59b61;color:#ffe2b9;text-align:left;font-size:12px;line-height:1.5;z-index:3}.machine-health[hidden]{display:none}
+.follow-control{display:flex;align-items:center;gap:5px;background:#17232bee;padding:5px 8px;border-radius:6px;font-size:11px;color:#c8d9df}.follow-control input{accent-color:#f2b46a}
+.edit-hint{flex-basis:100%;font-size:10px;color:#c0d1d8;text-shadow:0 1px 3px #17232b;padding:3px 0}.edit-toolbar{max-width:calc(100% - 32px)}
+/* Scroll the list instead of flex-shrinking each row through its text. */
+.part-list-item{flex:0 0 auto;min-height:36px;line-height:1.4}
+.inspector-panel .part-list{scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:#6c8995 #17232b}
+.inspector-panel .part-list::-webkit-scrollbar{width:8px}
+.inspector-panel .part-list::-webkit-scrollbar-thumb{background:#6c8995;border:2px solid #17232b;border-radius:8px}
+
+.selection-header{flex-wrap:wrap}.selection-state{flex-basis:100%;font-size:11px;color:#b9cbd2;padding-top:4px}
+
+.part-icon{width:64px;height:52px;object-fit:contain;flex:none;pointer-events:none}.more-part{display:flex;align-items:center;gap:9px;width:100%;text-align:left}.more-part .part-icon{width:48px;height:40px}.palette-hint{font-size:11px;line-height:1.5;color:#afc6cf}.keyboard-help{position:absolute;right:12px;top:16px;z-index:5;max-width:320px;background:#17232bf2;border:1px solid #3a4d58;border-radius:7px;font-size:11px;padding:8px}.keyboard-help p{line-height:1.65;margin:8px 0 0}.keyboard-help summary{cursor:pointer}.part-card{padding:8px;gap:8px}@media(max-width:780px){.part-icon{width:44px;height:38px}.keyboard-help{top:auto;bottom:70px;max-width:190px}}
+
+.edit-toolbar button.active{background:#f2b46a;color:#17232b;border-color:#ffcb8d;font-weight:700}.placement-cue{position:absolute;z-index:8;pointer-events:none;background:#183c32ed;border:1px solid #8cf5cf;color:#d6fff0;border-radius:6px;padding:8px 10px;font-size:11px}.placement-cue[hidden]{display:none}
+
+/* Keep the guide's primary action above variable-height instructions. */
+.starter-guide.active-guide>[data-command="guide-step"]{height:64px;flex:none;margin:8px 0}.recording-panel{margin-top:18px;font-size:12px}.recording-panel button{font-size:11px;margin:4px 4px 0 0}
+
+.playtest-panel{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);z-index:50;background:#172b35;color:#fff;border:1px solid #efb961;border-radius:8px;padding:8px 12px;display:flex;gap:12px;align-items:center;font-size:13px;max-width:95vw}.playtest-panel button,.playtest-dialog button{padding:10px 14px;border:1px solid #efb961;border-radius:6px;background:#efb961;color:#172b35;cursor:pointer}.playtest-dialog{background:#172b35;color:#eef4f5;border:1px solid #efb961;border-radius:12px;max-width:550px;padding:28px;font:16px/1.5 system-ui}.playtest-dialog::backdrop{background:#000a}.playtest-dialog textarea{display:block;box-sizing:border-box;width:100%;margin:16px 0;padding:12px;font:inherit}.playtest-dialog button{margin:4px}
+
+.selection-actions { position:absolute; z-index:12; transform:translateX(-50%); display:flex; flex-wrap:wrap; justify-content:center; gap:4px; width:280px; padding:7px; border:1px solid #49656a; border-radius:9px; background:#172a32ee; box-shadow:0 3px 12px #0005; }
+.selection-actions[hidden] { display:none; }
+.selection-actions strong { flex-basis:100%; text-align:center; color:#a2ebd4; font-size:12px; }
+.selection-actions button { padding:5px 7px; font-size:12px; min-height:30px; }
+.manipulation-scope { color:#a2ebd4; font-size:13px; line-height:1.45; }
+.port-button.wiring-source { outline:2px solid #ffca79; background:#59482e; }
+.target-button { border-color:#68bba6; }
+.target-button.previewing { outline:2px solid #a2ebd4; background:#28564c; }
+
+.inspection-banner { position:absolute; z-index:15; bottom:48px; left:12px; right:12px; padding:10px; background:#172a32f2; border:1px solid #92d5ce; border-radius:8px; display:flex; align-items:center; flex-wrap:wrap; gap:8px; font-size:12px; }
+.inspection-banner[hidden] { display:none; }
+.inspection-banner span { flex:1; min-width:160px; color:#b8ccd2; }
+.inspection-banner button { font-size:12px; }
+.trace-connection { display:block; width:100%; text-align:left; margin:8px 0; font-size:12px; }
+.trace-connection[aria-pressed=true] { border-color:#ffce84; background:#51472f; }
+.trace-description { font-size:13px; line-height:1.6; color:#d1e8e4; }
+
+.port-explanation { margin:12px 0; padding:10px; border:1px solid #75998e; border-radius:7px; color:#d3e8df; font-size:12px; line-height:1.5; }
+.port-explanation p { margin:6px 0; }
+.wheel-connection-help { font-size:12px; line-height:1.5; color:#b5d9cc; }
+.playtest-dialog { position:relative; }
+.playtest-close { position:absolute; top:10px; right:10px; padding:5px 10px; font-size:20px; line-height:1.2; }
+.playtest-comments { padding:0; list-style:none; max-height:200px; overflow-y:auto; }
+.playtest-comment { margin:8px 0; padding:10px; background:#10232b; border:1px solid #54756a; border-radius:7px; white-space:pre-wrap; }
+.playtest-comment p { margin:4px 0; }
+
+/* Keep the selected part and its useful controls ahead of optional detail. */
+.inspector-panel .inspector{padding:0 16px 18px}
+.machine-picker{border-bottom:1px solid #354a55;padding:0 16px}
+.machine-picker>summary{cursor:pointer;padding:14px 0;font-size:12px;color:#c4d5dc}
+.machine-picker .part-list{margin:0;padding:0 0 10px;max-height:180px;border:0}
+.selected-part-header{position:sticky;top:0;z-index:3;background:#17232b;padding:14px 0 10px;border-bottom:1px solid #354a55}
+.selected-part-header h2{font-size:20px;line-height:1.25;margin:0;overflow-wrap:anywhere}
+.selected-part-header .part-kind{margin:4px 0 0;font-size:12px}
+.part-actions{display:flex;align-items:center;gap:12px;margin-top:8px}
+.part-actions button{font-size:12px;padding:6px 0;min-height:30px}
+.inspector .part-live{margin:10px 0;padding:8px 10px;font-size:12px;line-height:1.45}
+.inspector .part-live strong{font-size:14px}
+.inspector .diagnosis{margin:0;line-height:1.45}
+.primary-setting{margin:10px 0;padding:10px;border:1px solid #52666c;border-radius:7px;background:#20313a}
+.primary-setting{margin:0;font-size:13px}
+.primary-setting input{font-size:13px;min-height:32px}
+.primary-setting .parameter-help{font-size:11px;line-height:1.4}
+.inspector h3{font-size:13px;margin:14px 0 8px}
+.inspector .port-list{gap:6px}
+.inspector .port-button{width:100%;font-size:12px;padding:8px 9px;min-height:38px}
+.inspector .port-peer{font-size:11px;line-height:1.3}
+.inspector .port-state{font-size:10px}
+.port-section{min-width:0}
+.port-list .port-explanation{margin:6px 0 4px;padding:9px;font-size:12px;line-height:1.4}
+.port-list .connection-targets{margin:6px 0;padding:8px}
+.port-list .connection-targets h3{margin:0 0 6px}
+.port-list .connection-preview{font-size:12px;line-height:1.4;margin:6px 0}
+.port-list .target-button{font-size:12px;padding:9px}
+.inspector .part-settings,.inspector .placement-settings{margin:12px 0 0;padding:0;border-top:1px solid #354a55;border-bottom:0}
+.inspector .part-settings>summary,.inspector .placement-settings>summary{padding:12px 0;font-size:12px;cursor:pointer}
+.engineering-live{font-size:12px;line-height:1.6;color:#bfced5;margin:8px 0}
+
+.part-identity{display:grid;grid-template-columns:44px minmax(0,1fr);column-gap:8px;align-items:center}
+.part-identity .part-icon{width:44px;height:38px;grid-row:1/3}
+.part-identity .part-kind{grid-column:2}
+.primary-setting{font-size:13px;grid-template-columns:1fr 70px}
+.primary-setting .parameter-help{font-size:11px;line-height:1.4}
+.signal-ownership,.axle-ownership{font-size:12px;line-height:1.4;margin:10px 0}
+.signal-ownership .parameter-help{display:block;margin-top:5px}
+.part-link{border:0;background:transparent;color:#a4e8d2;text-decoration:underline;text-underline-offset:3px;padding:6px 3px;font-size:12px}
+.port-explanation>.quiet{display:block;margin-top:5px;color:#e5b7a4;font-size:12px}
+.edit-mode-note{font-size:11px;color:#b6cbd3;line-height:1.4;margin:8px 0}
+.edit-mode-note>.quiet{color:#ffd29a;font-size:12px;padding:5px 0;display:block}
+.selection-hint{font-size:13px;line-height:1.6;color:#b6cbd3;margin:18px 0}
+
+/* Component instrument panels: restrained geometry and explicit connection symbols. */
+.inspector .selected-part-header{border-bottom:2px solid #d5a55e;padding:10px 0 7px}
+.inspector .part-live{border:0;border-left:2px solid #88c9b4;border-radius:0;background:#13252d;margin:8px 0;padding:6px 9px}
+.inspector .primary-setting{border:0;border-radius:0;background:transparent;padding:6px 0;gap:5px}
+.inspector input,.inspector select{border-radius:2px;font-variant-numeric:tabular-nums}
+.drive-range{grid-column:1/-1;width:100%;height:22px;accent-color:#edba72;padding:0!important;cursor:ew-resize}
+.drive-directions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0}
+.drive-directions button{border-radius:2px;font-size:12px;padding:5px 3px;min-height:28px;background:transparent;border-color:#49616b}
+.drive-directions button[aria-pressed=true]{background:#4e412b;border-color:#edba72;color:#ffe0ab}
+.inspector .connections-heading{margin:10px 0 4px}
+.inspector .port-list{gap:0;border-top:1px solid #49616b}
+.inspector .port-button{border:0;border-bottom:1px solid #49616b;border-radius:0;background:transparent;position:relative;padding:7px 7px 7px 28px;min-height:37px}
+.inspector .port-button:before{position:absolute;left:5px;top:10px;width:15px;height:15px;line-height:15px;text-align:center;font-size:14px;color:#c5d3d9;content:'⊞'}
+.inspector .port-button.power:before{content:'ϟ';color:#f2bd72}
+.inspector .port-button.shaft:before{content:'⊙';color:#c2c9ed}
+.inspector .port-button.signal:before{content:'⌁';color:#81d9cd}
+.inspector .port-button.connected .port-state:before{content:'✓ ';font-size:11px}
+.inspector .port-button:hover{background:#243943}
+.inspector .port-button.wiring-source{outline:0;box-shadow:inset 3px 0 #f6c77d;background:#403b2e}
+.inspector .port-explanation,.inspector .connection-targets{border-radius:2px;box-shadow:none}
+.inspector .engineering-live{font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.inspector .part-settings,.inspector .placement-settings{margin-top:8px}
+.inspector input.drive-range{min-height:22px}
+
+.inspector button,.inspector .trace-connection{border-radius:2px}
+
+.inspector .material-setting{grid-template-columns:1fr}
+
+/* Recording activity must never move the feedback controls. */
+.playtest-panel{width:min(920px,calc(100vw - 24px));max-width:none;height:80px;display:grid;grid-template-columns:96px 112px minmax(0,1fr) 128px 124px;gap:12px}
+.playtest-panel>strong{font-size:13px;line-height:1.4}
+.playtest-panel>button{height:48px;padding:6px 8px;font-size:13px;line-height:1.3}
+.playtest-panel [data-status]{min-width:0;height:56px;display:flex;flex-direction:column;justify-content:center;overflow:auto;font-size:12px;line-height:1.4}
+.playtest-panel [data-status-main]{font-weight:650}
+.playtest-panel [data-status-detail]{color:#b9cdd5;font-size:11px}
+@media(max-width:760px){.playtest-panel{height:114px;grid-template-columns:1fr 1fr 1fr;grid-template-rows:28px 48px;gap:8px;padding:10px}.playtest-panel>strong{display:none}.playtest-panel [data-status]{grid-column:1/-1;grid-row:1;height:28px;flex-direction:row;align-items:center;justify-content:flex-start;gap:8px}.playtest-panel>button{grid-row:2}.playtest-panel [data-status-detail]{font-size:10px}}
+
+.snap-notice{position:absolute;left:16px;right:16px;bottom:44px;padding:10px 14px;background:#142930;border:1px solid #8cf5cf;color:#d9fff0;font-size:13px;pointer-events:none;z-index:5}.snap-notice[hidden]{display:none}.snap-movement{display:block;color:#b9cdd5;font-size:11px;margin-top:4px}
+
+body:has(.playtest-panel) .snap-notice{bottom:108px}@media(max-width:760px){body:has(.playtest-panel) .snap-notice{bottom:142px}}
+
+.guide-feedback{position:absolute;left:16px;right:16px;bottom:44px;padding:12px;background:#16322e;border:2px solid #8cf5cf;color:#d9fff0;font-size:13px;pointer-events:none;z-index:6}.guide-feedback[hidden]{display:none}.guide-receipt{padding:8px;border-left:3px solid #8cf5cf;color:#c5ffe9;font-size:12px!important;line-height:1.5!important}body:has(.playtest-panel) .guide-feedback{bottom:108px}
+
+.machine-check{box-sizing:border-box;width:min(560px,92vw);max-height:85vh;overflow:auto;background:#172b35;color:#eef4f5;border:1px solid #efb961;border-radius:2px;padding:24px;font:15px/1.5 system-ui}.machine-check::backdrop{background:#0009}.machine-check h2{margin-top:0}.machine-check-issue{border-top:1px solid #516771;padding:12px 0}.machine-check-issue h3{font-size:17px;margin:0}.machine-check-issue p{margin:8px 0}.machine-check button{padding:9px 14px;cursor:pointer}
+
+/* Surface authoring shares the inspector's flat instrument hierarchy. */
+.mount-status { border-top: 2px solid #f5bd68; padding: 12px 0; }
+.mount-status h3 { margin: 0 0 8px; }
+.mount-relationship { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.mount-relationship > span { flex-basis: 100%; }
+.surface-placement { padding: 12px 0; border-top: 1px solid #45606a; }
+.surface-placement[hidden] { display: none; }
+.surface-placement p { min-height: 4.5em; margin: 8px 0; }
+.surface-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.surface-fields label { min-width: 0; display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+.surface-fields label:nth-child(-n+3) { grid-column: 1 / -1; }
+.surface-fields input, .surface-fields select { width: 100%; min-width: 0; box-sizing: border-box; padding: 8px; color: #e5eef0; background: #182b34; border: 1px solid #52707c; border-radius: 2px; }
+.surface-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.surface-actions button { padding: 8px; }
+.inspector .mount-status { border-top: 0; padding: 7px 0 3px; }
+.inspector .mount-status > p { margin: 0 0 5px; font-size: 12px; }
+.inspector .mount-relationship { gap: 5px; margin: 0; }
+.inspector .mount-relationship > span { font-size: 12px; line-height: 1.4; }
+.inspector .mount-relationship button, .inspector .mount-status > button { font-size: 12px; padding: 5px 8px; min-height: 28px; }
+.inspector .surface-placement > strong { font-size: 14px; }
+.inspector .surface-placement p { font-size: 12px; line-height: 1.45; min-height: 3em; }
+.surface-precise { margin-top: 12px; }
+.surface-precise summary { cursor: pointer; padding: 8px 0; }
+.inspector .connections-heading { margin: 8px 0 4px; }
+.inspector .part-settings > summary { padding: 8px 0; }

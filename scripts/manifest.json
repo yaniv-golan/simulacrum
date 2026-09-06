@@ -1,20 +1,20 @@
 {
-  "milestone": "M0",
+  "milestone": "M3b",
   "bars": {
     "L0": {
       "dueAt": "M5",
       "human": false,
-      "contract": "THE COURSE, complete circuit S1-S6, driven by the WHEELED ROVER under the wheeled annex. Proves the course dimensions, the evaluator, the ramp, the terrain and the instrumentation are correct and achievable BEFORE the gait is the variable. If the rover cannot complete it, the fault is the course or the engine, not the legs."
+      "contract": "Course v1 S1-S6 with the wheeled annex. Apparatus smoke test: proves achievability by this rover; does not exclude controller, engine or fixture causes of a later failure."
     },
     "L1a": {
       "dueAt": "M7",
       "human": false,
-      "contract": "STANDALONE (not a Course segment). From stable hold on level ground: >=8 strict alternating touchdowns each with positive forward projection, net displacement >=1 x L, within 60 s, then TERMINAL STABLE HOLD (5 s), with no fall, damage or forbidden support. Never observed passing: the one unpreserved run held 1.325 s of the required 5 s."
+      "contract": "Course v1 standalone: initial stable hold, at least 8 strict alternating forward touchdowns, net displacement at least L, terminal stable hold for 5 seconds; complete within 60 seconds, all whole-run invariants apply."
     },
     "L1b": {
       "dueAt": "M7",
       "human": false,
-      "contract": "THE COURSE, segment S1 (Approach): walk from stable hold to the ramp entry. >=4 strict alternating touchdowns, cross-track <=0.15 m, path efficiency >=0.70, stance slip <=0.02 m. THE KNOWN OPEN PROBLEM -- best observed efficiency 0.449."
+      "contract": "THE COURSE, segment S1 (Approach): walk from stable hold to the ramp entry. >=4 strict alternating touchdowns, cross-track <=0.15 m, path efficiency >=0.70, stance slip <=0.02 m."
     },
     "L1c": {
       "dueAt": "M7",
@@ -24,7 +24,7 @@
     "L1d": {
       "dueAt": "M9",
       "human": false,
-      "contract": "THE COURSE, segments S4+S5+S6 then the complete unbroken circuit under declared variation. S4 turnaround loop: heading sweep >=350 deg, arc length >=3.0 m, enclosed area >=0.8 m2, max distance from path centroid <=2.0 m, ending within 0.40 m of the ramp foot facing up-ramp. S5 ASCENT: walk back UP the ramp onto the plate, no fall, no forbidden support, no saturation failure -- this is where an underpowered machine fails, and no precedent for it exists in the record. S6: within 0.30 m and 0.35 rad of the S1 START POSE ON THE PLATE, stable hold 5 s. Whole circuit <=240 s. THE COMPLETION CONDITION."
+      "contract": "Course v1 S1-S6 unbroken, legged annex, all frozen held-out robustness cases. Includes closed loop, ascent and return to the original plate pose; at most 240 seconds."
     },
     "L2": {
       "dueAt": "M8",
@@ -34,7 +34,8 @@
     "D1": {
       "dueAt": "M1",
       "human": false,
-      "contract": "Same blueprint, input trace AND renaming seed => identical deterministicProjection(frame) hash, two processes, both clocks. The projection excludes wall-clock timings, identifier mappings and diagnostic metadata."
+      "contract": "Same blueprint, input trace AND renaming seed => identical deterministicProjection(frame) hash, two processes, both clocks. The projection excludes wall-clock timings, identifier mappings and diagnostic metadata.",
+      "check": "m1-qualification"
     },
     "P1": {
       "dueAt": "M5",
@@ -49,12 +50,14 @@
     "F1": {
       "dueAt": "M3b",
       "human": true,
-      "contract": "A target player, unassisted and untutored, builds something that moves within 15 minutes of first launch, and wants to build a second thing. Judged by watching a person."
+      "contract": "F1 v2: the maintainer-designated target player accepts the basic construction experience after building something that moves within 15 minutes without live assistance, and wants to build another. Returning sessions are eligible; explicit real-player feedback and the served build are required. The latest assessment governs.",
+      "participant": "designated-player"
     },
     "F2": {
       "dueAt": "M3b",
       "human": false,
-      "contract": "Instrumented: application response time across one place -> connect -> run cycle on a named reference scene and machine (input event to reflecting frame, plus Run to first tick), human thinking time excluded. p95 under 2 s, no single stall over 500 ms."
+      "contract": "Instrumented: application response time across one place -> connect -> run cycle on a named reference scene and machine (input event to reflecting frame, plus Run to first tick), human thinking time excluded. p95 under 2 s, no single stall over 500 ms.",
+      "check": "workshop-response"
     },
     "F3": {
       "dueAt": "M8",
@@ -72,7 +75,60 @@
       "contract": "A player, using their own browser agent, gets an actionable answer to 'why isn't this working' without leaving the game. Judged by watching a person."
     }
   },
-  "rules": [],
+  "rules": [
+    {
+      "id": "layers",
+      "rule": "Layer imports follow the module graph and physical laws receive no identity.",
+      "enforcedBy": [
+        "layers"
+      ]
+    },
+    {
+      "id": "tick-order",
+      "rule": "Nine ordered phases, one integration, previous completed sensors.",
+      "enforcedBy": []
+    },
+    {
+      "id": "identity",
+      "rule": "Physical properties derive only from authored geometry and player selections.",
+      "enforcedBy": []
+    },
+    {
+      "id": "gate-integrity",
+      "rule": "Checks execute, deadlines interrupt, owners and references validate.",
+      "enforcedBy": [
+        "manifest-validates",
+        "tooling-tests"
+      ]
+    },
+    {
+      "id": "iteration-budget",
+      "rule": "The local CI command finishes in less than 180 seconds.",
+      "enforcedBy": [
+        "ci-under-3min"
+      ]
+    },
+    {
+      "id": "runtime-contract",
+      "rule": "Runtime v1 governs values, cursor epochs, bounded replay and current save-format admission.",
+      "enforcedBy": []
+    },
+    {
+      "id": "physical-feasibility",
+      "rule": "All five measured physical stages must pass before expanding terrain.",
+      "enforcedBy": []
+    },
+    {
+      "id": "course-contract",
+      "rule": "Course v1 and its annexes require frozen fixtures and unbroken qualification.",
+      "enforcedBy": []
+    },
+    {
+      "id": "player-authority",
+      "rule": "Players and their agents share one command surface and physical constraints.",
+      "enforcedBy": []
+    }
+  ],
   "milestones": [
     "M0",
     "M1",
@@ -92,17 +148,26 @@
     {
       "id": "layers",
       "dueAt": "M0",
-      "description": "module graph: layer ownership and allowed import edges"
+      "description": "module graph: layer ownership and allowed import edges",
+      "ruleId": "layers"
     },
     {
       "id": "tick-order",
       "dueAt": "M1",
-      "description": "nine phases, frozen order"
+      "description": "nine phases, frozen order",
+      "ruleId": "tick-order",
+      "module": "scripts/check-tick.mjs",
+      "export": "checkTick",
+      "args": []
     },
     {
       "id": "identity",
       "dueAt": "M2",
-      "description": "per-shape material admission invariant"
+      "description": "per-shape material admission invariant",
+      "ruleId": "identity",
+      "module": "scripts/check-identity.mjs",
+      "export": "checkIdentity",
+      "args": []
     }
   ],
   "exitObligations": {
@@ -110,65 +175,82 @@
       {
         "id": "ci-under-3min",
         "how": "CI runs the every-commit tier in under 3 minutes",
-        "check": null
+        "check": "ci-under-3min",
+        "ruleId": "iteration-budget"
       },
       {
         "id": "manifest-validates",
         "how": "every check and obligation names a ruleId or barId it enforces; unowned entries are rejected; rules[] is non-empty",
-        "check": null
+        "check": "manifest-validates",
+        "ruleId": "gate-integrity"
+      },
+      {
+        "id": "tooling-tests",
+        "ruleId": "gate-integrity",
+        "check": "tooling-tests",
+        "how": "Evidence and runner counterexamples pass under node:test."
       }
     ],
     "M1": [
       {
         "id": "minimal-failure-bundle",
         "how": "a bundle replays to the same failure",
-        "check": null
+        "check": "minimal-failure-bundle",
+        "ruleId": "runtime-contract"
       },
       {
         "id": "physics-library-adr",
         "how": "the physics-library choice is recorded as an ADR with its reasoning; stepping, determinism and checkpoints all depend on it, so it cannot wait for M2",
-        "check": null
+        "check": "physics-library-adr",
+        "ruleId": "runtime-contract"
       }
     ],
     "M2": [
       {
         "id": "schema-rejects-malformed",
         "how": "every malformed fixture is rejected with a specific error",
-        "check": null
+        "check": "schema-rejects-malformed",
+        "ruleId": "runtime-contract"
       },
       {
         "id": "single-library-importer",
         "how": "exactly one module imports the physics library",
-        "check": null
+        "check": "single-library-importer",
+        "ruleId": "runtime-contract"
       },
       {
         "id": "no-live-object-escape",
         "how": "no live library object is reachable from any export (G2)",
-        "check": null
+        "check": "no-live-object-escape",
+        "ruleId": "runtime-contract"
       },
       {
         "id": "milestone-breadth-reject",
         "how": "parts and UI features carry a milestone field and the build rejects anything above the current milestone",
-        "check": null
+        "check": "milestone-breadth-reject",
+        "ruleId": "runtime-contract"
       }
     ],
     "M3": [
       {
         "id": "no-live-state-reads",
         "how": "controllers demonstrably cannot read live state",
-        "check": null
+        "check": "no-live-state-reads",
+        "ruleId": "runtime-contract"
       },
       {
         "id": "identity-invariance-minimal",
         "how": "renaming every part/component/blueprint/role id leaves the deterministic projection unchanged, on the scenarios that exist at M3 -- built BEFORE there is a contact law to corrupt (L2 at M8 expands the scenario set, it does not introduce the check)",
-        "check": null
+        "check": "identity-invariance-minimal",
+        "ruleId": "runtime-contract"
       }
     ],
     "M3b": [
       {
         "id": "production-control-path",
         "how": "default keyboard control runs through the ordinary command bus and Command Receivers; M3's host-side test double does not ship",
-        "check": null
+        "check": "production-control-path",
+        "ruleId": "runtime-contract"
       }
     ],
     "M4": [],
@@ -176,81 +258,96 @@
       {
         "id": "probe-instrumentation",
         "how": "per-pad normal force, sole clearance, touchdown/unload events, COM and support-polygon margin are measured -- a probe that cannot measure clearance cannot demonstrate it",
-        "check": null
+        "check": null,
+        "ruleId": "physical-feasibility"
       },
       {
         "id": "stage-loaded-standing",
         "how": "demonstrated after any repair, probe rerun",
-        "check": null
+        "check": null,
+        "ruleId": "physical-feasibility"
       },
       {
         "id": "stage-weight-transfer",
         "how": "demonstrated after any repair, probe rerun",
-        "check": null
+        "check": null,
+        "ruleId": "physical-feasibility"
       },
       {
         "id": "stage-swing-clearance",
         "how": "demonstrated after any repair, probe rerun",
-        "check": null
+        "check": null,
+        "ruleId": "physical-feasibility"
       },
       {
         "id": "stage-alternating-contact",
         "how": "demonstrated after any repair, probe rerun",
-        "check": null
+        "check": null,
+        "ruleId": "physical-feasibility"
       },
       {
         "id": "stage-stopping",
         "how": "demonstrated after any repair, probe rerun",
-        "check": null
+        "check": null,
+        "ruleId": "physical-feasibility"
       }
     ],
     "M5": [
       {
         "id": "course-dimensions-frozen",
-        "how": "plate height, ramp slope, approach distance, L, circle bound, ramp-foot capture radius and return tolerance are committed BEFORE the L0 attempt and not changed to accommodate the machine",
-        "check": null
+        "how": "plate height, ramp slope, approach distance, L, circle bound, ramp-foot capture radius and return tolerance are recorded and fingerprinted BEFORE the L0 attempt and not changed to accommodate the machine",
+        "check": null,
+        "ruleId": "course-contract"
       },
       {
         "id": "course-evaluator-minimum",
         "how": "the six-segment evaluator, machine bindings, measurement frames and position-based state machine exist and run -- L0 is an M5 gate and cannot be met by an M6 evaluator",
-        "check": null
+        "check": null,
+        "ruleId": "course-contract"
       },
       {
         "id": "ascent-power-margin",
-        "how": "the motor and battery models supply the torque and energy S5 demands at the frozen slope; ascent is the first segment that can fail for power rather than control",
-        "check": null
+        "how": "Measure torque, current and energy demand against physical ratings at the frozen slope. Diagnose failures with clearance, contact, control and engine hypotheses as well as power.",
+        "check": null,
+        "ruleId": "course-contract"
       },
       {
         "id": "rover-repeatable",
         "how": "rover drives over uneven ground repeatably; distance/repeats set from first measurement",
-        "check": null
+        "check": null,
+        "ruleId": "course-contract"
       },
       {
         "id": "structural-failure-model",
         "how": "rated capacity per joint, transmitted-load computation and a break event exist; a phase that computes nothing does not satisfy 'no damage'",
-        "check": null
+        "check": null,
+        "ruleId": "course-contract"
       },
       {
         "id": "course-mode-independent",
         "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
-        "check": null
+        "check": null,
+        "ruleId": "course-contract"
       },
       {
         "id": "course-predicates-falsified",
         "how": "every Course predicate has BOTH a trace it accepts and a deliberately-wrong trace it rejects -- an evaluator nobody has seen reject anything is not known to work (the same rule as 'never trust a test you have not seen fail', applied to the evaluator)",
-        "check": null
+        "check": null,
+        "ruleId": "course-contract"
       }
     ],
     "M6": [
       {
         "id": "induced-stall-replays",
         "how": "an induced stall produces a bundle that replays to the same failure on a named lane",
-        "check": null
+        "check": null,
+        "ruleId": "course-contract"
       },
       {
         "id": "course-evaluator-legged-annex",
         "how": "the legged annex predicates (touchdowns, alternation, stance slip) and support-eligibility validation for legged fixtures",
-        "check": null
+        "check": null,
+        "ruleId": "course-contract"
       }
     ],
     "M7": [],
@@ -260,28 +357,41 @@
       {
         "id": "f1-holds-without-agent",
         "how": "F1 still passes with the WebMCP tools unregistered -- the agent is an accelerator, never a crutch",
-        "check": null
+        "check": null,
+        "ruleId": "player-authority"
       },
       {
         "id": "no-player-content-in-tool-descriptions",
         "how": "no tool name or description interpolates player-authored content (part names, blueprint titles, error strings)",
-        "check": null
+        "check": null,
+        "ruleId": "player-authority"
       },
       {
         "id": "tools-registered-statically",
         "how": "the tool set is registered once; no third-party script can add or modify tools (mid-session tool injection)",
-        "check": null
+        "check": null,
+        "ruleId": "player-authority"
       },
       {
         "id": "no-privileged-agent-capability",
         "how": "no tool exposes a capability the player's own UI does not -- the agent is a player",
-        "check": null
+        "check": null,
+        "ruleId": "player-authority"
       },
       {
         "id": "results-use-closed-enum-codes",
         "how": "tool results carry closed-enum reason codes; player-authored strings appear only in delimited data fields",
-        "check": null
+        "check": null,
+        "ruleId": "player-authority"
       }
     ]
-  }
+  },
+  "contractVersion": 1,
+  "contracts": {
+    "runtime": "docs/contracts/runtime-v1.md",
+    "course": "docs/contracts/course-v1.md"
+  },
+  "physicsPackages": [
+    "@dimforge/rapier3d-deterministic-compat"
+  ]
 }

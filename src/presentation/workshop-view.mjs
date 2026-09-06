@@ -1,0 +1,413 @@
+import * as THREE from 'three';
+import { createSurfaceControls } from './surface-controls.mjs';
+import { surfaceRegions, resolveSurfaceEndpoint } from '../model/surfaces.mjs';
+import { createEditingControls } from './editing-controls.mjs';
+import { createPart } from '../model/blueprint.mjs';
+import { transformGroup, mechanicalGroup } from '../model/editing.mjs';
+import { duplicatePart } from '../model/duplication.mjs';
+import { snapConnection } from '../model/assembly.mjs';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { UI_FEATURES } from '../model/features.mjs';
+import { CATALOG, MATERIALS } from '../model/catalog.mjs';
+import { diagnoseMotion, motorShaftSpeed } from '../model/motion-diagnostics.mjs';
+import { explainReason } from '../model/messages.mjs';
+import { CYLINDER_SEGMENTS } from '../model/geometry.mjs';
+import { BUILD_ENVIRONMENT } from '../model/environment.mjs';
+import './workshop.css';
+export const WORKSHOP_VIEW_MILESTONE=UI_FEATURES.construction.milestone;
+const parameterLabels={torqueConstant:'Torque per amp',currentLimit:'Current limit',defaultDuty:'Drive setting',capacityJ:'Stored energy',internalResistance:'Cell resistance'};
+const parameterHelp={torqueConstant:'More torque per amp helps turn a heavier load.',currentLimit:'Caps current and therefore available motor torque.',defaultDuty:'−1 reverse · 0 off · 1 forward. Sets drive strength, not a guaranteed speed.',capacityJ:'More stored energy supports a longer run.'};
+const labels={power:'Power',shaft:'Shaft',fixed:'Mount',signal:'Signal'};
+
+function portLabel(part,port){
+ if(port.kind==='power')return 'Power';if(port.kind==='signal')return port.direction==='input'?'Control input':'Control output';
+ if(port.kind==='fixed')return port.id==='mount'?'Mount':`Mount · ${port.id.replace(/([A-Z])/g,' $1')}`;
+ if(part.type==='gripWheel')return 'Wheel axle';if(part.type==='poweredMotor')return 'Drive shaft';
+ return port.id==='shaft'?'Axle':`Axle · ${port.id}`;
+}
+function portPurpose(part,port){
+ if(port.kind==='fixed')return 'Bolts two parts together. They cannot move or turn relative to each other.'+(part.type==='gripWheel'?' Bolting this wheel to the chassis or motor housing stops it spinning independently.':'');
+ if(port.kind==='power')return 'Carries electrical power. This wire does not hold parts together. More than one wire can share this port.';
+ if(port.kind==='signal')return 'Carries control commands. This wire does not hold parts together.'+(part.type==='poweredMotor'?' Optional: without a signal, the motor uses its Drive setting.':'');
+ if(part.type==='gripWheel')return 'Connect to a motor or bearing to attach a turning wheel. This connection holds the wheel too; no separate fixed mount is needed.';
+ if(part.type==='poweredMotor')return 'Attaches a wheel or axle and drives its rotation relative to the motor housing. Mount the motor housing separately.';
+ return 'Connects an axle. A bearing lets the attached axle turn relative to its housing.';
+}
+
+const materialColor={aluminium:0x9aadb2,steel:0x657d8b,rubber:0x323d46};
+const format=(value,digits=1)=>Number.isFinite(value)?value.toFixed(digits):'—';
+function element(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node;}
+function button(text,fn,className=''){const node=element('button',className,text);node.type='button';node.addEventListener('click',fn);return node;}
+export function createWorkshopView(root,{onCommand,onSave,onLoad,onFailure,onRecording,onInteraction,getCursor,guideSteps=[]}) {
+ root.classList.add('workshop');
+ let explodeStarted=0,explodeFrom=0,exploded=false,explodeAmount=0,explodeTarget=new Map(),tracedConnection=null,explodeCamera=null,explodeCameraTween=null;
+ let activeTool='select',draggingType=null,copySequence=0,followCenter=null,guideActive=false,editing,frame=null,selected=null,sourcePort=null,blueprintKey='',inspectorKey='',disposed=false,inputTime=performance.now(),drivingReceiver=null,surface;
+ const captureInput=event=>{inputTime=event.timeStamp;};
+ for(const type of ['click','change'])root.addEventListener(type,captureInput,true);
+ const send=async command=>{try{if(exploded||explodeAmount)setExploded(false,true);const result=await onCommand(command,{inputTime});if(result?.ok===false)setMessage(result.message??explainReason(result.reasonCode));return result;}catch(error){setMessage(error.message);}};
+ function partIcon(type){const img=element('img','part-icon');img.dataset.iconType=type;img.alt='';img.draggable=false;return img;}
+ function enablePaletteDrag(card,type){card.draggable=true;card.title=`Drag ${CATALOG[type].name} into place`;card.addEventListener('dragstart',event=>{if(frame?.metadata.mode!=='build'){event.preventDefault();return;}draggingType=type;event.dataTransfer.setData('text/plain',type);event.dataTransfer.effectAllowed='copy';});card.addEventListener('dragend',()=>{draggingType=null;placementCue.hidden=true;editing?.clearPreview();});}
+ const header=element('header','workshop-header'),brand=element('div','brand');brand.append(element('span','brand-mark','S'),element('div','brand-name','SIMULACRUM'));
+ const subtitle=element('span','brand-subtitle','Mechanical workshop');brand.append(subtitle);
+ const modebar=element('div','modebar');
+ const run=button('▶ Run',()=>send({type:'run'}),'primary'),pause=button('Pause',()=>send({type:'pause'})),build=button('↶ Build',()=>send({type:'build'}));run.dataset.command='run';pause.dataset.command='pause';build.dataset.command='build';const stepButton=button('Step',()=>send({type:'step'}));stepButton.dataset.command='step';modebar.append(run,pause,build,stepButton);
+ const filebar=element('div','filebar');const failureButton=button('Failure record',()=>onFailure?.());failureButton.dataset.command='failure-record';failureButton.hidden=true;
+ const loadInput=element('input');loadInput.type='file';loadInput.accept='.json,application/json';loadInput.hidden=true;
+ loadInput.addEventListener('change',async()=>{const file=loadInput.files?.[0];if(!file)return;try{await onLoad(file);}catch{setMessage('This file could not be loaded. Choose a saved workshop JSON file.');}loadInput.value='';});
+ const newButton=button('New',()=>send({type:'new'}));newButton.dataset.command='new';
+ filebar.append(newButton,button('Save',async()=>{try{const save=await onSave();if(save===undefined)return;const url=URL.createObjectURL(new Blob([JSON.stringify(save,null,2)],{type:'application/json'}));const a=element('a');a.href=url;a.download='my-machine.json';a.click();URL.revokeObjectURL(url);}catch{setMessage('The machine could not be saved. Try again.');}}),button('Load',()=>loadInput.click()),failureButton,loadInput);
+ const undo=button('Undo',()=>send({type:'undo'})),redo=button('Redo',()=>send({type:'redo'}));undo.dataset.command='undo';redo.dataset.command='redo';filebar.prepend(undo,redo);header.append(brand,modebar,filebar);
+ const body=element('main','workshop-body'),left=element('aside','parts-panel');left.append(element('div','eyebrow','YOUR WORKBENCH'),element('h1','','Build. Run. Improve.'),element('p','intro','Start with the guided rolling machine, or choose parts to build freely. Run applies gravity; support your motor above the floor.'));
+ const palette=element('div','palette');
+ for(const type of ['powerCell','poweredMotor','gripWheel']){const card=button('',()=>send({type:'place',partType:type}),'part-card');card.dataset.partType=type;card.append(partIcon(type),element('span','',CATALOG[type].name));enablePaletteDrag(card,type);palette.append(card);}
+ let guideReceipt=null,guideVisual=null,guidePulseStarted=0;
+ const guide=element('section','starter-guide');
+ function refreshGuide(){guide.replaceChildren();guide.classList.toggle('active-guide',guideActive);if(!guideActive){guide.append(element('h2','','Build a rolling machine'),element('p','','A supported chassis and three wheels keep the motor clear of the floor. Place and connect each part yourself.'));const start=button('Start guided build',()=>{if(frame.metadata.blueprint.parts.length){setMessage('Choose New for an empty workbench, then start the guided build.');return;}guideActive=true;refreshGuide();});start.dataset.command='start-guide';guide.append(start);return;}
+ const bp=frame?.metadata.blueprint,step=bp&&guideSteps.find(s=>!s.done(bp));const completed=bp?guideSteps.filter(s=>s.done(bp)).length:0;
+ guide.append(element('span','guide-progress',`${completed} / ${guideSteps.length} steps`));
+ if(guideReceipt&&!bp.connections.some(c=>c.id===guideReceipt.id)){guideReceipt=null;showGuideConnection(null);}
+ if(guideReceipt)guide.append(element('p','guide-receipt',`✓ ${guideReceipt.message}`));
+ if(step){guide.append(element('p','',step.description));const next=button(step.label,async()=>{editing.clearPreview();const result=await send({type:'guide-step'});if(result?.ok){const command=step.commands.find(c=>c.type==='connect'),edge=command&&frame.metadata.blueprint.connections.find(c=>c.id===command.id);if(edge){select(edge.b.part);sourcePort={...edge.b};inspectorKey='';refreshInspector();guideReceipt={...edge,message:guideConnectionMessage(edge)};guidePulseStarted=performance.now();showGuideConnection(guideReceipt,true);}refreshGuide();editing.focus();}},'primary');next.dataset.command='guide-step';next.disabled=frame?.metadata.mode!=='build';const preview=()=>{if(step.part)editing.showPreview([step.part]);const connection=step.commands.find(c=>c.type==='connect');if(connection)showGuideConnection(connection,false);};const leave=()=>{editing.clearPreview();showGuideConnection(guideReceipt,true);};next.addEventListener('pointerenter',()=>{if(step.part)preview();});next.addEventListener('pointermove',event=>{if(!step.part&&(event.movementX||event.movementY))preview();});next.addEventListener('focus',preview);next.addEventListener('pointerleave',leave);next.addEventListener('blur',leave);guide.insertBefore(next,guide.children[1]);}else{guide.append(element('h2','','Ready for a rolling test'),element('p','','Press Run. This three-wheel machine travels in a curve. Pause and return to Build to try a change. The cell, mounts and wheels all remain editable.'));}
+ guide.append(button('Leave guide',()=>{guideActive=false;guideReceipt=null;showGuideConnection(null);editing.clearPreview();refreshGuide();},'quiet'));}
+ left.append(guide,palette);refreshGuide();
+ const more=element('details','more-parts');more.append(element('summary','','More parts'));
+ for(const [type,definition] of Object.entries(CATALOG))if(!['powerCell','poweredMotor','gripWheel','logicController'].includes(type)){const item=button('',()=>send({type:'place',partType:type}),'more-part');item.dataset.partType=type;item.append(partIcon(type),element('span','',definition.name));enablePaletteDrag(item,type);more.append(item);}
+ left.append(more,element('p','palette-hint','Drag a part into the workbench, or click to add it.'));
+ const recordingPanel=element('details','recording-panel');recordingPanel.append(element('summary','','Record an issue'),element('p','muted small','Records this workshop’s controls and machine state locally. Nothing is uploaded. Save the recording to share a problem. Capture stops visibly at its size limit.'));const recordingToggle=button('Start recording',()=>onRecording?.('toggle')),recordingExport=button('Save recording',()=>onRecording?.('export')),recordingStatus=element('p','small');recordingToggle.dataset.command='record-session';recordingExport.dataset.command='export-session';recordingPanel.append(recordingToggle,recordingExport,recordingStatus);left.append(recordingPanel);
+ function setRecordingState(state){recordingToggle.textContent=state.recording?'Stop recording':'Start recording';recordingExport.disabled=!state.available;recordingPanel.firstChild.textContent=state.recording?'● Recording issue':'Record an issue';recordingStatus.textContent=state.recording?`Recording · ${state.eventCount} events`:state.reason?`Recording stopped${state.reason==='user-stop'?'':state.reason==='event-limit'||state.reason==='byte-limit'?' at the capture limit':' because capture could not continue'}. ${state.persisted?'Saved locally.':'Save now to preserve the in-memory recording.'}`:state.available?'A previous recording is available.':'';if(state.recording||state.reason)recordingPanel.open=true;}
+
+ const partList=element('div','part-list');
+ const viewport=element('section','viewport');viewport.setAttribute('aria-label','Three dimensional workbench');
+ const overlay=element('div','viewport-caption');overlay.append(element('span','live-dot'),element('span','','Build a machine. Learn what makes it work.'));
+ const hint=element('div','canvas-hint','Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear');
+ const empty=element('div','empty-hint');empty.append(element('div','empty-glyph','+'),element('h2','','Your first machine starts here'),element('p','','Choose a part from the left.'));
+ const stage=element('div','stage'),buildId=element('div','build-id',document.querySelector('meta[name=build-id]')?.content??'');buildId.dataset.buildId='';viewport.append(stage,overlay,empty,hint,buildId);
+ const rightPanel=element('aside','inspector-panel'),machinePicker=element('details','machine-picker'),partCount=element('summary','section-label','Machine · 0');
+ const clearButton=button('Clear selection',()=>select(null),'clear-selection');clearButton.dataset.command='clear-selection';
+ const right=element('div','inspector');right.setAttribute('aria-label','Selected part');machinePicker.append(partCount,partList);rightPanel.append(machinePicker,right);
+ const health=button('',()=>showMachineCheck(),'machine-health');health.hidden=true;viewport.append(health);
+ const snapNotice=element('div','snap-notice');snapNotice.hidden=true;snapNotice.setAttribute('role','status');viewport.append(snapNotice);
+ const guideFeedback=element('div','guide-feedback');guideFeedback.hidden=true;guideFeedback.setAttribute('role','status');viewport.append(guideFeedback);
+ const selectionLabel=element('div','selection-label');selectionLabel.hidden=true;viewport.append(selectionLabel);
+ const selectionActions=element('div','selection-actions');selectionActions.hidden=true;const scopeLabel=element('strong','move-scope');selectionActions.append(scopeLabel,button('Move · W',()=>setTool('translate')),button('Rotate · E',()=>setTool('rotate')),button('Clear · Esc',()=>select(null)));viewport.append(selectionActions);
+ const footer=element('footer','workshop-footer'),modeLabel=element('span','mode-label','BUILD'),tickLabel=element('span','tick-label','Tick 0'),message=element('span','status-message','Choose your first part.'),shortcut=element('span','shortcuts','Space: run / pause · .: one tick');
+ message.setAttribute('role','status');message.setAttribute('aria-live','polite');footer.append(modeLabel,tickLabel,message,shortcut);
+ body.append(left,viewport,rightPanel);root.append(header,body,footer);
+ const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));renderer.setClearColor(0x18252d);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;renderer.domElement.setAttribute('aria-label','Machine view');stage.append(renderer.domElement);
+ const scene=new THREE.Scene();scene.fog=new THREE.Fog(0x18252d,8,30);
+ const camera=new THREE.PerspectiveCamera(42,1,.01,100);camera.position.set(1.45,1.15,1.65);
+ const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(.15,.12,0);controls.addEventListener('end',()=>onInteraction?.('camera-end',{position:camera.position.toArray(),target:controls.target.toArray()}));controls.addEventListener('start',()=>{explodeCameraTween=null;if(!exploded)explodeCamera=null;});controls.enableDamping=true;controls.minDistance=.3;controls.maxDistance=15;controls.maxPolarAngle=Math.PI*.95;
+ scene.add(new THREE.HemisphereLight(0xc5e4ef,0x30434e,2.5));
+ const keyLight=new THREE.DirectionalLight(0xffecd0,3);keyLight.position.set(2,5,3);keyLight.castShadow=true;keyLight.shadow.mapSize.set(2048,2048);keyLight.shadow.camera.left=-4;keyLight.shadow.camera.right=4;keyLight.shadow.camera.top=4;keyLight.shadow.camera.bottom=-4;keyLight.shadow.normalBias=.01;scene.add(keyLight);
+ const groundData=BUILD_ENVIRONMENT.ground;
+ const ground=new THREE.Mesh(new THREE.BoxGeometry(...groundData.halfExtents.map(value=>value*2)),new THREE.MeshStandardMaterial({color:0x263943,roughness:.95}));ground.position.fromArray(groundData.position);ground.receiveShadow=true;scene.add(ground);
+ const grid=new THREE.GridHelper(24,120,0x7796a1,0x476571);grid.position.y=groundData.position[1]+groundData.halfExtents[1]+.002;scene.add(grid);
+ const guideCues=new THREE.Group();scene.add(guideCues);
+ const meshes=new Map(),wires=new THREE.Group();scene.add(wires);const portCues=new THREE.Group();scene.add(portCues);let portCueKey='',previewEndpoint=null;
+ editing=createEditingControls({scene,camera,renderer,orbit:controls,getPart:id=>frame?.metadata.blueprint.parts.find(p=>p.id===id),getBlueprint:()=>frame.metadata.blueprint,getMode:()=>exploded?'inspection':frame?.metadata.mode,getMeshes:()=>meshes,onCommit:send});
+ surface=createSurfaceControls({scene,camera,renderer,orbit:controls,getFrame:()=>frame,getCursor,getMeshes:()=>meshes,send,onMessage:setMessage,onInteraction,createMesh:createPartMesh});
+ function beginSurface(part,options){endDirectDrag(false);if(exploded)setExploded(false,true);editing.cancel();editing.setTool('select');sourcePort=null;previewEndpoint=null;const ok=surface.start(part,options);inspectorKey='';refreshInspector();return ok;}
+ const surfaceSnapLabel=element('label','follow-control'),surfaceSnap=element('input');surfaceSnap.type='checkbox';surfaceSnap.checked=true;surfaceSnap.setAttribute('aria-label','Surface snap');surfaceSnapLabel.append(surfaceSnap,document.createTextNode('Surface snap'));surfaceSnap.addEventListener('change',()=>surface.setEnabled(surfaceSnap.checked));
+ let surfacePointer=null;
+ renderer.domElement.addEventListener('pointerdown',event=>{if(!surface.active()||event.button!==0)return;if(!surface.beginPointer(event))return;surfacePointer=event.pointerId;controls.enabled=false;renderer.domElement.setPointerCapture(event.pointerId);event.stopImmediatePropagation();},true);
+ renderer.domElement.addEventListener('pointermove',event=>{if(surface.active()&&surfacePointer!==null&&event.buttons===1){event.stopImmediatePropagation();surface.point(event,{lock:true});}},true);
+ renderer.domElement.addEventListener('pointerup',event=>{if(surfacePointer===null||event.button!==0)return;event.stopImmediatePropagation();surfacePointer=null;surface.endPointer();controls.enabled=true;if(renderer.domElement.hasPointerCapture(event.pointerId))renderer.domElement.releasePointerCapture(event.pointerId);},true);
+ const checkDialog=element('dialog','machine-check');checkDialog.setAttribute('aria-label','Check machine');root.append(checkDialog);
+ function showMachineCheck(){
+  if(!frame)return;checkDialog.replaceChildren(element('h2','','Check machine'));
+  checkDialog.append(element('p','muted',`Readings at tick ${frame.tick}. Close and check again after changing the machine.`));
+  const issues=diagnoseMotion(frame);
+  if(!issues.length)checkDialog.append(element('p','',frame.metadata.blueprint.parts.some(p=>p.type==='poweredMotor')?'No checked wiring or control blocker found. Run the machine to test its motion and physical support.':'Add a motor, a power cell and a driven wheel to check their connections.'));
+  for(const issue of issues){const card=element('section','machine-check-issue');card.dataset.diagnosticCode=issue.code;card.append(element('h3','',issue.title),element('p','',issue.action),element('p','muted small',issue.evidence));const part=frame.metadata.blueprint.parts.find(p=>p.id===issue.partId);card.append(button(`Inspect ${part.name}`,()=>{checkDialog.close();select(part.id);if(issue.port){sourcePort={part:part.id,port:issue.port};inspectorKey='';refreshInspector();}}));checkDialog.append(card);}
+  checkDialog.append(button('Close',()=>checkDialog.close(),'primary'));if(!checkDialog.open)checkDialog.showModal();
+ }
+ const tools=element('div','edit-toolbar');const checkButton=button('Check machine',showMachineCheck);checkButton.dataset.command='check-machine';tools.append(checkButton,surfaceSnapLabel);
+ for(const [value,label] of [['select','Select · V'],['translate','Move · W'],['rotate','Rotate · E']]){const b=button(label,()=>{setTool(value);});b.dataset.editTool=value;tools.append(b);}
+ const explodeButton=button('Exploded view',()=>setExploded(!exploded));explodeButton.dataset.command='explode-view';explodeButton.setAttribute('aria-pressed','false');tools.append(button('Frame machine · F',()=>{explodeCameraTween=null;editing.focus();}),explodeButton);const inspectionBanner=element('div','inspection-banner');inspectionBanner.hidden=true;inspectionBanner.append(element('strong','','Inspection view — parts haven’t moved.'),element('span','','Select parts or connections to trace them. Dashed lines show attachments.'),button('Return to assembly',()=>setExploded(false)));viewport.append(inspectionBanner);const followLabel=element('label','follow-control'),follow=element('input');follow.type='checkbox';follow.checked=true;follow.setAttribute('aria-label','Follow motion');followLabel.append(follow,document.createTextNode('Follow motion'));tools.append(followLabel);tools.append(element('span','edit-hint','Move/Rotate moves attached parts together. Use Adjust mount to reposition an attachment.'));viewport.append(tools);const help=element('details','keyboard-help');help.append(element('summary','','Controls · ?'),element('p','','Build: V selects direct movement; drag a part to move it; drag empty space or right-drag to orbit. Arrows move 2.5 cm in camera directions · Page Up/Down changes height · Alt + arrows rotates 90° · C or Ctrl/Cmd+C duplicates toward camera, skipping occupied 1 m positions · X/Delete removes the selected part · Esc clears · Ctrl/Cmd+Z undoes. Move/rotate affects attached parts; copying makes one disconnected part. Run: arrows drive a Command Receiver.'));viewport.append(help);
+
+ function setTool(value){surface?.cancel(false);if(exploded)setExploded(false,true);onInteraction?.('tool',{from:activeTool,to:value});activeTool=value;editing.setTool(value);hint.textContent=value==='select'?'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear':value==='rotate'?'Drag rings to rotate · V for direct part movement · Drag empty space to orbit':'Drag arrows to move · V for direct part movement · Drag empty space to orbit';for(const button of tools.querySelectorAll('[data-edit-tool]')){const active=button.dataset.editTool===value;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));}}setTool('select');
+ const placementCue=element('div','placement-cue');placementCue.hidden=true;viewport.append(placementCue);function showPlacementCue(event,text){const rect=viewport.getBoundingClientRect();placementCue.textContent=text;placementCue.style.left=`${Math.max(8,Math.min(event.clientX-rect.left+14,rect.width-220))}px`;placementCue.style.top=`${Math.max(8,Math.min(event.clientY-rect.top+16,rect.height-50))}px`;placementCue.hidden=false;}
+ const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();raycaster.params.Line.threshold=.012;let pointerStart=null;
+ function refreshSelectionVisuals(){
+  const edge=frame?.metadata.blueprint.connections.find(c=>c.id===tracedConnection);const group=exploded?(edge?[edge.a.part,edge.b.part]:[]):frame?.metadata.mode==='build'?mechanicalGroup(frame.metadata.blueprint,selected):[];
+  for(const [id,mesh] of meshes){const primary=id===selected,member=group.includes(id);mesh.material.emissive.setHex(primary?0x614017:member?0x123b35:0);const outline=mesh.userData.selectionOutline;outline.visible=primary||member;outline.material.color.setHex(primary?0xffc778:0x8cf5cf);}
+  selectionActions.hidden=surface.active()||exploded||!selected||frame?.metadata.mode!=='build';
+  scopeLabel.textContent=group.length>1?`Move connected assembly · ${group.length} parts`:'Move this part';
+  scopeLabel.title=group.length>1?'Mint outlines show everything that moves. Disconnect a mount or shaft to separate parts.':'Power and signal wires do not attach parts physically.';
+ }
+ function select(id){surface?.cancel(false);showGuideConnection(null);onInteraction?.('selection',{from:selected,to:id});editing?.select(id);if(id!==selected)rightPanel.scrollTop=0;selected=id;tracedConnection=null;sourcePort=null;previewEndpoint=null;editing?.clearPreview();inspectorKey='';refreshInspector();refreshLive();refreshPartList();refreshSelectionVisuals();if(exploded)updateConnections();}
+ const down=event=>{pointerStart=[event.clientX,event.clientY];};
+ const up=event=>{if(surface?.active())return;if(editing.isDragging()||editing.isHandleActive())return;if(!pointerStart||Math.hypot(event.clientX-pointerStart[0],event.clientY-pointerStart[1])>5)return;const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);raycaster.params.Line.threshold=camera.position.distanceTo(controls.target)*2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*6/stage.clientHeight;const connectionHit=exploded&&raycaster.intersectObjects(wires.children).find(hit=>hit.object.userData.connectionId);if(connectionHit){traceConnection(connectionHit.object.userData.connectionId);return;}const hit=raycaster.intersectObjects([...meshes.values()]).find(hit=>hit.object.isMesh);select(hit?.object.userData.partId??null);};
+ renderer.domElement.addEventListener('pointerdown',down);renderer.domElement.addEventListener('pointerup',up);
+ let directDrag=null;
+ function setRay(event){const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);}
+ function endDirectDrag(commit=false){if(!directDrag)return;const drag=directDrag;directDrag=null;if(drag.surface){controls.enabled=true;if(renderer.domElement.hasPointerCapture(drag.pointerId))renderer.domElement.releasePointerCapture(drag.pointerId);if(commit)surface.commit();else surface.cancel();return;}surface.cancel(false);placementCue.hidden=true;controls.enabled=true;renderer.domElement.style.cursor='';editing.clearPreview();if(renderer.domElement.hasPointerCapture(drag.pointerId))renderer.domElement.releasePointerCapture(drag.pointerId);if(commit&&drag.position&&frame.metadata.mode==='build')send({type:'transform',id:drag.part.id,position:drag.position,rotation:drag.part.rotation});}
+ renderer.domElement.addEventListener('pointerdown',event=>{if(surface?.active()||exploded||explodeAmount||event.button!==0||frame?.metadata.mode!=='build'||activeTool!=='select'||editing.isHandleActive())return;setRay(event);const hit=raycaster.intersectObjects([...meshes.values()]).find(hit=>hit.object.isMesh);if(!hit)return;const id=hit.object.userData.partId,part=frame.metadata.blueprint.parts.find(part=>part.id===id);if(!part)return;select(id);const plane=new THREE.Plane(new THREE.Vector3(0,1,0),-part.position[1]),start=raycaster.ray.intersectPlane(plane,new THREE.Vector3());if(!start)return;event.stopImmediatePropagation();controls.enabled=false;directDrag={part:structuredClone(part),blueprint:frame.metadata.blueprint,plane,start,pointerId:event.pointerId,x:event.clientX,y:event.clientY,position:null};renderer.domElement.setPointerCapture(event.pointerId);},true);
+ renderer.domElement.addEventListener('pointermove',event=>{if(!directDrag)return;event.stopImmediatePropagation();if(Math.hypot(event.clientX-directDrag.x,event.clientY-directDrag.y)<5&&!directDrag.position)return;if(surface.enabled()&&!surface.active()){surface.start(directDrag.part.id,{drag:true});inspectorKey='';refreshInspector();}if(surface.active()&&surface.point(event,{lock:true})){directDrag.surface=true;controls.enabled=false;return;}setRay(event);const point=raycaster.ray.intersectPlane(directDrag.plane,new THREE.Vector3());if(!point)return;const delta=point.sub(directDrag.start);directDrag.position=directDrag.part.position.map((value,axis)=>axis===1?value:value+Math.round(delta.getComponent(axis)/.025)*.025);const next=transformGroup(directDrag.blueprint,directDrag.part.id,directDrag.position,directDrag.part.rotation);editing.showPreview(next.parts.filter((part,i)=>JSON.stringify(part)!==JSON.stringify(directDrag.blueprint.parts[i])));renderer.domElement.style.cursor='grabbing';showPlacementCue(event,'Release to move · Esc cancels');setMessage('Release to move the attached parts here. Esc cancels.');},true);
+ renderer.domElement.addEventListener('pointerup',event=>{if(!directDrag)return;event.stopImmediatePropagation();endDirectDrag(true);},true);
+ renderer.domElement.addEventListener('pointercancel',()=>endDirectDrag(false));
+
+ function droppedPosition(event){const rect=renderer.domElement.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)return null;const h=CATALOG[draggingType]?.primitives[0].halfExtents;if(!h)return null;pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);const point=raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-h[1]),new THREE.Vector3());if(!point)return null;return [Math.round(point.x/.025)*.025,h[1],Math.round(point.z/.025)*.025];}
+ let surfaceDropSequence=0;
+ renderer.domElement.addEventListener('dragover',event=>{if(!draggingType||frame?.metadata.mode!=='build')return;event.preventDefault();event.dataTransfer.dropEffect='copy';if(surface.enabled()){if(!surface.active()){let id;do{id=`dropped-${++surfaceDropSequence}`;}while(frame.metadata.blueprint.parts.some(p=>p.id===id));surface.start(id,{insertPart:createPart(draggingType,id,[0,0,0]),drag:true});right.append(surface.panel);}if(surface.point(event,{lock:false})){showPlacementCue(event,surface.read().valid?'Release to attach to surface':'Placement blocked · check the mounting panel');return;}}showPlacementCue(event,'Release to place · 2.5 cm grid');const position=droppedPosition(event);if(position)editing.showPreview([createPart(draggingType,'placement-preview',position)]);});
+ renderer.domElement.addEventListener('dragleave',()=>{placementCue.hidden=true;editing.clearPreview();});
+ renderer.domElement.addEventListener('drop',async event=>{if(!draggingType||frame?.metadata.mode!=='build')return;event.preventDefault();const position=droppedPosition(event),partType=draggingType;draggingType=null;placementCue.hidden=true;editing.clearPreview();if(surface.read()?.target){await surface.commit();return;}surface.cancel(false);if(position){await send({type:'place',partType,position});setMessage('Part placed. Use Snap to surface to mount it, or connect its sockets.');}});
+ function setMessage(text){message.textContent=String(text);}
+ function refreshPartList(){clearButton.disabled=selected===null;partCount.textContent=`Machine · ${frame?.metadata?.blueprint?.parts.length??0}`;partList.replaceChildren();for(const part of frame?.metadata?.blueprint?.parts??[]){const item=button(part.name,()=>{machinePicker.open=false;select(part.id);},`part-list-item${part.id===selected?' selected':''}`);item.dataset.partId=part.id;partList.append(item);}}
+ function endpointName(part,endpoint){return endpoint.surface?surfaceRegions(part).find(r=>r.id===endpoint.surface.region)?.label??endpoint.surface.region:endpoint.port;}
+ function endpointDefinition(part,endpoint){return endpoint.surface?resolveSurfaceEndpoint(part,endpoint):CATALOG[part.type].ports.find(p=>p.id===endpoint.port);}
+ function compatible(a,b){return a.kind===b.kind&&(a.kind!=='signal'||a.direction!==b.direction);}
+ function portConnections(part,port){return frame.metadata.blueprint.connections.filter(connection=>[connection.a,connection.b].some(endpoint=>endpoint.part===part.id&&endpoint.port===port.id));}
+ function occupied(part,port){return port.multiplicity==='one'&&portConnections(part,port).length>0;}
+ function refreshInspector(){
+  if(!frame)return;const parts=frame.metadata.blueprint.parts,part=parts.find(item=>item.id===selected),mode=frame.metadata.mode;
+  const nextKey=JSON.stringify([blueprintKey,selected,sourcePort,mode,exploded]);if(nextKey===inspectorKey)return;inspectorKey=nextKey;const focusLabel=right.dataset.partId===selected&&right.contains(document.activeElement)?document.activeElement.getAttribute('aria-label'):null;const openSections=right.dataset.partId===selected?[...right.querySelectorAll('details[open]')].map(node=>node.className):[];right.dataset.partId=selected??'';right.dataset.inspectorType=part?.type??'';right.replaceChildren();
+  if(!part){right.append(element('p','selection-hint','Select a part in the workbench or Machine menu to inspect and connect it.'));return;}
+  const definition=CATALOG[part.type],body=frame.physics[parts.indexOf(part)],editable=mode==='build'&&!exploded;
+  const selectedHeader=element('div','selected-part-header'),identity=element('div','part-identity'),icon=partIcon(part.type),existingIcon=left.querySelector(`[data-icon-type="${part.type}"]`);if(existingIcon)icon.src=existingIcon.src;identity.append(icon,element('h2','',part.name));if(part.name!==definition.name)identity.append(element('span','part-kind',definition.name));
+  const actions=element('div','part-actions'),duplicate=button('Copy · C',()=>copySelected(),'quiet'),remove=button('Delete · X',()=>send({type:'delete',id:part.id}),'danger quiet');duplicate.setAttribute('aria-label','Copy part · C');remove.setAttribute('aria-label','Delete part');duplicate.disabled=remove.disabled=!editable;actions.append(clearButton,duplicate,remove);selectedHeader.append(identity,actions);right.append(selectedHeader);
+  if(exploded){const links=frame.metadata.blueprint.connections.filter(c=>c.a.part===part.id||c.b.part===part.id);right.append(element('h3','','Trace connections'));for(const edge of links){const other=edge.a.part===part.id?edge.b:edge.a,peer=parts.find(p=>p.id===other.part);const trace=button(`${labels[edge.kind]} → ${peer.name} · ${endpointName(peer,other)}`,()=>traceConnection(edge.id),'trace-connection');trace.dataset.connectionId=edge.id;trace.setAttribute('aria-pressed',String(tracedConnection===edge.id));right.append(trace);}if(!links.length)right.append(element('p','muted','No connections. Return to assembly to connect this part.'));const edge=links.find(c=>c.id===tracedConnection);if(edge){const end=e=>`${parts.find(p=>p.id===e.part).name} · ${endpointName(parts.find(p=>p.id===e.part),e)}`;right.append(element('p','trace-description',`${end(edge.a)} ↔ ${end(edge.b)}. ${edge.kind==='power'?'Carries electrical power; does not hold parts together.':edge.kind==='signal'?'Carries commands; does not hold parts together.':edge.kind==='shaft'?'Joins the shaft to the axle and transmits rotation.':'Holds these parts together.'}`));}right.append(button('Return to assembly to edit',()=>setExploded(false),'primary'));return;}
+
+  function returnToBuild(target){const note=element('div','edit-mode-note');note.append(element('span','','Return to Build to edit.'),button('Return to Build',()=>send({type:'build'}),'quiet'));target.append(note);}
+  function bindParameterInput(input,key){
+   let tabTarget=null;
+   const tabStops=()=>[...right.querySelectorAll('button,input,select,textarea,a[href],summary,[tabindex]')].filter(node=>!node.disabled&&node.tabIndex>=0&&node.getClientRects().length);
+   input.addEventListener('keydown',event=>{
+    tabTarget=null;
+    if(event.key!=='Tab')return;
+    const stops=tabStops(),index=stops.indexOf(input)+(event.shiftKey?-1:1);
+    if(index>=0&&index<stops.length)tabTarget=index;
+   });
+   input.addEventListener('change',async()=>{
+    const target=tabTarget;tabTarget=null;
+    // Send while the trusted change event is active. Only focus restoration
+    // waits for the rebuilt inspector; native Tab still chooses its direction.
+    await send({type:'parameter',id:part.id,key,value:Number(input.value)});
+    if(target!==null&&selected===part.id)tabStops()[target]?.focus();
+   });
+   input.addEventListener('blur',()=>{tabTarget=null;});
+  }
+  function parameterControl(key){const parameter=definition.parameterDefinitions[key],label=element('div','setting primary-setting'),input=element('input');label.append(element('span','',parameterLabels[key]??key));input.type='number';input.value=part.parameters[key];input.min=parameter.minimum;input.max=parameter.maximum;input.step=parameter.type==='integer'?'1':'any';input.disabled=!editable;input.setAttribute('aria-label',key==='defaultDuty'?'Drive setting':key);bindParameterInput(input,key);label.append(input);if(key==='defaultDuty'&&!definition.ports.some(port=>port.kind==='signal'&&portConnections(part,port).length)){
+   const range=element('input','drive-range');range.type='range';range.min='-1';range.max='1';range.step='.05';range.value=part.parameters[key];range.disabled=!editable;range.setAttribute('aria-label','Drive strength');range.addEventListener('input',()=>{input.value=range.value;});range.addEventListener('change',async()=>{await send({type:'parameter',id:part.id,key,value:Number(range.value)});if(selected===part.id)right.querySelector('.drive-range')?.focus({preventScroll:true});});label.append(range);
+   const directions=element('div','drive-directions');for(const [value,title] of [[-1,'Reverse'],[0,'Off'],[1,'Forward']]){const preset=button(title,()=>send({type:'parameter',id:part.id,key,value}));preset.disabled=!editable;preset.setAttribute('aria-pressed',String(value===0?part.parameters[key]===0:Math.sign(part.parameters[key])===value));directions.append(preset);}label.append(directions);
+  }if(parameterHelp[key])label.append(element('span','parameter-help',parameterHelp[key]));return label;}
+  if(surfaceRegions(part).length){const mounting=element('section','mount-status');mounting.setAttribute('aria-label','Mounting');const edges=frame.metadata.blueprint.connections.filter(c=>c.kind==='fixed'&&(c.a.part===part.id||c.b.part===part.id));
+   if(!edges.length)mounting.append(element('p','','Not mounted'));
+   for(const edge of edges){const own=edge.a.part===part.id?edge.a:edge.b,other=edge.a.part===part.id?edge.b:edge.a,peer=parts.find(p=>p.id===other.part),row=element('div','mount-relationship');row.append(element('span','',`Attached to ${peer.name} · ${endpointName(peer,other)}`));if(editable&&edge.b.part===part.id&&own.surface&&other.surface)row.append(button('Adjust mount',()=>beginSurface(part.id,{replaceConnection:edge.id})));if(editable)row.append(button('Detach',()=>send({type:'disconnect',id:edge.id}),'quiet'));mounting.append(row);}
+   if(editable&&!edges.length){const snap=button('Snap to surface',()=>beginSurface(part.id));snap.dataset.command='snap-surface';mounting.append(snap);}
+   if(surface.active())mounting.append(surface.panel);right.append(mounting);
+  }
+  const live=element('div','part-live');live.dataset.livePart=part.id;right.append(live);
+  if(part.type==='poweredMotor'){
+   const signal=definition.ports.find(p=>p.kind==='signal'),connection=signal&&portConnections(part,signal)[0];
+   if(connection){const endpoint=connection.a.part===part.id?connection.b:connection.a,owner=parts.find(p=>p.id===endpoint.part),ownership=element('div','signal-ownership');ownership.append(element('span','','Drive commanded by '),button(owner?.name??endpoint.part,()=>select(endpoint.part),'part-link'),element('span','parameter-help','The signal replaces this motor’s default drive setting.'));right.append(ownership);}
+   else right.append(parameterControl('defaultDuty'));
+  }
+  if(part.type==='gripWheel'){const axle=definition.ports.find(p=>p.kind==='shaft'),connection=axle&&portConnections(part,axle)[0];if(connection){const endpoint=connection.a.part===part.id?connection.b:connection.a,peer=parts.find(p=>p.id===endpoint.part),ownership=element('div','axle-ownership');ownership.append(element('span','',peer?.type==='poweredMotor'?'Driven by ':'Axle attached to '),button(peer?.name??endpoint.part,()=>select(endpoint.part),'part-link'));right.append(ownership);}}
+  if(part.type==='logicController')right.append(element('p','connection-preview','Programmable controller unavailable in this build. Use a Command Receiver for keyboard control.'));
+  if(part.type==='commandReceiver'){const driving=element('div','drive-buttons');driving.append(button('Forward',()=>send({type:'control',id:part.id,duty:1})),button('Stop',()=>send({type:'control',id:part.id,duty:0})),button('Reverse',()=>send({type:'control',id:part.id,duty:-1})));right.append(driving);}
+  if(!editable)returnToBuild(right);
+  right.append(element('h3','connections-heading','Connections'));const ports=element('div','port-list');right.append(ports);
+  const orderedPorts=part.type==='gripWheel'?[...definition.ports].sort((a,b)=>Number(b.kind==='shaft')-Number(a.kind==='shaft')):definition.ports;
+  for(const port of orderedPorts){
+   const connections=portConnections(part,port),chosen=sourcePort?.part===part.id&&sourcePort?.port===port.id,optional=!connections.length&&((part.type==='gripWheel'&&port.kind==='fixed')||(part.type==='poweredMotor'&&port.kind==='signal'));
+   const item=button('',()=>{sourcePort=chosen?null:{part:part.id,port:port.id};previewEndpoint=null;editing.clearPreview();onInteraction?.('port-selected',{port:sourcePort});inspectorKey='';refreshInspector();const replacement=right.querySelector(`[data-port-id="${port.id}"]`);replacement?.focus({preventScroll:true});right.querySelector('.port-explanation')?.scrollIntoView({block:'nearest'});},`port-button ${port.kind}${connections.length?' connected':' free'}${chosen?' wiring-source':''}${optional?' optional-port':''}`);
+   item.append(element('span','port-title',portLabel(part,port)),element('span','port-state',connections.length?`${connections.length} connected`:optional?'Optional':'Available'));
+   for(const connection of connections){const other=connection.a.part===part.id&&connection.a.port===port.id?connection.b:connection.a,target=parts.find(p=>p.id===other.part),diagnostic=frame.metadata.connections.find(c=>c.id===connection.id);item.append(element('span','port-peer',`${target?.name??other.part} · ${target?portLabel(target,CATALOG[target.type].ports.find(p=>p.id===other.port)):other.port}${diagnostic&&diagnostic.reasonCode!=='OK'?' · check alignment':''}`));}
+   item.setAttribute('aria-pressed',String(chosen));item.setAttribute('aria-expanded',String(chosen));item.dataset.portId=port.id;item.dataset.partId=part.id;item.dataset.connectionCount=connections.length;ports.append(item);
+   if(!chosen)continue;
+   const explanation=element('div','port-explanation');explanation.append(element('p','',portPurpose(part,port)));ports.append(explanation);
+   for(const connection of connections){const other=connection.a.part===part.id&&connection.a.port===port.id?connection.b:connection.a,peer=parts.find(p=>p.id===other.part);explanation.append(button(`Inspect ${peer?.name??other.part}`,()=>select(other.part),'part-link'));const disconnect=button(`Disconnect ${labels[connection.kind]} · ${peer?.name??other.part}`,()=>send({type:'disconnect',id:connection.id}),'quiet');disconnect.dataset.disconnectId=connection.id;disconnect.disabled=!editable;explanation.append(disconnect);}
+   if(!editable){returnToBuild(explanation);continue;}
+   if(!occupied(part,port)){
+    const mechanical=['fixed','shaft'].includes(port.kind),targets=element('div','connection-targets');targets.append(element('p','connection-preview',mechanical?'Choose a connection. The smaller assembly moves; the larger one stays in place.':connections.length?'Optional: add another wire. Existing wiring is connected.':'Choose where to wire. Both parts stay in place.'));explanation.append(targets);
+    let count=0;for(const target of parts)if(target.id!==part.id)for(const targetPort of CATALOG[target.type].ports)if(compatible(port,targetPort)&&!occupied(target,targetPort)&&!connections.some(connection=>[connection.a,connection.b].some(endpoint=>endpoint.part===target.id&&endpoint.port===targetPort.id))){
+     const ownGroup=mechanicalGroup(frame.metadata.blueprint,part.id),otherGroup=mechanicalGroup(frame.metadata.blueprint,target.id);
+     const moveSelected=mechanical&&ownGroup.length<otherGroup.length;
+     const moving=moveSelected?part:target,stationary=moveSelected?target:part,movingCount=(moveSelected?ownGroup:otherGroup).length;
+     const endpoints=()=>{let a={part:part.id,port:port.id},b={part:target.id,port:targetPort.id};if(moveSelected||(port.kind==='signal'&&port.direction==='input'))[a,b]=[b,a];return {a,b};};
+     const movement=`${moving.name}${movingCount>1?` and ${movingCount-1} attached parts`:''}`;
+     count++;const targetButton=button(`${mechanical?'Attach to':'Wire'} ${target.name} · ${targetPort.id}${mechanical?'':' (parts stay put)'}`,async()=>{const result=await send({type:'connect',...endpoints()});if(result?.ok===true){editing.clearPreview();sourcePort=null;previewEndpoint=null;snapNotice.hidden=true;inspectorKey='';refreshInspector();setMessage(mechanical?`${movement} moved to ${stationary.name}. Connected. Undo to restore.`:`${part.name} wired to ${target.name}. Both parts stayed in place.`);}},'target-button');
+     if(mechanical){const detail=element('span','snap-movement',`Moves ${movement}`);targetButton.append(detail);}
+     const preview=()=>{previewEndpoint={part:target.id,port:targetPort.id};if(mechanical){try{const {a,b}=endpoints(),next=snapConnection(frame.metadata.blueprint,a,b);editing.showPreview(next.parts.filter((p,i)=>JSON.stringify(p)!==JSON.stringify(frame.metadata.blueprint.parts[i])));snapNotice.textContent=`Connection preview · Moves ${movement}. ${stationary.name} stays. Click to attach; Esc cancels.`;snapNotice.hidden=false;}catch{editing.clearPreview();snapNotice.hidden=true;}}targetButton.classList.add('previewing');};const clearPreview=()=>{previewEndpoint=null;editing.clearPreview();snapNotice.hidden=true;targetButton.classList.remove('previewing');};targetButton.addEventListener('pointerenter',preview);targetButton.addEventListener('focus',preview);targetButton.addEventListener('pointerleave',clearPreview);targetButton.addEventListener('blur',clearPreview);targetButton.dataset.targetPartId=target.id;targetButton.dataset.targetPortId=targetPort.id;targets.append(targetButton);
+    }
+    if(!count)targets.append(element('p','muted small',connections.length?'No additional matching ports are available.':'Add a part with a free matching port.'));
+   }
+   explanation.append(button('Cancel connection',()=>{editing.clearPreview();previewEndpoint=null;sourcePort=null;inspectorKey='';refreshInspector();right.querySelector(`[data-port-id="${port.id}"]`)?.focus({preventScroll:true});},'quiet'));
+  }
+  const settings=element('details','part-settings');settings.append(element('summary','','Engineering details'));if(body)settings.append(element('div','part-mass',`${format(body.mass,2)} kg · ${part.authoredMaterial.body??definition.primitives[0].materialKey}`));const measurements=element('div','engineering-live');measurements.dataset.liveEngineering=part.id;settings.append(measurements);
+  for(const [key,parameter] of Object.entries(definition.parameterDefinitions)){if((part.type==='logicController'&&key==='duty')||(part.type==='poweredMotor'&&key==='defaultDuty'&&!definition.ports.some(port=>port.kind==='signal'&&portConnections(part,port).length)))continue;const label=element('label','setting');label.append(element('span','',parameterLabels[key]??key.replace(/([A-Z])/g,' $1')));const input=element('input');input.type='number';input.value=part.parameters[key];input.min=parameter.minimum;input.max=parameter.maximum;input.step=parameter.type==='integer'?'1':'any';input.disabled=mode!=='build';input.setAttribute('aria-label',key==='defaultDuty'?'Drive setting':key);bindParameterInput(input,key);label.append(input,element('span','unit',parameter.unit));if(parameterHelp[key])label.append(element('span','parameter-help',parameterHelp[key]));settings.append(label);}
+  const materialLabel=element('label','setting material-setting');materialLabel.append(element('span','','Material'));const materials=element('select');materials.setAttribute('aria-label','Material');for(const [name,value] of Object.entries(MATERIALS))if(value.selectable){const currentMaterial=MATERIALS[part.authoredMaterial.body??definition.primitives[0].materialKey],mass=body?body.mass*value.density/currentMaterial.density:null;const option=element('option','',mass===null?name:`${name} · ${format(mass,2)} kg`);option.value=name;materials.append(option);}materials.value=part.authoredMaterial.body??definition.primitives[0].materialKey;materials.disabled=mode!=='build';materials.addEventListener('change',()=>send({type:'material',id:part.id,primitive:'body',material:materials.value}));materialLabel.append(materials);settings.append(materialLabel);right.append(settings);
+ const placement=element('details','placement-settings');placement.append(element('summary','','Position & rotation'));
+ placement.append(element('p','muted small','Move or rotate the connected mechanism. Disconnect a part first to move it separately.'));
+ for(let axis=0;axis<3;axis++){const label=element('label','setting'),input=element('input');label.append(element('span','',`${['X','Height','Z'][axis]} (m)`));input.type='number';input.step='.025';input.value=part.position[axis];input.disabled=mode!=='build';input.setAttribute('aria-label',`Position ${['X','Y','Z'][axis]}`);input.addEventListener('change',()=>{const position=[...part.position];position[axis]=Number(input.value);send({type:'transform',id:part.id,position,rotation:part.rotation});});label.append(input);placement.append(label);}
+ const turn=button('Turn 90°',()=>{const q=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),Math.PI/2).multiply(new THREE.Quaternion(...part.rotation));send({type:'transform',id:part.id,position:part.position,rotation:q.toArray()});});turn.disabled=mode!=='build';placement.append(turn);right.append(placement);
+
+  for(const details of right.querySelectorAll('details'))details.open=openSections.includes(details.className);
+  if(focusLabel){const replacement=[...right.querySelectorAll('[aria-label]')].find(node=>node.getAttribute('aria-label')===focusLabel);replacement?.focus({preventScroll:true});}
+  refreshLive();
+ }
+ function shaftSpeed(motor){return motorShaftSpeed(frame,motor.node);}
+ function refreshHealth(){health.hidden=true;if(frame.metadata.mode!=='run'||frame.tick<120)return;const issue=diagnoseMotion(frame)[0];if(issue){health.textContent=`${issue.title} · Check machine`;health.hidden=false;}}
+ function refreshLive(){const part=frame.metadata.blueprint.parts.find(part=>part.id===selected),target=right.querySelector('[data-live-part]');if(!part||!target)return;const index=frame.metadata.blueprint.parts.indexOf(part),cell=frame.power?.cells.find(cell=>cell.node===index),motor=frame.power?.motors.find(motor=>motor.node===index),engineering=right.querySelector('[data-live-engineering]');target.replaceChildren();engineering?.replaceChildren();
+  if(cell){const capacity=part.parameters.capacityJ,percentage=capacity>0?Math.max(0,Math.min(100,cell.energyJ/capacity*100)):0;target.append(element('strong','',`${format(percentage,0)}% charge`));engineering?.append(element('div','',`${format(cell.energyJ,0)} / ${format(capacity,0)} J energy`),element('div','',`${format(cell.heatJ)} J cell heat`));}
+  if(motor){const speed=shaftSpeed(motor);let diagnosis=explainReason(motor.reasonCode);if(frame.metadata.mode==='build')diagnosis='Build mode · choose Run to test';else if(motor.reasonCode==='OK')diagnosis=speed!==null&&Math.abs(speed)<.5&&Math.abs(motor.current)>.01?'Powered, but barely turning. Check clearance and load.':'Powered';if(frame.metadata.mode==='paused')diagnosis=`Paused · last reading: ${diagnosis}`;target.append(element('div','diagnosis',diagnosis));if(speed!==null&&frame.metadata.mode!=='build')target.append(element('strong','shaft-speed',`${format(speed,2)} rad/s shaft speed`));engineering?.append(element('div','',`${format(motor.torque,3)} N·m torque · ${format(motor.current,2)} A`),element('div','',`${format(motor.heatJ)} J motor heat`));}
+  if(!cell&&!motor){const speed=frame.physics[index]?.angularVelocity;target.textContent=frame.metadata.mode==='build'?'Build mode · choose Run to test':speed?`Rotation speed ${format(Math.hypot(...speed),2)} rad/s`:'No live measurement';}
+ }
+ function disposePart(mesh){mesh.traverse(object=>{object.geometry?.dispose();object.material?.map?.dispose();object.material?.dispose();});}
+ function finishPart(mesh,part,definition){
+  const [hx,hy,hz]=definition.halfExtents;
+  function detail(geometry,color,position){const item=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,roughness:.45,metalness:.45}));item.position.fromArray(position);mesh.add(item);return item;}
+  function faceLabel(text,width,height,position,background='#203844',color='#ffdb9a'){
+   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=256;const context=canvas.getContext('2d');context.fillStyle=background;context.fillRect(0,0,512,256);context.fillStyle=color;context.font='bold 74px sans-serif';context.textAlign='center';context.textBaseline='middle';context.fillText(text,256,128);
+   const texture=new THREE.CanvasTexture(canvas),label=new THREE.Mesh(new THREE.PlaneGeometry(width,height),new THREE.MeshBasicMaterial({map:texture}));label.position.fromArray(position);mesh.add(label);return label;
+  }
+  if(part.type==='powerCell'){
+   mesh.material.color.setHex(0x294c60);
+   // Paint the lid with one offset face; a second box shares the housing's
+   // top and side planes and flickers as depth precision changes with the view.
+   const lid=detail(new THREE.PlaneGeometry(2*hx,2*hz).rotateX(-Math.PI/2),0xd3a450,[0,hy+.0005,0]);
+   lid.material.polygonOffset=true;lid.material.polygonOffsetFactor=-1;lid.material.polygonOffsetUnits=-1;
+   for(const sign of [-1,1])detail(new THREE.CylinderGeometry(.009,.009,.012,16),sign>0?0xd38a55:0xa4b1bb,[sign*hx*.6,hy+.006,0]);
+   const socket=CATALOG[part.type].ports.find(port=>port.kind==='power').position;
+   for(const sign of [-1,1]){const start=new THREE.Vector3(...socket),end=new THREE.Vector3(sign*hx*.6,hy+.012,0),middle=start.clone().lerp(end,.5);middle.y+=.018;detail(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(start,middle,end),12,.003,8,false),sign>0?0xcb7250:0x253641,[0,0,0]);}
+   faceLabel('−  CELL  +',hx*1.6,hy*1.2,[0,0,hz+.0005]);
+  }
+  if(part.type==='poweredMotor'){
+   mesh.material.color.setHex(0x80959f);
+   for(let i=0;i<5;i++)detail(new THREE.BoxGeometry(.007,hy*1.2,.001),0x24333c,[-hx*.7+i*.013,0,hz+.0005]);
+   for(const y of [-1,1])for(const z of [-1,1])detail(new THREE.CylinderGeometry(.004,.004,.002,8).rotateZ(-Math.PI/2),0x283d48,[hx+.001,y*hy*.76,z*hz*.76]);
+   const label=faceLabel('MOTOR',hx*1.5,hy*.58,[0,hy+.0005,0],'#364f5e','#dce9ee');label.rotation.x=-Math.PI/2;
+  }
+  if(part.type==='gripWheel'){
+   // Surface markings identify the hub without changing collision geometry.
+   for(const side of [-1,1]){
+    const hub=detail(new THREE.RingGeometry(.013,Math.min(hy*.3,.035),32).rotateY(side*Math.PI/2),0xaabac2,[side*(hx+.0005),0,0]);
+    hub.material.side=THREE.DoubleSide;
+    const rim=detail(new THREE.RingGeometry(hy*.78,hy*.82,48).rotateY(side*Math.PI/2),0x657d8b,[side*(hx+.0005),0,0]);rim.material.side=THREE.DoubleSide;
+   }
+  }
+  for(const region of surfaceRegions(part).filter(r=>r.padHalfSize)){const [hu,hv]=region.padHalfSize,rotation=new THREE.Quaternion(...region.rotation),origin=new THREE.Vector3(...region.position),normal=new THREE.Vector3(1,0,0).applyQuaternion(rotation);for(const [u,v] of [[-.75,-.75],[.75,-.75],[.75,.75],[-.75,.75]]){const position=new THREE.Vector3(0,u*hu,v*hv).applyQuaternion(rotation).add(origin).addScaledVector(normal,.0006);const head=detail(new THREE.CircleGeometry(.003,8),0xb9cbd2,position.toArray());head.quaternion.copy(rotation).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),Math.PI/2));}}
+  // Draw every exposed shaft from the housing face to its authored endpoint.
+  for(const shaft of CATALOG[part.type].ports.filter(port=>port.kind==='shaft')){const end=shaft.position[0],face=Math.sign(end)*hx,length=Math.abs(end-face);if(Math.abs(end)>hx)detail(new THREE.CylinderGeometry(.012,.012,length,20).rotateZ(-Math.PI/2),0xc5d3d8,[(face+end)/2,shaft.position[1],shaft.position[2]]);}
+  for(const port of CATALOG[part.type].ports)if(['power','signal'].includes(port.kind))detail(new THREE.SphereGeometry(.007,12,8),port.kind==='power'?0xf8bd68:0x6edbd2,port.position);
+  const outline=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry,25),new THREE.LineBasicMaterial({color:0xffc778,depthTest:false,transparent:true,opacity:.95}));outline.renderOrder=10;outline.visible=false;mesh.add(outline);mesh.userData.selectionOutline=outline;
+  mesh.traverse(object=>{object.userData.partId=part.id;});
+ }
+ function createPartMesh(part){
+   const definition=CATALOG[part.type].primitives[0],material=part.authoredMaterial[definition.id]??definition.materialKey;
+   const [halfLength,radius]=definition.halfExtents;
+   // CylinderGeometry starts on Y. Rotate the geometry, leaving the mesh frame
+   // equal to the actual body frame with its cylinder along local X.
+   const geometry=definition.kind==='cylinder'?new THREE.CylinderGeometry(radius,radius,2*halfLength,CYLINDER_SEGMENTS).rotateZ(-Math.PI/2):new THREE.BoxGeometry(...definition.halfExtents.map(value=>value*2));
+   const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:materialColor[material],metalness:material==='rubber'?.05:.45,roughness:material==='rubber'?.95:.45}));
+   mesh.userData.partId=part.id;mesh.castShadow=true;mesh.receiveShadow=true;
+   if(definition.kind==='cylinder'){
+    // Painted radial marks reveal real rotation. They inherit the body's full
+    // transform; there is no separate animation or simulated wheel angle.
+    for(const side of [-1,1])for(let spoke=0;spoke<3;spoke++){
+     const angle=spoke*2*Math.PI/3,x=side*(halfLength+.0002);
+     const points=[new THREE.Vector3(x,0,0),new THREE.Vector3(x,Math.cos(angle)*radius*.82,Math.sin(angle)*radius*.82)];
+     const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color:spoke===0?0xffbf69:0xaabac2}));
+     line.userData.partId=part.id;mesh.add(line);
+    }
+   }
+   finishPart(mesh,part,definition);return mesh;
+ }
+ function rebuildMeshes(blueprint){for(const mesh of meshes.values()){scene.remove(mesh.parent);disposePart(mesh);}meshes.clear();for(const part of blueprint.parts){const mesh=createPartMesh(part),display=new THREE.Group();display.add(mesh);scene.add(display);meshes.set(part.id,mesh);}refreshPartList();}
+ function renderPaletteIcons(){const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true});renderer.setSize(128,104);renderer.setClearColor(0,0);for(const img of left.querySelectorAll('[data-icon-type]')){const part=createPart(img.dataset.iconType,'thumbnail',[0,0,0]),mesh=createPartMesh(part),scene=new THREE.Scene();scene.add(mesh,new THREE.HemisphereLight(0xffffff,0x4f6470,3));const light=new THREE.DirectionalLight(0xffecd0,3);light.position.set(2,3,4);scene.add(light);const bounds=new THREE.Box3().setFromObject(mesh),size=bounds.getSize(new THREE.Vector3()).length()*.6,center=bounds.getCenter(new THREE.Vector3()),camera=new THREE.OrthographicCamera(-size*128/104,size*128/104,size,-size,.01,10);camera.position.copy(center).add(new THREE.Vector3(1.4,.9,1.8));camera.lookAt(center);renderer.render(scene,camera);img.src=renderer.domElement.toDataURL();disposePart(mesh);}renderer.dispose();renderer.forceContextLoss();}
+
+ function updatePortCues(){
+  if(!previewEndpoint)snapNotice.hidden=true;
+  const key=JSON.stringify([blueprintKey,sourcePort,previewEndpoint,frame?.metadata.mode]);if(key===portCueKey)return;portCueKey=key;
+  for(const child of [...portCues.children]){portCues.remove(child);disposePart(child);}
+  if(!sourcePort||frame?.metadata.mode!=='build')return;
+  const bp=frame.metadata.blueprint,source=bp.parts.find(p=>p.id===sourcePort.part),sourceDefinition=source&&CATALOG[source.type].ports.find(p=>p.id===sourcePort.port);if(!sourceDefinition||occupied(source,sourceDefinition))return;
+  const position=(part,port)=>new THREE.Vector3(...port.position).applyQuaternion(new THREE.Quaternion(...part.rotation)).add(new THREE.Vector3(...part.position));
+  const start=position(source,sourceDefinition);
+  for(const part of bp.parts)for(const port of CATALOG[part.type].ports){const isSource=part.id===source.id&&port.id===sourceDefinition.id;if(!isSource&&(part.id===source.id||!compatible(sourceDefinition,port)||occupied(part,port)||portConnections(source,sourceDefinition).some(c=>[c.a,c.b].some(e=>e.part===part.id&&e.port===port.id))))continue;
+   const dot=new THREE.Mesh(new THREE.SphereGeometry(.012,12,8),new THREE.MeshBasicMaterial({color:isSource?0xffc778:0x8cf5cf,depthTest:false,transparent:true,opacity:.9}));dot.position.copy(position(part,port));dot.renderOrder=20;portCues.add(dot);
+   if(previewEndpoint?.part===part.id&&previewEndpoint.port===port.id){const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([start,dot.position]),new THREE.LineDashedMaterial({color:0x8cf5cf,dashSize:.02,gapSize:.01,depthTest:false}));line.computeLineDistances();line.renderOrder=20;portCues.add(line);}
+  }
+ }
+ function guideConnectionMessage(edge,completed=true){
+  const bp=frame.metadata.blueprint,a=bp.parts.find(p=>p.id===edge.a.part),b=bp.parts.find(p=>p.id===edge.b.part);
+  const kind=edge.kind??(edge.a.surface?'fixed':CATALOG[a.type].ports.find(p=>p.id===edge.a.port).kind);
+  if(!completed)return `${a.name} ↔ ${b.name} · ${kind==='fixed'?'Will bolt these parts together.':kind==='shaft'?'Will join the axle, allowing rotation.':kind==='power'?'Will add a power cable.':'Will connect the control signal.'}`;
+  return `${a.name} ↔ ${b.name} · ${kind==='fixed'?'Bolted together: they move as one.':kind==='shaft'?'Axle connected: the wheel can turn.':kind==='power'?'Power wired: energy can reach the motor.':'Signal connected: commands can pass.'}`;
+ }
+ function showGuideConnection(edge,completed=false){
+  if(edge&&!completed&&guideVisual?.id===edge.id&&!guideVisual.completed)return;
+  for(const child of [...guideCues.children]){guideCues.remove(child);disposePart(child);}
+  guideVisual=edge?{...edge,completed}:null;guideFeedback.hidden=!edge;if(!edge)return;
+  guideFeedback.textContent=`${completed?'✓ Connected':'Next connection'} · ${guideConnectionMessage(edge,completed)}`;
+  scene.updateMatrixWorld(true);
+  for(const endpoint of [edge.a,edge.b]){
+   const part=frame.metadata.blueprint.parts.find(p=>p.id===endpoint.part),mesh=meshes.get(endpoint.part);if(!part||!mesh)continue;
+   const color=completed?0x8cf5cf:0xffc778,outline=new THREE.BoxHelper(mesh,color);outline.material.depthTest=false;outline.material.transparent=true;outline.material.opacity=.8;outline.renderOrder=24;guideCues.add(outline);
+   const port=endpointDefinition(part,endpoint),marker=new THREE.Mesh(new THREE.SphereGeometry(.022,16,12),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.65,depthTest:false,depthWrite:false}));marker.position.copy(mesh.localToWorld(new THREE.Vector3(...port.position)));marker.renderOrder=25;marker.userData.guideMarker=true;guideCues.add(marker);
+  }
+ }
+ function updateConnections(){
+  for(const wire of [...wires.children]){wires.remove(wire);disposePart(wire);}
+  for(const connection of frame.metadata.blueprint.connections){
+   const ends=[connection.a,connection.b].map(endpoint=>{const index=frame.metadata.blueprint.parts.findIndex(part=>part.id===endpoint.part),part=frame.metadata.blueprint.parts[index],pose=frame.physics[index],port=endpointDefinition(part,endpoint);if(!pose||!port)return null;return meshes.get(part.id).localToWorld(new THREE.Vector3(...port.position));});
+   if(ends.some(value=>!value))continue;
+   const electrical=['power','signal'].includes(connection.kind),color=connection.kind==='power'?0xfbc16c:connection.kind==='signal'?0x68d9d0:0xc7d8df;
+   const diagnostic=frame.metadata.connections.find(item=>item.id===connection.id);
+   if(explodeAmount>0){const highlighted=connection.id===tracedConnection||(!tracedConnection&&[connection.a.part,connection.b.part].includes(selected)),line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(ends),new THREE.LineDashedMaterial({color:highlighted?0xffffff:color,dashSize:.025,gapSize:.015,transparent:true,opacity:highlighted?1:.8}));line.computeLineDistances();line.userData.connectionId=connection.id;wires.add(line);for(const point of ends){const dot=new THREE.Mesh(new THREE.SphereGeometry(highlighted?.014:.009,12,8),new THREE.MeshBasicMaterial({color:highlighted?0xffffff:color}));dot.position.copy(point);dot.userData.connectionId=connection.id;wires.add(dot);}continue;}
+   if(!electrical&&diagnostic?.reasonCode!=='OK'){
+    const warning=new THREE.Line(new THREE.BufferGeometry().setFromPoints(ends),new THREE.LineDashedMaterial({color:0xff9a47,dashSize:.025,gapSize:.015}));warning.computeLineDistances();wires.add(warning);continue;
+   }
+   if(electrical){
+    const middle=ends[0].clone().lerp(ends[1],.5);middle.y+=Math.min(.12,ends[0].distanceTo(ends[1])*.2+.035);
+    const path=new THREE.QuadraticBezierCurve3(ends[0],middle,ends[1]);
+    const cable=new THREE.Mesh(new THREE.TubeGeometry(path,20,connection.kind==='power'?.005:.004,8,false),new THREE.MeshStandardMaterial({color,roughness:.6,emissive:color,emissiveIntensity:.1}));wires.add(cable);
+   }else if(ends[0].distanceTo(ends[1])>1e-5){
+    const direction=ends[1].clone().sub(ends[0]),shaft=new THREE.Mesh(new THREE.CylinderGeometry(.009,.009,direction.length(),12),new THREE.MeshStandardMaterial({color,metalness:.75,roughness:.3}));shaft.position.copy(ends[0]).lerp(ends[1],.5);shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction.normalize());wires.add(shaft);
+   }
+   for(const point of electrical?ends:[ends[0]]){const marker=new THREE.Mesh(new THREE.SphereGeometry(electrical?.007:.009,12,8),new THREE.MeshStandardMaterial({color,metalness:.5,roughness:.35}));marker.position.copy(point);wires.add(marker);}
+  }
+ }
+
+ function traceConnection(id){const edge=frame.metadata.blueprint.connections.find(c=>c.id===id);if(!edge)return;select(edge.a.part);tracedConnection=id;inspectorKey='';refreshInspector();refreshSelectionVisuals();updateConnections();onInteraction?.('trace-connection',{id});}
+ function applyExploded(){for(const [id,mesh] of meshes)mesh.parent.position.copy(explodeTarget.get(id)??new THREE.Vector3()).multiplyScalar(explodeAmount);scene.updateMatrixWorld(true);updateConnections();}
+ function setExploded(on,immediate=false){surface?.cancel(false);
+  if(on&&(frame?.metadata.mode==='run'||frame?.metadata.blueprint.parts.length<2))return;
+  if(on===exploded&&!immediate)return;endDirectDrag(false);editing.cancel();sourcePort=null;previewEndpoint=null;tracedConnection=null;
+  if(on){explodeCamera??={position:camera.position.toArray(),target:controls.target.toArray()};const center=new THREE.Vector3();for(const mesh of meshes.values())center.add(mesh.position);center.multiplyScalar(1/meshes.size);explodeTarget=new Map();let i=0;for(const [id,mesh] of meshes){const radial=mesh.position.clone().sub(center);if(radial.length()<.03){const angle=i*2.399963;radial.set(Math.cos(angle),.2,Math.sin(angle));}radial.normalize().multiplyScalar(.22+Math.sqrt(meshes.size)*.07);radial.y=Math.max(0,radial.y);explodeTarget.set(id,radial);i++;}}
+  explodeFrom=explodeAmount;explodeStarted=performance.now();exploded=on;const cameraFrom={position:camera.position.clone(),target:controls.target.clone()};
+  if(on){const previous=explodeAmount;explodeAmount=1;applyExploded();editing.focus();explodeCameraTween={from:cameraFrom,to:{position:camera.position.clone(),target:controls.target.clone()},started:performance.now()};explodeAmount=previous;applyExploded();camera.position.copy(cameraFrom.position);controls.target.copy(cameraFrom.target);controls.update();}
+  else if(explodeCamera)explodeCameraTween={from:cameraFrom,to:{position:new THREE.Vector3(...explodeCamera.position),target:new THREE.Vector3(...explodeCamera.target)},started:performance.now()};
+  tools.querySelector('.edit-hint').textContent=on?'Inspection only · Return to assembly to edit':'Move/Rotate moves attached parts together. Use Adjust mount to reposition an attachment.';explodeButton.textContent=on?'Assembly view':'Exploded view';explodeButton.setAttribute('aria-pressed',String(on));inspectionBanner.hidden=!on;inspectorKey='';editing.setTool('select');activeTool='select';for(const b of tools.querySelectorAll('[data-edit-tool]')){b.classList.toggle('active',b.dataset.editTool==='select');b.setAttribute('aria-pressed',String(b.dataset.editTool==='select'));}
+  if(immediate){explodeAmount=0;applyExploded();}
+  refreshInspector();refreshSelectionVisuals();hint.textContent=on?'Click a part or dashed connection to inspect · Drag to orbit · Esc clears selection':'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear';onInteraction?.('exploded-view',{active:on,amount:explodeAmount});
+ }
+ function render(next){const previousMode=frame?.metadata.mode;frame=next;surface.refresh();const blueprint=frame.metadata.blueprint,key=JSON.stringify(blueprint);if((exploded||explodeAmount)&&(key!==blueprintKey||frame.metadata.mode==='run'))setExploded(false,true);if(key!==blueprintKey){if(guideVisual)showGuideConnection(null);blueprintKey=key;const added=blueprint.parts.filter(part=>!meshes.has(part.id)).at(-1);if(added)selected=added.id;else if(!blueprint.parts.some(part=>part.id===selected))selected=null;if(sourcePort&&!blueprint.parts.some(part=>part.id===sourcePort.part))sourcePort=null;rebuildMeshes(blueprint);inspectorKey='';}
+  if(exploded&&(frame.metadata.mode==='run'||key!==blueprintKey))setExploded(false,true);for(const [index,part] of blueprint.parts.entries()){const pose=frame.physics[index],mesh=meshes.get(part.id);if(!pose)continue;mesh.position.fromArray(pose.position);mesh.quaternion.fromArray(pose.rotation);}
+  explodeButton.disabled=frame.metadata.mode==='run'||blueprint.parts.length<2;refreshSelectionVisuals();if(previousMode&&previousMode!=='build'&&frame.metadata.mode==='build')editing.focus();editing.select(selected);undo.disabled=frame.metadata.mode!=='build'||!frame.metadata.editing?.undoCount;redo.disabled=frame.metadata.mode!=='build'||!frame.metadata.editing?.redoCount;refreshGuide();updateConnections();refreshInspector();refreshLive();refreshHealth();failureButton.hidden=frame.status!=='failed';empty.hidden=blueprint.parts.length>0;tickLabel.textContent=`Tick ${frame.tick}`;modeLabel.textContent=frame.status==='failed'?'STOPPED':frame.metadata.mode.toUpperCase();run.disabled=frame.metadata.mode==='run';pause.disabled=frame.metadata.mode!=='run';stepButton.disabled=frame.metadata.mode!=='paused';build.classList.toggle('active',frame.metadata.mode==='build');for(const b of palette.querySelectorAll('button'))b.disabled=frame.metadata.mode!=='build';for(const b of more.querySelectorAll('button'))b.disabled=frame.metadata.mode!=='build';
+ }
+ function readRenderedCenters(){return [...meshes].map(([id,mesh])=>{const p=mesh.getWorldPosition(new THREE.Vector3()).project(camera);return {id,x:p.x,y:p.y,z:p.z};});}
+ function readRenderedTransforms(){return [...meshes].map(([id,mesh])=>({id,position:mesh.getWorldPosition(new THREE.Vector3()).toArray(),rotation:mesh.quaternion.toArray()}));}
+ const resize=new ResizeObserver(()=>{const width=stage.clientWidth,height=stage.clientHeight;if(!width||!height)return;camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height,false);});resize.observe(stage);
+ function cameraAxes(){const forward=camera.getWorldDirection(new THREE.Vector3());forward.y=0;if(forward.lengthSq()<1e-8)forward.set(0,0,-1);forward.normalize();return {forward,right:forward.clone().cross(new THREE.Vector3(0,1,0)).normalize()};}
+ async function copySelected(){const bp=frame?.metadata.blueprint;if(frame?.metadata.mode!=='build'||!selected)return;let id;do{id=`copy-${++copySequence}`;}while(bp.parts.some(p=>p.id===id));try{const part=duplicatePart(bp,selected,id,cameraAxes().forward.negate().toArray());const result=await send({type:'insert',part});if(result?.ok){editing.focus();setMessage('Copied toward the camera; view widened to show both. The copy has no connections.');}}catch(error){setMessage(error.reasonCode==='UNKNOWN_PART'?'Select a part to copy.':'No free copy position found. Move parts to make room.');}}
+ const keydown=event=>{if(document.querySelector('dialog[open]'))return;inputTime=event.timeStamp;const key=event.key.toLowerCase();if(surface.active()&&event.key==='Escape'){event.preventDefault();endDirectDrag(false);surface.cancel();return;}if(surface.active()&&surface.key(event)){event.preventDefault();return;}if(event.key==='Escape'){event.preventDefault();endDirectDrag(false);draggingType=null;placementCue.hidden=true;editing.cancel();select(null);return;}if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)||document.activeElement?.isContentEditable||event.repeat)return;
+ if((event.metaKey||event.ctrlKey)&&key==='z'){event.preventDefault();send({type:event.shiftKey?'redo':'undo'});return;}
+ if(key==='?'){event.preventDefault();help.open=!help.open;return;}
+ if(exploded&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown','Delete','x','c'].includes(event.key)){event.preventDefault();setMessage('Return to assembly to edit parts.');return;}
+ if(frame?.metadata.mode==='build'){
+  const part=frame.metadata.blueprint.parts.find(p=>p.id===selected);
+  if(part&&(event.key==='Delete'||key==='x')&&!event.ctrlKey&&!event.metaKey&&!event.altKey){event.preventDefault();send({type:'delete',id:part.id});return;}
+  if(part&&key==='c'&&!event.altKey&&!window.getSelection()?.toString()){event.preventDefault();copySelected();return;}
+  if(part&&(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown'].includes(event.key))&&!event.ctrlKey&&!event.metaKey){event.preventDefault();const {forward,right}=cameraAxes();let position=[...part.position],rotation=[...part.rotation];if(event.altKey){if(event.key.startsWith('Page'))return;const axis=['ArrowLeft','ArrowRight'].includes(event.key)?new THREE.Vector3(0,1,0):right;const angle=['ArrowLeft','ArrowUp'].includes(event.key)?Math.PI/2:-Math.PI/2;rotation=new THREE.Quaternion().setFromAxisAngle(axis,angle).multiply(new THREE.Quaternion(...rotation)).toArray();}else{const direction=event.key==='ArrowUp'?forward:event.key==='ArrowDown'?forward.negate():event.key==='ArrowRight'?right:event.key==='ArrowLeft'?right.negate():new THREE.Vector3(0,event.key==='PageUp'?1:-1,0);position=new THREE.Vector3(...position).addScaledVector(direction,.025).toArray();}send({type:'transform',id:part.id,position,rotation});return;}
+ }
+ if(event.ctrlKey||event.metaKey||event.altKey)return;
+ if(key==='v'){setTool('select');return;}if(key==='w'){setTool('translate');return;}if(key==='e'){setTool('rotate');return;}if(key==='f'){explodeCameraTween=null;editing.focus();return;}if(event.code==='Space'){event.preventDefault();endDirectDrag(false);send({type:frame?.metadata.mode==='run'?'pause':'run'});}if(event.key==='.'){event.preventDefault();send({type:'step'});}if(frame?.metadata.mode!=='build'&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key)){const receiver=frame?.metadata.blueprint.parts.find(p=>p.id===selected&&p.type==='commandReceiver')??frame?.metadata.blueprint.parts.find(p=>p.type==='commandReceiver');if(receiver){drivingReceiver=receiver.id;event.preventDefault();send({type:'control',id:receiver.id,duty:['ArrowUp','ArrowRight'].includes(event.key)?1:-1});}}};window.addEventListener('keydown',keydown);
+ const stopKeys=()=>{endDirectDrag(false);if(drivingReceiver){const id=drivingReceiver;drivingReceiver=null;send({type:'control',id,duty:0});}};
+ const keyup=event=>{inputTime=event.timeStamp;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key))stopKeys();};window.addEventListener('keyup',keyup);window.addEventListener('blur',stopKeys);
+
+ renderPaletteIcons();
+ let animation;function draw(){if(disposed)return;if(guideVisual&&frame?.metadata.mode!=='build')showGuideConnection(null);for(const cue of guideCues.children)if(cue.userData.guideMarker){const elapsed=performance.now()-guidePulseStarted;cue.scale.setScalar(guideVisual?.completed&&elapsed<1800?1+.35*Math.sin(elapsed/120)**2:1);}if(follow.checked&&frame?.metadata.mode==='run'&&meshes.size){const center=new THREE.Vector3();for(const mesh of meshes.values())center.add(mesh.position);center.multiplyScalar(1/meshes.size);if(followCenter){const delta=center.clone().sub(followCenter);camera.position.add(delta);controls.target.add(delta);}followCenter=center;}else followCenter=null;const target=exploded?1:0;if(explodeAmount!==target){const progress=Math.min(1,(performance.now()-explodeStarted)/450);explodeAmount=explodeFrom+(target-explodeFrom)*(1-(1-progress)**3);if(progress===1)explodeAmount=target;applyExploded();}if(explodeCameraTween){const tween=explodeCameraTween,progress=Math.min(1,(performance.now()-tween.started)/450),eased=progress*progress*(3-2*progress);camera.position.lerpVectors(tween.from.position,tween.to.position,eased);controls.target.lerpVectors(tween.from.target,tween.to.target,eased);if(progress===1){explodeCameraTween=null;if(!exploded)explodeCamera=null;}}controls.update();updatePortCues();const selectedMesh=meshes.get(selected),part=frame?.metadata.blueprint.parts.find(p=>p.id===selected);selectionLabel.hidden=!selectedMesh;if(selectedMesh&&part){const point=selectedMesh.getWorldPosition(new THREE.Vector3());point.y+=CATALOG[part.type].primitives[0].halfExtents[1]+.07;point.project(camera);selectionLabel.textContent=part.name;selectionLabel.hidden=surface.active()||point.z>1;const x=Math.max(140,Math.min(stage.clientWidth-140,(point.x*.5+.5)*stage.clientWidth)),y=Math.max(tools.offsetTop+tools.offsetHeight+selectionLabel.offsetHeight+12,Math.min(stage.clientHeight-130,(-point.y*.5+.5)*stage.clientHeight));selectionLabel.style.left=`${x}px`;selectionLabel.style.top=`${y}px`;selectionActions.style.left=`${x}px`;const bounds=new THREE.Box3();for(const id of mechanicalGroup(frame.metadata.blueprint,selected))bounds.expandByObject(meshes.get(id));let top=y;for(const bx of [bounds.min.x,bounds.max.x])for(const by of [bounds.min.y,bounds.max.y])for(const bz of [bounds.min.z,bounds.max.z]){const corner=new THREE.Vector3(bx,by,bz).project(camera);top=Math.min(top,(-corner.y*.5+.5)*stage.clientHeight);}let actionsTop=Math.max(tools.offsetTop+tools.offsetHeight+12,top-95);const actionHeight=selectionActions.offsetHeight,labelHeight=selectionLabel.offsetHeight;if(actionsTop+actionHeight>y-labelHeight-8&&actionsTop<y+8){const separation=140+selectionLabel.offsetWidth/2+10,side=x+separation<=stage.clientWidth-140?x+separation:x-separation>=140?x-separation:null;if(side!==null)selectionActions.style.left=`${side}px`;else actionsTop=y+12;}selectionActions.style.top=`${actionsTop}px`;selectionActions.hidden=surface.active()||exploded||explodeAmount>0||point.z>1||frame.metadata.mode!=='build';}renderer.render(scene,camera);animation=requestAnimationFrame(draw);}draw();
+ return {render,setMessage,setRecordingState,readInteractionState:()=>({selected,sourcePort,previewEndpoint,surfacePlacement:surface.read(),guideConnection:guideVisual,explodedView:{active:exploded,amount:explodeAmount,tracedConnection,displayOffsets:[...meshes].map(([id,mesh])=>({id,offset:mesh.parent.position.toArray()}))},affectedParts:frame?.metadata.mode==='build'?mechanicalGroup(frame.metadata.blueprint,selected):[],tool:activeTool,camera:{position:camera.position.toArray(),target:controls.target.toArray(),fov:camera.fov,aspect:camera.aspect}}),readRenderedTransforms,readRenderedCenters,camera,dispose(){disposed=true;showGuideConnection(null);cancelAnimationFrame(animation);for(const type of ['click','change'])root.removeEventListener(type,captureInput,true);resize.disconnect();window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',stopKeys);surface.dispose();editing.dispose();controls.dispose();for(const mesh of meshes.values())disposePart(mesh);renderer.dispose();root.replaceChildren();}};
+}

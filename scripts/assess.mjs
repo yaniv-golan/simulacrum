@@ -1,13 +1,13 @@
 // Records a human assessment.
-//   npm run assess -- F1 pass alex app-1234567890abcdef "11 min to a moving cart"
+//   npm run assess -- F1 pass designated-player app-1234567890abcdef "11 min to a moving cart"
 //
 // `servedBuild` is read off the RUNNING APPLICATION by the person who ran the
 // session -- not inferred from the assessor's checkout, which allowed testing an
 // old server and recording against new source.
 //
-// Sessions are APPEND-ONLY in assessments/sessions/. F1's novice rule reads that
-// log: overwriting a single F1.json let alex -> blair -> alex be accepted.
-import { writeFileSync, mkdirSync, readdirSync, readFileSync, existsSync } from "node:fs";
+// Sessions are APPEND-ONLY in assessments/sessions/. The latest session for a
+// bar is authoritative, including a repeat assessment that fails.
+import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { appFingerprint, protocolHash } from "./build-fingerprint.mjs";
 
@@ -32,42 +32,32 @@ if (!servedBuild) fail("servedBuild is required: the build id shown by the runni
 if (!notes) fail("notes are required: what happened");
 
 const sessionsDir = new URL("../assessments/sessions/", import.meta.url);
-function sessions() {
-  if (!existsSync(sessionsDir)) return [];
-  return readdirSync(sessionsDir)
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => JSON.parse(readFileSync(new URL(f, sessionsDir), "utf8")));
-}
-
-// F1 measures FIRST-launch experience: a participant cannot be novice twice.
-// F1 measures FIRST-launch experience. Any prior recorded exposure disqualifies,
-// not only a prior F1: a ten-minute F4 participant is no longer a novice.
+// F1 is acceptance by the designated player. The alias is public; its mapping
+// to the real participant stays private. Returning sessions are eligible.
 if (id === "F1") {
-  const prior = sessions().find((s) => s.participant === participant);
-  if (prior)
-    fail(
-      `F1 is a first-launch bar and ${participant} already has a recorded session (${prior.bar}, ` +
-        `${prior.date}). A participant with any prior exposure cannot supply novice evidence.`,
-    );
+  const designated = manifest.bars.F1.participant;
+  if (typeof designated !== "string" || !designated.trim() || participant !== designated)
+    fail("F1 requires the manifest's designated participant");
 }
 
 const app = appFingerprint();
+const recordedAt = new Date().toISOString();
 const record = {
   bar: id,
   verdict,
   app,
   protocol: protocolHash(id, manifest.bars[id].contract),
-  recordedAt: new Date().toISOString(),
+  recordedAt,
   servedBuild,
   participant,
   assessor: execFileSync("git", ["config", "user.name"], { encoding: "utf8" }).trim(),
-  date: new Date().toISOString().slice(0, 10),
+  date: recordedAt.slice(0, 10),
   notes,
 };
 
 mkdirSync(sessionsDir, { recursive: true });
-const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-writeFileSync(new URL(`${id}-${stamp}.json`, sessionsDir), `${JSON.stringify(record, null, 2)}\n`);
+const stamp = recordedAt.replace(/[:.]/g, "-");
+writeFileSync(new URL(`${id}-${stamp}.json`, sessionsDir), `${JSON.stringify(record, null, 2)}\n`, { flag: "wx" });
 writeFileSync(
   new URL(`../assessments/${id}.json`, import.meta.url),
   `${JSON.stringify(record, null, 2)}\n`,

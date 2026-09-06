@@ -1,69 +1,26 @@
-// ONE aggregate script on purpose. `npm run a b c` runs only `a` and passes the
-// rest as arguments -- verified: scripts exiting 0, 17 and 23 combine to exit 0.
-//
-// Checks are OWNED BY A MILESTONE and may be async. Awaiting matters: a check
-// that returned an unresolved promise previously printed green and exited 0.
-import { readFileSync } from "node:fs";
-
-const manifest = JSON.parse(
-  readFileSync(new URL("./manifest.json", import.meta.url), "utf8"),
-);
-
-const TIMEOUT_MS = 60_000;
-
-const implementations = {
-  layers: null, // M0 deliverable
-  "tick-order": null, // M1
-  identity: null, // M2
-};
-
-async function withTimeout(name, fn) {
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`timed out after ${TIMEOUT_MS} ms`)), TIMEOUT_MS);
-  });
-  try {
-    await Promise.race([Promise.resolve().then(fn), timeout]);
-  } finally {
-    clearTimeout(timer);
-  }
+// Every structural check runs in a killable process; a blocked child cannot
+// prevent the parent deadline firing. Future checks remain explicitly deferred.
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { runModuleCheck } from './run-check.mjs';
+const root=fileURLToPath(new URL('../',import.meta.url));
+const manifest=JSON.parse(readFileSync(new URL('./manifest.json',import.meta.url),'utf8'));
+const implementations={layers:{module:'scripts/module-graph.mjs',export:'checkLayers'}};
+export async function runStructuralChecks(target=manifest.milestone) {
+ const cutoff=manifest.milestones.indexOf(target);if(cutoff<0)throw new Error(`unknown milestone: ${target}`);
+ const due=manifest.checks.filter(check=>{if(!manifest.milestones.includes(check.dueAt))throw new Error(`invalid dueAt for ${check.id}`);return manifest.milestones.indexOf(check.dueAt)<=cutoff;});
+ let failed=0;
+ for(const check of due){
+  const implementation=check.module?check:implementations[check.id];
+  if(!implementation){failed++;console.error(`STUB  gate:${check.id} -- not written; due ${check.dueAt}`);continue;}
+  try{await runModuleCheck(resolve(root,implementation.module),implementation.export??'check',check.args??[root,{physicsPackages:manifest.physicsPackages??[]}],{cwd:root,timeoutMs:check.timeoutMs??5000});console.log(`ok    gate:${check.id}`);}
+  catch(error){failed++;console.error(`FAIL  gate:${check.id}: ${error.message}`);}
+ }
+ for(const check of manifest.checks.filter(check=>!due.includes(check)))console.log(`--    gate:${check.id} deferred to ${check.dueAt}`);
+ return {failed,ran:due.length};
 }
-
-export async function runStructuralChecks(target = manifest.milestone) {
-  const order = manifest.milestones;
-  const cutoff = order.indexOf(target);
-  if (cutoff < 0) throw new Error(`unknown milestone: ${target}`);
-
-  const due = manifest.checks.filter((check) => order.indexOf(check.dueAt) <= cutoff);
-  let failed = 0;
-
-  for (const check of due) {
-    const run = implementations[check.id];
-    if (!run) {
-      failed += 1;
-      console.error(`STUB  gate:${check.id} -- not written; due ${check.dueAt}`);
-      continue;
-    }
-    try {
-      await withTimeout(check.id, run);
-      console.log(`ok    gate:${check.id}`);
-    } catch (error) {
-      failed += 1;
-      console.error(`FAIL  gate:${check.id}: ${error.message}`);
-    }
-  }
-  for (const check of manifest.checks.filter((c) => !due.includes(c)))
-    console.log(`--    gate:${check.id} deferred to ${check.dueAt}`);
-
-  return { failed, ran: due.length };
-}
-
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const target = process.argv[2] ?? manifest.milestone;
-  const { failed, ran } = await runStructuralChecks(target);
-  if (failed > 0) {
-    console.error(`\n${failed} of ${ran} structural check(s) not green at ${target}.`);
-    process.exit(1);
-  }
-  console.log(`\nstructural gate green at ${target} (${ran} check(s)).`);
+if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+ const start=performance.now();const target=process.argv[2]??manifest.milestone;const {failed,ran}=await runStructuralChecks(target);
+ console.log(`structural gate ${failed?'REFUSED':'green'} at ${target}: ${ran} checks, ${(performance.now()-start).toFixed(1)} ms`);process.exitCode=failed?1:0;
 }

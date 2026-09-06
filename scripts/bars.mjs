@@ -2,6 +2,7 @@
 // record that passes a STRICT schema: a partial record used to print GREEN with
 // "assessed undefined, participant undefined".
 import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { appFingerprint, protocolHash } from "./build-fingerprint.mjs";
 
 const manifest = JSON.parse(
@@ -19,13 +20,23 @@ function validate(record, id) {
       return `evidence missing or empty field: ${field}`;
   if (record.bar !== id) return `evidence is for bar ${record.bar}, not ${id}`;
   if (!["pass", "fail"].includes(record.verdict)) return `bad verdict: ${record.verdict}`;
+  const timestamp = Date.parse(record.recordedAt);
+  if (!Number.isFinite(timestamp) || new Date(timestamp).toISOString() !== record.recordedAt)
+    return `recordedAt must be a canonical UTC timestamp: ${record.recordedAt}`;
+  if (record.date !== record.recordedAt.slice(0, 10)) return "date must match recordedAt";
   return null;
 }
 
 export function evaluateBar(id) {
   const bar = manifest.bars[id];
   if (!bar) throw new Error(`unknown bar: ${id}`);
-  if (!bar.human) return { id, state: "RED", why: "not implemented" };
+  if (!bar.human) {
+    if (!bar.check) return { id, state: "RED", why: "not implemented" };
+    try {
+      execFileSync(process.execPath, ["--input-type=module", "-e", `const {CHECKS}=await import('./scripts/checks.mjs'); if(typeof CHECKS[${JSON.stringify(bar.check)}]!=='function')throw Error('unknown check'); await CHECKS[${JSON.stringify(bar.check)}]();`], { timeout: 120000, killSignal: 'SIGKILL', stdio: 'pipe' });
+      return { id, state: 'GREEN', why: `executed ${bar.check}` };
+    } catch(error) { return { id, state: 'RED', why: `check failed: ${error.message}` }; }
+  }
 
   // The APPEND-ONLY SESSION LOG is authoritative, not assessments/<id>.json.
   // Restoring an older index file resurrected a superseded pass while the newer
@@ -35,10 +46,10 @@ export function evaluateBar(id) {
 
   let record;
   try {
-    const all = readdirSync(sessionsDir)
+    const log = readdirSync(sessionsDir)
       .filter((f) => f.endsWith(".json"))
-      .map((f) => JSON.parse(readFileSync(new URL(f, sessionsDir), "utf8")))
-      .filter((r) => r?.bar === id);
+      .map((f) => JSON.parse(readFileSync(new URL(f, sessionsDir), "utf8")));
+    const all = log.filter((r) => r?.bar === id);
     if (all.length === 0) return { id, state: "RED", why: "no recorded assessment" };
 
     // Validate BEFORE ordering. Sorting first let a record with
@@ -52,8 +63,15 @@ export function evaluateBar(id) {
     if (unparsable)
       return { id, state: "RED", why: `unparsable recordedAt: ${unparsable.r.recordedAt}` };
 
-    timed.sort((a, b) => a.t - b.t || (a.r.participant < b.r.participant ? -1 : 1));
+    if (new Set(timed.map((x) => x.t)).size !== timed.length)
+      return { id, state: "RED", why: "ambiguous recordedAt: sessions have identical timestamps" };
+    timed.sort((a, b) => a.t - b.t);
     record = timed.at(-1).r; // most recent valid session wins
+    if (id === "F1") {
+      const designated = bar.participant;
+      if (typeof designated !== "string" || !designated.trim() || record.participant !== designated)
+        return { id, state: "RED", why: "F1 requires the manifest's designated participant" };
+    }
   } catch (error) {
     return { id, state: "RED", why: `session log unreadable: ${error.message}` };
   }

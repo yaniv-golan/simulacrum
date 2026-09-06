@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:simulacrum:blueprint:3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "id",
+    "name",
+    "parts",
+    "connections"
+  ],
+  "properties": {
+    "version": {
+      "const": 3
+    },
+    "id": {
+      "$ref": "#/$defs/id"
+    },
+    "name": {
+      "$ref": "#/$defs/name"
+    },
+    "parts": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/part"
+      }
+    },
+    "connections": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/connection"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[\\s\\S]{1,128}$"
+    },
+    "position": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "number",
+        "minimum": -10000,
+        "maximum": 10000
+      }
+    },
+    "rotation": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "number",
+        "minimum": -1,
+        "maximum": 1
+      }
+    },
+    "part": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "name",
+        "position",
+        "rotation",
+        "authoredMaterial",
+        "parameters"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/name"
+        },
+        "position": {
+          "$ref": "#/$defs/position"
+        },
+        "rotation": {
+          "$ref": "#/$defs/rotation"
+        },
+        "authoredMaterial": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "body": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        },
+        "parameters": {
+          "type": "object"
+        }
+      }
+    },
+    "endpoint": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "part",
+            "port"
+          ],
+          "properties": {
+            "part": {
+              "$ref": "#/$defs/id"
+            },
+            "port": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "part",
+            "surface"
+          ],
+          "properties": {
+            "part": {
+              "$ref": "#/$defs/id"
+            },
+            "surface": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "region",
+                "u",
+                "v",
+                "twist"
+              ],
+              "properties": {
+                "region": {
+                  "type": "string"
+                },
+                "u": {
+                  "type": "number"
+                },
+                "v": {
+                  "type": "number"
+                },
+                "twist": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "connection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "a",
+        "b"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "fixed",
+            "shaft",
+            "power",
+            "signal"
+          ]
+        },
+        "a": {
+          "$ref": "#/$defs/endpoint"
+        },
+        "b": {
+          "$ref": "#/$defs/endpoint"
+        }
+      }
+    }
+  },
+  "$comment": "Current catalog membership and parameter schemas are joined by generate-schema.mjs. Only save version 3 is admitted."
+}
