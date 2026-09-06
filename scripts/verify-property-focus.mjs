@@ -34,6 +34,10 @@ try {
   build = await page.locator('meta[name=build-id]').getAttribute('content');
   await page.locator('[data-part-type=poweredMotor]').click();
   const duty = page.getByRole('spinbutton', { name: 'Drive setting', exact: true });
+  await duty.focus();
+  await duty.press('Shift+Tab');
+  const nativePrevious = await active();
+  assert.notEqual(nativePrevious.tag, 'BODY', 'the field has a native predecessor');
   await duty.fill('.5');
   await duty.press('Tab');
   await page.waitForFunction(
@@ -51,10 +55,10 @@ try {
   await duty.fill('.25');
   await duty.press('Shift+Tab');
   assert.equal(await parameter('defaultDuty'), 0.25);
-  assert.equal(
-    (await active()).label,
-    'Delete part',
-    'Shift+Tab after editing returns to the preceding action',
+  assert.deepEqual(
+    await active(),
+    nativePrevious,
+    'Shift+Tab after editing preserves the native predecessor',
   );
   await duty.focus();
   await duty.press('Tab');
@@ -102,7 +106,7 @@ try {
         errors,
         checks: [
           'edited primary Tab to slider then preset',
-          'edited primary Shift+Tab to Delete',
+          'edited primary Shift+Tab preserves native predecessor',
           'unchanged native Tab',
           'engineering next and previous fields',
           'engineering summary focus and open state',
