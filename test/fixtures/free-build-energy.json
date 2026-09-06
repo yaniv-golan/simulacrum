@@ -7,17 +7,8 @@
       "id": "wheel",
       "type": "gripWheel",
       "name": "Grip Wheel",
-      "position": [
-        -1.3250000000000002,
-        0.3,
-        0
-      ],
-      "rotation": [
-        0,
-        1,
-        0,
-        0
-      ],
+      "position": [-1.3250000000000002, 0.3, 0],
+      "rotation": [0, 1, 0, 0],
       "authoredMaterial": {},
       "parameters": {}
     },
@@ -25,17 +16,8 @@
       "id": "motor",
       "type": "poweredMotor",
       "name": "Powered Motor",
-      "position": [
-        -1.1800000000000002,
-        0.3,
-        0
-      ],
-      "rotation": [
-        0,
-        1,
-        0,
-        0
-      ],
+      "position": [-1.1800000000000002, 0.3, 0],
+      "rotation": [0, 1, 0, 0],
       "authoredMaterial": {},
       "parameters": {
         "torqueConstant": 0.1,
@@ -48,17 +30,8 @@
       "id": "cell",
       "type": "powerCell",
       "name": "Power Cell",
-      "position": [
-        -1,
-        0.3,
-        0
-      ],
-      "rotation": [
-        0,
-        0,
-        0,
-        1
-      ],
+      "position": [-1, 0.3, 0],
+      "rotation": [0, 0, 0, 1],
       "authoredMaterial": {
         "body": "aluminium"
       },

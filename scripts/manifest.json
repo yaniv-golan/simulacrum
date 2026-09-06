@@ -113,21 +113,7 @@
       "rule": "Players and their agents share one command surface and physical constraints."
     }
   ],
-  "milestones": [
-    "M0",
-    "M1",
-    "M2",
-    "M3",
-    "M3b",
-    "M4",
-    "M4b",
-    "M5",
-    "M6",
-    "M7",
-    "M8",
-    "M8b",
-    "M9"
-  ],
+  "milestones": ["M0", "M1", "M2", "M3", "M3b", "M4", "M4b", "M5", "M6", "M7", "M8", "M8b", "M9"],
   "checks": [
     {
       "id": "layers",
@@ -377,9 +363,7 @@
     "runtime": "docs/contracts/runtime-v1.md",
     "course": "docs/contracts/course-v1.md"
   },
-  "physicsPackages": [
-    "@dimforge/rapier3d-deterministic-compat"
-  ],
+  "physicsPackages": ["@dimforge/rapier3d-deterministic-compat"],
   "browserChecks": [
     {
       "id": "qualify-workshop",

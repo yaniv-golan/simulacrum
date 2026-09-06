@@ -4,8 +4,12 @@ import { readFileSync } from 'node:fs';
 import { appFingerprint } from './app-fingerprint.mjs';
 import { sourceIdentity } from './source-identity.mjs';
 
-export function createBrowserEvidence({ readBuild = appFingerprint, readSource = sourceIdentity } = {}) {
-  const build = readBuild(), source = structuredClone(readSource());
+export function createBrowserEvidence({
+  readBuild = appFingerprint,
+  readSource = sourceIdentity,
+} = {}) {
+  const build = readBuild(),
+    source = structuredClone(readSource());
   return {
     identity: { build, source },
     async assertServed(page) {
@@ -13,16 +17,32 @@ export function createBrowserEvidence({ readBuild = appFingerprint, readSource =
       assert.equal(served, build, 'served build must match the expected source fingerprint');
       return served;
     },
-    async goto(page, url) { await page.goto(url); return this.assertServed(page); },
-    async reload(page) { await page.reload(); return this.assertServed(page); },
+    async goto(page, url) {
+      await page.goto(url);
+      return this.assertServed(page);
+    },
+    async reload(page) {
+      await page.reload();
+      return this.assertServed(page);
+    },
     assertUnchanged() {
       assert.equal(readBuild(), build, 'app source changed during browser verification');
-      assert.deepEqual(readSource(), source, 'verification source changed during browser verification');
+      assert.deepEqual(
+        readSource(),
+        source,
+        'verification source changed during browser verification',
+      );
     },
   };
 }
 
 export function createFixtureEvidence({ name, build, files }) {
-  const readSource = () => ({ fixture: name, files: files.map(path => ({ path, sha256: createHash('sha256').update(readFileSync(path)).digest('hex') })) });
+  const readSource = () => ({
+    fixture: name,
+    files: files.map((path) => ({
+      path,
+      sha256: createHash('sha256').update(readFileSync(path)).digest('hex'),
+    })),
+  });
   return createBrowserEvidence({ readBuild: () => build, readSource });
 }

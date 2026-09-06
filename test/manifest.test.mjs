@@ -16,6 +16,9 @@ test('manifest owns every check and resolves milestone references', () => {
   assert.throws(() => validateManifest(duplicate), /duplicate/);
 });
 test('the dependency order places the ADR at M1 and all early legged bars at M7', () => {
-  assert.ok(manifest.exitObligations.M1.some(x => x.id === 'physics-library-adr'));
-  assert.deepEqual(['L1a','L1b','L1c'].map(x => manifest.bars[x].dueAt), ['M7','M7','M7']);
+  assert.ok(manifest.exitObligations.M1.some((x) => x.id === 'physics-library-adr'));
+  assert.deepEqual(
+    ['L1a', 'L1b', 'L1c'].map((x) => manifest.bars[x].dueAt),
+    ['M7', 'M7', 'M7'],
+  );
 });

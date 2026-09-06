@@ -8,13 +8,11 @@ export { appFingerprint };
 // existing evidence -- hashing only the short contract string left a pass green
 // after the instructions changed underneath it.
 export function protocolHash(barId, barContract) {
-  const hash = createHash("sha256").update(barId).update("\0").update(barContract).update("\0");
+  const hash = createHash('sha256').update(barId).update('\0').update(barContract).update('\0');
   // A missing protocol is not a protocol. Hashing a placeholder let evidence be
   // recorded and stay green with no written instructions at all.
-  hash.update(
-    readFileSync(new URL(`../assessments/protocol/${barId}.md`, import.meta.url)),
-  );
-  return `proto-${hash.digest("hex").slice(0, 12)}`;
+  hash.update(readFileSync(new URL(`../assessments/protocol/${barId}.md`, import.meta.url)));
+  return `proto-${hash.digest('hex').slice(0, 12)}`;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) console.log(appFingerprint());

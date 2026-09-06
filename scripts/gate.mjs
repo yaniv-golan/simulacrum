@@ -4,19 +4,25 @@
 // Structural checks, bars and exit obligations are ALL CUMULATIVE: a later gate
 // re-checks everything due at or before it. Obligations previously read only
 // `[target]`, so an M1 gate passed with an unmet M0 obligation.
-import { readManifest } from "./validate-manifest.mjs";
+import { readManifest } from './validate-manifest.mjs';
 const gateStarted = performance.now();
-import { runStructuralChecks } from "./gate-structural.mjs";
-import { evaluateBar } from "./bars.mjs";
-import { CHECKS, checkDeadline } from "./checks.mjs";
-import {runModuleCheck} from './run-check.mjs';
-import {prepareBrowserBuild} from './verify-browser-suite.mjs';
+import { runStructuralChecks } from './gate-structural.mjs';
+import { evaluateBar } from './bars.mjs';
+import { CHECKS, checkDeadline } from './checks.mjs';
+import { runModuleCheck } from './run-check.mjs';
+import { prepareBrowserBuild } from './verify-browser-suite.mjs';
 
-function runCheckInSubprocess(checkId,timeoutMs){return runModuleCheck(new URL('./check-entry.mjs',import.meta.url).pathname,'check',[checkId],{timeoutMs});}
+function runCheckInSubprocess(checkId, timeoutMs) {
+  return runModuleCheck(
+    new URL('./check-entry.mjs', import.meta.url).pathname,
+    'check',
+    [checkId],
+    { timeoutMs },
+  );
+}
 
 const manifest = readManifest();
 const target = process.argv[2] ?? manifest.milestone;
-
 
 if (!manifest.milestones.includes(target)) {
   console.error(`unknown milestone: ${target}`);
@@ -31,7 +37,8 @@ const order = manifest.milestones;
 const cutoff = order.indexOf(target);
 const dueAt = (m) => order.indexOf(m) <= cutoff;
 
-if(manifest.milestones.indexOf(target)>=manifest.milestones.indexOf('M3b'))await prepareBrowserBuild();
+if (manifest.milestones.indexOf(target) >= manifest.milestones.indexOf('M3b'))
+  await prepareBrowserBuild();
 
 console.log(`milestone ${target} (owned by scripts/manifest.json)\n`);
 const { failed, ran } = await runStructuralChecks(target);
@@ -45,7 +52,7 @@ for (const [id, bar] of Object.entries(manifest.bars)) {
   }
   dueBarCount += 1;
   const { state, why } = await evaluateBar(id);
-  if (state === "RED") redBars += 1;
+  if (state === 'RED') redBars += 1;
   console.log(`${state.padEnd(5)} bar:${id.padEnd(4)} due ${bar.dueAt} -- ${why}`);
 }
 
@@ -67,7 +74,7 @@ for (const milestone of order.filter(dueAt)) {
       continue;
     }
     const fn = CHECKS[ob.check];
-    if (typeof fn !== "function") {
+    if (typeof fn !== 'function') {
       unmet += 1;
       console.error(`BADREF ${ob.id} (${milestone}) -- check "${ob.check}" is not in the registry`);
       continue;
@@ -93,4 +100,4 @@ if (failed > 0 || redBars > 0 || unmet > 0) {
   );
   process.exit(1);
 }
-console.log(`\n${target} gate green in ${(performance.now()-gateStarted).toFixed(1)}ms.`);
+console.log(`\n${target} gate green in ${(performance.now() - gateStarted).toFixed(1)}ms.`);

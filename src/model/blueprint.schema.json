@@ -3,13 +3,7 @@
   "$id": "urn:simulacrum:blueprint:3",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "version",
-    "id",
-    "name",
-    "parts",
-    "connections"
-  ],
+  "required": ["version", "id", "name", "parts", "connections"],
   "properties": {
     "version": {
       "const": 3
@@ -67,15 +61,7 @@
     "part": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "id",
-        "type",
-        "name",
-        "position",
-        "rotation",
-        "authoredMaterial",
-        "parameters"
-      ],
+      "required": ["id", "type", "name", "position", "rotation", "authoredMaterial", "parameters"],
       "properties": {
         "id": {
           "$ref": "#/$defs/id"
@@ -111,10 +97,7 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "part",
-            "port"
-          ],
+          "required": ["part", "port"],
           "properties": {
             "part": {
               "$ref": "#/$defs/id"
@@ -127,10 +110,7 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "part",
-            "surface"
-          ],
+          "required": ["part", "surface"],
           "properties": {
             "part": {
               "$ref": "#/$defs/id"
@@ -138,12 +118,7 @@
             "surface": {
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "region",
-                "u",
-                "v",
-                "twist"
-              ],
+              "required": ["region", "u", "v", "twist"],
               "properties": {
                 "region": {
                   "type": "string"
@@ -166,23 +141,13 @@
     "connection": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "id",
-        "kind",
-        "a",
-        "b"
-      ],
+      "required": ["id", "kind", "a", "b"],
       "properties": {
         "id": {
           "$ref": "#/$defs/id"
         },
         "kind": {
-          "enum": [
-            "fixed",
-            "shaft",
-            "power",
-            "signal"
-          ]
+          "enum": ["fixed", "shaft", "power", "signal"]
         },
         "a": {
           "$ref": "#/$defs/endpoint"
