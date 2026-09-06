@@ -168,3 +168,6 @@ body:has(.playtest-panel) .snap-notice{bottom:108px}@media(max-width:760px){body
 
 .part-identity > button,.part-name-editor{grid-column:2;justify-self:start}
 .part-name-editor{display:flex;flex-wrap:wrap;gap:6px;min-width:0;width:100%}.part-name-editor input{width:100%;min-width:0;box-sizing:border-box}.part-identity h2{overflow-wrap:anywhere}
+.part-identity{grid-template-columns:44px minmax(0,1fr) auto}
+.part-identity > button{grid-column:3;grid-row:1;padding:4px}
+.part-name-editor{grid-column:2/-1}

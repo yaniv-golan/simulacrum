@@ -29,7 +29,7 @@ try{
  await page.screenshot({path:`${out}/preview.png`});
  await page.locator('[data-command=apply-surface]').click();
  const mounted=await read();assert.equal(mounted.connections.length,1);assert.deepEqual(mounted.parts[0],before.parts[0]);
- assert.match(await page.locator('.mount-status').innerText(),/Attached to Chassis · Top/);
+ assert.match(await page.locator('.mount-status').innerText(),/Bolted to Chassis · Top/);
  await page.getByRole('button',{name:'Adjust mount',exact:true}).click();if(!await page.locator('.surface-precise').evaluate(e=>e.open))await page.locator('.surface-precise summary').click();await page.getByLabel('Across surface (mm)').fill('50');
  await page.locator('[data-command=apply-surface]').click();const adjusted=await read();assert.notDeepEqual(adjusted.parts[1],mounted.parts[1]);assert.deepEqual(adjusted.parts[0],mounted.parts[0]);
  await page.locator('[data-command=undo]').click();assert.deepEqual(await read(),mounted);

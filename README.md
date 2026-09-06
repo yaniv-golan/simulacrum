@@ -83,3 +83,12 @@ can reveal underside faces. Bases must fit and have clearance; a thin chassis
 edge may be too small for a motor base, so use its top face near that edge.
 
 Select a part and choose **Rename** beside its name in the inspector. Save name applies it everywhere; Escape cancels. Names persist in saves and support Undo/Redo. Added parts and copies receive distinct names, such as Chassis, Chassis-2 and Chassis-3.
+
+Attachment status distinguishes **Unattached**, **Bolted to** and **Axle attached to**.
+Surface placement keeps rejected poses visible with a red outline and identifies
+obstructions. **Edge toward camera** aligns the mounting footprint to the nearest
+face edge; rotate the part to aim its shaft outward. Drag the preview to slide,
+or click it to confirm. Socket previews also accept a click to attach; red
+previews explain why attachment cannot proceed. Escape cancels either operation.
+Underside inspection hides the ground visually; physics is unchanged. **Frame
+machine** restores a useful angle and fits the machine clear of inspection overlays.

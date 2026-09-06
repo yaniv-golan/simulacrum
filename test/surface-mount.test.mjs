@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createEmptyBlueprint,createPart,loadSave,validateBlueprint} from '../src/model/blueprint.mjs';
-import {proposeSurfaceMount,compileAssembly} from '../src/model/assembly.mjs';
+import {proposeSurfaceMount,inspectSurfaceMount,compileAssembly} from '../src/model/assembly.mjs';
 import {surfaceRegions} from '../src/model/surfaces.mjs';
 const fixture=()=>({...createEmptyBlueprint('test','Test'),parts:[createPart('chassis','base',[0,1,0]),createPart('poweredMotor','motor',[1,1,0])]});
 test('surface mounts seat on top, underside and side as ordinary fixed joints',()=>{
@@ -57,3 +57,11 @@ test('saved mounted geometry refuses intersecting obstacle but preserves unrelat
  mounted.connections=[];mounted.parts.at(-1).position=[0,1.08,0];assert.equal(loadSave(mounted).ok,true);
 });
 test('fixed socket endpoints are not an alternative mounting path',()=>{const bp=fixture();bp.connections.push({id:'bad',kind:'fixed',a:{part:'base',port:'top'},b:{part:'motor',port:'mount'}});assert.equal(validateBlueprint(bp).ok,false);});
+
+test('inspection preserves invalid geometry for feedback without authorizing or mutating it',()=>{
+ const bp=fixture(),before=structuredClone(bp),options={part:'motor',sourceRegion:'bottom',targetPart:'base',targetRegion:'top',id:'mount'};
+ const valid=inspectSurfaceMount(bp,options);assert.equal(valid.valid,true);assert.deepEqual(valid.proposal,proposeSurfaceMount(bp,options));
+ const outside=inspectSurfaceMount(bp,{...options,u:4});assert.equal(outside.valid,false);assert.equal(outside.reasonCode,'SURFACE_OUT_OF_BOUNDS');assert.ok(outside.proposal);assert.deepEqual(outside.proposal.movingPartIds,['motor']);assert.equal(outside.proposal.blueprint.connections.length,0);assert.ok(Math.hypot(...outside.proposal.blueprint.parts[1].position.map((v,i)=>v-valid.proposal.blueprint.parts[1].position[i]))>3.9);assert.throws(()=>proposeSurfaceMount(bp,{...options,u:4}),/SURFACE_OUT_OF_BOUNDS/);assert.deepEqual(bp,before);
+ const blocked=structuredClone(bp);blocked.parts.push(createPart('powerCell','obstacle',[0,1.13,0]));const blockedBefore=structuredClone(blocked),overlap=inspectSurfaceMount(blocked,options);assert.equal(overlap.valid,false);assert.equal(overlap.reasonCode,'SURFACE_OVERLAP');assert.equal(overlap.obstructingPartId,'obstacle');assert.deepEqual(overlap.proposal.blueprint.parts[1],valid.proposal.blueprint.parts[1]);assert.throws(()=>proposeSurfaceMount(blocked,options),/SURFACE_OVERLAP/);assert.deepEqual(blocked,blockedBefore);
+ assert.equal(inspectSurfaceMount(bp,{...options,u:NaN}).proposal,null);
+});

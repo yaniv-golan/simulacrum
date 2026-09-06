@@ -8,7 +8,7 @@ async function select(name){if(!await page.locator('.machine-picker').evaluate(e
 try{
  await page.goto(process.argv[2]??'http://127.0.0.1:4173/');await page.locator('[data-command=start-guide]').click();for(let i=0;i<16;i++)await page.locator('[data-command=guide-step]').click();await page.getByRole('button',{name:'Leave guide',exact:true}).click();await select('Motor');const before=await read();
  assert.equal(await page.locator('.port-button[data-port-id=mount]').count(),0,'surface mounting must not expose a duplicate fixed socket');
- assert.match(await page.locator('.mount-relationship').innerText(),/Attached to Chassis/);
+ assert.match(await page.locator('.mount-relationship').innerText(),/Bolted to Chassis/);
  assert.equal(await page.getByRole('button',{name:'Adjust mount',exact:true}).isEnabled(),true);assert.equal(await page.getByRole('button',{name:'Detach',exact:true}).isEnabled(),true);
  for(const id of ['shaft','power']){const port=page.locator(`.port-button[data-port-id=${id}]`);assert.equal(await port.isEnabled(),true,'connected ports must remain inspectable');await port.click();assert.equal(await page.locator('.port-explanation [data-disconnect-id]').count(),1);assert.equal(await page.locator('.target-button').count(),0,'occupied connector must not offer another attachment');}
  assert.deepEqual(await read(),before,'inspection must not change authored connections');

@@ -35,6 +35,9 @@ export function snapConnection(blueprint,a,b) {
  const A=endpoint(blueprint,a,'a'),B=endpoint(blueprint,b,'b');
  if(A.index===B.index)reject('SELF_CONNECTION','b.part');
  if(!['fixed','shaft'].includes(A.port.kind))return structuredClone(blueprint);
+ return snapFrames(blueprint,A,B);
+}
+function snapFrames(blueprint,A,B){
  const target=worldPort(A),rotation=normalize(multiply(multiply(target.rotation,matingRotation(A.port)),inverse(B.port.rotation)));
  const position=subtract(target.position,rotate(rotation,B.port.position));
  const group=new Set([B.part.id]);let changed=true;
@@ -108,8 +111,17 @@ export function compileAssembly(blueprint,{gravity=BUILD_ENVIRONMENT.gravity,gro
  return {configuration:{gravity:[...gravity],bodies,joints,power},mapping,connections};
 }
 
-/** Same pure authoring proposal feeds preview and atomic commit. No simulation writes. */
-export function proposeSurfaceMount(blueprint,{part,sourceRegion,targetPart,targetRegion,u=0,v=0,twist=0,id,replaceConnection,attach=true,insertPart}={}){
+/** Read-only placement inspection retains rejected geometry for visible feedback. */
+export function inspectSurfaceMount(blueprint,options={}){
+ let proposal=null;
+ try{return {valid:true,proposal:surfaceMountCandidate(blueprint,options,value=>{proposal=value;})};}
+ catch(error){return {valid:false,proposal,reasonCode:error.reasonCode??error.message,path:error.path,...(error.obstructingPartId?{obstructingPartId:error.obstructingPartId}:{})};}
+}
+/** Strict authoring admission; a diagnostic candidate never authorizes a connection. */
+export function proposeSurfaceMount(blueprint,options={}){
+ return surfaceMountCandidate(blueprint,options,()=>{});
+}
+function surfaceMountCandidate(blueprint,{part,sourceRegion,targetPart,targetRegion,u=0,v=0,twist=0,id,replaceConnection,attach=true,insertPart}={},observe){
  validate(blueprint);
  let next=structuredClone(blueprint);next.version=3;
  if(insertPart){if(insertPart.id!==part)reject('INVALID_ENDPOINT','insertPart');next.parts.push(structuredClone(insertPart));validate(next);}
@@ -119,15 +131,19 @@ export function proposeSurfaceMount(blueprint,{part,sourceRegion,targetPart,targ
  const sourceFace=surfaceRegions(source).find(r=>r.id===sourceRegion),targetFace=surfaceRegions(target).find(r=>r.id===targetRegion);
  if(!sourceFace||!targetFace)reject('UNKNOWN_SURFACE','region');
  if(![u,v,twist].every(Number.isFinite))reject('SURFACE_OUT_OF_BOUNDS','surface');
- const width=Math.abs(Math.cos(twist))*sourceFace.padHalfSize[0]+Math.abs(Math.sin(twist))*sourceFace.padHalfSize[1];
- const height=Math.abs(Math.sin(twist))*sourceFace.padHalfSize[0]+Math.abs(Math.cos(twist))*sourceFace.padHalfSize[1];
- if(Math.abs(u)+width>targetFace.halfSize[0]+1e-9||Math.abs(v)+height>targetFace.halfSize[1]+1e-9)reject('SURFACE_OUT_OF_BOUNDS','surface');
  const moving=new Set([part]);let changed=true;
  while(changed){changed=false;for(const c of next.connections)if(['fixed','shaft'].includes(c.kind)&&(moving.has(c.a.part)||moving.has(c.b.part)))for(const member of [c.a.part,c.b.part])if(!moving.has(member)){moving.add(member);changed=true;}}
  if(moving.has(targetPart))reject('MOUNT_HELD_BY_ANOTHER_CONNECTION','targetPart');
  const a={part:targetPart,surface:{region:targetRegion,u,v,twist}},b={part,surface:{region:sourceRegion,u:0,v:0,twist:0}};
- next=snapConnection(next,a,b);
- for(const moved of next.parts.filter(p=>moving.has(p.id)))for(const fixed of next.parts.filter(p=>!moving.has(p.id)))if(placementEnvelopes(moved).some(a=>placementEnvelopes(fixed).some(b=>solidsOverlap(a,b))))reject('SURFACE_OVERLAP',fixed.id);
+ // Compute the same rigid transform even beyond the finite receiving face. Admission
+ // below still rejects overhang; this frame exists only to show the attempted pose.
+ const targetPort={kind:'fixed',position:add(targetFace.position,rotateVector(targetFace.rotation,[0,u,v])),rotation:multiply(targetFace.rotation,[Math.sin(twist/2),0,0,Math.cos(twist/2)])};
+ next=snapFrames(next,{part:target,port:targetPort},{part:source,port:resolveSurfaceEndpoint(source,b)});
+ const proposal={blueprint:next,movingPartIds:[...moving]};observe(proposal);
+ const width=Math.abs(Math.cos(twist))*sourceFace.padHalfSize[0]+Math.abs(Math.sin(twist))*sourceFace.padHalfSize[1];
+ const height=Math.abs(Math.sin(twist))*sourceFace.padHalfSize[0]+Math.abs(Math.cos(twist))*sourceFace.padHalfSize[1];
+ if(Math.abs(u)+width>targetFace.halfSize[0]+1e-9||Math.abs(v)+height>targetFace.halfSize[1]+1e-9)reject('SURFACE_OUT_OF_BOUNDS','surface');
+ for(const moved of next.parts.filter(p=>moving.has(p.id)))for(const fixed of next.parts.filter(p=>!moving.has(p.id)))if(placementEnvelopes(moved).some(a=>placementEnvelopes(fixed).some(b=>solidsOverlap(a,b))))throw Object.assign(Error('SURFACE_OVERLAP'),{reasonCode:'SURFACE_OVERLAP',path:fixed.id,obstructingPartId:fixed.id});
  if(attach)next.connections.push({id,kind:'fixed',a,b});
- validate(next);return {blueprint:next,movingPartIds:[...moving]};
+ validate(next);return proposal;
 }
