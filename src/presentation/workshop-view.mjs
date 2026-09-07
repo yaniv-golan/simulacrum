@@ -1,3 +1,4 @@
+import { createDirectDrag } from './direct-drag.mjs';
 import { createConnectionTest } from './connection-test.mjs';
 import { createAssemblyMirror } from './assembly-mirror.mjs';
 import { proposeMirroredAssembly } from '../model/mirror-assembly.mjs';
@@ -17,7 +18,7 @@ import {
 } from '../model/surfaces.mjs';
 import { createEditingControls } from './editing-controls.mjs';
 import { createPart } from '../model/blueprint.mjs';
-import { transformGroup, mechanicalGroup } from '../model/editing.mjs';
+import { mechanicalGroup } from '../model/editing.mjs';
 import { duplicatePart } from '../model/duplication.mjs';
 import { snapConnection, compileAssembly } from '../model/assembly.mjs';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -165,6 +166,7 @@ export function createWorkshopView(
   for (const type of ['click', 'change']) root.addEventListener(type, captureInput, true);
   const send = async (command) => {
     try {
+      directDrag.end(false);
       if (exploded || explodeAmount) setExploded(false, true);
       const result = await onCommand(command, { inputTime });
       if (result?.ok === false) setMessage(explainFailure(result, frame?.metadata.blueprint));
@@ -677,7 +679,7 @@ export function createWorkshopView(
   });
   function beginSurface(part, options) {
     invalidateScene();
-    endDirectDrag(false);
+    directDrag.end(false);
     if (exploded) setExploded(false, true);
     editing.cancel();
     editing.setTool('select');
@@ -699,7 +701,7 @@ export function createWorkshopView(
   renderer.domElement.addEventListener(
     'pointerdown',
     (event) => {
-      if (!surface.active() || event.button !== 0) return;
+      if (!surface.active() || surfacePointer !== null || event.button !== 0) return;
       if (!surface.beginPointer(event)) return;
       surfacePointer = event.pointerId;
       controls.enabled = false;
@@ -711,7 +713,7 @@ export function createWorkshopView(
   renderer.domElement.addEventListener(
     'pointermove',
     (event) => {
-      if (surface.active() && surfacePointer !== null && event.buttons === 1) {
+      if (surface.active() && surfacePointer === event.pointerId && event.buttons === 1) {
         event.stopImmediatePropagation();
         surface.point(event, { lock: true });
       }
@@ -721,7 +723,7 @@ export function createWorkshopView(
   renderer.domElement.addEventListener(
     'pointerup',
     (event) => {
-      if (surfacePointer === null || event.button !== 0) return;
+      if (surfacePointer !== event.pointerId || event.button !== 0) return;
       event.stopImmediatePropagation();
       surfacePointer = null;
       surface.endPointer(event);
@@ -1052,150 +1054,34 @@ export function createWorkshopView(
   };
   renderer.domElement.addEventListener('pointerdown', down);
   renderer.domElement.addEventListener('pointerup', up);
-  let directDrag = null;
-  function setRay(event) {
-    const rect = renderer.domElement.getBoundingClientRect();
-    pointer.set(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      (-(event.clientY - rect.top) / rect.height) * 2 + 1,
-    );
-    raycaster.setFromCamera(pointer, camera);
-  }
-  function endDirectDrag(commit = false, event) {
-    if (!directDrag) return;
-    const drag = directDrag;
-    directDrag = null;
-    placementCue.hidden = true;
-    renderer.domElement.style.cursor = '';
-    editing.clearPreview();
-    if (drag.surface) {
-      controls.enabled = true;
-      if (renderer.domElement.hasPointerCapture(drag.pointerId))
-        renderer.domElement.releasePointerCapture(drag.pointerId);
-      if (commit) surface.endPointer(event);
-      else surface.cancel();
-      return;
-    }
-    surface.cancel(false);
-    controls.enabled = true;
-    if (renderer.domElement.hasPointerCapture(drag.pointerId))
-      renderer.domElement.releasePointerCapture(drag.pointerId);
-    if (commit && drag.position && frame.metadata.mode === 'build')
-      send({
-        type: 'transform',
-        id: drag.part.id,
-        position: drag.position,
-        rotation: drag.part.rotation,
-      });
-  }
-  renderer.domElement.addEventListener(
-    'pointerdown',
-    (event) => {
-      if (
-        sourcePort ||
-        surface?.active() ||
-        mirror?.active() ||
-        exploded ||
-        explodeAmount ||
-        event.button !== 0 ||
-        frame?.metadata.mode !== 'build' ||
-        activeTool !== 'select' ||
-        editing.isHandleActive()
-      )
-        return;
-      setRay(event);
-      const hit = raycaster.intersectObjects([...meshes.values()]).find((hit) => hit.object.isMesh);
-      if (!hit) return;
-      const id = hit.object.userData.partId,
-        part = frame.metadata.blueprint.parts.find((part) => part.id === id);
-      if (!part) return;
-      select(id);
-      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -part.position[1]),
-        start = raycaster.ray.intersectPlane(plane, new THREE.Vector3());
-      if (!start) return;
-      event.stopImmediatePropagation();
-      controls.enabled = false;
-      directDrag = {
-        part: structuredClone(part),
-        blueprint: frame.metadata.blueprint,
-        plane,
-        start,
-        pointerId: event.pointerId,
-        x: event.clientX,
-        y: event.clientY,
-        position: null,
-      };
-      renderer.domElement.setPointerCapture(event.pointerId);
+  const directDrag = createDirectDrag({
+    renderer,
+    camera,
+    controls,
+    editing,
+    surface,
+    getFrame: () => frame,
+    getMeshes: () => meshes,
+    canStart: (event) =>
+      !sourcePort &&
+      !surface.active() &&
+      !mirror.active() &&
+      !exploded &&
+      !explodeAmount &&
+      event.button === 0 &&
+      frame?.metadata.mode === 'build' &&
+      activeTool === 'select' &&
+      !editing.isHandleActive(),
+    select,
+    send,
+    placementCue,
+    showPlacementCue,
+    setMessage,
+    onSurfaceStart() {
+      inspectorKey = '';
+      refreshInspector();
     },
-    true,
-  );
-  renderer.domElement.addEventListener(
-    'pointermove',
-    (event) => {
-      if (!directDrag) return;
-      event.stopImmediatePropagation();
-      if (
-        Math.hypot(event.clientX - directDrag.x, event.clientY - directDrag.y) < 5 &&
-        !directDrag.position
-      )
-        return;
-      if (surface.enabled() && !surface.active()) {
-        surface.start(directDrag.part.id, { drag: true });
-        inspectorKey = '';
-        refreshInspector();
-      }
-      if (surface.active() && surface.point(event, { lock: true })) {
-        placementCue.hidden = true;
-        renderer.domElement.style.cursor = '';
-        editing.clearPreview();
-        directDrag.surface = true;
-        controls.enabled = false;
-        return;
-      }
-      setRay(event);
-      const point = raycaster.ray.intersectPlane(directDrag.plane, new THREE.Vector3());
-      if (!point) return;
-      const delta = point.sub(directDrag.start);
-      directDrag.position = directDrag.part.position.map((value, axis) =>
-        axis === 1 ? value : value + Math.round(delta.getComponent(axis) / 0.025) * 0.025,
-      );
-      const next = transformGroup(
-        directDrag.blueprint,
-        directDrag.part.id,
-        directDrag.position,
-        directDrag.part.rotation,
-      );
-      const overlap = findPlacementOverlap(next.parts);
-      editing.showPreview(
-        next.parts.filter(
-          (part, i) => JSON.stringify(part) !== JSON.stringify(directDrag.blueprint.parts[i]),
-        ),
-        { color: overlap ? 0xff836f : 0x8cf5cf },
-      );
-      renderer.domElement.style.cursor = 'grabbing';
-      showPlacementCue(
-        event,
-        overlap
-          ? `${overlap[0].name} overlaps ${overlap[1].name} · Move clear`
-          : 'Release to move · Esc cancels',
-      );
-      setMessage(
-        overlap
-          ? 'Placement blocked. Move clear or press Esc to cancel.'
-          : 'Release to move the attached parts here. Esc cancels.',
-      );
-    },
-    true,
-  );
-  renderer.domElement.addEventListener(
-    'pointerup',
-    (event) => {
-      if (!directDrag) return;
-      event.stopImmediatePropagation();
-      endDirectDrag(true, event);
-    },
-    true,
-  );
+  });
   function releaseSurfacePointer() {
     const id = surfacePointer;
     surfacePointer = null;
@@ -1205,7 +1091,7 @@ export function createWorkshopView(
   }
   function cancelInteraction() {
     invalidateScene();
-    endDirectDrag(false);
+    directDrag.end(false);
     releaseSurfacePointer();
     surface?.cancel(false);
     draggingType = null;
@@ -1215,7 +1101,7 @@ export function createWorkshopView(
   }
   renderer.domElement.addEventListener('pointercancel', cancelInteraction);
   renderer.domElement.addEventListener('lostpointercapture', () => {
-    if (surfacePointer !== null || directDrag) cancelInteraction();
+    if (surfacePointer !== null || directDrag.active()) cancelInteraction();
   });
 
   function droppedPosition(event) {
@@ -2761,7 +2647,7 @@ export function createWorkshopView(
     if (on && (frame?.metadata.mode === 'run' || frame?.metadata.blueprint.parts.length < 2))
       return;
     if (on === exploded && !immediate) return;
-    endDirectDrag(false);
+    directDrag.end(false);
     editing.cancel();
     sourcePort = null;
     previewEndpoint = null;
@@ -3107,7 +2993,7 @@ export function createWorkshopView(
     }
     if (event.code === 'Space') {
       event.preventDefault();
-      endDirectDrag(false);
+      directDrag.end(false);
       send({ type: frame?.metadata.mode === 'run' ? 'pause' : 'run' });
     }
     if (event.key === '.') {
@@ -3188,6 +3074,15 @@ export function createWorkshopView(
       selectionLabel.style.left = `${x}px`;
       selectionLabel.style.top = `${y}px`;
       selectionActions.style.left = `${x}px`;
+      selectionActions.hidden =
+        surface.active() ||
+        directDrag.hasMoved() ||
+        editing.isHandleActive() ||
+        exploded ||
+        explodeAmount > 0 ||
+        point.z > 1 ||
+        frame.metadata.mode !== 'build';
+
       const bounds = new THREE.Box3();
       for (const id of mechanicalGroup(frame.metadata.blueprint, selected))
         bounds.expandByObject(meshes.get(id));
@@ -3198,9 +3093,12 @@ export function createWorkshopView(
             const corner = new THREE.Vector3(bx, by, bz).project(camera);
             top = Math.min(top, (-corner.y * 0.5 + 0.5) * stage.clientHeight);
           }
-      let actionsTop = Math.max(tools.offsetTop + tools.offsetHeight + 12, top - 95);
       const actionHeight = selectionActions.offsetHeight,
         labelHeight = selectionLabel.offsetHeight;
+      let actionsTop = Math.max(
+        tools.offsetTop + tools.offsetHeight + 12,
+        Math.min(top, y - labelHeight) - actionHeight - 12,
+      );
       if (actionsTop + actionHeight > y - labelHeight - 8 && actionsTop < y + 8) {
         const separation = 140 + selectionLabel.offsetWidth / 2 + 10,
           side =
@@ -3213,14 +3111,6 @@ export function createWorkshopView(
         else actionsTop = y + 12;
       }
       selectionActions.style.top = `${actionsTop}px`;
-      selectionActions.hidden =
-        surface.active() ||
-        Boolean(directDrag?.position) ||
-        editing.isHandleActive() ||
-        exploded ||
-        explodeAmount > 0 ||
-        point.z > 1 ||
-        frame.metadata.mode !== 'build';
     }
     inspectionFill.position.copy(camera.position);
     inspectionFill.target.position.copy(controls.target);
@@ -3281,6 +3171,7 @@ export function createWorkshopView(
       mirrorPlane.geometry.dispose();
       mirrorPlane.material.dispose();
       connectionTest.dispose();
+      directDrag.dispose();
       vehicleControls.dispose();
       motionReadout.dispose();
       window.removeEventListener('blur', blur);

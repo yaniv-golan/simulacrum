@@ -1,3 +1,4 @@
+import { assertRejectedEditUnchanged } from './contracts/editing.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createWorkshop } from '../src/core/workshop.mjs';
@@ -45,13 +46,13 @@ test('place connect run and restore use one observable command surface', async (
 test('malformed authoring is rejected without altering model or cursor', async () => {
   const workshop = await createWorkshop();
   try {
-    const before = workshop.observe();
-    assert.equal(
-      (await workshop.act({ type: 'place', partType: 'magic', id: 'x', position: [0, 0, 0] })).ok,
-      false,
-    );
-    assert.deepEqual(workshop.observe(), before);
-    assert.equal((await workshop.act({ type: 'delete', id: 'missing' })).ok, false);
+    await assertRejectedEditUnchanged(workshop, {
+      type: 'place',
+      partType: 'magic',
+      id: 'x',
+      position: [0, 0, 0],
+    });
+    await assertRejectedEditUnchanged(workshop, { type: 'delete', id: 'missing' });
   } finally {
     workshop.dispose();
   }

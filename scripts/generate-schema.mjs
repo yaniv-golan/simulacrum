@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 const schemaURL = new URL('../src/model/blueprint.schema.json', import.meta.url);
 const targetURL = new URL('../src/model/generated/blueprint-validator.mjs', import.meta.url);
-export function generateSchema({ check = false } = {}) {
+export function buildBlueprintSchema() {
   const schema = JSON.parse(readFileSync(schemaURL, 'utf8'));
   const part = schema.$defs.part;
   part.properties.type = { type: 'string', enum: Object.keys(CATALOG) };
@@ -42,6 +42,10 @@ export function generateSchema({ check = false } = {}) {
       },
     },
   }));
+  return schema;
+}
+export function generateSchema({ check = false } = {}) {
+  const schema = buildBlueprintSchema();
   const compiler = new Ajv2020({
     strict: true,
     allErrors: false,

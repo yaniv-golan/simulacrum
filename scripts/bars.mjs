@@ -32,20 +32,25 @@ function validate(record, id) {
   return null;
 }
 
-export async function evaluateBar(id) {
+export async function evaluateBar(id, context) {
   const bar = manifest.bars[id];
   if (!bar) throw new Error(`unknown bar: ${id}`);
   if (!bar.human) {
     if (!bar.check) return { id, state: 'RED', why: 'not implemented' };
     try {
-      const { runModuleCheck } = await import('./run-check.mjs');
-      const { checkDeadline } = await import('./checks.mjs');
-      await runModuleCheck(
-        new URL('./check-entry.mjs', import.meta.url).pathname,
-        'check',
-        [bar.check],
-        { timeoutMs: checkDeadline(bar.check) },
-      );
+      if (context) {
+        const { executeCheck } = await import('./checks.mjs');
+        await executeCheck(bar.check, context);
+      } else {
+        const { runModuleCheck } = await import('./run-check.mjs');
+        const { checkDeadline } = await import('./checks.mjs');
+        await runModuleCheck(
+          new URL('./check-entry.mjs', import.meta.url).pathname,
+          'check',
+          [bar.check],
+          { timeoutMs: checkDeadline(bar.check) },
+        );
+      }
       return { id, state: 'GREEN', why: `executed ${bar.check}` };
     } catch (error) {
       return { id, state: 'RED', why: `check failed: ${error.message}` };

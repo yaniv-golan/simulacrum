@@ -59,3 +59,17 @@ test('declared duration cannot conceal a larger measured elapsed time', () => {
   cycles[0].metrics[0].completedAt = 1010;
   assert.throws(() => evaluateF2(cycles, { build: 'app-frozen' }), /duration/);
 });
+test('F2 initializes the shared session before collecting errors and reaches browser launch', async () => {
+  const { qualifyWorkshop } = await import('../scripts/qualify-workshop.mjs');
+  await assert.rejects(
+    qualifyWorkshop(undefined, {
+      createEvidence: () => ({
+        errors: [],
+        launch: async () => {
+          throw Error('controlled launch boundary');
+        },
+      }),
+    }),
+    /controlled launch boundary/,
+  );
+});

@@ -1,3 +1,4 @@
+import { compileBody } from './compile-body.mjs';
 import { partPrimitives } from './geometry.mjs';
 import {
   surfaceRegions,
@@ -149,22 +150,7 @@ export function compileAssembly(
     const primitive = partPrimitives(part)[0];
     const material = MATERIALS[part.authoredMaterial[primitive.id] ?? primitive.materialKey];
     mapping.push({ part: part.id, shape: primitive.id, materialHandle: material.handle });
-    // Cylinders use the local X axis; halfExtents is [half length, radius, radius].
-    const volume =
-      primitive.kind === 'cylinder'
-        ? 2 * Math.PI * primitive.halfExtents[0] * primitive.halfExtents[1] ** 2
-        : 8 * primitive.halfExtents.reduce((a, b) => a * b, 1);
-    return {
-      shape: primitive.kind,
-      position: [...part.position],
-      rotation: normalize(part.rotation),
-      velocity: [0, 0, 0],
-      mass: volume * material.density,
-      halfExtents: [...primitive.halfExtents],
-      fixed: false,
-      friction: material.friction,
-      restitution: material.restitution,
-    };
+    return compileBody(part);
   });
   const connections = [],
     joints = [];

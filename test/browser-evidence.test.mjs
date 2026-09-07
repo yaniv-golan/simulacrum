@@ -53,3 +53,229 @@ test('receipt fixture records the actual input bytes and refuses changed fixture
   writeFileSync(path, 'changed');
   assert.throws(() => evidence.assertUnchanged(), /verification source changed/);
 });
+import { EventEmitter } from 'node:events';
+function fakeBrowser() {
+  const page = new EventEmitter();
+  Object.assign(page, {
+    locator: () => ({ getAttribute: async () => 'app-current' }),
+    goto: async () => {},
+    evaluate: async () => ({
+      frame: { tick: 2, physics: [], metadata: {} },
+      interaction: { kind: 'idle' },
+      cursor: { tick: 2 },
+    }),
+    screenshot: async () => Buffer.from('image'),
+    url: () => 'http://fixture/',
+    isClosed: () => false,
+  });
+  const context = {
+    newPage: async () => page,
+    close: async () => {
+      context.closed = true;
+    },
+  };
+  const browser = {
+    newContext: async () => context,
+    version: () => 'browser-test',
+    close: async () => {
+      browser.closed = true;
+    },
+  };
+  return { browser, page, context };
+}
+test('shared browser lifecycle captures request/page failures and closes owned context on failure', async () => {
+  const f = fakeBrowser(),
+    records = [];
+  const evidence = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({ digest: 'source' }),
+    launchBrowser: async () => f.browser,
+    writeArtifact: (name, value) => records.push({ name, value }),
+  });
+  assert.equal(typeof evidence.launch, 'function');
+  const browser = await evidence.launch({ profile: 'ui' }),
+    p = await browser.newPage();
+  await evidence.goto(p, 'http://fixture/');
+  p.emit('pageerror', new Error('injected page failure'));
+  p.emit('requestfailed', {
+    url: () => 'http://fixture/missing.js',
+    failure: () => ({ errorText: 'injected request failure' }),
+  });
+  await assert.rejects(browser.close(), /browser errors/);
+  assert.ok(f.context.closed && f.browser.closed);
+  const report = records.find((r) => r.name.endsWith('.json')).value;
+  assert.equal(report.errors.length, 2);
+  assert.equal(report.profile, 'ui');
+  assert.ok(report.pages[0].state.cursor);
+  assert.ok(records.some((r) => r.name.endsWith('.png')));
+});
+test('browser profiles reject fake focus mode and cleanup context setup failure', async () => {
+  const f = fakeBrowser();
+  const evidence = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({ digest: 'source' }),
+    launchBrowser: async () => f.browser,
+    writeArtifact: () => {},
+  });
+  await assert.rejects(evidence.launch({ profile: 'focus', headless: true }), /focus/);
+  f.browser.newContext = async () => {
+    throw Error('context setup failure');
+  };
+  const b = await evidence.launch({ profile: 'recording' });
+  await assert.rejects(b.newPage(), /context setup failure/);
+  assert.ok(f.browser.closed);
+});
+test('assertion evidence retains exact actual/expected values and matching build is a positive control', async () => {
+  const f = fakeBrowser(),
+    records = [];
+  const e = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({ digest: 'source' }),
+    launchBrowser: async () => f.browser,
+    writeArtifact: (name, value) => records.push({ name, value }),
+  });
+  const b = await e.launch({ profile: 'performance' }),
+    p = await b.newPage();
+  await e.goto(p, 'http://fixture/');
+  assert.throws(() =>
+    e.assert('deepEqual', [{ tick: 2 }, { tick: 3 }], {
+      action: 'observe tick',
+      expected: 'next completed frame',
+    }),
+  );
+  await e.captureFailure(Error('wrong tick'));
+  await b.close();
+  const r = records.find((r) => r.name.endsWith('.json')).value;
+  assert.deepEqual(r.assertions[0].actual, { tick: 2 });
+  assert.deepEqual(r.assertions[0].expected, { tick: 3 });
+});
+test('driver action and exact observed frame accompany an assertion; new-page failure closes ownership', async () => {
+  const f = fakeBrowser(),
+    records = [];
+  f.page.mouse = { click: async () => {} };
+  const e = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({ digest: 'source' }),
+    launchBrowser: async () => f.browser,
+    writeArtifact: (name, value) => records.push({ name, value }),
+  });
+  const b = await e.launch(),
+    p = await b.newPage();
+  await p.mouse.click(4, 5);
+  await p.evaluate(() => null);
+  e.assert('equal', [2, 2], { expectation: 'completed cursor' });
+  await e.captureFailure(Error('negative control'));
+  await b.close();
+  const report = records.find((r) => r.name.endsWith('.json')).value;
+  assert.equal(report.assertions[0].action.method, 'mouse.click');
+  assert.deepEqual(report.assertions[0].action.args, [4, 5]);
+  assert.equal(report.assertions[0].lastObservedFrame.tick, 2);
+  const g = fakeBrowser();
+  g.context.newPage = async () => {
+    throw Error('page setup failure');
+  };
+  const e2 = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({ digest: 'source' }),
+    launchBrowser: async () => g.browser,
+    writeArtifact: () => {},
+  });
+  const b2 = await e2.launch();
+  await assert.rejects(b2.newPage(), /page setup failure/);
+  assert.ok(g.context.closed && g.browser.closed);
+});
+test('context close failure is reported while browser still closes', async () => {
+  const f = fakeBrowser();
+  f.context.close = async () => {
+    throw Error('close failed');
+  };
+  const e = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({ digest: 'source' }),
+    launchBrowser: async () => f.browser,
+    writeArtifact: () => {},
+  });
+  const b = await e.launch();
+  await b.newPage();
+  await assert.rejects(b.close(), /close failed/);
+  assert.ok(f.browser.closed);
+});
+test('failure artifact writer cannot prevent owned context and browser cleanup', async () => {
+  const f = fakeBrowser();
+  const e = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({ digest: 'source' }),
+    launchBrowser: async () => f.browser,
+    writeArtifact: () => {
+      throw Error('artifact writer failure');
+    },
+  });
+  const b = await e.launch();
+  await b.newPage();
+  f.page.emit('pageerror', Error('page failed'));
+  await assert.rejects(b.close());
+  assert.ok(
+    f.context.closed && f.browser.closed,
+    'evidence write failure must not prevent cleanup',
+  );
+});
+test('asserted frames bind explicit context or full arguments, never an unrelated last observation', async () => {
+  const f = fakeBrowser(),
+    records = [],
+    actual = { tick: 3, metadata: {}, physics: [] },
+    explicit = { tick: 4, metadata: {}, physics: [] };
+  const e = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({ digest: 'source' }),
+    launchBrowser: async () => f.browser,
+    writeArtifact: (name, value) => records.push({ name, value }),
+  });
+  const b = await e.launch(),
+    p = await b.newPage();
+  await p.evaluate(() => null);
+  e.assert('deepEqual', [actual, actual]);
+  e.assert('equal', [1, 1]);
+  assert.throws(() => e.assert('equal', [1, 2], { frame: explicit }));
+  await e.captureFailure(Error('controlled failure'));
+  await b.close();
+  const report = records.find((r) => r.name === 'failure.json').value;
+  assert.deepEqual(
+    report.assertions.map((row) => row.assertedFrame?.tick ?? null),
+    [3, null, 4],
+  );
+  assert.deepEqual(
+    report.assertions.map((row) => row.assertedFrameSource),
+    ['actual', null, 'explicit'],
+  );
+  assert.equal(report.lastObservedFrame.tick, 2);
+});
+test('assertion evidence records the live caller and message while preserving custom descriptions', async () => {
+  const f = fakeBrowser(),
+    records = [];
+  const e = createBrowserEvidence({
+    readBuild: () => 'app-current',
+    readSource: () => ({ digest: 'source' }),
+    launchBrowser: async () => f.browser,
+    writeArtifact: (name, value) => records.push({ name, value }),
+  });
+  const b = await e.launch();
+  await b.newPage();
+  function liveAssertion() {
+    e.assert('equal', [1, 1, 'reached expected state']);
+  }
+  liveAssertion();
+  assert.throws(() =>
+    e.assert('equal', [1, 2, 'wrong state'], { expectation: 'custom transition' }),
+  );
+  assert.throws(() => e.assert('equal', [4, 5]));
+  await e.captureFailure(Error('controlled evidence capture'));
+  await b.close();
+  const rows = records.find((row) => row.name === 'failure.json').value.assertions;
+  assert.match(rows[0].location, /liveAssertion.*browser-evidence\.test\.mjs:\d+:\d+/);
+  assert.doesNotMatch(rows[0].location, /browser-session/);
+  assert.equal(rows[0].expectation, 'reached expected state');
+  assert.equal(rows[1].expectation, 'custom transition');
+  assert.match(rows[1].failureMessage, /wrong state/);
+  assert.match(rows[2].failureMessage, /4 !== 5/);
+  assert.deepEqual([rows[1].actual, rows[1].expected], [1, 2]);
+});

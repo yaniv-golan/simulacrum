@@ -1,10 +1,10 @@
 import { createBrowserEvidence } from './browser-evidence.mjs';
-import { chromium } from 'playwright';
+
 import { createPlaytestServer } from './playtest-server.mjs';
 import { mkdtempSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import assert from 'node:assert/strict';
+
 const browserEvidence = createBrowserEvidence();
 
 const data = mkdtempSync(join(tmpdir(), 'remote-playtest-')),
@@ -12,19 +12,22 @@ const data = mkdtempSync(join(tmpdir(), 'remote-playtest-')),
   server = createPlaytestServer({ publicDir: 'dist', dataDir: data, token });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const origin = `http://127.0.0.1:${server.address().port}`;
-const browser = await chromium.launch({
-  channel: 'chrome',
-  headless: false,
-  args: [
-    '--auto-accept-this-tab-capture',
-    '--auto-select-tab-capture-source-by-title=Simulacrum',
-    '--use-fake-device-for-media-stream',
-    '--allow-http-screen-capture',
-  ],
+const browser = await browserEvidence.launch({
+  profile: 'recording',
+  ...{
+    channel: 'chrome',
+    headless: false,
+    args: [
+      '--auto-accept-this-tab-capture',
+      '--auto-select-tab-capture-source-by-title=Simulacrum',
+      '--use-fake-device-for-media-stream',
+      '--allow-http-screen-capture',
+    ],
+  },
 });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
-  errors = [];
-page.on('pageerror', (e) => errors.push(e.message));
+  errors = browserEvidence.errors;
+
 try {
   await page.context().grantPermissions(['microphone']);
   console.log('opening');
@@ -89,17 +92,20 @@ try {
     'voice-end',
     'session-end',
   ])
-    assert.ok(
-      events.some((x) => x.kind === kind),
-      kind,
-    );
-  assert.ok(records.some((x) => x.media?.kind === 'screen' && x.media.bytes > 0));
-  assert.ok(records.some((x) => x.media?.kind === 'voice' && x.media.bytes > 0));
+    browserEvidence.assert('ok', [events.some((x) => x.kind === kind), kind]);
+  browserEvidence.assert('ok', [
+    records.some((x) => x.media?.kind === 'screen' && x.media.bytes > 0),
+  ]);
+  browserEvidence.assert('ok', [
+    records.some((x) => x.media?.kind === 'voice' && x.media.bytes > 0),
+  ]);
   const anchor = events.find((x) => x.kind === 'feedback-anchor');
-  assert.ok(anchor.data.image.startsWith('data:image/jpeg'));
-  assert.ok(anchor.data.context.ui.selected);
-  assert.ok(events.find((x) => x.kind === 'feedback-text').data.anchorId === anchor.data.id);
-  assert.deepEqual(errors, []);
+  browserEvidence.assert('ok', [anchor.data.image.startsWith('data:image/jpeg')]);
+  browserEvidence.assert('ok', [anchor.data.context.ui.selected]);
+  browserEvidence.assert('ok', [
+    events.find((x) => x.kind === 'feedback-text').data.anchorId === anchor.data.id,
+  ]);
+  browserEvidence.assert('deepEqual', [errors, []]);
   mkdirSync('artifacts/remote-playtest', { recursive: true });
   await page.screenshot({ path: 'artifacts/remote-playtest/completed.png' });
   browserEvidence.assertUnchanged();
@@ -121,6 +127,8 @@ try {
   );
   console.log('remote capture browser passed', dir);
 } catch (error) {
+  await browserEvidence.captureFailure(error);
+
   await page.screenshot({ path: 'artifacts/remote-playtest/failure.png' });
   writeFileSync('artifacts/remote-playtest/failure.txt', await page.locator('body').innerText());
   throw error;

@@ -1,17 +1,12 @@
 import { createBrowserEvidence } from './browser-evidence.mjs';
-import { chromium } from 'playwright';
-import assert from 'node:assert/strict';
+
 import { mkdirSync, writeFileSync } from 'node:fs';
 const browserEvidence = createBrowserEvidence();
 
-const browser = await chromium.launch(),
+const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1280, height: 720 } }),
-  errors = [];
-page.on('pageerror', (e) => errors.push(e.message));
-page.on('console', (m) => {
-  if (m.type() === 'error') errors.push(m.text());
-});
-page.on('requestfailed', (r) => errors.push(r.url()));
+  errors = browserEvidence.errors;
+
 mkdirSync('artifacts/selection-ux', { recursive: true });
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
@@ -19,17 +14,17 @@ try {
   for (let i = 0; i < 4; i++) await page.locator('[data-command=guide-step]').click();
   await page.getByRole('button', { name: 'Leave guide', exact: true }).click();
   await page.mouse.click(672, 416);
-  assert.equal(
+  browserEvidence.assert('equal', [
     await page.locator('.part-list-item.selected').textContent(),
     'Motor',
     'visible motor casing must pick motor, not wheel decoration',
-  );
+  ]);
   await page.mouse.click(866, 551);
-  assert.equal(
+  browserEvidence.assert('equal', [
     await page.locator('.part-list-item.selected').count(),
     0,
     'empty floor clears selection',
-  );
+  ]);
   if (!(await page.locator('.machine-picker').evaluate((el) => el.open)))
     await page.locator('.machine-picker > summary').click();
   await page
@@ -46,7 +41,7 @@ try {
         .frames[0].metadata.blueprint.parts.find((p) => p.name === 'Motor').parameters
         .defaultDuty === 0.5,
   );
-  assert.equal(await page.locator('.part-settings').getAttribute('open'), '');
+  browserEvidence.assert('equal', [await page.locator('.part-settings').getAttribute('open'), '']);
   await page.getByRole('combobox', { name: 'Material', exact: true }).selectOption('aluminium');
   await page.waitForFunction(
     () =>
@@ -55,11 +50,11 @@ try {
         .frames[0].metadata.blueprint.parts.find((p) => p.name === 'Motor').authoredMaterial
         .body === 'aluminium',
   );
-  assert.equal(await page.locator('.part-settings').getAttribute('open'), '');
-  assert.equal(
+  browserEvidence.assert('equal', [await page.locator('.part-settings').getAttribute('open'), '']);
+  browserEvidence.assert('equal', [
     await page.getByRole('spinbutton', { name: 'Drive setting', exact: true }).inputValue(),
     '0.5',
-  );
+  ]);
   await page.locator('[data-command=new]').click();
   await page.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 16; i++) await page.locator('[data-command=guide-step]').click();
@@ -79,10 +74,13 @@ try {
   await page
     .getByRole('button', { name: 'Wire Cell · power (parts stay put)', exact: true })
     .click();
-  assert.equal(await page.locator('.guide-progress').textContent(), '16 / 16 steps');
+  browserEvidence.assert('equal', [
+    await page.locator('.guide-progress').textContent(),
+    '16 / 16 steps',
+  ]);
   await page.getByRole('button', { name: 'Clear selection', exact: true }).click();
   await page.screenshot({ path: 'artifacts/selection-ux/repaired.png' });
-  assert.deepEqual(errors, []);
+  browserEvidence.assert('deepEqual', [errors, []]);
   browserEvidence.assertUnchanged();
   writeFileSync(
     'artifacts/selection-ux/result.json',
@@ -104,6 +102,9 @@ try {
     ),
   );
   console.log('selection and manual wiring browser regressions passed');
+} catch (error) {
+  await browserEvidence.captureFailure(error);
+  throw error;
 } finally {
   try {
     browserEvidence.assertUnchanged();

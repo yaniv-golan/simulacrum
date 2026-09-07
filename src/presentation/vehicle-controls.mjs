@@ -1,3 +1,4 @@
+import { controlCommand } from '../model/workshop-command.mjs';
 import { receiverControlOwner } from '../model/connection-test-paths.mjs';
 import {
   CONTROL_KEYS,
@@ -61,14 +62,14 @@ export function createVehicleControls({ send, select, container }) {
     overrides.clear();
     pressed.clear();
     states.clear();
-    for (const [id, duty] of duties) if (duty !== 0) enqueue({ type: 'control', id, duty: 0 });
+    for (const [id, duty] of duties) if (duty !== 0) enqueue(controlCommand(id, 0));
     duties.clear();
     return sequence;
   }
   function emit(id, duty) {
     if (!eligible(id) || (duties.get(id) ?? 0) === duty) return sequence;
     duties.set(id, duty);
-    return enqueue({ type: 'control', id, duty });
+    return enqueue(controlCommand(id, duty));
   }
   function apply() {
     for (const part of receivers()) {

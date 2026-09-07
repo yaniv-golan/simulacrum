@@ -12,7 +12,7 @@ import { compileAssembly, snapConnection, proposeSurfaceMount } from '../model/a
 import { immutableCopy } from '../model/observation.mjs';
 import { isReasonCode } from '../model/reasons.mjs';
 import { createSession } from '../simulation/session.mjs';
-const result = (ok, reasonCode = 'OK', path = '') => ({ ok, reasonCode, path });
+import { commandResult as result } from '../model/workshop-command.mjs';
 function reject(reasonCode, path = '') {
   throw Object.assign(Error(reasonCode), { reasonCode, path });
 }
@@ -68,6 +68,8 @@ export async function createWorkshop(
   // Published metadata is the sole authored read model. Local variables hold
   // candidates only; no private blueprint or mode can diverge from observation.
   const metadata = () => session.observe().frames[0].metadata;
+  /** @param {import('../model/workshop-command.js').WorkshopCommand} inputCommand
+   * @returns {Promise<import('../model/workshop-command.js').CommandResult>} */
   async function act(inputCommand) {
     if (disposed) return result(false, 'SESSION_DISPOSED');
     if (busy) return result(false, 'BUSY');

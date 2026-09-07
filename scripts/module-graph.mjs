@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync, lstatSync, realpathSync, existsSyn
 import { resolve, relative, dirname, extname } from 'node:path';
 import { parse } from 'acorn';
 import { parse as parseHTML } from 'parse5';
+import ts from 'typescript';
 import * as cssTree from 'css-tree';
 const sourceExtensions = new Set(['.js', '.mjs', '.cjs']);
 const excluded = new Set(['.git', 'node_modules', 'dist', 'coverage', '.cache', 'artifacts']);
@@ -93,10 +94,14 @@ export function buildModuleGraph(
       errors.push(`${path}: symlink dependencies are unsupported`);
   const pending = entrypoints
     ? [...entrypoints]
-    : files.filter((path) => sourceExtensions.has(extname(path)));
-  function targetFor(path, specifier) {
+    : files.filter(
+        (path) =>
+          sourceExtensions.has(extname(path)) ||
+          (purpose === 'test-selection' && path.endsWith('.d.ts')),
+      );
+  function targetFor(path, specifier, typeOnly = false, kind = 'module') {
     if (!specifier.startsWith('.') && !specifier.startsWith('/')) return null;
-    const target = relative(
+    let target = relative(
       root,
       resolve(
         root,
@@ -106,6 +111,16 @@ export function buildModuleGraph(
     ).replaceAll('\\', '/');
     if (target.startsWith('../')) {
       errors.push(`${path}: dependency escapes project: ${specifier}`);
+      return null;
+    }
+    if (
+      typeOnly &&
+      /\.js$/.test(target) &&
+      existsSync(resolve(root, target.replace(/\.js$/, '.d.ts')))
+    )
+      target = target.replace(/\.js$/, '.d.ts');
+    if (kind === 'module' && !typeOnly && target.endsWith('.d.ts')) {
+      errors.push(`${path}: runtime import of declaration ${specifier}`);
       return null;
     }
     if (!existsSync(resolve(root, target)) || !statSync(resolve(root, target)).isFile()) {
@@ -127,8 +142,10 @@ export function buildModuleGraph(
     const info = { dependencies: new Set(), imports: [], dom: false };
     nodes.set(path, info);
     const add = (specifier, kind) => {
-      const target = targetFor(path, specifier);
-      info.imports.push({ specifier, target, kind, typeOnly: false });
+      const typeOnly = kind === 'type';
+      if (typeOnly && purpose !== 'test-selection') return;
+      const target = targetFor(path, specifier, typeOnly, kind);
+      info.imports.push({ specifier, target, kind, typeOnly });
       if (target) info.dependencies.add(target);
     };
     const resource = (value) => {
@@ -169,7 +186,12 @@ export function buildModuleGraph(
         errors.push(`${path}: CSS parse error: ${error.message}`);
       }
     };
-    if (sourceExtensions.has(extname(path)))
+    if (path.endsWith('.d.ts')) {
+      const text = readFileSync(resolve(root, path), 'utf8');
+      const parsed = ts.preProcessFile(text, true, true);
+      for (const ref of [...parsed.importedFiles, ...parsed.referencedFiles])
+        add(ref.fileName, 'type');
+    } else if (sourceExtensions.has(extname(path)))
       scripts.push(readFileSync(resolve(root, path), 'utf8'));
     else if (extname(path) === '.css') css(readFileSync(resolve(root, path), 'utf8'));
     else if (['.html', '.htm'].includes(extname(path))) {
@@ -204,7 +226,15 @@ export function buildModuleGraph(
     for (const script of scripts) {
       let ast;
       try {
-        ast = parse(script, { ecmaVersion: 'latest', sourceType: 'module', allowHashBang: true });
+        ast = parse(script, {
+          ecmaVersion: 'latest',
+          sourceType: 'module',
+          allowHashBang: true,
+          onComment: (_block, text) => {
+            for (const match of text.matchAll(/\bimport\(\s*['"]([^'"]+)['"]\s*\)/g))
+              add(match[1], 'type');
+          },
+        });
       } catch (error) {
         errors.push(`${path}: parse error: ${error.message}`);
         continue;
@@ -343,6 +373,7 @@ export function buildModuleGraph(
     (path) =>
       path.startsWith('src/') &&
       !sourceExtensions.has(extname(path)) &&
+      !path.endsWith('.d.ts') &&
       !['.json', '.html', '.htm', '.css', '.svg', '.png', '.jpg', '.wasm'].includes(extname(path)),
   ))
     errors.push(`${path}: unsupported source format`);
@@ -418,18 +449,53 @@ export function checkLayers(root = process.cwd(), options = {}) {
   const errors = validateLayers(buildModuleGraph(root), options);
   if (errors.length) throw new Error(errors.join('\n'));
 }
-export function affectedTests(graph, changed) {
+/** Shortest import/data path for each selected test; uncertainty stays explicit. */
+export function explainAffectedTests(graph, changed) {
   const tests = graph.files.filter((path) => /\.test\.(m?js|cjs)$/.test(path));
-  if (!changed?.length || graph.errors.length || changed.some((path) => !graph.nodes.has(path)))
-    return tests;
-  const changedSet = new Set(changed);
-  function affected(path, seen = new Set()) {
-    if (changedSet.has(path) || graph.nodes.get(path)?.opaqueInputs) return true;
-    if (seen.has(path)) return false;
-    seen.add(path);
-    return [...(graph.nodes.get(path)?.dependencies ?? [])].some((dependency) =>
-      affected(dependency, seen),
-    );
+  const fallback = graph.errors.length
+    ? `graph uncertainty: ${graph.errors.join('; ')}`
+    : !changed?.length
+      ? 'changed files unavailable or empty'
+      : changed.some((path) => !graph.nodes.has(path))
+        ? `unknown changed inputs: ${changed.filter((path) => !graph.nodes.has(path)).join(', ')}`
+        : null;
+  if (fallback)
+    return {
+      tests,
+      fallback,
+      reasons: tests.map((test) => ({ test, reason: fallback, path: [test], edges: [] })),
+    };
+  const changedSet = new Set(changed),
+    reasons = [];
+  for (const test of tests) {
+    const queue = [{ path: [test], edges: [] }],
+      seen = new Set();
+    while (queue.length) {
+      const candidate = queue.shift(),
+        path = candidate.path.at(-1),
+        node = graph.nodes.get(path);
+      if (seen.has(path)) continue;
+      seen.add(path);
+      if (changedSet.has(path) || node?.opaqueInputs) {
+        reasons.push({
+          test,
+          reason: changedSet.has(path) ? 'changed dependency' : 'opaque runtime input',
+          ...candidate,
+        });
+        break;
+      }
+      for (const dependency of [...(node?.dependencies ?? [])].sort()) {
+        const kind =
+          node?.imports?.find((edge) => edge.target === dependency)?.kind ?? 'dependency';
+        queue.push({
+          path: [...candidate.path, dependency],
+          edges: [...candidate.edges, { from: path, to: dependency, kind }],
+        });
+      }
+    }
   }
-  return tests.filter((path) => affected(path));
+  return { tests: reasons.map((r) => r.test), fallback: null, reasons };
+}
+export function affectedTests(graph, changed) {
+  return explainAffectedTests(graph, changed).tests;
 }

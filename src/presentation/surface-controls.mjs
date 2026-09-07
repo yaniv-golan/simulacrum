@@ -1,7 +1,14 @@
+import {
+  degreesToRadians,
+  radiansToDegrees,
+  metresToMillimetres,
+  millimetresToMetres,
+} from '../model/display-units.mjs';
+import { createPlacementLifecycle, placementPresentation } from './placement-lifecycle.mjs';
 import * as THREE from 'three';
 import { spreadSurfaceAnchors } from './surface-anchor-layout.mjs';
 import { explainFailure } from '../model/messages.mjs';
-import { surfaceRegions } from '../model/surfaces.mjs';
+import { surfaceRegions, projectedPadHalfSize } from '../model/surfaces.mjs';
 import { inspectSurfaceMount } from '../model/assembly.mjs';
 import { mechanicalGroup } from '../model/editing.mjs';
 
@@ -179,26 +186,20 @@ export function createSurfaceControls({
     const part = state.insertPart ?? bp().parts.find((p) => p.id === state.part);
     const pad = surfaceRegions(part).find((r) => r.id === source.value);
     const ext = pad.padHalfSize ?? pad.halfSize;
-    const theta = (Number(angle.value) * Math.PI) / 180;
+    const theta = degreesToRadians(Number(angle.value));
     const roundoff = 32 * Number.EPSILON * Math.max(1, ...ext, ...face.halfSize);
-    return [
-      face.halfSize[0] - Math.abs(Math.cos(theta)) * ext[0] - Math.abs(Math.sin(theta)) * ext[1],
-      face.halfSize[1] - Math.abs(Math.sin(theta)) * ext[0] - Math.abs(Math.cos(theta)) * ext[1],
-    ].map((limit) => (Math.abs(limit) <= roundoff ? 0 : limit));
+    const projected = projectedPadHalfSize(ext, theta);
+    return [face.halfSize[0] - projected[0], face.halfSize[1] - projected[1]].map((limit) =>
+      Math.abs(limit) <= roundoff ? 0 : limit,
+    );
   }
-  function placementInstruction() {
-    if (state.drag)
-      return state.replaceConnection
-        ? 'Release mouse button to apply'
-        : placementMode.value === 'attach'
-          ? 'Release mouse button to attach'
-          : 'Release mouse button to place';
-    return state.replaceConnection
-      ? 'Click Apply mount'
-      : placementMode.value === 'attach'
-        ? 'Click Attach'
-        : 'Click Place only';
+  function presentation() {
+    return placementPresentation(placement.read(), {
+      attach: placementMode.value === 'attach',
+      adjusting: !!state?.replaceConnection,
+    });
   }
+  const placementInstruction = () => presentation().instruction;
   function renderOverlay() {
     overlay.hidden = !state?.target;
     if (overlay.hidden) return;
@@ -238,12 +239,15 @@ export function createSurfaceControls({
       leader.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
       if (!control.hidden) markerYs.push(position.y);
     }
-    const point = screen(Number(u.value) / 1000, Number(v.value) / 1000);
+    const point = screen(
+      millimetresToMetres(Number(u.value)),
+      millimetresToMetres(Number(v.value)),
+    );
     cue.hidden = !point.visible;
-    cue.textContent = state.proposal
+    cue.textContent = placement.read().proposal
       ? `${state.replaceConnection ? 'Adjusting mount' : placementMode.value === 'attach' ? 'Not attached' : 'Position only'} · ${placementInstruction()} — ${part.name}`
       : `Not placed · ${status.textContent}`;
-    cue.dataset.blocked = String(!state.proposal);
+    cue.dataset.blocked = String(!placement.read().proposal);
     cue.style.left = `${Math.max(8, Math.min(point.x + 30, canvasRect.width - 290))}px`;
     const below = Math.max(point.y + 36, ...markerYs.map((y) => y + 24));
     const top =
@@ -268,9 +272,11 @@ export function createSurfaceControls({
   }
   const preview = new THREE.Group();
   scene.add(preview);
+  const placement = createPlacementLifecycle();
   let state = null,
     sequence = 0,
-    enabled = true;
+    enabled = true,
+    disposed = false;
   const reasons = {
     SURFACE_OUT_OF_BOUNDS:
       'The mounting base extends beyond this surface. Slide it inward or choose a larger face.',
@@ -312,6 +318,7 @@ export function createSurfaceControls({
     return state.insertPart ? [state.part] : mechanicalGroup(base, state.part);
   }
   function start(part, { replaceConnection, insertPart, drag = false } = {}) {
+    if (disposed || placement.read().kind === 'committing') return false;
     cancel(false);
     const value = insertPart ?? bp().parts.find((p) => p.id === part);
     if (!value || !surfaceRegions(value).length) return false;
@@ -319,14 +326,13 @@ export function createSurfaceControls({
       part,
       replaceConnection,
       insertPart,
-      drag,
       locked: false,
       target: null,
       blueprint: JSON.stringify(bp()),
       cursor: getCursor?.(),
       twist: 0,
-      proposal: null,
     };
+    placement.begin(drag);
     source.replaceChildren();
     for (const r of surfaceRegions(value)) {
       const o = node('option', r.label);
@@ -363,9 +369,9 @@ export function createSurfaceControls({
         source.value = own.surface.region;
         state.target = { part: other.part, region: other.surface.region };
         state.locked = true;
-        u.value = String(other.surface.u * 1000);
-        v.value = String(other.surface.v * 1000);
-        angle.value = String((other.surface.twist * 180) / Math.PI);
+        u.value = String(metresToMillimetres(other.surface.u));
+        v.value = String(metresToMillimetres(other.surface.v));
+        angle.value = String(radiansToDegrees(other.surface.twist));
         target.value = JSON.stringify([other.part, other.surface.region]);
       }
     }
@@ -396,9 +402,9 @@ export function createSurfaceControls({
       sourceRegion: source.value,
       targetPart: state.target.part,
       targetRegion: state.target.region,
-      u: Number(u.value) / 1000,
-      v: Number(v.value) / 1000,
-      twist: (Number(angle.value) * Math.PI) / 180,
+      u: millimetresToMetres(Number(u.value)),
+      v: millimetresToMetres(Number(v.value)),
+      twist: degreesToRadians(Number(angle.value)),
       id: state.replaceConnection ?? nextId(),
       ...(state.replaceConnection ? { replaceConnection: state.replaceConnection } : {}),
       ...(state.insertPart ? { insertPart: state.insertPart } : {}),
@@ -414,9 +420,9 @@ export function createSurfaceControls({
     return state.id;
   }
   function update() {
-    if (!state) return;
+    if (!state || placement.read().kind === 'committing') return;
     onInvalidate?.();
-    state.proposal = null;
+    placement.assess(null, !!state.target);
     stateLabel.textContent = 'Preview · not attached';
     state.previewParts = [];
     clearPreview();
@@ -432,7 +438,7 @@ export function createSurfaceControls({
       const assessment = inspectSurfaceMount(bp(), options()),
         proposal = assessment.proposal;
       if (!proposal) throw assessment;
-      state.proposal = assessment.valid ? proposal : null;
+      placement.assess(assessment.valid ? proposal : null);
       state.previewParts = proposal.blueprint.parts.filter((p) =>
         proposal.movingPartIds.includes(p.id),
       );
@@ -481,7 +487,11 @@ export function createSurfaceControls({
       const targetPart = bp().parts.find((p) => p.id === state.target.part),
         region = surfaceRegions(targetPart).find((r) => r.id === state.target.region);
       const endpoint = {
-        position: vec([0, Number(u.value) / 1000, Number(v.value) / 1000])
+        position: vec([
+          0,
+          millimetresToMetres(Number(u.value)),
+          millimetresToMetres(Number(v.value)),
+        ])
           .applyQuaternion(quat(region.rotation))
           .add(vec(region.position))
           .toArray(),
@@ -535,7 +545,7 @@ export function createSurfaceControls({
           .multiply(
             new THREE.Quaternion().setFromAxisAngle(
               vec([1, 0, 0]),
-              (Number(angle.value) * Math.PI) / 180,
+              degreesToRadians(Number(angle.value)),
             ),
           ),
         pu = vec([0, 1, 0]).applyQuaternion(padRotation),
@@ -570,15 +580,9 @@ export function createSurfaceControls({
         : assessment.obstructingPartId
           ? `${state.insertPart?.name ?? bp().parts.find((p) => p.id === state.part).name} overlaps ${bp().parts.find((p) => p.id === assessment.obstructingPartId)?.name ?? assessment.obstructingPartId}. Slide or turn it clear.`
           : `${label}: ${reasons[assessment.reasonCode] ?? assessment.reasonCode}`;
-      stateLabel.textContent = assessment.valid
-        ? state.replaceConnection
-          ? 'Preview · mount adjustment'
-          : placementMode.value === 'attach'
-            ? 'Preview · not attached'
-            : 'Preview · position only'
-        : 'Blocked · not placed';
-      footer.dataset.blocked = String(!assessment.valid);
-      apply.disabled = !assessment.valid;
+      stateLabel.textContent = presentation().label;
+      footer.dataset.blocked = String(presentation().blocked);
+      apply.disabled = !presentation().canCommit;
       if (assessment.obstructingPartId) {
         const obstacle = getMeshes().get(assessment.obstructingPartId);
         if (obstacle) {
@@ -627,9 +631,10 @@ export function createSurfaceControls({
     update();
   }
   async function commit() {
-    if (!state?.proposal || state.committing) return false;
-    state.committing = true;
+    const token = placement.commit();
+    if (token === null || !state) return false;
     const committedState = state;
+    stateLabel.textContent = presentation().label;
     const attaching = placementMode.value === 'attach';
     const peerName = bp().parts.find((p) => p.id === state.target.part)?.name;
     apply.disabled = true;
@@ -640,6 +645,7 @@ export function createSurfaceControls({
       },
       label = status.textContent;
     const result = await send(command);
+    if (!placement.settle(token, !!result?.ok)) return false;
     if (result?.ok) {
       if (state === committedState) cancel(false);
       onMessage(
@@ -651,8 +657,6 @@ export function createSurfaceControls({
       return true;
     }
     if (state === committedState) {
-      state.committing = false;
-      state.proposal = null;
       stateLabel.textContent = 'Not attached';
       status.textContent = explainFailure(result ?? {});
       footer.dataset.blocked = 'true';
@@ -662,6 +666,11 @@ export function createSurfaceControls({
   }
   function cancel(notify = true) {
     if (!state) return;
+    if (placement.read().kind === 'committing') {
+      if (notify) onMessage('Placement is being applied. Undo can reverse it once complete.');
+      return;
+    }
+    placement.cancel();
     state = null;
     clearPreview();
     panel.hidden = true;
@@ -683,8 +692,8 @@ export function createSurfaceControls({
     return r;
   }
   function point(event, { lock = false } = {}) {
-    if (!state) return false;
-    state.drag = !!(event.buttons & 1);
+    if (!state || placement.read().kind === 'committing') return false;
+    placement.pointer(!!(event.buttons & 1));
     const r = ray(event);
     let p, region, world;
     if (state.locked && state.target) {
@@ -753,13 +762,8 @@ export function createSurfaceControls({
     // pad's projected extent and remain ordinary authored local coordinates.
     const part = state.insertPart ?? bp().parts.find((p) => p.id === state.part),
       base = surfaceRegions(part).find((r) => r.id === source.value),
-      theta = (Number(angle.value) * Math.PI) / 180;
-    const extU =
-        Math.abs(Math.cos(theta)) * (base.padHalfSize ?? base.halfSize)[0] +
-        Math.abs(Math.sin(theta)) * (base.padHalfSize ?? base.halfSize)[1],
-      extV =
-        Math.abs(Math.sin(theta)) * (base.padHalfSize ?? base.halfSize)[0] +
-        Math.abs(Math.cos(theta)) * (base.padHalfSize ?? base.halfSize)[1];
+      theta = degreesToRadians(Number(angle.value));
+    const [extU, extV] = projectedPadHalfSize(base.padHalfSize ?? base.halfSize, theta);
     const limitU = region.halfSize[0] - extU,
       limitV = region.halfSize[1] - extV;
     const pixel =
@@ -884,11 +888,11 @@ export function createSurfaceControls({
       const local = world.sub(origin).applyQuaternion(rotation.invert());
       state.dragAnchor = {
         point: local.toArray(),
-        u: Number(u.value) / 1000,
-        v: Number(v.value) / 1000,
+        u: millimetresToMetres(Number(u.value)),
+        v: millimetresToMetres(Number(v.value)),
       };
       state.locked = true;
-      state.drag = true;
+      placement.pointer(true);
       update();
       return true;
     }
@@ -915,21 +919,23 @@ export function createSurfaceControls({
     // Preserve the grab offset, but assess the final position even if no final move event arrived.
     point(event, { lock: true });
     state.dragAnchor = null;
-    state.drag = false;
+    placement.pointer(false);
     commit();
   }
 
   function read() {
     return state
       ? {
+          phase: placement.read().kind,
+          pointerHeld: placement.read().pointerHeld,
           part: state.part,
           target: state.target,
           sourceRegion: source.value,
-          u: Number(u.value) / 1000,
-          v: Number(v.value) / 1000,
-          twist: (Number(angle.value) * Math.PI) / 180,
-          valid: !!state.proposal,
-          movingPartIds: state.proposal?.movingPartIds ?? moving(),
+          u: millimetresToMetres(Number(u.value)),
+          v: millimetresToMetres(Number(v.value)),
+          twist: degreesToRadians(Number(angle.value)),
+          valid: !!placement.read().proposal,
+          movingPartIds: placement.read().proposal?.movingPartIds ?? moving(),
           previewParts: (state.previewParts ?? []).map((p) => ({
             id: p.id,
             position: p.position,
@@ -960,11 +966,17 @@ export function createSurfaceControls({
     refresh() {
       if (
         state &&
-        (getFrame()?.metadata.mode !== 'build' || JSON.stringify(bp()) !== state.blueprint)
+        (getFrame()?.metadata.mode !== 'build' ||
+          (placement.read().kind !== 'committing' && JSON.stringify(bp()) !== state.blueprint))
       )
         cancel(false);
     },
     dispose() {
+      if (disposed) return;
+      disposed = true;
+      // Disposal abandons presentation ownership, not the already sent edit.
+      // Invalidate its token so a late result cannot update removed UI.
+      placement.cancel();
       cancel(false);
       scene.remove(preview);
       overlay.remove();

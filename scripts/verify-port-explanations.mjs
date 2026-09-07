@@ -1,21 +1,16 @@
 import { createBrowserEvidence } from './browser-evidence.mjs';
-import { chromium } from 'playwright';
-import assert from 'node:assert/strict';
+
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createStarterVehicle } from '../src/model/starter-vehicle.mjs';
 import { createPart } from '../src/model/blueprint.mjs';
 import { snapConnection } from '../src/model/assembly.mjs';
 const browserEvidence = createBrowserEvidence();
 
-const browser = await chromium.launch(),
+const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
-  errors = [];
+  errors = browserEvidence.errors;
 page.setDefaultTimeout(6000);
-page.on('pageerror', (e) => errors.push(e.message));
-page.on('console', (m) => {
-  if (m.type() === 'error') errors.push(m.text());
-});
-page.on('requestfailed', (r) => errors.push(r.url()));
+
 mkdirSync('artifacts/feedback-fixes', { recursive: true });
 const read = () => page.evaluate(() => window.workshopProbe.observe().frames[0].metadata.blueprint);
 async function select(name) {
@@ -33,84 +28,111 @@ try {
   await page.getByRole('button', { name: 'Leave guide', exact: true }).click();
   await select('Motor');
   const before = await read();
-  assert.equal(
+  browserEvidence.assert('equal', [
     await page.locator('.port-button[data-port-id=mount]').count(),
     0,
     'surface mounting must not expose a duplicate fixed socket',
-  );
-  assert.match(await page.locator('.mount-relationship').innerText(), /Bolted to Chassis/);
-  assert.equal(
+  ]);
+  browserEvidence.assert('match', [
+    await page.locator('.mount-relationship').innerText(),
+    /Bolted to Chassis/,
+  ]);
+  browserEvidence.assert('equal', [
     await page.getByRole('button', { name: 'Adjust mount', exact: true }).isEnabled(),
     true,
-  );
-  assert.equal(await page.getByRole('button', { name: 'Detach', exact: true }).isEnabled(), true);
+  ]);
+  browserEvidence.assert('equal', [
+    await page.getByRole('button', { name: 'Detach', exact: true }).isEnabled(),
+    true,
+  ]);
   for (const id of ['shaft', 'power']) {
     const port = page.locator(`.port-button[data-port-id=${id}]`);
-    assert.equal(await port.isEnabled(), true, 'connected ports must remain inspectable');
+    browserEvidence.assert('equal', [
+      await port.isEnabled(),
+      true,
+      'connected ports must remain inspectable',
+    ]);
     await port.click();
-    assert.equal(await page.locator('.port-explanation [data-disconnect-id]').count(), 1);
-    assert.equal(
+    browserEvidence.assert('equal', [
+      await page.locator('.port-explanation [data-disconnect-id]').count(),
+      1,
+    ]);
+    browserEvidence.assert('equal', [
       await page.locator('.target-button').count(),
       0,
       'occupied connector must not offer another attachment',
-    );
+    ]);
   }
-  assert.deepEqual(await read(), before, 'inspection must not change authored connections');
+  browserEvidence.assert('deepEqual', [
+    await read(),
+    before,
+    'inspection must not change authored connections',
+  ]);
   await select('Drive wheel');
-  assert.equal(await page.locator('.port-button[data-port-id=mount]').count(), 0);
+  browserEvidence.assert('equal', [
+    await page.locator('.port-button[data-port-id=mount]').count(),
+    0,
+  ]);
   await page.locator('.port-button[data-port-id=axle]').click();
-  assert.match(
+  browserEvidence.assert('match', [
     await page.locator('.port-explanation').textContent(),
     /holds the wheel too; no separate fixed mount/,
-  );
+  ]);
   await page.screenshot({ path: 'artifacts/feedback-fixes/wheel-ports.png' });
-  assert.deepEqual(await read(), before);
+  browserEvidence.assert('deepEqual', [await read(), before]);
   await select('Motor');
   await page.getByRole('button', { name: 'Adjust mount', exact: true }).click();
-  assert.equal(await page.locator('.surface-placement').isVisible(), true);
-  assert.deepEqual(await read(), before, 'mount adjustment begins as read-only preview');
+  browserEvidence.assert('equal', [await page.locator('.surface-placement').isVisible(), true]);
+  browserEvidence.assert('deepEqual', [
+    await read(),
+    before,
+    'mount adjustment begins as read-only preview',
+  ]);
   await page
     .locator('.surface-placement')
     .getByRole('button', { name: 'Cancel', exact: true })
     .click();
-  assert.deepEqual(await read(), before);
+  browserEvidence.assert('deepEqual', [await read(), before]);
   await page.getByRole('button', { name: 'Detach', exact: true }).click();
   const detached = await read(),
     motor = before.parts.find((p) => p.name === 'Motor'),
     surface = before.connections.find(
       (c) => c.kind === 'fixed' && (c.a.part === motor.id || c.b.part === motor.id),
     );
-  assert.ok(surface?.a.surface && surface?.b.surface);
-  assert.deepEqual(detached.parts, before.parts, 'detach does not move parts');
-  assert.deepEqual(
+  browserEvidence.assert('ok', [surface?.a.surface && surface?.b.surface]);
+  browserEvidence.assert('deepEqual', [detached.parts, before.parts, 'detach does not move parts']);
+  browserEvidence.assert('deepEqual', [
     detached.connections,
     before.connections.filter((c) => c.id !== surface.id),
     'detach removes only the surface relationship, preserving shaft and power',
-  );
+  ]);
   await page.locator('[data-command=undo]').click();
-  assert.deepEqual(await read(), before);
+  browserEvidence.assert('deepEqual', [await read(), before]);
   await page.locator('[data-part-type=poweredMotor]').click();
   await page.locator('.port-button[data-port-id=power]').click();
   await page
     .getByRole('button', { name: 'Wire Cell · power (parts stay put)', exact: true })
     .click();
-  assert.equal(
+  browserEvidence.assert('equal', [
     (await read()).connections.filter((c) => c.kind === 'power').length,
     before.connections.filter((c) => c.kind === 'power').length + 1,
     'a second motor shares the cell through another visible wire',
-  );
+  ]);
   const shared = await read();
   await page.locator('[data-part-type=powerCell]').click();
   await page.locator('.port-button[data-port-id=power]').click();
   await page
     .getByRole('button', { name: 'Wire Cell · power (parts stay put)', exact: true })
     .click();
-  assert.deepEqual(
+  browserEvidence.assert('deepEqual', [
     (await read()).connections,
     shared.connections,
     'a second cell cannot join the circuit',
-  );
-  assert.match(await page.locator('.connection-targets [role=alert]').innerText(), /one cell/);
+  ]);
+  browserEvidence.assert('match', [
+    await page.locator('.connection-targets [role=alert]').innerText(),
+    /one cell/,
+  ]);
   let twoMotors = createStarterVehicle();
   twoMotors.parts = twoMotors.parts.filter((p) =>
     ['frame', 'motor', 'cell', 'drive'].includes(p.id),
@@ -148,29 +170,29 @@ try {
       exact: true,
     })
     .click();
-  assert.equal(
+  browserEvidence.assert('equal', [
     (await read()).connections.filter((c) => c.kind === 'shaft').length,
     2,
     'second motor wheel snaps on the same chassis',
-  );
+  ]);
   await page.locator('[data-command=run]').click();
   await page.waitForFunction(() => window.workshopProbe.observe().frames[0].tick >= 120);
   await page.locator('[data-command=pause]').click();
   const running = await page.evaluate(() => window.workshopProbe.observe().frames[0]);
-  assert.ok(
+  browserEvidence.assert('ok', [
     running.power.motors.every((m) => m.shaftWorkJ > 0),
     'both motors physically deliver work',
-  );
+  ]);
   await page.screenshot({ path: 'artifacts/feedback-fixes/two-motors.png' });
   await page.locator('[data-command=build]').click();
   const diameter = page.getByLabel('Wheel diameter (mm)', { exact: true });
   const beforeSize = await read();
   await diameter.fill('405');
-  assert.deepEqual(
+  browserEvidence.assert('deepEqual', [
     await read(),
     beforeSize,
     'diameter input previews without changing authored state',
-  );
+  ]);
   await diameter.press('Tab');
   await page.waitForFunction(
     () =>
@@ -180,7 +202,7 @@ try {
       0.405,
   );
   await page.screenshot({ path: 'artifacts/feedback-fixes/wheel-diameter.png' });
-  assert.deepEqual(errors, []);
+  browserEvidence.assert('deepEqual', [errors, []]);
   browserEvidence.assertUnchanged();
   writeFileSync(
     'artifacts/feedback-fixes/ports.json',
@@ -203,6 +225,9 @@ try {
     ),
   );
   console.log('port explanation browser passed');
+} catch (error) {
+  await browserEvidence.captureFailure(error);
+  throw error;
 } finally {
   try {
     browserEvidence.assertUnchanged();

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { validateInvariantCoverage } from './invariant-coverage.mjs';
 export function validateManifest(m) {
   const unique = (values, what) => {
     if (new Set(values).size !== values.length) throw new Error(`duplicate ${what}`);
@@ -71,6 +72,7 @@ export function validateManifest(m) {
   }
   unique(obligations, 'obligation');
   for (const key of Object.keys(m.exitObligations)) milestone(key);
+  validateInvariantCoverage(m);
   return m;
 }
 export function readManifest() {

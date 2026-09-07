@@ -1,15 +1,14 @@
 import { createBrowserEvidence } from './browser-evidence.mjs';
-import { chromium } from 'playwright';
-import assert from 'node:assert/strict';
+
 import { mkdirSync, writeFileSync } from 'node:fs';
 const browserEvidence = createBrowserEvidence();
 
 const out = process.argv[3] ?? 'artifacts/property-focus';
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch(),
+const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1280, height: 720 } }),
-  errors = [];
-page.on('pageerror', (error) => errors.push(error.message));
+  errors = browserEvidence.errors;
+
 page.setDefaultTimeout(6000);
 const active = () =>
   page.evaluate(() => ({
@@ -36,13 +35,21 @@ try {
   const duty = page.getByRole('spinbutton', { name: 'Drive setting', exact: true });
   await duty.fill('.3');
   await duty.press('Escape');
-  assert.equal(await parameter('defaultDuty'), 1, 'Escape discards the numeric draft');
+  browserEvidence.assert('equal', [
+    await parameter('defaultDuty'),
+    1,
+    'Escape discards the numeric draft',
+  ]);
   await page.locator('.machine-picker > summary').click();
   await page.locator('.part-list-item').first().click();
   await duty.focus();
   await duty.press('Shift+Tab');
   const nativePrevious = await active();
-  assert.notEqual(nativePrevious.tag, 'BODY', 'the field has a native predecessor');
+  browserEvidence.assert('notEqual', [
+    nativePrevious.tag,
+    'BODY',
+    'the field has a native predecessor',
+  ]);
   await duty.fill('.5');
   await duty.press('Tab');
   await page.waitForFunction(
@@ -50,56 +57,64 @@ try {
       window.workshopProbe.observe().frames[0].metadata.blueprint.parts[0].parameters
         .defaultDuty === 0.5,
   );
-  assert.equal(
+  browserEvidence.assert('equal', [
     (await active()).label,
     'Drive strength',
     'editing Drive setting then Tab must focus its adjacent slider, not body',
-  );
+  ]);
   await page.keyboard.press('Tab');
-  assert.equal((await active()).text, 'Reverse', 'the following Tab continues to Reverse');
+  browserEvidence.assert('equal', [
+    (await active()).text,
+    'Reverse',
+    'the following Tab continues to Reverse',
+  ]);
   await duty.fill('.25');
   await duty.press('Shift+Tab');
-  assert.equal(await parameter('defaultDuty'), 0.25);
-  assert.deepEqual(
+  browserEvidence.assert('equal', [await parameter('defaultDuty'), 0.25]);
+  browserEvidence.assert('deepEqual', [
     await active(),
     nativePrevious,
     'Shift+Tab after editing preserves the native predecessor',
-  );
+  ]);
   await duty.focus();
   await duty.press('Tab');
-  assert.equal((await active()).label, 'Drive strength', 'unchanged Tab keeps native order');
+  browserEvidence.assert('equal', [
+    (await active()).label,
+    'Drive strength',
+    'unchanged Tab keeps native order',
+  ]);
   await page.locator('.part-settings > summary').click();
   const torque = page.getByRole('spinbutton', { name: 'torqueConstant', exact: true }),
     resistance = page.getByRole('spinbutton', { name: 'resistance', exact: true });
   await torque.fill('.2');
   await torque.press('Tab');
-  assert.equal(await parameter('torqueConstant'), 0.2);
-  assert.equal(
+  browserEvidence.assert('equal', [await parameter('torqueConstant'), 0.2]);
+  browserEvidence.assert('equal', [
     (await active()).label,
     'resistance',
     'engineering numeric edit continues to the next field',
-  );
+  ]);
   await resistance.fill('2');
   await resistance.press('Shift+Tab');
-  assert.equal(await parameter('resistance'), 2);
-  assert.equal(
+  browserEvidence.assert('equal', [await parameter('resistance'), 2]);
+  browserEvidence.assert('equal', [
     (await active()).label,
     'torqueConstant',
     'engineering reverse Tab preserves previous field',
-  );
+  ]);
   await torque.fill('.3');
   await torque.press('Shift+Tab');
-  assert.equal(
+  browserEvidence.assert('equal', [
     (await active()).text,
     'Engineering details',
     'reverse Tab can restore a summary without an aria-label',
-  );
-  assert.equal(
+  ]);
+  browserEvidence.assert('equal', [
     await page.locator('.part-settings').evaluate((element) => element.open),
     true,
     'editing preserves open engineering section',
-  );
-  assert.deepEqual(errors, []);
+  ]);
+  browserEvidence.assert('deepEqual', [errors, []]);
   await page.screenshot({ path: `${out}/focus.png` });
   browserEvidence.assertUnchanged();
   writeFileSync(
@@ -123,6 +138,8 @@ try {
   );
   console.log('property focus browser passed');
 } catch (error) {
+  await browserEvidence.captureFailure(error);
+
   await page.screenshot({ path: `${out}/failed.png` });
   writeFileSync(
     `${out}/failure.json`,

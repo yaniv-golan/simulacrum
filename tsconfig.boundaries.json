@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "strict": true,
+    "noEmit": true,
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "skipLibCheck": false,
+    "exactOptionalPropertyTypes": true,
+    "lib": ["ES2023", "DOM", "ESNext.Disposable"]
+  },
+  "include": [
+    "src/model/boundaries.d.ts",
+    "src/model/catalog.mjs",
+    "src/model/geometry.mjs",
+    "src/model/transforms.mjs",
+    "src/model/connection-test-paths.mjs",
+    "test/types/positive.mts",
+    "src/model/compile-body.mjs",
+    "src/simulation/physics/read-body.mjs",
+    "src/model/workshop-command.mjs",
+    "src/presentation/placement-lifecycle.mjs",
+    "src/model/display-units.mjs",
+    "src/model/motor-shaft-speed.mjs"
+  ]
+}

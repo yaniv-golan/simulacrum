@@ -1,7 +1,6 @@
 import { finalRollingIntervals } from './starter-motion.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
-import { chromium } from 'playwright';
-import assert from 'node:assert/strict';
+
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { sourceIdentity } from './source-identity.mjs';
 import { appFingerprint } from './build-fingerprint.mjs';
@@ -9,25 +8,21 @@ const browserEvidence = createBrowserEvidence();
 
 const source = sourceIdentity(),
   build = appFingerprint(),
-  errors = [],
+  errors = browserEvidence.errors,
   samples = [];
-const browser = await chromium.launch(),
+const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-page.on('pageerror', (e) => errors.push(e.message));
-page.on('console', (m) => {
-  if (m.type() === 'error') errors.push(m.text());
-});
-page.on('requestfailed', (r) => errors.push(r.url()));
-page.on('response', (r) => {
-  if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`);
-});
+
 let last;
 const frame = () => page.evaluate(() => window.workshopProbe.observe().frames[0]);
 mkdirSync('artifacts/starter-browser', { recursive: true });
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.waitForFunction(() => window.workshopProbe);
-  assert.equal(await page.locator('meta[name=build-id]').getAttribute('content'), build);
+  browserEvidence.assert('equal', [
+    await page.locator('meta[name=build-id]').getAttribute('content'),
+    build,
+  ]);
   await page.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 16; i++) {
     await page.locator('[data-command=guide-step]').click();
@@ -47,19 +42,22 @@ try {
       return { name: item.textContent, fits: text.top >= box.top && text.bottom <= box.bottom };
     }),
   );
-  assert.ok(
+  browserEvidence.assert('ok', [
     rows.every((row) => row.fits),
     `selection rows clipped: ${JSON.stringify(rows)}`,
-  );
+  ]);
   const built = await frame();
-  assert.equal(built.metadata.blueprint.parts.length, 8);
-  assert.equal(built.metadata.blueprint.connections.length, 8);
-  assert.ok(built.metadata.connections.every((c) => c.reasonCode === 'OK'));
+  browserEvidence.assert('equal', [built.metadata.blueprint.parts.length, 8]);
+  browserEvidence.assert('equal', [built.metadata.blueprint.connections.length, 8]);
+  browserEvidence.assert('ok', [built.metadata.connections.every((c) => c.reasonCode === 'OK')]);
   // A single visible edit is one undo operation, then redo restores it.
   await page.locator('[data-command=undo]').click();
-  assert.equal((await frame()).metadata.blueprint.connections.length, 7);
+  browserEvidence.assert('equal', [(await frame()).metadata.blueprint.connections.length, 7]);
   await page.locator('[data-command=redo]').click();
-  assert.deepEqual((await frame()).metadata.blueprint, built.metadata.blueprint);
+  browserEvidence.assert('deepEqual', [
+    (await frame()).metadata.blueprint,
+    built.metadata.blueprint,
+  ]);
   await page.locator('[data-command=run]').click();
   for (const tick of [1200, ...Array.from({ length: 11 }, (_, i) => 2400 + i * 120)]) {
     await page.waitForFunction((t) => window.workshopProbe.observe().cursor.tick >= t, tick, {
@@ -74,27 +72,27 @@ try {
     last.physics[0].position[0] - start[0],
     last.physics[0].position[2] - start[2],
   );
-  assert.ok(travel > 2, `sustained travel ${travel}`);
-  assert.ok(samples.every((f) => f.status === 'ready'));
+  browserEvidence.assert('ok', [travel > 2, `sustained travel ${travel}`]);
+  browserEvidence.assert('ok', [samples.every((f) => f.status === 'ready')]);
   // A rolling machine can circle back near its earlier position. Measure each
   // final-second interval, not a chord across the loop or a later Pause frame.
   const finalIntervals = finalRollingIntervals(samples.slice(1));
   const moving = finalIntervals.reduce((sum, distance) => sum + distance, 0);
   const centers = await page.evaluate(() => window.workshopProbe.readRenderedCenters());
-  assert.ok(
+  browserEvidence.assert('ok', [
     centers.every((p) => Math.abs(p.x) < 1 && Math.abs(p.y) < 1 && Math.abs(p.z) < 1),
     'follow keeps machine in view',
-  );
+  ]);
   await page.screenshot({ path: 'artifacts/starter-browser/sustained.png' });
   await page.locator('[data-command=build]').click();
   if (!(await page.locator('.machine-picker').evaluate((el) => el.open)))
     await page.locator('.machine-picker > summary').click();
   await page.locator('.part-list [data-part-id="guide-motor"]').click();
   const resetCenters = await page.evaluate(() => window.workshopProbe.readRenderedCenters());
-  assert.ok(
+  browserEvidence.assert('ok', [
     resetCenters.every((p) => Math.abs(p.x) < 1 && Math.abs(p.y) < 1),
     'Build reframes machine',
-  );
+  ]);
   await page.locator('.placement-settings summary').click();
   const before = (await frame()).metadata.blueprint;
   await page.getByRole('spinbutton', { name: 'Position Y', exact: true }).fill('0.2');
@@ -106,21 +104,21 @@ try {
         .frames[0].metadata.blueprint.parts.find((p) => p.id === 'guide-motor').position[1] === 0.2,
   );
   const moved = (await frame()).metadata;
-  assert.ok(
+  browserEvidence.assert('ok', [
     moved.connections.every((c) => c.reasonCode === 'OK'),
     'moving group preserves joints',
-  );
+  ]);
   await page.keyboard.press('ControlOrMeta+z');
-  assert.deepEqual((await frame()).metadata.blueprint, before);
+  browserEvidence.assert('deepEqual', [(await frame()).metadata.blueprint, before]);
   const wire = before.connections.find((c) => c.kind === 'power');
   await page.locator('.port-button[data-port-id=power]').click();
   await page.locator(`[data-disconnect-id="${wire.id}"]`).click();
-  assert.equal((await frame()).metadata.blueprint.connections.length, 7);
+  browserEvidence.assert('equal', [(await frame()).metadata.blueprint.connections.length, 7]);
   await page.locator('[data-command=undo]').click();
-  assert.deepEqual((await frame()).metadata.blueprint, before);
-  assert.deepEqual(errors, []);
-  assert.deepEqual(sourceIdentity(), source);
-  assert.equal(appFingerprint(), build);
+  browserEvidence.assert('deepEqual', [(await frame()).metadata.blueprint, before]);
+  browserEvidence.assert('deepEqual', [errors, []]);
+  browserEvidence.assert('deepEqual', [sourceIdentity(), source]);
+  browserEvidence.assert('equal', [appFingerprint(), build]);
   browserEvidence.assertUnchanged();
   writeFileSync(
     'artifacts/starter-browser/qualification.json',
@@ -154,6 +152,8 @@ try {
     `starter browser passed: ${travel.toFixed(3)}m net travel; ${moving.toFixed(3)}m final interval`,
   );
 } catch (error) {
+  await browserEvidence.captureFailure(error);
+
   await page.screenshot({ path: 'artifacts/starter-browser/failed.png' }).catch(() => {});
   writeFileSync(
     'artifacts/starter-browser/failure.json',

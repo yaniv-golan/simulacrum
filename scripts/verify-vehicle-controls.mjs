@@ -1,35 +1,26 @@
-import { chromium } from 'playwright';
-import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 const evidence = createBrowserEvidence();
 const out = process.argv[3] ?? 'artifacts/vehicle-controls';
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({
-  headless: false,
-  ignoreDefaultArgs: [
-    '--disable-backgrounding-occluded-windows',
-    '--disable-renderer-backgrounding',
-    '--disable-background-timer-throttling',
-  ],
+const browser = await evidence.launch({
+  profile: 'focus',
+  ...{
+    headless: false,
+    ignoreDefaultArgs: [
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+      '--disable-background-timer-throttling',
+    ],
+  },
 });
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
 const page = await context.newPage(),
-  errors = [],
+  errors = evidence.errors,
   samples = [];
 page.setDefaultTimeout(6000);
-page.on('pageerror', (error) => errors.push(error.message));
-page.on('console', (message) => {
-  if (message.type() === 'error')
-    errors.push(`${message.text()} ${JSON.stringify(message.location())}`);
-});
-page.on('requestfailed', (request) =>
-  errors.push(`${request.url()}: ${request.failure()?.errorText}`),
-);
-page.on('response', (response) => {
-  if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`);
-});
+
 const frame = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
 const blueprint = async () => (await frame()).metadata.blueprint;
 const command = (name) => page.locator(`[data-command="${name}"]`).click();
@@ -110,14 +101,17 @@ try {
   const configured = await blueprint();
   driveId = configured.parts.find((part) => part.name === 'Drive action').id;
   steerId = configured.parts.find((part) => part.name === 'Steer action').id;
-  assert.equal(configured.parts.find((part) => part.id === steerId).controlBinding.steer.gain, 1);
+  evidence.assert('equal', [
+    configured.parts.find((part) => part.id === steerId).controlBinding.steer.gain,
+    1,
+  ]);
   await command('undo');
-  assert.equal(
+  evidence.assert('equal', [
     (await blueprint()).parts.find((part) => part.id === steerId).controlBinding,
     undefined,
-  );
+  ]);
   await command('redo');
-  assert.deepEqual(await blueprint(), configured);
+  evidence.assert('deepEqual', [await blueprint(), configured]);
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await (await download).saveAs(`${out}/bindings.json`);
@@ -128,17 +122,21 @@ try {
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).metadata.blueprint.parts.length === 2,
   );
-  assert.deepEqual(await blueprint(), configured, 'save/load retains complete bindings');
+  evidence.assert('deepEqual', [
+    await blueprint(),
+    configured,
+    'save/load retains complete bindings',
+  ]);
   await select(driveId);
   await openControlSettings();
   await page.locator('.receiver-key-mixing > summary').click();
   await page.getByRole('spinbutton', { name: 'drive output strength', exact: true }).focus();
   await page.keyboard.press('w');
-  assert.deepEqual(
+  evidence.assert('deepEqual', [
     await blueprint(),
     configured,
     'typing in a Build field must not transform parts or route controls',
-  );
+  ]);
   await page.keyboard.press('Escape');
   await command('run');
   await expectDuties({ [driveId]: 0, [steerId]: 0 }, 'run starts neutral');
@@ -206,7 +204,7 @@ try {
   await command('run');
   await expectDuties({ [driveId]: 0, [steerId]: 0 }, 'pause and resume resets latched duty');
   await command('pause');
-  assert.deepEqual(errors, []);
+  evidence.assert('deepEqual', [errors, []]);
   await page.screenshot({ path: `${out}/completed.png` });
   evidence.assertUnchanged();
   writeFileSync(
@@ -226,6 +224,8 @@ try {
   );
   console.log('vehicle control routing browser checks passed');
 } catch (error) {
+  await evidence.captureFailure(error);
+
   await sample('failure').catch(() => {});
   await page.screenshot({ path: `${out}/failed.png` }).catch(() => {});
   writeFileSync(

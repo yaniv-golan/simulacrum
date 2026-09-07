@@ -1,10 +1,14 @@
 import { createFixtureEvidence } from './browser-evidence.mjs';
 // M3b: feedback receipts must follow server acknowledgement and final media flush.
-import { chromium } from 'playwright';
+
 import { createServer } from 'node:http';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
-import assert from 'node:assert/strict';
+
 const browserEvidence = createFixtureEvidence({
+  expectedErrors: [401, 403, 404, 413, 503].flatMap((status) => [
+    { type: 'http', status, url: '/api/playtest/' },
+    { type: 'console', url: '/api/playtest/', message: 'Failed to load resource' },
+  ]),
   name: 'feedback-receipts',
   build: 'receipt-test',
   files: [
@@ -34,12 +38,15 @@ const server = createServer((req, res) => {
   );
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const browser = await browserEvidence.launch({
+  profile: 'recording',
+  ...{ channel: 'chrome', headless: true },
+});
 try {
   const page = await browser.newPage(),
-    errors = [];
+    errors = browserEvidence.errors;
   page.setDefaultTimeout(5000);
-  page.on('pageerror', (e) => errors.push(e.message));
+
   await page.addInitScript(() => {
     window.originalConsoleError = console.error;
     const originalTimeout = window.setTimeout;
@@ -144,16 +151,16 @@ try {
         }),
       );
   const initial = await geometry();
-  assert.equal(
+  browserEvidence.assert('equal', [
     await page.locator('[data-status-detail]').textContent(),
     'Video and actions are sent automatically.',
-  );
+  ]);
   await page.waitForTimeout(1200);
-  assert.deepEqual(
+  browserEvidence.assert('deepEqual', [
     await geometry(),
     initial,
     'automatic state uploads cannot move feedback controls',
-  );
+  ]);
   await page.getByRole('button', { name: 'Give feedback', exact: true }).click();
   await page
     .getByRole('button', { name: 'Close feedback', exact: true })
@@ -165,13 +172,23 @@ try {
   await page.waitForFunction(() =>
     document.querySelector('.playtest-comment')?.textContent.includes('Sending to Yaniv'),
   );
-  assert.match(
+  browserEvidence.assert('match', [
     await page.locator('.playtest-comment').innerText(),
     /Keep this exact comment visible/,
-  );
-  assert.doesNotMatch(await page.locator('.playtest-comment').innerText(), /Received by/);
-  assert.deepEqual(await geometry(), initial, 'pending comment cannot resize the bar');
-  assert.doesNotMatch(await page.locator('[data-status]').textContent(), /uploads pending/);
+  ]);
+  browserEvidence.assert('doesNotMatch', [
+    await page.locator('.playtest-comment').innerText(),
+    /Received by/,
+  ]);
+  browserEvidence.assert('deepEqual', [
+    await geometry(),
+    initial,
+    'pending comment cannot resize the bar',
+  ]);
+  browserEvidence.assert('doesNotMatch', [
+    await page.locator('[data-status]').textContent(),
+    /uploads pending/,
+  ]);
   while (!held) await new Promise((r) => setTimeout(r, 10));
   await held.fulfill({ json: {} });
   holdComment = false;
@@ -179,8 +196,15 @@ try {
   await page.waitForFunction(() =>
     document.querySelector('.playtest-comment')?.textContent.includes('Not received yet'),
   );
-  assert.doesNotMatch(await page.locator('.playtest-comment').innerText(), /Received by/);
-  assert.deepEqual(await geometry(), initial, 'retry message cannot move controls');
+  browserEvidence.assert('doesNotMatch', [
+    await page.locator('.playtest-comment').innerText(),
+    /Received by/,
+  ]);
+  browserEvidence.assert('deepEqual', [
+    await geometry(),
+    initial,
+    'retry message cannot move controls',
+  ]);
   badReceipt = false;
   await page.waitForFunction(() =>
     document.querySelector('.playtest-comment')?.textContent.includes('Received by Yaniv'),
@@ -199,7 +223,10 @@ try {
       (text) => document.querySelector('[data-status-detail]').textContent.includes(text),
       message,
     );
-    assert.doesNotMatch(await page.locator('.playtest-comment').last().innerText(), /Received by/);
+    browserEvidence.assert('doesNotMatch', [
+      await page.locator('.playtest-comment').last().innerText(),
+      /Received by/,
+    ]);
     statusCode = 200;
     await page.waitForFunction(() =>
       [...document.querySelectorAll('.playtest-comment')]
@@ -216,7 +243,10 @@ try {
   await page.waitForFunction(() =>
     document.querySelector('[data-status-detail]').textContent.includes('retrying automatically'),
   );
-  assert.doesNotMatch(await page.locator('.playtest-comment').last().innerText(), /Received by/);
+  browserEvidence.assert('doesNotMatch', [
+    await page.locator('.playtest-comment').last().innerText(),
+    /Received by/,
+  ]);
   await page.waitForFunction(() =>
     [...document.querySelectorAll('.playtest-comment')]
       .at(-1)
@@ -228,28 +258,31 @@ try {
     if (close === 'x')
       await page.getByRole('button', { name: 'Close feedback', exact: true }).click();
     else await page.keyboard.press('Escape');
-    assert.equal(await page.evaluate(() => window.pendingRecorders.length), 1);
-    assert.equal(
+    browserEvidence.assert('equal', [await page.evaluate(() => window.pendingRecorders.length), 1]);
+    browserEvidence.assert('equal', [
       await page.evaluate(() =>
         window.pendingRecorders[0].stream.getTracks().every((t) => t.readyState === 'ended'),
       ),
       true,
-    );
+    ]);
     await page.evaluate(() => window.flushRecorders());
     await page.getByRole('button', { name: 'Give feedback', exact: true }).click();
   }
   await page.getByRole('button', { name: 'Back to building' }).click();
   await page.getByRole('button', { name: 'Finish session', exact: true }).click();
-  assert.match(await page.locator('[data-completion-status]').innerText(), /Keep this tab open/);
-  assert.doesNotMatch(
+  browserEvidence.assert('match', [
+    await page.locator('[data-completion-status]').innerText(),
+    /Keep this tab open/,
+  ]);
+  browserEvidence.assert('doesNotMatch', [
     await page.locator('[data-completion-status]').innerText(),
     /You can close this tab/,
-  );
+  ]);
   await page.waitForTimeout(150);
-  assert.doesNotMatch(
+  browserEvidence.assert('doesNotMatch', [
     await page.locator('[data-completion-status]').innerText(),
     /You can close this tab/,
-  );
+  ]);
   await page.evaluate(() => window.flushRecorders());
   await page.waitForFunction(
     () =>
@@ -268,10 +301,10 @@ try {
       .querySelector('[data-completion-status]')
       .textContent.includes('Session not fully saved'),
   );
-  assert.doesNotMatch(
+  browserEvidence.assert('doesNotMatch', [
     await page.locator('[data-completion-status]').innerText(),
     /You can close this tab/,
-  );
+  ]);
   await page.evaluate(() => {
     IDBDatabase.prototype.transaction = window.originalTransaction;
   });
@@ -332,36 +365,42 @@ try {
     }
     return null;
   }, recoveryComment);
-  assert.ok(savedBody, 'written feedback body committed to real IndexedDB before reload');
+  browserEvidence.assert('ok', [
+    savedBody,
+    'written feedback body committed to real IndexedDB before reload',
+  ]);
   const sessionsBeforeReload = sessionPosts,
     uploadsBeforeReload = uploads.length;
   await browserEvidence.reload(page);
   await page.waitForFunction(() =>
     document.querySelector('[data-status-detail]')?.textContent.includes('retrying automatically'),
   );
-  assert.ok(
+  browserEvidence.assert('ok', [
     (await outbox()).some((row) => row.id === savedBody.id),
     'outage cannot delete the persisted comment',
-  );
-  assert.equal(
+  ]);
+  browserEvidence.assert('equal', [
     await page.evaluate(() => window.captureRequests),
     0,
     'reload never silently requests display capture',
-  );
-  assert.equal(
+  ]);
+  browserEvidence.assert('equal', [
     sessionPosts,
     sessionsBeforeReload,
     'reload never silently creates a capture session',
-  );
-  assert.equal(
+  ]);
+  browserEvidence.assert('equal', [
     await page.getByRole('button', { name: 'Give feedback', exact: true }).isDisabled(),
     true,
-  );
-  assert.match(
+  ]);
+  browserEvidence.assert('match', [
     await page.locator('[data-recovery]').innerText(),
     /saved uploads from an earlier session/i,
-  );
-  assert.match(await page.locator('[data-recovery]').innerText(), /recording has not resumed/i);
+  ]);
+  browserEvidence.assert('match', [
+    await page.locator('[data-recovery]').innerText(),
+    /recording has not resumed/i,
+  ]);
   mkdirSync('artifacts/reload-recovery', { recursive: true });
   await page.screenshot({ path: 'artifacts/reload-recovery/outage-after-reload.png' });
   const outageNotice = await page.locator('[data-recovery]').innerText();
@@ -370,28 +409,38 @@ try {
   const beforeMalformed = uploads.length;
   for (let attempt = 0; uploads.length === beforeMalformed && attempt < 100; attempt++)
     await new Promise((resolve) => setTimeout(resolve, 50));
-  assert.ok(uploads.length > beforeMalformed, 'saved uploads retry after reload');
+  browserEvidence.assert('ok', [
+    uploads.length > beforeMalformed,
+    'saved uploads retry after reload',
+  ]);
   await page.waitForTimeout(100);
-  assert.ok(
+  browserEvidence.assert('ok', [
     (await outbox()).some((row) => row.id === savedBody.id),
     'malformed ACK after reload cannot delete saved feedback',
-  );
-  assert.doesNotMatch(await page.locator('[data-recovery]').innerText(), /received by Yaniv/);
+  ]);
+  browserEvidence.assert('doesNotMatch', [
+    await page.locator('[data-recovery]').innerText(),
+    /received by Yaniv/,
+  ]);
   badReceipt = false;
   await page.waitForFunction(() =>
     document.querySelector('[data-recovery]')?.textContent.includes('received by Yaniv'),
   );
-  assert.deepEqual(await outbox(), [], 'only valid acknowledgements drain recovered uploads');
-  assert.ok(
+  browserEvidence.assert('deepEqual', [
+    await outbox(),
+    [],
+    'only valid acknowledgements drain recovered uploads',
+  ]);
+  browserEvidence.assert('ok', [
     uploads
       .slice(uploadsBeforeReload)
       .some((upload) => upload.url.endsWith(savedBody.url) && upload.body === savedBody.body),
     'exact persisted feedback body retried to its original session',
-  );
-  assert.equal(await page.evaluate(() => window.captureRequests), 0);
-  assert.equal(sessionPosts, sessionsBeforeReload);
+  ]);
+  browserEvidence.assert('equal', [await page.evaluate(() => window.captureRequests), 0]);
+  browserEvidence.assert('equal', [sessionPosts, sessionsBeforeReload]);
   const receivedNotice = await page.locator('[data-recovery]').innerText();
-  assert.match(receivedNotice, /recording has not resumed/i);
+  browserEvidence.assert('match', [receivedNotice, /recording has not resumed/i]);
   await page.screenshot({ path: 'artifacts/reload-recovery/received-after-reload.png' });
   browserEvidence.assertUnchanged();
   writeFileSync(
@@ -418,10 +467,19 @@ try {
   await page.waitForFunction(() => window.remoteCapture.active());
   statusCode = 503;
   await page.evaluate(() => window.remoteCapture.dispose());
-  assert.equal(await page.locator('.playtest-panel, .playtest-dialog').count(), 0);
-  assert.equal(await page.evaluate(() => console.error === window.originalConsoleError), true);
-  assert.equal(await page.evaluate(() => window.remoteCapture.active()), false);
-  assert.equal(await page.evaluate(() => window.pendingRecorders.length), 1);
+  browserEvidence.assert('equal', [
+    await page.locator('.playtest-panel, .playtest-dialog').count(),
+    0,
+  ]);
+  browserEvidence.assert('equal', [
+    await page.evaluate(() => console.error === window.originalConsoleError),
+    true,
+  ]);
+  browserEvidence.assert('equal', [
+    await page.evaluate(() => window.remoteCapture.active()),
+    false,
+  ]);
+  browserEvidence.assert('equal', [await page.evaluate(() => window.pendingRecorders.length), 1]);
   await page.evaluate(() => window.flushRecorders());
   await page.waitForFunction(async () => {
     const db = await new Promise((resolve) => {
@@ -445,16 +503,28 @@ try {
   await page.waitForFunction(() =>
     document.querySelector('[data-recovery]')?.textContent.includes('received by Yaniv'),
   );
-  assert.deepEqual(await outbox(), []);
-  assert.equal(await page.evaluate(() => window.captureRequests), beforeRemount);
-  assert.equal(await page.locator('.playtest-panel').count(), 1);
+  browserEvidence.assert('deepEqual', [await outbox(), []]);
+  browserEvidence.assert('equal', [
+    await page.evaluate(() => window.captureRequests),
+    beforeRemount,
+  ]);
+  browserEvidence.assert('equal', [await page.locator('.playtest-panel').count(), 1]);
   await page.evaluate(() => window.remoteCapture.dispose());
-  assert.equal(await page.locator('.playtest-panel, .playtest-dialog').count(), 0);
-  assert.equal(await page.evaluate(() => console.error === window.originalConsoleError), true);
-  assert.deepEqual(errors, []);
+  browserEvidence.assert('equal', [
+    await page.locator('.playtest-panel, .playtest-dialog').count(),
+    0,
+  ]);
+  browserEvidence.assert('equal', [
+    await page.evaluate(() => console.error === window.originalConsoleError),
+    true,
+  ]);
+  browserEvidence.assert('deepEqual', [errors, []]);
   console.log(
     'feedback receipt checks passed: delayed/malformed acknowledgement, 401/403/404/413/503 recovery, hung upload timeout/recovery, retained comments, X/Escape microphone stop, final media flush, outbox read failure, real IndexedDB reload/outage recovery, disposal/final-flush/remount recovery',
   );
+} catch (error) {
+  await browserEvidence.captureFailure(error);
+  throw error;
 } finally {
   try {
     browserEvidence.assertUnchanged();

@@ -3,10 +3,14 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runModuleCheck } from './run-check.mjs';
+import { createVerificationContext } from './verification-run.mjs';
+import { invariantTestFiles } from './check-invariant-controls.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const manifest = JSON.parse(readFileSync(new URL('./manifest.json', import.meta.url), 'utf8'));
-export async function runStructuralChecks(target = manifest.milestone) {
+export async function runStructuralChecks(
+  target = manifest.milestone,
+  context = createVerificationContext(),
+) {
   const cutoff = manifest.milestones.indexOf(target);
   if (cutoff < 0) throw new Error(`unknown milestone: ${target}`);
   const due = manifest.checks.filter((check) => {
@@ -23,12 +27,16 @@ export async function runStructuralChecks(target = manifest.milestone) {
       continue;
     }
     try {
-      await runModuleCheck(
-        resolve(root, implementation.module),
+      await context.module(
+        `structural:${check.id}`,
+        implementation.module,
         implementation.export ?? 'check',
-        check.args ?? [root, { physicsPackages: manifest.physicsPackages ?? [] }],
-        { cwd: root, timeoutMs: check.timeoutMs ?? 5000 },
+        check.id === 'invariant-controls'
+          ? [root, { metadataOnly: true }]
+          : (check.args ?? [root, { physicsPackages: manifest.physicsPackages ?? [] }]),
+        check.timeoutMs ?? 5000,
       );
+      if (check.id === 'invariant-controls') await context.unit(invariantTestFiles(root));
       console.log(`ok    gate:${check.id}`);
     } catch (error) {
       failed++;

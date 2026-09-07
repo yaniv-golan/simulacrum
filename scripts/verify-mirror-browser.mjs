@@ -1,5 +1,3 @@
-import { chromium } from 'playwright';
-import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { sourceIdentity } from './source-identity.mjs';
@@ -9,31 +7,21 @@ const evidence = createBrowserEvidence(),
   provisional = process.argv.includes('--provisional');
 const out = process.argv[3] ?? 'artifacts/mirror-browser';
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ headless: false });
+const browser = await evidence.launch({ profile: 'focus', ...{ headless: false } });
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
 const page = await context.newPage(),
-  errors = [],
+  errors = evidence.errors,
   samples = [];
 page.setDefaultTimeout(6000);
-page.on('pageerror', (error) => errors.push(error.message));
-page.on('console', (message) => {
-  if (message.type() === 'error')
-    errors.push(`${message.text()} ${JSON.stringify(message.location())}`);
-});
-page.on('requestfailed', (request) =>
-  errors.push(`${request.url()}: ${request.failure()?.errorText}`),
-);
-page.on('response', (response) => {
-  if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`);
-});
+
 const frame = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
 async function snapshot(label) {
   const observed = await frame();
   const rendered = await page.evaluate(() => window.workshopProbe.readRenderedTransforms());
   for (const [i, part] of observed.metadata.blueprint.parts.entries()) {
     const transform = rendered.find((transform) => transform.id === part.id);
-    assert.deepEqual(transform.position, observed.physics[i].position);
-    assert.deepEqual(transform.rotation, observed.physics[i].rotation);
+    evidence.assert('deepEqual', [transform.position, observed.physics[i].position]);
+    evidence.assert('deepEqual', [transform.rotation, observed.physics[i].rotation]);
   }
   samples.push({
     label,
@@ -81,72 +69,76 @@ try {
     .getByRole('button', { name: 'Attach to Powered Motor · shaft Moves Grip Wheel', exact: true })
     .click();
   const original = await snapshot('built-source');
-  assert.equal(original.parts.length, 3);
-  assert.equal(original.connections.length, 2);
+  evidence.assert('equal', [original.parts.length, 3]);
+  evidence.assert('equal', [original.connections.length, 2]);
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await (await download).saveAs(`${out}/ui-built-source.json`);
   await startMirror();
-  assert.equal(
+  evidence.assert('equal', [
     await page.getByRole('combobox', { name: 'Mirror plane', exact: true }).inputValue(),
     'x',
-  );
-  assert.equal(
+  ]);
+  evidence.assert('equal', [
     await page.getByRole('checkbox', { name: 'Mirror Chassis', exact: true }).isDisabled(),
     true,
-  );
-  assert.equal(
+  ]);
+  evidence.assert('equal', [
     await page.getByRole('checkbox', { name: 'Mirror Powered Motor', exact: true }).isChecked(),
     true,
-  );
-  assert.equal(
+  ]);
+  evidence.assert('equal', [
     await page.getByRole('checkbox', { name: 'Mirror Grip Wheel', exact: true }).isChecked(),
     true,
-  );
-  assert.deepEqual(await snapshot('preview'), original, 'preview cannot mutate authored state');
+  ]);
+  evidence.assert('deepEqual', [
+    await snapshot('preview'),
+    original,
+    'preview cannot mutate authored state',
+  ]);
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  assert.equal(await page.locator('.assembly-mirror').count(), 0);
-  assert.deepEqual(await snapshot('cancelled'), original);
+  evidence.assert('equal', [await page.locator('.assembly-mirror').count(), 0]);
+  evidence.assert('deepEqual', [await snapshot('cancelled'), original]);
   await startMirror();
   await page.getByRole('combobox', { name: 'Mirror plane', exact: true }).selectOption('z');
-  assert.equal(
+  evidence.assert('equal', [
     await page.getByRole('button', { name: 'Create mirrored copy', exact: true }).isDisabled(),
     true,
-  );
+  ]);
   const refusal = await page.locator('.mirror-status').innerText();
-  assert.match(refusal, /overlap/i);
-  assert.doesNotMatch(refusal, /Part \d+/, 'refusal names the actual mirrored copy');
-  assert.deepEqual(await snapshot('wrong-plane-refused'), original);
+  evidence.assert('match', [refusal, /overlap/i]);
+  evidence.assert('doesNotMatch', [refusal, /Part \d+/, 'refusal names the actual mirrored copy']);
+  evidence.assert('deepEqual', [await snapshot('wrong-plane-refused'), original]);
   await page.keyboard.press('Escape');
-  assert.equal(await page.locator('.assembly-mirror').count(), 0);
-  assert.deepEqual(await snapshot('escape-cancelled'), original);
+  evidence.assert('equal', [await page.locator('.assembly-mirror').count(), 0]);
+  evidence.assert('deepEqual', [await snapshot('escape-cancelled'), original]);
   await startMirror();
   await page.getByRole('button', { name: 'Create mirrored copy', exact: true }).click();
   const copied = await snapshot('created');
-  assert.equal(copied.parts.length, 5);
-  assert.equal(copied.connections.length, 4);
-  assert.ok(
+  evidence.assert('equal', [copied.parts.length, 5]);
+  evidence.assert('equal', [copied.connections.length, 4]);
+  evidence.assert('ok', [
     (await frame()).metadata.connections.every((connection) => connection.reasonCode === 'OK'),
-  );
+  ]);
   for (const part of original.parts)
-    assert.deepEqual(
+    evidence.assert('deepEqual', [
       copied.parts.find((candidate) => candidate.id === part.id),
       part,
-    );
+    ]);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
-  assert.deepEqual((await frame()).metadata.blueprint, original);
+  evidence.assert('deepEqual', [(await frame()).metadata.blueprint, original]);
   await selectWheel();
   await startMirror();
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Load', exact: true }).click();
   await (await chooser).setFiles(`${out}/ui-built-source.json`);
   await page.waitForFunction(() => !document.querySelector('.assembly-mirror'));
-  assert.deepEqual(
+  evidence.assert('deepEqual', [
     await snapshot('identical-load-cleared'),
     original,
     'loading identical data clears the old preview',
-  );
-  assert.deepEqual(errors, []);
+  ]);
+  evidence.assert('deepEqual', [errors, []]);
   if (!provisional) evidence.assertUnchanged();
   writeFileSync(
     `${out}/result.json`,
@@ -164,6 +156,8 @@ try {
   );
   console.log(`mirror browser passed${provisional ? ' (provisional source)' : ''}`);
 } catch (error) {
+  await evidence.captureFailure(error);
+
   await snapshot('failure').catch(() => {});
   writeFileSync(
     `${out}/failure.json`,

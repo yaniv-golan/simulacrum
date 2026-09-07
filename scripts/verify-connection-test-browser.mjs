@@ -1,15 +1,14 @@
 import { createBrowserEvidence } from './browser-evidence.mjs';
-import { chromium } from 'playwright';
-import assert from 'node:assert/strict';
+
 import { mkdirSync, writeFileSync } from 'node:fs';
 const evidence = createBrowserEvidence();
 const out = 'artifacts/connection-test-browser';
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch();
+const browser = await evidence.launch({ profile: 'ui', ...{} });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 page.setDefaultTimeout(8000);
-const errors = [];
-page.on('pageerror', (error) => errors.push(error.message));
+const errors = evidence.errors;
+
 const section = page.getByRole('region', { name: 'Connect and test actuator' });
 async function select(name) {
   const picker = page.locator('.machine-picker');
@@ -31,7 +30,7 @@ try {
   await page.getByRole('button', { name: 'Powered Motor', exact: true }).click();
   await section.waitFor({ state: 'visible' });
   await section.locator('summary').click();
-  assert.match(await section.innerText(), /Connect power/);
+  evidence.assert('match', [await section.innerText(), /Connect power/]);
   await page.getByRole('button', { name: 'Power Cell', exact: true }).click();
   await page.getByText('More parts', { exact: true }).click();
   await page.getByRole('button', { name: 'Command Receiver', exact: true }).click();
@@ -44,12 +43,12 @@ try {
   await page.getByRole('button', { name: /Wire Power Cell · power/ }).click();
   await section.getByRole('button', { name: 'Connect control', exact: true }).click();
   await page.getByRole('button', { name: /Wire Command Receiver · signal/ }).click();
-  assert.match(await section.innerText(), /Power Cell/);
-  assert.match(await section.innerText(), /Command Receiver/);
-  assert.match(await section.innerText(), /Grip Wheel/);
+  evidence.assert('match', [await section.innerText(), /Power Cell/]);
+  evidence.assert('match', [await section.innerText(), /Command Receiver/]);
+  evidence.assert('match', [await section.innerText(), /Grip Wheel/]);
   const original = (await read()).metadata.blueprint;
-  assert.equal(original.parts.length, 4);
-  assert.equal(original.connections.length, 3);
+  evidence.assert('equal', [original.parts.length, 4]);
+  evidence.assert('equal', [original.connections.length, 3]);
   await page.screenshot({ path: `${out}/wired.png` });
   await section.getByRole('button', { name: 'Test in Run', exact: true }).click();
   const plus = section.getByRole('button', { name: /Hold \+ through/ });
@@ -68,7 +67,10 @@ try {
   });
   await page.keyboard.up('Enter');
   await duty(0);
-  assert.match(await section.locator('.connection-test-live').innerText(), /A · shaft .*rad\/s/);
+  evidence.assert('match', [
+    await section.locator('.connection-test-live').innerText(),
+    /A · shaft .*rad\/s/,
+  ]);
   await page.screenshot({ path: `${out}/tested.png` });
   const box = await plus.boundingBox();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -115,13 +117,13 @@ try {
   await page.waitForFunction(
     () => window.workshopProbe.observe().frames[0].metadata.mode === 'build',
   );
-  assert.deepEqual(
+  evidence.assert('deepEqual', [
     (await read()).metadata.blueprint,
     original,
     'testing preserves authored settings and wires',
-  );
-  assert.equal(await plus.isDisabled(), true);
-  assert.deepEqual(errors, []);
+  ]);
+  evidence.assert('equal', [await plus.isDisabled(), true]);
+  evidence.assert('deepEqual', [errors, []]);
   writeFileSync(
     `${out}/result.json`,
     JSON.stringify(
@@ -143,6 +145,9 @@ try {
     ),
   );
   console.log('connection test browser passed');
+} catch (error) {
+  await evidence.captureFailure(error);
+  throw error;
 } finally {
   try {
     evidence.assertUnchanged();

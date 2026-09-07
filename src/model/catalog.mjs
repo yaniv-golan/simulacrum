@@ -1,6 +1,11 @@
+// @ts-check
+/** @typedef {import('./boundaries.js').CatalogDefinition} CatalogDefinition */
+/** @typedef {import('./boundaries.js').Port} Port */
+/** @typedef {import('./boundaries.js').Vec3} Vec3 */
 import { DEFAULT_CONTROL_BINDING } from './control-bindings.mjs';
 // Geometry dimensions are in metres. Material values are explicit selectable
 // workshop parameters; friction values are nominal, not measured surface pairs.
+/** @template T @param {T} value @returns {T} */
 function freeze(value) {
   if (value && typeof value === 'object') {
     for (const child of Object.values(value)) freeze(child);
@@ -14,9 +19,11 @@ export const MATERIALS = freeze({
   rubber: { handle: 2, density: 1100, friction: 0.9, restitution: 0.2, selectable: true },
 });
 
+/** @param {number} defaultValue @param {number} minimum @param {number} maximum @param {string} unit @returns {import('./boundaries.js').ParameterDefinition} */
 function rating(defaultValue, minimum, maximum, unit) {
   return { type: 'number', default: defaultValue, minimum, maximum, unit };
 }
+/** @param {string} id @param {Port['kind']} kind @param {Vec3} position @returns {Port} */
 function port(id, kind, position) {
   return {
     id,
@@ -27,9 +34,11 @@ function port(id, kind, position) {
     rotation: [0, 0, 0, 1],
   };
 }
+/** @returns {Port} */
 function power() {
   return { ...port('power', 'power', [0, 0, 0]), multiplicity: 'many' };
 }
+/** @param {string} id @param {Port['direction']} direction @returns {Port} */
 function signal(id, direction) {
   return {
     ...port(id, 'signal', [0, 0, 0]),
@@ -37,6 +46,16 @@ function signal(id, direction) {
     multiplicity: direction === 'output' ? 'many' : 'one',
   };
 }
+/**
+ * @param {CatalogDefinition['type']} type
+ * @param {string} name
+ * @param {Vec3} halfExtents
+ * @param {import('./generated/blueprint-types.js').MaterialKey} materialKey
+ * @param {Port[]} ports
+ * @param {CatalogDefinition['parameterDefinitions']} parameterDefinitions
+ * @param {'box' | 'cylinder'} [kind]
+ * @returns {CatalogDefinition}
+ */
 function component(
   type,
   name,
@@ -47,21 +66,23 @@ function component(
   kind = 'box',
 ) {
   // Wiring endpoints are authored surface positions, shared by compiler and view.
-  const surfaced = ports.map((p) => {
-    if (!['power', 'signal'].includes(p.kind)) return p;
-    const face = p.kind === 'power' ? 'top' : p.direction === 'input' ? 'back' : 'front';
-    const peers = ports.filter(
-      (other) => other.kind === p.kind && (p.kind === 'power' || other.direction === p.direction),
-    );
-    const x = halfExtents[0] * ((2 * (peers.indexOf(p) + 1)) / (peers.length + 1) - 1);
-    return {
-      ...p,
-      position:
-        face === 'top'
-          ? [x, halfExtents[1], 0]
-          : [x, 0, face === 'back' ? -halfExtents[2] : halfExtents[2]],
-    };
-  });
+  const surfaced = ports.map(
+    /** @returns {Port} */ (p) => {
+      if (!['power', 'signal'].includes(p.kind)) return p;
+      const face = p.kind === 'power' ? 'top' : p.direction === 'input' ? 'back' : 'front';
+      const peers = ports.filter(
+        (other) => other.kind === p.kind && (p.kind === 'power' || other.direction === p.direction),
+      );
+      const x = halfExtents[0] * ((2 * (peers.indexOf(p) + 1)) / (peers.length + 1) - 1);
+      return {
+        ...p,
+        position:
+          face === 'top'
+            ? [x, halfExtents[1], 0]
+            : [x, 0, face === 'back' ? -halfExtents[2] : halfExtents[2]],
+      };
+    },
+  );
   return {
     type,
     name,
@@ -81,7 +102,9 @@ function component(
 // axle. Port frames express the same authored tilt as the collision cuboid.
 const hubTilt = Math.atan2(0.07, 0.1),
   hubHalfLength = Math.hypot(0.1, 0.07) / 2;
+/** @param {number} angle @returns {import('./boundaries.js').Quaternion} */
 const aboutZ = (angle) => [0, 0, Math.sin(angle / 2), Math.cos(angle / 2)];
+/** @type {Readonly<Record<import('./generated/blueprint-types.js').PartType, CatalogDefinition>>} */
 export const CATALOG = freeze({
   beam: {
     mountingFaces: ['right', 'left', 'top', 'bottom', 'front', 'back'],

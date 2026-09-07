@@ -1,7 +1,7 @@
 import { createBrowserEvidence } from './browser-evidence.mjs';
-import { chromium } from 'playwright';
+
 import * as THREE from 'three';
-import assert from 'node:assert/strict';
+
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 import { snapConnection } from '../src/model/assembly.mjs';
@@ -17,10 +17,10 @@ const bp = {
   ],
 };
 writeFileSync(`${out}/machine.json`, JSON.stringify(bp));
-const b = await chromium.launch(),
+const b = await browserEvidence.launch({ profile: 'ui', ...{} }),
   p = await b.newPage({ viewport: { width: 1440, height: 1000 } }),
-  errors = [];
-p.on('pageerror', (e) => errors.push(e.message));
+  errors = browserEvidence.errors;
+
 try {
   await browserEvidence.goto(p, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await p.locator('input[type=file]').setInputFiles(`${out}/machine.json`);
@@ -43,15 +43,18 @@ try {
     rect.x + ((pos.x + 1) * rect.width) / 2,
     rect.y + ((1 - pos.y) * rect.height) / 2,
   );
-  assert.equal(
+  browserEvidence.assert('equal', [
     await p.evaluate(
       () => window.workshopProbe.observe().frames[0].metadata.blueprint.connections.length,
     ),
     1,
-  );
+  ]);
   await p.screenshot({ path: `${out}/connected.png` });
-  assert.deepEqual(errors, []);
+  browserEvidence.assert('deepEqual', [errors, []]);
   console.log('PASS ghost click attaches without losing selection');
+} catch (error) {
+  await browserEvidence.captureFailure(error);
+  throw error;
 } finally {
   try {
     browserEvidence.assertUnchanged();

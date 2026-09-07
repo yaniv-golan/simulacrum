@@ -6,9 +6,16 @@ import { appFingerprint } from './app-fingerprint.mjs';
 import { selectChecks, validateBrowserCoverage } from './browser-registry.mjs';
 import { runProcess } from './run-check.mjs';
 import { checkBreadth } from './check-breadth.mjs';
+import {
+  createVerificationContext,
+  initializeVerificationEnvironment,
+} from './verification-run.mjs';
 import { runCheckSequence } from './check-sequence.mjs';
 const stamp = 'dist/.verification-source.json';
-export async function prepareBrowserBuild() {
+export async function prepareBrowserBuild(context) {
+  initializeVerificationEnvironment();
+  if (context)
+    return context.check('build:browser', { mode: 'production' }, () => prepareBrowserBuild());
   const source = sourceIdentity();
   checkBreadth();
   validateBrowserCoverage();
@@ -19,13 +26,16 @@ export async function prepareBrowserBuild() {
   writeFileSync(stamp, JSON.stringify(identity));
   return identity;
 }
-export async function verifyBrowserSuite(mode = 'all', { reuseBuild = false } = {}) {
+export async function verifyBrowserSuite(
+  mode = 'all',
+  { reuseBuild = false, context = createVerificationContext() } = {},
+) {
   const checks = selectChecks(mode),
     source = sourceIdentity(),
     identity =
       reuseBuild && existsSync(stamp)
         ? JSON.parse(readFileSync(stamp))
-        : await prepareBrowserBuild();
+        : await prepareBrowserBuild(context);
   if (
     identity.source.workingTreeDigest !== source.workingTreeDigest ||
     identity.app !== appFingerprint()
@@ -52,9 +62,16 @@ export async function verifyBrowserSuite(mode = 'all', { reuseBuild = false } = 
         }
         console.log(`RUN ${check.id}`);
         try {
-          const result = await runProcess(process.execPath, [check.script, target], {
-            timeoutMs: check.timeoutMs,
-          });
+          const result = await context.check(
+            `browser:${check.id}`,
+            {
+              script: check.script,
+              timeoutMs: check.timeoutMs,
+              environment: check.environment ?? 'workshop',
+            },
+            () =>
+              runProcess(process.execPath, [check.script, target], { timeoutMs: check.timeoutMs }),
+          );
           runs.push({ id: check.id, ok: true, elapsedMs: result.elapsedMs });
           writeFileSync(`artifacts/browser-suite/${check.id}.log`, result.output);
           console.log(`PASS ${check.id} ${Math.round(result.elapsedMs)}ms`);

@@ -39,6 +39,7 @@ export async function mountWorkshopApp(root) {
       getItem: (key) => localStorage.getItem(key),
     },
   });
+  let lastCommandResult = null;
   let lastRecordedInput = null,
     lastPointerSample = -Infinity;
   const seenEvents = new WeakSet();
@@ -238,6 +239,7 @@ export async function mountWorkshopApp(root) {
     const trigger = lastRecordedInput;
     logInteraction('command-request', { input, trigger });
     const result = await executeCommand(input, context);
+    lastCommandResult = structuredClone({ input, result, cursor: workshop.observe().cursor });
     logInteraction('command-result', { input, result, trigger });
     return result;
   }
@@ -500,6 +502,7 @@ export async function mountWorkshopApp(root) {
   };
   window.workshopProbe = Object.freeze({
     observe: () => workshop.observe(),
+    readLastCommandResult: () => structuredClone(lastCommandResult),
     readRenderedTransforms: () => view.readRenderedTransforms(),
     readRenderedCenters: () => view.readRenderedCenters(),
     readInteractionState: () => view.readInteractionState(),

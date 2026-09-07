@@ -1,3 +1,4 @@
+import { readBody } from './read-body.mjs';
 import { createConstraintProjection } from './law/constraints.mjs';
 import { CYLINDER_SEGMENTS } from '../../model/geometry.mjs';
 const MAX_BODIES = 4097; // 4096 authored primitives plus the workshop ground.
@@ -109,6 +110,7 @@ function decode(input) {
     payload: bytes.slice(12 + size),
   };
 }
+/** @param {import('../../model/boundaries.js').PhysicsConfiguration} configuration */
 export async function createPhysicsWorld(configuration) {
   record(configuration, ['gravity', 'bodies', 'joints']);
   const gravity = vector(configuration.gravity);
@@ -354,14 +356,7 @@ export async function createPhysicsWorld(configuration) {
     return mapping.map((handle) => {
       const body = candidate.getRigidBody(handle);
       if (!body) throw new Error('snapshot body missing');
-      const rotation = body.rotation();
-      return {
-        position: array(body.translation()),
-        rotation: [rotation.x, rotation.y, rotation.z, rotation.w],
-        velocity: array(body.linvel()),
-        angularVelocity: array(body.angvel()),
-        mass: body.mass(),
-      };
+      return readBody(body);
     });
   }
   function assertFinite(states) {
@@ -704,6 +699,8 @@ export async function createPhysicsWorld(configuration) {
       }
       return response;
     },
+    /** @param {number} a @param {number} b @param {import('../../model/boundaries.js').Vec3} axisWorld @param {number} torqueNm
+     * @returns {import('../../model/boundaries.js').TorqueResult} */
     applyTorquePair(a, b, axisWorld, torqueNm) {
       const bodyA = bodyAt(a),
         bodyB = bodyAt(b),

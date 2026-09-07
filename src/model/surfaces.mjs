@@ -59,6 +59,12 @@ export function resolveSurfaceEndpoint(part, binding) {
     multiplicity: 'many',
   };
 }
+/** Shared mounting footprint geometry. Callers own admission versus display tolerances. */
+export function projectedPadHalfSize([u, v], twist) {
+  const c = Math.abs(Math.cos(twist)),
+    s = Math.abs(Math.sin(twist));
+  return [c * u + s * v, s * u + c * v];
+}
 /** Surface connection a is the receiving face; b is the centered mounting pad. */
 export function validateSurfacePair(target, a, source, b) {
   resolveSurfaceEndpoint(target, a);
@@ -68,12 +74,7 @@ export function validateSurfacePair(target, a, source, b) {
   const receiver = surfaceRegions(target).find((r) => r.id === a.surface.region),
     pad = surfaceRegions(source).find((r) => r.id === b.surface.region),
     { u, v, twist } = a.surface;
-  const width =
-      Math.abs(Math.cos(twist)) * pad.padHalfSize[0] +
-      Math.abs(Math.sin(twist)) * pad.padHalfSize[1],
-    height =
-      Math.abs(Math.sin(twist)) * pad.padHalfSize[0] +
-      Math.abs(Math.cos(twist)) * pad.padHalfSize[1];
+  const [width, height] = projectedPadHalfSize(pad.padHalfSize, twist);
   if (
     Math.abs(u) + width > receiver.halfSize[0] + 1e-9 ||
     Math.abs(v) + height > receiver.halfSize[1] + 1e-9

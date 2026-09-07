@@ -1,11 +1,10 @@
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { mkdirSync } from 'node:fs';
 mkdirSync('artifacts/ux-repairs', { recursive: true });
-import { chromium } from 'playwright';
-import assert from 'node:assert/strict';
+
 const browserEvidence = createBrowserEvidence();
 
-const b = await chromium.launch(),
+const b = await browserEvidence.launch({ profile: 'ui', ...{} }),
   p = await b.newPage();
 try {
   await browserEvidence.goto(p, process.argv[2] ?? 'http://127.0.0.1:4173/');
@@ -17,10 +16,19 @@ try {
     .locator('.part-list-item')
     .filter({ hasText: /^Drive wheel$/ })
     .click();
-  assert.match(await p.locator('.mount-status').innerText(), /Axle attached to/);
-  assert.doesNotMatch(await p.locator('.mount-status').innerText(), /Not mounted|Snap to surface/);
+  browserEvidence.assert('match', [
+    await p.locator('.mount-status').innerText(),
+    /Axle attached to/,
+  ]);
+  browserEvidence.assert('doesNotMatch', [
+    await p.locator('.mount-status').innerText(),
+    /Not mounted|Snap to surface/,
+  ]);
   await p.screenshot({ path: 'artifacts/ux-repairs/attached.png' });
   console.log('PASS axle status');
+} catch (error) {
+  await browserEvidence.captureFailure(error);
+  throw error;
 } finally {
   try {
     browserEvidence.assertUnchanged();

@@ -1,3 +1,5 @@
+import { radiansToDegrees } from '../model/display-units.mjs';
+import { modeCommand } from '../model/workshop-command.mjs';
 import { explainReason } from '../model/messages.mjs';
 import { connectionTestPaths } from '../model/connection-test-paths.mjs';
 import { DEFAULT_CONTROL_BINDING } from '../model/control-bindings.mjs';
@@ -154,13 +156,13 @@ export function createConnectionTest({
     start.addEventListener('click', async () => {
       if (frame?.metadata.mode === 'run') return;
       if (run) await run();
-      else await command({ type: 'run' });
+      else await command(modeCommand('run'));
     });
     build = node('button', 'Return to Build');
     build.type = 'button';
     build.addEventListener('click', async () => {
       await release();
-      await command({ type: 'build' });
+      await command(modeCommand('build'));
     });
     disclosure.append(warning, start, build);
     if (paths.manualReceiver) {
@@ -247,7 +249,7 @@ export function createConnectionTest({
     live.textContent =
       prefix +
       (part.type === 'poweredHinge'
-        ? `${number(motor?.current, 'A')} · angle ${number((motor?.position?.angle * 180) / Math.PI, '°')} · target ${number((motor?.position?.targetAngle * 180) / Math.PI, '°')} · command ${number(motor?.position?.controlDuty, '')}`
+        ? `${number(motor?.current, 'A')} · angle ${number(radiansToDegrees(motor?.position?.angle), '°')} · target ${number(radiansToDegrees(motor?.position?.targetAngle), '°')} · command ${number(motor?.position?.controlDuty, '')}`
         : `${number(motor?.current, 'A')} · shaft ${number(motorShaftSpeed(next, index), 'rad/s')}`) +
       (motor?.reasonCode && motor.reasonCode !== 'OK'
         ? ` · ${explainReason(motor.reasonCode)}`

@@ -1,5 +1,5 @@
-import { chromium } from 'playwright';
-import assert from 'node:assert/strict';
+import { createBrowserEvidence } from './browser-evidence.mjs';
+
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { cpus, totalmem, platform, arch, release } from 'node:os';
 import { pathToFileURL } from 'node:url';
@@ -83,12 +83,16 @@ export function evaluateF2(cycles, { build } = {}) {
     thresholds: { p95ExclusiveMs: 2000, maxInclusiveMs: 500 },
   };
 }
-export async function qualifyWorkshop(url = 'http://127.0.0.1:4173/') {
+export async function qualifyWorkshop(
+  url = 'http://127.0.0.1:4173/',
+  { createEvidence = createBrowserEvidence } = {},
+) {
+  const evidence = createEvidence();
   const source = sourceIdentity(),
     build = appFingerprint(),
-    errors = [],
+    errors = evidence.errors,
     cycles = [];
-  const browser = await chromium.launch({ headless: true }),
+  const browser = await evidence.launch({ profile: 'performance', ...{ headless: true } }),
     page = await browser.newPage({ viewport });
   const report = {
     version: 1,
@@ -118,22 +122,17 @@ export async function qualifyWorkshop(url = 'http://127.0.0.1:4173/') {
     cycles,
     errors,
   };
-  page.on('pageerror', (error) => errors.push(error.message));
-  page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
-  });
-  page.on('requestfailed', (request) =>
-    errors.push(`${request.url()}: ${request.failure()?.errorText}`),
-  );
-  page.on('response', (response) => {
-    if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`);
-  });
+
   mkdirSync('artifacts/m3b', { recursive: true });
   try {
     await page.goto(url);
     await page.waitForFunction(() => window.workshopProbe);
     report.servedBuild = await page.locator('meta[name=build-id]').getAttribute('content');
-    assert.equal(report.servedBuild, build, 'served build does not match current app fingerprint');
+    evidence.assert('equal', [
+      report.servedBuild,
+      build,
+      'served build does not match current app fingerprint',
+    ]);
     report.runtime.browserDevice = await page.evaluate(() => {
       const gl = document.querySelector('canvas')?.getContext('webgl2'),
         extension = gl?.getExtension('WEBGL_debug_renderer_info');
@@ -213,23 +212,32 @@ export async function qualifyWorkshop(url = 'http://127.0.0.1:4173/') {
         metrics: state.metrics,
         final: state.frame,
       });
-      assert.equal(state.frame.status, 'ready', `cycle ${cycle} simulation failed`);
-      assert.deepEqual(state.frame, state.text);
+      evidence.assert('equal', [state.frame.status, 'ready', `cycle ${cycle} simulation failed`]);
+      evidence.assert('deepEqual', [state.frame, state.text]);
       for (const [index, part] of blueprint.parts.entries()) {
         const rendered = state.transforms.find((value) => value.id === part.id);
-        assert.deepEqual(rendered.position, state.frame.physics[index].position);
-        assert.deepEqual(rendered.rotation, state.frame.physics[index].rotation);
+        evidence.assert('deepEqual', [rendered.position, state.frame.physics[index].position], {
+          frame: state.frame,
+        });
+        evidence.assert('deepEqual', [rendered.rotation, state.frame.physics[index].rotation], {
+          frame: state.frame,
+        });
       }
     }
     report.result = evaluateF2(cycles, { build });
-    assert.deepEqual(errors, [], 'browser errors during F2');
-    assert.deepEqual(sourceIdentity(), source, 'source changed during F2 qualification');
-    assert.equal(appFingerprint(), build);
+    evidence.assert('deepEqual', [errors, [], 'browser errors during F2']);
+    evidence.assert('deepEqual', [
+      sourceIdentity(),
+      source,
+      'source changed during F2 qualification',
+    ]);
+    evidence.assert('equal', [appFingerprint(), build]);
     report.metrics = await page.evaluate(() => window.workshopProbe.metrics());
     await page.screenshot({ path: 'artifacts/m3b/f2.png' });
     writeFileSync('artifacts/m3b/f2.json', JSON.stringify(report, null, 2) + '\n');
     return report;
   } catch (error) {
+    await evidence.captureFailure(error);
     report.failure = error.message;
     report.metrics = await page
       .evaluate(() => window.workshopProbe?.metrics() ?? [])

@@ -1,6 +1,5 @@
 import { createBrowserEvidence } from './browser-evidence.mjs';
-import { chromium } from 'playwright';
-import assert from 'node:assert/strict';
+
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { appFingerprint } from './build-fingerprint.mjs';
 import { sourceIdentity } from './source-identity.mjs';
@@ -8,37 +7,30 @@ const browserEvidence = createBrowserEvidence();
 
 const source = sourceIdentity(),
   build = appFingerprint(),
-  errors = [];
-const browser = await chromium.launch({ headless: true });
+  errors = browserEvidence.errors;
+const browser = await browserEvidence.launch({ profile: 'ui', ...{ headless: true } });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-page.on('pageerror', (e) => errors.push(e.message));
-page.on('console', (m) => {
-  if (m.type() === 'error') errors.push(m.text());
-});
-page.on('requestfailed', (r) => errors.push(`${r.url()}: ${r.failure()?.errorText}`));
-page.on('response', (r) => {
-  if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`);
-});
+
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.waitForFunction(() => window.workshopProbe);
   const served = await page.locator('meta[name=build-id]').getAttribute('content');
-  assert.equal(served, build, 'served build must match source');
-  assert.equal(
+  browserEvidence.assert('equal', [served, build, 'served build must match source']);
+  browserEvidence.assert('equal', [
     await page.locator('[data-part-type="logicController"]').count(),
     0,
     'a controller with no player execution surface must not be offered as usable',
-  );
+  ]);
   for (const type of ['powerCell', 'poweredMotor', 'gripWheel']) {
     await page.locator(`[data-part-type="${type}"]`).click();
     await page.waitForFunction(
       (n) => window.workshopProbe.observe().frames[0].metadata.blueprint.parts.length === n,
       ['powerCell', 'poweredMotor', 'gripWheel'].indexOf(type) + 1,
     );
-    assert.equal(
+    browserEvidence.assert('equal', [
       await page.locator('.part-list .selected').textContent(),
       { powerCell: 'Power Cell', poweredMotor: 'Powered Motor', gripWheel: 'Grip Wheel' }[type],
-    );
+    ]);
   }
   const bp = await page.evaluate(() => window.workshopProbe.observe().frames[0].metadata.blueprint);
   const id = (type) => bp.parts.find((p) => p.type === type).id;
@@ -53,27 +45,27 @@ try {
   await page.waitForFunction(
     () => window.workshopProbe.observe().frames[0].metadata.blueprint.connections.length === 1,
   );
-  assert.equal(
+  browserEvidence.assert('equal', [
     await page
       .locator(`.port-button[data-part-id="${id('powerCell')}"][data-port-id="power"]`)
       .getAttribute('data-connection-count'),
     '1',
     'fanout ports still show their connections',
-  );
-  assert.deepEqual(
+  ]);
+  browserEvidence.assert('deepEqual', [
     await page.evaluate(() =>
       window.workshopProbe.observe().frames[0].metadata.blueprint.parts.map((p) => p.position),
     ),
     bp.parts.map((p) => p.position),
     'wiring must not snap parts',
-  );
+  ]);
   await page.keyboard.press('Escape');
-  assert.equal(await page.locator('.part-list .selected').count(), 0);
+  browserEvidence.assert('equal', [await page.locator('.part-list .selected').count(), 0]);
   if (!(await page.locator('.machine-picker').evaluate((el) => el.open)))
     await page.locator('.machine-picker > summary').click();
   await page.locator(`.part-list [data-part-id="${id('powerCell')}"]`).click();
   await page.locator('[data-command="clear-selection"]').click();
-  assert.equal(await page.locator('.part-list .selected').count(), 0);
+  browserEvidence.assert('equal', [await page.locator('.part-list .selected').count(), 0]);
   await connect(id('poweredMotor'), 'shaft', id('gripWheel'), 'axle');
   await page.waitForFunction(
     () => window.workshopProbe.observe().frames[0].metadata.blueprint.connections.length === 2,
@@ -98,22 +90,34 @@ try {
       2,
     ) + '\n',
   );
-  assert.equal(state.observation.frames[0].status, 'ready');
-  assert.equal(state.observation.frames[0].metadata.mode, 'paused');
-  assert.ok(state.observation.frames[0].power.cells[0].energyJ < 36000);
-  assert.ok(
-    Math.abs(
-      state.observation.frames[0].physics[bp.parts.findIndex((p) => p.type === 'gripWheel')]
-        .angularVelocity[0],
-    ) > 0.01,
+  browserEvidence.assert('equal', [state.observation.frames[0].status, 'ready']);
+  browserEvidence.assert('equal', [state.observation.frames[0].metadata.mode, 'paused']);
+  browserEvidence.assert('ok', [state.observation.frames[0].power.cells[0].energyJ < 36000]);
+  browserEvidence.assert(
+    'ok',
+    [
+      Math.abs(
+        state.observation.frames[0].physics[bp.parts.findIndex((p) => p.type === 'gripWheel')]
+          .angularVelocity[0],
+      ) > 0.01,
+    ],
+    { frame: state.observation.frames[0] },
   );
   for (const [i, p] of bp.parts.entries()) {
     const rendered = state.transforms.find((t) => t.id === p.id);
-    assert.deepEqual(rendered.position, state.observation.frames[0].physics[i].position);
-    assert.deepEqual(rendered.rotation, state.observation.frames[0].physics[i].rotation);
+    browserEvidence.assert(
+      'deepEqual',
+      [rendered.position, state.observation.frames[0].physics[i].position],
+      { frame: state.observation.frames[0] },
+    );
+    browserEvidence.assert(
+      'deepEqual',
+      [rendered.rotation, state.observation.frames[0].physics[i].rotation],
+      { frame: state.observation.frames[0] },
+    );
   }
-  assert.deepEqual(state.text, state.observation.frames[0]);
-  assert.deepEqual(errors, []);
+  browserEvidence.assert('deepEqual', [state.text, state.observation.frames[0]]);
+  browserEvidence.assert('deepEqual', [errors, []]);
   // Keyboard control must travel through a placed receiver and its signal wire.
   await page.locator('[data-command=build]').click();
   await page.locator('.more-parts summary').click();
@@ -133,10 +137,10 @@ try {
   );
   await page.locator('[data-command=run]').click();
   await page.waitForFunction(() => window.workshopProbe.observe().cursor.tick >= 2);
-  assert.equal(
+  browserEvidence.assert('equal', [
     await page.evaluate(() => window.workshopProbe.observe().frames[0].power.motors[0].torque),
     0,
-  );
+  ]);
   await page.keyboard.down('ArrowUp');
   await page.waitForFunction(
     () => window.workshopProbe.observe().frames[0].power.motors[0].torque > 0,
@@ -163,10 +167,10 @@ try {
   await page.waitForFunction(
     () => window.workshopProbe.observe().frames[0].metadata.blueprint.parts.length === 4,
   );
-  assert.deepEqual(
+  browserEvidence.assert('deepEqual', [
     await page.evaluate(() => window.workshopProbe.observe().frames[0].metadata.blueprint),
     saved,
-  );
+  ]);
   writeFileSync('artifacts/browser-workshop/future-save.json', JSON.stringify({ version: 999 }));
   await page
     .locator('input[type=file]')
@@ -174,10 +178,10 @@ try {
   await page.waitForFunction(() =>
     document.querySelector('.status-message').textContent.includes('newer'),
   );
-  assert.deepEqual(
+  browserEvidence.assert('deepEqual', [
     await page.evaluate(() => window.workshopProbe.observe().frames[0].metadata.blueprint),
     saved,
-  );
+  ]);
   // Rejected file diagnostics retain an authored name and field path, while the
   // current machine and private invalid value stay out of the displayed result.
   const invalidSave = structuredClone(saved),
@@ -194,13 +198,13 @@ try {
     invalidPath,
   );
   const invalidMessage = await page.locator('.status-message').innerText();
-  assert.match(invalidMessage, /Left drive/);
-  assert.match(invalidMessage, /Drive setting/);
-  assert.doesNotMatch(invalidMessage, /private invalid value/);
-  assert.deepEqual(
+  browserEvidence.assert('match', [invalidMessage, /Left drive/]);
+  browserEvidence.assert('match', [invalidMessage, /Drive setting/]);
+  browserEvidence.assert('doesNotMatch', [invalidMessage, /private invalid value/]);
+  browserEvidence.assert('deepEqual', [
     await page.evaluate(() => window.workshopProbe.observe().frames[0].metadata.blueprint),
     saved,
-  );
+  ]);
   // Explicit wrong-input control: a hidden synthetic Run cannot become a
   // successful timed sample or disappear from the first-tick attempt ledger.
   const beforeNegative = await page.evaluate(() => window.workshopProbe.metrics().length);
@@ -213,9 +217,17 @@ try {
     (n) => window.workshopProbe.metrics().slice(n),
     beforeNegative,
   );
-  assert.equal(negative.find((m) => m.kind === 'run-first-tick').outcome, 'cancelled');
-  assert.equal(negative.find((m) => m.kind === 'run-first-tick').cause, 'hidden');
-  assert.ok(negative.every((m) => m.timestampSource === 'callback' && m.durationMs === null));
+  browserEvidence.assert('equal', [
+    negative.find((m) => m.kind === 'run-first-tick').outcome,
+    'cancelled',
+  ]);
+  browserEvidence.assert('equal', [
+    negative.find((m) => m.kind === 'run-first-tick').cause,
+    'hidden',
+  ]);
+  browserEvidence.assert('ok', [
+    negative.every((m) => m.timestampSource === 'callback' && m.durationMs === null),
+  ]);
   await page.evaluate(() => {
     delete document.hidden;
   });
@@ -223,8 +235,8 @@ try {
     'artifacts/browser-workshop/instrumentation-negative.json',
     JSON.stringify(negative, null, 2) + '\n',
   );
-  assert.deepEqual(errors, []);
-  assert.equal(appFingerprint(), build);
+  browserEvidence.assert('deepEqual', [errors, []]);
+  browserEvidence.assert('equal', [appFingerprint(), build]);
 
   mkdirSync('artifacts/browser-workshop', { recursive: true });
   await page.screenshot({ path: 'artifacts/browser-workshop/workshop.png' });
@@ -240,6 +252,9 @@ try {
   console.log(
     JSON.stringify({ build, tick: state.observation.cursor.tick, errors, metrics: state.metrics }),
   );
+} catch (error) {
+  await browserEvidence.captureFailure(error);
+  throw error;
 } finally {
   try {
     browserEvidence.assertUnchanged();

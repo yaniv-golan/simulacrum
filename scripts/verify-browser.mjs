@@ -1,25 +1,18 @@
 import { createBrowserEvidence } from './browser-evidence.mjs';
-import { chromium } from 'playwright';
+
 import { createSession } from '../src/simulation/session.mjs';
 import { deterministicProjection } from '../src/model/tick.mjs';
 import { appFingerprint } from './build-fingerprint.mjs';
 import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import assert from 'node:assert/strict';
+
 const browserEvidence = createBrowserEvidence();
 
 const identity = appFingerprint();
-const browser = await chromium.launch({ headless: true });
+const browser = await browserEvidence.launch({ profile: 'ui', ...{ headless: true } });
 const page = await browser.newPage({ viewport: { width: 1000, height: 700 } }),
-  errors = [];
-page.on('pageerror', (e) => errors.push(e.message));
-page.on('console', (m) => {
-  if (m.type() === 'error') errors.push(m.text());
-});
-page.on('requestfailed', (r) => errors.push(`${r.url()}: ${r.failure()?.errorText}`));
-page.on('response', (r) => {
-  if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`);
-});
+  errors = browserEvidence.errors;
+
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:5173/test/browser/');
   await page.waitForFunction(() => window.probe);
@@ -39,18 +32,22 @@ try {
       if (tick < 120) reference.step(1);
     }
     const actual = data.trace.filter((f) => f.tick <= 120);
-    assert.deepEqual(
+    browserEvidence.assert('deepEqual', [
       actual,
       expected,
       'real requestAnimationFrame trace must equal fixed-tick trace',
-    );
-    assert.deepEqual(
+    ]);
+    browserEvidence.assert('deepEqual', [
       data.text.physics,
       data.trace.at(-1).physics,
       'text mirror must match last published frame',
-    );
-    assert.deepEqual(errors, []);
-    assert.equal(appFingerprint(), identity, 'source changed during browser verification');
+    ]);
+    browserEvidence.assert('deepEqual', [errors, []]);
+    browserEvidence.assert('equal', [
+      appFingerprint(),
+      identity,
+      'source changed during browser verification',
+    ]);
     mkdirSync('artifacts/browser-m1', { recursive: true });
     await page.screenshot({ path: 'artifacts/browser-m1/raf.png' });
     const result = {
@@ -69,6 +66,9 @@ try {
   } finally {
     reference.dispose();
   }
+} catch (error) {
+  await browserEvidence.captureFailure(error);
+  throw error;
 } finally {
   try {
     browserEvidence.assertUnchanged();

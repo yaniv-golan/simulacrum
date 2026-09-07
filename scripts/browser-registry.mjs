@@ -9,7 +9,11 @@ export function validateBrowserCoverage(root = process.cwd()) {
     if (name.endsWith('.mjs')) {
       const path = `scripts/${name}`,
         source = readFileSync(`${root}/${path}`, 'utf8');
-      if (/from\s+['"]playwright['"]/.test(source) && !registered.has(path))
+      if (
+        (/from\s+['"]playwright['"]/.test(source) ||
+          (/from\s+['"]\.\/browser-evidence\.mjs['"]/.test(source) && /\.launch\(/.test(source))) &&
+        !registered.has(path)
+      )
         throw Error(`unregistered browser check: ${path}`);
     }
 }

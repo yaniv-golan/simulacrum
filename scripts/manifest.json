@@ -140,6 +140,24 @@
       "module": "scripts/check-identity.mjs",
       "export": "checkIdentity",
       "args": []
+    },
+    {
+      "id": "invariant-controls",
+      "dueAt": "M3b",
+      "description": "specific invariant positive and negative control suites from manifest pointers",
+      "ruleId": "runtime-contract",
+      "module": "scripts/check-invariant-controls.mjs",
+      "export": "checkInvariantControls"
+    },
+    {
+      "id": "boundary-types",
+      "dueAt": "M3b",
+      "description": "checked production boundary interfaces, schema-derived freshness and wrong-type counterexamples",
+      "ruleId": "runtime-contract",
+      "module": "scripts/check-boundary-types.mjs",
+      "export": "check",
+      "args": [],
+      "timeoutMs": 5000
     }
   ],
   "exitObligations": {
@@ -607,6 +625,220 @@
       "smoke": true,
       "timeoutMs": 60000,
       "ruleId": "runtime-contract"
+    }
+  ],
+  "invariants": [
+    {
+      "id": "rejected-edit-atomicity",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Rejected and stale authoring commands preserve the blueprint, observation and editor history.",
+      "owners": [
+        {
+          "path": "src/core/workshop.mjs",
+          "anchor": "createWorkshop"
+        }
+      ],
+      "checks": ["invariant-controls"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/workshop.test.mjs",
+            "anchor": "disconnect undo redo preserve authored history and reject bad edits atomically"
+          },
+          {
+            "path": "test/editing-contracts.test.mjs",
+            "anchor": "mixed resize, axle attachment, rotation, undo and reload preserve connections"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/workshop.test.mjs",
+            "anchor": "malformed authoring is rejected without altering model or cursor"
+          },
+          {
+            "path": "test/editing-contracts.test.mjs",
+            "anchor": "registered edit examples share rejection and round-trip behavioral contracts"
+          }
+        ]
+      },
+      "qualificationBars": ["F1", "L0"]
+    },
+    {
+      "id": "preview-isolation",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Mirror proposals and placement lifecycle state stay outside authored state until accepted commands commit them; stale completion cannot reopen a canceled proposal.",
+      "owners": [
+        {
+          "path": "src/model/mirror-assembly.mjs",
+          "anchor": "proposeMirroredAssembly"
+        },
+        {
+          "path": "src/presentation/assembly-mirror.mjs",
+          "anchor": "createAssemblyMirror"
+        },
+        {
+          "path": "src/presentation/placement-lifecycle.mjs",
+          "anchor": "createPlacementLifecycle"
+        }
+      ],
+      "checks": ["invariant-controls", "verify-mirror-browser"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/mirror-assembly.test.mjs",
+            "anchor": "mirror preview preserves internal shafts and reference mounts, authored choices and input blueprint"
+          },
+          {
+            "path": "test/placement-lifecycle.test.mjs",
+            "anchor": "placement commits valid previews once, rejects stale completions and cancels pointer ownership"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/mirror-assembly.test.mjs",
+            "anchor": "mirror core transaction is atomic and undoable, rejects stale previews and edits outside Build"
+          },
+          {
+            "path": "test/placement-lifecycle.test.mjs",
+            "anchor": "placement commits valid previews once, rejects stale completions and cancels pointer ownership"
+          }
+        ]
+      },
+      "qualificationBars": ["F1", "L0"]
+    },
+    {
+      "id": "input-cancellation",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Receiver overrides reset on pause and focus loss; placement cancellation clears pointer/proposal ownership and stale completions are refused.",
+      "owners": [
+        {
+          "path": "src/presentation/vehicle-controls.mjs",
+          "anchor": "createVehicleControls"
+        },
+        {
+          "path": "src/presentation/placement-lifecycle.mjs",
+          "anchor": "createPlacementLifecycle"
+        }
+      ],
+      "checks": ["invariant-controls", "verify-ui-lifecycle-browser"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/receiver-input-owner.test.mjs",
+            "anchor": "createVehicleControls"
+          },
+          {
+            "path": "test/placement-lifecycle.test.mjs",
+            "anchor": "placement commits valid previews once, rejects stale completions and cancels pointer ownership"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/receiver-input-owner.test.mjs",
+            "anchor": "for (const reset of ['blur', 'pause'])"
+          },
+          {
+            "path": "test/placement-lifecycle.test.mjs",
+            "anchor": "placement commits valid previews once, rejects stale completions and cancels pointer ownership"
+          }
+        ]
+      },
+      "qualificationBars": ["F1", "L0"]
+    },
+    {
+      "id": "geometry-agreement",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Authored wheel geometry drives physical radius and mass; attachment admission rejects real intersections while allowing empty hull corners.",
+      "owners": [
+        {
+          "path": "src/model/geometry.mjs",
+          "anchor": "partPrimitives"
+        },
+        {
+          "path": "src/model/assembly.mjs",
+          "anchor": "compileAssembly"
+        }
+      ],
+      "checks": ["invariant-controls", "verify-property-focus", "verify-surface-browser"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/wheel-diameter.test.mjs",
+            "anchor": "wheel diameter changes physical radius and mass without moving its axle; undo and load preserve it"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/placement-overlap.test.mjs",
+            "anchor": "wheel bounds corners are empty while real cylinder intersections are blocked"
+          }
+        ]
+      },
+      "qualificationBars": ["F1", "L0"]
+    },
+    {
+      "id": "identity-material-admission",
+      "ruleId": "identity",
+      "dueAt": "M3b",
+      "guarantee": "Names and rig placement do not select physical materials; authored selectable materials are copied.",
+      "owners": [
+        {
+          "path": "src/model/assembly.mjs",
+          "anchor": "compileAssembly"
+        },
+        {
+          "path": "src/model/catalog.mjs",
+          "anchor": "MATERIALS"
+        }
+      ],
+      "checks": ["identity"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/assembly.test.mjs",
+            "anchor": "authored selectable material is copied without identity inference"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/assembly.test.mjs",
+            "anchor": "renaming and rig placement never select material mass or contact properties"
+          }
+        ]
+      },
+      "qualificationBars": ["F1", "L0"]
+    },
+    {
+      "id": "checkpoint-next-step",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Valid checkpoint restore preserves future physical stepping while invalid restore remains atomic.",
+      "owners": [
+        {
+          "path": "src/simulation/session.mjs",
+          "anchor": "createSession"
+        }
+      ],
+      "checks": ["invariant-controls"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/session.test.mjs",
+            "anchor": "checkpoint restores tick and future physics but advances observation epoch"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/session.test.mjs",
+            "anchor": "checkpoint rejection is atomic for malformed clocks inputs sensors and identity"
+          }
+        ]
+      },
+      "qualificationBars": ["F1", "L0"]
     }
   ]
 }

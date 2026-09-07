@@ -1,17 +1,12 @@
 import { createBrowserEvidence } from './browser-evidence.mjs';
-import { chromium } from 'playwright';
-import assert from 'node:assert/strict';
+
 import { mkdirSync, writeFileSync } from 'node:fs';
 const browserEvidence = createBrowserEvidence();
 
-const browser = await chromium.launch(),
+const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
-  errors = [];
-page.on('pageerror', (e) => errors.push(e.message));
-page.on('console', (m) => {
-  if (m.type() === 'error') errors.push(m.text());
-});
-page.on('requestfailed', (r) => errors.push(r.url()));
+  errors = browserEvidence.errors;
+
 const out = 'artifacts/camera-recovery';
 mkdirSync(out, { recursive: true });
 try {
@@ -32,25 +27,28 @@ try {
     await page.waitForTimeout(300);
   }
   const below = await state();
-  assert.ok(below.camera.position[1] < 0, 'ordinary orbit must reach underside');
+  browserEvidence.assert('ok', [
+    below.camera.position[1] < 0,
+    'ordinary orbit must reach underside',
+  ]);
   await page.screenshot({ path: `${out}/underside.png` });
   await page.getByRole('button', { name: 'Exploded view', exact: true }).click();
   await page.waitForTimeout(800);
   const inspected = await state();
-  assert.ok(
+  browserEvidence.assert('ok', [
     inspected.camera.position[1] < inspected.camera.target[1],
     'exploding preserves underside heading',
-  );
+  ]);
   await page.screenshot({ path: `${out}/exploded-underside.png` });
   await page.getByRole('button', { name: 'Frame machine · F', exact: true }).click();
   await page.waitForTimeout(400);
   const recovered = await state();
-  assert.ok(
+  browserEvidence.assert('ok', [
     recovered.camera.position[1] > recovered.camera.target[1],
     'Frame must recover above-floor angle',
-  );
+  ]);
   await page.screenshot({ path: `${out}/recovered.png` });
-  assert.deepEqual(errors, []);
+  browserEvidence.assert('deepEqual', [errors, []]);
   browserEvidence.assertUnchanged();
   writeFileSync(
     `${out}/result.json`,
@@ -67,6 +65,9 @@ try {
     ),
   );
   console.log('camera recovery browser checks passed');
+} catch (error) {
+  await browserEvidence.captureFailure(error);
+  throw error;
 } finally {
   try {
     browserEvidence.assertUnchanged();

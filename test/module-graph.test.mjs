@@ -65,3 +65,33 @@ test('package runtime network contract binds service and permits only declared r
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('type-only declaration dependencies select consuming tests but never become runtime assets', () => {
+  const root = mkdtempSync(join(tmpdir(), 'sim-types-'));
+  try {
+    writeFileSync(
+      join(root, 'main.mjs'),
+      "/** @type {import('./contract.js').Value} */\nexport const value={x:1};",
+    );
+    writeFileSync(
+      join(root, 'contract.d.ts'),
+      "import type {Scalar} from './scalar.js'; export interface Value {x:Scalar}",
+    );
+    writeFileSync(join(root, 'scalar.d.ts'), 'export type Scalar=number;');
+    writeFileSync(join(root, 'main.test.mjs'), "import './main.mjs';");
+    const runtime = buildModuleGraph(root, { entrypoints: ['main.mjs'] });
+    assert.deepEqual(runtime.errors, []);
+    assert.equal(runtime.nodes.has('contract.d.ts'), false);
+    const graph = buildModuleGraph(root, { purpose: 'test-selection' });
+    assert.deepEqual(graph.errors, []);
+    assert.deepEqual(affectedTests(graph, ['scalar.d.ts']), ['main.test.mjs']);
+    assert.equal(graph.nodes.get('main.mjs').imports.find((x) => x.kind === 'type').typeOnly, true);
+    writeFileSync(join(root, 'main.mjs'), "import './contract.d.ts';");
+    assert.match(
+      buildModuleGraph(root, { entrypoints: ['main.mjs'] }).errors.join('\n'),
+      /runtime.*declaration/,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
