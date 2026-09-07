@@ -1,3 +1,4 @@
+import { assertRuntime } from './runtime-preflight.mjs';
 import ts from 'typescript';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readFileSync } from 'node:fs';
@@ -5,6 +6,7 @@ import { parse } from 'acorn';
 import { generateBoundaryTypes } from './generate-boundary-types.mjs';
 
 export function check() {
+  assertRuntime();
   generateBoundaryTypes({ check: true });
   const root = fileURLToPath(new URL('../', import.meta.url));
   const configPath = root + 'tsconfig.boundaries.json';

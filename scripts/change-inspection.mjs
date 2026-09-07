@@ -117,3 +117,45 @@ export async function inspectChange(root = process.cwd(), { files } = {}) {
     },
   );
 }
+
+/** A compact view of the same analysis; never a narrower verification policy. */
+export function summarizeChangeInspection({ analysis, value: report }) {
+  const lines = [
+    `Change inspection · ${analysis.contentIdentity}`,
+    `Files: ${report.files.join(', ')}`,
+    `Owners: ${report.owners.map((owner) => owner.path).join(', ') || 'none found'}`,
+    `Invariants: ${report.invariants.map((row) => row.id).join(', ') || 'none associated'}`,
+    `Tests: ${report.tests.selectedCount}/${report.tests.total} (${report.tests.causal.length} causal, ${report.tests.conservative.length} conservative)`,
+  ];
+  if (report.tests.fallback) lines.push(`Fallback: ${report.tests.fallback}`);
+  for (const row of report.tests.causal) lines.push(`  ${row.test}`);
+  lines.push('Browser checks (registered, not executed):');
+  const associated = report.browserChecks.filter(
+    (row) => row.dependencyPath || row.invariantIds.length,
+  );
+  lines.push(`  Associated: ${associated.map((row) => row.id).join(', ') || 'none'}`);
+  lines.push(
+    `  Also registered: ${
+      report.browserChecks
+        .filter((row) => !associated.includes(row))
+        .map((row) => row.id)
+        .join(', ') || 'none'
+    }`,
+  );
+  lines.push('Affected documentation:');
+  for (const row of report.documentation.sections)
+    lines.push(`  ${row.stale ? 'STALE' : 'current'} ${row.file}#${row.id}`);
+  for (const error of [...report.parseErrors, ...report.documentation.errors]) {
+    const text = typeof error === 'string' ? error : JSON.stringify(error);
+    lines.push(`ERROR: ${text.slice(0, 220)}${text.length > 220 ? '… (full detail: --json)' : ''}`);
+  }
+  const paths = report.files.map((path) => "'" + path.replaceAll("'", "'\\''") + "'").join(' ');
+  lines.push(`Run selected tests: npm run test:unit -- --files ${paths}`);
+  lines.push(
+    'Before closure: npm run docs:impact; then review affected explanations and run npm run verify:final.',
+  );
+  lines.push(
+    'No checks executed. No inferred association does not prove independence. Add --json for every dependency and conservative selection reason.',
+  );
+  return lines.join('\n');
+}

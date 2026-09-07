@@ -276,8 +276,27 @@ export function buildModuleGraph(
             'spawnSync',
             'spawn',
           ].includes(node.callee.name)
-        )
-          info.opaqueInputs = true;
+        ) {
+          const target = node.arguments[0],
+            base = target?.arguments?.[1];
+          const staticRead =
+            ['readFileSync', 'readFile'].includes(node.callee.name) &&
+            target?.type === 'NewExpression' &&
+            target.callee.name === 'URL' &&
+            target.arguments[0]?.type === 'Literal' &&
+            typeof target.arguments[0].value === 'string' &&
+            target.arguments[0].value.startsWith('.') &&
+            base?.type === 'MemberExpression' &&
+            !base.computed &&
+            base.property.name === 'url' &&
+            base.object.type === 'MetaProperty' &&
+            base.object.meta.name === 'import' &&
+            base.object.property.name === 'meta';
+          // The URL visitor records this data edge. Unresolved files and all other
+          // read forms retain the existing conservative whole-project fallback.
+          const file = staticRead && resolve(root, dirname(path), target.arguments[0].value);
+          if (!file || !existsSync(file) || !statSync(file).isFile()) info.opaqueInputs = true;
+        }
         if (tooling && node.type === 'CallExpression' && node.callee.name === 'fetch' && !runtime) {
           info.opaqueInputs = true;
           return;

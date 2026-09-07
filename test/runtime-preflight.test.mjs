@@ -1,0 +1,74 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { assertRuntime } from '../scripts/runtime-preflight.mjs';
+test('runtime admission uses the package range and rejects unsupported or ambiguous versions', () => {
+  for (const version of ['24.18.0', '24.19.2'])
+    assert.doesNotThrow(() => assertRuntime({ version }));
+  for (const version of ['24.17.9', '25.0.0', '24.18.0-rc.1', 'invalid'])
+    assert.throws(() => assertRuntime({ version }), /Unsupported Node.*package.json.*Switch/s);
+  assert.doesNotThrow(() => assertRuntime({ version: '26.1.0', range: '>=26.1 <27' }));
+  assert.throws(
+    () => assertRuntime({ version: '24.18.0', range: '*' }),
+    /Unsupported engine range/,
+  );
+});
+
+test('localhost preflight labels permission failures without swallowing other failures and closes its probe', async () => {
+  const { assertLocalServerAccess } = await import('../scripts/runtime-preflight.mjs');
+  const { EventEmitter } = await import('node:events');
+  for (const code of [null, 'EPERM', 'EACCES', 'EADDRNOTAVAIL']) {
+    let closed = false;
+    const server = Object.assign(new EventEmitter(), {
+      listen(options, ready) {
+        assert.equal(options.host, '127.0.0.1');
+        assert.equal(options.port, 0);
+        queueMicrotask(() =>
+          code ? this.emit('error', Object.assign(Error('bind failed'), { code })) : ready(),
+        );
+      },
+      close(done) {
+        closed = true;
+        done();
+      },
+    });
+    const result = assertLocalServerAccess({ create: () => server });
+    if (code)
+      await assert.rejects(
+        result,
+        code === 'EPERM' || code === 'EACCES'
+          ? /Environment.*localhost.*permission/s
+          : /EADDRNOTAVAIL/,
+      );
+    else {
+      await result;
+      assert.ok(closed);
+    }
+  }
+});
+
+test('verification context rejects an unsupported runtime before identity reads or environment mutation', async () => {
+  const { createVerificationContext } = await import('../scripts/verification-run.mjs');
+  const descriptor = Object.getOwnPropertyDescriptor(process.versions, 'node');
+  const environment = process.env.NODE_ENV;
+  let read = false;
+  try {
+    delete process.env.NODE_ENV;
+    Object.defineProperty(process.versions, 'node', { value: '25.0.0', configurable: true });
+    assert.throws(
+      () =>
+        createVerificationContext({
+          readIdentity: () => {
+            read = true;
+            return {};
+          },
+        }),
+      /Unsupported Node/,
+    );
+    assert.equal(read, false);
+    assert.equal(process.env.NODE_ENV, undefined);
+  } finally {
+    Object.defineProperty(process.versions, 'node', descriptor);
+    if (environment === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = environment;
+  }
+});

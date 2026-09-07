@@ -369,3 +369,27 @@ test('implementation links cover code and declared inputs without claiming arbit
   f.put('scripts/reader.mjs', "import { missing } from './gone.mjs';\n");
   assert.match(f.inspect().errors.join('\n'), /gone|coverage/);
 });
+
+test('batch reviews keep per-section decisions, reject invalid batches before writing, and still become stale', async (t) => {
+  const { reviewSections } = await import('../scripts/documentation.mjs');
+  const f = fixture(t),
+    file = 'docs/development/guide.md';
+  f.put(
+    file,
+    '# Owner\n[run](../../src/model/tool.mjs#symbol=run).\n\n# Other\n[other](../../src/model/tool.mjs#symbol=unrelated).\n',
+  );
+  const rows = ['owner', 'other'].map((id) => ({ file, id, ...receipt }));
+  const before = readFileSync(join(f.root, file), 'utf8');
+  assert.throws(() => reviewSections(f.root, [...rows, { ...rows[0], id: 'absent' }]));
+  assert.equal(readFileSync(join(f.root, file), 'utf8'), before);
+  assert.throws(() => reviewSections(f.root, [rows[0], rows[0]]), /duplicate/);
+  assert.throws(() => reviewSections(f.root, [{ ...rows[0], rationale: '' }]), /rationale/);
+  assert.throws(() => reviewSections(f.root, []), /nonempty/);
+  reviewSections(f.root, rows);
+  assert.deepEqual(f.inspect().errors, []);
+  f.put(
+    'src/model/tool.mjs',
+    'export function run(x) { return x + 8; }\nexport function unrelated() { return 9; }\n',
+  );
+  assert.ok(f.inspect().sections.find((s) => s.id === 'owner').stale);
+});

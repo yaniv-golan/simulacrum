@@ -1,13 +1,19 @@
 import { pathToFileURL } from 'node:url';
-import { inspectChange, parseChangeInspectionArgs } from './change-inspection.mjs';
+import {
+  inspectChange,
+  parseChangeInspectionArgs,
+  summarizeChangeInspection,
+} from './change-inspection.mjs';
 
 export async function runInspectionCLI(
   args,
   { inspect = inspectChange, write = console.log } = {},
 ) {
-  const files = parseChangeInspectionArgs(args);
+  if (args.filter((arg) => arg === '--json').length > 1) throw Error('duplicate option: --json');
+  const json = args.includes('--json');
+  const files = parseChangeInspectionArgs(args.filter((arg) => arg !== '--json'));
   const report = await inspect(process.cwd(), { files });
-  write(JSON.stringify(report, null, 2));
+  write(json ? JSON.stringify(report, null, 2) : summarizeChangeInspection(report));
   return report.value.parseErrors.length || report.value.documentation.errors.length ? 1 : 0;
 }
 

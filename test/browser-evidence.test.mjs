@@ -279,3 +279,21 @@ test('assertion evidence records the live caller and message while preserving cu
   assert.match(rows[2].failureMessage, /4 !== 5/);
   assert.deepEqual([rows[1].actual, rows[1].expected], [1, 2]);
 });
+
+test('part clicks derive from current canvas projection and reject missing or off-screen centers', async () => {
+  const evidence = createBrowserEvidence({ readBuild: () => 'app', readSource: () => ({}) });
+  const clicks = [];
+  let center = { id: 7, x: 0.5, y: -0.5 };
+  const p = {
+    evaluate: async () => center,
+    locator: () => ({
+      first: () => ({ boundingBox: async () => ({ x: 100, y: 50, width: 800, height: 400 }) }),
+    }),
+    mouse: { click: async (x, y) => clicks.push([x, y]) },
+  };
+  await evidence.clickPart(p, 7);
+  assert.deepEqual(clicks, [[700, 350]]);
+  for (center of [null, { x: 2, y: 0 }, { x: NaN, y: 0 }])
+    await assert.rejects(evidence.clickPart(p, 7), /visible projected center/);
+  assert.equal(clicks.length, 1);
+});

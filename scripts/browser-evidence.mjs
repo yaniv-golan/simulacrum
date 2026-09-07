@@ -28,6 +28,24 @@ export function createBrowserEvidence({
         await page.reload();
         return this.assertServed(page);
       },
+      // This sends an ordinary pointer click; callers must assert what was picked.
+      async clickPart(page, partId) {
+        const center = await page.evaluate(
+          (id) => window.workshopProbe.readRenderedCenters().find((row) => row.id === id),
+          partId,
+        );
+        const canvas = await page.locator('canvas').first().boundingBox();
+        assert.ok(
+          canvas &&
+            center &&
+            [center.x, center.y].every((value) => Number.isFinite(value) && Math.abs(value) <= 1),
+          `Part ${partId} needs a visible projected center; frame or rotate the view first.`,
+        );
+        await page.mouse.click(
+          canvas.x + (center.x * 0.5 + 0.5) * canvas.width,
+          canvas.y + (-center.y * 0.5 + 0.5) * canvas.height,
+        );
+      },
       assertUnchanged() {
         assert.equal(readBuild(), build, 'app source changed during browser verification');
         assert.deepEqual(

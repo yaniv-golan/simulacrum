@@ -1,9 +1,11 @@
+import { assertLocalServerAccess } from './runtime-preflight.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { createVerificationContext } from './verification-run.mjs';
 import { runStructuralChecks } from './gate-structural.mjs';
 import { buildModuleGraph } from './module-graph.mjs';
 export async function runCI(context = createVerificationContext()) {
+  await context.check('environment:localhost', {}, assertLocalServerAccess);
   return context.check('ci:budget', { limitMs: 180000 }, () =>
     context.withDeadline(180000, async () => {
       const start = performance.now();

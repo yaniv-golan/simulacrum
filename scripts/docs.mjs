@@ -1,9 +1,10 @@
+import { readFileSync } from 'node:fs';
 import { check, documentationReport } from './check-documentation.mjs';
-import { reviewSection } from './documentation.mjs';
+import { reviewSection, reviewSections } from './documentation.mjs';
 import { refreshReference } from './development-reference.mjs';
 const [mode, ...args] = process.argv.slice(2);
 const usage =
-  'Use docs:check, docs:impact, docs:generate, or docs:review -- <file> <section-id> <updated|still accurate> "technical rationale"';
+  'Use docs:check, docs:impact, docs:generate, or docs:review -- <file> <section-id> <updated|still accurate> "technical rationale"; or docs:review -- --batch <decisions.json>';
 try {
   if (['check', 'impact', 'generate'].includes(mode) && args.length === 0) {
     if (mode === 'generate') {
@@ -40,6 +41,10 @@ try {
       );
       if (value.errors.length) process.exitCode = 1;
     }
+  } else if (mode === 'review' && args.length === 2 && args[0] === '--batch') {
+    const rows = JSON.parse(readFileSync(args[1], 'utf8'));
+    reviewSections(process.cwd(), rows);
+    console.log(`Recorded ${rows.length} individual section reviews. Run npm run docs:check.`);
   } else if (mode === 'review' && args.length === 4) {
     const [file, id, disposition, rationale] = args;
     reviewSection(process.cwd(), file, id, { disposition, rationale });

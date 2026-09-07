@@ -163,7 +163,7 @@ test('CLI emits report before returning failure for parse or documentation issue
       value: { parseErrors, documentation: { errors } },
     };
     const output = [];
-    const status = await runInspectionCLI(['--files', 'src/policy.mjs'], {
+    const status = await runInspectionCLI(['--files', 'src/policy.mjs', '--json'], {
       inspect: async () => report,
       write: (text) => output.push(text),
     });
@@ -173,4 +173,26 @@ test('CLI emits report before returning failure for parse or documentation issue
       [report],
     );
   }
+});
+
+test('concise discovery preserves errors, fallback, identity and required checks', async () => {
+  const { summarizeChangeInspection } = await import('../scripts/change-inspection.mjs');
+  const report = {
+    analysis: { contentIdentity: 'source123' },
+    value: composeChangeInspection({ ...inputs(), files: ['src/policy.mjs'] }),
+  };
+  const text = summarizeChangeInspection(report);
+  assert.match(text, /source123/);
+  assert.match(text, /2\/2.*1 causal.*1 conservative/);
+  assert.match(text, /view-policy/);
+  assert.match(text, /browser/);
+  assert.match(text, /other/);
+  assert.match(text, /No checks executed/);
+  report.value.documentation.errors.push('stale review');
+  report.value.parseErrors.push({ path: 'broken.mjs', message: 'bad syntax' });
+  report.value.tests.fallback = 'unknown changed inputs';
+  const failed = summarizeChangeInspection(report);
+  assert.match(failed, /stale review/);
+  assert.match(failed, /broken.mjs/);
+  assert.match(failed, /unknown changed inputs/);
 });

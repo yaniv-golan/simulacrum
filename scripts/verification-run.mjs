@@ -1,3 +1,4 @@
+import { assertRuntime } from './runtime-preflight.mjs';
 import { sourceIdentity } from './source-identity.mjs';
 import { appFingerprint } from './app-fingerprint.mjs';
 import { runProcess, runModuleCheck } from './run-check.mjs';
@@ -68,6 +69,7 @@ export function createVerificationRun({ readIdentity = verificationIdentity } = 
   };
 }
 export function initializeVerificationEnvironment() {
+  assertRuntime();
   process.env.NODE_ENV ??= 'production';
 }
 export function createVerificationContext(options) {

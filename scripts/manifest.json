@@ -167,6 +167,15 @@
       "module": "scripts/check-documentation.mjs",
       "export": "check",
       "timeoutMs": 5000
+    },
+    {
+      "id": "verification-runtime",
+      "dueAt": "M3b",
+      "description": "supported package-owned Node runtime before verification",
+      "ruleId": "gate-integrity",
+      "module": "scripts/runtime-preflight.mjs",
+      "export": "assertRuntime",
+      "timeoutMs": 1000
     }
   ],
   "exitObligations": {

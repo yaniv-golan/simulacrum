@@ -62,6 +62,7 @@ These are registered commands and checks, not evidence that they passed.
 | invariant-controls | runtime-contract | M3b | [scripts/check-invariant-controls.mjs](../../scripts/check-invariant-controls.mjs) |
 | boundary-types | runtime-contract | M3b | [scripts/check-boundary-types.mjs](../../scripts/check-boundary-types.mjs) |
 | developer-documentation | gate-integrity | M3b | [scripts/check-documentation.mjs](../../scripts/check-documentation.mjs) |
+| verification-runtime | gate-integrity | M3b | [scripts/runtime-preflight.mjs](../../scripts/runtime-preflight.mjs) |
 
 ## Invariant owners
 

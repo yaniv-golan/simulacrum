@@ -13,17 +13,13 @@ try {
   await page.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 4; i++) await page.locator('[data-command=guide-step]').click();
   await page.getByRole('button', { name: 'Leave guide', exact: true }).click();
-  const canvas = await page.locator('canvas').first().boundingBox();
-  const motorCenter = await page.evaluate(() => {
-    const motor = window.workshopProbe
-      .observe()
-      .frames[0].metadata.blueprint.parts.find((p) => p.name === 'Motor');
-    return window.workshopProbe.readRenderedCenters().find((p) => p.id === motor.id);
-  });
-  await page.mouse.click(
-    canvas.x + (motorCenter.x * 0.5 + 0.5) * canvas.width,
-    canvas.y + (-motorCenter.y * 0.5 + 0.5) * canvas.height,
+  const motorId = await page.evaluate(
+    () =>
+      window.workshopProbe
+        .observe()
+        .frames[0].metadata.blueprint.parts.find((p) => p.name === 'Motor').id,
   );
+  await browserEvidence.clickPart(page, motorId);
   browserEvidence.assert('equal', [
     await page.locator('.part-list-item.selected').textContent(),
     'Motor',

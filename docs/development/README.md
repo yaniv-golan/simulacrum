@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"b7187e1d63a04396e822d93f2f9e883adb4bbb9fffdd84137a57bd512714458a","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"10bd7ac82f01e82a12794d1f7783d429ffb50d42ef5454b2e2830568641fe5c0","disposition":"still accurate","rationale":"The linked overlay recipe now covers Wiring; the working loop still discovers owners, runs failing controls, reviews docs and executes final verification."} -->
+<!-- doc-review {"version":1,"fingerprint":"bcbe74a87954e7206408512140a68f918d08a093b64aa49b295323d106111973","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"ffbf81f881d666d052a85d226f3db9a650c42ce6b789bb3967f7f9bcf62b2fd3","disposition":"updated","rationale":"Discovery now defaults to a concise report with full JSON available, and formal documentation decisions are deferred until source closure while discovery remains required after structural changes."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md) and the
 [recipe for your change](recipes.md) before choosing an owner. Use Node 24.18.x and
@@ -18,7 +18,8 @@ serve a stable build. The page displays its build identity.
 3. Demonstrate a new test failing for the intended reason, make the smallest owner-level
    change, and run those checks. Update real consumers and boundary fixtures together.
 4. Rerun discovery after structural edits or integrating another agent’s work. Run
-   `docs:impact` and resolve affected explanation reviews as described below.
+   `docs:impact` to identify affected explanations. Update their text during development;
+   record formal dispositions once source changes have settled, before final verification.
 5. Run `typecheck` and `ci`; inspect browser behavior when presentation or input changes.
    Use `verify:final` for final closure on one source identity. Read the gate result:
    automated success cannot supply a missing human assessment.
@@ -45,7 +46,9 @@ fails rather than treating it as a successful empty symbol scan. Graph errors al
 focused selection for deciding what to run.
 
 `inspect:change -- --files <paths>` composes these existing authorities in one
-source-bound report. Tests are grouped by causal and conservative inclusion; browser
+source-bound report. The default is a concise human-readable summary; add `--json`
+for full dependency paths, conservative reasons and analysis metadata. Both formats
+use exactly the same analysis and failure status. Tests are grouped by causal and conservative inclusion; browser
 checks show known dependency paths or invariant registration associations. All registered
 browser checks remain visible because lack of an inferred association is not proof of
 irrelevance. It executes nothing. Documentation errors remain unresolved and make the
@@ -62,10 +65,13 @@ from explicit changed paths. Add `--summary` for a concise dry run with counts a
 shortest known paths, grouped by causal dependencies, conservative opaque inputs or
 full-suite fallback. Use `--explain` instead for the existing full selection JSON.
 Both explanation modes leave tests unexecuted; unknown changes select all tests.
+A literal file read relative to `import.meta.url` follows that file's data edge;
+dynamic file reads and subprocesses remain conservative. Do not omit these tests
+because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"448381508d2e2c8bf9a451adf93acdb6f63270cba10012b89ee99c09d7ed57ec","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"81fbef107561cac4e4b87948e51e916e93ceda52f9e963dce5ecccca95f27783","disposition":"still accurate","rationale":"Package metadata adds only the discovery command. CI, typecheck, final browser verification and human gate responsibilities remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"cb57e847db46255a9abdaa0e630342c6b5f366a5a0063a97a8bba66d28b2646a","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"f356ad224715372d36ed2b6f8cc9234cc284adc1f7074672048e38c79bce7ae4","disposition":"updated","rationale":"The verification commands now reject unsupported Node versions and CI/browser builds probe loopback access; the projected-center helper still sends real pointer input and requires a resulting-selection assertion."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -83,9 +89,23 @@ Linux tab capture needs Xvfb. Follow [playtesting](playtesting.md) for recording
 human evidence. Run final checks on the same final source; do not reuse an old green
 report after changing source or environment.
 
+The [verification preflight](../../scripts/runtime-preflight.mjs#implementation) reads
+`engines.node` from package.json. CI, the milestone gate, final verification, focused
+tests and type checking reject unsupported Node versions before running checks.
+Switch Node and confirm `node --version` before retrying. CI and browser builds also
+probe an ephemeral loopback port: permission denial is an environment blocker, not
+product failure or permission to skip server/browser tests. Grant loopback access in
+the execution environment and rerun. The probe cannot guarantee later server startup.
+
+For canvas interactions use `browserEvidence.clickPart(page, partId)` from the
+[browser evidence helper](../../scripts/browser-evidence.mjs#implementation). It sends
+a real pointer click at the current projected center; it never selects through an
+application API. Assert the resulting selected part. If geometry occludes the center,
+rotate the view or use a visible part surface; the projection alone does not prove visibility.
+
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"212d230db58522a65eb8601e30ff425ec3a1f1f645c18ac38da7870e20da1197","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"11c8d9641f47ee49be465f1ac3d6f7db5baaf13399b14777cd11bdeac8d6aa48","disposition":"still accurate","rationale":"The generated reference now includes the expanded connection display guarantee and exploded browser association; its role and the section-scoped review procedure remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1aa3b174a3cb6c1a53a41ec8f878096ed9d79873b8c48f4b43377409b31e39a8","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"8945a4c298b88ac462d599ae1a9f36f19556c8aca70b213a4862957c64375fd1","disposition":"updated","rationale":"Batch submission validates every distinct section decision before writing and retains individual source-bound receipts; changed source still invalidates reviews and no accept-all operation exists."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -103,6 +123,9 @@ reviews. Its report is `artifacts/developer-documentation.json`; it is an output
 an input required by a fresh clone. See the [generated reference](reference.md) for
 current commands and manifest-owned check/owner pointers.
 
+Record formal reviews after source closure, not after each tuning edit. A later source
+change still invalidates affected reviews and must be reviewed before final verification.
+
 1. Run `npm run docs:impact`. It lists affected sections and changed dependencies;
    it does not acknowledge them. Repair invalid links or symbols first.
 2. For each stale section, inspect the named source and explanation. Update the text
@@ -114,6 +137,18 @@ current commands and manifest-owned check/owner pointers.
    npm run docs:review -- docs/development/architecture.md trace-an-edit updated "The command admission owner moved; the flow now names its new entry point."
    npm run docs:review -- docs/development/architecture.md trace-an-edit "still accurate" "The admission helper now rejects an additional malformed field; candidate compilation and atomic history ownership remain unchanged."
    ```
+
+   To submit several separately reviewed decisions in one invocation, put an array
+   in a temporary JSON file and run `npm run docs:review -- --batch <decisions.json>`:
+
+   ```json
+   [{"file":"docs/development/architecture.md","id":"trace-an-edit","disposition":"still accurate","rationale":"The new view toggle does not change command admission or history ownership."}]
+   ```
+
+   Every row requires its own file, section ID, disposition and technical rationale.
+   Invalid or duplicate rows are rejected before writing. This is not accept-all:
+   source is rechecked for each write; if a concurrent edit interrupts the batch,
+   earlier individual receipts remain and the gate reports what still needs review.
 
 4. Run `npm run docs:generate` if generated command/check facts changed, then
    `npm run docs:check`, focused tests and final verification on the final source.
@@ -144,7 +179,7 @@ covers the checking algorithm, not the contents of every document it can inspect
 An unrelated edit, timestamp change or same-content commit cannot refresh a stale
 review. Dynamic inputs can force broad conservative coverage; the impact report
 explains that fallback. Narrow, statically resolvable owner links keep routine
-review scope smaller. There is no bulk acceptance command. Uncertain source scope expands coverage.
+review scope smaller. There is no accept-all command; batch submission preserves individual decisions. Uncertain source scope expands coverage.
 These gates establish current references and an explicit review record. They cannot
 prove that prose is true or that an agent understood it; behavioral tests and source
 review remain necessary.

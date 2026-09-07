@@ -683,8 +683,7 @@ export function inspectDocumentation(root = process.cwd(), { files } = {}) {
   }
   return { errors, sections, generated };
 }
-/** Record exactly one current section disposition; never bulk-accept stale prose. */
-export function reviewSection(root, file, id, { disposition, rationale } = {}) {
+function prepareReview(root, file, id, { disposition, rationale } = {}) {
   root = realpathSync(root);
   const invalid = dispositionError({ disposition, rationale });
   if (invalid) throw Error(invalid);
@@ -698,6 +697,30 @@ export function reviewSection(root, file, id, { disposition, rationale } = {}) {
     throw Error(`duplicate section ID ${file}#${id}; choose unique headings before review`);
   if (!section) throw Error(`unknown implementation-backed section ${file}#${id}`);
   if (section.issues.length) throw Error(section.issues.join('\n'));
+  return { before, section };
+}
+
+/** Each row is a separate reviewed decision. Validate the whole submission before writing. */
+export function reviewSections(root, rows) {
+  if (!Array.isArray(rows) || !rows.length) throw Error('review batch must be a nonempty array');
+  const seen = new Set();
+  for (const row of rows) {
+    if (!row || Object.keys(row).sort().join(',') !== 'disposition,file,id,rationale')
+      throw Error('each review needs file, id, disposition and rationale');
+    const key = `${row.file}#${row.id}`;
+    if (seen.has(key)) throw Error(`duplicate review: ${key}`);
+    seen.add(key);
+    prepareReview(root, row.file, row.id, row);
+  }
+  // Revalidate each section at write time. A concurrent change can stop the batch;
+  // already written individual receipts remain valid, never a blanket approval.
+  return rows.map((row) => reviewSection(root, row.file, row.id, row));
+}
+
+/** Record exactly one current section disposition; never bulk-accept stale prose. */
+export function reviewSection(root, file, id, { disposition, rationale } = {}) {
+  root = realpathSync(root);
+  const { before, section } = prepareReview(root, file, id, { disposition, rationale });
   const current = inspectDocumentation(root, { files: [file] }).sections.find(
     (row) => row.id === id,
   );

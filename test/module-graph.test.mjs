@@ -95,3 +95,34 @@ test('type-only declaration dependencies select consuming tests but never become
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('static module-relative file reads select their data while dynamic reads remain conservative', () => {
+  const root = mkdtempSync(join(tmpdir(), 'sim-static-read-'));
+  const put = (path, source) => {
+    mkdirSync(join(root, path, '..'), { recursive: true });
+    writeFileSync(join(root, path), source);
+  };
+  try {
+    put('config/runtime.json', '{}');
+    put('src/unrelated.mjs', 'export {};');
+    put(
+      'scripts/read.mjs',
+      "import { readFileSync } from 'node:fs'; export const data = readFileSync(new URL('../config/runtime.json', import.meta.url), 'utf8');",
+    );
+    put('test/read.test.mjs', "import '../scripts/read.mjs';");
+    let graph = buildModuleGraph(root, { purpose: 'test-selection' });
+    assert.deepEqual(affectedTests(graph, ['src/unrelated.mjs']), []);
+    assert.deepEqual(affectedTests(graph, ['config/runtime.json']), ['test/read.test.mjs']);
+    for (const source of [
+      'readFileSync(path)',
+      "readFileSync(new URL('../config/runtime.json', otherBase))",
+      "readFileSync(new URL('../config/missing.json', import.meta.url))",
+    ]) {
+      put('scripts/read.mjs', source);
+      graph = buildModuleGraph(root, { purpose: 'test-selection' });
+      assert.deepEqual(affectedTests(graph, ['src/unrelated.mjs']), ['test/read.test.mjs']);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

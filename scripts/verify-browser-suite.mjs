@@ -1,3 +1,4 @@
+import { assertLocalServerAccess } from './runtime-preflight.mjs';
 import { build, preview, createServer } from 'vite';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
@@ -16,6 +17,7 @@ export async function prepareBrowserBuild(context) {
   initializeVerificationEnvironment();
   if (context)
     return context.check('build:browser', { mode: 'production' }, () => prepareBrowserBuild());
+  await assertLocalServerAccess();
   const source = sourceIdentity();
   checkBreadth();
   validateBrowserCoverage();

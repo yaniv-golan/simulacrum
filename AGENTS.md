@@ -55,7 +55,8 @@ Before choosing an implementation owner, use the [developer guide](docs/developm
 [architecture map](docs/development/architecture.md) and matching [change recipe](docs/development/recipes.md).
 `npm run docs:navigate -- <symbol-or-path>` finds current owners/consumers;
 `npm run inspect:change -- --files <paths>` combines owners, invariants, conservative
-test selection, registered browser checks and affected explanations without executing them;
+test selection, registered browser checks and affected explanations without executing them
+(use `--json` for full detail);
 `npm run test:unit -- --files <paths> --summary` explains checks without running them.
 Remove `--summary` to execute. Reuse the existing boundary and invariant test contracts;
 register new guarantees in the manifest rather than another hand-maintained inventory.
@@ -85,6 +86,8 @@ iterations, re-derive the decomposition from measurements instead of tuning blin
 After structural changes or integrating another agent's edits, rerun navigation and
 focused-test discovery. Before final verification, run `npm run docs:impact`, repair
 broken references, and review each stale explanation with `npm run docs:review`.
+Record dispositions after source closure; `--batch <decisions.json>` submits separate
+section decisions together, never accepts all stale explanations automatically.
 Update the explanation when behavior or ownership changed; otherwise record a specific
 reason it remains accurate. `npm run docs:check` is a required structural gate in CI
 and final verification. It automatically regenerates source-bound discovery and rejects

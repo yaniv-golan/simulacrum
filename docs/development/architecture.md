@@ -1,6 +1,6 @@
 # Architecture and policy owners
 
-<!-- doc-review {"version":1,"fingerprint":"9f64a52606526e3d7858b2ac844060bed66f2c985bdd746ee40dfdb7afb4dec0","dependencies":"docs/development/.reviews/architecture/architecture-and-policy-owners.json","dependencyDigest":"389315757bee4b19ed1556f7a2eb4d190a41e3f6b18b1317df27f4ba17512b90","disposition":"still accurate","rationale":"The manifest extends the existing connection display invariant at M3b; runtime, AGENTS layer edges and manifest milestone authority remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"7b6cd0163e47e0dd47844d39d858bfbbd70419fccbc4df4fef7eb555926f5478","dependencies":"docs/development/.reviews/architecture/architecture-and-policy-owners.json","dependencyDigest":"59988f1ef6c3270254491b45e43f297576ae9a28a6ff059b95f27b569de73282","disposition":"still accurate","rationale":"The runtime admission check belongs to the existing gate-integrity rule; runtime, Course, AGENTS layer boundaries and manifest milestone authority remain unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

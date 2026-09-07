@@ -41,7 +41,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"e37f64693016eae468e69b5754e51ed584f7e69b634b1ec13ed26ca092233e4e","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"9120dd2dc6cd05638674969a14355b6dc03cc1cb7d13994f5befa4c07d785872","disposition":"updated","rationale":"The browser-verifier reference now covers its implementation rather than arbitrary inspected files. The recipe explicitly requires executing it against the served build for behavioral evidence."} -->
+<!-- doc-review {"version":1,"fingerprint":"2fffb7e4fa577549f4f7a1c49b08e170c1c5552d1f456115e78c4b48edac0f3c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"96c6c8743f0a6fe8e5c6a4e97aca3aa1a1b091330d54783f394452398d6432fc","disposition":"still accurate","rationale":"The shared browser evidence helper adds a projected-center pointer click without changing input ownership, model proposals or command admission; interaction verifiers still require observed behavior on the matching build."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.

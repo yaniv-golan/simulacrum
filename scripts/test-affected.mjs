@@ -1,3 +1,4 @@
+import { assertRuntime } from './runtime-preflight.mjs';
 import { analyzeSnapshot } from './analysis-snapshot.mjs';
 import {
   parseTestSelectionArgs,
@@ -6,6 +7,7 @@ import {
 } from './test-selection.mjs';
 import { runProcess } from './run-check.mjs';
 import { buildModuleGraph, explainAffectedTests } from './module-graph.mjs';
+assertRuntime();
 const options = parseTestSelectionArgs(process.argv.slice(2));
 const started = performance.now();
 function remaining() {
