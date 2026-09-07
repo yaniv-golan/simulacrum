@@ -3,8 +3,8 @@
   "dependencies": {
     "package-lock.json": "05895ca4f634dd4a9e0cd1297bc78e61780252818a90ac8409cb6d7ebf09f969",
     "package.json": "66cf3224647ec2fe7858b639eebeca48ff29c1a28ea87bcc03b2d806f2ee7733",
-    "src/model/assembly.mjs": "037eaeddbcd0df567d81c22d8c934d898569468ea1b63f22e2734fb763e591a1",
-    "src/model/blueprint.mjs": "390705290f0c6b81998370ed87a9363da6fc207f7d72a65cee0e4e8ccb061e82",
+    "src/model/assembly.mjs": "1dc43d2c2c1f2d85fbae0ef5994f1576696ce432e7bd28a69931eb8a41f35cb2",
+    "src/model/blueprint.mjs": "7b66c48381aef0b007a644a765bc40567f7f811db7d9ee9d46f6896a847e8de3",
     "src/model/boundaries.d.ts": "9b2a01a18d52d8bb78130b6ebfb583fae90900d0db7db6bdec32b41ff42b6c98",
     "src/model/catalog.mjs": "abad4686c17d94ed44092563ac8f24421d1cce93fcbd695e8bee6f488804db09",
     "src/model/compile-body.mjs": "ca526164f6d7b0f879d814373952d7d2654c3215431a579eab706daec856a304",
@@ -12,8 +12,8 @@
     "src/model/control-bindings.mjs": "ccdd408b593910d9ad2ad0de345b5339243742e7939ce0a364792fc44af0196f",
     "src/model/display-units.mjs": "6f816b6465becc23ac98147b059d48e7b9ade38825b710ed951f66d20959d69c",
     "src/model/environment.mjs": "40efdce97605552249177aad5f7cafaf0dd41ad884d0ec5ad1e92863e8b6e52b",
-    "src/model/generated/blueprint-types.d.ts": "fca2608ef648f2897196fc41e14dfe734b3dde819b9a3f80c9bbf83bab65ea74",
-    "src/model/generated/blueprint-validator.mjs": "09ec9e9cb8b5b38f5d9e850d3ea8acdd626a48196918089e968cf34dcea684e9",
+    "src/model/generated/blueprint-types.d.ts": "16738efb3cd9058550980d72721f9776f27df5bacc884fa234e59371ea836ce8",
+    "src/model/generated/blueprint-validator.mjs": "35a9d388bc38a01aece1c9f99a69619993ccdda78e851ccc395a7c66cdbfa7d2",
     "src/model/geometry.mjs": "9f76388f92784502c43136fd0cbd41199415dab557da5f03f0d061c655e799d7",
     "src/model/messages.mjs": "4b7c2881710aec6e0691403620e696f88e56a5d7b83b2889f0b312fa6a298c23",
     "src/model/mirror-assembly.mjs": "ca3585eb3589b1233fd84be40b2eafbc5e940cd933f127cb99ac9b6165084203",
@@ -25,12 +25,13 @@
     "src/model/transforms.mjs": "d72cac96acec8f21c2dc73bb6cee78d0c97223a68984b59b46d26bc0ececfb46",
     "src/presentation/placement-lifecycle.mjs": "004f7ef54368ff081b239ec09cb95635a51db8b5e4bd9e6953e3915de9cf17ad",
     "src/presentation/surface-anchor-layout.mjs": "f8c8a00db5504e7a1e8a29ad259f393d10b91408175b160ffaa360ab76e5de6a",
-    "src/presentation/surface-controls.mjs": "e1fde22ec9a3d03e532484aa84dafc4e0c6e75e0f7d599e86eec8f115af5c996",
+    "src/presentation/surface-controls.mjs": "58875a47ca8922e5550c1863ce212cf1e84a545d8ed213255e5817c2708ec4d8",
     "src/model/editing.mjs": "f2cd8c1ad4bf6ef6f8f2ace4060086c802d1c33a4987c6fd4f3141009966420b",
     "src/presentation/editing-controls.mjs": "a33e6e20c78ae1e55124f3d54fbb440dd2837fbc53867d2dd33edfa019cc3dbe",
     "src/presentation/assembly-mirror.mjs": "24dd77973fcf7b22e37164dface4e11898a6eeaeda048325d0e8a19aeb230b99",
-    "src/core/workshop.mjs": "4200e8545ba066caaa5aa243a236387acd4287826052a12f32dfe938c3e89394",
-    "src/model/workshop-command.d.ts": "50d7599f2f004c8476db64e4aa08531a3dce8c4350584282ce20381a98e68b63",
+    "src/core/workshop.mjs": "069a8b5e1a3075477252ce972cb1050e101d855bc35d5fb89f1cf04a5012015d",
+    "src/model/reusable-assemblies.mjs": "b0273bae78b1790cdabe6fadc9cc499487f3c7a61a717cbb9a5d2eaccf5797e6",
+    "src/model/workshop-command.d.ts": "46844a2fd5ce0585c39a416a3717ffe8ba4c356495d4ee37e006d4f5793d8313",
     "src/model/workshop-command.mjs": "47e2b86f85f36e5e408bc0743878f1dcb9f1d7f3bcfdccc1d030c8882ded7f73",
     "src/simulation/controllers.mjs": "ed276ab5f39f6deb51a69143b504906c70670c128b0265d481113b6e47a09171",
     "src/simulation/physics/law/constraints.mjs": "b5682effa5851da1dc9f8f298096c3e23ca812da7a894f72ada27c520a4b37cd",
@@ -48,6 +49,6 @@
     "scripts/source-identity.mjs": "1d0f001521fa9bf3133b6fdcbc90ffbc33c11186650f78c429712b90d1c43bf0",
     "scripts/verify-mirror-browser.mjs": "32e8d2b5a29347ddebfbe38d1c5ced82aa19cf346ac82ddb2072e3ffccc72bc3",
     "src/model/connection-test-paths.mjs": "ae3f9f3e2b350d833b8757ddb6cc326cf8c1b356202976e74b95ae96e7bc157d",
-    "src/presentation/vehicle-controls.mjs": "00360ede87c0c435fc1fd5a11f75f1e40fb742b902e620a73dd215593c96721b"
+    "src/presentation/vehicle-controls.mjs": "0c9d508ec0118258de010ca674b79be154f2b049fc7fb9dc7d594c5564f9df05"
   }
 }

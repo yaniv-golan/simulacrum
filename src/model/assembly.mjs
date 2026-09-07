@@ -329,6 +329,7 @@ function surfaceMountCandidate(
     twist = 0,
     id,
     replaceConnection,
+    assemblyId,
     attach = true,
     insertPart,
   } = {},
@@ -358,7 +359,13 @@ function surfaceMountCandidate(
     targetFace = surfaceRegions(target).find((r) => r.id === targetRegion);
   if (!sourceFace || !targetFace) reject('UNKNOWN_SURFACE', 'region');
   if (![u, v, twist].every(Number.isFinite)) reject('SURFACE_OUT_OF_BOUNDS', 'surface');
-  const moving = new Set(mechanicalGroup(next, part));
+  const group = assemblyId === undefined ? null : next.assemblies?.find((g) => g.id === assemblyId);
+  if (assemblyId !== undefined && (!group || !group.ids.includes(part)))
+    reject('INVALID_ENDPOINT', 'assemblyId');
+  const originalMoving = new Set(mechanicalGroup(next, part));
+  const moving = new Set(
+    group ? group.ids.flatMap((id) => mechanicalGroup(next, id)) : originalMoving,
+  );
   if (moving.has(targetPart)) reject('MOUNT_HELD_BY_ANOTHER_CONNECTION', 'targetPart');
   const a = { part: targetPart, surface: { region: targetRegion, u, v, twist } },
     b = { part, surface: { region: sourceRegion, u: 0, v: 0, twist: 0 } };
@@ -374,6 +381,12 @@ function surfaceMountCandidate(
     { part: target, port: targetPort },
     { part: source, port: resolveSurfaceEndpoint(source, b) },
   );
+  if (group) {
+    const after = next.parts.find((p) => p.id === part);
+    for (const member of next.parts)
+      if (moving.has(member.id) && !originalMoving.has(member.id))
+        Object.assign(member, transformPoseBetweenFrames(member, source, after));
+  }
   const proposal = { blueprint: next, movingPartIds: [...moving] };
   observe(proposal);
   const width =

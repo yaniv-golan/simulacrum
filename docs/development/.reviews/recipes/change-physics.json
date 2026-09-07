@@ -6,7 +6,7 @@
     "src/model/boundaries.d.ts": "9b2a01a18d52d8bb78130b6ebfb583fae90900d0db7db6bdec32b41ff42b6c98",
     "src/model/catalog.mjs": "abad4686c17d94ed44092563ac8f24421d1cce93fcbd695e8bee6f488804db09",
     "src/model/control-bindings.mjs": "ccdd408b593910d9ad2ad0de345b5339243742e7939ce0a364792fc44af0196f",
-    "src/model/generated/blueprint-types.d.ts": "fca2608ef648f2897196fc41e14dfe734b3dde819b9a3f80c9bbf83bab65ea74",
+    "src/model/generated/blueprint-types.d.ts": "16738efb3cd9058550980d72721f9776f27df5bacc884fa234e59371ea836ce8",
     "src/model/geometry.mjs": "9f76388f92784502c43136fd0cbd41199415dab557da5f03f0d061c655e799d7",
     "src/model/tick.mjs": "2e18e64033fcbdcad0c4cd85a0bd5a90715fa16ada6714afabf00b51e03455ac",
     "src/model/transforms.mjs": "d72cac96acec8f21c2dc73bb6cee78d0c97223a68984b59b46d26bc0ececfb46",

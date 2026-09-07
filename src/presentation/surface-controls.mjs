@@ -315,9 +315,22 @@ export function createSurfaceControls({
     const base = structuredClone(bp());
     if (state.replaceConnection)
       base.connections = base.connections.filter((c) => c.id !== state.replaceConnection);
-    return state.insertPart ? [state.part] : mechanicalGroup(base, state.part);
+    return state.insertPart
+      ? [state.part]
+      : state.assemblyId
+        ? [
+            ...new Set(
+              base.assemblies
+                .find((g) => g.id === state.assemblyId)
+                .ids.flatMap((id) => mechanicalGroup(base, id)),
+            ),
+          ]
+        : mechanicalGroup(base, state.part);
   }
-  function start(part, { replaceConnection, insertPart, drag = false } = {}) {
+  function start(
+    part,
+    { replaceConnection, insertPart, drag = false, assemblyId, sourceRegion, targetEndpoint } = {},
+  ) {
     if (disposed || placement.read().kind === 'committing') return false;
     cancel(false);
     const value = insertPart ?? bp().parts.find((p) => p.id === part);
@@ -326,6 +339,7 @@ export function createSurfaceControls({
       part,
       replaceConnection,
       insertPart,
+      assemblyId,
       locked: false,
       target: null,
       blueprint: JSON.stringify(bp()),
@@ -341,6 +355,8 @@ export function createSurfaceControls({
     }
     source.value =
       surfaceRegions(value).find((r) => r.id === 'bottom')?.id ?? surfaceRegions(value)[0].id;
+    if (sourceRegion) source.value = sourceRegion;
+    source.disabled = !!assemblyId;
     target.replaceChildren(node('option', 'Choose a face in the scene'));
     const excluded = moving();
     for (const p of bp().parts)
@@ -375,6 +391,14 @@ export function createSurfaceControls({
         target.value = JSON.stringify([other.part, other.surface.region]);
       }
     }
+    if (targetEndpoint?.surface) {
+      state.target = { part: targetEndpoint.part, region: targetEndpoint.surface.region };
+      state.locked = true;
+      u.value = String(metresToMillimetres(targetEndpoint.surface.u));
+      v.value = String(metresToMillimetres(targetEndpoint.surface.v));
+      angle.value = String(radiansToDegrees(targetEndpoint.surface.twist));
+      target.value = JSON.stringify([targetEndpoint.part, targetEndpoint.surface.region]);
+    }
     update();
     onInteraction?.('surface-start', read());
     return true;
@@ -408,6 +432,7 @@ export function createSurfaceControls({
       id: state.replaceConnection ?? nextId(),
       ...(state.replaceConnection ? { replaceConnection: state.replaceConnection } : {}),
       ...(state.insertPart ? { insertPart: state.insertPart } : {}),
+      ...(state.assemblyId ? { assemblyId: state.assemblyId } : {}),
       attach: placementMode.value === 'attach',
     };
   }

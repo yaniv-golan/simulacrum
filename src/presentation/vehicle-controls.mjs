@@ -312,13 +312,17 @@ export function createVehicleControls({ send, select, container }) {
         input.type = 'number';
         input.min = '-1';
         input.max = '1';
-        input.step = '0.1';
+        input.step = 'any';
         input.value = String(binding[axis].gain);
         input.disabled = !editable;
         input.setAttribute('aria-label', `${axis} output strength`);
         input.onchange = () => {
-          if (input.checkValidity())
+          if (input.value !== '' && input.checkValidity()) {
             save({ ...binding, [axis]: { ...binding[axis], gain: Number(input.value) } });
+          } else {
+            input.reportValidity();
+            input.value = String(binding[axis].gain);
+          }
         };
         label.append(input);
         group.append(label);

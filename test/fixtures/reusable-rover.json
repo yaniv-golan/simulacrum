@@ -1,0 +1,680 @@
+{
+  "version": 3,
+  "id": "machine",
+  "name": "My machine",
+  "parts": [
+    {
+      "id": "part-1",
+      "type": "poweredMotor",
+      "name": "Powered Motor",
+      "position": [0.67, 0.4, 0.12],
+      "rotation": [0, 0, 0, 1],
+      "authoredMaterial": {},
+      "parameters": {
+        "torqueConstant": 0.4,
+        "resistance": 1,
+        "currentLimit": 10,
+        "defaultDuty": 1,
+        "inputPolarity": 1
+      }
+    },
+    {
+      "id": "part-2",
+      "type": "gripWheel",
+      "name": "Grip Wheel",
+      "position": [0.815, 0.4, 0.12],
+      "rotation": [0, 0, 0, 1],
+      "authoredMaterial": {},
+      "parameters": {
+        "diameter": 0.2
+      }
+    },
+    {
+      "id": "part-3",
+      "type": "commandReceiver",
+      "name": "Command Receiver",
+      "position": [0.35000000000000003, 0.44000000000000006, 0.14999999999999997],
+      "rotation": [0, 6.123233995736766e-17, 0, 1],
+      "authoredMaterial": {},
+      "parameters": {
+        "duty": 0
+      },
+      "controlBinding": {
+        "mode": "hold",
+        "drive": {
+          "gain": 1,
+          "positiveKeys": ["KeyW", "ArrowUp"],
+          "negativeKeys": ["KeyS", "ArrowDown"]
+        },
+        "steer": {
+          "gain": -1,
+          "positiveKeys": ["KeyD", "ArrowRight"],
+          "negativeKeys": ["KeyA", "ArrowLeft"]
+        }
+      }
+    },
+    {
+      "id": "part-4",
+      "type": "chassis",
+      "name": "Chassis",
+      "position": [0.45, 0.4, 0],
+      "rotation": [0, 0, 0, 1],
+      "authoredMaterial": {},
+      "parameters": {}
+    },
+    {
+      "id": "part-5",
+      "type": "poweredMotor",
+      "name": "Powered Motor-2",
+      "position": [0.67, 0.4, -0.12],
+      "rotation": [0, 0, 0, 1],
+      "authoredMaterial": {},
+      "parameters": {
+        "torqueConstant": 0.4,
+        "resistance": 1,
+        "currentLimit": 10,
+        "defaultDuty": 1,
+        "inputPolarity": 1
+      }
+    },
+    {
+      "id": "part-6",
+      "type": "gripWheel",
+      "name": "Grip Wheel-2",
+      "position": [0.8150000000000001, 0.4, -0.12],
+      "rotation": [0, 0, 0, 1],
+      "authoredMaterial": {},
+      "parameters": {
+        "diameter": 0.2
+      }
+    },
+    {
+      "id": "part-7",
+      "type": "commandReceiver",
+      "name": "Command Receiver-2",
+      "position": [0.35000000000000003, 0.44000000000000006, -0.14999999999999997],
+      "rotation": [0, 6.123233995736766e-17, 0, 1],
+      "authoredMaterial": {},
+      "parameters": {
+        "duty": 0
+      },
+      "controlBinding": {
+        "mode": "hold",
+        "drive": {
+          "gain": 1,
+          "positiveKeys": ["KeyW", "ArrowUp"],
+          "negativeKeys": ["KeyS", "ArrowDown"]
+        },
+        "steer": {
+          "gain": -1,
+          "positiveKeys": ["KeyD", "ArrowRight"],
+          "negativeKeys": ["KeyA", "ArrowLeft"]
+        }
+      }
+    },
+    {
+      "id": "part-8",
+      "type": "poweredMotor",
+      "name": "Powered Motor-3",
+      "position": [0.22999999999999998, 0.4, -0.12],
+      "rotation": [0, 1, 0, 0],
+      "authoredMaterial": {},
+      "parameters": {
+        "torqueConstant": 0.4,
+        "resistance": 1,
+        "currentLimit": 10,
+        "defaultDuty": 1,
+        "inputPolarity": -1
+      }
+    },
+    {
+      "id": "part-9",
+      "type": "gripWheel",
+      "name": "Grip Wheel-3",
+      "position": [0.08499999999999996, 0.4, -0.12],
+      "rotation": [0, 1, 0, 0],
+      "authoredMaterial": {},
+      "parameters": {
+        "diameter": 0.2
+      }
+    },
+    {
+      "id": "part-10",
+      "type": "commandReceiver",
+      "name": "Command Receiver-3",
+      "position": [0.55, 0.44000000000000006, 0.14999999999999997],
+      "rotation": [0, 1, 0, 0],
+      "authoredMaterial": {},
+      "parameters": {
+        "duty": 0
+      },
+      "controlBinding": {
+        "mode": "hold",
+        "drive": {
+          "gain": 1,
+          "positiveKeys": ["KeyW", "ArrowUp"],
+          "negativeKeys": ["KeyS", "ArrowDown"]
+        },
+        "steer": {
+          "gain": 1,
+          "positiveKeys": ["KeyD", "ArrowRight"],
+          "negativeKeys": ["KeyA", "ArrowLeft"]
+        }
+      }
+    },
+    {
+      "id": "part-11",
+      "type": "poweredMotor",
+      "name": "Powered Motor-4",
+      "position": [0.22999999999999998, 0.4, 0.12],
+      "rotation": [0, 1, 0, 0],
+      "authoredMaterial": {},
+      "parameters": {
+        "torqueConstant": 0.4,
+        "resistance": 1,
+        "currentLimit": 10,
+        "defaultDuty": 1,
+        "inputPolarity": -1
+      }
+    },
+    {
+      "id": "part-12",
+      "type": "gripWheel",
+      "name": "Grip Wheel-4",
+      "position": [0.08499999999999999, 0.4, 0.12],
+      "rotation": [0, 1, 0, 0],
+      "authoredMaterial": {},
+      "parameters": {
+        "diameter": 0.2
+      }
+    },
+    {
+      "id": "part-13",
+      "type": "commandReceiver",
+      "name": "Command Receiver-4",
+      "position": [0.55, 0.44000000000000006, -0.14999999999999997],
+      "rotation": [0, 6.123233995736766e-17, 0, 1],
+      "authoredMaterial": {},
+      "parameters": {
+        "duty": 0
+      },
+      "controlBinding": {
+        "mode": "hold",
+        "drive": {
+          "gain": 1,
+          "positiveKeys": ["KeyW", "ArrowUp"],
+          "negativeKeys": ["KeyS", "ArrowDown"]
+        },
+        "steer": {
+          "gain": 1,
+          "positiveKeys": ["KeyD", "ArrowRight"],
+          "negativeKeys": ["KeyA", "ArrowLeft"]
+        }
+      }
+    },
+    {
+      "id": "part-14",
+      "type": "powerCell",
+      "name": "Power Cell",
+      "position": [0.45, 0.47000000000000003, 0],
+      "rotation": [0, 6.123233995736766e-17, 0, 1],
+      "authoredMaterial": {},
+      "parameters": {
+        "voltage": 24,
+        "capacityJ": 36000,
+        "internalResistance": 0.1,
+        "currentLimit": 20
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "connection-1",
+      "kind": "shaft",
+      "a": {
+        "part": "part-2",
+        "port": "axle"
+      },
+      "b": {
+        "part": "part-1",
+        "port": "shaft"
+      }
+    },
+    {
+      "id": "connection-2",
+      "kind": "signal",
+      "a": {
+        "part": "part-3",
+        "port": "signal"
+      },
+      "b": {
+        "part": "part-1",
+        "port": "signal"
+      }
+    },
+    {
+      "id": "assembly-link-1",
+      "kind": "fixed",
+      "a": {
+        "part": "part-4",
+        "surface": {
+          "region": "right",
+          "u": 0,
+          "v": 0.12,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "part-1",
+        "surface": {
+          "region": "left",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "connection-4",
+      "kind": "signal",
+      "a": {
+        "part": "part-7",
+        "port": "signal"
+      },
+      "b": {
+        "part": "part-5",
+        "port": "signal"
+      }
+    },
+    {
+      "id": "surface-1",
+      "kind": "fixed",
+      "a": {
+        "part": "part-4",
+        "surface": {
+          "region": "right",
+          "u": 0,
+          "v": -0.12,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "part-5",
+        "surface": {
+          "region": "left",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "connection-3",
+      "kind": "shaft",
+      "a": {
+        "part": "part-5",
+        "port": "shaft"
+      },
+      "b": {
+        "part": "part-6",
+        "port": "axle"
+      }
+    },
+    {
+      "id": "connection-5",
+      "kind": "shaft",
+      "a": {
+        "part": "part-9",
+        "port": "axle"
+      },
+      "b": {
+        "part": "part-8",
+        "port": "shaft"
+      }
+    },
+    {
+      "id": "connection-6",
+      "kind": "signal",
+      "a": {
+        "part": "part-10",
+        "port": "signal"
+      },
+      "b": {
+        "part": "part-8",
+        "port": "signal"
+      }
+    },
+    {
+      "id": "assembly-link-2",
+      "kind": "fixed",
+      "a": {
+        "part": "part-4",
+        "surface": {
+          "region": "left",
+          "u": 0,
+          "v": 0.12,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "part-8",
+        "surface": {
+          "region": "left",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "connection-8",
+      "kind": "signal",
+      "a": {
+        "part": "part-13",
+        "port": "signal"
+      },
+      "b": {
+        "part": "part-11",
+        "port": "signal"
+      }
+    },
+    {
+      "id": "surface-2",
+      "kind": "fixed",
+      "a": {
+        "part": "part-4",
+        "surface": {
+          "region": "left",
+          "u": 0,
+          "v": -0.12,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "part-11",
+        "surface": {
+          "region": "left",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "connection-7",
+      "kind": "shaft",
+      "a": {
+        "part": "part-11",
+        "port": "shaft"
+      },
+      "b": {
+        "part": "part-12",
+        "port": "axle"
+      }
+    },
+    {
+      "id": "assembly-link-3",
+      "kind": "power",
+      "a": {
+        "part": "part-1",
+        "port": "power"
+      },
+      "b": {
+        "part": "part-14",
+        "port": "power"
+      }
+    },
+    {
+      "id": "assembly-link-4",
+      "kind": "power",
+      "a": {
+        "part": "part-5",
+        "port": "power"
+      },
+      "b": {
+        "part": "part-14",
+        "port": "power"
+      }
+    },
+    {
+      "id": "assembly-link-5",
+      "kind": "power",
+      "a": {
+        "part": "part-8",
+        "port": "power"
+      },
+      "b": {
+        "part": "part-14",
+        "port": "power"
+      }
+    },
+    {
+      "id": "assembly-link-6",
+      "kind": "power",
+      "a": {
+        "part": "part-11",
+        "port": "power"
+      },
+      "b": {
+        "part": "part-14",
+        "port": "power"
+      }
+    },
+    {
+      "id": "surface-3",
+      "kind": "fixed",
+      "a": {
+        "part": "part-4",
+        "surface": {
+          "region": "top",
+          "u": 0.1,
+          "v": 0.15,
+          "twist": -3.141592653589793
+        }
+      },
+      "b": {
+        "part": "part-3",
+        "surface": {
+          "region": "bottom",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "surface-4",
+      "kind": "fixed",
+      "a": {
+        "part": "part-4",
+        "surface": {
+          "region": "top",
+          "u": 0.1,
+          "v": -0.15,
+          "twist": -3.141592653589793
+        }
+      },
+      "b": {
+        "part": "part-7",
+        "surface": {
+          "region": "bottom",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "surface-5",
+      "kind": "fixed",
+      "a": {
+        "part": "part-4",
+        "surface": {
+          "region": "top",
+          "u": -0.1,
+          "v": 0.15,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "part-10",
+        "surface": {
+          "region": "bottom",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "surface-6",
+      "kind": "fixed",
+      "a": {
+        "part": "part-4",
+        "surface": {
+          "region": "top",
+          "u": -0.1,
+          "v": -0.15,
+          "twist": -3.141592653589793
+        }
+      },
+      "b": {
+        "part": "part-13",
+        "surface": {
+          "region": "bottom",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "surface-7",
+      "kind": "fixed",
+      "a": {
+        "part": "part-4",
+        "surface": {
+          "region": "top",
+          "u": 0,
+          "v": 0,
+          "twist": -3.141592653589793
+        }
+      },
+      "b": {
+        "part": "part-14",
+        "surface": {
+          "region": "bottom",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    }
+  ],
+  "assemblies": [
+    {
+      "id": "assembly-1",
+      "name": "Rover corner",
+      "ids": ["part-3", "part-1", "part-2"],
+      "ports": [
+        {
+          "name": "Power",
+          "endpoint": {
+            "part": "part-1",
+            "port": "power"
+          }
+        },
+        {
+          "name": "Chassis mount",
+          "endpoint": {
+            "part": "part-1",
+            "surface": {
+              "region": "left",
+              "u": 0,
+              "v": 0,
+              "twist": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "assembly-2",
+      "name": "Rover corner-2",
+      "ids": ["part-7", "part-5", "part-6"],
+      "ports": [
+        {
+          "name": "Power",
+          "endpoint": {
+            "part": "part-5",
+            "port": "power"
+          }
+        },
+        {
+          "name": "Chassis mount",
+          "endpoint": {
+            "part": "part-5",
+            "surface": {
+              "region": "left",
+              "u": 0,
+              "v": 0,
+              "twist": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "assembly-3",
+      "name": "Rover corner-3",
+      "ids": ["part-10", "part-8", "part-9"],
+      "ports": [
+        {
+          "name": "Power",
+          "endpoint": {
+            "part": "part-8",
+            "port": "power"
+          }
+        },
+        {
+          "name": "Chassis mount",
+          "endpoint": {
+            "part": "part-8",
+            "surface": {
+              "region": "left",
+              "u": 0,
+              "v": 0,
+              "twist": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "assembly-4",
+      "name": "Rover corner-4",
+      "ids": ["part-13", "part-11", "part-12"],
+      "ports": [
+        {
+          "name": "Power",
+          "endpoint": {
+            "part": "part-11",
+            "port": "power"
+          }
+        },
+        {
+          "name": "Chassis mount",
+          "endpoint": {
+            "part": "part-11",
+            "surface": {
+              "region": "left",
+              "u": 0,
+              "v": 0,
+              "twist": 0
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

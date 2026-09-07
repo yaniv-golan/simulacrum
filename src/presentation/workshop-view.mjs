@@ -1,3 +1,4 @@
+import { createAssemblyLibraryPanel } from './assembly-library.mjs';
 import { createDirectDrag } from './direct-drag.mjs';
 import { createConnectionTest } from './connection-test.mjs';
 import { createAssemblyMirror } from './assembly-mirror.mjs';
@@ -109,7 +110,17 @@ function button(text, fn, className = '') {
 }
 export function createWorkshopView(
   root,
-  { onCommand, onSave, onLoad, onFailure, onRecording, onInteraction, getCursor, guideSteps = [] },
+  {
+    onCommand,
+    onSave,
+    onLoad,
+    onFailure,
+    onRecording,
+    onInteraction,
+    getCursor,
+    assemblyLibrary,
+    guideSteps = [],
+  },
 ) {
   const wiringPreferences = createWiringPreferences();
   root.classList.add('workshop');
@@ -489,7 +500,29 @@ export function createWorkshopView(
   const right = element('div', 'inspector');
   right.setAttribute('aria-label', 'Selected part');
   machinePicker.append(partCount, partList);
+  const assemblies = assemblyLibrary
+    ? createAssemblyLibraryPanel({
+        library: assemblyLibrary,
+        send,
+        getCursor,
+        select: (id) => {
+          select(id);
+          right.scrollIntoView({ block: 'start' });
+        },
+        getSelected: () => selected,
+        mount: (group, alias, target) => {
+          select(alias.endpoint.part);
+          beginSurface(alias.endpoint.part, {
+            assemblyId: group.id,
+            sourceRegion: alias.endpoint.surface.region,
+            targetEndpoint: target,
+          });
+          right.scrollIntoView({ block: 'start' });
+        },
+      })
+    : null;
   rightPanel.append(machinePicker, right);
+  if (assemblies) left.insertBefore(assemblies.panel, palette);
   const health = button('', () => showMachineCheck(), 'machine-health');
   health.hidden = true;
   viewport.append(health);
@@ -757,7 +790,9 @@ export function createWorkshopView(
           '',
           frame.metadata.blueprint.parts.some((p) => p.type === 'poweredMotor')
             ? 'No checked wiring or control blocker found. Run the machine to test its motion and physical support.'
-            : 'Add a motor, a power cell and a driven wheel to check their connections.',
+            : frame.metadata.blueprint.parts.some((p) => p.type === 'poweredHinge')
+              ? 'Motor wiring checks do not cover powered hinges yet. Inspect each hinge’s power, control input and target angle, then Run to test motion and support.'
+              : 'No motor wiring checks apply to these parts. Inspect their connections, then Run to test motion and physical support.',
         ),
       );
     for (const issue of issues) {
@@ -848,7 +883,7 @@ export function createWorkshopView(
   follow.checked = true;
   follow.setAttribute('aria-label', 'Follow motion');
   followLabel.append(follow, document.createTextNode('Follow motion'));
-  tools.append(followLabel);
+  tools.append(followLabel, health);
   tools.append(
     element(
       'span',
@@ -1553,7 +1588,7 @@ export function createWorkshopView(
           row.append(button('Detach', () => send({ type: 'disconnect', id: edge.id }), 'quiet'));
         mounting.append(row);
       }
-      if (editable && !edges.length && !axleEdges.length && !surface.active()) {
+      if (editable && !edges.length && !surface.active()) {
         const snap = button('Snap to surface', () => beginSurface(part.id));
         snap.dataset.command = 'snap-surface';
         mounting.append(snap);
@@ -2806,6 +2841,7 @@ export function createWorkshopView(
     )
       tracedConnection = null;
     mirror.update(next);
+    assemblies?.update(next);
     vehicleControls.update(next);
     connectionTest.update(next);
     motionReadout.update(next);
@@ -3260,6 +3296,7 @@ export function createWorkshopView(
       window.removeEventListener('keydown', keydown);
       mirrorPlane.geometry.dispose();
       mirrorPlane.material.dispose();
+      assemblies?.dispose();
       connectionTest.dispose();
       directDrag.dispose();
       vehicleControls.dispose();

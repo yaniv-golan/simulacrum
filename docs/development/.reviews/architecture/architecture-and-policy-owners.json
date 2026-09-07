@@ -1,8 +1,8 @@
 {
   "version": 1,
   "dependencies": {
-    "docs/contracts/runtime-v1.md": "6aaac2b1f6effa7bd45b5ac4c7945658f2131ece115e2a64c86dab621b7bb6bb",
+    "docs/contracts/runtime-v1.md": "f75cdc8ef9f47702468e1502096880c562d2b036d7e2fafcd567df5de2dc1561",
     "AGENTS.md": "a16015cf800c788a3c4521c369c3358ede6927166049ad25e752809d8bf5b398",
-    "scripts/manifest.json": "8103cc915267a29ac1e4c044b693d75a8c70270b1311f366cb953268153a84b3"
+    "scripts/manifest.json": "7babc8c514b0b0891a4d4e08f6fbdc8bd50420f932b43d31816880c36f3aee82"
   }
 }

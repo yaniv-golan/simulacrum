@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"bcbe74a87954e7206408512140a68f918d08a093b64aa49b295323d106111973","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"ffbf81f881d666d052a85d226f3db9a650c42ce6b789bb3967f7f9bcf62b2fd3","disposition":"updated","rationale":"Discovery now defaults to a concise report with full JSON available, and formal documentation decisions are deferred until source closure while discovery remains required after structural changes."} -->
+<!-- doc-review {"version":1,"fingerprint":"b75d6565c86fbf3808892c575bdab4f42b3634732832f7ede82f376014ae145d","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"9d69b0b47004a228cdd22e62961e9417d19a8c97e5cb872c871ed13804cb1ad4","disposition":"still accurate","rationale":"The revised map and recipe retain owner discovery, fail-first checks, Node 24 and final source-bound verification; they now describe assembly interface editing and shared surface previews."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md) and the
 [recipe for your change](recipes.md) before choosing an owner. Use Node 24.18.x and
@@ -105,7 +105,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"1aa3b174a3cb6c1a53a41ec8f878096ed9d79873b8c48f4b43377409b31e39a8","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"8945a4c298b88ac462d599ae1a9f36f19556c8aca70b213a4862957c64375fd1","disposition":"updated","rationale":"Batch submission validates every distinct section decision before writing and retains individual source-bound receipts; changed source still invalidates reviews and no accept-all operation exists."} -->
+<!-- doc-review {"version":1,"fingerprint":"8e08c4853ff07939933e2358936f6a2ef983429e8f7d25921b418570e96e59a6","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"9c774beaa24cd00e8668131c00ca9fbc8e4a62571d7c1038d74d9baa8e67ec8a","disposition":"still accurate","rationale":"The generated reference includes the newly registered assembly UX browser check. The existing regeneration and per-section disposition process still applies."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes

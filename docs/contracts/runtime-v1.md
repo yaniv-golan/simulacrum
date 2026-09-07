@@ -39,6 +39,34 @@ restore validate before replacing state. No live library object escapes the phys
 door. A failed tick poisons the session; it publishes failure evidence, cannot continue
 or issue a checkpoint, and may recover only by validated restore or a new session.
 
+### Reusable assembly metadata
+
+Version 3 admits optional strict `assemblies` records with a name, unique ID,
+nonempty disjoint part IDs and named one-to-one endpoint aliases. Each alias must
+resolve to an ordinary endpoint of a member. Duplicate names (case-insensitive),
+duplicate endpoint aliases, unknown members and overlapping groups are rejected.
+Deleting a part removes its aliases and membership; empty groups disappear. Other
+edits must leave aliases valid or fail atomically. `edit-assembly` changes membership,
+name and aliases in one history transaction while preserving the group ID and ordinary
+parts/connections. Assemblies create no physical joints.
+
+Machine saves embed every ordinary part, connection and receiver binding. Assembly
+names and membership remain authored metadata, never numerical physics configuration.
+Library definitions use the same strict blueprint schema with exactly one group
+covering every part, and contain only the selected internal connections. Crossing
+connections are disclosed at capture and are not copied. Insertion makes fresh,
+independent copies with rigid frame transforms and unchanged authored properties.
+Receiver bindings retain their ordinary keys; identical keys can operate multiple
+receivers, and editing one instance does not change another.
+
+The application owns a separate version-1 browser library (50 items / 2 MiB of JSON
+text). Invalid or unavailable storage is reported without replacing existing data.
+Library additions, renames and removals are separate from machine Undo. A failed library write
+can leave a successfully created group in the machine, with a visible retry path.
+New snapshots receive distinct names and expose saved authored settings for inspection.
+Saving edited internals as a library item affects future placements only. Loading,
+replay and physical stepping require no library access.
+
 ## Bounded failure evidence
 
 Interactive history is a rolling replay window, not an unlimited tick-zero log.
@@ -187,7 +215,10 @@ joints; surface placement grants no special force, support or power.
 `surface-mount` atomically proposes and commits selected-group placement, optional
 part insertion, and optional fixed attachment in Build. `replaceConnection`
 removes the chosen fixed edge in a temporary graph before computing the moving
-component. The selected source group moves; the receiving part remains fixed.
+component. Optional `assemblyId` requires the selected source to be a member of that
+editor group and includes every member's mechanical component in the same rigid
+transform and collision check. Without it, only the selected mechanical component
+moves. The receiving part remains fixed.
 A remaining mechanical path to the receiver refuses adjustment. An optional
 `expectedCursor` rejects stale requests. Preview is transient authoring state;
 it does not write completed physical poses. Undo restores the entire transaction.

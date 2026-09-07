@@ -1,3 +1,4 @@
+import { createAssemblyLibrary } from './assembly-library.mjs';
 import { palettePlacement } from '../model/palette-placement.mjs';
 import { createDrivingMachine } from '../model/fixtures/driving-machine.mjs';
 import { createWorkshop } from '../core/workshop.mjs';
@@ -473,6 +474,10 @@ export async function mountWorkshopApp(root) {
     getCursor: () => workshop.observe().cursor,
     onInteraction: logInteraction,
     guideSteps: starterSteps(),
+    assemblyLibrary: createAssemblyLibrary({
+      getItem: (key) => localStorage.getItem(key),
+      setItem: (key, value) => localStorage.setItem(key, value),
+    }),
   });
   refreshRecording();
   clock = createClock(

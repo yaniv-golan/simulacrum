@@ -91,6 +91,49 @@ export function validateBlueprint(blueprint) {
     }
     parts.set(part.id, part);
   }
+  const groupIds = new Set(),
+    membership = new Set();
+  for (const [index, group] of (blueprint.assemblies ?? []).entries()) {
+    const path = `/assemblies/${index}`;
+    if (groupIds.has(group.id)) return result('DUPLICATE_ID', `${path}/id`);
+    groupIds.add(group.id);
+    if (!group.name.trim()) return result('INVALID_BLUEPRINT', `${path}/name`);
+    for (const id of group.ids) {
+      if (!parts.has(id)) return result('UNKNOWN_PART', `${path}/ids`);
+      if (membership.has(id)) return result('INVALID_BLUEPRINT', `${path}/ids`);
+      membership.add(id);
+    }
+    const names = new Set(),
+      endpoints = new Set();
+    for (const [i, alias] of group.ports.entries()) {
+      const portPath = `${path}/ports/${i}`,
+        endpoint = alias.endpoint;
+      if (!alias.name.trim() || names.has(alias.name.trim().toLowerCase()))
+        return result('INVALID_BLUEPRINT', `${portPath}/name`);
+      names.add(alias.name.trim().toLowerCase());
+      if (!group.ids.includes(endpoint.part)) return result('UNKNOWN_PART', `${portPath}/endpoint`);
+      const part = parts.get(endpoint.part);
+      try {
+        const port = endpoint.surface
+          ? resolveSurfaceEndpoint(part, endpoint)
+          : CATALOG[part.type].ports.find((port) => port.id === endpoint.port);
+        if (!port) return result('UNKNOWN_PORT', `${portPath}/endpoint`);
+      } catch (error) {
+        return result(error.reasonCode ?? 'INVALID_ENDPOINT', `${portPath}/endpoint`);
+      }
+      const key = JSON.stringify([
+        endpoint.part,
+        endpoint.port ?? [
+          endpoint.surface.region,
+          endpoint.surface.u,
+          endpoint.surface.v,
+          endpoint.surface.twist,
+        ],
+      ]);
+      if (endpoints.has(key)) return result('INVALID_BLUEPRINT', `${portPath}/endpoint`);
+      endpoints.add(key);
+    }
+  }
   const connections = new Set(),
     occupied = new Set();
   for (let index = 0; index < blueprint.connections.length; index++) {

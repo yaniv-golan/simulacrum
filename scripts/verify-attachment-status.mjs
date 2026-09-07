@@ -22,7 +22,11 @@ try {
   ]);
   browserEvidence.assert('doesNotMatch', [
     await p.locator('.mount-status').innerText(),
-    /Not mounted|Snap to surface/,
+    /Not mounted|Unattached/,
+  ]);
+  browserEvidence.assert('equal', [
+    await p.getByRole('button', { name: 'Snap to surface', exact: true }).isEnabled(),
+    true,
   ]);
   await p.screenshot({ path: 'artifacts/ux-repairs/attached.png' });
   console.log('PASS axle status');

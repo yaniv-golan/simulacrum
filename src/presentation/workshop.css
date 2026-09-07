@@ -2130,7 +2130,10 @@ body:has(.playtest-panel) .guide-feedback {
   font-size: 10px;
 }
 .machine-health {
-  top: 105px;
+  position: static;
+  flex-basis: 100%;
+  width: 100%;
+  margin: 0;
   bottom: auto;
 }
 
@@ -2236,4 +2239,103 @@ body:has(.playtest-panel) .guide-feedback {
 .follow-control input:focus-visible {
   outline: 2px solid #f2b46a;
   outline-offset: 3px;
+}
+
+.assembly-library {
+  margin: 8px 0;
+  border: 1px solid #42606d;
+  border-radius: 8px;
+  padding: 10px;
+}
+.assembly-library > summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.assembly-library label {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 7px 0;
+  font-size: 12px;
+}
+.assembly-library input:not([type='checkbox']),
+.assembly-library select {
+  width: 100%;
+  min-width: 0;
+}
+.assembly-library button {
+  margin: 4px 3px 4px 0;
+}
+.assembly-library small {
+  display: block;
+  overflow-wrap: anywhere;
+  margin: 4px 0;
+}
+.assembly-library p {
+  font-size: 12px;
+  line-height: 1.45;
+}
+.assembly-library fieldset {
+  min-width: 0;
+  margin: 8px 0;
+  padding: 8px;
+  border: 1px solid #42606d;
+}
+.assembly-card,
+.assembly-instance {
+  border-top: 1px solid #42606d;
+  padding: 10px 0;
+}
+.assembly-card svg {
+  width: 100%;
+  height: 90px;
+  background: #17272f;
+  border-radius: 6px;
+}
+.assembly-port {
+  margin: 10px 0;
+  padding: 6px;
+  background: #17272f;
+  border-radius: 6px;
+}
+
+.assembly-library input:not([type='checkbox']),
+.assembly-library select {
+  color: #e5eff2;
+  background: #10232c;
+  border: 1px solid #42606d;
+  border-radius: 4px;
+  padding: 7px;
+  font: inherit;
+  font-size: 12px;
+}
+.assembly-library input:focus-visible,
+.assembly-library select:focus-visible {
+  outline: 2px solid #efb665;
+  outline-offset: 2px;
+}
+
+.assembly-navigation {
+  display: flex;
+  gap: 4px;
+  position: sticky;
+  top: 0;
+  background: #17272f;
+  z-index: 2;
+}
+.assembly-navigation button {
+  flex: 1;
+  font-size: 12px;
+}
+.assembly-navigation button[aria-pressed='true'] {
+  border-color: #efb665;
+  color: #efb665;
+}
+.assembly-workspace {
+  max-height: 50vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.assembly-workspace[hidden] {
+  display: none;
 }

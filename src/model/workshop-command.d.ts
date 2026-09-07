@@ -1,5 +1,6 @@
 import type {
   Blueprint,
+  AssemblyPort,
   Endpoint,
   Part,
   PartType,
@@ -22,6 +23,24 @@ export type ControlBinding = NonNullable<
   Extract<Part, { type: 'commandReceiver' }>['controlBinding']
 >;
 export type WorkshopCommand =
+  | { type: 'create-assembly'; name: string; ids: string[]; ports: AssemblyPort[] }
+  | { type: 'edit-assembly'; id: string; name: string; ids: string[]; ports: AssemblyPort[] }
+  | {
+      type: 'insert-assembly';
+      definition: Blueprint;
+      position: Position;
+      rotation: Rotation;
+      expectedCursor?: Cursor;
+    }
+  | { type: 'transform-assembly'; id: string; position: Position; rotation: Rotation }
+  | {
+      type: 'connect-assembly';
+      id: string;
+      portName: string;
+      target: Endpoint;
+      connectionId: string;
+    }
+  | { type: 'ungroup-assembly'; id: string }
   | { type: 'run' | 'pause' | 'build' }
   | { type: 'undo' | 'redo' }
   | { type: 'control'; id: string; duty: number }
@@ -49,6 +68,7 @@ export type WorkshopCommand =
       twist: number;
       id: string;
       replaceConnection?: string;
+      assemblyId?: string;
       attach?: boolean;
       insertPart?: Part;
       expectedCursor?: Cursor;

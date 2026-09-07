@@ -643,6 +643,24 @@
       "smoke": true,
       "timeoutMs": 60000,
       "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-assembly-ux-browser",
+      "script": "scripts/verify-assembly-ux-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-assemblies-browser",
+      "script": "scripts/verify-assemblies-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract"
     }
   ],
   "invariants": [
@@ -862,25 +880,37 @@
       "id": "copied-graph-integrity",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Existing mirror copies allocate fresh identities, preserve authored fields and internal connections, and remain independent through editing and persistence.",
+      "guarantee": "Mirror and reusable assembly copies allocate fresh identities, preserve authored fields and internal connections, and remain independent through editing and persistence. Named assembly aliases bind ordinary endpoints; grouping does not change compiled physics. Interface edits preserve ordinary state, named surface previews include all editor members, and saved snapshots remain distinguishable and inspectable.",
       "owners": [
         {
           "path": "src/model/mirror-assembly.mjs",
           "anchor": "proposeMirroredAssembly"
+        },
+        {
+          "path": "src/model/reusable-assemblies.mjs",
+          "anchor": "insertAssembly"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": ["invariant-controls", "verify-assemblies-browser", "verify-assembly-ux-browser"],
       "controls": {
         "positive": [
           {
             "path": "test/copied-graph.test.mjs",
             "anchor": "public mirror transactions isolate instance parameter edits and preserve both graphs through Undo and save/load"
+          },
+          {
+            "path": "test/reusable-assemblies.test.mjs",
+            "anchor": "assembly capture and repeated insertion preserve ordinary graphs, aliases and independent bindings"
           }
         ],
         "negative": [
           {
             "path": "test/copied-graph.test.mjs",
             "anchor": "copied graph oracle rejects lost authored fields, topology corruption, aliases and external leakage"
+          },
+          {
+            "path": "test/reusable-assemblies.test.mjs",
+            "anchor": "assembly admission rejects dangling aliases, overlapping groups, malformed definitions and nested capture"
           }
         ]
       },

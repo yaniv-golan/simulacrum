@@ -2,8 +2,8 @@
   "version": 1,
   "dependencies": {
     "AGENTS.md": "a16015cf800c788a3c4521c369c3358ede6927166049ad25e752809d8bf5b398",
-    "docs/development/architecture.md": "fb4cb89b0f675d53da9506e21c9fa5132ddd2b8bc6e63de0120ead33e117e4ad",
-    "docs/development/recipes.md": "f09b0f657225cc84911c49400da441386fe9ed685be5c2ae7ce4bfedb59a9203",
+    "docs/development/architecture.md": "b39d9ef958351e6084ef9a0f72322e74bd981a1908911d78700fd5ce6f292d9f",
+    "docs/development/recipes.md": "4569d559033d534c1bb5b071a0ef2e8648e7a890a44de9353ec724f87ea2f6e5",
     "package.json#script=dev": "db1288b08c007548a58bed6fc2cb27f6962a578ebac206a5a389aec0f78bf84b",
     "package.json#script=build": "fa8d7c70071ee5868cc28f384dcf73a041efeea031475bcfab06c3c3e4ef1b0e",
     "package.json#script=preview": "734491675c009f724e200a102cac97cd540c2e284972825fa04649d9ca611b23"

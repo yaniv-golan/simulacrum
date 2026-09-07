@@ -151,14 +151,29 @@ try {
     });
     await page.waitForFunction(
       () => {
-        const frames = window.workshopProbe.readInteractionState().rendering.frames,
+        const state = window.workshopProbe.readInteractionState(),
+          frames = state.rendering.frames,
+          camera = [
+            ...state.camera.position,
+            ...state.camera.target,
+            state.camera.fov,
+            state.camera.aspect,
+          ],
           now = performance.now();
-        if (!window.__idleRenderProbe || window.__idleRenderProbe.frames !== frames)
-          window.__idleRenderProbe = { frames, since: now };
+        // A pause between GPU submissions is not camera quiescence: damping can
+        // accumulate sub-threshold movement and trigger another frame later.
+        // Require the observed camera itself to stay stable to sub-pixel precision.
+        const previous = window.__idleRenderProbe;
+        if (
+          !previous ||
+          previous.frames !== frames ||
+          camera.some((value, i) => Math.abs(value - previous.camera[i]) > 1e-9)
+        )
+          window.__idleRenderProbe = { frames, camera, since: now };
         return now - window.__idleRenderProbe.since >= 350;
       },
       null,
-      { timeout: 5000 },
+      { timeout: 15000 },
     );
     const before = await frames();
     await page.waitForTimeout(350);

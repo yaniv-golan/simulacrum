@@ -1,6 +1,6 @@
 # Change recipes
 
-<!-- doc-review {"version":1,"fingerprint":"cbe6305b20e2f759fe67c5927afb72828219ffbfc2e967d5f1e04537ceff9b28","dependencies":"docs/development/.reviews/recipes/change-recipes.json","dependencyDigest":"3b5613cf54b494f90644cfa7cd0462618461384a94abaaf1bdc57e5dddabadd2","disposition":"still accurate","rationale":"The architecture map clarifies implementation scope for composition; canonical model policy and ordinary command admission still govern authoring convenience."} -->
+<!-- doc-review {"version":1,"fingerprint":"71a8c905c30bba74d8575586a174e5590d7f6c2af7a6ffb9ca2c974a227e783d","dependencies":"docs/development/.reviews/recipes/change-recipes.json","dependencyDigest":"8fbd6409db358fbecd3998a4fb0d8f6803be58e3016add2af182f6b8e3937eba","disposition":"still accurate","rationale":"The map now explains additional assembly UI composition, but the recipe still requires public commands and canonical model policy instead of view-local authoring authority."} -->
 
 Use the [map](architecture.md) to locate the owner, inspect its reverse consumers with
 `node scripts/navigate.mjs <symbol-or-path>`, then use focused tests. Admit changes
@@ -9,7 +9,7 @@ attachment, polarity, naming, reset or authored-property policy.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"e443c815b2b82375108fa836aedb9dc60f0009116ef6eb24ac0b9a0e63f33908","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"cf9245da7c96fac625688df730a987724fd963028639740a9b91b2b3aca75b55","disposition":"still accurate","rationale":"The features allocation adds only M3b wiring presentation. Catalog, geometry, compiler and schema part-authoring procedures remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"06bc96659f2c46549d5c6cf04d3392eeb634ac08028eaf7e7d24ae3bc2440e49","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"75d1e4ee5f226cf294541f5910a81e4f766a928572cdf630f00b8996ff515773","disposition":"still accurate","rationale":"Optional assembly-scoped surface movement changes which authored parts move, not catalog geometry, parameter definitions or per-shape material selection; schema and wheel worked examples remain valid."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -26,7 +26,7 @@ validation with `node scripts/generate-schema.mjs` when schema changes.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"7688e8232a148b72ffcab012c93352d91a192752edbd0718d298965f8483e637","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"c09137c31342d6c140869465810102270fdfc95b34093923c6cd9b4d42689729","disposition":"still accurate","rationale":"No core or model edits occurred. Candidate admission, atomic history and the surface-mount example still use the named owners and existing shared assertions."} -->
+<!-- doc-review {"version":1,"fingerprint":"e6577d00dd464c480cdf26d9bec56b29800286092c6182ab59d3bde3b04e3e02","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"1783edac88e06a62084606da6ff5787ddefb8e67b0ef76c9c7d72cd4c0653c64","disposition":"still accurate","rationale":"edit-assembly and assemblyId on surface-mount both validate through model proposals before one core publication. Existing malformed-input, stale-cursor and Undo requirements still apply."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -41,7 +41,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"2fffb7e4fa577549f4f7a1c49b08e170c1c5552d1f456115e78c4b48edac0f3c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"96c6c8743f0a6fe8e5c6a4e97aca3aa1a1b091330d54783f394452398d6432fc","disposition":"still accurate","rationale":"The shared browser evidence helper adds a projected-center pointer click without changing input ownership, model proposals or command admission; interaction verifiers still require observed behavior on the matching build."} -->
+<!-- doc-review {"version":1,"fingerprint":"0c7009403fdac958d04270293c78beaa59c75b0d59ee19fc7593ede4a2005abf","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"48de22331b1a25709430aa806fff31c6609989433aedb5e37931d626f3dbd9e7","disposition":"still accurate","rationale":"Named mounts now enter the same surface control lifecycle. Preview isolation, cancellation, cursor checks and core commitment remain owned by those documented modules; decimal gain uses the existing control writer."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -58,7 +58,7 @@ not dispatch a second reset or directly write actuator state.
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"d57730ecf8884fb1b1e4a5374bb39d2b0024c0ce282907377aefc6847b446329","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"3c403453ccf7bbcc94c370fe0cc41bce666e7ddc7de7967b825759184d26355c","disposition":"still accurate","rationale":"The discovery command does not modify completed observations or diagnostic ownership. Opposed-drive and motion diagnostics remain the same symptom checks."} -->
+<!-- doc-review {"version":1,"fingerprint":"dd526f30c34c2f5671c5c2dae26df64d1c9d833fc535e4d88c5fb36c9b22979e","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"8fe6201df4cbed991a2fb70419ecdabd66e3011c43326840d55ed78e8fdd6a9a","disposition":"still accurate","rationale":"Hinge-only machines now receive an explicit coverage explanation in presentation. diagnoseMotion calculations still consume completed observations and no automatic repair or identity inference was added."} -->
 
 Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -73,7 +73,7 @@ A symptom is not proof of the intended mechanism or cause.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"7944a9d8978ad3cc3346116660af9606dd7f2b5b8c957c20c5ff0b019c690727","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"8d6d3a3566bd23b059ad199682e4c9e50319db6c31ddb8858a30569e06687110","disposition":"still accurate","rationale":"Only package discovery metadata changed in this dependency scope. Numeric law, physics door and independent energy/contact tests remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"89d56179c8728a79572613f3380e727ae107f62d0dbacc5f4e291af16228323a","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"efd067dfd2d9229c2cf88e6940f45890eb2d7d991e56135daddb12e56725c7b6","disposition":"still accurate","rationale":"Generated Blueprint types now include editor groups, but no numerical physics configuration or law signature changed; compileAssembly excludes group identity and aliases from its configuration."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -90,7 +90,7 @@ Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"96474b7805ab08c04c9e1d6eca4e0af9b500350f22f2c1bb134614b560d8ed42","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"d406e8e46da863aff1696b25ea7b8d88760a2dade04901208e49ab246a56fd27","disposition":"still accurate","rationale":"This work adds no reusable assembly feature, schema or copy operations. Mechanical graph classification, frame math and candidate admission remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"74a92c4d126819c18784595fbaec370cc3f0647e16e660f301b5a6604cdf824b","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"98b82c73bdc74602c5b60789ed0d68a86182b7f45de274ce68650db33385278c","disposition":"updated","rationale":"Documented group-scoped surface preview, in-place interface changes, distinct inspectable snapshots and bounded placed/saved navigation; linked the UX regression verifier and its ordinary rover fixture."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft connectivity, not an editor selection, electrical network, or stored
@@ -118,19 +118,52 @@ Use [actual mirror examples](../../test/copied-graph.test.mjs) for repeated copi
 instance edits, Undo/Redo and save/load; include lost fields, aliasing, dangling/misbound
 connections and accidental external links as wrong controls.
 
-Before adding persistent grouping or reusable definitions, specify what a machine save
-contains, what belongs to a separate library, and what remains transient UI state.
-A saved machine must be self-contained for replay; library edits must not silently alter
-it. An interface alias identifies an ordinary endpoint, not a new source of power,
-control or support. Decide alias cardinality, deleted-endpoint behavior and instance key
-bindings before extending the strict schema or command union. Follow
-[runtime ownership](../contracts/runtime-v1.md), declare the authorized milestone, and
-regenerate schema-derived types/validation when a schema change is actually required.
-Do not add speculative storage adapters, compatibility aliases or unused copy APIs.
+Reusable composition now uses [model proposals](../../src/model/reusable-assemblies.mjs)
+and the optional strict `assemblies` field in the [save schema](../../src/model/blueprint.schema.json).
+Groups are disjoint editor membership, with one-to-one named ordinary endpoint aliases;
+they never participate in mechanical traversal or the numerical compiler. Explicit group
+move/rotate commands include each member's mechanical component. Named mechanical
+connections use existing snap policy, then move the remaining editor members through
+the same rigid frame. Named surface connections open the existing surface preview
+with the selected alias and receiver; offsets and rotation remain player-editable.
+Its `assemblyId` scope moves disconnected editor members as well as mechanical
+components, using the same model proposal for preview and commitment. Electrical connections never move parts. The usual whole-candidate
+compiler still rejects intersections, unsupported connections and occupied ports.
+
+The [library adapter](../../src/application/assembly-library.mjs) validates a definition
+as a self-contained blueprint with exactly one complete group. Capture preserves
+internal edges and discloses omitted crossing edges. Insertion allocates fresh part
+and connection IDs and copies all authored values, including receiver key bindings.
+Identical keys can intentionally operate several receivers; the
+[assembly panel](../../src/presentation/assembly-library.mjs) shows bindings and opens
+the ordinary inspector to edit one receiver. Library items are independent snapshots with distinct generated names, editable saved
+names and inspectable authored settings. Placed instances and saved items have separate
+bounded views; connection choices show named assembly interfaces before ordinary endpoints.
+Storage failure must remain visible and preserve previous library data; it must not
+roll back an already accepted machine edit or silently discard the stored library.
+
+Deleting a part removes its aliases/membership and deletes empty groups. Other edits
+must preserve endpoint validity or fail. Library edits are outside machine Undo, while
+create, edit membership/interface, insert, group transform, alias connection and ungroup are ordinary atomic
+commands. New copies get distinguishable names. A machine save contains its parts,
+connections and aliases without requiring its source library. Nesting, linked updates,
+parameter exports and assembly-aware mirroring are not provided; existing mirror
+commands remain ordinary part-copy operations.
+
+Use [assembly transaction and wrong-input tests](../../test/reusable-assemblies.test.mjs),
+[library failure tests](../../test/assembly-library.test.mjs) and the registered
+[assembly browser flow](../../scripts/verify-assemblies-browser.mjs#implementation).
+The browser flow creates an articulated mechanism, places it, connects its named
+Power port to a real cell, compares rendered transforms with completed observations,
+and checks Undo/Redo, save/load and removal of its source library item. These are
+construction checks, not human acceptance or locomotion qualification. The registered
+[assembly UX browser check](../../scripts/verify-assembly-ux-browser.mjs#implementation)
+also covers offset mounting with an intact shaft, in-place interface edits, decimal
+receiver tuning, saved settings, named targets, bounded navigation and diagnostic layout.
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"e54579fa2255883044d61f41b25fe20fc4b509cc63ae2d9af6b5c0b743ac79c8","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"1028520e6891abcfd1483d69230855ca0f0c0674ae7a4b648171a57607324c52","disposition":"updated","rationale":"Documented mounted wiring preferences, exact panel reveal distinct from hover highlighting, straight electrical lines and closing exploded transitions; retained resources and physical independence checks remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"24d1fa4ee609253270aec3c62edad1835633edd1fd12136f40dbd91426a8e08d","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"c5563d941ac7094663e82ee7edfb8537b583720a0a60d7c7ee7891a7c4c7681b","disposition":"still accurate","rationale":"Surface proposal scope and command types changed, but connection visibility, retained GPU resources, exact path highlights and read-only overlay authority remain unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

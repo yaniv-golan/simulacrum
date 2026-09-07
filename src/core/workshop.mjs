@@ -1,3 +1,10 @@
+import {
+  groupAssembly,
+  editAssembly,
+  insertAssembly,
+  transformAssembly,
+  connectAssembly,
+} from '../model/reusable-assemblies.mjs';
 import { resolveSurfaceEndpoint } from '../model/surfaces.mjs';
 import { transformGroup } from '../model/editing.mjs';
 import { proposeMirroredAssembly } from '../model/mirror-assembly.mjs';
@@ -135,6 +142,67 @@ export async function createWorkshop(
       }
       let next = structuredClone(current.blueprint);
       switch (command.type) {
+        case 'create-assembly':
+          if (keys !== 'ids,name,ports,type') return result(false, 'INVALID_COMMAND', 'command');
+          next = groupAssembly(next, command);
+          break;
+        case 'edit-assembly':
+          if (keys !== 'id,ids,name,ports,type') return result(false, 'INVALID_COMMAND', 'command');
+          next = editAssembly(next, command);
+          break;
+        case 'insert-assembly':
+          if (
+            keys !== 'definition,position,rotation,type' &&
+            keys !== 'definition,expectedCursor,position,rotation,type'
+          )
+            return result(false, 'INVALID_COMMAND', 'command');
+          if (
+            command.expectedCursor !== undefined &&
+            !sameData(command.expectedCursor, session.observe().cursor)
+          )
+            return result(false, 'STALE_PROPOSAL', 'expectedCursor');
+          next = insertAssembly(
+            next,
+            command.definition,
+            command.position,
+            command.rotation,
+          ).blueprint;
+          break;
+        case 'transform-assembly':
+          if (keys !== 'id,position,rotation,type')
+            return result(false, 'INVALID_COMMAND', 'command');
+          next = transformAssembly(next, command.id, command.position, command.rotation);
+          break;
+        case 'connect-assembly': {
+          if (keys !== 'connectionId,id,portName,target,type')
+            return result(false, 'INVALID_COMMAND', 'command');
+          const proposal = connectAssembly(
+            next,
+            command.id,
+            command.portName,
+            command.target,
+            command.connectionId,
+          );
+          next = proposal.blueprint;
+          const part = next.parts.find((part) => part.id === proposal.endpoint.part);
+          const port = proposal.endpoint.surface
+            ? resolveSurfaceEndpoint(part, proposal.endpoint)
+            : CATALOG[part.type].ports.find((port) => port.id === proposal.endpoint.port);
+          const a =
+            ['fixed', 'shaft'].includes(port.kind) ||
+            (port.kind === 'signal' && port.direction === 'input')
+              ? proposal.target
+              : proposal.endpoint;
+          const b = a === proposal.endpoint ? proposal.target : proposal.endpoint;
+          next.connections.push({ id: command.connectionId, kind: port.kind, a, b });
+          break;
+        }
+        case 'ungroup-assembly':
+          if (keys !== 'id,type' || !next.assemblies?.some((group) => group.id === command.id))
+            return result(false, 'INVALID_COMMAND', 'command');
+          next.assemblies = next.assemblies.filter((group) => group.id !== command.id);
+          if (!next.assemblies.length) delete next.assemblies;
+          break;
         case 'insert':
           if (keys !== 'part,type') return result(false, 'INVALID_COMMAND', 'command');
           next.parts.push({
@@ -169,6 +237,14 @@ export async function createWorkshop(
           if (!next.parts.some((part) => part.id === command.id))
             return result(false, 'UNKNOWN_PART', 'id');
           next.parts = next.parts.filter((part) => part.id !== command.id);
+          if (next.assemblies) {
+            for (const group of next.assemblies) {
+              group.ids = group.ids.filter((id) => id !== command.id);
+              group.ports = group.ports.filter((port) => port.endpoint.part !== command.id);
+            }
+            next.assemblies = next.assemblies.filter((group) => group.ids.length);
+            if (!next.assemblies.length) delete next.assemblies;
+          }
           next.connections = next.connections.filter(
             (connection) => connection.a.part !== command.id && connection.b.part !== command.id,
           );
@@ -224,6 +300,7 @@ export async function createWorkshop(
             'twist',
             'id',
             'replaceConnection',
+            'assemblyId',
             'attach',
             'insertPart',
             'expectedCursor',
