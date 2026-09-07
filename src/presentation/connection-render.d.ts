@@ -12,6 +12,9 @@ export interface ConnectionRenderSpec {
   failed: boolean;
 }
 export interface ConnectionRenderInputs {
+  wiringVisible: boolean;
+  revealedConnectionIds: ReadonlySet<string>;
+  sourceEndpoint: DeepReadonly<Endpoint> | null;
   connections: readonly DeepReadonly<Connection>[];
   diagnostics: readonly { id: string; reasonCode: string }[];
   resolveEndpoint: (endpoint: DeepReadonly<Endpoint>) => Vector3 | null;

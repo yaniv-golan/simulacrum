@@ -8,7 +8,7 @@ import { findPlacementOverlap } from '../model/surfaces.mjs';
 import { partPrimitives, shaftSegments } from '../model/geometry.mjs';
 import * as THREE from 'three';
 import { createResourceCache, partAppearanceKey } from './resource-cache.mjs';
-import { connectionRenderSpecs } from './connection-render.mjs';
+import { connectionRenderSpecs, createWiringPreferences } from './connection-render.mjs';
 import { createConnectionView } from './connection-view.mjs';
 import { createSurfaceControls } from './surface-controls.mjs';
 import {
@@ -111,6 +111,7 @@ export function createWorkshopView(
   root,
   { onCommand, onSave, onLoad, onFailure, onRecording, onInteraction, getCursor, guideSteps = [] },
 ) {
+  const wiringPreferences = createWiringPreferences();
   root.classList.add('workshop');
   let explodeStarted = 0,
     explodeFrom = 0,
@@ -119,6 +120,7 @@ export function createWorkshopView(
     explodeTarget = new Map(),
     tracedConnection = null,
     testConnectionIds = new Set(),
+    revealedConnectionIds = new Set(),
     explodeCamera = null,
     explodeCameraTween = null;
   let activeTool = 'select',
@@ -808,6 +810,26 @@ export function createWorkshopView(
     }),
     explodeButton,
   );
+  const wiringLabel = element('label', 'follow-control'),
+    wiring = element('input'),
+    wiringHelp = element(
+      'span',
+      'wiring-help',
+      'Shows power and signal connections. These lines do not restrict movement.',
+    ),
+    wiringNotice = element('span', 'wiring-notice', 'Inspection connections shown.');
+  wiring.type = 'checkbox';
+  wiring.checked = true;
+  wiring.setAttribute('aria-label', 'Wiring');
+  wiringNotice.hidden = true;
+  wiringNotice.setAttribute('role', 'status');
+  wiringLabel.append(wiring, document.createTextNode('Wiring'));
+  wiring.addEventListener('change', () => {
+    wiringPreferences.set(frame?.metadata.mode ?? 'build', wiring.checked);
+    updateConnections();
+    invalidateScene();
+  });
+  tools.append(wiringLabel, wiringHelp, wiringNotice);
   const inspectionBanner = element('div', 'inspection-banner');
   inspectionBanner.hidden = true;
   inspectionBanner.append(
@@ -850,6 +872,17 @@ export function createWorkshopView(
   const connectionTest = createConnectionTest({
     holdReceiver: (id, duty) => vehicleControls.hold(id, duty),
     releaseReceiver: (id) => vehicleControls.releaseHold(id),
+    reveal: (ids) => {
+      const next = new Set(ids);
+      if (
+        next.size === revealedConnectionIds.size &&
+        [...next].every((id) => revealedConnectionIds.has(id))
+      )
+        return;
+      revealedConnectionIds = next;
+      updateConnections();
+      invalidateScene();
+    },
     highlight: (ids) => {
       testConnectionIds = new Set(ids);
       updateConnections();
@@ -1008,7 +1041,7 @@ export function createWorkshopView(
     refreshLive();
     refreshPartList();
     refreshSelectionVisuals();
-    if (exploded) updateConnections();
+    updateConnections();
   }
   const down = (event) => {
     pointerStart = [event.clientX, event.clientY];
@@ -1098,6 +1131,14 @@ export function createWorkshopView(
     releaseSurfacePointer();
     surface?.cancel(false);
     draggingType = null;
+    if (sourcePort) {
+      sourcePort = null;
+      previewEndpoint = null;
+      socketPreview = null;
+      inspectorKey = '';
+      refreshInspector();
+      updateConnections();
+    }
     placementCue.hidden = true;
     editing?.cancel();
     controls.enabled = true;
@@ -1722,6 +1763,20 @@ export function createWorkshopView(
     }
     if (!editable) returnToBuild(right);
     right.append(element('h3', 'connections-heading', 'Connections'));
+    if (tracedConnection)
+      right.append(
+        button(
+          'Clear trace',
+          () => {
+            tracedConnection = null;
+            inspectorKey = '';
+            refreshInspector();
+            updateConnections();
+            invalidateScene();
+          },
+          'quiet',
+        ),
+      );
     const ports = element('div', 'port-list');
     right.append(ports);
     const orderedPorts =
@@ -1806,6 +1861,14 @@ export function createWorkshopView(
         explanation.append(
           button(`Inspect ${peer?.name ?? other.part}`, () => select(other.part), 'part-link'),
         );
+        const trace = button(
+          `Trace ${labels[connection.kind]} → ${peer?.name ?? other.part}`,
+          () => traceConnection(connection.id),
+          'trace-connection quiet',
+        );
+        trace.dataset.connectionId = connection.id;
+        trace.setAttribute('aria-pressed', String(tracedConnection === connection.id));
+        explanation.append(trace);
         const disconnect = button(
           `Disconnect ${labels[connection.kind]} · ${peer?.name ?? other.part}`,
           () => send({ type: 'disconnect', id: connection.id }),
@@ -2598,10 +2661,15 @@ export function createWorkshopView(
     }
   }
   function updateConnections() {
+    if (!frame || disposed) return;
+    wiring.checked = wiringPreferences.read(frame.metadata.mode);
     const specs = connectionRenderSpecs({
+      wiringVisible: wiring.checked,
+      revealedConnectionIds,
+      sourceEndpoint: sourcePort,
       connections: frame.metadata.blueprint.connections,
       diagnostics: frame.metadata.connections,
-      exploded: explodeAmount > 0,
+      exploded: exploded || explodeAmount > 0,
       selectedPartId: selected ?? null,
       tracedConnectionId: tracedConnection ?? null,
       testConnectionIds: testConnectionIds,
@@ -2615,6 +2683,9 @@ export function createWorkshopView(
       },
     });
     connectionView.update(specs);
+    wiringNotice.hidden =
+      wiring.checked ||
+      !specs.some((spec) => spec.visible && ['power', 'signal'].includes(spec.kind));
   }
 
   function traceConnection(id) {
@@ -2724,6 +2795,16 @@ export function createWorkshopView(
     const previousCount = frame?.metadata.blueprint.parts.length ?? 0;
     const previousMode = frame?.metadata.mode;
     frame = next;
+    if (previousMode && previousMode !== next.metadata.mode) {
+      sourcePort = null;
+      previewEndpoint = null;
+      socketPreview = null;
+    }
+    if (
+      tracedConnection &&
+      !next.metadata.blueprint.connections.some((c) => c.id === tracedConnection)
+    )
+      tracedConnection = null;
     mirror.update(next);
     vehicleControls.update(next);
     connectionTest.update(next);
@@ -3049,6 +3130,7 @@ export function createWorkshopView(
     }
     controls.update();
     updatePortCues();
+    if (sceneDirty) updateConnections();
     const selectedMesh = meshes.get(selected),
       part = frame?.metadata.blueprint.parts.find((p) => p.id === selected);
     selectionLabel.hidden = !selectedMesh;
@@ -3129,6 +3211,18 @@ export function createWorkshopView(
       selected,
       sourcePort,
       testConnectionIds: [...testConnectionIds],
+      wiring: {
+        preference: wiringPreferences.read(frame?.metadata.mode ?? 'build'),
+        inspectionOverride: !wiringNotice.hidden,
+        revealedConnectionIds: [...revealedConnectionIds],
+        connections: [...connectionView.resources].map(([id, resource]) => ({
+          id,
+          visible: resource.group.visible,
+          endpoints: resource.group.children
+            .filter((child) => child instanceof THREE.Line)
+            .map((line) => [...line.geometry.attributes.position.array]),
+        })),
+      },
       previewEndpoint,
       surfacePlacement: surface.read(),
       guideConnection: guideVisual,

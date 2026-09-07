@@ -132,3 +132,17 @@ not assume the intended vehicle behavior.
 
 
 See [playtest instructions](development/playtesting.md) for sharing recorded feedback.
+
+## Wiring display
+
+The **Wiring** checkbox shows power and signal connections as schematic lines.
+These lines do not restrict movement. Wiring starts on in Build and off in Run;
+Pause and Step share the Run setting. Each setting lasts until you reload the workshop,
+including when you start or load another machine.
+
+Open a port to find its **Trace** actions. With Wiring off, **Trace**, an open **Connect & test** panel, and a selected wiring
+port temporarily reveal their connections. Ordinary part selection does not reveal
+hidden wiring. “Inspection connections shown” explains this temporary display;
+the checkbox keeps your preference. Clear the trace, close the panel or cancel the
+connection to end its reveal. Exploded view shows all connections through the return
+to assembly. Mechanical attachments and shafts remain visible independently.

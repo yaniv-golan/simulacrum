@@ -1,3 +1,6 @@
+import { deterministicProjection } from '../src/model/tick.mjs';
+import { CATALOG } from '../src/model/catalog.mjs';
+import * as THREE from 'three';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -15,6 +18,21 @@ async function select(name) {
   if (!(await picker.evaluate((element) => element.open))) await picker.locator('summary').click();
   await picker.getByRole('button', { name, exact: true }).click();
 }
+const wiringState = () => page.evaluate(() => window.workshopProbe.readInteractionState().wiring);
+const visibleElectrical = async () => {
+  const state = await wiringState();
+  const frame = await read();
+  return state.connections
+    .filter(
+      (c) =>
+        c.visible &&
+        frame.metadata.blueprint.connections.some(
+          (e) => e.id === c.id && ['power', 'signal'].includes(e.kind),
+        ),
+    )
+    .map((c) => c.id)
+    .sort();
+};
 const read = () => page.evaluate(() => window.workshopProbe.observe().frames[0]);
 async function duty(value) {
   await page.waitForFunction((value) => {
@@ -49,13 +67,73 @@ try {
   const original = (await read()).metadata.blueprint;
   evidence.assert('equal', [original.parts.length, 4]);
   evidence.assert('equal', [original.connections.length, 3]);
+  const wiring = page.getByRole('checkbox', { name: 'Wiring', exact: true });
+  const electricalIds = original.connections
+    .filter((e) => ['power', 'signal'].includes(e.kind))
+    .map((e) => e.id)
+    .sort();
+  evidence.assert('equal', [await wiring.isChecked(), true]);
+  await wiring.uncheck();
+  evidence.assert('deepEqual', [
+    await visibleElectrical(),
+    electricalIds,
+    'open panel reveals exact paths',
+  ]);
   const powerRow = section.locator('.connection-test-path').nth(0);
   await powerRow.hover();
   evidence.assert('deepEqual', [
     await page.evaluate(() => window.workshopProbe.readInteractionState().testConnectionIds),
     original.connections.filter((edge) => edge.kind === 'power').map((edge) => edge.id),
   ]);
+  await wiring.hover();
+  evidence.assert('deepEqual', [
+    await page.evaluate(() => window.workshopProbe.readInteractionState().testConnectionIds),
+    [],
+  ]);
+  evidence.assert('deepEqual', [
+    await visibleElectrical(),
+    electricalIds,
+    'pointer leave keeps panel reveal',
+  ]);
   await section.locator('summary').click();
+  await page.waitForFunction('document.querySelector(".wiring-notice").hidden');
+  evidence.assert('deepEqual', [
+    await visibleElectrical(),
+    [],
+    'ordinary selected motor does not reveal wiring',
+  ]);
+  await page.locator('[data-port-id=power]').click();
+  await page.getByRole('button', { name: 'Trace Power → Power Cell', exact: true }).click();
+  evidence.assert('deepEqual', [
+    await visibleElectrical(),
+    original.connections.filter((e) => e.kind === 'power').map((e) => e.id),
+  ]);
+  await page.getByRole('button', { name: 'Clear trace', exact: true }).click();
+  evidence.assert('deepEqual', [await visibleElectrical(), []]);
+  await page.locator('[data-port-id=power]').click();
+  evidence.assert('deepEqual', [
+    await visibleElectrical(),
+    original.connections.filter((e) => e.kind === 'power').map((e) => e.id),
+  ]);
+  await page.getByRole('button', { name: 'Cancel connection', exact: true }).click();
+  await page.waitForFunction(
+    () =>
+      window.workshopProbe.readInteractionState().wiring.connections.filter((c) => c.visible)
+        .length === 1,
+  );
+  evidence.assert('deepEqual', [await visibleElectrical(), []]);
+  await page.waitForFunction('document.querySelector(".wiring-notice").hidden');
+  await page.screenshot({ path: `${out}/build-hidden.png` });
+  await wiring.check();
+  await page.screenshot({ path: `${out}/build-schematic.png` });
+  await wiring.uncheck();
+  await page.waitForFunction('document.querySelector(".wiring-notice").hidden');
+  await page.waitForFunction(
+    'window.workshopProbe.readInteractionState().testConnectionIds.length === 0',
+  );
+  await page.waitForFunction(
+    'window.workshopProbe.readInteractionState().wiring.preference === false',
+  );
   await page.waitForFunction(
     () => window.workshopProbe.readInteractionState().testConnectionIds?.length === 0,
   );
@@ -139,6 +217,74 @@ try {
     'testing preserves authored settings and wires',
   ]);
   evidence.assert('equal', [await plus.isDisabled(), true]);
+  // Replay fixed ticks with the same ordinary controls and different overlay preferences.
+  await section.locator('summary').click();
+  async function projection(show) {
+    await page.locator('[data-command=build]').click();
+    await page.evaluate(async () => {
+      document.querySelector('[data-command=run]').click();
+      for (let i = 0; i < 30; i++) await Promise.resolve();
+      document.querySelector('[data-command=pause]').click();
+      for (let i = 0; i < 30; i++) await Promise.resolve();
+    });
+    await wiring.setChecked(show);
+    for (let i = 0; i < 12; i++) await page.locator('[data-command=step]').click();
+    const snapshot = await page.evaluate(() => ({
+      frame: window.workshopProbe.observe().frames[0],
+      poses: window.workshopProbe.readRenderedTransforms(),
+      wiring: window.workshopProbe.readInteractionState().wiring,
+    }));
+    for (const edge of snapshot.frame.metadata.blueprint.connections.filter((e) =>
+      ['power', 'signal'].includes(e.kind),
+    )) {
+      const actual = snapshot.wiring.connections.find((c) => c.id === edge.id).endpoints[0];
+      const expected = [edge.a, edge.b].flatMap((endpoint) => {
+        const part = snapshot.frame.metadata.blueprint.parts.find((p) => p.id === endpoint.part);
+        const pose = snapshot.poses.find((p) => p.id === endpoint.part);
+        return new THREE.Vector3(
+          ...CATALOG[part.type].ports.find((p) => p.id === endpoint.port).position,
+        )
+          .applyQuaternion(new THREE.Quaternion(...pose.rotation))
+          .add(new THREE.Vector3(...pose.position))
+          .toArray();
+      });
+      evidence.assert('ok', [
+        actual.every((n, i) => Math.abs(n - expected[i]) < 1e-6),
+        'line endpoints match displayed transformed ports',
+      ]);
+    }
+    evidence.assert('equal', [await wiring.isChecked(), show]);
+    evidence.assert('equal', [(await visibleElectrical()).length, show ? 2 : 0]);
+    await page.screenshot({ path: `${out}/paused-${show ? 'shown' : 'hidden'}.png` });
+    return deterministicProjection(snapshot.frame);
+  }
+  const hiddenProjection = await projection(false);
+  const shownProjection = await projection(true);
+  evidence.assert('deepEqual', [
+    shownProjection,
+    hiddenProjection,
+    'overlay has no physical or network effect',
+  ]);
+  await page.locator('[data-command=run]').click();
+  evidence.assert('equal', [await wiring.isChecked(), true, 'resume retains run preference']);
+  await page.locator('[data-command=build]').click();
+  evidence.assert('equal', [await wiring.isChecked(), false, 'restores build preference']);
+  await page.getByRole('button', { name: 'New', exact: true }).click();
+  evidence.assert('equal', [
+    await wiring.isChecked(),
+    false,
+    'blueprint replacement retains preference',
+  ]);
+  evidence.assert('equal', [
+    (await wiringState()).connections.length,
+    0,
+    'removed resources disappear',
+  ]);
+  await evidence.reload(page);
+  evidence.assert('equal', [await wiring.isChecked(), true, 'reload defaults build on']);
+  await page.locator('[data-command=run]').click();
+  await page.locator('[data-command=pause]').click();
+  evidence.assert('equal', [await wiring.isChecked(), false, 'reload defaults paused/run off']);
   evidence.assert('deepEqual', [errors, []]);
   writeFileSync(
     `${out}/result.json`,
@@ -146,6 +292,10 @@ try {
       {
         ...evidence.identity,
         checks: [
+          'Build/Run/Paused preferences, blueprint replacement and reload defaults',
+          'exact trace and source reveals; panel reveal survives row pointer leave',
+          'schematic endpoints agree with moving displayed ports',
+          'identical fixed-tick deterministic projections with wiring shown and hidden',
           'empty workbench UI wiring',
           'ordinary powered run',
           'keyboard release',

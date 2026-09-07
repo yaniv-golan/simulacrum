@@ -29,40 +29,6 @@ function disposeGroup(group) {
   });
 }
 
-// Keep the GPU buffers while reshaping the cable to the completed endpoint poses.
-/** @param {THREE.TubeGeometry} geometry @param {THREE.QuadraticBezierCurve3} path */
-function updateTube(geometry, path) {
-  const { tubularSegments, radialSegments, radius } = geometry.parameters;
-  path.updateArcLengths();
-  const frames = path.computeFrenetFrames(tubularSegments, false);
-  const positions = geometry.attributes.position,
-    normals = geometry.attributes.normal,
-    point = new THREE.Vector3(),
-    normal = new THREE.Vector3();
-  for (let i = 0; i <= tubularSegments; i++) {
-    path.getPointAt(i / tubularSegments, point);
-    for (let j = 0; j <= radialSegments; j++) {
-      const angle = (j / radialSegments) * Math.PI * 2,
-        index = i * (radialSegments + 1) + j;
-      normal
-        .copy(frames.normals[i])
-        .multiplyScalar(-Math.cos(angle))
-        .addScaledVector(frames.binormals[i], Math.sin(angle))
-        .normalize();
-      normals.setXYZ(index, normal.x, normal.y, normal.z);
-      positions.setXYZ(
-        index,
-        point.x + radius * normal.x,
-        point.y + radius * normal.y,
-        point.z + radius * normal.z,
-      );
-    }
-  }
-  positions.needsUpdate = normals.needsUpdate = true;
-  geometry.computeBoundingSphere();
-  geometry.computeBoundingBox();
-}
-
 /** @param {THREE.Object3D} parent */
 export function createConnectionView(parent) {
   const cache = createResourceCache({
@@ -115,34 +81,16 @@ export function createConnectionView(parent) {
           );
       } else {
         if (electrical) {
-          const path = new THREE.QuadraticBezierCurve3(
-              spec.ends[0].clone(),
-              spec.ends[0].clone().lerp(spec.ends[1], 0.5),
-              spec.ends[1].clone(),
-            ),
-            geometry = new THREE.TubeGeometry(
-              path,
-              20,
-              spec.highlighted ? 0.0065 : spec.kind === 'power' ? 0.005 : 0.004,
-              8,
-              false,
-            ),
-            cable = new THREE.Mesh(
-              geometry,
-              new THREE.MeshStandardMaterial({
-                color: spec.highlighted ? 0xffefc7 : color,
-                roughness: 0.6,
-                emissive: color,
-                emissiveIntensity: spec.highlighted ? 0.4 : 0.1,
-              }),
-            );
-          group.add(cable);
+          const line = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(spec.ends),
+            new THREE.LineBasicMaterial({ color: spec.highlighted ? 0xffefc7 : color }),
+          );
+          group.add(line);
           updates.push((ends) => {
-            path.v0.copy(ends[0]);
-            path.v2.copy(ends[1]);
-            path.v1.copy(ends[0]).lerp(ends[1], 0.5);
-            path.v1.y += Math.min(0.12, ends[0].distanceTo(ends[1]) * 0.2 + 0.035);
-            updateTube(geometry, path);
+            const position = line.geometry.attributes.position;
+            for (let i = 0; i < 2; i++) position.setXYZ(i, ...ends[i].toArray());
+            position.needsUpdate = true;
+            line.geometry.computeBoundingSphere();
           });
         } else if (spec.ends[0].distanceTo(spec.ends[1]) > 1e-5) {
           const shaft = new THREE.Mesh(

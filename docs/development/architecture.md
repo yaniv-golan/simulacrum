@@ -1,6 +1,6 @@
 # Architecture and policy owners
 
-<!-- doc-review {"version":1,"fingerprint":"110fd9e0caa147deb732d831e02807fe5881bdf8d2b290d8ed9bba9d7859ba34","dependencies":"docs/development/.reviews/architecture/architecture-and-policy-owners.json","dependencyDigest":"e36cfcbdfefdf64c0b0924d39ba6124dc208b3fb8092cc3aea032c7b9a9d244e","disposition":"still accurate","rationale":"AGENTS adds a discovery entry point without changing runtime ownership, layer boundaries, or manifest milestone authority."} -->
+<!-- doc-review {"version":1,"fingerprint":"9f64a52606526e3d7858b2ac844060bed66f2c985bdd746ee40dfdb7afb4dec0","dependencies":"docs/development/.reviews/architecture/architecture-and-policy-owners.json","dependencyDigest":"389315757bee4b19ed1556f7a2eb4d190a41e3f6b18b1317df27f4ba17512b90","disposition":"still accurate","rationale":"The manifest extends the existing connection display invariant at M3b; runtime, AGENTS layer edges and manifest milestone authority remain unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -8,7 +8,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"8714c87aea654755ab5e20da7ef7af561619a5bf621e6c85ab1afd74435a3225","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"655619db3c2d5c62a1fd2f21630bb44fd57cab5fbdbc1d55faf85b9da9f5961a","disposition":"updated","rationale":"The application composition link now uses implementation coverage, excluding arbitrary remote payload bytes. Core admission, snapshots and fixed simulation phases are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a580eaf2a7becb1de5bbdbdd47d298cdc4320e0b0382b8920c844dbf716746f3","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"3f4b4556a204e389a22f85efb344e32009c757ec45218a41fba25260a3239f5e","disposition":"still accurate","rationale":"Trace actions now live inside their port explanations to preserve the 1280x720 inspector layout. Wiring and trace state remain presentation-owned and commands still follow the documented admission and publication path."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#implementation) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs) turns player input into ordinary commands. Surface and mirror controls keep previews outside authored state.
@@ -27,7 +27,7 @@ lost capture and pause where applicable.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"115c61101fd8fdded6e0fddd64eaffb82ff6176d39793c7fbc068c794eaa5b7b","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"7323e7037bde6810cbce2d6ebb352cd407539c1bc1d56086af63489a957e5836","disposition":"still accurate","rationale":"Only developer tooling and package scripts changed. The named geometry, graph, render, diagnostic and command policy owners remain the production implementations."} -->
+<!-- doc-review {"version":1,"fingerprint":"f86d5dd06b4b36b627a2d979dd569e89a705295a9dcd910b16526aa5eb813e74","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"5a3ff4da3095eb26a41000351d70990c032fb74947532c0c3218e915cf69c0b2","disposition":"still accurate","rationale":"The existing connection producer and renderer still own overlay policy and GPU resources, and connectionTestPaths still supplies exact diagnostic edge IDs; the new view preference does not change these ownership claims."} -->
 
 | Decision                                       | Production owner                                                                                                                                                                                                                                             | Example consumer                                                          |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |

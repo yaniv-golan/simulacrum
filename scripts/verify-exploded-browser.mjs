@@ -26,6 +26,11 @@ try {
       frame: window.workshopProbe.observe().frames[0],
       poses: window.workshopProbe.readRenderedTransforms(),
     }));
+  const wiring = page.getByRole('checkbox', { name: 'Wiring', exact: true });
+  await wiring.uncheck();
+  await page.waitForFunction(
+    'window.workshopProbe.readInteractionState().wiring.preference === false',
+  );
   const before = await read();
   await page.locator('.recording-panel summary').click();
   await page.locator('[data-command=record-session]').click();
@@ -41,6 +46,12 @@ try {
         'entering exploded view must not jump the camera',
       ]);
   await page.waitForTimeout(180);
+  browserEvidence.assert('equal', [await wiring.isChecked(), false]);
+  browserEvidence.assert('ok', [
+    await page.evaluate(() =>
+      window.workshopProbe.readInteractionState().wiring.connections.every((c) => c.visible),
+    ),
+  ]);
   await page.screenshot({ path: `${out}/transition-midpoint.png` });
   await page.waitForTimeout(520);
   browserEvidence.assert('equal', [await page.locator('.inspection-banner').isVisible(), true]);
@@ -83,8 +94,16 @@ try {
   const exit = await page.evaluate(() => {
     const before = window.workshopProbe.readRenderedCenters();
     document.querySelector('[data-command=explode-view]').click();
-    return { before, after: window.workshopProbe.readRenderedCenters() };
+    return {
+      before,
+      after: window.workshopProbe.readRenderedCenters(),
+      wiring: window.workshopProbe.readInteractionState().wiring,
+    };
   });
+  browserEvidence.assert('ok', [
+    exit.wiring.connections.every((c) => c.visible),
+    'closing transition retains reveal',
+  ]);
   for (let i = 0; i < exit.before.length; i++)
     for (const axis of ['x', 'y'])
       browserEvidence.assert('ok', [
@@ -93,6 +112,18 @@ try {
       ]);
   await page.waitForTimeout(700);
   browserEvidence.assert('deepEqual', [await read(), before]);
+  browserEvidence.assert('equal', [await wiring.isChecked(), false]);
+  browserEvidence.assert('equal', [await page.locator('.wiring-notice').isVisible(), false]);
+  browserEvidence.assert('ok', [
+    await page.evaluate(() => {
+      const state = window.workshopProbe.readInteractionState().wiring;
+      const edges = window.workshopProbe.observe().frames[0].metadata.blueprint.connections;
+      return state.connections.every(
+        (c) =>
+          c.visible === !edges.some((e) => e.id === c.id && ['power', 'signal'].includes(e.kind)),
+      );
+    }),
+  ]);
   browserEvidence.assert('equal', [await page.locator('.inspection-banner').isVisible(), false]);
   await page.locator('[data-command=explode-view]').click();
   await page.waitForTimeout(600);

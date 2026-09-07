@@ -2223,3 +2223,17 @@ body:has(.playtest-panel) .guide-feedback {
   width: auto;
   accent-color: #edb860;
 }
+
+.wiring-help,
+.wiring-notice {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: #c8d9df;
+  background: #17232bee;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.follow-control input:focus-visible {
+  outline: 2px solid #f2b46a;
+  outline-offset: 3px;
+}

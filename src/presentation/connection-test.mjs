@@ -27,7 +27,7 @@ const keys = (part) => {
 
 /** @typedef {(connectionIds: readonly import('../model/generated/blueprint-types.js').Connection['id'][]) => void} ConnectionPathHighlight */
 /** Selected-actuator inspection and ordinary commands; never overrides authored control owners.
- * @param {{send: import('../model/workshop-command.js').SendCommand, holdReceiver?: (id:string,duty:number)=>unknown, releaseReceiver?: (id:string)=>unknown, select:(id:string)=>unknown, choosePort:(endpoint:import('../model/generated/blueprint-types.js').Endpoint)=>unknown, run?:()=>unknown, container?:HTMLElement, highlight?:ConnectionPathHighlight}} options
+ * @param {{send: import('../model/workshop-command.js').SendCommand, holdReceiver?: (id:string,duty:number)=>unknown, releaseReceiver?: (id:string)=>unknown, select:(id:string)=>unknown, choosePort:(endpoint:import('../model/generated/blueprint-types.js').Endpoint)=>unknown, run?:()=>unknown, container?:HTMLElement, highlight?:ConnectionPathHighlight, reveal?:ConnectionPathHighlight}} options
  */
 export function createConnectionTest({
   send,
@@ -38,6 +38,7 @@ export function createConnectionTest({
   run,
   container,
   highlight = () => {},
+  reveal = () => {},
 }) {
   let frame,
     selectedId,
@@ -95,6 +96,7 @@ export function createConnectionTest({
     const keepOpen = selectedId === part?.id && section?.firstElementChild?.open;
     release();
     highlight([]);
+    reveal([]);
     section?.remove();
     section = null;
     frame = next;
@@ -154,7 +156,9 @@ export function createConnectionTest({
       row.addEventListener('focusout', () => highlight([]));
     }
     disclosure.addEventListener('toggle', () => {
+      if (section?.firstElementChild !== disclosure) return;
       if (!disclosure.open) highlight([]);
+      revealPath();
     });
     disclosure.append(power, control, output);
     warning = node(
@@ -232,6 +236,19 @@ export function createConnectionTest({
     update(next);
     return section;
   }
+  function revealPath() {
+    reveal(
+      section && !section.hidden && section.firstElementChild?.open && paths
+        ? [
+            ...new Set([
+              ...paths.powerConnectionIds,
+              ...paths.signalConnectionIds,
+              ...paths.shaftConnectionIds,
+            ]),
+          ]
+        : [],
+    );
+  }
   function update(next) {
     frame = next;
     if (!section || !live) return;
@@ -240,13 +257,15 @@ export function createConnectionTest({
       release();
       highlight([]);
       section.hidden = true;
+      reveal([]);
       return;
     }
     if (pathBlueprint !== next.metadata.blueprint) {
       highlight([]);
-      pathBlueprint = next.metadata.blueprint;
-      paths = connectionTestPaths(pathBlueprint, selectedId);
+      render(next, part, next.metadata.mode === 'build', section.parentElement ?? container);
+      return;
     }
+    revealPath();
     if (held && (next.metadata.mode !== 'run' || paths.manualReceiver?.id !== held)) release();
     start.disabled = next.metadata.mode === 'run';
     build.hidden = next.metadata.mode === 'build';
@@ -286,6 +305,7 @@ export function createConnectionTest({
     dispose() {
       release();
       highlight([]);
+      reveal([]);
       section?.remove();
       section = null;
       window.removeEventListener('pointerup', release);

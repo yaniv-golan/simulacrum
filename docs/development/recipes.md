@@ -9,7 +9,7 @@ attachment, polarity, naming, reset or authored-property policy.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"c02b5685075772eb74167811b3280755ea3f80844a116be7a6f5c4f05b8cbf44","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"e54708f4764fa53dc5e7fdeb3286bdfdef20124c17d4588b99f9d7122c0acecc","disposition":"still accurate","rationale":"The added package command is discovery-only; catalog, schema, geometry, mounting and compiler sources and their authority remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e443c815b2b82375108fa836aedb9dc60f0009116ef6eb24ac0b9a0e63f33908","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"cf9245da7c96fac625688df730a987724fd963028639740a9b91b2b3aca75b55","disposition":"still accurate","rationale":"The features allocation adds only M3b wiring presentation. Catalog, geometry, compiler and schema part-authoring procedures remain unchanged."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -130,7 +130,7 @@ Do not add speculative storage adapters, compatibility aliases or unused copy AP
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"f12903feb420232d007d4deb161a2bfe61c1a599f8e356d4894b291eabb71090","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"58f6a85a95aac2e65f4d8246bfb43662bbbd6599f15cf0fd8c71b768f1c02ef7","disposition":"still accurate","rationale":"Rendering and diagnostic sources remain unchanged. Required visibility and exact edge IDs are existing infrastructure; the Wiring preferences and schematic lines are still future feature work."} -->
+<!-- doc-review {"version":1,"fingerprint":"e54579fa2255883044d61f41b25fe20fc4b509cc63ae2d9af6b5c0b743ac79c8","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"1028520e6891abcfd1483d69230855ca0f0c0674ae7a4b648171a57607324c52","disposition":"updated","rationale":"Documented mounted wiring preferences, exact panel reveal distinct from hover highlighting, straight electrical lines and closing exploded transitions; retained resources and physical independence checks remain required."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -138,18 +138,25 @@ connection overlay. The checked producer takes narrow display inputs; the checke
 [connection renderer](../../src/presentation/connection-view.mjs) owns GPU resources.
 The workshop view resolves endpoints from displayed meshes, including exploded offsets.
 The renderer never changes authored connectivity or sends a command. Visibility is an
-explicit required field; all current production connections remain visible.
+explicit required field. Normal electrical links use straight schematic lines; mechanical
+geometry and exploded dashed styling retain their existing behavior.
 
 Use exact IDs from [connectionTestPaths](../../src/model/connection-test-paths.mjs#symbol=connectionTestPaths) for
 path highlights. The [Connect & test panel](../../src/presentation/connection-test.mjs)
-owns the highlighted row and clears it on close, replacement and disposal. An edge
+owns both the highlighted row and a separate reveal of its currently displayed paths
+while open. Row pointer leave clears highlighting, but closing the panel, changing
+selection, removing the target and disposal clear reveal as well. An edge
 between two highlighted parts is not necessarily on the inspected path. Selection,
 tracing and exploded display state keep their existing owners; compose their inputs
 instead of copying them into another mutable store.
 
-For any future display preference, specify its lifetime and restoration before adding
-state. Keep it in presentation, outside blueprints, commands, Undo, checkpoints and
-replay. Distinguish the user's preference from a temporary inspection override. Updating
+[Wiring preferences](../../src/presentation/connection-render.mjs#symbol=createWiringPreferences)
+belong to the mounted view: Build defaults on, Run/Paused off, replacement preserves them,
+and remount resets them. They stay outside blueprints, commands, Undo, checkpoints and
+replay. The checkbox reflects this preference. The producer unions exact trace edges,
+open-panel path edges and edges incident to the wiring source endpoint; ordinary selection
+only highlights. Exploded reveal includes its closing transition. The inspection notice
+appears only when these overrides reveal otherwise hidden electrical links. Updating
 while paused must use existing scene invalidation. Hidden resources must be excluded
 from picking through `pickableObjects`, retain their geometry, and update their endpoints
 before reappearing. Do not put visibility in the geometry cache key.
@@ -158,7 +165,7 @@ Run [renderer/resource tests](../../test/connection-render.test.mjs),
 [resource retention tests](../../test/presentation-resources.test.mjs),
 [diagnostic path tests](../../test/connection-test-paths.test.mjs), and boundary type checks.
 Wrong controls must catch missing visibility, non-path highlights, hidden ray hits and
-changed graph/poses. For a new UI toggle, additionally compare completed simulation
+changed graph/poses. For UI toggles, compare completed simulation
 projections with identical authored data and input traces across the toggle, and exercise
 paused updates, cancellation and remount cleanup through the shared browser harness.
 Use existing registered connection-test/exploded browser checks and the interaction

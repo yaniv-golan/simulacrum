@@ -82,6 +82,9 @@ import * as THREE from 'three';
 import { connectionRenderSpecs } from '../../src/presentation/connection-render.mjs';
 import { createConnectionView } from '../../src/presentation/connection-view.mjs';
 const renderSpecs = connectionRenderSpecs({
+  wiringVisible: true,
+  revealedConnectionIds: new Set<string>(),
+  sourceEndpoint: null,
   connections: blueprint.connections,
   diagnostics: [],
   resolveEndpoint: () => new THREE.Vector3(),

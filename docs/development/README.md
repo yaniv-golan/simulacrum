@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"4000801acbd82690beda6b03a13fcad871031da39140ea2559b74cd8cdaf30a0","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"7966329d3db55d3971ab247b17657152fa5385e49329724f9e1e9966b9dff0ee","disposition":"updated","rationale":"The working loop now offers inspect:change as a composed discovery report; existing Node, build and preview commands remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b7187e1d63a04396e822d93f2f9e883adb4bbb9fffdd84137a57bd512714458a","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"10bd7ac82f01e82a12794d1f7783d429ffb50d42ef5454b2e2830568641fe5c0","disposition":"still accurate","rationale":"The linked overlay recipe now covers Wiring; the working loop still discovers owners, runs failing controls, reviews docs and executes final verification."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md) and the
 [recipe for your change](recipes.md) before choosing an owner. Use Node 24.18.x and
@@ -85,7 +85,7 @@ report after changing source or environment.
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"d1226ed911dbc596ae8deef90dab50deb8c61e596772f26570d455da07412ab1","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"b27fa2dabf5f3156cb16b4735c4f9d85803f5a2b10940e1a4cc2a13385614b05","disposition":"updated","rationale":"Implementation scope now binds static code and declared dependencies while explicitly excluding arbitrary runtime payload contents; default module coverage remains conservative and explicit input links remain binding."} -->
+<!-- doc-review {"version":1,"fingerprint":"212d230db58522a65eb8601e30ff425ec3a1f1f645c18ac38da7870e20da1197","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"11c8d9641f47ee49be465f1ac3d6f7db5baaf13399b14777cd11bdeac8d6aa48","disposition":"still accurate","rationale":"The generated reference now includes the expanded connection display guarantee and exploded browser association; its role and the section-scoped review procedure remain unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes

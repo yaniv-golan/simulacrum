@@ -13,7 +13,17 @@ export function connectionRenderSpecs(input) {
       id: connection.id,
       kind: connection.kind,
       ends: [a, b],
-      visible: true,
+      visible:
+        !['power', 'signal'].includes(connection.kind) ||
+        input.wiringVisible ||
+        input.exploded ||
+        connection.id === input.tracedConnectionId ||
+        input.revealedConnectionIds.has(connection.id) ||
+        [connection.a, connection.b].some(
+          (endpoint) =>
+            endpoint.part === input.sourceEndpoint?.part &&
+            endpoint.port === input.sourceEndpoint?.port,
+        ),
       failed: diagnostics.get(connection.id) !== 'OK',
       exploded: input.exploded,
       highlighted:
@@ -24,4 +34,17 @@ export function connectionRenderSpecs(input) {
     });
   }
   return specs;
+}
+
+/** View-session preferences only; paused and stepping share the Run preference. */
+export function createWiringPreferences() {
+  const preferences = { build: true, run: false };
+  return {
+    /** @param {string} mode */
+    read: (mode) => preferences[mode === 'build' ? 'build' : 'run'],
+    /** @param {string} mode @param {boolean} visible */
+    set(mode, visible) {
+      preferences[mode === 'build' ? 'build' : 'run'] = visible;
+    },
+  };
 }

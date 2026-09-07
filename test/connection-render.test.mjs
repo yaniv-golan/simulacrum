@@ -12,6 +12,9 @@ const edge = (id, kind = 'power') => ({
 test('render producer uses exact test edges and preserves source and endpoint poses', () => {
   const connections = [edge('tested'), edge('other', 'signal')];
   const input = {
+    wiringVisible: true,
+    revealedConnectionIds: new Set(),
+    sourceEndpoint: null,
     connections,
     diagnostics: connections.map((e) => ({ id: e.id, reasonCode: 'OK' })),
     resolveEndpoint: (e) => new THREE.Vector3(e.part === 'a' ? 1 : 2, 3, 4),
@@ -68,4 +71,67 @@ test('hidden render resources neither intercept rays nor churn geometry and rest
   assert.equal(resource.group.visible, true);
   view.dispose();
   assert.deepEqual(view.pickableObjects(), []);
+});
+
+test('electrical visibility unions exact inspection edges without revealing ordinary selections', () => {
+  const connections = [
+    edge('power'),
+    edge('signal', 'signal'),
+    edge('shaft', 'shaft'),
+    { ...edge('unrelated'), a: { part: 'x', port: 'power' }, b: { part: 'y', port: 'power' } },
+  ];
+  const input = {
+    connections,
+    diagnostics: [],
+    resolveEndpoint: () => new THREE.Vector3(),
+    exploded: false,
+    selectedPartId: 'a',
+    tracedConnectionId: null,
+    testConnectionIds: new Set(),
+    wiringVisible: false,
+    revealedConnectionIds: new Set(),
+    sourceEndpoint: null,
+  };
+  const visible = (overrides = {}) =>
+    connectionRenderSpecs({ ...input, ...overrides })
+      .filter((s) => s.visible)
+      .map((s) => s.id);
+  assert.deepEqual(visible(), ['shaft']);
+  assert.deepEqual(visible({ tracedConnectionId: 'signal' }), ['signal', 'shaft']);
+  assert.deepEqual(visible({ revealedConnectionIds: new Set(['power', 'deleted']) }), [
+    'power',
+    'shaft',
+  ]);
+  assert.deepEqual(visible({ sourceEndpoint: { part: 'a', port: 'missing' } }), ['shaft']);
+  assert.deepEqual(visible({ sourceEndpoint: { part: 'a', port: 'power' } }), [
+    'power',
+    'signal',
+    'shaft',
+  ]);
+  assert.deepEqual(
+    visible({ tracedConnectionId: 'signal', revealedConnectionIds: new Set(['power']) }),
+    ['power', 'signal', 'shaft'],
+  );
+  assert.deepEqual(
+    visible({ exploded: true }),
+    connections.map((e) => e.id),
+  );
+  assert.deepEqual(
+    visible({ wiringVisible: true }),
+    connections.map((e) => e.id),
+  );
+});
+
+test('mounted wiring preferences separate build from run and paused and reset on remount', async () => {
+  const { createWiringPreferences } = await import('../src/presentation/connection-render.mjs');
+  const prefs = createWiringPreferences();
+  assert.equal(prefs.read('build'), true);
+  assert.equal(prefs.read('run'), false);
+  prefs.set('build', false);
+  prefs.set('paused', true);
+  assert.equal(prefs.read('run'), true);
+  assert.equal(prefs.read('build'), false);
+  assert.equal(prefs.read('paused'), true);
+  assert.equal(createWiringPreferences().read('run'), false);
+  assert.equal(createWiringPreferences().read('build'), true);
 });

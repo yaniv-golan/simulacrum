@@ -41,7 +41,7 @@ test('resource ownership retains harmless edits and disposes changed or removed 
 
 import * as THREE from 'three';
 import { createConnectionView } from '../src/presentation/connection-view.mjs';
-test('unchanged and moved connection endpoints retain GPU resources and match a fresh cable', () => {
+test('unchanged and moved connection endpoints retain GPU resources and match schematic line endpoints', () => {
   const parent = new THREE.Group(),
     view = createConnectionView(parent),
     spec = {
@@ -73,18 +73,19 @@ test('unchanged and moved connection endpoints retain GPU resources and match a 
   assert.equal(cable.material, material);
   assert.equal(disposals, 0);
   assert.ok(position.version > version);
-  const middle = spec.ends[0].clone().lerp(spec.ends[1], 0.5);
-  middle.y += Math.min(0.12, spec.ends[0].distanceTo(spec.ends[1]) * 0.2 + 0.035);
-  const expected = new THREE.TubeGeometry(
-    new THREE.QuadraticBezierCurve3(spec.ends[0], middle, spec.ends[1]),
-    20,
-    0.005,
-    8,
-    false,
+  assert.ok(cable instanceof THREE.Line);
+  assert.deepEqual(
+    [...position.array],
+    spec.ends.flatMap((p) => p.toArray()),
   );
-  assert.deepEqual(position.array, expected.attributes.position.array);
-  assert.deepEqual(geometry.attributes.normal.array, expected.attributes.normal.array);
-  expected.dispose();
+  for (let i = 0; i < 30; i++) view.update([{ ...spec, visible: i % 2 === 0 }]);
+  assert.equal(cable.geometry, geometry);
+  assert.equal(cable.material, material);
+  assert.equal(disposals, 0);
+  assert.deepEqual(
+    resource.group.children.slice(1).map((m) => m.position.toArray()),
+    spec.ends.map((p) => p.toArray()),
+  );
   view.update([{ ...spec, exploded: true }]);
   assert.equal(disposals, 1);
   assert.notEqual(view.resources.get('wire'), resource);

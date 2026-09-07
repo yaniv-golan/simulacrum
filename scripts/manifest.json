@@ -881,7 +881,7 @@
       "id": "connection-display-isolation",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Connection display preserves authored edges and uses exact diagnostic path IDs; hidden render resources do not intercept picking.",
+      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking.",
       "owners": [
         {
           "path": "src/presentation/connection-render.mjs",
@@ -892,7 +892,7 @@
           "anchor": "pickableObjects"
         }
       ],
-      "checks": ["invariant-controls", "verify-connection-test-browser"],
+      "checks": ["invariant-controls", "verify-connection-test-browser", "verify-exploded-browser"],
       "controls": {
         "positive": [
           {

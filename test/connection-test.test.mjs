@@ -61,28 +61,34 @@ test('diagnostic rows highlight exact edges and clear on close, graph change, re
   };
   const frame = { metadata: { mode: 'build', blueprint } },
     seen = [],
+    revealed = [],
     container = new Element('main');
   const view = createConnectionTest({
     send: async () => ({ ok: true }),
     select: () => {},
     choosePort: () => {},
     container,
+    reveal: (ids) => revealed.push([...ids]),
     highlight: (ids) => seen.push([...ids]),
   });
   const section = view.render(frame, parts[0], true),
     details = section.firstElementChild;
   details.open = true;
+  details.dispatchEvent(new Event('toggle'));
+  assert.deepEqual(revealed.at(-1), ['power', 'signal', 'shaft']);
   const rows = details.children.filter((node) => node.className === 'connection-test-path');
   for (const [row, id] of rows.map((row, i) => [row, ['power', 'signal', 'shaft'][i]])) {
     row.dispatchEvent(new Event('pointerenter'));
     assert.deepEqual(seen.at(-1), [id]);
     row.dispatchEvent(new Event('pointerleave'));
     assert.deepEqual(seen.at(-1), []);
+    assert.deepEqual(revealed.at(-1), ['power', 'signal', 'shaft']);
   }
   rows[0].dispatchEvent(new Event('focusin'));
   details.open = false;
   details.dispatchEvent(new Event('toggle'));
   assert.deepEqual(seen.at(-1), []);
+  assert.deepEqual(revealed.at(-1), []);
   details.open = true;
   rows[0].dispatchEvent(new Event('focusin'));
   view.update({ metadata: { mode: 'build', blueprint: { ...blueprint, connections: [] } } });
@@ -99,5 +105,6 @@ test('diagnostic rows highlight exact edges and clear on close, graph change, re
   final.open = true;
   final.children[1].dispatchEvent(new Event('focusin'));
   view.dispose();
+  assert.deepEqual(revealed.at(-1), []);
   assert.deepEqual(seen.at(-1), []);
 });
