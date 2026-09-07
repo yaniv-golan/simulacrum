@@ -1,7 +1,7 @@
 # Architecture and policy owners
 
 ## Overview
-<!-- doc-review {"version":1,"fingerprint":"02b0b71c8c4bafd9857764c316eba2e4a8175af22024ad5ec333bb37ada20f1c","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"59e59174c0520d2ab54b5b6ba8f1e3288946923723e4e47912e50fb17fe464dc","disposition":"updated","rationale":"The authority introduction now has its own overview heading for navigation consumers; runtime, layer and manifest ownership claims and their existing dependencies are preserved."} -->
+<!-- doc-review {"version":1,"fingerprint":"c7764dbe9838f93554dbdf671c252071311307632fd6287ff4af01ca221e97f5","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"49782bf274d7a79ff71ee0bbf9018c88ba41fe12036487ef30a67f2556da47e8","disposition":"still accurate","rationale":"The additional browser check registers existing M3b help behavior under runtime-contract; runtime ownership and milestone authority are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -9,7 +9,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"9fac3a5abb837635a2bcaedac71580968059f5737b530722923333729a2926c2","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"2121ba3640f628c1c1100fd065675c14f485a78310dae0b34e0a1ff5186066e4","disposition":"updated","rationale":"Described named mount delegation to the existing surface preview, core-admitted interface edits and separate placed/saved views with inspectable authored settings."} -->
+<!-- doc-review {"version":1,"fingerprint":"16a0e03af6b67b1cd4107bb21b9bcde0e43ca7827d7bfce97864dadabde55b21","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"a5f3512528aea8932a84de279ff77e867f42cde70474a52cd58f41c97a86a0b8","disposition":"updated","rationale":"Documented retained reading state across close and catalog-wide thumbnail caching independent of palette membership; all state remains presentation-owned."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#implementation) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs) turns player input into ordinary commands. Surface and mirror controls keep previews outside authored state. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -34,9 +34,25 @@ machine. A preview is a proposed edit, not a body pose write. Disposal must end 
 input operations and release handlers/resources; input cancellation also runs on blur,
 lost capture and pause where applicable.
 
+Part explanations, tooltip timers and the movable reference window live in
+[part help](../../src/presentation/part-help.mjs). Window position, size and active tab
+are presentation state. Closing retains the current type, tab and scroll for reopening;
+choosing a different type resets the reading page. Catalog thumbnails are cached
+independently of palette eligibility, so supported loaded-only parts have images too.
+[Example diagrams](../../src/presentation/part-help-diagram.mjs)
+render one node per example part and resize their connection paths with the window.
+They never enter authored state or
+history. The shared [help input scope](../../src/presentation/part-help-input.mjs)
+precedes receiver capture and workshop shortcuts; entering it releases held receiver
+input through the ordinary vehicle-controls command path. Returning to the workbench
+requires a fresh key press. An open reference alone does not suppress controls.
+Because the fixed heading is outside the scrolling content, part help forwards
+reading keys from the header into the active page. Content focus keeps native
+scrolling, while buttons and tab navigation retain their activation behavior.
+
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"c895612739e933d76eb5482c6574ee44bbe9aeb7b7ac6389779fb9085ad9c732","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"822d07c5851f6b62c6a001f2af73fb13098da79be5a2555c6d0c5ef2061b4210","disposition":"still accurate","rationale":"The model assembly owner still owns surface frames and proposal admission; reusable-assemblies owns metadata edits, core owns history, and vehicle-controls owns receiver gain input."} -->
+<!-- doc-review {"version":1,"fingerprint":"7fe0ec1ae3210dbd824d0663dcaef1a6908373b50fe745f473de615ea79bdafd","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"e69ece2a216f3c18bc8be72975eea1e7f78894a5b13812078d5e7e37320afcc8","disposition":"updated","rationale":"Added the extracted palette grouping and shared part-help/port wording owners; receiver input remains owned by vehicle controls."} -->
 
 | Decision                                       | Production owner                                                                                                                                                                                                                                             | Example consumer                                                          |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
@@ -54,6 +70,8 @@ lost capture and pause where applicable.
 | Placement commitment and cancellation          | [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs#symbol=createPlacementLifecycle)                                                                                                                                                   | surface controls                                                          |
 | Canvas direct drag lifetime                    | [createDirectDrag](../../src/presentation/direct-drag.mjs#symbol=createDirectDrag)                                                                                                                                                                           | workshop view                                                             |
 | Receiver keyboard/override ownership           | [createVehicleControls](../../src/presentation/vehicle-controls.mjs#symbol=createVehicleControls)                                                                                                                                                            | [Connect & test](../../src/presentation/connection-test.mjs)              |
+| Palette eligibility and grouping | [part palette](../../src/presentation/part-palette.mjs) | workshop palette; help coverage instead follows the catalog |
+| Part teaching copy and port labels | [help content](../../src/presentation/part-help-content.mjs), [port wording](../../src/presentation/port-wording.mjs) | palette, inspector and static example diagrams |
 | Diagnostics from completed data                | [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion), [connection paths](../../src/model/connection-test-paths.mjs)                                                                                                                | inspector and Check machine                                               |
 
 Use `node scripts/navigate.mjs <owner-symbol>` to discover current consumers and tests.

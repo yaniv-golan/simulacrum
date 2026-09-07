@@ -661,6 +661,24 @@
       "smoke": true,
       "timeoutMs": 60000,
       "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-part-help-window",
+      "script": "scripts/verify-part-help-window.mjs",
+      "environment": "self",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-part-help-browser",
+      "script": "scripts/verify-part-help-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract"
     }
   ],
   "invariants": [
@@ -759,7 +777,12 @@
           "anchor": "createPlacementLifecycle"
         }
       ],
-      "checks": ["invariant-controls", "verify-ui-lifecycle-browser"],
+      "checks": [
+        "invariant-controls",
+        "verify-ui-lifecycle-browser",
+        "verify-part-help-browser",
+        "verify-part-help-window"
+      ],
       "controls": {
         "positive": [
           {

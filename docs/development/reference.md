@@ -70,7 +70,7 @@ These are registered commands and checks, not evidence that they passed.
 | --- | --- | --- |
 | rejected-edit-atomicity | [createWorkshop](../../src/core/workshop.mjs) | invariant-controls |
 | preview-isolation | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [createAssemblyMirror](../../src/presentation/assembly-mirror.mjs), [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs) | invariant-controls, verify-mirror-browser |
-| input-cancellation | [createVehicleControls](../../src/presentation/vehicle-controls.mjs), [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs) | invariant-controls, verify-ui-lifecycle-browser |
+| input-cancellation | [createVehicleControls](../../src/presentation/vehicle-controls.mjs), [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs) | invariant-controls, verify-ui-lifecycle-browser, verify-part-help-browser, verify-part-help-window |
 | geometry-agreement | [partPrimitives](../../src/model/geometry.mjs), [compileAssembly](../../src/model/assembly.mjs) | invariant-controls, verify-property-focus, verify-surface-browser |
 | identity-material-admission | [compileAssembly](../../src/model/assembly.mjs), [MATERIALS](../../src/model/catalog.mjs) | identity |
 | checkpoint-next-step | [createSession](../../src/simulation/session.mjs) | invariant-controls |

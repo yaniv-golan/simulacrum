@@ -49,6 +49,14 @@
     "scripts/source-identity.mjs": "1d0f001521fa9bf3133b6fdcbc90ffbc33c11186650f78c429712b90d1c43bf0",
     "scripts/verify-mirror-browser.mjs": "32e8d2b5a29347ddebfbe38d1c5ced82aa19cf346ac82ddb2072e3ffccc72bc3",
     "src/model/connection-test-paths.mjs": "ae3f9f3e2b350d833b8757ddb6cc326cf8c1b356202976e74b95ae96e7bc157d",
-    "src/presentation/vehicle-controls.mjs": "0c9d508ec0118258de010ca674b79be154f2b049fc7fb9dc7d594c5564f9df05"
+    "src/presentation/part-help-input.mjs": "79ebcd26eb9fbc152749d139a68ba4e0fc980e857fa2a3a7e89917b67a02e0da",
+    "src/presentation/vehicle-controls.mjs": "53c11c5e68e3359ceecb0e962b2be39aaaa5942d12abbf792d5eb4dde3b46d3e",
+    "src/presentation/part-palette.mjs": "658f66ed51550e6e8316109c9003d28618e9352db789cf01cce7072cef0c2ba2",
+    "src/presentation/part-help-content.mjs": "1d6c0b2cdad75b7b6f218a8e83c5eabc66a259ccbe51af33e110482e8304bad8",
+    "scripts/verify-part-help-browser.mjs": "964a796e6e67bdfd05b7b1388b831a9655ca85ea8323918b8de6249906661a33",
+    "scripts/verify-part-help-window.mjs": "ab0c9934c73af0f66388d2788a056cdfe3b4b8816ec0070f796ab764475192e1",
+    "src/presentation/part-help-diagram.mjs": "f42b281fb28bb20b4951a7539a7aa485499454e41ebc58b9992bbb425d7029f1",
+    "src/presentation/port-wording.mjs": "ac6d7d6357095a2a5b62f7fd9c2165e84dd442f825cce3e01b275f39c166e5f4",
+    "test/part-help.test.mjs": "3d38b14f7e711cf3bc60ce092b90eef7e32c6ca36b8f7e713f772153f3216caf"
   }
 }

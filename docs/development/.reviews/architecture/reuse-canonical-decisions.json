@@ -40,11 +40,15 @@
     "src/presentation/placement-lifecycle.mjs": "bca1d2b2fe1b89af4a9016421159459773929ab20572fb033a871e38109f5964",
     "src/presentation/direct-drag.mjs": "86548b9e76092c51c028fc3f23884035b264d476c33745593cc27b3f56b0217d",
     "src/model/connection-test-paths.mjs": "b98157a6a478edf4fc34690e1217af113c19674cf5cbb7e223287d769abf44c3",
-    "src/presentation/vehicle-controls.mjs": "22da5a2eb6d88d66995b8f9a097753ebea307dd8a48051e2d80acf25b23926f8",
+    "src/presentation/part-help-input.mjs": "a8e6b35c6c740ffb06f6143b4f06aeca682e55bbadb3e40d8ef69e06ed0c7663",
+    "src/presentation/vehicle-controls.mjs": "8c769047347ecd12163336ab04a40940b7ea5685d687db2d6b5e579981b910c8",
     "src/model/display-units.mjs": "6f816b6465becc23ac98147b059d48e7b9ade38825b710ed951f66d20959d69c",
     "src/model/messages.mjs": "4b7c2881710aec6e0691403620e696f88e56a5d7b83b2889f0b312fa6a298c23",
     "src/model/motion-diagnostics.mjs": "86e7b431c4e9b2f07952113417050003255bf3c1b615956905e15f0fc03a5cd3",
     "src/model/motor-shaft-speed.mjs": "fa34a31acf30727ed96cc1909443b163bd68f17b514c26c9f61a805fbc48e6d4",
-    "src/presentation/connection-test.mjs": "af11fe191b5ec417bfd1214764477d7c0c69ca183f977c282f9469fc094033fb"
+    "src/presentation/connection-test.mjs": "af11fe191b5ec417bfd1214764477d7c0c69ca183f977c282f9469fc094033fb",
+    "src/presentation/part-palette.mjs": "658f66ed51550e6e8316109c9003d28618e9352db789cf01cce7072cef0c2ba2",
+    "src/presentation/part-help-content.mjs": "1d6c0b2cdad75b7b6f218a8e83c5eabc66a259ccbe51af33e110482e8304bad8",
+    "src/presentation/port-wording.mjs": "ac6d7d6357095a2a5b62f7fd9c2165e84dd442f825cce3e01b275f39c166e5f4"
   }
 }

@@ -10,7 +10,7 @@ attachment, polarity, naming, reset or authored-property policy.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"06bc96659f2c46549d5c6cf04d3392eeb634ac08028eaf7e7d24ae3bc2440e49","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"75d1e4ee5f226cf294541f5910a81e4f766a928572cdf630f00b8996ff515773","disposition":"still accurate","rationale":"Optional assembly-scoped surface movement changes which authored parts move, not catalog geometry, parameter definitions or per-shape material selection; schema and wheel worked examples remain valid."} -->
+<!-- doc-review {"version":1,"fingerprint":"12a52d7c9fab3cdf92cdbc6a6ff0287256a727a2649d35dc7794a9cab5516fcb","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"dc15bb2ef30f7479b659d28933e6d6b8e516aa342c194149ec88c8e83c8265dc","disposition":"still accurate","rationale":"UI_FEATURES adds an M3b partHelp entrypoint; no catalog geometry, parameter, material, schema or compiler behavior changed."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -42,7 +42,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"309e24df5518ea71fcdfbf502e15a272aeb947d755eb426d953c3ac4ecef574d","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"51f837bc326a1317954b28da141f8befc65db025a046f396d758949b11cbd704","disposition":"still accurate","rationale":"The module graph adds a server-listen preflight hint for test execution; interaction ownership, pointer cancellation, mirror proposals and browser assertions remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1b68631b5a083fc7174332acbc5650159c52040ceaa1ce1eeaaa2d7263881302","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"3ab793c191f4d6462dab981587f4be03d6c5d3ce9a3557c6e27604459c441a50","disposition":"updated","rationale":"Added decoded portrait coverage for supported loaded types and exact tab/scroll preservation across close/reopen; existing switching and cleanup checks remain."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -56,6 +56,32 @@ and the registered [mirror browser verifier](../../scripts/verify-mirror-browser
 The verifier link covers its implementation; execute it against the current served build to obtain behavioral evidence.
 Receiver overrides must use [vehicle controls](../../src/presentation/vehicle-controls.mjs),
 not dispatch a second reset or directly write actuator state.
+
+For reading controls, share [help input containment](../../src/presentation/part-help-input.mjs)
+between window capture and workshop shortcuts before handling surface/mirror keys.
+Preserve native navigation inside the help panel and release held receiver commands
+through vehicle controls on focus entry. Keep static help independent of selection,
+mode, frame refresh and authored history. Pointer focus must not open a tooltip
+between press and release and intercept placement. Place connection diagrams before
+text instructions in the How to connect tab of the nonmodal reference window.
+Keep the title bar and tabs available while content scrolls; clamp dragging and
+resizing to the viewport. Keep the small info control visually inside the placement
+card while retaining sibling buttons in the DOM. Restore a hidden opener by opening
+its containing disclosure before focusing it. Preserve palette eligibility through
+[part palette](../../src/presentation/part-palette.mjs); supported loaded types still
+need [help content](../../src/presentation/part-help-content.mjs). Use the
+[part help browser check](../../scripts/verify-part-help-browser.mjs#implementation)
+for dragging, expand/restore, tabs, capture, authoring Escape, mode availability,
+inspector coverage and reflow. Assert actual scroll movement as well as absence of
+workshop edits when reading keys start on the fixed heading. Verify close/reopen
+preserves tab and scroll, switching types resets the page, and every supported
+loaded type has a decoded help thumbnail without changing palette membership. The
+[window browser check](../../scripts/verify-part-help-window.mjs#implementation)
+uses the real help owner in an isolated browser fixture to verify native resizing,
+exact restoration, drag cancellation, rendered endpoint geometry, actual browser
+zoom through a test-only extension, and listener/observer disposal across remounts.
+Its empty thumbnails also exercise readable labels without images. Use
+[example admission tests](../../test/part-help.test.mjs) for ordinary diagram endpoints.
 
 ## Add a diagnostic
 

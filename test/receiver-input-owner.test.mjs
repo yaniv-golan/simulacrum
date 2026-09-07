@@ -126,6 +126,39 @@ for (const reset of ['blur', 'pause']) {
   keyboard.update(frame);
   tester.update(frame);
 }
+// Reading help releases held keys and capture must not consume navigation keys.
+commands.length = 0;
+window.dispatchEvent(event('keydown', { code: 'KeyW', key: 'w' }));
+await flush();
+document.activeElement = {
+  closest: (selector) => (selector.includes('data-part-help-input') ? {} : null),
+};
+document.dispatchEvent(event('focusin'));
+await flush();
+check(
+  commands.map((c) => c.duty),
+  [1, 0],
+);
+const readingKey = event('keydown', { code: 'KeyW', key: 'w' });
+window.dispatchEvent(readingKey);
+await flush();
+check(readingKey.defaultPrevented, false);
+document.activeElement = null;
+window.dispatchEvent(event('keydown', { code: 'KeyW', key: 'w', repeat: true }));
+await flush();
+check(
+  commands.map((c) => c.duty),
+  [1, 0],
+);
+window.dispatchEvent(event('keyup', { code: 'KeyW', key: 'w' }));
+window.dispatchEvent(event('keydown', { code: 'KeyW', key: 'w' }));
+await flush();
+check(
+  commands.map((c) => c.duty),
+  [1, 0, 1],
+);
+window.dispatchEvent(event('keyup', { code: 'KeyW', key: 'w' }));
+await flush();
 commands.length = 0;
 const controlled = structuredClone(bp);
 controlled.parts.push({ id: 'logic', name: 'Controller', type: 'logicController' });

@@ -108,7 +108,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"56230386f1296a6334191a9fe33e8683ad40d99fabf674dfe0e7dde6a1a7f843","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"7511befd6aef7ecedd548252496f5f276ad61fd50bb666d515ff85f7158917b9","disposition":"updated","rationale":"Navigation-only links target scoped overview headings while implementation explanations retain body dependencies; batch decisions remain individually source-bound and later source changes still require review."} -->
+<!-- doc-review {"version":1,"fingerprint":"4839635c9199b1831b450675040c9e604bbc282524dfa8dc7ef69ed91a4c1bba","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"f70967abfe2d6d7ece59c05ae5ddcca16f9b67c2a85a82141f89dd5f6f964d49","disposition":"still accurate","rationale":"The regenerated reference includes the registered part help window check and fixture module; the documented generation and section-review workflow remains unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes

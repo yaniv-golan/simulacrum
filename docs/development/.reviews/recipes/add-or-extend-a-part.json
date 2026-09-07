@@ -12,7 +12,7 @@
     "src/model/geometry.mjs": "9f76388f92784502c43136fd0cbd41199415dab557da5f03f0d061c655e799d7",
     "src/model/surfaces.mjs": "350bbac7e19e8fa0779a1f94b5ec4eadcbe656629cae7cb19b946951f4ad1058",
     "src/model/transforms.mjs": "d72cac96acec8f21c2dc73bb6cee78d0c97223a68984b59b46d26bc0ececfb46",
-    "src/model/features.mjs": "f7b4c8d7d2c182855a6a1c5486ea95beaae7bb525cd2a318fd37f41871440403",
+    "src/model/features.mjs": "519df94c080306c199038bf574242c474eb72e045caff473a0186c0378fa86cf",
     "src/model/assembly.mjs": "1dc43d2c2c1f2d85fbae0ef5994f1576696ce432e7bd28a69931eb8a41f35cb2",
     "src/model/compile-body.mjs": "ca526164f6d7b0f879d814373952d7d2654c3215431a579eab706daec856a304",
     "src/model/environment.mjs": "40efdce97605552249177aad5f7cafaf0dd41ad884d0ec5ad1e92863e8b6e52b",

@@ -1,3 +1,7 @@
+import { portLabel, portPurpose } from './port-wording.mjs';
+import { PRIMARY_PARTS, MORE_PARTS } from './part-palette.mjs';
+import { createPartHelp } from './part-help.mjs';
+import { ownsPartHelpInput } from './part-help-input.mjs';
 import { createAssemblyLibraryPanel } from './assembly-library.mjs';
 import { createDirectDrag } from './direct-drag.mjs';
 import { createConnectionTest } from './connection-test.mjs';
@@ -51,48 +55,6 @@ const parameterHelp = {
   capacityJ: 'More stored energy supports a longer run.',
 };
 const labels = { power: 'Power', shaft: 'Shaft', fixed: 'Mount', signal: 'Signal' };
-
-function portLabel(part, port) {
-  if (port.kind === 'power') return 'Power';
-  if (port.kind === 'signal')
-    return port.direction === 'input' ? 'Control input' : 'Control output';
-  if (port.kind === 'fixed')
-    return port.id === 'mount' ? 'Mount' : `Mount · ${port.id.replace(/([A-Z])/g, ' $1')}`;
-  if (part.type === 'gripWheel') return 'Wheel axle';
-  if (part.type === 'poweredMotor') return 'Drive shaft';
-  if (part.type === 'poweredHinge') return 'Steering output';
-  if (part.type === 'wheelHub') return port.id === 'steering' ? 'Steering input' : 'Wheel axle';
-  return port.id === 'shaft' ? 'Axle' : `Axle · ${port.id}`;
-}
-function portPurpose(part, port) {
-  if (port.kind === 'fixed')
-    return (
-      'Bolts two parts together. They cannot move or turn relative to each other.' +
-      (part.type === 'gripWheel'
-        ? ' Bolting this wheel to the chassis or motor housing stops it spinning independently.'
-        : '')
-    );
-  if (port.kind === 'power')
-    return 'Carries electrical power. This wire does not hold parts together. More than one wire can share this port.';
-  if (port.kind === 'signal')
-    return (
-      'Carries control commands. This wire does not hold parts together.' +
-      (part.type === 'poweredMotor'
-        ? ' Optional: without a signal, the motor uses its Drive setting.'
-        : '')
-    );
-  if (part.type === 'poweredHinge' && port.kind === 'shaft')
-    return 'Turns the attached hub using motor torque. Connect the hub steering input here.';
-  if (part.type === 'wheelHub' && port.kind === 'shaft')
-    return port.id === 'steering'
-      ? 'Attach to a powered hinge. The hub follows its steering angle.'
-      : 'Attach a wheel here. It spins freely while the hub steers.';
-  if (part.type === 'gripWheel')
-    return 'Connect to a motor or bearing to attach a turning wheel. This connection holds the wheel too; no separate fixed mount is needed.';
-  if (part.type === 'poweredMotor')
-    return 'Attaches a wheel or axle and drives its rotation relative to the motor housing. Mount the motor housing separately.';
-  return 'Connects an axle. A bearing lets the attached axle turn relative to its housing.';
-}
 
 const materialColor = { aluminium: 0x9aadb2, steel: 0x657d8b, rubber: 0x323d46 };
 const format = (value, digits = 1) => (Number.isFinite(value) ? value.toFixed(digits) : '—');
@@ -191,21 +153,24 @@ export function createWorkshopView(
       return result;
     }
   };
+  const partThumbnails = new Map();
   function partIcon(type) {
     const img = element('img', 'part-icon');
     img.dataset.iconType = type;
+    if (partThumbnails.has(type)) img.src = partThumbnails.get(type);
     img.alt = '';
     img.draggable = false;
     return img;
   }
   function enablePaletteDrag(card, type) {
     card.draggable = true;
-    card.title = `Drag ${CATALOG[type].name} into place`;
+    card.dataset.placement = '';
     card.addEventListener('dragstart', (event) => {
       if (frame?.metadata.mode !== 'build') {
         event.preventDefault();
         return;
       }
+      partHelp.dismissTooltip();
       cancelInteraction();
       draggingType = type;
       event.dataTransfer.setData('text/plain', type);
@@ -280,13 +245,29 @@ export function createWorkshopView(
       'Start with the guided rolling machine, or choose parts to build freely. Run applies gravity; support your motor above the floor.',
     ),
   );
+  const partsHeading = element('h2', '', 'Parts');
+  partsHeading.tabIndex = -1;
+  left.append(partsHeading);
+  const partHelp = createPartHelp({
+    container: left,
+    fallback: partsHeading,
+    icon: partIcon,
+    busy: () =>
+      Boolean(
+        draggingType ||
+          surface?.active() ||
+          mirror?.active() ||
+          directDrag?.active?.() ||
+          editing?.isDragging(),
+      ),
+  });
   const palette = element('div', 'palette');
-  for (const type of ['powerCell', 'poweredMotor', 'gripWheel']) {
+  for (const type of PRIMARY_PARTS) {
     const card = button('', () => send({ type: 'place', partType: type }), 'part-card');
     card.dataset.partType = type;
     card.append(partIcon(type), element('span', '', CATALOG[type].name));
     enablePaletteDrag(card, type);
-    palette.append(card);
+    palette.append(partHelp.entry(card, type));
   }
   let guideReceipt = null,
     guideVisual = null,
@@ -421,14 +402,13 @@ export function createWorkshopView(
   refreshGuide();
   const more = element('details', 'more-parts');
   more.append(element('summary', '', 'More parts'));
-  for (const [type, definition] of Object.entries(CATALOG))
-    if (!['powerCell', 'poweredMotor', 'gripWheel', 'logicController'].includes(type)) {
-      const item = button('', () => send({ type: 'place', partType: type }), 'more-part');
-      item.dataset.partType = type;
-      item.append(partIcon(type), element('span', '', definition.name));
-      enablePaletteDrag(item, type);
-      more.append(item);
-    }
+  for (const type of MORE_PARTS) {
+    const item = button('', () => send({ type: 'place', partType: type }), 'more-part');
+    item.dataset.partType = type;
+    item.append(partIcon(type), element('span', '', CATALOG[type].name));
+    enablePaletteDrag(item, type);
+    more.append(partHelp.entry(item, type));
+  }
   left.append(
     more,
     element('p', 'palette-hint', 'Drag a part into the workbench, or click to add it.'),
@@ -564,7 +544,7 @@ export function createWorkshopView(
   message.setAttribute('aria-live', 'polite');
   footer.append(modeLabel, tickLabel, message, shortcut);
   body.append(left, viewport, rightPanel);
-  root.append(header, body, footer);
+  root.append(header, body, footer, partHelp.panel);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x18252d);
@@ -1354,7 +1334,12 @@ export function createWorkshopView(
       icon = partIcon(part.type),
       existingIcon = left.querySelector(`[data-icon-type="${part.type}"]`);
     if (existingIcon) icon.src = existingIcon.src;
-    identity.append(icon, element('h2', '', part.name));
+    const aboutPart = partHelp.about(part.type, 'About this part');
+    aboutPart.classList.add('inspector-part-about');
+    aboutPart.setAttribute('aria-label', 'About this part');
+    aboutPart.title = 'About this part';
+    aboutPart.replaceChildren(icon, element('span', 'help-badge', 'ⓘ'));
+    identity.append(aboutPart, element('h2', '', part.name));
     if (part.name !== definition.name)
       identity.append(element('span', 'part-kind', definition.name));
     const actions = element('div', 'part-actions'),
@@ -2555,8 +2540,8 @@ export function createWorkshopView(
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setSize(128, 104);
     renderer.setClearColor(0, 0);
-    for (const img of left.querySelectorAll('[data-icon-type]')) {
-      const part = createPart(img.dataset.iconType, 'thumbnail', [0, 0, 0]),
+    for (const type of Object.keys(CATALOG)) {
+      const part = createPart(type, 'thumbnail', [0, 0, 0]),
         mesh = createPartMesh(part),
         scene = new THREE.Scene();
       scene.add(mesh, new THREE.HemisphereLight(0xffffff, 0x4f6470, 3));
@@ -2577,9 +2562,11 @@ export function createWorkshopView(
       camera.position.copy(center).add(new THREE.Vector3(1.4, 0.9, 1.8));
       camera.lookAt(center);
       renderer.render(scene, camera);
-      img.src = renderer.domElement.toDataURL();
+      partThumbnails.set(type, renderer.domElement.toDataURL());
       disposePart(mesh);
     }
+    for (const img of left.querySelectorAll('[data-icon-type]'))
+      img.src = partThumbnails.get(img.dataset.iconType);
     renderer.dispose();
     renderer.forceContextLoss();
   }
@@ -2843,6 +2830,7 @@ export function createWorkshopView(
     mirror.update(next);
     assemblies?.update(next);
     vehicleControls.update(next);
+    partHelp.update();
     connectionTest.update(next);
     motionReadout.update(next);
     surface.refresh();
@@ -2901,9 +2889,10 @@ export function createWorkshopView(
     else if (previousMode !== 'build')
       hint.textContent =
         'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear';
-    for (const b of palette.querySelectorAll('button'))
+    for (const b of palette.querySelectorAll('[data-placement]'))
       b.disabled = frame.metadata.mode !== 'build';
-    for (const b of more.querySelectorAll('button')) b.disabled = frame.metadata.mode !== 'build';
+    for (const b of more.querySelectorAll('[data-placement]'))
+      b.disabled = frame.metadata.mode !== 'build';
   }
   function readRenderedCenters() {
     return [...meshes].map(([id, mesh]) => {
@@ -2966,6 +2955,11 @@ export function createWorkshopView(
     }
   }
   const keydown = (event) => {
+    if (ownsPartHelpInput(event.target)) return;
+    if (event.key === 'Escape' && partHelp.dismissTooltip()) {
+      event.preventDefault();
+      return;
+    }
     invalidateScene();
     if (document.querySelector('dialog[open]')) return;
     inputTime = event.timeStamp;
@@ -3300,6 +3294,7 @@ export function createWorkshopView(
       connectionTest.dispose();
       directDrag.dispose();
       vehicleControls.dispose();
+      partHelp.dispose();
       motionReadout.dispose();
       window.removeEventListener('blur', blur);
       surface.dispose();

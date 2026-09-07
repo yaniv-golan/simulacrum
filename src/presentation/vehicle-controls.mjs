@@ -1,3 +1,4 @@
+import { ownsPartHelpInput } from './part-help-input.mjs';
 import { controlCommand } from '../model/workshop-command.mjs';
 import { receiverControlOwner } from '../model/connection-test-paths.mjs';
 import {
@@ -149,6 +150,7 @@ export function createVehicleControls({ send, select, container }) {
   }
   function keydown(event) {
     if (
+      ownsPartHelpInput(event.target) ||
       frame?.metadata.mode !== 'run' ||
       event.ctrlKey ||
       event.metaKey ||
@@ -172,7 +174,11 @@ export function createVehicleControls({ send, select, container }) {
     apply();
   }
   function focus(event) {
-    if (event.target.closest?.('input,textarea,select,[contenteditable="true"],dialog')) clear();
+    if (
+      ownsPartHelpInput(event.target) ||
+      event.target.closest?.('input,textarea,select,[contenteditable="true"],dialog')
+    )
+      clear();
   }
   function visibility() {
     if (document.hidden) clear();
