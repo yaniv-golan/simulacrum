@@ -13,7 +13,6 @@ export const PHASES = Object.freeze([
 export const REASON_CODES = Object.freeze([
   'OK',
   'INVALID_CONFIGURATION',
-  'UNSUPPORTED_ACTUATOR_COUPLING',
   'ENERGY_INVARIANT',
   'INVALID_COMMAND',
   'INVALID_BODY',

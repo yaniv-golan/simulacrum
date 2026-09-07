@@ -43,6 +43,9 @@ try {
   assert.equal(await page.getByLabel('Mounting face').count(), 1);
   await page.locator('.surface-precise summary').click();
   await page.getByLabel('Target surface').selectOption(JSON.stringify(['base', 'top']));
+  await page.waitForFunction(() => document.querySelector('.surface-cue')?.textContent);
+  assert.match(await page.locator('.surface-cue').innerText(), /Click Attach/);
+  assert.doesNotMatch(await page.locator('.surface-confirmation').innerText(), /Release/);
   assert.deepEqual(await read(), before, 'preview must leave authored state unchanged');
   await page.getByLabel('Along surface (mm)').fill('500');
   assert.equal(
@@ -54,6 +57,58 @@ try {
     await page.locator('.surface-placement [role=status]').innerText(),
     /extends beyond/,
   );
+  assert.match(await page.locator('.surface-confirmation').innerText(), /Blocked · not placed/);
+  await page.screenshot({ path: `${out}/blocked.png` });
+  const blockedFooter = await page.locator('.surface-confirmation').boundingBox();
+  const blockedAction = await page.locator('[data-command=apply-surface]').boundingBox();
+  assert.ok(
+    blockedAction.y >= blockedFooter.y &&
+      blockedAction.y + blockedAction.height <= blockedFooter.y + blockedFooter.height,
+    'blocked reason and action share one visible footer',
+  );
+  await select('base');
+  assert.deepEqual(
+    await read(),
+    before,
+    'leaving an invalid preview must not attach or move parts',
+  );
+  await select('motor');
+  await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
+  await page.getByLabel('Target surface').selectOption(JSON.stringify(['base', 'top']));
+  await page.getByRole('button', { name: 'Center on surface', exact: true }).click();
+  const centered = await page.evaluate(
+    () => window.workshopProbe.readInteractionState().surfacePlacement,
+  );
+  assert.equal(centered.u, 0);
+  assert.equal(centered.v, 0);
+  await page.getByRole('button', { name: 'Align to surface edge 1', exact: true }).click();
+  const beforeKeyboard = await read();
+  await page.getByRole('button', { name: 'Center on surface', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  assert.deepEqual(await read(), beforeKeyboard, 'Enter on an alignment button must not attach');
+  await page.keyboard.press('ArrowRight');
+  assert.deepEqual(await read(), beforeKeyboard, 'focused marker arrows must only move preview');
+  await page.keyboard.press('Space');
+  assert.deepEqual(
+    await read(),
+    beforeKeyboard,
+    'Space on a marker must not run or edit the machine',
+  );
+  assert.equal(
+    (await page.evaluate(() => window.workshopProbe.readInteractionState().surfacePlacement)).u,
+    0,
+  );
+  await page.getByRole('button', { name: 'Align to surface edge 1', exact: true }).click();
+  const edgePreview = await page.evaluate(
+    () => window.workshopProbe.readInteractionState().surfacePlacement,
+  );
+  assert.ok(
+    edgePreview.valid && edgePreview.u < 0,
+    'surface edge marker aligns a fitting footprint',
+  );
+  assert.deepEqual(await read(), before, 'alignment controls adjust only the labelled preview');
+  if (!(await page.locator('.surface-precise').evaluate((e) => e.open)))
+    await page.locator('.surface-precise summary').click();
   await page.getByLabel('Along surface (mm)').fill('50');
   assert.equal(await page.locator('[data-command=apply-surface]').isDisabled(), false);
   const previewUI = await page.evaluate(() => window.workshopProbe.readInteractionState()),
@@ -70,7 +125,6 @@ try {
   await page.mouse.move(px, py);
   await page.mouse.down();
   await page.mouse.move(px + 20, py, { steps: 6 });
-  await page.mouse.up();
   const draggedUI = await page.evaluate(() => window.workshopProbe.readInteractionState());
   assert.deepEqual(draggedUI.camera, previewUI.camera, 'dragging preview must not orbit camera');
   assert.notDeepEqual(
@@ -78,11 +132,20 @@ try {
     [previewUI.surfacePlacement.u, previewUI.surfacePlacement.v],
     'dragging preview slides on face',
   );
-  assert.deepEqual(await read(), before);
-  await page.getByLabel('Along surface (mm)').fill('50');
-  await page.getByLabel('Across surface (mm)').fill('0');
   await page.screenshot({ path: `${out}/preview.png` });
-  await page.locator('[data-command=apply-surface]').click();
+  await page.mouse.up();
+  await page.waitForFunction(
+    () => window.workshopProbe.observe().frames[0].metadata.blueprint.connections.length === 1,
+  );
+  assert.equal(
+    (await read()).connections.length,
+    1,
+    'releasing a valid surface placement must attach',
+  );
+  const committed = await read();
+  await select('base');
+  assert.deepEqual(await read(), committed, 'clicking away must preserve completed attachment');
+  await select('motor');
   const mounted = await read();
   assert.equal(mounted.connections.length, 1);
   assert.deepEqual(mounted.parts[0], before.parts[0]);
@@ -119,9 +182,132 @@ try {
   await page.getByRole('button', { name: 'Detach', exact: true }).click();
   await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
   await page.getByLabel('Target surface').selectOption(JSON.stringify(['base', 'top']));
-  await page.getByLabel('Attach after snapping').uncheck();
+  await page.getByLabel('Placement result').selectOption('position');
   await page.locator('[data-command=apply-surface]').click();
   assert.equal((await read()).connections.length, 0);
+  await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
+  assert.equal(
+    await page.getByLabel('Placement result').inputValue(),
+    'attach',
+    'new operations default to attachment',
+  );
+  await page.getByLabel('Target surface').selectOption(JSON.stringify(['base', 'top']));
+  const beforeOutside = await read();
+  const pending = await page.evaluate(() => window.workshopProbe.readInteractionState());
+  camera.position.fromArray(pending.camera.position);
+  camera.lookAt(new THREE.Vector3(...pending.camera.target));
+  camera.updateMatrixWorld();
+  const outsideStart = new THREE.Vector3(
+    ...pending.surfacePlacement.previewParts[0].position,
+  ).project(camera);
+  await page.mouse.move(
+    canvas.x + ((outsideStart.x + 1) * canvas.width) / 2,
+    canvas.y + ((1 - outsideStart.y) * canvas.height) / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(canvas.x - 20, canvas.y + canvas.height / 2, { steps: 5 });
+  await page.mouse.up();
+  assert.deepEqual(
+    await read(),
+    beforeOutside,
+    'release outside the canvas cancels without a joint',
+  );
+  assert.equal(
+    await page.evaluate(() => window.workshopProbe.readInteractionState().surfacePlacement),
+    null,
+  );
+  await page.locator('input[type=file]').setInputFiles(`${out}/fixture.json`);
+  await page.waitForFunction(
+    (expected) =>
+      JSON.stringify(window.workshopProbe.observe().frames[0].metadata.blueprint) === expected,
+    JSON.stringify(fixture),
+  );
+  await page.evaluate(() => new Promise(requestAnimationFrame));
+  const dragUI = await page.evaluate(() => window.workshopProbe.readInteractionState());
+  const dragCamera = new THREE.PerspectiveCamera(
+    dragUI.camera.fov,
+    dragUI.camera.aspect,
+    0.01,
+    100,
+  );
+  dragCamera.position.fromArray(dragUI.camera.position);
+  dragCamera.lookAt(new THREE.Vector3(...dragUI.camera.target));
+  dragCamera.updateMatrixWorld();
+  const dragCanvas = await page.locator('canvas').first().boundingBox();
+  function dragScreen(position) {
+    const p = new THREE.Vector3(...position).project(dragCamera);
+    return [
+      dragCanvas.x + ((p.x + 1) * dragCanvas.width) / 2,
+      dragCanvas.y + ((1 - p.y) * dragCanvas.height) / 2,
+    ];
+  }
+  await page.mouse.move(...dragScreen(fixture.parts[1].position));
+  await page.mouse.down();
+  await page.mouse.move(
+    dragCanvas.x + dragCanvas.width - 30,
+    dragCanvas.y + dragCanvas.height - 30,
+    { steps: 4 },
+  );
+  assert.equal(
+    await page.locator('.placement-cue').isVisible(),
+    true,
+    'free drag offers release hint',
+  );
+  await page.mouse.move(...dragScreen([0, 0.4, 0]), { steps: 1 });
+  await page.mouse.up();
+  assert.equal(
+    await page.locator('.placement-cue').isVisible(),
+    false,
+    'surface release clears free-drag hint',
+  );
+  const fullTurnFixture = {
+    ...createEmptyBlueprint('full-turn', 'Full turn'),
+    parts: [
+      createPart('chassis', 'base', [0, 0.35, 0]),
+      createPart('chassis', 'moving', [1, 0.35, 0]),
+    ],
+  };
+  writeFileSync(`${out}/full-turn.json`, JSON.stringify(fullTurnFixture));
+  await page.locator('input[type=file]').setInputFiles(`${out}/full-turn.json`);
+  await select('moving');
+  await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
+  await page.getByLabel('Mounting face').selectOption('left');
+  await page.getByLabel('Target surface').selectOption(JSON.stringify(['base', 'right']));
+  const markers = page.locator('.surface-anchor:visible');
+  await markers.first().waitFor();
+  const markerCount = await markers.count();
+  assert.ok(markerCount > 0, 'exact-fit face initially offers alignment controls');
+  for (let i = 0; i < 4; i++)
+    await page.getByRole('button', { name: 'Rotate on surface +90°', exact: true }).click();
+  await page.evaluate(() => new Promise(requestAnimationFrame));
+  assert.equal(await markers.count(), markerCount, 'four quarter turns restore alignment controls');
+  assert.deepEqual(await read(), fullTurnFixture, 'full-turn preview does not author a joint');
+  await page.screenshot({ path: `${out}/full-turn.png` });
+  await page.locator('input[type=file]').setInputFiles(`${out}/fixture.json`);
+  await page.waitForFunction(
+    () => window.workshopProbe.observe().frames[0].metadata.blueprint.id === 'surface-test',
+  );
+  await page.getByLabel('Surface snap', { exact: true }).uncheck();
+  await page.getByRole('button', { name: 'Frame machine · F', exact: true }).click();
+  await page.waitForTimeout(300);
+  const beforeBlockedDrag = await read();
+  const centers = await page.evaluate(() => window.workshopProbe.readRenderedCenters());
+  const box = await page.locator('canvas').first().boundingBox();
+  const pixel = (id) => {
+    const p = centers.find((p) => p.id === id);
+    return { x: box.x + ((p.x + 1) * box.width) / 2, y: box.y + ((1 - p.y) * box.height) / 2 };
+  };
+  const start = pixel('motor'),
+    end = pixel('base');
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(end.x, end.y, { steps: 12 });
+  assert.match(await page.locator('.placement-cue').innerText(), /overlaps/);
+  await page.screenshot({ path: `${out}/free-overlap-preview.png` });
+  await page.mouse.up();
+  assert.deepEqual(await read(), beforeBlockedDrag, 'blocked free drag preserves authored machine');
+  assert.match(await page.locator('body').innerText(), /nothing was changed/);
+  await page.screenshot({ path: `${out}/free-overlap-restored.png` });
   assert.deepEqual(errors, []);
   browserEvidence.assertUnchanged();
   writeFileSync(

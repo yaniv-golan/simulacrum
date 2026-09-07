@@ -1,4 +1,5 @@
 import { CATALOG, MATERIALS } from '../src/model/catalog.mjs';
+import { CONTROL_BINDING_SCHEMA } from '../src/model/control-bindings.mjs';
 import Ajv2020 from 'ajv/dist/2020.js';
 import standaloneCode from 'ajv/dist/standalone/index.js';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -9,6 +10,7 @@ export function generateSchema({ check = false } = {}) {
   const schema = JSON.parse(readFileSync(schemaURL, 'utf8'));
   const part = schema.$defs.part;
   part.properties.type = { type: 'string', enum: Object.keys(CATALOG) };
+  part.properties.controlBinding = structuredClone(CONTROL_BINDING_SCHEMA);
   part.properties.authoredMaterial.properties.body = {
     type: 'string',
     enum: Object.keys(MATERIALS),
@@ -17,14 +19,23 @@ export function generateSchema({ check = false } = {}) {
     if: { required: ['type'], properties: { type: { const: type } } },
     then: {
       properties: {
+        controlBinding:
+          type === 'commandReceiver' ? structuredClone(CONTROL_BINDING_SCHEMA) : false,
         parameters: {
           type: 'object',
           additionalProperties: false,
-          required: Object.keys(definition.parameterDefinitions),
+          required: Object.entries(definition.parameterDefinitions)
+            .filter(([, value]) => !value.optional)
+            .map(([key]) => key),
           properties: Object.fromEntries(
             Object.entries(definition.parameterDefinitions).map(([key, value]) => [
               key,
-              { type: value.type, minimum: value.minimum, maximum: value.maximum },
+              {
+                type: value.type,
+                minimum: value.minimum,
+                maximum: value.maximum,
+                ...(value.enum ? { enum: [...value.enum] } : {}),
+              },
             ]),
           ),
         },

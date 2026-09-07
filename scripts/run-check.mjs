@@ -21,8 +21,6 @@ function propagateTermination() {
     } catch {}
 }
 function retainChild(child) {
-  if (activeChildren.size === 0 && process.platform !== 'win32')
-    process.on('SIGTERM', propagateTermination);
   activeChildren.add(child);
 }
 function releaseChild(child) {
@@ -47,11 +45,23 @@ export function runProcess(
     throw new Error('output limit must be positive');
   return new Promise((resolve, reject) => {
     const started = performance.now(),
+      firstChild = activeChildren.size === 0 && process.platform !== 'win32';
+    // Install before native spawn: termination can arrive after the OS child
+    // exists but before spawn returns. Signal callbacks run after this stack,
+    // by which time the returned child has been retained below.
+    if (firstChild) process.on('SIGTERM', propagateTermination);
+    let child;
+    try {
       child = spawn(command, args, {
         cwd,
         stdio: ['ignore', 'pipe', 'pipe'],
         detached: process.platform !== 'win32',
       });
+    } catch (error) {
+      if (firstChild && activeChildren.size === 0) process.off('SIGTERM', propagateTermination);
+      reject(error);
+      return;
+    }
     retainChild(child);
     let stdout = '',
       stderr = '',

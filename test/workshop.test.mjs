@@ -182,7 +182,14 @@ test('disconnect undo redo preserve authored history and reject bad edits atomic
   try {
     for (const id of ['a', 'b'])
       assert.equal(
-        (await w.act({ type: 'place', partType: 'beam', id, position: [0, 2, 0] })).ok,
+        (
+          await w.act({
+            type: 'place',
+            partType: 'beam',
+            id,
+            position: [id.charCodeAt(0) - 97, 2, 0],
+          })
+        ).ok,
         true,
       );
     await w.act({
@@ -228,7 +235,7 @@ test('rigid transform preserves connected group and leaves only wired part still
   const w = await createWorkshop();
   try {
     for (const id of ['a', 'b', 'c'])
-      await w.act({ type: 'place', partType: 'beam', id, position: [0, 2, 0] });
+      await w.act({ type: 'place', partType: 'beam', id, position: [id.charCodeAt(0) - 97, 2, 0] });
     await w.act({
       type: 'connect',
       id: 'ab',

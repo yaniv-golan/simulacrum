@@ -1,4 +1,4 @@
-import { motorStep } from './physics/law/motor.mjs';
+import { motorStep, sharedPowerStep, sampledPositionDuty } from './physics/law/motor.mjs';
 const clone = (x) => structuredClone(x);
 const fail = (code) => {
   throw Object.assign(new Error(code), { reasonCode: code, path: 'power' });
@@ -38,8 +38,11 @@ export function createPowerNetwork(configuration) {
     if (
       !exact(
         motor,
-        'node,body,rotor,joint,axis,torqueConstant,resistance,currentLimit,defaultDuty',
+        'node,body,rotor,joint,axis,torqueConstant,resistance,currentLimit,defaultDuty' +
+          (Object.hasOwn(motor, 'positionControl') ? ',positionControl' : '') +
+          (Object.hasOwn(motor, 'inputPolarity') ? ',inputPolarity' : ''),
       ) ||
+      (Object.hasOwn(motor, 'inputPolarity') && ![-1, 1].includes(motor.inputPolarity)) ||
       !node(motor.node) ||
       !node(motor.body) ||
       !Number.isSafeInteger(motor.rotor) ||
@@ -57,6 +60,26 @@ export function createPowerNetwork(configuration) {
       motor.currentLimit <= 0
     )
       fail('INVALID_POWER_CONFIGURATION');
+  for (const motor of config.motors)
+    if (Object.hasOwn(motor, 'positionControl')) {
+      const p = motor.positionControl;
+      if (
+        !exact(
+          p,
+          'lowerLimit,upperLimit,proportionalGain,dampingGain' +
+            (Object.hasOwn(p, 'integralGain') ? ',integralGain' : ''),
+        ) ||
+        !finite(p.lowerLimit, p.upperLimit, p.proportionalGain, p.dampingGain) ||
+        p.lowerLimit >= 0 ||
+        p.upperLimit <= 0 ||
+        p.lowerLimit < -3 ||
+        p.upperLimit > 3 ||
+        p.proportionalGain <= 0 ||
+        p.dampingGain < 0 ||
+        (Object.hasOwn(p, 'integralGain') && (!finite(p.integralGain) || p.integralGain < 0))
+      )
+        fail('INVALID_POWER_CONFIGURATION');
+    }
   for (const source of [...config.receivers, ...config.controllers])
     if (
       !exact(source, 'node,duty') ||
@@ -101,11 +124,7 @@ export function createPowerNetwork(configuration) {
   for (const motor of config.motors) root(motor.node);
   const cellsFor = (m) => config.cells.filter((c) => root(c.node) === root(m.node));
   for (const motor of config.motors)
-    if (
-      cellsFor(motor).length > 1 ||
-      config.motors.filter((m) => root(m.node) === root(motor.node)).length > 1
-    )
-      fail('UNSUPPORTED_POWER_TOPOLOGY');
+    if (cellsFor(motor).length > 1) fail('UNSUPPORTED_POWER_TOPOLOGY');
   for (const cell of config.cells)
     if (config.cells.filter((c) => root(c.node) === root(cell.node)).length > 1)
       fail('UNSUPPORTED_POWER_TOPOLOGY');
@@ -131,6 +150,21 @@ export function createPowerNetwork(configuration) {
       torque: 0,
       electricalEnergy: 0,
       reasonCode: 'OFF',
+      ...(m.positionControl
+        ? {
+            position: {
+              targetAngle:
+                m.defaultDuty *
+                (m.inputPolarity ?? 1) *
+                (m.defaultDuty * (m.inputPolarity ?? 1) >= 0
+                  ? m.positionControl.upperLimit
+                  : -m.positionControl.lowerLimit),
+              angle: 0,
+              controlDuty: 0,
+              integralDuty: 0,
+            },
+          }
+        : {}),
     })),
   };
   function validateState(candidate) {
@@ -166,9 +200,40 @@ export function createPowerNetwork(configuration) {
         fail('INVALID_POWER_CHECKPOINT');
     });
     candidate.motors.forEach((m, i) => {
+      const control = config.motors[i].positionControl;
+      if (
+        control &&
+        (!exact(m.position, 'targetAngle,angle,controlDuty,integralDuty') ||
+          !finite(
+            m.position.targetAngle,
+            m.position.angle,
+            m.position.controlDuty,
+            m.position.integralDuty,
+          ) ||
+          m.position.targetAngle < control.lowerLimit ||
+          m.position.targetAngle > control.upperLimit ||
+          Math.abs(m.position.controlDuty) > 1 ||
+          Math.abs(m.position.integralDuty) > 1 ||
+          Math.abs(m.position.angle) > Math.PI)
+      )
+        fail('INVALID_POWER_CHECKPOINT');
       if (
         Object.keys(m).sort().join(',') !==
-          'current,driverHeatJ,electricalEnergy,energyResidualJ,heatJ,mechanicalEnergy,node,reasonCode,shaftWorkJ,torque' ||
+          [
+            'current',
+            'driverHeatJ',
+            'electricalEnergy',
+            'energyResidualJ',
+            'heatJ',
+            'mechanicalEnergy',
+            'node',
+            'reasonCode',
+            'shaftWorkJ',
+            'torque',
+            ...(config.motors[i].positionControl ? ['position'] : []),
+          ]
+            .sort()
+            .join(',') ||
         m.node !== config.motors[i].node ||
         !finite(
           m.heatJ,
@@ -191,10 +256,29 @@ export function createPowerNetwork(configuration) {
   validateState(state);
   let pending = null;
   return Object.freeze({
-    step(dt, speeds, commands = [], inertias = []) {
+    step(dt, speeds, commands = [], inertias = [], coupling = []) {
       if (pending) fail('POWER_STEP_PENDING');
       if (dt !== 1 / 120) fail('INVALID_POWER_STEP');
       const next = clone(state);
+      const predicted = new Map(speeds.map((s) => [s.node, s.speed]));
+      const responses = new Map();
+      if (!Array.isArray(coupling)) fail('INVALID_MOTOR_INERTIA');
+      for (const edge of coupling) {
+        if (
+          !exact(edge, 'source,target,response') ||
+          !Number.isInteger(edge.source) ||
+          !Number.isInteger(edge.target) ||
+          edge.source < 0 ||
+          edge.target <= edge.source ||
+          edge.target >= config.motors.length ||
+          !finite(edge.response)
+        )
+          fail('INVALID_MOTOR_INERTIA');
+        if (!responses.has(edge.source)) responses.set(edge.source, []);
+        if (responses.get(edge.source).some((e) => e.target === edge.target))
+          fail('INVALID_MOTOR_INERTIA');
+        responses.get(edge.source).push(edge);
+      }
       const seen = new Set();
       for (const command of commands) {
         const source = next.sources.find((s) => s.node === command.node);
@@ -209,6 +293,125 @@ export function createPowerNetwork(configuration) {
         seen.add(command.node);
         source.duty = command.duty;
       }
+      const controls = config.motors.map((motor, i) => {
+        const source = signalFor(motor)[0];
+        const command =
+          (source ? next.sources.find((s) => s.node === source.node).duty : motor.defaultDuty) *
+          (motor.inputPolarity ?? 1);
+        if (!motor.positionControl) return { duty: command };
+        const p = motor.positionControl,
+          sample = speeds.find((s) => s.node === motor.node);
+        if (!sample || !finite(sample.angle, sample.speed) || Math.abs(sample.angle) > Math.PI)
+          fail('INVALID_MOTOR_SAMPLE');
+        const targetAngle = command * (command >= 0 ? p.upperLimit : -p.lowerLimit);
+        const previous = state.motors[i].position;
+        let integralDuty = previous.targetAngle === targetAngle ? previous.integralDuty : 0;
+        const error = targetAngle - sample.angle;
+        if (integralDuty * error < 0) integralDuty = 0;
+        const raw = p.proportionalGain * error - p.dampingGain * sample.speed + integralDuty;
+        const cell = cellsFor(motor)[0],
+          available =
+            cell &&
+            next.cells.find((c) => c.node === cell.node).energyJ > 0 &&
+            motor.joint >= 0 &&
+            motor.rotor >= 0;
+        if (!available) integralDuty = 0;
+        else if (
+          Math.abs(
+            sampledPositionDuty(
+              targetAngle,
+              sample.angle,
+              sample.speed,
+              p.proportionalGain,
+              p.dampingGain,
+              integralDuty,
+              inertias.find((s) => s.node === motor.node)?.inertia,
+              motor.torqueConstant,
+              cell.voltage,
+              motor.resistance,
+              dt,
+            ),
+          ) < 1 ||
+          Math.sign(raw) * error < 0
+        )
+          integralDuty = Math.max(
+            -1,
+            Math.min(1, integralDuty + (p.integralGain ?? 3) * error * dt),
+          );
+        const duty = available
+          ? sampledPositionDuty(
+              targetAngle,
+              sample.angle,
+              sample.speed,
+              p.proportionalGain,
+              p.dampingGain,
+              integralDuty,
+              inertias.find((s) => s.node === motor.node)?.inertia,
+              motor.torqueConstant,
+              cell.voltage,
+              motor.resistance,
+              dt,
+            )
+          : 0;
+        next.motors[i].position = {
+          targetAngle,
+          angle: sample.angle,
+          controlDuty: duty,
+          integralDuty,
+        };
+        return { duty };
+      });
+      const shared = config.cells.some(
+        (c) => config.motors.filter((m) => root(m.node) === root(c.node)).length > 1,
+      );
+      let sharedResult;
+      if (shared) {
+        const entries = config.motors.map((m, i) => {
+          const cell = cellsFor(m)[0],
+            source = signalFor(m)[0];
+          const duty = controls[i].duty;
+          const speed = predicted.get(m.node),
+            inertia = inertias.find((s) => s.node === m.node)?.inertia;
+          const active =
+            m.rotor >= 0 &&
+            m.joint >= 0 &&
+            cell &&
+            next.cells.find((c) => c.node === cell.node).energyJ > 0 &&
+            duty !== 0;
+          if (!finite(speed, duty)) fail('INVALID_MOTOR_SAMPLE');
+          if (active && ((!finite(inertia) && inertia !== Infinity) || inertia <= 0))
+            fail('INVALID_MOTOR_INERTIA');
+          return {
+            cell: config.cells.indexOf(cell),
+            duty,
+            speed,
+            inertia,
+            active: Boolean(active),
+            k: m.torqueConstant,
+            resistance: m.resistance,
+            limit: m.currentLimit,
+          };
+        });
+        sharedResult = sharedPowerStep(
+          config.cells.map((c, i) => ({
+            voltage: c.voltage,
+            resistance: c.resistance,
+            limit: c.currentLimit,
+            energy: next.cells[i].energyJ,
+          })),
+          entries,
+          coupling,
+          dt,
+        );
+        if (!sharedResult) fail('ENERGY_INVARIANT');
+        for (const [i, c] of config.cells.entries()) {
+          next.cells[i].energyJ = Math.max(
+            0,
+            next.cells[i].energyJ - c.voltage * sharedResult.totals[i] * dt,
+          );
+          next.cells[i].heatJ += c.resistance * sharedResult.totals[i] ** 2 * dt;
+        }
+      }
       const torques = [],
         allocations = [];
       for (const [i, motor] of config.motors.entries()) {
@@ -216,10 +419,8 @@ export function createPowerNetwork(configuration) {
           cell = cellsFor(motor)[0],
           energy = cell && next.cells.find((c) => c.node === cell.node),
           source = signalFor(motor)[0];
-        const duty = source
-          ? next.sources.find((s) => s.node === source.node).duty
-          : motor.defaultDuty;
-        const sample = speeds.find((s) => s.node === motor.node),
+        const duty = controls[i].duty;
+        const sample = { speed: predicted.get(motor.node) },
           inertiaSample = inertias.find((s) => s.node === motor.node);
         const inertia = inertiaSample?.inertia;
         if (!sample || !finite(sample.speed) || !finite(duty) || Math.abs(duty) > 1)
@@ -228,10 +429,15 @@ export function createPowerNetwork(configuration) {
           reasonCode = 'OK';
         if (motor.rotor < 0 || motor.joint < 0) reasonCode = 'NO_SHAFT';
         else if (!cell) reasonCode = 'NO_POWER';
-        else if (energy.energyJ <= 0) reasonCode = 'DEPLETED';
+        else if (
+          (sharedResult ? state.cells.find((c) => c.node === cell.node).energyJ : energy.energyJ) <=
+          0
+        )
+          reasonCode = 'DEPLETED';
         else if (duty === 0) reasonCode = 'OFF';
         else {
-          if (!finite(inertia) || inertia <= 0) fail('INVALID_MOTOR_INERTIA');
+          if ((!finite(inertia) && inertia !== Infinity) || inertia <= 0)
+            fail('INVALID_MOTOR_INERTIA');
           const voltage = cell.voltage * duty,
             resistance = motor.resistance + cell.resistance * duty * duty;
           const limit = Math.min(
@@ -239,18 +445,26 @@ export function createPowerNetwork(configuration) {
             cell.currentLimit / Math.abs(duty),
             energy.energyJ / (Math.abs(voltage) * dt),
           );
-          result = motorStep(
-            voltage,
-            sample.speed,
-            motor.torqueConstant,
-            resistance,
-            limit,
-            inertia,
-            dt,
-          );
-          energy.energyJ = Math.max(0, energy.energyJ - result.electricalEnergy);
-          const cellHeat = cell.resistance * (result.current * duty) ** 2 * dt;
-          energy.heatJ += cellHeat;
+          result = sharedResult
+            ? {
+                current: sharedResult.currents[i],
+                torque: motor.torqueConstant * sharedResult.currents[i],
+                electricalEnergy: voltage * sharedResult.currents[i] * dt,
+              }
+            : motorStep(
+                voltage,
+                sample.speed,
+                motor.torqueConstant,
+                resistance,
+                limit,
+                inertia,
+                dt,
+              );
+          if (!sharedResult) {
+            energy.energyJ = Math.max(0, energy.energyJ - result.electricalEnergy);
+            const cellHeat = cell.resistance * (result.current * duty) ** 2 * dt;
+            energy.heatJ += cellHeat;
+          }
         }
         Object.assign(record, {
           current: result.current,
@@ -264,9 +478,20 @@ export function createPowerNetwork(configuration) {
           current: result.current,
           torque: result.torque,
           electricalEnergy: result.electricalEnergy,
-          cellHeat: cell ? cell.resistance * (result.current * duty) ** 2 * dt : 0,
+          cellHeat: cell
+            ? cell.resistance *
+              (result.current * duty) *
+              (sharedResult
+                ? sharedResult.totals[config.cells.indexOf(cell)]
+                : result.current * duty) *
+              dt
+            : 0,
           copperHeat: motor.resistance * result.current ** 2 * dt,
         });
+        for (const edge of responses.get(i) ?? []) {
+          const node = config.motors[edge.target].node;
+          predicted.set(node, predicted.get(node) + edge.response * result.torque * dt);
+        }
         torques.push({
           body: motor.body,
           rotor: motor.rotor,
@@ -294,7 +519,8 @@ export function createPowerNetwork(configuration) {
           !sample ||
           !exact(
             sample,
-            'node,speedBefore,speedAfter,workJ,kineticDeltaJ,kineticBeforeJ,kineticAfterJ',
+            'node,speedBefore,speedAfter,workJ,kineticDeltaJ,kineticBeforeJ,kineticAfterJ' +
+              (motor.positionControl ? ',angle' : ''),
           ) ||
           !finite(
             sample.speedBefore,
@@ -304,6 +530,7 @@ export function createPowerNetwork(configuration) {
             sample.kineticBeforeJ,
             sample.kineticAfterJ,
           ) ||
+          (motor.positionControl && (!finite(sample.angle) || Math.abs(sample.angle) > Math.PI)) ||
           sample.kineticBeforeJ < 0 ||
           sample.kineticAfterJ < 0
         )
@@ -368,6 +595,7 @@ export function createPowerNetwork(configuration) {
           headroom < -endpointTolerance
         )
           fail('ENERGY_INVARIANT');
+        if (motor.positionControl) record.position.angle = sample.angle;
         record.heatJ += allocation.copperHeat;
         record.mechanicalEnergy = work;
         record.shaftWorkJ += work;

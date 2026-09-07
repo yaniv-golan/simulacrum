@@ -1,3 +1,4 @@
+import { finalRollingIntervals } from './starter-motion.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
@@ -20,6 +21,7 @@ page.on('requestfailed', (r) => errors.push(r.url()));
 page.on('response', (r) => {
   if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`);
 });
+let last;
 const frame = () => page.evaluate(() => window.workshopProbe.observe().frames[0]);
 mkdirSync('artifacts/starter-browser', { recursive: true });
 try {
@@ -59,26 +61,25 @@ try {
   await page.locator('[data-command=redo]').click();
   assert.deepEqual((await frame()).metadata.blueprint, built.metadata.blueprint);
   await page.locator('[data-command=run]').click();
-  for (const tick of [1200, 2400, 3600]) {
+  for (const tick of [1200, ...Array.from({ length: 11 }, (_, i) => 2400 + i * 120)]) {
     await page.waitForFunction((t) => window.workshopProbe.observe().cursor.tick >= t, tick, {
       timeout: 45000,
     });
     samples.push(await frame());
   }
   await page.locator('[data-command=pause]').click();
-  const last = await frame(),
-    start = built.physics[0].position;
+  last = await frame();
+  const start = built.physics[0].position;
   const travel = Math.hypot(
     last.physics[0].position[0] - start[0],
     last.physics[0].position[2] - start[2],
   );
   assert.ok(travel > 2, `sustained travel ${travel}`);
   assert.ok(samples.every((f) => f.status === 'ready'));
-  const moving = Math.hypot(
-    last.physics[0].position[0] - samples[1].physics[0].position[0],
-    last.physics[0].position[2] - samples[1].physics[0].position[2],
-  );
-  assert.ok(moving > 0.5, 'movement continues during final ten seconds');
+  // A rolling machine can circle back near its earlier position. Measure each
+  // final-second interval, not a chord across the loop or a later Pause frame.
+  const finalIntervals = finalRollingIntervals(samples.slice(1));
+  const moving = finalIntervals.reduce((sum, distance) => sum + distance, 0);
   const centers = await page.evaluate(() => window.workshopProbe.readRenderedCenters());
   assert.ok(
     centers.every((p) => Math.abs(p.x) < 1 && Math.abs(p.y) < 1 && Math.abs(p.z) < 1),
@@ -134,7 +135,8 @@ try {
         samples,
         last,
         travel,
-        finalTenSecondsDisplacement: moving,
+        finalTenSecondsSampledTravel: moving,
+        finalIntervals,
         checks: [
           'guided ordinary authoring',
           'undo redo',
@@ -155,7 +157,7 @@ try {
   await page.screenshot({ path: 'artifacts/starter-browser/failed.png' }).catch(() => {});
   writeFileSync(
     'artifacts/starter-browser/failure.json',
-    JSON.stringify({ source, build, errors, samples, message: error.message }, null, 2),
+    JSON.stringify({ source, build, errors, samples, last, message: error.message }, null, 2),
   );
   throw error;
 } finally {

@@ -1,3 +1,4 @@
+import { createConstraintProjection } from './law/constraints.mjs';
 import { CYLINDER_SEGMENTS } from '../../model/geometry.mjs';
 const MAX_BODIES = 4097; // 4096 authored primitives plus the workshop ground.
 // Sole library importer. The closure exports capabilities and copied numeric
@@ -166,7 +167,16 @@ export async function createPhysicsWorld(configuration) {
       joint,
       joint.kind === 'fixed'
         ? ['kind', 'a', 'b', 'anchorA', 'anchorB', 'rotationA', 'rotationB']
-        : ['kind', 'a', 'b', 'anchorA', 'anchorB', 'axisA', 'axisB'],
+        : [
+            'kind',
+            'a',
+            'b',
+            'anchorA',
+            'anchorB',
+            'axisA',
+            'axisB',
+            ...(Object.hasOwn(joint, 'limits') ? ['limits'] : []),
+          ],
     );
     if (
       !Number.isInteger(joint.a) ||
@@ -178,7 +188,19 @@ export async function createPhysicsWorld(configuration) {
       joint.a === joint.b
     )
       throw new TypeError('invalid joint body binding');
+    if (
+      Object.hasOwn(joint, 'limits') &&
+      (!Array.isArray(joint.limits) ||
+        joint.limits.length !== 2 ||
+        !joint.limits.every(Number.isFinite) ||
+        joint.limits[0] >= 0 ||
+        joint.limits[1] <= 0 ||
+        joint.limits[0] < -3 ||
+        joint.limits[1] > 3)
+    )
+      throw new TypeError('invalid angular limits');
     const common = {
+      ...(joint.limits ? { limits: [...joint.limits] } : {}),
       kind: joint.kind,
       a: joint.a,
       b: joint.b,
@@ -258,6 +280,7 @@ export async function createPhysicsWorld(configuration) {
         world.getRigidBody(handles[joint.b]),
         true,
       );
+      if (joint.limits) connection.setLimits(...joint.limits);
       connection.setContactsEnabled(false);
       jointHandles.push(connection.handle);
     }
@@ -285,6 +308,9 @@ export async function createPhysicsWorld(configuration) {
         rotationA: rotationArray(joint.frameX1()),
         rotationB: rotationArray(joint.frameX2()),
         contactsEnabled: joint.contactsEnabled(),
+        ...(joint.type() === RAPIER.JointType.Revolute
+          ? { limitsEnabled: joint.limitsEnabled(), limits: [joint.limitsMin(), joint.limitsMax()] }
+          : {}),
       }),
     );
     connections.sort((a, b) => a.handle - b.handle);
@@ -387,12 +413,297 @@ export async function createPhysicsWorld(configuration) {
     }
     return { kineticJ, potentialJ };
   }
+  let preparedTorqueIslands = new Map(),
+    constraintsApplied = true;
+  const cross = (a, b) => [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+  function makeTorqueIsland(indices) {
+    const matvec = (m, v) => m.map((r) => r.reduce((s, x, i) => s + x * v[i], 0));
+    const inverse3 = (m) => {
+      const [a, b, c] = m[0],
+        [, d, e] = m[1],
+        f = m[2][2],
+        det = a * (d * f - e * e) - b * (b * f - c * e) + c * (b * e - c * d);
+      if (!(det > 0)) throw new Error('invalid rigid inertia');
+      return [
+        [d * f - e * e, c * e - b * f, b * e - c * d],
+        [c * e - b * f, a * f - c * c, b * c - a * e],
+        [b * e - c * d, b * c - a * e, a * d - b * b],
+      ].map((r) => r.map((x) => x / det));
+    };
+    const parent = new Map(indices.map((i) => [i, i])),
+      root = (i) => {
+        while (parent.get(i) !== i) i = parent.get(i);
+        return i;
+      };
+    for (const j of joints)
+      if (j.kind === 'fixed' && parent.has(j.a)) parent.set(root(j.b), root(j.a));
+    const groups = new Map();
+    for (const i of indices) {
+      const r = root(i);
+      if (!groups.has(r)) groups.set(r, []);
+      groups.get(r).push(i);
+    }
+    const clusters = [...groups.values()].map((members) => {
+      const mass = members.reduce((s, i) => s + bodyAt(i).mass(), 0),
+        fixed = members.some((i) => bodyAt(i).isFixed());
+      const centre = [0, 0, 0];
+      for (const i of members) {
+        const p = array(bodyAt(i).translation()),
+          m = bodyAt(i).mass();
+        for (let k = 0; k < 3; k++) centre[k] += (m * p[k]) / mass;
+      }
+      const inertia = Array.from({ length: 3 }, () => [0, 0, 0]);
+      const parts = members.map((i) => {
+        const b = bodyAt(i),
+          r = array(b.translation()).map((x, k) => x - centre[k]),
+          m = b.mass(),
+          a = b.effectiveWorldInvInertia();
+        const own = b.isFixed()
+          ? [
+              [0, 0, 0],
+              [0, 0, 0],
+              [0, 0, 0],
+            ]
+          : inverse3([
+              [a.m11, a.m12, a.m13],
+              [a.m12, a.m22, a.m23],
+              [a.m13, a.m23, a.m33],
+            ]);
+        const square = r.reduce((s, x) => s + x * x, 0);
+        for (let row = 0; row < 3; row++)
+          for (let col = 0; col < 3; col++)
+            inertia[row][col] += own[row][col] + m * ((row === col ? square : 0) - r[row] * r[col]);
+        return { i, r, m, own };
+      });
+      return {
+        members,
+        parts,
+        mass,
+        centre,
+        fixed,
+        inverse: fixed
+          ? [
+              [0, 0, 0],
+              [0, 0, 0],
+              [0, 0, 0],
+            ]
+          : inverse3(inertia),
+      };
+    });
+    const offsets = new Map();
+    clusters.forEach((c, i) => c.members.forEach((b) => offsets.set(b, i * 6)));
+    const n = clusters.length * 6,
+      inverse = Array.from({ length: n }, () => Array(n).fill(0));
+    for (const [i, c] of clusters.entries()) {
+      for (let k = 0; k < 3; k++) inverse[i * 6 + k][i * 6 + k] = c.fixed ? 0 : 1 / c.mass;
+      for (let r = 0; r < 3; r++)
+        for (let col = 0; col < 3; col++)
+          inverse[i * 6 + 3 + r][i * 6 + 3 + col] = c.inverse[r][col];
+    }
+    const rows = [],
+      axes = [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+      ];
+    for (const j of joints) {
+      if (j.kind === 'fixed' || !offsets.has(j.a) || !offsets.has(j.b)) continue;
+      const a = offsets.get(j.a),
+        b = offsets.get(j.b);
+      if (a === b) continue;
+      const qa = rotationArray(bodyAt(j.a).rotation()),
+        qb = rotationArray(bodyAt(j.b).rotation());
+      const pointA = rotate(qa, j.anchorA).map((x, k) => x + array(bodyAt(j.a).translation())[k]);
+      const pointB = rotate(qb, j.anchorB).map((x, k) => x + array(bodyAt(j.b).translation())[k]);
+      // Equal and opposite reactions use one shared point even with solver drift.
+      const point = pointA.map((x, k) => (x + pointB[k]) / 2);
+      const ra = point.map((x, k) => x - clusters[a / 6].centre[k]);
+      const rb = point.map((x, k) => x - clusters[b / 6].centre[k]);
+      for (const d of axes) {
+        const row = Array(n).fill(0),
+          aa = cross(ra, d),
+          bb = cross(rb, d);
+        for (let i = 0; i < 3; i++) {
+          row[a + i] = -d[i];
+          row[b + i] = d[i];
+          row[a + 3 + i] = -aa[i];
+          row[b + 3 + i] = bb[i];
+        }
+        rows.push(row);
+      }
+      const axis = rotate(qa, j.axisA),
+        t = unit(cross(axis, Math.abs(axis[0]) < 0.9 ? axes[0] : axes[1]));
+      for (const d of [t, cross(axis, t)]) {
+        const row = Array(n).fill(0);
+        for (let i = 0; i < 3; i++) {
+          row[a + 3 + i] = -d[i];
+          row[b + 3 + i] = d[i];
+        }
+        rows.push(row);
+      }
+    }
+    const projection = createConstraintProjection(inverse, rows);
+    function clusterVelocity(c) {
+      if (c.fixed) return [0, 0, 0, 0, 0, 0];
+      const momentum = [0, 0, 0],
+        angular = [0, 0, 0];
+      for (const p of c.parts) {
+        const b = bodyAt(p.i),
+          v = array(b.linvel()),
+          w = array(b.angvel()),
+          own = matvec(p.own, w),
+          orbital = cross(
+            p.r,
+            v.map((x) => x * p.m),
+          );
+        for (let i = 0; i < 3; i++) {
+          momentum[i] += p.m * v[i];
+          angular[i] += own[i] + orbital[i];
+        }
+      }
+      return [...momentum.map((x) => x / c.mass), ...matvec(c.inverse, angular)];
+    }
+    const vector = () => clusters.flatMap(clusterVelocity);
+    const apply = (impulse) => {
+      for (const [i, c] of clusters.entries()) {
+        if (c.fixed) continue;
+        const v = impulse.slice(i * 6, i * 6 + 3).map((x) => x / c.mass),
+          w = matvec(c.inverse, impulse.slice(i * 6 + 3, i * 6 + 6));
+        for (const p of c.parts) {
+          const spin = cross(w, p.r);
+          bodyAt(p.i).applyImpulse(xyz(v.map((x, k) => p.m * (x + spin[k]))), true);
+          bodyAt(p.i).applyTorqueImpulse(xyz(matvec(p.own, w)), true);
+        }
+      }
+    };
+    const initialVector = vector(),
+      correction = projection.project(initialVector).velocity,
+      projectedVector = initialVector.map((x, i) => x + correction[i]);
+    const passiveImpulses = [];
+    for (const [index, c] of clusters.entries()) {
+      const v = projectedVector.slice(index * 6, index * 6 + 3),
+        w = projectedVector.slice(index * 6 + 3, index * 6 + 6);
+      for (const p of c.parts) {
+        const b = bodyAt(p.i),
+          oldV = array(b.linvel()),
+          oldW = array(b.angvel()),
+          spin = cross(w, p.r);
+        passiveImpulses.push({
+          index: p.i,
+          linear: v.map((x, k) => p.m * (x + spin[k] - oldV[k])),
+          angular: matvec(
+            p.own,
+            w.map((x, k) => x - oldW[k]),
+          ),
+        });
+      }
+    }
+    const applyPassive = () => {
+      for (const p of passiveImpulses) {
+        bodyAt(p.index).applyImpulse(xyz(p.linear), true);
+        bodyAt(p.index).applyTorqueImpulse(xyz(p.angular), true);
+      }
+    };
+    const force = (a, b, axis) => {
+      const f = Array(n).fill(0);
+      for (let i = 0; i < 3; i++) {
+        f[offsets.get(a) + 3 + i] -= axis[i];
+        f[offsets.get(b) + 3 + i] += axis[i];
+      }
+      return f;
+    };
+    return {
+      indices,
+      offsets,
+      projection,
+      vector,
+      apply,
+      force,
+      applyPassive,
+      projectedVector,
+      kinetic: () => indices.reduce((s, i) => s + kinetic(bodyAt(i)), 0),
+    };
+  }
+  function measuredJointAngle(physics, index, bodyHandles) {
+    const config = joints[index],
+      joint = physics.getImpulseJoint(jointHandles[index]);
+    const qa = rotationArray(physics.getRigidBody(bodyHandles[config.a]).rotation());
+    const qb = rotationArray(physics.getRigidBody(bodyHandles[config.b]).rotation());
+    const local = multiply(
+      conjugate(multiply(qa, rotationArray(joint.frameX1()))),
+      multiply(qb, rotationArray(joint.frameX2())),
+    );
+    const raw = 2 * Math.atan2(local[0], local[3]);
+    return Math.atan2(Math.sin(raw), Math.cos(raw));
+  }
   return Object.freeze({
+    prepareConstraints() {
+      preparedTorqueIslands = new Map();
+      constraintsApplied = true;
+      const parent = handles.map((_, i) => i),
+        root = (i) => {
+          while (parent[i] !== i) i = parent[i];
+          return i;
+        };
+      for (const j of joints) parent[root(j.b)] = root(j.a);
+      const active = new Set(joints.flatMap((j) => [root(j.a), root(j.b)]));
+      constraintsApplied = false;
+      for (const id of active) {
+        const indices = handles.map((_, i) => i).filter((i) => root(i) === id),
+          island = makeTorqueIsland(indices);
+        for (const i of indices) preparedTorqueIslands.set(i, island);
+      }
+    },
+    applyPreparedConstraints() {
+      if (constraintsApplied) throw new Error('constraints already applied');
+      let loss = 0;
+      for (const island of new Set(preparedTorqueIslands.values())) {
+        const before = island.kinetic();
+        island.applyPassive();
+        const after = island.kinetic();
+        if (after > before + 1e-8 + 4e-6 * before)
+          throw new Error('constraint projection created energy');
+        loss += Math.max(0, before - after);
+      }
+      constraintsApplied = true;
+      return loss;
+    },
     mechanicalEnergy() {
       alive();
       return energyOf(world, handles);
     },
     getAxisInverseInertia,
+    torquePairResponse(a, b, axisWorld, c, d, otherAxisWorld) {
+      const axis = unit(axisWorld),
+        other = unit(otherAxisWorld);
+      const island = preparedTorqueIslands.get(a);
+      if (island && island === preparedTorqueIslands.get(b)) {
+        if (island !== preparedTorqueIslands.get(c) || island !== preparedTorqueIslands.get(d))
+          return 0;
+        const response = island.projection.response(island.force(c, d, other)).velocity;
+        return island.force(a, b, axis).reduce((sum, x, i) => sum + x * response[i], 0);
+      }
+      let response = 0;
+      for (const [body, sign] of [
+        [a, -1],
+        [b, 1],
+      ]) {
+        const otherSign = (body === d ? 1 : 0) - (body === c ? 1 : 0);
+        if (!otherSign) continue;
+        const m = bodyAt(body).effectiveWorldInvInertia();
+        const v = [
+          m.m11 * other[0] + m.m12 * other[1] + m.m13 * other[2],
+          m.m12 * other[0] + m.m22 * other[1] + m.m23 * other[2],
+          m.m13 * other[0] + m.m23 * other[1] + m.m33 * other[2],
+        ];
+        response += sign * otherSign * axis.reduce((sum, x, i) => sum + x * v[i], 0);
+      }
+      return response;
+    },
     applyTorquePair(a, b, axisWorld, torqueNm) {
       const bodyA = bodyAt(a),
         bodyB = bodyAt(b),
@@ -404,19 +715,27 @@ export async function createPhysicsWorld(configuration) {
           (sum, v, i) => sum + v * (array(bodyB.angvel())[i] - array(bodyA.angvel())[i]),
           0,
         );
+      const island = preparedTorqueIslands.get(a);
+      if (island && !constraintsApplied) throw new Error('passive constraints not applied');
       const speedBefore = speed(),
-        before = kinetic(bodyA) + kinetic(bodyB),
+        before = island ? island.kinetic() : kinetic(bodyA) + kinetic(bodyB),
         impulse = axis.map((value) => value * torqueNm * DT);
-      bodyA.applyTorqueImpulse(xyz(impulse.map((value) => -value)), true);
-      bodyB.applyTorqueImpulse(xyz(impulse), true);
+      if (island) {
+        const projected = island.projection.response(island.force(a, b, axis)).impulse;
+        island.apply(projected.map((x) => x * torqueNm * DT));
+      } else {
+        bodyA.applyTorqueImpulse(xyz(impulse.map((value) => -value)), true);
+        bodyB.applyTorqueImpulse(xyz(impulse), true);
+      }
+      const after = island ? island.kinetic() : kinetic(bodyA) + kinetic(bodyB);
       const speedAfter = speed();
       return {
         speedBefore,
         speedAfter,
         workJ: (torqueNm * DT * (speedBefore + speedAfter)) / 2,
         kineticBeforeJ: before,
-        kineticAfterJ: kinetic(bodyA) + kinetic(bodyB),
-        kineticDeltaJ: kinetic(bodyA) + kinetic(bodyB) - before,
+        kineticAfterJ: after,
+        kineticDeltaJ: after - before,
       };
     },
     jointState(index) {
@@ -429,31 +748,39 @@ export async function createPhysicsWorld(configuration) {
       )
         throw new TypeError('joint has no angular degree of freedom');
       const config = joints[index],
-        joint = world.getImpulseJoint(jointHandles[index]),
         a = bodyAt(config.a),
         b = bodyAt(config.b);
       const qa = rotationArray(a.rotation()),
-        qb = rotationArray(b.rotation()),
         axis = unit(rotate(qa, config.axisA));
-      const local = multiply(
-        conjugate(multiply(qa, rotationArray(joint.frameX1()))),
-        multiply(qb, rotationArray(joint.frameX2())),
-      );
-      const raw = 2 * Math.atan2(local[0], local[3]),
-        angle = Math.atan2(Math.sin(raw), Math.cos(raw));
+      const angle = measuredJointAngle(world, index, handles);
       const wa = array(a.angvel()),
         wb = array(b.angvel()),
-        speed = axis.reduce((sum, value, i) => sum + value * (wb[i] - wa[i]), 0);
+        rawSpeed = axis.reduce((sum, value, i) => sum + value * (wb[i] - wa[i]), 0);
+      const plan = preparedTorqueIslands.get(config.a),
+        speed =
+          plan && !constraintsApplied
+            ? plan
+                .force(config.a, config.b, axis)
+                .reduce((sum, x, i) => sum + x * plan.projectedVector[i], 0)
+            : rawSpeed;
       return {
         angle,
         speed,
-        effectiveInverseInertia:
-          getAxisInverseInertia(config.a, axis) + getAxisInverseInertia(config.b, axis),
+        effectiveInverseInertia: preparedTorqueIslands.has(config.a)
+          ? (() => {
+              const island = preparedTorqueIslands.get(config.a),
+                f = island.force(config.a, config.b, axis),
+                v = island.projection.response(f).velocity;
+              return f.reduce((sum, x, i) => sum + x * v[i], 0);
+            })()
+          : getAxisInverseInertia(config.a, axis) + getAxisInverseInertia(config.b, axis),
       };
     },
     step() {
       alive();
       world.step();
+      preparedTorqueIslands = new Map();
+      constraintsApplied = true;
       assertFinite(readWorld(world, handles));
     },
     read() {
@@ -464,7 +791,7 @@ export async function createPhysicsWorld(configuration) {
       alive();
       return encode(world.takeSnapshot(), handles, JSON.parse(configurationIdentity));
     },
-    restore(bytes, expectedEnergy) {
+    restore(bytes, expectedEnergy, expectedJointAngles = []) {
       alive();
       const decoded = decode(bytes);
       if (JSON.stringify(decoded.configuration) !== configurationIdentity)
@@ -491,6 +818,18 @@ export async function createPhysicsWorld(configuration) {
           )
             throw new Error('snapshot energy mismatch');
         }
+        if (!Array.isArray(expectedJointAngles))
+          throw new TypeError('invalid expected joint angles');
+        for (const expected of expectedJointAngles) {
+          record(expected, ['joint', 'angle']);
+          if (
+            !Number.isInteger(expected.joint) ||
+            joints[expected.joint]?.kind !== 'revolute' ||
+            !Number.isFinite(expected.angle) ||
+            measuredJointAngle(candidate, expected.joint, decoded.handles) !== expected.angle
+          )
+            throw new Error('snapshot joint angle mismatch');
+        }
         if (JSON.stringify(plant(candidate, decoded.handles)) !== originalPlant)
           throw new Error('snapshot physical plant mismatch');
       } catch (error) {
@@ -499,6 +838,8 @@ export async function createPhysicsWorld(configuration) {
       }
       const previous = world;
       world = candidate;
+      preparedTorqueIslands = new Map();
+      constraintsApplied = true;
       handles = [...decoded.handles];
       previous.free();
     },

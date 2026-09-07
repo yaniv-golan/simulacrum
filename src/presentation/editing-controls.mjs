@@ -1,3 +1,5 @@
+import { findPlacementOverlap } from '../model/surfaces.mjs';
+import { partPrimitives } from '../model/geometry.mjs';
 import * as THREE from 'three';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { transformGroup } from '../model/editing.mjs';
@@ -40,7 +42,7 @@ export function createEditingControls({
   function showPreview(parts, { color = 0x8cf5cf } = {}) {
     clearPreview();
     for (const part of parts) {
-      const shape = CATALOG[part.type].primitives[0],
+      const shape = partPrimitives(part)[0],
         h = shape.halfExtents;
       const geometry =
         shape.kind === 'cylinder'
@@ -100,6 +102,7 @@ export function createEditingControls({
         );
       showPreview(
         next.parts.filter((p, i) => JSON.stringify(p) !== JSON.stringify(before.parts[i])),
+        { color: findPlacementOverlap(next.parts) ? 0xff836f : 0x8cf5cf },
       );
     }
   });

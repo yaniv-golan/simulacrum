@@ -84,7 +84,7 @@ try {
   assert.equal(edge.a.port, undefined);
   assert.equal(edge.b.port, undefined);
   await page.getByRole('button', { name: 'Adjust mount', exact: true }).click();
-  await panel.getByRole('button', { name: 'Turn +90°', exact: true }).click();
+  await panel.getByRole('button', { name: 'Rotate on surface +90°', exact: true }).click();
   assert.deepEqual(await read(), after, 'adjustment remains preview until apply');
   await panel.getByRole('button', { name: 'Cancel', exact: true }).click();
   assert.deepEqual(await read(), after, 'adjust cancel preserves committed mount');

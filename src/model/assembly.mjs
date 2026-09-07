@@ -1,10 +1,11 @@
+import { partPrimitives } from './geometry.mjs';
 import {
   surfaceRegions,
   resolveSurfaceEndpoint,
   rotateVector,
   placementEnvelopes,
   solidsOverlap,
-  validateSurfaceGeometry,
+  validatePlacementGeometry,
 } from './surfaces.mjs';
 import { CATALOG, MATERIALS } from './catalog.mjs';
 import { validateBlueprint } from './blueprint.mjs';
@@ -114,7 +115,7 @@ export function compileAssembly(
   { gravity = BUILD_ENVIRONMENT.gravity, ground = BUILD_ENVIRONMENT.ground } = {},
 ) {
   validate(blueprint);
-  validateSurfaceGeometry(blueprint);
+  validatePlacementGeometry(blueprint);
   try {
     gravity = immutableCopy(gravity);
   } catch {
@@ -145,7 +146,7 @@ export function compileAssembly(
     reject('INVALID_GROUND', 'ground');
   const mapping = [];
   const bodies = blueprint.parts.map((part) => {
-    const primitive = CATALOG[part.type].primitives[0];
+    const primitive = partPrimitives(part)[0];
     const material = MATERIALS[part.authoredMaterial[primitive.id] ?? primitive.materialKey];
     mapping.push({ part: part.id, shape: primitive.id, materialHandle: material.handle });
     // Cylinders use the local X axis; halfExtents is [half length, radius, radius].
@@ -189,6 +190,7 @@ export function compileAssembly(
           currentLimit: p.currentLimit,
         });
         break;
+      case 'poweredHinge':
       case 'poweredMotor':
         power.motors.push({
           node,
@@ -199,7 +201,19 @@ export function compileAssembly(
           torqueConstant: p.torqueConstant,
           resistance: p.resistance,
           currentLimit: p.currentLimit,
-          defaultDuty: p.defaultDuty,
+          defaultDuty: part.type === 'poweredHinge' ? p.defaultTarget : p.defaultDuty,
+          ...(p.inputPolarity !== undefined ? { inputPolarity: p.inputPolarity } : {}),
+          ...(part.type === 'poweredHinge'
+            ? {
+                positionControl: {
+                  lowerLimit: p.lowerLimit,
+                  upperLimit: p.upperLimit,
+                  proportionalGain: p.proportionalGain,
+                  dampingGain: p.dampingGain,
+                  integralGain: p.integralGain ?? 3,
+                },
+              }
+            : {}),
         });
         break;
       case 'commandReceiver':
@@ -251,6 +265,7 @@ export function compileAssembly(
       const motor = motorA ?? motorB,
         M = motorA ? A : B,
         R = motorA ? B : A;
+      motor.axis = rotate(M.port.rotation, [1, 0, 0]);
       motor.rotor = R.index;
       motor.joint = joints.length;
       joints.push({
@@ -261,6 +276,9 @@ export function compileAssembly(
         anchorB: [...R.port.position],
         axisA: rotate(M.port.rotation, [1, 0, 0]),
         axisB: rotate(R.port.rotation, [1, 0, 0]),
+        ...(motor.positionControl
+          ? { limits: [motor.positionControl.lowerLimit, motor.positionControl.upperLimit] }
+          : {}),
       });
     } else if (
       connection.kind === 'shaft' &&

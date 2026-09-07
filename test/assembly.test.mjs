@@ -7,7 +7,7 @@ const part = (id, type = 'beam') => ({
   id,
   type,
   name: id,
-  position: [0, 0, 0],
+  position: [id === 'b' ? 1 : 0, 0, 0],
   rotation: [0, 0, 0, 1],
   authoredMaterial: {},
   parameters: {},
@@ -44,13 +44,13 @@ test('snap authors mating port transforms and aligned connection compiles', () =
   bp.parts[0].position = [2, 3, 4];
   bp.parts[0].rotation = [0, Math.sin(0.3), 0, Math.cos(0.3)];
   const snapped = snapConnection(bp, a, b);
-  assert.deepEqual(bp.parts[1].position, [0, 0, 0]);
+  assert.deepEqual(bp.parts[1].position, [1, 0, 0]);
   snapped.connections.push({ id: 'joint', kind: 'fixed', a, b });
   const compiled = compileAssembly(snapped);
   assert.equal(compiled.configuration.joints.length, 1);
   assert.equal(compiled.configuration.joints[0].a, 0);
   assert.equal(compiled.configuration.joints[0].b, 1);
-  snapped.parts[1].position[0] += 0.003;
+  snapped.parts[1].position[0] -= 0.003;
   const misaligned = compileAssembly(snapped);
   assert.equal(misaligned.configuration.joints.length, 0);
   assert.deepEqual(misaligned.connections, [{ id: 'joint', reasonCode: 'MISALIGNED' }]);
@@ -92,7 +92,7 @@ test('renaming and rig placement never select material mass or contact propertie
         bp.parts.forEach((p, i) => {
           p.id = `part-${seed}-${i}`;
           p.name = `Part ${seed}-${i}`;
-          p.position = [...position];
+          p.position = position.map((v, axis) => v + (axis === 0 ? i : 0));
         });
         const after = compileAssembly(bp);
         assert.deepEqual(

@@ -34,6 +34,11 @@ try {
   build = await page.locator('meta[name=build-id]').getAttribute('content');
   await page.locator('[data-part-type=poweredMotor]').click();
   const duty = page.getByRole('spinbutton', { name: 'Drive setting', exact: true });
+  await duty.fill('.3');
+  await duty.press('Escape');
+  assert.equal(await parameter('defaultDuty'), 1, 'Escape discards the numeric draft');
+  await page.locator('.machine-picker > summary').click();
+  await page.locator('.part-list-item').first().click();
   await duty.focus();
   await duty.press('Shift+Tab');
   const nativePrevious = await active();

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, existsSync, rmSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { runProcess } from '../scripts/run-check.mjs';
@@ -72,4 +72,52 @@ test('nested shared runners terminate their owned workers when process enumerati
     else process.env.PATH = savedPath;
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('termination covers the native spawn-to-registration gap and leaves no live worker', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'runner-spawn-gap-'));
+  const pidFile = join(root, 'worker.pid');
+  let pid;
+  try {
+    const runnerURL = new URL('../scripts/run-check.mjs', import.meta.url).href;
+    // Widen the synchronous native-spawn scheduling window without replacing
+    // the production runner. The outer runner retains its real deadline.
+    const worker = `require('node:fs').writeFileSync(${JSON.stringify(pidFile)},String(process.pid));setTimeout(()=>{},5000)`;
+    const nested = `import cp from 'node:child_process';import {syncBuiltinESMExports} from 'node:module';import {existsSync} from 'node:fs';const spawn=cp.spawn;cp.spawn=function(...args){const child=spawn(...args);const end=performance.now()+1500;while(!existsSync(${JSON.stringify(pidFile)})&&performance.now()<end){}if(!existsSync(${JSON.stringify(pidFile)}))throw new Error('worker did not start');process.kill(process.pid,'SIGTERM');return child;};syncBuiltinESMExports();process.env.PATH=${JSON.stringify(root)};const {runProcess}=await import(${JSON.stringify(runnerURL)});await runProcess(process.execPath,['-e',${JSON.stringify(worker)}],{timeoutMs:3000});`;
+    const saved = process.env.PATH;
+    try {
+      process.env.PATH = root;
+      await assert.rejects(
+        runProcess(process.execPath, ['--input-type=module', '-e', nested], { timeoutMs: 3000 }),
+        /check exited/,
+      );
+    } finally {
+      if (saved === undefined) delete process.env.PATH;
+      else process.env.PATH = saved;
+    }
+    assert.ok(existsSync(pidFile), 'worker must start to exercise the registration race');
+    pid = Number(readFileSync(pidFile, 'utf8'));
+    assert.throws(
+      () => process.kill(pid, 0),
+      { code: 'ESRCH' },
+      'worker remains alive after terminated owner returned',
+    );
+  } finally {
+    if (pid)
+      try {
+        process.kill(pid, 'SIGKILL');
+      } catch {}
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('synchronous spawn rejection does not retain termination listeners', async () => {
+  const before = process.listenerCount('SIGTERM');
+  await assert.rejects(runProcess(null, [], { timeoutMs: 1000 }), /file|command|argument/i);
+  assert.equal(process.listenerCount('SIGTERM'), before);
+  const result = await runProcess(process.execPath, ['-e', 'console.log("after rejection")'], {
+    timeoutMs: 3000,
+  });
+  assert.equal(result.stdout.trim(), 'after rejection');
+  assert.equal(process.listenerCount('SIGTERM'), before);
 });

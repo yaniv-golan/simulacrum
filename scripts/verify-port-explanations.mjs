@@ -2,6 +2,9 @@ import { createBrowserEvidence } from './browser-evidence.mjs';
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { createStarterVehicle } from '../src/model/starter-vehicle.mjs';
+import { createPart } from '../src/model/blueprint.mjs';
+import { snapConnection } from '../src/model/assembly.mjs';
 const browserEvidence = createBrowserEvidence();
 
 const browser = await chromium.launch(),
@@ -86,6 +89,97 @@ try {
   );
   await page.locator('[data-command=undo]').click();
   assert.deepEqual(await read(), before);
+  await page.locator('[data-part-type=poweredMotor]').click();
+  await page.locator('.port-button[data-port-id=power]').click();
+  await page
+    .getByRole('button', { name: 'Wire Cell · power (parts stay put)', exact: true })
+    .click();
+  assert.equal(
+    (await read()).connections.filter((c) => c.kind === 'power').length,
+    before.connections.filter((c) => c.kind === 'power').length + 1,
+    'a second motor shares the cell through another visible wire',
+  );
+  const shared = await read();
+  await page.locator('[data-part-type=powerCell]').click();
+  await page.locator('.port-button[data-port-id=power]').click();
+  await page
+    .getByRole('button', { name: 'Wire Cell · power (parts stay put)', exact: true })
+    .click();
+  assert.deepEqual(
+    (await read()).connections,
+    shared.connections,
+    'a second cell cannot join the circuit',
+  );
+  assert.match(await page.locator('.connection-targets [role=alert]').innerText(), /one cell/);
+  let twoMotors = createStarterVehicle();
+  twoMotors.parts = twoMotors.parts.filter((p) =>
+    ['frame', 'motor', 'cell', 'drive'].includes(p.id),
+  );
+  twoMotors.connections = twoMotors.connections.filter(
+    (c) =>
+      twoMotors.parts.some((p) => p.id === c.a.part) &&
+      twoMotors.parts.some((p) => p.id === c.b.part),
+  );
+  twoMotors.parts.push(
+    createPart('poweredMotor', 'motor2', [2, 0.4, 0]),
+    createPart('powerCell', 'cell2', [2, 0.4, 1]),
+    createPart('gripWheel', 'wheel2', [2, 0.4, -1]),
+  );
+  twoMotors.parts.find((p) => p.id === 'wheel2').name = 'Second wheel';
+  const a = { part: 'frame', surface: { region: 'left', u: 0, v: 0, twist: 0 } },
+    b = { part: 'motor2', surface: { region: 'left', u: 0, v: 0, twist: 0 } };
+  twoMotors = snapConnection(twoMotors, a, b);
+  twoMotors.connections.push(
+    { id: 'second-mount', kind: 'fixed', a, b },
+    {
+      id: 'second-power',
+      kind: 'power',
+      a: { part: 'cell2', port: 'power' },
+      b: { part: 'motor2', port: 'power' },
+    },
+  );
+  writeFileSync('artifacts/feedback-fixes/two-motors.json', JSON.stringify(twoMotors));
+  await page.locator('input[type=file]').setInputFiles('artifacts/feedback-fixes/two-motors.json');
+  await select('Second wheel');
+  await page.locator('.port-button[data-port-id=axle]').click();
+  await page
+    .getByRole('button', {
+      name: 'Attach to Powered Motor · shaft Moves Second wheel',
+      exact: true,
+    })
+    .click();
+  assert.equal(
+    (await read()).connections.filter((c) => c.kind === 'shaft').length,
+    2,
+    'second motor wheel snaps on the same chassis',
+  );
+  await page.locator('[data-command=run]').click();
+  await page.waitForFunction(() => window.workshopProbe.observe().frames[0].tick >= 120);
+  await page.locator('[data-command=pause]').click();
+  const running = await page.evaluate(() => window.workshopProbe.observe().frames[0]);
+  assert.ok(
+    running.power.motors.every((m) => m.shaftWorkJ > 0),
+    'both motors physically deliver work',
+  );
+  await page.screenshot({ path: 'artifacts/feedback-fixes/two-motors.png' });
+  await page.locator('[data-command=build]').click();
+  const diameter = page.getByLabel('Wheel diameter (mm)', { exact: true });
+  const beforeSize = await read();
+  await diameter.fill('405');
+  assert.deepEqual(
+    await read(),
+    beforeSize,
+    'diameter input previews without changing authored state',
+  );
+  await diameter.press('Tab');
+  await page.waitForFunction(
+    () =>
+      window.workshopProbe
+        .observe()
+        .frames[0].metadata.blueprint.parts.find((p) => p.id === 'wheel2').parameters.diameter ===
+      0.405,
+  );
+  await page.screenshot({ path: 'artifacts/feedback-fixes/wheel-diameter.png' });
   assert.deepEqual(errors, []);
   browserEvidence.assertUnchanged();
   writeFileSync(

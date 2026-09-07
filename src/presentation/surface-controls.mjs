@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { spreadSurfaceAnchors } from './surface-anchor-layout.mjs';
 import { explainFailure } from '../model/messages.mjs';
 import { surfaceRegions } from '../model/surfaces.mjs';
 import { inspectSurfaceMount } from '../model/assembly.mjs';
@@ -24,6 +25,7 @@ export function createSurfaceControls({
   onMessage,
   onInteraction,
   createMesh,
+  onInvalidate,
 }) {
   const panel = node('section');
   panel.className = 'surface-placement';
@@ -44,7 +46,7 @@ export function createSurfaceControls({
   }
   const source = selectField('Mounting face'),
     target = selectField('Target surface'),
-    grid = selectField('Placement grid');
+    grid = selectField('Move increment');
   for (const [value, label] of [
     ['.025', '25 mm'],
     ['.001', 'Fine · 1 mm'],
@@ -74,7 +76,15 @@ export function createSurfaceControls({
   const preciseFields = node('div');
   preciseFields.className = 'surface-fields';
   for (const input of [u, v, angle]) preciseFields.append(input.parentElement);
-  precise.append(node('p', 'Gold arrow: Along · Blue arrow: Across'), preciseFields);
+  precise.append(
+    grid.parentElement,
+    node(
+      'p',
+      'Spacing for dragging and arrow keys. Free removes the movement grid; center and edge guides still snap.',
+    ),
+    node('p', 'Gold arrow: Along · Blue arrow: Across'),
+    preciseFields,
+  );
   const actions = node('div');
   actions.className = 'surface-actions';
   function action(label, fn) {
@@ -84,35 +94,16 @@ export function createSurfaceControls({
     actions.append(b);
     return b;
   }
-  action('Turn −90°', () => turn(-90));
-  action('Turn +90°', () => turn(90));
-  action('Center', () => {
-    u.value = v.value = '0';
-    update();
-  });
-  action('Edge toward camera', () => alignEdge(true));
-  action('Edge away from camera', () => alignEdge(false));
-  function alignEdge(toward) {
-    if (!state?.target) return;
-    const p = bp().parts.find((p) => p.id === state.target.part),
-      r = surfaceRegions(p).find((r) => r.id === state.target.region),
-      part = state.insertPart ?? bp().parts.find((p) => p.id === state.part),
-      pad = surfaceRegions(part).find((r) => r.id === source.value),
-      theta = (Number(angle.value) * Math.PI) / 180,
-      ext = pad.padHalfSize ?? pad.halfSize,
-      lu = r.halfSize[0] - Math.abs(Math.cos(theta)) * ext[0] - Math.abs(Math.sin(theta)) * ext[1],
-      lv = r.halfSize[1] - Math.abs(Math.sin(theta)) * ext[0] - Math.abs(Math.cos(theta)) * ext[1],
-      direction = camera.position
-        .clone()
-        .sub(vec(p.position))
-        .applyQuaternion(quat(p.rotation).multiply(quat(r.rotation)).invert()),
-      sign = toward ? 1 : -1;
-    if (Math.abs(direction.y) > Math.abs(direction.z))
-      u.value = String(Math.sign(direction.y) * sign * Math.max(0, lu) * 1000);
-    else v.value = String(Math.sign(direction.z) * sign * Math.max(0, lv) * 1000);
-    update();
-  }
-
+  const rotateLeft = action('↶ 90°', () => turn(-90));
+  rotateLeft.setAttribute('aria-label', 'Rotate on surface −90°');
+  rotateLeft.title = 'Rotate around the mounting point on this face';
+  const rotateRight = action('↷ 90°', () => turn(90));
+  rotateRight.setAttribute('aria-label', 'Rotate on surface +90°');
+  rotateRight.title = rotateLeft.title;
+  const alignHint = node(
+    'p',
+    'Drag to slide. Use the center or edge markers on the face to align.',
+  );
   action('Change surface', () => {
     if (state) {
       state.locked = false;
@@ -124,13 +115,157 @@ export function createSurfaceControls({
   const apply = action('Attach', () => commit());
   apply.dataset.command = 'apply-surface';
   action('Cancel', () => cancel());
-  const attachLabel = node('label'),
-    attach = node('input');
-  attach.type = 'checkbox';
-  attach.checked = true;
-  attach.setAttribute('aria-label', 'Attach after snapping');
-  attachLabel.append(attach, document.createTextNode(' Attach after snapping'));
-  panel.append(title, status, fields, attachLabel, actions, precise);
+  const placementMode = node('select');
+  placementMode.setAttribute('aria-label', 'Placement result');
+  for (const [value, label] of [
+    ['attach', 'Attach to surface'],
+    ['position', 'Position only'],
+  ]) {
+    const option = node('option', label);
+    option.value = value;
+    placementMode.append(option);
+  }
+  const modeLabel = node('label', 'When placed');
+  modeLabel.className = 'placement-result';
+  const modeHelp = node('small', 'Creates a fixed joint. These parts move together.');
+  modeLabel.append(placementMode, modeHelp);
+  const footer = node('div');
+  footer.className = 'surface-confirmation';
+  const stateLabel = node('strong', 'Choose a surface');
+  const finishActions = node('div');
+  finishActions.className = 'surface-finish-actions';
+  const cancelButton = actions.lastElementChild;
+  finishActions.append(apply, cancelButton);
+  footer.append(stateLabel, status, finishActions);
+  panel.append(title, modeLabel, fields, actions, alignHint, precise, footer);
+  const overlay = node('div');
+  overlay.className = 'surface-overlay';
+  overlay.hidden = true;
+  renderer.domElement.parentElement.append(overlay);
+  const cue = node('div');
+  cue.className = 'surface-cue';
+  overlay.append(cue);
+  const anchors = [
+    [0, 0],
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+  ].map(([a, b], index) => {
+    const control = node('button', index ? '◇' : '⊙');
+    control.type = 'button';
+    control.className = 'surface-anchor';
+    control.setAttribute(
+      'aria-label',
+      index ? `Align to surface edge ${index}` : 'Center on surface',
+    );
+    control.title = index ? 'Align mounting footprint with this edge' : 'Center on this surface';
+    control.addEventListener('click', () => {
+      const limits = alignmentLimits();
+      if (!limits) return;
+      u.value = String(a * limits[0] * 1000);
+      v.value = String(b * limits[1] * 1000);
+      update();
+    });
+    const leader = node('span');
+    leader.className = 'surface-anchor-leader';
+    overlay.append(leader, control);
+    return { a, b, control, leader };
+  });
+  function alignmentLimits() {
+    if (!state?.target) return null;
+    const receiver = bp().parts.find((p) => p.id === state.target.part);
+    const face = surfaceRegions(receiver).find((r) => r.id === state.target.region);
+    const part = state.insertPart ?? bp().parts.find((p) => p.id === state.part);
+    const pad = surfaceRegions(part).find((r) => r.id === source.value);
+    const ext = pad.padHalfSize ?? pad.halfSize;
+    const theta = (Number(angle.value) * Math.PI) / 180;
+    const roundoff = 32 * Number.EPSILON * Math.max(1, ...ext, ...face.halfSize);
+    return [
+      face.halfSize[0] - Math.abs(Math.cos(theta)) * ext[0] - Math.abs(Math.sin(theta)) * ext[1],
+      face.halfSize[1] - Math.abs(Math.sin(theta)) * ext[0] - Math.abs(Math.cos(theta)) * ext[1],
+    ].map((limit) => (Math.abs(limit) <= roundoff ? 0 : limit));
+  }
+  function placementInstruction() {
+    if (state.drag)
+      return state.replaceConnection
+        ? 'Release mouse button to apply'
+        : placementMode.value === 'attach'
+          ? 'Release mouse button to attach'
+          : 'Release mouse button to place';
+    return state.replaceConnection
+      ? 'Click Apply mount'
+      : placementMode.value === 'attach'
+        ? 'Click Attach'
+        : 'Click Place only';
+  }
+  function renderOverlay() {
+    overlay.hidden = !state?.target;
+    if (overlay.hidden) return;
+    const part = bp().parts.find((p) => p.id === state.target.part);
+    const face = surfaceRegions(part).find((r) => r.id === state.target.region);
+    const canvasRect = renderer.domElement.getBoundingClientRect();
+    const parentRect = overlay.parentElement.getBoundingClientRect();
+    function screen(a, b) {
+      const point = vec([0, a, b])
+        .applyQuaternion(quat(face.rotation))
+        .add(vec(face.position))
+        .applyQuaternion(quat(part.rotation))
+        .add(vec(part.position))
+        .project(camera);
+      return {
+        x: canvasRect.left - parentRect.left + ((point.x + 1) * canvasRect.width) / 2,
+        y: canvasRect.top - parentRect.top + ((1 - point.y) * canvasRect.height) / 2,
+        visible: point.z >= -1 && point.z <= 1,
+      };
+    }
+    const limits = alignmentLimits();
+    const markerYs = [];
+    const points = anchors.map(({ a, b }) => screen(a * face.halfSize[0], b * face.halfSize[1]));
+    const positions = spreadSurfaceAnchors(points, canvasRect.width, canvasRect.height);
+    for (const [index, { control, leader }] of anchors.entries()) {
+      const point = points[index],
+        position = positions[index];
+      control.hidden = !point.visible || limits.some((value) => value < 0);
+      control.style.left = `${position.x}px`;
+      control.style.top = `${position.y}px`;
+      const dx = position.x - point.x,
+        dy = position.y - point.y;
+      leader.hidden = control.hidden || Math.hypot(dx, dy) < 1;
+      leader.style.left = `${point.x}px`;
+      leader.style.top = `${point.y}px`;
+      leader.style.width = `${Math.hypot(dx, dy)}px`;
+      leader.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+      if (!control.hidden) markerYs.push(position.y);
+    }
+    const point = screen(Number(u.value) / 1000, Number(v.value) / 1000);
+    cue.hidden = !point.visible;
+    cue.textContent = state.proposal
+      ? `${state.replaceConnection ? 'Adjusting mount' : placementMode.value === 'attach' ? 'Not attached' : 'Position only'} · ${placementInstruction()} — ${part.name}`
+      : `Not placed · ${status.textContent}`;
+    cue.dataset.blocked = String(!state.proposal);
+    cue.style.left = `${Math.max(8, Math.min(point.x + 30, canvasRect.width - 290))}px`;
+    const below = Math.max(point.y + 36, ...markerYs.map((y) => y + 24));
+    const top =
+      below + cue.offsetHeight < canvasRect.height - 12
+        ? below
+        : Math.min(point.y, ...markerYs) - cue.offsetHeight - 24;
+    cue.style.top = `${Math.max(80, Math.min(top, canvasRect.height - cue.offsetHeight - 12))}px`;
+    const cueBox = cue.getBoundingClientRect();
+    for (const { control, leader } of anchors) {
+      if (control.hidden) continue;
+      const box = control.getBoundingClientRect();
+      if (
+        box.left < cueBox.right &&
+        box.right > cueBox.left &&
+        box.top < cueBox.bottom &&
+        box.bottom > cueBox.top
+      ) {
+        control.hidden = true;
+        leader.hidden = true;
+      }
+    }
+  }
   const preview = new THREE.Group();
   scene.add(preview);
   let state = null,
@@ -210,11 +345,14 @@ export function createSurfaceControls({
           target.append(o);
         }
     u.value = v.value = angle.value = '0';
+    placementMode.value = 'attach';
+    placementMode.disabled = !!replaceConnection;
+    modeHelp.textContent = 'Creates a fixed joint. These parts move together.';
     panel.hidden = false;
     title.textContent = replaceConnection ? 'Adjust mount' : 'Snap to surface';
     apply.textContent = replaceConnection
       ? 'Apply mount'
-      : attach.checked
+      : placementMode.value === 'attach'
         ? 'Attach'
         : 'Place only';
     if (replaceConnection) {
@@ -264,7 +402,7 @@ export function createSurfaceControls({
       id: state.replaceConnection ?? nextId(),
       ...(state.replaceConnection ? { replaceConnection: state.replaceConnection } : {}),
       ...(state.insertPart ? { insertPart: state.insertPart } : {}),
-      attach: attach.checked,
+      attach: placementMode.value === 'attach',
     };
   }
   function nextId() {
@@ -277,11 +415,14 @@ export function createSurfaceControls({
   }
   function update() {
     if (!state) return;
+    onInvalidate?.();
     state.proposal = null;
+    stateLabel.textContent = 'Preview · not attached';
     state.previewParts = [];
     clearPreview();
     apply.disabled = true;
     if (!state.target) {
+      stateLabel.textContent = 'Choose a surface';
       status.textContent =
         'Choose the top, side or underside of a part. Drag empty space to orbit.';
       return;
@@ -304,6 +445,13 @@ export function createSurfaceControls({
           m.quaternion.fromArray(part.rotation);
           m.traverse((o) => {
             if (o.isMesh) {
+              const materials = Array.isArray(o.material) ? o.material : [o.material];
+              for (const material of materials) {
+                material.transparent = true;
+                material.opacity = 0.42;
+                material.depthWrite = false;
+              }
+              o.castShadow = false;
               o.userData.partId = null;
               o.userData.surfacePreview = true;
             }
@@ -418,10 +566,18 @@ export function createSurfaceControls({
       preview.add(footprint);
       const label = `${state.insertPart?.name ?? bp().parts.find((p) => p.id === state.part)?.name} → ${targetPart.name} · ${region.label}`;
       status.textContent = assessment.valid
-        ? `${label}. Drag the preview to slide; click it or use ${apply.textContent} to confirm.${state.previewParts.some((p) => p.type === 'poweredMotor') ? ' White arrow: shaft direction. Turn it outward before attaching a wheel.' : ''}`
+        ? `${label}. ${placementInstruction()}.`
         : assessment.obstructingPartId
           ? `${state.insertPart?.name ?? bp().parts.find((p) => p.id === state.part).name} overlaps ${bp().parts.find((p) => p.id === assessment.obstructingPartId)?.name ?? assessment.obstructingPartId}. Slide or turn it clear.`
           : `${label}: ${reasons[assessment.reasonCode] ?? assessment.reasonCode}`;
+      stateLabel.textContent = assessment.valid
+        ? state.replaceConnection
+          ? 'Preview · mount adjustment'
+          : placementMode.value === 'attach'
+            ? 'Preview · not attached'
+            : 'Preview · position only'
+        : 'Blocked · not placed';
+      footer.dataset.blocked = String(!assessment.valid);
       apply.disabled = !assessment.valid;
       if (assessment.obstructingPartId) {
         const obstacle = getMeshes().get(assessment.obstructingPartId);
@@ -471,7 +627,12 @@ export function createSurfaceControls({
     update();
   }
   async function commit() {
-    if (!state?.proposal) return false;
+    if (!state?.proposal || state.committing) return false;
+    state.committing = true;
+    const committedState = state;
+    const attaching = placementMode.value === 'attach';
+    const peerName = bp().parts.find((p) => p.id === state.target.part)?.name;
+    apply.disabled = true;
     const command = {
         type: 'surface-mount',
         ...options(),
@@ -480,14 +641,22 @@ export function createSurfaceControls({
       label = status.textContent;
     const result = await send(command);
     if (result?.ok) {
-      cancel(false);
+      if (state === committedState) cancel(false);
       onMessage(
-        attach.checked
-          ? 'Attached. The mount holds these parts together. Undo restores the previous position.'
+        attaching
+          ? `Attached to ${peerName}. These parts now move together. Undo reverses this attachment.`
           : 'Placed against surface · not attached.',
       );
       onInteraction?.('surface-committed', { command, label });
       return true;
+    }
+    if (state === committedState) {
+      state.committing = false;
+      state.proposal = null;
+      stateLabel.textContent = 'Not attached';
+      status.textContent = explainFailure(result ?? {});
+      footer.dataset.blocked = 'true';
+      onInvalidate?.();
     }
     return false;
   }
@@ -496,6 +665,8 @@ export function createSurfaceControls({
     state = null;
     clearPreview();
     panel.hidden = true;
+    overlay.hidden = true;
+    onInvalidate?.();
     orbit.enabled = true;
     if (notify) onMessage('Surface placement cancelled. Your machine is unchanged.');
   }
@@ -513,6 +684,7 @@ export function createSurfaceControls({
   }
   function point(event, { lock = false } = {}) {
     if (!state) return false;
+    state.drag = !!(event.buttons & 1);
     const r = ray(event);
     let p, region, world;
     if (state.locked && state.target) {
@@ -627,10 +799,14 @@ export function createSurfaceControls({
     update();
   });
   grid.addEventListener('change', update);
-  attach.addEventListener('change', () => {
+  placementMode.addEventListener('change', () => {
+    modeHelp.textContent =
+      placementMode.value === 'attach'
+        ? 'Creates a fixed joint. These parts move together.'
+        : 'No joint. Touching parts can separate when you run.';
     apply.textContent = state?.replaceConnection
       ? 'Apply mount'
-      : attach.checked
+      : placementMode.value === 'attach'
         ? 'Attach'
         : 'Place only';
     update();
@@ -656,6 +832,9 @@ export function createSurfaceControls({
       cancel();
       return true;
     }
+    if (event.target.tagName === 'SELECT') return false;
+    if (['BUTTON', 'SUMMARY'].includes(event.target.tagName) && ['Enter', ' '].includes(event.key))
+      return false;
     if (event.key === 'Enter') {
       commit();
       return true;
@@ -687,14 +866,11 @@ export function createSurfaceControls({
   }
   function beginPointer(event) {
     if (!state) return false;
-    state.pointerStart = [event.clientX, event.clientY];
-    state.previewClicked = false;
     const r = ray(event),
       previewHit = r
         .intersectObjects(preview.children)
         .find((h) => h.object.userData.surfacePreview);
     if (previewHit && state.target) {
-      state.previewClicked = true;
       const p = bp().parts.find((p) => p.id === state.target.part),
         region = surfaceRegions(p).find((r) => r.id === state.target.region),
         rotation = quat(p.rotation).multiply(quat(region.rotation)),
@@ -712,6 +888,8 @@ export function createSurfaceControls({
         v: Number(v.value) / 1000,
       };
       state.locked = true;
+      state.drag = true;
+      update();
       return true;
     }
     const hit = r
@@ -723,15 +901,24 @@ export function createSurfaceControls({
   }
   function endPointer(event) {
     if (!state) return;
-    const click =
-      state.previewClicked &&
-      state.pointerStart &&
+    const rect = renderer.domElement.getBoundingClientRect();
+    const inside =
       event &&
-      Math.hypot(event.clientX - state.pointerStart[0], event.clientY - state.pointerStart[1]) < 5;
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom;
+    if (!inside) {
+      cancel();
+      return;
+    }
+    // Preserve the grab offset, but assess the final position even if no final move event arrived.
+    point(event, { lock: true });
     state.dragAnchor = null;
     state.drag = false;
-    if (click) commit();
+    commit();
   }
+
   function read() {
     return state
       ? {
@@ -749,7 +936,7 @@ export function createSurfaceControls({
             rotation: p.rotation,
           })),
           locked: state.locked,
-          attach: attach.checked,
+          attach: placementMode.value === 'attach',
         }
       : null;
   }
@@ -763,6 +950,7 @@ export function createSurfaceControls({
     cancel,
     key,
     read,
+    renderOverlay,
     active: () => !!state,
     enabled: () => enabled,
     setEnabled: (value) => {
@@ -779,6 +967,7 @@ export function createSurfaceControls({
     dispose() {
       cancel(false);
       scene.remove(preview);
+      overlay.remove();
     },
   };
 }

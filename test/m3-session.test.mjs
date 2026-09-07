@@ -201,7 +201,8 @@ test('attached passive inertia does not disappear from measured circuit energy',
       I = 0.02 / 3;
     // Rotor and identical passive load share momentum: K=.5*J²/I + .5*J²/(2I).
     assert.ok(Math.abs(kinetic - (0.75 * impulse ** 2) / I) < 1e-7);
-    assert.ok(Math.abs(f.energy.integrationDeltaJ + (0.25 * impulse ** 2) / I) < 1e-7);
+    assert.ok(Math.abs(f.energy.integrationDeltaJ) < 1e-7);
+    assert.ok(Math.abs(f.energy.constraintDissipationJ) < 1e-7);
     assert.ok(
       Math.abs(
         1000 - f.power.cells[0].energyJ - kinetic - dissipated + f.energy.integrationDeltaJ,
@@ -212,7 +213,7 @@ test('attached passive inertia does not disappear from measured circuit energy',
     s.dispose();
   }
 });
-test('coupled active motors are explicitly unsupported until coupled electrical allocation exists', async () => {
+test('separately powered motors sharing a rotor account for coupled kicks and replay', async () => {
   const c = motorConfiguration();
   c.bodies.push({ ...body(), position: [0, 0, 0] }, { ...body(), position: [20, 0, 0] });
   c.joints.push({
@@ -227,5 +228,39 @@ test('coupled active motors are explicitly unsupported until coupled electrical 
   c.power.cells.push({ ...c.power.cells[0], node: 4 });
   c.power.motors.push({ ...c.power.motors[0], node: 3, body: 3, joint: 1 });
   c.power.wires.push([4, 3]);
-  await assert.rejects(createSession(c), /UNSUPPORTED_ACTUATOR_COUPLING/);
+  for (const cell of c.power.cells) {
+    cell.voltage = 1;
+    cell.currentLimit = 100;
+  }
+  for (const motor of c.power.motors) motor.currentLimit = 100;
+  const s = await createSession(c);
+  try {
+    s.step(1);
+    const first = s.observe().frames[0];
+    const inertia = 0.02 / 3,
+      dt = 1 / 120,
+      k = 0.1;
+    const current1 = 1 / (2 + (k * k * dt * 2) / inertia);
+    const current2 = (1 - k * ((k * current1 * dt) / inertia)) / (2 + (k * k * dt * 2) / inertia);
+    assert.ok(Math.abs(first.power.motors[0].current - current1) < 1e-7);
+    assert.ok(
+      Math.abs(first.power.motors[1].current - current2) < 1e-7,
+      'shared rotor changes the second current allocation',
+    );
+    s.step(119);
+    const frame = s.observe().frames[0];
+    assert.equal(frame.tick, 120);
+    assert.ok(frame.power.motors.every((m) => m.shaftWorkJ > 0));
+    assert.ok(frame.power.cells.every((cell) => cell.energyJ < 1000));
+    assert.ok(Math.abs(frame.energy.balanceResidualJ) < 1e-6);
+    const checkpoint = s.checkpoint();
+    s.step(20);
+    const expected = s.observe().frames[0];
+    s.restore(checkpoint);
+    s.step(20);
+    assert.deepEqual(s.observe().frames[0].physics, expected.physics);
+    assert.deepEqual(s.observe().frames[0].power, expected.power);
+  } finally {
+    s.dispose();
+  }
 });

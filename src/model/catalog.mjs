@@ -1,3 +1,4 @@
+import { DEFAULT_CONTROL_BINDING } from './control-bindings.mjs';
 // Geometry dimensions are in metres. Material values are explicit selectable
 // workshop parameters; friction values are nominal, not measured surface pairs.
 function freeze(value) {
@@ -76,6 +77,11 @@ function component(
 
 // Fixed-port local +X points outward. Mating opposes the two normals via a
 // half-turn around port Y. Shaft frames instead coincide along local +X.
+// A single solid steering arm slopes down from its input bearing to the wheel
+// axle. Port frames express the same authored tilt as the collision cuboid.
+const hubTilt = Math.atan2(0.07, 0.1),
+  hubHalfLength = Math.hypot(0.1, 0.07) / 2;
+const aboutZ = (angle) => [0, 0, Math.sin(angle / 2), Math.cos(angle / 2)];
 export const CATALOG = freeze({
   beam: {
     mountingFaces: ['right', 'left', 'top', 'bottom', 'front', 'back'],
@@ -135,14 +141,81 @@ export const CATALOG = freeze({
       'steel',
       [port('shaft', 'shaft', [0.12, 0, 0]), power(), signal('signal', 'input')],
       {
-        torqueConstant: rating(0.1, 0.001, 100, 'N m/A'),
+        torqueConstant: rating(0.4, 0.001, 100, 'N m/A'),
         resistance: rating(1, 0.001, 1000, 'ohm'),
         currentLimit: rating(10, 0.01, 1000, 'A'),
         defaultDuty: rating(1, -1, 1, 'ratio'),
+        inputPolarity: {
+          ...rating(1, -1, 1, 'sign'),
+          type: 'integer',
+          enum: [-1, 1],
+          optional: true,
+        },
       },
     ),
     mountingFaces: ['bottom', 'left'],
     mountingPads: { left: [0.02, 0.04] },
+  },
+  poweredHinge: {
+    ...component(
+      'poweredHinge',
+      'Powered Hinge',
+      [0.025, 0.025, 0.05],
+      'aluminium',
+      [
+        { ...port('shaft', 'shaft', [0, 0.05, 0]), rotation: [0, 0, Math.SQRT1_2, Math.SQRT1_2] },
+        power(),
+        signal('signal', 'input'),
+      ],
+      {
+        torqueConstant: rating(0.6, 0.001, 100, 'N m/A'),
+        resistance: rating(2, 0.001, 1000, 'ohm'),
+        currentLimit: rating(8, 0.01, 1000, 'A'),
+        defaultTarget: rating(0, -1, 1, 'ratio'),
+        inputPolarity: {
+          ...rating(1, -1, 1, 'sign'),
+          type: 'integer',
+          enum: [-1, 1],
+          optional: true,
+        },
+        lowerLimit: rating(-0.6, -3, -0.01, 'rad'),
+        upperLimit: rating(0.6, 0.01, 3, 'rad'),
+        proportionalGain: rating(10, 0.01, 100, '1/rad'),
+        dampingGain: rating(0.1, 0, 100, 's/rad'),
+        integralGain: { ...rating(3, 0, 100, '1/(rad s)'), optional: true },
+      },
+    ),
+    milestone: 'M3b',
+    mountingPads: { left: [0.02, 0.04] },
+  },
+  wheelHub: {
+    ...component(
+      'wheelHub',
+      'Wheel Hub',
+      [hubHalfLength, 0.0075, 0.07],
+      'aluminium',
+      [
+        {
+          ...port('steering', 'shaft', [
+            -hubHalfLength + 0.02 * Math.sin(hubTilt),
+            -0.02 * Math.cos(hubTilt),
+            0,
+          ]),
+          rotation: aboutZ(Math.PI / 2 + hubTilt),
+        },
+        {
+          ...port('shaft', 'shaft', [
+            hubHalfLength + 0.008 * Math.cos(hubTilt),
+            0.008 * Math.sin(hubTilt),
+            0,
+          ]),
+          rotation: aboutZ(hubTilt),
+          joint: 'revolute',
+        },
+      ],
+      {},
+    ),
+    milestone: 'M3b',
   },
   steelAxle: {
     ...component(
@@ -162,7 +235,7 @@ export const CATALOG = freeze({
       [0.025, 0.1, 0.1],
       'rubber',
       [port('axle', 'shaft', [-0.025, 0, 0])],
-      {},
+      { diameter: { ...rating(0.2, 0.1, 1, 'm'), optional: true } },
       'cylinder',
     ),
     mountingPads: { right: [0.02, 0.02] },
@@ -175,14 +248,18 @@ export const CATALOG = freeze({
     [signal('signal', 'output')],
     { axis: { ...rating(0, 0, 2, '0=X, 1=Y, 2=Z'), type: 'integer' } },
   ),
-  commandReceiver: component(
-    'commandReceiver',
-    'Command Receiver',
-    [0.04, 0.02, 0.03],
-    'aluminium',
-    [signal('command', 'input'), signal('signal', 'output')],
-    { duty: rating(0, -1, 1, 'ratio') },
-  ),
+  commandReceiver: {
+    ...component(
+      'commandReceiver',
+      'Command Receiver',
+      [0.04, 0.02, 0.03],
+      'aluminium',
+      [signal('command', 'input'), signal('signal', 'output')],
+      { duty: rating(0, -1, 1, 'ratio') },
+    ),
+    controlBindingDefault: DEFAULT_CONTROL_BINDING,
+    controlBindingMilestone: 'M3b',
+  },
   logicController: component(
     'logicController',
     'Logic Controller',

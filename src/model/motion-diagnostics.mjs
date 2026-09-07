@@ -1,3 +1,5 @@
+import { CATALOG } from './catalog.mjs';
+import { rotateVector } from './transforms.mjs';
 /** Explanations derived only from the authored graph and completed telemetry. */
 function connected(blueprint, start, kind) {
   const seen = new Set([start]);
@@ -25,8 +27,10 @@ export function motorShaftSpeed(frame, node) {
     rotor = frame.physics[bp.parts.findIndex((p) => p.id === other)],
     housing = frame.physics[node];
   if (!rotor || !housing) return null;
-  const [x, y, z, w] = housing.rotation,
-    axis = [1 - 2 * (y * y + z * z), 2 * (x * y + z * w), 2 * (x * z - y * w)];
+  const own = edge.a.part === part.id ? edge.a : edge.b;
+  const socket = CATALOG[part.type]?.ports.find((p) => p.id === own.port);
+  if (!socket) return null;
+  const axis = rotateVector(housing.rotation, rotateVector(socket.rotation, [1, 0, 0]));
   return axis.reduce(
     (sum, value, i) => sum + (rotor.angularVelocity[i] - housing.angularVelocity[i]) * value,
     0,
@@ -40,8 +44,18 @@ export function diagnoseMotion(frame) {
     (frame.metadata.connections ?? []).filter((c) => c.reasonCode !== 'OK').map((c) => c.id),
   );
   const admitted = { ...bp, connections: bp.connections.filter((c) => !rejected.has(c.id)) };
-  const add = (code, part, port, title, action, evidence) =>
-    issues.push({ code, partId: part.id, port, title, action, evidence });
+  const add = (code, part, port, title, action, evidence) => {
+    if (
+      !issues.some(
+        (issue) =>
+          issue.code === code &&
+          issue.partId === part.id &&
+          issue.port === port &&
+          issue.title === title,
+      )
+    )
+      issues.push({ code, partId: part.id, port, title, action, evidence });
+  };
   for (const edge of bp.connections.filter((c) => c.kind === 'fixed' && rejected.has(c.id))) {
     const part = bp.parts.find((p) => p.id === edge.a.part),
       other = bp.parts.find((p) => p.id === edge.b.part);
@@ -126,9 +140,9 @@ export function diagnoseMotion(frame) {
         'COMMAND_OFF',
         owner,
         source ? 'signal' : null,
-        `${owner.name} is commanding Stop`,
+        `${owner.name} has zero drive (coasting)`,
         source
-          ? 'Choose Forward or Reverse on this receiver. It controls the motor instead of the motor’s Drive setting.'
+          ? 'Use this receiver’s keyboard controls to apply drive. Zero output lets the motor coast; it is not a brake.'
           : 'Set Drive setting above or below zero.',
         source ? 'Connected control source reports a zero command.' : 'Drive setting is 0.',
       );
@@ -156,5 +170,49 @@ export function diagnoseMotion(frame) {
         `${speed.toFixed(2)} rad/s relative shaft speed, ${motor.current.toFixed(2)} A. These readings alone do not identify the cause.`,
       );
   }
+  const stalled = bp.parts.filter((p) =>
+    issues.some((issue) => issue.code === 'SLOW_UNDER_POWER' && issue.partId === p.id),
+  );
+  const peer = (part, kind) => {
+    const edge = admitted.connections.find(
+      (c) => c.kind === kind && [c.a.part, c.b.part].includes(part.id),
+    );
+    return edge
+      ? bp.parts.find((p) => p.id === (edge.a.part === part.id ? edge.b.part : edge.a.part))
+      : null;
+  };
+  for (let i = 0; i < stalled.length; i++)
+    for (let j = i + 1; j < stalled.length; j++) {
+      const a = stalled[i],
+        b = stalled[j],
+        owner = peer(a, 'signal');
+      if (
+        !owner ||
+        owner.type !== 'commandReceiver' ||
+        peer(b, 'signal')?.id !== owner.id ||
+        peer(a, 'shaft')?.type !== 'gripWheel' ||
+        peer(b, 'shaft')?.type !== 'gripWheel' ||
+        !connected(admitted, a.id, 'fixed').has(b.id)
+      )
+        continue;
+      const axis = (part) =>
+        rotateVector(frame.physics[bp.parts.indexOf(part)].rotation, [
+          part.parameters.inputPolarity ?? 1,
+          0,
+          0,
+        ]);
+      const first = axis(a),
+        second = axis(b),
+        dot = first.reduce((sum, value, k) => sum + value * second[k], 0);
+      if (dot < -0.99)
+        add(
+          'OPPOSED_DRIVES',
+          b,
+          'signal',
+          `${a.name} and ${b.name} have opposing drive directions`,
+          'If these wheels should roll in the same direction, enable Reverse direction on one motor. Otherwise check clearance and load.',
+          'Both stalled wheel motors share a receiver and rigid assembly; their command-adjusted shaft axes oppose. This is a possible cause, not proof of the fault.',
+        );
+    }
   return issues;
 }

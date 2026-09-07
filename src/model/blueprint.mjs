@@ -1,7 +1,7 @@
 import {
   resolveSurfaceEndpoint,
   validateSurfacePair,
-  validateSurfaceGeometry,
+  validatePlacementGeometry,
 } from './surfaces.mjs';
 import validateSchema from './generated/blueprint-validator.mjs';
 import { CATALOG, MATERIALS } from './catalog.mjs';
@@ -159,7 +159,7 @@ export function loadSave(input) {
   const validation = validateBlueprint(parsed);
   if (validation.ok)
     try {
-      validateSurfaceGeometry(parsed);
+      validatePlacementGeometry(parsed);
     } catch (error) {
       return result(error.reasonCode, error.path ?? 'connections');
     }

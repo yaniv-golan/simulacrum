@@ -1,5 +1,7 @@
 import { REASON_CODES } from './reasons.mjs';
 const messages = {
+  MIRROR_UNREPRESENTABLE:
+    'This assembly cannot be mirrored with its current shapes or connections.',
   UNKNOWN_SURFACE: 'Choose a highlighted mounting surface.',
   SURFACE_OUT_OF_BOUNDS:
     'The mounting base extends beyond this surface. Slide it inward or choose a larger surface.',
@@ -36,8 +38,6 @@ const messages = {
     'This shaft arrangement is not supported yet. Connect one motor to an axle or wheel.',
   INVALID_CONFIGURATION:
     'The machine configuration is invalid. Return to Build and check its connections.',
-  UNSUPPORTED_ACTUATOR_COUPLING:
-    'This build currently supports one motor per connected mechanism. Separate the mechanisms or remove a motor.',
   ENERGY_INVARIANT:
     'The electrical model could not account for this motion. The run stopped; return to Build. Its failure record is available.',
   INVALID_COMMAND: 'That action is not valid. Check the selected part and its settings.',
@@ -64,7 +64,7 @@ const messages = {
   INVALID_POWER_CONFIGURATION:
     'The electrical configuration is invalid. Check the power connections.',
   UNSUPPORTED_POWER_TOPOLOGY:
-    'This build supports one cell and one motor per power circuit. Use separate circuits.',
+    'A power circuit can have several motors, but only one cell. Disconnect the extra cell.',
   UNSUPPORTED_SIGNAL_TOPOLOGY: 'Connect one Command Receiver output to each motor input.',
   INVALID_POWER_CHECKPOINT: 'The saved electrical state is invalid. Load a matching checkpoint.',
   POWER_STEP_PENDING: 'The electrical step is still in progress. Wait for the completed frame.',
@@ -152,6 +152,14 @@ export function explainFailure(error, blueprint) {
     message = explainReason(failure.reasonCode),
     path = failure.path;
   if (!path) return message;
+  const overlap = /^\/parts\/(\d+)\/overlaps\/(\d+)$/.exec(path);
+  if (failure.reasonCode === 'SURFACE_OVERLAP' && overlap) {
+    const names = overlap.slice(1).map((index) => {
+      const name = ownValue(ownValue(ownValue(blueprint, 'parts'), index), 'name');
+      return typeof name === 'string' ? name.slice(0, 128) : `Part ${Number(index) + 1}`;
+    });
+    return `${names.join(' overlaps ')}. Move the part clear; nothing was changed.`;
+  }
   const tokens = path
     .replace(/^\//, '')
     .split('/')

@@ -120,6 +120,10 @@ try {
     ),
   );
   console.log('remote capture browser passed', dir);
+} catch (error) {
+  await page.screenshot({ path: 'artifacts/remote-playtest/failure.png' });
+  writeFileSync('artifacts/remote-playtest/failure.txt', await page.locator('body').innerText());
+  throw error;
 } finally {
   try {
     browserEvidence.assertUnchanged();

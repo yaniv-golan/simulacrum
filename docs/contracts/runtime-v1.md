@@ -99,11 +99,15 @@ ordinary authored components. Connecting a cell to a motor defaults to full duty
 a wired receiver overrides that duty, including zero. Torque acts equally and
 oppositely on the motor housing and its shaft load. Charge and dissipated energy
 are checkpointed; cell heat and motor/driver heat are reported separately. The
-current electrical solver admits one cell and one motor per connected power
-component; unsupported parallel topology is refused explicitly. At M3, each
-joint-connected assembly admits at most one powered motor. Coupled electrical
-allocation must be implemented before the multi-joint M4b plant; a bare-body
-inertia estimate does not bound acceleration under multiple coupled actuators.
+current electrical solver admits one cell and multiple motors per connected power
+component; multiple connected cells are refused explicitly. Multiple circuits may
+share a joint-connected assembly. Shared-cell voltage satisfies Vbus = Voc − Rcell × Q,
+where Q is the sum of duty × winding current. Cell heat is Rcell × Q² × dt,
+including cross terms, and charge is debited once. A common winding-rating
+fraction enforces total cell current and available energy without first-motor
+priority. Bounded coordinate roots solve electrical droop against the ordered
+mechanical kick response; nonconvergence rejects the tick rather than supplying
+unfunded work. Convergence for every admitted ill-conditioned assembly is not proved.
 
 The DC drive uses first-order operator splitting on the fixed 1/120 s path:
 allocate bounded current from completed shaft speed, apply an equal/opposite
@@ -116,6 +120,13 @@ measured kinetic-energy change. Electrical allocation must fund kick work plus
 copper and cell losses, with voltage headroom at the kick endpoint. Current,
 voltage, charge limits and the existing energy tolerance remain enforced. No
 later contact motion can rewrite the electrical allocation or motor work.
+
+Motor kicks follow compiled motor order. Before allocating each current, the power
+phase predicts earlier kicks on shared bodies using signed cross-axis inverse
+inertia from the physics door. Each actuator receipt checks the actual pre-kick
+speed and independently measured kinetic-energy change. The approximation is
+order dependent at finite timestep; it does not claim a simultaneous continuous
+current solution. Joint and contact redistribution occurs afterward, once per tick.
 
 The completed observation's `energy` ledger separately reports kinetic and
 gravitational potential energy (world center of mass), actuator work, external
@@ -183,10 +194,85 @@ it does not write completed physical poses. Undo restores the entire transaction
 
 The catalog-declared source pad must fit on the receiving face; each source pad
 is exclusive. A housing can overhang while its smaller declared pad remains fully
-supported. Pad geometry is shown on the part and in its placement preview. Canonical body and exposed-shaft placement envelopes reject
-intersection between the mounted group and surrounding parts. Cylinders currently
-use conservative enclosing boxes for placement admission. Load and compiler apply
-the same surface geometry admission. These checks are geometric admission, not
+supported. Pad geometry is shown on the part and in its placement preview. All
+placement paths and loads reject intersections between canonical bodies and
+exposed-shaft placement envelopes, including unattached parts. Bounds prune distant
+pairs; cylinders use the same 64-sided convex hull as production collision geometry
+for the final intersection test. A separation or contact within 1e-7 metres is
+admitted as numerical contact tolerance. Failed edits preserve state and history.
+This admission applies to authored starting geometry, not integrated runtime poses.
+These checks are geometric admission, not
 proof of load capacity or powered motion. Misaligned surface frames are diagnosed and do not produce a joint; they are
 not silently repaired. Electrical and signal
 wires never become structural attachments.
+
+## Keyboard input ownership (M3b)
+
+An optional strict `controlBinding` on a command receiver maps physical keyboard
+codes through two signed input channels and gains to a clamped duty. Presets are
+authoring conveniences, never vehicle-type dispatch. The default is held W/S or
+up/down. Steering and differential mixing are explicit player configuration. A
+custom action is a named receiver with custom keys; it still requires an ordinary
+signal connection and actuator capable of that action. No payload-release physics
+is implied by naming a receiver.
+
+Bindings persist with the blueprint and support Undo/Redo. Selection does not
+redirect keys. The presentation input owner tracks simultaneous held codes and
+toggle rising edges, emitting ordinary recorded receiver commands. Keyboard
+autorepeat does not retrigger toggles. Input focus, blur and leaving Run reset
+keyboard outputs; release of one key preserves other held keys. A zero receiver
+command lets a drive motor coast; a position actuator targets its zero angle.
+Text fields and browser modifier shortcuts are excluded.
+Physics reads receiver commands, never keys, binding names or vehicle labels.
+
+### Assembly copying and actuator inspection (M3b)
+
+`mirror-assembly` is an atomic Build edit over explicit part ids, a reference part
+and one of that part's local center planes. It preserves authored physical
+properties and internal connections, including mechanical attachments to the
+reference, but does not duplicate other boundary connections. Preview and commit
+use the same model proposal. Proper rotations must represent the reflected
+canonical shapes and mechanical sockets; otherwise admission rejects the edit.
+No runtime controller polarity is inferred from names, sides or blueprint identity.
+
+Connection testing uses ordinary Run and receiver commands. It never suspends
+gravity, anchors a machine, bypasses a signal owner or supplies hidden energy.
+Keyboard and test holds share one receiver input owner. A test hold temporarily
+overrides the receiver's keyboard output; releasing it restores that output.
+Focus loss and mode changes clear both inputs. Wired controller ownership excludes
+both keyboard and test overrides. Live
+readouts come from completed telemetry. All-machine motion during a test is
+explicit in the interface.
+
+### Powered position joints and constrained work (M3b)
+
+`poweredHinge` maps normalized input, after optional `inputPolarity` (−1 or +1,
+default +1), to its authored lower/upper angular limits. Its PI-D voltage driver
+uses continuous coefficients Kp (rad⁻¹), Kd (s/rad), and Ki (rad⁻¹s⁻¹). The fixed
+1/120 s realization predicts implicit motor speed and midpoint angle. With
+`h=dt/(I+k²dt/R)`, `A=kVoc/R`, `B=k²/R`, and `C=(Kp*dt/2+Kd)*h`, its duty is
+`clamp((Kp*(target-angle)-(Kp*dt+Kd)*omega+trim+C*B*omega)/(1+C*A), -1, 1)`.
+I is the prepared bilateral effective inertia; Voc is the connected source rating
+used for prediction. The shared electrical solver independently owns actual
+funded torque, voltage droop, current limits and heat. A locked shaft has internal
+infinite effective inertia (zero mobility), consuming resistive energy without
+mechanical work. Authored and checkpointed data remain finite.
+
+Trim integrates `Ki*error*dt` while the sampled duty is unsaturated or the change
+unwinds saturation, bounded to [−1,1]. It clears on target change, unavailable
+power and error reversal. Completed hinge telemetry/checkpoint fields are
+`angle`, `targetAngle`, `controlDuty`, and `integralDuty`. Feedback uses the prior
+completed angle and prepared projected joint speed. Sensor/controller t→t+1
+latency is unchanged. Angular stops remain physical constraints, never pose writes.
+
+Power/signals prepares bilateral responses without changing physical state.
+Actuators/constraints first applies passive velocity projection to every jointed
+island, including unpowered assemblies. Fixed clusters use authored mass and
+inertia with parallel-axis terms; free clusters conserve linear and angular
+momentum. Revolute reactions share an anchor midpoint. Contacts and angular stops
+remain in the single integration. Projected motor impulses include all bilaterally
+connected bodies, and torque/midpoint-speed work receipts are checked against
+whole-island kinetic change. Passive projection loss is separately reported as
+`energy.constraintDissipationJ`; it never becomes motor heat. The energy identity is
+`deltaMechanical = actuatorWorkJ + externalWorkJ + integrationDeltaJ
+- constraintDissipationJ + balanceResidualJ`.

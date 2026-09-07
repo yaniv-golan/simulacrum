@@ -175,7 +175,7 @@ test('string limits reject terminal newlines beyond the bounded field', () => {
 test('M3 factories expose complete player-authored electrical ratings', () => {
   const motor = createPart('poweredMotor', 'motor', [0, 0, 0]);
   assert.equal(motor.parameters.defaultDuty, 1);
-  assert.equal(motor.parameters.torqueConstant, 0.1);
+  assert.equal(motor.parameters.torqueConstant, 0.4);
   const cell = createPart('powerCell', 'cell', [0, 0, 0]);
   assert.equal(cell.parameters.voltage, 24);
   assert.equal(CATALOG.poweredMotor.milestone, 'M3');

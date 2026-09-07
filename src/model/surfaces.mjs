@@ -1,3 +1,4 @@
+import { partPrimitives, CYLINDER_SEGMENTS, shaftSegments } from './geometry.mjs';
 import { CATALOG } from './catalog.mjs';
 import { normalizeQuaternion, multiplyQuaternion, rotateVector } from './transforms.mjs';
 export { multiplyQuaternion, rotateVector } from './transforms.mjs';
@@ -16,7 +17,9 @@ export function surfaceRegions(partOrType) {
   const type = typeof partOrType === 'string' ? partOrType : partOrType.type,
     definition = CATALOG[type];
   if (!definition) return [];
-  const [x, y, z] = definition.primitives[0].halfExtents,
+  const [x, y, z] = (
+      typeof partOrType === 'string' ? definition.primitives : partPrimitives(partOrType)
+    )[0].halfExtents,
     s = Math.SQRT1_2;
   const faces = [
     ['right', [x, 0, 0], [0, 0, 0, 1], [y, z]],
@@ -80,7 +83,7 @@ export function validateSurfacePair(target, a, source, b) {
 
 export function solidsOverlap(a, b) {
   const box = (part) => {
-    const h = part.envelopeHalf ?? CATALOG[part.type].primitives[0].halfExtents;
+    const h = part.envelopeHalf ?? partPrimitives(part)[0].halfExtents;
     return {
       center: part.position,
       half: h,
@@ -108,25 +111,98 @@ export function solidsOverlap(a, b) {
       r = (box) => box.half.reduce((s, h, i) => s + h * Math.abs(dot(box.axes[i], n)), 0);
     if (Math.abs(dot(delta, n)) >= r(A) + r(B) - 1e-7) return false;
   }
+  // Bounds are only a broad phase: a wheel's empty corners are not solid.
+  const hull = (part, bounds) => {
+    const cylinder = !part.envelopeHalf && partPrimitives(part)[0].kind === 'cylinder';
+    const local = cylinder
+      ? Array.from({ length: CYLINDER_SEGMENTS * 2 }, (_, i) => [
+          i < CYLINDER_SEGMENTS ? -bounds.half[0] : bounds.half[0],
+          bounds.half[1] * Math.cos((2 * Math.PI * i) / CYLINDER_SEGMENTS),
+          bounds.half[2] * Math.sin((2 * Math.PI * i) / CYLINDER_SEGMENTS),
+        ])
+      : Array.from({ length: 8 }, (_, i) => bounds.half.map((h, j) => (i & (1 << j) ? h : -h)));
+    const radial = cylinder
+      ? Array.from({ length: CYLINDER_SEGMENTS }, (_, i) => {
+          const angle = (2 * Math.PI * (i + 0.5)) / CYLINDER_SEGMENTS;
+          return rotateVector(part.rotation, [0, Math.cos(angle), Math.sin(angle)]);
+        })
+      : [];
+    return {
+      vertices: local.map((v) =>
+        rotateVector(part.rotation, v).map((x, i) => x + part.position[i]),
+      ),
+      normals: cylinder ? [bounds.axes[0], ...radial] : bounds.axes,
+      edges: cylinder
+        ? [bounds.axes[0], ...radial.map((n) => cross(bounds.axes[0], n))]
+        : bounds.axes,
+      cylinder,
+    };
+  };
+  const H = hull(a, A),
+    K = hull(b, B);
+  if (!H.cylinder && !K.cylinder) return true;
+  for (const axis of [
+    ...H.normals,
+    ...K.normals,
+    ...H.edges.flatMap((x) => K.edges.map((y) => cross(x, y))),
+  ]) {
+    const length = Math.hypot(...axis);
+    if (length < 1e-10) continue;
+    const n = axis.map((x) => x / length);
+    const p = H.vertices.map((v) => dot(v, n)),
+      q = K.vertices.map((v) => dot(v, n));
+    if (Math.max(...p) <= Math.min(...q) + 1e-7 || Math.max(...q) <= Math.min(...p) + 1e-7)
+      return false;
+  }
   return true;
 }
 export function placementEnvelopes(part) {
-  const half = CATALOG[part.type].primitives[0].halfExtents;
-  const shafts = CATALOG[part.type].ports.filter(
-    (p) => p.kind === 'shaft' && Math.abs(p.position[0]) > half[0],
-  );
   return [
     part,
-    ...shafts.map((p) => {
-      const face = Math.sign(p.position[0]) * half[0],
-        center = [(face + p.position[0]) / 2, p.position[1], p.position[2]];
-      return {
-        ...part,
-        position: part.position.map((v, i) => v + rotateVector(part.rotation, center)[i]),
-        envelopeHalf: [Math.abs(p.position[0] - face) / 2, 0.012, 0.012],
-      };
-    }),
+    ...shaftSegments(part).map((shaft) => ({
+      ...part,
+      position: part.position.map((v, i) => v + rotateVector(part.rotation, shaft.position)[i]),
+      rotation: multiplyQuaternion(part.rotation, shaft.rotation),
+      envelopeHalf: [shaft.length / 2, 0.012, 0.012],
+    })),
   ];
+}
+
+/** Deterministic broad-phase ordering avoids testing distant pairs. Touching is legal. */
+export function findPlacementOverlap(parts) {
+  const bounds = (part) => {
+    const envelopes = placementEnvelopes(part);
+    const xBounds = envelopes.map((e) => {
+      const half = e.envelopeHalf ?? partPrimitives(e)[0].halfExtents;
+      const extent = half.reduce(
+        (sum, h, i) =>
+          sum +
+          h *
+            Math.abs(
+              rotateVector(e.rotation, [Number(i === 0), Number(i === 1), Number(i === 2)])[0],
+            ),
+        0,
+      );
+      return [e.position[0] - extent, e.position[0] + extent];
+    });
+    return {
+      part,
+      envelopes,
+      min: Math.min(...xBounds.map((b) => b[0])),
+      max: Math.max(...xBounds.map((b) => b[1])),
+    };
+  };
+  const sorted = parts
+    .map(bounds)
+    .sort((a, b) => a.min - b.min || a.part.id.localeCompare(b.part.id));
+  for (let i = 0; i < sorted.length; i++)
+    for (let j = i + 1; j < sorted.length && sorted[j].min < sorted[i].max - 1e-7; j++) {
+      const a = sorted[i],
+        b = sorted[j];
+      if (a.envelopes.some((x) => b.envelopes.some((y) => solidsOverlap(x, y))))
+        return [a.part, b.part];
+    }
+  return null;
 }
 
 export function surfaceConnectionAligned(blueprint, edge) {
@@ -149,8 +225,15 @@ export function surfaceConnectionAligned(blueprint, edge) {
     1 - Math.min(1, Math.abs(expected.reduce((sum, v, i) => sum + v * b.rotation[i], 0))) <= 1e-10
   );
 }
-/** Recheck authored surface assemblies at load and compilation, using proposal geometry. */
-export function validateSurfaceGeometry(blueprint) {
+/** Admit solid placements and surface attachment topology at load and compilation. */
+export function validatePlacementGeometry(blueprint) {
+  const overlap = findPlacementOverlap(blueprint.parts);
+  if (overlap)
+    throw Object.assign(Error('SURFACE_OVERLAP'), {
+      reasonCode: 'SURFACE_OVERLAP',
+      path: `/parts/${blueprint.parts.indexOf(overlap[0])}/overlaps/${blueprint.parts.indexOf(overlap[1])}`,
+    });
+
   for (const edge of blueprint.connections.filter(
     (c) => c.a.surface && c.b.surface && surfaceConnectionAligned(blueprint, c),
   )) {
@@ -172,13 +255,5 @@ export function validateSurfaceGeometry(blueprint) {
             }
     }
     if (group.has(edge.a.part)) reject('MOUNT_HELD_BY_ANOTHER_CONNECTION');
-    for (const source of blueprint.parts.filter((p) => group.has(p.id)))
-      for (const target of blueprint.parts.filter((p) => !group.has(p.id)))
-        if (
-          placementEnvelopes(source).some((a) =>
-            placementEnvelopes(target).some((b) => solidsOverlap(a, b)),
-          )
-        )
-          reject('SURFACE_OVERLAP');
   }
 }

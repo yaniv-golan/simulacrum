@@ -7,7 +7,7 @@ const styleKey = (s) =>
   JSON.stringify([
     s.kind,
     s.exploded,
-    s.exploded && s.highlighted,
+    s.highlighted,
     !electric(s.kind) && s.failed,
     !electric(s.kind) && s.ends[0].distanceTo(s.ends[1]) > 1e-5,
   ]);
@@ -109,17 +109,17 @@ export function createConnectionView(parent) {
             geometry = new THREE.TubeGeometry(
               path,
               20,
-              spec.kind === 'power' ? 0.005 : 0.004,
+              spec.highlighted ? 0.0065 : spec.kind === 'power' ? 0.005 : 0.004,
               8,
               false,
             ),
             cable = new THREE.Mesh(
               geometry,
               new THREE.MeshStandardMaterial({
-                color,
+                color: spec.highlighted ? 0xffefc7 : color,
                 roughness: 0.6,
                 emissive: color,
-                emissiveIntensity: 0.1,
+                emissiveIntensity: spec.highlighted ? 0.4 : 0.1,
               }),
             );
           group.add(cable);

@@ -243,7 +243,7 @@ test('adjust moves shaft-connected wheel and retains wire; loops refuse', async 
     /MOUNT_HELD_BY_ANOTHER_CONNECTION/,
   );
 });
-test('saved mounted geometry refuses intersecting obstacle but preserves unrelated loose overlap', () => {
+test('saved geometry refuses intersecting obstacles even without attachments', () => {
   const mounted = proposeSurfaceMount(fixture(), {
     part: 'motor',
     sourceRegion: 'bottom',
@@ -258,7 +258,7 @@ test('saved mounted geometry refuses intersecting obstacle but preserves unrelat
   assert.equal(loadSave(mounted).ok, true);
   mounted.connections = [];
   mounted.parts.at(-1).position = [0, 1.08, 0];
-  assert.equal(loadSave(mounted).ok, true);
+  assert.equal(loadSave(mounted).reasonCode, 'SURFACE_OVERLAP');
 });
 test('fixed socket endpoints are not an alternative mounting path', () => {
   const bp = fixture();

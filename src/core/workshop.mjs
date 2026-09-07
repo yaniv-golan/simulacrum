@@ -1,5 +1,6 @@
 import { resolveSurfaceEndpoint } from '../model/surfaces.mjs';
 import { transformGroup } from '../model/editing.mjs';
+import { proposeMirroredAssembly } from '../model/mirror-assembly.mjs';
 import { CATALOG } from '../model/catalog.mjs';
 import {
   createEmptyBlueprint,
@@ -176,6 +177,24 @@ export async function createWorkshop(
           next = transformGroup(current.blueprint, command.id, command.position, command.rotation);
           break;
         }
+        case 'mirror-assembly': {
+          if (
+            keys !== 'axis,ids,referenceId,type' &&
+            keys !== 'axis,expectedCursor,ids,referenceId,type'
+          )
+            return result(false, 'INVALID_COMMAND', 'command');
+          if (
+            command.expectedCursor !== undefined &&
+            !sameData(command.expectedCursor, session.observe().cursor)
+          )
+            return result(false, 'STALE_PROPOSAL', 'expectedCursor');
+          next = proposeMirroredAssembly(current.blueprint, {
+            ids: command.ids,
+            referenceId: command.referenceId,
+            axis: command.axis,
+          }).blueprint;
+          break;
+        }
         case 'material': {
           if (keys !== 'id,material,primitive,type')
             return result(false, 'INVALID_COMMAND', 'command');
@@ -253,11 +272,22 @@ export async function createWorkshop(
             return result(false, 'UNKNOWN_CONNECTION', 'id');
           next.connections = next.connections.filter((connection) => connection.id !== command.id);
           break;
+        case 'bind-control': {
+          if (keys !== 'binding,id,type') return result(false, 'INVALID_COMMAND', 'command');
+          const part = next.parts.find((p) => p.id === command.id);
+          if (!part) return result(false, 'UNKNOWN_PART', 'id');
+          if (part.type !== 'commandReceiver') return result(false, 'INVALID_COMMAND', 'id');
+          part.controlBinding = command.binding;
+          break;
+        }
         case 'parameter': {
           if (keys !== 'id,key,type,value') return result(false, 'INVALID_COMMAND', 'command');
           const part = next.parts.find((p) => p.id === command.id);
           if (!part) return result(false, 'UNKNOWN_PART', 'id');
-          if (typeof command.key !== 'string' || !Object.hasOwn(part.parameters, command.key))
+          if (
+            typeof command.key !== 'string' ||
+            !Object.hasOwn(CATALOG[part.type].parameterDefinitions, command.key)
+          )
             return result(false, 'INVALID_COMMAND', 'key');
           part.parameters[command.key] = command.value;
           break;

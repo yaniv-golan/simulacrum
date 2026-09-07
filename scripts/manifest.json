@@ -580,6 +580,33 @@
       "smoke": true,
       "timeoutMs": 45000,
       "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-vehicle-controls",
+      "script": "scripts/verify-vehicle-controls.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-connection-test-browser",
+      "script": "scripts/verify-connection-test-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-mirror-browser",
+      "script": "scripts/verify-mirror-browser.mjs",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract"
     }
   ]
 }

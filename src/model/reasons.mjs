@@ -1,4 +1,5 @@
 import { SURFACE_REASON_CODES } from './surfaces.mjs';
+import { MIRROR_REASON_CODES } from './mirror-assembly.mjs';
 import { BLUEPRINT_REASON_CODES } from './blueprint.mjs';
 import { OBSERVATION_REASON_CODES } from './observation.mjs';
 import { ASSEMBLY_REASON_CODES } from './assembly.mjs';
@@ -15,6 +16,7 @@ export const CORE_REASON_CODES = Object.freeze([
 export const REASON_CODES = Object.freeze([
   ...new Set([
     ...SURFACE_REASON_CODES,
+    ...MIRROR_REASON_CODES,
     ...BLUEPRINT_REASON_CODES,
     ...OBSERVATION_REASON_CODES,
     ...ASSEMBLY_REASON_CODES,

@@ -1,3 +1,4 @@
+import { partPrimitives } from './geometry.mjs';
 import { CATALOG } from './catalog.mjs';
 import { validateBlueprint, availablePartName } from './blueprint.mjs';
 
@@ -23,7 +24,7 @@ function rotate(vector, rotation) {
 function bounds(part) {
   const min = [Infinity, Infinity, Infinity],
     max = [-Infinity, -Infinity, -Infinity];
-  for (const primitive of CATALOG[part.type].primitives)
+  for (const primitive of partPrimitives(part))
     for (let corner = 0; corner < 8; corner++) {
       const local = primitive.halfExtents.map(
         (extent, axis) => extent * (corner & (1 << axis) ? 1 : -1),

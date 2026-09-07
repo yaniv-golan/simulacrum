@@ -48,25 +48,25 @@ function admitConfiguration(input) {
           m.axis.some((v, i) => Math.abs(v - c.joints[m.joint].axisA[i]) > 1e-12)))
     )
       throw Error('INVALID_CONFIGURATION');
-  const parent = c.bodies.map((_, i) => i);
-  const root = (n) => {
-    while (parent[n] !== n) n = parent[n];
-    return n;
-  };
+  for (const m of c.power.motors)
+    if (
+      m.positionControl &&
+      m.joint >= 0 &&
+      (c.joints[m.joint].limits?.[0] !== m.positionControl.lowerLimit ||
+        c.joints[m.joint].limits?.[1] !== m.positionControl.upperLimit)
+    )
+      throw Error('INVALID_CONFIGURATION');
   for (const joint of c.joints) {
     if (
       !Number.isInteger(joint.a) ||
       !Number.isInteger(joint.b) ||
       joint.a < 0 ||
       joint.b < 0 ||
-      joint.a >= parent.length ||
-      joint.b >= parent.length
+      joint.a >= c.bodies.length ||
+      joint.b >= c.bodies.length
     )
       throw Error('INVALID_CONFIGURATION');
-    parent[root(joint.a)] = root(joint.b);
   }
-  const driven = c.power.motors.filter((m) => m.joint >= 0).map((m) => root(m.body));
-  if (new Set(driven).size !== driven.length) throw Error('UNSUPPORTED_ACTUATOR_COUPLING');
   for (const sensor of c.power.sensors)
     if (
       !Number.isInteger(sensor.body) ||
@@ -123,6 +123,7 @@ export async function createSession(
     actuatorWorkJ: 0,
     externalWorkJ: 0,
     integrationDeltaJ: 0,
+    constraintDissipationJ: 0,
     balanceResidualJ: 0,
   });
   let energy = emptyEnergy();
@@ -229,7 +230,8 @@ export async function createSession(
       const startEnergy = world.mechanicalEnergy();
       let actuatorWorkJ = 0,
         externalWorkJ = 0,
-        integrationDeltaJ = 0;
+        integrationDeltaJ = 0,
+        constraintDissipationJ = 0;
       try {
         for (const phase of PHASES) {
           const start = performance.now();
@@ -254,8 +256,28 @@ export async function createSession(
               break;
             }
             case 'power-signals': {
+              world.prepareConstraints();
+              const coupling = [];
+              for (const [i, m] of config.power.motors.entries()) {
+                if (m.joint < 0) continue;
+                for (let j = 0; j < i; j++) {
+                  const other = config.power.motors[j];
+                  if (other.joint < 0) continue;
+                  const response = world.torquePairResponse(
+                    m.body,
+                    m.rotor,
+                    rotate(sensors.bodies[m.body].rotation, m.axis),
+                    other.body,
+                    other.rotor,
+                    rotate(sensors.bodies[other.body].rotation, other.axis),
+                  );
+                  if (response !== 0) coupling.push({ source: j, target: i, response });
+                }
+              }
               const states = config.power.motors.map((m) =>
-                m.joint < 0 ? { speed: 0, effectiveInverseInertia: 0 } : world.jointState(m.joint),
+                m.joint < 0
+                  ? { speed: 0, angle: 0, effectiveInverseInertia: 0 }
+                  : world.jointState(m.joint),
               );
               const commands = new Map(
                 pending
@@ -264,19 +286,25 @@ export async function createSession(
               );
               torques = power.step(
                 DT,
-                config.power.motors.map((m, i) => ({ node: m.node, speed: states[i].speed })),
+                config.power.motors.map((m, i) => ({
+                  node: m.node,
+                  speed: states[i].speed,
+                  ...(m.positionControl ? { angle: states[i].angle } : {}),
+                })),
                 [...commands.values()],
                 config.power.motors.map((m, i) => ({
                   node: m.node,
                   inertia:
                     states[i].effectiveInverseInertia > 0
                       ? 1 / states[i].effectiveInverseInertia
-                      : 0,
+                      : Infinity,
                 })),
+                coupling,
               ).torques;
               break;
             }
             case 'actuators-constraints':
+              constraintDissipationJ = world.applyPreparedConstraints();
               receipts = torques.map((torque, i) => {
                 const r =
                   torque.joint < 0
@@ -323,7 +351,20 @@ export async function createSession(
               break;
             }
             case 'thermal-ablation':
-              power.completeStep(DT, receipts);
+              power.completeStep(
+                DT,
+                receipts.map((r, i) =>
+                  config.power.motors[i].positionControl
+                    ? {
+                        ...r,
+                        angle:
+                          config.power.motors[i].joint < 0
+                            ? 0
+                            : world.jointState(config.power.motors[i].joint).angle,
+                      }
+                    : r,
+                ),
+              );
               break;
             case 'telemetry':
               energy = {
@@ -331,12 +372,14 @@ export async function createSession(
                 actuatorWorkJ,
                 externalWorkJ,
                 integrationDeltaJ,
+                constraintDissipationJ,
                 balanceResidualJ:
                   total(world.mechanicalEnergy()) -
                   total(startEnergy) -
                   actuatorWorkJ -
                   externalWorkJ -
-                  integrationDeltaJ,
+                  integrationDeltaJ +
+                  constraintDissipationJ,
               };
               tick = next;
               pending = [];
@@ -581,9 +624,11 @@ export async function createSession(
         'actuatorWorkJ',
         'externalWorkJ',
         'integrationDeltaJ',
+        'constraintDissipationJ',
         'balanceResidualJ',
       ]) ||
-      !Object.values(cp.energy).every(Number.isFinite)
+      !Object.values(cp.energy).every(Number.isFinite) ||
+      cp.energy.constraintDissipationJ < 0
     )
       invalid();
     if (
@@ -639,10 +684,18 @@ export async function createSession(
     // All session-owned fields are admitted before the physics door validates and
     // atomically swaps its opaque snapshot. The resulting frame contains only
     // validated finite values, so publication cannot discover a late schema error.
-    world.restore(Uint8Array.from(cp.physics), {
-      kineticJ: cp.energy.kineticJ,
-      potentialJ: cp.energy.potentialJ,
-    });
+    world.restore(
+      Uint8Array.from(cp.physics),
+      {
+        kineticJ: cp.energy.kineticJ,
+        potentialJ: cp.energy.potentialJ,
+      },
+      config.power.motors.flatMap((m, i) =>
+        m.positionControl && m.joint >= 0
+          ? [{ joint: m.joint, angle: cp.power.motors[i].position.angle }]
+          : [],
+      ),
+    );
     power = candidatePower;
     torques = [];
     receipts = [];

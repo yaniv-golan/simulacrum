@@ -1,5 +1,7 @@
+import { partPrimitives } from '../model/geometry.mjs';
 /** Resources are keyed by authored identity; only appearance changes replace them. */
-export const partAppearanceKey = (part) => JSON.stringify([part.type, part.authoredMaterial]);
+export const partAppearanceKey = (part) =>
+  JSON.stringify([part.type, part.authoredMaterial, partPrimitives(part)]);
 export function createResourceCache({ create, dispose, key }) {
   const values = new Map(),
     keys = new Map();

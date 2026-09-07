@@ -39,6 +39,7 @@ try {
   const x = box.x + (center.x * 0.5 + 0.5) * box.width,
     y = box.y + (-center.y * 0.5 + 0.5) * box.height;
   async function startDrag(type) {
+    await page.locator(`[data-part-type=${type}]`).scrollIntoViewIfNeeded();
     const card = await page.locator(`[data-part-type=${type}]`).boundingBox();
     await page.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
     await page.mouse.down();
@@ -75,6 +76,33 @@ try {
   await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
   const frameBefore = await read();
   const base = frameBefore.blueprint.parts.find((p) => p.type === 'chassis');
+  await page.getByLabel('Mounting face', { exact: true }).selectOption({ label: 'Left' });
+  await page
+    .getByLabel('Target surface', { exact: true })
+    .selectOption(JSON.stringify([base.id, 'right']));
+  const markers = page.locator('.surface-anchor:visible');
+  await page.waitForFunction(
+    () => [...document.querySelectorAll('.surface-anchor')].filter((e) => !e.hidden).length === 5,
+  );
+  const markerBoxes = await markers.evaluateAll((nodes) =>
+    nodes.map((n) => {
+      const r = n.getBoundingClientRect();
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+    }),
+  );
+  for (let i = 0; i < markerBoxes.length; i++)
+    for (let j = 0; j < i; j++) {
+      const a = markerBoxes[i],
+        b = markerBoxes[j];
+      assert.ok(
+        a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top,
+        'alignment markers must not intercept one another',
+      );
+    }
+  await page.getByRole('button', { name: 'Align to surface edge 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Align to surface edge 2', exact: true }).click();
+  await page.screenshot({ path: `${out}/separated-markers.png` });
+  await page.getByLabel('Mounting face', { exact: true }).selectOption({ label: 'Bottom' });
   await page
     .getByLabel('Target surface', { exact: true })
     .selectOption(JSON.stringify([base.id, 'top']));
@@ -221,6 +249,10 @@ try {
     ),
   );
   console.log('PASS UI drag lifecycle, orbit recovery and demand rendering');
+} catch (error) {
+  await page.screenshot({ path: `${out}/failure.png` });
+  writeFileSync(`${out}/failure-state.json`, JSON.stringify(await read(), null, 2));
+  throw error;
 } finally {
   await browser.close();
 }

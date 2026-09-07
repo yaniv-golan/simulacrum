@@ -1,3 +1,5 @@
+import { palettePlacement } from '../model/palette-placement.mjs';
+import { createDrivingMachine } from '../model/fixtures/driving-machine.mjs';
 import { createWorkshop } from '../core/workshop.mjs';
 import { createEmptyBlueprint, loadSave } from '../model/blueprint.mjs';
 import { explainFailure, normalizeFailure } from '../model/messages.mjs';
@@ -262,6 +264,11 @@ export async function mountWorkshopApp(root) {
         render();
         return { ok: true, reasonCode: 'OK', path: '' };
       }
+      if (command.type === 'driving-example') {
+        if (frame().metadata.blueprint.parts.length)
+          return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
+        command = { type: 'load', save: createDrivingMachine() };
+      }
       if (command.type === 'new') {
         clock.pause();
         cancelRun('paused');
@@ -279,12 +286,16 @@ export async function mountWorkshopApp(root) {
             { next: () => ++partSequence },
             frame().metadata.blueprint.parts,
           );
-        if (command.position === undefined)
-          command.position = [
-            ((placementSequence % 5) - 2) * 0.45,
-            0.4,
-            Math.floor(placementSequence / 5) * 0.4,
-          ];
+        if (command.position === undefined) {
+          const placement = palettePlacement(
+            frame().metadata.blueprint,
+            command.partType,
+            command.id,
+            placementSequence,
+          );
+          command.position = placement.position;
+          placementSequence = placement.index;
+        }
       }
       if (command.type === 'connect' && command.id === undefined)
         command.id = availableId(
