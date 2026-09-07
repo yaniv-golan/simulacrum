@@ -8,6 +8,7 @@ import { findPlacementOverlap } from '../model/surfaces.mjs';
 import { partPrimitives, shaftSegments } from '../model/geometry.mjs';
 import * as THREE from 'three';
 import { createResourceCache, partAppearanceKey } from './resource-cache.mjs';
+import { connectionRenderSpecs } from './connection-render.mjs';
 import { createConnectionView } from './connection-view.mjs';
 import { createSurfaceControls } from './surface-controls.mjs';
 import {
@@ -18,7 +19,7 @@ import {
 } from '../model/surfaces.mjs';
 import { createEditingControls } from './editing-controls.mjs';
 import { createPart } from '../model/blueprint.mjs';
-import { mechanicalGroup } from '../model/editing.mjs';
+import { mechanicalGroup } from '../model/connection-graph.mjs';
 import { duplicatePart } from '../model/duplication.mjs';
 import { snapConnection, compileAssembly } from '../model/assembly.mjs';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -117,7 +118,7 @@ export function createWorkshopView(
     explodeAmount = 0,
     explodeTarget = new Map(),
     tracedConnection = null,
-    testPath = new Set(),
+    testConnectionIds = new Set(),
     explodeCamera = null,
     explodeCameraTween = null;
   let activeTool = 'select',
@@ -850,7 +851,7 @@ export function createWorkshopView(
     holdReceiver: (id, duty) => vehicleControls.hold(id, duty),
     releaseReceiver: (id) => vehicleControls.releaseHold(id),
     highlight: (ids) => {
-      testPath = new Set(ids);
+      testConnectionIds = new Set(ids);
       updateConnections();
       invalidateScene();
     },
@@ -1044,7 +1045,9 @@ export function createWorkshopView(
       stage.clientHeight;
     const connectionHit =
       exploded &&
-      raycaster.intersectObjects(wires.children).find((hit) => hit.object.userData.connectionId);
+      raycaster
+        .intersectObjects(connectionView.pickableObjects())
+        .find((hit) => hit.object.userData.connectionId);
     if (connectionHit) {
       traceConnection(connectionHit.object.userData.connectionId);
       return;
@@ -2595,30 +2598,22 @@ export function createWorkshopView(
     }
   }
   function updateConnections() {
-    const specs = [];
-    for (const connection of frame.metadata.blueprint.connections) {
-      const ends = [connection.a, connection.b].map((endpoint) => {
+    const specs = connectionRenderSpecs({
+      connections: frame.metadata.blueprint.connections,
+      diagnostics: frame.metadata.connections,
+      exploded: explodeAmount > 0,
+      selectedPartId: selected ?? null,
+      tracedConnectionId: tracedConnection ?? null,
+      testConnectionIds: testConnectionIds,
+      resolveEndpoint(endpoint) {
         const index = frame.metadata.blueprint.parts.findIndex((part) => part.id === endpoint.part),
           part = frame.metadata.blueprint.parts[index],
           pose = frame.physics[index],
           port = endpointDefinition(part, endpoint);
         if (!pose || !port || !meshes.has(part.id)) return null;
         return meshes.get(part.id).localToWorld(new THREE.Vector3(...port.position));
-      });
-      if (ends.some((value) => !value)) continue;
-      const diagnostic = frame.metadata.connections.find((item) => item.id === connection.id);
-      specs.push({
-        id: connection.id,
-        kind: connection.kind,
-        ends,
-        failed: diagnostic?.reasonCode !== 'OK',
-        exploded: explodeAmount > 0,
-        highlighted:
-          (testPath.has(connection.a.part) && testPath.has(connection.b.part)) ||
-          connection.id === tracedConnection ||
-          (!tracedConnection && [connection.a.part, connection.b.part].includes(selected)),
-      });
-    }
+      },
+    });
     connectionView.update(specs);
   }
 
@@ -3133,6 +3128,7 @@ export function createWorkshopView(
       rendering: { frames: renderedFrames },
       selected,
       sourcePort,
+      testConnectionIds: [...testConnectionIds],
       previewEndpoint,
       surfacePlacement: surface.read(),
       guideConnection: guideVisual,

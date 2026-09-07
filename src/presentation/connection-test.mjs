@@ -25,7 +25,10 @@ const keys = (part) => {
     .join(' · ');
 };
 
-/** Selected-actuator inspection and ordinary commands; never overrides authored control owners. */
+/** @typedef {(connectionIds: readonly import('../model/generated/blueprint-types.js').Connection['id'][]) => void} ConnectionPathHighlight */
+/** Selected-actuator inspection and ordinary commands; never overrides authored control owners.
+ * @param {{send: import('../model/workshop-command.js').SendCommand, holdReceiver?: (id:string,duty:number)=>unknown, releaseReceiver?: (id:string)=>unknown, select:(id:string)=>unknown, choosePort:(endpoint:import('../model/generated/blueprint-types.js').Endpoint)=>unknown, run?:()=>unknown, container?:HTMLElement, highlight?:ConnectionPathHighlight}} options
+ */
 export function createConnectionTest({
   send,
   holdReceiver,
@@ -93,6 +96,7 @@ export function createConnectionTest({
     release();
     highlight([]);
     section?.remove();
+    section = null;
     frame = next;
     selectedId = part?.id;
     holdButtons = [];
@@ -135,16 +139,23 @@ export function createConnectionTest({
     output.append(node('span', part.type === 'poweredHinge' ? 'Moving output: ' : 'Shaft: '));
     if (paths.shaftPeers.length) for (const peer of paths.shaftPeers) output.append(link(peer));
     else output.append(portAction('Connect shaft', 'shaft', editable));
-    for (const [row, path] of [
-      [power, paths.powerPath],
-      [control, [part, paths.signalOwner].filter(Boolean)],
-      [output, [part, ...paths.shaftPeers]],
+    for (const [row, key] of [
+      [power, 'powerConnectionIds'],
+      [control, 'signalConnectionIds'],
+      [output, 'shaftConnectionIds'],
     ]) {
-      row.addEventListener('pointerenter', () => highlight(path.map((p) => p.id)));
+      const showPath = () =>
+        highlight(
+          section?.contains(row) && !section.hidden && disclosure.open ? [...paths[key]] : [],
+        );
+      row.addEventListener('pointerenter', showPath);
       row.addEventListener('pointerleave', () => highlight([]));
-      row.addEventListener('focusin', () => highlight(path.map((p) => p.id)));
+      row.addEventListener('focusin', showPath);
       row.addEventListener('focusout', () => highlight([]));
     }
+    disclosure.addEventListener('toggle', () => {
+      if (!disclosure.open) highlight([]);
+    });
     disclosure.append(power, control, output);
     warning = node(
       'p',
@@ -227,10 +238,12 @@ export function createConnectionTest({
     const part = next.metadata.blueprint.parts.find((part) => part.id === selectedId);
     if (!part) {
       release();
+      highlight([]);
       section.hidden = true;
       return;
     }
     if (pathBlueprint !== next.metadata.blueprint) {
+      highlight([]);
       pathBlueprint = next.metadata.blueprint;
       paths = connectionTestPaths(pathBlueprint, selectedId);
     }
@@ -272,7 +285,9 @@ export function createConnectionTest({
     release,
     dispose() {
       release();
+      highlight([]);
       section?.remove();
+      section = null;
       window.removeEventListener('pointerup', release);
       window.removeEventListener('pointercancel', release);
       window.removeEventListener('keyup', keyup);

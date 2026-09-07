@@ -40,6 +40,13 @@ export function check() {
       ['wrong-observation-consumer', 2339],
       ['wrong-geometry', 2322],
       ['wrong-placement', 2322],
+      ['wrong-graph-selection', 2345],
+      ['wrong-rigid-frame', 2322],
+      ['wrong-render-visible', 2741],
+      ['wrong-render-spelling', 2561],
+      ['wrong-render-kind', 2322],
+      ['wrong-render-ends', 2322],
+      ['wrong-path-highlight', 2322],
     ].map(([name, code]) => [root + `test/types/${name}.mts`, code]),
   );
   const negative = diagnostics([...parsed.fileNames, ...wrong.keys()]);

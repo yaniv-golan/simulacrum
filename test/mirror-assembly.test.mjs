@@ -8,6 +8,7 @@ import { partPrimitives } from '../src/model/geometry.mjs';
 import { rotateVector, normalizeQuaternion } from '../src/model/transforms.mjs';
 import { transformGroup } from '../src/model/editing.mjs';
 import * as mirror from '../src/model/mirror-assembly.mjs';
+import { assertCopiedGraph } from './contracts/copied-graph.mjs';
 function fixture() {
   let bp = createEmptyBlueprint('mirror', 'Mirror');
   bp.parts.push(
@@ -53,6 +54,14 @@ test('mirror preview preserves internal shafts and reference mounts, authored ch
   });
   assert.deepEqual(bp, before);
   assert.equal(out.copiedIds.length, 2);
+  assertCopiedGraph({
+    source: bp,
+    copied: out.blueprint,
+    partIds: ['motor', 'wheel'],
+    idMap: out.idMap,
+    connectionIdMap: out.connectionIdMap,
+    allowedExternalConnectionIds: [out.connectionIdMap.mount],
+  });
   assert.equal(out.copiedConnectionIds.length, 2);
   assert.deepEqual(out.omittedExternalConnectionIds, ['wire']);
   const wheel = out.blueprint.parts.find((p) => p.id === out.idMap.wheel);
@@ -132,6 +141,14 @@ test('hinge Y-axis and hub X-axis assembly mirrors together with internal receiv
     axis: 'x',
   });
   assert.equal(out.copiedConnectionIds.length, 4);
+  assertCopiedGraph({
+    source: bp,
+    copied: out.blueprint,
+    partIds: ['hinge', 'hub', 'wheel', 'receiver'],
+    idMap: out.idMap,
+    connectionIdMap: out.connectionIdMap,
+    allowedExternalConnectionIds: [out.connectionIdMap['hinge-mount']],
+  });
   assert.ok(
     compileAssembly(out.blueprint).connections.every(
       (connection) => connection.reasonCode === 'OK',

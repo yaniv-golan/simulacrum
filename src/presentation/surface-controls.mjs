@@ -10,7 +10,7 @@ import { spreadSurfaceAnchors } from './surface-anchor-layout.mjs';
 import { explainFailure } from '../model/messages.mjs';
 import { surfaceRegions, projectedPadHalfSize } from '../model/surfaces.mjs';
 import { inspectSurfaceMount } from '../model/assembly.mjs';
-import { mechanicalGroup } from '../model/editing.mjs';
+import { mechanicalGroup } from '../model/connection-graph.mjs';
 
 const node = (tag, text) => {
   const e = document.createElement(tag);

@@ -1,3 +1,4 @@
+import { mechanicalGroup } from './connection-graph.mjs';
 import { compileBody } from './compile-body.mjs';
 import { partPrimitives } from './geometry.mjs';
 import {
@@ -13,6 +14,7 @@ import { validateBlueprint } from './blueprint.mjs';
 import { BUILD_ENVIRONMENT } from './environment.mjs';
 import { immutableCopy } from './observation.mjs';
 import {
+  transformPoseBetweenFrames,
   normalizeQuaternion as normalize,
   multiplyQuaternion as multiply,
   rotateVector as rotate,
@@ -80,33 +82,17 @@ function snapFrames(blueprint, A, B) {
       multiply(multiply(target.rotation, matingRotation(A.port)), inverse(B.port.rotation)),
     );
   const position = subtract(target.position, rotate(rotation, B.port.position));
-  const group = new Set([B.part.id]);
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const edge of blueprint.connections) {
-      if (!['fixed', 'shaft'].includes(edge.kind)) continue;
-      if (group.has(edge.a.part) || group.has(edge.b.part)) {
-        for (const id of [edge.a.part, edge.b.part])
-          if (!group.has(id)) {
-            group.add(id);
-            changed = true;
-          }
-      }
-    }
-  }
+  const group = new Set(mechanicalGroup(blueprint, B.part.id));
   if (group.has(A.part.id)) {
     const gap = Math.hypot(...subtract(position, B.part.position)),
       dot = Math.abs(rotation.reduce((sum, v, i) => sum + v * normalize(B.part.rotation)[i], 0));
     if (gap > 1e-6 || 1 - Math.min(1, dot) > 1e-10) reject('INCOMPATIBLE_CONNECTION_LOOP', 'b');
     return structuredClone(blueprint);
   }
-  const delta = normalize(multiply(rotation, inverse(normalize(B.part.rotation))));
   const result = structuredClone(blueprint);
   for (const part of result.parts)
     if (group.has(part.id)) {
-      part.position = add(position, rotate(delta, subtract(part.position, B.part.position)));
-      part.rotation = normalize(multiply(delta, normalize(part.rotation)));
+      Object.assign(part, transformPoseBetweenFrames(part, B.part, { position, rotation }));
     }
   return result;
 }
@@ -372,18 +358,7 @@ function surfaceMountCandidate(
     targetFace = surfaceRegions(target).find((r) => r.id === targetRegion);
   if (!sourceFace || !targetFace) reject('UNKNOWN_SURFACE', 'region');
   if (![u, v, twist].every(Number.isFinite)) reject('SURFACE_OUT_OF_BOUNDS', 'surface');
-  const moving = new Set([part]);
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const c of next.connections)
-      if (['fixed', 'shaft'].includes(c.kind) && (moving.has(c.a.part) || moving.has(c.b.part)))
-        for (const member of [c.a.part, c.b.part])
-          if (!moving.has(member)) {
-            moving.add(member);
-            changed = true;
-          }
-  }
+  const moving = new Set(mechanicalGroup(next, part));
   if (moving.has(targetPart)) reject('MOUNT_HELD_BY_ANOTHER_CONNECTION', 'targetPart');
   const a = { part: targetPart, surface: { region: targetRegion, u, v, twist } },
     b = { part, surface: { region: sourceRegion, u: 0, v: 0, twist: 0 } };

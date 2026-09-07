@@ -25,3 +25,25 @@ export function rotateVector(rotation, v) {
   const result = multiplyQuaternion(multiplyQuaternion(q, [...v, 0]), [-q[0], -q[1], -q[2], q[3]]);
   return [result[0], result[1], result[2]];
 }
+
+/** @typedef {{position: Vec3, rotation: Quaternion}} Pose */
+/** Move an admitted authored pose between rigid frames. Returns fresh values;
+ * this authoring helper never writes simulation bodies. Reflections are not rigid rotations.
+ * @param {Pose} pose @param {Pose} from @param {Pose} to
+ * @returns {{position: [number, number, number], rotation: [number, number, number, number]}}
+ */
+export function transformPoseBetweenFrames(pose, from, to) {
+  const q = normalizeQuaternion(from.rotation);
+  const delta = normalizeQuaternion(
+    multiplyQuaternion(normalizeQuaternion(to.rotation), [-q[0], -q[1], -q[2], q[3]]),
+  );
+  const offset = rotateVector(delta, [
+    pose.position[0] - from.position[0],
+    pose.position[1] - from.position[1],
+    pose.position[2] - from.position[2],
+  ]);
+  return {
+    position: [to.position[0] + offset[0], to.position[1] + offset[1], to.position[2] + offset[2]],
+    rotation: normalizeQuaternion(multiplyQuaternion(delta, normalizeQuaternion(pose.rotation))),
+  };
+}

@@ -46,6 +46,7 @@ test('unchanged and moved connection endpoints retain GPU resources and match a 
     view = createConnectionView(parent),
     spec = {
       id: 'wire',
+      visible: true,
       kind: 'power',
       exploded: false,
       highlighted: false,

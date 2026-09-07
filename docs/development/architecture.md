@@ -28,7 +28,9 @@ lost capture and pause where applicable.
 | Unique player-visible names | [availablePartName](../../src/model/blueprint.mjs) | core insertion/copy/rename |
 | Surface frames and collision admission | [resolveSurfaceEndpoint / validatePlacementGeometry](../../src/model/surfaces.mjs) | compiler and surface proposal |
 | Candidate attachment | [snapConnection / proposeSurfaceMount](../../src/model/assembly.mjs) | core and surface preview |
-| Connected transform membership | [mechanicalGroup / transformGroup](../../src/model/editing.mjs) | core transforms |
+| Mechanical membership and selection boundaries | [connection graph](../../src/model/connection-graph.mjs) | authoring, mount admission, manipulation scope and mirror selection |
+| Rigid authoring transforms | [transformGroup](../../src/model/editing.mjs), [frame math](../../src/model/transforms.mjs) | core transforms and connection snapping |
+| Connection overlay specification/resources | [checked spec producer](../../src/presentation/connection-render.mjs), [renderer](../../src/presentation/connection-view.mjs) | workshop display; exact diagnostic edge IDs come from connectionTestPaths |
 | Mirror reflection and omitted edges | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs) | mirror UI and core command |
 | Command effects, cursor and history | [createWorkshop](../../src/core/workshop.mjs) | all authoring interfaces |
 | Placement commitment and cancellation | [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs) | surface controls |

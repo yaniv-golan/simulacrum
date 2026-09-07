@@ -839,6 +839,66 @@
         ]
       },
       "qualificationBars": ["F1", "L0"]
+    },
+    {
+      "id": "copied-graph-integrity",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Existing mirror copies allocate fresh identities, preserve authored fields and internal connections, and remain independent through editing and persistence.",
+      "owners": [
+        {
+          "path": "src/model/mirror-assembly.mjs",
+          "anchor": "proposeMirroredAssembly"
+        }
+      ],
+      "checks": ["invariant-controls"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/copied-graph.test.mjs",
+            "anchor": "public mirror transactions isolate instance parameter edits and preserve both graphs through Undo and save/load"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/copied-graph.test.mjs",
+            "anchor": "copied graph oracle rejects lost authored fields, topology corruption, aliases and external leakage"
+          }
+        ]
+      },
+      "qualificationBars": ["F1"]
+    },
+    {
+      "id": "connection-display-isolation",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Connection display preserves authored edges and uses exact diagnostic path IDs; hidden render resources do not intercept picking.",
+      "owners": [
+        {
+          "path": "src/presentation/connection-render.mjs",
+          "anchor": "connectionRenderSpecs"
+        },
+        {
+          "path": "src/presentation/connection-view.mjs",
+          "anchor": "pickableObjects"
+        }
+      ],
+      "checks": ["invariant-controls", "verify-connection-test-browser"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/connection-render.test.mjs",
+            "anchor": "render producer uses exact test edges and preserves source and endpoint poses"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/connection-render.test.mjs",
+            "anchor": "hidden render resources neither intercept rays nor churn geometry and restore current endpoints"
+          }
+        ]
+      },
+      "qualificationBars": ["F1"]
     }
   ]
 }

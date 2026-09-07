@@ -9,7 +9,11 @@
     "moduleResolution": "NodeNext",
     "skipLibCheck": false,
     "exactOptionalPropertyTypes": true,
-    "lib": ["ES2023", "DOM", "ESNext.Disposable"]
+    "lib": [
+      "ES2023",
+      "DOM",
+      "ESNext.Disposable"
+    ]
   },
   "include": [
     "src/model/boundaries.d.ts",
@@ -23,6 +27,10 @@
     "src/model/workshop-command.mjs",
     "src/presentation/placement-lifecycle.mjs",
     "src/model/display-units.mjs",
-    "src/model/motor-shaft-speed.mjs"
+    "src/model/motor-shaft-speed.mjs",
+    "src/model/connection-graph.mjs",
+    "src/presentation/connection-render.mjs",
+    "src/presentation/connection-view.mjs",
+    "src/presentation/resource-cache.mjs"
   ]
 }

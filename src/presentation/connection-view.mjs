@@ -1,8 +1,14 @@
+// @ts-check
+/** @typedef {import('./connection-render.js').ConnectionRenderSpec} Spec */
+/** @typedef {{group: THREE.Group, update: (ends: Spec['ends']) => void}} Resource */
 import * as THREE from 'three';
 import { createResourceCache } from './resource-cache.mjs';
 
+/** @param {Spec["kind"]} kind */
 const colorFor = (kind) => (kind === 'power' ? 0xfbc16c : kind === 'signal' ? 0x68d9d0 : 0xc7d8df);
+/** @param {Spec["kind"]} kind */
 const electric = (kind) => kind === 'power' || kind === 'signal';
+/** @param {Spec} s */
 const styleKey = (s) =>
   JSON.stringify([
     s.kind,
@@ -11,15 +17,20 @@ const styleKey = (s) =>
     !electric(s.kind) && s.failed,
     !electric(s.kind) && s.ends[0].distanceTo(s.ends[1]) > 1e-5,
   ]);
+/** @param {THREE.Group} group */
 function disposeGroup(group) {
   group.removeFromParent();
   group.traverse((object) => {
-    object.geometry?.dispose();
-    object.material?.dispose();
+    if (object instanceof THREE.Mesh || object instanceof THREE.Line) {
+      object.geometry.dispose();
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of materials) material.dispose();
+    }
   });
 }
 
 // Keep the GPU buffers while reshaping the cable to the completed endpoint poses.
+/** @param {THREE.TubeGeometry} geometry @param {THREE.QuadraticBezierCurve3} path */
 function updateTube(geometry, path) {
   const { tubularSegments, radialSegments, radius } = geometry.parameters;
   path.updateArcLengths();
@@ -52,17 +63,20 @@ function updateTube(geometry, path) {
   geometry.computeBoundingBox();
 }
 
+/** @param {THREE.Object3D} parent */
 export function createConnectionView(parent) {
   const cache = createResourceCache({
     key: styleKey,
     dispose: (resource) => disposeGroup(resource.group),
+    /** @param {Spec} spec @returns {Resource} */
     create(spec) {
       const group = new THREE.Group(),
         color = colorFor(spec.kind),
         electrical = electric(spec.kind),
         up = new THREE.Vector3(0, 1, 0),
-        updates = [];
+        updates = /** @type {((ends: Spec["ends"]) => void)[]} */ ([]);
       parent.add(group);
+      /** @param {(0|1)[]} indices @param {number} radius @param {() => THREE.Material} material */
       function markers(indices, radius, material) {
         for (const index of indices) {
           const marker = new THREE.Mesh(new THREE.SphereGeometry(radius, 12, 8), material());
@@ -149,12 +163,14 @@ export function createConnectionView(parent) {
           () => new THREE.MeshStandardMaterial({ color, metalness: 0.5, roughness: 0.35 }),
         );
       }
+      /** @type {number[] | null} */
       let previous = null;
       return {
         group,
         update(ends) {
           const next = ends.flatMap((p) => p.toArray());
-          if (previous && next.every((value, i) => value === previous[i])) return;
+          const prior = previous;
+          if (prior && next.every((value, i) => value === prior[i])) return;
           for (const update of updates) update(ends);
           previous = next;
         },
@@ -163,10 +179,20 @@ export function createConnectionView(parent) {
   });
   return {
     resources: cache.values,
+    /** @param {readonly Spec[]} specs */
     update(specs) {
       cache.reconcile(specs);
-      for (const spec of specs) cache.values.get(spec.id).update(spec.ends);
+      for (const spec of specs) {
+        const resource = cache.values.get(spec.id);
+        if (!resource) throw Error(`Missing connection resource: ${spec.id}`);
+        resource.group.visible = spec.visible;
+        resource.update(spec.ends);
+      }
     },
+    pickableObjects: () =>
+      [...cache.values.values()]
+        .filter((resource) => resource.group.visible)
+        .map((resource) => resource.group),
     dispose: () => cache.dispose(),
   };
 }

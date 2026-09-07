@@ -49,6 +49,15 @@ they never derive them from role, name, blueprint or rig position. Every materia
 is player-selectable. The same authority rule applies to mass, inertia, ratings and drag.
 Property tests perturb identity while preserving the physical authored choices.
 
+## Developer entrypoint
+
+Before choosing an implementation owner, use the [developer guide](docs/development/README.md),
+[architecture map](docs/development/architecture.md) and matching [change recipe](docs/development/recipes.md).
+`npm run docs:navigate -- <symbol-or-path>` finds current owners/consumers;
+`npm run test:unit -- --files <paths> --summary` explains checks without running them.
+Remove `--summary` to execute. Reuse the existing boundary and invariant test contracts;
+register new guarantees in the manifest rather than another hand-maintained inventory.
+
 ## Work and milestones
 
 Run the actual current gate before advancing. M1 decides the physics library and

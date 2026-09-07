@@ -60,3 +60,46 @@ const checked: [
   IsUnchecked<(typeof primitives)[0]['halfExtents'][0]>,
 ] = [false, false, false, false, false];
 void checked;
+
+import {
+  mechanicalGroup,
+  classifySelectionConnections,
+} from '../../src/model/connection-graph.mjs';
+import { transformPoseBetweenFrames } from '../../src/model/transforms.mjs';
+export const group = mechanicalGroup(blueprint, part.id, {
+  eligible: (connection) => connection.kind === 'fixed',
+});
+export const selectionEdges = classifySelectionConnections(blueprint, [part.id]);
+export const movedPose = transformPoseBetweenFrames(part, part, part);
+const graphChecked: [
+  IsUnchecked<(typeof group)[number]>,
+  IsUnchecked<(typeof selectionEdges)[number]['classification']>,
+  IsUnchecked<(typeof movedPose.position)[0]>,
+] = [false, false, false];
+void graphChecked;
+
+import * as THREE from 'three';
+import { connectionRenderSpecs } from '../../src/presentation/connection-render.mjs';
+import { createConnectionView } from '../../src/presentation/connection-view.mjs';
+const renderSpecs = connectionRenderSpecs({
+  connections: blueprint.connections,
+  diagnostics: [],
+  resolveEndpoint: () => new THREE.Vector3(),
+  exploded: false,
+  selectedPartId: null,
+  tracedConnectionId: null,
+  testConnectionIds: new Set<string>(),
+});
+createConnectionView(new THREE.Group()).update(renderSpecs);
+const renderChecked: [
+  IsUnchecked<(typeof renderSpecs)[number]['visible']>,
+  IsUnchecked<(typeof renderSpecs)[number]['ends'][0]>,
+] = [false, false];
+void renderChecked;
+
+import type { ConnectionPathHighlight } from '../../src/presentation/connection-test.mjs';
+const highlightPath: ConnectionPathHighlight = (ids) => {
+  const edge: string | undefined = ids[0];
+  void edge;
+};
+highlightPath(paths.powerConnectionIds);

@@ -1,3 +1,4 @@
+import { mechanicalGroup } from './connection-graph.mjs';
 import { partPrimitives, CYLINDER_SEGMENTS, shaftSegments } from './geometry.mjs';
 import { CATALOG } from './catalog.mjs';
 import { normalizeQuaternion, multiplyQuaternion, rotateVector } from './transforms.mjs';
@@ -238,23 +239,12 @@ export function validatePlacementGeometry(blueprint) {
   for (const edge of blueprint.connections.filter(
     (c) => c.a.surface && c.b.surface && surfaceConnectionAligned(blueprint, c),
   )) {
-    const group = new Set([edge.b.part]);
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const c of blueprint.connections)
-        if (
-          c.id !== edge.id &&
-          surfaceConnectionAligned(blueprint, c) &&
-          ['fixed', 'shaft'].includes(c.kind) &&
-          (group.has(c.a.part) || group.has(c.b.part))
-        )
-          for (const id of [c.a.part, c.b.part])
-            if (!group.has(id)) {
-              group.add(id);
-              changed = true;
-            }
-    }
+    const group = new Set(
+      mechanicalGroup(blueprint, edge.b.part, {
+        omitConnectionIds: [edge.id],
+        eligible: (connection) => surfaceConnectionAligned(blueprint, connection),
+      }),
+    );
     if (group.has(edge.a.part)) reject('MOUNT_HELD_BY_ANOTHER_CONNECTION');
   }
 }

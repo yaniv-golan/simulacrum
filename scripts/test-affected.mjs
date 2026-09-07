@@ -1,4 +1,8 @@
-import { parseTestSelectionArgs, normalizeSelectedFiles } from './test-selection.mjs';
+import {
+  parseTestSelectionArgs,
+  normalizeSelectedFiles,
+  summarizeTestSelection,
+} from './test-selection.mjs';
 import { runProcess } from './run-check.mjs';
 import { buildModuleGraph, explainAffectedTests } from './module-graph.mjs';
 const options = parseTestSelectionArgs(process.argv.slice(2));
@@ -33,11 +37,19 @@ const selection = explainAffectedTests(
     options.all ? undefined : options.files ? normalizeSelectedFiles(options.files) : changed,
   ),
   selected = selection.tests;
-console.log(
-  `unit tests: ${selected.length} selected from module graph${selection.fallback ? ` (${selection.fallback})` : ''}`,
-);
+if (options.summary)
+  console.log(
+    summarizeTestSelection(selection, {
+      totalTests: graph.files.filter((path) => /\.test\.(m?js|cjs)$/.test(path)).length,
+      all: options.all,
+    }),
+  );
+else
+  console.log(
+    `unit tests: ${selected.length} selected from module graph${selection.fallback ? ` (${selection.fallback})` : ''}`,
+  );
 if (options.explain) console.log(JSON.stringify(selection, null, 2));
-if (!options.explain && selected.length)
+if (!options.explain && !options.summary && selected.length)
   try {
     await runProcess(process.execPath, ['--test', ...selected], {
       inheritOutput: true,

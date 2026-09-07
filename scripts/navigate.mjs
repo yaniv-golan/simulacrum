@@ -1,23 +1,32 @@
 import { buildModuleGraph } from './module-graph.mjs';
 import { queryNavigation } from './navigation.mjs';
 const args = process.argv.slice(2);
-if (args.length !== 1 || !args[0].trim() || args[0].startsWith('-')) {
-  console.error('Usage: node scripts/navigate.mjs <path-or-symbol-substring>');
+const allSymbols = args.includes('--all-symbols');
+const queries = args.filter((arg) => arg !== '--all-symbols');
+if (
+  queries.length !== 1 ||
+  !queries[0].trim() ||
+  queries[0].startsWith('-') ||
+  args.filter((arg) => arg === '--all-symbols').length > 1
+) {
+  console.error('Usage: node scripts/navigate.mjs <path-or-symbol-substring> [--all-symbols]');
   process.exitCode = 1;
 } else {
   const graph = buildModuleGraph(process.cwd(), { purpose: 'test-selection' });
-  const matches = queryNavigation(graph, args[0]);
+  const { matches, parseErrors } = queryNavigation(graph, queries[0], { allSymbols });
   console.log(
     JSON.stringify(
       {
-        query: args[0],
+        query: queries[0],
+        allSymbols,
         graphErrors: graph.errors,
-        note: 'Generated from current imports and declarations. Test reachability is navigation, not a complete test-selection decision; opaque inputs and graph errors require conservative verification.',
+        parseErrors,
+        note: 'Generated from current imports and declarations. Path queries show module owners by default; nested function searches include enclosing scope. Test reachability is navigation, not complete test selection; opaque inputs, graph and parse errors require conservative verification.',
         matches,
       },
       null,
       2,
     ),
   );
-  if (!matches.length) process.exitCode = 1;
+  if (!matches.length || parseErrors.length) process.exitCode = 1;
 }

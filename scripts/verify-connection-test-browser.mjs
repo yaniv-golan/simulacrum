@@ -49,6 +49,22 @@ try {
   const original = (await read()).metadata.blueprint;
   evidence.assert('equal', [original.parts.length, 4]);
   evidence.assert('equal', [original.connections.length, 3]);
+  const powerRow = section.locator('.connection-test-path').nth(0);
+  await powerRow.hover();
+  evidence.assert('deepEqual', [
+    await page.evaluate(() => window.workshopProbe.readInteractionState().testConnectionIds),
+    original.connections.filter((edge) => edge.kind === 'power').map((edge) => edge.id),
+  ]);
+  await section.locator('summary').click();
+  await page.waitForFunction(
+    () => window.workshopProbe.readInteractionState().testConnectionIds?.length === 0,
+  );
+  evidence.assert('deepEqual', [
+    await page.evaluate(() => window.workshopProbe.readInteractionState().testConnectionIds),
+    [],
+  ]);
+  evidence.assert('deepEqual', [(await read()).metadata.blueprint, original]);
+  await section.locator('summary').click();
   await page.screenshot({ path: `${out}/wired.png` });
   await section.getByRole('button', { name: 'Test in Run', exact: true }).click();
   const plus = section.getByRole('button', { name: /Hold \+ through/ });

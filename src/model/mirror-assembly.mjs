@@ -1,3 +1,4 @@
+import { classifySelectionConnections } from './connection-graph.mjs';
 import { CATALOG } from './catalog.mjs';
 import { partPrimitives } from './geometry.mjs';
 import { loadSave, availablePartName } from './blueprint.mjs';
@@ -134,7 +135,7 @@ export function proposeMirroredAssembly(blueprint, options) {
   const byId = new Map(blueprint.parts.map((part) => [part.id, part]));
   const reference = byId.get(referenceId);
   if (!reference) reject('UNKNOWN_PART', 'referenceId');
-  if (ids.some((id) => !byId.has(id))) reject('UNKNOWN_PART', 'ids');
+  const classifiedConnections = classifySelectionConnections(blueprint, ids);
   const selected = new Set(ids),
     next = loaded.blueprint;
   const partIds = new Set(next.parts.map((part) => part.id)),
@@ -162,14 +163,13 @@ export function proposeMirroredAssembly(blueprint, options) {
           'Mirroring reverses physical handedness. Settings are preserved; inspect output direction before running.',
       });
   }
-  for (const connection of blueprint.connections) {
-    const a = selected.has(connection.a.part),
-      b = selected.has(connection.b.part);
-    if (!a && !b) continue;
+  for (const { connection, classification } of classifiedConnections) {
+    if (classification === 'external') continue;
+    const a = selected.has(connection.a.part);
     const referenceAttachment =
       ['fixed', 'shaft'].includes(connection.kind) &&
       (a ? connection.b.part === referenceId : connection.a.part === referenceId);
-    if (!(a && b) && !referenceAttachment) {
+    if (classification !== 'internal' && !referenceAttachment) {
       omittedExternalConnectionIds.push(connection.id);
       continue;
     }

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { explainAffectedTests } from '../scripts/module-graph.mjs';
-import { parseTestSelectionArgs } from '../scripts/test-selection.mjs';
+import { parseTestSelectionArgs, summarizeTestSelection } from '../scripts/test-selection.mjs';
 const graph = () => ({
   files: ['test/a.test.mjs', 'test/b.test.mjs', 'src/a.mjs', 'data.json'],
   errors: [],
@@ -47,6 +47,7 @@ test('explicit selection CLI rejects missing/conflicting/unknown arguments', () 
     all: false,
     files: ['src/a.mjs', 'data.json'],
     explain: true,
+    summary: false,
   });
   for (const args of [
     ['--files'],
@@ -56,4 +57,77 @@ test('explicit selection CLI rejects missing/conflicting/unknown arguments', () 
     ['--explain', '--explain'],
   ])
     assert.throws(() => parseTestSelectionArgs(args));
+});
+
+test('summary groups causal and opaque reasons without changing exact selection', () => {
+  const g = graph();
+  g.nodes.get('test/b.test.mjs').opaqueInputs = true;
+  const result = explainAffectedTests(g, ['data.json']);
+  const before = structuredClone(result);
+  const text = summarizeTestSelection(result, { totalTests: 2 });
+  assert.match(text, /DRY RUN.*no tests executed/i);
+  assert.match(text, /Causal dependency: 1/);
+  assert.match(text, /test\/a.test.mjs.*src\/a.mjs.*data.json/);
+  assert.match(text, /Conservative opaque input: 1/);
+  assert.deepEqual(result, before);
+  const fallback = summarizeTestSelection(explainAffectedTests(g, ['unknown']), { totalTests: 2 });
+  assert.match(fallback, /All-suite fallback: 2/);
+  assert.match(fallback, /unknown changed inputs/);
+  assert.doesNotMatch(fallback, /Causal dependency: [1-9]/);
+});
+test('summary is explicit dry-run CLI mode and rejects conflicting or unknown flags', () => {
+  assert.equal(parseTestSelectionArgs(['--files', 'src/a.mjs', '--summary']).summary, true);
+  assert.equal(parseTestSelectionArgs(['--all', '--summary']).all, true);
+  for (const args of [
+    ['--summary', '--explain'],
+    ['--summary', '--summary'],
+    ['--files', 'src/a.mjs', '--summery'],
+    ['--files', '-wat'],
+  ])
+    assert.throws(() => parseTestSelectionArgs(args));
+});
+test('summary CLI does not execute selected tests and --explain keeps its JSON selection', async () => {
+  const { mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join, resolve } = await import('node:path');
+  const { execFileSync } = await import('node:child_process');
+  const root = mkdtempSync(join(tmpdir(), 'selection-summary-'));
+  try {
+    mkdirSync(join(root, 'src'));
+    mkdirSync(join(root, 'test'));
+    writeFileSync(join(root, 'src/input.mjs'), 'export const value = 1;');
+    writeFileSync(
+      join(root, 'test/probe.test.mjs'),
+      "import '../src/input.mjs'; import {writeFileSync} from 'node:fs'; writeFileSync('EXECUTED','wrong');",
+    );
+    const cli = resolve('scripts/test-affected.mjs');
+    const env = { ...process.env };
+    // Launch an ordinary CLI: inherited node:test context suppresses nested --test execution.
+    delete env.NODE_TEST_CONTEXT;
+    const run = (flags) =>
+      execFileSync(process.execPath, [cli, '--files', 'src/input.mjs', ...flags], {
+        cwd: root,
+        encoding: 'utf8',
+        env,
+      });
+    const summary = run(['--summary']);
+    assert.match(summary, /DRY RUN.*1\/1 tests selected/);
+    assert.equal(
+      existsSync(join(root, 'EXECUTED')),
+      false,
+      'summary must not execute selected test code',
+    );
+    const explain = run(['--explain']);
+    const selection = JSON.parse(explain.slice(explain.indexOf('{')));
+    assert.deepEqual(selection.tests, ['test/probe.test.mjs']);
+    assert.equal(existsSync(join(root, 'EXECUTED')), false);
+    run([]);
+    assert.equal(
+      existsSync(join(root, 'EXECUTED')),
+      true,
+      'ordinary mode executes the same selected test',
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

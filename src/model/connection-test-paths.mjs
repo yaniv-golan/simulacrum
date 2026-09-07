@@ -27,34 +27,39 @@ export function connectionTestPaths(blueprint, id) {
     edges
       .filter((edge) => edge.kind === kind)
       .flatMap((edge) => [
-        [edge.a, edge.b],
-        [edge.b, edge.a],
+        { own: edge.a, endpoint: edge.b, connectionId: edge.id },
+        { own: edge.b, endpoint: edge.a, connectionId: edge.id },
       ])
-      .filter(([own]) => own.part === node && (!port || own.port === port))
-      .map(([, other]) => other)
-      .filter((end) => parts.has(end.part));
+      .filter(({ own }) => own.part === node && (!port || own.port === port))
+      .filter(({ endpoint }) => parts.has(endpoint.part));
   const queue = parts.has(id) ? [id] : [];
-  /** @type {Map<string, string | null>} */
+  /** @type {Map<string, {part:string,connectionId:string} | null>} */
   const previous = new Map(queue.map((key) => [key, null]));
   const powerSources = [];
   for (let i = 0; i < queue.length; i++) {
     const node = queue[i];
     const part = parts.get(node);
     if (part?.type === 'powerCell') powerSources.push(part);
-    for (const peer of peers(node, 'power', 'power')) {
+    for (const { endpoint: peer, connectionId } of peers(node, 'power', 'power')) {
       if (peer.port !== 'power' || previous.has(peer.part)) continue;
-      previous.set(peer.part, node);
+      previous.set(peer.part, { part: node, connectionId });
       queue.push(peer.part);
     }
   }
   const path = [];
+  const powerConnectionIds = [];
   /** @type {string | undefined} */
   let key = powerSources[0]?.id;
-  for (; key != null; key = previous.get(key) ?? undefined) {
+  while (key != null) {
     const part = parts.get(key);
     if (part) path.unshift(part);
+    const previousStep = previous.get(key);
+    if (previousStep) powerConnectionIds.unshift(previousStep.connectionId);
+    key = previousStep?.part;
   }
-  const signalEndpoint = peers(id, 'signal', 'signal')[0];
+  const signalPeer = peers(id, 'signal', 'signal')[0];
+  const signalEndpoint = signalPeer?.endpoint;
+  const shaftConnections = peers(id, 'shaft');
   const signalOwner = (signalEndpoint ? parts.get(signalEndpoint.part) : null) ?? null;
   const manualReceiver =
     signalOwner?.type === 'commandReceiver' &&
@@ -65,9 +70,12 @@ export function connectionTestPaths(blueprint, id) {
   return {
     powerSources,
     powerPath: path,
+    powerConnectionIds,
+    signalConnectionIds: signalPeer ? [signalPeer.connectionId] : [],
+    shaftConnectionIds: shaftConnections.map((peer) => peer.connectionId),
     signalOwner,
     manualReceiver,
-    shaftPeers: peers(id, 'shaft').flatMap((end) => {
+    shaftPeers: shaftConnections.flatMap(({ endpoint: end }) => {
       const part = parts.get(end.part);
       return part ? [part] : [];
     }),
