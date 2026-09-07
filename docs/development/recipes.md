@@ -1,8 +1,9 @@
 # Change recipes
 
-<!-- doc-review {"version":1,"fingerprint":"71a8c905c30bba74d8575586a174e5590d7f6c2af7a6ffb9ca2c974a227e783d","dependencies":"docs/development/.reviews/recipes/change-recipes.json","dependencyDigest":"8fbd6409db358fbecd3998a4fb0d8f6803be58e3016add2af182f6b8e3937eba","disposition":"still accurate","rationale":"The map now explains additional assembly UI composition, but the recipe still requires public commands and canonical model policy instead of view-local authoring authority."} -->
+## Choose a recipe
+<!-- doc-review {"version":1,"fingerprint":"e1efc3474910f0f1754e2fb0c3bae4fdd01852a16e61c16a1053c227019cc5c7","dependencies":"docs/development/.reviews/recipes/choose-a-recipe.json","dependencyDigest":"a6fe1912ca9d33b9daafd7eeaa23c9991aa19dc509961644944cfc954018b954","disposition":"updated","rationale":"The recipe introduction is now independently addressable and links to the architecture overview; detailed recipes retain their implementation references and are not silently approved by overview review."} -->
 
-Use the [map](architecture.md) to locate the owner, inspect its reverse consumers with
+Use the [map](architecture.md#overview) to locate the owner, inspect its reverse consumers with
 `node scripts/navigate.mjs <symbol-or-path>`, then use focused tests. Admit changes
 through the public command surface. A view-local convenience must not become a second
 attachment, polarity, naming, reset or authored-property policy.
@@ -41,7 +42,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"0c7009403fdac958d04270293c78beaa59c75b0d59ee19fc7593ede4a2005abf","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"48de22331b1a25709430aa806fff31c6609989433aedb5e37931d626f3dbd9e7","disposition":"still accurate","rationale":"Named mounts now enter the same surface control lifecycle. Preview isolation, cancellation, cursor checks and core commitment remain owned by those documented modules; decimal gain uses the existing control writer."} -->
+<!-- doc-review {"version":1,"fingerprint":"309e24df5518ea71fcdfbf502e15a272aeb947d755eb426d953c3ac4ecef574d","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"51f837bc326a1317954b28da141f8befc65db025a046f396d758949b11cbd704","disposition":"still accurate","rationale":"The module graph adds a server-listen preflight hint for test execution; interaction ownership, pointer cancellation, mirror proposals and browser assertions remain unchanged."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -90,7 +91,7 @@ Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"74a92c4d126819c18784595fbaec370cc3f0647e16e660f301b5a6604cdf824b","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"98b82c73bdc74602c5b60789ed0d68a86182b7f45de274ce68650db33385278c","disposition":"updated","rationale":"Documented group-scoped surface preview, in-place interface changes, distinct inspectable snapshots and bounded placed/saved navigation; linked the UX regression verifier and its ordinary rover fixture."} -->
+<!-- doc-review {"version":1,"fingerprint":"6494d849e3fa96df88f250fce7c51c82ef2fdc5e71b6551904960cac3ba3e8cf","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"f921bdf1d915ac63e3cbed553ff87a7e95df74a1fd484fde940c991a64de01e9","disposition":"still accurate","rationale":"Only verifier dependency analysis changed: reusable-assembly admission, named interfaces, persistence and authored state remain owned by the existing model/core/application layers and their browser checks."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft connectivity, not an editor selection, electrical network, or stored

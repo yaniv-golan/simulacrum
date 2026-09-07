@@ -61,7 +61,8 @@ export async function evaluateBar(id, context) {
   // Restoring an older index file resurrected a superseded pass while the newer
   // failure sat in the log; the index is now a convenience view only.
   const sessionsDir = new URL('../assessments/sessions/', import.meta.url);
-  if (!existsSync(sessionsDir)) return { id, state: 'RED', why: 'no recorded assessment' };
+  if (!existsSync(sessionsDir))
+    return { id, state: 'RED', assessment: 'pending', why: 'no recorded assessment' };
 
   let record;
   try {
@@ -69,7 +70,8 @@ export async function evaluateBar(id, context) {
       .filter((f) => f.endsWith('.json'))
       .map((f) => JSON.parse(readFileSync(new URL(f, sessionsDir), 'utf8')));
     const all = log.filter((r) => r?.bar === id);
-    if (all.length === 0) return { id, state: 'RED', why: 'no recorded assessment' };
+    if (all.length === 0)
+      return { id, state: 'RED', assessment: 'pending', why: 'no recorded assessment' };
 
     // Validate BEFORE ordering. Sorting first let a record with
     // recordedAt "zz-invalid-timestamp" sort last and mask a newer failure.
@@ -115,8 +117,18 @@ export async function evaluateBar(id, context) {
     return { id, state: 'RED', why: 'the bar contract changed since this assessment' };
 
   return record.verdict === 'pass'
-    ? { id, state: 'GREEN', why: `assessed ${record.date}, participant ${record.participant}` }
-    : { id, state: 'RED', why: `assessed FAIL ${record.date}: ${record.notes}` };
+    ? {
+        id,
+        state: 'GREEN',
+        assessment: 'passed',
+        why: `assessed ${record.date}, participant ${record.participant}`,
+      }
+    : {
+        id,
+        state: 'RED',
+        assessment: 'failed',
+        why: `assessed FAIL ${record.date}: ${record.notes}`,
+      };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

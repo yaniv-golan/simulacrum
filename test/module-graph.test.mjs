@@ -126,3 +126,24 @@ test('static module-relative file reads select their data while dynamic reads re
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('server hints identify listen calls but not unrelated listening event names or property reads', () => {
+  const root = mkdtempSync(join(tmpdir(), 'server-hint-'));
+  try {
+    mkdirSync(join(root, 'test'));
+    for (const [source, expected] of [
+      ['server.listen(0)', true],
+      ["server['listen'](0)", true],
+      ["server.on('listening', handler)", false],
+      ['const method = server.listen', false],
+    ]) {
+      writeFileSync(join(root, 'test/server.test.mjs'), source);
+      assert.equal(
+        Boolean(buildModuleGraph(root).nodes.get('test/server.test.mjs').serverListen),
+        expected,
+      );
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

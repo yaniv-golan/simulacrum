@@ -131,3 +131,14 @@ test('summary CLI does not execute selected tests and --explain keeps its JSON s
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('server preflight follows selected dependency paths without requiring a server for pure tests', async () => {
+  const { selectedServerRequirements } = await import('../scripts/test-selection.mjs');
+  const g = graph();
+  g.nodes.get('src/a.mjs').serverListen = true;
+  assert.deepEqual(selectedServerRequirements(g, ['test/a.test.mjs']), [
+    { test: 'test/a.test.mjs', owner: 'src/a.mjs' },
+  ]);
+  assert.deepEqual(selectedServerRequirements(g, ['test/b.test.mjs']), []);
+  assert.deepEqual(selectedServerRequirements(g, []), []);
+});

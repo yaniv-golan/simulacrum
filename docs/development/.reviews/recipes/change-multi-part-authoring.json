@@ -45,7 +45,7 @@
     "scripts/app-fingerprint.mjs": "32d6c25865b0921a8b203d0a89af997e8816201e5eeaa9b9db6653de2ce2e9d4",
     "scripts/browser-evidence.mjs": "2e690400fe2e9b2e81ae6d87cc6e9abcd2f25dfc4b6572ffcc92797f95dfeac7",
     "scripts/browser-session.mjs": "96be298c95c65398d6072affda9eb759cb9cb805068835ec0f8007bbf3d9e6ed",
-    "scripts/module-graph.mjs": "9012c65bb38e569847cb33ca8a771d3453e75f67be61df7c68a35d1120af9506",
+    "scripts/module-graph.mjs": "e43391ff0856149384c9c28518ac82a97927486aee718cef2450316bb7675cb0",
     "scripts/source-identity.mjs": "1d0f001521fa9bf3133b6fdcbc90ffbc33c11186650f78c429712b90d1c43bf0",
     "scripts/verify-assemblies-browser.mjs": "00bc2f8a5c11e3cf310cec56456b3553c00403f42c01758fc65d75f8d5c232d0",
     "scripts/verify-assembly-ux-browser.mjs": "f2e5e476a298d8cb2a14cfabfafbf837923ca3f3d3951dfa337f079e6395270b",

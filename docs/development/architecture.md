@@ -1,6 +1,7 @@
 # Architecture and policy owners
 
-<!-- doc-review {"version":1,"fingerprint":"e72bb1b3b18fa370e32d70750d6e7a925d1d3305644199e01c59391772ea049c","dependencies":"docs/development/.reviews/architecture/architecture-and-policy-owners.json","dependencyDigest":"59e59174c0520d2ab54b5b6ba8f1e3288946923723e4e47912e50fb17fe464dc","disposition":"still accurate","rationale":"Runtime now documents edit-assembly and optional assembly surface scope, and the manifest registers its UX checks under runtime-contract; authority and milestone ownership are unchanged."} -->
+## Overview
+<!-- doc-review {"version":1,"fingerprint":"02b0b71c8c4bafd9857764c316eba2e4a8175af22024ad5ec333bb37ada20f1c","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"59e59174c0520d2ab54b5b6ba8f1e3288946923723e4e47912e50fb17fe464dc","disposition":"updated","rationale":"The authority introduction now has its own overview heading for navigation consumers; runtime, layer and manifest ownership claims and their existing dependencies are preserved."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

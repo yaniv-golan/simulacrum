@@ -1,3 +1,4 @@
+import { verificationOutcome, formatVerificationOutcome } from './verification-outcome.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createVerificationContext } from './verification-run.mjs';
 import { runCI } from './ci.mjs';
@@ -26,9 +27,11 @@ const report = {
   results,
   checks: context.receipts(),
 };
+report.outcome = verificationOutcome(results, report.checks);
 mkdirSync('artifacts', { recursive: true });
 writeFileSync('artifacts/verification-final.json', JSON.stringify(report, null, 2) + '\n');
 console.log(
   `Final verification: ${report.checks.length} unique checks; human bars are evaluated separately by the gate.`,
 );
-process.exitCode = results.every((row) => row.ok) ? 0 : 1;
+console.log(formatVerificationOutcome(report.outcome));
+process.exitCode = report.outcome.exitCode;

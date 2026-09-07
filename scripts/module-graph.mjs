@@ -241,6 +241,14 @@ export function buildModuleGraph(
       }
       walk(ast, (node) => {
         if (
+          node.type === 'CallExpression' &&
+          node.callee.type === 'MemberExpression' &&
+          ((!node.callee.computed && node.callee.property.name === 'listen') ||
+            (node.callee.computed && node.callee.property.value === 'listen'))
+        )
+          info.serverListen = true;
+
+        if (
           ['ImportDeclaration', 'ExportNamedDeclaration', 'ExportAllDeclaration'].includes(
             node.type,
           ) &&

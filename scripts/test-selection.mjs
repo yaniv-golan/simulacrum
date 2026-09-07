@@ -70,3 +70,19 @@ export function summarizeTestSelection(
   );
   return lines.join('\n');
 }
+
+/** Known listen calls reachable from selected tests. This is a preflight hint, not exhaustive capability analysis. */
+export function selectedServerRequirements(graph, tests) {
+  return tests.flatMap((test) => {
+    const queue = [test],
+      seen = new Set();
+    for (const path of queue) {
+      if (seen.has(path)) continue;
+      seen.add(path);
+      const node = graph.nodes.get(path);
+      if (node?.serverListen) return [{ test, owner: path }];
+      queue.push(...(node?.dependencies ?? []));
+    }
+    return [];
+  });
+}

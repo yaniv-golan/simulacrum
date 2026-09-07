@@ -35,6 +35,7 @@ export async function runGate(target = manifest.milestone, context = createVerif
   console.log(`milestone ${target} (owned by scripts/manifest.json)\n`);
   const { failed, ran } = await runStructuralChecks(target, context);
 
+  const bars = [];
   let redBars = 0;
   let dueBarCount = 0;
   for (const [id, bar] of Object.entries(manifest.bars)) {
@@ -43,7 +44,13 @@ export async function runGate(target = manifest.milestone, context = createVerif
       continue;
     }
     dueBarCount += 1;
-    const { state, why } = await evaluateBar(id, context);
+    const result = await evaluateBar(id, context);
+    const { state, why } = result;
+    bars.push({
+      ...result,
+      human: Boolean(bar.human),
+      ...(bar.human ? { assessment: result.assessment ?? 'invalid' } : {}),
+    });
     if (state === 'RED') redBars += 1;
     console.log(`${state.padEnd(5)} bar:${id.padEnd(4)} due ${bar.dueAt} -- ${why}`);
   }
@@ -92,11 +99,11 @@ export async function runGate(target = manifest.milestone, context = createVerif
       `\nREFUSED at ${target}: ${failed} of ${ran} structural check(s) not green; ` +
         `${redBars} of ${dueBarCount} due bar(s) red; ${unmet} of ${obligationCount} obligation(s) unmet.`,
     );
-    return { ok: false, failed, ran, redBars, dueBarCount, unmet, obligationCount };
+    return { ok: false, failed, ran, redBars, dueBarCount, unmet, obligationCount, bars };
   }
   console.log(`\n${target} gate green in ${(performance.now() - gateStarted).toFixed(1)}ms.`);
 
-  return { ok: true, failed, ran, redBars, dueBarCount, unmet, obligationCount };
+  return { ok: true, failed, ran, redBars, dueBarCount, unmet, obligationCount, bars };
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const result = await runGate(process.argv[2]);

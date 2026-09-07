@@ -1,9 +1,9 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"b75d6565c86fbf3808892c575bdab4f42b3634732832f7ede82f376014ae145d","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"9d69b0b47004a228cdd22e62961e9417d19a8c97e5cb872c871ed13804cb1ad4","disposition":"still accurate","rationale":"The revised map and recipe retain owner discovery, fail-first checks, Node 24 and final source-bound verification; they now describe assembly interface editing and shared surface previews."} -->
+<!-- doc-review {"version":1,"fingerprint":"a8053de8e1071eabfeb3467ac8010e1607985f7d33965677b46e53896b39f33e","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"a592c1cdbbd6f8e0ee5803a209227074bf014455789fdf1a4aae9301d2a94b4d","disposition":"updated","rationale":"Navigation links now bind overview sections only; implementation recipes still own detailed dependencies and the working loop still requires fail-first checks and final source-bound verification."} -->
 
-Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md) and the
-[recipe for your change](recipes.md) before choosing an owner. Use Node 24.18.x and
+Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
+[recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
 `npm ci`. `npm run dev` serves the workshop; `npm run build` and `npm run preview`
 serve a stable build. The page displays its build identity.
 
@@ -71,11 +71,11 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"cb57e847db46255a9abdaa0e630342c6b5f366a5a0063a97a8bba66d28b2646a","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"f356ad224715372d36ed2b6f8cc9234cc284adc1f7074672048e38c79bce7ae4","disposition":"updated","rationale":"The verification commands now reject unsupported Node versions and CI/browser builds probe loopback access; the projected-center helper still sends real pointer input and requires a resulting-selection assertion."} -->
+<!-- doc-review {"version":1,"fingerprint":"a8c4b4fb7d764b1b77b7541ef63184c220a0705fb10107d26c0c4fb03afb1e66","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"fdc7322daf7b145dcd30da6ad55856168b9381ac5a704bc9ee81ec2d1d203bb5","disposition":"updated","rationale":"Focused execution now probes known selected server dependencies before tests; the final report distinguishes automated failure, human pending/failed/invalid evidence and overall qualification with documented exit codes."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
-- `npm run verify:final` runs CI, all browser checks and the current gate with invocation-local shared check receipts; human acceptance remains a separate requirement.
+- `npm run verify:final` runs CI, all browser checks and the current gate with invocation-local shared check receipts; human acceptance remains a separate requirement. The [verification outcome](../../scripts/verification-outcome.mjs#implementation) separates automation, human acceptance and overall qualification: exit 0 means qualified, exit 1 means automation failed or was incomplete, and exit 2 means automation passed but human acceptance blocks qualification. Failed or invalid human evidence is distinguished from missing evidence; none authorizes qualification.
 - `npm run ci` runs structural and unit checks within the development budget.
 - `npm run gate` evaluates the current cumulative milestone, including human requirements.
 - `npm run test:browser` builds and runs all registered browser checks; `npm run test:browser:smoke` runs construction smoke checks.
@@ -92,6 +92,9 @@ report after changing source or environment.
 The [verification preflight](../../scripts/runtime-preflight.mjs#implementation) reads
 `engines.node` from package.json. CI, the milestone gate, final verification, focused
 tests and type checking reject unsupported Node versions before running checks.
+Focused tests probe loopback only when selected dependency paths contain known server
+listen calls. Dry-run discovery never opens sockets. The discovery is conservative
+and cannot identify every dynamically loaded server; later environment failures remain possible.
 Switch Node and confirm `node --version` before retrying. CI and browser builds also
 probe an ephemeral loopback port: permission denial is an environment blocker, not
 product failure or permission to skip server/browser tests. Grant loopback access in
@@ -105,7 +108,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"8e08c4853ff07939933e2358936f6a2ef983429e8f7d25921b418570e96e59a6","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"9c774beaa24cd00e8668131c00ca9fbc8e4a62571d7c1038d74d9baa8e67ec8a","disposition":"still accurate","rationale":"The generated reference includes the newly registered assembly UX browser check. The existing regeneration and per-section disposition process still applies."} -->
+<!-- doc-review {"version":1,"fingerprint":"56230386f1296a6334191a9fe33e8683ad40d99fabf674dfe0e7dde6a1a7f843","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"7511befd6aef7ecedd548252496f5f276ad61fd50bb666d515ff85f7158917b9","disposition":"updated","rationale":"Navigation-only links target scoped overview headings while implementation explanations retain body dependencies; batch decisions remain individually source-bound and later source changes still require review."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -123,7 +126,8 @@ reviews. Its report is `artifacts/developer-documentation.json`; it is an output
 an input required by a fresh clone. See the [generated reference](reference.md) for
 current commands and manifest-owned check/owner pointers.
 
-Record formal reviews after source closure, not after each tuning edit. A later source
+Record formal reviews after source closure, not after each tuning edit. Navigation-only links should target
+a stable overview heading; implementation explanations must keep their source/body dependencies. A later source
 change still invalidates affected reviews and must be reviewed before final verification.
 
 1. Run `npm run docs:impact`. It lists affected sections and changed dependencies;
