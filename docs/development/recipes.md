@@ -1,5 +1,7 @@
 # Change recipes
 
+<!-- doc-review {"version":1,"fingerprint":"cbe6305b20e2f759fe67c5927afb72828219ffbfc2e967d5f1e04537ceff9b28","dependencies":"docs/development/.reviews/recipes/change-recipes.json","dependencyDigest":"3b5613cf54b494f90644cfa7cd0462618461384a94abaaf1bdc57e5dddabadd2","disposition":"still accurate","rationale":"The architecture map clarifies implementation scope for composition; canonical model policy and ordinary command admission still govern authoring convenience."} -->
+
 Use the [map](architecture.md) to locate the owner, inspect its reverse consumers with
 `node scripts/navigate.mjs <symbol-or-path>`, then use focused tests. Admit changes
 through the public command surface. A view-local convenience must not become a second
@@ -7,10 +9,12 @@ attachment, polarity, naming, reset or authored-property policy.
 
 ## Add or extend a part
 
-Start with [CATALOG](../../src/model/catalog.mjs), [schema](../../src/model/blueprint.schema.json)
-and [createPart](../../src/model/blueprint.mjs). Declare its current milestone in
-[features](../../src/model/features.mjs). Use [partPrimitives](../../src/model/geometry.mjs)
-for authored shapes and [surfaceRegions](../../src/model/surfaces.mjs) for mounting.
+<!-- doc-review {"version":1,"fingerprint":"c02b5685075772eb74167811b3280755ea3f80844a116be7a6f5c4f05b8cbf44","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"e54708f4764fa53dc5e7fdeb3286bdfdef20124c17d4588b99f9d7122c0acecc","disposition":"still accurate","rationale":"The added package command is discovery-only; catalog, schema, geometry, mounting and compiler sources and their authority remain unchanged."} -->
+
+Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
+and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
+[features](../../src/model/features.mjs). Use [partPrimitives](../../src/model/geometry.mjs#symbol=partPrimitives)
+for authored shapes and [surfaceRegions](../../src/model/surfaces.mjs#symbol=surfaceRegions) for mounting.
 The [compiler](../../src/model/assembly.mjs) derives configuration; the renderer consumes
 the same geometry. Do not select material or forces by name, role or fixture identity.
 
@@ -22,18 +26,22 @@ validation with `node scripts/generate-schema.mjs` when schema changes.
 
 ## Add a command
 
-Start at [createWorkshop](../../src/core/workshop.mjs). Validate shape before reading
+<!-- doc-review {"version":1,"fingerprint":"7688e8232a148b72ffcab012c93352d91a192752edbd0718d298965f8483e637","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"c09137c31342d6c140869465810102270fdfc95b34093923c6cd9b4d42689729","disposition":"still accurate","rationale":"No core or model edits occurred. Candidate admission, atomic history and the surface-mount example still use the named owners and existing shared assertions."} -->
+
+Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
 and publish only after successful compilation. One accepted edit owns one history
 transaction; stale/no-op/rejected effects must be explicit.
 
-Worked example: `surface-mount` delegates to [proposeSurfaceMount](../../src/model/assembly.mjs).
+Worked example: `surface-mount` delegates to [proposeSurfaceMount](../../src/model/assembly.mjs#symbol=proposeSurfaceMount).
 [Surface mount tests](../../test/surface-mount.test.mjs) exercise stale cursor rejection,
 mounting, adjustment and Undo. Add malformed input, accepted effect, rejected-state
 identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing contract assertions](../../test/contracts/editing.mjs) as shown by [mixed editing examples](../../test/editing-contracts.test.mjs); inspect
 `node scripts/explain-invariant.mjs rejected-edit-atomicity`.
 
 ## Change an interaction
+
+<!-- doc-review {"version":1,"fingerprint":"e37f64693016eae468e69b5754e51ed584f7e69b634b1ec13ed26ca092233e4e","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"9120dd2dc6cd05638674969a14355b6dc03cc1cb7d13994f5befa4c07d785872","disposition":"updated","rationale":"The browser-verifier reference now covers its implementation rather than arbitrary inspected files. The recipe explicitly requires executing it against the served build for behavioral evidence."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -43,13 +51,16 @@ command. Cancellation must terminate the owned operation without committing it.
 Worked example: [mirror controls](../../src/presentation/assembly-mirror.mjs) call the
 same model proposal used by the core. Test preview isolation, blocked release, Escape,
 blur/lost capture and stale completion. Run [mirror model tests](../../test/mirror-assembly.test.mjs)
-and the registered [mirror browser verifier](../../scripts/verify-mirror-browser.mjs).
+and the registered [mirror browser verifier](../../scripts/verify-mirror-browser.mjs#implementation).
+The verifier link covers its implementation; execute it against the current served build to obtain behavioral evidence.
 Receiver overrides must use [vehicle controls](../../src/presentation/vehicle-controls.mjs),
 not dispatch a second reset or directly write actuator state.
 
 ## Add a diagnostic
 
-Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs). Consume completed
+<!-- doc-review {"version":1,"fingerprint":"d57730ecf8884fb1b1e4a5374bb39d2b0024c0ce282907377aefc6847b446329","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"3c403453ccf7bbcc94c370fe0cc41bce666e7ddc7de7967b825759184d26355c","disposition":"still accurate","rationale":"The discovery command does not modify completed observations or diagnostic ownership. Opposed-drive and motion diagnostics remain the same symptom checks."} -->
+
+Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
 owns navigation and wording layout. Do not repair authored state or infer intention
 from a machine name.
@@ -61,6 +72,8 @@ symptom, a similar valid configuration that must remain quiet, and missing-data 
 A symptom is not proof of the intended mechanism or cause.
 
 ## Change physics
+
+<!-- doc-review {"version":1,"fingerprint":"7944a9d8978ad3cc3346116660af9606dd7f2b5b8c957c20c5ff0b019c690727","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"8d6d3a3566bd23b059ad199682e4c9e50319db6c31ddb8858a30569e06687110","disposition":"still accurate","rationale":"Only package discovery metadata changed in this dependency scope. Numeric law, physics door and independent energy/contact tests remain unchanged."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -76,6 +89,8 @@ Use analytical expectations and passive mirrored controls before tuning a contro
 Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
+
+<!-- doc-review {"version":1,"fingerprint":"96474b7805ab08c04c9e1d6eca4e0af9b500350f22f2c1bb134614b560d8ed42","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"d406e8e46da863aff1696b25ea7b8d88760a2dade04901208e49ab246a56fd27","disposition":"still accurate","rationale":"This work adds no reusable assembly feature, schema or copy operations. Mechanical graph classification, frame math and candidate admission remain unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft connectivity, not an editor selection, electrical network, or stored
@@ -115,7 +130,9 @@ Do not add speculative storage adapters, compatibility aliases or unused copy AP
 
 ## Change a presentation overlay
 
-Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs) and
+<!-- doc-review {"version":1,"fingerprint":"f12903feb420232d007d4deb161a2bfe61c1a599f8e356d4894b291eabb71090","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"58f6a85a95aac2e65f4d8246bfb43662bbbd6599f15cf0fd8c71b768f1c02ef7","disposition":"still accurate","rationale":"Rendering and diagnostic sources remain unchanged. Required visibility and exact edge IDs are existing infrastructure; the Wiring preferences and schematic lines are still future feature work."} -->
+
+Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
 connection overlay. The checked producer takes narrow display inputs; the checked
 [connection renderer](../../src/presentation/connection-view.mjs) owns GPU resources.
@@ -123,7 +140,7 @@ The workshop view resolves endpoints from displayed meshes, including exploded o
 The renderer never changes authored connectivity or sends a command. Visibility is an
 explicit required field; all current production connections remain visible.
 
-Use exact IDs from [connectionTestPaths](../../src/model/connection-test-paths.mjs) for
+Use exact IDs from [connectionTestPaths](../../src/model/connection-test-paths.mjs#symbol=connectionTestPaths) for
 path highlights. The [Connect & test panel](../../src/presentation/connection-test.mjs)
 owns the highlighted row and clears it on close, replacement and disposal. An edge
 between two highlighted parts is not necessarily on the inspected path. Selection,

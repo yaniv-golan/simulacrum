@@ -50,7 +50,12 @@
     "typecheck": "node scripts/check-boundary-types.mjs",
     "docs:navigate": "node scripts/navigate.mjs",
     "rules:explain": "node scripts/explain-invariant.mjs",
-    "verify:final": "node scripts/verify-final.mjs"
+    "verify:final": "node scripts/verify-final.mjs",
+    "docs:check": "node scripts/docs.mjs check",
+    "docs:impact": "node scripts/docs.mjs impact",
+    "docs:review": "node scripts/docs.mjs review",
+    "docs:generate": "node scripts/docs.mjs generate",
+    "inspect:change": "node scripts/inspect-change.mjs"
   },
   "devDependencies": {
     "@types/three": "0.185.4",
@@ -58,6 +63,7 @@
     "ajv": "^8.20.0",
     "css-tree": "^3.2.1",
     "fast-check": "^4.9.0",
+    "mdast-util-from-markdown": "2.0.2",
     "parse5": "^8.0.1",
     "playwright": "^1.63.0",
     "prettier": "3.6.2",

@@ -22,16 +22,16 @@ locomotion predicates and qualification. `scripts/manifest.json` owns milestone
 allocation, bars and rule/check ownership. `npm run rules` reports enforcement;
 UNENFORCED means exactly that. `npm run gate` prints the current milestone.
 
-| layer | may import |
-|---|---|
-| model | no other layer |
-| simulation | model; physics only through its narrow door |
-| simulation/physics | model; sole physics-library importer |
-| simulation/physics/law | nothing; numeric inputs and outputs only |
-| scripting | model |
-| presentation | model; telemetry values injected at runtime |
-| application | all layers |
-| core | model, simulation, scripting; DOM-free |
+| layer                  | may import                                  |
+| ---------------------- | ------------------------------------------- |
+| model                  | no other layer                              |
+| simulation             | model; physics only through its narrow door |
+| simulation/physics     | model; sole physics-library importer        |
+| simulation/physics/law | nothing; numeric inputs and outputs only    |
+| scripting              | model                                       |
+| presentation           | model; telemetry values injected at runtime |
+| application            | all layers                                  |
+| core                   | model, simulation, scripting; DOM-free      |
 
 No cycles or presentation/simulation import edge. Simulation never imports scripting.
 Programs are injected into controller phase execution. No live physics-library object
@@ -54,6 +54,8 @@ Property tests perturb identity while preserving the physical authored choices.
 Before choosing an implementation owner, use the [developer guide](docs/development/README.md),
 [architecture map](docs/development/architecture.md) and matching [change recipe](docs/development/recipes.md).
 `npm run docs:navigate -- <symbol-or-path>` finds current owners/consumers;
+`npm run inspect:change -- --files <paths>` combines owners, invariants, conservative
+test selection, registered browser checks and affected explanations without executing them;
 `npm run test:unit -- --files <paths> --summary` explains checks without running them.
 Remove `--summary` to execute. Reuse the existing boundary and invariant test contracts;
 register new guarantees in the manifest rather than another hand-maintained inventory.
@@ -80,6 +82,15 @@ smoke test, not proof of the walker's engine behavior. Check ascent torque, char
 clearance and contact evidence before assigning a cause. After two failed control
 iterations, re-derive the decomposition from measurements instead of tuning blindly.
 
+After structural changes or integrating another agent's edits, rerun navigation and
+focused-test discovery. Before final verification, run `npm run docs:impact`, repair
+broken references, and review each stale explanation with `npm run docs:review`.
+Update the explanation when behavior or ownership changed; otherwise record a specific
+reason it remains accurate. `npm run docs:check` is a required structural gate in CI
+and final verification. It automatically regenerates source-bound discovery and rejects
+stale review evidence; a previous report cannot narrow required checks. See the
+[documentation workflow](docs/development/README.md#keep-explanations-current).
+
 ## Verification
 
 Use analytical solutions, conservation accounting and symmetry for physical claims;
@@ -93,7 +104,7 @@ unknown changes select all tests. Structural checks target <5 s, unit/property <
 short physics <60 s. The every-commit command must stay below 180 s and report wall time.
 Long contact tests run at merge/nightly until measured. Scenarios run merge/nightly,
 browser checks at merge, critical-module mutation weekly. Do not delete an assertion
-or skip a required tier to recover speed. Never write `npm run a b c`: use separate
+or skip a required tier to recover speed. Never combine multiple script names in one npm-run invocation: use separate
 invocations or an aggregate that propagates every failure.
 
 Every new test must be seen failing. Include positive controls and plausible wrong

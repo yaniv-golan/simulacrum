@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "dependencies": {
+    "docs/development/playtesting.md": "94f84734128fb41f3264cd935813db191a01060ad2a439033e00984d1b75502c",
+    "package.json#script=test:unit": "c0b2b754ea3e791a755cd5078218e1afd949b79f9dcf41463b08ba6a25295520",
+    "package.json#script=test:all": "ef468829f6f5c4c972f0007d48f286261a43b58d0138e9f73278db660732a565",
+    "package.json#script=typecheck": "5e62f90ab5f4682dc10c75da9a38e82ceb4f3ea333b24cd22a81ed883715229f",
+    "package.json#script=verify:final": "b4ba58befcb628054c4158a3f0f448fb957bb93d6c44f21f2fbb5f5c4d87b607",
+    "package.json#script=ci": "983720eabd4c5c5c7b1632cf19fa055267ec65df08297104206ff541a64dfd6f",
+    "package.json#script=gate": "9adcc469f55b82e3c42003509ffc7c366dfacf650d18aac9fb332ae0348ec885",
+    "package.json#script=test:browser": "d3b372e235bb547558dc1d31ce36e9d37fb6d35b559a6e60f30c7d16483a7c10",
+    "package.json#script=test:browser:smoke": "2a56b3a9803b1b4e3c94475c235597549ef88663c79b1823bb2e870abc1feee2",
+    "package.json#script=test:performance": "27a31361776ddd4388f281cd1411c0f6b1615c16056cdc5aa4bc5b536db61342",
+    "package.json#script=format": "ef05253c916d239ff45cf48973f920de06053a1c36cd7adc76d9a5304bc5e054",
+    "package.json#script=replay": "ca85cb1b8ca2f88fb66317807b8fc4fda7a411879afeb377af34f92d190732c9"
+  }
+}

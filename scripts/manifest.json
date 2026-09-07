@@ -158,6 +158,15 @@
       "export": "check",
       "args": [],
       "timeoutMs": 5000
+    },
+    {
+      "id": "developer-documentation",
+      "dueAt": "M3b",
+      "description": "fresh source navigation, live references, generated developer facts and scoped explanation review",
+      "ruleId": "gate-integrity",
+      "module": "scripts/check-documentation.mjs",
+      "export": "check",
+      "timeoutMs": 5000
     }
   ],
   "exitObligations": {
