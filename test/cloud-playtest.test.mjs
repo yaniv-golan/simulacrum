@@ -156,6 +156,12 @@ test('synthetic capacity is reclaimed across 21 runs without deleting human evid
     r2 = bucket(),
     store = new CaptureStore(st, { RECORDINGS: r2, INVITATION_GENERATION: '1' });
   const human = await start(store, 'human');
+  const humanSnapshot = await (
+    await store.fetch(
+      new Request(`https://capture.invalid/admin/playtest/${human.sessionId}/snapshot`),
+    )
+  ).json();
+  assert.equal(humanSnapshot.session.syntheticRun, null);
   for (let i = 0; i < 21; i++) {
     const response = await store.fetch(
       req('/admin/playtest/synthetic', { slots: 1, bytes: 65536 }),
@@ -170,6 +176,10 @@ test('synthetic capacity is reclaimed across 21 runs without deleting human evid
     const created = await store.fetch(request);
     assert.equal(created.status, 201);
     const { sessionId } = await created.json();
+    const snapshot = await (
+      await store.fetch(new Request(`https://capture.invalid/admin/playtest/${sessionId}/snapshot`))
+    ).json();
+    assert.equal(snapshot.session.syntheticRun, run.id);
     await store.fetch(req(`/api/playtest/v2/${sessionId}/event`, { id: 'one' }));
     const deletion = await store.fetch(
       new Request(`https://capture.invalid/admin/playtest/synthetic/${run.id}`, {
@@ -441,4 +451,96 @@ test('verification holds full capacity across preliminary drain and load admissi
   await store.alarm();
   assert.equal(store.usage().sessions, 0);
   st.db.close();
+});
+
+test('coordinator persists bounded failures across owners and clears only explicit same-family IDs', async (t) => {
+  const st = state();
+  t.after(() => st.db.close());
+  const c = new ReleaseCoordinator(st);
+  const a = {
+    attempt: 'publisher-a',
+    token: 'a'.repeat(64),
+    artifact: '1'.repeat(64),
+    predecessor: 'p',
+  };
+  const failure = {
+    id: 'failure-a',
+    family: 'endurance',
+    status: 'FAIL',
+    identity: '2'.repeat(64),
+    artifact: a.artifact,
+    measuredAt: Date.now() - 1000,
+    reason: 'backlog grew',
+  };
+  assert.equal((await c.fetch(req('/acquire', a))).status, 201);
+  assert.equal((await c.fetch(req('/experiment-failed', { ...a, failure }))).status, 201);
+  assert.equal((await c.fetch(req('/experiment-failed', { ...a, failure }))).status, 200);
+  assert.equal(
+    (await c.fetch(req('/experiment-failed', { ...a, failure: { ...failure, reason: 'rewrite' } })))
+      .status,
+    409,
+  );
+  const list = async () => (await (await c.fetch(req('/experiment-failures'))).json()).failures;
+  assert.deepEqual(await list(), [failure]);
+  await c.fetch(req('/release', a));
+  const b = { ...a, attempt: 'publisher-b', token: 'b'.repeat(64), artifact: '3'.repeat(64) };
+  await c.fetch(req('/acquire', b));
+  const pass = {
+    ...b,
+    family: 'endurance',
+    receiptId: '4'.repeat(64),
+    identity: '5'.repeat(64),
+    measuredAt: Date.now(),
+    artifact: b.artifact,
+    failureIds: [failure.id],
+  };
+  assert.equal((await c.fetch(req('/experiment-passed', { ...pass, token: a.token }))).status, 403);
+  assert.equal(
+    (await c.fetch(req('/experiment-passed', { ...pass, family: 'capacity' }))).status,
+    409,
+  );
+  assert.equal(
+    (await c.fetch(req('/experiment-passed', { ...pass, artifact: a.artifact }))).status,
+    409,
+  );
+  assert.deepEqual(await list(), [failure]);
+  assert.equal((await c.fetch(req('/experiment-passed', pass))).status, 200);
+  assert.deepEqual(await list(), []);
+  assert.equal((await c.fetch(req('/experiment-passed', pass))).status, 200);
+  for (const invalid of [
+    { status: 'PASS' },
+    { identity: 'bad' },
+    { artifact: a.artifact },
+    { measuredAt: Infinity },
+    { reason: '' },
+    { extra: 'unbounded' },
+  ])
+    assert.equal(
+      (
+        await c.fetch(
+          req('/experiment-failed', {
+            ...b,
+            failure: { ...failure, artifact: b.artifact, ...invalid },
+          }),
+        )
+      ).status,
+      400,
+    );
+  const failures = Array.from({ length: 65 }, (_, i) => ({
+    ...failure,
+    id: `failure-${i}`,
+    artifact: b.artifact,
+  }));
+  const responses = await Promise.all(
+    failures.map((f) => c.fetch(req('/experiment-failed', { ...b, failure: f }))),
+  );
+  assert.equal(responses.filter((r) => r.status === 201).length, 64);
+  assert.equal(responses.filter((r) => r.status === 409).length, 1);
+  assert.equal((await list()).length, 64);
+  assert.equal(
+    (await c.fetch(req('/experiment-passed', { ...pass, failureIds: failures.map((f) => f.id) })))
+      .status,
+    400,
+  );
+  assert.equal((await list()).length, 64);
 });

@@ -1,4 +1,19 @@
-import { measureCaptureLoad } from './load.mjs';
+import { assertPackageVerification } from './package-verification.mjs';
+import { readCalibrationEvidence } from './calibration-evidence.mjs';
+import { readCorpus } from './corpus.mjs';
+import { prepareRelease } from './prepare-release.mjs';
+export { prepareRelease };
+import {
+  selectExperiments,
+  experimentReservation,
+  experimentReceipt,
+  verifyExperimentResults,
+  behaviorConfiguration,
+  stagingResults,
+  normalizeExperimentEvidence,
+  validateProfile,
+} from './experiments.mjs';
+import { measureCaptureLoad, assertCaptureBacklog, assertCaptureWorkload } from './load.mjs';
 import { assertReservationLifetime } from './release-policy.mjs';
 import { validateReleaseConfig } from './release-config.mjs';
 import {
@@ -56,94 +71,7 @@ export async function verifyPackage(directory, { rollback = false } = {}) {
     if (prior.artifact !== manifest.artifact || prior.status !== 'passed' || !prior.version)
       throw Error('Previously verified production package required');
   } else if (Date.now() > manifest.expires) throw Error('Release artifact expired');
-  return manifest;
-}
-export async function prepareRelease(destination) {
-  const root = process.cwd(),
-    out = resolve(destination);
-  if (!relative(root, out).startsWith('.release-private/'))
-    throw Error('Prepare destination must be a new .release-private/<release> directory');
-  const head = text('git', ['rev-parse', 'HEAD']);
-  const paths = text('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'])
-    .split('\0')
-    .filter(Boolean)
-    .sort();
-  if (paths.some((path) => /(^|\/)(\.env(?:\.|$)|\.dev\.vars|secrets?\.)/.test(path)))
-    throw Error('Review secret-like source paths before packaging');
-  const source = {};
-  for (const path of paths) {
-    const info = await lstat(path).catch(() => null);
-    if (!info) continue;
-    if (!info.isFile()) throw Error(`Unsupported source input: ${path}`);
-    source[path] = sha(await readFile(path));
-  }
-  await mkdir(resolve(out, '..'), { recursive: true, mode: 0o700 });
-  await mkdir(out, { recursive: false, mode: 0o700 });
-  const snapshot = join(out, 'source');
-  run('git', ['clone', '--quiet', '--no-hardlinks', '--no-checkout', root, snapshot]);
-  for (const path of Object.keys(source)) {
-    const target = join(snapshot, path);
-    await mkdir(resolve(target, '..'), { recursive: true });
-    await copyFile(join(root, path), target);
-  }
-  await writeFile(join(out, 'source.json'), JSON.stringify({ head, source }, null, 2), {
-    mode: 0o600,
-  });
-  run('npm', ['ci'], snapshot);
-  // Qualification exit 2 is acceptable for release automation only when its report
-  // confirms automation passed; human acceptance is never invented by deployment.
-  try {
-    run('npm', ['run', 'verify:final'], snapshot);
-  } catch (error) {
-    const report = JSON.parse(
-      await readFile(join(snapshot, 'artifacts', 'verification-final.json'), 'utf8'),
-    );
-    if (error.status !== 2 || report.outcome?.automation?.status !== 'PASS') throw error;
-  }
-  const payload = join(out, 'payload');
-  await mkdir(payload);
-  await mkdir(join(payload, 'assets'));
-  const assets = await inventory(join(snapshot, 'dist'));
-  for (const path of Object.keys(assets)) {
-    if (path.startsWith('.') || path.endsWith('.map')) continue;
-    const target = join(payload, 'assets', path);
-    await mkdir(resolve(target, '..'), { recursive: true });
-    await copyFile(join(snapshot, 'dist', path), target);
-  }
-  run(
-    'npx',
-    ['--no-install', 'wrangler', 'deploy', '--dry-run', '--outdir', join(payload, 'backend')],
-    snapshot,
-  );
-  // Source drift outside the frozen copy is also a rejection, never a silent selection.
-  for (const [path, hash] of Object.entries(source))
-    if (sha(await readFile(join(root, path))) !== hash)
-      throw Error('Source changed during release preparation');
-  const current = text('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'])
-    .split('\0')
-    .filter(Boolean)
-    .sort();
-  if (JSON.stringify(paths) !== JSON.stringify(current))
-    throw Error('Source input list changed during preparation');
-  const files = await inventory(payload),
-    artifact = sha(JSON.stringify(files));
-  const manifest = {
-    schema: 1,
-    protocolVersion: 2,
-    createOnlyPayloads: true,
-    artifact,
-    files,
-    head,
-    sourceHash: sha(JSON.stringify(source)),
-    origin: process.env.GITHUB_ACTIONS === 'true' ? 'github' : 'local',
-    appBuild: /<meta[^>]+name="build-id"[^>]+content="([^"]+)"/.exec(
-      await readFile(join(payload, 'assets/index.html'), 'utf8'),
-    )?.[1],
-    created: Date.now(),
-    expires: Date.now() + 14 * 86400000,
-  };
-  await writeFile(join(out, 'release.json'), JSON.stringify(manifest, null, 2), { mode: 0o600 });
-  console.log(JSON.stringify({ directory: out, artifact }));
+  assertPackageVerification(manifest);
   return manifest;
 }
 export async function persistOwner(path, owner, { recovery = false } = {}) {
@@ -155,10 +83,79 @@ export async function persistOwner(path, owner, { recovery = false } = {}) {
     if (
       saved.attempt !== owner.attempt ||
       saved.token !== owner.token ||
-      (!recovery && (saved.artifact !== owner.artifact || saved.predecessor !== owner.predecessor))
+      (saved.artifact === owner.artifact &&
+        saved.verificationIdentity !== owner.verificationIdentity) ||
+      (!recovery &&
+        (saved.artifact !== owner.artifact ||
+          saved.predecessor !== owner.predecessor ||
+          saved.verificationIdentity !== owner.verificationIdentity))
     )
       throw Error('Owner file identity mismatch');
+    const newVerificationIdentity = owner.verificationIdentity;
     Object.assign(owner, saved);
+    if (recovery) owner.verificationIdentity = newVerificationIdentity;
+  }
+}
+
+// Persist receipts and resolution evidence before deleting durable failure records.
+// A lost coordinator acknowledgement leaves local failures conservative and replayable.
+export async function recordExperimentPasses(
+  directory,
+  historyPath,
+  evidence,
+  results,
+  families,
+  control,
+) {
+  const writeImmutable = async (path, value) => {
+    const body = JSON.stringify(value, null, 2);
+    try {
+      await writeFile(path, body, { mode: 0o600, flag: 'wx' });
+    } catch (error) {
+      if (error.code !== 'EEXIST' || (await readFile(path, 'utf8')) !== body) throw error;
+    }
+  };
+  for (const result of Object.values(results))
+    if (result.status === 'PASS') {
+      await writeImmutable(
+        join(directory, `experiment-pass-${result.receipt.id}.json`),
+        result.receipt,
+      );
+    }
+  await writeFile(
+    join(directory, 'experiment-evidence.json'),
+    JSON.stringify(
+      Object.values(results).flatMap((r) => (r.receipt ? [r.receipt] : [])),
+      null,
+      2,
+    ),
+    { mode: 0o600 },
+  );
+  for (const family of families) {
+    const result = results[family];
+    if (result.status !== 'PASS') throw Error('Experiment did not complete');
+    const failureIds = evidence
+      .filter((e) => e.status === 'FAIL' && e.family === family)
+      .map((e) => e.id);
+    // Keep immutable failure evidence even after the active history is resolved.
+    for (const failure of evidence.filter((e) => failureIds.includes(e.id))) {
+      await writeImmutable(
+        join(directory, `resolved-failure-${sha(String(failure.id))}-${result.receipt.id}.json`),
+        { failure, resolvedBy: result.receipt },
+      );
+    }
+    await control('/experiment-passed', {
+      family,
+      receiptId: result.receipt.id,
+      identity: result.receipt.identity,
+      measuredAt: result.receipt.measuredAt,
+      artifact: result.receipt.artifact,
+      failureIds,
+    });
+    for (let i = evidence.length - 1; i >= 0; i--)
+      if (failureIds.includes(evidence[i].id)) evidence.splice(i, 1);
+    evidence.push(result.receipt);
+    await writeFile(historyPath, JSON.stringify(evidence, null, 2), { mode: 0o600 });
   }
 }
 
@@ -193,16 +190,20 @@ export async function deployRelease(
     !process.env.GH_TOKEN
   )
     throw Error('Environment-scoped Cloudflare, coordinator and GitHub credentials required');
+  let stagingEvidence;
   if (
     config.environment === 'production' &&
     !rollback &&
     !(recovery && admittedOwner?.artifact === manifest.artifact)
   ) {
     const evidence = JSON.parse(await readFile(config.evidence, 'utf8'));
+    stagingEvidence = evidence;
     if (
       evidence.artifact !== manifest.artifact ||
       evidence.environment !== 'staging' ||
       evidence.status !== 'passed' ||
+      evidence.schema !== 2 ||
+      evidence.smoke?.status !== 'PASS' ||
       !Number.isFinite(evidence.expires) ||
       evidence.expires <= Date.now()
     )
@@ -211,6 +212,88 @@ export async function deployRelease(
   const desired = JSON.parse(await readFile(config.wranglerConfig, 'utf8'));
   validateReleaseConfig(config, desired);
   config.bucketName = desired.r2_buckets[0].bucket_name;
+  const verification = config.verification || { mode: 'auto' };
+  const profile = verification.profile || null;
+  if (!['auto', 'full', 'bypass-expensive'].includes(verification.mode || 'auto'))
+    throw Error('Unknown experiment mode');
+  let calibration;
+  if (verification.mode !== 'bypass-expensive') {
+    validateProfile(profile);
+    calibration = await readCalibrationEvidence(profile, verification.calibrationFile);
+  }
+  const historyPath = join(
+    resolve(directory, '..'),
+    `experiment-history-${config.environment}.json`,
+  );
+  let evidence = await readFile(historyPath, 'utf8')
+    .then(JSON.parse)
+    .catch((error) => {
+      if (error.code === 'ENOENT') return [];
+      throw error;
+    });
+  const failureResponse = await fetch(new URL('/experiment-failures', config.coordinator), {
+    method: 'POST',
+    headers: { authorization: `Bearer ${process.env.PLAYTEST_CONTROL_TOKEN}` },
+    redirect: 'error',
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!failureResponse.ok)
+    throw Error('Cannot read durable experiment failures; coordinator update required');
+  const knownFailures = (await failureResponse.json()).failures;
+  if (!Array.isArray(knownFailures)) throw Error('Invalid coordinator failure history');
+  evidence.push(...knownFailures);
+  for (const file of verification.evidenceFiles || []) {
+    const record = JSON.parse(await readFile(file, 'utf8'));
+    evidence.push(...(Array.isArray(record) ? record : [record]));
+  }
+  evidence = normalizeExperimentEvidence(evidence);
+  const { experimentInputs } = await import('./experiment-inputs.mjs');
+  const effectiveBefore = await inspectDeployment(config);
+  const runtimeInputs = profile
+    ? {
+        capacityRuntime: {
+          calibrationEvidence: profile.calibration?.evidence,
+          workload: profile.calibration?.workload,
+          browserVersion: profile.calibration?.browserVersion,
+          effectiveProvider: effectiveBefore.effectiveDigest,
+        },
+      }
+    : {};
+  const context = {
+    ...(verification.mode === 'bypass-expensive'
+      ? { inputs: {}, configuration: sha(JSON.stringify(desired)) }
+      : await experimentInputs(manifest, desired, runtimeInputs)),
+    artifact: manifest.artifact,
+    environment: config.environment,
+    profile,
+    evidence,
+    mode: verification.mode || 'auto',
+    reason: verification.reason,
+    acknowledgeFailures: verification.acknowledgeFailures || [],
+  };
+  let experimentPlan;
+  if (stagingEvidence && context.mode === 'auto') {
+    if (evidence.some((record) => record.status === 'FAIL'))
+      throw Error(
+        'Known production experiment failure requires full retest or explicit exception acknowledgement',
+      );
+    experimentPlan = {
+      mode: 'auto',
+      smokeSeconds: 60,
+      run: [],
+      results: stagingResults(stagingEvidence, manifest.artifact, desired, profile),
+      stagingArtifact: manifest.artifact,
+    };
+  } else experimentPlan = selectExperiments(context);
+  const budget = experimentReservation(experimentPlan, profile);
+  console.log(
+    JSON.stringify({
+      artifact: manifest.artifact,
+      environment: config.environment,
+      verification: experimentPlan,
+      budget,
+    }),
+  );
   const attempt = admittedOwner
     ? { ...admittedOwner }
     : {
@@ -220,6 +303,14 @@ export async function deployRelease(
         predecessor: config.expectedPredecessor,
       };
   const ownerPath = join(directory, `owner-${config.environment}-${attempt.attempt}.json`);
+  const verificationIdentity = sha(
+    JSON.stringify({
+      mode: context.mode,
+      profile,
+      exception: experimentPlan.exception,
+    }),
+  );
+  attempt.verificationIdentity = verificationIdentity;
   await persistOwner(ownerPath, attempt, { recovery });
   const control = async (path, extra = {}) => {
     const r = await fetch(new URL(path, config.coordinator), {
@@ -244,16 +335,17 @@ export async function deployRelease(
     Object.assign(attempt, { artifact: recovered.artifact, predecessor: recovered.predecessor });
     await writeFile(ownerPath, JSON.stringify(attempt), { mode: 0o600 });
   } else await control('/acquire');
+  let activeExperiment = null,
+    measured;
   let reservation,
     privateDirectory,
     cleaned = false;
   try {
-    const effectiveBefore = await inspectDeployment(config);
     const reserve = () =>
       captureAdmin(config.origin, 'synthetic', {
-        slots: config.environment === 'staging' ? 20 : 2,
-        bytes: config.environment === 'staging' ? 20 * 1024 ** 3 : 32 * 1024 ** 2,
-        metadataBytes: config.environment === 'staging' ? 1024 ** 3 : 1024 ** 2,
+        slots: budget.slots,
+        bytes: budget.bytes,
+        metadataBytes: budget.metadataBytes,
       });
     // Restoration retains ownership and provider binding checks, but cannot
     // depend on the application's broken admin API. Validate it after restoring.
@@ -299,11 +391,7 @@ export async function deployRelease(
       text('gh', ['variable', 'get', variable, '--repo', config.repository]) !== 'true'
     )
       throw Error('Deployment paused');
-    if (!restoration)
-      assertReservationLifetime(
-        reservation,
-        config.environment === 'staging' ? 3600000 : 20 * 60000,
-      );
+    if (!restoration) assertReservationLifetime(reservation, budget.requiredMs);
     await control('/phase', { phase: 'deploying' });
     const wrangler = JSON.parse(await readFile(config.wranglerConfig, 'utf8'));
     if (
@@ -334,9 +422,30 @@ export async function deployRelease(
     const browserResultPath = join(privateDirectory, 'browser-result.json');
     try {
       effectiveAfter = await inspectDeployment(config);
+      if (profile && !experimentPlan.stagingArtifact && !experimentPlan.exception) {
+        const afterInputs = await experimentInputs(manifest, desired, {
+          capacityRuntime: {
+            ...runtimeInputs.capacityRuntime,
+            effectiveProvider: effectiveAfter.effectiveDigest,
+          },
+        });
+        for (const family of ['endurance', 'capacity'])
+          if (
+            experimentPlan.results[family].status === 'REUSED' &&
+            context.inputs[family] !== afterInputs.inputs[family]
+          )
+            throw Error('Effective configuration changed; reused evidence invalid');
+        Object.assign(context, afterInputs);
+      }
+      if (!experimentPlan.exception) {
+        for (const result of Object.values(experimentPlan.results))
+          if (result.status === 'REUSED' && result.receipt.expires <= Date.now())
+            throw Error('Experiment evidence expired during deployment');
+      }
       if (restoration) {
         if (attempt.reservationId) await cleanupSynthetic(config.origin, attempt.reservationId);
         reservation = await reserve();
+        assertReservationLifetime(reservation, budget.requiredMs);
         await writeFile(
           ownerPath,
           JSON.stringify({ ...attempt, priorPause: prior, reservationId: reservation.id }),
@@ -349,6 +458,7 @@ export async function deployRelease(
         `synthetic/${reservation.id}/invitation`,
       );
       try {
+        activeExperiment = experimentPlan.run.includes('endurance') ? 'endurance' : null;
         execFileSync(process.execPath, ['scripts/verify-remote-playtest.mjs'], {
           env: {
             ...process.env,
@@ -356,16 +466,43 @@ export async function deployRelease(
             PLAYTEST_VERIFY_TOKEN: invitation.token,
             PLAYTEST_VERIFY_BUILD: manifest.appBuild,
             PLAYTEST_VERIFY_ADAPTER: 'cloud',
-            PLAYTEST_CAPTURE_SECONDS: config.environment === 'staging' ? '1800' : '0',
+            PLAYTEST_CAPTURE_SECONDS: String(
+              experimentPlan.run.includes('endurance')
+                ? profile.enduranceSeconds
+                : experimentPlan.smokeSeconds,
+            ),
+            PLAYTEST_ACTIVE_WORKLOAD: 'true',
             PLAYTEST_VERIFY_RESULT: browserResultPath,
             PLAYTEST_VERIFY_PRIVATE_ROOT: privateDirectory,
           },
           stdio: 'pipe',
-          timeout: config.environment === 'staging' ? 1950000 : 90000,
+          timeout:
+            ((experimentPlan.run.includes('endurance')
+              ? profile.enduranceSeconds
+              : experimentPlan.smokeSeconds) +
+              120) *
+            1000,
         });
       } catch {
         throw Error('Deployed browser verification failed; synthetic diagnostics removed');
       }
+      measured = JSON.parse(await readFile(browserResultPath, 'utf8'));
+      assertCaptureWorkload(measured, profile?.calibration.workload);
+      if (profile && measured.browserVersion !== profile.calibration.browserVersion)
+        throw Error('Browser changed; calibrated evidence cannot be reused');
+      if (experimentPlan.run.includes('endurance')) {
+        assertCaptureBacklog(measured, profile.enduranceSeconds);
+        experimentPlan.results.endurance = {
+          status: 'PASS',
+          receipt: experimentReceipt('endurance', context, {
+            captureSeconds: measured.captureSeconds,
+            outboxSamples: measured.outboxSamples,
+            finalOutbox: measured.finalOutbox,
+            workload: assertCaptureWorkload(measured),
+          }),
+        };
+      }
+      activeExperiment = null;
       for (const [path, hash] of Object.entries(manifest.files)) {
         if (!path.startsWith('assets/')) continue;
         const response = await fetch(new URL('/' + path.slice(7), config.origin), {
@@ -382,30 +519,74 @@ export async function deployRelease(
     await control('/phase', { phase: 'cleanup' });
     if (reservation)
       await cleanupSynthetic(config.origin, reservation.id, {
-        preserveReservation: config.environment === 'staging' && !verificationError,
+        preserveReservation: experimentPlan.run.includes('capacity') && !verificationError,
       });
-    cleaned = config.environment !== 'staging' || !!verificationError;
+    cleaned = !experimentPlan.run.includes('capacity') || !!verificationError;
     if (verificationError) throw verificationError;
-    if (config.environment === 'staging') {
-      const measured = JSON.parse(await readFile(browserResultPath, 'utf8'));
-      if (measured.captureSeconds !== 1800) throw Error('Thirty-minute capture evidence required');
+    if (experimentPlan.run.includes('capacity')) {
+      activeExperiment = 'capacity';
+      const corpusDirectory =
+        verification.corpus?.directory || resolve(verification.calibrationFile, '..', 'corpus');
+      if (verification.corpus && verification.corpus.id !== calibration.corpusId)
+        throw Error('Corpus was not characterized by this calibration');
+      const workload = await readCorpus(corpusDirectory, calibration.corpusId);
+      if (workload.browserVersion !== profile.calibration.browserVersion)
+        throw Error('Corpus browser differs from calibration');
+      assertCaptureWorkload(workload, profile.calibration.workload);
       performanceEvidence = await measureCaptureLoad({
         origin: config.origin,
-        capture: measured,
+        capture: workload,
+        seconds: profile.capacitySeconds,
         reservation,
       });
       cleaned = true;
+      experimentPlan.results.capacity = {
+        status: 'PASS',
+        receipt: experimentReceipt('capacity', context, performanceEvidence),
+      };
     }
+    activeExperiment = null;
+    if (!experimentPlan.exception) verifyExperimentResults(experimentPlan.results);
+    await recordExperimentPasses(
+      directory,
+      historyPath,
+      evidence,
+      experimentPlan.results,
+      experimentPlan.run,
+      control,
+    );
+
     const current = await api(`workers/scripts/${config.workerName}/deployments`);
     const version = current.deployments?.[0]?.versions?.[0]?.version_id;
     if (!version || version === config.expectedPredecessor)
       throw Error('Deployed version did not change');
+    if (!experimentPlan.exception) verifyExperimentResults(experimentPlan.results);
     await writeFile(
       join(directory, `verified-${config.environment}.json`),
       JSON.stringify({
         artifact: manifest.artifact,
         environment: config.environment,
         status: 'passed',
+        schema: 2,
+        behaviorConfiguration: behaviorConfiguration(desired),
+        qualification: experimentPlan.exception ? 'EXCEPTION' : 'PASS',
+        experiments: experimentPlan.results,
+        exception: experimentPlan.exception
+          ? {
+              ...experimentPlan.exception,
+              artifact: manifest.artifact,
+              environment: config.environment,
+              attempt: attempt.attempt,
+              actor: config.publisher || 'local',
+              policyVersion: 1,
+            }
+          : undefined,
+        smoke: {
+          status: 'PASS',
+          captureSeconds: measured.captureSeconds,
+          workload: assertCaptureWorkload(measured),
+          finalOutbox: measured.finalOutbox,
+        },
         performance: performanceEvidence,
         version,
         configuration: { before: effectiveBefore, after: effectiveAfter },
@@ -425,9 +606,63 @@ export async function deployRelease(
         environment: config.environment,
         version,
         artifact: manifest.artifact,
-        status: 'passed',
+        status: experimentPlan.exception ? 'deployed-with-exception' : 'passed',
       }),
     );
+  } catch (error) {
+    if (activeExperiment) {
+      const diagnosticPath = join(directory, `experiment-failure-${attempt.attempt}.json`);
+      // Preserve useful numeric evidence, never invitation URLs, media or private events.
+      const diagnostic = {
+        family: activeExperiment,
+        artifact: manifest.artifact,
+        attempt: attempt.attempt,
+        errorType: error.name,
+        reason: String(error.message)
+          .replace(/https?:\/\/[^\s]+/g, '[redacted URL]')
+          .slice(0, 2000),
+        capture: measured
+          ? {
+              captureSeconds: measured.captureSeconds,
+              browserVersion: measured.browserVersion,
+              outboxSamples: measured.outboxSamples,
+              finalOutbox: measured.finalOutbox,
+              screenBytes: measured.screenBytes,
+              maximumScreenChunkBytes: measured.maximumScreenChunkBytes,
+              workloadActions: measured.workloadActions,
+            }
+          : null,
+      };
+      await writeFile(diagnosticPath, JSON.stringify(diagnostic, null, 2), { mode: 0o600 });
+      const failed = {
+        ...experimentReceipt(activeExperiment, context, {}, Date.now()),
+        status: 'FAIL',
+        id: crypto.randomUUID(),
+        artifact: manifest.artifact,
+        attempt: attempt.attempt,
+        reason: 'Experiment failed; inspect artifact-bound experiment-failure report',
+      };
+      evidence.push(failed);
+      try {
+        await control('/experiment-failed', {
+          failure: Object.fromEntries(
+            ['id', 'family', 'status', 'identity', 'artifact', 'measuredAt', 'reason'].map(
+              (key) => [key, failed[key]],
+            ),
+          ),
+        });
+      } catch (historyError) {
+        await writeFile(historyPath, JSON.stringify(evidence, null, 2), { mode: 0o600 });
+        throw new AggregateError(
+          [error, historyError],
+          'Experiment failed and coordinator persistence failed; retain local history and owner',
+        );
+      }
+
+      await writeFile(historyPath, JSON.stringify(evidence, null, 2), { mode: 0o600 });
+      console.error(`Preserved experiment failure ${failed.id} in ${historyPath}`);
+    }
+    throw error;
   } finally {
     try {
       if (reservation && !cleaned) await cleanupSynthetic(config.origin, reservation.id);

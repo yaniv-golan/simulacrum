@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateInvariantCoverage, explainInvariant } from '../scripts/invariant-coverage.mjs';
+import {
+  validateInvariantCoverage,
+  explainInvariant,
+  failureControlView,
+} from '../scripts/invariant-coverage.mjs';
 const fixture = () => ({
   milestone: 'M3b',
   milestones: ['M0', 'M3b', 'M5'],
@@ -80,4 +84,22 @@ test('runtime service invariants may name script owners but not private or escap
       /invalid pointer/,
     );
   }
+});
+
+test('failure view projects explicit controls without treating registration as an executed pass', () => {
+  const m = fixture();
+  const result = failureControlView(m);
+  assert.equal(result.execution, 'NOT_EVALUATED');
+  assert.equal(result.invariants[0].coverage, 'REGISTERED');
+  assert.deepEqual(result.invariants[0].controls, m.invariants[0].controls.negative);
+  assert.deepEqual(result.invariants[0].checks, ['unit']);
+  assert.equal(result.invariants[0].ruleId, 'runtime');
+  m.invariants[0].controls.negative = [];
+  assert.equal(failureControlView(m).invariants[0].coverage, 'UNKNOWN');
+  m.invariants[0].controls.negative = [{ path: 'test/owner.test.mjs', anchor: 'different fault' }];
+  assert.equal(failureControlView(m).invariants[0].controls[0].anchor, 'different fault');
+  m.invariants[0].checks = ['missing'];
+  assert.equal(failureControlView(m).invariants[0].coverage, 'UNKNOWN');
+  m.invariants[0].checks = [];
+  assert.equal(failureControlView(m).invariants[0].coverage, 'UNKNOWN');
 });

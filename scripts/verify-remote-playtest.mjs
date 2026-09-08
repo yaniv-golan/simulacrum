@@ -1,3 +1,5 @@
+import { installCaptureFault } from './playtest/capture-fault.mjs';
+import { assertDrivenMotion } from './playtest/load.mjs';
 import { createLocalCloud } from './playtest/local-cloud.mjs';
 import { downloadCapture } from './playtest/download.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
@@ -9,7 +11,9 @@ import { join } from 'node:path';
 
 const privateRoot = process.env.PLAYTEST_VERIFY_PRIVATE_ROOT;
 const output = privateRoot ? join(privateRoot, 'screens') : 'artifacts/remote-playtest';
+const expectedFaultErrors = [];
 const browserEvidence = createBrowserEvidence({
+  expectedErrors: expectedFaultErrors,
   ...(process.env.PLAYTEST_VERIFY_BUILD
     ? { readBuild: () => process.env.PLAYTEST_VERIFY_BUILD }
     : {}),
@@ -58,6 +62,7 @@ const browser = await browserEvidence.launch({
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
   errors = browserEvidence.errors;
 
+page.setDefaultTimeout(15000);
 let capturedSession;
 page.on('response', (response) => {
   if (new URL(response.url()).pathname === '/api/playtest/v2/session' && response.ok())
@@ -88,6 +93,12 @@ try {
   if (!Number.isFinite(captureSeconds) || captureSeconds < 0 || captureSeconds > 1800)
     throw Error('Invalid capture duration');
   const outboxSamples = [];
+  const resourceSamples = [];
+  const metrics =
+    process.env.PLAYTEST_CHARACTERIZATION === 'true'
+      ? await page.context().newCDPSession(page)
+      : null;
+  if (metrics) await metrics.send('Performance.enable');
   const sampleOutbox = () =>
     page.evaluate(async () => {
       const db = await new Promise((resolve, reject) => {
@@ -111,9 +122,65 @@ try {
         db.close();
       }
     });
-  for (let remaining = captureSeconds * 1000; remaining > 0; remaining -= 3000) {
-    await page.waitForTimeout(Math.min(remaining, 3000));
+  const activeWorkload = process.env.PLAYTEST_ACTIVE_WORKLOAD === 'true';
+  const workloadActions = [];
+  let driveStart, driveEnd;
+  const readFrame = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  if (activeWorkload) {
+    await page.locator('[data-part-type=poweredMotor]').click();
+    await page.keyboard.press('ArrowRight');
+    workloadActions.push('build-edit');
+    await page.keyboard.press('Delete');
+    await page.getByRole('button', { name: 'Try driving example', exact: true }).click();
+    driveStart = await readFrame();
+    await page.locator('[data-command=run]').click();
+    await page
+      .locator('canvas')
+      .first()
+      .click({ position: { x: 20, y: 20 } });
+    await page.keyboard.down('w');
+    workloadActions.push('drive');
+  }
+  const faultName = process.env.PLAYTEST_CAPTURE_FAULT;
+  let fault =
+    faultName && faultName !== 'reload-recovery'
+      ? await installCaptureFault(page, faultName, expectedFaultErrors)
+      : null;
+  const captureStarted = Date.now();
+  let turn = false;
+  while (Date.now() - captureStarted < captureSeconds * 1000) {
+    await page.waitForTimeout(
+      Math.min(3000, Math.max(1, captureSeconds * 1000 - (Date.now() - captureStarted))),
+    );
     outboxSamples.push(await sampleOutbox());
+    if (metrics) {
+      const values = (await metrics.send('Performance.getMetrics')).metrics;
+      resourceSamples.push({
+        at: Date.now(),
+        ...Object.fromEntries(
+          values
+            .filter((x) => ['JSHeapUsedSize', 'Nodes', 'Documents'].includes(x.name))
+            .map((x) => [x.name, x.value]),
+        ),
+      });
+    }
+    if (activeWorkload) {
+      if (turn) await page.keyboard.up('a');
+      else await page.keyboard.down('a');
+      turn = !turn;
+    }
+  }
+  const captureEnded = Date.now();
+  if (fault) await fault.stop();
+  if (activeWorkload) {
+    driveEnd = await readFrame();
+    assertDrivenMotion(driveStart, driveEnd);
+    mkdirSync(output, { recursive: true });
+    await page.screenshot({ path: join(output, 'active-driving.png') });
+    await page.keyboard.up('w');
+    await page.keyboard.up('a');
+    await page.locator('[data-command=build]').click();
+    workloadActions.push('return-build');
   }
   mkdirSync(output, { recursive: true });
   await page.screenshot({ path: join(output, 'recording-bar.png') });
@@ -134,19 +201,43 @@ try {
   await page.getByRole('button', { name: '● Stop voice recording', exact: true }).click();
   await page.getByRole('button', { name: 'Back to building' }).click();
   await page.waitForTimeout(3200);
+  if (faultName === 'reload-recovery')
+    fault = await installCaptureFault(page, faultName, expectedFaultErrors);
   await page.getByRole('button', { name: 'Finish session', exact: true }).click();
-  await page.waitForFunction(() =>
-    document.querySelector('.playtest-panel [data-status]').textContent.includes('All received'),
-  );
-  await page.waitForFunction(() =>
-    document
-      .querySelector('[data-completion-status]')
-      .textContent.includes('You can close this tab'),
-  );
+  if (faultName === 'reload-recovery') {
+    await page.waitForTimeout(500);
+    const pending = await sampleOutbox();
+    if (!pending.pending) throw Error('Reload fault requires pending durable payloads');
+    fault.state.pendingBeforeReload = pending.pending;
+    await fault.stop();
+    await browserEvidence.reload(page);
+  }
+  if (faultName === 'reload-recovery') {
+    await page
+      .getByText(
+        'Saved uploads from your earlier session were received by Yaniv’s playtest server.',
+        { exact: false },
+      )
+      .waitFor();
+    browserEvidence.assert('ok', [
+      (await page.locator('.playtest-panel [data-status]').innerText()).includes('Ready to record'),
+      'Reload recovery must not restart recording',
+    ]);
+  } else {
+    await page.waitForFunction(() =>
+      document.querySelector('.playtest-panel [data-status]').textContent.includes('All received'),
+    );
+    await page.waitForFunction(() =>
+      document
+        .querySelector('[data-completion-status]')
+        .textContent.includes('You can close this tab'),
+    );
+  }
   await page.waitForTimeout(800);
   const finalOutbox = await sampleOutbox();
   if (finalOutbox.bytes || finalOutbox.pending)
     throw Error('Finished capture retains unacknowledged payloads');
+  if (fault) fault.state.recovered = true;
   const exportStarted = Date.now();
   if (adapter === 'cloud' || remoteOrigin) {
     const id = await capturedSession;
@@ -211,18 +302,43 @@ try {
       process.env.PLAYTEST_VERIFY_RESULT,
       JSON.stringify({
         directory: dir,
+        source: browserEvidence.identity.source,
+        build: browserEvidence.identity.build,
+        syntheticRun:
+          JSON.parse(readFileSync(join(dir, 'session.json'), 'utf8')).syntheticRun ?? null,
         mediaFiles: records
           .filter((row) => row.media?.kind === 'screen')
           .map((row) => join(dir, row.media.file)),
         eventSamples: events,
         exportMs,
         outboxSamples,
+        resourceSamples,
         finalOutbox,
         storageBytes: records.reduce(
           (n, row) => n + (row.media?.bytes || row.rawEvent?.bytes || 0),
           0,
         ),
         captureSeconds,
+        captureStarted,
+        captureEnded,
+        browserVersion: browser.version(),
+        workloadActions,
+        fault: fault?.state ?? null,
+        driving: driveStart
+          ? {
+              fromTick: driveStart.tick,
+              toTick: driveEnd.tick,
+              from: driveStart.physics.map((b) => b.position),
+              to: driveEnd.physics.map((b) => b.position),
+            }
+          : null,
+        maximumScreenChunkBytes: Math.max(
+          0,
+          ...records.filter((row) => row.media?.kind === 'screen').map((row) => row.media.bytes),
+        ),
+        screenBytes: records
+          .filter((row) => row.media?.kind === 'screen')
+          .reduce((sum, row) => sum + row.media.bytes, 0),
       }),
       { mode: 0o600 },
     );

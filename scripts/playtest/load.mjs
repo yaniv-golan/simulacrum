@@ -42,10 +42,16 @@ export async function retryUpload({
 }
 // Five consecutive one-minute medians must not rise by >1 MiB overall,
 // with each adjacent minute rising by >128 KiB. Brief bursts may drain normally.
-export function assertCaptureBacklog(capture) {
+export function assertCaptureBacklog(capture, durationSeconds = 1800) {
+  if (!Number.isInteger(durationSeconds) || durationSeconds < 360 || durationSeconds > 1800)
+    throw Error('Invalid endurance duration');
   const samples = capture.outboxSamples;
-  if (capture.captureSeconds !== 1800 || !Array.isArray(samples) || samples.length < 590)
-    throw Error('Thirty-minute outbox samples required');
+  if (
+    capture.captureSeconds !== durationSeconds ||
+    !Array.isArray(samples) ||
+    samples.length < Math.floor(durationSeconds / 3) - 2
+  )
+    throw Error('Complete endurance outbox samples required');
   if (!capture.finalOutbox || capture.finalOutbox.bytes !== 0 || capture.finalOutbox.pending !== 0)
     throw Error('Capture must drain');
   for (let i = 0; i < samples.length; i++)
@@ -56,7 +62,8 @@ export function assertCaptureBacklog(capture) {
       (i && (samples[i].at <= samples[i - 1].at || samples[i].at - samples[i - 1].at > 6000))
     )
       throw Error('Invalid outbox samples');
-  if (samples.at(-1).at - samples[0].at < 1794000) throw Error('Incomplete outbox samples');
+  if (samples.at(-1).at - samples[0].at < (durationSeconds - 6) * 1000)
+    throw Error('Incomplete outbox samples');
   const medians = [];
   for (let start = samples[0].at; start + 60000 <= samples.at(-1).at + 3000; start += 60000) {
     const values = samples
@@ -73,8 +80,35 @@ export function assertCaptureBacklog(capture) {
     )
       throw Error('Sustained capture outbox growth');
 }
+export function assertCaptureWorkload(capture, bounds) {
+  if (
+    !Number.isFinite(capture?.captureSeconds) ||
+    capture.captureSeconds < 60 ||
+    !capture.finalOutbox ||
+    capture.finalOutbox.bytes !== 0 ||
+    capture.finalOutbox.pending !== 0 ||
+    !capture.mediaFiles?.length ||
+    !capture.eventSamples?.length
+  )
+    throw Error('Drained representative capture workload required');
+  const rates = {
+    mediaBytesPerSecond: capture.screenBytes / capture.captureSeconds,
+    eventsPerSecond: capture.eventSamples.length / capture.captureSeconds,
+  };
+  if (!Number.isFinite(rates.mediaBytesPerSecond) || rates.mediaBytesPerSecond <= 0)
+    throw Error('Measured screen bytes required');
+  if (
+    bounds &&
+    (rates.mediaBytesPerSecond > bounds.maxMediaBytesPerSecond ||
+      rates.eventsPerSecond > bounds.maxEventsPerSecond ||
+      !Number.isFinite(capture.maximumScreenChunkBytes) ||
+      capture.maximumScreenChunkBytes > bounds.maxChunkBytes)
+  )
+    throw Error('Capture workload exceeds calibrated bounds; new calibration required');
+  return rates;
+}
 export async function measureCaptureLoad({ origin, capture, seconds = 120, reservation }) {
-  assertCaptureBacklog(capture);
+  assertCaptureWorkload(capture);
   if (!capture?.mediaFiles?.length || !capture?.eventSamples?.length)
     throw Error('Measured media distribution and event traffic required');
   const clients = 20,
@@ -263,6 +297,7 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
       backlog,
       eventsPerTick,
       mediaSamples: capture.mediaFiles.length,
+      ...(capture.corpusId ? { corpusId: capture.corpusId } : {}),
       bytes: byteCount + maximum.length * 2,
       ...stats,
       p95Ms: p95,
@@ -282,4 +317,33 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
     clearInterval(sample);
     await cleanupSynthetic(origin, run.id);
   }
+}
+
+// A smoke witness, not locomotion qualification: gravity alone cannot satisfy it.
+export function assertDrivenMotion(start, end) {
+  if (
+    !Number.isSafeInteger(start?.tick) ||
+    !Number.isSafeInteger(end?.tick) ||
+    end.tick - start.tick < 120
+  )
+    throw Error('Active capture must advance simulation');
+  if (
+    !Array.isArray(start.physics) ||
+    !start.physics.length ||
+    end.physics?.length !== start.physics.length
+  )
+    throw Error('Active capture body identity changed');
+  const valid = (p) => Array.isArray(p) && p.length === 3 && p.every(Number.isFinite);
+  if (start.physics.some((b, i) => !valid(b.position) || !valid(end.physics[i].position)))
+    throw Error('Invalid active capture transforms');
+  if (
+    !end.physics.some(
+      (b, i) =>
+        Math.hypot(
+          b.position[0] - start.physics[i].position[0],
+          b.position[2] - start.physics[i].position[2],
+        ) > 0.05,
+    )
+  )
+    throw Error('Active capture must contain horizontal vehicle motion');
 }

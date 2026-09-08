@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "dependencies": {
+    "package.json#script=rules": "4dfc0f5f951a09d79ebe39ccc3318e76c1050f947daad81e197102bca05518c4"
+  }
+}

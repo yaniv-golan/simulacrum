@@ -473,6 +473,7 @@ export class CaptureStore {
         session: {
           sessionId: id,
           metadata: JSON.parse(session.metadata),
+          syntheticRun: session.synthetic || null,
           receivedAt: new Date(session.created).toISOString(),
         },
         cutoff,

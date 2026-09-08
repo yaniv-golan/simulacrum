@@ -1,11 +1,11 @@
 # Architecture and policy owners
 
 ## Overview
-<!-- doc-review {"version":1,"fingerprint":"9560e5bffee851d8bbf314842ee93e9b7541aaf15d101fadad3ba5d9e3a68250","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"566d2fae4926dbece45e016910412d6a2caa23503e0c54f4fb4084599395ffce","disposition":"still accurate","rationale":"Additional capture and release regression controls remain manifest-owned under the current milestone. Runtime contract ownership and layer boundaries are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e3ecec4c1985abba40cc3907bc71dc18acbc6be9ede83899c93d40136d0f9c72","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"3e5639271768ee2579a5250864c6b5dfb613b5e1ad0483b02308a5a5701a84bc","disposition":"updated","rationale":"The overview describes registry-reader ownership with direct source coverage; current rule and gate values are obtained through their commands rather than binding this composition explanation to every manifest entry."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
-[manifest](../../scripts/manifest.json) owns milestone allocation and check metadata.
+[registry reader](../../scripts/validate-manifest.mjs#source) loads the canonical `scripts/manifest.json` for milestone allocation and check metadata. This overview identifies that owner; use `npm run gate` and `npm run rules` for its current entries.
 
 ## Trace an edit
 

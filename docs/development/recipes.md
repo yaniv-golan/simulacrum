@@ -1,7 +1,7 @@
 # Change recipes
 
 ## Choose a recipe
-<!-- doc-review {"version":1,"fingerprint":"e1efc3474910f0f1754e2fb0c3bae4fdd01852a16e61c16a1053c227019cc5c7","dependencies":"docs/development/.reviews/recipes/choose-a-recipe.json","dependencyDigest":"a6fe1912ca9d33b9daafd7eeaa23c9991aa19dc509961644944cfc954018b954","disposition":"updated","rationale":"The recipe introduction is now independently addressable and links to the architecture overview; detailed recipes retain their implementation references and are not silently approved by overview review."} -->
+<!-- doc-review {"version":1,"fingerprint":"268fda4646b90f3ced9224a44f96bed3ef03c5b8e1319df6f89ef45d1066925a","dependencies":"docs/development/.reviews/recipes/choose-a-recipe.json","dependencyDigest":"b8b9b29dfda321d1e6bc52fd82f6f34928642f45884cef31e5e9a6f7db1af03b","disposition":"still accurate","rationale":"Architecture overview now routes manifest values through gate/rules; choosing an owner, following consumers and using the existing command authority is unchanged."} -->
 
 Use the [map](architecture.md#overview) to locate the owner, inspect its reverse consumers with
 `node scripts/navigate.mjs <symbol-or-path>`, then use focused tests. Admit changes

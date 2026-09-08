@@ -91,3 +91,7 @@ These are registered commands and checks, not evidence that they passed.
 | capture-synthetic-cleanup | [CaptureStore](../../scripts/playtest/cloud-store.mjs) | invariant-controls |
 | release-effective-isolation | [verifyCredentialIsolation](../../scripts/playtest/credential-isolation.mjs) | invariant-controls |
 | release-load-delivery | [retryUpload](../../scripts/playtest/load.mjs) | invariant-controls |
+| release-verification-single-pass | [prepareRelease](../../scripts/playtest/prepare-release.mjs), [assertPackageVerification](../../scripts/playtest/package-verification.mjs) | invariant-controls |
+| release-experiment-exceptions | [selectExperiments](../../scripts/playtest/experiments.mjs), [recordExperimentPasses](../../scripts/playtest/release.mjs), [retrieveEvidence](../../scripts/playtest/experiment-transport.mjs) | invariant-controls |
+| release-experiment-inputs | [deriveExperimentInputs](../../scripts/playtest/experiment-inputs.mjs) | invariant-controls |
+| release-characterization-ownership | [withCalibrationOwner](../../scripts/playtest/calibrate.mjs), [readCalibrationEvidence](../../scripts/playtest/calibration-evidence.mjs), [readCorpus](../../scripts/playtest/corpus.mjs), [assertCalibrationObservations](../../scripts/playtest/calibration-evidence.mjs) | invariant-controls |

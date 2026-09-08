@@ -22,3 +22,20 @@ test('the dependency order places the ADR at M1 and all early legged bars at M7'
     ['M7', 'M7', 'M7'],
   );
 });
+
+test('experiment reuse scopes require exact bounded sources and registered checks', () => {
+  for (const change of [
+    (x) => (x.family = 'invented'),
+    (x) => (x.sourceSha256 = 'bad'),
+    (x) => (x.runtimeBoundary = 'unknown'),
+    (x) => (x.checks = ['missing']),
+    (x) => (x.dependencies = ['../escape']),
+  ]) {
+    const m = structuredClone(manifest);
+    change(m.experimentInputScopes[0]);
+    assert.throws(() => validateManifest(m), /experiment/);
+  }
+  const m = structuredClone(manifest);
+  m.experimentInputScopes[0].sourceSha256 = 'a'.repeat(64);
+  assert.doesNotThrow(() => validateManifest(m)); // changed source broadens selection, not structural admission
+});

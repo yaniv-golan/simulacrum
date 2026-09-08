@@ -2,6 +2,19 @@ name: Deploy production
 on:
   workflow_dispatch:
     inputs:
+      verification_mode:
+        description: auto requires staging qualification; bypass-expensive records a production exception
+        required: true
+        default: auto
+        type: choice
+        options: [auto, full, bypass-expensive]
+      verification_reason:
+        description: Required for bypass-expensive
+        type: string
+      acknowledge_failures:
+        description: JSON array of known failure IDs explicitly acknowledged
+        default: '[]'
+        type: string
       compatible_rollback:
         description: Restore a previously successful production run instead of promoting a staging run
         required: true
@@ -48,6 +61,9 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASE_READ_TOKEN }}
           PLAYTEST_CONTROL_TOKEN: ${{ secrets.PRODUCTION_CONTROL_TOKEN }}
           RELEASE_CONFIG: ${{ vars.PRODUCTION_RELEASE_CONFIG }}
+          RELEASE_VERIFICATION_MODE: ${{ inputs.verification_mode }}
+          RELEASE_VERIFICATION_REASON: ${{ inputs.verification_reason }}
+          RELEASE_ACKNOWLEDGE_FAILURES: ${{ inputs.acknowledge_failures }}
           RELEASE_ROLLBACK: ${{ inputs.compatible_rollback }}
           RELEASE_PREDECESSOR: ${{ inputs.expected_predecessor }}
           RELEASE_RUN_ID: ${{ inputs.release_run_id }}
@@ -87,10 +103,24 @@ jobs:
           PLAYTEST_ADMIN_TOKEN: ${{ secrets.PLAYTEST_ADMIN_TOKEN }}
           PLAYTEST_CONTROL_TOKEN: ${{ secrets.PRODUCTION_CONTROL_TOKEN }}
           RELEASE_CONFIG: ${{ vars.PRODUCTION_RELEASE_CONFIG }}
+          RELEASE_VERIFICATION_MODE: ${{ inputs.verification_mode }}
+          RELEASE_VERIFICATION_REASON: ${{ inputs.verification_reason }}
+          RELEASE_ACKNOWLEDGE_FAILURES: ${{ inputs.acknowledge_failures }}
           RELEASE_ROLLBACK: ${{ inputs.compatible_rollback }}
           RELEASE_PREDECESSOR: ${{ inputs.expected_predecessor }}
           RELEASE_RUN_ID: ${{ inputs.release_run_id }}
           RELEASE_DIGEST: ${{ inputs.artifact_digest }}
+      - if: always()
+        run: node scripts/playtest/experiment-transport.mjs .release-private/ci production
+        env:
+          RELEASE_JOB_STATUS: ${{ job.status }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: experiment-evidence
+          retention-days: 30
+          if-no-files-found: error
+          path: .release-private/ci/experiment-transport.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: production-verification

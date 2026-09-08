@@ -3,12 +3,36 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      verification_mode:
+        type: choice
+        default: auto
+        options: [auto, full, bypass-expensive]
+      verification_reason:
+        type: string
+        default: ''
+      acknowledge_failures:
+        type: string
+        default: ''
   schedule:
     - cron: '17 2 * * *'
 permissions:
   contents: read
 jobs:
+  route:
+    runs-on: ubuntu-latest
+    outputs:
+      eligible: ${{ steps.policy.outputs.eligible }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.18.0
+      - id: policy
+        run: echo "eligible=$(node scripts/playtest/ci-verification.mjs route)" >> "$GITHUB_OUTPUT"
   automated:
+    needs: route
+    if: needs.route.outputs.eligible != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -30,6 +54,8 @@ jobs:
             !artifacts/playtest-cloud/**
             !artifacts/**/trace.zip
   browser:
+    needs: route
+    if: needs.route.outputs.eligible != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -52,12 +78,12 @@ jobs:
             !artifacts/**/trace.zip
 
   release-package:
-    needs: [automated, browser]
-    if: github.event_name == 'push'
+    needs: route
+    if: needs.route.outputs.eligible == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     outputs:
-      eligible: ${{ steps.policy.outputs.eligible }}
+      eligible: ${{ needs.route.outputs.eligible }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -65,14 +91,9 @@ jobs:
           node-version: 24.18.0
           cache: npm
       - run: npm ci
-      - id: policy
-        run: echo "eligible=$(node scripts/playtest/ci-release.mjs eligible)" >> "$GITHUB_OUTPUT"
-      - if: steps.policy.outputs.eligible == 'true'
-        run: npx playwright install --with-deps chromium chrome
-      - if: steps.policy.outputs.eligible == 'true'
-        run: xvfb-run --auto-servernum npm run release:prepare -- .release-private/ci
-      - if: steps.policy.outputs.eligible == 'true'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - run: npx playwright install --with-deps chromium chrome
+      - run: xvfb-run --auto-servernum npm run release:prepare -- .release-private/ci
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: release-package
           retention-days: 14
@@ -80,8 +101,20 @@ jobs:
             .release-private/ci/release.json
             .release-private/ci/payload/
           include-hidden-files: true
+  verification:
+    if: always()
+    needs: [route, automated, browser, release-package]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.18.0
+      - run: node scripts/playtest/ci-verification.mjs assert
+        env:
+          VERIFICATION_JOBS: ${{ toJSON(needs) }}
   staging-admission:
-    needs: release-package
+    needs: [release-package, verification]
     if: needs.release-package.outputs.eligible == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -101,6 +134,9 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASE_READ_TOKEN }}
           PLAYTEST_CONTROL_TOKEN: ${{ secrets.STAGING_CONTROL_TOKEN }}
           RELEASE_CONFIG: ${{ vars.STAGING_RELEASE_CONFIG }}
+          RELEASE_VERIFICATION_MODE: ${{ inputs.verification_mode || 'auto' }}
+          RELEASE_VERIFICATION_REASON: ${{ inputs.verification_reason }}
+          RELEASE_ACKNOWLEDGE_FAILURES: ${{ inputs.acknowledge_failures }}
   staging-deploy:
     needs: staging-admission
     runs-on: ubuntu-latest
@@ -130,6 +166,20 @@ jobs:
           PLAYTEST_ADMIN_TOKEN: ${{ secrets.PLAYTEST_ADMIN_TOKEN }}
           PLAYTEST_CONTROL_TOKEN: ${{ secrets.STAGING_CONTROL_TOKEN }}
           RELEASE_CONFIG: ${{ vars.STAGING_RELEASE_CONFIG }}
+          RELEASE_VERIFICATION_MODE: ${{ inputs.verification_mode || 'auto' }}
+          RELEASE_VERIFICATION_REASON: ${{ inputs.verification_reason }}
+          RELEASE_ACKNOWLEDGE_FAILURES: ${{ inputs.acknowledge_failures }}
+      - if: always()
+        run: node scripts/playtest/experiment-transport.mjs .release-private/ci staging
+        env:
+          RELEASE_JOB_STATUS: ${{ job.status }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: experiment-evidence
+          retention-days: 30
+          if-no-files-found: error
+          path: .release-private/ci/experiment-transport.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: staging-verification

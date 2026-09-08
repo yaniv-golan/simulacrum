@@ -95,3 +95,30 @@ export function explainInvariant(manifest, id) {
     })),
   };
 }
+
+/** A view of declared controls only. Registration cannot supply execution evidence. */
+export function failureControlView(manifest) {
+  const registered = new Map(
+    [
+      ...(manifest.checks ?? []),
+      ...Object.values(manifest.exitObligations ?? {}).flat(),
+      ...(manifest.browserChecks ?? []),
+    ].map((check) => [check.id, check]),
+  );
+  return {
+    execution: 'NOT_EVALUATED',
+    invariants: (manifest.invariants ?? []).map((invariant) => ({
+      id: invariant.id,
+      ruleId: invariant.ruleId,
+      guarantee: invariant.guarantee,
+      coverage:
+        invariant.controls?.negative?.length &&
+        invariant.checks?.length &&
+        invariant.checks.every((id) => registered.get(id)?.ruleId === invariant.ruleId)
+          ? 'REGISTERED'
+          : 'UNKNOWN',
+      checks: invariant.checks ?? [],
+      controls: invariant.controls?.negative ?? [],
+    })),
+  };
+}

@@ -99,6 +99,57 @@ export function validateManifest(m) {
     unique(scope.dependencies, 'local browser dependency');
     unique(scope.checks, 'local browser check');
   }
+  const experiments = m.experimentInputScopes ?? [];
+  if (!Array.isArray(experiments)) throw Error('invalid experiment scopes');
+  unique(
+    experiments.map((x) => `${x.family}:${x.entrypoint}`),
+    'experiment entrypoint',
+  );
+  const localPath = (p) =>
+    typeof p === 'string' && !p.startsWith('/') && !p.split('/').includes('..');
+  for (const scope of experiments) {
+    if (
+      !['capacity', 'endurance'].includes(scope.family) ||
+      !localPath(scope.entrypoint) ||
+      !scope.entrypoint.startsWith('scripts/') ||
+      !/^[a-f0-9]{64}$/.test(scope.sourceSha256 ?? '') ||
+      scope.runtimeBoundary !==
+        (scope.family === 'capacity'
+          ? 'synthetic-capacity-envelope-v1'
+          : 'packaged-capture-runtime-v1') ||
+      !Array.isArray(scope.dependencies) ||
+      !scope.dependencies.every(localPath) ||
+      !Array.isArray(scope.externalImports) ||
+      !scope.externalImports.every((x) => typeof x === 'string') ||
+      !Array.isArray(scope.checks) ||
+      !scope.checks.length ||
+      !scope.checks.every((id) => m.checks.some((c) => c.id === id))
+    )
+      throw Error('invalid experiment input scope');
+    unique(scope.dependencies, 'experiment dependency');
+    unique(scope.checks, 'experiment check');
+  }
+  const metadataScopes = m.browserReviewMetadataScopes ?? [];
+  if (!Array.isArray(metadataScopes)) throw Error('invalid browser review metadata scopes');
+  unique(
+    metadataScopes.map((s) => s.entrypoint),
+    'browser review metadata owner',
+  );
+  for (const scope of metadataScopes) {
+    if (
+      !localPath(scope.entrypoint) ||
+      !scope.entrypoint.startsWith('scripts/') ||
+      !/^[a-f0-9]{64}$/.test(scope.sourceSha256 ?? '') ||
+      !Array.isArray(scope.dependencies) ||
+      !scope.dependencies.every(localPath) ||
+      !Array.isArray(scope.externalImports) ||
+      !scope.externalImports.every((x) => typeof x === 'string') ||
+      !Array.isArray(scope.checks) ||
+      !scope.checks.length ||
+      !scope.checks.every((id) => m.checks.some((c) => c.id === id))
+    )
+      throw Error('invalid browser review metadata scope');
+  }
   return m;
 }
 export function readManifest() {

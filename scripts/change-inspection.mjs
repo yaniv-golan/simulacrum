@@ -92,6 +92,8 @@ export function composeChangeInspection({ graph, files, manifest, documentation,
     browserSelection: selectAffectedBrowserChecks({
       checks: manifest.browserChecks,
       scopes: manifest.browserLocalScopes ?? [],
+      metadataScopes: manifest.browserReviewMetadataScopes ?? [],
+      readSource: read ?? ((path) => readFileSync(path)),
       graph,
       files,
     }),
@@ -122,7 +124,13 @@ export async function inspectChange(root = process.cwd(), { files } = {}) {
       const documentation = inspectDocumentation(root);
       return {
         graph,
-        value: composeChangeInspection({ graph, files: normalized, manifest, documentation }),
+        value: composeChangeInspection({
+          graph,
+          files: normalized,
+          manifest,
+          documentation,
+          read: (path) => readFileSync(resolve(root, path), 'utf8'),
+        }),
       };
     },
   );

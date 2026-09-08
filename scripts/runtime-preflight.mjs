@@ -29,7 +29,7 @@ export function assertRuntime({ version = process.versions.node, range = engines
     });
   if (!valid)
     throw Error(
-      `Unsupported Node ${version}; package.json requires ${range}. Switch Node (for example, nvm use a compatible version), verify node --version, then rerun the command. No checks were started.`,
+      `Unsupported Node ${version}; package.json requires ${range}. Switch Node from the repository root with nvm install && nvm use; verify node --version, then rerun the command. No checks were started.`,
     );
 }
 

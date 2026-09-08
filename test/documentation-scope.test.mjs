@@ -155,3 +155,25 @@ for (const [name, broken, diagnostic] of [
     assert.throws(() => f.review(), diagnostic);
   });
 }
+
+test('playtest guidance binds setup advice without inheriting unrelated release instructions', (t) => {
+  const f = fixture(t);
+  const guide = readFileSync(new URL('../docs/development/README.md', import.meta.url), 'utf8');
+  const link = guide.match(/\[playtesting\]\(([^)]+)\)/)[1];
+  f.put(
+    'docs/development/playtesting.md',
+    '# Playtests\n## Remote setup\nShare the workshop tab.\n## Release operations\nPrepare one package.\n',
+  );
+  f.put(document, `# Owner\n[reader](../../scripts/reader.mjs#source)\n[setup](${link})\n`);
+  f.review();
+  f.put(
+    'docs/development/playtesting.md',
+    '# Playtests\n## Remote setup\nShare the workshop tab.\n## Release operations\nPrepare the changed package.\n',
+  );
+  assert.equal(f.inspect().sections[0].stale, false);
+  f.put(
+    'docs/development/playtesting.md',
+    '# Playtests\n## Remote setup\nShare the changed tab.\n## Release operations\nPrepare the changed package.\n',
+  );
+  assert.equal(f.inspect().sections[0].stale, true);
+});

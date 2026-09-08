@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"2840f84c58276c3002a5463e6780ed832b53f047d04192bd02829da7d9ede844","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"319b0d228526a2d73a97d2343750c04487c7ab1e4422225a70ad51378f482466","disposition":"updated","rationale":"The bootstrap now uses the checked Node pin with nvm install/use; owner discovery and CI/local/final sequencing remain the same."} -->
+<!-- doc-review {"version":1,"fingerprint":"2cceaba329a36bd349171dec09d3779ae4372ec526895ad8fe09203446489336","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"5041269c22597cace3b5f44b8bc60cde1e06038b2ee88260fe619de86d07e638","disposition":"still accurate","rationale":"Architecture overview now links the registry reader for composition and gate/rules for live values; architecture-first discovery and the single completion-command workflow remain accurate."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -20,12 +20,16 @@ serve a stable build. The page displays its build identity.
 4. Rerun discovery after structural edits or integrating another agent’s work. Run
    `docs:prepare` to regenerate references first and identify affected explanations. Update their text during development;
    record formal dispositions once source changes have settled, before final verification.
-5. Run `typecheck` and `ci`; inspect browser behavior when presentation or input changes.
-   Use `verify:local` for local closure on one source identity; use `verify:final` for
-   merge/release or milestone qualification. Read the gate result:
+5. Inspect browser behavior when presentation or input changes. Focused tests,
+   `typecheck` and `ci` are optional development probes, not prerequisites to repeat.
+   Choose one completion command: `verify:local` for local closure on one source identity,
+   or `verify:final` for merge/milestone qualification. Both already run CI.
+   For a release candidate, `release:prepare` owns complete verification in its frozen copy;
+   do not run a completion tier first solely as preparation. Read the gate result:
    automated success cannot supply a missing human assessment.
 
 ## Find owners and checks
+<!-- doc-review {"version":1,"fingerprint":"fadc458dbb1c8b6b2f1dbb858a5c2b13a18c1f6f79c8074497aa85949ad3a268","dependencies":"docs/development/.reviews/README/find-owners-and-checks.json","dependencyDigest":"c6275df393eb8b04ad047ae48f7f56667f094d7dce4c67f59f6d2766bed45c13","disposition":"updated","rationale":"Added rules --failures as a manifest-derived view; explicit controls and check IDs are shown without claiming execution or inferring coverage from names."} -->
 
 ```sh
 node scripts/navigate.mjs availablePartName
@@ -61,6 +65,11 @@ Invariant explanations resolve manifest-owned implementation and positive/negati
 control pointers, registered checks and qualification bars. Registration is not an
 execution result. An umbrella runtime rule does not prove every semantic guarantee.
 Future bars stay deferred; current human bars require participant evidence.
+`npm run rules -- --failures` projects each invariant's explicit negative-control
+pointers and registered check IDs. Coverage without pointers/checks is UNKNOWN;
+execution is NOT_EVALUATED. The view cannot infer uncovered scenarios from test names
+or turn registration into a passing receipt. Inspect current verification reports
+separately for actual executions; add missing scenarios to the manifest-owned controls.
 
 `node scripts/test-affected.mjs --files src/model/assembly.mjs` runs tests selected
 from explicit changed paths. Add `--summary` for a concise dry run with counts and
@@ -73,7 +82,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"5dc07dcbdcb4c55522e89f17fed41d04ea8ab89d4469c442947fbbdf4a8cf9d4","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"c791e36c50a3bd159bb38fe5c978895cd0536926ec59267abc562ebf6fd266d6","disposition":"still accurate","rationale":"The linked playtest guide now documents atomic creation and stricter release acceptance. Verification tiers, source identity and the separate human acceptance gate are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b7913ee60f5ff04dd3fe0323cc3119cce3cb51fe75d34e6b56edc4be4825d2cf","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"af6ca846128c436c651c69151d8406c87a152d5b1ef62770a2d0a428b2665b31","disposition":"updated","rationale":"Recording setup now links the remote-setup section rather than all release operations; completion tiers, source binding and human acceptance semantics remain unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -90,7 +99,7 @@ because the changed feature appears unrelated.
 - `npm run replay -- <bundle.json>` checks a failure bundle against the current implementation and runtime.
 
 Install browser dependencies once with `npx playwright install chromium chrome`.
-Linux tab capture needs Xvfb. Follow [playtesting](playtesting.md) for recordings and
+Linux tab capture needs Xvfb. Follow [playtesting](playtesting.md#remote-setup) for recordings and
 human evidence. Run the required tier on the same final source; do not reuse an old green
 report after changing source or environment.
 
@@ -113,7 +122,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"a2e27527b2bbf3609bb3b4a512ed8428ed575e80c01e4b5e0776021744d920f4","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"3cec900d0b85bfc2beba77befebccd95fa71e2ab200e7442b2a61b229b49a126","disposition":"still accurate","rationale":"Regenerated reference entries include new recording admission and release capability witnesses. The source-bound discovery, independent section reviews and stale rejection workflow are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"438469205119ba1237ae1e2f5505b036eaac446e1e1f84894848b5439ad1101b","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"35de58fee0a27b05a3f7cfd5863c8abdeaac580091bdb7cee025d8d84438e9eb","disposition":"still accurate","rationale":"Regenerated invariant pointers now include verification envelope admission and measured failure persistence; regenerate-before-review and separate semantic dispositions remain the implemented process."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -199,7 +208,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"6099a240a1a030f06d82d136a2f784f07aac5e73fb32a58def1acf82fbd90d0f","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c5e568f1488c918277ec183e4c39db45b9fb77731dd8cde0c925fa868ce5e7d2","disposition":"still accurate","rationale":"Manifest controls add creation crash, retained reservation and sustained queue-growth witnesses. Registered browser checks, capture adapters and conservative execution selection remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e5a8d8795d06205f0cec2755a8470b05db849e41011bb40e95b7a9a2a1623ad1","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"ea4f99d93de792d1b68625f7da4f1743236871b3eef528821d8183763586805d","disposition":"still accurate","rationale":"Audited source hashes were refreshed only for capture interval and fault timestamp outputs with unchanged import shapes. Metadata exclusions, recording witnesses and conservative unknown-input fallback remain unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -208,8 +217,8 @@ shared runtime and identity dependencies often select the full browser suite.
 `browserLocalScopes` in the manifest is an explicit local-only behavioral contract: a named
 entrypoint, its frozen direct dependency shape, and required feature/integration checks.
 Part-help presentation edits select four checks; its standalone verifier selects two.
-Mirror presentation edits select mirror, assembly UX and manipulation checks; its standalone verifier selects the mirror check.
-Known documentation Markdown and current review records select no browsers only when every relevant verifier/served-root graph is resolved and the files are not runtime data dependencies. Reachable opaque readers or unresolved roots retain conservative coverage, including for mixed documentation and scoped changes. CI still validates documentation in both tiers. Documentation composes with scoped runtime changes; unknown data and shared tooling stay conservative.
+Mirror presentation edits select mirror, assembly UX and manipulation checks; its standalone verifier selects the mirror check. The remote recording client selects both backend adapters, durable feedback receipts, workshop lifecycle and construction checks; new service/import edges or opaque inputs restore conservative coverage.
+Known documentation Markdown and current review records select no browsers only when every relevant verifier/served-root graph is resolved and the files are not runtime data dependencies. An additional manifest `browserReviewMetadataScopes` boundary permits only `docs/development/.reviews/<document>/<section>.json` to skip browsers when every reachable opaque reader matches its audited exact source and import shape, no static data edge reaches that review file, and no feedback source override is active. These readers use review metadata only for source identity, never workshop behavior; CI still validates the review itself. New, changed or missing readers fail closed. This is not an exemption for Markdown, unknown JSON or runtime data. Other reachable opaque readers or unresolved roots retain conservative coverage, including for mixed documentation and scoped changes. CI still validates documentation in both tiers. Documentation composes with scoped runtime changes; unknown data and shared tooling stay conservative.
 Changed shared modules, consumers, unknown files, or new imports expand coverage. These
 contracts do not apply to full qualification and do not claim that imports prove behavior.
 When extending a boundary, review its integration checks as well as dependency changes.

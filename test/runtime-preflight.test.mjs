@@ -78,3 +78,10 @@ test('conventional Node pin stays inside the package-owned runtime range', async
   const pin = readFileSync(new URL('../.nvmrc', import.meta.url), 'utf8').trim();
   assert.doesNotThrow(() => assertRuntime({ version: pin }));
 });
+
+test('runtime rejection gives the exact repository bootstrap without starting checks', () => {
+  assert.throws(
+    () => assertRuntime({ version: '25.0.0' }),
+    /Node 25\.0\.0.*requires.*nvm install && nvm use.*No checks were started/s,
+  );
+});

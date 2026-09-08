@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { readManifest } from './validate-manifest.mjs';
 import { sourceIdentity } from './source-identity.mjs';
 import { buildModuleGraph, listProjectFiles } from './module-graph.mjs';
@@ -10,7 +12,15 @@ export function browserGraphEntrypoints(root) {
   );
 }
 /** URL-loaded application roots are dependencies too. Unresolved inputs never authorize omission. */
-export function selectAffectedBrowserChecks({ checks, graph, files, scopes = [] }) {
+export function selectAffectedBrowserChecks({
+  checks,
+  graph,
+  files,
+  scopes = [],
+  metadataScopes = [],
+  readSource = (path) => readFileSync(path),
+  metadataEnvironmentSafe = !process.env.FEEDBACK_SOURCE,
+}) {
   // Absence from a static graph is not evidence of isolation when a reachable
   // reader can load an unresolved input. Include served roots as well as verifiers.
   const queue = checks.flatMap((c) => [
@@ -22,20 +32,49 @@ export function selectAffectedBrowserChecks({ checks, graph, files, scopes = [] 
         : []),
   ]);
   const seen = new Set();
-  let unresolved = false;
+  let unresolved = false,
+    metadataAudited = metadataEnvironmentSafe;
   for (const path of queue) {
     if (seen.has(path)) continue;
     seen.add(path);
     const node = graph.nodes.get(path);
-    if (!node || node.opaqueInputs) {
+    if (!node) {
       unresolved = true;
-      break;
+      metadataAudited = false;
+      continue;
+    }
+    if (node.opaqueInputs) {
+      unresolved = true;
+      let hash;
+      try {
+        hash = createHash('sha256').update(readSource(path)).digest('hex');
+      } catch {
+        metadataAudited = false;
+      }
+      if (
+        !metadataScopes.some(
+          (scope) =>
+            scope.entrypoint === path &&
+            scope.sourceSha256 === hash &&
+            JSON.stringify([...scope.dependencies].sort()) ===
+              JSON.stringify([...node.dependencies].sort()) &&
+            JSON.stringify([...scope.externalImports].sort()) ===
+              JSON.stringify(
+                (node.imports ?? [])
+                  .filter((x) => x.target === null)
+                  .map((x) => x.specifier)
+                  .sort(),
+              ),
+        )
+      )
+        metadataAudited = false;
     }
     queue.push(...node.dependencies);
   }
   const documentation = (files ?? []).filter(
     (p) =>
-      !unresolved &&
+      (!unresolved ||
+        (metadataAudited && /^docs\/development\/\.reviews\/[\w-]+\/[\w-]+\.json$/.test(p))) &&
       !graph.nodes.has(p) &&
       !p.startsWith('docs/internal/') &&
       (['AGENTS.md', 'README.md'].includes(p) ||
@@ -152,6 +191,7 @@ export function affectedBrowserChecks(files) {
   const selection = selectAffectedBrowserChecks({
     checks: browserChecks(),
     scopes: readManifest().browserLocalScopes ?? [],
+    metadataScopes: readManifest().browserReviewMetadataScopes ?? [],
     graph,
     files: normalizeSelectedFiles(files, root),
   });

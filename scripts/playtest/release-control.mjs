@@ -15,12 +15,22 @@ export class ReleaseCoordinator {
           'CREATE TABLE IF NOT EXISTS deployed (id INTEGER PRIMARY KEY CHECK(id=1), version TEXT)',
         )
         .toArray();
+      this.sql
+        .exec('CREATE TABLE IF NOT EXISTS experiment_failures (id TEXT PRIMARY KEY, data TEXT)')
+        .toArray();
+      if (new URL(request.url).pathname === '/experiment-failures')
+        return Response.json({
+          failures: this.sql
+            .exec('SELECT data FROM experiment_failures ORDER BY id')
+            .toArray()
+            .map((row) => JSON.parse(row.data)),
+        });
       if (new URL(request.url).pathname === '/current')
         return Response.json({
           version:
             this.sql.exec('SELECT version FROM deployed WHERE id=1').toArray()[0]?.version || null,
         });
-      const input = json(await readBounded(request.body, 4096));
+      const input = json(await readBounded(request.body, 8192));
       if (
         !safeId.test(input.attempt || '') ||
         typeof input.token !== 'string' ||
@@ -68,6 +78,80 @@ export class ReleaseCoordinator {
           return Response.json({ owned: true }, { status: owner ? 200 : 201 });
         }
         if (!same) throw fail(403, 'Not publisher owner');
+        if (path === '/experiment-failed') {
+          const f = input.failure;
+          if (
+            !f ||
+            Object.keys(f).sort().join(',') !==
+              'artifact,family,id,identity,measuredAt,reason,status' ||
+            typeof f.id !== 'string' ||
+            !safeId.test(f.id) ||
+            !['endurance', 'capacity'].includes(f.family) ||
+            f.status !== 'FAIL' ||
+            !/^[a-f0-9]{64}$/.test(f.identity || '') ||
+            f.artifact !== owner.artifact ||
+            !Number.isFinite(f.measuredAt) ||
+            f.measuredAt < 0 ||
+            f.measuredAt > Date.now() ||
+            typeof f.reason !== 'string' ||
+            !f.reason.trim() ||
+            f.reason.length > 1000
+          )
+            throw fail(400, 'Invalid experiment failure');
+          const data = JSON.stringify({
+            id: f.id,
+            family: f.family,
+            status: f.status,
+            identity: f.identity,
+            artifact: f.artifact,
+            measuredAt: f.measuredAt,
+            reason: f.reason,
+          });
+          const previous = this.sql
+            .exec('SELECT data FROM experiment_failures WHERE id=?', f.id)
+            .toArray()[0];
+          if (previous) {
+            if (previous.data !== data) throw fail(409, 'Experiment failure ID already used');
+            return Response.json({ recorded: true }, { status: 200 });
+          }
+          if (this.sql.exec('SELECT COUNT(*) AS n FROM experiment_failures').toArray()[0].n >= 64)
+            throw fail(409, 'Experiment failure history full; resolve failures before publishing');
+          this.sql.exec('INSERT INTO experiment_failures VALUES (?,?)', f.id, data).toArray();
+          return Response.json({ recorded: true }, { status: 201 });
+        }
+        // Only the trusted publisher calls this after a fresh actual PASS. A reused
+        // receipt must never resolve a known failure. IDs explicitly cover fixed sources.
+        if (path === '/experiment-passed') {
+          if (
+            !['endurance', 'capacity'].includes(input.family) ||
+            !/^[a-f0-9]{64}$/.test(input.receiptId || '') ||
+            !/^[a-f0-9]{64}$/.test(input.identity || '') ||
+            !Number.isFinite(input.measuredAt) ||
+            input.measuredAt < 0 ||
+            input.measuredAt > Date.now() ||
+            !Array.isArray(input.failureIds) ||
+            input.failureIds.length > 64 ||
+            new Set(input.failureIds).size !== input.failureIds.length ||
+            input.failureIds.some((id) => typeof id !== 'string' || !safeId.test(id))
+          )
+            throw fail(400, 'Invalid experiment pass');
+          if (input.artifact !== owner.artifact)
+            throw fail(409, 'Experiment artifact differs from publisher');
+          const resolved = [];
+          for (const id of input.failureIds) {
+            const row = this.sql
+              .exec('SELECT data FROM experiment_failures WHERE id=?', id)
+              .toArray()[0];
+            if (!row) continue; // Repeat acknowledgments are idempotent.
+            const failure = JSON.parse(row.data);
+            if (failure.family !== input.family || input.measuredAt <= failure.measuredAt)
+              throw fail(409, 'Experiment failure resolution mismatch');
+            resolved.push(id);
+          }
+          for (const id of resolved)
+            this.sql.exec('DELETE FROM experiment_failures WHERE id=?', id).toArray();
+          return Response.json({ resolved, receiptId: input.receiptId, artifact: owner.artifact });
+        }
         if (path === '/recover') {
           if (
             !/^[a-f0-9]{64}$/.test(input.artifact || '') ||

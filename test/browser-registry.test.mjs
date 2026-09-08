@@ -142,7 +142,7 @@ test('documentation composes with local scopes without exempting runtime data or
   assert.equal(select([]).checks.length, 2);
 });
 
-test('live mirror verifier stays bounded while metadata with unresolved readers stays conservative', async () => {
+test('live mirror verifier stays bounded and metadata obeys its audited boundary', async () => {
   const { affectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
   const paths = [
     'scripts/verify-mirror-browser.mjs',
@@ -152,7 +152,13 @@ test('live mirror verifier stays bounded while metadata with unresolved readers 
     affectedBrowserChecks([paths[0]]).checks.map((c) => c.id),
     ['verify-mirror-browser'],
   );
-  assert.equal(affectedBrowserChecks(paths).checks.length, browserChecks().length);
+  const mixed = affectedBrowserChecks(paths);
+  assert.ok(mixed.checks.length === 1 || mixed.checks.length === browserChecks().length);
+  if (mixed.scope === 'local-contract')
+    assert.deepEqual(
+      mixed.checks.map((c) => c.id),
+      ['verify-mirror-browser'],
+    );
   assert.equal(
     affectedBrowserChecks(['scripts/browser-evidence.mjs', ...paths]).checks.length,
     browserChecks().length,
@@ -180,4 +186,77 @@ test('opaque readers retain coverage for documentation-only and mixed scoped cha
         (c) => c.id === 'reader',
       ),
     );
+});
+
+test('recording client scope retains both adapters, durable receipt and workshop lifecycle witnesses', async () => {
+  const { buildModuleGraph } = await import('../scripts/module-graph.mjs');
+  const { selectAffectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const m = readManifest(),
+    graph = buildModuleGraph(process.cwd(), { purpose: 'test-selection' }),
+    file = 'src/application/remote-playtest.mjs';
+  const select = () =>
+    selectAffectedBrowserChecks({
+      checks: browserChecks(),
+      graph,
+      files: [file],
+      scopes: m.browserLocalScopes,
+    });
+  assert.equal(select().scope, 'local-contract');
+  assert.deepEqual(
+    select()
+      .checks.map((c) => c.id)
+      .sort(),
+    [
+      'verify-cloud-playtest',
+      'verify-feedback-receipts',
+      'verify-remote-playtest',
+      'verify-ui-lifecycle-browser',
+      'verify-workshop',
+    ].sort(),
+  );
+  graph.nodes.get(file).dependencies.add('unknown-new-reader');
+  assert.notEqual(select().scope, 'local-contract');
+  graph.nodes.get(file).dependencies.delete('unknown-new-reader');
+  graph.nodes.get(file).opaqueInputs = true;
+  assert.notEqual(select().scope, 'local-contract');
+});
+
+test('audited review metadata exclusion rejects changed readers, direct data dependencies and unknown opacity', async () => {
+  const { createHash } = await import('node:crypto');
+  const { selectAffectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const file = 'docs/development/.reviews/README/section.json',
+    source = 'known output-only reader';
+  const node = { dependencies: new Set(), imports: [], opaqueInputs: true };
+  const graph = { nodes: new Map([['reader', node]]), errors: [] };
+  const checks = [{ id: 'check', script: 'reader', environment: 'self' }];
+  const metadataScopes = [
+    {
+      entrypoint: 'reader',
+      sourceSha256: createHash('sha256').update(source).digest('hex'),
+      dependencies: [],
+      externalImports: [],
+    },
+  ];
+  const select = (overrides = {}) =>
+    selectAffectedBrowserChecks({
+      checks,
+      graph,
+      files: [file],
+      metadataScopes,
+      readSource: () => source,
+      ...overrides,
+    });
+  assert.equal(select().checks.length, 0);
+  assert.equal(select({ readSource: () => source + 'new input' }).checks.length, 1);
+  node.dependencies.add(file);
+  graph.nodes.set(file, { dependencies: new Set() });
+  assert.equal(select().checks.length, 1);
+  node.dependencies.clear();
+  graph.nodes.delete(file);
+  node.dependencies.add('new-reader');
+  graph.nodes.set('new-reader', { dependencies: new Set(), opaqueInputs: true });
+  assert.equal(select().checks.length, 1);
+  node.dependencies.clear();
+  assert.equal(select({ files: ['docs/development/README.md'] }).checks.length, 1);
+  assert.equal(select({ metadataEnvironmentSafe: false }).checks.length, 1);
 });
