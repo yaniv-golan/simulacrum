@@ -1,7 +1,7 @@
 # Architecture and policy owners
 
 ## Overview
-<!-- doc-review {"version":1,"fingerprint":"c24661857ea4920d42d7c72147474f4c8c1add3b4a82e0c660ed97b7d00f77ff","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"8d02faedcdda759f982dd817d6865b1b02b3e6a6c42d55e455d95489e4c36d77","disposition":"still accurate","rationale":"Manifest now also owns local browser behavioral scope and its dependency shape; it remains the check-metadata owner. Runtime and allowed layer ownership are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a50df0eb3cdacf51be2c77430eb374c4ac51297e1b209757cd660248d651fa33","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"59bae0d4fc3e376c28d06f0cda7b7b875ae7ca3e8dc9dbc83056009135b6faf9","disposition":"still accurate","rationale":"The manifest gains two local browser contracts; it still owns check metadata and milestone allocation. Runtime ownership and allowed layer edges are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -9,10 +9,10 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"edcdfe8518b966b31edc81369b265970f6441c0ce3f32b0c817fcdf626fe5fa3","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"d2923a10122750ae3ac2bd73d0b8f9766e5041db4c9768281cb2810207851531","disposition":"still accurate","rationale":"The mirror member-count legend now uses singular part for one selected member. This wording-only change preserves preview, command admission, authored state and all documented layer ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"b9ce1282490618a133e6ff333ca53af14bc83b4e25b2f9077dfde1d8e07aab71","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"8c1cf79b07f8164fc852febf581285f3a0caa76f147e01b1cf5ff03eed54baf5","disposition":"updated","rationale":"Preview isolation is now explicitly bound to surface controls, placement lifecycle and mirror controls. Cancellation and cleanup claims bind direct drag, editing and vehicle control owners. Direct composition links remain narrow; core/model/simulation claims retain their existing bindings."} -->
 
-1. [Workshop application](../../src/application/workshop-app.mjs#implementation) composes the DOM view, clock and core.
-2. [Workshop view](../../src/presentation/workshop-view.mjs) turns player input into ordinary commands. Surface and mirror controls keep previews outside authored state. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
+1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
+2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
 3. [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop) admits commands, prepares a candidate and commits accepted edits as one history operation. Rejected/no-op edits preserve their specified cursor/history effects; Undo/Redo restores authored candidates.
 4. [validateBlueprint](../../src/model/blueprint.mjs#symbol=validateBlueprint), [placement admission](../../src/model/surfaces.mjs) and [compileAssembly](../../src/model/assembly.mjs#symbol=compileAssembly) validate stored values, physical intersections and connection geometry before simulation receives configuration.
 5. [Session](../../src/simulation/session.mjs) owns stepping, checkpoint and completed publication. [Controllers](../../src/simulation/controllers.mjs) produce commands; [power](../../src/simulation/power.mjs) resolves circuits; the [physics door](../../src/simulation/physics/world.mjs) alone imports the physics library.
@@ -20,19 +20,21 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 The [assembly library](../../src/application/assembly-library.mjs#implementation) owns
 browser persistence and validates definitions with the model. The
-[assembly panel](../../src/presentation/assembly-library.mjs#implementation) displays
+[assembly panel](../../src/presentation/assembly-library.mjs#source) displays
 named and ordinary endpoints, receiver keys and independent instances. Named mounts
 open the surface preview; interface edits use core admission. Placed instances and
 saved snapshots have separate views, and saved authored settings are inspectable. Machine saves
 embed all internals; simulation has no library dependency.
 
-The application link covers composition code and declared dependencies, not remote runtime payload contents.
+The application/view links cover their own composition and input routing code. The core, model and simulation links separately bind the admitted behavior; remote payload contents are outside these claims.
 
 Build edits may replace the admitted configuration; Run uses the fixed simulation
 path and forbids authoring edits. Returning to Build restores the editable starting
 machine. A preview is a proposed edit, not a body pose write. Disposal must end owned
-input operations and release handlers/resources; input cancellation also runs on blur,
-lost capture and pause where applicable.
+input operations and release handlers/resources. [Direct drag](../../src/presentation/direct-drag.mjs#source),
+[editing controls](../../src/presentation/editing-controls.mjs#source), and
+[vehicle controls](../../src/presentation/vehicle-controls.mjs#source) own their respective
+input lifetimes; input cancellation runs on blur, lost capture and pause where applicable.
 
 Part explanations, tooltip timers and the movable reference window live in
 [part help](../../src/presentation/part-help.mjs). Window position, size and active tab
@@ -52,7 +54,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"255007aed788a98e110d21f63f4f842a969522751e74beca7094dce9425a1028","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"ffad7fc11f9129727f7c26a2c053b68684499c63985fdc9895891e8348f86e35","disposition":"still accurate","rationale":"The mirror refusal wording now names parts; its reason code and canonical explainFailure owner are unchanged, as are graph, transform and command policies."} -->
+<!-- doc-review {"version":1,"fingerprint":"0410c4d21d8f683385cfbebd9f53d630888009fdfee6c875fdbdd4d1b585d5a2","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"fe56a3440c69d897390798d625daad01fa2a0287be64b69cf872d6579a24680c","disposition":"updated","rationale":"The Connect and test consumer link now binds its own source. The row assigns receiver override ownership to createVehicleControls, which keeps its existing symbol dependency scope; model and geometry owners remain explicitly bound."} -->
 
 | Decision                                       | Production owner                                                                                                                                                                                                                                             | Example consumer                                                          |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
@@ -69,7 +71,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 | Command effects, cursor and history            | [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop)                                                                                                                                                                                          | all authoring interfaces                                                  |
 | Placement commitment and cancellation          | [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs#symbol=createPlacementLifecycle)                                                                                                                                                   | surface controls                                                          |
 | Canvas direct drag lifetime                    | [createDirectDrag](../../src/presentation/direct-drag.mjs#symbol=createDirectDrag)                                                                                                                                                                           | workshop view                                                             |
-| Receiver keyboard/override ownership           | [createVehicleControls](../../src/presentation/vehicle-controls.mjs#symbol=createVehicleControls)                                                                                                                                                            | [Connect & test](../../src/presentation/connection-test.mjs)              |
+| Receiver keyboard/override ownership           | [createVehicleControls](../../src/presentation/vehicle-controls.mjs#symbol=createVehicleControls)                                                                                                                                                            | [Connect & test](../../src/presentation/connection-test.mjs#source)              |
 | Palette eligibility and grouping | [part palette](../../src/presentation/part-palette.mjs) | workshop palette; help coverage instead follows the catalog |
 | Part teaching copy and port labels | [help content](../../src/presentation/part-help-content.mjs), [port wording](../../src/presentation/port-wording.mjs) | palette, inspector and static example diagrams |
 | Diagnostics from completed data                | [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion), [connection paths](../../src/model/connection-test-paths.mjs)                                                                                                                | inspector and Check machine                                               |

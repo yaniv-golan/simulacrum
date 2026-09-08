@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "scripts/verification-outcome.mjs": "b4442aedff2819f3edba44e5044c696824423d0c13ce1f4f9aa83a0b5bab422f",
-    "docs/development/playtesting.md": "94f84734128fb41f3264cd935813db191a01060ad2a439033e00984d1b75502c",
+    "docs/development/playtesting.md": "439e59cb2b97a2196048b52905b86b9caad53502ccc458649af64847b7bbc454",
     "package.json": "e6f9a4e6ceb42c45571a5d15bd0755ddca539b541b1632f26545c269a56511f8",
     "scripts/runtime-preflight.mjs": "30bbc487a2ad15d45337402f7930edaed7916302bbb3e20e798d97ab9641dbd1",
     "package-lock.json": "05895ca4f634dd4a9e0cd1297bc78e61780252818a90ac8409cb6d7ebf09f969",

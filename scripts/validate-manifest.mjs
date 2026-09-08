@@ -92,7 +92,7 @@ export function validateManifest(m) {
       !Array.isArray(scope.dependencies) ||
       !scope.dependencies.every((p) => typeof p === 'string') ||
       !Array.isArray(scope.checks) ||
-      scope.checks.length < 2 ||
+      scope.checks.length < (scope.entrypoint.startsWith('src/') ? 2 : 1) ||
       !scope.checks.every((id) => browser.some((c) => c.id === id))
     )
       throw Error('invalid local browser scope');

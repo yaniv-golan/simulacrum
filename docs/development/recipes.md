@@ -190,7 +190,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"e64d2d2fb3d0beaafe9ca139ab76196b36076155c2e3f81a81321c69c5b2ff78","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"844dc58490c910796e7cf665c784ea6c85a86cd20f66b81ea43cc62d8bd622d3","disposition":"still accurate","rationale":"The shared error message now refers to mirrored parts. Connection visibility, render specifications, resources, trace ownership and overlay tests are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"bb746b78ca9bebd8d58a6a37d009e079fa14d5240129e8dd1f295bde5695bea3","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"bab9b02bc959e75d5eef27659c808ef116dc0f0898f2396dee43ba54bc2cb69b","disposition":"updated","rationale":"The Connect and test panel direct source binds its row and reveal lifecycle. connectionTestPaths, renderer/resource owners and existing test links separately bind the helper and integration behavior described by this recipe."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -202,7 +202,7 @@ explicit required field. Normal electrical links use straight schematic lines; m
 geometry and exploded dashed styling retain their existing behavior.
 
 Use exact IDs from [connectionTestPaths](../../src/model/connection-test-paths.mjs#symbol=connectionTestPaths) for
-path highlights. The [Connect & test panel](../../src/presentation/connection-test.mjs)
+path highlights. The [Connect & test panel](../../src/presentation/connection-test.mjs#source)
 owns both the highlighted row and a separate reveal of its currently displayed paths
 while open. Row pointer leave clears highlighting, but closing the panel, changing
 selection, removing the target and disposal clear reveal as well. An edge

@@ -11,17 +11,59 @@ export function browserGraphEntrypoints(root) {
 }
 /** URL-loaded application roots are dependencies too. Unresolved inputs never authorize omission. */
 export function selectAffectedBrowserChecks({ checks, graph, files, scopes = [] }) {
+  // Absence from a static graph is not evidence of isolation when a reachable
+  // reader can load an unresolved input. Include served roots as well as verifiers.
+  const queue = checks.flatMap((c) => [
+    c.script,
+    ...(c.environment === 'workshop'
+      ? ['index.html']
+      : c.environment === 'probe'
+        ? ['test/browser/index.html']
+        : []),
+  ]);
+  const seen = new Set();
+  let unresolved = false;
+  for (const path of queue) {
+    if (seen.has(path)) continue;
+    seen.add(path);
+    const node = graph.nodes.get(path);
+    if (!node || node.opaqueInputs) {
+      unresolved = true;
+      break;
+    }
+    queue.push(...node.dependencies);
+  }
+  const documentation = (files ?? []).filter(
+    (p) =>
+      !unresolved &&
+      !graph.nodes.has(p) &&
+      !p.startsWith('docs/internal/') &&
+      (['AGENTS.md', 'README.md'].includes(p) ||
+        /^docs\/[\w./-]+\.md$/.test(p) ||
+        /^docs\/development\/\.reviews\/[\w-]+\/[\w-]+\.json$/.test(p)),
+  );
+  const runtimeFiles = (files ?? []).filter((p) => !documentation.includes(p));
+  if (files?.length && !runtimeFiles.length && !graph.errors.length)
+    return {
+      files,
+      documentation,
+      fallback: null,
+      scope: 'documentation',
+      checks: [],
+      reasons: [],
+    };
+  const changed = runtimeFiles;
   const fallback = graph.errors.length
     ? 'dependency graph errors'
     : !files?.length
       ? 'changed files unavailable'
-      : files.some((p) => !graph.nodes.has(p))
+      : changed.some((p) => !graph.nodes.has(p))
         ? 'unknown changed inputs'
         : null;
   // Local behavioral contracts are explicit, not proofs inferred from an import graph.
   // Frozen direct dependencies prevent a new integration edge silently retaining narrow coverage.
   if (!fallback) {
-    const matched = files.map((file) =>
+    const matched = changed.map((file) =>
       scopes.find((scope) => {
         const node = graph.nodes.get(file);
         return (
@@ -44,18 +86,19 @@ export function selectAffectedBrowserChecks({ checks, graph, files, scopes = [] 
         throw Error('unknown local browser contract check');
       return {
         files,
+        documentation,
         fallback: null,
         scope: 'local-contract',
         checks: checks.filter((c) => ids.has(c.id)),
         reasons: [...ids].map((id) => ({
           id,
           reason: 'manifest local behavioral contract',
-          path: files,
+          path: changed,
         })),
       };
     }
   }
-  const targets = new Set(files),
+  const targets = new Set(changed),
     reasons = [];
   for (const check of checks) {
     let reason = fallback,
@@ -93,6 +136,7 @@ export function selectAffectedBrowserChecks({ checks, graph, files, scopes = [] 
   }
   return {
     files,
+    documentation,
     fallback,
     checks: checks.filter((c) => reasons.some((r) => r.id === c.id)),
     reasons,

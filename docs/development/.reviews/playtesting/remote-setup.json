@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "scripts/playtest-server.mjs": "25c07198b747971c91b56a133b7e6b565642878469a5740b09fdc387d39a7ae7",
-    "src/application/remote-playtest.mjs": "5dfddd119db4f1ca50da83889dfaf169c746902fdab5b0da1c52d377df110218",
+    "src/application/remote-playtest.mjs": "0f27cb18988df6a6b66572a25aac192d563f2024f5e9a2f5979c1e0ed59f07aa",
     "scripts/export-playtest.mjs": "0c70589a224f25950766a16195109bc3dc90133fc46a0cc1223bb9b1bdf4ff2f"
   }
 }

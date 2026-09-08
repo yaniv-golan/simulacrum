@@ -8,9 +8,11 @@ mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine sa
 Human acceptance, sandboxed programs and locomotion qualification remain incomplete.
 The [released version](https://github.com/yaniv-golan/simulacrum/releases) remains available.
 
-Use Node 24.18.x:
+Use Node 24.18.x (with nvm installed):
 
 ```sh
+nvm install
+nvm use
 npm ci
 npm run dev
 ```

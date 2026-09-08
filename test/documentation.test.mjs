@@ -393,3 +393,54 @@ test('batch reviews keep per-section decisions, reject invalid batches before wr
   );
   assert.ok(f.inspect().sections.find((s) => s.id === 'owner').stale);
 });
+
+test('direct source scope binds module bodies and explicit wider claims without unrelated dependency churn', (t) => {
+  const f = fixture(t),
+    file = 'docs/development/guide.md';
+  f.put('src/model/owner.mjs', "import {run} from './tool.mjs'; export const owner=()=>run(1);\n");
+  f.put(
+    file,
+    '# Owner\n[composition](../../src/model/owner.mjs#source) calls its helper.\n\n# Behavior\n[implementation](../../src/model/owner.mjs#implementation) delegates calculation.\n',
+  );
+  for (const id of ['owner', 'behavior']) reviewSection(f.root, file, id, receipt);
+  assert.deepEqual(f.inspect().errors, []);
+  f.put('src/model/tool.mjs', 'export function run(x) { return x + 2; }\n');
+  const rows = f.inspect().sections;
+  assert.equal(rows.find((s) => s.id === 'owner').stale, false);
+  assert.equal(rows.find((s) => s.id === 'behavior').stale, true);
+  f.put('src/model/owner.mjs', "import {run} from './tool.mjs'; export const owner=()=>run(2);\n");
+  assert.equal(f.inspect().sections.find((s) => s.id === 'owner').stale, true);
+});
+
+test('one direct-source section retains explicitly linked dependency behavior', (t) => {
+  const f = fixture(t),
+    file = 'docs/development/guide.md';
+  f.put('src/model/owner.mjs', "import {run} from './tool.mjs'; export const owner=()=>run(1);\n");
+  f.put(
+    file,
+    '# Owner\n[composition](../../src/model/owner.mjs#source) calls [run](../../src/model/tool.mjs#symbol=run).\n',
+  );
+  reviewSection(f.root, file, 'owner', receipt);
+  assert.deepEqual(f.inspect().errors, []);
+  f.put('src/model/tool.mjs', 'export function run(x) { return x + 99; }\n');
+  assert.equal(f.inspect().sections[0].stale, true);
+});
+
+test('architecture preview and cancellation claims bind their actual control owners', () => {
+  const report = inspectDocumentation(process.cwd(), {
+    files: ['docs/development/architecture.md'],
+  });
+  const section = report.sections.find((s) => s.id === 'trace-an-edit');
+  for (const owner of [
+    'assembly-mirror',
+    'surface-controls',
+    'placement-lifecycle',
+    'direct-drag',
+    'editing-controls',
+    'vehicle-controls',
+  ])
+    assert.ok(
+      Object.hasOwn(section.dependencies, `src/presentation/${owner}.mjs`),
+      `${owner} behavior must invalidate the architecture claim`,
+    );
+});

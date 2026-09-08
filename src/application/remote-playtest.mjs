@@ -587,7 +587,8 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
     disposed = true;
     clearInterval(uploadTimer);
     startController?.abort();
-    uploadController?.abort();
+    // An already dispatched upload owns its bounded timeout and receipt. Let it
+    // settle; disposed prevents another dispatch and storage closes after busy clears.
     startingStream?.getTracks().forEach((track) => track.stop());
     stop();
     window.removeEventListener('error', onError);

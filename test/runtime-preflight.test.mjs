@@ -72,3 +72,9 @@ test('verification context rejects an unsupported runtime before identity reads 
     else process.env.NODE_ENV = environment;
   }
 });
+
+test('conventional Node pin stays inside the package-owned runtime range', async () => {
+  const { readFileSync } = await import('node:fs');
+  const pin = readFileSync(new URL('../.nvmrc', import.meta.url), 'utf8').trim();
+  assert.doesNotThrow(() => assertRuntime({ version: pin }));
+});

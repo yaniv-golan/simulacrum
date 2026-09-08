@@ -107,3 +107,77 @@ test('local feature boundary narrows only its reviewed dependency shape; shared 
   nodes.get('help').dependencies.push('new');
   assert.equal(select(['help']).checks.length, 3);
 });
+
+test('documentation composes with local scopes without exempting runtime data or unknown inputs', async () => {
+  const { selectAffectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const checks = [
+    { id: 'mirror', script: 'scripts/mirror.mjs', environment: 'workshop' },
+    { id: 'other', script: 'other', environment: 'self' },
+  ];
+  const nodes = new Map([
+    ['scripts/mirror.mjs', { dependencies: [] }],
+    ['shared', { dependencies: [], opaqueInputs: true }],
+    ['other', { dependencies: [] }],
+    ['index.html', { dependencies: [] }],
+  ]);
+  const graph = { nodes, errors: [] };
+  const scopes = [{ entrypoint: 'scripts/mirror.mjs', dependencies: [], checks: ['mirror'] }];
+  const doc = 'docs/development/.reviews/README/developer-guide.json';
+  const select = (files) => selectAffectedBrowserChecks({ checks, graph, files, scopes });
+  assert.equal(select([doc]).checks.length, 0);
+  assert.deepEqual(
+    select([doc, 'scripts/mirror.mjs']).checks.map((c) => c.id),
+    ['mirror'],
+  );
+  for (const p of ['config/new.json', 'docs/runtime.json', 'docs/internal/plan.md'])
+    assert.equal(select([doc, p]).checks.length, 2);
+  nodes.set(doc, { dependencies: [] }); // A literal runtime read makes this data, not documentation-only.
+  nodes.get('scripts/mirror.mjs').dependencies.push(doc);
+  assert.equal(select([doc]).checks.length, 2);
+  nodes.delete(doc);
+  nodes.get('scripts/mirror.mjs').dependencies = [];
+  graph.errors.push('bad import');
+  assert.equal(select([doc]).checks.length, 2);
+  graph.errors = [];
+  assert.equal(select([]).checks.length, 2);
+});
+
+test('live mirror verifier stays bounded while metadata with unresolved readers stays conservative', async () => {
+  const { affectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const paths = [
+    'scripts/verify-mirror-browser.mjs',
+    'docs/development/.reviews/README/developer-guide.json',
+  ];
+  assert.deepEqual(
+    affectedBrowserChecks([paths[0]]).checks.map((c) => c.id),
+    ['verify-mirror-browser'],
+  );
+  assert.equal(affectedBrowserChecks(paths).checks.length, browserChecks().length);
+  assert.equal(
+    affectedBrowserChecks(['scripts/browser-evidence.mjs', ...paths]).checks.length,
+    browserChecks().length,
+  );
+});
+
+test('opaque readers retain coverage for documentation-only and mixed scoped changes', async () => {
+  const { selectAffectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const checks = [
+    { id: 'reader', script: 'reader', environment: 'self' },
+    { id: 'mirror', script: 'mirror', environment: 'workshop' },
+  ];
+  const graph = {
+    errors: [],
+    nodes: new Map([
+      ['reader', { dependencies: [], opaqueInputs: true }],
+      ['mirror', { dependencies: [] }],
+      ['index.html', { dependencies: [] }],
+    ]),
+  };
+  const scopes = [{ entrypoint: 'mirror', dependencies: [], checks: ['mirror'] }];
+  for (const files of [['docs/player-guide.md'], ['docs/player-guide.md', 'mirror']])
+    assert.ok(
+      selectAffectedBrowserChecks({ checks, graph, files, scopes }).checks.some(
+        (c) => c.id === 'reader',
+      ),
+    );
+});

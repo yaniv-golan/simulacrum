@@ -6,7 +6,7 @@
     "scripts/analysis-snapshot.mjs": "01c0b2a6c3f0a5e0c8b3fb9e83491d34aea521e1fdeb35e0018cad8e25790a65",
     "scripts/check-documentation.mjs": "a7e70d75271294f28bcecbd94a200fd570d632a2f94747920dca3915379e0a0b",
     "scripts/development-reference.mjs": "f7c06f165c32be0a7297cc34f22ef41f544bd83847c46fedd833fd44b54194f2",
-    "scripts/documentation.mjs": "a7bb258984220f05dfb44ec52e9691495b7abd70ede7f01d74e1125ddfc2147a",
+    "scripts/documentation.mjs": "e918c0a219e9e68c3a830315651fbae6786bd4588cdbfad96a4e3b5c7dad98cb",
     "scripts/module-graph.mjs": "e43391ff0856149384c9c28518ac82a97927486aee718cef2450316bb7675cb0",
     "scripts/navigation.mjs": "9be03fea6305785058fd512055a3a9deb4a30588055895f57ac9f25a71ca6281",
     "scripts/manifest.json#check=developer-documentation": "da797452e2b026fbd18d7224ee57d1b7fc2bb04da8fae08b3d8e49a5f3bc23c5",

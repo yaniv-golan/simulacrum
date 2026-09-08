@@ -1,10 +1,10 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"09a432b24852d6b9b2d52cffd77f5e90d0256cf51037932957f0067d4def6b4b","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"319b0d228526a2d73a97d2343750c04487c7ab1e4422225a70ad51378f482466","disposition":"updated","rationale":"The working loop now routes local completion through verify:local and reserves verify:final for qualification, matching the revised AGENTS tier instructions."} -->
+<!-- doc-review {"version":1,"fingerprint":"2840f84c58276c3002a5463e6780ed832b53f047d04192bd02829da7d9ede844","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"319b0d228526a2d73a97d2343750c04487c7ab1e4422225a70ad51378f482466","disposition":"updated","rationale":"The bootstrap now uses the checked Node pin with nvm install/use; owner discovery and CI/local/final sequencing remain the same."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
-`npm ci`. `npm run dev` serves the workshop; `npm run build` and `npm run preview`
+`nvm install && nvm use && npm ci` (with nvm installed). The checked `.nvmrc` pins a version inside the package-owned range. `npm run dev` serves the workshop; `npm run build` and `npm run preview`
 serve a stable build. The page displays its build identity.
 
 ## Working loop
@@ -73,7 +73,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"011bd93fb904fe92cd52475bdadc43727f559db866d9bc8bb63524b5ee686f1a","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"54bd248c245d0cc92a59a23da02b73248c38224b80dea2da3afaff8a8d46f006","disposition":"still accurate","rationale":"Local closure still runs CI then affected browser checks; final closure still runs every browser check and the human-aware gate. Launch admission adds an execution-policy check without changing these commands or exit semantics."} -->
+<!-- doc-review {"version":1,"fingerprint":"f29b61decd0bdd157faa73f34e156cc53f4f96c3218d7c2852c4f4d28286cf8f","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"da1eb15807ebfd03983173987ecce5b6cee60408a5e76b77ed0813655957fe3e","disposition":"still accurate","rationale":"The package runtime remains the authority and the new .nvmrc supplies a compatible installation default. Existing tier exit semantics, localhost preflight and production clock checks remain unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -113,7 +113,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"ee883c56fc93f874effbba82c9a7b3febe50ed2096d0fa987ca2b7aff2c119d0","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"934e83008d5d7b9b5abb70d0d264182c69b8835cb69e62781b4f8a83c57403f7","disposition":"updated","rationale":"Preparation now regenerates derived references before collecting stale sections; semantic dispositions remain individual and docs:check remains mandatory after source closure."} -->
+<!-- doc-review {"version":1,"fingerprint":"630b685b0a51d5f77903f8309b43e8dea57e72cffb5ba77880147004fd1578ac","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"3571b3cc2f342d4f8d9a66bf1f447657af80f750b0a2b970f631ee9b5c3b7bb7","disposition":"updated","rationale":"Direct source scope binds module bodies and imports without transitive dependencies, explicitly requiring wider links for wider claims. Regression controls preserve transitive implementation invalidation and direct body invalidation."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -178,6 +178,8 @@ Use ordinary Markdown links for module-wide claims. References such as
 configuration claims checkable. Explanatory sections in this directory that reference
 implementation are covered; generated facts are checked by regeneration instead.
 
+For direct module claims, `file.mjs#source` binds that module’s entire source, including imports, bodies and side effects, without importing the behavior of its dependencies. Use it for composition or a panel’s own state transitions; explicitly link any helper/configuration whose behavior the explanation asserts. The impact report labels this boundary. It is not suitable for claims about complete transitive behavior.
+
 For implementation and ownership explanations, `file.mjs#implementation` covers the
 entire module and statically resolved transitive dependencies, including declared data,
 types and runtime services. Reports explicitly exclude unresolved runtime payload contents.
@@ -197,7 +199,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"0746d3f7ff1a5b1e6a96853e488d217ab3648acef11bc2e9a6b0e431b9bdaf3c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"2ee8f36cb88c3d67b966b9060198ae3efaf835824671d9fad75dfe19e90ea1e3","disposition":"updated","rationale":"Browser, local and final execution attempts now replace previous reports before argument or runtime admission. Read-only summary preserves prior evidence. Probe cleanup remains inside receipt completion, retaining simultaneous execution and cleanup causes."} -->
+<!-- doc-review {"version":1,"fingerprint":"cfa59f5b058ef501273147a7205895ed59b58832be61fbae26e9b041add7a052","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"6d97cdb1f62d283e818e79f3de313328a536fc7fdb4359b5daa07136d3698a14","disposition":"updated","rationale":"Documentation omission now requires all relevant verifier and served-root readers to resolve; opaque and missing roots preserve conservative coverage for documentation-only and mixed changes. Mirror-only frozen scope remains narrow. Scheduling, report lifecycle and qualification behavior remain unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -206,6 +208,8 @@ shared runtime and identity dependencies often select the full browser suite.
 `browserLocalScopes` in the manifest is an explicit local-only behavioral contract: a named
 entrypoint, its frozen direct dependency shape, and required feature/integration checks.
 Part-help presentation edits select four checks; its standalone verifier selects two.
+Mirror presentation edits select mirror, assembly UX and manipulation checks; its standalone verifier selects the mirror check.
+Known documentation Markdown and current review records select no browsers only when every relevant verifier/served-root graph is resolved and the files are not runtime data dependencies. Reachable opaque readers or unresolved roots retain conservative coverage, including for mixed documentation and scoped changes. CI still validates documentation in both tiers. Documentation composes with scoped runtime changes; unknown data and shared tooling stay conservative.
 Changed shared modules, consumers, unknown files, or new imports expand coverage. These
 contracts do not apply to full qualification and do not claim that imports prove behavior.
 When extending a boundary, review its integration checks as well as dependency changes.

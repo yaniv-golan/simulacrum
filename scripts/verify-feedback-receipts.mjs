@@ -51,7 +51,7 @@ try {
     window.originalConsoleError = console.error;
     const originalTimeout = window.setTimeout;
     window.setTimeout = (callback, delay, ...args) =>
-      originalTimeout(callback, delay === 15000 ? 100 : delay, ...args);
+      originalTimeout(callback, delay === 15000 && window.hangNext ? 100 : delay, ...args);
     const originalFetch = window.fetch;
     window.hungUploads = 0;
     window.fetch = async (url, options) => {
@@ -110,6 +110,8 @@ try {
   });
   let sequence = 0,
     held = null,
+    disposalUpload = null,
+    disposalArrival = Promise.withResolvers(),
     holdComment = true,
     badReceipt = false,
     statusCode = 200,
@@ -123,6 +125,11 @@ try {
       return route.fulfill({ json: { sessionId: 'test-session' } });
     }
     uploads.push({ url: route.request().url(), body: route.request().postData() });
+    if (path.endsWith('/event') && route.request().postDataJSON().kind === 'disposal-witness') {
+      disposalUpload = route;
+      disposalArrival.resolve();
+      return;
+    }
     if (
       path.endsWith('/event') &&
       route.request().postDataJSON().kind === 'feedback-text' &&
@@ -465,8 +472,58 @@ try {
   // bytes in real IndexedDB; a remount drains them without resuming capture.
   await page.getByRole('button', { name: 'Share workshop tab & start' }).click();
   await page.waitForFunction(() => window.remoteCapture.active());
-  statusCode = 503;
+  // Hold a real request across disposal; it must settle under its owned deadline,
+  // not be aborted by unmount or dispatched again by the disposed pump.
+  await page.evaluate(() => window.remoteCapture.emit('disposal-witness', {}));
+  let arrivalTimeout;
+  try {
+    await Promise.race([
+      disposalArrival.promise,
+      new Promise((_, reject) => {
+        arrivalTimeout = setTimeout(() => reject(Error('disposal request did not arrive')), 5000);
+      }),
+    ]);
+  } finally {
+    clearTimeout(arrivalTimeout);
+  }
+  browserEvidence.assert('ok', [disposalUpload, 'disposal witness reached the server']);
+  await page.evaluate(() => window.remoteCapture.emit('after-disposal-witness', {}));
   await page.evaluate(() => window.remoteCapture.dispose());
+  await disposalUpload.fulfill({
+    json: { sequence: ++sequence, receivedAt: new Date().toISOString() },
+  });
+  await page.waitForFunction(async () => {
+    const db = await new Promise((resolve) => {
+      const r = indexedDB.open('simulacrum-playtest-outbox', 1);
+      r.onsuccess = () => resolve(r.result);
+    });
+    try {
+      const rows = await new Promise((resolve) => {
+        const r = db.transaction('items').objectStore('items').getAll();
+        r.onsuccess = () => resolve(r.result);
+      });
+      for (const row of rows)
+        if (
+          row.url.endsWith('/event') &&
+          JSON.parse(await row.body.text()).kind === 'disposal-witness'
+        )
+          return false;
+      return true;
+    } finally {
+      db.close();
+    }
+  });
+  browserEvidence.assert('deepEqual', [
+    errors,
+    [],
+    'disposal must not abort the acknowledged request',
+  ]);
+  browserEvidence.assert('equal', [
+    uploads.some((u) => u.body?.includes('after-disposal-witness')),
+    false,
+    'disposed pump starts no queued request',
+  ]);
+  statusCode = 503;
   browserEvidence.assert('equal', [
     await page.locator('.playtest-panel, .playtest-dialog').count(),
     0,
@@ -509,6 +566,122 @@ try {
     beforeRemount,
   ]);
   browserEvidence.assert('equal', [await page.locator('.playtest-panel').count(), 1]);
+  // Failure after unmount must retain the exact request, release the owned DB,
+  // and recover on remount. Hold transport and deadline explicitly, without sleeps.
+  for (const outcome of ['http', 'timeout']) {
+    await page.getByRole('button', { name: 'Share workshop tab & start' }).click();
+    await page.waitForFunction(() => window.remoteCapture.active());
+    await page.evaluate((outcome) => {
+      const fetch = window.fetch,
+        schedule = window.setTimeout,
+        close = IDBDatabase.prototype.close;
+      window.disposalPending = false;
+      window.disposalAborted = false;
+      window.disposalDbCloses = 0;
+      let deadline;
+      window.setTimeout = (callback, delay, ...args) => {
+        const id = schedule(callback, delay, ...args);
+        if (delay === 15000)
+          deadline = () => {
+            clearTimeout(id);
+            callback(...args);
+          };
+        return id;
+      };
+      IDBDatabase.prototype.close = function () {
+        window.disposalDbCloses++;
+        return close.call(this);
+      };
+      window.fetch = async (url, options) => {
+        if (
+          String(url).endsWith('/event') &&
+          JSON.parse(await options.body.text()).kind === 'disposal-failure'
+        ) {
+          return new Promise((resolve, reject) => {
+            options.signal.addEventListener(
+              'abort',
+              () => {
+                window.disposalAborted = true;
+                reject(new DOMException('Timed out', 'AbortError'));
+              },
+              { once: true },
+            );
+            window.settleDisposal =
+              outcome === 'timeout' ? deadline : () => resolve(new Response('{}', { status: 503 }));
+            window.disposalPending = true;
+          });
+        }
+        return fetch(url, options);
+      };
+      window.restoreDisposalFixture = () => {
+        window.fetch = fetch;
+        window.setTimeout = schedule;
+        IDBDatabase.prototype.close = close;
+      };
+      window.remoteCapture.emit('disposal-failure', { outcome });
+    }, outcome);
+    await page.waitForFunction(() => window.disposalPending);
+    const exactRows = () =>
+      page.evaluate(async () => {
+        const db = await new Promise((resolve) => {
+          const r = indexedDB.open('simulacrum-playtest-outbox', 1);
+          r.onsuccess = () => resolve(r.result);
+        });
+        try {
+          const rows = await new Promise((resolve) => {
+            const r = db.transaction('items').objectStore('items').getAll();
+            r.onsuccess = () => resolve(r.result);
+          });
+          const result = [];
+          for (const row of rows) result.push({ ...row, body: await row.body.text() });
+          return result.filter((row) => row.body.includes('disposal-failure'));
+        } finally {
+          db.close();
+        }
+      });
+    const saved = await exactRows();
+    browserEvidence.assert('equal', [saved.length, 1]);
+    await page.evaluate(() => {
+      window.disposalDbCloses = 0;
+      window.remoteCapture.dispose();
+      window.flushRecorders();
+    });
+    browserEvidence.assert('equal', [
+      await page.evaluate(() => window.disposalAborted),
+      false,
+      'unmount must not abort upload',
+    ]);
+    await page.evaluate(() => window.settleDisposal());
+    await page.waitForFunction(() => window.disposalDbCloses > 0);
+    browserEvidence.assert('equal', [
+      await page.evaluate(() => window.disposalAborted),
+      outcome === 'timeout',
+    ]);
+    browserEvidence.assert('deepEqual', [
+      await exactRows(),
+      saved,
+      'failed disposed upload retains exact durable request',
+    ]);
+    await page.evaluate(() => window.restoreDisposalFixture());
+    const receivedBefore = uploads.length;
+    await page.evaluate(async () => {
+      window.remoteCapture = await window.mountCapture();
+    });
+    await page.waitForFunction(() =>
+      document.querySelector('[data-recovery]')?.textContent.includes('received by Yaniv'),
+    );
+    browserEvidence.assert('deepEqual', [await outbox(), []]);
+    browserEvidence.assert('ok', [
+      uploads
+        .slice(receivedBefore)
+        .some((u) => u.url.endsWith(saved[0].url) && u.body === saved[0].body),
+      'remount delivers exact retained request',
+    ]);
+    browserEvidence.assert('equal', [
+      await page.evaluate(() => window.remoteCapture.active()),
+      false,
+    ]);
+  }
   await page.evaluate(() => window.remoteCapture.dispose());
   browserEvidence.assert('equal', [
     await page.locator('.playtest-panel, .playtest-dialog').count(),

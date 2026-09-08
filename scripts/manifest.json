@@ -342,7 +342,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -1036,6 +1036,26 @@
       ],
       "checks": ["verify-part-help-window", "verify-part-help-browser"],
       "externalImports": ["vite", "playwright", "node:fs", "node:os", "node:path"]
+    },
+    {
+      "entrypoint": "scripts/verify-mirror-browser.mjs",
+      "dependencies": [
+        "scripts/app-fingerprint.mjs",
+        "scripts/browser-evidence.mjs",
+        "scripts/source-identity.mjs"
+      ],
+      "externalImports": ["node:fs"],
+      "checks": ["verify-mirror-browser"]
+    },
+    {
+      "entrypoint": "src/presentation/assembly-mirror.mjs",
+      "dependencies": ["src/model/messages.mjs"],
+      "externalImports": [],
+      "checks": [
+        "verify-mirror-browser",
+        "verify-assembly-ux-browser",
+        "verify-manipulation-browser"
+      ]
     }
   ]
 }

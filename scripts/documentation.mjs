@@ -443,6 +443,15 @@ export function inspectDocumentation(root = process.cwd(), { files } = {}) {
       const authored = authoredMarkdown(d, start, end);
       return { [path + (fragment ? '#' + fragment : '')]: hash(authored) };
     }
+    if (fragment === 'source') {
+      if (!/\.(mjs|cjs|js)$/.test(path))
+        throw Error(`unsupported source scope ${url}; reference a JavaScript module`);
+      module(path); // A broken source is not a valid reviewed boundary.
+      activeScopeNotes = [
+        `direct source coverage for ${path}; imported behavior requires explicit dependency links or implementation scope`,
+      ];
+      return { [path]: hash(read(path)) };
+    }
     if (fragment === 'implementation') {
       if (!/\.(mjs|cjs|js)$/.test(path))
         throw Error(`unsupported implementation scope ${url}; reference a JavaScript module`);
