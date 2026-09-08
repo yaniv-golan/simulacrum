@@ -1,3 +1,5 @@
+import { createLocalCloud } from './playtest/local-cloud.mjs';
+import { downloadCapture } from './playtest/download.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { createPlaytestServer } from './playtest-server.mjs';
@@ -5,13 +7,41 @@ import { mkdtempSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const browserEvidence = createBrowserEvidence();
+const privateRoot = process.env.PLAYTEST_VERIFY_PRIVATE_ROOT;
+const output = privateRoot ? join(privateRoot, 'screens') : 'artifacts/remote-playtest';
+const browserEvidence = createBrowserEvidence({
+  ...(process.env.PLAYTEST_VERIFY_BUILD
+    ? { readBuild: () => process.env.PLAYTEST_VERIFY_BUILD }
+    : {}),
+  ...(privateRoot
+    ? {
+        writeArtifact: (file, value) => {
+          const dir = join(privateRoot, 'evidence');
+          mkdirSync(dir, { recursive: true });
+          writeFileSync(
+            join(dir, file),
+            Buffer.isBuffer(value) || typeof value === 'string' ? value : JSON.stringify(value),
+          );
+        },
+      }
+    : {}),
+});
 
-const data = mkdtempSync(join(tmpdir(), 'remote-playtest-')),
-  token = 'browser-verification-token-'.repeat(3),
+const adapter = process.env.PLAYTEST_VERIFY_ADAPTER || 'node';
+const remoteOrigin = process.env.PLAYTEST_VERIFY_ORIGIN;
+const data = mkdtempSync(join(privateRoot || tmpdir(), 'remote-playtest-')),
+  token = process.env.PLAYTEST_VERIFY_TOKEN || 'browser-verification-token-'.repeat(3),
+  adminToken = process.env.PLAYTEST_ADMIN_TOKEN || 'local-admin-test-'.repeat(4);
+let server, cloud;
+let origin = remoteOrigin;
+if (!origin && adapter === 'cloud') {
+  cloud = await createLocalCloud({ token, adminToken });
+  origin = cloud.origin;
+} else if (!origin) {
   server = createPlaytestServer({ publicDir: 'dist', dataDir: data, token });
-await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const origin = `http://127.0.0.1:${server.address().port}`;
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  origin = `http://127.0.0.1:${server.address().port}`;
+}
 const browser = await browserEvidence.launch({
   profile: 'recording',
   ...{
@@ -28,6 +58,11 @@ const browser = await browserEvidence.launch({
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
   errors = browserEvidence.errors;
 
+let capturedSession;
+page.on('response', (response) => {
+  if (new URL(response.url()).pathname === '/api/playtest/v2/session' && response.ok())
+    capturedSession = response.json().then((value) => value.sessionId);
+});
 try {
   await page.context().grantPermissions(['microphone']);
   console.log('opening');
@@ -49,8 +84,39 @@ try {
       throw e;
     });
   console.log('sharing');
-  mkdirSync('artifacts/remote-playtest', { recursive: true });
-  await page.screenshot({ path: 'artifacts/remote-playtest/recording-bar.png' });
+  const captureSeconds = Number(process.env.PLAYTEST_CAPTURE_SECONDS || 0);
+  if (!Number.isFinite(captureSeconds) || captureSeconds < 0 || captureSeconds > 1800)
+    throw Error('Invalid capture duration');
+  const outboxSamples = [];
+  const sampleOutbox = () =>
+    page.evaluate(async () => {
+      const db = await new Promise((resolve, reject) => {
+        const r = indexedDB.open('simulacrum-playtest-outbox-v2', 1);
+        r.onsuccess = () => resolve(r.result);
+        r.onerror = () => reject(r.error);
+      });
+      try {
+        return await new Promise((resolve, reject) => {
+          const tx = db.transaction('items', 'readonly'),
+            r = tx.objectStore('items').getAll();
+          tx.oncomplete = () =>
+            resolve({
+              at: Date.now(),
+              pending: r.result.filter((row) => row.body).length,
+              bytes: r.result.reduce((n, row) => n + (row.body?.size || 0), 0),
+            });
+          tx.onerror = () => reject(tx.error);
+        });
+      } finally {
+        db.close();
+      }
+    });
+  for (let remaining = captureSeconds * 1000; remaining > 0; remaining -= 3000) {
+    await page.waitForTimeout(Math.min(remaining, 3000));
+    outboxSamples.push(await sampleOutbox());
+  }
+  mkdirSync(output, { recursive: true });
+  await page.screenshot({ path: join(output, 'recording-bar.png') });
   await page.locator('[data-part-type=poweredMotor]').click();
   await page.keyboard.press('ArrowRight');
   await page.getByRole('button', { name: 'Give feedback', exact: true }).click();
@@ -61,8 +127,8 @@ try {
   await page.waitForFunction(() =>
     document.querySelector('.playtest-comment')?.textContent.includes('Received by'),
   );
-  mkdirSync('artifacts/remote-playtest', { recursive: true });
-  await page.screenshot({ path: 'artifacts/remote-playtest/feedback-receipt.png' });
+  mkdirSync(output, { recursive: true });
+  await page.screenshot({ path: join(output, 'feedback-receipt.png') });
   await page.getByRole('button', { name: 'Record voice comment', exact: true }).click();
   await page.waitForTimeout(1200);
   await page.getByRole('button', { name: '● Stop voice recording', exact: true }).click();
@@ -78,6 +144,22 @@ try {
       .textContent.includes('You can close this tab'),
   );
   await page.waitForTimeout(800);
+  const finalOutbox = await sampleOutbox();
+  if (finalOutbox.bytes || finalOutbox.pending)
+    throw Error('Finished capture retains unacknowledged payloads');
+  const exportStarted = Date.now();
+  if (adapter === 'cloud' || remoteOrigin) {
+    const id = await capturedSession;
+    if (!id) throw Error('Missing owned cloud capture');
+    await downloadCapture({
+      origin,
+      sessionId: id,
+      directory: join(data, id),
+      token: adminToken,
+      allowLocal: !!cloud,
+    });
+  }
+  const exportMs = Date.now() - exportStarted;
   const id = readdirSync(data)[0],
     dir = join(data, id),
     records = readFileSync(join(dir, 'events.ndjson'), 'utf8').trim().split('\n').map(JSON.parse),
@@ -106,16 +188,15 @@ try {
     events.find((x) => x.kind === 'feedback-text').data.anchorId === anchor.data.id,
   ]);
   browserEvidence.assert('deepEqual', [errors, []]);
-  mkdirSync('artifacts/remote-playtest', { recursive: true });
-  await page.screenshot({ path: 'artifacts/remote-playtest/completed.png' });
+  mkdirSync(output, { recursive: true });
+  await page.screenshot({ path: join(output, 'completed.png') });
   browserEvidence.assertUnchanged();
   writeFileSync(
-    'artifacts/remote-playtest/result.json',
+    join(output, 'result.json'),
     JSON.stringify(
       {
         ...browserEvidence.identity,
         build: events[0].context.build,
-        dir,
         events: events.length,
         media: records.filter((x) => x.media).map((x) => x.media),
         errors,
@@ -125,19 +206,42 @@ try {
       2,
     ),
   );
-  console.log('remote capture browser passed', dir);
+  if (process.env.PLAYTEST_VERIFY_RESULT)
+    writeFileSync(
+      process.env.PLAYTEST_VERIFY_RESULT,
+      JSON.stringify({
+        directory: dir,
+        mediaFiles: records
+          .filter((row) => row.media?.kind === 'screen')
+          .map((row) => join(dir, row.media.file)),
+        eventSamples: events,
+        exportMs,
+        outboxSamples,
+        finalOutbox,
+        storageBytes: records.reduce(
+          (n, row) => n + (row.media?.bytes || row.rawEvent?.bytes || 0),
+          0,
+        ),
+        captureSeconds,
+      }),
+      { mode: 0o600 },
+    );
+  console.log('remote capture browser passed', adapter);
 } catch (error) {
   await browserEvidence.captureFailure(error);
 
-  await page.screenshot({ path: 'artifacts/remote-playtest/failure.png' });
-  writeFileSync('artifacts/remote-playtest/failure.txt', await page.locator('body').innerText());
+  await page.screenshot({ path: join(output, 'failure.png') });
+  writeFileSync(join(output, 'failure.txt'), await page.locator('body').innerText());
   throw error;
 } finally {
   try {
     browserEvidence.assertUnchanged();
   } finally {
     await browser.close();
-    server.closeAllConnections();
-    await new Promise((r) => server.close(r));
+    if (server) {
+      server.closeAllConnections();
+      await new Promise((r) => server.close(r));
+    }
+    if (cloud) await cloud.close();
   }
 }

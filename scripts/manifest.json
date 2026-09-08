@@ -342,7 +342,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -719,6 +719,26 @@
       "smoke": false,
       "timeoutMs": 60000,
       "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-cloud-playtest",
+      "script": "scripts/verify-cloud-playtest.mjs",
+      "execution": "exclusive",
+      "environment": "self",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-cloud-runtime",
+      "script": "scripts/verify-cloud-runtime.mjs",
+      "execution": "exclusive",
+      "environment": "self",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 30000,
+      "ruleId": "runtime-contract"
     }
   ],
   "invariants": [
@@ -1010,6 +1030,306 @@
         ]
       },
       "qualificationBars": ["F1"]
+    },
+    {
+      "id": "capture-write-admission",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Capture body admission stays bounded through actual persistence settlement.",
+      "owners": [
+        {
+          "path": "scripts/playtest-server.mjs",
+          "anchor": "createPlaytestServer"
+        }
+      ],
+      "checks": ["invariant-controls"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/playtest-admission.test.mjs",
+            "anchor": "write admission holds bodies through paused persistence and rejects excess unread"
+          },
+          {
+            "path": "test/playtest-admission.test.mjs",
+            "anchor": "Node storage deadline replies once while retaining admission until persistence settles"
+          },
+          {
+            "path": "test/playtest-admission.test.mjs",
+            "anchor": "Node admission recovers after malformed, oversized, disconnected and failed-persistence requests"
+          },
+          {
+            "path": "test/playtest-recovery.test.mjs",
+            "anchor": "v2 creation recovers partial writes and post-rename sync failures without duplicate sessions"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/playtest-admission.test.mjs",
+            "anchor": "write admission holds bodies through paused persistence and rejects excess unread"
+          },
+          {
+            "path": "test/playtest-admission.test.mjs",
+            "anchor": "Node storage deadline replies once while retaining admission until persistence settles"
+          },
+          {
+            "path": "test/playtest-admission.test.mjs",
+            "anchor": "Node admission recovers after malformed, oversized, disconnected and failed-persistence requests"
+          },
+          {
+            "path": "test/playtest-recovery.test.mjs",
+            "anchor": "v2 creation recovers partial writes and post-rename sync failures without duplicate sessions"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "capture-cloud-integrity",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Cloud exact retries retain receipts and deletion fences prevent payload resurrection.",
+      "owners": [
+        {
+          "path": "scripts/playtest/cloud-store.mjs",
+          "anchor": "CaptureStore"
+        }
+      ],
+      "checks": ["invariant-controls"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "cloud receipt retries, pending conflicts, deletion fencing and capacity recovery"
+          },
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "receipt recovery survives R2 and SQL acknowledgment faults without double charging"
+          },
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "storage deadlines retain a finite operation budget until the provider settles"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "cloud receipt retries, pending conflicts, deletion fencing and capacity recovery"
+          },
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "late conditional payload cannot resurrect a deleted session"
+          },
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "cloud exact P plus pointer quota, expired writes and exhausted cleanup retries fail closed"
+          },
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "receipt recovery survives R2 and SQL acknowledgment faults without double charging"
+          },
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "storage deadlines retain a finite operation budget until the provider settles"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "capture-receipt-ownership",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Only a matching durable v2 receipt removes a persisted upload payload.",
+      "owners": [
+        {
+          "path": "src/application/capture-outbox.mjs",
+          "anchor": "openCaptureOutbox"
+        }
+      ],
+      "checks": ["invariant-controls"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/capture-outbox.test.mjs",
+            "anchor": "v2 durable receipt survives another tab closing and wrong identity preserves payload"
+          },
+          {
+            "path": "test/remote-playtest.test.mjs",
+            "anchor": "frozen legacy client cannot upload or acknowledge the live v2 outbox"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/capture-outbox.test.mjs",
+            "anchor": "v2 durable receipt survives another tab closing and wrong identity preserves payload"
+          },
+          {
+            "path": "test/remote-playtest.test.mjs",
+            "anchor": "frozen legacy client cannot upload or acknowledge the live v2 outbox"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "release-publisher-ownership",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Only one admitted publisher owns an environment until explicit release; time cannot transfer ownership.",
+      "owners": [
+        {
+          "path": "scripts/playtest/release-control.mjs",
+          "anchor": "ReleaseCoordinator"
+        }
+      ],
+      "checks": ["invariant-controls"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "publisher admission is atomic, owner checked and has no clock takeover"
+          },
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "publisher rejects stale predecessor and supports owner-checked recovery"
+          },
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "first staging recovery reuses ownership and cleans synthetic resources on either side of publication"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "publisher admission is atomic, owner checked and has no clock takeover"
+          },
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "publisher rejects stale predecessor and supports owner-checked recovery"
+          },
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "first staging recovery reuses ownership and cleans synthetic resources on either side of publication"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "capture-synthetic-cleanup",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Synthetic run cleanup releases payload capacity without deleting human recordings.",
+      "owners": [
+        {
+          "path": "scripts/playtest/cloud-store.mjs",
+          "anchor": "CaptureStore"
+        }
+      ],
+      "checks": ["invariant-controls"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "synthetic capacity is reclaimed across 21 runs without deleting human evidence"
+          },
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "independent Cron repairs missing alarms and recovers deletion after repeated outages"
+          },
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "synthetic admission reserves lifetime metadata before publication"
+          },
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "verification holds full capacity across preliminary drain and load admission"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "synthetic capacity is reclaimed across 21 runs without deleting human evidence"
+          },
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "independent Cron repairs missing alarms and recovers deletion after repeated outages"
+          },
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "synthetic admission reserves lifetime metadata before publication"
+          },
+          {
+            "path": "test/cloud-playtest.test.mjs",
+            "anchor": "verification holds full capacity across preliminary drain and load admission"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "release-effective-isolation",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Publication requires positive current-account and negative cross-account capability probes on explicitly disposable targets.",
+      "owners": [
+        {
+          "path": "scripts/playtest/credential-isolation.mjs",
+          "anchor": "verifyCredentialIsolation"
+        }
+      ],
+      "checks": ["invariant-controls"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/playtest-isolation.test.mjs",
+            "anchor": "isolation probes require disposable authorization and catch storage or Worker write authority"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/playtest-isolation.test.mjs",
+            "anchor": "isolation probes require disposable authorization and catch storage or Worker write authority"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "release-load-delivery",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Load qualification retains throttled requests through identity-checked acknowledgment.",
+      "owners": [
+        {
+          "path": "scripts/playtest/load.mjs",
+          "anchor": "retryUpload"
+        }
+      ],
+      "checks": ["invariant-controls"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/playtest-load.test.mjs",
+            "anchor": "load keeps the exact event request through throttling and checks receipt identity"
+          },
+          {
+            "path": "test/playtest-load.test.mjs",
+            "anchor": "capture qualification rejects sustained growth and missing evidence but permits bounded bursts"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/playtest-load.test.mjs",
+            "anchor": "load keeps the exact event request through throttling and checks receipt identity"
+          },
+          {
+            "path": "test/playtest-load.test.mjs",
+            "anchor": "capture qualification rejects sustained growth and missing evidence but permits bounded bursts"
+          }
+        ]
+      },
+      "qualificationBars": []
     }
   ],
   "browserLocalScopes": [

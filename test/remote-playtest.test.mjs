@@ -1,9 +1,13 @@
+import { IDBFactory } from 'fake-indexeddb';
+import { mountRemotePlaytest as mountLegacyCapture } from './fixtures/legacy-capture-client.mjs';
+import { openCaptureOutbox } from '../src/application/capture-outbox.mjs';
+import { captureDigest } from '../src/application/capture-outbox.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mountRemotePlaytest } from '../src/application/remote-playtest.mjs';
 
 const settle = async () => {
-  for (let i = 0; i < 12; i++) await new Promise((resolve) => setImmediate(resolve));
+  for (let i = 0; i < 60; i++) await new Promise((resolve) => setImmediate(resolve));
 };
 async function fixture(t, options = {}) {
   const names = [
@@ -48,6 +52,10 @@ async function fixture(t, options = {}) {
       return this.children.get(key);
     }
     append() {}
+    replaceChildren(...children) {
+      this.options = children;
+      this.value = children[0]?.value || '';
+    }
     showModal() {
       this.open = true;
     }
@@ -80,56 +88,44 @@ async function fixture(t, options = {}) {
     const t = track();
     return { getVideoTracks: () => [t], getTracks: () => [t] };
   };
-  const db = {
-    close() {
-      dbClosed = true;
-    },
-    transaction() {
-      assert.equal(dbClosed, false, 'no transaction after database close');
-      const tx = {};
-      let pending = 0,
-        aborted = false;
-      const request = (operation) => {
-        pending++;
-        const r = {};
-        setImmediate(() => {
-          if (aborted) return;
-          try {
-            r.result = operation();
-            r.onsuccess?.();
-          } catch (error) {
-            tx.error = error;
-            tx.onerror?.();
-            return;
-          } finally {
-            pending--;
+  const factory = new IDBFactory();
+  const originalOpen = factory.open.bind(factory);
+  factory.open = (...args) => {
+    const r = originalOpen(...args);
+    r.addEventListener('success', () => {
+      const db = r.result,
+        close = db.close.bind(db),
+        transaction = db.transaction.bind(db);
+      db.close = () => {
+        dbClosed = true;
+        close();
+      };
+      db.transaction = (...args) => {
+        const tx = transaction(...args),
+          objectStore = tx.objectStore.bind(tx);
+        tx.objectStore = (name) => {
+          const store = objectStore(name);
+          if (name === 'items' && args[1] === 'readwrite') {
+            for (const method of ['put', 'clear']) {
+              const original = store[method].bind(store);
+              store[method] = (...values) => {
+                const request = original(...values);
+                request.addEventListener('success', () => {
+                  const all = store.getAll();
+                  all.addEventListener('success', () => {
+                    rows.splice(0, rows.length, ...all.result);
+                  });
+                });
+                return request;
+              };
+            }
           }
-          setImmediate(() => {
-            if (!pending && !aborted) tx.oncomplete?.();
-          });
-        });
-        return r;
+          return store;
+        };
+        return tx;
       };
-      tx.abort = () => {
-        aborted = true;
-        setImmediate(() => tx.onabort?.());
-      };
-      tx.objectStore = () => ({
-        getAll: () => request(() => [...rows]),
-        add: (value) =>
-          request(() => {
-            const id = nextId++;
-            rows.push({ ...value, id });
-            return id;
-          }),
-        delete: (id) =>
-          request(() => {
-            const index = rows.findIndex((r) => r.id === id);
-            if (index >= 0) rows.splice(index, 1);
-          }),
-      });
-      return tx;
-    },
+    });
+    return r;
   };
   const values = {
     document: {
@@ -156,13 +152,7 @@ async function fixture(t, options = {}) {
         },
       },
     },
-    indexedDB: {
-      open() {
-        const request = { result: db };
-        setImmediate(() => request.onsuccess());
-        return request;
-      },
-    },
+    indexedDB: factory,
     setInterval(fn) {
       intervals.set(++intervalId, fn);
       return intervalId;
@@ -207,7 +197,7 @@ async function fixture(t, options = {}) {
       return {
         ok: true,
         headers: { get: () => 'application/json' },
-        json: async () => ({ enabled: true }),
+        json: async () => ({ enabled: true, protocolVersion: 2 }),
       };
     if (url.endsWith('/session')) {
       if (mode.failure === 'network') throw new TypeError('Failed to fetch');
@@ -216,7 +206,13 @@ async function fixture(t, options = {}) {
         ok: mode.failure !== 'http',
         json: async () => {
           if (mode.failure === 'json') throw SyntaxError('bad JSON');
-          return { sessionId: 'a'.repeat(32) };
+          const start = JSON.parse(init.body);
+          return {
+            sessionId: 'a'.repeat(32),
+            protocolVersion: 2,
+            requestId: start.requestId,
+            requestHash: await captureDigest(new TextEncoder().encode(init.body)),
+          };
         },
       };
     }
@@ -235,7 +231,7 @@ async function fixture(t, options = {}) {
       else delete globalThis[key];
     }
   });
-  mount = await mountRemotePlaytest({
+  mount = await (options.mount || mountRemotePlaytest)({
     context: () => {
       if (++contextCalls > 30) throw Error('recursive finalization guard');
       return {};
@@ -354,4 +350,41 @@ test('finish keeps durable uploads available for retry while disposal releases t
       .find((n) => n.tag === '[data-completion-status]')
       .textContent.includes('Keep this tab open'),
   );
+});
+
+// Frozen pre-v2 client from a4d93f455cf499f2335f674af27027fd203128d3.
+test('frozen legacy client cannot upload or acknowledge the live v2 outbox', async (t) => {
+  const f = await fixture(t, { mount: mountLegacyCapture });
+  const v2 = await openCaptureOutbox();
+  t.after(() => v2.close());
+  await v2.enqueue({
+    url: `/api/playtest/v2/${'a'.repeat(32)}/event`,
+    type: 'application/json',
+    body: new Blob(['{"id":"isolated"}']),
+  });
+  for (const tick of f.intervals.values()) tick();
+  await settle();
+  assert.equal(f.uploads.length, 0);
+  assert.equal((await v2.items())[0].outcome, 'pending');
+  const legacy = await new Promise((resolve) => {
+    const r = indexedDB.open('simulacrum-playtest-outbox', 1);
+    r.onsuccess = () => resolve(r.result);
+  });
+  await new Promise((resolve, reject) => {
+    const tx = legacy.transaction('items', 'readwrite');
+    tx.objectStore('items').add({
+      url: '/api/playtest/legacy/event',
+      type: 'application/json',
+      body: new Blob(['{}']),
+    });
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+  for (const tick of f.intervals.values()) tick();
+  await settle();
+  assert.ok(f.uploads.some((row) => row.url === '/api/playtest/legacy/event'));
+  legacy.close();
+  f.mount.dispose();
+  await settle();
+  assert.equal((await v2.items()).length, 1);
 });

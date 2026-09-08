@@ -1,13 +1,13 @@
 {
   "version": 1,
   "dependencies": {
-    "package-lock.json": "05895ca4f634dd4a9e0cd1297bc78e61780252818a90ac8409cb6d7ebf09f969",
-    "package.json": "c9657149157853c2a1b3a26407d74bcc593ed0a131c4d7a8f518f24e543bfd26",
+    "package-lock.json": "f44632025fc6a2b08f70e71a45243005e5f59483a19702a2d67f741b69e7f5e5",
+    "package.json": "7d88444db01726877660314787f7eff8424862b9e891952c15b5d4693ca82626",
     "scripts/browser-registry.mjs": "73c0bd7257f16146dc500641e0a4d81e367f1ae239328697af8421113dd938e9",
     "scripts/browser-selection.mjs": "ed6cec6fb1932b9ce1e0d3005a01b8a34285ea390b265cf74ba23e9adc014689",
-    "scripts/invariant-coverage.mjs": "95d91b83793a697398c67b742bbb4788ed15a1add3b714b7b1b3393c45386904",
-    "scripts/manifest.json": "8468675cb9f1bd547fb5f32101ea14cd440f53bcd9d87beac38163efa64271d9",
-    "scripts/module-graph.mjs": "e43391ff0856149384c9c28518ac82a97927486aee718cef2450316bb7675cb0",
+    "scripts/invariant-coverage.mjs": "d2a429601e101ee86c3e8c3aa3a4742d2258d41367ae57b8dfc341f4eb037e4c",
+    "scripts/manifest.json": "413a59769c52b6baad8db8528e4c6aacc46d1f24a498ca024a3c560ce8114c1b",
+    "scripts/module-graph.mjs": "efb5d29da98f47dfb241180a619b5b44d88608871cbacc5b8b66d1fa01bf143e",
     "scripts/source-identity.mjs": "1d0f001521fa9bf3133b6fdcbc90ffbc33c11186650f78c429712b90d1c43bf0",
     "scripts/test-selection.mjs": "077d44bf0edf082dd21af44c2836263b21437368eeaddbdb5af5a4e21ecf53c4",
     "scripts/validate-manifest.mjs": "b0d75953ae0b5d9be222cb73541671128274a6647a43a75ec9dbd72e376782f9",

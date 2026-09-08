@@ -89,7 +89,9 @@ if (!options.explain && !options.summary && selected.length)
   try {
     const servers = selectedServerRequirements(graph, selected);
     if (servers.length) {
-      console.log(`Localhost preflight: ${servers.length} selected test files reach server listen calls (${servers[0].owner}).`);
+      console.log(
+        `Localhost preflight: ${servers.length} selected test files reach server listen calls (${servers[0].owner}).`,
+      );
       await assertLocalServerAccess();
     }
     await runProcess(process.execPath, ['--test', ...selected], {

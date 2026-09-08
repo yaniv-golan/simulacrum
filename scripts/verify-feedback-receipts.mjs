@@ -2,6 +2,7 @@ import { createFixtureEvidence } from './browser-evidence.mjs';
 // M3b: feedback receipts must follow server acknowledgement and final media flush.
 
 import { createServer } from 'node:http';
+import { createHash } from 'node:crypto';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 
 const browserEvidence = createFixtureEvidence({
@@ -14,6 +15,7 @@ const browserEvidence = createFixtureEvidence({
   files: [
     process.env.FEEDBACK_SOURCE || 'src/application/remote-playtest.mjs',
     'src/presentation/workshop.css',
+    'src/application/capture-outbox.mjs',
     'scripts/verify-feedback-receipts.mjs',
   ],
 });
@@ -23,18 +25,20 @@ const source = readFileSync(process.env.FEEDBACK_SOURCE || 'src/application/remo
 const server = createServer((req, res) => {
   res.setHeader(
     'Content-Type',
-    req.url === '/remote.mjs'
+    ['/remote.mjs', '/capture-outbox.mjs'].includes(req.url)
       ? 'text/javascript'
       : req.url === '/style.css'
         ? 'text/css'
         : 'text/html',
   );
   res.end(
-    req.url === '/remote.mjs'
-      ? source
-      : req.url === '/style.css'
-        ? css
-        : '<link rel="stylesheet" href="/style.css"><meta name="build-id" content="receipt-test"><script type="module">import {mountRemotePlaytest} from "/remote.mjs";window.mountCapture=()=>mountRemotePlaytest({context:()=>({}),checkpoint:()=>({})});window.remoteCapture=await window.mountCapture();</script>',
+    req.url === '/capture-outbox.mjs'
+      ? readFileSync('src/application/capture-outbox.mjs')
+      : req.url === '/remote.mjs'
+        ? source
+        : req.url === '/style.css'
+          ? css
+          : '<link rel="stylesheet" href="/style.css"><meta name="build-id" content="receipt-test"><script type="module">import {mountRemotePlaytest} from "/remote.mjs";window.mountCapture=()=>mountRemotePlaytest({context:()=>({}),checkpoint:()=>({})});window.remoteCapture=await window.mountCapture();</script>',
   );
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
@@ -45,13 +49,13 @@ const browser = await browserEvidence.launch({
 try {
   const page = await browser.newPage(),
     errors = browserEvidence.errors;
-  page.setDefaultTimeout(5000);
+  page.setDefaultTimeout(20000);
 
   await page.addInitScript(() => {
     window.originalConsoleError = console.error;
     const originalTimeout = window.setTimeout;
     window.setTimeout = (callback, delay, ...args) =>
-      originalTimeout(callback, delay === 15000 && window.hangNext ? 100 : delay, ...args);
+      originalTimeout(callback, delay === 45000 && window.hangNext ? 100 : delay, ...args);
     const originalFetch = window.fetch;
     window.hungUploads = 0;
     window.fetch = async (url, options) => {
@@ -117,12 +121,39 @@ try {
     statusCode = 200,
     sessionPosts = 0;
   const uploads = [];
+  const receipt = (route) => {
+    const request = route.request(),
+      url = new URL(request.url()),
+      raw = request.postDataBuffer();
+    const media = url.pathname.endsWith('/media');
+    return {
+      protocolVersion: 2,
+      sessionId: url.pathname.split('/')[4],
+      logicalKey: media
+        ? `media:${url.searchParams.get('kind')}:${url.searchParams.get('clip')}:${url.searchParams.get('seq')}`
+        : `event:${JSON.parse(raw).id}`,
+      uploadHash: createHash('sha256')
+        .update(media ? request.headers()['content-type'].toLowerCase() : '')
+        .update(raw)
+        .digest('hex'),
+      sequence: ++sequence,
+      receivedAt: new Date().toISOString(),
+    };
+  };
   await page.route('**/api/playtest/**', async (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path.endsWith('/config')) return route.fulfill({ json: { enabled: true } });
+    if (path.endsWith('/config'))
+      return route.fulfill({ json: { enabled: true, protocolVersion: 2 } });
     if (path.endsWith('/session')) {
       sessionPosts++;
-      return route.fulfill({ json: { sessionId: 'test-session' } });
+      return route.fulfill({
+        json: {
+          protocolVersion: 2,
+          sessionId: sessionPosts.toString(16).padStart(32, '0'),
+          requestId: route.request().postDataJSON().requestId,
+          requestHash: createHash('sha256').update(route.request().postDataBuffer()).digest('hex'),
+        },
+      });
     }
     uploads.push({ url: route.request().url(), body: route.request().postData() });
     if (path.endsWith('/event') && route.request().postDataJSON().kind === 'disposal-witness') {
@@ -141,7 +172,7 @@ try {
     if (statusCode !== 200)
       return route.fulfill({ status: statusCode, json: { error: 'test failure' } });
     return route.fulfill({
-      json: badReceipt ? {} : { sequence: ++sequence, receivedAt: new Date().toISOString() },
+      json: badReceipt ? {} : receipt(route),
     });
   });
   await browserEvidence.goto(page, `http://127.0.0.1:${server.address().port}`);
@@ -235,6 +266,7 @@ try {
       /Received by/,
     ]);
     statusCode = 200;
+    if (code !== 503) await page.evaluate(() => document.querySelector('[data-retry]').click());
     await page.waitForFunction(() =>
       [...document.querySelectorAll('.playtest-comment')]
         .at(-1)
@@ -325,7 +357,7 @@ try {
   const outbox = () =>
     page.evaluate(async () => {
       const db = await new Promise((resolve, reject) => {
-        const request = indexedDB.open('simulacrum-playtest-outbox', 1);
+        const request = indexedDB.open('simulacrum-playtest-outbox-v2', 1);
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       });
@@ -334,7 +366,9 @@ try {
           const request = db.transaction('items', 'readonly').objectStore('items').getAll();
           request.onsuccess = () =>
             resolve(
-              request.result.map(({ id, url, body, type }) => ({ id, url, size: body.size, type })),
+              request.result
+                .filter((row) => row.body)
+                .map(({ id, url, body, type }) => ({ id, url, size: body.size, type })),
             );
           request.onerror = () => reject(request.error);
         });
@@ -356,22 +390,27 @@ try {
     document.querySelector('.playtest-comment')?.textContent.includes('Not received yet'),
   );
   // Assert body durability too, not merely that some unrelated periodic upload survived.
-  const savedBody = await page.evaluate(async (text) => {
-    const db = await new Promise((resolve) => {
-      const request = indexedDB.open('simulacrum-playtest-outbox', 1);
-      request.onsuccess = () => resolve(request.result);
-    });
-    const rows = await new Promise((resolve) => {
-      const request = db.transaction('items').objectStore('items').getAll();
-      request.onsuccess = () => resolve(request.result);
-    });
-    db.close();
-    for (const row of rows) {
-      const body = await row.body.text();
-      if (body.includes(text)) return { id: row.id, url: row.url, body };
-    }
-    return null;
-  }, recoveryComment);
+  const readSavedBody = () =>
+    page.evaluate(async (text) => {
+      const db = await new Promise((resolve) => {
+        const request = indexedDB.open('simulacrum-playtest-outbox-v2', 1);
+        request.onsuccess = () => resolve(request.result);
+      });
+      const rows = await new Promise((resolve) => {
+        const request = db.transaction('items').objectStore('items').getAll();
+        request.onsuccess = () => resolve(request.result);
+      });
+      db.close();
+      for (const row of rows.filter((row) => row.body)) {
+        const body = await row.body.text();
+        if (body.includes(text)) return { id: row.id, url: row.url, body };
+      }
+      return null;
+    }, recoveryComment);
+  let savedBody;
+  const saveDeadline = Date.now() + 5000;
+  while (!(savedBody = await readSavedBody()) && Date.now() < saveDeadline)
+    await page.waitForTimeout(25);
   browserEvidence.assert('ok', [
     savedBody,
     'written feedback body committed to real IndexedDB before reload',
@@ -490,11 +529,11 @@ try {
   await page.evaluate(() => window.remoteCapture.emit('after-disposal-witness', {}));
   await page.evaluate(() => window.remoteCapture.dispose());
   await disposalUpload.fulfill({
-    json: { sequence: ++sequence, receivedAt: new Date().toISOString() },
+    json: receipt(disposalUpload),
   });
   await page.waitForFunction(async () => {
     const db = await new Promise((resolve) => {
-      const r = indexedDB.open('simulacrum-playtest-outbox', 1);
+      const r = indexedDB.open('simulacrum-playtest-outbox-v2', 1);
       r.onsuccess = () => resolve(r.result);
     });
     try {
@@ -504,6 +543,7 @@ try {
       });
       for (const row of rows)
         if (
+          row.body &&
           row.url.endsWith('/event') &&
           JSON.parse(await row.body.text()).kind === 'disposal-witness'
         )
@@ -540,7 +580,7 @@ try {
   await page.evaluate(() => window.flushRecorders());
   await page.waitForFunction(async () => {
     const db = await new Promise((resolve) => {
-      const r = indexedDB.open('simulacrum-playtest-outbox', 1);
+      const r = indexedDB.open('simulacrum-playtest-outbox-v2', 1);
       r.onsuccess = () => resolve(r.result);
     });
     try {
@@ -581,7 +621,7 @@ try {
       let deadline;
       window.setTimeout = (callback, delay, ...args) => {
         const id = schedule(callback, delay, ...args);
-        if (delay === 15000)
+        if (delay === 45000)
           deadline = () => {
             clearTimeout(id);
             callback(...args);
@@ -624,7 +664,7 @@ try {
     const exactRows = () =>
       page.evaluate(async () => {
         const db = await new Promise((resolve) => {
-          const r = indexedDB.open('simulacrum-playtest-outbox', 1);
+          const r = indexedDB.open('simulacrum-playtest-outbox-v2', 1);
           r.onsuccess = () => resolve(r.result);
         });
         try {
@@ -633,7 +673,13 @@ try {
             r.onsuccess = () => resolve(r.result);
           });
           const result = [];
-          for (const row of rows) result.push({ ...row, body: await row.body.text() });
+          for (const row of rows.filter((row) => row.body))
+            result.push({
+              id: row.id,
+              url: row.url,
+              uploadHash: row.uploadHash,
+              body: await row.body.text(),
+            });
           return result.filter((row) => row.body.includes('disposal-failure'));
         } finally {
           db.close();

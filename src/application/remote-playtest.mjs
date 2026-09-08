@@ -1,12 +1,32 @@
+function uploadFailureMessage(code) {
+  return code === 401 || code === 403
+    ? 'Open your invitation again in another tab, then return here. Keep this tab open.'
+    : code === 404
+      ? 'This session is unavailable. Keep this tab open and ask Yaniv to restore it.'
+      : code === 413
+        ? 'An upload is too large or the session is full. Keep this tab open and ask Yaniv for help.'
+        : [409, 410, 415].includes(code)
+          ? 'This upload cannot be delivered. Export or discard its saved bytes.'
+          : 'Uploads not received yet — retrying automatically. Keep this tab open.';
+}
+
+import { openCaptureOutbox } from './capture-outbox.mjs';
 /** Consented remote usability capture; never an authority for simulation state. */
 export async function mountRemotePlaytest({ context, checkpoint }) {
-  const uploadTimeoutMs = 15000;
+  const uploadTimeoutMs = 45000;
   const config = await fetch('/api/playtest/config')
     .then((r) =>
       r.ok && r.headers.get('content-type')?.includes('application/json') ? r.json() : null,
     )
     .catch(() => null);
   if (!config?.enabled) return null;
+  if (config.protocolVersion !== 2) {
+    const notice = document.createElement('p');
+    notice.textContent =
+      'Recording needs a compatible server. Saved recordings have not been changed.';
+    document.body.append(notice);
+    return { active: () => false, emit: () => {}, dispose: () => notice.remove() };
+  }
   const canRecord =
     typeof navigator.mediaDevices?.getDisplayMedia === 'function' &&
     typeof MediaRecorder === 'function';
@@ -20,21 +40,55 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
     notice.showModal();
     return { active: () => false, emit: () => {}, dispose: () => notice.remove() };
   }
-  const db = await new Promise((resolve, reject) => {
-    const r = indexedDB.open('simulacrum-playtest-outbox', 1);
-    r.onupgradeneeded = () =>
-      r.result.createObjectStore('items', { keyPath: 'id', autoIncrement: true });
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-  });
-  const transaction = (mode, action) =>
-    new Promise((resolve, reject) => {
-      const tx = db.transaction('items', mode),
-        request = action(tx.objectStore('items'));
-      tx.oncomplete = () => resolve(request.result);
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error ?? Error('Upload transaction aborted'));
-    });
+  const outbox = await openCaptureOutbox();
+  let durableRows = [],
+    durableGroups = [];
+  const reconcile = async () => {
+    durableRows = await outbox.items();
+    durableGroups = await outbox.groups();
+    const picker = completion.querySelector('[data-session]');
+    if (picker) {
+      const chosen = picker.value;
+      const ids = [
+        ...new Set(
+          [
+            ...durableRows.map((r) => r.sessionId),
+            ...(await outbox.starts()).map((r) => r.ack?.sessionId || r.sessionId),
+          ].filter(Boolean),
+        ),
+      ];
+      picker.replaceChildren(
+        ...ids.map((id, index) => {
+          const option = document.createElement('option');
+          option.value = id;
+          const blocked = durableRows.some((r) => r.sessionId === id && r.outcome === 'blocked');
+          option.textContent = `Recording ${index + 1}${id === session ? ' (current)' : ''}${blocked ? ' — needs attention' : ''}`;
+          return option;
+        }),
+      );
+      if (ids.includes(chosen)) picker.value = chosen;
+      else if (ids.includes(session)) picker.value = session;
+    }
+    if (
+      session &&
+      ((await outbox.starts()).some(
+        (row) => row.sessionId === session && row.outcome === 'discarded',
+      ) ||
+        durableRows.some((row) => row.sessionId === session && row.outcome === 'discarded'))
+    ) {
+      captureError = 'Local recording was discarded; delivery is not complete.';
+      if (active) stop();
+    }
+    queued = durableRows.filter((row) => ['pending', 'blocked'].includes(row.outcome)).length;
+    for (const receipt of receipts) {
+      const rows = durableRows.filter((row) => row.group === receipt.id);
+      const group = durableGroups.find((row) => row.id === receipt.id);
+      receipt.pending = rows.filter((row) => row.outcome !== 'received').length;
+      receipt.error ||= rows.some((row) => row.outcome === 'discarded') || !!group?.discarded;
+      if (group) receipt.sealed = group.sealed;
+    }
+  };
+  let startAttempt = null;
   let session = null,
     origin = 0,
     seq = 0,
@@ -92,7 +146,7 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
   function closeDatabaseIfIdle() {
     if (disposed && !dbClosed && !busy && !pendingWrites && !recorders.size) {
       dbClosed = true;
-      db.close();
+      outbox.close();
     }
   }
   const status = () => {
@@ -139,7 +193,7 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
         ? 'Not sent — could not save on this device. Keep this tab open.'
         : !receipt.sealed
           ? 'Recording voice comment…'
-          : receipt.pending
+          : receipt.pending || pendingWrites
             ? failed
               ? 'Not received yet. ' + failed
               : 'Sending to Yaniv…'
@@ -157,8 +211,8 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
     busy = true;
     try {
       while (!disposed) {
-        const items = await transaction('readonly', (store) => store.getAll());
-        queued = items.length;
+        await reconcile();
+        const items = durableRows.filter((row) => ['pending', 'blocked'].includes(row.outcome));
         if (recoveredIds === null) {
           recoveredIds = new Set(items.map((row) => row.id));
           recoveredCount = recoveredIds.size;
@@ -168,7 +222,13 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
           failed = '';
           break;
         }
-        const next = items[0];
+        const next = await outbox.next();
+        if (!next) {
+          failed = items.some((row) => row.outcome === 'blocked')
+            ? uploadFailureMessage(items.find((row) => row.outcome === 'blocked').error)
+            : 'Uploads delayed — retrying automatically.';
+          break;
+        }
         try {
           const target = new URL(next.url, location.origin);
           if (
@@ -188,37 +248,24 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
               signal: uploadController.signal,
             });
             if (!response.ok)
-              throw Object.assign(Error(`Upload ${response.status}`), { status: response.status });
+              throw Object.assign(Error(`Upload ${response.status}`), {
+                status: response.status,
+                retryAfter: Number(response.headers?.get('retry-after') || 0) * 1000,
+              });
             ack = JSON.parse(await response.text());
           } finally {
             clearTimeout(timeout);
             uploadController = null;
           }
-          if (
-            !Number.isSafeInteger(ack.sequence) ||
-            ack.sequence < 1 ||
-            !Number.isFinite(Date.parse(ack.receivedAt))
-          )
-            throw Error('Missing upload receipt');
-          await transaction('readwrite', (store) => store.delete(next.id));
+          await outbox.acknowledge(next, ack);
           recoveredIds.delete(next.id);
-          const receipt = uploadReceipts.get(next.id);
-          if (receipt) {
-            receipt.pending--;
-            uploadReceipts.delete(next.id);
-          }
+          await reconcile();
           failed = '';
           status();
         } catch (error) {
-          failed =
-            error.status === 401 || error.status === 403
-              ? 'Open your invitation again in another tab, then return here. Keep this tab open.'
-              : error.status === 404
-                ? 'This session is unavailable. Keep this tab open and ask Yaniv to restore it.'
-                : error.status === 413
-                  ? 'An upload is too large or the session is full. Keep this tab open and ask Yaniv for help.'
-                  : 'Uploads not received yet — retrying automatically. Keep this tab open.';
-          break;
+          await outbox.failure(next, error.status || 0, error.retryAfter || 0);
+          failed = uploadFailureMessage(error.status);
+          continue;
         }
       }
     } catch {
@@ -229,36 +276,12 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
       closeDatabaseIfIdle();
     }
   }
-  // Check and insert in the same serialized IndexedDB transaction. Concurrent final
-  // chunks and another mounted tab cannot each admit against a stale byte count.
-  function enqueue(value) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction('items', 'readwrite'),
-        store = tx.objectStore('items');
-      let request, error;
-      const read = store.getAll();
-      read.onsuccess = () => {
-        if (
-          read.result.reduce((total, item) => total + item.body.size, 0) + value.body.size >
-          100 * 1024 * 1024
-        ) {
-          error = Error('Local capture limit reached');
-          tx.abort();
-          return;
-        }
-        request = store.add(value);
-      };
-      tx.oncomplete = () => resolve(request.result);
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(error ?? tx.error ?? Error('Upload transaction aborted'));
-    });
-  }
   async function send(url, body, type, receipt) {
     pendingWrites++;
     if (receipt) receipt.pending++;
     status();
     try {
-      const id = await enqueue({ url, body, type });
+      const id = await outbox.enqueue({ url, body, type, group: receipt?.id || null });
       if (receipt) uploadReceipts.set(id, receipt);
       queued++;
       void pump();
@@ -284,7 +307,7 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
         context: context(),
       };
       void send(
-        `/api/playtest/${session}/event`,
+        `/api/playtest/v2/${session}/event`,
         new Blob([JSON.stringify(event)], { type: 'application/json' }),
         'application/json',
         receipt,
@@ -314,7 +337,7 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
     recorder.ondataavailable = (event) => {
       if (event.data.size)
         void send(
-          `/api/playtest/${sessionId}/media?kind=${kind}&clip=${clip}&seq=${index++}`,
+          `/api/playtest/v2/${sessionId}/media?kind=${kind}&clip=${clip}&seq=${index++}`,
           event.data,
           event.data.type || 'application/octet-stream',
           receipt,
@@ -325,7 +348,20 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
       recorder.ondataavailable = null;
       recorder.onerror = null;
       recorder.onstop = null;
-      if (receipt) receipt.sealed = true;
+      if (receipt) {
+        receipt.sealed = true;
+        pendingWrites++;
+        void outbox
+          .group({ id: receipt.id, sessionId, sealed: true })
+          .catch(() => {
+            receipt.error = true;
+          })
+          .finally(() => {
+            pendingWrites--;
+            status();
+            closeDatabaseIfIdle();
+          });
+      }
       status();
       closeDatabaseIfIdle();
     };
@@ -408,21 +444,25 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
       const settings = stream.getVideoTracks()[0].getSettings();
       if (settings.displaySurface && settings.displaySurface !== 'browser')
         throw Error('Please choose the workshop browser tab, rather than your whole screen.');
-      const response = await fetch('/api/playtest/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const start =
+        startAttempt ||
+        (await outbox.prepareStart({
           build: document.querySelector('meta[name=build-id]').content,
           startedAt: new Date().toISOString(),
           userAgent: navigator.userAgent,
-        }),
+        }));
+      startAttempt = start;
+      const response = await fetch('/api/playtest/v2/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: start.bodyText,
         signal: startController.signal,
       });
       if (!response.ok) throw Error('Could not start the session. Please retry.');
       const created = await response.json();
+      await outbox.acceptStart(start, created);
+      startAttempt = null;
       if (disposed) return;
-      if (typeof created.sessionId !== 'string' || !created.sessionId)
-        throw Error('Could not start the session. Please retry.');
       session = created.sessionId;
       seq = 0;
       origin = performance.now();
@@ -488,7 +528,24 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
     content.textContent = text;
     row.append(content, state);
     feedback.querySelector('.playtest-comments').append(row);
-    const receipt = { pending: 0, sealed: true, error: false, status: state };
+    const receipt = {
+      id: crypto.randomUUID(),
+      pending: 0,
+      sealed: true,
+      error: false,
+      status: state,
+    };
+    pendingWrites++;
+    void outbox
+      .group({ id: receipt.id, sessionId: session, sealed: true })
+      .catch(() => {
+        receipt.error = true;
+      })
+      .finally(() => {
+        pendingWrites--;
+        status();
+        closeDatabaseIfIdle();
+      });
     receipts.push(receipt);
     return receipt;
   }
@@ -532,6 +589,7 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
       }
       voiceReceipt = comment('Voice comment');
       voiceReceipt.sealed = false;
+      await outbox.group({ id: voiceReceipt.id, sessionId: session, sealed: false });
       emit('voice-start', { anchorId: anchor.id, clip: `${anchor.id}-${seq + 1}` }, voiceReceipt);
       voice = media(stream, 'voice', `${anchor.id}-${seq}`, voiceReceipt);
       button.textContent = '● Stop voice recording';
@@ -557,6 +615,118 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
   feedback.querySelector('[data-dismiss]').onclick = closeFeedback;
   feedback.addEventListener('cancel', () => stopVoice());
   panel.querySelector('[data-end]').onclick = () => stop();
+  const recoveryActions = document.createElement('div');
+  recoveryActions.innerHTML =
+    '<label>Saved recording <select data-session></select></label><button data-export>Download saved uploads</button><button data-discard>Discard a saved session</button><button data-delete>Delete a local session</button><button data-legacy>Download recordings from an older version</button>';
+  completion.append(recoveryActions);
+  recoveryActions.querySelector('[data-export]').onclick = async () => {
+    const rows = await outbox.items();
+    const parts = ['{"protocolVersion":2,"items":['];
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (i) parts.push(',');
+      parts.push(JSON.stringify({ ...row, body: undefined }).slice(0, -1));
+      if (row.body) {
+        parts.push(',"base64":"');
+        const bytes = new Uint8Array(await row.body.arrayBuffer());
+        for (let offset = 0; offset < bytes.length; offset += 32766)
+          parts.push(btoa(String.fromCharCode(...bytes.subarray(offset, offset + 32766))));
+        parts.push('"');
+      }
+      parts.push('}');
+    }
+    parts.push('],"starts":' + JSON.stringify(await outbox.starts()) + '}');
+    const url = URL.createObjectURL(new Blob(parts, { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'saved-playtest.json';
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  recoveryActions.querySelector('[data-discard]').onclick = async () => {
+    const id = completion.querySelector('[data-session]').value;
+    if (
+      id &&
+      window.confirm('Discard this session’s local undelivered recording? This cannot be undone.')
+    ) {
+      await outbox.discard(id);
+      await reconcile();
+      status();
+    }
+  };
+  recoveryActions.querySelector('[data-delete]').onclick = async () => {
+    const id = completion.querySelector('[data-session]').value;
+    if (
+      id &&
+      window.confirm(
+        'Delete local payloads and receipts for this session? Download them first if needed.',
+      )
+    ) {
+      await outbox.deleteSession(id);
+      await reconcile();
+      status();
+    }
+  };
+  recoveryActions.querySelector('[data-legacy]').onclick = async () => {
+    try {
+      if (!indexedDB.databases)
+        throw Error(
+          'This browser cannot inspect older recordings. Use the original version to recover them.',
+        );
+      const databases = await indexedDB.databases();
+      if (!databases.some((db) => db.name === 'simulacrum-playtest-outbox'))
+        throw Error('No older recordings on this origin.');
+      const legacy = await new Promise((resolve, reject) => {
+        const r = indexedDB.open('simulacrum-playtest-outbox');
+        r.onupgradeneeded = () => {
+          r.transaction.abort();
+        };
+        r.onsuccess = () => resolve(r.result);
+        r.onerror = () => reject(r.error);
+      });
+      let items;
+      try {
+        items = await new Promise((resolve, reject) => {
+          const tx = legacy.transaction('items', 'readonly'),
+            r = tx.objectStore('items').getAll();
+          tx.oncomplete = () => resolve(r.result);
+          tx.onerror = () => reject(tx.error);
+        });
+      } finally {
+        legacy.close();
+      }
+      const parts = ['{"protocolVersion":1,"items":['];
+      for (let i = 0; i < items.length; i++) {
+        if (i) parts.push(',');
+        const row = items[i];
+        parts.push(JSON.stringify({ ...row, body: undefined }).slice(0, -1) + ',"base64":"');
+        const bytes = new Uint8Array(await row.body.arrayBuffer());
+        for (let offset = 0; offset < bytes.length; offset += 32766)
+          parts.push(btoa(String.fromCharCode(...bytes.subarray(offset, offset + 32766))));
+        parts.push('"}');
+      }
+      parts.push(']}');
+      const url = URL.createObjectURL(new Blob(parts, { type: 'application/json' })),
+        link = document.createElement('a');
+      link.href = url;
+      link.download = 'older-playtest.json';
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      completion.querySelector('[data-completion-status]').textContent = error.message;
+    }
+  };
+  const manage = document.createElement('button');
+  manage.textContent = 'Manage saved recordings';
+  dialog.append(manage);
+  manage.onclick = () => {
+    dialog.close();
+    completion.showModal();
+  };
+  completion.querySelector('[data-retry]').onclick = async () => {
+    await outbox.retry(completion.querySelector('[data-session]').value || undefined);
+    void pump();
+  };
   const originalConsoleError = console.error;
   const consoleError = (...args) => {
     emit('console-error', {
@@ -579,6 +749,31 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
   window.addEventListener('error', onError);
   window.addEventListener('unhandledrejection', onError);
   window.addEventListener('beforeunload', beforeUnload);
+  const recoverStarts = async () => {
+    for (const start of await outbox.starts()) {
+      if (start.outcome !== 'pending' || disposed) continue;
+      try {
+        const response = await fetch('/api/playtest/v2/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: start.bodyText,
+          signal: AbortSignal.timeout(uploadTimeoutMs),
+        });
+        if (response.ok) await outbox.acceptStart(start, await response.json());
+      } catch {
+        /* Preserve immutable creation attempts for later explicit recovery. */
+      }
+    }
+  };
+  // Recovery never starts a recorder. The user still chooses a tab on Start.
+  pendingWrites++;
+  void recoverStarts().finally(() => {
+    pendingWrites--;
+    closeDatabaseIfIdle();
+  });
+  const onFocus = () => void pump();
+  window.addEventListener('focus', onFocus);
+  window.addEventListener('visibilitychange', onFocus);
   const uploadTimer = setInterval(pump, 3000);
   pump();
   status();
@@ -591,6 +786,8 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
     // settle; disposed prevents another dispatch and storage closes after busy clears.
     startingStream?.getTracks().forEach((track) => track.stop());
     stop();
+    window.removeEventListener('focus', onFocus);
+    window.removeEventListener('visibilitychange', onFocus);
     window.removeEventListener('error', onError);
     window.removeEventListener('unhandledrejection', onError);
     window.removeEventListener('beforeunload', beforeUnload);

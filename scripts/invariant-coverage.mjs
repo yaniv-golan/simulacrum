@@ -43,7 +43,7 @@ export function validateInvariantCoverage(
     if (!manifest.milestones.includes(x.dueAt)) fail(`unknown milestone ${x.id}`);
     if (typeof x.guarantee !== 'string' || !x.guarantee.trim()) fail(`missing guarantee ${x.id}`);
     if (!Array.isArray(x.owners) || !x.owners.length) fail(`missing owner ${x.id}`);
-    x.owners.forEach((p) => pointer(p, 'src/'));
+    x.owners.forEach((p) => pointer(p, p?.path?.startsWith('scripts/') ? 'scripts/' : 'src/'));
     for (const kind of ['positive', 'negative']) {
       if (!Array.isArray(x.controls?.[kind]) || !x.controls[kind].length)
         fail(`missing ${kind} control ${x.id}`);

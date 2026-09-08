@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "dependencies": {
+    "scripts/playtest/cloud-store.mjs": "e9dad819a8cce7098831a76d86de5b68af9108eab43bcb2309d5bd28f94eb882",
+    "scripts/playtest/protocol.mjs": "75b1a5cf9a3d9ab0b3b51c4845a25a9264e07fced7af8c15f2f8c5a1c084ad77",
+    "scripts/playtest/worker.mjs": "2a67d1db4b8840950809cedbaed91d006c2fe2d15892b60a31541d9b3c05c7eb",
+    "src/application/capture-outbox.mjs": "b15bb819cee191f5e4c49b5562ea167b0c42b40eca665d5207b7b6d806c86d05",
+    "scripts/playtest/download.mjs": "58135880f31a73e1c50d488fc7411da8694c3fc9fdfe8f857c68b84aa512c351",
+    "package.json#script=build": "fa8d7c70071ee5868cc28f384dcf73a041efeea031475bcfab06c3c3e4ef1b0e",
+    "package.json#script=playtest:local": "eb354fb3f029c126a66fe445b1b53e6a435555f30027c3e3718d83bbeae61c77",
+    "package.json#script=playtest:download": "3d07abdbda3164ed5ff2f54426a361f5be6b9a26d1c57100f46d25216e5cfd18"
+  }
+}

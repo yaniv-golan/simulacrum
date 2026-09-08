@@ -66,3 +66,18 @@ test('current guarantee cannot cite only a future check as its owner', () => {
   m.checks[0].dueAt = 'M5';
   assert.throws(() => validateInvariantCoverage(m, { read }), /future check/);
 });
+
+test('runtime service invariants may name script owners but not private or escaping paths', () => {
+  const m = fixture();
+  m.invariants[0].owners[0].path = 'scripts/playtest/worker.mjs';
+  const serviceRead = (path) =>
+    path === 'scripts/playtest/worker.mjs' ? 'function commit() {}' : read(path);
+  assert.doesNotThrow(() => validateInvariantCoverage(m, { read: serviceRead }));
+  for (const path of ['scripts/../private.mjs', 'docs/internal/worker.mjs']) {
+    m.invariants[0].owners[0].path = path;
+    assert.throws(
+      () => validateInvariantCoverage(m, { read: () => 'commit accepted edit rejected edit' }),
+      /invalid pointer/,
+    );
+  }
+});

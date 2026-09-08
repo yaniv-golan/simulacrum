@@ -1,5 +1,7 @@
 // M3b: private, bounded remote playtest capture. Receipts order completed uploads at the server.
 import { createServer } from 'node:http';
+import { Readable } from 'node:stream';
+import { admission, readBounded, safeId, mediaTypes } from './playtest/protocol.mjs';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import {
   mkdirSync,
@@ -10,19 +12,22 @@ import {
   writeFileSync,
   truncateSync,
   unlinkSync,
+  rmSync,
+  renameSync,
 } from 'node:fs';
-import { appendFile, writeFile, stat, realpath, readFile, rename, open } from 'node:fs/promises';
+import {
+  appendFile,
+  writeFile,
+  stat,
+  realpath,
+  readFile,
+  rename,
+  open,
+  rm,
+} from 'node:fs/promises';
 import { resolve, relative, sep, extname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const safeId = /^[A-Za-z0-9_-]{1,80}$/;
-const mediaTypes = new Set([
-  'video/webm',
-  'audio/webm',
-  'audio/mp4',
-  'video/mp4',
-  'application/octet-stream',
-]);
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -41,7 +46,10 @@ const inside = (root, path) => {
   return r === '' || (!r.startsWith(`..${sep}`) && r !== '..' && !r.startsWith(sep));
 };
 const fail = (status, message) => Object.assign(new Error(message), { status });
+const completedResponses = new WeakSet();
 function send(res, status, value) {
+  if (completedResponses.has(res) || res.destroyed || res.writableEnded) return;
+  completedResponses.add(res);
   res.writeHead(status, { 'content-type': 'application/json' });
   res.end(JSON.stringify(value));
 }
@@ -54,21 +62,8 @@ async function syncPath(path) {
   }
 }
 async function body(req, limit) {
-  if (Number(req.headers['content-length']) > limit) {
-    req.resume();
-    throw fail(413, 'Request too large');
-  }
-  const chunks = [];
-  let size = 0;
-  for await (const chunk of req.iterator({ destroyOnReturn: false })) {
-    size += chunk.length;
-    if (size > limit) {
-      req.resume();
-      throw fail(413, 'Request too large');
-    }
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks);
+  if (Number(req.headers['content-length']) > limit) throw fail(413, 'Request too large');
+  return Buffer.from(await readBounded(Readable.toWeb(req), limit));
 }
 function json(bytes) {
   try {
@@ -80,6 +75,9 @@ function json(bytes) {
   }
 }
 
+const processWriteAdmission = admission();
+const stalledWrites = new Set();
+
 export function createPlaytestServer({
   publicDir = process.env.PLAYTEST_PUBLIC_DIR,
   dataDir = process.env.PLAYTEST_DATA_DIR,
@@ -87,6 +85,7 @@ export function createPlaytestServer({
   maxRequestBytes = 10 * 1024 * 1024,
   maxSessionBytes = 1024 ** 3,
   maxSessions = 20,
+  persistenceResponseMs = 40000,
 } = {}) {
   if (!publicDir || !dataDir || !token || token.length < 32)
     throw Error(
@@ -94,6 +93,12 @@ export function createPlaytestServer({
     );
   for (const n of [maxRequestBytes, maxSessionBytes, maxSessions])
     if (!Number.isSafeInteger(n) || n < 1) throw Error('Limits must be positive integers');
+  if (
+    !Number.isSafeInteger(persistenceResponseMs) ||
+    persistenceResponseMs < 1 ||
+    persistenceResponseMs > 40000
+  )
+    throw Error('Invalid persistence response deadline');
   const publicRoot = realpathSync(resolve(publicDir));
   // Resolve before creation so the server never creates its private store under public assets.
   if (inside(publicRoot, resolve(dataDir)))
@@ -102,6 +107,9 @@ export function createPlaytestServer({
   const privateRoot = realpathSync(resolve(dataDir));
   if (inside(publicRoot, privateRoot) || inside(privateRoot, publicRoot))
     throw Error('Public and private roots must be separate');
+  for (const name of readdirSync(privateRoot))
+    if (/^\.[a-f0-9]{32}\.creating$/.test(name))
+      rmSync(join(privateRoot, name), { recursive: true, force: true });
   let sessionCount = readdirSync(privateRoot, { withFileTypes: true }).filter((x) =>
     x.isDirectory(),
   ).length;
@@ -110,7 +118,28 @@ export function createPlaytestServer({
   for (const entry of readdirSync(privateRoot, { withFileTypes: true })) {
     if (!entry.isDirectory() || !/^[a-f0-9]{32}$/.test(entry.name)) continue;
     const dir = join(privateRoot, entry.name);
-    const session = { dir, bytes: 0, sequence: 0, writes: new Map() };
+    let saved;
+    try {
+      saved = JSON.parse(readFileSync(join(dir, 'session.json'), 'utf8'));
+    } catch (error) {
+      // Preserve old incomplete creations without hiding a corrupt recording journal.
+      if (
+        !(error instanceof SyntaxError || error.code === 'ENOENT') ||
+        readdirSync(dir).some((file) => file !== 'session.json')
+      )
+        throw error;
+      renameSync(dir, join(privateRoot, '.incomplete-' + entry.name));
+      continue;
+    }
+    const session = {
+      dir,
+      bytes: 0,
+      sequence: 0,
+      writes: new Map(),
+      protocolVersion: saved.protocolVersion || 1,
+      requestId: saved.requestId,
+      requestHash: saved.requestHash,
+    };
     const log = join(dir, 'events.ndjson');
     let bytes = Buffer.alloc(0);
     try {
@@ -157,6 +186,8 @@ export function createPlaytestServer({
     }
     sessions.set(entry.name, session);
   }
+  if (maxRequestBytes > 10 * 1024 ** 2) throw Error('Request limit exceeds write admission budget');
+  const writes = processWriteAdmission;
   let queue = Promise.resolve();
   const serialized = (fn) => {
     const result = queue.then(fn);
@@ -168,6 +199,21 @@ export function createPlaytestServer({
     res.setHeader('x-content-type-options', 'nosniff');
     res.setHeader('referrer-policy', 'no-referrer');
     res.setHeader('cross-origin-resource-policy', 'same-origin');
+    let release;
+    const acquireWrite = (size) => {
+      if (stalledWrites.size) throw fail(503, 'Storage unavailable');
+      const dispose = writes.acquire(size),
+        id = {};
+      const timer = setTimeout(() => {
+        stalledWrites.add(id);
+        send(res, 503, { error: 'Storage response deadline; retry later' });
+      }, persistenceResponseMs);
+      return () => {
+        clearTimeout(timer);
+        stalledWrites.delete(id);
+        dispose();
+      };
+    };
     try {
       const rawPath = req.url.split('?')[0];
       let decoded;
@@ -216,6 +262,10 @@ export function createPlaytestServer({
       if (url.pathname === '/api/playtest/config' && req.method === 'GET') {
         send(res, 200, {
           enabled: true,
+          protocolVersion: 2,
+          supportedProtocols: [1, 2],
+          accountingVersion: 'node-filesystem-v1',
+          storageUnavailable: stalledWrites.size > 0,
           limits: {
             eventBytes: Math.min(maxRequestBytes, 2 * 1024 * 1024),
             mediaBytes: maxRequestBytes,
@@ -225,9 +275,41 @@ export function createPlaytestServer({
         });
         return;
       }
-      if (url.pathname === '/api/playtest/session' && req.method === 'POST') {
-        const metadata = json(await body(req, Math.min(maxRequestBytes, 64 * 1024)));
+      const v2 = url.pathname.startsWith('/api/playtest/v2/');
+      if (
+        ['/api/playtest/session', '/api/playtest/v2/session'].includes(url.pathname) &&
+        req.method === 'POST'
+      ) {
+        release = acquireWrite(Math.min(maxRequestBytes, 64 * 1024));
+        const raw = await body(req, Math.min(maxRequestBytes, 64 * 1024));
+        const input = json(raw),
+          metadata = v2 ? input.metadata : input;
+        if (
+          v2 &&
+          (!safeId.test(input.requestId || '') ||
+            !metadata ||
+            typeof metadata !== 'object' ||
+            Array.isArray(metadata))
+        )
+          throw fail(400, 'Invalid creation identity');
+        const requestHash = digest(raw);
         await serialized(async () => {
+          if (v2) {
+            const prior = [...sessions.entries()].find(([, s]) => s.requestId === input.requestId);
+            if (prior) {
+              if (prior[1].requestHash !== requestHash)
+                throw fail(409, 'Creation identity conflict');
+              await syncPath(prior[1].dir);
+              await syncPath(privateRoot);
+              send(res, 200, {
+                sessionId: prior[0],
+                protocolVersion: 2,
+                requestId: input.requestId,
+                requestHash,
+              });
+              return;
+            }
+          }
           if (sessionCount >= maxSessions) throw fail(429, 'Session limit reached');
           const sessionId = randomBytes(16).toString('hex');
           const dir = join(privateRoot, sessionId);
@@ -235,32 +317,48 @@ export function createPlaytestServer({
             sessionId,
             receivedAt: new Date().toISOString(),
             metadata,
+            ...(v2 ? { protocolVersion: 2, requestId: input.requestId, requestHash } : {}),
           });
           if (Buffer.byteLength(record) > maxSessionBytes)
             throw fail(413, 'Session storage limit reached');
-          mkdirSync(dir, { mode: 0o700 });
-          await writeFile(join(dir, 'session.json'), record, {
-            flag: 'wx',
-            mode: 0o600,
-            flush: true,
-          });
-          await syncPath(dir);
-          await syncPath(privateRoot);
+          const staging = join(privateRoot, `.${sessionId}.creating`);
+          mkdirSync(staging, { mode: 0o700 });
+          try {
+            await writeFile(join(staging, 'session.json'), record, {
+              flag: 'wx',
+              mode: 0o600,
+              flush: true,
+            });
+            await syncPath(staging);
+            await rename(staging, dir);
+          } catch (error) {
+            await rm(staging, { recursive: true, force: true });
+            throw error;
+          }
+          // Register immediately after atomic publication. A failed directory sync
+          // is retried before any receipt; it cannot allocate a second v2 identity.
           sessions.set(sessionId, {
             dir,
             bytes: Buffer.byteLength(record),
             sequence: 0,
             writes: new Map(),
+            protocolVersion: v2 ? 2 : 1,
+            ...(v2 ? { requestId: input.requestId, requestHash } : {}),
           });
           sessionCount++;
-          send(res, 201, { sessionId });
+          await syncPath(privateRoot);
+          send(res, 201, {
+            sessionId,
+            ...(v2 ? { protocolVersion: 2, requestId: input.requestId, requestHash } : {}),
+          });
         });
         return;
       }
-      const match = /^\/api\/playtest\/([a-f0-9]{32})\/(event|media)$/.exec(url.pathname);
+      const match = /^\/api\/playtest\/(?:v2\/)?([a-f0-9]{32})\/(event|media)$/.exec(url.pathname);
       if (match && req.method === 'POST') {
         const session = sessions.get(match[1]);
         if (!session) throw fail(404, 'Unknown session');
+        if ((session.protocolVersion === 2) !== v2) throw fail(409, 'Capture protocol mismatch');
         let key, event, media;
         if (match[2] === 'media') {
           const kind = url.searchParams.get('kind');
@@ -280,6 +378,9 @@ export function createPlaytestServer({
           key = `media:${kind}:${clip}:${seq}`;
           media = { kind, clip, seq: Number(seq), mime, file: `${kind}-${clip}-${seq}.bin` };
         }
+        release = acquireWrite(
+          match[2] === 'event' ? Math.min(maxRequestBytes, 2 * 1024 ** 2) : maxRequestBytes,
+        );
         const bytes = await body(
           req,
           match[2] === 'event' ? Math.min(maxRequestBytes, 2 * 1024 * 1024) : maxRequestBytes,
@@ -298,7 +399,13 @@ export function createPlaytestServer({
             send(res, 200, prior.receipt);
             return;
           }
-          const receipt = { sequence: session.sequence + 1, receivedAt: new Date().toISOString() };
+          const receipt = {
+            sequence: session.sequence + 1,
+            receivedAt: new Date().toISOString(),
+            ...(v2
+              ? { protocolVersion: 2, sessionId: match[1], logicalKey: key, uploadHash: hash }
+              : {}),
+          };
           if (media) {
             media.bytes = bytes.length;
             media.sha256 = digest(bytes);
@@ -368,9 +475,16 @@ export function createPlaytestServer({
       res.writeHead(200, { 'content-type': type, 'content-length': info.size });
       res.end(content);
     } catch (error) {
+      if (!res.headersSent && [408, 413, 429].includes(error.status)) {
+        res.setHeader('connection', 'close');
+        if (error.status === 429) res.setHeader('retry-after', '3');
+        res.once?.('finish', () => req.destroy());
+      }
       if (!res.headersSent)
         send(res, error.status || 500, { error: error.status ? error.message : 'Capture failed' });
       else res.end();
+    } finally {
+      release?.();
     }
   });
   server.requestTimeout = 30_000;

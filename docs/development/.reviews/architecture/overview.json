@@ -3,6 +3,6 @@
   "dependencies": {
     "docs/contracts/runtime-v1.md": "f75cdc8ef9f47702468e1502096880c562d2b036d7e2fafcd567df5de2dc1561",
     "AGENTS.md": "4d05bdbb821b3002a5eedfdc190ae30d3f4dde812a0ea977892f4be4b8485c30",
-    "scripts/manifest.json": "8468675cb9f1bd547fb5f32101ea14cd440f53bcd9d87beac38163efa64271d9"
+    "scripts/manifest.json": "413a59769c52b6baad8db8528e4c6aacc46d1f24a498ca024a3c560ce8114c1b"
   }
 }

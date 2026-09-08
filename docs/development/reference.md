@@ -40,7 +40,11 @@ These are registered commands and checks, not evidence that they passed.
 | npm run gate:M0 | node scripts/gate.mjs M0 |
 | npm run gate:structural | node scripts/gate-structural.mjs |
 | npm run inspect:change | node scripts/inspect-change.mjs |
+| npm run playtest:download | node scripts/playtest/download.mjs |
+| npm run playtest:local | wrangler dev --port 8787 |
 | npm run preview | vite preview --host 127.0.0.1 |
+| npm run release:deploy | node scripts/playtest/release.mjs deploy |
+| npm run release:prepare | node scripts/playtest/release.mjs prepare |
 | npm run replay | node scripts/replay.mjs |
 | npm run rules | node scripts/rules.mjs |
 | npm run rules:explain | node scripts/explain-invariant.mjs |
@@ -80,3 +84,10 @@ These are registered commands and checks, not evidence that they passed.
 | checkpoint-next-step | [createSession](../../src/simulation/session.mjs) | invariant-controls |
 | copied-graph-integrity | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [insertAssembly](../../src/model/reusable-assemblies.mjs) | invariant-controls, verify-assemblies-browser, verify-assembly-ux-browser |
 | connection-display-isolation | [connectionRenderSpecs](../../src/presentation/connection-render.mjs), [pickableObjects](../../src/presentation/connection-view.mjs) | invariant-controls, verify-connection-test-browser, verify-exploded-browser |
+| capture-write-admission | [createPlaytestServer](../../scripts/playtest-server.mjs) | invariant-controls |
+| capture-cloud-integrity | [CaptureStore](../../scripts/playtest/cloud-store.mjs) | invariant-controls |
+| capture-receipt-ownership | [openCaptureOutbox](../../src/application/capture-outbox.mjs) | invariant-controls |
+| release-publisher-ownership | [ReleaseCoordinator](../../scripts/playtest/release-control.mjs) | invariant-controls |
+| capture-synthetic-cleanup | [CaptureStore](../../scripts/playtest/cloud-store.mjs) | invariant-controls |
+| release-effective-isolation | [verifyCredentialIsolation](../../scripts/playtest/credential-isolation.mjs) | invariant-controls |
+| release-load-delivery | [retryUpload](../../scripts/playtest/load.mjs) | invariant-controls |

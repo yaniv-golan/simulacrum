@@ -1,0 +1,106 @@
+name: Deploy production
+on:
+  workflow_dispatch:
+    inputs:
+      compatible_rollback:
+        description: Restore a previously successful production run instead of promoting a staging run
+        required: true
+        default: false
+        type: boolean
+      expected_predecessor:
+        description: Exact currently deployed production version selected when dispatching
+        required: true
+        type: string
+      release_run_id:
+        description: Successful release-branch Verify run ID
+        required: true
+        type: string
+      artifact_digest:
+        description: Exact SHA-256 release artifact digest
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  admission:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.18.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ inputs.compatible_rollback && 'production-rollback-package' || 'release-package' }}
+          path: .release-private/ci
+          run-id: ${{ inputs.release_run_id }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: inputs.compatible_rollback == false
+        with:
+          name: staging-verification
+          path: .release-private/ci
+          run-id: ${{ inputs.release_run_id }}
+          github-token: ${{ github.token }}
+      - run: node scripts/playtest/ci-release.mjs preflight production
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_READ_TOKEN }}
+          PLAYTEST_CONTROL_TOKEN: ${{ secrets.PRODUCTION_CONTROL_TOKEN }}
+          RELEASE_CONFIG: ${{ vars.PRODUCTION_RELEASE_CONFIG }}
+          RELEASE_ROLLBACK: ${{ inputs.compatible_rollback }}
+          RELEASE_PREDECESSOR: ${{ inputs.expected_predecessor }}
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+          RELEASE_DIGEST: ${{ inputs.artifact_digest }}
+  deploy:
+    needs: admission
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.18.0
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ inputs.compatible_rollback && 'production-rollback-package' || 'release-package' }}
+          path: .release-private/ci
+          run-id: ${{ inputs.release_run_id }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: inputs.compatible_rollback == false
+        with:
+          name: staging-verification
+          path: .release-private/ci
+          run-id: ${{ inputs.release_run_id }}
+          github-token: ${{ github.token }}
+      - run: npx playwright install --with-deps chromium chrome
+      - run: xvfb-run --auto-servernum node scripts/playtest/ci-release.mjs deploy production
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_READ_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          PLAYTEST_ADMIN_TOKEN: ${{ secrets.PLAYTEST_ADMIN_TOKEN }}
+          PLAYTEST_CONTROL_TOKEN: ${{ secrets.PRODUCTION_CONTROL_TOKEN }}
+          RELEASE_CONFIG: ${{ vars.PRODUCTION_RELEASE_CONFIG }}
+          RELEASE_ROLLBACK: ${{ inputs.compatible_rollback }}
+          RELEASE_PREDECESSOR: ${{ inputs.expected_predecessor }}
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+          RELEASE_DIGEST: ${{ inputs.artifact_digest }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: production-verification
+          path: .release-private/ci/verified-production.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: production-rollback-package
+          retention-days: 90
+          include-hidden-files: true
+          path: |
+            .release-private/ci/release.json
+            .release-private/ci/payload/
+            .release-private/ci/verified-production.json

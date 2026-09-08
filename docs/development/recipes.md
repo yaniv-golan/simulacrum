@@ -10,7 +10,7 @@ attachment, polarity, naming, reset or authored-property policy.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"3310f56f06c85195e6eff706ee7b18ef95769e2a5ecbe88a8d69844dbf0adb57","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"2d31a6ca0c04205a3ae7c03b6ef7a0680c76c42b1631ac83f135e7b31b657b42","disposition":"still accurate","rationale":"Package verification scripts changed without changing catalog, geometry, schema generation or part admission; the recipe still identifies their current owners and wheel controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"8e291210c8ee0cf1056151d1762624726f2d144966c2263c65900c9b0d2e2334","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"c6bfa32d33ed40f4bde084c5471fdf7e2a8cda1807faf1433cbedf6d350edfea","disposition":"still accurate","rationale":"Wrangler and storage-test dependencies do not change the catalog, schema, geometry, compiler, wheel-diameter contracts or part milestone admission described by this recipe."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -27,7 +27,7 @@ validation with `node scripts/generate-schema.mjs` when schema changes.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"ac1c8c0b1c4811319fa46477f97eef4c85e9e15e5aa8194cb48751e4a7215b14","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"5fe86f6635455c83a6b60f22fb0c11c3af034a759ab0844c4799e618d1cce28b","disposition":"still accurate","rationale":"New verification entrypoints do not change core command admission, compilation, history or the positive and negative command controls described here."} -->
+<!-- doc-review {"version":1,"fingerprint":"1a0e5a8158d5421bb786a28a08743d9aa27b64ae75f8f08321dfac276976d37f","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"d4008bb8e2ad3f5669c591c71be92c9b8ce6de15bef654c0c123c043abe3d410","disposition":"still accurate","rationale":"Capture API commands live outside the workshop authoring surface. The referenced core command shape validation, candidate compilation, atomic history and surface-mount counterexamples are unchanged."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -42,7 +42,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"193c6ad3a081e1d09018764d8bef13b7bfd5372425dd4fdc92ca4a1829d90ba9","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"174d05370f893c10fdfe3499cc601188c431e9cacc4c1ac7d34e6b3f1586ce6c","disposition":"still accurate","rationale":"The mirror legend now distinguishes one part from multiple parts. Selection, preview, refusal, cancellation and commit behavior and the registered browser checks remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b347469310a5df54ef2a35368a71f8aeaa530d088f4dfe88c741179c562ac8a9","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"6c4eeae48656fb69ebe606af91d67842439ed9c23287cc6b2852e399d4b1d5b9","disposition":"still accurate","rationale":"Discovery gains runtime service alternatives, while the mirror and help verifiers retain their implementation and registered execution. No surface/mirror preview, receiver cancellation, tooltip, scroll or reference-window behavior changed."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -85,7 +85,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"6e81a59f89e13b1fece53e06dae7bb4ab90b9d9960b1b6cf0d64beb61f8dbba8","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"061fd69588ec00cd8d4b3385d060b3cbb2a096e968b00c08e552c752b44e0b9d","disposition":"still accurate","rationale":"Package command additions do not alter completed-observation diagnostics or their opposed-drive and missing-data controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"4035b6b4071ff4f044cdb8639e5089fcbab8e4313246b08c88f335d0de3f32e6","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"bd4d79ec80ef77ebedafeec473dc7c4c63f5d9787079ec3be686bb73caa48117","disposition":"still accurate","rationale":"Deployment diagnostics and capture status do not alter diagnoseMotion, completed-observation consumption, opposed-drive controls or the separation between a symptom and its cause."} -->
 
 Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -100,7 +100,7 @@ A symptom is not proof of the intended mechanism or cause.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"7f4a10413495bcbbdf8cb0ada5eeae68f5ea2f8bdd40ffa90872ece1af1296fd","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ba2837480c69c6b0cee0d77ebffade1431d2af5e96c9bbf41de26c5b5538d4f4","disposition":"still accurate","rationale":"Only development tooling changed; physical laws, compiler configuration, fixed stepping and mandatory actual milestone qualification remain as described."} -->
+<!-- doc-review {"version":1,"fingerprint":"54c62e5cbb8d086c84d657df1eab600387b0df91971dafe68549dee183321312","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ee35245f7438dc8069cd674ba2809972cf97c00aa1e21396bcc924687c20edac","disposition":"still accurate","rationale":"No physics, compiler, phase ordering, energy accounting or controller source changed. Added capture/deployment packages leave the narrow physics door and required physical qualification procedure intact."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -117,7 +117,7 @@ Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"9e1d7a65e5a4aba25a8ddfc7c9da4be4980fb6f431851b792d8a6f3dda48db40","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"2fd7103e53235c2c10287745e229ac0dc8bb490b1c643af29043c5be6a040406","disposition":"still accurate","rationale":"Only the shared mirror refusal wording changed among this section dependencies. Assembly metadata, mechanical traversal, copy admission, instance bindings and persistence retain the documented semantics."} -->
+<!-- doc-review {"version":1,"fingerprint":"842eb3b18940a26996c603babebd1ff4569282c206893cf9bd9f5715be2b9810","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"40a7700ed164635cca1b7d34c43a36291c285e9c0de32e17a0cf9c7454bb016c","disposition":"still accurate","rationale":"Runtime network discovery was extended for recording adapters only. Mechanical traversal, assembly aliases, copied-graph contracts, library persistence, transforms and the shared assembly browser flows remain unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft connectivity, not an editor selection, electrical network, or stored
@@ -190,7 +190,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"bb746b78ca9bebd8d58a6a37d009e079fa14d5240129e8dd1f295bde5695bea3","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"bab9b02bc959e75d5eef27659c808ef116dc0f0898f2396dee43ba54bc2cb69b","disposition":"updated","rationale":"The Connect and test panel direct source binds its row and reveal lifecycle. connectionTestPaths, renderer/resource owners and existing test links separately bind the helper and integration behavior described by this recipe."} -->
+<!-- doc-review {"version":1,"fingerprint":"edc333fd77fe504d5ed5a4e2755a7f61dbd3e3182e82c823aa10836fbd53efb0","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"eeb5f5af3f51cf43b262f98b73ec5ace92d25fec9e1119d01649dfdd8d5f3ae3","disposition":"still accurate","rationale":"The package changes do not modify connection rendering, reveal/highlight ownership, visibility, ray picking or GPU resources. Existing overlay invariants and browser checks remain the prescribed validation."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

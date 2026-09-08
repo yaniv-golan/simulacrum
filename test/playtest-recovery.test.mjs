@@ -111,3 +111,82 @@ test('orphan recovery credits existing bytes and ignores uncommitted staging fil
   );
   await assert.rejects(readFile(join(f.dir, 'screen-tab-1.bin.pending')), { code: 'ENOENT' });
 });
+
+test('v2 creation survives a lost response and restart without accepting legacy writes', async (t) => {
+  const f = await fixture(t),
+    input = { requestId: 'immutable-start', metadata: { build: 'v2-test' } };
+  const created = await f.post('/api/playtest/v2/session', input);
+  assert.equal(created.status, 201);
+  assert.equal(created.body.protocolVersion, 2);
+  const post = await f.restart();
+  assert.deepEqual((await post('/api/playtest/v2/session', input)).body, created.body);
+  assert.equal(
+    (await post('/api/playtest/v2/session', { ...input, metadata: { build: 'changed' } })).status,
+    409,
+  );
+  const id = created.body.sessionId;
+  assert.equal((await post(`/api/playtest/${id}/event`, { id: 'legacy' })).status, 409);
+  const response = await post(`/api/playtest/v2/${id}/event`, { id: 'v2' });
+  assert.equal(response.status, 201);
+  assert.equal(response.body.logicalKey, 'event:v2');
+  assert.equal(response.body.sessionId, id);
+  assert.equal(response.body.protocolVersion, 2);
+});
+
+test('v2 creation recovers partial writes and post-rename sync failures without duplicate sessions', async (t) => {
+  const fs = await import('node:fs/promises'),
+    { syncBuiltinESMExports } = await import('node:module'),
+    { dirname } = await import('node:path');
+  const api = fs.default;
+  for (const fault of ['partial', 'sync']) {
+    const f = await fixture(t),
+      dataDir = await fs.realpath(dirname(f.dir)),
+      input = { requestId: 'fault-' + fault, metadata: {} };
+    const originalWrite = api.writeFile,
+      originalOpen = api.open;
+    let injected = false;
+    api.writeFile = async (path, bytes, ...args) => {
+      if (fault === 'partial' && String(path).endsWith('session.json') && !injected) {
+        injected = true;
+        await originalWrite(path, '{');
+        throw Error('partial write');
+      }
+      return originalWrite(path, bytes, ...args);
+    };
+    api.open = async (path, ...args) => {
+      const handle = await originalOpen(path, ...args);
+      if (fault === 'sync' && path === dataDir && !injected) {
+        injected = true;
+        handle.sync = async () => {
+          throw Error('sync failed');
+        };
+      }
+      return handle;
+    };
+    syncBuiltinESMExports();
+    try {
+      assert.equal((await f.post('/api/playtest/v2/session', input)).status, 500);
+    } finally {
+      api.writeFile = originalWrite;
+      api.open = originalOpen;
+      syncBuiltinESMExports();
+    }
+    const retry = await f.post('/api/playtest/v2/session', input);
+    assert.ok([200, 201].includes(retry.status));
+    if (fault === 'partial') {
+      await fs.mkdir(join(dataDir, 'c'.repeat(32)));
+      await fs.writeFile(join(dataDir, 'c'.repeat(32), 'session.json'), '{');
+    }
+    const restarted = await f.restart();
+    if (fault === 'partial')
+      assert.equal(
+        await fs.readFile(join(dataDir, '.incomplete-' + 'c'.repeat(32), 'session.json'), 'utf8'),
+        '{',
+      );
+    assert.deepEqual((await restarted('/api/playtest/v2/session', input)).body, retry.body);
+    assert.equal(
+      (await fs.readdir(dataDir)).filter((name) => /^[a-f0-9]{32}$/.test(name)).length,
+      2,
+    );
+  }
+});

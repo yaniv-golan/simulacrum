@@ -73,7 +73,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"f29b61decd0bdd157faa73f34e156cc53f4f96c3218d7c2852c4f4d28286cf8f","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"da1eb15807ebfd03983173987ecce5b6cee60408a5e76b77ed0813655957fe3e","disposition":"still accurate","rationale":"The package runtime remains the authority and the new .nvmrc supplies a compatible installation default. Existing tier exit semantics, localhost preflight and production clock checks remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"5dc07dcbdcb4c55522e89f17fed41d04ea8ab89d4469c442947fbbdf4a8cf9d4","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"c791e36c50a3bd159bb38fe5c978895cd0536926ec59267abc562ebf6fd266d6","disposition":"still accurate","rationale":"The linked playtest guide now documents atomic creation and stricter release acceptance. Verification tiers, source identity and the separate human acceptance gate are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -113,7 +113,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"630b685b0a51d5f77903f8309b43e8dea57e72cffb5ba77880147004fd1578ac","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"3571b3cc2f342d4f8d9a66bf1f447657af80f750b0a2b970f631ee9b5c3b7bb7","disposition":"updated","rationale":"Direct source scope binds module bodies and imports without transitive dependencies, explicitly requiring wider links for wider claims. Regression controls preserve transitive implementation invalidation and direct body invalidation."} -->
+<!-- doc-review {"version":1,"fingerprint":"a2e27527b2bbf3609bb3b4a512ed8428ed575e80c01e4b5e0776021744d920f4","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"3cec900d0b85bfc2beba77befebccd95fa71e2ab200e7442b2a61b229b49a126","disposition":"still accurate","rationale":"Regenerated reference entries include new recording admission and release capability witnesses. The source-bound discovery, independent section reviews and stale rejection workflow are unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -199,7 +199,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"cfa59f5b058ef501273147a7205895ed59b58832be61fbae26e9b041add7a052","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"6d97cdb1f62d283e818e79f3de313328a536fc7fdb4359b5daa07136d3698a14","disposition":"updated","rationale":"Documentation omission now requires all relevant verifier and served-root readers to resolve; opaque and missing roots preserve conservative coverage for documentation-only and mixed changes. Mirror-only frozen scope remains narrow. Scheduling, report lifecycle and qualification behavior remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"6099a240a1a030f06d82d136a2f784f07aac5e73fb32a58def1acf82fbd90d0f","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c5e568f1488c918277ec183e4c39db45b9fb77731dd8cde0c925fa868ce5e7d2","disposition":"still accurate","rationale":"Manifest controls add creation crash, retained reservation and sustained queue-growth witnesses. Registered browser checks, capture adapters and conservative execution selection remain unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

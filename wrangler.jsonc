@@ -1,0 +1,60 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "simulacrum-workshop-local",
+  "main": "scripts/playtest/worker.mjs",
+  "compatibility_date": "2026-09-07",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "not_found_handling": "none"
+  },
+  "observability": {
+    "enabled": false,
+    "logs": {
+      "enabled": false,
+      "invocation_logs": false
+    },
+    "traces": {
+      "enabled": false
+    }
+  },
+  "vars": {
+    "ALLOWED_ORIGIN": "http://localhost:8787",
+    "INVITATION_GENERATION": "1",
+    "PRIVATE_SITE": "false",
+    "CAPTURE_NEW_SESSIONS": "true"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CAPTURE",
+        "class_name": "CaptureStore"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "capture-v2",
+      "new_sqlite_classes": [
+        "CaptureStore"
+      ]
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "RECORDINGS",
+      "bucket_name": "simulacrum-local-recordings"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "*/5 * * * *"
+    ]
+  },
+  "version_metadata": {
+    "binding": "WORKER_VERSION"
+  }
+}

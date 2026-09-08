@@ -1,0 +1,285 @@
+// Real capture supplies the sample distribution. Every scheduled event/chunk must be acknowledged.
+import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { captureAdmin, cleanupSynthetic } from './verify-deployment.mjs';
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const hash = (bytes, mime = '') => createHash('sha256').update(mime).update(bytes).digest('hex');
+export async function retryUpload({
+  path,
+  bytes,
+  mime,
+  expected,
+  deadline,
+  send,
+  stats,
+  now = Date.now,
+  wait = delay,
+}) {
+  while (now() < deadline) {
+    stats.requests++;
+    let response;
+    try {
+      response = await send(path, bytes, mime);
+    } catch (error) {
+      stats.timeouts++;
+      if (now() >= deadline) throw error;
+      stats.retries++;
+      await wait(1000);
+      continue;
+    }
+    if (response.ok) {
+      const receipt = await response.json();
+      for (const [key, value] of Object.entries(expected))
+        if (receipt[key] !== value) throw Error('Load receipt identity mismatch');
+      return receipt;
+    }
+    await response.arrayBuffer();
+    if (![429, 503].includes(response.status)) throw Error(`Load upload ${response.status}`);
+    stats.retries++;
+    await wait(Math.max(1000, Number(response.headers.get('retry-after') || 0) * 1000));
+  }
+  throw Error('Load delivery deadline: queued data remains unacknowledged');
+}
+// Five consecutive one-minute medians must not rise by >1 MiB overall,
+// with each adjacent minute rising by >128 KiB. Brief bursts may drain normally.
+export function assertCaptureBacklog(capture) {
+  const samples = capture.outboxSamples;
+  if (capture.captureSeconds !== 1800 || !Array.isArray(samples) || samples.length < 590)
+    throw Error('Thirty-minute outbox samples required');
+  if (!capture.finalOutbox || capture.finalOutbox.bytes !== 0 || capture.finalOutbox.pending !== 0)
+    throw Error('Capture must drain');
+  for (let i = 0; i < samples.length; i++)
+    if (
+      !Number.isFinite(samples[i].at) ||
+      !Number.isFinite(samples[i].bytes) ||
+      samples[i].bytes < 0 ||
+      (i && (samples[i].at <= samples[i - 1].at || samples[i].at - samples[i - 1].at > 6000))
+    )
+      throw Error('Invalid outbox samples');
+  if (samples.at(-1).at - samples[0].at < 1794000) throw Error('Incomplete outbox samples');
+  const medians = [];
+  for (let start = samples[0].at; start + 60000 <= samples.at(-1).at + 3000; start += 60000) {
+    const values = samples
+      .filter((s) => s.at >= start && s.at < start + 60000)
+      .map((s) => s.bytes)
+      .sort((a, b) => a - b);
+    if (values.length < 10) throw Error('Sparse outbox samples');
+    medians.push(values[Math.floor(values.length / 2)]);
+  }
+  for (let i = 4; i < medians.length; i++)
+    if (
+      medians[i] - medians[i - 4] > 1024 ** 2 &&
+      medians.slice(i - 3, i + 1).every((value, j) => value - medians[i - 4 + j] > 128 * 1024)
+    )
+      throw Error('Sustained capture outbox growth');
+}
+export async function measureCaptureLoad({ origin, capture, seconds = 120, reservation }) {
+  assertCaptureBacklog(capture);
+  if (!capture?.mediaFiles?.length || !capture?.eventSamples?.length)
+    throw Error('Measured media distribution and event traffic required');
+  const clients = 20,
+    ticks = Math.ceil(seconds / 3),
+    eventsPerTick = Math.max(
+      1,
+      Math.ceil(capture.eventSamples.length / Math.max(1, capture.captureSeconds / 3)),
+    );
+  const rows = clients * (ticks * (1 + eventsPerTick) + 1) + 2;
+  const run =
+    reservation ||
+    (await captureAdmin(origin, 'synthetic', {
+      slots: clients,
+      bytes: 20 * 1024 ** 3,
+      metadataBytes: (rows + clients) * 4096,
+    }));
+  const stats = { requests: 0, retries: 0, timeouts: 0 },
+    latencies = [],
+    backlog = [];
+  const cpu = process.cpuUsage(),
+    memory = { scope: 'load generator process', peakRss: process.memoryUsage().rss };
+  let completed = 0,
+    scheduled = 0,
+    byteCount = 0;
+  const sample = setInterval(() => {
+    memory.peakRss = Math.max(memory.peakRss, process.memoryUsage().rss);
+    backlog.push({ at: Date.now(), pending: scheduled - completed });
+  }, 250);
+  try {
+    const invite = await captureAdmin(origin, `synthetic/${run.id}/invitation`);
+    const login = await fetch(new URL(`/join?token=${encodeURIComponent(invite.token)}`, origin), {
+      redirect: 'manual',
+      signal: AbortSignal.timeout(15000),
+    });
+    const cookie = login.headers.get('set-cookie')?.split(';')[0];
+    if (login.status !== 303 || !cookie) throw Error('Load invitation failed');
+    const send = async (path, bytes, mime, shaped = true) => {
+      let body = bytes;
+      if (shaped) {
+        let offset = 0;
+        body = new ReadableStream({
+          async pull(controller) {
+            if (offset === bytes.length) {
+              controller.close();
+              return;
+            }
+            const part = bytes.subarray(offset, offset + 32768);
+            offset += part.length;
+            await delay((part.length * 8) / 5000);
+            controller.enqueue(part);
+          },
+        });
+        await delay(100);
+      }
+      return fetch(new URL(path, origin), {
+        method: 'POST',
+        headers: { cookie, origin, 'content-type': mime },
+        body,
+        redirect: 'error',
+        signal: AbortSignal.timeout(45000),
+        ...(shaped ? { duplex: 'half' } : {}),
+      });
+    };
+    const sessions = [];
+    for (let i = 0; i < clients; i++) {
+      const bytes = Buffer.from(
+        JSON.stringify({ requestId: crypto.randomUUID(), metadata: { synthetic: true } }),
+      );
+      const response = await send('/api/playtest/v2/session', bytes, 'application/json', false);
+      stats.requests++;
+      if (!response.ok) throw Error(`Load session admission ${response.status}`);
+      sessions.push((await response.json()).sessionId);
+    }
+    const start = Date.now();
+    const delivery = async (session, key, bytes, mime, path, due, normal = true) => {
+      byteCount += bytes.length;
+      await retryUpload({
+        path,
+        bytes,
+        mime,
+        expected: {
+          protocolVersion: 2,
+          sessionId: session,
+          logicalKey: key,
+          uploadHash: hash(bytes, key.startsWith('media:') ? mime : ''),
+        },
+        deadline: start + seconds * 1000 + 45000,
+        send,
+        stats,
+      });
+      if (normal) {
+        latencies.push(Date.now() - due);
+        completed++;
+      }
+    };
+    const producer = setInterval(() => {
+      scheduled =
+        Math.min(ticks, Math.floor((Date.now() - start) / 3000) + 1) *
+        clients *
+        (eventsPerTick + 1);
+    }, 50);
+    let outcomes;
+    try {
+      scheduled = clients * (eventsPerTick + 1);
+      outcomes = await Promise.allSettled(
+        sessions.map(async (session, index) => {
+          for (let seq = 0; seq < ticks; seq++) {
+            const due = start + seq * 3000;
+            await delay(Math.max(0, due - Date.now()));
+            const media = await readFile(
+              capture.mediaFiles[(seq * clients + index) % capture.mediaFiles.length],
+            );
+            if (!media.length || media.length > 10 * 1024 ** 2)
+              throw Error('Capture chunk outside admitted bounds');
+            await delivery(
+              session,
+              `media:screen:load:${seq}`,
+              media,
+              'video/webm',
+              `/api/playtest/v2/${session}/media?kind=screen&clip=load&seq=${seq}`,
+              due,
+            );
+            for (let e = 0; e < eventsPerTick; e++) {
+              const id = `load-${seq}-${e}`,
+                template =
+                  capture.eventSamples[(seq * eventsPerTick + e) % capture.eventSamples.length];
+              const bytes = Buffer.from(JSON.stringify({ ...template, id }));
+              await delivery(
+                session,
+                `event:${id}`,
+                bytes,
+                'application/json',
+                `/api/playtest/v2/${session}/event`,
+                due,
+              );
+            }
+          }
+        }),
+      );
+    } finally {
+      clearInterval(producer);
+      scheduled = clients * ticks * (eventsPerTick + 1);
+    }
+    const failures = outcomes.filter((r) => r.status === 'rejected');
+    if (failures.length)
+      throw new AggregateError(
+        failures.map((r) => r.reason),
+        'Load failed with undelivered requests',
+      );
+    // The maximum-size case is separate from normal-upload latency qualification.
+    const maximum = new Uint8Array(10 * 1024 ** 2);
+    const seed = await readFile(capture.mediaFiles[0]);
+    if (!seed.length) throw Error('Empty maximum-size media seed');
+    for (let offset = 0; offset < maximum.length; offset += seed.length)
+      maximum.set(seed.subarray(0, maximum.length - offset), offset);
+    const maxStart = Date.now();
+    const maximumResults = await Promise.allSettled(
+      sessions.slice(0, 2).map((session) =>
+        retryUpload({
+          path: `/api/playtest/v2/${session}/media?kind=screen&clip=maximum&seq=0`,
+          bytes: maximum,
+          mime: 'video/webm',
+          expected: {
+            protocolVersion: 2,
+            sessionId: session,
+            logicalKey: 'media:screen:maximum:0',
+            uploadHash: hash(maximum, 'video/webm'),
+          },
+          deadline: Date.now() + 90000,
+          send,
+          stats,
+        }),
+      ),
+    );
+    if (maximumResults.some((r) => r.status === 'rejected'))
+      throw Error('Concurrent 10 MiB upload failed');
+    latencies.sort((a, b) => a - b);
+    const p95 =
+      latencies[Math.min(latencies.length - 1, Math.floor(latencies.length * 0.95))] ?? Infinity;
+    const result = {
+      clients,
+      seconds,
+      completed,
+      scheduled,
+      finalBacklog: scheduled - completed,
+      backlog,
+      eventsPerTick,
+      mediaSamples: capture.mediaFiles.length,
+      bytes: byteCount + maximum.length * 2,
+      ...stats,
+      p95Ms: p95,
+      maximum: { concurrent: 2, bytes: maximum.length, elapsedMs: Date.now() - maxStart },
+      cpu: { scope: 'load generator process', ...process.cpuUsage(cpu) },
+      memory,
+      outboxSamples: capture.outboxSamples,
+      finalOutbox: capture.finalOutbox,
+      exportMs: capture.exportMs,
+      storageBytes: capture.storageBytes,
+      network: { uplinkMbps: 5, rttMs: 100 },
+    };
+    if (p95 >= 5000 || result.finalBacklog !== 0)
+      throw Object.assign(Error('Capture load target failed'), { result });
+    return result;
+  } finally {
+    clearInterval(sample);
+    await cleanupSynthetic(origin, run.id);
+  }
+}

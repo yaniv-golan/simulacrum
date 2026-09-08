@@ -5,38 +5,133 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '17 2 * * *'
+permissions:
+  contents: read
 jobs:
   automated:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24.18.0
           cache: npm
       - run: npm ci
       - run: npm run format:check
       - run: npm run ci
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: unit-verification
-          path: artifacts/
+          path: |
+            artifacts/
+            !artifacts/remote-playtest/**
+            !artifacts/playtest-cloud/**
+            !artifacts/**/trace.zip
   browser:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24.18.0
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium chrome
       - run: xvfb-run --auto-servernum npm run test:browser
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: browser-verification
-          path: artifacts/
+          path: |
+            artifacts/
+            !artifacts/remote-playtest/**
+            !artifacts/playtest-cloud/**
+            !artifacts/**/trace.zip
+
+  release-package:
+    needs: [automated, browser]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      eligible: ${{ steps.policy.outputs.eligible }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.18.0
+          cache: npm
+      - run: npm ci
+      - id: policy
+        run: echo "eligible=$(node scripts/playtest/ci-release.mjs eligible)" >> "$GITHUB_OUTPUT"
+      - if: steps.policy.outputs.eligible == 'true'
+        run: npx playwright install --with-deps chromium chrome
+      - if: steps.policy.outputs.eligible == 'true'
+        run: xvfb-run --auto-servernum npm run release:prepare -- .release-private/ci
+      - if: steps.policy.outputs.eligible == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-package
+          retention-days: 14
+          path: |
+            .release-private/ci/release.json
+            .release-private/ci/payload/
+          include-hidden-files: true
+  staging-admission:
+    needs: release-package
+    if: needs.release-package.outputs.eligible == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.18.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-package
+          path: .release-private/ci
+      - run: node scripts/playtest/ci-release.mjs preflight staging
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_READ_TOKEN }}
+          PLAYTEST_CONTROL_TOKEN: ${{ secrets.STAGING_CONTROL_TOKEN }}
+          RELEASE_CONFIG: ${{ vars.STAGING_RELEASE_CONFIG }}
+  staging-deploy:
+    needs: staging-admission
+    runs-on: ubuntu-latest
+    environment: staging
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.18.0
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-package
+          path: .release-private/ci
+      - run: npx playwright install --with-deps chromium chrome
+      - run: xvfb-run --auto-servernum node scripts/playtest/ci-release.mjs deploy staging
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_READ_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          PLAYTEST_ADMIN_TOKEN: ${{ secrets.PLAYTEST_ADMIN_TOKEN }}
+          PLAYTEST_CONTROL_TOKEN: ${{ secrets.STAGING_CONTROL_TOKEN }}
+          RELEASE_CONFIG: ${{ vars.STAGING_RELEASE_CONFIG }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: staging-verification
+          retention-days: 14
+          path: .release-private/ci/verified-staging.json

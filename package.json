@@ -58,20 +58,28 @@
     "inspect:change": "node scripts/inspect-change.mjs",
     "docs:prepare": "node scripts/docs.mjs prepare",
     "verify:local": "node scripts/verify-local.mjs",
-    "test:browser:affected": "node scripts/verify-browser-suite.mjs"
+    "test:browser:affected": "node scripts/verify-browser-suite.mjs",
+    "playtest:local": "wrangler dev --port 8787",
+    "playtest:download": "node scripts/playtest/download.mjs",
+    "release:prepare": "node scripts/playtest/release.mjs prepare",
+    "release:deploy": "node scripts/playtest/release.mjs deploy"
   },
   "devDependencies": {
     "@types/three": "0.185.4",
     "acorn": "^8.18.0",
     "ajv": "^8.20.0",
     "css-tree": "^3.2.1",
+    "esbuild": "0.28.1",
+    "fake-indexeddb": "6.2.5",
     "fast-check": "^4.9.0",
     "mdast-util-from-markdown": "2.0.2",
+    "miniflare": "5.20260907.0-alpha",
     "parse5": "^8.0.1",
     "playwright": "^1.63.0",
     "prettier": "3.6.2",
     "typescript": "5.9.3",
-    "vite": "^8.2.2"
+    "vite": "^8.2.2",
+    "wrangler": "4.129.1"
   },
   "dependencies": {
     "@dimforge/rapier3d-deterministic-compat": "0.20.0",
@@ -81,9 +89,12 @@
     "runtimeNetworkDependencies": {
       "src/application/remote-playtest.mjs": {
         "namespace": "/api/playtest/",
-        "service": "../../scripts/playtest-server.mjs",
         "dynamicFetchArguments": [
           "next.url"
+        ],
+        "services": [
+          "../../scripts/playtest-server.mjs",
+          "../../scripts/playtest/worker.mjs"
         ]
       }
     },
@@ -94,6 +105,18 @@
       ],
       "src/application/remote-playtest.mjs": [
         "next.url"
+      ],
+      "src/application/capture-outbox.mjs": [
+        "value.url"
+      ],
+      "scripts/playtest/worker.mjs": [
+        "request.url"
+      ],
+      "scripts/playtest/cloud-store.mjs": [
+        "request.url"
+      ],
+      "scripts/playtest/release-control.mjs": [
+        "request.url"
       ]
     }
   }

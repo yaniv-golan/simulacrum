@@ -1,8 +1,12 @@
 {
   "version": 1,
   "dependencies": {
-    "scripts/playtest-server.mjs": "25c07198b747971c91b56a133b7e6b565642878469a5740b09fdc387d39a7ae7",
-    "src/application/remote-playtest.mjs": "0f27cb18988df6a6b66572a25aac192d563f2024f5e9a2f5979c1e0ed59f07aa",
-    "scripts/export-playtest.mjs": "0c70589a224f25950766a16195109bc3dc90133fc46a0cc1223bb9b1bdf4ff2f"
+    "scripts/playtest-server.mjs": "bec3e777ceac5c8a37c57fe46981ed0a07e8ac39f712f829116f278385c6a3f1",
+    "scripts/playtest/protocol.mjs": "75b1a5cf9a3d9ab0b3b51c4845a25a9264e07fced7af8c15f2f8c5a1c084ad77",
+    "scripts/playtest/cloud-store.mjs": "e9dad819a8cce7098831a76d86de5b68af9108eab43bcb2309d5bd28f94eb882",
+    "scripts/playtest/worker.mjs": "2a67d1db4b8840950809cedbaed91d006c2fe2d15892b60a31541d9b3c05c7eb",
+    "src/application/capture-outbox.mjs": "b15bb819cee191f5e4c49b5562ea167b0c42b40eca665d5207b7b6d806c86d05",
+    "src/application/remote-playtest.mjs": "8820ea2bd83050d0bdf4dbcfa7df6beaa748e6102738fc80d3c0598a1a571fa0",
+    "scripts/export-playtest.mjs": "f39e9d6990338b17f2ca5538c4bc8d5f9c5016d6ab34fcae15d7e8ddede9cd8d"
   }
 }

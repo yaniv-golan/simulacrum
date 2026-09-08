@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "dependencies": {
+    "scripts/playtest/release-policy.json": "8e02ce60547dedf86c4e0c929a633110b24c0afb5b2c06f71dd700b1f32397fb",
+    "scripts/playtest/credential-isolation.mjs": "afeb60b1fe4e6b50e7d6f4218ae69150991c630b67ec271361f742ebe837225a",
+    "scripts/playtest/download.mjs": "58135880f31a73e1c50d488fc7411da8694c3fc9fdfe8f857c68b84aa512c351",
+    "scripts/playtest/load.mjs": "f6ecac86bac02301a6e6db0fe01e8aaed28e55394a0a448dee8e190e75cc138b",
+    "scripts/playtest/protocol.mjs": "75b1a5cf9a3d9ab0b3b51c4845a25a9264e07fced7af8c15f2f8c5a1c084ad77",
+    "scripts/playtest/release-config.mjs": "90862c96f81d2ccff8ccb4adb6163f1083135edaaf96ea3a978579f1c6d109da",
+    "scripts/playtest/release-policy.mjs": "dc772a37a435c01dc1734a8bc0c5316bed7ca10710cd3a0cb10d8329ed0a358b",
+    "scripts/playtest/release.mjs": "e3658756b279735a79275a8698b25e2dbb767fd9c6274276ab66fb8a2aea5979",
+    "scripts/playtest/verify-deployment.mjs": "6e086660118a97f4499aa44e13d9d230b2d7addbf49c9d2c24ffd9b85756b0df",
+    "scripts/playtest/release-control.mjs": "5bb5eb75fb8ae4f8db1de5efe1cf77be3c6d7641413552bc9a8e4a663fb19690",
+    "package.json#script=release:prepare": "b7fd140f59ba0dc7524b4a4117465d269be8cac21bca39a2d68ca1e747aa4995",
+    "package.json#script=release:deploy": "4d8271ed3b96bfd9dcba93ff1733c5a7ae64356cdb56d18bc4790a247e2048e1"
+  }
+}

@@ -5,12 +5,22 @@ import { parse as parseHTML } from 'parse5';
 import ts from 'typescript';
 import * as cssTree from 'css-tree';
 const sourceExtensions = new Set(['.js', '.mjs', '.cjs']);
-const excluded = new Set(['.git', 'node_modules', 'dist', 'coverage', '.cache', 'artifacts']);
+const excluded = new Set([
+  '.git',
+  'node_modules',
+  'dist',
+  'coverage',
+  '.cache',
+  'artifacts',
+  '.wrangler',
+  '.release-private',
+  '.playtest-private',
+]);
 export function listProjectFiles(root, directory = '') {
   return readdirSync(resolve(root, directory), { withFileTypes: true })
     .flatMap((entry) => {
       const path = [directory, entry.name].filter(Boolean).join('/');
-      if (excluded.has(entry.name)) return [];
+      if (excluded.has(entry.name) || entry.name.startsWith('.dev.vars')) return [];
       if (entry.isSymbolicLink()) return [path];
       return entry.isDirectory() ? listProjectFiles(root, path) : [path];
     })
@@ -70,16 +80,26 @@ export function buildModuleGraph(
     for (const [path, value] of Object.entries(contract[key] ?? {})) {
       const valid =
         key === 'runtimeURLArguments'
-          ? (path.startsWith('scripts/') || Object.hasOwn(network, path)) && expressions(value)
+          ? (path.startsWith('scripts/') ||
+              path.startsWith('src/application/') ||
+              Object.hasOwn(network, path)) &&
+            expressions(value)
           : path.startsWith('src/application/') &&
             record(value) &&
             Object.keys(value).every((x) =>
-              ['namespace', 'service', 'dynamicFetchArguments'].includes(x),
+              ['namespace', 'service', 'services', 'dynamicFetchArguments'].includes(x),
             ) &&
             typeof value.namespace === 'string' &&
             /^\/api\/(?:[A-Za-z0-9_-]+\/)+$/.test(value.namespace) &&
-            typeof value.service === 'string' &&
-            value.service.startsWith('.') &&
+            ((typeof value.service === 'string' &&
+              value.service.startsWith('.') &&
+              value.services === undefined) ||
+              (value.service === undefined &&
+                Array.isArray(value.services) &&
+                value.services.length > 0 &&
+                value.services.every(
+                  (service) => typeof service === 'string' && service.startsWith('.'),
+                ))) &&
             expressions(value.dynamicFetchArguments);
       if (!files.includes(path) || !valid) {
         errors.push(`${path}: invalid ${key} contract`);
@@ -156,13 +176,15 @@ export function buildModuleGraph(
     for (const dependency of dataDependencies[path] ?? []) add(dependency, 'data');
     const runtime = network[path];
     if (runtime) {
-      const service = relative(root, resolve(root, dirname(path), runtime.service)).replaceAll(
-        '\\',
-        '/',
-      );
-      if (!service.startsWith('scripts/') || !sourceExtensions.has(extname(service)))
-        errors.push(`${path}: runtime service must be a project script`);
-      else add(runtime.service, 'runtime-service');
+      for (const specifier of runtime.services ?? [runtime.service]) {
+        const service = relative(root, resolve(root, dirname(path), specifier)).replaceAll(
+          '\\',
+          '/',
+        );
+        if (!service.startsWith('scripts/') || !sourceExtensions.has(extname(service)))
+          errors.push(`${path}: runtime service must be a project script`);
+        else add(specifier, 'runtime-service');
+      }
     }
     const scripts = [];
     const css = (text, context = 'stylesheet') => {

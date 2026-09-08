@@ -1,7 +1,7 @@
 # Architecture and policy owners
 
 ## Overview
-<!-- doc-review {"version":1,"fingerprint":"a50df0eb3cdacf51be2c77430eb374c4ac51297e1b209757cd660248d651fa33","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"59bae0d4fc3e376c28d06f0cda7b7b875ae7ca3e8dc9dbc83056009135b6faf9","disposition":"still accurate","rationale":"The manifest gains two local browser contracts; it still owns check metadata and milestone allocation. Runtime ownership and allowed layer edges are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"9560e5bffee851d8bbf314842ee93e9b7541aaf15d101fadad3ba5d9e3a68250","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"566d2fae4926dbece45e016910412d6a2caa23503e0c54f4fb4084599395ffce","disposition":"still accurate","rationale":"Additional capture and release regression controls remain manifest-owned under the current milestone. Runtime contract ownership and layer boundaries are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -9,7 +9,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"b9ce1282490618a133e6ff333ca53af14bc83b4e25b2f9077dfde1d8e07aab71","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"8c1cf79b07f8164fc852febf581285f3a0caa76f147e01b1cf5ff03eed54baf5","disposition":"updated","rationale":"Preview isolation is now explicitly bound to surface controls, placement lifecycle and mirror controls. Cancellation and cleanup claims bind direct drag, editing and vehicle control owners. Direct composition links remain narrow; core/model/simulation claims retain their existing bindings."} -->
+<!-- doc-review {"version":1,"fingerprint":"602d206e57dcd98ea5c8f5f17e85ce60d6480a38723ed09f0d53ef00523b2064","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"3f406d4578414600631bb416c1efac0007a3f3d1be0f789c1a5794c26501736c","disposition":"still accurate","rationale":"Only the package dependency/configuration inputs of this section changed. Cloud capture consumes events from the application; core admission, previews, history, telemetry publication and physical stepping owners remain unchanged."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -54,7 +54,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"0410c4d21d8f683385cfbebd9f53d630888009fdfee6c875fdbdd4d1b585d5a2","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"fe56a3440c69d897390798d625daad01fa2a0287be64b69cf872d6579a24680c","disposition":"updated","rationale":"The Connect and test consumer link now binds its own source. The row assigns receiver override ownership to createVehicleControls, which keeps its existing symbol dependency scope; model and geometry owners remain explicitly bound."} -->
+<!-- doc-review {"version":1,"fingerprint":"4c991049cfa90e6b1a7a062f71cf0c3051090b1afcd05dd6aac5e0dbfe9bc9fe","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"3c6d118cb5bc109c74954ef033ab17f7cc9d1fd674421e28342626ed8432deca","disposition":"still accurate","rationale":"The added deployment dependencies do not alter geometry, material, naming, receiver, diagnostic or shared-power policy owners in this table. Capture storage does not become an authority for authored decisions."} -->
 
 | Decision                                       | Production owner                                                                                                                                                                                                                                             | Example consumer                                                          |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
