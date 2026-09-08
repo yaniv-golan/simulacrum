@@ -28,6 +28,12 @@ test('clean source needs explicit section review; impact and generated refresh c
   delete env.NODE_TEST_CONTEXT;
   const run = (...args) =>
     spawnSync(process.execPath, [cli, ...args], { cwd: root, env, encoding: 'utf8' });
+  const prepared = run('prepare');
+  assert.equal(prepared.status, 1, 'preparation leaves semantic review pending');
+  assert.ok(
+    JSON.parse(prepared.stdout).sections.some((s) => s.stale),
+    'preparation reports pending sections after generation',
+  );
   assert.equal(run('generate').status, 0);
   assert.notEqual(run('check').status, 0);
   const before = readFileSync(join(root, 'docs/development/map.md'), 'utf8');

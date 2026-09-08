@@ -32,6 +32,7 @@ These are registered commands and checks, not evidence that they passed.
 | npm run docs:generate | node scripts/docs.mjs generate |
 | npm run docs:impact | node scripts/docs.mjs impact |
 | npm run docs:navigate | node scripts/navigate.mjs |
+| npm run docs:prepare | node scripts/docs.mjs prepare |
 | npm run docs:review | node scripts/docs.mjs review |
 | npm run format | prettier --write src scripts test |
 | npm run format:check | prettier --check src scripts test |
@@ -44,13 +45,15 @@ These are registered commands and checks, not evidence that they passed.
 | npm run rules | node scripts/rules.mjs |
 | npm run rules:explain | node scripts/explain-invariant.mjs |
 | npm run test:all | node scripts/test-affected.mjs --all |
-| npm run test:browser | node scripts/verify-browser-suite.mjs all |
+| npm run test:browser | node scripts/verify-browser-suite.mjs |
+| npm run test:browser:affected | node scripts/verify-browser-suite.mjs |
 | npm run test:browser:smoke | node scripts/verify-browser-suite.mjs smoke |
 | npm run test:determinism | node scripts/verify-m1.mjs |
 | npm run test:performance | node scripts/verify-browser-suite.mjs performance |
 | npm run test:unit | node scripts/test-affected.mjs |
 | npm run typecheck | node scripts/check-boundary-types.mjs |
 | npm run verify:final | node scripts/verify-final.mjs |
+| npm run verify:local | node scripts/verify-local.mjs |
 
 ## Structural checks
 
@@ -63,6 +66,7 @@ These are registered commands and checks, not evidence that they passed.
 | boundary-types | runtime-contract | M3b | [scripts/check-boundary-types.mjs](../../scripts/check-boundary-types.mjs) |
 | developer-documentation | gate-integrity | M3b | [scripts/check-documentation.mjs](../../scripts/check-documentation.mjs) |
 | verification-runtime | gate-integrity | M3b | [scripts/runtime-preflight.mjs](../../scripts/runtime-preflight.mjs) |
+| verification-workflow | gate-integrity | M3b | [scripts/verification-tiers.mjs](../../scripts/verification-tiers.mjs) |
 
 ## Invariant owners
 

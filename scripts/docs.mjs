@@ -1,20 +1,23 @@
+import { assertRuntime } from './runtime-preflight.mjs';
 import { readFileSync } from 'node:fs';
 import { check, documentationReport } from './check-documentation.mjs';
 import { reviewSection, reviewSections } from './documentation.mjs';
 import { refreshReference } from './development-reference.mjs';
 const [mode, ...args] = process.argv.slice(2);
 const usage =
-  'Use docs:check, docs:impact, docs:generate, or docs:review -- <file> <section-id> <updated|still accurate> "technical rationale"; or docs:review -- --batch <decisions.json>';
+  'Use docs:prepare, docs:check, docs:impact, docs:generate, or docs:review -- <file> <section-id> <updated|still accurate> "technical rationale"; or docs:review -- --batch <decisions.json>';
 try {
-  if (['check', 'impact', 'generate'].includes(mode) && args.length === 0) {
-    if (mode === 'generate') {
+  assertRuntime();
+  if (['check', 'impact', 'generate', 'prepare'].includes(mode) && args.length === 0) {
+    if (mode === 'generate' || mode === 'prepare') {
       refreshReference(process.cwd());
-      console.log(
-        'Refreshed generated developer reference. Authored explanations still require review.',
-      );
+      if (mode === 'generate')
+        console.log(
+          'Refreshed generated developer reference. Authored explanations still require review.',
+        );
     }
     if (mode === 'check') console.log(JSON.stringify(await check(), null, 2));
-    if (mode === 'impact') {
+    if (mode === 'impact' || mode === 'prepare') {
       const { analysis, value } = await documentationReport();
       console.log(
         JSON.stringify(

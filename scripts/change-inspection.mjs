@@ -1,3 +1,4 @@
+import { browserGraphEntrypoints, selectAffectedBrowserChecks } from './browser-selection.mjs';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { buildModuleGraph, explainAffectedTests } from './module-graph.mjs';
@@ -88,6 +89,12 @@ export function composeChangeInspection({ graph, files, manifest, documentation,
       conservative: selection.reasons.filter((x) => x.reason !== 'changed dependency'),
     },
     browserChecks,
+    browserSelection: selectAffectedBrowserChecks({
+      checks: manifest.browserChecks,
+      scopes: manifest.browserLocalScopes ?? [],
+      graph,
+      files,
+    }),
     documentation: { sections, errors: documentation.errors },
     limitations: [
       'Registered checks are not execution evidence. This command runs no tests or browser checks.',
@@ -106,7 +113,10 @@ export async function inspectChange(root = process.cwd(), { files } = {}) {
     root,
     { format: 'change-inspection/v1', options: { files: normalized } },
     () => {
-      const graph = buildModuleGraph(root, { purpose: 'test-selection' });
+      const graph = buildModuleGraph(root, {
+        purpose: 'test-selection',
+        entrypoints: browserGraphEntrypoints(root),
+      });
       const manifest = JSON.parse(readFileSync(resolve(root, 'scripts/manifest.json'), 'utf8'));
       validateInvariantCoverage(manifest, { root });
       const documentation = inspectDocumentation(root);
@@ -142,6 +152,9 @@ export function summarizeChangeInspection({ analysis, value: report }) {
         .join(', ') || 'none'
     }`,
   );
+  lines.push(
+    `Executable conservative browser selection: ${report.browserSelection.checks.length}/${report.browserChecks.length}. Use test:browser:affected -- --files <paths> --summary for reasons.`,
+  );
   lines.push('Affected documentation:');
   for (const row of report.documentation.sections)
     lines.push(`  ${row.stale ? 'STALE' : 'current'} ${row.file}#${row.id}`);
@@ -152,7 +165,7 @@ export function summarizeChangeInspection({ analysis, value: report }) {
   const paths = report.files.map((path) => "'" + path.replaceAll("'", "'\\''") + "'").join(' ');
   lines.push(`Run selected tests: npm run test:unit -- --files ${paths}`);
   lines.push(
-    'Before closure: npm run docs:impact; then review affected explanations and run npm run verify:final.',
+    'Before local closure: npm run docs:prepare; review pending explanations, then npm run verify:local. Merge/release/milestone qualification requires npm run verify:final.',
   );
   lines.push(
     'No checks executed. No inferred association does not prove independence. Add --json for every dependency and conservative selection reason.',

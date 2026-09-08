@@ -64,6 +64,8 @@ export function validateManifest(m) {
       !/^scripts\/[a-z0-9-]+\.mjs$/.test(x.script) ||
       !['browser', 'performance'].includes(x.tier) ||
       !['workshop', 'self', 'probe'].includes(x.environment) ||
+      (x.execution !== undefined && !['parallel', 'exclusive'].includes(x.execution)) ||
+      (x.execution === 'parallel' && (x.tier === 'performance' || x.environment !== 'workshop')) ||
       typeof x.smoke !== 'boolean' ||
       !Number.isSafeInteger(x.timeoutMs) ||
       x.timeoutMs <= 0
@@ -73,6 +75,30 @@ export function validateManifest(m) {
   unique(obligations, 'obligation');
   for (const key of Object.keys(m.exitObligations)) milestone(key);
   validateInvariantCoverage(m);
+  const scopes = m.browserLocalScopes ?? [];
+  unique(
+    scopes.map((s) => s.entrypoint),
+    'local browser entrypoint',
+  );
+  for (const scope of scopes) {
+    if (
+      typeof scope.entrypoint !== 'string' ||
+      !(
+        scope.entrypoint.startsWith('src/') ||
+        browser.some((c) => c.script === scope.entrypoint && scope.checks?.includes(c.id))
+      ) ||
+      !Array.isArray(scope.externalImports ?? []) ||
+      !(scope.externalImports ?? []).every((p) => typeof p === 'string') ||
+      !Array.isArray(scope.dependencies) ||
+      !scope.dependencies.every((p) => typeof p === 'string') ||
+      !Array.isArray(scope.checks) ||
+      scope.checks.length < 2 ||
+      !scope.checks.every((id) => browser.some((c) => c.id === id))
+    )
+      throw Error('invalid local browser scope');
+    unique(scope.dependencies, 'local browser dependency');
+    unique(scope.checks, 'local browser check');
+  }
   return m;
 }
 export function readManifest() {

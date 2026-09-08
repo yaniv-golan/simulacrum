@@ -176,6 +176,15 @@
       "module": "scripts/runtime-preflight.mjs",
       "export": "assertRuntime",
       "timeoutMs": 1000
+    },
+    {
+      "id": "verification-workflow",
+      "dueAt": "M3b",
+      "description": "local success never qualifies; failed prerequisites stop downstream work",
+      "ruleId": "gate-integrity",
+      "module": "scripts/verification-tiers.mjs",
+      "export": "checkVerificationTiers",
+      "timeoutMs": 1000
     }
   ],
   "exitObligations": {
@@ -404,6 +413,7 @@
     {
       "id": "qualify-workshop",
       "script": "scripts/qualify-workshop.mjs",
+      "execution": "exclusive",
       "environment": "workshop",
       "tier": "performance",
       "smoke": false,
@@ -413,6 +423,7 @@
     {
       "id": "verify-attachment-status",
       "script": "scripts/verify-attachment-status.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -422,6 +433,7 @@
     {
       "id": "verify-browser",
       "script": "scripts/verify-browser.mjs",
+      "execution": "exclusive",
       "environment": "probe",
       "tier": "browser",
       "smoke": false,
@@ -431,6 +443,7 @@
     {
       "id": "verify-camera-recovery",
       "script": "scripts/verify-camera-recovery.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -440,6 +453,7 @@
     {
       "id": "verify-direct-edit-browser",
       "script": "scripts/verify-direct-edit-browser.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
@@ -449,6 +463,7 @@
     {
       "id": "verify-edit-cycles",
       "script": "scripts/verify-edit-cycles.mjs",
+      "execution": "exclusive",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -458,6 +473,7 @@
     {
       "id": "verify-energy-browser",
       "script": "scripts/verify-energy-browser.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -467,6 +483,7 @@
     {
       "id": "verify-exploded-browser",
       "script": "scripts/verify-exploded-browser.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -476,6 +493,7 @@
     {
       "id": "verify-feedback-receipts",
       "script": "scripts/verify-feedback-receipts.mjs",
+      "execution": "exclusive",
       "environment": "self",
       "tier": "browser",
       "smoke": true,
@@ -485,6 +503,7 @@
     {
       "id": "verify-guide-feedback",
       "script": "scripts/verify-guide-feedback.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -494,6 +513,7 @@
     {
       "id": "verify-inspector-browser",
       "script": "scripts/verify-inspector-browser.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -503,6 +523,7 @@
     {
       "id": "verify-manipulation-browser",
       "script": "scripts/verify-manipulation-browser.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -512,6 +533,7 @@
     {
       "id": "verify-motion-diagnostics",
       "script": "scripts/verify-motion-diagnostics.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -521,6 +543,7 @@
     {
       "id": "verify-port-explanations",
       "script": "scripts/verify-port-explanations.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -530,6 +553,7 @@
     {
       "id": "verify-property-focus",
       "script": "scripts/verify-property-focus.mjs",
+      "execution": "exclusive",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -539,6 +563,7 @@
     {
       "id": "verify-recording-browser",
       "script": "scripts/verify-recording-browser.mjs",
+      "execution": "exclusive",
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
@@ -548,6 +573,7 @@
     {
       "id": "verify-remote-playtest",
       "script": "scripts/verify-remote-playtest.mjs",
+      "execution": "exclusive",
       "environment": "self",
       "tier": "browser",
       "smoke": true,
@@ -557,6 +583,7 @@
     {
       "id": "verify-selection-browser",
       "script": "scripts/verify-selection-browser.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
@@ -566,6 +593,7 @@
     {
       "id": "verify-snap-intent",
       "script": "scripts/verify-snap-intent.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -575,6 +603,7 @@
     {
       "id": "verify-socket-preview",
       "script": "scripts/verify-socket-preview.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -584,6 +613,7 @@
     {
       "id": "verify-starter-browser",
       "script": "scripts/verify-starter-browser.mjs",
+      "execution": "exclusive",
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
@@ -593,6 +623,7 @@
     {
       "id": "verify-surface-browser",
       "script": "scripts/verify-surface-browser.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
@@ -602,6 +633,7 @@
     {
       "id": "verify-ui-lifecycle-browser",
       "script": "scripts/verify-ui-lifecycle-browser.mjs",
+      "execution": "exclusive",
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
@@ -611,6 +643,7 @@
     {
       "id": "verify-workshop",
       "script": "scripts/verify-workshop.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
@@ -620,6 +653,7 @@
     {
       "id": "verify-vehicle-controls",
       "script": "scripts/verify-vehicle-controls.mjs",
+      "execution": "exclusive",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -629,6 +663,7 @@
     {
       "id": "verify-connection-test-browser",
       "script": "scripts/verify-connection-test-browser.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
@@ -638,6 +673,7 @@
     {
       "id": "verify-mirror-browser",
       "script": "scripts/verify-mirror-browser.mjs",
+      "execution": "exclusive",
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
@@ -647,6 +683,7 @@
     {
       "id": "verify-assembly-ux-browser",
       "script": "scripts/verify-assembly-ux-browser.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -656,6 +693,7 @@
     {
       "id": "verify-assemblies-browser",
       "script": "scripts/verify-assemblies-browser.mjs",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
@@ -665,6 +703,7 @@
     {
       "id": "verify-part-help-window",
       "script": "scripts/verify-part-help-window.mjs",
+      "execution": "exclusive",
       "environment": "self",
       "tier": "browser",
       "smoke": false,
@@ -674,6 +713,7 @@
     {
       "id": "verify-part-help-browser",
       "script": "scripts/verify-part-help-browser.mjs",
+      "execution": "exclusive",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -970,6 +1010,32 @@
         ]
       },
       "qualificationBars": ["F1"]
+    }
+  ],
+  "browserLocalScopes": [
+    {
+      "entrypoint": "src/presentation/part-help.mjs",
+      "dependencies": [
+        "src/model/catalog.mjs",
+        "src/presentation/part-help-content.mjs",
+        "src/presentation/part-help-diagram.mjs"
+      ],
+      "checks": [
+        "verify-part-help-window",
+        "verify-part-help-browser",
+        "verify-ui-lifecycle-browser",
+        "verify-workshop"
+      ]
+    },
+    {
+      "entrypoint": "scripts/verify-part-help-window.mjs",
+      "dependencies": [
+        "scripts/browser-evidence.mjs",
+        "src/presentation/part-help-content.mjs",
+        "src/presentation/part-help-diagram.mjs"
+      ],
+      "checks": ["verify-part-help-window", "verify-part-help-browser"],
+      "externalImports": ["vite", "playwright", "node:fs", "node:os", "node:path"]
     }
   ]
 }

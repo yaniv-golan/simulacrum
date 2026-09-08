@@ -291,6 +291,11 @@ export function attachBrowserSession(
         throw Error('focus profile requires a visible browser');
       profile = selected;
       configuration = { ...BROWSER_PROFILES[selected], ...options };
+      const execution = process.env.SIMULACRUM_BROWSER_EXECUTION;
+      if (execution && !['parallel', 'exclusive'].includes(execution))
+        throw Error(`unknown browser execution policy: ${execution}`);
+      if (execution === 'parallel' && (selected !== 'ui' || configuration.headless !== true))
+        throw Error('this browser configuration requires exclusive execution');
       const launch =
         launchBrowser ?? (async (options) => (await import('playwright')).chromium.launch(options));
       browser = await launch(configuration);

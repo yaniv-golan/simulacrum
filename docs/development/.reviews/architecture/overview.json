@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "docs/contracts/runtime-v1.md": "f75cdc8ef9f47702468e1502096880c562d2b036d7e2fafcd567df5de2dc1561",
-    "AGENTS.md": "a16015cf800c788a3c4521c369c3358ede6927166049ad25e752809d8bf5b398",
-    "scripts/manifest.json": "b9c68376a9cbc88f6f2813d4ecf7a5cdf7befb76bef5099261d4e6955fb84be3"
+    "AGENTS.md": "4d05bdbb821b3002a5eedfdc190ae30d3f4dde812a0ea977892f4be4b8485c30",
+    "scripts/manifest.json": "375bfb7350f647c760433de06e1ad1404267220e0129e1fbdc9255c245446cfb"
   }
 }

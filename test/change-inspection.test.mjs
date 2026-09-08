@@ -196,3 +196,14 @@ test('concise discovery preserves errors, fallback, identity and required checks
   assert.match(failed, /broken.mjs/);
   assert.match(failed, /unknown changed inputs/);
 });
+
+test('live inspection and execution discovery use the same local browser contracts', async () => {
+  const { inspectChange } = await import('../scripts/change-inspection.mjs');
+  const { affectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const files = ['src/presentation/part-help.mjs'];
+  const inspected = await inspectChange(process.cwd(), { files });
+  assert.deepEqual(
+    inspected.value.browserSelection.checks.map((c) => c.id),
+    affectedBrowserChecks(files).checks.map((c) => c.id),
+  );
+});

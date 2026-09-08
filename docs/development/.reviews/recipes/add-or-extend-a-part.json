@@ -18,7 +18,7 @@
     "src/model/environment.mjs": "40efdce97605552249177aad5f7cafaf0dd41ad884d0ec5ad1e92863e8b6e52b",
     "src/model/observation.mjs": "29e70bc89d56e32d9d48a651a4ccf58fa2b9a8f6abf5a50bc53985a31501d88b",
     "package-lock.json": "05895ca4f634dd4a9e0cd1297bc78e61780252818a90ac8409cb6d7ebf09f969",
-    "package.json": "66cf3224647ec2fe7858b639eebeca48ff29c1a28ea87bcc03b2d806f2ee7733",
+    "package.json": "f080f4f9c57b0148d1789533ab4e68498b5647b06fbcbf021bd06fa3206dc48c",
     "src/core/workshop.mjs": "069a8b5e1a3075477252ce972cb1050e101d855bc35d5fb89f1cf04a5012015d",
     "src/model/editing.mjs": "f2cd8c1ad4bf6ef6f8f2ace4060086c802d1c33a4987c6fd4f3141009966420b",
     "src/model/mirror-assembly.mjs": "ca3585eb3589b1233fd84be40b2eafbc5e940cd933f127cb99ac9b6165084203",

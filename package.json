@@ -37,7 +37,7 @@
     "test:unit": "node scripts/test-affected.mjs",
     "test:all": "node scripts/test-affected.mjs --all",
     "ci": "node scripts/ci.mjs",
-    "test:browser": "node scripts/verify-browser-suite.mjs all",
+    "test:browser": "node scripts/verify-browser-suite.mjs",
     "test:determinism": "node scripts/verify-m1.mjs",
     "replay": "node scripts/replay.mjs",
     "dev": "vite --host 127.0.0.1",
@@ -55,7 +55,10 @@
     "docs:impact": "node scripts/docs.mjs impact",
     "docs:review": "node scripts/docs.mjs review",
     "docs:generate": "node scripts/docs.mjs generate",
-    "inspect:change": "node scripts/inspect-change.mjs"
+    "inspect:change": "node scripts/inspect-change.mjs",
+    "docs:prepare": "node scripts/docs.mjs prepare",
+    "verify:local": "node scripts/verify-local.mjs",
+    "test:browser:affected": "node scripts/verify-browser-suite.mjs"
   },
   "devDependencies": {
     "@types/three": "0.185.4",

@@ -36,6 +36,7 @@ export function runProcess(
   {
     timeoutMs = 60_000,
     cwd = process.cwd(),
+    env = process.env,
     maxOutputBytes = 4 * 1024 * 1024,
     inheritOutput = false,
   } = {},
@@ -54,6 +55,7 @@ export function runProcess(
     try {
       child = spawn(command, args, {
         cwd,
+        env,
         stdio: ['ignore', 'pipe', 'pipe'],
         detached: process.platform !== 'win32',
       });

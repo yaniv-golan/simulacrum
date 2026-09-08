@@ -10,6 +10,7 @@ const manifest = JSON.parse(readFileSync(new URL('./manifest.json', import.meta.
 export async function runStructuralChecks(
   target = manifest.milestone,
   context = createVerificationContext(),
+  { stopOnFailure = false } = {},
 ) {
   const cutoff = manifest.milestones.indexOf(target);
   if (cutoff < 0) throw new Error(`unknown milestone: ${target}`);
@@ -18,12 +19,16 @@ export async function runStructuralChecks(
       throw new Error(`invalid dueAt for ${check.id}`);
     return manifest.milestones.indexOf(check.dueAt) <= cutoff;
   });
-  let failed = 0;
+  let failed = 0,
+    ran = 0,
+    invariantControlsReady = false;
   for (const check of due) {
+    ran++;
     const implementation = check.module ? check : null;
     if (!implementation) {
       failed++;
       console.error(`STUB  gate:${check.id} -- not written; due ${check.dueAt}`);
+      if (stopOnFailure) break;
       continue;
     }
     try {
@@ -36,16 +41,26 @@ export async function runStructuralChecks(
           : (check.args ?? [root, { physicsPackages: manifest.physicsPackages ?? [] }]),
         check.timeoutMs ?? 5000,
       );
-      if (check.id === 'invariant-controls') await context.unit(invariantTestFiles(root));
+      if (check.id === 'invariant-controls') invariantControlsReady = true;
       console.log(`ok    gate:${check.id}`);
     } catch (error) {
       failed++;
       console.error(`FAIL  gate:${check.id}: ${error.message}`);
+      if (stopOnFailure) break;
+    }
+  }
+  // Finish cheap metadata/documentation prerequisites before invoking unit work.
+  if (invariantControlsReady && (!failed || !stopOnFailure)) {
+    try {
+      await context.unit(invariantTestFiles(root));
+    } catch (error) {
+      failed++;
+      console.error(`FAIL  gate:invariant-controls tests: ${error.message}`);
     }
   }
   for (const check of manifest.checks.filter((check) => !due.includes(check)))
     console.log(`--    gate:${check.id} deferred to ${check.dueAt}`);
-  return { failed, ran: due.length };
+  return { failed, ran };
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const start = performance.now();

@@ -1,7 +1,7 @@
 # Architecture and policy owners
 
 ## Overview
-<!-- doc-review {"version":1,"fingerprint":"c7764dbe9838f93554dbdf671c252071311307632fd6287ff4af01ca221e97f5","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"49782bf274d7a79ff71ee0bbf9018c88ba41fe12036487ef30a67f2556da47e8","disposition":"still accurate","rationale":"The additional browser check registers existing M3b help behavior under runtime-contract; runtime ownership and milestone authority are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"c24661857ea4920d42d7c72147474f4c8c1add3b4a82e0c660ed97b7d00f77ff","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"8d02faedcdda759f982dd817d6865b1b02b3e6a6c42d55e455d95489e4c36d77","disposition":"still accurate","rationale":"Manifest now also owns local browser behavioral scope and its dependency shape; it remains the check-metadata owner. Runtime and allowed layer ownership are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -9,7 +9,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"16a0e03af6b67b1cd4107bb21b9bcde0e43ca7827d7bfce97864dadabde55b21","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"a5f3512528aea8932a84de279ff77e867f42cde70474a52cd58f41c97a86a0b8","disposition":"updated","rationale":"Documented retained reading state across close and catalog-wide thumbnail caching independent of palette membership; all state remains presentation-owned."} -->
+<!-- doc-review {"version":1,"fingerprint":"99fddfc73d489362c4f7d11320cad680609f5336d7c292910e2cd16b70a83920","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"79922678844532807f19fc56cc1170cb1a9870b68cfb8a148dfe4c990cbcc2ff","disposition":"still accurate","rationale":"Package scripts add local verification and documentation preparation only; application composition, command admission, simulation publication and help input ownership are unchanged."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#implementation) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs) turns player input into ordinary commands. Surface and mirror controls keep previews outside authored state. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -52,7 +52,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"7fe0ec1ae3210dbd824d0663dcaef1a6908373b50fe745f473de615ea79bdafd","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"e69ece2a216f3c18bc8be72975eea1e7f78894a5b13812078d5e7e37320afcc8","disposition":"updated","rationale":"Added the extracted palette grouping and shared part-help/port wording owners; receiver input remains owned by vehicle controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"3afe6f3a663785b86d5dc51d075b61e754b342ed9aeb8a383dc04a7a09cca088","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"2d17995854f923df82aaa6c499e6b051d416a4ca4a0c29af0b6bb389d39da8dd","disposition":"still accurate","rationale":"Only verification commands changed in package.json; every listed production owner and the physical property and diagnostic authority rules are unchanged."} -->
 
 | Decision                                       | Production owner                                                                                                                                                                                                                                             | Example consumer                                                          |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |

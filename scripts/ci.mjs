@@ -9,10 +9,10 @@ export async function runCI(context = createVerificationContext()) {
   return context.check('ci:budget', { limitMs: 180000 }, () =>
     context.withDeadline(180000, async () => {
       const start = performance.now();
-      const structural = await runStructuralChecks(undefined, context);
+      const structural = await runStructuralChecks(undefined, context, { stopOnFailure: true });
+      if (structural.failed) throw Error(`${structural.failed} structural checks failed`);
       const graph = buildModuleGraph(process.cwd(), { purpose: 'test-selection' });
       await context.unit(graph.files.filter((path) => /\.test\.(m?js|cjs)$/.test(path)));
-      if (structural.failed) throw Error(`${structural.failed} structural checks failed`);
       const elapsedMs = performance.now() - start;
       if (elapsedMs >= 180000) throw Error(`iteration-budget: ${elapsedMs}ms`);
       mkdirSync('artifacts', { recursive: true });

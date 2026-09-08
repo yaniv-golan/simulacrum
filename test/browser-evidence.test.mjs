@@ -297,3 +297,29 @@ test('part clicks derive from current canvas projection and reject missing or of
     await assert.rejects(evidence.clickPart(p, 7), /visible projected center/);
   assert.equal(clicks.length, 1);
 });
+
+test('parallel admission checks resolved launch options, including variable profiles', async (t) => {
+  const previous = process.env.SIMULACRUM_BROWSER_EXECUTION;
+  process.env.SIMULACRUM_BROWSER_EXECUTION = 'parallel';
+  t.after(() => {
+    if (previous === undefined) delete process.env.SIMULACRUM_BROWSER_EXECUTION;
+    else process.env.SIMULACRUM_BROWSER_EXECUTION = previous;
+  });
+  let launches = 0;
+  const make = () =>
+    createBrowserEvidence({
+      readBuild: () => 'app-test',
+      readSource: () => ({}),
+      launchBrowser: async () => {
+        launches++;
+        return fakeBrowser().browser;
+      },
+      writeArtifact: () => {},
+    });
+  for (const profile of ['recording', 'performance', 'focus'])
+    await assert.rejects(make().launch({ profile }), /exclusive/);
+  await assert.rejects(make().launch({ headless: false }), /exclusive/);
+  assert.equal(launches, 0);
+  await (await make().launch({ profile: 'ui' })).close();
+  assert.equal(launches, 1);
+});

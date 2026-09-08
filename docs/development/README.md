@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"a8053de8e1071eabfeb3467ac8010e1607985f7d33965677b46e53896b39f33e","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"a592c1cdbbd6f8e0ee5803a209227074bf014455789fdf1a4aae9301d2a94b4d","disposition":"updated","rationale":"Navigation links now bind overview sections only; implementation recipes still own detailed dependencies and the working loop still requires fail-first checks and final source-bound verification."} -->
+<!-- doc-review {"version":1,"fingerprint":"09a432b24852d6b9b2d52cffd77f5e90d0256cf51037932957f0067d4def6b4b","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"319b0d228526a2d73a97d2343750c04487c7ab1e4422225a70ad51378f482466","disposition":"updated","rationale":"The working loop now routes local completion through verify:local and reserves verify:final for qualification, matching the revised AGENTS tier instructions."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -18,10 +18,11 @@ serve a stable build. The page displays its build identity.
 3. Demonstrate a new test failing for the intended reason, make the smallest owner-level
    change, and run those checks. Update real consumers and boundary fixtures together.
 4. Rerun discovery after structural edits or integrating another agent’s work. Run
-   `docs:impact` to identify affected explanations. Update their text during development;
+   `docs:prepare` to regenerate references first and identify affected explanations. Update their text during development;
    record formal dispositions once source changes have settled, before final verification.
 5. Run `typecheck` and `ci`; inspect browser behavior when presentation or input changes.
-   Use `verify:final` for final closure on one source identity. Read the gate result:
+   Use `verify:local` for local closure on one source identity; use `verify:final` for
+   merge/release or milestone qualification. Read the gate result:
    automated success cannot supply a missing human assessment.
 
 ## Find owners and checks
@@ -51,7 +52,8 @@ for full dependency paths, conservative reasons and analysis metadata. Both form
 use exactly the same analysis and failure status. Tests are grouped by causal and conservative inclusion; browser
 checks show known dependency paths or invariant registration associations. All registered
 browser checks remain visible because lack of an inferred association is not proof of
-irrelevance. It executes nothing. Documentation errors remain unresolved and make the
+irrelevance. The executable conservative selection is also shown; it includes served HTML
+roots and expands on opaque or unknown inputs unless a manifest local behavioral contract applies. Associations alone never authorize omission. It executes nothing. Documentation errors remain unresolved and make the
 command fail. Use this report to start work, then run the selected checks through the
 existing commands; there is no additional approval or receipt for change inspection.
 
@@ -71,13 +73,16 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"a8c4b4fb7d764b1b77b7541ef63184c220a0705fb10107d26c0c4fb03afb1e66","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"fdc7322daf7b145dcd30da6ad55856168b9381ac5a704bc9ee81ec2d1d203bb5","disposition":"updated","rationale":"Focused execution now probes known selected server dependencies before tests; the final report distinguishes automated failure, human pending/failed/invalid evidence and overall qualification with documented exit codes."} -->
+<!-- doc-review {"version":1,"fingerprint":"011bd93fb904fe92cd52475bdadc43727f559db866d9bc8bb63524b5ee686f1a","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"54bd248c245d0cc92a59a23da02b73248c38224b80dea2da3afaff8a8d46f006","disposition":"still accurate","rationale":"Local closure still runs CI then affected browser checks; final closure still runs every browser check and the human-aware gate. Launch admission adds an execution-policy check without changing these commands or exit semantics."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
-- `npm run verify:final` runs CI, all browser checks and the current gate with invocation-local shared check receipts; human acceptance remains a separate requirement. The [verification outcome](../../scripts/verification-outcome.mjs#implementation) separates automation, human acceptance and overall qualification: exit 0 means qualified, exit 1 means automation failed or was incomplete, and exit 2 means automation passed but human acceptance blocks qualification. Failed or invalid human evidence is distinguished from missing evidence; none authorizes qualification.
+- `npm run verify:local` runs CI and conservatively affected browser checks, with `artifacts/verification-local.json` recording the base, exact paths, selection reasons and source. Default base is HEAD; `--base <commit>` includes committed changes since that commit. Untracked files are included and clean source selects all checks. Exit 0 means local automation passed; qualification and human acceptance are explicitly NOT_EVALUATED.
+- `npm run verify:final` runs CI, all browser checks and the current gate with invocation-local shared check receipts; human acceptance remains a separate requirement. Both tiers stop after a failed prerequisite, including stale documentation, before starting browser work. The [verification outcome](../../scripts/verification-outcome.mjs#implementation) separates automation, human acceptance and overall qualification: exit 0 means qualified, exit 1 means automation failed or was incomplete, and exit 2 means automation passed but human acceptance blocks qualification. Failed or invalid human evidence is distinguished from missing evidence; none authorizes qualification.
 - `npm run ci` runs structural and unit checks within the development budget.
 - `npm run gate` evaluates the current cumulative milestone, including human requirements.
+- `npm run test:browser:affected -- --files <paths>` selects, explains in its report, builds once and executes conservative browser coverage. Add `--summary` for source-bound discovery without building or opening sockets.
+- `npm run test:browser -- --checks verify-part-help-window verify-part-help-browser` runs explicit development probes with one build and combined `artifacts/browser-suite/selected.json` evidence. This does not claim local completion or qualification. Unknown IDs/options fail rather than silently narrowing scope.
 - `npm run test:browser` builds and runs all registered browser checks; `npm run test:browser:smoke` runs construction smoke checks.
 - `npm run test:performance` runs the isolated performance checks.
 - `npm run format` applies the pinned formatter; generated validators are excluded.
@@ -86,7 +91,7 @@ because the changed feature appears unrelated.
 
 Install browser dependencies once with `npx playwright install chromium chrome`.
 Linux tab capture needs Xvfb. Follow [playtesting](playtesting.md) for recordings and
-human evidence. Run final checks on the same final source; do not reuse an old green
+human evidence. Run the required tier on the same final source; do not reuse an old green
 report after changing source or environment.
 
 The [verification preflight](../../scripts/runtime-preflight.mjs#implementation) reads
@@ -108,7 +113,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"4839635c9199b1831b450675040c9e604bbc282524dfa8dc7ef69ed91a4c1bba","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"f70967abfe2d6d7ece59c05ae5ddcca16f9b67c2a85a82141f89dd5f6f964d49","disposition":"still accurate","rationale":"The regenerated reference includes the registered part help window check and fixture module; the documented generation and section-review workflow remains unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"ee883c56fc93f874effbba82c9a7b3febe50ed2096d0fa987ca2b7aff2c119d0","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"934e83008d5d7b9b5abb70d0d264182c69b8835cb69e62781b4f8a83c57403f7","disposition":"updated","rationale":"Preparation now regenerates derived references before collecting stale sections; semantic dispositions remain individual and docs:check remains mandatory after source closure."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -130,7 +135,8 @@ Record formal reviews after source closure, not after each tuning edit. Navigati
 a stable overview heading; implementation explanations must keep their source/body dependencies. A later source
 change still invalidates affected reviews and must be reviewed before final verification.
 
-1. Run `npm run docs:impact`. It lists affected sections and changed dependencies;
+1. Run `npm run docs:prepare`. It regenerates derived command/check references before listing
+   affected sections and changed dependencies. It may update the generated reference, but
    it does not acknowledge them. Repair invalid links or symbols first.
 2. For each stale section, inspect the named source and explanation. Update the text
    if behavior, ownership, invariants or the working procedure changed. If the text
@@ -154,8 +160,10 @@ change still invalidates affected reviews and must be reviewed before final veri
    source is rechecked for each write; if a concurrent edit interrupts the batch,
    earlier individual receipts remain and the gate reports what still needs review.
 
-4. Run `npm run docs:generate` if generated command/check facts changed, then
-   `npm run docs:check`, focused tests and final verification on the final source.
+4. Run `npm run docs:check`, focused tests and the required verification tier on the final source.
+   If new commands/checks or other source changed during review, rerun `docs:prepare` before
+   recording the remaining decisions. `docs:impact` remains available for read-only inspection;
+   `docs:generate` regenerates facts only. Neither command can approve explanations.
 
 A section’s current `doc-review` comment records its content fingerprint, format
 version, disposition and technical rationale. Derived dependency hashes live in an
@@ -187,3 +195,44 @@ review scope smaller. There is no accept-all command; batch submission preserves
 These gates establish current references and an explicit review record. They cannot
 prove that prose is true or that an agent understood it; behavioral tests and source
 review remain necessary.
+
+## Browser execution and scope
+<!-- doc-review {"version":1,"fingerprint":"0746d3f7ff1a5b1e6a96853e488d217ab3648acef11bc2e9a6b0e431b9bdaf3c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"2ee8f36cb88c3d67b966b9060198ae3efaf835824671d9fad75dfe19e90ea1e3","disposition":"updated","rationale":"Browser, local and final execution attempts now replace previous reports before argument or runtime admission. Read-only summary preserves prior evidence. Probe cleanup remains inside receipt completion, retaining simultaneous execution and cleanup causes."} -->
+
+The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
+served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
+opaque file/subprocess inputs conservatively expand selection. In the current application,
+shared runtime and identity dependencies often select the full browser suite.
+`browserLocalScopes` in the manifest is an explicit local-only behavioral contract: a named
+entrypoint, its frozen direct dependency shape, and required feature/integration checks.
+Part-help presentation edits select four checks; its standalone verifier selects two.
+Changed shared modules, consumers, unknown files, or new imports expand coverage. These
+contracts do not apply to full qualification and do not claim that imports prove behavior.
+When extending a boundary, review its integration checks as well as dependency changes.
+A shorter
+explicit probe remains useful during development, but is not evidence of complete coverage.
+There is no persistent cross-run receipt cache.
+
+The [browser runner](../../scripts/verify-browser-suite.mjs#implementation) supports
+`--workers 1` and `--workers 2`. The default is two; use one for serial comparisons. Bounded serial/parallel probes
+and the full required suite validate changes to this scheduling policy.
+Only checks declared `execution: parallel` in the manifest may overlap. Missing metadata,
+performance checks, recording, focus-sensitive checks and self-hosted environments run
+exclusively. Each admitted check owns its browser process, contexts and artifact directory;
+probe servers are local to the check and always closed. Exclusive checks drain the previous
+work before starting. Available workers immediately take the next admitted check.
+Source changes stop new dispatches and drain already-started work.
+The [shared browser launch boundary](../../scripts/browser-session.mjs#implementation) checks the resolved profile and headless option against
+the child process execution policy, so passing a profile through a variable cannot bypass
+exclusive execution. This is an engineering guard, not a sandbox for hostile verifier code.
+Reports preserve manifest order, all failures, worker configuration and source identity.
+Each attempt replaces its report with a non-green running record before build/server startup;
+CLI admission, startup and cleanup failures produce failed reports, also available as `last-run.json`.
+Summary-only discovery does not replace execution evidence. [Local completion](../../scripts/verify-local.mjs#implementation) and
+[final verification](../../scripts/verify-final.mjs#implementation) also record
+a fresh failed outcome when runtime, arguments or base-revision admission fails.
+A browser check owns its probe setup, execution and cleanup inside one receipt; success
+is recorded only after cleanup. Saved errors retain both execution and cleanup causes.
+[CI](../../scripts/ci.mjs#implementation) stops on the first failed structural prerequisite before starting unit work.
+The [tier coordinator](../../scripts/verification-tiers.mjs#implementation) keeps prerequisite
+ordering and local outcome reporting separate from the qualification gate.

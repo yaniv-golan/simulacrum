@@ -1,35 +1,43 @@
+import { runVerificationPhases } from './verification-tiers.mjs';
 import { verificationOutcome, formatVerificationOutcome } from './verification-outcome.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createVerificationContext } from './verification-run.mjs';
 import { runCI } from './ci.mjs';
 import { verifyBrowserSuite } from './verify-browser-suite.mjs';
 import { runGate } from './gate.mjs';
-if (process.argv.length > 2) throw Error('verify-final accepts no arguments');
-const context = createVerificationContext(),
-  started = performance.now(),
-  results = [];
-for (const [id, execute] of [
-  ['ci', () => runCI(context)],
-  ['browser', () => verifyBrowserSuite('all', { context })],
-  ['gate', () => runGate(undefined, context)],
-]) {
-  try {
-    const result = await execute();
-    results.push({ id, ok: result?.ok !== false, result });
-  } catch (error) {
-    results.push({ id, ok: false, error: error.message });
-    console.error(`${id}: ${error.stack}`);
-  }
-}
+const started = performance.now();
 const report = {
-  ...context.identity,
-  elapsedMs: performance.now() - started,
-  results,
-  checks: context.receipts(),
+  status: 'running',
+  results: [],
+  checks: [],
+  outcome: verificationOutcome([], []),
 };
-report.outcome = verificationOutcome(results, report.checks);
-mkdirSync('artifacts', { recursive: true });
-writeFileSync('artifacts/verification-final.json', JSON.stringify(report, null, 2) + '\n');
+const write = () => {
+  mkdirSync('artifacts', { recursive: true });
+  writeFileSync('artifacts/verification-final.json', JSON.stringify(report, null, 2) + '\n');
+};
+write();
+try {
+  if (process.argv.length > 2) throw Error('verify-final accepts no arguments');
+  const context = createVerificationContext();
+  Object.assign(report, context.identity);
+  const results = await runVerificationPhases([
+    ['ci', () => runCI(context)],
+    ['browser', () => verifyBrowserSuite('all', { context })],
+    ['gate', () => runGate(undefined, context)],
+  ]);
+  Object.assign(report, { results, checks: context.receipts() });
+  report.outcome = verificationOutcome(results, report.checks);
+} catch (error) {
+  report.failure = error.message;
+  report.results.push({ id: 'admission', ok: false, error: error.message });
+  report.outcome = verificationOutcome(report.results, report.checks);
+  console.error(error.stack ?? error);
+} finally {
+  report.elapsedMs = performance.now() - started;
+  report.status = report.outcome.automation.status === 'PASS' ? 'passed' : 'failed';
+  write();
+}
 console.log(
   `Final verification: ${report.checks.length} unique checks; human bars are evaluated separately by the gate.`,
 );

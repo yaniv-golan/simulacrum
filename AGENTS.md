@@ -84,13 +84,13 @@ clearance and contact evidence before assigning a cause. After two failed contro
 iterations, re-derive the decomposition from measurements instead of tuning blindly.
 
 After structural changes or integrating another agent's edits, rerun navigation and
-focused-test discovery. Before final verification, run `npm run docs:impact`, repair
+focused-test discovery. Before verification closure, run `npm run docs:prepare` (regenerate first, then inspect), repair
 broken references, and review each stale explanation with `npm run docs:review`.
 Record dispositions after source closure; `--batch <decisions.json>` submits separate
 section decisions together, never accepts all stale explanations automatically.
 Update the explanation when behavior or ownership changed; otherwise record a specific
 reason it remains accurate. `npm run docs:check` is a required structural gate in CI
-and final verification. It automatically regenerates source-bound discovery and rejects
+and both verification tiers. It automatically regenerates source-bound discovery and rejects
 stale review evidence; a previous report cannot narrow required checks. See the
 [documentation workflow](docs/development/README.md#keep-explanations-current).
 
@@ -106,7 +106,12 @@ Run focused tests during development, derived from import and data dependency gr
 unknown changes select all tests. Structural checks target <5 s, unit/property <30 s,
 short physics <60 s. The every-commit command must stay below 180 s and report wall time.
 Long contact tests run at merge/nightly until measured. Scenarios run merge/nightly,
-browser checks at merge, critical-module mutation weekly. Do not delete an assertion
+all browser checks at merge/release, critical-module mutation weekly.
+Use `npm run verify:local` for local completion (CI plus conservatively affected browser checks;
+`--base <commit>` includes committed changes). Clean source defaults to all checks.
+Use `npm run verify:final` for merge/release or milestone qualification; local success never
+advances a milestone or supplies human evidence. Explicit browser check IDs are development
+probes, not a substitute for either completion tier. Do not delete an assertion
 or skip a required tier to recover speed. Never combine multiple script names in one npm-run invocation: use separate
 invocations or an aggregate that propagates every failure.
 

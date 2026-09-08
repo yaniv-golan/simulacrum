@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "package-lock.json": "05895ca4f634dd4a9e0cd1297bc78e61780252818a90ac8409cb6d7ebf09f969",
-    "package.json": "66cf3224647ec2fe7858b639eebeca48ff29c1a28ea87bcc03b2d806f2ee7733",
+    "package.json": "f080f4f9c57b0148d1789533ab4e68498b5647b06fbcbf021bd06fa3206dc48c",
     "scripts/playtest-server.mjs": "25c07198b747971c91b56a133b7e6b565642878469a5740b09fdc387d39a7ae7",
     "src/application/assembly-library.mjs": "912de28f6ce9c6a4288091b8fdf804ceeb713ba79d29050f12276bf98670eecd",
     "src/application/clock.mjs": "a06b9f867b61ab8c0d61f24a598b3111583cba978ed8c671d5995625d5d2ff98",

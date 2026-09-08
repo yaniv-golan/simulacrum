@@ -10,7 +10,7 @@ attachment, polarity, naming, reset or authored-property policy.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"12a52d7c9fab3cdf92cdbc6a6ff0287256a727a2649d35dc7794a9cab5516fcb","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"dc15bb2ef30f7479b659d28933e6d6b8e516aa342c194149ec88c8e83c8265dc","disposition":"still accurate","rationale":"UI_FEATURES adds an M3b partHelp entrypoint; no catalog geometry, parameter, material, schema or compiler behavior changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"3310f56f06c85195e6eff706ee7b18ef95769e2a5ecbe88a8d69844dbf0adb57","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"2d31a6ca0c04205a3ae7c03b6ef7a0680c76c42b1631ac83f135e7b31b657b42","disposition":"still accurate","rationale":"Package verification scripts changed without changing catalog, geometry, schema generation or part admission; the recipe still identifies their current owners and wheel controls."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -27,7 +27,7 @@ validation with `node scripts/generate-schema.mjs` when schema changes.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"e6577d00dd464c480cdf26d9bec56b29800286092c6182ab59d3bde3b04e3e02","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"1783edac88e06a62084606da6ff5787ddefb8e67b0ef76c9c7d72cd4c0653c64","disposition":"still accurate","rationale":"edit-assembly and assemblyId on surface-mount both validate through model proposals before one core publication. Existing malformed-input, stale-cursor and Undo requirements still apply."} -->
+<!-- doc-review {"version":1,"fingerprint":"ac1c8c0b1c4811319fa46477f97eef4c85e9e15e5aa8194cb48751e4a7215b14","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"5fe86f6635455c83a6b60f22fb0c11c3af034a759ab0844c4799e618d1cce28b","disposition":"still accurate","rationale":"New verification entrypoints do not change core command admission, compilation, history or the positive and negative command controls described here."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -42,7 +42,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"1b68631b5a083fc7174332acbc5650159c52040ceaa1ce1eeaaa2d7263881302","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"3ab793c191f4d6462dab981587f4be03d6c5d3ce9a3557c6e27604459c441a50","disposition":"updated","rationale":"Added decoded portrait coverage for supported loaded types and exact tab/scroll preservation across close/reopen; existing switching and cleanup checks remain."} -->
+<!-- doc-review {"version":1,"fingerprint":"39fd45e9c5abdf5e2387a1ffb1e113ff48c7b82e9643d5eaea81b21ff6c18d8e","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"c5f156f6a2d87dc71160fe54caa3dd682c06bafdcebda96f8fd73d39dd75194b","disposition":"still accurate","rationale":"Browser session launch admission now rejects parallel focus/recording/performance options. The cited help window and interaction verifiers remain exclusive and their input, resize, focus and disposal assertions are unchanged."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -85,7 +85,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"dd526f30c34c2f5671c5c2dae26df64d1c9d833fc535e4d88c5fb36c9b22979e","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"8fe6201df4cbed991a2fb70419ecdabd66e3011c43326840d55ed78e8fdd6a9a","disposition":"still accurate","rationale":"Hinge-only machines now receive an explicit coverage explanation in presentation. diagnoseMotion calculations still consume completed observations and no automatic repair or identity inference was added."} -->
+<!-- doc-review {"version":1,"fingerprint":"6e81a59f89e13b1fece53e06dae7bb4ab90b9d9960b1b6cf0d64beb61f8dbba8","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"061fd69588ec00cd8d4b3385d060b3cbb2a096e968b00c08e552c752b44e0b9d","disposition":"still accurate","rationale":"Package command additions do not alter completed-observation diagnostics or their opposed-drive and missing-data controls."} -->
 
 Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -100,7 +100,7 @@ A symptom is not proof of the intended mechanism or cause.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"89d56179c8728a79572613f3380e727ae107f62d0dbacc5f4e291af16228323a","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"efd067dfd2d9229c2cf88e6940f45890eb2d7d991e56135daddb12e56725c7b6","disposition":"still accurate","rationale":"Generated Blueprint types now include editor groups, but no numerical physics configuration or law signature changed; compileAssembly excludes group identity and aliases from its configuration."} -->
+<!-- doc-review {"version":1,"fingerprint":"7f4a10413495bcbbdf8cb0ada5eeae68f5ea2f8bdd40ffa90872ece1af1296fd","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ba2837480c69c6b0cee0d77ebffade1431d2af5e96c9bbf41de26c5b5538d4f4","disposition":"still accurate","rationale":"Only development tooling changed; physical laws, compiler configuration, fixed stepping and mandatory actual milestone qualification remain as described."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -117,7 +117,7 @@ Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"6494d849e3fa96df88f250fce7c51c82ef2fdc5e71b6551904960cac3ba3e8cf","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"f921bdf1d915ac63e3cbed553ff87a7e95df74a1fd484fde940c991a64de01e9","disposition":"still accurate","rationale":"Only verifier dependency analysis changed: reusable-assembly admission, named interfaces, persistence and authored state remain owned by the existing model/core/application layers and their browser checks."} -->
+<!-- doc-review {"version":1,"fingerprint":"783f72cb67996c8c9b3dd85c830a718b4beb8a628df76b6f2e7b22df0d09b3e2","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"b849db1b296331831412c55cd4ba7cb69a1486fee81f0b4b85f93373adcfdf5a","disposition":"still accurate","rationale":"The shared browser launch boundary now enforces execution admission. Multi-part authoring commands, preview isolation, atomic undo and the registered assembly verifier assertions are unchanged; admitted UI checks still use headless ui profiles."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft connectivity, not an editor selection, electrical network, or stored
@@ -190,7 +190,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"24d1fa4ee609253270aec3c62edad1835633edd1fd12136f40dbd91426a8e08d","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"c5563d941ac7094663e82ee7edfb8537b583720a0a60d7c7ee7891a7c4c7681b","disposition":"still accurate","rationale":"Surface proposal scope and command types changed, but connection visibility, retained GPU resources, exact path highlights and read-only overlay authority remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"95a7aa96344e7171c0c2fe9dfe8ae26ebbc4443de231764df64f5d0461917ff6","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"44e1f65ef64b7b79e742a3f15ff7924888fb292fc19068dd854accbe0df96672","disposition":"still accurate","rationale":"Verification script additions do not alter overlay resource ownership, electrical visibility preferences, read-only telemetry use or required renderer controls."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
