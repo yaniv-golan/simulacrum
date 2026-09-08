@@ -520,7 +520,7 @@ export function createWorkshopView(
   const selectionActions = element('div', 'selection-actions');
   selectionActions.hidden = true;
   const scopeLabel = element('strong', 'move-scope');
-  const mirrorButton = button('Mirror assembly…', () => {
+  const mirrorButton = button('Mirror parts…', () => {
     if (!selected) return;
     surface.cancel(false);
     sourcePort = null;
@@ -854,7 +854,7 @@ export function createWorkshopView(
       '',
       'Select parts or connections to trace them. Dashed lines show attachments.',
     ),
-    button('Return to assembly', () => setExploded(false)),
+    button('Return to machine', () => setExploded(false)),
   );
   viewport.append(inspectionBanner);
   const followLabel = element('label', 'follow-control'),
@@ -1030,7 +1030,7 @@ export function createWorkshopView(
       surface.active() || exploded || !selected || frame?.metadata.mode !== 'build';
     mirrorButton.disabled = (frame?.metadata.blueprint.parts.length ?? 0) < 2;
     scopeLabel.textContent =
-      group.length > 1 ? `Move connected assembly · ${group.length} parts` : 'Move this part';
+      group.length > 1 ? `Move connected parts · ${group.length} parts` : 'Move this part';
     scopeLabel.title =
       group.length > 1
         ? 'Mint outlines show everything that moves. Disconnect a mount or shaft to separate parts.'
@@ -1420,7 +1420,7 @@ export function createWorkshopView(
       }
       if (!links.length)
         right.append(
-          element('p', 'muted', 'No connections. Return to assembly to connect this part.'),
+          element('p', 'muted', 'No connections. Return to machine to connect this part.'),
         );
       const edge = links.find((c) => c.id === tracedConnection);
       if (edge) {
@@ -1437,7 +1437,7 @@ export function createWorkshopView(
           ),
         );
       }
-      right.append(button('Return to assembly to edit', () => setExploded(false), 'primary'));
+      right.append(button('Return to machine to edit', () => setExploded(false), 'primary'));
       return;
     }
 
@@ -1910,7 +1910,7 @@ export function createWorkshopView(
             'p',
             'connection-preview',
             mechanical
-              ? 'Choose a connection. The smaller assembly moves; the larger one stays in place.'
+              ? 'Choose a connection. The smaller connected group moves; the larger one stays in place.'
               : connections.length
                 ? 'Optional: add another wire. Existing wiring is connected.'
                 : 'Choose where to wire. Both parts stay in place.',
@@ -2789,9 +2789,9 @@ export function createWorkshopView(
         started: performance.now(),
       };
     tools.querySelector('.edit-hint').textContent = on
-      ? 'Inspection only · Return to assembly to edit'
+      ? 'Inspection only · Return to machine to edit'
       : 'Move/Rotate moves attached parts together. Use Adjust mount to reposition an attachment.';
-    explodeButton.textContent = on ? 'Assembly view' : 'Exploded view';
+    explodeButton.textContent = on ? 'Machine view' : 'Exploded view';
     explodeButton.setAttribute('aria-pressed', String(on));
     inspectionBanner.hidden = !on;
     inspectorKey = '';
@@ -3019,7 +3019,7 @@ export function createWorkshopView(
       ].includes(event.key)
     ) {
       event.preventDefault();
-      setMessage('Return to assembly to edit parts.');
+      setMessage('Return to machine to edit parts.');
       return;
     }
     if (frame?.metadata.mode === 'build') {

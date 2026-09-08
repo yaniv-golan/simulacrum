@@ -9,7 +9,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"99fddfc73d489362c4f7d11320cad680609f5336d7c292910e2cd16b70a83920","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"79922678844532807f19fc56cc1170cb1a9870b68cfb8a148dfe4c990cbcc2ff","disposition":"still accurate","rationale":"Package scripts add local verification and documentation preparation only; application composition, command admission, simulation publication and help input ownership are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"edcdfe8518b966b31edc81369b265970f6441c0ce3f32b0c817fcdf626fe5fa3","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"d2923a10122750ae3ac2bd73d0b8f9766e5041db4c9768281cb2810207851531","disposition":"still accurate","rationale":"The mirror member-count legend now uses singular part for one selected member. This wording-only change preserves preview, command admission, authored state and all documented layer ownership."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#implementation) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs) turns player input into ordinary commands. Surface and mirror controls keep previews outside authored state. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -52,7 +52,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"3afe6f3a663785b86d5dc51d075b61e754b342ed9aeb8a383dc04a7a09cca088","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"2d17995854f923df82aaa6c499e6b051d416a4ca4a0c29af0b6bb389d39da8dd","disposition":"still accurate","rationale":"Only verification commands changed in package.json; every listed production owner and the physical property and diagnostic authority rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"255007aed788a98e110d21f63f4f842a969522751e74beca7094dce9425a1028","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"ffad7fc11f9129727f7c26a2c053b68684499c63985fdc9895891e8348f86e35","disposition":"still accurate","rationale":"The mirror refusal wording now names parts; its reason code and canonical explainFailure owner are unchanged, as are graph, transform and command policies."} -->
 
 | Decision                                       | Production owner                                                                                                                                                                                                                                             | Example consumer                                                          |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |

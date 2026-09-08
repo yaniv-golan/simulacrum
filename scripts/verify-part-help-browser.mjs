@@ -282,7 +282,7 @@ try {
       .click({ position: { x: 16, y: 250 } });
     await p.keyboard.press('Escape');
     await evidence.clickPart(p, selected);
-    await p.getByRole('button', { name: 'Mirror assembly…', exact: true }).click();
+    await p.getByRole('button', { name: 'Mirror parts…', exact: true }).click();
     await p.getByRole('button', { name: 'About Powered Motor', exact: true }).click();
     await p.keyboard.press('Escape');
     equal(await p.locator('.assembly-mirror').count(), 1);

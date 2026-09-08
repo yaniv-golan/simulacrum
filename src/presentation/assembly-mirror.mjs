@@ -17,7 +17,7 @@ export function createAssemblyMirror({
   completed = () => {},
 }) {
   const panel = node('section', '', 'assembly-mirror');
-  panel.setAttribute('aria-label', 'Mirror assembly');
+  panel.setAttribute('aria-label', 'Mirror parts');
   let previewCursor,
     frame,
     selection,
@@ -73,7 +73,7 @@ export function createAssemblyMirror({
     panel.replaceChildren();
     const bp = frame.metadata.blueprint;
     panel.append(
-      node('h3', 'Mirror assembly'),
+      node('h3', 'Mirror parts'),
       node('p', 'Choose only the parts to copy. The reference stays in place.', 'parameter-help'),
     );
     const refLabel = node('label', 'Mirror across'),
@@ -112,7 +112,7 @@ export function createAssemblyMirror({
     planeLabel.append(plane);
     panel.append(planeLabel);
     const group = node('fieldset', '', 'mirror-members');
-    group.append(node('legend', `Copy ${ids.size} parts`));
+    group.append(node('legend', `Copy ${ids.size} ${ids.size === 1 ? 'part' : 'parts'}`));
     for (const part of bp.parts) {
       const label = node('label'),
         box = node('input');

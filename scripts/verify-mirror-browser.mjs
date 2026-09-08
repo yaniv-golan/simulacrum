@@ -45,7 +45,7 @@ async function selectWheel() {
     .click();
 }
 async function startMirror() {
-  await page.getByRole('button', { name: 'Mirror assembly…', exact: true }).click();
+  await page.getByRole('button', { name: 'Mirror parts…', exact: true }).click();
 }
 try {
   await context.tracing.start({ screenshots: true, snapshots: true });
@@ -68,13 +68,39 @@ try {
   await page
     .getByRole('button', { name: 'Attach to Powered Motor · shaft Moves Grip Wheel', exact: true })
     .click();
+  // A named one-part group must not narrow ordinary mechanical movement or mirroring.
+  await page.locator('.assembly-library > summary').click();
+  await page.getByRole('button', { name: 'Create assembly…', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Assembly name', exact: true }).fill('Wheel module');
+  await page.getByRole('button', { name: 'Create and save assembly', exact: true }).click();
   const original = await snapshot('built-source');
+  evidence.assert('equal', [original.assemblies[0].ids.length, 1]);
+  evidence.assert('equal', [
+    await page.getByText('Move connected parts · 3 parts', { exact: true }).isVisible(),
+    true,
+  ]);
+  await page.locator('.assembly-library > summary').click();
+  await page.keyboard.press('PageUp');
+  const moved = await snapshot('connected-parts-moved');
+  for (const part of original.parts) {
+    const after = moved.parts.find((candidate) => candidate.id === part.id);
+    evidence.assert('ok', [Math.abs(after.position[1] - part.position[1] - 0.025) < 1e-9]);
+    evidence.assert('deepEqual', [after.rotation, part.rotation]);
+  }
+  evidence.assert('deepEqual', [moved.assemblies, original.assemblies]);
+  evidence.assert('deepEqual', [moved.connections, original.connections]);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  evidence.assert('deepEqual', [(await frame()).metadata.blueprint, original]);
   evidence.assert('equal', [original.parts.length, 3]);
   evidence.assert('equal', [original.connections.length, 2]);
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await (await download).saveAs(`${out}/ui-built-source.json`);
   await startMirror();
+  evidence.assert('equal', [
+    await page.getByRole('region', { name: 'Mirror parts', exact: true }).isVisible(),
+    true,
+  ]);
   evidence.assert('equal', [
     await page.getByRole('combobox', { name: 'Mirror plane', exact: true }).inputValue(),
     'x',
@@ -138,6 +164,34 @@ try {
     original,
     'loading identical data clears the old preview',
   ]);
+  // A receiver mounted to a motor's left side cannot reflect to its shaft side.
+  // Author the same unsupported geometry as the model counterexample through the UI.
+  await page.reload();
+  await page.waitForFunction(() => window.render_game_to_text);
+  await page.getByRole('button', { name: 'Powered Motor', exact: true }).click();
+  await page.locator('.more-parts > summary').click();
+  await page.getByRole('button', { name: 'Command Receiver', exact: true }).click();
+  await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
+  await page
+    .getByRole('combobox', { name: 'Mounting face', exact: true })
+    .selectOption({ label: 'Bottom' });
+  await page
+    .getByRole('combobox', { name: 'Target surface', exact: true })
+    .selectOption({ label: 'Powered Motor · Left' });
+  await page.getByRole('button', { name: 'Attach', exact: true }).click();
+  const unsupported = await snapshot('unsupported-source');
+  await startMirror();
+  evidence.assert('equal', [
+    await page.locator('.mirror-status').textContent(),
+    'These parts cannot be mirrored with their current shapes or connections.',
+  ]);
+  evidence.assert('equal', [
+    await page.getByRole('button', { name: 'Create mirrored copy', exact: true }).isDisabled(),
+    true,
+  ]);
+  evidence.assert('deepEqual', [await snapshot('unrepresentable-message'), unsupported]);
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  evidence.assert('deepEqual', [(await frame()).metadata.blueprint, unsupported]);
   evidence.assert('deepEqual', [errors, []]);
   if (!provisional) evidence.assertUnchanged();
   writeFileSync(

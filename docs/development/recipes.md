@@ -42,7 +42,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"39fd45e9c5abdf5e2387a1ffb1e113ff48c7b82e9643d5eaea81b21ff6c18d8e","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"c5f156f6a2d87dc71160fe54caa3dd682c06bafdcebda96f8fd73d39dd75194b","disposition":"still accurate","rationale":"Browser session launch admission now rejects parallel focus/recording/performance options. The cited help window and interaction verifiers remain exclusive and their input, resize, focus and disposal assertions are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"193c6ad3a081e1d09018764d8bef13b7bfd5372425dd4fdc92ca4a1829d90ba9","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"174d05370f893c10fdfe3499cc601188c431e9cacc4c1ac7d34e6b3f1586ce6c","disposition":"still accurate","rationale":"The mirror legend now distinguishes one part from multiple parts. Selection, preview, refusal, cancellation and commit behavior and the registered browser checks remain unchanged."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -117,7 +117,7 @@ Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"783f72cb67996c8c9b3dd85c830a718b4beb8a628df76b6f2e7b22df0d09b3e2","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"b849db1b296331831412c55cd4ba7cb69a1486fee81f0b4b85f93373adcfdf5a","disposition":"still accurate","rationale":"The shared browser launch boundary now enforces execution admission. Multi-part authoring commands, preview isolation, atomic undo and the registered assembly verifier assertions are unchanged; admitted UI checks still use headless ui profiles."} -->
+<!-- doc-review {"version":1,"fingerprint":"9e1d7a65e5a4aba25a8ddfc7c9da4be4980fb6f431851b792d8a6f3dda48db40","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"2fd7103e53235c2c10287745e229ac0dc8bb490b1c643af29043c5be6a040406","disposition":"still accurate","rationale":"Only the shared mirror refusal wording changed among this section dependencies. Assembly metadata, mechanical traversal, copy admission, instance bindings and persistence retain the documented semantics."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft connectivity, not an editor selection, electrical network, or stored
@@ -190,7 +190,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"95a7aa96344e7171c0c2fe9dfe8ae26ebbc4443de231764df64f5d0461917ff6","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"44e1f65ef64b7b79e742a3f15ff7924888fb292fc19068dd854accbe0df96672","disposition":"still accurate","rationale":"Verification script additions do not alter overlay resource ownership, electrical visibility preferences, read-only telemetry use or required renderer controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"e64d2d2fb3d0beaafe9ca139ab76196b36076155c2e3f81a81321c69c5b2ff78","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"844dc58490c910796e7cf665c784ea6c85a86cd20f66b81ea43cc62d8bd622d3","disposition":"still accurate","rationale":"The shared error message now refers to mirrored parts. Connection visibility, render specifications, resources, trace ownership and overlay tests are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

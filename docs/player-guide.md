@@ -7,9 +7,9 @@ Start with **Start guided build** to place and connect a supported three-wheel m
 Drag a part picture from the side palette into the scene. In Build mode, use **Select · V** and drag a part directly to move it on its horizontal plane; drag empty space to orbit; right-drag to pan. **Move** / **Rotate** handles and Position & rotation fields remain available.
 
 Arrow keys move 2.5 cm in camera-relative ground directions; Page Up/Down adjusts height. Alt + arrows rotates 90° without translating. **C** or **Ctrl/Cmd+C** duplicates the selected part one metre toward the camera, skipping occupied positions (up to 100 attempts). The copy preserves its settings and material and starts disconnected. **X/Delete** deletes; **Ctrl/Cmd+Z** undoes; **Esc** cancels a drag or clears selection. Shortcuts leave text/number inputs alone, and build edits are disabled during simulation. Open **Controls · ?** for help.
-**Exploded view** separates parts for inspection without changing the machine. Select a part or a dashed connection to trace its endpoints and purpose. **Assembly view** restores the original layout. Camera framing eases with the separation and return; orbiting takes control immediately. Edits and Run return to it automatically. The inspection state and display offsets are included in playtest recordings.
+**Exploded view** separates parts for inspection without changing the machine. Select a part or a dashed connection to trace its endpoints and purpose. **Machine view** restores the original layout. Camera framing eases with the separation and return; orbiting takes control immediately. Edits and Run return to it automatically. The inspection state and display offsets are included in playtest recordings.
 
-The right-hand inspector keeps the selected part, its main control and connections together. Open **Machine** to choose another part. Component inspectors use a flat instrument layout with socket symbols and aligned readings. Motors provide a drive slider, Reverse / Off / Forward presets and an exact numeric value. Motor **Drive setting** controls the default open-loop command, not a guaranteed speed; a connected signal source owns the command instead. **Engineering details** reveals ratings, material and live measurements. The guided build highlights attachment endpoints before a step and confirms the actual connection afterward, distinguishing rigid mounts, rotating axles and power wires. Connection actions open directly beneath their port. Mechanical attachments move the smaller connected group, keeping the larger assembly in place; equal-sized groups keep the selected part in place. Hover or focus an attachment choice to see a labelled preview of what will move. Escape cancels the preview; Undo restores an attachment.
+The right-hand inspector keeps the selected part, its main control and connections together. Open **Machine** to choose another part. Component inspectors use a flat instrument layout with socket symbols and aligned readings. Motors provide a drive slider, Reverse / Off / Forward presets and an exact numeric value. Motor **Drive setting** controls the default open-loop command, not a guaranteed speed; a connected signal source owns the command instead. **Engineering details** reveals ratings, material and live measurements. The guided build highlights attachment endpoints before a step and confirms the actual connection afterward, distinguishing rigid mounts, rotating axles and power wires. Connection actions open directly beneath their port. Mechanical attachments move the smaller connected group, keeping the larger connected group in place; equal-sized groups keep the selected part in place. Hover or focus an attachment choice to see a labelled preview of what will move. Escape cancels the preview; Undo restores an attachment.
 
 **Check machine** explains missing power or axle connections, empty cells, stopped commands and rigid mount paths that lock a driven axle. Each finding links to the relevant part. Low shaft speed under power is a symptom: check clearance and load before changing motor ratings. A check with no findings is not proof of physical feasibility.
 
@@ -97,7 +97,7 @@ The workshop floor is 200×200 metres with a painted perimeter. The motion reado
 warns near its edge and offers **Return to Build** if a machine leaves or falls.
 It does not automatically brake, teleport or support a machine beyond the floor.
 
-**Mirror assembly…** copies a chosen group across a reference part’s center plane.
+**Mirror parts…** copies a chosen group across a reference part’s center plane.
 The member list makes the scope explicit; the blue plane and preview show the copy
 before creation. Internal connections and mechanical mounts to the reference are
 copied. Other external connections are listed as omitted and must be reconnected.
@@ -126,7 +126,7 @@ actual current and motion. **Return to Build** resets the machine for editing.
 **Reverse direction** on an actuator reverses its response to both its default
 setting and wired control. This is useful for opposite-facing wheel motors sharing
 one receiver. Mirroring does not silently change it. When stalled wheel motors on
-one rigid assembly share a receiver but have opposing command-adjusted axes,
+one rigidly connected group share a receiver but have opposing command-adjusted axes,
 Check machine suggests checking direction alongside clearance and load; it does
 not assume the intended vehicle behavior.
 
@@ -145,4 +145,4 @@ port temporarily reveal their connections. Ordinary part selection does not reve
 hidden wiring. “Inspection connections shown” explains this temporary display;
 the checkbox keeps your preference. Clear the trace, close the panel or cancel the
 connection to end its reveal. Exploded view shows all connections through the return
-to assembly. Mechanical attachments and shafts remain visible independently.
+to machine view. Mechanical attachments and shafts remain visible independently.

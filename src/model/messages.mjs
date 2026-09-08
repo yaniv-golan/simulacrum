@@ -1,7 +1,7 @@
 import { REASON_CODES } from './reasons.mjs';
 const messages = {
   MIRROR_UNREPRESENTABLE:
-    'This assembly cannot be mirrored with its current shapes or connections.',
+    'These parts cannot be mirrored with their current shapes or connections.',
   UNKNOWN_SURFACE: 'Choose a highlighted mounting surface.',
   SURFACE_OUT_OF_BOUNDS:
     'The mounting base extends beyond this surface. Slide it inward or choose a larger surface.',

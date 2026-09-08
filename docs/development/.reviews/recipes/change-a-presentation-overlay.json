@@ -21,7 +21,7 @@
     "src/model/display-units.mjs": "6f816b6465becc23ac98147b059d48e7b9ade38825b710ed951f66d20959d69c",
     "src/model/environment.mjs": "40efdce97605552249177aad5f7cafaf0dd41ad884d0ec5ad1e92863e8b6e52b",
     "src/model/generated/blueprint-validator.mjs": "35a9d388bc38a01aece1c9f99a69619993ccdda78e851ccc395a7c66cdbfa7d2",
-    "src/model/messages.mjs": "4b7c2881710aec6e0691403620e696f88e56a5d7b83b2889f0b312fa6a298c23",
+    "src/model/messages.mjs": "581f59c834338635a6bb9339f5fa8e584dc6f1d519a77be1aaa1aa30b4db9701",
     "src/model/mirror-assembly.mjs": "ca3585eb3589b1233fd84be40b2eafbc5e940cd933f127cb99ac9b6165084203",
     "src/model/motion-diagnostics.mjs": "86e7b431c4e9b2f07952113417050003255bf3c1b615956905e15f0fc03a5cd3",
     "src/model/motor-shaft-speed.mjs": "fa34a31acf30727ed96cc1909443b163bd68f17b514c26c9f61a805fbc48e6d4",

@@ -22,7 +22,7 @@ try {
     .click();
   browserEvidence.assert('match', [
     await page.locator('.move-scope').textContent(),
-    /connected assembly · 8 parts/,
+    /connected parts · 8 parts/,
   ]);
   const read = () =>
     page.evaluate(() => window.workshopProbe.observe().frames[0].metadata.blueprint);

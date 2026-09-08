@@ -82,7 +82,13 @@ try {
     trace.context.ui.explodedView.displayOffsets.some((p) => p.offset.some((v) => v !== 0)),
   ]);
   browserEvidence.assert('equal', [trace.context.ui.explodedView.tracedConnection, trace.data.id]);
+  await page.locator('canvas').first().focus();
   await page.keyboard.press('ArrowRight');
+  browserEvidence.assert('equal', [
+    await page.locator('.status-message').textContent(),
+    'Return to machine to edit parts.',
+  ]);
+  await page.screenshot({ path: `${out}/guarded-edit-message.png` });
   browserEvidence.assert('deepEqual', [
     (await read()).frame,
     before.frame,
@@ -125,7 +131,38 @@ try {
     }),
   ]);
   browserEvidence.assert('equal', [await page.locator('.inspection-banner').isVisible(), false]);
-  await page.locator('[data-command=explode-view]').click();
+  for (const name of ['Machine view', 'Return to machine', 'Return to machine to edit']) {
+    // Select before inspection, which hides the ordinary machine picker.
+    if (!(await page.locator('.machine-picker').evaluate((el) => el.open)))
+      await page.locator('.machine-picker > summary').click();
+    await page
+      .locator('.part-list-item')
+      .filter({ hasText: /^Motor$/ })
+      .click();
+    const beforeInspection = (await read()).frame;
+    await page.getByRole('button', { name: 'Exploded view', exact: true }).click();
+    await page.waitForTimeout(600);
+    await page.getByRole('button', { name, exact: true }).click();
+    await page.waitForTimeout(700);
+    browserEvidence.assert('equal', [await page.locator('.inspection-banner').isVisible(), false]);
+    browserEvidence.assert('deepEqual', [(await read()).frame, beforeInspection]);
+    await page.locator('canvas').first().focus();
+    await page.keyboard.press('PageUp');
+    const edited = (await read()).frame.metadata.blueprint;
+    const starting = before.frame.metadata.blueprint;
+    for (const part of starting.parts) {
+      const moved = edited.parts.find((candidate) => candidate.id === part.id);
+      browserEvidence.assert('ok', [
+        Math.abs(moved.position[1] - part.position[1] - 0.025) < 1e-9,
+        `${name} restores editing of the connected machine`,
+      ]);
+      browserEvidence.assert('deepEqual', [moved.rotation, part.rotation]);
+    }
+    browserEvidence.assert('deepEqual', [edited.connections, starting.connections]);
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    browserEvidence.assert('deepEqual', [(await read()).frame.metadata.blueprint, starting]);
+  }
+  await page.getByRole('button', { name: 'Exploded view', exact: true }).click();
   await page.waitForTimeout(600);
   await page.locator('[data-command=run]').click();
   await page.waitForTimeout(250);
@@ -133,6 +170,26 @@ try {
   browserEvidence.assert('ok', [(await read()).frame.tick > 0]);
   await page.locator('[data-command=pause]').click();
   await page.locator('[data-command=build]').click();
+  browserEvidence.assert('deepEqual', [
+    (await read()).frame.metadata.blueprint,
+    before.frame.metadata.blueprint,
+  ]);
+  // An ordinary unconnected part exposes the empty connection instruction.
+  await page.getByRole('button', { name: 'Power Cell', exact: true }).click();
+  const disconnected = (await read()).frame.metadata.blueprint;
+  await page.getByRole('button', { name: 'Exploded view', exact: true }).click();
+  await page.waitForTimeout(700);
+  browserEvidence.assert('equal', [
+    await page
+      .getByText('No connections. Return to machine to connect this part.', { exact: true })
+      .isVisible(),
+    true,
+  ]);
+  browserEvidence.assert('deepEqual', [(await read()).frame.metadata.blueprint, disconnected]);
+  await page.screenshot({ path: `${out}/disconnected-part-message.png` });
+  await page.getByRole('button', { name: 'Return to machine to edit', exact: true }).click();
+  await page.waitForTimeout(700);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
   browserEvidence.assert('deepEqual', [
     (await read()).frame.metadata.blueprint,
     before.frame.metadata.blueprint,
@@ -149,7 +206,9 @@ try {
         checks: [
           'inspection preserves telemetry and reports displayed poses',
           'shaft explanation and recorded display context',
-          'inspection edit guard',
+          'inspection edit guard and rendered instruction',
+          'all three return controls restore real editing and Undo',
+          'disconnected part instruction preserves authored state',
           'deselect',
           'exact assembly restore',
           'Run restores assembly before ticks',
