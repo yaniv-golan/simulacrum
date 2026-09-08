@@ -60,6 +60,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_READ_TOKEN }}
           PLAYTEST_CONTROL_TOKEN: ${{ secrets.PRODUCTION_CONTROL_TOKEN }}
+          CALIBRATION_BUNDLE_TOKEN: ${{ secrets.CALIBRATION_BUNDLE_TOKEN }}
           RELEASE_CONFIG: ${{ vars.PRODUCTION_RELEASE_CONFIG }}
           RELEASE_VERIFICATION_MODE: ${{ inputs.verification_mode }}
           RELEASE_VERIFICATION_REASON: ${{ inputs.verification_reason }}
@@ -102,6 +103,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           PLAYTEST_ADMIN_TOKEN: ${{ secrets.PLAYTEST_ADMIN_TOKEN }}
           PLAYTEST_CONTROL_TOKEN: ${{ secrets.PRODUCTION_CONTROL_TOKEN }}
+          CALIBRATION_BUNDLE_TOKEN: ${{ secrets.CALIBRATION_BUNDLE_TOKEN }}
           RELEASE_CONFIG: ${{ vars.PRODUCTION_RELEASE_CONFIG }}
           RELEASE_VERIFICATION_MODE: ${{ inputs.verification_mode }}
           RELEASE_VERIFICATION_REASON: ${{ inputs.verification_reason }}

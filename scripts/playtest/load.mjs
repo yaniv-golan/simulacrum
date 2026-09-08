@@ -113,11 +113,11 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
     throw Error('Measured media distribution and event traffic required');
   const clients = 20,
     ticks = Math.ceil(seconds / 3),
-    eventsPerTick = Math.max(
-      1,
-      Math.ceil(capture.eventSamples.length / Math.max(1, capture.captureSeconds / 3)),
-    );
-  const rows = clients * (ticks * (1 + eventsPerTick) + 1) + 2;
+    mediaPerTick = capture.envelope ? 1 + capture.envelope.mediaCopiesPerTick : 1,
+    eventsPerTick =
+      capture.envelope?.eventsPerTick ??
+      Math.max(1, Math.ceil(capture.eventSamples.length / Math.max(1, capture.captureSeconds / 3)));
+  const rows = clients * (ticks * (mediaPerTick + eventsPerTick) + 1) + 2;
   const run =
     reservation ||
     (await captureAdmin(origin, 'synthetic', {
@@ -208,29 +208,33 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
       scheduled =
         Math.min(ticks, Math.floor((Date.now() - start) / 3000) + 1) *
         clients *
-        (eventsPerTick + 1);
+        (eventsPerTick + mediaPerTick);
     }, 50);
     let outcomes;
     try {
-      scheduled = clients * (eventsPerTick + 1);
+      scheduled = clients * (eventsPerTick + mediaPerTick);
       outcomes = await Promise.allSettled(
         sessions.map(async (session, index) => {
           for (let seq = 0; seq < ticks; seq++) {
             const due = start + seq * 3000;
             await delay(Math.max(0, due - Date.now()));
-            const media = await readFile(
-              capture.mediaFiles[(seq * clients + index) % capture.mediaFiles.length],
-            );
-            if (!media.length || media.length > 10 * 1024 ** 2)
-              throw Error('Capture chunk outside admitted bounds');
-            await delivery(
-              session,
-              `media:screen:load:${seq}`,
-              media,
-              'video/webm',
-              `/api/playtest/v2/${session}/media?kind=screen&clip=load&seq=${seq}`,
-              due,
-            );
+            for (let m = 0; m < mediaPerTick; m++) {
+              const media = await readFile(
+                m === 0
+                  ? capture.mediaFiles[(seq * clients + index) % capture.mediaFiles.length]
+                  : capture.maximumMediaFile,
+              );
+              if (!media.length || media.length > 10 * 1024 ** 2)
+                throw Error('Capture chunk outside admitted bounds');
+              await delivery(
+                session,
+                `media:screen:load:${seq * mediaPerTick + m}`,
+                media,
+                'video/webm',
+                `/api/playtest/v2/${session}/media?kind=screen&clip=load&seq=${seq * mediaPerTick + m}`,
+                due,
+              );
+            }
             for (let e = 0; e < eventsPerTick; e++) {
               const id = `load-${seq}-${e}`,
                 template =
@@ -250,7 +254,7 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
       );
     } finally {
       clearInterval(producer);
-      scheduled = clients * ticks * (eventsPerTick + 1);
+      scheduled = clients * ticks * (eventsPerTick + mediaPerTick);
     }
     const failures = outcomes.filter((r) => r.status === 'rejected');
     if (failures.length)
@@ -296,6 +300,7 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
       finalBacklog: scheduled - completed,
       backlog,
       eventsPerTick,
+      mediaPerTick,
       mediaSamples: capture.mediaFiles.length,
       ...(capture.corpusId ? { corpusId: capture.corpusId } : {}),
       bytes: byteCount + maximum.length * 2,

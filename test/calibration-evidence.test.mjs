@@ -1,4 +1,5 @@
 import test from 'node:test';
+import * as ciRelease from '../scripts/playtest/ci-release.mjs';
 import assert from 'node:assert/strict';
 import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -8,6 +9,10 @@ import {
   readCalibrationEvidence,
   CALIBRATION_CASES,
 } from '../scripts/playtest/calibration-evidence.mjs';
+import {
+  packCalibrationBundle,
+  retrieveCalibrationBundle,
+} from '../scripts/playtest/calibration-bundle.mjs';
 import { writeCorpus } from '../scripts/playtest/corpus.mjs';
 const hash = (b) => createHash('sha256').update(b).digest('hex');
 test('release calibration admission requires reviewed report and all intact independent artifacts', async () => {
@@ -31,7 +36,9 @@ test('release calibration admission requires reviewed report and all intact inde
       workloadActions: ['drive'],
       driving: { fromTick: 0, toTick: 7200, from: [[0, 0, 0]], to: [[1, 0, 0]] },
     };
-    const corpus = await writeCorpus(join(root, 'corpus'), base);
+    const captures = [];
+    const largest = join(root, 'largest.bin');
+    await writeFile(largest, '12345');
     const report = {
       schema: 2,
       protocol: 'capture-characterization-v2',
@@ -42,7 +49,6 @@ test('release calibration admission requires reviewed report and all intact inde
       browserVersion: base.browserVersion,
       effective: { effectiveDigest: 'e'.repeat(64), loggingVerified: true },
       completedAt: 1000,
-      corpusId: corpus.id,
       cases: [],
       controls: {
         fastDetected: true,
@@ -54,8 +60,11 @@ test('release calibration admission requires reviewed report and all intact inde
     };
     for (const spec of CALIBRATION_CASES) {
       const file = spec.id + '.json';
-      const bytes = JSON.stringify({
+      const capture = {
         ...base,
+        ...(spec.id === 'long'
+          ? { mediaFiles: [largest, largest], screenBytes: 10, maximumScreenChunkBytes: 5 }
+          : {}),
         syntheticRun: CALIBRATION_CASES.indexOf(spec).toString(16).padStart(32, '0'),
         captureSeconds: spec.seconds,
         captureStarted: 0,
@@ -87,7 +96,9 @@ test('release calibration admission requires reviewed report and all intact inde
               ).map((at) => ({ at, fault: spec.fault })),
             }
           : null,
-      });
+      };
+      captures.push(capture);
+      const bytes = JSON.stringify(capture);
       await writeFile(join(root, file), bytes);
       report.cases.push({
         id: spec.id,
@@ -97,14 +108,16 @@ test('release calibration admission requires reviewed report and all intact inde
         sha256: hash(bytes),
       });
     }
+    const corpus = await writeCorpus(join(root, 'corpus'), captures);
+    report.corpusId = corpus.id;
     const capacity = JSON.stringify({
       clients: 20,
       seconds: 600,
       p95Ms: 50,
       finalBacklog: 0,
       corpusId: corpus.id,
-      scheduled: 8000,
-      completed: 8000,
+      scheduled: 12000,
+      completed: 12000,
       maximum: { concurrent: 2, bytes: 10485760, elapsedMs: 50 },
       network: { uplinkMbps: 5, rttMs: 100 },
     });
@@ -127,7 +140,7 @@ test('release calibration admission requires reviewed report and all intact inde
       calibration: {
         evidence: hash(await readFile(file)),
         browserVersion: base.browserVersion,
-        workload: { maxMediaBytesPerSecond: 1, maxEventsPerSecond: 1 / 3, maxChunkBytes: 4 },
+        workload: { maxMediaBytesPerSecond: 1, maxEventsPerSecond: 1 / 3, maxChunkBytes: 5 },
         review: {
           reviewer: 'fixture reviewer',
           reviewedAt: 2000,
@@ -139,6 +152,58 @@ test('release calibration admission requires reviewed report and all intact inde
       },
     };
     await assert.doesNotReject(readCalibrationEvidence(profile, file));
+    await assert.rejects(
+      readCalibrationEvidence(
+        {
+          ...profile,
+          calibration: {
+            ...profile.calibration,
+            workload: { ...profile.calibration.workload, maxChunkBytes: 4 },
+          },
+        },
+        file,
+      ),
+      /bounds/,
+    );
+    const packed = join(root, 'packed');
+    const exported = await packCalibrationBundle(profile, file, packed);
+    const restored = await retrieveCalibrationBundle(
+      { url: 'https://private.test/calibration/manifest.json', sha256: exported.sha256 },
+      join(root, 'fresh-runner'),
+      {
+        token: 'synthetic',
+        request: async (url) =>
+          new Response(
+            await readFile(join(packed, new URL(url).pathname.replace('/calibration/', ''))),
+          ),
+      },
+    );
+    await assert.doesNotReject(readCalibrationEvidence(profile, restored));
+    for (const mode of ['auto', 'full']) {
+      const verification = {
+        mode,
+        profile,
+        calibrationFile: '/unavailable/repo-variable-path',
+        calibrationBundle: {
+          url: 'https://private.test/calibration/manifest.json',
+          sha256: exported.sha256,
+        },
+      };
+      await ciRelease.admitGitHubCalibration(verification, join(root, mode), {
+        token: 'synthetic',
+        request: async (url) =>
+          new Response(
+            await readFile(join(packed, new URL(url).pathname.replace('/calibration/', ''))),
+          ),
+      });
+      await assert.doesNotReject(readCalibrationEvidence(profile, verification.calibrationFile));
+    }
+    await ciRelease.admitGitHubCalibration({ mode: 'bypass-expensive' }, join(root, 'bypass'), {
+      request: () => {
+        throw Error('bypass must not download');
+      },
+    });
+
     await assert.rejects(readCalibrationEvidence(profile), /file required/);
     await assert.rejects(
       readCalibrationEvidence(

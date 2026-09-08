@@ -1511,7 +1511,7 @@
       "id": "release-characterization-ownership",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Characterization holds publisher exclusion, preserves independent capture and fault artifacts, and requires reviewed measured calibration plus an intact synthetic corpus before normal release admission. Measurement failures persist in recovery and coordinator history before owner release; observation timing, driving and repeated fault periods are validated.",
+      "guarantee": "Characterization holds publisher exclusion, preserves independent capture and fault artifacts, and requires reviewed measured calibration plus an intact synthetic corpus before normal release admission. Measurement failures persist in recovery and coordinator history before owner release; observation timing, driving and repeated fault periods are validated. Fresh GitHub runners retrieve a private hash-pinned calibration bundle before admission. Capacity executes a corpus stress envelope covering all characterized cases.",
       "owners": [
         {
           "path": "scripts/playtest/calibrate.mjs",
@@ -1528,6 +1528,18 @@
         {
           "path": "scripts/playtest/calibration-evidence.mjs",
           "anchor": "assertCalibrationObservations"
+        },
+        {
+          "path": "scripts/playtest/calibration-bundle.mjs",
+          "anchor": "retrieveCalibrationBundle"
+        },
+        {
+          "path": "scripts/playtest/ci-release.mjs",
+          "anchor": "admitGitHubCalibration"
+        },
+        {
+          "path": "scripts/playtest/corpus.mjs",
+          "anchor": "writeCorpus"
         }
       ],
       "checks": ["invariant-controls"],
@@ -1560,6 +1572,18 @@
           {
             "path": "test/playtest-calibration.test.mjs",
             "anchor": "calibration measurement failure is persisted before owner can release"
+          },
+          {
+            "path": "test/calibration-bundle.test.mjs",
+            "anchor": "private calibration retrieval is bounded, pinned and fails before publishing partial files"
+          },
+          {
+            "path": "test/playtest-corpus.test.mjs",
+            "anchor": "capacity corpus covers every case envelope before load is measured"
+          },
+          {
+            "path": "test/playtest-load.test.mjs",
+            "anchor": "capacity sends retained samples and envelope stress with distinct acknowledged keys"
           }
         ],
         "negative": [
@@ -1590,6 +1614,18 @@
           {
             "path": "test/playtest-calibration.test.mjs",
             "anchor": "calibration measurement failure is persisted before owner can release"
+          },
+          {
+            "path": "test/calibration-bundle.test.mjs",
+            "anchor": "private calibration retrieval is bounded, pinned and fails before publishing partial files"
+          },
+          {
+            "path": "test/playtest-corpus.test.mjs",
+            "anchor": "capacity corpus covers every case envelope before load is measured"
+          },
+          {
+            "path": "test/playtest-load.test.mjs",
+            "anchor": "capacity sends retained samples and envelope stress with distinct acknowledged keys"
           }
         ]
       },
@@ -1662,7 +1698,7 @@
     {
       "family": "capacity",
       "entrypoint": "scripts/playtest/load.mjs",
-      "sourceSha256": "3f882ef13a0cb2183a4253f6d43461f2a45c1c51d05fc14831cbbd0a978fc1f7",
+      "sourceSha256": "e9b07a0deb6b39f30beeb55546a4d955ebe426c4923c8716ebdc4b4b1e6bed3e",
       "dependencies": ["scripts/playtest/verify-deployment.mjs"],
       "externalImports": ["node:crypto", "node:fs/promises"],
       "runtimeBoundary": "synthetic-capacity-envelope-v1",
@@ -1709,7 +1745,7 @@
     {
       "family": "endurance",
       "entrypoint": "scripts/playtest/load.mjs",
-      "sourceSha256": "3f882ef13a0cb2183a4253f6d43461f2a45c1c51d05fc14831cbbd0a978fc1f7",
+      "sourceSha256": "e9b07a0deb6b39f30beeb55546a4d955ebe426c4923c8716ebdc4b4b1e6bed3e",
       "dependencies": ["scripts/playtest/verify-deployment.mjs"],
       "externalImports": ["node:crypto", "node:fs/promises"],
       "runtimeBoundary": "packaged-capture-runtime-v1",
@@ -1890,7 +1926,7 @@
     },
     {
       "entrypoint": "scripts/playtest/load.mjs",
-      "sourceSha256": "3f882ef13a0cb2183a4253f6d43461f2a45c1c51d05fc14831cbbd0a978fc1f7",
+      "sourceSha256": "e9b07a0deb6b39f30beeb55546a4d955ebe426c4923c8716ebdc4b4b1e6bed3e",
       "dependencies": ["scripts/playtest/verify-deployment.mjs"],
       "externalImports": ["node:crypto", "node:fs/promises"],
       "checks": ["invariant-controls"]

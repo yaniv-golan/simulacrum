@@ -41,3 +41,42 @@ test('corpus rejects human provenance and changed samples, preserving synthetic 
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test('capacity corpus covers every case envelope before load is measured', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'corpus-envelope-'));
+  try {
+    const captures = [];
+    for (const [i, size] of [4, 5].entries()) {
+      const file = join(root, `${i}.bin`);
+      await writeFile(file, Buffer.alloc(size));
+      captures.push({
+        captureSeconds: 60,
+        mediaFiles: [file, file],
+        eventSamples: Array.from({ length: i ? 80 : 2 }, (_, j) => ({ id: String(j) })),
+        screenBytes: size * 2,
+        maximumScreenChunkBytes: size,
+        finalOutbox: { bytes: 0, pending: 0 },
+        browserVersion: 'test',
+        source: { head: 'a'.repeat(40), workingTreeDigest: 'b'.repeat(64) },
+        build: 'test',
+        syntheticRun: String(i).repeat(32),
+      });
+    }
+    const record = await corpus.writeCorpus(join(root, 'all'), captures);
+    const result = await corpus.readCorpus(join(root, 'all'), record.id);
+    assert.equal(result.maximumScreenChunkBytes, 5);
+    assert.equal(result.envelope.maxChunkBytes, 5);
+    assert.ok(
+      (result.envelope.mediaCopiesPerTick * 5) / 3 >=
+        Math.max(...captures.map((c) => c.screenBytes / c.captureSeconds)),
+    );
+    assert.ok(result.envelope.eventsPerTick / 3 >= 80 / 60);
+    assert.equal(result.mediaFiles.length, 4);
+    await assert.rejects(
+      corpus.writeCorpus(join(root, 'mixed'), [captures[0], { ...captures[1], build: 'other' }]),
+      /identity/,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

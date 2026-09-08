@@ -122,7 +122,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"438469205119ba1237ae1e2f5505b036eaac446e1e1f84894848b5439ad1101b","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"35de58fee0a27b05a3f7cfd5863c8abdeaac580091bdb7cee025d8d84438e9eb","disposition":"still accurate","rationale":"Regenerated invariant pointers now include verification envelope admission and measured failure persistence; regenerate-before-review and separate semantic dispositions remain the implemented process."} -->
+<!-- doc-review {"version":1,"fingerprint":"db182597656034355caf626ca4b12408f465705ecebffc2d58e016321ce33634","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"9ff01f566cd081a741e3c985fec97d6306010cb14b05dc742e97fd61e52984ce","disposition":"still accurate","rationale":"Generated reference adds private bundle and corpus-envelope controls; regenerate-before-review and individual semantic dispositions remain unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -208,7 +208,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"e5a8d8795d06205f0cec2755a8470b05db849e41011bb40e95b7a9a2a1623ad1","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"ea4f99d93de792d1b68625f7da4f1743236871b3eef528821d8183763586805d","disposition":"still accurate","rationale":"Audited source hashes were refreshed only for capture interval and fault timestamp outputs with unchanged import shapes. Metadata exclusions, recording witnesses and conservative unknown-input fallback remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"0e79277b23f3c218ac6cacd4ac1e68fe06071338ffad81bed2b6d1d7f09831ef","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5eee4a633e4be606ed95ab16e77bbd03b68384582076eb235a99bb591803988f","disposition":"still accurate","rationale":"The audited load reader still reads only supplied synthetic media and deployment inputs, never documentation metadata. Its changed schedule is bound by exact source hashes and calibrated corpus identity; import shapes are unchanged. Conservative fallback and complete release coverage remain intact."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

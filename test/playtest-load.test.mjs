@@ -145,3 +145,81 @@ test('active driving evidence rejects gravity-only motion and changed body inven
     /simulation/,
   );
 });
+
+test('capacity sends retained samples and envelope stress with distinct acknowledged keys', async (t) => {
+  const { mkdtemp, writeFile, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { createHash } = await import('node:crypto');
+  const { measureCaptureLoad } = await import('../scripts/playtest/load.mjs');
+  const root = await mkdtemp(join(tmpdir(), 'load-envelope-'));
+  const file = join(root, 'sample');
+  await writeFile(file, '12345');
+  const previous = globalThis.fetch;
+  const token = process.env.PLAYTEST_ADMIN_TOKEN;
+  process.env.PLAYTEST_ADMIN_TOKEN = 't'.repeat(64);
+  const deliveries = [];
+  let sessions = 0;
+  globalThis.fetch = async (url, options = {}) => {
+    const u = new URL(url);
+    if (u.pathname === '/admin/playtest/sessions') return Response.json([]);
+    if (u.pathname.includes('/admin/')) return Response.json({ ok: true, token: 'synthetic' });
+    if (u.pathname === '/join')
+      return new Response('', { status: 303, headers: { 'set-cookie': 'auth=synthetic' } });
+    if (u.pathname.endsWith('/session')) return Response.json({ sessionId: `s${sessions++}` });
+    const bytes = Buffer.from(await new Response(options.body).arrayBuffer());
+    const sessionId = u.pathname.split('/')[4];
+    const media = u.pathname.endsWith('/media');
+    const key = media
+      ? `media:${u.searchParams.get('kind')}:${u.searchParams.get('clip')}:${u.searchParams.get('seq')}`
+      : `event:${JSON.parse(bytes).id}`;
+    deliveries.push({ key, bytes: bytes.length, sessionId });
+    return Response.json({
+      protocolVersion: 2,
+      sessionId,
+      logicalKey: key,
+      uploadHash: createHash('sha256')
+        .update(media ? 'video/webm' : '')
+        .update(bytes)
+        .digest('hex'),
+    });
+  };
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
+  try {
+    let done = false;
+    const pending = measureCaptureLoad({
+      origin: 'https://synthetic.test',
+      seconds: 3,
+      reservation: { id: 'r' },
+      capture: {
+        captureSeconds: 60,
+        mediaFiles: [file],
+        maximumMediaFile: file,
+        eventSamples: [{ kind: 'input' }],
+        screenBytes: 5,
+        finalOutbox: { bytes: 0, pending: 0 },
+        envelope: { mediaCopiesPerTick: 2, eventsPerTick: 2 },
+      },
+    }).finally(() => {
+      done = true;
+    });
+    pending.catch(() => {});
+    // Advance only the test clock; production still uses the real timed network path.
+    for (let i = 0; i < 2000 && !done; i++) {
+      t.mock.timers.tick(100);
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+    const result = await pending;
+    assert.equal(result.scheduled, 100);
+    assert.equal(result.completed, 100);
+    assert.equal(result.mediaPerTick, 3);
+    assert.equal(deliveries.filter((d) => d.key.startsWith('media:screen:load:')).length, 60);
+    assert.equal(new Set(deliveries.map((d) => `${d.sessionId}/${d.key}`)).size, deliveries.length);
+  } finally {
+    t.mock.timers.reset();
+    globalThis.fetch = previous;
+    if (token === undefined) delete process.env.PLAYTEST_ADMIN_TOKEN;
+    else process.env.PLAYTEST_ADMIN_TOKEN = token;
+    await rm(root, { recursive: true, force: true });
+  }
+});

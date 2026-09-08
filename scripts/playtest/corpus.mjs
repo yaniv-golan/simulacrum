@@ -12,7 +12,42 @@ async function boundedRead(path, limit) {
     throw Error('Corpus file bounds/integrity');
   return readFile(path);
 }
-export async function writeCorpus(directory, capture) {
+export async function writeCorpus(directory, input) {
+  const captures = Array.isArray(input) ? input : [input];
+  if (!captures.length || captures.length > 9) throw Error('Bounded capture cases required');
+  const first = captures[0];
+  for (const c of captures) {
+    assertCaptureWorkload(c);
+    if (
+      JSON.stringify(c.source) !== JSON.stringify(first.source) ||
+      c.build !== first.build ||
+      c.browserVersion !== first.browserVersion ||
+      !/^[a-f0-9]{32}$/.test(c.syntheticRun ?? '')
+    )
+      throw Error('Synthetic corpus case identity mismatch');
+  }
+  const maxChunkBytes = Math.max(...captures.map((c) => c.maximumScreenChunkBytes));
+  const envelope = {
+    maxChunkBytes,
+    mediaCopiesPerTick: Math.max(
+      1,
+      Math.ceil(
+        (Math.max(...captures.map((c) => c.screenBytes / c.captureSeconds)) * 3) / maxChunkBytes,
+      ),
+    ),
+    eventsPerTick: Math.max(
+      1,
+      Math.ceil(Math.max(...captures.map((c) => c.eventSamples.length / c.captureSeconds)) * 3),
+    ),
+  };
+  const capture = {
+    ...first,
+    captureSeconds: captures.reduce((n, c) => n + c.captureSeconds, 0),
+    mediaFiles: captures.flatMap((c) => c.mediaFiles),
+    eventSamples: captures.flatMap((c) => c.eventSamples),
+    screenBytes: captures.reduce((n, c) => n + c.screenBytes, 0),
+    maximumScreenChunkBytes: maxChunkBytes,
+  };
   assertCaptureWorkload(capture);
   if (
     !/^[a-f0-9]{32}$/.test(capture.syntheticRun ?? '') ||
@@ -23,8 +58,8 @@ export async function writeCorpus(directory, capture) {
     throw Error('Authenticated synthetic capture provenance required');
   if (
     capture.mediaFiles.length < 2 ||
-    capture.mediaFiles.length > 600 ||
-    capture.eventSamples.length > 10000
+    capture.mediaFiles.length > 2048 ||
+    capture.eventSamples.length > 1000000
   )
     throw Error('Bounded sample distribution required');
   const samples = await Promise.all(
@@ -36,7 +71,9 @@ export async function writeCorpus(directory, capture) {
   const events = Buffer.from(JSON.stringify(capture.eventSamples));
   if (events.length > 32 * 1024 ** 2) throw Error('Corpus event bounds');
   const body = {
-    schema: 1,
+    schema: 2,
+    envelope,
+    runs: captures.map((c) => c.syntheticRun),
     purpose: 'synthetic-capacity-v1',
     source: capture.source,
     build: capture.build,
@@ -58,12 +95,12 @@ export async function writeCorpus(directory, capture) {
   return manifest;
 }
 export async function readCorpus(directory, expectedId) {
-  const record = JSON.parse(await boundedRead(join(directory, 'corpus.json'), 256 * 1024));
+  const record = JSON.parse(await boundedRead(join(directory, 'corpus.json'), 512 * 1024));
   const { id, ...body } = record;
   if (!hash(expectedId) || id !== expectedId || digest(body) !== id)
     throw Error('Corpus identity mismatch');
   if (
-    body.schema !== 1 ||
+    body.schema !== 2 ||
     body.purpose !== 'synthetic-capacity-v1' ||
     !/^[a-f0-9]{32}$/.test(body.syntheticRun ?? '') ||
     !hash(body.source?.workingTreeDigest) ||
@@ -71,10 +108,19 @@ export async function readCorpus(directory, expectedId) {
     !body.build ||
     !Array.isArray(body.media) ||
     body.media.length < 2 ||
-    body.media.length > 600 ||
+    body.media.length > 2048 ||
     body.events?.file !== 'events.json'
   )
     throw Error('Invalid synthetic corpus');
+  if (
+    !Number.isSafeInteger(body.envelope?.mediaCopiesPerTick) ||
+    body.envelope.mediaCopiesPerTick < 1 ||
+    body.envelope.mediaCopiesPerTick > 20 ||
+    !Number.isSafeInteger(body.envelope.eventsPerTick) ||
+    body.envelope.eventsPerTick < 1 ||
+    body.envelope.eventsPerTick > 1000
+  )
+    throw Error('Corpus stress envelope bounds');
   let total = 0;
   const sizes = [];
   for (const [i, row] of body.media.entries()) {
@@ -85,16 +131,19 @@ export async function readCorpus(directory, expectedId) {
     total += bytes.length;
     sizes.push(bytes.length);
   }
+  if (body.envelope.maxChunkBytes !== Math.max(...sizes))
+    throw Error('Corpus envelope chunk integrity');
   if (total > 256 * 1024 ** 2) throw Error('Corpus bounds');
   const events = await boundedRead(join(directory, 'events.json'), 32 * 1024 ** 2);
   if (events.length !== body.events.bytes || sha(events) !== body.events.sha256)
     throw Error('Corpus event integrity');
   const eventSamples = JSON.parse(events);
-  if (!Array.isArray(eventSamples) || eventSamples.length > 10000)
+  if (!Array.isArray(eventSamples) || eventSamples.length > 100000)
     throw Error('Corpus event distribution');
   const capture = {
     ...body,
     corpusId: id,
+    maximumMediaFile: join(directory, body.media[sizes.indexOf(Math.max(...sizes))].file),
     mediaFiles: body.media.map((r) => join(directory, r.file)),
     eventSamples,
     screenBytes: total,

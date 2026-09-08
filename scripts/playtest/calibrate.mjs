@@ -273,11 +273,6 @@ export async function calibrateCapture(config, directory) {
             sha256: createHash('sha256').update(bytes).digest('hex'),
           });
           if (spec.id === 'long') report.windows = compareCaptureWindows(capture);
-          if (spec.id === 'short-360-a') {
-            const manifest = await writeCorpus(join(out, 'corpus'), capture);
-            report.corpusId = manifest.id;
-            corpus = await readCorpus(join(out, 'corpus'), manifest.id);
-          }
           await save();
           if (status === 'FAIL') throw Error(reason);
         });
@@ -285,6 +280,13 @@ export async function calibrateCapture(config, directory) {
         await cleanupSynthetic(config.origin, reservation.id);
       }
     }
+    const captures = await Promise.all(
+      report.cases.map(async (row) => JSON.parse(await readFile(join(out, row.file), 'utf8'))),
+    );
+    const manifest = await writeCorpus(join(out, 'corpus'), captures);
+    report.corpusId = manifest.id;
+    corpus = await readCorpus(join(out, 'corpus'), manifest.id);
+    await save();
     await checkOwner();
     try {
       const measurement = await checkOwner.measure('capacity', 'capacity', () =>

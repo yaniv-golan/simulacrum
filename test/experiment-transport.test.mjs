@@ -172,7 +172,12 @@ test('real capture rows and capacity corpus metadata survive mixed failure histo
   const capacity = experimentReceipt(
     'capacity',
     context,
-    { corpusId: 'f'.repeat(64), outboxSamples: [{ at: 1, pending: 2, bytes: 3 }], clients: 20 },
+    {
+      mediaPerTick: 2,
+      corpusId: 'f'.repeat(64),
+      outboxSamples: [{ at: 1, pending: 2, bytes: 3 }],
+      clients: 20,
+    },
     Date.now() - 100,
   );
   const failure = {

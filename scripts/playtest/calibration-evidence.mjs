@@ -167,13 +167,22 @@ export async function readCalibrationEvidence(profile, path) {
   )
     throw Error('Incomplete calibration capacity workload');
   const corpus = await readCorpus(resolve(root, 'corpus'), report.corpusId);
+  if (JSON.stringify([...corpus.runs].sort()) !== JSON.stringify([...runs].sort()))
+    throw Error('Corpus must cover every characterization run');
+  if (
+    capacity.scheduled !==
+    20 *
+      Math.ceil(capacity.seconds / 3) *
+      (1 + corpus.envelope.mediaCopiesPerTick + corpus.envelope.eventsPerTick)
+  )
+    throw Error('Capacity did not execute corpus stress envelope');
   if (corpus.browserVersion !== report.browserVersion)
     throw Error('Calibration corpus browser mismatch');
   assertCaptureWorkload(corpus, profile.calibration.workload);
   const tested = {
-    maxMediaBytesPerSecond: corpus.screenBytes / corpus.mediaFiles.length / 3,
-    maxEventsPerSecond:
-      Math.max(1, Math.ceil(corpus.eventSamples.length / (corpus.captureSeconds / 3))) / 3,
+    maxMediaBytesPerSecond:
+      (corpus.envelope.mediaCopiesPerTick * corpus.maximumScreenChunkBytes) / 3,
+    maxEventsPerSecond: corpus.envelope.eventsPerTick / 3,
     maxChunkBytes: corpus.maximumScreenChunkBytes,
   };
   if (Object.keys(tested).some((k) => profile.calibration.workload[k] > tested[k]))

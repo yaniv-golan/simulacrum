@@ -42,6 +42,7 @@ function measurement(value) {
     'finalBacklog',
     'backlog',
     'eventsPerTick',
+    'mediaPerTick',
     'mediaSamples',
     'bytes',
     'requests',

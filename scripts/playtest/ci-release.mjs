@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { verifyPackage, deployRelease } from './release.mjs';
 import { assertStagingOrder } from './release-policy.mjs';
 import { retrieveGitHubEvidence } from './experiment-transport.mjs';
+import { retrieveCalibrationBundle } from './calibration-bundle.mjs';
 import { readCalibrationEvidence } from './calibration-evidence.mjs';
 import { releaseEligible } from './ci-verification.mjs';
 import { selectExperiments, verifyExperimentResults, validateProfile } from './experiments.mjs';
@@ -51,6 +52,17 @@ export function assertExperimentAdmission(
     (staged?.schema !== 2 || staged.artifact !== artifact || staged.smoke?.status !== 'PASS')
   )
     throw Error('Exact staging smoke evidence required');
+}
+export async function admitGitHubCalibration(verification, directory, options) {
+  if (verification.mode === 'bypass-expensive') return;
+  // Both fresh runners retrieve the same pinned private inputs before owner admission.
+  verification.calibrationFile = await retrieveCalibrationBundle(
+    verification.calibrationBundle,
+    `${directory}/calibration`,
+    options,
+  );
+  delete verification.corpus;
+  await readCalibrationEvidence(verification.profile, verification.calibrationFile);
 }
 async function main() {
   const [command, environment = 'staging', directory = '.release-private/ci'] =
@@ -119,11 +131,7 @@ async function main() {
       staged,
       artifact: manifest.artifact,
     });
-    if (config.verification.mode !== 'bypass-expensive')
-      await readCalibrationEvidence(
-        config.verification.profile,
-        config.verification.calibrationFile,
-      );
+    await admitGitHubCalibration(config.verification, directory);
     if (config.verification.mode === 'bypass-expensive') {
       const response = await fetch(new URL('/experiment-failures', config.coordinator), {
         method: 'POST',

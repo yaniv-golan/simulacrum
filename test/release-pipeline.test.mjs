@@ -48,6 +48,21 @@ test('workflow routes once and aggregate is always evaluated before admission', 
   assert.equal((workflow.match(/npm run release:prepare/g) || []).length, 1);
   assert.match(workflow, /verification:\n    if: always\(\)/);
   assert.match(workflow, /staging-admission:\n    needs: \[release-package, verification\]/);
+  for (const path of ['.github/workflows/ci.yml', '.github/workflows/deploy-production.yml']) {
+    assert.equal(
+      (
+        readFileSync(path, 'utf8').match(
+          /CALIBRATION_BUNDLE_TOKEN: \$\{\{ secrets.CALIBRATION_BUNDLE_TOKEN \}\}/g,
+        ) || []
+      ).length,
+      2,
+    );
+  }
+  const admission = readFileSync('scripts/playtest/ci-release.mjs', 'utf8');
+  assert.ok(
+    admission.indexOf('await admitGitHubCalibration(config.verification, directory)') <
+      admission.indexOf("fetch(new URL('/acquire'"),
+  );
 });
 
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
