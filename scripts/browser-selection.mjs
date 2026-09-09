@@ -92,11 +92,12 @@ export function selectAffectedBrowserChecks({
       reasons: [],
     };
   const changed = runtimeFiles;
+  const unknownInputs = [...new Set(changed.filter((p) => !graph.nodes.has(p)))].sort();
   const fallback = graph.errors.length
     ? 'dependency graph errors'
     : !files?.length
       ? 'changed files unavailable'
-      : changed.some((p) => !graph.nodes.has(p))
+      : unknownInputs.length
         ? 'unknown changed inputs'
         : null;
   // Local behavioral contracts are explicit, not proofs inferred from an import graph.
@@ -171,12 +172,19 @@ export function selectAffectedBrowserChecks({
       }
       queue.push(...[...node.dependencies].sort().map((d) => [...chain, d]));
     }
-    if (reason) reasons.push({ id: check.id, reason, path });
+    if (reason)
+      reasons.push({
+        id: check.id,
+        reason,
+        path,
+        ...(reason === 'unknown changed inputs' ? { inputs: unknownInputs } : {}),
+      });
   }
   return {
     files,
     documentation,
     fallback,
+    unknownInputs,
     checks: checks.filter((c) => reasons.some((r) => r.id === c.id)),
     reasons,
   };

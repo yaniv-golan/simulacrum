@@ -22,15 +22,11 @@ try {
       .locator('.parts-panel .part-icon')
       .evaluateAll((imgs) => imgs.every((i) => i.complete && i.naturalWidth > 0)),
   ]);
-  await page.locator('[data-part-type=poweredMotor]').scrollIntoViewIfNeeded();
-  const card = await page.locator('[data-part-type=poweredMotor]').boundingBox(),
-    canvas = await page.locator('canvas').first().boundingBox();
-  const x = canvas.x + canvas.width * 0.5,
-    y = canvas.y + canvas.height * 0.65;
-  await page.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(x, y, { steps: 20 });
-  await page.mouse.up();
+  await browserEvidence.dragFrom(page, page.locator('[data-part-type=poweredMotor]'), async () => {
+    const canvas = await page.locator('canvas').first().boundingBox();
+    return { x: canvas.x + canvas.width * 0.5, y: canvas.y + canvas.height * 0.65 };
+  });
+  const canvas = await page.locator('canvas').first().boundingBox();
   await page.waitForFunction(
     () => window.workshopProbe.observe().frames[0].metadata.blueprint.parts.length === 1,
   );

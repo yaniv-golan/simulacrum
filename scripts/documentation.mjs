@@ -13,6 +13,34 @@ import { createHash } from 'node:crypto';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { parse } from 'acorn';
 import { buildModuleGraph } from './module-graph.mjs';
+// Review equivalence only: execution/build identities remain byte-exact.
+function reviewSource(path, value) {
+  if (!/\.(?:mjs|cjs|js)$/.test(path)) return value;
+  const source = String(value);
+  try {
+    const spans = [];
+    const ast = parse(source, {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      onToken: (token) => spans.push([token.start, token.end]),
+      onComment: (_block, _text, start, end) => spans.push([start, end]),
+    });
+    const structure = JSON.stringify(ast, (key, val) =>
+      ['start', 'end', 'loc', 'range'].includes(key)
+        ? undefined
+        : typeof val === 'bigint'
+          ? `${val}n`
+          : val,
+    );
+    return JSON.stringify([
+      structure,
+      spans.sort((a, b) => a[0] - b[0]).map(([a, b]) => source.slice(a, b)),
+    ]);
+  } catch {
+    // Fragments or unsupported syntax have no proven formatting equivalence.
+    return source;
+  }
+}
 const VERSION = 1;
 const sidecarPath = (file, id) =>
   `docs/development/.reviews/${file.slice('docs/development/'.length, -3)}/${id}.json`;
@@ -284,7 +312,7 @@ export function inspectDocumentation(root = process.cwd(), { files } = {}) {
     };
     const add = (file, value) => {
       if (!selected.has(file)) selected.set(file, new Set());
-      selected.get(file).add(value);
+      selected.get(file).add(reviewSource(file, value));
     };
     const addFull = (file) => {
       if (!fileHashes.has(file))
@@ -293,7 +321,7 @@ export function inspectDocumentation(root = process.cwd(), { files } = {}) {
           hash(
             file.endsWith('.md')
               ? authoredMarkdown(document(file))
-              : readFileSync(ownedPath(root, file)),
+              : reviewSource(file, readFileSync(ownedPath(root, file))),
           ),
         );
       add(file, `bytes:${fileHashes.get(file)}`);
@@ -450,7 +478,7 @@ export function inspectDocumentation(root = process.cwd(), { files } = {}) {
       activeScopeNotes = [
         `direct source coverage for ${path}; imported behavior requires explicit dependency links or implementation scope`,
       ];
-      return { [path]: hash(read(path)) };
+      return { [path]: hash(reviewSource(path, read(path))) };
     }
     if (fragment === 'implementation') {
       if (!/\.(mjs|cjs|js)$/.test(path))

@@ -462,3 +462,37 @@ test('architecture preview and cancellation claims bind their actual control own
       `${owner} behavior must invalidate the architecture claim`,
     );
 });
+
+test('JavaScript review ignores only whitespace with identical structure, tokens and comments', (t) => {
+  for (const scope of ['source', 'implementation', 'symbol=run']) {
+    const f = fixture(t);
+    const original = 'export function run() { /* rationale */ return 9; }';
+    f.put('src/model/tool.mjs', original);
+    f.put('docs/development/guide.md', `# Owner\nUses [run](../../src/model/tool.mjs#${scope}).\n`);
+    reviewSection(f.root, 'docs/development/guide.md', 'owner', receipt);
+    f.put('src/model/tool.mjs', 'export function run() {\n  /* rationale */ return 9;\n}\n');
+    assert.deepEqual(f.inspect().errors, [], scope);
+    for (const wrong of [
+      original.replace('9', '8'),
+      original.replace('return 9', 'return\n9'),
+      original.replace('rationale', 'changed'),
+    ]) {
+      f.put('src/model/tool.mjs', wrong);
+      assert.match(f.inspect().errors.join('\n'), /stale documentation review/, scope);
+    }
+  }
+});
+
+test('review equivalence never decodes binary dependency bytes', (t) => {
+  const f = fixture(t);
+  f.put('src/model/tool.mjs', "export const asset = new URL('./asset.wasm', import.meta.url);");
+  f.put('src/model/asset.wasm', Buffer.from([255]));
+  f.put(
+    'docs/development/guide.md',
+    '# Owner\nUses [asset](../../src/model/tool.mjs#implementation).\n',
+  );
+  reviewSection(f.root, 'docs/development/guide.md', 'owner', receipt);
+  assert.deepEqual(f.inspect().errors, []);
+  f.put('src/model/asset.wasm', Buffer.from([254]));
+  assert.match(f.inspect().errors.join('\n'), /stale documentation review/);
+});

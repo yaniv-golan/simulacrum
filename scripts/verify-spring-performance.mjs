@@ -46,17 +46,13 @@ try {
   report.simulationAcceptance = evaluateSpringSimulation(report.simulation);
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   const load = async (count) => {
-    await page.locator('input[type=file]').setInputFiles(fixtures.get(count));
-    await page.waitForFunction((count) => {
-      const receipt = window.workshopProbe.readLastCommandResult();
-      return (
-        receipt?.input.type === 'load' &&
-        receipt.input.save.parts.length === count * 4 &&
-        (count === 32
-          ? receipt.result.ok === false
-          : receipt.result.ok && JSON.parse(window.render_game_to_text()).springs.length === count)
+    const receipt = await evidence.loadAndWait(page, fixtures.get(count), { ok: count !== 32 });
+    if (count !== 32)
+      await page.waitForFunction(
+        (count) => JSON.parse(window.render_game_to_text()).springs.length === count,
+        count,
       );
-    }, count);
+    return receipt;
   };
   const stableState = () =>
     page.evaluate(() => {
@@ -135,13 +131,17 @@ try {
       );
     }
   await load(8);
-  const beforeLoad = await stableState();
-  await load(32);
-  const rejection = await page.evaluate(() => window.workshopProbe.readLastCommandResult());
-  evidence.assert('equal', [rejection.result.ok, false]);
-  evidence.assert('equal', [rejection.input.type, 'load']);
+  const rejection = await evidence.assertRejectedEdit({
+    snapshot: stableState,
+    action: () => load(32),
+  });
   evidence.assert('equal', [rejection.input.save.parts.length, 128]);
-  evidence.assert('deepEqual', [await stableState(), beforeLoad]);
+  // Repeat the identical rejection to prove a previous receipt cannot satisfy this attempt.
+  const repeated = await evidence.assertRejectedEdit({
+    snapshot: stableState,
+    action: () => load(32),
+  });
+  evidence.assert('ok', [repeated.sequence > rejection.sequence]);
   report.rejection = rejection;
   await load(0);
   report.idle.push(await collect(false));

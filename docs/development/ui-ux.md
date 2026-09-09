@@ -23,7 +23,7 @@ otherwise give the observation and a useful next check. Do not shrink text to ma
 more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Current surfaces and lifecycle
-<!-- doc-review {"version":1,"fingerprint":"faa0325ea0fe974a6f17e4f30c61bbc8fb250ce764a5bc74f2d6a181e2f99438","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"3d8fff7e4b1d3f50c1d31f5b33827b0d0d8504b331f45b1cdf7f58a67fad966b","disposition":"still accurate","rationale":"Restored the conditional diagnostic to the workbench edge with pointer access; the responsive header now wraps at smaller widths without changing the documented command homes or requested surfaces."} -->
+<!-- doc-review {"version":1,"fingerprint":"1511803b0c378abd8505b02bed254dc09b53beb2ca2854ba68ad1716ddead313","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"5934bab638d82df9fe3cee32eaf316cd27df41b88c2ff3b7ae2240a179a882ff","disposition":"still accurate","rationale":"No player-facing surface changed; application command receipt sequencing is diagnostic only. Inspector, toolbar, learning and measurement visibility rules remain unchanged."} -->
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
 document and run actions in the header; parts in the left catalogue; separate edit
@@ -65,7 +65,7 @@ not a general success criterion for a spring. Recovery warnings remain visible w
 measurements closed. No measurement is permission to invent physical causality.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"947bed01de1e68883a9c2e362bf027c59fd1acd0e4bbf7788d99cf7a5a35b9ed","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"84e0312727071cdeebd24824e2350b08ac08940c4643a9cb59ea27e322c0013d","disposition":"still accurate","rationale":"The browser journey additionally verifies mount-mode scope suppression and non-clipped header buttons at 980 pixels; requested surfaces, independent warnings and the human-evidence limitation remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"5302ec36e6cc5377cb28e37d57901fad3d3b999a789dd21262f2a1a5db4418ae","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"17a94c6c84e38cb73468143d937852855b286da85fe565cd8bd72e76ea1a4a26","disposition":"still accurate","rationale":"New test helpers retain actual pointer interactions and do not substitute for layout, prediction or human acceptance evidence. Documentation normalization does not change verification tier obligations."} -->
 
 Use the manifest's `workbench-content-lifecycle` invariant and
 [registered browser check](../../scripts/manifest.json#check=verify-workbench-content)

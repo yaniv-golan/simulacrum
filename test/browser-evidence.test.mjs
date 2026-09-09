@@ -323,3 +323,80 @@ test('parallel admission checks resolved launch options, including variable prof
   await (await make().launch({ profile: 'ui' })).close();
   assert.equal(launches, 1);
 });
+
+test('load helper waits for a fresh matching receipt, including repeated rejected input', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'load-helper-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const file = join(dir, 'save.json'),
+    save = { parts: [] };
+  writeFileSync(file, JSON.stringify(save));
+  const evidence = createBrowserEvidence({ readBuild: () => 'x', readSource: () => ({}) });
+  let receipt = { sequence: 4, input: { type: 'load', save }, result: { ok: false } };
+  const fake = {
+    evaluate: async () => structuredClone(receipt),
+    locator: () => ({ setInputFiles: async (path) => assert.equal(path, file) }),
+    waitForFunction: async (predicate, args) => {
+      globalThis.window = { workshopProbe: { readLastCommandResult: () => receipt } };
+      try {
+        assert.equal(predicate(args), false, 'stale identical rejection cannot complete a load');
+        receipt = { ...receipt, sequence: 5, input: { type: 'load', save: { parts: [1] } } };
+        assert.equal(predicate(args), false, 'another input cannot complete this load');
+        receipt = { ...receipt, input: { type: 'load', save } };
+        assert.deepEqual(predicate(args), receipt);
+        return { jsonValue: async () => structuredClone(receipt), dispose: async () => {} };
+      } finally {
+        delete globalThis.window;
+      }
+    },
+  };
+  assert.equal((await evidence.loadAndWait(fake, file, { ok: false })).sequence, 5);
+});
+
+test('rejected edit helper catches mutation; real pointer drag scrolls and releases even on failure', async () => {
+  const evidence = createBrowserEvidence({ readBuild: () => 'x', readSource: () => ({}) });
+  let state = { x: 1 };
+  const snapshot = async () => structuredClone(state);
+  await evidence.assertRejectedEdit({ snapshot, action: async () => ({ result: { ok: false } }) });
+  await assert.rejects(
+    evidence.assertRejectedEdit({
+      snapshot,
+      action: async () => {
+        state.x++;
+        return { result: { ok: false } };
+      },
+    }),
+    /rejected edit changed/,
+  );
+  await assert.rejects(
+    evidence.assertRejectedEdit({ snapshot, action: async () => ({ result: { ok: true } }) }),
+    /expected a rejected/,
+  );
+  const calls = [],
+    source = {
+      scrollIntoViewIfNeeded: async () => calls.push('scroll'),
+      boundingBox: async () => {
+        assert.equal(calls[0], 'scroll');
+        return { x: 0, y: 0, width: 20, height: 20 };
+      },
+    };
+  let fail = false;
+  const fake = {
+    mouse: {
+      move: async (x) => {
+        calls.push('move');
+        if (fail && x === 50) throw Error('interrupted');
+      },
+      down: async () => calls.push('down'),
+      up: async () => calls.push('up'),
+    },
+  };
+  await evidence.dragFrom(fake, source, async () => ({ x: 50, y: 50 }));
+  assert.deepEqual(calls, ['scroll', 'move', 'down', 'move', 'up']);
+  calls.length = 0;
+  fail = true;
+  await assert.rejects(
+    evidence.dragFrom(fake, source, async () => ({ x: 50, y: 50 })),
+    /interrupted/,
+  );
+  assert.equal(calls.at(-1), 'up');
+});

@@ -46,6 +46,57 @@ export function createBrowserEvidence({
           canvas.y + (-center.y * 0.5 + 0.5) * canvas.height,
         );
       },
+      // Returns the complete receipt. Matching input alone is insufficient for repeated failures.
+      async loadAndWait(page, file, { ok = true } = {}) {
+        const save = JSON.parse(readFileSync(file, 'utf8'));
+        const before = await page.evaluate(() => window.workshopProbe.readLastCommandResult());
+        await page.locator('input[type=file]').setInputFiles(file);
+        const handle = await page.waitForFunction(
+          ({ sequence, save }) => {
+            const receipt = window.workshopProbe.readLastCommandResult();
+            return (
+              receipt?.sequence > sequence &&
+              receipt.input.type === 'load' &&
+              JSON.stringify(receipt.input.save) === JSON.stringify(save) &&
+              receipt
+            );
+          },
+          { sequence: before?.sequence ?? 0, save },
+        );
+        const receipt = await handle.jsonValue();
+        await handle.dispose();
+        assert.equal(receipt.result.ok, ok, 'load returned an unexpected result');
+        return receipt;
+      },
+      // The caller owns the consequential state projection, including history/cursor when relevant.
+      async assertRejectedEdit({ snapshot, action }) {
+        const before = structuredClone(await snapshot());
+        const receipt = await action();
+        assert.equal(receipt.result.ok, false, 'expected a rejected edit');
+        assert.deepEqual(await snapshot(), before, 'rejected edit changed consequential state');
+        return receipt;
+      },
+      // Resolve the destination after scrolling; callers still assert the authored outcome.
+      async dragFrom(page, source, destination) {
+        await source.scrollIntoViewIfNeeded();
+        const box = await source.boundingBox(),
+          target = await destination();
+        assert.ok(
+          box &&
+            box.width > 0 &&
+            box.height > 0 &&
+            Number.isFinite(target.x) &&
+            Number.isFinite(target.y),
+          'drag needs visible source and finite destination',
+        );
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.mouse.down();
+        try {
+          await page.mouse.move(target.x, target.y, { steps: 20 });
+        } finally {
+          await page.mouse.up();
+        }
+      },
       assertUnchanged() {
         assert.equal(readBuild(), build, 'app source changed during browser verification');
         assert.deepEqual(

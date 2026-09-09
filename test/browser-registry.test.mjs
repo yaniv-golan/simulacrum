@@ -53,6 +53,11 @@ test('runtime roots include engine consumers without test imports; unknown and o
     ['app', 'self'],
   );
   assert.equal(select(['unknown.json']).checks.length, 3);
+  const unknown = select(['z.json', 'scripts/app.mjs', 'a.json']);
+  assert.deepEqual(unknown.unknownInputs, ['a.json', 'z.json']);
+  assert.ok(
+    unknown.reasons.every((r) => r.path === null && r.inputs.join(',') === 'a.json,z.json'),
+  );
   nodes.get('scripts/probe.mjs').opaqueInputs = true;
   assert.equal(select(['scripts/app.mjs']).checks.length, 3);
   assert.equal(

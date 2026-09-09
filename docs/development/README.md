@@ -87,7 +87,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"b7913ee60f5ff04dd3fe0323cc3119cce3cb51fe75d34e6b56edc4be4825d2cf","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"af6ca846128c436c651c69151d8406c87a152d5b1ef62770a2d0a428b2665b31","disposition":"updated","rationale":"Recording setup now links the remote-setup section rather than all release operations; completion tiers, source binding and human acceptance semantics remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"16c57bc8fb5cedabd320dabda3f012ae168e814356a92ad7133c53e3731ab65c","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"cb69d7efc8f92098e8e078675eef4684a12c4a621aaced5668b192cfaa2630fc","disposition":"still accurate","rationale":"Shared evidence gained load, rejected-edit and drag helpers; clickPart still sends an ordinary projected pointer click and completion tiers still own required scope. Load completion now returns the captured matching receipt handle, avoiding a later command racing the result read."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -127,7 +127,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"b886cd74ef2d546a5cb10a80c302d6f09dc45dc6e36d46899f26a5c52640a43c","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"c046d28c865f6fe758dee811b0a92a404815b00291ebdb2b6978ac97c7b128c3","disposition":"still accurate","rationale":"Generated reference now includes spring angular-momentum and performance control pointers. The documentation refresh, source identity and per-section review procedure remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"5a330a56a25fa0977012411f10cd10f41e1ca569452a4962dabf43193e332c62","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"2a74d1bb28e7f2264ad3f4bca402c63e4a513a82f22c515bb9d1c484560fc652","disposition":"updated","rationale":"Whitespace-only JavaScript review equivalence now preserves binary dependency bytes without UTF-8 decoding. Independent WASM-byte counterexamples fail on altered bytes; exact build identities and semantic review requirements remain intact."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -189,7 +189,12 @@ adjacent `.reviews/<document>/<section>.json` file, bound by the comment’s dig
 These current technical records belong in version control; missing or modified
 metadata fails the gate. Remove its adjacent metadata when removing a section;
 orphaned records also fail. They contain no review history or private coordination. Source function bodies count,
-not only signatures. Module references conservatively cover the module and its
+not only signatures. JavaScript review hashes ignore whitespace between tokens only when
+parsing confirms identical syntax structure and exact tokens/comments. This catches
+newline-sensitive behavior; changed literals, comments, syntax or unparseable fragments
+remain source changes. Other file formats remain byte-sensitive. This equivalence applies
+only to explanation review, never build identities or verification receipts.
+Module references conservatively cover the module and its
 local dependencies; symbol references use `file.mjs#symbol=name` to narrow coverage.
 Use ordinary Markdown links for module-wide claims. References such as
 `package.json#script=ci` and `scripts/manifest.json#rule=gate-integrity` make specific
@@ -217,7 +222,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"a069a071767ce68b8616cc98687039bc6ef064b29e0c5f988d6afff352ebf08b","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7d04d79ac4e133d8f7a5bdeaa4cb95938664dca9a3cfd55b7f4829cf6bcbc4f9","disposition":"still accurate","rationale":"Spring invariant ownership adds performance evaluators and regression controls. The existing exclusive spring performance check and conservative browser selection contracts are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1b85c7583de57b5a6ed0e01a290c5c38f1228c0b616647d6f72b9e74639719ac","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7483ea7675ebc7022612cf0441d07f488ebaebff09763ecae7e7abda5ffdfb1f","disposition":"updated","rationale":"Added unknown input path reporting and the three shared interaction helpers with fresh command sequence receipts, caller-owned atomicity projections and ordinary pointer semantics. Load completion now returns the captured matching receipt handle, avoiding a later command racing the result read."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -227,7 +232,7 @@ shared runtime and identity dependencies often select the full browser suite.
 entrypoint, its frozen direct dependency shape, and required feature/integration checks.
 Part-help presentation edits select four checks; its standalone verifier selects two.
 Mirror presentation edits select mirror, assembly UX and manipulation checks; its standalone verifier selects the mirror check. The remote recording client selects both backend adapters, durable feedback receipts, workshop lifecycle and construction checks; new service/import edges or opaque inputs restore conservative coverage.
-Known documentation Markdown and current review records select no browsers only when every relevant verifier/served-root graph is resolved and the files are not runtime data dependencies. An additional manifest `browserReviewMetadataScopes` boundary permits only `docs/development/.reviews/<document>/<section>.json` to skip browsers when every reachable opaque reader matches its audited exact source and import shape, no static data edge reaches that review file, and no feedback source override is active. These readers use review metadata only for source identity, never workshop behavior; CI still validates the review itself. New, changed or missing readers fail closed. This is not an exemption for Markdown, unknown JSON or runtime data. Other reachable opaque readers or unresolved roots retain conservative coverage, including for mixed documentation and scoped changes. CI still validates documentation in both tiers. Documentation composes with scoped runtime changes; unknown data and shared tooling stay conservative.
+Known documentation Markdown and current review records select no browsers only when every relevant verifier/served-root graph is resolved and the files are not runtime data dependencies. An additional manifest `browserReviewMetadataScopes` boundary permits only `docs/development/.reviews/<document>/<section>.json` to skip browsers when every reachable opaque reader matches its audited exact source and import shape, no static data edge reaches that review file, and no feedback source override is active. These readers use review metadata only for source identity, never workshop behavior; CI still validates the review itself. New, changed or missing readers fail closed. This is not an exemption for Markdown, unknown JSON or runtime data. Other reachable opaque readers or unresolved roots retain conservative coverage, including for mixed documentation and scoped changes. CI still validates documentation in both tiers. Documentation composes with scoped runtime changes; unknown data and shared tooling stay conservative. Unknown-input fallback reports name the triggering paths separately from dependency chains.
 Changed shared modules, consumers, unknown files, or new imports expand coverage. These
 contracts do not apply to full qualification and do not claim that imports prove behavior.
 When extending a boundary, review its integration checks as well as dependency changes.
@@ -253,6 +258,16 @@ CLI admission, startup and cleanup failures produce failed reports, also availab
 Summary-only discovery does not replace execution evidence. [Local completion](../../scripts/verify-local.mjs#implementation) and
 [final verification](../../scripts/verify-final.mjs#implementation) also record
 a fresh failed outcome when runtime, arguments or base-revision admission fails.
+Use the [browser evidence helpers](../../scripts/browser-evidence.mjs#source) for repeated interactions:
+`loadAndWait(page, file, { ok })` uploads through the file input and returns a fresh matching
+command receipt, including rejected loads. The [application-owned receipt sequence](../../src/application/workshop-app.mjs#source) advances
+on completed attempts even when the simulation cursor does not change.
+`assertRejectedEdit({ snapshot, action })` compares the caller's consequential state projection
+before and after a rejected receipt; include history and cursor where those are part of the claim.
+`dragFrom(page, locator, destination)` scrolls before resolving coordinates and sends ordinary
+mouse events, releasing the button on failure. Keep outcome assertions in the check, and use
+explicit pointer steps when inspecting an in-progress drag. Helpers do not replace UI assertions.
+
 A browser check owns its probe setup, execution and cleanup inside one receipt; success
 is recorded only after cleanup. Saved errors retain both execution and cleanup causes.
 [CI](../../scripts/ci.mjs#implementation) stops on the first failed structural prerequisite before starting unit work.

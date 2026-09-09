@@ -1,7 +1,7 @@
 # Architecture and policy owners
 
 ## Overview
-<!-- doc-review {"version":1,"fingerprint":"2123bbcc2a383d5ed1c2c22f8bf62d965be0d631d7dbfb9f46316c928606e29b","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"b351b5909aa84434358b4185f248b95e3a00808dc3eb446a6133dd60cf6392a2","disposition":"still accurate","rationale":"AGENTS adds UI workflow requirements without changing layer imports, registry ownership or runtime and Course authority."} -->
+<!-- doc-review {"version":1,"fingerprint":"5dc9b44cc68d1a880ed836ca2ac6e674fadba8a62c2bf0e69455d1eae34c401f","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"64a31b28cdaefb3a4e85ccd656ed9bef3fed55a3ee78a41814884d8a9ca59224","disposition":"still accurate","rationale":"Only review fingerprint representation changed for the registry dependency; runtime and Course authority and manifest ownership did not change."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -9,7 +9,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"76cdf95344162d769380671e75c917f41e06278279b0b12d58beb670859d47da","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"9524ed09841ba4bd8f44a10f97302e95e44b967dc854fe62a3c547c5f5084481","disposition":"still accurate","rationale":"The conditional scope refresh and diagnostic toolbar placement remain presentation-only; input and authoring changes still flow through the documented owners and core."} -->
+<!-- doc-review {"version":1,"fingerprint":"4b27b2df0ab4ddc3b299de90723d8ffbe2e0e6f8eea8b8623624aab76b427127","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"989996f60c48cd9bcc548e3daa705d1d0c64ec4d9820dcfefafb160479f63845","disposition":"still accurate","rationale":"Application adds a completion sequence to its diagnostic receipt; candidate admission, history, sensor timing and immutable observation ownership remain unchanged."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -55,7 +55,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"1a672f2818234ba656866c5a180f5ff72bb171cfc93b0db45bf95ba99250234e","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"8f9b78fb4ad3cf0b82cc4b77bbcb87585e5f3ba48cc7188fc2cd15efc12dfc69","disposition":"still accurate","rationale":"Spring-view and session changes since review are formatting only; numeric-law, completed-reading and retained-geometry owners in the table remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"4de1e5c8188ef047a2a8f20b86b67fdaba212c2d4c19a57cf3ec3b629218b23a","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"e43fafa788842a181a1105a7cf9a5d73f2cb3e0611174d95eee85d1dc02c6d5b","disposition":"still accurate","rationale":"Whitespace-aware review hashing refreshes the dependency digests without moving any listed production policy owner or changing physical laws and canonical geometry decisions."} -->
 
 | Decision                                       | Production owner                                                                                                                                                                                                                                             | Example consumer                                                          |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |

@@ -10,7 +10,7 @@ attachment, polarity, naming, reset or authored-property policy.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"2a2554aca1e4455bfba6cb470dc888fcc29a3ce077bd79944e0abd3f13098053","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"c326af87389ee54f6baa5bf47db1bed5c519bcb07512279941050dff773d0273","disposition":"still accurate","rationale":"Only session formatting changed since this section review. Guide/carriage extend catalog and schema at M3b and regenerate validators/types. Pads remain canonical geometry with authored materials, compiler admission and ordinary surface mounts as described."} -->
+<!-- doc-review {"version":1,"fingerprint":"0b30cac9baed06feaed828fa0d4ad6294f877372e15538523629fdaffea185e8","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"fed7e6740d0c4637c6a660c5e44d9007f476937948e19ed38f614658803288c4","disposition":"still accurate","rationale":"Dependency representation changed for reviews only; catalog, schema, geometry, mounting and compiler authoring paths remain unchanged."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -27,7 +27,7 @@ validation with `node scripts/generate-schema.mjs` when schema changes.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"4c45647f4762192c1fdd7ffa7bd02dcb66087054c1d3485e9696c6f51fb39a56","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"2ed743d661d92200593d676836f38a129c86dd7f1f142331a6ef4e640a50bd3e","disposition":"still accurate","rationale":"Only session formatting changed since this section review. Spring convenience actions map to existing load/insert-assembly commands and parameter edits. Candidate compilation and atomic history remain the core admission route; no new command authority bypass was added."} -->
+<!-- doc-review {"version":1,"fingerprint":"55a341e2ec73230848d35ccdf2607859e30acc9719c7b6336d1d7013ffbf493e","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"89cc8ae8a374fe52b5f38e9ddd2c09b24f7a2274dcfb97d1436fcda631d11b5c","disposition":"still accurate","rationale":"The new application diagnostic sequence is outside core history and cursors; the recipe still requires whole-candidate compilation and explicit rejected command effects."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -47,7 +47,7 @@ Identify the player task, primary home, visibility/retrieval lifecycle and repla
 surface. Keep consequential state visible and verify unique actions remain reachable
 after removing or moving controls.
 
-<!-- doc-review {"version":1,"fingerprint":"c79b96c27116b8b70ec7c8bb9ec8729f4471844fc983244547197fc60a8c54a4","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"34b440e544857e5c06acb2c95e272683894879164830310bd02a259ef1f22738","disposition":"updated","rationale":"Added the UI policy decisions before interaction implementation. Mirror verifier uses the new truthful scope label and still exercises preview cancellation and ordinary commands."} -->
+<!-- doc-review {"version":1,"fingerprint":"9e7adc9580682899c5f79474978832b3cdd18d192433a28ba8a4736ce9cc2c7b","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"cece79761e10e6e0cde10f80dec769f3623b573fed34ddfd4c234470e70b7aa3","disposition":"still accurate","rationale":"The shared drag helper preserves real pointer input and finally releases on errors. Presentation preview ownership, cancellation and the referenced UI checks remain required. Load completion now returns the captured matching receipt handle, avoiding a later command racing the result read."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -90,7 +90,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"859ffd68a97ad422feb49525f1ef1c40d6d91c6ace114fa4a4f5dcdb31a2cb42","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"db6b288ffc90d2a1925a15c1a265080ffe0f70f6dc68225ba927efc8f4c439fb","disposition":"still accurate","rationale":"Only session formatting changed since this section review. Spring inspector reads completed length/speed/energy and explains limits; it neither repairs state nor infers intent. Existing diagnoseMotion ownership and symptom-versus-cause guidance remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"9b7a3564f707b8df65392b6025253e91b9293331106b3b604ea748736df6f136","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"ac54eed451b274691541ee7e7eeda68c503dcc32294663cab3113a1984473cf8","disposition":"still accurate","rationale":"No diagnostic model or navigation behavior changed; review hashes alone changed and completed observation inputs remain the required diagnostic source."} -->
 
 Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -105,7 +105,7 @@ A symptom is not proof of the intended mechanism or cause.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"fe68cce494ad77cc612cd4df8d912e2daccfc26e3363aabee960dd031fc4c124","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"cb9f1ed999393f3a14663c9dff12caabdfe0932b345b835c6392c60cb1fce851","disposition":"updated","rationale":"Added the independent orbital-plus-rotational angular-momentum oracle, centered controls, rotation and independent body/joint/endpoint ordering. Physics ownership and one integration are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"ef6099e09d2ea9bce5f1657987a156e307968e293569c4cd9b33e55aa68dac63","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"6605c37f18c9e3c69a23b009a438a0b86f7107dc8b96d3e61725b8bbe1cb9c0f","disposition":"still accurate","rationale":"Independent spring angular momentum tests were rerun successfully; this tooling change does not alter spring laws, physical tolerances, ordering or ownership."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -132,7 +132,7 @@ Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"51f4e38c50a2b003a648f65477a376515365603b5d5d395b81974af449f97bd2","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"9544fb0b543eac29f7b99560bf2f6b1a962ee698f43e81becc7b3add40ceda14","disposition":"still accurate","rationale":"The existing assembly UX verifier now also clicks the automatic diagnostic to reach its finding; assembly authoring, named interfaces and library semantics are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"da7b22ac1109fa6f8c714ac6141ec031fcdc21642792228ecc8886b85a0a87db","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"2aa504a1731d5b25b796fefa34963b713a396ac659664b68e7578313ef73e614","disposition":"still accurate","rationale":"No assembly graph, alias or insertion semantics changed. New browser helpers retain caller assertions and do not replace the copied-graph and history contracts described here. Load completion now returns the captured matching receipt handle, avoiding a later command racing the result read."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -205,7 +205,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"e4cb47455684d48bf5c8dabda6dd41b57cd2a7a24e82bb87176ef811e3ec54ba","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"a1c0fdca975c898cd3f489de45172db7a4f9fe29fe792ef96955d65d8a78cb77","disposition":"updated","rationale":"Corrected the spring performance sentence while preserving the enforced budgets, environment controls and native Metal configuration; other overlay behavior is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"ac0f8c51c50f05ccf58b13911f517d5155fad58725f52c5f79158927e035d5ec","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"c03d0486d8bce8cdd7161c77fddb62f1bc4f7f02f5bdc4015a56d30ab87a94e7","disposition":"still accurate","rationale":"The shared evidence helper captures a fresh matching load receipt and new documentation controls preserve exact binary bytes. Neither change alters connection geometry, visibility, picking or simulation projections required by this recipe."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

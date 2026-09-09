@@ -3,7 +3,7 @@
   "dependencies": {
     "docs/contracts/runtime-v1.md": "1aec9e2ea755e8020c312709acbc756cbba082e27f0add9ce483781f10805477",
     "AGENTS.md": "d273b84d6b4715b636413ca277f29769ae6dffefedf781330c4799ed454635bb",
-    "scripts/validate-manifest.mjs": "5ab967ae54555d570a07338949222f57b325c1b311d0fbb25330d0af17bfb1f5",
+    "scripts/validate-manifest.mjs": "e9c52fa31431726571aa51c0f9dc664764ad9955ac2be37fb22c5ed410448bdb",
     "package.json#script=gate": "9adcc469f55b82e3c42003509ffc7c366dfacf650d18aac9fb332ae0348ec885",
     "package.json#script=rules": "4dfc0f5f951a09d79ebe39ccc3318e76c1050f947daad81e197102bca05518c4"
   }

@@ -163,6 +163,8 @@ export function summarizeChangeInspection({ analysis, value: report }) {
   lines.push(
     `Executable conservative browser selection: ${report.browserSelection.checks.length}/${report.browserChecks.length}. Use test:browser:affected -- --files <paths> --summary for reasons.`,
   );
+  if (report.browserSelection.unknownInputs?.length)
+    lines.push(`  Unknown browser inputs: ${report.browserSelection.unknownInputs.join(', ')}`);
   lines.push('Affected documentation:');
   for (const row of report.documentation.sections)
     lines.push(`  ${row.stale ? 'STALE' : 'current'} ${row.file}#${row.id}`);
