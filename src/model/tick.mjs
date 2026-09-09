@@ -34,6 +34,7 @@ export function deterministicProjection(frame) {
     tick: frame.tick,
     physics: frame.physics,
     ...(frame.springs ? { springs: frame.springs } : {}),
+    ...(frame.contacts ? { contacts: frame.contacts } : {}),
     energy: frame.energy,
     power: frame.power,
     sensors: frame.sensors,

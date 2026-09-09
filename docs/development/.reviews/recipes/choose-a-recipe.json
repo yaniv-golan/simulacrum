@@ -1,6 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "docs/development/architecture.md#overview": "1509d5fc399fa327f873779b4867f9fd25b1e4ee97b6b3cfd38446d676f4cde3"
+    "docs/development/architecture.md#overview": "b8d3ea7673ca3a8fa7ace24823befb713f774ba6e20d7c57730de85b82392ee6",
+    "docs/development/ui-ux.md#learning-content-policy": "bfd6c736ce8d508ad5dc134f81239df2c6481d268ece6ac30d9dacd40f48f3cc"
   }
 }

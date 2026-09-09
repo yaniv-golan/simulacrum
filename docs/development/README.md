@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"53cc97a69b3ea776cb790aac1d64c70d013749713c2b56569e59c8b35980a0e1","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"d805b410b8f4dfd3bee1bcf30f7c45eae609e0b5befa67d7b247cfd1e2fab246","disposition":"still accurate","rationale":"AGENTS now requires the UI content policy; the architecture-first entrypoint, Node range and served identity guidance remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"10752e738e464fcd009ac49a40abf1be134b1bd38b58e13b43cfdbad3ad87f0a","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"90ef402d1f7ddfc3c4e28737af55cf528147bc32d911b9040235f8350c27deda","disposition":"still accurate","rationale":"The root AGENTS change adds the learning-content admission trigger. This entry still correctly directs agents to AGENTS, architecture and recipes; Node 24.18.x and package commands are unchanged by this policy edit."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -87,7 +87,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"052a884495816a0f1c5b2b786aa0639a76eb4011c7780ed52ef7b2380bbe1310","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"2b705524e89944610007477739a942d2cac4369093240a02f0fe7e5b897baae9","disposition":"still accurate","rationale":"Data capture changes the linked playtest workflow, but verification tiers, source binding and separate human acceptance remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f4d3fe39ffb46abb7af5a694ef8647540b4787e48586a8d8d71aa0f3af712ec1","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"b1deb22bc87e018b15f9c92c54bdc0a89767b5b66089c4b5d9b9de4e37bf128c","disposition":"still accurate","rationale":"The merged package keeps the documented verification commands and Node range; its pinned native physics artifact does not change tier semantics."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -127,7 +127,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"8b01569bc24b5ecc59a76c54d2650bd6b1ecf8b1f6d1a1db551c5b79036f4070","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"0f07dfc953ce8d7b1f4922a9590ba6e92b5a07001cc66532f1d615e4e99276fa","disposition":"still accurate","rationale":"Generated reference adds the existing copied-graph invariant placement owner; source identity, regeneration and per-section review workflow are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1b9c1c948eb8190d75f24ea7064e4e17fbe7cbb36fb006776dfe421b56a6eb81","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"b9a7bbea7fd4b86669b344bc23d2cec58965008c594a65ee73e6732beb10115c","disposition":"still accurate","rationale":"The combined generated reference retains manifest-derived discovery and explicit section reviews; the native package pin does not change documentation generation."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -222,7 +222,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"f8d33083c1e637109bea9469c187b92c82468b6711387e7ffd81c0a9dd1e1a93","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7749c58e74939020afaa6901d418fe3f144e5240e8686654db08aa90a896d747","disposition":"still accurate","rationale":"The existing assembly UX check gains regression journeys and the placement control gains mode admission coverage; browser selection and completion tiers remain manifest-derived and unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"49041777a7f7ee1b7b02ab015336b4a88dc30e591ab7109c0bcdf1c3d3072a2a","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d377552721aedde6f106de7404684ec1cb9a6db155555560efb26d4006e7d0e3","disposition":"still accurate","rationale":"Merged native contact controls and assembly UX checks retain existing browser IDs, profiles, selection and deadlines."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

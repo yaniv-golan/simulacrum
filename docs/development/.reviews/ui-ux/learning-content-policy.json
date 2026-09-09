@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "dependencies": {
+    "src/presentation/workshop-view.mjs": "254abd494751b140afe77dc28547095f48e6e15f5e3fbfcb12273a33494272dc",
+    "src/application/starter-guide.mjs": "419ced867a8ae10c623b35fe8c0f2ee5ec2dba6495e2c4026d24909353e46e60",
+    "src/application/workshop-app.mjs": "f252d321eca5a03d2a216a456ef9c6c44a3b1496aa6ae801a840c81ba40075da",
+    "src/presentation/spring-controls.mjs": "b42353f7848333072f9c773d67ce59b87bf2dc17f62b314bd10e1e10a9b5a548"
+  }
+}

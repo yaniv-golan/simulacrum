@@ -1,5 +1,7 @@
+import { springTopologyDomain } from './spring-topology.mjs';
 import { coupledSpringImpulses } from './law/spring.mjs';
 import { readBody } from './read-body.mjs';
+import { readContacts } from './read-contacts.mjs';
 import { createConstraintProjection } from './law/constraints.mjs';
 import { CYLINDER_SEGMENTS } from '../../model/geometry.mjs';
 const MAX_BODIES = 4097; // 4096 authored primitives plus the workshop ground.
@@ -70,7 +72,7 @@ function hash(bytes) {
   return h >>> 0;
 }
 function encode(payload, handles, configuration) {
-  const metadata = new TextEncoder().encode(JSON.stringify({ version: 1, handles, configuration }));
+  const metadata = new TextEncoder().encode(JSON.stringify({ version: 3, handles, configuration }));
   const bytes = new Uint8Array(12 + metadata.length + payload.length),
     view = new DataView(bytes.buffer);
   view.setUint32(0, 0x53494d31);
@@ -98,7 +100,7 @@ function decode(input) {
   );
   record(metadata, ['version', 'handles', 'configuration']);
   if (
-    metadata.version !== 1 ||
+    metadata.version !== 3 ||
     !Array.isArray(metadata.handles) ||
     metadata.handles.length > MAX_BODIES ||
     metadata.handles.some((handle) => !Number.isFinite(handle)) ||
@@ -244,6 +246,7 @@ export async function createPhysicsWorld(configuration) {
   });
   if (joints.filter((j) => j.kind === 'spring').length > 8)
     throw new RangeError('at most 8 guided springs');
+  const activeElastic = new Set(springTopologyDomain(descriptions, joints).activeElastic);
   await (initialization ??= RAPIER.init());
   let world = new RAPIER.World(xyz(gravity)),
     handles = [];
@@ -251,6 +254,7 @@ export async function createPhysicsWorld(configuration) {
   try {
     world.timestep = DT;
     world.integrationParameters.numSolverIterations = 4; // Frozen temporal solver subdivision.
+    world.integrationParameters.maxCcdSubsteps = 1; // Contact diagnostics cover one physical interval.
     for (const body of descriptions) {
       const descriptor = (
         body.fixed ? RAPIER.RigidBodyDesc.fixed() : RAPIER.RigidBodyDesc.dynamic()
@@ -312,6 +316,13 @@ export async function createPhysicsWorld(configuration) {
         true,
       );
       if (joint.limits) connection.setLimits(...joint.limits);
+      // Elastic force is solved beside contacts at every temporal subdivision.
+      // Physical damping remains the measured, passive pre-motor impulse below.
+      // A zero-stiffness row must stay disabled, not become a velocity motor.
+      if (activeElastic.has(joints.indexOf(joint))) {
+        connection.configureMotorModel(RAPIER.MotorModel.SymplecticSpring);
+        connection.configureMotorPosition(joint.restLength, joint.stiffness, 0);
+      }
       connection.setContactsEnabled(joint.kind === 'spring');
       jointHandles.push(connection.handle);
     }
@@ -339,6 +350,7 @@ export async function createPhysicsWorld(configuration) {
         rotationA: rotationArray(joint.frameX1()),
         rotationB: rotationArray(joint.frameX2()),
         contactsEnabled: joint.contactsEnabled(),
+        motors: joint.motorConfiguration(),
         ...([RAPIER.JointType.Revolute, RAPIER.JointType.Prismatic].includes(joint.type())
           ? { limitsEnabled: joint.limitsEnabled(), limits: [joint.limitsMin(), joint.limitsMax()] }
           : {}),
@@ -351,6 +363,8 @@ export async function createPhysicsWorld(configuration) {
       gravity: array(candidate.gravity).map(Math.fround),
       timestep: candidate.timestep,
       solverIterations: candidate.integrationParameters.numSolverIterations,
+      internalPgsIterations: candidate.integrationParameters.numInternalPgsIterations,
+      maxCcdSubsteps: candidate.integrationParameters.maxCcdSubsteps,
       joints: connections,
       bodies: mapping.map((handle) => {
         const body = candidate.getRigidBody(handle);
@@ -359,6 +373,7 @@ export async function createPhysicsWorld(configuration) {
           rotation = collider.rotationWrtParent();
         return {
           type: body.bodyType(),
+          additionalSolverIterations: body.additionalSolverIterations(),
           mass: body.mass(),
           localCom: array(body.localCom()),
           principalInertia: array(body.principalInertia()),
@@ -450,7 +465,9 @@ export async function createPhysicsWorld(configuration) {
     };
   }
   let preparedTorqueIslands = new Map(),
-    constraintsApplied = true;
+    constraintsApplied = true,
+    preparedSprings = null,
+    springsApplied = false;
   const cross = (a, b) => [
     a[1] * b[2] - a[2] * b[1],
     a[2] * b[0] - a[0] * b[2],
@@ -659,10 +676,6 @@ export async function createPhysicsWorld(configuration) {
       vector,
       apply,
       force,
-      gravityResponse: () =>
-        projection.response(
-          clusters.flatMap((c) => [...gravity.map((x) => (c.fixed ? 0 : x * c.mass)), 0, 0, 0]),
-        ).velocity,
       axialForce(a, b, axis, pointA, pointB) {
         const f = Array(n).fill(0);
         for (const [body, sign, point] of [
@@ -692,8 +705,10 @@ export async function createPhysicsWorld(configuration) {
       qa = rotationArray(a.rotation()),
       qb = rotationArray(b.rotation());
     const axis = rotate(qa, j.axisA);
-    const pointA = rotate(qa, j.anchorA).map((x, i) => x + array(a.translation())[i]);
-    const pointB = rotate(qb, j.anchorB).map((x, i) => x + array(b.translation())[i]);
+    const positionA = array(a.translation()),
+      positionB = array(b.translation());
+    const pointA = rotate(qa, j.anchorA).map((x, i) => x + positionA[i]);
+    const pointB = rotate(qb, j.anchorB).map((x, i) => x + positionB[i]);
     const length = axis.reduce((sum, x, i) => sum + x * (pointB[i] - pointA[i]), 0);
     const va = array(a.velocityAtPoint(xyz(pointA))),
       vb = array(b.velocityAtPoint(xyz(pointB)));
@@ -727,9 +742,61 @@ export async function createPhysicsWorld(configuration) {
     const raw = 2 * Math.atan2(local[0], local[3]);
     return Math.atan2(Math.sin(raw), Math.cos(raw));
   }
+  function prepareSpringAllocations() {
+    const groups = new Map();
+    for (const [i, j] of joints.entries()) {
+      if (j.kind !== 'spring') continue;
+      const state = springState(i),
+        island = preparedTorqueIslands.get(j.a);
+      if (!island) throw new Error('spring island missing');
+      const f = island.axialForce(j.a, j.b, state.axis, state.pointA, state.pointB),
+        response = island.projection.response(f);
+      if (!groups.has(island)) groups.set(island, []);
+      groups.get(island).push({ j, state, f, response });
+    }
+    const allocations = [];
+    for (const [island, rows] of groups) {
+      const mobility = rows.map((a) =>
+        rows.map((b) => a.f.reduce((sum, x, k) => sum + x * b.response.velocity[k], 0)),
+      );
+      const trace = rows.reduce(
+        (sum, r, i) => sum + DT * DT * r.j.stiffness * Math.max(0, mobility[i][i]),
+        0,
+      );
+      if (trace > 0.09)
+        throw new RangeError(
+          'spring island exceeds validated frequency range; reduce stiffness or number of springs',
+        );
+      const receipt = coupledSpringImpulses({
+        extensions: rows.map((r) => r.state.extension),
+        speeds: rows.map((r) =>
+          constraintsApplied
+            ? r.state.speed
+            : r.f.reduce((sum, x, k) => sum + x * island.projectedVector[k], 0),
+        ),
+        // Split the dissipative impulse from the solver-integrated elastic force.
+        stiffnesses: rows.map(() => 0),
+        dampings: rows.map((r) => r.j.damping),
+        mobility,
+        dt: DT,
+      });
+      const impulse = Array(rows[0].f.length).fill(0),
+        velocity = Array(rows[0].f.length).fill(0);
+      rows.forEach((row, i) =>
+        row.response.impulse.forEach((x, k) => (impulse[k] += x * receipt.impulses[i])),
+      );
+      rows.forEach((row, i) =>
+        row.response.velocity.forEach((x, k) => (velocity[k] += x * receipt.impulses[i])),
+      );
+      allocations.push({ island, impulse, velocity, receipt });
+    }
+    return allocations;
+  }
   return Object.freeze({
     prepareConstraints() {
       preparedTorqueIslands = new Map();
+      preparedSprings = null;
+      springsApplied = false;
       constraintsApplied = true;
       const parent = handles.map((_, i) => i),
         root = (i) => {
@@ -744,6 +811,11 @@ export async function createPhysicsWorld(configuration) {
           island = makeTorqueIsland(indices);
         for (const i of indices) preparedTorqueIslands.set(i, island);
       }
+    },
+    prepareSprings() {
+      alive();
+      if (constraintsApplied) throw new Error('prepare springs before passive constraints');
+      preparedSprings = prepareSpringAllocations();
     },
     applyPreparedConstraints() {
       if (constraintsApplied) throw new Error('constraints already applied');
@@ -766,48 +838,8 @@ export async function createPhysicsWorld(configuration) {
     applySprings() {
       alive();
       if (!constraintsApplied) throw new Error('passive constraints not applied');
-      const groups = new Map();
-      for (const [i, j] of joints.entries()) {
-        if (j.kind !== 'spring') continue;
-        const state = springState(i),
-          island = preparedTorqueIslands.get(j.a);
-        if (!island) throw new Error('spring island missing');
-        const f = island.axialForce(j.a, j.b, state.axis, state.pointA, state.pointB),
-          response = island.projection.response(f);
-        if (!groups.has(island)) groups.set(island, []);
-        groups.get(island).push({ j, state, f, response });
-      }
-      const allocations = [];
-      for (const [island, rows] of groups) {
-        const mobility = rows.map((a) =>
-          rows.map((b) => a.f.reduce((sum, x, k) => sum + x * b.response.velocity[k], 0)),
-        );
-        const trace = rows.reduce(
-          (sum, r, i) => sum + DT * DT * r.j.stiffness * Math.max(0, mobility[i][i]),
-          0,
-        );
-        if (trace > 0.09)
-          throw new RangeError(
-            'spring island exceeds validated frequency range; reduce stiffness or number of springs',
-          );
-        const acceleration = island.gravityResponse();
-        const receipt = coupledSpringImpulses({
-          extensions: rows.map((r) => r.state.extension),
-          speeds: rows.map(
-            (r) =>
-              r.state.speed + 0.625 * DT * r.f.reduce((sum, x, k) => sum + x * acceleration[k], 0),
-          ),
-          stiffnesses: rows.map((r) => r.j.stiffness),
-          dampings: rows.map((r) => r.j.damping),
-          mobility,
-          dt: DT,
-        });
-        const impulse = Array(rows[0].f.length).fill(0);
-        rows.forEach((row, i) =>
-          row.response.impulse.forEach((x, k) => (impulse[k] += x * receipt.impulses[i])),
-        );
-        allocations.push({ island, impulse, receipt });
-      }
+      if (springsApplied) throw new Error('springs already applied');
+      const allocations = preparedSprings ?? prepareSpringAllocations();
       let dampingWorkJ = 0,
         kineticDeltaJ = 0;
       for (const { island, impulse, receipt } of allocations) {
@@ -816,7 +848,12 @@ export async function createPhysicsWorld(configuration) {
         kineticDeltaJ += island.kinetic() - before;
         dampingWorkJ += receipt.dampingWorkJ;
       }
+      springsApplied = true;
       return { dampingWorkJ, kineticDeltaJ };
+    },
+    contacts() {
+      alive();
+      return readContacts(world, handles);
     },
     mechanicalEnergy() {
       alive();
@@ -853,6 +890,8 @@ export async function createPhysicsWorld(configuration) {
     /** @param {number} a @param {number} b @param {import('../../model/boundaries.js').Vec3} axisWorld @param {number} torqueNm
      * @returns {import('../../model/boundaries.js').TorqueResult} */
     applyTorquePair(a, b, axisWorld, torqueNm) {
+      if (preparedSprings && !springsApplied)
+        throw new Error('prepared spring kick must precede actuator impulses');
       const bodyA = bodyAt(a),
         bodyB = bodyAt(b),
         axis = unit(axisWorld);
@@ -909,7 +948,14 @@ export async function createPhysicsWorld(configuration) {
           plan && !constraintsApplied
             ? plan
                 .force(config.a, config.b, axis)
-                .reduce((sum, x, i) => sum + x * plan.projectedVector[i], 0)
+                .reduce(
+                  (sum, x, i) =>
+                    sum +
+                    x *
+                      (plan.projectedVector[i] +
+                        (preparedSprings?.find((a) => a.island === plan)?.velocity[i] ?? 0)),
+                  0,
+                )
             : rawSpeed;
       return {
         angle,
@@ -926,8 +972,12 @@ export async function createPhysicsWorld(configuration) {
     },
     step() {
       alive();
+      if (joints.some((j) => j.kind === 'spring') && !springsApplied)
+        throw new Error('spring preparation and damping must precede integration');
       world.step();
       preparedTorqueIslands = new Map();
+      preparedSprings = null;
+      springsApplied = false;
       constraintsApplied = true;
       assertFinite(readWorld(world, handles));
     },
@@ -1006,6 +1056,7 @@ export async function createPhysicsWorld(configuration) {
             seen.add(previous.joint);
           }
         }
+        readContacts(candidate, decoded.handles);
         if (JSON.stringify(plant(candidate, decoded.handles)) !== originalPlant)
           throw new Error('snapshot physical plant mismatch');
       } catch (error) {
@@ -1015,12 +1066,16 @@ export async function createPhysicsWorld(configuration) {
       const previous = world;
       world = candidate;
       preparedTorqueIslands = new Map();
+      preparedSprings = null;
+      springsApplied = false;
       constraintsApplied = true;
       handles = [...decoded.handles];
       previous.free();
     },
     applyImpulse(index, impulse) {
       alive();
+      if (preparedSprings && !springsApplied)
+        throw new Error('prepared spring allocation cannot accept an intervening impulse');
       if (!Number.isInteger(index) || index < 0 || index >= handles.length)
         throw new TypeError('invalid body index');
       const value = vector(impulse);

@@ -8,12 +8,15 @@ import assert from 'node:assert/strict';
 // Cadence gets 20% scheduling margin. These are fixed budgets, not fitted baselines.
 export const SPRING_PERFORMANCE = Object.freeze({
   repetitions: 3,
+  connectedBodies: Object.freeze([22, 34]), // Four-wheel cart size and retained 32-fixed-link counterexample.
   warmupTicks: 240,
   sampleTicks: 480,
   warmupFrames: 60,
   sampleFrames: 90,
   tickP95Ms: (1000 / 120) * 0.4,
   constraintP95Ms: 2,
+  loadedImpulseMinNs: 9.81 / 120 / 2, // Half the known 1 kg weight impulse; springs press down too.
+  integrationP95Ms: 1, // Leaves 1/3 ms of the 3 1/3 ms tick allocation for other phases.
   renderP95Ms: 6,
   cadenceP95Ms: 40,
   stallMs: 500,
@@ -40,18 +43,42 @@ function under(values, limit, label, count) {
   assert.ok(p95 <= limit, `${label}: p95 ${p95.toFixed(3)} ms exceeds ${limit.toFixed(3)} ms`);
   return p95;
 }
+export function springSimulationProfiles() {
+  return [
+    { dense: false, connectedBodies: 0 },
+    { dense: true, connectedBodies: 0 },
+    ...SPRING_PERFORMANCE.connectedBodies.map((connectedBodies) => ({
+      dense: false,
+      connectedBodies,
+    })),
+  ];
+}
 export function evaluateSpringSimulation(cases) {
-  assert.equal(cases.length, 18, 'three complete sparse/dense simulation trials required');
+  assert.equal(
+    cases.length,
+    SPRING_PERFORMANCE.repetitions * 3 * springSimulationProfiles().length,
+    'three complete sparse/dense/connected simulation trials required',
+  );
   const results = [];
   for (let trial = 0; trial < 3; trial++)
     for (const count of [0, 1, 8])
-      for (const dense of [false, true]) {
+      for (const { dense, connectedBodies } of springSimulationProfiles()) {
         const matches = cases.filter(
-          (c) => c.trial === trial && c.count === count && c.dense === dense,
+          (c) =>
+            c.trial === trial &&
+            c.count === count &&
+            c.dense === dense &&
+            (c.connectedBodies ?? 0) === connectedBodies,
         );
         assert.equal(matches.length, 1, 'unique simulation trial required');
         const c = matches[0],
-          label = `simulation trial ${trial} count ${count} ${dense ? 'dense' : 'sparse'}`;
+          label = `simulation trial ${trial} count ${count} ${connectedBodies ? `connected-${connectedBodies}` : dense ? 'dense' : 'sparse'}`;
+        if (connectedBodies)
+          assert.deepEqual(
+            c.fixture,
+            connectedSpringFixture(count, connectedBodies),
+            'connected workload geometry and topology must be retained',
+          );
         assert.equal(c.warmupTicks, SPRING_PERFORMANCE.warmupTicks);
         const tickP95Ms = under(
           c.timesMs,
@@ -65,14 +92,49 @@ export function evaluateSpringSimulation(cases) {
           `${label} constraints`,
           SPRING_PERFORMANCE.sampleTicks,
         );
-        if (count === 0)
+        let integrationP95Ms = null;
+        if ((dense && count > 0) || connectedBodies) {
+          integrationP95Ms = under(
+            c.phases['integration-contacts'],
+            SPRING_PERFORMANCE.integrationP95Ms,
+            `${label} integration and contacts`,
+            SPRING_PERFORMANCE.sampleTicks,
+          );
+        }
+        if (dense && count > 0) {
+          assert.equal(
+            c.contacts.length,
+            SPRING_PERFORMANCE.sampleTicks,
+            'complete loaded-contact samples required',
+          );
+          assert.ok(
+            c.contacts.every(
+              (s) =>
+                s.available &&
+                s.supportImpulses.length === count &&
+                s.supportImpulses.every(
+                  (j) => Number.isFinite(j) && j >= SPRING_PERFORMANCE.loadedImpulseMinNs,
+                ),
+            ),
+            'dense fixture must actually measure loaded contacts',
+          );
+        }
+        if (count === 0 && !connectedBodies)
           under(
             c.timesMs,
             1000 / 120 / 8,
             `${label} environment control`,
             SPRING_PERFORMANCE.sampleTicks,
           );
-        results.push({ trial, count, dense, tickP95Ms, constraintP95Ms });
+        results.push({
+          trial,
+          count,
+          dense,
+          connectedBodies,
+          tickP95Ms,
+          constraintP95Ms,
+          integrationP95Ms,
+        });
       }
   return results;
 }
@@ -154,6 +216,10 @@ export function springSimulationFixture(count, dense) {
       damping: 2,
     });
   }
+  // Retain the shared spring constraint body and add a real supporting floor.
+  // Dense trials now exercise contact collection alongside all eight spring rows.
+  if (dense && count > 0)
+    bodies.push({ ...body((count - 1) / 2, 0.24, true), halfExtents: [count, 0.1, 1] });
   return {
     gravity: [0, -9.81, 0],
     bodies,
@@ -169,16 +235,94 @@ export function springSimulationFixture(count, dense) {
     },
   };
 }
+export function connectedSpringFixture(count, totalBodies) {
+  if (![0, 1, 8].includes(count) || !Number.isInteger(totalBodies) || totalBodies < count + 1)
+    throw Error('invalid benchmark dimensions');
+  const body = (position) => ({
+    shape: 'box',
+    position,
+    rotation: [0, 0, 0, 1],
+    velocity: [0, 0, 0],
+    mass: 1,
+    halfExtents: [0.01, 0.01, 0.01],
+    fixed: false,
+    friction: 0,
+    restitution: 0,
+  });
+  const bodies = [body([0, 0, 0])],
+    joints = [];
+  for (let i = 0; i < count; i++) {
+    const x = i * 0.04;
+    bodies.push(body([x, 0.31, 0]));
+    joints.push({
+      kind: 'spring',
+      a: 0,
+      b: bodies.length - 1,
+      anchorA: [x, 0, 0],
+      anchorB: [0, 0, 0],
+      axisA: [0, 1, 0],
+      axisB: [0, 1, 0],
+      limits: [0.08, 0.4],
+      restLength: 0.3,
+      stiffness: 20,
+      damping: 2,
+    });
+  }
+  let previous = 0,
+    link = 0;
+  while (bodies.length < totalBodies) {
+    link++;
+    bodies.push(body([-link * 0.04, 0, 0]));
+    joints.push({
+      kind: 'fixed',
+      a: previous,
+      b: bodies.length - 1,
+      anchorA: [-0.02, 0, 0],
+      anchorB: [0.02, 0, 0],
+      rotationA: [0, 0, 0, 1],
+      rotationB: [0, 0, 0, 1],
+    });
+    previous = bodies.length - 1;
+  }
+  return {
+    gravity: [0, 0, 0],
+    bodies,
+    joints,
+    power: {
+      cells: [],
+      motors: [],
+      wires: [],
+      signalWires: [],
+      receivers: [],
+      controllers: [],
+      sensors: [],
+    },
+  };
+}
+
+export function springSupportImpulses(sample, fixture) {
+  const floor = fixture.bodies.length - 1;
+  return fixture.joints.map((j) =>
+    sample.rows.reduce((sum, r) => {
+      if (r.a === j.b && r.b === floor) return sum - (r.normalImpulse?.[1] ?? 0);
+      if (r.b === j.b && r.a === floor) return sum + (r.normalImpulse?.[1] ?? 0);
+      return sum;
+    }, 0),
+  );
+}
 export async function measureSpringSimulation() {
   const cases = [];
   for (let trial = 0; trial < 3; trial++)
     for (const count of trial % 2 ? [8, 1, 0] : [0, 1, 8])
-      for (const dense of [false, true]) {
-        const fixture = springSimulationFixture(count, dense),
+      for (const { dense, connectedBodies } of springSimulationProfiles()) {
+        const fixture = connectedBodies
+            ? connectedSpringFixture(count, connectedBodies)
+            : springSimulationFixture(count, dense),
           session = await createSession(fixture);
         try {
           session.step(SPRING_PERFORMANCE.warmupTicks);
           const timesMs = [],
+            contacts = [],
             phases = {};
           for (let i = 0; i < SPRING_PERFORMANCE.sampleTicks; i++) {
             const start = performance.now();
@@ -186,16 +330,22 @@ export async function measureSpringSimulation() {
             timesMs.push(performance.now() - start);
             const f = session.observe().frames[0];
             assert.equal(f.status, 'ready');
+            contacts.push({
+              available: f.contacts.available,
+              supportImpulses: dense && count > 0 ? springSupportImpulses(f.contacts, fixture) : [],
+            });
             for (const [p, ms] of Object.entries(f.phaseTimings)) (phases[p] ??= []).push(ms);
           }
           cases.push({
             trial,
             count,
             dense,
+            connectedBodies,
             fixture,
             warmupTicks: SPRING_PERFORMANCE.warmupTicks,
             timesMs,
             phases,
+            contacts,
           });
         } finally {
           session.dispose();

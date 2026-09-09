@@ -9,11 +9,7 @@
     "moduleResolution": "NodeNext",
     "skipLibCheck": false,
     "exactOptionalPropertyTypes": true,
-    "lib": [
-      "ES2023",
-      "DOM",
-      "ESNext.Disposable"
-    ]
+    "lib": ["ES2023", "DOM", "ESNext.Disposable"]
   },
   "include": [
     "src/model/boundaries.d.ts",
@@ -31,6 +27,7 @@
     "src/model/connection-graph.mjs",
     "src/presentation/connection-render.mjs",
     "src/presentation/connection-view.mjs",
-    "src/presentation/resource-cache.mjs"
+    "src/presentation/resource-cache.mjs",
+    "src/simulation/physics/read-contacts.mjs"
   ]
 }

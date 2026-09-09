@@ -67,6 +67,12 @@ lifecycle and displaced UI. Preserve consequential state and unique actions; exa
 and explanations do not earn permanent canvas space by being new. Verify the affected
 journey and rendered layout, and report automation separately from player evidence.
 
+For features that add or change teaching, examples, experiments or challenges, apply
+the [learning content admission rules](docs/development/ui-ux.md#learning-content-policy)
+before adding an entry. Record **no entry / extend / replace / add**, the player need,
+the closest existing content and why it suffices or does not. A new feature does not
+automatically earn a lesson. The linked policy owns the full rules.
+
 ## Work and milestones
 
 Run the actual current gate before advancing. M1 decides the physics library and
