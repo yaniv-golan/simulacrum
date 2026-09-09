@@ -16,6 +16,19 @@ try {
     'the parts catalogue must not start with an unsolicited lesson/example panel',
   ]);
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
+  evidence.assert('equal', [
+    await page
+      .locator('.examples-browser button')
+      .filter({ hasText: 'Compare zero damping' })
+      .count(),
+    0,
+    'zero damping is an inspector edit within the spring experiment, not a replacement preset',
+  ]);
+  await page.locator('.examples-header h2').click();
+  evidence.assert('equal', [await page.locator('.examples-browser').isVisible(), true]);
+  await page.mouse.click(10, 100);
+  evidence.assert('equal', [await page.locator('.examples-browser').isVisible(), false]);
+  await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 16; i++) await page.locator('[data-command=guide-step]').click();
   await page.getByRole('button', { name: 'Leave guide', exact: true }).click();
@@ -205,7 +218,6 @@ try {
   await page.keyboard.up('w');
 
   await learn.click();
-  await page.locator('.spring-experiments > summary').click();
   const springLaunch = page.getByRole('button', { name: 'Try spring playground', exact: true });
   await springLaunch.focus();
   const tick = (await read()).tick;
@@ -271,8 +283,8 @@ try {
   ]);
   evidence.assert('deepEqual', [(await read()).metadata.blueprint, stable]);
   await learn.click();
-  // Expanded descriptions remain scrollable and the final action is really clickable.
-  await page.getByRole('button', { name: 'Compare zero damping', exact: true }).click();
+  // The final activity remains reachable without an extra feature-specific category.
+  await page.getByRole('button', { name: 'Try spring playground', exact: true }).click();
   await page.getByRole('button', { name: 'Cancel replacement', exact: true }).click();
   await page.screenshot({ path: `${out}/examples-small.png` });
   await page.keyboard.press('Escape');

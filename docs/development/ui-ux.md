@@ -23,7 +23,7 @@ otherwise give the observation and a useful next check. Do not shrink text to ma
 more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
-<!-- doc-review {"version":1,"fingerprint":"43dc577711052df58947b92ea1096b4f36c082d025e603de3c2dfaaf245a1b1f","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"8892db9717c7d531861fbffa95a0f89c7212cc25da1f1ad4276e2aefdc7d9f4f","disposition":"still accurate","rationale":"No entry: this change repairs assembly controls and uses their contextual explanations. Existing authoring UI suffices; no lesson, experiment, preset or challenge is added."} -->
+<!-- doc-review {"version":1,"fingerprint":"572cbaccd9003a05702b9898cce6a4c2ebd7d17715ef50a8e6b82d2ffb875b83","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"4d57379a10f37a5407841072f062e1c39e78943d0941ec1908960a47623bc03f","disposition":"still accurate","rationale":"Native outside-click dismissal changes no activity admission, teaching sequence, independent attempt or authored recovery behavior."} -->
 
 Learn & examples is a curated collection of things players can learn to do.
 Adding a feature requires a teaching decision, not automatically a catalogue entry.
@@ -122,7 +122,7 @@ documentation workflow. Documentation checks detect stale references and reviews
 they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
-<!-- doc-review {"version":1,"fingerprint":"f702d660c77f6f808e75bf2bdda12cd4b3f41c402c61f5fb8878ba0adcc40e6e","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8337a39ee64a2d7ebef46eb62e2759f1c5f169efc24ef5f3e89a8d49786bc7b2","disposition":"updated","rationale":"Documented explicit member targeting for part shortcuts, Build-only repeat placement, visible rename focus and retained narrow browser navigation."} -->
+<!-- doc-review {"version":1,"fingerprint":"40ef0c8c9d247e24da25f3fe1cec4cf5c6d8ac3fcd48e3407c74765b30cbcc5b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c0f4f0c43912028fe94cd7ee8c5805d2ff6d52a7d75290f04acbc7d5868968c1","disposition":"updated","rationale":"The lifecycle now documents the top-right close control, Escape and outside-click dismissal, while clicks within content retain the dialog."} -->
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
 document and run actions in the header; parts in the left catalogue; separate edit
@@ -162,9 +162,14 @@ creation belongs to authoring, not View. Exploded inspection shows its state and
 temporary connection inspection must disclose when it overrides a hidden-wiring
 preference. View state must not imply that authored parts have physically moved.
 
-Learn & examples opens a bounded browser. Starting a lesson moves its current step
+Learn & examples opens a bounded browser. The top-right close control, Escape, or a
+click outside dismisses it; clicks within its content keep it open. Starting a lesson moves its current step
 into the parts area; leaving removes it. New examples enlarge this browser, not the
-ordinary toolbar. Examples have individual outcome descriptions. Existing machines
+ordinary toolbar. The three activities identify their format and outcome: a guided
+rolling build with an independent motor-setting attempt, a keyboard driving task, and
+a spring-settling experiment. The spring inspector offers a requested damping comparison
+through the ordinary Damping edit and Undo, preserving other tuning instead of loading
+a second preset. Existing machines
 require explicit replacement confirmation, with Download, Cancel and an explicit
 replace action. A browser download request is not proof of a saved file: after download,
 the player confirms they saved it before opening. Cancel and download failure preserve
@@ -195,7 +200,7 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"c4a88da8906f9e8acfe1fe376ce508d7c780d5a557b7aa04380504df9ac91e93","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"31b44bf51bc5714f21353e12a1741a3f601d9d05a5cfe61ed37462b8a4d34789","disposition":"still accurate","rationale":"The linked workflow now records observed data with optional media. Real participant protocols and the distinction between automation and human acceptance remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"68e4e0de871f2c41597762c0d5e9876fa35124b77b4a23a36f332ee66c1333ff","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"87408929c7b14cb6f5fd35802fb45d43374e3408e0271d1690d5b555eb9e3792","disposition":"still accurate","rationale":"The existing workbench journey now also proves clicks inside retain the dialog and outside clicks dismiss it before reopening and continuing construction. Its documented lifecycle and preservation responsibilities remain accurate."} -->
 
 Use the manifest's `workbench-content-lifecycle` invariant and
 [registered browser check](../../scripts/manifest.json#check=verify-workbench-content)
@@ -206,7 +211,10 @@ explanations. Unknown changes stay conservative. Registration is not execution.
 [Scope controls](../../test/workbench-content.test.mjs) cover meaningful and wrong
 states; the [browser journey](../../scripts/verify-workbench-content.mjs#source)
 checks requested learning/results, scope against changed parts, preserved operations
-and non-mutating help. Existing manipulation, inspector, mirror, connection and input
+and non-mutating help. The [learning example journey](../../scripts/verify-learning-examples.mjs#source)
+checks the independent motor edit, Run and Undo, and a zero-damping comparison that
+preserves other spring tuning. It also checks cancellation of example replacement.
+Existing manipulation, inspector, mirror, connection and input
 checks retain their guarantees when locators move. Extend the appropriate check for
 new behavior; demonstrate new tests failing before the repair. Do not bless arbitrary
 word counts, screenshots or button counts as proof of good design.

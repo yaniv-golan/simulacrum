@@ -127,7 +127,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"1b9c1c948eb8190d75f24ea7064e4e17fbe7cbb36fb006776dfe421b56a6eb81","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"b9a7bbea7fd4b86669b344bc23d2cec58965008c594a65ee73e6732beb10115c","disposition":"still accurate","rationale":"The combined generated reference retains manifest-derived discovery and explicit section reviews; the native package pin does not change documentation generation."} -->
+<!-- doc-review {"version":1,"fingerprint":"4aa17f1d907b4b88072b46e80839c627d63d0e93c33a46ed3e90d85344fbcb95","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"dbc2810fb5e8fc2eaba045480993227079d6a6b8ee8b146367eb76eb5f1ec79f","disposition":"still accurate","rationale":"The regenerated reference adds the registered learning-example browser check; manifest-derived discovery and per-section review remain the documented workflow."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -222,7 +222,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"49041777a7f7ee1b7b02ab015336b4a88dc30e591ab7109c0bcdf1c3d3072a2a","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d377552721aedde6f106de7404684ec1cb9a6db155555560efb26d4006e7d0e3","disposition":"still accurate","rationale":"Merged native contact controls and assembly UX checks retain existing browser IDs, profiles, selection and deadlines."} -->
+<!-- doc-review {"version":1,"fingerprint":"9ad0440af44f01a21fe00d5cf8df1b1b5b56e5454f744668ab0ff9e5dff1b1bb","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"990e49b9e634574b0597f273e4d0d293e53ad0bcf06c012b338280de6d89f14a","disposition":"still accurate","rationale":"The learning-example check uses the existing parallel UI profile and a 45-second deadline. No browser selection boundary, worker policy or qualification scope changed."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

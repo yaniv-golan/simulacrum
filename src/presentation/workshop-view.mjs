@@ -297,13 +297,15 @@ export function createWorkshopView(
     guidePulseStarted = 0;
   const examples = element('dialog', 'workshop-dialog examples-browser');
   examples.setAttribute('aria-label', 'Learn & examples');
+  examples.setAttribute('closedby', 'any');
   const exampleMessage = element('p', 'example-message');
   exampleMessage.setAttribute('role', 'status');
-  examples.append(
-    element('h2', '', 'Learn & examples'),
-    exampleMessage,
-    button('Close examples', () => examples.close()),
-  );
+  const examplesHeader = element('div', 'examples-header');
+  const closeExamples = button('×', () => examples.close(), 'examples-close');
+  closeExamples.setAttribute('aria-label', 'Close examples');
+  closeExamples.title = 'Close examples';
+  examplesHeader.append(element('h2', '', 'Learn & examples'), closeExamples);
+  examples.append(examplesHeader, exampleMessage);
   root.append(examples);
   const learnButton = button('Learn & examples', () => {
     exampleMessage.textContent = '';
@@ -394,45 +396,43 @@ export function createWorkshopView(
     guide.classList.toggle('active-guide', guideActive);
     if (!guideActive) {
       examples.append(guide);
-      const addExample = (parent, name, description, label, command, guided = false) => {
+      const addExample = (parent, name, format, description, label, command, guided = false) => {
         const card = element('section', 'example-card');
         const launch = button(label, () => chooseExample({ name, command, guide: guided }, launch));
-        if (command.damping !== 0) launch.dataset.command = guided ? 'start-guide' : command.type;
-        card.append(element('h3', '', name), element('p', '', description), launch);
+        launch.dataset.command = guided ? 'start-guide' : command.type;
+        card.append(
+          element('h3', '', name),
+          element('p', 'example-format', format),
+          element('p', '', description),
+          launch,
+        );
         parent.append(card);
       };
       addExample(
         guide,
         'Build a rolling machine',
-        'Start with an empty workbench. Place and connect a chassis, motor and wheels one step at a time. Leave the guide whenever you want.',
+        'Guided build · Start here',
+        'Start with an empty workbench. Place parts and connect power and axles one step at a time. Run your machine, then try switching its motor off yourself. You can leave the guide and keep building at any time.',
         'Start guided build',
         { type: 'new' },
         true,
       );
       addExample(
         guide,
-        'Driving machine',
-        'Open an editable four-wheel machine. W/S drives and A/D turns. Change the machine, then try driving away and returning.',
+        'Drive and return',
+        'Editable example · Keyboard driving',
+        'Open a four-wheel machine. Press Run: W/S drives and A/D turns. Try driving away, turning around and returning to where you started. For another experiment, return to Build, select Shared cell and lower Voltage in Engineering details. Predict how it will drive; try again, then return to Build and Undo to restore the setting.',
         'Try driving example',
         { type: 'driving-example', replace: true },
       );
-      const springExperiments = element('details', 'spring-experiments');
-      springExperiments.append(element('summary', '', 'Spring experiments'));
       addExample(
-        springExperiments,
-        'Spring playground',
-        'Open a supported sliding carriage and spring. Run to watch it bounce and settle; change stiffness, damping or load and try again.',
+        guide,
+        'Make a spring settle',
+        'Experiment · Change one setting',
+        'Open a supported carriage and spring. Run to watch the falling weight land and the carriage bounce. Return to Build and change Damping in the selected guide’s settings. Can you make it settle after one bounce? Open Compare damping there to try zero damping without replacing your machine.',
         'Try spring playground',
         { type: 'spring-example', replace: true },
       );
-      addExample(
-        springExperiments,
-        'Zero damping',
-        'Open the same spring setup with damping set to zero. Watch how long it keeps bouncing. This replaces the current machine; it does not open a side-by-side comparison.',
-        'Compare zero damping',
-        { type: 'spring-example', damping: 0, replace: true },
-      );
-      guide.append(springExperiments);
       return;
     }
     left.insertBefore(guide, partsHeading);
@@ -500,7 +500,12 @@ export function createWorkshopView(
         element(
           'p',
           '',
-          'Press Run. This three-wheel machine travels in a curve. Pause and return to Build to try a change. The cell, mounts and wheels all remain editable.',
+          'Press Run. This three-wheel machine travels in a curve. Pause, then return to Build for your own experiment.',
+        ),
+        element(
+          'p',
+          '',
+          'Open the Machine list and select Motor. Set Drive setting to 0. Predict what will move, then press Run. Return to Build and Undo to restore the setting. The guide places parts; this change is yours to try.',
         ),
       );
     }

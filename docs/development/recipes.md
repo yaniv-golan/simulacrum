@@ -242,7 +242,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"ce5426b1235c76a65521d28b796177f574e85a01aeeb40479b204811c252a44a","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"5971b41a5160a1aea3d20f1ce3d31486f87902c61b29dd756b7a0da057b999ca","disposition":"still accurate","rationale":"The native contact reader and assembly controls leave overlay visibility, picking, disposal and documented spring graphics budgets unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"7b243ab390ad7fa660b0a4941c5e887d5b89652fcf39cdc208dfc7d258eb4bbc","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"a7c601c097f12fbb3cde771a6a797f1d5cda72374f084a0abf0b92fc52e8b5f0","disposition":"still accurate","rationale":"Outside-click dismissal applies only to the requested examples dialog. Connection visibility, picking, disposal and spring rendering budgets are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
