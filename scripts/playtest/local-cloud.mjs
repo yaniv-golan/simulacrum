@@ -3,7 +3,7 @@ import { extname, relative } from 'node:path';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import { build } from 'esbuild';
 import { resolve } from 'node:path';
-export async function createLocalCloud({ token, adminToken }) {
+export async function createLocalCloud({ token, adminToken, optionalVideo = false }) {
   const bundled = await build({
     entryPoints: [resolve('scripts/playtest/worker.mjs')],
     bundle: true,
@@ -20,6 +20,7 @@ export async function createLocalCloud({ token, adminToken }) {
         compatibilityDate: '2026-09-07',
         bindings: {
           ALLOWED_ORIGIN: 'http://localhost',
+          CAPTURE_OPTIONAL_VIDEO: String(optionalVideo),
           INVITATION_GENERATION: '1',
           INVITATION_TOKEN: token,
           COOKIE_SECRET: 'local-only-cookie-secret-'.repeat(3),

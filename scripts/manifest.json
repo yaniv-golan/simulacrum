@@ -1870,6 +1870,178 @@
         ]
       },
       "qualificationBars": []
+    },
+    {
+      "id": "capture-final-drain",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Final recording verification accepts completion only within a fixed two-minute drain deadline with zero pending uploads, zero queued bytes and saved-session UI; publisher and calibration budgets include the browser drain allowance.",
+      "owners": [
+        {
+          "path": "scripts/playtest/release-policy.mjs",
+          "anchor": "waitForCaptureDrain"
+        },
+        {
+          "path": "scripts/playtest/release-policy.mjs",
+          "anchor": "captureBrowserTimeoutMs"
+        }
+      ],
+      "checks": ["invariant-controls", "verify-remote-playtest", "verify-cloud-playtest"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "final capture drain accepts delayed delivery but rejects stalled or incomplete completion"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "final capture drain accepts delayed delivery but rejects stalled or incomplete completion"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "capture-export-read-recovery",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Authenticated export retries only recognized transient transport failures, at most three attempts within a fixed per-read deadline; HTTP, redirect, parse and integrity failures remain terminal.",
+      "owners": [
+        {
+          "path": "scripts/playtest/download.mjs",
+          "anchor": "downloadCapture"
+        }
+      ],
+      "checks": ["invariant-controls", "verify-remote-playtest", "verify-cloud-playtest"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "private export retries transient reads but never status or malformed responses"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "private export retries transient reads but never status or malformed responses"
+          },
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "private export preserves exact raw event bytes and rejects corrupted payloads"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "capture-bounded-sampling",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Calibration retains bounded samples from every synthetic UUID run, preserves observed event and media rates and per-case maxima, and exercises largest event payloads at the measured event rate.",
+      "owners": [
+        {
+          "path": "scripts/playtest/capture-samples.mjs",
+          "anchor": "sampleCapture"
+        },
+        {
+          "path": "scripts/playtest/corpus.mjs",
+          "anchor": "readCorpus"
+        }
+      ],
+      "checks": ["invariant-controls", "verify-cloud-playtest", "verify-remote-playtest"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/playtest-corpus.test.mjs",
+            "anchor": "bounded capture sampling preserves full rates and rare largest payloads"
+          },
+          {
+            "path": "test/playtest-load.test.mjs",
+            "anchor": "capacity sends retained samples and envelope stress with distinct acknowledged keys"
+          },
+          {
+            "path": "test/playtest-corpus.test.mjs",
+            "anchor": "data corpus binds mode and schema without inventing screen media"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/playtest-corpus.test.mjs",
+            "anchor": "bounded capture sampling preserves full rates and rare largest payloads"
+          },
+          {
+            "path": "test/calibration-evidence.test.mjs",
+            "anchor": "release calibration admission requires reviewed report and all intact independent artifacts"
+          },
+          {
+            "path": "test/playtest-load.test.mjs",
+            "anchor": "data capacity covers wire events and admitted voice without screen media"
+          },
+          {
+            "path": "test/release-experiments.test.mjs",
+            "anchor": "qualification profile rejects unbound legacy media evidence and admits data bounds"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "capture-observation-stream",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Versioned observations preserve ordered contexts, expose gaps and reject unsafe or unbounded payloads.",
+      "owners": [
+        {
+          "path": "src/application/capture-stream.mjs",
+          "anchor": "decodeCaptureEvents"
+        }
+      ],
+      "checks": ["invariant-controls"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/capture-stream.test.mjs",
+            "anchor": "capture stream round trips immutable contexts, deletes, arrays and periodic keyframes"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/capture-stream.test.mjs",
+            "anchor": "capture stream rejects duplicate, unknown, corrupt and dangerous contexts"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "capture-observation-review",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Offline review renders bounded observed poses without executing captured programs and exposes incomplete timelines.",
+      "owners": [
+        {
+          "path": "src/presentation/capture-review-model.mjs",
+          "anchor": "sceneParts"
+        }
+      ],
+      "checks": ["invariant-controls"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/capture-review.test.mjs",
+            "anchor": "geometry follows captured physics rather than original placement"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/capture-review.test.mjs",
+            "anchor": "review rejects oversized/hostile geometry and remote media"
+          }
+        ]
+      },
+      "qualificationBars": []
     }
   ],
   "browserLocalScopes": [
@@ -1922,7 +2094,8 @@
       "dependencies": [
         "scripts/playtest-server.mjs",
         "scripts/playtest/worker.mjs",
-        "src/application/capture-outbox.mjs"
+        "src/application/capture-outbox.mjs",
+        "src/application/capture-stream.mjs"
       ],
       "externalImports": [],
       "checks": [

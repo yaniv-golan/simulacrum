@@ -1,11 +1,11 @@
 {
   "version": 1,
   "dependencies": {
-    "scripts/playtest/cloud-store.mjs": "34f1e7c1401f236da7638a539b2765525db33469f4fd859749668ccb54a00372",
+    "scripts/playtest/cloud-store.mjs": "ef5b82f8c3512d35d448a6a90f5c89e5428939fa9c8a32bfe5c5eee0c47c3f30",
     "scripts/playtest/protocol.mjs": "56aa243b32314a4ee0b30e87f432c27a6e66273f981eb446450324439665d151",
-    "scripts/playtest/worker.mjs": "7f0cb23f5ee8f9886751253db4d7dc18c978238c8f9d9e244450e92a7beab98b",
+    "scripts/playtest/worker.mjs": "fb47b7557423ab5169d83c319b217e4266ac629f7629b542c8838bc41d4113af",
     "src/application/capture-outbox.mjs": "4224e18cef1b3532390cc50c8969a65b539f18d56c244255ae242f8c8c66f858",
-    "scripts/playtest/download.mjs": "444c341b28b3bad99a31640ab9b73ded513317dcd65c09b294d8086416c52cc2",
+    "scripts/playtest/download.mjs": "653732a2144c62777539d34f617f73991dc8d46fe3f9a25dc74e99321b8f28bf",
     "package.json#script=build": "fa8d7c70071ee5868cc28f384dcf73a041efeea031475bcfab06c3c3e4ef1b0e",
     "package.json#script=playtest:local": "eb354fb3f029c126a66fe445b1b53e6a435555f30027c3e3718d83bbeae61c77",
     "package.json#script=playtest:download": "3d07abdbda3164ed5ff2f54426a361f5be6b9a26d1c57100f46d25216e5cfd18"

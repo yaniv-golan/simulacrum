@@ -33,7 +33,7 @@ export async function verifyCredentialIsolation(config, request) {
     if (response.ok) await expect(path + '/' + secret, { method: 'DELETE' }, 200);
     return response.status;
   };
-  if ((await writeSecret(current, targets.currentWorker)) !== 200)
+  if (![200, 201].includes(await writeSecret(current, targets.currentWorker)))
     throw Error('Permitted current-account Worker write failed');
   if ((await writeSecret(other, targets.otherWorker)) !== 403)
     throw Error('Cross-account Worker write was not denied');

@@ -87,8 +87,14 @@ test('invitation protects static files, config and writes; root cannot leak file
 });
 
 test('receipt sequence, retry deduplication and private media bytes are preserved', async (t) => {
-  const f = await fixture(t);
-  const { sessionId } = await (await f.post('/api/playtest/session', { consent: true })).json();
+  const f = await fixture(t, { optionalVideo: true });
+  const { sessionId } = await (
+    await f.post('/api/playtest/session', {
+      consent: true,
+      recordingMode: 'video',
+      captureSchema: 1,
+    })
+  ).json();
   const path = `/api/playtest/${sessionId}`;
   const first = await f.post(path + '/event', { id: 'event-1', type: 'start', time: 12 });
   assert.equal(first.status, 201);
@@ -179,4 +185,37 @@ test('restart restores upload deduplication, receipt ordering and storage budget
   assert.equal((await f.post(eventPath, { ...event, screenshot: 'changed' })).status, 409);
   const next = await f.post(eventPath, { id: 'after-restart', type: 'stop' });
   assert.equal((await next.json()).sequence, 2);
+});
+
+test('data mode blocks screen uploads across restart and video requires explicit server opt in', async (t) => {
+  const f = await fixture(t);
+  assert.equal(
+    (
+      await f.post('/api/playtest/v2/session', {
+        requestId: 'video',
+        metadata: { recordingMode: 'video', captureSchema: 1 },
+      })
+    ).status,
+    403,
+  );
+  const { sessionId } = await (
+    await f.post('/api/playtest/v2/session', {
+      requestId: 'data',
+      metadata: { recordingMode: 'data', captureSchema: 1 },
+    })
+  ).json();
+  const upload = () =>
+    f.request(`/api/playtest/v2/${sessionId}/media?kind=screen&clip=tab&seq=0`, {
+      method: 'POST',
+      headers: { 'content-type': 'video/webm' },
+      body: 'video',
+    });
+  assert.equal((await upload()).status, 403);
+  await f.restart();
+  assert.equal((await upload()).status, 403);
+  const voice = await f.request(
+    `/api/playtest/v2/${sessionId}/media?kind=voice&clip=comment&seq=0`,
+    { method: 'POST', headers: { 'content-type': 'audio/webm' }, body: 'voice' },
+  );
+  assert.equal(voice.status, 201);
 });

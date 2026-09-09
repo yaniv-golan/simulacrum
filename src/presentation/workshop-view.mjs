@@ -3436,6 +3436,16 @@ export function createWorkshopView(
     render,
     setMessage,
     setRecordingState,
+    captureScreenshot: () => {
+      renderer.render(scene, camera);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.min(renderer.domElement.width, 1280);
+      canvas.height = Math.round(
+        (renderer.domElement.height * canvas.width) / renderer.domElement.width,
+      );
+      canvas.getContext('2d').drawImage(renderer.domElement, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', 0.65);
+    },
     clearMeasurements: () => motionReadout.clear(),
     readInteractionState: () => ({
       rendering: {

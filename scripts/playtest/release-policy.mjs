@@ -12,3 +12,41 @@ export function assertReservationLifetime(reservation, requiredMs, now = Date.no
   if (!Number.isFinite(reservation?.expires) || reservation.expires - now < requiredMs)
     throw Error('Insufficient synthetic reservation lifetime before publication');
 }
+
+// A finite delivery deadline, not a throughput or endurance qualification.
+const finalDrainMs = 120000;
+export const feedbackReceiptMs = 120000;
+export function captureBrowserTimeoutMs(captureSeconds) {
+  if (!Number.isInteger(captureSeconds) || captureSeconds < 0 || captureSeconds > 1800)
+    throw Error('Invalid capture duration');
+  // Feedback receipts and final drain each have a dedicated bounded allowance.
+  // Setup and verified export retain a separate three-minute allowance.
+  return captureSeconds * 1000 + feedbackReceiptMs + finalDrainMs + 180000;
+}
+export async function waitForCaptureDrain({
+  read,
+  now = () => performance.now(),
+  wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+}) {
+  const start = now();
+  let state;
+  while (true) {
+    state = await read();
+    const elapsedMs = now() - start;
+    if (
+      !Number.isSafeInteger(state?.pending) ||
+      state.pending < 0 ||
+      !Number.isSafeInteger(state?.bytes) ||
+      state.bytes < 0 ||
+      typeof state.saved !== 'boolean'
+    )
+      throw Error('Invalid drain observation');
+    if (elapsedMs <= finalDrainMs && state.pending === 0 && state.bytes === 0 && state.saved)
+      return { elapsedMs, finalOutbox: state };
+    if (elapsedMs >= finalDrainMs)
+      throw Error(
+        `Capture drain deadline: ${state.pending} uploads, ${state.bytes} bytes remain; saved=${state.saved}`,
+      );
+    await wait(Math.min(1000, finalDrainMs - elapsedMs));
+  }
+}

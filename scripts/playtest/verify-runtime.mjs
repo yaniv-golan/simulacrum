@@ -101,10 +101,10 @@ try {
   const uploads = await Promise.all(
     [0, 1].map((seq) =>
       mf.dispatchFetch(
-        `https://capture.invalid/api/playtest/v2/${sessionId}/media?kind=screen&clip=max&seq=${seq}`,
+        `https://capture.invalid/api/playtest/v2/${sessionId}/media?kind=voice&clip=max&seq=${seq}`,
         {
           method: 'POST',
-          headers: { cookie, origin: 'https://capture.invalid', 'content-type': 'video/webm' },
+          headers: { cookie, origin: 'https://capture.invalid', 'content-type': 'audio/webm' },
           body: maximum,
         },
       ),

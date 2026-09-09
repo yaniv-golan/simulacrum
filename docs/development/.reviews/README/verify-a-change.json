@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "scripts/verification-outcome.mjs": "b28832154ca392e72f053afb09c02f41f1665df3bcebdb763b9a9de9873c741d",
-    "docs/development/playtesting.md#remote-setup": "6e1ba76dabc436f6a9f475624a5a071bdde9f021122b21b8cee3feb91ad9d1e1",
+    "docs/development/playtesting.md#remote-setup": "20fcd996cfd8df29134f1ffa145272e2091dc870d34911a1e41af5efc366e923",
     "package.json": "112a4b83633792fbab399629e14dde6a1e893998a0fa2d1d75682d8908c8fc24",
     "scripts/runtime-preflight.mjs": "243c17a7df72eb827c51b4ac7d48356714e8d74b9396d5b384a671bb22521b61",
     "package-lock.json": "f44632025fc6a2b08f70e71a45243005e5f59483a19702a2d67f741b69e7f5e5",

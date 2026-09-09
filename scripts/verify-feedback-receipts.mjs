@@ -1,3 +1,4 @@
+import { decodeCaptureEvents } from '../src/application/capture-stream.mjs';
 import { createFixtureEvidence } from './browser-evidence.mjs';
 // M3b: feedback receipts must follow server acknowledgement and final media flush.
 
@@ -16,6 +17,7 @@ const browserEvidence = createFixtureEvidence({
     process.env.FEEDBACK_SOURCE || 'src/application/remote-playtest.mjs',
     'src/presentation/workshop.css',
     'src/application/capture-outbox.mjs',
+    'src/application/capture-stream.mjs',
     'scripts/verify-feedback-receipts.mjs',
   ],
 });
@@ -25,20 +27,22 @@ const source = readFileSync(process.env.FEEDBACK_SOURCE || 'src/application/remo
 const server = createServer((req, res) => {
   res.setHeader(
     'Content-Type',
-    ['/remote.mjs', '/capture-outbox.mjs'].includes(req.url)
+    ['/remote.mjs', '/capture-outbox.mjs', '/capture-stream.mjs'].includes(req.url)
       ? 'text/javascript'
       : req.url === '/style.css'
         ? 'text/css'
         : 'text/html',
   );
   res.end(
-    req.url === '/capture-outbox.mjs'
-      ? readFileSync('src/application/capture-outbox.mjs')
-      : req.url === '/remote.mjs'
-        ? source
-        : req.url === '/style.css'
-          ? css
-          : '<link rel="stylesheet" href="/style.css"><meta name="build-id" content="receipt-test"><script type="module">import {mountRemotePlaytest} from "/remote.mjs";window.mountCapture=()=>mountRemotePlaytest({context:()=>({}),checkpoint:()=>({})});window.remoteCapture=await window.mountCapture();</script>',
+    req.url === '/capture-stream.mjs'
+      ? readFileSync('src/application/capture-stream.mjs')
+      : req.url === '/capture-outbox.mjs'
+        ? readFileSync('src/application/capture-outbox.mjs')
+        : req.url === '/remote.mjs'
+          ? source
+          : req.url === '/style.css'
+            ? css
+            : '<link rel="stylesheet" href="/style.css"><meta name="build-id" content="receipt-test"><script type="module">import {mountRemotePlaytest} from "/remote.mjs";window.mountCapture=()=>mountRemotePlaytest({context:()=>({}),checkpoint:()=>({}),screenshot:()=>{throw Error("screenshot unavailable")}});window.remoteCapture=await window.mountCapture();</script>',
   );
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
@@ -53,6 +57,8 @@ try {
 
   await page.addInitScript(() => {
     window.originalConsoleError = console.error;
+    window.packetHas = (body, kind) =>
+      (body.kind === 'capture-batch' ? body.data.events : [body]).some((e) => e.kind === kind);
     const originalTimeout = window.setTimeout;
     window.setTimeout = (callback, delay, ...args) =>
       originalTimeout(callback, delay === 45000 && window.hangNext ? 100 : delay, ...args);
@@ -62,7 +68,7 @@ try {
       if (
         window.hangNext &&
         String(url).endsWith('/event') &&
-        JSON.parse(await options.body.text()).kind === 'feedback-text'
+        window.packetHas(JSON.parse(await options.body.text()), 'feedback-text')
       ) {
         window.hangNext = false;
         window.hungUploads++;
@@ -119,8 +125,11 @@ try {
     holdComment = true,
     badReceipt = false,
     statusCode = 200,
-    sessionPosts = 0;
+    sessionPosts = 0,
+    failNextSession = false;
   const uploads = [];
+  const hasEvent = (packet, kind) =>
+    (packet.kind === 'capture-batch' ? packet.data.events : [packet]).some((e) => e.kind === kind);
   const receipt = (route) => {
     const request = route.request(),
       url = new URL(request.url()),
@@ -143,9 +152,13 @@ try {
   await page.route('**/api/playtest/**', async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/config'))
-      return route.fulfill({ json: { enabled: true, protocolVersion: 2 } });
+      return route.fulfill({ json: { enabled: true, protocolVersion: 2, optionalVideo: true } });
     if (path.endsWith('/session')) {
       sessionPosts++;
+      if (failNextSession) {
+        failNextSession = false;
+        return route.fulfill({ status: 503, json: { error: 'uncertain start' } });
+      }
       return route.fulfill({
         json: {
           protocolVersion: 2,
@@ -156,14 +169,14 @@ try {
       });
     }
     uploads.push({ url: route.request().url(), body: route.request().postData() });
-    if (path.endsWith('/event') && route.request().postDataJSON().kind === 'disposal-witness') {
+    if (path.endsWith('/event') && hasEvent(route.request().postDataJSON(), 'disposal-witness')) {
       disposalUpload = route;
       disposalArrival.resolve();
       return;
     }
     if (
       path.endsWith('/event') &&
-      route.request().postDataJSON().kind === 'feedback-text' &&
+      hasEvent(route.request().postDataJSON(), 'feedback-text') &&
       holdComment
     ) {
       held = route;
@@ -176,7 +189,8 @@ try {
     });
   });
   await browserEvidence.goto(page, `http://127.0.0.1:${server.address().port}`);
-  await page.getByRole('button', { name: 'Share workshop tab & start' }).click();
+  await page.locator('[data-video]').check();
+  await page.getByRole('button', { name: 'Start recording' }).click();
   await page.waitForFunction(
     () => document.querySelector('[data-status-main]')?.textContent === '● Recording tab',
   );
@@ -377,7 +391,8 @@ try {
       }
     });
   await browserEvidence.reload(page);
-  await page.getByRole('button', { name: 'Share workshop tab & start' }).click();
+  await page.locator('[data-video]').check();
+  await page.getByRole('button', { name: 'Start recording' }).click();
   await page.waitForFunction(
     () => document.querySelector('[data-status-main]')?.textContent === '● Recording tab',
   );
@@ -509,7 +524,8 @@ try {
   );
   // Dispose must release the mount while preserving delayed final MediaRecorder
   // bytes in real IndexedDB; a remount drains them without resuming capture.
-  await page.getByRole('button', { name: 'Share workshop tab & start' }).click();
+  await page.locator('[data-video]').check();
+  await page.getByRole('button', { name: 'Start recording' }).click();
   await page.waitForFunction(() => window.remoteCapture.active());
   // Hold a real request across disposal; it must settle under its owned deadline,
   // not be aborted by unmount or dispatched again by the disposed pump.
@@ -545,7 +561,7 @@ try {
         if (
           row.body &&
           row.url.endsWith('/event') &&
-          JSON.parse(await row.body.text()).kind === 'disposal-witness'
+          window.packetHas(JSON.parse(await row.body.text()), 'disposal-witness')
         )
           return false;
       return true;
@@ -609,7 +625,8 @@ try {
   // Failure after unmount must retain the exact request, release the owned DB,
   // and recover on remount. Hold transport and deadline explicitly, without sleeps.
   for (const outcome of ['http', 'timeout']) {
-    await page.getByRole('button', { name: 'Share workshop tab & start' }).click();
+    await page.locator('[data-video]').check();
+    await page.getByRole('button', { name: 'Start recording' }).click();
     await page.waitForFunction(() => window.remoteCapture.active());
     await page.evaluate((outcome) => {
       const fetch = window.fetch,
@@ -635,7 +652,7 @@ try {
       window.fetch = async (url, options) => {
         if (
           String(url).endsWith('/event') &&
-          JSON.parse(await options.body.text()).kind === 'disposal-failure'
+          window.packetHas(JSON.parse(await options.body.text()), 'disposal-failure')
         ) {
           return new Promise((resolve, reject) => {
             options.signal.addEventListener(
@@ -738,6 +755,119 @@ try {
     true,
   ]);
   browserEvidence.assert('deepEqual', [errors, []]);
+  // An uncertain start retains its consented mode on retry.
+  await page.evaluate(async () => {
+    window.remoteCapture = await window.mountCapture();
+  });
+  await page.locator('[data-video]').check();
+  failNextSession = true;
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.waitForFunction(() => !!document.querySelector('[data-error]')?.textContent);
+  browserEvidence.assert('equal', [await page.locator('[data-video]').isDisabled(), true]);
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.waitForFunction(
+    () => document.querySelector('[data-status-main]')?.textContent === '● Recording tab',
+  );
+  await page.getByRole('button', { name: 'Finish session', exact: true }).click();
+  await page.evaluate(() => window.flushRecorders());
+  await page.waitForFunction(() =>
+    document
+      .querySelector('[data-completion-status]')
+      ?.textContent.includes('You can close this tab'),
+  );
+  await page.evaluate(() => window.remoteCapture.dispose());
+  // Data capture remains usable without either browser media API. A failed
+  // canvas screenshot must not block text feedback or the terminal receipt.
+  const dataUploadsStart = uploads.length;
+  const displayBeforeData = await page.evaluate(() => window.captureRequests);
+  await page.evaluate(async () => {
+    window.MediaRecorder = undefined;
+    navigator.mediaDevices.getDisplayMedia = undefined;
+    window.remoteCapture = await window.mountCapture();
+  });
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.waitForFunction(
+    () => document.querySelector('[data-status-main]')?.textContent === '● Recording actions',
+  );
+  await page.getByRole('button', { name: 'Give feedback', exact: true }).click();
+  await page
+    .getByRole('textbox', { name: 'Your feedback' })
+    .fill('Data feedback despite unavailable screenshot.');
+  await page.getByRole('button', { name: 'Send written feedback' }).click();
+  await page.waitForFunction(() =>
+    document.querySelector('.playtest-comment')?.textContent.includes('Received by Yaniv'),
+  );
+  await page.getByRole('button', { name: 'Back to building' }).click();
+  await page.getByRole('button', { name: 'Finish session', exact: true }).click();
+  await page.waitForFunction(() =>
+    document
+      .querySelector('[data-completion-status]')
+      ?.textContent.includes('You can close this tab'),
+  );
+  const dataUploads = uploads.slice(dataUploadsStart);
+  browserEvidence.assert('equal', [
+    await page.evaluate(() => window.captureRequests),
+    displayBeforeData,
+  ]);
+  browserEvidence.assert('equal', [
+    dataUploads.some((upload) => upload.url.includes('/media?')),
+    false,
+  ]);
+  const decoded = decodeCaptureEvents(
+    dataUploads
+      .filter((upload) => upload.url.endsWith('/event'))
+      .map((upload) => JSON.parse(upload.body)),
+  );
+  browserEvidence.assert('equal', [decoded.status, 'complete']);
+  browserEvidence.assert('equal', [decoded.events[0].data.recordingMode, 'data']);
+  browserEvidence.assert('equal', [
+    decoded.events.find((event) => event.kind === 'feedback-anchor').data.imageScope,
+    'unavailable',
+  ]);
+  browserEvidence.assert('ok', [
+    decoded.events.some(
+      (event) => event.kind === 'feedback-text' && event.data.text.includes('despite unavailable'),
+    ),
+  ]);
+  await page.evaluate(() => window.remoteCapture.dispose());
+  // Producer bounds finish an intact stream instead of creating an unreviewable session.
+  const boundedUploadsStart = uploads.length;
+  await page.evaluate(async () => {
+    window.remoteCapture = await window.mountCapture();
+  });
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.waitForFunction(() => window.remoteCapture.active());
+  await page.evaluate(() => {
+    const payload = 'b'.repeat(1024 * 1024);
+    for (let i = 0; i < 65 && window.remoteCapture.active(); i++)
+      window.remoteCapture.emit('bounded-recording-witness', { payload });
+  });
+  browserEvidence.assert('equal', [
+    await page.evaluate(() => window.remoteCapture.active()),
+    false,
+  ]);
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-completion-status]')
+        ?.textContent.includes('You can close this tab'),
+    undefined,
+    { timeout: 120000 },
+  );
+  browserEvidence.assert('match', [
+    await page.locator('[data-completion-status]').innerText(),
+    /size limit/,
+  ]);
+  const boundedDecoded = decodeCaptureEvents(
+    uploads
+      .slice(boundedUploadsStart)
+      .filter((upload) => upload.url.endsWith('/event'))
+      .map((upload) => JSON.parse(upload.body)),
+    { indexed: true },
+  );
+  browserEvidence.assert('equal', [boundedDecoded.status, 'complete']);
+  browserEvidence.assert('equal', [boundedDecoded.events.at(-1).kind, 'session-end']);
+  await page.evaluate(() => window.remoteCapture.dispose());
   console.log(
     'feedback receipt checks passed: delayed/malformed acknowledgement, 401/403/404/413/503 recovery, hung upload timeout/recovery, retained comments, X/Escape microphone stop, final media flush, outbox read failure, real IndexedDB reload/outage recovery, disposal/final-flush/remount recovery',
   );

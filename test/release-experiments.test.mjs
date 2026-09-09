@@ -10,13 +10,20 @@ import {
 const now = 1000000;
 const profile = {
   schema: 1,
+  recordingMode: 'video',
+  captureSchema: 1,
   enduranceSeconds: 360,
   capacitySeconds: 120,
   maxAgeMs: 86400000,
   calibration: {
     browserVersion: 'test-browser',
     evidence: 'a'.repeat(64),
-    workload: { maxMediaBytesPerSecond: 100000, maxEventsPerSecond: 10, maxChunkBytes: 10485760 },
+    workload: {
+      maxEventBytes: 1000,
+      maxMediaBytesPerSecond: 100000,
+      maxEventsPerSecond: 10,
+      maxChunkBytes: 10485760,
+    },
   },
 };
 const context = {
@@ -221,4 +228,29 @@ test('experiment evidence deduplicates compact durable failures without erasing 
   ])
     assert.throws(() => normalizeExperimentEvidence([bad]), /invalid/i);
   assert.throws(() => normalizeExperimentEvidence({}), /array/i);
+});
+
+test('qualification profile rejects unbound legacy media evidence and admits data bounds', () => {
+  const p = {
+    schema: 1,
+    recordingMode: 'data',
+    captureSchema: 1,
+    enduranceSeconds: 360,
+    capacitySeconds: 120,
+    maxAgeMs: 1000,
+    calibration: {
+      evidence: 'a'.repeat(64),
+      browserVersion: 'test',
+      workload: {
+        maxMediaBytesPerSecond: 0,
+        maxChunkBytes: 0,
+        maxEventsPerSecond: 10,
+        maxEventBytes: 1000,
+      },
+    },
+  };
+  assert.doesNotThrow(() => validateProfile(p));
+  assert.throws(() => validateProfile({ ...p, recordingMode: undefined }), /mode|schema/i);
+  assert.throws(() => validateProfile({ ...p, captureSchema: 2 }), /mode|schema/i);
+  assert.throws(() => validateProfile({ ...p, recordingMode: 'video' }), /bounds/i);
 });

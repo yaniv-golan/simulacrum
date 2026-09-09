@@ -25,10 +25,27 @@ export async function inspectDeployment(config) {
   const settings = await get(
     `accounts/${config.accountId}/workers/scripts/${config.workerName}/settings`,
   );
+  const scriptSettings = await get(
+    `accounts/${config.accountId}/workers/scripts/${config.workerName}/script-settings`,
+  );
+  // Cloudflare returns explicit null when observability is disabled. Missing
+  // fields remain unverified; versioned binding settings are not this read model.
+  const observability = scriptSettings?.observability;
   if (
-    settings.observability?.enabled !== false ||
-    settings.observability?.logs?.invocation_logs !== false ||
-    settings.tail_consumers?.length
+    !scriptSettings ||
+    !Object.hasOwn(scriptSettings, 'observability') ||
+    scriptSettings.logpush !== false ||
+    !(
+      scriptSettings.tail_consumers === null ||
+      (Array.isArray(scriptSettings.tail_consumers) && scriptSettings.tail_consumers.length === 0)
+    ) ||
+    !(
+      observability === null ||
+      (observability?.enabled === false &&
+        observability.logs?.enabled === false &&
+        observability.logs?.invocation_logs === false &&
+        observability.traces?.enabled === false)
+    )
   )
     throw Error('Unverified Worker logging destination');
   validateEffectiveBindings(config, settings);
@@ -67,7 +84,17 @@ export async function inspectDeployment(config) {
     loggingVerified: true,
     loggingMode: 'all-account-controlled-destinations-disabled',
     effectiveDigest: createHash('sha256')
-      .update(JSON.stringify({ settings, managed, custom, lifecycle, accountJobs, zoneJobs }))
+      .update(
+        JSON.stringify({
+          settings,
+          scriptSettings,
+          managed,
+          custom,
+          lifecycle,
+          accountJobs,
+          zoneJobs,
+        }),
+      )
       .digest('hex'),
   };
 }
@@ -167,4 +194,24 @@ export async function verifySynthetic(config, reservation, directory) {
     directory: join(directory, created.sessionId),
   });
   return { sessionId: created.sessionId, protocolVersion: 2, cookie };
+}
+
+export async function verifyServedAssets(manifest, origin, cookie, request = fetch) {
+  for (const [path, hash] of Object.entries(manifest.files)) {
+    if (!path.startsWith('assets/')) continue;
+    // Workers Static Assets canonicalizes index.html to the directory URL.
+    const route = path === 'assets/index.html' ? '/' : '/' + path.slice(7);
+    const response = await request(new URL(route, origin), {
+      headers: { cookie },
+      redirect: 'error',
+      signal: AbortSignal.timeout(45000),
+    });
+    if (
+      !response.ok ||
+      createHash('sha256')
+        .update(new Uint8Array(await response.arrayBuffer()))
+        .digest('hex') !== hash
+    )
+      throw Error('Served artifact integrity mismatch');
+  }
 }

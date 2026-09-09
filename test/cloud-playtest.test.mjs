@@ -544,3 +544,61 @@ test('coordinator persists bounded failures across owners and clears only explic
   );
   assert.equal((await list()).length, 64);
 });
+
+test('data sessions reject screen uploads and disabled video cannot be admitted', async () => {
+  const st = state(),
+    store = new CaptureStore(st, { RECORDINGS: bucket(), INVITATION_GENERATION: '1' });
+  const denied = await store.fetch(
+    req('/api/playtest/v2/session', {
+      requestId: 'video',
+      metadata: { recordingMode: 'video', captureSchema: 1 },
+    }),
+  );
+  assert.equal(denied.status, 403);
+  const { sessionId } = await start(store, 'data');
+  const screen = () =>
+    new Request(
+      `https://capture.invalid/api/playtest/v2/${sessionId}/media?kind=screen&clip=tab&seq=0`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'video/webm', 'x-invitation-generation': '1' },
+        body: 'video',
+      },
+    );
+  assert.equal((await store.fetch(screen())).status, 403);
+  const enabled = new CaptureStore(st, {
+    RECORDINGS: bucket(),
+    INVITATION_GENERATION: '1',
+    CAPTURE_OPTIONAL_VIDEO: 'true',
+  });
+  assert.equal((await enabled.fetch(screen())).status, 403);
+  const v = await (
+    await enabled.fetch(
+      req('/api/playtest/v2/session', {
+        requestId: 'allowed',
+        metadata: { recordingMode: 'video', captureSchema: 1 },
+      }),
+    )
+  ).json();
+  const voice = new Request(
+    `https://capture.invalid/api/playtest/v2/${v.sessionId}/media?kind=screen&clip=tab&seq=0`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'video/webm', 'x-invitation-generation': '1' },
+      body: 'video',
+    },
+  );
+  assert.equal((await enabled.fetch(voice)).status, 201);
+  const disabledAgain = new CaptureStore(st, { RECORDINGS: bucket(), INVITATION_GENERATION: '1' });
+  assert.equal(
+    (
+      await disabledAgain.fetch(
+        req('/api/playtest/v2/session', {
+          requestId: 'allowed',
+          metadata: { recordingMode: 'video', captureSchema: 1 },
+        }),
+      )
+    ).status,
+    200,
+  );
+});

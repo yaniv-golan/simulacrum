@@ -1,12 +1,23 @@
 {
   "version": 1,
   "dependencies": {
-    "scripts/playtest-server.mjs": "36eb76d88f66b31247098645f61233bb90962c54d6fab22502f04082bd487ad4",
+    "scripts/playtest-server.mjs": "e1926289a1103789413cfa480c871c4800e7dbfa2b9184d66e5f5e1d7d093648",
     "scripts/playtest/protocol.mjs": "56aa243b32314a4ee0b30e87f432c27a6e66273f981eb446450324439665d151",
-    "scripts/playtest/cloud-store.mjs": "34f1e7c1401f236da7638a539b2765525db33469f4fd859749668ccb54a00372",
-    "scripts/playtest/worker.mjs": "7f0cb23f5ee8f9886751253db4d7dc18c978238c8f9d9e244450e92a7beab98b",
+    "scripts/playtest/cloud-store.mjs": "ef5b82f8c3512d35d448a6a90f5c89e5428939fa9c8a32bfe5c5eee0c47c3f30",
+    "scripts/playtest/worker.mjs": "fb47b7557423ab5169d83c319b217e4266ac629f7629b542c8838bc41d4113af",
     "src/application/capture-outbox.mjs": "4224e18cef1b3532390cc50c8969a65b539f18d56c244255ae242f8c8c66f858",
-    "src/application/remote-playtest.mjs": "0075260dfe2bde51a5812cc646b98b1715decbb001b1b92d617952d436f190ad",
-    "scripts/export-playtest.mjs": "de4e4eab8f24a0d166776b276a6f0a14812521ee9807a45663209dd654badadb"
+    "src/application/capture-stream.mjs": "713d4d6b1cad80fb625dd1ef58fd8b3a3ae754ccd398a6268da63fdbd16b5932",
+    "src/application/remote-playtest.mjs": "005cd0feb3836e6b0dfd3425ac05d6884dd6e028f4063d7d504ac9cbb8861220",
+    "package-lock.json": "f44632025fc6a2b08f70e71a45243005e5f59483a19702a2d67f741b69e7f5e5",
+    "package.json": "ac1208b1973128edabff7a63b2257e32f3be1970f2f3164b8c6d4b3ba4d6598e",
+    "scripts/export-playtest.mjs": "f74b33d6d8bb831cd4730b98457214576c23fe72123437a37474c5747eb69977",
+    "src/model/boundaries.d.ts": "73455a4fce8c8d161198d6a16646ce15d398a42ed563eee83690ff5c136ba938",
+    "src/model/catalog.mjs": "ed3388946005de707233a3d1dda10cd9827b700e136030fa60200b97efd778c8",
+    "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",
+    "src/model/generated/blueprint-types.d.ts": "bd194a365248f2562dbb641baeb96a8dc7fb86a4ab9a9c1d5f156c2f441c12a5",
+    "src/model/geometry.mjs": "90d75331b8f5261f9d1a6e4d803473bbdf4be12fc63b283d63e65d4312b80bd8",
+    "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
+    "src/presentation/capture-review-model.mjs": "affe9e104b2a8245202e39ad5a52cc08720e0c42b58253a7fd3c360f675ec359",
+    "src/presentation/capture-review.mjs": "af9e6e863ed5949872bcb022227f689061b9550a90ba773c852122fc7ef07b05"
   }
 }

@@ -23,6 +23,9 @@ test('release calibration admission requires reviewed report and all intact inde
     await writeFile(media[0], 'aaa');
     await writeFile(media[1], 'bbbb');
     const base = {
+      recordingMode: 'video',
+      captureSchema: 1,
+      maximumEventBytes: 25,
       source,
       build: 'fixture',
       browserVersion: 'fixture-browser',
@@ -32,7 +35,7 @@ test('release calibration admission requires reviewed report and all intact inde
       screenBytes: 7,
       maximumScreenChunkBytes: 4,
       finalOutbox: { bytes: 0, pending: 0 },
-      syntheticRun: 'c'.repeat(32),
+      syntheticRun: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
       workloadActions: ['drive'],
       driving: { fromTick: 0, toTick: 7200, from: [[0, 0, 0]], to: [[1, 0, 0]] },
     };
@@ -40,6 +43,8 @@ test('release calibration admission requires reviewed report and all intact inde
     const largest = join(root, 'largest.bin');
     await writeFile(largest, '12345');
     const report = {
+      recordingMode: 'video',
+      captureSchema: 1,
       schema: 2,
       protocol: 'capture-characterization-v2',
       calibrationStatus: 'MEASURED_NOT_APPROVED',
@@ -65,7 +70,7 @@ test('release calibration admission requires reviewed report and all intact inde
         ...(spec.id === 'long'
           ? { mediaFiles: [largest, largest], screenBytes: 10, maximumScreenChunkBytes: 5 }
           : {}),
-        syntheticRun: CALIBRATION_CASES.indexOf(spec).toString(16).padStart(32, '0'),
+        syntheticRun: `00000000-0000-4000-8000-${CALIBRATION_CASES.indexOf(spec).toString(16).padStart(12, '0')}`,
         captureSeconds: spec.seconds,
         captureStarted: 0,
         captureEnded: spec.seconds * 1000,
@@ -111,13 +116,17 @@ test('release calibration admission requires reviewed report and all intact inde
     const corpus = await writeCorpus(join(root, 'corpus'), captures);
     report.corpusId = corpus.id;
     const capacity = JSON.stringify({
+      recordingMode: 'video',
+      captureSchema: 1,
       clients: 20,
       seconds: 600,
       p95Ms: 50,
       finalBacklog: 0,
       corpusId: corpus.id,
-      scheduled: 12000,
-      completed: 12000,
+      scheduled:
+        20 * 200 * (1 + corpus.envelope.mediaCopiesPerTick + corpus.envelope.eventsPerTick),
+      completed:
+        20 * 200 * (1 + corpus.envelope.mediaCopiesPerTick + corpus.envelope.eventsPerTick),
       maximum: { concurrent: 2, bytes: 10485760, elapsedMs: 50 },
       network: { uplinkMbps: 5, rttMs: 100 },
     });
@@ -134,13 +143,20 @@ test('release calibration admission requires reviewed report and all intact inde
     await writeFile(file, JSON.stringify(report));
     const profile = {
       schema: 1,
+      recordingMode: 'video',
+      captureSchema: 1,
       enduranceSeconds: 360,
       capacitySeconds: 120,
       maxAgeMs: 86400000,
       calibration: {
         evidence: hash(await readFile(file)),
         browserVersion: base.browserVersion,
-        workload: { maxMediaBytesPerSecond: 1, maxEventsPerSecond: 1 / 3, maxChunkBytes: 5 },
+        workload: {
+          maxEventBytes: 25,
+          maxMediaBytesPerSecond: 1,
+          maxEventsPerSecond: 1 / 3,
+          maxChunkBytes: 5,
+        },
         review: {
           reviewer: 'fixture reviewer',
           reviewedAt: 2000,
@@ -152,6 +168,24 @@ test('release calibration admission requires reviewed report and all intact inde
       },
     };
     await assert.doesNotReject(readCalibrationEvidence(profile, file));
+    await assert.rejects(
+      readCalibrationEvidence(
+        {
+          ...profile,
+          recordingMode: 'data',
+          calibration: {
+            ...profile.calibration,
+            workload: {
+              ...profile.calibration.workload,
+              maxMediaBytesPerSecond: 0,
+              maxChunkBytes: 0,
+            },
+          },
+        },
+        file,
+      ),
+      /mode|schema/i,
+    );
     await assert.rejects(
       readCalibrationEvidence(
         {
@@ -274,7 +308,7 @@ test('release calibration admission requires reviewed report and all intact inde
       [
         1,
         (c) => {
-          c.syntheticRun = '0'.repeat(32);
+          c.syntheticRun = '00000000-0000-4000-8000-000000000000';
         },
         /independent/,
       ],

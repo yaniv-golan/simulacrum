@@ -80,43 +80,94 @@ export function assertCaptureBacklog(capture, durationSeconds = 1800) {
     )
       throw Error('Sustained capture outbox growth');
 }
+export function captureIdentity(value) {
+  if (!['data', 'video'].includes(value?.recordingMode) || value.captureSchema !== 1)
+    throw Error('Explicit recording mode and capture schema required');
+  return { recordingMode: value.recordingMode, captureSchema: value.captureSchema };
+}
+export function assertCaptureIdentity(value, expected) {
+  const actual = captureIdentity(value),
+    wanted = captureIdentity(expected);
+  if (
+    actual.recordingMode !== wanted.recordingMode ||
+    actual.captureSchema !== wanted.captureSchema
+  )
+    throw Error('Recording mode or capture schema mismatch');
+}
+export function captureMedia(capture) {
+  return capture.recordingMode === 'data'
+    ? {
+        bytes: capture.voiceBytes ?? 0,
+        maximum: capture.maximumVoiceChunkBytes ?? 0,
+        chunks: capture.voiceChunks ?? 0,
+        kind: 'voice',
+        mime: 'audio/webm',
+      }
+    : {
+        bytes: capture.screenBytes,
+        maximum: capture.maximumScreenChunkBytes,
+        chunks: capture.screenChunks,
+        kind: 'screen',
+        mime: 'video/webm',
+      };
+}
 export function assertCaptureWorkload(capture, bounds) {
+  const { recordingMode } = captureIdentity(capture);
+  const video = recordingMode === 'video';
+  const observedMedia = captureMedia(capture);
   if (
     !Number.isFinite(capture?.captureSeconds) ||
     capture.captureSeconds < 60 ||
     !capture.finalOutbox ||
     capture.finalOutbox.bytes !== 0 ||
     capture.finalOutbox.pending !== 0 ||
-    !capture.mediaFiles?.length ||
+    !Array.isArray(capture.mediaFiles) ||
+    (video && !capture.mediaFiles.length) ||
+    (!video && capture.screenBytes !== 0) ||
     !capture.eventSamples?.length
   )
     throw Error('Drained representative capture workload required');
   const rates = {
-    mediaBytesPerSecond: capture.screenBytes / capture.captureSeconds,
-    eventsPerSecond: capture.eventSamples.length / capture.captureSeconds,
+    mediaBytesPerSecond: observedMedia.bytes / capture.captureSeconds,
+    eventsPerSecond: (capture.eventCount ?? capture.eventSamples.length) / capture.captureSeconds,
   };
-  if (!Number.isFinite(rates.mediaBytesPerSecond) || rates.mediaBytesPerSecond <= 0)
+  if (
+    !Number.isFinite(rates.mediaBytesPerSecond) ||
+    (video ? rates.mediaBytesPerSecond <= 0 : rates.mediaBytesPerSecond < 0)
+  )
     throw Error('Measured screen bytes required');
   if (
     bounds &&
     (rates.mediaBytesPerSecond > bounds.maxMediaBytesPerSecond ||
       rates.eventsPerSecond > bounds.maxEventsPerSecond ||
-      !Number.isFinite(capture.maximumScreenChunkBytes) ||
-      capture.maximumScreenChunkBytes > bounds.maxChunkBytes)
+      !Number.isFinite(observedMedia.maximum) ||
+      observedMedia.maximum > bounds.maxChunkBytes ||
+      !Number.isFinite(capture.maximumEventBytes) ||
+      capture.maximumEventBytes > bounds.maxEventBytes)
   )
     throw Error('Capture workload exceeds calibrated bounds; new calibration required');
   return rates;
 }
 export async function measureCaptureLoad({ origin, capture, seconds = 120, reservation }) {
   assertCaptureWorkload(capture);
-  if (!capture?.mediaFiles?.length || !capture?.eventSamples?.length)
+  if (!capture?.eventSamples?.length)
     throw Error('Measured media distribution and event traffic required');
   const clients = 20,
     ticks = Math.ceil(seconds / 3),
-    mediaPerTick = capture.envelope ? 1 + capture.envelope.mediaCopiesPerTick : 1,
+    mediaPerTick = !capture.mediaFiles.length
+      ? 0
+      : capture.envelope
+        ? 1 + capture.envelope.mediaCopiesPerTick
+        : 1,
     eventsPerTick =
       capture.envelope?.eventsPerTick ??
-      Math.max(1, Math.ceil(capture.eventSamples.length / Math.max(1, capture.captureSeconds / 3)));
+      Math.max(
+        1,
+        Math.ceil(
+          (capture.eventCount ?? capture.eventSamples.length) /
+            Math.max(1, capture.captureSeconds / 3),
+        ),
+      );
   const rows = clients * (ticks * (mediaPerTick + eventsPerTick) + 1) + 2;
   const run =
     reservation ||
@@ -175,7 +226,10 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
     const sessions = [];
     for (let i = 0; i < clients; i++) {
       const bytes = Buffer.from(
-        JSON.stringify({ requestId: crypto.randomUUID(), metadata: { synthetic: true } }),
+        JSON.stringify({
+          requestId: crypto.randomUUID(),
+          metadata: { synthetic: true, ...captureIdentity(capture) },
+        }),
       );
       const response = await send('/api/playtest/v2/session', bytes, 'application/json', false);
       stats.requests++;
@@ -228,17 +282,19 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
                 throw Error('Capture chunk outside admitted bounds');
               await delivery(
                 session,
-                `media:screen:load:${seq * mediaPerTick + m}`,
+                `media:${captureMedia(capture).kind}:load:${seq * mediaPerTick + m}`,
                 media,
-                'video/webm',
-                `/api/playtest/v2/${session}/media?kind=screen&clip=load&seq=${seq * mediaPerTick + m}`,
+                captureMedia(capture).mime,
+                `/api/playtest/v2/${session}/media?kind=${captureMedia(capture).kind}&clip=load&seq=${seq * mediaPerTick + m}`,
                 due,
               );
             }
             for (let e = 0; e < eventsPerTick; e++) {
               const id = `load-${seq}-${e}`,
                 template =
-                  capture.eventSamples[(seq * eventsPerTick + e) % capture.eventSamples.length];
+                  e > 0 && capture.maximumEvent
+                    ? capture.maximumEvent
+                    : capture.eventSamples[(seq * eventsPerTick + e) % capture.eventSamples.length];
               const bytes = Buffer.from(JSON.stringify({ ...template, id }));
               await delivery(
                 session,
@@ -263,23 +319,29 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
         'Load failed with undelivered requests',
       );
     // The maximum-size case is separate from normal-upload latency qualification.
+    const video = capture.recordingMode === 'video';
+    // Independent admitted-envelope stress, explicitly separate from measured rates.
     const maximum = new Uint8Array(10 * 1024 ** 2);
-    const seed = await readFile(capture.mediaFiles[0]);
+    const seed = capture.mediaFiles.length
+      ? await readFile(capture.mediaFiles[0])
+      : new Uint8Array([0]);
     if (!seed.length) throw Error('Empty maximum-size media seed');
     for (let offset = 0; offset < maximum.length; offset += seed.length)
       maximum.set(seed.subarray(0, maximum.length - offset), offset);
+    const maximumMime = captureMedia(capture).mime;
+    const maximumKey = `media:${captureMedia(capture).kind}:maximum:0`;
     const maxStart = Date.now();
     const maximumResults = await Promise.allSettled(
       sessions.slice(0, 2).map((session) =>
         retryUpload({
-          path: `/api/playtest/v2/${session}/media?kind=screen&clip=maximum&seq=0`,
+          path: `/api/playtest/v2/${session}/media?kind=${captureMedia(capture).kind}&clip=maximum&seq=0`,
           bytes: maximum,
-          mime: 'video/webm',
+          mime: maximumMime,
           expected: {
             protocolVersion: 2,
             sessionId: session,
-            logicalKey: 'media:screen:maximum:0',
-            uploadHash: hash(maximum, 'video/webm'),
+            logicalKey: maximumKey,
+            uploadHash: hash(maximum, maximumMime),
           },
           deadline: Date.now() + 90000,
           send,
@@ -293,6 +355,7 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
     const p95 =
       latencies[Math.min(latencies.length - 1, Math.floor(latencies.length * 0.95))] ?? Infinity;
     const result = {
+      ...captureIdentity(capture),
       clients,
       seconds,
       completed,

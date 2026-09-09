@@ -5,7 +5,7 @@
     "src/presentation/workbench-content.mjs": "85a2d6b3e5fcc67d028f4823f256059cd673e2a3a41c19d6b660b48f58510659",
     "test/workbench-content.test.mjs": "0ff4bd532d0b4756ba675db7e85dde4cc4d9bdb56ff36bbca224f4ac0534ff29",
     "scripts/verify-workbench-content.mjs": "bd7c2c5baa426a73cd6670681a7346d75c1d2b0766e8eed5090e9314f89cb1bc",
-    "docs/development/playtesting.md#remote-setup": "6e1ba76dabc436f6a9f475624a5a071bdde9f021122b21b8cee3feb91ad9d1e1",
+    "docs/development/playtesting.md#remote-setup": "20fcd996cfd8df29134f1ffa145272e2091dc870d34911a1e41af5efc366e923",
     "package.json#script=inspect:change": "3dce2ce48429d4242732dc4e49c06d644a407c094520685458a92cc0c4c09bc3",
     "package.json#script=docs:prepare": "12217c6795d7e7b9dd072d5f7c5c5f86522a3e11ca9d186fc4b0075831ca39f4",
     "package.json#script=verify:local": "e562f569798a2101fa9e8a7a2feadcd8c8b865702c87fb65441621ceeb310b35",

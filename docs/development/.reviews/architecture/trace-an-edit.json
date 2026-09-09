@@ -1,8 +1,8 @@
 {
   "version": 1,
   "dependencies": {
-    "src/application/workshop-app.mjs": "46c372ec91b7b1b68786d0e2a6d9167d53476b7f63f2195e8248c6d9362d267d",
-    "src/presentation/workshop-view.mjs": "cdc11f740ecd533d109d87e7c53f4d2b68667293cad73f90c06c7fb2fcf88926",
+    "src/application/workshop-app.mjs": "637f9c9f3f47f6c69aaedf6cd742679cffb9414d3e09dcab6a67f5e0b5eb176d",
+    "src/presentation/workshop-view.mjs": "e842adf206156432c5cbd1756012053836bed6f1d8befedfa97ffb5b5a3a39fe",
     "src/presentation/surface-controls.mjs": "d4124cc989ac08aea07ebde8104a810bfc136e24a6101c4fcb1ca5276a03b527",
     "src/presentation/placement-lifecycle.mjs": "02d5fc17f5ada7fe5c60d43c2bd8cc7963dc2ea8e7d0fb7238270fcc7a7f8015",
     "src/presentation/assembly-mirror.mjs": "d5b6819691909cfa5aef213acaf065e74e157d60f023f3e6ac227f689386f212",

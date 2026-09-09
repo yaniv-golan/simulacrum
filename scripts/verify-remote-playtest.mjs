@@ -1,3 +1,6 @@
+import { createCaptureReviewIndex } from '../src/application/capture-stream.mjs';
+import { sampleCapture } from './playtest/capture-samples.mjs';
+import { feedbackReceiptMs, waitForCaptureDrain } from './playtest/release-policy.mjs';
 import { installCaptureFault } from './playtest/capture-fault.mjs';
 import { assertDrivenMotion } from './playtest/load.mjs';
 import { createLocalCloud } from './playtest/local-cloud.mjs';
@@ -31,6 +34,8 @@ const browserEvidence = createBrowserEvidence({
     : {}),
 });
 
+const recordingMode = process.env.PLAYTEST_RECORDING_MODE || 'data';
+if (!['data', 'video'].includes(recordingMode)) throw Error('Invalid recording mode');
 const adapter = process.env.PLAYTEST_VERIFY_ADAPTER || 'node';
 const remoteOrigin = process.env.PLAYTEST_VERIFY_ORIGIN;
 const data = mkdtempSync(join(privateRoot || tmpdir(), 'remote-playtest-')),
@@ -39,10 +44,15 @@ const data = mkdtempSync(join(privateRoot || tmpdir(), 'remote-playtest-')),
 let server, cloud;
 let origin = remoteOrigin;
 if (!origin && adapter === 'cloud') {
-  cloud = await createLocalCloud({ token, adminToken });
+  cloud = await createLocalCloud({ token, adminToken, optionalVideo: recordingMode === 'video' });
   origin = cloud.origin;
 } else if (!origin) {
-  server = createPlaytestServer({ publicDir: 'dist', dataDir: data, token });
+  server = createPlaytestServer({
+    publicDir: 'dist',
+    dataDir: data,
+    token,
+    optionalVideo: recordingMode === 'video',
+  });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   origin = `http://127.0.0.1:${server.address().port}`;
 }
@@ -73,14 +83,19 @@ try {
   console.log('opening');
   await browserEvidence.goto(page, `${origin}/join?token=${token}`);
   console.log('loaded');
-  await page.getByRole('button', { name: 'Share workshop tab & start' }).click();
+  if (recordingMode === 'video') await page.locator('[data-video]').check();
+  else
+    await page.evaluate(() => {
+      navigator.mediaDevices.getDisplayMedia = () => {
+        throw Error('Data capture requested screen access');
+      };
+    });
+  await page.getByRole('button', { name: 'Start recording' }).click();
   console.log('share clicked');
   await page
     .waitForFunction(
       () =>
-        document
-          .querySelector('.playtest-panel [data-status]')
-          .textContent.includes('Recording tab'),
+        document.querySelector('.playtest-panel [data-status]').textContent.includes('Recording '),
       null,
       { timeout: 15000 },
     )
@@ -192,8 +207,10 @@ try {
     .getByRole('textbox', { name: 'Your feedback' })
     .fill('I expected this motor to move separately.');
   await page.getByRole('button', { name: 'Send written feedback' }).click();
-  await page.waitForFunction(() =>
-    document.querySelector('.playtest-comment')?.textContent.includes('Received by'),
+  await page.waitForFunction(
+    () => document.querySelector('.playtest-comment')?.textContent.includes('Received by'),
+    undefined,
+    { timeout: feedbackReceiptMs },
   );
   mkdirSync(output, { recursive: true });
   await page.screenshot({ path: join(output, 'feedback-receipt.png') });
@@ -213,6 +230,7 @@ try {
     await fault.stop();
     await browserEvidence.reload(page);
   }
+  let finalDrain;
   if (faultName === 'reload-recovery') {
     await page
       .getByText(
@@ -225,14 +243,20 @@ try {
       'Reload recovery must not restart recording',
     ]);
   } else {
-    await page.waitForFunction(() =>
-      document.querySelector('.playtest-panel [data-status]').textContent.includes('All received'),
-    );
-    await page.waitForFunction(() =>
-      document
-        .querySelector('[data-completion-status]')
-        .textContent.includes('You can close this tab'),
-    );
+    finalDrain = await waitForCaptureDrain({
+      read: async () => ({
+        ...(await sampleOutbox()),
+        saved: await page.evaluate(
+          () =>
+            document
+              .querySelector('.playtest-panel [data-status]')
+              .textContent.includes('All received') &&
+            document
+              .querySelector('[data-completion-status]')
+              .textContent.includes('You can close this tab'),
+        ),
+      }),
+    });
   }
   await page.waitForTimeout(800);
   const finalOutbox = await sampleOutbox();
@@ -255,7 +279,10 @@ try {
   const id = readdirSync(data)[0],
     dir = join(data, id),
     records = readFileSync(join(dir, 'events.ndjson'), 'utf8').trim().split('\n').map(JSON.parse),
-    events = records.filter((x) => x.event).map((x) => x.event);
+    wireEvents = records.filter((x) => x.event).map((x) => x.event),
+    decoded = createCaptureReviewIndex(wireEvents),
+    events = decoded.events;
+  browserEvidence.assert('equal', [decoded.status, 'complete']);
   for (const kind of [
     'session-start',
     'input',
@@ -268,12 +295,13 @@ try {
   ])
     browserEvidence.assert('ok', [events.some((x) => x.kind === kind), kind]);
   browserEvidence.assert('ok', [
-    records.some((x) => x.media?.kind === 'screen' && x.media.bytes > 0),
+    records.some((x) => x.media?.kind === 'screen' && x.media.bytes > 0) ===
+      (recordingMode === 'video'),
   ]);
   browserEvidence.assert('ok', [
     records.some((x) => x.media?.kind === 'voice' && x.media.bytes > 0),
   ]);
-  const anchor = events.find((x) => x.kind === 'feedback-anchor');
+  const anchor = decoded.readEvent(events.findIndex((x) => x.kind === 'feedback-anchor'));
   browserEvidence.assert('ok', [anchor.data.image.startsWith('data:image/jpeg')]);
   browserEvidence.assert('ok', [anchor.data.context.ui.selected]);
   browserEvidence.assert('ok', [
@@ -288,11 +316,16 @@ try {
     JSON.stringify(
       {
         ...browserEvidence.identity,
-        build: events[0].context.build,
+        build: decoded.readEvent(0).context.build,
         events: events.length,
         media: records.filter((x) => x.media).map((x) => x.media),
         errors,
-        screenSource: 'Chromium automated current-tab capture; fake microphone device',
+        recordingMode,
+        captureSchema: 1,
+        screenSource:
+          recordingMode === 'video'
+            ? 'Chromium automated current-tab capture; fake microphone device'
+            : 'No video; canvas feedback screenshot; fake microphone device',
       },
       null,
       2,
@@ -301,46 +334,63 @@ try {
   if (process.env.PLAYTEST_VERIFY_RESULT)
     writeFileSync(
       process.env.PLAYTEST_VERIFY_RESULT,
-      JSON.stringify({
-        directory: dir,
-        source: browserEvidence.identity.source,
-        build: browserEvidence.identity.build,
-        syntheticRun:
-          JSON.parse(readFileSync(join(dir, 'session.json'), 'utf8')).syntheticRun ?? null,
-        mediaFiles: records
-          .filter((row) => row.media?.kind === 'screen')
-          .map((row) => join(dir, row.media.file)),
-        eventSamples: events,
-        exportMs,
-        outboxSamples,
-        resourceSamples,
-        finalOutbox,
-        storageBytes: records.reduce(
-          (n, row) => n + (row.media?.bytes || row.rawEvent?.bytes || 0),
-          0,
-        ),
-        captureSeconds,
-        captureStarted,
-        captureEnded,
-        browserVersion: browser.version(),
-        workloadActions,
-        fault: fault?.state ?? null,
-        driving: driveStart
-          ? {
-              fromTick: driveStart.tick,
-              toTick: driveEnd.tick,
-              from: driveStart.physics.map((b) => b.position),
-              to: driveEnd.physics.map((b) => b.position),
-            }
-          : null,
-        maximumScreenChunkBytes: Math.max(
-          0,
-          ...records.filter((row) => row.media?.kind === 'screen').map((row) => row.media.bytes),
-        ),
-        screenBytes: records
-          .filter((row) => row.media?.kind === 'screen')
-          .reduce((sum, row) => sum + row.media.bytes, 0),
-      }),
+      JSON.stringify(
+        await sampleCapture({
+          directory: dir,
+          source: browserEvidence.identity.source,
+          build: browserEvidence.identity.build,
+          syntheticRun:
+            JSON.parse(readFileSync(join(dir, 'session.json'), 'utf8')).syntheticRun ?? null,
+          mediaFiles: records
+            .filter((row) => row.media?.kind === (recordingMode === 'data' ? 'voice' : 'screen'))
+            .map((row) => join(dir, row.media.file)),
+          recordingMode,
+          captureSchema: 1,
+          eventSamples: wireEvents,
+          maximumEventBytes: Math.max(
+            ...wireEvents.map((event) => Buffer.byteLength(JSON.stringify(event))),
+          ),
+          voiceBytes: records
+            .filter((row) => row.media?.kind === 'voice')
+            .reduce((sum, row) => sum + row.media.bytes, 0),
+          maximumVoiceChunkBytes: Math.max(
+            0,
+            ...records.filter((row) => row.media?.kind === 'voice').map((row) => row.media.bytes),
+          ),
+          voiceChunks: records.filter((row) => row.media?.kind === 'voice').length,
+          screenChunks: records.filter((row) => row.media?.kind === 'screen').length,
+          exportMs,
+          outboxSamples,
+          resourceSamples,
+          finalOutbox,
+          storageBytes: records.reduce(
+            (n, row) => n + (row.media?.bytes || row.rawEvent?.bytes || 0),
+            0,
+          ),
+          captureSeconds,
+          finalDrain,
+          captureStarted,
+          captureEnded,
+          browserVersion: browser.version(),
+          workloadActions,
+          fault: fault?.state ?? null,
+          driving: driveStart
+            ? {
+                fromTick: driveStart.tick,
+                toTick: driveEnd.tick,
+                from: driveStart.physics.map((b) => b.position),
+                to: driveEnd.physics.map((b) => b.position),
+              }
+            : null,
+          maximumScreenChunkBytes: Math.max(
+            0,
+            ...records.filter((row) => row.media?.kind === 'screen').map((row) => row.media.bytes),
+          ),
+          screenBytes: records
+            .filter((row) => row.media?.kind === 'screen')
+            .reduce((sum, row) => sum + row.media.bytes, 0),
+        }),
+      ),
       { mode: 0o600 },
     );
   console.log('remote capture browser passed', adapter);

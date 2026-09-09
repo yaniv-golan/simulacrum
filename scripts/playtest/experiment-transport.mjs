@@ -30,6 +30,8 @@ const numeric = (value) => {
 };
 function measurement(value) {
   keys(value, [
+    'recordingMode',
+    'captureSchema',
     'captureSeconds',
     'corpusId',
     'outboxSamples',
@@ -57,7 +59,11 @@ function measurement(value) {
     'network',
   ]);
   for (const [key, v] of Object.entries(value)) {
-    if (key === 'corpusId') {
+    if (key === 'recordingMode') {
+      if (!['data', 'video'].includes(v)) throw Error('Invalid recording mode');
+    } else if (key === 'captureSchema') {
+      if (v !== 1) throw Error('Invalid capture schema');
+    } else if (key === 'corpusId') {
       if (typeof v !== 'string' || !/^[a-f0-9]{64}$/.test(v))
         throw Error('Invalid capacity corpus identity');
     } else if (['outboxSamples', 'backlog'].includes(key)) {
@@ -87,6 +93,8 @@ function measurement(value) {
 function receipt(record) {
   keys(record, [
     'schema',
+    'recordingMode',
+    'captureSchema',
     'family',
     'status',
     'artifact',

@@ -1,3 +1,4 @@
+import { captureIdentity, assertCaptureIdentity } from './load.mjs';
 import { assertPackageVerification } from './package-verification.mjs';
 import { readCalibrationEvidence } from './calibration-evidence.mjs';
 import { readCorpus } from './corpus.mjs';
@@ -14,12 +15,13 @@ import {
   validateProfile,
 } from './experiments.mjs';
 import { measureCaptureLoad, assertCaptureBacklog, assertCaptureWorkload } from './load.mjs';
-import { assertReservationLifetime } from './release-policy.mjs';
+import { assertReservationLifetime, captureBrowserTimeoutMs } from './release-policy.mjs';
 import { validateReleaseConfig } from './release-config.mjs';
 import {
   inspectDeployment,
   captureAdmin,
   verifySynthetic,
+  verifyServedAssets,
   cleanupSynthetic,
 } from './verify-deployment.mjs';
 // Explicit local/CI release entry point. All control files and frozen sources stay private.
@@ -214,11 +216,24 @@ export async function deployRelease(
   config.bucketName = desired.r2_buckets[0].bucket_name;
   const verification = config.verification || { mode: 'auto' };
   const profile = verification.profile || null;
+  const captureMode = {
+    recordingMode: config.recordingMode ?? 'data',
+    captureSchema: config.captureSchema ?? 1,
+  };
+  captureIdentity(captureMode);
+  if ((desired.vars?.CAPTURE_OPTIONAL_VIDEO === 'true') !== (config.optionalVideo === true))
+    throw Error('Optional video configuration mismatch');
+  if (config.optionalVideo === true || captureMode.recordingMode === 'video')
+    throw Error(
+      'Optional video releases require dual-mode qualification; single-mode evidence cannot authorize both modes',
+    );
+  if (stagingEvidence) assertCaptureIdentity(stagingEvidence, captureMode);
   if (!['auto', 'full', 'bypass-expensive'].includes(verification.mode || 'auto'))
     throw Error('Unknown experiment mode');
   let calibration;
   if (verification.mode !== 'bypass-expensive') {
     validateProfile(profile);
+    assertCaptureIdentity(profile, captureMode);
     calibration = await readCalibrationEvidence(profile, verification.calibrationFile);
   }
   const historyPath = join(
@@ -252,6 +267,7 @@ export async function deployRelease(
   const runtimeInputs = profile
     ? {
         capacityRuntime: {
+          ...captureMode,
           calibrationEvidence: profile.calibration?.evidence,
           workload: profile.calibration?.workload,
           browserVersion: profile.calibration?.browserVersion,
@@ -462,6 +478,7 @@ export async function deployRelease(
         execFileSync(process.execPath, ['scripts/verify-remote-playtest.mjs'], {
           env: {
             ...process.env,
+            PLAYTEST_RECORDING_MODE: captureMode.recordingMode,
             PLAYTEST_VERIFY_ORIGIN: config.origin,
             PLAYTEST_VERIFY_TOKEN: invitation.token,
             PLAYTEST_VERIFY_BUILD: manifest.appBuild,
@@ -476,17 +493,17 @@ export async function deployRelease(
             PLAYTEST_VERIFY_PRIVATE_ROOT: privateDirectory,
           },
           stdio: 'pipe',
-          timeout:
-            ((experimentPlan.run.includes('endurance')
+          timeout: captureBrowserTimeoutMs(
+            experimentPlan.run.includes('endurance')
               ? profile.enduranceSeconds
-              : experimentPlan.smokeSeconds) +
-              120) *
-            1000,
+              : experimentPlan.smokeSeconds,
+          ),
         });
       } catch {
         throw Error('Deployed browser verification failed; synthetic diagnostics removed');
       }
       measured = JSON.parse(await readFile(browserResultPath, 'utf8'));
+      assertCaptureIdentity(measured, captureMode);
       assertCaptureWorkload(measured, profile?.calibration.workload);
       if (profile && measured.browserVersion !== profile.calibration.browserVersion)
         throw Error('Browser changed; calibrated evidence cannot be reused');
@@ -503,16 +520,7 @@ export async function deployRelease(
         };
       }
       activeExperiment = null;
-      for (const [path, hash] of Object.entries(manifest.files)) {
-        if (!path.startsWith('assets/')) continue;
-        const response = await fetch(new URL('/' + path.slice(7), config.origin), {
-          headers: { cookie: synthetic.cookie },
-          redirect: 'error',
-          signal: AbortSignal.timeout(45000),
-        });
-        if (!response.ok || sha(new Uint8Array(await response.arrayBuffer())) !== hash)
-          throw Error('Served artifact integrity mismatch');
-      }
+      await verifyServedAssets(manifest, config.origin, synthetic.cookie);
     } catch (error) {
       verificationError = error;
     }
@@ -568,6 +576,7 @@ export async function deployRelease(
         environment: config.environment,
         status: 'passed',
         schema: 2,
+        ...captureMode,
         behaviorConfiguration: behaviorConfiguration(desired),
         qualification: experimentPlan.exception ? 'EXCEPTION' : 'PASS',
         experiments: experimentPlan.results,

@@ -110,6 +110,7 @@ export default {
                 enabled: true,
                 protocolVersion: 2,
                 supportedProtocols: [2],
+                optionalVideo: env.CAPTURE_OPTIONAL_VIDEO === 'true',
                 accountingVersion: 'cloud-v2',
                 limits: LIMITS,
               }

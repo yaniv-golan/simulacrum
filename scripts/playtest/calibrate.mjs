@@ -1,3 +1,4 @@
+import { captureBrowserTimeoutMs } from './release-policy.mjs';
 // Explicit characterization, never a release prerequisite or automatic profile approval.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
@@ -7,7 +8,12 @@ import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { CALIBRATION_CASES } from './calibration-evidence.mjs';
 import { writeCorpus, readCorpus } from './corpus.mjs';
 import { inspectDeployment, captureAdmin, cleanupSynthetic } from './verify-deployment.mjs';
-import { assertCaptureBacklog, measureCaptureLoad } from './load.mjs';
+import {
+  assertCaptureBacklog,
+  measureCaptureLoad,
+  captureIdentity,
+  assertCaptureIdentity,
+} from './load.mjs';
 import { normalizeExperimentEvidence } from './experiments.mjs';
 import { sourceIdentity } from '../source-identity.mjs';
 export function compareCaptureWindows(capture) {
@@ -176,6 +182,12 @@ export function characterizationControls() {
   return result;
 }
 export async function calibrateCapture(config, directory) {
+  const mode = {
+    recordingMode: config.recordingMode ?? 'data',
+    captureSchema: config.captureSchema ?? 1,
+  };
+  captureIdentity(mode);
+
   if (config.environment !== 'staging') throw Error('Calibration requires isolated staging');
   const out = resolve(directory);
   if (!out.startsWith(resolve('.release-private') + '/'))
@@ -194,6 +206,7 @@ export async function calibrateCapture(config, directory) {
     const source = sourceIdentity(),
       effective = await inspectDeployment(config);
     const report = {
+      ...mode,
       schema: 2,
       protocol: 'capture-characterization-v2',
       source,
@@ -220,7 +233,7 @@ export async function calibrateCapture(config, directory) {
       });
       try {
         await checkOwner.measure('endurance', spec.id, async () => {
-          if (reservation.expires - Date.now() < (spec.seconds + 180) * 1000)
+          if (reservation.expires - Date.now() < captureBrowserTimeoutMs(spec.seconds))
             throw Error('Insufficient calibration reservation lifetime');
           const invitation = await captureAdmin(
             config.origin,
@@ -229,9 +242,10 @@ export async function calibrateCapture(config, directory) {
           const file = join(caseDir, 'capture.json');
           execFileSync(process.execPath, ['scripts/verify-remote-playtest.mjs'], {
             stdio: 'inherit',
-            timeout: (spec.seconds + 180) * 1000,
+            timeout: captureBrowserTimeoutMs(spec.seconds),
             env: {
               ...process.env,
+              PLAYTEST_RECORDING_MODE: mode.recordingMode,
               PLAYTEST_VERIFY_ORIGIN: config.origin,
               PLAYTEST_VERIFY_TOKEN: invitation.token,
               PLAYTEST_VERIFY_BUILD: config.appBuild,
@@ -246,6 +260,7 @@ export async function calibrateCapture(config, directory) {
           });
           const bytes = await readFile(file),
             capture = JSON.parse(bytes);
+          assertCaptureIdentity(capture, mode);
           if (capture.syntheticRun !== reservation.id)
             throw Error('Synthetic capture reservation identity mismatch');
           report.browserVersion ??= capture.browserVersion;

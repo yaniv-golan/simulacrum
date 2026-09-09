@@ -123,9 +123,11 @@ export class CaptureStore {
       const generation = request.headers.get('x-invitation-generation');
       if (generation !== String(this.env.INVITATION_GENERATION))
         throw fail(403, 'Invitation generation changed');
-      if (match) this.live(match[1], generation);
+      const existingSession = match ? this.live(match[1], generation) : null;
       const media =
         match?.[2] === 'media' ? mediaIdentity(url, request.headers.get('content-type')) : null;
+      if (media?.kind === 'screen' && JSON.parse(existingSession.metadata).recordingMode === 'data')
+        throw fail(403, 'Screen media not admitted for data session');
       if (!media && request.headers.get('content-type')?.split(';')[0] !== 'application/json')
         throw fail(415, 'Expected JSON');
       const limit = start ? LIMITS.startBytes : media ? LIMITS.mediaBytes : LIMITS.eventBytes;
@@ -177,9 +179,14 @@ export class CaptureStore {
       Array.isArray(input.metadata)
     )
       throw fail(400, 'Invalid session creation');
+    const recordingMode = input.metadata.recordingMode ?? 'data';
+    if (!['data', 'video'].includes(recordingMode) || (input.metadata.captureSchema ?? 1) !== 1)
+      throw fail(400, 'Invalid recording mode or capture schema');
     const hash = await digest(bytes),
       metadata = JSON.stringify({
         ...input.metadata,
+        recordingMode,
+        captureSchema: 1,
         backend: { protocolVersion: 2, deployment: this.env.WORKER_VERSION?.id || 'local' },
       }),
       charge = new TextEncoder().encode(metadata).length + 4096;
@@ -191,6 +198,8 @@ export class CaptureStore {
         if (prior.requestHash !== hash) throw fail(409, 'Creation identity conflict');
         return { sessionId: prior.id, retry: true };
       }
+      if (recordingMode === 'video' && this.env.CAPTURE_OPTIONAL_VIDEO !== 'true')
+        throw fail(403, 'Video capture disabled');
       if (this.env.CAPTURE_NEW_SESSIONS === 'false') throw fail(503, 'New capture disabled');
       const usage = this.usage(),
         reserved = this.one(

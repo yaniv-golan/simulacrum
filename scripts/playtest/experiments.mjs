@@ -1,3 +1,5 @@
+import { captureIdentity } from './load.mjs';
+import { captureBrowserTimeoutMs } from './release-policy.mjs';
 // One policy for local and GitHub publishers. Evidence reuse is not a fresh pass.
 import { createHash } from 'node:crypto';
 const families = ['endurance', 'capacity'];
@@ -13,6 +15,7 @@ export function validateProfile(profile) {
     throw Error(
       'Measured calibration profile required; use an explicit bypass for an unqualified preview',
     );
+  captureIdentity(profile);
   if (
     !Number.isInteger(profile.enduranceSeconds) ||
     profile.enduranceSeconds < 360 ||
@@ -28,11 +31,19 @@ export function validateProfile(profile) {
     profile.maxAgeMs > 30 * 86400000
   )
     throw Error('Invalid evidence age');
-  for (const key of ['maxMediaBytesPerSecond', 'maxEventsPerSecond', 'maxChunkBytes'])
+  for (const key of [
+    'maxMediaBytesPerSecond',
+    'maxEventsPerSecond',
+    'maxChunkBytes',
+    'maxEventBytes',
+  ])
     if (
       !(
         Number.isFinite(profile.calibration.workload?.[key]) &&
-        profile.calibration.workload[key] > 0
+        (profile.recordingMode === 'data' &&
+        ['maxMediaBytesPerSecond', 'maxChunkBytes'].includes(key)
+          ? profile.calibration.workload[key] >= 0
+          : profile.calibration.workload[key] > 0)
       )
     )
       throw Error('Calibrated workload bounds required');
@@ -58,6 +69,7 @@ export function experimentIdentity(family, context) {
 export function experimentReceipt(family, context, measurement, measuredAt = Date.now()) {
   const receipt = {
     schema: 1,
+    ...captureIdentity(context.profile),
     family,
     status: 'PASS',
     artifact: context.artifact,
@@ -75,6 +87,8 @@ function validReceipt(receipt, family, context, now) {
   if (
     !receipt ||
     receipt.schema !== 1 ||
+    receipt.recordingMode !== context.profile.recordingMode ||
+    receipt.captureSchema !== context.profile.captureSchema ||
     receipt.family !== family ||
     receipt.status !== 'PASS' ||
     !hash(receipt.artifact) ||
@@ -190,6 +204,7 @@ export function selectExperiments(context) {
   return { mode, smokeSeconds: 60, run, results };
 }
 export function validateExperimentReceiptIntegrity(receipt) {
+  captureIdentity(receipt);
   if (
     !receipt ||
     receipt.schema !== 1 ||
@@ -231,10 +246,8 @@ export function experimentReservation(plan, profile) {
     bytes: capacity ? 20 * 1024 ** 3 : endurance ? 2 * 1024 ** 3 : 32 * 1024 ** 2,
     metadataBytes: capacity ? 1024 ** 3 : endurance ? 128 * 1024 ** 2 : 4 * 1024 ** 2,
     requiredMs:
-      ((endurance ? profile.enduranceSeconds : plan.smokeSeconds) +
-        (capacity ? profile.capacitySeconds + 180 : 0) +
-        1200) *
-      1000,
+      captureBrowserTimeoutMs(endurance ? profile.enduranceSeconds : plan.smokeSeconds) +
+      ((capacity ? profile.capacitySeconds + 180 : 0) + 1200) * 1000,
   };
 }
 
@@ -273,6 +286,8 @@ export function stagingResults(evidence, artifact, worker, profile, now = Date.n
   for (const family of families) {
     const receipt = evidence.experiments[family].receipt;
     if (
+      receipt.recordingMode !== profile.recordingMode ||
+      receipt.captureSchema !== profile.captureSchema ||
       receipt.profile !== digest(profile) ||
       !Number.isFinite(receipt.measuredAt) ||
       receipt.measuredAt > now ||

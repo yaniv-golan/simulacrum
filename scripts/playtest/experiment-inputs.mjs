@@ -18,12 +18,18 @@ const ordered = (value) =>
 // Manifest scopes are audited exact implementations, not a filename whitelist.
 const boundedRuntime = (value) =>
   value &&
+  ['data', 'video'].includes(value.recordingMode) &&
+  value.captureSchema === 1 &&
   /^[a-f0-9]{64}$/.test(value.calibrationEvidence ?? '') &&
   /^[a-f0-9]{64}$/.test(value.effectiveProvider ?? '') &&
   typeof value.browserVersion === 'string' &&
   value.browserVersion.trim() &&
-  ['maxMediaBytesPerSecond', 'maxEventsPerSecond', 'maxChunkBytes'].every(
-    (key) => Number.isFinite(value.workload?.[key]) && value.workload[key] > 0,
+  ['maxMediaBytesPerSecond', 'maxEventsPerSecond', 'maxChunkBytes', 'maxEventBytes'].every(
+    (key) =>
+      Number.isFinite(value.workload?.[key]) &&
+      (value.recordingMode === 'data' && ['maxMediaBytesPerSecond', 'maxChunkBytes'].includes(key)
+        ? value.workload[key] >= 0
+        : value.workload[key] > 0),
   );
 const matchesScope = (scope, path, node, hash, family) =>
   scope.family === family &&

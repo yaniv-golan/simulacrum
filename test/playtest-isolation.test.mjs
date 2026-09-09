@@ -15,7 +15,7 @@ test('isolation probes require disposable authorization and catch storage or Wor
       otherBucket: 'simulacrum-isolation-other',
     },
   };
-  const run = (allowed) =>
+  const run = (allowed, createdStatus = 200) =>
     verifyCredentialIsolation(
       config,
       async (path, options = {}) =>
@@ -24,10 +24,14 @@ test('isolation probes require disposable authorization and catch storage or Wor
             path.startsWith('accounts/other') &&
             !(['PUT', 'DELETE'].includes(options.method) && path.includes(allowed))
               ? 403
-              : 200,
+              : options.method === 'PUT' && path.endsWith('/secrets')
+                ? createdStatus
+                : 200,
         }),
     );
   assert.equal((await run('never')).otherStorageWriteDenied, true);
+  assert.equal((await run('never', 201)).currentWorkerWrite, true);
+  await assert.rejects(run('never', 202), /Worker write/);
   await assert.rejects(run('/cors'), /isolation/);
   await assert.rejects(run('/secrets'), /Worker write/);
   await assert.rejects(

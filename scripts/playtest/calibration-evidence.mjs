@@ -3,7 +3,13 @@ import { readFile, lstat } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 import { validateProfile } from './experiments.mjs';
-import { assertCaptureBacklog, assertCaptureWorkload, assertDrivenMotion } from './load.mjs';
+import {
+  assertCaptureBacklog,
+  assertCaptureWorkload,
+  assertDrivenMotion,
+  assertCaptureIdentity,
+  captureMedia,
+} from './load.mjs';
 import { readCorpus } from './corpus.mjs';
 export const CALIBRATION_CASES = Object.freeze([
   { id: 'long', seconds: 1800 },
@@ -26,10 +32,12 @@ async function bounded(path, limit = 8 * 1024 * 1024) {
 export async function readCalibrationEvidence(profile, path) {
   validateProfile(profile);
   if (typeof path !== 'string' || !path) throw Error('Calibration evidence file required');
+  const measurements = [];
   const bytes = await bounded(path);
   if (sha(bytes) !== profile.calibration.evidence)
     throw Error('Calibration evidence fingerprint mismatch');
   const report = JSON.parse(bytes);
+  assertCaptureIdentity(report, profile);
   if (
     report.schema !== 2 ||
     report.protocol !== 'capture-characterization-v2' ||
@@ -81,12 +89,26 @@ export async function readCalibrationEvidence(profile, path) {
     const artifact = await bounded(file, 32 * 1024 * 1024);
     if (sha(artifact) !== row.sha256) throw Error('Calibration artifact integrity mismatch');
     const capture = JSON.parse(artifact);
+    assertCaptureIdentity(capture, profile);
     if (
-      !/^[a-f0-9]{32}$/.test(capture.syntheticRun ?? '') ||
+      !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(
+        capture.syntheticRun ?? '',
+      ) ||
       runs.has(capture.syntheticRun) ||
       files.has(row.file)
     )
       throw Error('Calibration captures must be independent');
+    measurements.push({
+      run: capture.syntheticRun,
+      captureSeconds: capture.captureSeconds,
+      eventCount: capture.eventCount ?? capture.eventSamples.length,
+      screenBytes: capture.screenBytes,
+      voiceBytes: capture.voiceBytes ?? 0,
+      maximumEventBytes:
+        capture.maximumEventBytes ??
+        Math.max(...capture.eventSamples.map((e) => Buffer.byteLength(JSON.stringify(e)))),
+      maximumScreenChunkBytes: capture.maximumScreenChunkBytes,
+    });
     runs.add(capture.syntheticRun);
     files.add(row.file);
     if (
@@ -145,6 +167,7 @@ export async function readCalibrationEvidence(profile, path) {
   if (report.capacity.file !== 'capacity.json' || sha(capacityBytes) !== report.capacity.sha256)
     throw Error('Calibration capacity artifact integrity');
   const capacity = JSON.parse(capacityBytes);
+  assertCaptureIdentity(capacity, profile);
   if (
     capacity.seconds !== report.capacity.seconds ||
     capacity.p95Ms !== report.capacity.p95Ms ||
@@ -167,23 +190,31 @@ export async function readCalibrationEvidence(profile, path) {
   )
     throw Error('Incomplete calibration capacity workload');
   const corpus = await readCorpus(resolve(root, 'corpus'), report.corpusId);
+  assertCaptureIdentity(corpus, profile);
+  for (const measured of measurements) {
+    const c = corpus.cases.find((c) => c.run === measured.run);
+    if (!c || Object.keys(measured).some((k) => c[k] !== measured[k]))
+      throw Error('Corpus case observations mismatch');
+  }
   if (JSON.stringify([...corpus.runs].sort()) !== JSON.stringify([...runs].sort()))
     throw Error('Corpus must cover every characterization run');
   if (
     capacity.scheduled !==
     20 *
       Math.ceil(capacity.seconds / 3) *
-      (1 + corpus.envelope.mediaCopiesPerTick + corpus.envelope.eventsPerTick)
+      ((corpus.mediaFiles.length ? 1 : 0) +
+        corpus.envelope.mediaCopiesPerTick +
+        corpus.envelope.eventsPerTick)
   )
     throw Error('Capacity did not execute corpus stress envelope');
   if (corpus.browserVersion !== report.browserVersion)
     throw Error('Calibration corpus browser mismatch');
   assertCaptureWorkload(corpus, profile.calibration.workload);
   const tested = {
-    maxMediaBytesPerSecond:
-      (corpus.envelope.mediaCopiesPerTick * corpus.maximumScreenChunkBytes) / 3,
+    maxMediaBytesPerSecond: (corpus.envelope.mediaCopiesPerTick * captureMedia(corpus).maximum) / 3,
     maxEventsPerSecond: corpus.envelope.eventsPerTick / 3,
-    maxChunkBytes: corpus.maximumScreenChunkBytes,
+    maxChunkBytes: captureMedia(corpus).maximum,
+    maxEventBytes: corpus.maximumEventBytes,
   };
   if (Object.keys(tested).some((k) => profile.calibration.workload[k] > tested[k]))
     throw Error('Profile workload exceeds tested capacity distribution');

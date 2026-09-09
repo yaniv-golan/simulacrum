@@ -87,7 +87,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"16c57bc8fb5cedabd320dabda3f012ae168e814356a92ad7133c53e3731ab65c","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"cb69d7efc8f92098e8e078675eef4684a12c4a621aaced5668b192cfaa2630fc","disposition":"still accurate","rationale":"Shared evidence gained load, rejected-edit and drag helpers; clickPart still sends an ordinary projected pointer click and completion tiers still own required scope. Load completion now returns the captured matching receipt handle, avoiding a later command racing the result read."} -->
+<!-- doc-review {"version":1,"fingerprint":"052a884495816a0f1c5b2b786aa0639a76eb4011c7780ed52ef7b2380bbe1310","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"2b705524e89944610007477739a942d2cac4369093240a02f0fe7e5b897baae9","disposition":"still accurate","rationale":"Data capture changes the linked playtest workflow, but verification tiers, source binding and separate human acceptance remain unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -127,7 +127,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"380be1e96ae7b0605b64c736c059ca15ece9606ec8507f155c6e5b0b9b484278","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"869e12db4faae1d94f98d2fc276d8b818250624b96c83516066a271e60763537","disposition":"still accurate","rationale":"Generated reference now includes the adaptive graphics check and invariant owners; regeneration and section-specific review procedures are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4ea76e74e7ec1569470f4406f8e34246b2dfd5f30c5afbf841dd2f1cb18767a1","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"9bbdb30ff52de7156f8c65066e30977ff8bb84abecb9df84332cc6402daaa080","disposition":"still accurate","rationale":"Generated references add recording drain, sampling, codec and review invariants; regeneration and individual review rules remain unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -222,7 +222,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"80bc5e62a77c8107fca4766d21ef2af30996babc24219c3ccce3e2cfedbf3ba9","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"3798f1e7c63931a8f974cde665edefbcbc51763c5ff1292a3b0f94d972cc81a2","disposition":"still accurate","rationale":"Adaptive graphics is registered as an exclusive performance browser check. The conservative selection, local scopes and completion-tier policies are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f627589246175c2b864bc2024a72d59336adf70171534764629feb3aa7874f38","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5f1072c93cbc30b31ecd9065680852a9b84c68c504152b46f14e0bca8543bc8b","disposition":"still accurate","rationale":"The remote client explicitly adds capture-stream to its audited dependency shape. Existing backend, receipt, lifecycle and construction checks remain required; screenshot composition does not alter receipt ordering."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

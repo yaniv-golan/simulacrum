@@ -205,7 +205,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"e4f00f1f8f60de023c39d50dd9c5dec04314e0384a0b16f8c3fba52db59b77b9","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"41f4b6e50fccf9e9811c95039a183bca387639c653982c2e88d5024c4848f607","disposition":"still accurate","rationale":"The observation optimization does not alter rendering data or connection resources. The existing workbench check covers panel reflow, and new observation controls reject unsafe copying while retaining all graphics and spring budgets. The simulation benchmark now finishes before browser launch; native rendered trials, workloads, repetitions and acceptance budgets are retained."} -->
+<!-- doc-review {"version":1,"fingerprint":"cd5b4879140dc34f2fe63cf9a9005500d22849cbfbf09a334f6f6576a2c93a14","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"6f436e1c5e625be93887b0de0aa57d520f2475c0dd7e94b0ae25f472e9f4b89c","disposition":"still accurate","rationale":"New remote codec/review sources expand conservative provenance dependencies. Screenshot rendering adds no authoring or physics write, and overlay lifecycle and spring benchmark rules remain unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

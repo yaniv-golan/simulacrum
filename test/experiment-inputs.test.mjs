@@ -78,7 +78,14 @@ test('audited capacity runtime admits only exact owner sources and complete decl
   options.read = (path) => readFileSync(path);
   options.capacityRuntime = {
     calibrationEvidence: 'a'.repeat(64),
-    workload: { maxMediaBytesPerSecond: 1000, maxEventsPerSecond: 10, maxChunkBytes: 10000 },
+    recordingMode: 'video',
+    captureSchema: 1,
+    workload: {
+      maxEventBytes: 1000,
+      maxMediaBytesPerSecond: 1000,
+      maxEventsPerSecond: 10,
+      maxChunkBytes: 10000,
+    },
     browserVersion: 'Chrome1',
     effectiveProvider: 'c'.repeat(64),
   };
@@ -114,7 +121,14 @@ test('bounded endurance still includes every packaged byte and rejects unaudited
     calibrationEvidence: 'a'.repeat(64),
     effectiveProvider: 'b'.repeat(64),
     browserVersion: 'Chrome',
-    workload: { maxMediaBytesPerSecond: 1, maxEventsPerSecond: 1, maxChunkBytes: 1 },
+    recordingMode: 'video',
+    captureSchema: 1,
+    workload: {
+      maxEventBytes: 1000,
+      maxMediaBytesPerSecond: 1,
+      maxEventsPerSecond: 1,
+      maxChunkBytes: 1,
+    },
   };
   options.scopes = [
     {

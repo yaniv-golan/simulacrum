@@ -22,24 +22,49 @@ export async function downloadCapture({
   const root = resolve(directory);
   await mkdir(root, { mode: 0o700 });
   const get = async (path) => {
-    const response = await fetcher(new URL(path, origin), {
-      headers: { authorization: `Bearer ${token}` },
-      redirect: 'error',
-      signal: AbortSignal.timeout(45000),
-    });
-    if (!response.ok) throw Error(`Private export failed: ${response.status}`);
-    return response;
+    const deadline = performance.now() + 45000;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const remaining = Math.ceil(deadline - performance.now());
+      if (remaining <= 0) throw Error('Private export read deadline');
+      const signal = AbortSignal.timeout(Math.min(15000, remaining));
+      try {
+        const response = await fetcher(new URL(path, origin), {
+          headers: { authorization: `Bearer ${token}` },
+          redirect: 'error',
+          signal,
+        });
+        if (!response.ok) throw Error(`Private export failed: ${response.status}`);
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        if (signal.aborted) throw signal.reason;
+        return bytes;
+      } catch (error) {
+        const transient =
+          (signal.aborted && ['AbortError', 'TimeoutError'].includes(error.name)) ||
+          [
+            'UND_ERR_CONNECT_TIMEOUT',
+            'UND_ERR_HEADERS_TIMEOUT',
+            'UND_ERR_BODY_TIMEOUT',
+            'UND_ERR_SOCKET',
+            'ECONNRESET',
+            'ETIMEDOUT',
+            'EAI_AGAIN',
+          ].includes(error.cause?.code);
+        if (!transient || attempt === 2 || performance.now() >= deadline) throw error;
+      }
+    }
   };
   let cutoff,
     after = 0,
     session;
   const records = [];
   do {
-    const page = await (
-      await get(
-        `/admin/playtest/${sessionId}/snapshot?after=${after}${cutoff === undefined ? '' : `&cutoff=${cutoff}`}`,
-      )
-    ).json();
+    const page = JSON.parse(
+      new TextDecoder().decode(
+        await get(
+          `/admin/playtest/${sessionId}/snapshot?after=${after}${cutoff === undefined ? '' : `&cutoff=${cutoff}`}`,
+        ),
+      ),
+    );
     cutoff ??= page.cutoff;
     session ??= page.session;
     if (page.cutoff !== cutoff || page.session.sessionId !== sessionId)
@@ -52,9 +77,7 @@ export async function downloadCapture({
         !/^[a-f0-9]{32}$/.test(row.objectKey)
       )
         throw Error('Invalid export pointer');
-      const bytes = new Uint8Array(
-        await (await get(`/admin/playtest/${sessionId}/object?key=${row.objectKey}`)).arrayBuffer(),
-      );
+      const bytes = await get(`/admin/playtest/${sessionId}/object?key=${row.objectKey}`);
       if (bytes.length !== row.bytes || (await digest(bytes)) !== row.sha256)
         throw Error('Export checksum mismatch');
       if (row.media) {
@@ -78,7 +101,12 @@ export async function downloadCapture({
   } while (after < cutoff);
   await writeFile(
     join(root, 'session.json'),
-    JSON.stringify({ ...session, exportCutoff: cutoff, completion: 'not proven' }),
+    JSON.stringify({
+      ...session,
+      rawEventEvidence: 1,
+      exportCutoff: cutoff,
+      completion: 'not proven',
+    }),
     { mode: 0o600, flag: 'wx' },
   );
   await writeFile(

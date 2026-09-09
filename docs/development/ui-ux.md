@@ -23,7 +23,7 @@ otherwise give the observation and a useful next check. Do not shrink text to ma
 more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Current surfaces and lifecycle
-<!-- doc-review {"version":1,"fingerprint":"cb4214185552a0a3fbecb2f413b61f6a10f78c7e95246c8aca7c42ceae85b1bc","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"f3427683933b1c849735809eca945572ff729334001b0416c59b49f195e08057","disposition":"updated","rationale":"Documented the shared lower workbench layout, narrow stacking and independent scrolling. Existing controls disclosure, requested measurements and unconditional recovery warning lifecycles remain owned by the same panels."} -->
+<!-- doc-review {"version":1,"fingerprint":"7ef64f62d6138a3a3b603bdc487bf7a4c733a7f67425bfacffb8ec5820e32b65","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"637e5595c5629627f1307f641a0a5aa858f7b5f2be5fdab4261ee72e50ba129a","disposition":"still accurate","rationale":"Canvas screenshot capture is an injected recording callback with no new permanent workshop panel; existing shell regions, requested measurements and lower-panel layout are unchanged."} -->
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
 document and run actions in the header; parts in the left catalogue; separate edit
@@ -77,7 +77,7 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"dd4bc7673a7f118e922125dbdcbe944161da5d524f091e9b1b0a73ec141145e8","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"44cdeadda6d4164d3bbbbecd62d1c059c25a68a6fdd2af4ed2eeee0600897585","disposition":"still accurate","rationale":"The existing registered browser journey now checks nonoverlap and viewport containment at 900x650 and 1280x720 in Build, Run and Paused, expanded and collapsed, with receiver focus after scrolling. Existing state preservation and input checks remain present; automation is not human acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"c4a88da8906f9e8acfe1fe376ce508d7c780d5a557b7aa04380504df9ac91e93","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"31b44bf51bc5714f21353e12a1741a3f601d9d05a5cfe61ed37462b8a4d34789","disposition":"still accurate","rationale":"The linked workflow now records observed data with optional media. Real participant protocols and the distinction between automation and human acceptance remain unchanged."} -->
 
 Use the manifest's `workbench-content-lifecycle` invariant and
 [registered browser check](../../scripts/manifest.json#check=verify-workbench-content)

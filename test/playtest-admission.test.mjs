@@ -25,7 +25,7 @@ for (const size of [1024, 10 * 1024 ** 2])
         Object.assign(req, {
           url,
           method,
-          headers: { cookie, 'content-type': 'video/webm' },
+          headers: { cookie, 'content-type': 'audio/webm' },
           socket: {},
         });
         const res = {
@@ -65,7 +65,7 @@ for (const size of [1024, 10 * 1024 ** 2])
     });
     const pending = Array.from({ length: 12 }, (_, i) =>
       request(
-        `/api/playtest/${session}/media?kind=screen&clip=tab&seq=${i}`,
+        `/api/playtest/${session}/media?kind=voice&clip=tab&seq=${i}`,
         'x'.repeat(size),
         cookie,
       ),
@@ -81,7 +81,7 @@ for (const size of [1024, 10 * 1024 ** 2])
     assert.equal(results.filter((r) => r.status === 201).length, 2);
     assert.equal(results.filter((r) => r.status === 429).length, 10);
     assert.equal(
-      (await request(`/api/playtest/${session}/media?kind=screen&clip=tab&seq=99`, 'ok', cookie))
+      (await request(`/api/playtest/${session}/media?kind=voice&clip=tab&seq=99`, 'ok', cookie))
         .status,
       201,
     );
@@ -91,12 +91,12 @@ test('Node storage deadline replies once while retaining admission until persist
   const root = await fs.mkdtemp(join(tmpdir(), 'storage-deadline-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.mkdir(join(root, 'public'));
-  const server = createPlaytestServer({
+  const options = {
     publicDir: join(root, 'public'),
     dataDir: join(root, 'data'),
     token: 't'.repeat(32),
-    persistenceResponseMs: 25,
-  });
+  };
+  let server = createPlaytestServer(options);
   let replies = 0;
   const request = (url, data = '', cookie = '', method = 'POST') =>
     new Promise((resolve) => {
@@ -104,7 +104,7 @@ test('Node storage deadline replies once while retaining admission until persist
       Object.assign(req, {
         url,
         method,
-        headers: { cookie, 'content-type': 'video/webm' },
+        headers: { cookie, 'content-type': 'audio/webm' },
         socket: {},
       });
       const res = {
@@ -123,9 +123,18 @@ test('Node storage deadline replies once while retaining admission until persist
       };
       server.emit('request', req, res);
     });
-  const login = await request('/join?token=' + 't'.repeat(32), '', '', 'GET'),
-    cookie = login.headers['set-cookie'].split(';')[0];
-  const sid = (await request('/api/playtest/session', '{}', cookie)).body.sessionId;
+  const login = await request('/join?token=' + 't'.repeat(32), '', '', 'GET');
+  let cookie = login.headers['set-cookie'].split(';')[0];
+  const created = await request('/api/playtest/session', '{}', cookie);
+  assert.equal(created.status, 201, 'session setup must finish before testing a short deadline');
+  const sid = created.body.sessionId;
+  assert.match(sid, /^[a-f0-9]{32}$/);
+  // Bootstrap uses the normal budget; only the stalled-write probe gets 25 ms.
+  // Reopening also confirms the admitted session was durably published.
+  server = createPlaytestServer({ ...options, persistenceResponseMs: 25 });
+  const rejoin = await request('/join?token=' + 't'.repeat(32), '', '', 'GET');
+  assert.equal(rejoin.status, 303);
+  cookie = rejoin.headers['set-cookie'].split(';')[0];
   const original = fs.appendFile;
   const pending = Promise.withResolvers();
   fs.appendFile = async (...args) => {
@@ -138,7 +147,7 @@ test('Node storage deadline replies once while retaining admission until persist
     fs.appendFile = original;
     syncBuiltinESMExports();
   });
-  const upload = request(`/api/playtest/${sid}/media?kind=screen&clip=stall&seq=0`, 'abc', cookie);
+  const upload = request(`/api/playtest/${sid}/media?kind=voice&clip=stall&seq=0`, 'abc', cookie);
   const result = await Promise.race([
     upload,
     new Promise((r) => setTimeout(() => r({ status: 'no deadline' }), 300)),
@@ -146,7 +155,7 @@ test('Node storage deadline replies once while retaining admission until persist
   try {
     assert.equal(result.status, 503);
     assert.equal(
-      (await request(`/api/playtest/${sid}/media?kind=screen&clip=stall&seq=1`, 'abc', cookie))
+      (await request(`/api/playtest/${sid}/media?kind=voice&clip=stall&seq=1`, 'abc', cookie))
         .status,
       503,
     );
@@ -165,8 +174,7 @@ test('Node storage deadline replies once while retaining admission until persist
   syncBuiltinESMExports();
   const count = replies;
   assert.equal(
-    (await request(`/api/playtest/${sid}/media?kind=screen&clip=stall&seq=0`, 'abc', cookie))
-      .status,
+    (await request(`/api/playtest/${sid}/media?kind=voice&clip=stall&seq=0`, 'abc', cookie)).status,
     200,
   );
   assert.equal(replies, count + 1, 'late persistence cannot send a second response');

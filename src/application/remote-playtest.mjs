@@ -10,9 +10,10 @@ function uploadFailureMessage(code) {
           : 'Uploads not received yet — retrying automatically. Keep this tab open.';
 }
 
+import { createCaptureEncoder, captureStreamLimits } from './capture-stream.mjs';
 import { openCaptureOutbox } from './capture-outbox.mjs';
 /** Consented remote usability capture; never an authority for simulation state. */
-export async function mountRemotePlaytest({ context, checkpoint }) {
+export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
   const uploadTimeoutMs = 45000;
   const config = await fetch('/api/playtest/config')
     .then((r) =>
@@ -30,16 +31,6 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
   const canRecord =
     typeof navigator.mediaDevices?.getDisplayMedia === 'function' &&
     typeof MediaRecorder === 'function';
-  if (!canRecord) {
-    const notice = document.createElement('dialog');
-    notice.className = 'playtest-dialog';
-    notice.innerHTML =
-      '<h2>Open the playtest on a computer</h2><p>This browser cannot record a workshop tab. No recording has started.</p><p>For the recorded playtest, open the same invitation link in Chrome or Edge on a laptop or desktop. The workshop also works best with a keyboard and mouse.</p><button>Browse without recording</button>';
-    document.body.append(notice);
-    notice.querySelector('button').onclick = () => notice.close();
-    notice.showModal();
-    return { active: () => false, emit: () => {}, dispose: () => notice.remove() };
-  }
   const outbox = await openCaptureOutbox();
   let durableRows = [],
     durableGroups = [];
@@ -89,6 +80,14 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
     }
   };
   let startAttempt = null;
+  let encoder,
+    packetSeq = 0,
+    packet = [],
+    packetBytes = 0,
+    packetTimer = null;
+  let recordingMode = 'data',
+    captureBytes = 0,
+    completionReason = '';
   let session = null,
     origin = 0,
     seq = 0,
@@ -126,7 +125,10 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
   dialog.className = 'playtest-dialog';
   dialog.innerHTML =
     projectStatus +
-    '<p data-recovery role="status" hidden></p><p><strong>To start:</strong> share only this workshop tab. Its video and your actions will be sent to Yaniv for review.</p><p>Use <strong>Give feedback</strong> anytime. Write a sentence or record a voice note; your view is attached. The microphone runs only when you choose voice recording.</p><button data-start>Share workshop tab & start</button><p data-error role="status"></p>';
+    '<p data-recovery role="status" hidden></p><p>Your project, programs, actions and sampled workshop state will be sent to Yaniv for review.</p><label data-video-option hidden><input type="checkbox" data-video> Include tab video (optional)</label><p>Use <strong>Give feedback</strong> anytime. Write a sentence or record a voice note; a workshop canvas image is attached when available. The microphone runs only when you choose voice recording.</p><button data-start>Start recording</button><p data-error role="status"></p>';
+  dialog.querySelector('[data-video-option]').hidden = !(
+    canRecord && config.optionalVideo === true
+  );
   document.body.append(dialog);
   dialog.showModal();
   const projectDialog = document.createElement('dialog');
@@ -151,7 +153,7 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
   }
   const status = () => {
     if (disposed) return;
-    const pending = queued + pendingWrites,
+    const pending = queued + pendingWrites + packet.length,
       flushing = recorders.size > 0 && !active;
     const recovery = dialog.querySelector('[data-recovery]');
     recovery.hidden = !recoveredCount;
@@ -162,7 +164,7 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
           : 'Saved uploads from your earlier session were received by Yaniv’s playtest server.') +
         (active
           ? ' Your new recording is running.'
-          : ' Recording has not resumed. Share this workshop tab to start a new recording.');
+          : ' Recording has not resumed. Choose Start recording to begin a new session.');
     const saved =
       !!session && !active && !pending && !flushing && !busy && !captureError && !failed;
     panel.querySelector('[data-status-main]').textContent = captureError
@@ -170,7 +172,9 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
       : failed
         ? 'Uploads delayed'
         : active
-          ? '● Recording tab'
+          ? recordingMode === 'video'
+            ? '● Recording tab'
+            : '● Recording actions'
           : saved
             ? 'Session saved'
             : pending || flushing
@@ -180,12 +184,14 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
       captureError ||
       failed ||
       (active
-        ? 'Video and actions are sent automatically.'
+        ? recordingMode === 'video'
+          ? 'Video and actions are sent automatically.'
+          : 'Actions and sampled workshop state are sent automatically.'
         : saved
           ? 'All received'
           : pending || flushing
             ? 'Sending recording. Keep this tab open.'
-            : 'Share the workshop tab to begin.');
+            : 'Start recording to begin.');
     panel.querySelector('[data-feedback]').disabled = !active;
     panel.querySelector('[data-end]').disabled = !active;
     for (const receipt of receipts)
@@ -200,7 +206,7 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
             : 'Received by Yaniv’s playtest server.';
     completion.querySelector('h2').textContent = saved ? 'Session saved' : 'Finishing your session';
     completion.querySelector('[data-completion-status]').textContent = saved
-      ? 'Feedback received — session saved. You can close this tab.'
+      ? `${completionReason}Feedback received — session saved. You can close this tab.`
       : captureError || failed
         ? 'Session not fully saved. ' + (captureError || failed) + '. Keep this tab open.'
         : 'Sending your session and final recording to Yaniv. Keep this tab open.';
@@ -295,23 +301,58 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
       closeDatabaseIfIdle();
     }
   }
+  function flushEvents(receipt) {
+    clearTimeout(packetTimer);
+    packetTimer = null;
+    if (!packet.length) return;
+    const body = JSON.stringify({
+      id: `packet-${++packetSeq}`,
+      kind: 'capture-batch',
+      data: { schema: 1, events: packet },
+    });
+    packet = [];
+    packetBytes = 0;
+    void send(
+      `/api/playtest/v2/${session}/event`,
+      new Blob([body], { type: 'application/json' }),
+      'application/json',
+      receipt,
+    );
+  }
   function writeEvent(kind, data, receipt) {
     try {
-      const event = {
-        id: `event-${++seq}`,
-        seq,
-        timeMs: performance.now() - origin,
-        at: new Date().toISOString(),
-        kind,
-        data,
-        context: context(),
-      };
-      void send(
-        `/api/playtest/v2/${session}/event`,
-        new Blob([JSON.stringify(event)], { type: 'application/json' }),
-        'application/json',
-        receipt,
+      const event = encoder.encode(
+        {
+          id: `event-${++seq}`,
+          seq,
+          timeMs: performance.now() - origin,
+          at: new Date().toISOString(),
+          kind,
+          data,
+          context: context(),
+        },
+        { keyframe: ['session-start', 'session-end', 'feedback-anchor'].includes(kind) },
       );
+      const bytes = new TextEncoder().encode(JSON.stringify(event)).length;
+      // Reserve wrapper overhead; the wire packet has the same bound as one event.
+      if (bytes + 256 > captureStreamLimits.bytes)
+        throw Error('Recording event exceeds the upload limit');
+      if (
+        receipt ||
+        packet.length >= captureStreamLimits.batch ||
+        packetBytes + bytes + 256 > captureStreamLimits.bytes
+      )
+        flushEvents();
+      packet.push(event);
+      packetBytes += bytes + 1;
+      captureBytes += bytes + 256;
+      if (receipt || kind === 'session-end' || kind === 'session-start') flushEvents(receipt);
+      else if (!packetTimer) packetTimer = setTimeout(flushEvents, 1000);
+      if (kind !== 'session-end' && (seq >= 95000 || captureBytes >= 64 * 1024 * 1024)) {
+        completionReason = 'This recording reached its size limit. ';
+        stop();
+      }
+      status();
       return seq;
     } catch (error) {
       captureError = `Capture stopped: ${error.message}`;
@@ -403,7 +444,8 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
     clearInterval(timer);
     try {
       stopVoice(wasActive);
-      if (wasActive) writeEvent('session-end', { checkpoint: checkpoint() });
+      if (wasActive && !captureError) writeEvent('session-end', { checkpoint: checkpoint() });
+      flushEvents();
     } catch (error) {
       captureError = `Capture stopped: ${error.message}`;
     } finally {
@@ -433,25 +475,36 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
     startController = new AbortController();
     let timeout;
     try {
-      stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: 15 },
-        audio: false,
-        preferCurrentTab: true,
-      });
-      if (disposed) return;
-      startingStream = stream;
+      recordingMode = startAttempt
+        ? JSON.parse(startAttempt.bodyText).metadata.recordingMode
+        : canRecord && config.optionalVideo === true && dialog.querySelector('[data-video]').checked
+          ? 'video'
+          : 'data';
+      let settings = null;
+      if (recordingMode === 'video') {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: 15 },
+          audio: false,
+          preferCurrentTab: true,
+        });
+        if (disposed) return;
+        startingStream = stream;
+        settings = stream.getVideoTracks()[0].getSettings();
+        if (settings.displaySurface && settings.displaySurface !== 'browser')
+          throw Error('Please choose the workshop browser tab, rather than your whole screen.');
+      }
       timeout = setTimeout(() => startController?.abort(), uploadTimeoutMs);
-      const settings = stream.getVideoTracks()[0].getSettings();
-      if (settings.displaySurface && settings.displaySurface !== 'browser')
-        throw Error('Please choose the workshop browser tab, rather than your whole screen.');
       const start =
         startAttempt ||
         (await outbox.prepareStart({
           build: document.querySelector('meta[name=build-id]').content,
           startedAt: new Date().toISOString(),
           userAgent: navigator.userAgent,
+          recordingMode,
+          captureSchema: 1,
         }));
       startAttempt = start;
+      dialog.querySelector('[data-video]').disabled = true;
       const response = await fetch('/api/playtest/v2/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -465,14 +518,20 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
       if (disposed) return;
       session = created.sessionId;
       seq = 0;
+      packetSeq = 0;
+      captureBytes = 0;
+      completionReason = '';
+      encoder = createCaptureEncoder();
       origin = performance.now();
-      video = document.createElement('video');
-      video.muted = true;
-      video.srcObject = stream;
-      await video.play();
-      if (disposed) return;
+      if (stream) {
+        video = document.createElement('video');
+        video.muted = true;
+        video.srcObject = stream;
+        await video.play();
+        if (disposed) return;
+      }
       const initialCheckpoint = checkpoint();
-      media(stream, 'screen', 'tab');
+      if (stream) media(stream, 'screen', 'tab');
       active = true;
       ready = true;
       captureError = '';
@@ -480,13 +539,19 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
         timeOrigin: performance.timeOrigin,
         checkpoint: initialCheckpoint,
         screen: settings,
+        recordingMode,
+        captureSchema: 1,
+        sampleIntervalMs: 100,
       });
       if (!active) return;
-      stream.getVideoTracks()[0].onended = () => {
-        emit('screen-share-ended', {});
-        stop();
-      };
-      timer = setInterval(() => emit('state-sample', {}), 1000);
+      if (stream)
+        stream.getVideoTracks()[0].onended = () => {
+          emit('screen-share-ended', {});
+          stop();
+        };
+      timer = setInterval(() => {
+        if (!document.hidden) emit('state-sample', {});
+      }, 100);
       dialog.close();
       status();
     } catch (error) {
@@ -518,7 +583,7 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
   const feedback = document.createElement('dialog');
   feedback.className = 'playtest-dialog';
   feedback.innerHTML =
-    '<button class="playtest-close" data-dismiss aria-label="Close feedback">×</button><h2>What felt wrong?</h2><p>Your view is attached. Comments go to Yaniv for review.</p><textarea aria-label="Your feedback" placeholder="What did you expect? What happened?" rows="4"></textarea><button data-write>Send written feedback</button><button data-voice>Record voice comment</button><button data-close>Back to building</button><p role="status"></p><ol class="playtest-comments" aria-label="Your comments" aria-live="polite"></ol>';
+    '<button class="playtest-close" data-dismiss aria-label="Close feedback">×</button><h2>What felt wrong?</h2><p>A workshop canvas image is attached when available. Comments go to Yaniv for review.</p><textarea aria-label="Your feedback" placeholder="What did you expect? What happened?" rows="4"></textarea><button data-write>Send written feedback</button><button data-voice>Record voice comment</button><button data-close>Back to building</button><p role="status"></p><ol class="playtest-comments" aria-label="Your comments" aria-live="polite"></ol>';
   document.body.append(feedback);
   function comment(text) {
     const row = document.createElement('li');
@@ -550,16 +615,35 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
     return receipt;
   }
   panel.querySelector('[data-feedback]').onclick = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.min(video.videoWidth, 1280);
-    canvas.height = Math.round((video.videoHeight * canvas.width) / video.videoWidth);
-    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    let image = null,
+      imageScope = 'unavailable',
+      imageError = '';
+    try {
+      if (video?.videoWidth) {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.min(video.videoWidth, 1280);
+        canvas.height = Math.round((video.videoHeight * canvas.width) / video.videoWidth);
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        image = canvas.toDataURL('image/jpeg', 0.65);
+        imageScope = 'tab';
+      } else {
+        image = screenshot?.() ?? null;
+        if (image) imageScope = 'canvas';
+      }
+      if (!image || image.length > 512 * 1024) throw Error('Canvas image unavailable or too large');
+    } catch (error) {
+      image = null;
+      imageScope = 'unavailable';
+      imageError = error.message;
+    }
     anchor = {
       id: crypto.randomUUID(),
       timeMs: performance.now() - origin,
       context: context(),
       checkpoint: checkpoint(),
-      image: canvas.toDataURL('image/jpeg', 0.65),
+      image,
+      imageScope,
+      imageError,
     };
     emit('feedback-anchor', anchor);
     feedback.showModal();
@@ -765,13 +849,16 @@ export async function mountRemotePlaytest({ context, checkpoint }) {
       }
     }
   };
-  // Recovery never starts a recorder. The user still chooses a tab on Start.
+  // Recovery only drains immutable uploads. A new capture needs fresh consent.
   pendingWrites++;
   void recoverStarts().finally(() => {
     pendingWrites--;
     closeDatabaseIfIdle();
   });
-  const onFocus = () => void pump();
+  const onFocus = () => {
+    emit('visibility', { hidden: document.hidden });
+    void pump();
+  };
   window.addEventListener('focus', onFocus);
   window.addEventListener('visibilitychange', onFocus);
   const uploadTimer = setInterval(pump, 3000);

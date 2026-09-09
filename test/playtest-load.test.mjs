@@ -46,6 +46,8 @@ test('load keeps the exact event request through throttling and checks receipt i
 test('capture qualification rejects sustained growth and missing evidence but permits bounded bursts', async () => {
   const { assertCaptureBacklog, measureCaptureLoad } = await import('../scripts/playtest/load.mjs');
   const capture = {
+    recordingMode: 'video',
+    captureSchema: 1,
     captureSeconds: 1800,
     finalOutbox: { bytes: 0, pending: 0 },
     outboxSamples: Array.from({ length: 600 }, (_, i) => ({
@@ -95,14 +97,22 @@ test('short capture supplies capacity workload without claiming endurance', asyn
     '../scripts/playtest/load.mjs'
   );
   const capture = {
+    recordingMode: 'video',
+    captureSchema: 1,
     captureSeconds: 60,
     screenBytes: 60000,
     maximumScreenChunkBytes: 3000,
+    maximumEventBytes: 10,
     mediaFiles: ['sample'],
     eventSamples: [{ id: 'e' }],
     finalOutbox: { pending: 0, bytes: 0 },
   };
-  const bounds = { maxMediaBytesPerSecond: 2000, maxEventsPerSecond: 2, maxChunkBytes: 4000 };
+  const bounds = {
+    maxMediaBytesPerSecond: 2000,
+    maxEventsPerSecond: 2,
+    maxChunkBytes: 4000,
+    maxEventBytes: 1000,
+  };
   assert.equal(assertCaptureWorkload(capture, bounds).mediaBytesPerSecond, 1000);
   assert.throws(() => assertCaptureBacklog(capture, 60), /duration/);
   for (const patch of [
@@ -114,6 +124,8 @@ test('short capture supplies capacity workload without claiming endurance', asyn
     assert.throws(() => assertCaptureWorkload({ ...capture, ...patch }, bounds));
   const endurance = {
     ...capture,
+    recordingMode: 'video',
+    captureSchema: 1,
     captureSeconds: 360,
     outboxSamples: Array.from({ length: 120 }, (_, i) => ({ at: (i + 1) * 3000, bytes: 0 })),
   };
@@ -146,7 +158,7 @@ test('active driving evidence rejects gravity-only motion and changed body inven
   );
 });
 
-test('capacity sends retained samples and envelope stress with distinct acknowledged keys', async (t) => {
+async function capacityModeWitness(t, recordingMode) {
   const { mkdtemp, writeFile, rm } = await import('node:fs/promises');
   const { tmpdir } = await import('node:os');
   const { join } = await import('node:path');
@@ -179,7 +191,7 @@ test('capacity sends retained samples and envelope stress with distinct acknowle
       sessionId,
       logicalKey: key,
       uploadHash: createHash('sha256')
-        .update(media ? 'video/webm' : '')
+        .update(media ? options.headers['content-type'] : '')
         .update(bytes)
         .digest('hex'),
     });
@@ -192,11 +204,14 @@ test('capacity sends retained samples and envelope stress with distinct acknowle
       seconds: 3,
       reservation: { id: 'r' },
       capture: {
+        recordingMode,
+        captureSchema: 1,
         captureSeconds: 60,
-        mediaFiles: [file],
+        mediaFiles: recordingMode === 'video' ? [file] : [],
         maximumMediaFile: file,
         eventSamples: [{ kind: 'input' }],
-        screenBytes: 5,
+        maximumEvent: { kind: 'input', data: 'x'.repeat(1000) },
+        screenBytes: recordingMode === 'video' ? 5 : 0,
         finalOutbox: { bytes: 0, pending: 0 },
         envelope: { mediaCopiesPerTick: 2, eventsPerTick: 2 },
       },
@@ -210,10 +225,18 @@ test('capacity sends retained samples and envelope stress with distinct acknowle
       await new Promise((resolve) => setImmediate(resolve));
     }
     const result = await pending;
-    assert.equal(result.scheduled, 100);
-    assert.equal(result.completed, 100);
-    assert.equal(result.mediaPerTick, 3);
-    assert.equal(deliveries.filter((d) => d.key.startsWith('media:screen:load:')).length, 60);
+    assert.equal(deliveries.filter((d) => d.key.startsWith('event:') && d.bytes > 1000).length, 20);
+    assert.equal(result.scheduled, recordingMode === 'video' ? 100 : 40);
+    assert.equal(result.completed, result.scheduled);
+    assert.equal(result.mediaPerTick, recordingMode === 'video' ? 3 : 0);
+    assert.equal(
+      deliveries.filter((d) => d.key.startsWith('media:screen:load:')).length,
+      recordingMode === 'video' ? 60 : 0,
+    );
+    if (recordingMode === 'data') {
+      assert.equal(deliveries.filter((d) => d.key.startsWith('media:voice:maximum:')).length, 2);
+      assert.equal(deliveries.filter((d) => d.key.startsWith('media:screen:')).length, 0);
+    }
     assert.equal(new Set(deliveries.map((d) => `${d.sessionId}/${d.key}`)).size, deliveries.length);
   } finally {
     t.mock.timers.reset();
@@ -222,4 +245,8 @@ test('capacity sends retained samples and envelope stress with distinct acknowle
     else process.env.PLAYTEST_ADMIN_TOKEN = token;
     await rm(root, { recursive: true, force: true });
   }
-});
+}
+test('capacity sends retained samples and envelope stress with distinct acknowledged keys', (t) =>
+  capacityModeWitness(t, 'video'));
+test('data capacity covers wire events and admitted voice without screen media', (t) =>
+  capacityModeWitness(t, 'data'));

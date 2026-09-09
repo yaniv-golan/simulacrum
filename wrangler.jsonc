@@ -25,7 +25,8 @@
     "ALLOWED_ORIGIN": "http://localhost:8787",
     "INVITATION_GENERATION": "1",
     "PRIVATE_SITE": "false",
-    "CAPTURE_NEW_SESSIONS": "true"
+    "CAPTURE_NEW_SESSIONS": "true",
+    "CAPTURE_OPTIONAL_VIDEO": "false"
   },
   "durable_objects": {
     "bindings": [

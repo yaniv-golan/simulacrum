@@ -20,11 +20,13 @@ async function fixture(t, options = {}) {
     'Blob',
     'setInterval',
     'clearInterval',
+    'setTimeout',
   ];
   const originals = new Map(
     names.map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]),
   );
   const originalError = console.error;
+  const originalTimeout = setTimeout;
   const nodes = [],
     intervals = new Map(),
     listeners = new Map(),
@@ -144,6 +146,7 @@ async function fixture(t, options = {}) {
     },
     location: { origin: 'http://localhost' },
     navigator: {
+      userAgent: 'fixture-browser',
       mediaDevices: {
         async getDisplayMedia() {
           const result = stream();
@@ -153,6 +156,9 @@ async function fixture(t, options = {}) {
       },
     },
     indexedDB: factory,
+    setTimeout(fn, delay, ...args) {
+      return originalTimeout(fn, delay === 1000 ? 0 : delay, ...args);
+    },
     setInterval(fn) {
       intervals.set(++intervalId, fn);
       return intervalId;
@@ -197,7 +203,7 @@ async function fixture(t, options = {}) {
       return {
         ok: true,
         headers: { get: () => 'application/json' },
-        json: async () => ({ enabled: true, protocolVersion: 2 }),
+        json: async () => ({ enabled: true, protocolVersion: 2, optionalVideo: true }),
       };
     if (url.endsWith('/session')) {
       if (mode.failure === 'network') throw new TypeError('Failed to fetch');
@@ -250,7 +256,13 @@ async function fixture(t, options = {}) {
     intervals,
     listeners,
     originalError,
-    start: () => nodes.find((n) => n.tag === '[data-start]').onclick(),
+    start: () => {
+      const video = nodes
+        .find((n) => n.children.has('[data-start]'))
+        ?.querySelector('[data-video]');
+      if (video) video.checked = true;
+      return nodes.find((n) => n.tag === '[data-start]').onclick();
+    },
     finish: () => nodes.find((n) => n.tag === '[data-end]').onclick(),
     huge: (value) => {
       huge = value;

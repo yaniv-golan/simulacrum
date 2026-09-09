@@ -82,6 +82,7 @@ export function createPlaytestServer({
   publicDir = process.env.PLAYTEST_PUBLIC_DIR,
   dataDir = process.env.PLAYTEST_DATA_DIR,
   token = process.env.PLAYTEST_TOKEN,
+  optionalVideo = process.env.PLAYTEST_OPTIONAL_VIDEO === 'true',
   maxRequestBytes = 10 * 1024 * 1024,
   maxSessionBytes = 1024 ** 3,
   maxSessions = 20,
@@ -139,6 +140,7 @@ export function createPlaytestServer({
       protocolVersion: saved.protocolVersion || 1,
       requestId: saved.requestId,
       requestHash: saved.requestHash,
+      recordingMode: saved.metadata?.recordingMode ?? 'video',
     };
     const log = join(dir, 'events.ndjson');
     let bytes = Buffer.alloc(0);
@@ -264,6 +266,7 @@ export function createPlaytestServer({
           enabled: true,
           protocolVersion: 2,
           supportedProtocols: [1, 2],
+          optionalVideo,
           accountingVersion: 'node-filesystem-v1',
           storageUnavailable: stalledWrites.size > 0,
           limits: {
@@ -292,6 +295,10 @@ export function createPlaytestServer({
             Array.isArray(metadata))
         )
           throw fail(400, 'Invalid creation identity');
+        const recordingMode = metadata.recordingMode ?? 'data';
+        if (!['data', 'video'].includes(recordingMode) || (metadata.captureSchema ?? 1) !== 1)
+          throw fail(400, 'Invalid recording mode or capture schema');
+        const admittedMetadata = { ...metadata, recordingMode, captureSchema: 1 };
         const requestHash = digest(raw);
         await serialized(async () => {
           if (v2) {
@@ -310,13 +317,15 @@ export function createPlaytestServer({
               return;
             }
           }
+          if (recordingMode === 'video' && !optionalVideo)
+            throw fail(403, 'Video capture disabled');
           if (sessionCount >= maxSessions) throw fail(429, 'Session limit reached');
           const sessionId = randomBytes(16).toString('hex');
           const dir = join(privateRoot, sessionId);
           const record = JSON.stringify({
             sessionId,
             receivedAt: new Date().toISOString(),
-            metadata,
+            metadata: admittedMetadata,
             ...(v2 ? { protocolVersion: 2, requestId: input.requestId, requestHash } : {}),
           });
           if (Buffer.byteLength(record) > maxSessionBytes)
@@ -342,6 +351,7 @@ export function createPlaytestServer({
             bytes: Buffer.byteLength(record),
             sequence: 0,
             writes: new Map(),
+            recordingMode,
             protocolVersion: v2 ? 2 : 1,
             ...(v2 ? { requestId: input.requestId, requestHash } : {}),
           });
@@ -362,6 +372,8 @@ export function createPlaytestServer({
         let key, event, media;
         if (match[2] === 'media') {
           const kind = url.searchParams.get('kind');
+          if (kind === 'screen' && session.recordingMode === 'data')
+            throw fail(403, 'Screen media not admitted for data session');
           const clip = url.searchParams.get('clip');
           const seq = url.searchParams.get('seq');
           if (

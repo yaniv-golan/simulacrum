@@ -173,6 +173,49 @@ test('private export preserves exact raw event bytes and rejects corrupted paylo
   );
 });
 
+test('private export retries transient reads but never status or malformed responses', async (t) => {
+  const { downloadCapture } = await import('../scripts/playtest/download.mjs');
+  const root = await mkdtemp(join(tmpdir(), 'capture-read-retry-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const sessionId = 'a'.repeat(32);
+  for (const mode of ['connect', 'body', 'exhausted', 'forbidden', 'redirect', 'malformed']) {
+    let calls = 0;
+    const options = {
+      origin: 'https://example.invalid',
+      sessionId,
+      token: 'x'.repeat(32),
+      directory: join(root, mode),
+      fetcher: async (url, options) => {
+        calls++;
+        assert.equal(options.redirect, 'error');
+        assert.equal(options.headers.authorization, `Bearer ${'x'.repeat(32)}`);
+        assert.ok(options.signal instanceof AbortSignal);
+        if (mode === 'forbidden') return new Response('', { status: 403 });
+        if (mode === 'redirect') throw new TypeError('unexpected redirect');
+        if (mode === 'malformed') return new Response('{');
+        if (mode === 'exhausted' || (mode === 'connect' && calls === 1))
+          throw new TypeError('fetch failed', { cause: { code: 'UND_ERR_CONNECT_TIMEOUT' } });
+        if (mode === 'body' && calls === 1)
+          return new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.error(new TypeError('terminated', { cause: { code: 'ECONNRESET' } }));
+              },
+            }),
+          );
+        return Response.json({ cutoff: 0, session: { sessionId }, uploads: [] });
+      },
+    };
+    if (['connect', 'body'].includes(mode)) {
+      await downloadCapture(options);
+      assert.equal(calls, 2);
+    } else {
+      await assert.rejects(downloadCapture(options));
+      assert.equal(calls, mode === 'exhausted' ? 3 : 1);
+    }
+  }
+});
+
 test('staging admission rejects older runs and expired synthetic reservations', async () => {
   const { assertStagingOrder, assertReservationLifetime } = await import(
     '../scripts/playtest/release-policy.mjs'
@@ -373,6 +416,8 @@ test('first staging recovery reuses ownership and cleans synthetic resources on 
         return new Response('', { status: 403 });
       const ok = (result) => Response.json({ success: true, result });
       if (path.includes('simulacrum-isolation')) return ok({});
+      if (path.endsWith('/script-settings'))
+        return ok({ observability: null, logpush: false, tail_consumers: null });
       if (path.endsWith('/settings')) {
         inspections++;
         if (inspections > 1 && stage !== 'recovery') return new Response('', { status: 503 });
@@ -468,4 +513,171 @@ test('successful experiment evidence is durable before coordinator resolution', 
   assert.deepEqual(evidence, [failure]);
   await recordExperimentPasses(root, history, evidence, results, ['capacity'], inspect);
   assert.deepEqual(JSON.parse(await readFile(history, 'utf8')), [receipt]);
+});
+
+test('provider inspection accepts explicit disabled observability and rejects unknown or active settings', async (t) => {
+  const { inspectDeployment } = await import('../scripts/playtest/verify-deployment.mjs');
+  const original = globalThis.fetch;
+  t.after(() => {
+    globalThis.fetch = original;
+  });
+  const config = {
+    environment: 'staging',
+    accountId: 'a'.repeat(32),
+    otherAccountId: 'b'.repeat(32),
+    workerName: 'workshop',
+    bucketName: 'recordings',
+    captureNamespaceId: 'fixed',
+    isolationTargets: {
+      authorization: 'disposable-probes-only',
+      currentWorker: 'simulacrum-isolation-current',
+      otherWorker: 'simulacrum-isolation-other',
+      currentBucket: 'simulacrum-isolation-current',
+      otherBucket: 'simulacrum-isolation-other',
+    },
+  };
+  let scriptSettings = { observability: null, logpush: false, tail_consumers: null };
+  globalThis.fetch = async (input) => {
+    const path = new URL(input).pathname;
+    const ok = (result) => Response.json({ success: true, result });
+    if (path.includes(config.otherAccountId)) return new Response(null, { status: 403 });
+    if (path.includes('simulacrum-isolation')) return ok({});
+    if (path.endsWith('/script-settings')) return ok(scriptSettings);
+    if (path.endsWith('/settings'))
+      return ok({
+        bindings: [
+          { name: 'RECORDINGS', type: 'r2_bucket', bucket_name: 'recordings' },
+          {
+            name: 'CAPTURE',
+            type: 'durable_object_namespace',
+            namespace_id: 'fixed',
+            class_name: 'CaptureStore',
+          },
+        ],
+      });
+    if (path.endsWith('/schedules')) return ok({ schedules: [{ cron: '*/5 * * * *' }] });
+    if (path.endsWith('/domains/managed')) return ok({ enabled: false });
+    if (path.endsWith('/domains/custom')) return ok({ domains: [] });
+    if (path.endsWith('/lifecycle')) return ok({ rules: [] });
+    if (path.endsWith('/logpush/jobs')) return ok([]);
+    throw Error('Unexpected request ' + path);
+  };
+  assert.equal((await inspectDeployment(config)).loggingVerified, true);
+  const disabled = {
+    enabled: false,
+    logs: { enabled: false, invocation_logs: false },
+    traces: { enabled: false },
+  };
+  scriptSettings.observability = disabled;
+  assert.equal((await inspectDeployment(config)).loggingVerified, true);
+  for (const unsafe of [
+    {},
+    { observability: null },
+    { observability: null, logpush: true, tail_consumers: [] },
+    { observability: null, logpush: false, tail_consumers: [{ service: 'collector' }] },
+    ...[
+      {},
+      true,
+      { ...disabled, enabled: true },
+      { ...disabled, logs: { enabled: true, invocation_logs: false } },
+      { ...disabled, traces: { enabled: true } },
+    ].map((observability) => ({ observability, logpush: false, tail_consumers: [] })),
+  ]) {
+    scriptSettings = unsafe;
+    await assert.rejects(inspectDeployment(config), /logging/);
+  }
+});
+
+test('final capture drain accepts delayed delivery but rejects stalled or incomplete completion', async () => {
+  const { waitForCaptureDrain, captureBrowserTimeoutMs } = await import(
+    '../scripts/playtest/release-policy.mjs'
+  );
+  const run = (read) => {
+    let clock = 0;
+    return waitForCaptureDrain({
+      read: () => read(clock),
+      now: () => clock,
+      wait: async (ms) => {
+        clock += ms;
+      },
+    });
+  };
+  const complete = { pending: 0, bytes: 0, saved: true };
+  const late = await run((clock) =>
+    clock >= 24000 ? complete : { pending: 5, bytes: 1000, saved: false },
+  );
+  assert.equal(late.elapsedMs, 24000);
+  assert.deepEqual(late.finalOutbox, complete);
+  await assert.rejects(
+    run(() => ({ pending: 1, bytes: 10, saved: false })),
+    /drain deadline/,
+  );
+  await assert.rejects(
+    run(() => ({ pending: 0, bytes: 0, saved: false })),
+    /drain deadline/,
+  );
+  await assert.rejects(
+    run(() => ({ pending: 1, bytes: 0, saved: true })),
+    /drain deadline/,
+  );
+  await assert.rejects(
+    run(() => ({ pending: 0, bytes: 10, saved: true })),
+    /drain deadline/,
+  );
+  await assert.rejects(
+    run((clock) => (clock > 120000 ? complete : { pending: 1, bytes: 1, saved: false })),
+    /drain deadline/,
+  );
+  await assert.rejects(
+    run(() => ({ pending: NaN, bytes: 0, saved: true })),
+    /Invalid drain/,
+  );
+  const { experimentReservation } = await import('../scripts/playtest/experiments.mjs');
+  const budget = experimentReservation({ run: [], smokeSeconds: 60 }, null);
+  assert.equal(budget.requiredMs, captureBrowserTimeoutMs(60) + 1200000);
+  assert.equal(captureBrowserTimeoutMs(60), 480000);
+  assert.equal(captureBrowserTimeoutMs(1800), 2220000);
+  assert.throws(() => captureBrowserTimeoutMs(-1), /duration/);
+});
+
+test('served asset integrity checks canonical index URL and rejects wrong bytes or redirects', async () => {
+  const { verifyServedAssets } = await import('../scripts/playtest/verify-deployment.mjs');
+  const { createHash } = await import('node:crypto');
+  const hash = (s) => createHash('sha256').update(s).digest('hex');
+  const files = {
+    'assets/index.html': hash('index'),
+    'assets/app.js': hash('script'),
+    'backend/worker.js': hash('worker'),
+  };
+  const paths = [];
+  await verifyServedAssets(
+    { files },
+    'https://workshop.example',
+    'session=test',
+    async (url, options) => {
+      paths.push(url.pathname);
+      assert.equal(options.redirect, 'error');
+      assert.equal(options.headers.cookie, 'session=test');
+      return new Response(url.pathname === '/' ? 'index' : 'script');
+    },
+  );
+  assert.deepEqual(paths, ['/', '/app.js']);
+  await assert.rejects(
+    verifyServedAssets(
+      { files },
+      'https://workshop.example',
+      'session=test',
+      async () => new Response('wrong'),
+    ),
+    /integrity/,
+  );
+  await assert.rejects(
+    verifyServedAssets(
+      { files },
+      'https://workshop.example',
+      'session=test',
+      async () => new Response(null, { status: 302, headers: { location: '/' } }),
+    ),
+    /integrity/,
+  );
 });

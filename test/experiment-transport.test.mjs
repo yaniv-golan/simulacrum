@@ -19,13 +19,20 @@ const metadata = {
 };
 const profile = {
   schema: 1,
+  recordingMode: 'video',
+  captureSchema: 1,
   enduranceSeconds: 360,
   capacitySeconds: 120,
   maxAgeMs: 86400000,
   calibration: {
     evidence: 'b'.repeat(64),
     browserVersion: 'fixture',
-    workload: { maxMediaBytesPerSecond: 1, maxEventsPerSecond: 1, maxChunkBytes: 1 },
+    workload: {
+      maxEventBytes: 1000,
+      maxMediaBytesPerSecond: 1,
+      maxEventsPerSecond: 1,
+      maxChunkBytes: 1,
+    },
   },
 };
 const context = {

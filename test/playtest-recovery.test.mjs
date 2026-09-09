@@ -15,7 +15,13 @@ async function fixture(t, limits = {}) {
   await writeFile(join(publicDir, 'index.html'), 'ok');
   const token = 'recovery-test-invitation-token-00000000';
   const start = async () => {
-    const server = createPlaytestServer({ publicDir, dataDir, token, ...limits });
+    const server = createPlaytestServer({
+      publicDir,
+      dataDir,
+      token,
+      optionalVideo: true,
+      ...limits,
+    });
     const request = (url, { method = 'GET', headers = {}, body = '' } = {}) =>
       new Promise((resolve) => {
         const req = Readable.from(body ? [Buffer.from(body)] : []);
@@ -47,7 +53,7 @@ async function fixture(t, limits = {}) {
   let post = await start();
   const {
     body: { sessionId },
-  } = await post('/api/playtest/session', {});
+  } = await post('/api/playtest/session', { recordingMode: 'video', captureSchema: 1 });
   return {
     dir: join(dataDir, sessionId),
     path: `/api/playtest/${sessionId}`,
