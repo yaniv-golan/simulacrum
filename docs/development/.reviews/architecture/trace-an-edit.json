@@ -23,7 +23,7 @@
     "src/model/generated/blueprint-validator.mjs": "d7e98ea5e2382487d0040a2b359271f06114120ad2f6856c3e15ccccbcd20b2b",
     "src/model/geometry.mjs": "90d75331b8f5261f9d1a6e4d803473bbdf4be12fc63b283d63e65d4312b80bd8",
     "src/model/mirror-assembly.mjs": "fc26e0f73dad94435f140ab21d51733bbc066ceb44d4bfd1fe6038e8cd4deaad",
-    "src/model/observation.mjs": "f68a4b99fc7aefa837514faaf3b67ab747c118720ab86c6f0ecad2d4ad05240b",
+    "src/model/observation.mjs": "f2a62892ae0e9dc95734fb107d1588b007265604ad5aca49ade62b2004d61ec1",
     "src/model/power.mjs": "89978f57a012fcecf6006cfdb1e7d7e2f97e0f13bc49ecab3cd5255b85537887",
     "src/model/reasons.mjs": "9d24a09fbfaeff5445429f2f43c99fc07e690dc79cb355e5ccc1b6a1b86cabcc",
     "src/model/reusable-assemblies.mjs": "0892415010525d7ec506d812ee9a9ab160a567c379bd594bf1cdf8b538f90adc",

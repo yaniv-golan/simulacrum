@@ -16,7 +16,7 @@
     "src/model/assembly.mjs": "7c4625e4d3402cdadbedabc020922bc23e6ca1466a086319840f7d625d634b93",
     "src/model/compile-body.mjs": "f6b6a0caadca8e14c7bd97ae7fadc875458690140f5a06a1c0d4c1ef06c05665",
     "src/model/environment.mjs": "18d30efab4f787b8e187048a597f0aebd69f01dc9511b48b82413f9747565f37",
-    "src/model/observation.mjs": "f68a4b99fc7aefa837514faaf3b67ab747c118720ab86c6f0ecad2d4ad05240b",
+    "src/model/observation.mjs": "f2a62892ae0e9dc95734fb107d1588b007265604ad5aca49ade62b2004d61ec1",
     "package-lock.json": "f44632025fc6a2b08f70e71a45243005e5f59483a19702a2d67f741b69e7f5e5",
     "package.json": "ac1208b1973128edabff7a63b2257e32f3be1970f2f3164b8c6d4b3ba4d6598e",
     "src/core/workshop.mjs": "bc3fc351f6587b067fb8f77b5cdd4a9e8551985ea423815e1bdb135e9986a84e",

@@ -43,12 +43,13 @@ function copyData(value, ancestors) {
       throw new TypeError('Expected enumerable data fields');
     if (array && (!/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length))
       throw new TypeError('Unexpected array field');
-    entries.push([key, copyData(descriptor.value, ancestors)]);
+    const child = copyData(descriptor.value, ancestors);
+    entries.push(array ? child : [key, child]);
   }
   ancestors.delete(value);
   // Construct all data properties together, then freeze them. fromEntries also
   // preserves an own __proto__ key without invoking the prototype setter.
-  return Object.freeze(array ? entries.map(([, child]) => child) : Object.fromEntries(entries));
+  return Object.freeze(array ? entries : Object.fromEntries(entries));
 }
 
 /** Owns revision history, including edits that leave simulation tick unchanged. */

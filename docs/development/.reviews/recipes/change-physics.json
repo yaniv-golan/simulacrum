@@ -16,7 +16,7 @@
     "src/simulation/physics/world.mjs": "9377af91614d60570998ac0ed0f71d4d658814e561ed823250409db47e6e5eeb",
     "src/simulation/physics/law/motor.mjs": "82183f1ab4dc82adb3048faa13c3942f647f52d4583ff6a549b530f15f38eba6",
     "test/impulse-energy.test.mjs": "12ce6ca3584c5cbbb4a8f9d08084045ad26b294bf96f9f4851aa3013bd44c8b5",
-    "src/model/observation.mjs": "f68a4b99fc7aefa837514faaf3b67ab747c118720ab86c6f0ecad2d4ad05240b",
+    "src/model/observation.mjs": "f2a62892ae0e9dc95734fb107d1588b007265604ad5aca49ade62b2004d61ec1",
     "src/simulation/controllers.mjs": "f964f401080de7afae8ad3eceaeab49d45656c7908d5aa5faddbbe08a3cb8380",
     "src/simulation/power.mjs": "53e4acad70385dc3ba77fed61a53d48a93b62c08ea0e45be5798d3a2bf857bcf",
     "src/simulation/session.mjs": "86525d81e432db5a43f981de9a0e198fd7afda8739f55a9a0aad8ddb0285259d",

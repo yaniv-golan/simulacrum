@@ -16,7 +16,7 @@
     "src/model/fixtures/driving-machine.mjs": "e3ac02aa806f452d39238e989b79fa9232480e912ee63c342dda8e2be476a3d2",
     "src/model/generated/blueprint-validator.mjs": "d7e98ea5e2382487d0040a2b359271f06114120ad2f6856c3e15ccccbcd20b2b",
     "src/model/geometry.mjs": "90d75331b8f5261f9d1a6e4d803473bbdf4be12fc63b283d63e65d4312b80bd8",
-    "src/model/observation.mjs": "f68a4b99fc7aefa837514faaf3b67ab747c118720ab86c6f0ecad2d4ad05240b",
+    "src/model/observation.mjs": "f2a62892ae0e9dc95734fb107d1588b007265604ad5aca49ade62b2004d61ec1",
     "src/model/surfaces.mjs": "0d4b906f5e2100b42254369d284dc068e84c35199d40690ddeb8eef207f080cf",
     "test/opposed-drive-diagnostic.test.mjs": "0f8761244270dad4ff9fe020e8e507c80a624774e4d7b11b03f63f77b62a49a0",
     "package-lock.json": "f44632025fc6a2b08f70e71a45243005e5f59483a19702a2d67f741b69e7f5e5",

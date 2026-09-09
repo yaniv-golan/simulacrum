@@ -13,12 +13,7 @@ import {
 const evidence = createBrowserEvidence(),
   out = 'artifacts/spring-performance';
 mkdirSync(out, { recursive: true });
-const browser = await evidence.launch({
-    profile: 'performance',
-    // Headless macOS otherwise selects SwiftShader. Measure the native graphics backend.
-    args: process.platform === 'darwin' ? ['--use-angle=metal'] : [],
-  }),
-  page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+let browser;
 const fixtures = new Map();
 for (const count of [0, 1, 8, 32]) {
   let b = createEmptyBlueprint('benchmark', 'Springs');
@@ -44,6 +39,13 @@ const report = {
 try {
   report.simulation = await measureSpringSimulation();
   report.simulationAcceptance = evaluateSpringSimulation(report.simulation);
+  // Keep pure simulation measurements independent of browser startup and idle work.
+  browser = await evidence.launch({
+    profile: 'performance',
+    // Headless macOS otherwise selects SwiftShader. Measure the native graphics backend.
+    args: process.platform === 'darwin' ? ['--use-angle=metal'] : [],
+  });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   const load = async (count) => {
     const receipt = await evidence.loadAndWait(page, fixtures.get(count), { ok: count !== 32 });
@@ -179,5 +181,5 @@ try {
 } finally {
   report.errors = evidence.errors;
   writeFileSync(`${out}/result.json`, JSON.stringify(report, null, 2));
-  await browser.close();
+  await browser?.close();
 }
