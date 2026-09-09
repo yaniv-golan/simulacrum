@@ -9,7 +9,6 @@ try {
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   const read = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
-  await page.locator('.spring-experiments > summary').click();
   await page.locator('[data-command=spring-example]').click();
   let f = await read();
   evidence.assert('equal', [f.metadata.blueprint.parts.length, 6]);

@@ -771,6 +771,16 @@
       "ruleId": "player-authority"
     },
     {
+      "id": "verify-learning-examples",
+      "script": "scripts/verify-learning-examples.mjs",
+      "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 45000,
+      "ruleId": "player-authority"
+    },
+    {
       "id": "verify-adaptive-graphics",
       "script": "scripts/verify-adaptive-graphics.mjs",
       "execution": "exclusive",
@@ -1867,7 +1877,7 @@
       "id": "workbench-content-lifecycle",
       "ruleId": "player-authority",
       "dueAt": "M3b",
-      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability.",
+      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset.",
       "owners": [
         {
           "path": "src/presentation/workshop-view.mjs",
@@ -1884,9 +1894,13 @@
         {
           "path": "src/presentation/motion-readout.mjs",
           "anchor": "createMotionReadout"
+        },
+        {
+          "path": "src/presentation/spring-controls.mjs",
+          "anchor": "springInspector"
         }
       ],
-      "checks": ["verify-workbench-content"],
+      "checks": ["verify-workbench-content", "verify-learning-examples"],
       "controls": {
         "positive": [
           {

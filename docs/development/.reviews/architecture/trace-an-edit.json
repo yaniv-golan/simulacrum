@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "src/application/workshop-app.mjs": "9e4e6cf3337aae3a352911f7a98e4963576ba284876b28fdf64a695f377e05a8",
-    "src/presentation/workshop-view.mjs": "516ef69c9669d2f094f1ab117c529a370afa58679c5d026dbae0d175b87a6f48",
+    "src/presentation/workshop-view.mjs": "ab8415a4ec4f98633c0b5e67f2dc25241d724ef339e5456660fec1e453324aa0",
     "src/presentation/surface-controls.mjs": "d4124cc989ac08aea07ebde8104a810bfc136e24a6101c4fcb1ca5276a03b527",
     "src/presentation/placement-lifecycle.mjs": "02d5fc17f5ada7fe5c60d43c2bd8cc7963dc2ea8e7d0fb7238270fcc7a7f8015",
     "src/presentation/assembly-mirror.mjs": "d5b6819691909cfa5aef213acaf065e74e157d60f023f3e6ac227f689386f212",
@@ -10,7 +10,7 @@
     "src/model/catalog.mjs": "ed3388946005de707233a3d1dda10cd9827b700e136030fa60200b97efd778c8",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",
     "src/model/generated/blueprint-types.d.ts": "bd194a365248f2562dbb641baeb96a8dc7fb86a4ab9a9c1d5f156c2f441c12a5",
-    "src/presentation/spring-controls.mjs": "43e9472c6e6435f684d6a8cb3e9929757d8e7d63d1e28d076be03c1d27e6f604",
+    "src/presentation/spring-controls.mjs": "305cc025d102e64cf1438a02e333df00b4866c553ec29fa95ccee28bbaaf205d",
     "package-lock.json": "d7eb0fc6a6111c639f322b6d7adff6d7566c732f26dd695cb844b5b08182e4f7",
     "package.json": "e4582aa2a24fced519a55f09496810f3bce395a3bbe3d1b069182f1361bc7f07",
     "src/core/workshop.mjs": "8722e4dc4f836b456558920627390c676cb11bc066bbb4c5716486d487234d1d",

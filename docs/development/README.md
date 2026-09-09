@@ -127,7 +127,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"1b9c1c948eb8190d75f24ea7064e4e17fbe7cbb36fb006776dfe421b56a6eb81","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"b9a7bbea7fd4b86669b344bc23d2cec58965008c594a65ee73e6732beb10115c","disposition":"still accurate","rationale":"The combined generated reference retains manifest-derived discovery and explicit section reviews; the native package pin does not change documentation generation."} -->
+<!-- doc-review {"version":1,"fingerprint":"4aa17f1d907b4b88072b46e80839c627d63d0e93c33a46ed3e90d85344fbcb95","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"dbc2810fb5e8fc2eaba045480993227079d6a6b8ee8b146367eb76eb5f1ec79f","disposition":"still accurate","rationale":"The regenerated reference adds the registered learning-example browser check; manifest-derived discovery and per-section review remain the documented workflow."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -222,7 +222,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"be3a6acb192b1eeaa1210e03efd5ffcc8c7940b640b29ffa9abd3f78585adb95","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"349897fbf49cd9eec78fb013c49fba0710f989047fef916fc1c62410bd57c207","disposition":"still accurate","rationale":"The registered assembly browser journey now covers a built-in definition and collection filtering; conservative browser selection, runtime profiles and deadlines remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"cdb82ae1c4488c30c759ef8aed8495f53de56fe8ecc0925ed549aeefdc7110d0","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"44b37a0d4e2f2bbe83aa843556591fbc8218821464dc66895d0a9b942d79e04b","disposition":"still accurate","rationale":"The combined manifest retains the existing assembly checks and the added learning examples check; no browser execution profile, deadline or selection rule changes."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

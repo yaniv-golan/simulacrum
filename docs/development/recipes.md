@@ -244,7 +244,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"011bc62d005b8385b901474ba11630dfbd25e1e9abf1fcf5389dcb38f86c1381","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"34197d729f52a1b6106347289448d042af11b73f65a5e893b02fbc95e8e10350","disposition":"still accurate","rationale":"Collection filters and compact card sizing affect only requested assembly content. Wiring overlay visibility, picking, GPU ownership and spring performance limits are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"c54b6ab46defa9d0d85ff8fbccffca57f26964803d282b9ab835c4cb5801d7d4","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"7320d09efb5f479dff802639bced0ad8dddeaabedfa62ea522c6692d4998d8c1","disposition":"still accurate","rationale":"Both dialog changes retain connection overlay picking, visibility, resource ownership and spring rendering budgets; the assembly close icon changes no overlay authority."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

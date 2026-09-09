@@ -13,6 +13,21 @@ export function springInspector({ part, right, editable, element, send }) {
         'Can you make this settle after one bounce? Change one setting in Build, then Run. Damping resists motion; stiffness supports weight. The long side mark shows zero-force length; short marks show the travel stops.',
       ),
     );
+    const comparison = element('details', 'spring-comparison');
+    comparison.append(
+      element('summary', '', 'Compare damping'),
+      element(
+        'p',
+        'parameter-help',
+        'Run once and watch the bounce. Return to Build, set Damping to 0 below, and predict what will change. Keep stiffness, load and starting positions the same, then Run again.',
+      ),
+      element(
+        'p',
+        'parameter-help',
+        'This edits your current spring. Return to Build and Undo to restore the previous damping. Opening the example again replaces the whole machine and resets your other changes; it is not a comparison of one setting.',
+      ),
+    );
+    right.append(comparison);
     for (const key of ['stiffness', 'damping', 'restLength', 'minLength', 'maxLength']) {
       const def = definition.parameterDefinitions[key],
         box = element('div', 'spring-setting');
