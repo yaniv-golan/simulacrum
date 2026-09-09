@@ -47,7 +47,7 @@ Identify the player task, primary home, visibility/retrieval lifecycle and repla
 surface. Keep consequential state visible and verify unique actions remain reachable
 after removing or moving controls.
 
-<!-- doc-review {"version":1,"fingerprint":"dd6778bcdbc0fffde7b77aba3ffea3337a0c516e48d9a119abd61896ed6838b6","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"a66922c80bc2dc84b67226304b6c433338a3434762c2de02cbadcc2fd8977f59","disposition":"still accurate","rationale":"Mirror status now names the failed part and explains unavailable mounts. Proposal admission, cancellation and transaction ownership are unchanged; browser checks include cell and motor refusals."} -->
+<!-- doc-review {"version":1,"fingerprint":"0019643ea39a37f0f6f9593c0fc3a22e61565b2ba73142b0e81f0f101166d5e9","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"f7be9c7e7a64b34e04417970e62a16d8852cc00e0cdd6cdc906ab19079a84c0d","disposition":"still accurate","rationale":"Mirror verification now selects the member through the contextual assembly inspector instead of the removed sidebar; all mechanical scope, preview, cancellation and mirror assertions remain intact."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -132,7 +132,7 @@ Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"92134d344a47f3536bae680ac4266813e6885dc8eac226c91f3e9837413de6fc","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"fc89f42af41d00a1fdc6e6407c2f08c76237496644855e2f3d9937998e4669b9","disposition":"still accurate","rationale":"Refusal text now resolves the existing part path. Reflection and copied connection policy remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"8ee35180e194af972e5ad6c7666885759da49c26f7c376ddc374b6be0b050770","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"a207893110d6c71a6ac519e8befa7b564def0e7553ca46c55824be38aaf9ec28","disposition":"updated","rationale":"Added the registered browser journeys for insertion shortcuts, Build-only repeat, rename focus and compact sorting; model copying and named mounting contracts remain unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -179,8 +179,13 @@ and connection IDs and copies all authored values, including receiver key bindin
 Identical keys can intentionally operate several receivers; the
 [assembly panel](../../src/presentation/assembly-library.mjs) shows bindings and opens
 the ordinary inspector to edit one receiver. Library items are independent snapshots with distinct generated names, editable saved
-names and inspectable authored settings. Placed instances and saved items have separate
-bounded views; connection choices show named assembly interfaces before ordinary endpoints.
+names and inspectable authored settings. Placed instances use the contextual inspector and machine picker; saved items use
+a bounded requested browser with real mesh thumbnails and retained search. A free
+insertion preview owns world precision and explicit confirmation, then named mounting
+uses its separate surface transaction. Stale source or cursor requires revalidation;
+uncertain replies reconcile only with the complete observed insertion result. The
+preview never writes a part transform before the ordinary command.
+Connection choices show named assembly interfaces before ordinary endpoints.
 Storage failure must remain visible and preserve previous library data; it must not
 roll back an already accepted machine edit or silently discard the stored library.
 
@@ -200,12 +205,13 @@ Power port to a real cell, compares rendered transforms with completed observati
 and checks Undo/Redo, save/load and removal of its source library item. These are
 construction checks, not human acceptance or locomotion qualification. The registered
 [assembly UX browser check](../../scripts/verify-assembly-ux-browser.mjs#implementation)
-also covers offset mounting with an intact shaft, in-place interface edits, decimal
+also covers insertion selection and member shortcuts, Build-only repeat placement,
+rename focus, narrow-screen sorting, offset mounting with an intact shaft, in-place interface edits, decimal
 receiver tuning, saved settings, named targets, bounded navigation and diagnostic layout.
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"be2b384de53cddf73a6a6c803b426e3fb825d78ec946d11edb094fdc1810a69b","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"7981eb14ea5743d4409d0469d5554b5703f6453b524a1007f5c8861530c758f5","disposition":"still accurate","rationale":"Only mirror refusal wording and its browser assertions changed. Connection overlay resources, visibility and ownership remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e4a74dbed406ca1d9cfef5d901d2de6990e7414aeaeec4952e4ad42ccf162758","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"90618398083280ed3f621d594d53b7b8d01b53af14522b0243817ad9e24e8b57","disposition":"still accurate","rationale":"Assembly browser navigation, selection shortcuts and mode admission do not change connection overlay picking, resource ownership, spring geometry or rendering performance limits."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

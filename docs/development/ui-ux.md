@@ -23,13 +23,32 @@ otherwise give the observation and a useful next check. Do not shrink text to ma
 more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Current surfaces and lifecycle
-<!-- doc-review {"version":1,"fingerprint":"7ef64f62d6138a3a3b603bdc487bf7a4c733a7f67425bfacffb8ec5820e32b65","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"637e5595c5629627f1307f641a0a5aa858f7b5f2be5fdab4261ee72e50ba129a","disposition":"still accurate","rationale":"Canvas screenshot capture is an injected recording callback with no new permanent workshop panel; existing shell regions, requested measurements and lower-panel layout are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f702d660c77f6f808e75bf2bdda12cd4b3f41c402c61f5fb8878ba0adcc40e6e","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8337a39ee64a2d7ebef46eb62e2759f1c5f169efc24ef5f3e89a8d49786bc7b2","disposition":"updated","rationale":"Documented explicit member targeting for part shortcuts, Build-only repeat placement, visible rename focus and retained narrow browser navigation."} -->
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
 document and run actions in the header; parts in the left catalogue; separate edit
 and view groups at the workbench edge; selected properties and operations in the
 inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
+
+Saved assemblies opens a bounded, searchable browser with rendered saved geometry.
+Browsing, renaming and removing saved definitions remain separate from machine
+selection and Undo. Renaming returns focus to Place in machine; sorting preserves
+the current results/detail page on narrow screens. The machine picker lists assemblies alongside parts; Create
+assembly opens the contextual editor with canvas and checkbox membership selection.
+The first selected member defines the origin. Optional named connection points expose
+ordinary endpoints. The inspector retains group operations and a member can return
+to assembly selection without searching the saved library. Selecting an assembly
+leaves part-only shortcuts inactive until a member is explicitly inspected.
+
+Place in machine closes the browser and opens a nonmutating world-plane preview.
+Precision and increments adjust the proposal; Place publishes one ordinary insertion.
+Surface snapping is hidden during this free insertion. Named mounting is a separate
+transaction after insertion. Cancel returns to the retained browser; Place another
+starts a fresh proposal in Build only. A machine or cursor change requires explicit revalidation.
+Pending insertion disables cancellation and duplicate submission; uncertain replies
+can only reconcile against the exact authored result from the session observation.
+Saved thumbnails use production part meshes, a bounded cache and explicit disposal.
 
 Labeled Select/Move/Rotate and snap state remain visible in Build. The
 [scope formatter](../../src/presentation/workbench-content.mjs#symbol=movementScope)

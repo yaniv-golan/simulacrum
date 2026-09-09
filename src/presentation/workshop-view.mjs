@@ -5,6 +5,9 @@ import { PRIMARY_PARTS, MORE_PARTS } from './part-palette.mjs';
 import { createPartHelp } from './part-help.mjs';
 import { ownsPartHelpInput } from './part-help-input.mjs';
 import { createAssemblyLibraryPanel } from './assembly-library.mjs';
+import { createAssemblyBrowser } from './assembly-browser.mjs';
+import { createAssemblyPlacementView } from './assembly-placement-view.mjs';
+import { createAssemblyThumbnails } from './assembly-thumbnails.mjs';
 import { createDirectDrag } from './direct-drag.mjs';
 import { createConnectionTest } from './connection-test.mjs';
 import { createAssemblyMirror } from './assembly-mirror.mjs';
@@ -90,6 +93,7 @@ export function createWorkshopView(
     onRecording,
     onInteraction,
     getCursor,
+    getAssemblyFrame,
     assemblyLibrary,
     guideSteps = [],
   },
@@ -120,7 +124,9 @@ export function createWorkshopView(
     inspectorKey = '',
     disposed = false,
     inputTime = performance.now(),
-    surface;
+    surface,
+    assemblies = null,
+    assemblyPlacement = null;
   // RAF still owns control damping and animation; GPU work follows scene invalidation.
   const renderCosts = [];
   let renderedFrames = 0,
@@ -151,7 +157,11 @@ export function createWorkshopView(
     inputTime = event.timeStamp;
   };
   for (const type of ['click', 'change']) root.addEventListener(type, captureInput, true);
-  const send = async (command) => {
+  const send = async (command, assemblyAction = false) => {
+    if (!assemblyAction && (assemblies?.busy() || assemblyPlacement?.active())) {
+      setMessage('Finish or cancel the assembly operation first.');
+      return { ok: false, message: 'Finish or cancel the assembly operation first.' };
+    }
     try {
       directDrag.end(false);
       if (exploded || explodeAmount) setExploded(false, true);
@@ -159,6 +169,7 @@ export function createWorkshopView(
       if (result?.ok === false) setMessage(explainFailure(result, frame?.metadata.blueprint));
       return result;
     } catch (error) {
+      if (assemblyAction && command.type === 'insert-assembly') throw error;
       const result = normalizeFailure(error);
       setMessage(explainFailure(result, frame?.metadata.blueprint));
       return result;
@@ -217,6 +228,11 @@ export function createWorkshopView(
   loadInput.addEventListener('change', async () => {
     const file = loadInput.files?.[0];
     if (!file) return;
+    if (assemblies?.busy() || assemblyPlacement?.active()) {
+      setMessage('Finish or cancel the assembly operation before loading a machine.');
+      loadInput.value = '';
+      return;
+    }
     try {
       await onLoad(file);
     } catch {
@@ -580,10 +596,11 @@ export function createWorkshopView(
   const right = element('div', 'inspector');
   right.setAttribute('aria-label', 'Selected part');
   machinePicker.append(partCount, partList);
-  const assemblies = assemblyLibrary
+  assemblies = assemblyLibrary
     ? createAssemblyLibraryPanel({
         library: assemblyLibrary,
-        send,
+        send: (command) => send(command, true),
+        onState: refreshAssemblyState,
         getCursor,
         select: (id) => {
           select(id);
@@ -602,7 +619,92 @@ export function createWorkshopView(
       })
     : null;
   rightPanel.append(machinePicker, right);
-  if (assemblies) left.insertBefore(assemblies.panel, palette);
+  const assemblyThumbnails = assemblyLibrary
+    ? createAssemblyThumbnails({ createMesh: createPartMesh, disposeMesh: disposePart })
+    : null;
+  const savedAssemblies = assemblyLibrary
+    ? createAssemblyBrowser({
+        library: assemblyLibrary,
+        editable: () => frame?.metadata.mode === 'build',
+        canCreate: () =>
+          frame?.metadata.mode === 'build' &&
+          frame.metadata.blueprint.parts.some(
+            (p) => !(frame.metadata.blueprint.assemblies ?? []).some((g) => g.ids.includes(p.id)),
+          ),
+        thumbnail: (definition) => assemblyThumbnails.image(definition),
+        onCreate: () => {
+          cancelInteraction();
+          assemblies.create();
+        },
+        onPlace: (item) => {
+          cancelInteraction();
+          assemblies.selectPart();
+          selected = null;
+          assemblyPlacement.start(item);
+        },
+      })
+    : null;
+  const savedLauncher = button('Saved assemblies', () => {
+    if (assemblies.busy() || assemblyPlacement.active()) {
+      setMessage('Finish or cancel the assembly operation first.');
+      return;
+    }
+    savedAssemblies.open();
+  });
+  const createAssembly = button('Create assembly…', () => {
+    if (assemblyPlacement.active()) {
+      setMessage('Finish or cancel placement first.');
+      return;
+    }
+    cancelInteraction();
+    assemblies.create();
+  });
+  createAssembly.className = 'create-assembly-launcher';
+  const placeAnother = button('Place another', () => {
+    if (frame?.metadata.mode !== 'build') return;
+    assemblies.selectPart();
+    selected = null;
+    assemblyPlacement.repeat();
+  });
+  placeAnother.hidden = true;
+  let assemblyStateKey = '';
+  function refreshAssemblyState() {
+    if (!frame || !assemblyPlacement) return;
+    const busy = assemblies.busy() || assemblyPlacement.active();
+    const nextKey = JSON.stringify([
+      blueprintKey,
+      frame.metadata.mode,
+      selected,
+      assemblies.selected(),
+      assemblies.members(),
+      busy,
+      assemblyPlacement.active(),
+      assemblyPlacement.hasPrevious(),
+      frame.metadata.editing,
+    ]);
+    if (nextKey === assemblyStateKey) return;
+    assemblyStateKey = nextKey;
+    right.hidden = assemblies.contextual() || assemblyPlacement.active();
+    const eligible = frame.metadata.blueprint.parts.some(
+      (p) => !(frame.metadata.blueprint.assemblies ?? []).some((g) => g.ids.includes(p.id)),
+    );
+    createAssembly.disabled = busy || frame.metadata.mode !== 'build' || !eligible;
+    createAssembly.title = eligible ? '' : 'Add an ungrouped part to create an assembly.';
+    surfaceSnapLabel.hidden = frame.metadata.mode !== 'build' || assemblyPlacement.active();
+    savedLauncher.disabled = busy;
+    placeAnother.hidden =
+      busy || frame.metadata.mode !== 'build' || !assemblyPlacement.hasPrevious();
+    run.disabled = busy || frame.metadata.mode === 'run';
+    undo.disabled = busy || frame.metadata.mode !== 'build' || !frame.metadata.editing?.undoCount;
+    redo.disabled = busy || frame.metadata.mode !== 'build' || !frame.metadata.editing?.redoCount;
+    for (const b of tools.querySelectorAll('[data-edit-tool]'))
+      b.disabled = busy || !!assemblies.selected();
+    for (const b of left.querySelectorAll('[data-placement]'))
+      b.disabled = busy || frame.metadata.mode !== 'build';
+    refreshPartList();
+    refreshSelectionVisuals();
+    editing?.select(busy || assemblies.selected() ? null : selected);
+  }
   const health = button('', () => showMachineCheck(), 'machine-health');
   health.hidden = true;
   viewport.append(health);
@@ -1153,21 +1255,57 @@ export function createWorkshopView(
     placementCue.style.top = `${Math.max(8, Math.min(event.clientY - rect.top + 16, rect.height - 50))}px`;
     placementCue.hidden = false;
   }
+  if (assemblies) {
+    assemblyPlacement = createAssemblyPlacementView({
+      getFrame: () => getAssemblyFrame?.() ?? { ...frame, cursor: getCursor() },
+      send: (command) => send(command, true),
+      scene,
+      camera,
+      canvas: renderer.domElement,
+      orbit: controls,
+      getMachineMeshes: () => meshes.values(),
+      createMesh: createPartMesh,
+      disposeMesh: disposePart,
+      invalidate: invalidateScene,
+      onState: refreshAssemblyState,
+      onDone: (id) => {
+        selected = null;
+        assemblies.selectGroup(id);
+        placeAnother.hidden = false;
+        refreshAssemblyState();
+      },
+      onCancel: () => savedAssemblies.open(savedLauncher),
+    });
+    left.insertBefore(savedLauncher, palette);
+    rightPanel.insertBefore(createAssembly, machinePicker);
+    rightPanel.insertBefore(assemblies.panel, right);
+    rightPanel.insertBefore(placeAnother, right);
+    rightPanel.insertBefore(assemblyPlacement.panel, right);
+    root.append(savedAssemblies.dialog);
+  }
   const raycaster = new THREE.Raycaster(),
     pointer = new THREE.Vector2();
   raycaster.params.Line.threshold = 0.012;
   let pointerStart = null;
   function refreshSelectionVisuals() {
     const edge = frame?.metadata.blueprint.connections.find((c) => c.id === tracedConnection);
-    const group = exploded
-      ? edge
-        ? [edge.a.part, edge.b.part]
-        : []
-      : frame?.metadata.mode === 'build'
-        ? mechanicalGroup(frame.metadata.blueprint, selected)
-        : [];
+    const group = assemblies?.contextual()
+      ? assemblies.drafting()
+        ? assemblies.members()
+        : [
+            ...new Set(
+              assemblies.members().flatMap((id) => mechanicalGroup(frame.metadata.blueprint, id)),
+            ),
+          ]
+      : exploded
+        ? edge
+          ? [edge.a.part, edge.b.part]
+          : []
+        : frame?.metadata.mode === 'build'
+          ? mechanicalGroup(frame.metadata.blueprint, selected)
+          : [];
     for (const [id, mesh] of meshes) {
-      const primary = id === selected,
+      const primary = assemblies?.drafting() ? id === assemblies.members()[0] : id === selected,
         member = group.includes(id);
       mesh.material.emissive.setHex(primary ? 0x614017 : member ? 0x123b35 : 0);
       const outline = mesh.userData.selectionOutline;
@@ -1177,7 +1315,9 @@ export function createWorkshopView(
     mirrorButton.disabled =
       (frame?.metadata.blueprint.parts.length ?? 0) < 2 ||
       frame?.metadata.mode !== 'build' ||
-      exploded;
+      exploded ||
+      !!assemblies?.busy() ||
+      !!assemblyPlacement?.active();
     scopeLabel.textContent = movementScope({
       mode: frame?.metadata.mode,
       tool: activeTool,
@@ -1233,6 +1373,13 @@ export function createWorkshopView(
     }
   }
   function select(id) {
+    if (assemblyPlacement?.active()) return;
+    if (assemblies?.drafting()) {
+      assemblies.toggle(id);
+      return;
+    }
+    assemblies?.selectPart();
+    right.hidden = false;
     invalidateScene();
     surface?.cancel(false);
     connectionTest?.release();
@@ -1254,11 +1401,20 @@ export function createWorkshopView(
     refreshPartList();
     refreshSelectionVisuals();
     updateConnections();
+    refreshAssemblyState();
   }
   const down = (event) => {
     pointerStart = [event.clientX, event.clientY];
   };
   const up = (event) => {
+    if (assemblyPlacement?.active()) {
+      if (
+        pointerStart &&
+        Math.hypot(event.clientX - pointerStart[0], event.clientY - pointerStart[1]) <= 5
+      )
+        assemblyPlacement.point(event);
+      return;
+    }
     if (surface?.active() || mirror?.active()) return;
     if (sourcePort && socketPreview) {
       if (
@@ -1311,6 +1467,9 @@ export function createWorkshopView(
     getFrame: () => frame,
     getMeshes: () => meshes,
     canStart: (event) =>
+      !assemblies?.busy() &&
+      !assemblies?.selected() &&
+      !assemblyPlacement?.active() &&
       !sourcePort &&
       !surface.active() &&
       !mirror.active() &&
@@ -1445,9 +1604,26 @@ export function createWorkshopView(
     message.textContent = String(text);
   }
   function refreshPartList() {
-    clearButton.disabled = selected === null;
+    clearButton.disabled = selected === null && !assemblies?.selected();
     partCount.textContent = `Machine · ${frame?.metadata?.blueprint?.parts.length ?? 0}`;
     partList.replaceChildren();
+    for (const group of frame?.metadata.blueprint.assemblies ?? []) {
+      const item = button(
+        `${group.name} · ${group.ids.length} parts`,
+        () => {
+          if (assemblies.busy() || assemblyPlacement.active()) return;
+          cancelInteraction();
+          selected = null;
+          assemblies.selectGroup(group.id);
+          machinePicker.open = false;
+        },
+        'part-list-item assembly-list-item',
+      );
+      item.setAttribute('aria-label', `Select assembly ${group.name}`);
+      item.setAttribute('aria-pressed', String(assemblies?.selected() === group.id));
+      item.dataset.assemblyId = group.id;
+      partList.append(item);
+    }
     for (const part of frame?.metadata?.blueprint?.parts ?? []) {
       const item = button(
         part.name,
@@ -1487,6 +1663,8 @@ export function createWorkshopView(
   }
   function refreshInspector() {
     if (!frame) return;
+    right.hidden = !!assemblies?.contextual() || !!assemblyPlacement?.active();
+    if (right.hidden) return;
     const parts = frame.metadata.blueprint.parts,
       part = parts.find((item) => item.id === selected),
       mode = frame.metadata.mode;
@@ -1512,6 +1690,17 @@ export function createWorkshopView(
     right.dataset.partId = selected ?? '';
     right.dataset.inspectorType = part?.type ?? '';
     right.replaceChildren();
+    const assembly = (frame.metadata.blueprint.assemblies ?? []).find((g) =>
+      g.ids.includes(selected),
+    );
+    if (assembly)
+      right.append(
+        button(`Select assembly ${assembly.name}`, () => {
+          cancelInteraction();
+          selected = null;
+          assemblies.selectGroup(assembly.id);
+        }),
+      );
     if (!part) {
       connectionTest.render(frame, null, false, right);
       right.append(
@@ -3028,6 +3217,7 @@ export function createWorkshopView(
       tracedConnection = null;
     mirror.update(next);
     assemblies?.update(next);
+    assemblyPlacement?.refresh();
     vehicleControls.update(next);
     partHelp.update();
     connectionTest.update(next);
@@ -3101,6 +3291,7 @@ export function createWorkshopView(
       b.disabled = frame.metadata.mode !== 'build';
     for (const b of more.querySelectorAll('[data-placement]'))
       b.disabled = frame.metadata.mode !== 'build';
+    refreshAssemblyState();
   }
   function readRenderedCenters() {
     return [...meshes].map(([id, mesh]) => {
@@ -3171,6 +3362,17 @@ export function createWorkshopView(
     }
     invalidateScene();
     if (document.querySelector('dialog[open]')) return;
+    if (assemblyPlacement?.active()) {
+      assemblyPlacement.key(event);
+      return;
+    }
+    if (assemblies?.busy()) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        assemblies.cancel();
+      }
+      return;
+    }
     inputTime = event.timeStamp;
     const key = event.key.toLowerCase();
     if (mirror.active() && event.key === 'Escape') {
@@ -3233,7 +3435,8 @@ export function createWorkshopView(
       return;
     }
     if (frame?.metadata.mode === 'build') {
-      const part = frame.metadata.blueprint.parts.find((p) => p.id === selected);
+      const part =
+        !assemblies?.selected() && frame.metadata.blueprint.parts.find((p) => p.id === selected);
       if (
         part &&
         (event.key === 'Delete' || key === 'x') &&
@@ -3509,6 +3712,9 @@ export function createWorkshopView(
       mirrorPlane.geometry.dispose();
       mirrorPlane.material.dispose();
       assemblies?.dispose();
+      assemblyPlacement?.dispose();
+      savedAssemblies?.dispose();
+      assemblyThumbnails?.dispose();
       connectionTest.dispose();
       directDrag.dispose();
       vehicleControls.dispose();

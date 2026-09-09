@@ -36,10 +36,10 @@ try {
       exact: true,
     })
     .click();
-  await page.locator('.assembly-library > summary').click();
   await page.getByRole('button', { name: 'Create assembly…', exact: true }).click();
   await page.getByRole('checkbox', { name: 'Include Powered Motor', exact: true }).check();
   await page.getByRole('textbox', { name: 'Assembly name', exact: true }).fill('Drive module');
+  await page.getByText('Named connection points', { exact: true }).click();
   await page
     .getByRole('textbox', { name: 'Expose Powered Motor · power (power)', exact: true })
     .fill('Power');
@@ -48,23 +48,37 @@ try {
   evidence.assert('equal', [original.assemblies.length, 1]);
   evidence.assert('equal', [original.parts.length, 2]);
   evidence.assert('equal', [original.connections.length, 1]);
-  evidence.assert('equal', [await page.locator('.assembly-card svg polygon').count(), 2]);
   await page.getByRole('button', { name: 'Saved assemblies', exact: true }).click();
-  await page.getByRole('searchbox', { name: 'Search my assemblies' }).fill('missing');
+  await page.getByRole('searchbox', { name: 'Search saved assemblies' }).fill('missing');
   evidence.assert('equal', [await page.locator('.assembly-card').count(), 0]);
-  await page.getByRole('searchbox', { name: 'Search my assemblies' }).fill('drive');
-  await page.getByRole('button', { name: 'Place Drive module', exact: true }).click();
+  await page.getByRole('searchbox', { name: 'Search saved assemblies' }).fill('drive');
+  const libraryDialog = page.getByRole('dialog', { name: 'Saved assemblies', exact: true });
+  await libraryDialog.getByRole('button', { name: 'Drive module', exact: true }).click();
+  await libraryDialog.locator('.assembly-thumbnail img').first().waitFor({ state: 'visible' });
+  evidence.assert('ok', [
+    await libraryDialog
+      .locator('.assembly-thumbnail img')
+      .first()
+      .evaluate((img) => img.complete && img.naturalWidth > 0),
+  ]);
+  await libraryDialog.getByRole('button', { name: 'Place in machine', exact: true }).click();
+  evidence.assert('equal', [await libraryDialog.isVisible(), false]);
+  evidence.assert('deepEqual', [(await observed()).metadata.blueprint, original]);
   await snapshot('placement-form');
-  await page.getByRole('button', { name: 'Insert assembly', exact: true }).click();
+  await page
+    .getByRole('region', { name: 'Assembly placement', exact: true })
+    .getByRole('button', { name: 'Place', exact: true })
+    .click();
   const copies = await snapshot('inserted');
   evidence.assert('equal', [copies.parts.length, 4]);
   evidence.assert('equal', [copies.connections.length, 2]);
   evidence.assert('equal', [copies.assemblies.length, 2]);
   evidence.assert('deepEqual', [copies.assemblies[0], original.assemblies[0]]);
   await page.getByRole('button', { name: 'Power Cell', exact: true }).click();
-  await page.getByRole('button', { name: 'In this machine', exact: true }).click();
-  const instance = page.locator('.assembly-instance').nth(1);
-  await instance.locator('summary').click();
+  if (!(await page.locator('.machine-picker').evaluate((node) => node.open)))
+    await page.locator('.machine-picker > summary').click();
+  await page.getByRole('button', { name: 'Select assembly Drive module-2', exact: true }).click();
+  const instance = page.locator('.assembly-instance');
   await instance
     .getByRole('combobox', { name: 'Connect Drive module-2 Power to', exact: true })
     .selectOption({ label: 'Power Cell · power (power)' });
@@ -102,12 +116,12 @@ try {
   await (await download).saveAs(`${out}/machine.json`);
   await page.reload();
   await page.waitForFunction(() => window.render_game_to_text);
-  await page.locator('.assembly-library > summary').click();
   await page.getByRole('button', { name: 'Saved assemblies', exact: true }).click();
   evidence.assert('equal', [
-    await page.getByRole('button', { name: 'Place Drive module', exact: true }).count(),
+    await libraryDialog.getByRole('button', { name: 'Drive module', exact: true }).count(),
     1,
   ]);
+  await libraryDialog.getByRole('button', { name: 'Close', exact: true }).click();
   // Load the UI-authored save through its actual file input; the library is not needed to resolve it.
   await page.locator('input[type=file]').first().setInputFiles(`${out}/machine.json`);
   await page.waitForFunction(
@@ -118,7 +132,14 @@ try {
   );
   const loaded = await snapshot('loaded');
   evidence.assert('deepEqual', [loaded, rotated]);
-  await page.getByRole('button', { name: 'Remove saved Drive module', exact: true }).click();
+  await page.getByRole('button', { name: 'Saved assemblies', exact: true }).click();
+  await libraryDialog.getByRole('button', { name: 'Drive module', exact: true }).click();
+  await libraryDialog.getByText('Saved item actions', { exact: true }).click();
+  await libraryDialog
+    .getByRole('button', { name: 'Remove saved Drive module', exact: true })
+    .click();
+  evidence.assert('deepEqual', [(await observed()).metadata.blueprint, rotated]);
+  await libraryDialog.getByRole('button', { name: 'Remove saved item', exact: true }).click();
   evidence.assert('deepEqual', [(await observed()).metadata.blueprint, rotated]);
   evidence.assert('equal', [await page.locator('.assembly-card').count(), 0]);
   evidence.assert('deepEqual', [evidence.errors, []]);

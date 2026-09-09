@@ -49,7 +49,7 @@
     "scripts/browser-session.mjs": "92ef0cbb5957b8997d5779b6fd4d15912bd3fc3584732cae377b671f6a69ace7",
     "scripts/module-graph.mjs": "882d65af4a6b2eec7ef66161d1edc48451b78484c9639aea236814a40ce52eeb",
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
-    "scripts/verify-mirror-browser.mjs": "fa0fe6d6665a4ce99d036deb739a0a746a6be561739e65d801b6cdafe864052b",
+    "scripts/verify-mirror-browser.mjs": "ef7683a744849a300fa52f2cda472d210bb7956880500011a186dad46640ed72",
     "src/model/connection-test-paths.mjs": "e14f232b1198f447acf9f7ce71eac3fbd5692221b3a546875d81021629ff22f5",
     "src/presentation/part-help-input.mjs": "6380d1c3b9772c3c7522ef5a833a42a81a9c0935253e09ce026cadc0eb0491ec",
     "src/presentation/vehicle-controls.mjs": "680bc573b80113ad7e7c917fb8d4e87b4a3344b26f9fa296ef49645347ab6ac9",

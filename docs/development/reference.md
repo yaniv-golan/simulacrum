@@ -82,7 +82,7 @@ These are registered commands and checks, not evidence that they passed.
 | geometry-agreement | [partPrimitives](../../src/model/geometry.mjs), [compileAssembly](../../src/model/assembly.mjs) | invariant-controls, verify-property-focus, verify-surface-browser |
 | identity-material-admission | [compileAssembly](../../src/model/assembly.mjs), [MATERIALS](../../src/model/catalog.mjs) | identity |
 | checkpoint-next-step | [createSession](../../src/simulation/session.mjs) | invariant-controls |
-| copied-graph-integrity | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [insertAssembly](../../src/model/reusable-assemblies.mjs) | invariant-controls, verify-assemblies-browser, verify-assembly-ux-browser |
+| copied-graph-integrity | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [insertAssembly](../../src/model/reusable-assemblies.mjs), [createAssemblyPlacement](../../src/presentation/assembly-placement.mjs) | invariant-controls, verify-assemblies-browser, verify-assembly-ux-browser |
 | connection-display-isolation | [connectionRenderSpecs](../../src/presentation/connection-render.mjs), [pickableObjects](../../src/presentation/connection-view.mjs) | invariant-controls, verify-connection-test-browser, verify-exploded-browser |
 | capture-write-admission | [createPlaytestServer](../../scripts/playtest-server.mjs) | invariant-controls |
 | capture-cloud-integrity | [CaptureStore](../../scripts/playtest/cloud-store.mjs) | invariant-controls |

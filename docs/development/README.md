@@ -127,7 +127,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"4ea76e74e7ec1569470f4406f8e34246b2dfd5f30c5afbf841dd2f1cb18767a1","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"9bbdb30ff52de7156f8c65066e30977ff8bb84abecb9df84332cc6402daaa080","disposition":"still accurate","rationale":"Generated references add recording drain, sampling, codec and review invariants; regeneration and individual review rules remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"8b01569bc24b5ecc59a76c54d2650bd6b1ecf8b1f6d1a1db551c5b79036f4070","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"0f07dfc953ce8d7b1f4922a9590ba6e92b5a07001cc66532f1d615e4e99276fa","disposition":"still accurate","rationale":"Generated reference adds the existing copied-graph invariant placement owner; source identity, regeneration and per-section review workflow are unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -222,7 +222,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"f627589246175c2b864bc2024a72d59336adf70171534764629feb3aa7874f38","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5f1072c93cbc30b31ecd9065680852a9b84c68c504152b46f14e0bca8543bc8b","disposition":"still accurate","rationale":"The remote client explicitly adds capture-stream to its audited dependency shape. Existing backend, receipt, lifecycle and construction checks remain required; screenshot composition does not alter receipt ordering."} -->
+<!-- doc-review {"version":1,"fingerprint":"f8d33083c1e637109bea9469c187b92c82468b6711387e7ffd81c0a9dd1e1a93","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7749c58e74939020afaa6901d418fe3f144e5240e8686654db08aa90a896d747","disposition":"still accurate","rationale":"The existing assembly UX check gains regression journeys and the placement control gains mode admission coverage; browser selection and completion tiers remain manifest-derived and unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

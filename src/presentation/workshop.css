@@ -2739,3 +2739,275 @@ body:has(.playtest-panel) .guide-feedback {
 .motion-values details p {
   max-width: 32ch;
 }
+
+/* Saved browsing is requested content; instance editing stays with selection. */
+.assembly-browser {
+  width: min(860px, calc(100vw - 32px));
+  height: min(640px, calc(100dvh - 32px));
+  max-width: none;
+  max-height: none;
+  box-sizing: border-box;
+  padding: 20px;
+  color: #e5eff2;
+  background: #192a33;
+  border: 1px solid #58717e;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.assembly-browser[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.assembly-browser::backdrop {
+  background: #071018a8;
+}
+.assembly-browser header,
+.assembly-filters {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.assembly-browser h2 {
+  margin: 0;
+  flex: 1;
+  font-size: 22px;
+}
+.assembly-filters input {
+  flex: 1;
+  min-width: 0;
+}
+.assembly-browser-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 18px;
+  min-height: 0;
+}
+.assembly-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  align-content: start;
+  gap: 10px;
+  overflow: auto;
+  min-width: 0;
+  padding: 2px;
+}
+.assembly-card {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  text-align: left;
+  gap: 7px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.assembly-card[aria-pressed='true'] {
+  border-color: #efb665;
+  background: #30434c;
+}
+.assembly-thumbnail {
+  aspect-ratio: 1.6;
+  width: 100%;
+  background: #11232c;
+  border-radius: 6px;
+}
+.assembly-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.assembly-detail {
+  min-width: 0;
+  overflow: auto;
+  padding: 2px 10px;
+  border-left: 1px solid #42606d;
+}
+.assembly-detail small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.assembly-detail button,
+.assembly-detail input {
+  max-width: 100%;
+  margin: 6px 0;
+}
+.assembly-detail h3 {
+  overflow-wrap: anywhere;
+}
+.assembly-back {
+  display: none;
+}
+.assembly-browser input,
+.assembly-browser select,
+.assembly-placement input,
+.assembly-placement select {
+  background: #10232c;
+  color: #e5eff2;
+  border: 1px solid #58717e;
+  border-radius: 5px;
+  padding: 8px;
+  font: inherit;
+  box-sizing: border-box;
+}
+.assembly-placement {
+  padding: 12px;
+  border: 1px solid #efb665;
+  border-radius: 8px;
+  margin: 8px 0;
+}
+.assembly-placement fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.assembly-placement label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.assembly-placement input {
+  min-width: 0;
+  width: 100%;
+}
+.assembly-placement button {
+  margin: 5px 3px 0 0;
+}
+.assembly-nudges {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.assembly-library {
+  border: 0;
+  padding: 4px;
+}
+.assembly-library p,
+.assembly-library label,
+.assembly-library input:not([type='checkbox']),
+.assembly-library select {
+  font-size: 14px;
+}
+.assembly-list-item[aria-pressed='true'] {
+  border-color: #efb665;
+}
+@media (max-width: 700px) {
+  .assembly-browser {
+    padding: 12px;
+    gap: 8px;
+  }
+  .assembly-browser-body {
+    display: block;
+  }
+  .assembly-results,
+  .assembly-detail {
+    height: 100%;
+  }
+  .assembly-detail {
+    display: none;
+    border-left: 0;
+    padding: 0 4px;
+  }
+  .show-assembly-detail .assembly-results {
+    display: none;
+  }
+  .show-assembly-detail .assembly-detail,
+  .assembly-back {
+    display: block;
+  }
+  .assembly-detail .assembly-thumbnail {
+    max-width: 200px;
+  }
+  .assembly-filters select {
+    max-width: 120px;
+  }
+}
+
+.workshop:has(.assembly-browser[open]) .assembly-library {
+  visibility: hidden;
+}
+
+.assembly-nudges {
+  grid-template-columns: repeat(2, 1fr);
+}
+.assembly-placement-actions {
+  position: sticky;
+  bottom: 0;
+  background: #17232b;
+  padding: 6px 0;
+}
+@media (max-width: 780px) {
+  .workshop:has(.assembly-placement:not([hidden])) {
+    min-height: 0;
+  }
+  .workshop:has(.assembly-placement:not([hidden])) > .workshop-header,
+  .workshop:has(.assembly-placement:not([hidden])) > .workshop-footer,
+  .workshop:has(.assembly-placement:not([hidden])) .parts-panel {
+    display: none;
+  }
+  .workshop:has(.assembly-placement:not([hidden])) .workshop-body {
+    grid-template-columns: minmax(0, 1fr) min(280px, 50vw);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .workshop:has(.assembly-placement:not([hidden])) .viewport {
+    min-height: 0;
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .workshop:has(.assembly-placement:not([hidden])) .inspector-panel {
+    grid-column: 2;
+    grid-row: 1;
+    overflow: hidden;
+  }
+  .inspector-panel:has(.assembly-placement:not([hidden])) > :not(.assembly-placement) {
+    display: none;
+  }
+  .assembly-placement:not([hidden]) {
+    margin: 0;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+  }
+  .assembly-placement h3 {
+    margin: 0 0 8px;
+  }
+  .assembly-placement p {
+    margin: 4px 0 8px;
+  }
+  .assembly-placement fieldset {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 3px;
+  }
+  .assembly-placement-actions {
+    flex: none;
+    position: static;
+  }
+  .assembly-placement-actions button {
+    padding: 8px;
+  }
+}
+
+.inspector-panel {
+  position: relative;
+}
+.create-assembly-launcher {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  z-index: 2;
+  padding: 7px 9px;
+  font-size: 12px;
+}
+.machine-picker > summary {
+  width: calc(100% - 130px);
+  padding-right: 0;
+  white-space: nowrap;
+}
+
+.assembly-results > p {
+  grid-column: 1 / -1;
+}

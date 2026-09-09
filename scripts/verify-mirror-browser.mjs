@@ -69,17 +69,17 @@ try {
     .getByRole('button', { name: 'Attach to Powered Motor · shaft Moves Grip Wheel', exact: true })
     .click();
   // A named one-part group must not narrow ordinary mechanical movement or mirroring.
-  await page.locator('.assembly-library > summary').click();
   await page.getByRole('button', { name: 'Create assembly…', exact: true }).click();
   await page.getByRole('textbox', { name: 'Assembly name', exact: true }).fill('Wheel module');
   await page.getByRole('button', { name: 'Create and save assembly', exact: true }).click();
+  await page.getByRole('button', { name: 'Inspect Grip Wheel', exact: true }).click();
+  await page.locator('.machine-picker > summary').click();
   const original = await snapshot('built-source');
   evidence.assert('equal', [original.assemblies[0].ids.length, 1]);
   evidence.assert('equal', [
     await page.getByText('Moves 3 parts together', { exact: true }).isVisible(),
     true,
   ]);
-  await page.locator('.assembly-library > summary').click();
   await page.keyboard.press('PageUp');
   const moved = await snapshot('connected-parts-moved');
   for (const part of original.parts) {

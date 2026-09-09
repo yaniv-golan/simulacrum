@@ -495,6 +495,7 @@ export async function mountWorkshopApp(root) {
     onFailure,
     onRecording,
     getCursor: () => workshop.observe().cursor,
+    getAssemblyFrame: () => ({ ...frame(), cursor: workshop.observe().cursor }),
     onInteraction: logInteraction,
     guideSteps: starterSteps(),
     assemblyLibrary: createAssemblyLibrary({

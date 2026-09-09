@@ -1,8 +1,8 @@
+import { mechanicalGroup } from '../model/connection-graph.mjs';
 import { CATALOG } from '../model/catalog.mjs';
 import { surfaceRegions } from '../model/surfaces.mjs';
-import { partPrimitives } from '../model/geometry.mjs';
-import { rotateVector, multiplyQuaternion } from '../model/transforms.mjs';
-import { captureAssembly, insertAssembly } from '../model/reusable-assemblies.mjs';
+import { multiplyQuaternion } from '../model/transforms.mjs';
+import { captureAssembly } from '../model/reusable-assemblies.mjs';
 import { DEFAULT_CONTROL_BINDING } from '../model/control-bindings.mjs';
 import { explainFailure } from '../model/messages.mjs';
 
@@ -43,86 +43,6 @@ function endpoints(bp, ids) {
       })),
     ]);
 }
-function preview(bp) {
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', `${bp.name} layout preview`);
-  const project = ([x, y, z]) => [x - z * 0.55, -y + (x + z) * 0.25];
-  const shapes = bp.parts.flatMap((part) =>
-    partPrimitives(part).map((shape) => {
-      const points = [],
-        localPoints = [];
-      if (shape.kind === 'cylinder') {
-        for (const x of [-1, 1])
-          for (let step = 0; step < 32; step++) {
-            const angle = (step * Math.PI) / 16;
-            localPoints.push([
-              x * shape.halfExtents[0],
-              Math.cos(angle) * shape.halfExtents[1],
-              Math.sin(angle) * shape.halfExtents[2],
-            ]);
-          }
-      } else {
-        for (const x of [-1, 1])
-          for (const y of [-1, 1])
-            for (const z of [-1, 1])
-              localPoints.push([
-                x * shape.halfExtents[0],
-                y * shape.halfExtents[1],
-                z * shape.halfExtents[2],
-              ]);
-      }
-      for (const point of localPoints) {
-        const local = rotateVector(shape.rotation, point).map((v, i) => v + shape.position[i]);
-        points.push(
-          project(rotateVector(part.rotation, local).map((v, i) => v + part.position[i])),
-        );
-      }
-      return {
-        points,
-        color: { steel: 0x8198a1, aluminium: 0xa6bec7, rubber: 0x3c525b }[
-          part.authoredMaterial[shape.id] ?? shape.materialKey
-        ],
-      };
-    }),
-  );
-  const points = shapes.flatMap((s) => s.points),
-    xs = points.map((p) => p[0]),
-    ys = points.map((p) => p[1]);
-  const x = Math.min(...xs),
-    y = Math.min(...ys),
-    w = Math.max(0.1, Math.max(...xs) - x),
-    h = Math.max(0.1, Math.max(...ys) - y),
-    pad = Math.max(w, h) * 0.12;
-  svg.setAttribute('viewBox', `${x - pad} ${y - pad} ${w + 2 * pad} ${h + 2 * pad}`);
-  for (const shape of shapes) {
-    // Convex projected box silhouette from authored primitive frames.
-    const sorted = shape.points.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-    const cross = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
-    const half = (list) => {
-      const out = [];
-      for (const p of list) {
-        while (out.length > 1 && cross(out.at(-2), out.at(-1), p) <= 0) out.pop();
-        out.push(p);
-      }
-      return out.slice(0, -1);
-    };
-    const polygon = document.createElementNS(svg.namespaceURI, 'polygon');
-    polygon.setAttribute(
-      'points',
-      [...half(sorted), ...half([...sorted].reverse())].map((p) => p.join(',')).join(' '),
-    );
-    polygon.setAttribute(
-      'fill',
-      typeof shape.color === 'number' ? `#${shape.color.toString(16).padStart(6, '0')}` : '#69a4b5',
-    );
-    polygon.setAttribute('stroke', '#d3e7ec');
-    polygon.setAttribute('stroke-width', String(Math.max(w, h) * 0.006));
-    svg.append(polygon);
-  }
-  return svg;
-}
-
 export function createAssemblyLibraryPanel({
   library,
   send,
@@ -130,18 +50,20 @@ export function createAssemblyLibraryPanel({
   select,
   getSelected,
   mount,
+  onState = () => {},
 }) {
-  const panel = node('details');
+  const panel = node('section');
   panel.className = 'assembly-library';
-  panel.append(node('summary', 'My assemblies'));
+  panel.setAttribute('aria-label', 'Selected assembly');
+  panel.hidden = true;
   const content = node('div'),
     status = node('p');
   status.setAttribute('role', 'status');
   panel.append(content, status);
   let frame,
     key = '',
-    query = '',
-    activeView = 'machine',
+    selectedId = null,
+    pending = false,
     draft = null,
     disposed = false;
   const say = (text) => {
@@ -151,6 +73,7 @@ export function createAssemblyLibraryPanel({
     say(error.reasonCode ? explainFailure(error, frame.metadata.blueprint) : error.message);
   const bp = () => frame.metadata.blueprint;
   const editable = () => frame?.metadata.mode === 'build';
+  const identity = () => JSON.stringify([bp(), frame.metadata.mode, getCursor()]);
   async function act(command) {
     const reply = await send(command);
     if (!reply?.ok) {
@@ -165,11 +88,13 @@ export function createAssemblyLibraryPanel({
       ids: new Set(group.ids),
       name: group.name,
       ports: new Map(group.ports.map((port) => [JSON.stringify(port.endpoint), port.name])),
-      source: JSON.stringify(bp()),
+      source: identity(),
     };
     draw();
+    onState();
   }
   function create() {
+    if (!editable() || draft || pending) return;
     const candidate = getSelected();
     const selected = (bp().assemblies ?? []).some((group) => group.ids.includes(candidate))
       ? null
@@ -178,14 +103,19 @@ export function createAssemblyLibraryPanel({
       ids: new Set(selected ? [selected] : []),
       name: 'My assembly',
       ports: new Map(),
-      source: JSON.stringify(bp()),
+      source: identity(),
     };
     draw();
+    onState();
+    panel.querySelector('input')?.focus();
   }
   function drawDraft() {
     content.append(
       node('h3', draft.id ? 'Edit assembly' : 'Create assembly'),
-      node('p', 'Choose parts, then name the connections to expose. Blank names stay internal.'),
+      node(
+        'p',
+        'Click parts in the machine or check them below. The first chosen part is the assembly origin.',
+      ),
     );
     const name = input('Assembly name', draft.name);
     name.maxLength = 128;
@@ -203,11 +133,26 @@ export function createAssemblyLibraryPanel({
       box.onchange = () => {
         box.checked ? draft.ids.add(part.id) : draft.ids.delete(part.id);
         draw();
+        onState();
+        panel.querySelector(`[aria-label=${JSON.stringify('Include ' + part.name)}]`)?.focus();
       };
-      label.append(box, node('span', part.name));
+      label.append(
+        box,
+        node('span', part.name + (box.disabled ? ' · already in another assembly' : '')),
+      );
       members.append(label);
     }
     content.append(members);
+    const origin = bp().parts.find((p) => p.id === [...draft.ids][0]);
+    content.append(
+      node(
+        'p',
+        origin
+          ? `Origin: ${origin.name} · highlighted in amber. Removing it uses the next selected part.`
+          : 'Choose the first part to set the assembly origin.',
+      ),
+    );
+
     const entries = endpoints(bp(), [...draft.ids]);
     // Keep authored noncentral aliases when editing a loaded definition.
     for (const key of draft.ports.keys()) {
@@ -229,6 +174,9 @@ export function createAssemblyLibraryPanel({
           });
       }
     }
+    const ports = node('details');
+    ports.append(node('summary', 'Named connection points'));
+    content.append(ports);
     for (const entry of entries) {
       const label = node('label', entry.label),
         key = JSON.stringify(entry.endpoint),
@@ -237,7 +185,7 @@ export function createAssemblyLibraryPanel({
       field.maxLength = 128;
       field.oninput = () => draft.ports.set(key, field.value);
       label.append(field);
-      content.append(label);
+      ports.append(label);
     }
     const crossing = bp().connections.filter(
       (e) => draft.ids.has(e.a.part) !== draft.ids.has(e.b.part),
@@ -261,12 +209,31 @@ export function createAssemblyLibraryPanel({
         'Receiver keys are copied unchanged. Copies with the same keys respond together until you edit their bindings.',
       ),
     );
+    if (draft.source !== identity()) {
+      content.append(
+        node('p', 'Machine changed. Revalidate your selected parts before applying.'),
+        button('Revalidate assembly', () => {
+          draft.ids = new Set(
+            [...draft.ids].filter(
+              (id) =>
+                bp().parts.some((p) => p.id === id) &&
+                !(bp().assemblies ?? []).some((g) => g.id !== draft.id && g.ids.includes(id)),
+            ),
+          );
+          if (draft.id && !(bp().assemblies ?? []).some((g) => g.id === draft.id)) {
+            say('This assembly no longer exists. Cancel to create a new one.');
+            return;
+          }
+          draft.source = identity();
+          draw();
+          onState();
+        }),
+      );
+    }
     content.append(
       button(draft.id ? 'Apply assembly changes' : 'Create and save assembly', async () => {
-        if (!draft || draft.source !== JSON.stringify(bp())) {
-          draft = null;
-          draw();
-          say('Machine changed. Choose the parts again.');
+        if (pending || !editable() || !draft || draft.source !== identity()) {
+          say('Revalidate the assembly before applying.');
           return;
         }
         const spec = {
@@ -280,8 +247,14 @@ export function createAssemblyLibraryPanel({
             })),
         };
         try {
+          pending = true;
+          for (const field of content.querySelectorAll('input, select, button'))
+            field.disabled = true;
+          say('Applying assembly…');
+          onState();
           if (draft.id) {
             if (await act({ type: 'edit-assembly', id: draft.id, ...spec })) {
+              selectedId = draft.id;
               draft = null;
               draw();
               say('Assembly updated. Saved library snapshots keep their own contents.');
@@ -290,11 +263,15 @@ export function createAssemblyLibraryPanel({
           }
           const { definition } = captureAssembly(bp(), spec);
           if (!(await act({ type: 'create-assembly', ...spec }))) return;
+          selectedId =
+            (bp().assemblies ?? []).find(
+              (g) => g.ids.length === spec.ids.length && g.ids.every((id) => spec.ids.includes(id)),
+            )?.id ?? null;
           draft = null;
           try {
             library.add(definition);
             draw();
-            say(`Saved ${spec.name}. Place an independent copy from My assemblies.`);
+            say(`Saved ${spec.name}. Place an independent copy from Saved assemblies.`);
           } catch (error) {
             draw();
             fail(error);
@@ -304,17 +281,27 @@ export function createAssemblyLibraryPanel({
           }
         } catch (error) {
           fail(error);
+        } finally {
+          pending = false;
+          draw();
+          onState();
         }
       }),
       button('Cancel assembly', () => {
+        if (pending) return;
         draft = null;
         draw();
+        onState();
       }),
     );
   }
   function poseFields(container, position, rotation, apply, actionLabel) {
     const fields = position.map((value, i) => {
-      const field = input(`${actionLabel} ${'XYZ'[i]} (m)`, value, 'number');
+      const field = input(
+        `${actionLabel} ${'XYZ'[i]} (m)`,
+        Number(value.toPrecision(12)),
+        'number',
+      );
       field.step = '0.05';
       const label = node('label', `${'XYZ'[i]} (m)`);
       label.append(field);
@@ -324,7 +311,9 @@ export function createAssemblyLibraryPanel({
     container.append(
       button(actionLabel, () =>
         apply(
-          fields.map((f) => Number(f.value)),
+          fields.map((f, i) =>
+            f.value === String(Number(position[i].toPrecision(12))) ? position[i] : f.valueAsNumber,
+          ),
           rotation,
         ),
       ),
@@ -334,6 +323,7 @@ export function createAssemblyLibraryPanel({
   function showInstance(group) {
     const section = node('details');
     section.className = 'assembly-instance';
+    section.open = true;
     section.dataset.assemblyId = group.id;
     section.append(node('summary', `${group.name} · ${group.ids.length} parts`));
     section.append(
@@ -484,6 +474,13 @@ export function createAssemblyLibraryPanel({
     controls.append(button(`Edit ${group.name}`, () => edit(group)));
     controls.disabled = !editable();
     const origin = bp().parts.find((p) => p.id === group.ids[0]);
+    const movement = new Set(group.ids.flatMap((id) => mechanicalGroup(bp(), id)));
+    controls.append(
+      node(
+        'p',
+        `Move and rotate affect ${movement.size} highlighted parts, including mechanical connections.`,
+      ),
+    );
     poseFields(
       controls,
       origin.position,
@@ -522,183 +519,72 @@ export function createAssemblyLibraryPanel({
   }
   function draw() {
     if (disposed || !frame) return;
-    const openGroups = [...content.querySelectorAll('.assembly-instance[open]')].map(
-      (el) => el.dataset.assemblyId,
-    );
     content.replaceChildren();
+    panel.hidden = !draft && !(bp().assemblies ?? []).some((g) => g.id === selectedId);
     if (draft) {
       drawDraft();
+      if (pending)
+        for (const field of content.querySelectorAll('input, select, button'))
+          field.disabled = true;
       return;
     }
-    const createButton = button('Create assembly…', create);
-    createButton.disabled = !editable() || !bp().parts.length;
-    const navigation = node('div');
-    navigation.className = 'assembly-navigation';
-    const instances = node('div'),
-      savedPane = node('div');
-    instances.className = savedPane.className = 'assembly-workspace';
-    const switchView = (view) => {
-      activeView = view;
-      instances.hidden = view !== 'machine';
-      savedPane.hidden = view !== 'saved';
-      for (const b of navigation.querySelectorAll('button[data-view]'))
-        b.setAttribute('aria-pressed', String(b.dataset.view === view));
-    };
-    for (const [view, label] of [
-      ['machine', 'In this machine'],
-      ['saved', 'Saved assemblies'],
-    ]) {
-      const b = button(label, () => switchView(view));
-      b.dataset.view = view;
-      navigation.append(b);
-    }
-    content.append(navigation, createButton);
-    for (const group of bp().assemblies ?? []) showInstance(group);
-    for (const group of content.querySelectorAll('.assembly-instance'))
-      group.open = openGroups.includes(group.dataset.assemblyId);
-    instances.append(...content.querySelectorAll('.assembly-instance'));
-    content.append(instances, savedPane);
-    const search = input('Search my assemblies', query, 'search');
-    search.placeholder = 'Search assemblies';
-    savedPane.append(search);
-    const list = node('div');
-    savedPane.append(list);
-    function items() {
-      list.replaceChildren();
-      try {
-        const saved = library
-          .list()
-          .filter((item) => item.definition.name.toLowerCase().includes(query.toLowerCase()));
-        if (!saved.length)
-          list.append(node('p', 'No saved assemblies. Create one from parts in your machine.'));
-        for (const item of saved) {
-          const card = node('article');
-          card.className = 'assembly-card';
-          card.append(
-            preview(item.definition),
-            node('strong', item.definition.name),
-            node(
-              'small',
-              `${item.definition.parts.length} parts · ${item.definition.assemblies[0].ports.map((p) => p.name).join(', ') || 'No exposed ports'}`,
-            ),
-          );
-          const inspection = node('details');
-          inspection.append(node('summary', 'Inspect saved parts'));
-          const savedName = input(`Saved name ${item.definition.name}`, item.definition.name);
-          inspection.append(
-            savedName,
-            button('Rename saved assembly', () => {
-              try {
-                library.rename(item.id, savedName.value.trim());
-                items();
-                say('Saved assembly renamed.');
-              } catch (error) {
-                fail(error);
-              }
-            }),
-          );
-          for (const part of item.definition.parts) {
-            inspection.append(node('strong', part.name));
-            for (const [key, value] of Object.entries(part.parameters))
-              inspection.append(node('small', `${key}: ${value}`));
-            if (part.type === 'commandReceiver') {
-              const binding = part.controlBinding ?? DEFAULT_CONTROL_BINDING;
-              for (const axis of ['drive', 'steer'])
-                inspection.append(
-                  node(
-                    'small',
-                    `${axis}: ${binding[axis].positiveKeys.join(', ') || 'none'} / ${binding[axis].negativeKeys.join(', ') || 'none'} · gain ${binding[axis].gain}`,
-                  ),
-                );
-            }
-          }
-          card.append(inspection);
-          const place = button(`Place ${item.definition.name}`, () => {
-            const form = node('fieldset');
-            form.append(node('legend', `Place ${item.definition.name}`));
-            const source = item.definition.parts.find(
-              (p) => p.id === item.definition.assemblies[0].ids[0],
-            );
-            const position = [...source.position];
-            // Suggest the first admitted copy beside the current machine, using the real proposal.
-            const right = Math.max(0, ...bp().parts.map((p) => p.position[0]));
-            let proposal;
-            for (let n = 1; n <= 30; n++) {
-              position[0] = right + n;
-              try {
-                proposal = insertAssembly(bp(), item.definition, position, source.rotation);
-                break;
-              } catch {}
-            }
-            const cursor = getCursor();
-            poseFields(
-              form,
-              position,
-              source.rotation,
-              async (p, r) => {
-                if (
-                  await act({
-                    type: 'insert-assembly',
-                    definition: item.definition,
-                    position: p,
-                    rotation: r,
-                    expectedCursor: cursor,
-                  })
-                ) {
-                  say(`Placed ${item.definition.name}. Inspect its ports and receiver keys below.`);
-                }
-              },
-              'Insert assembly',
-            );
-            if (!proposal)
-              form.append(
-                node('p', 'Choose a clear position; placement is checked before insertion.'),
-              );
-            form.append(
-              button('Cancel placement', () => {
-                form.remove();
-                place.disabled = !editable();
-              }),
-            );
-            card.append(form);
-            place.disabled = true;
-          });
-          place.disabled = !editable();
-          card.append(
-            place,
-            button(`Remove saved ${item.definition.name}`, () => {
-              try {
-                library.remove(item.id);
-                items();
-                say('Removed the library item. Placed copies remain in the machine.');
-              } catch (error) {
-                fail(error);
-              }
-            }),
-          );
-          list.append(card);
-        }
-      } catch (error) {
-        fail(error);
-      }
-    }
-    search.oninput = () => {
-      query = search.value;
-      items();
-    };
-    items();
-    switchView(activeView);
+    const group = (bp().assemblies ?? []).find((g) => g.id === selectedId);
+    if (group) showInstance(group);
   }
   return {
     panel,
+    create,
+    busy: () => !!draft || pending,
+    drafting: () => !!draft,
+    selected: () =>
+      (frame?.metadata.blueprint.assemblies ?? []).some((g) => g.id === selectedId)
+        ? selectedId
+        : null,
+    contextual: () => !panel.hidden,
+    members: () =>
+      draft
+        ? [...draft.ids]
+        : ((bp()?.assemblies ?? []).find((g) => g.id === selectedId)?.ids ?? []),
+    selectGroup(id) {
+      if (draft || pending) return;
+      selectedId = id;
+      draw();
+      onState();
+    },
+    selectPart() {
+      selectedId = null;
+      draw();
+    },
+    toggle(id) {
+      if (
+        !draft ||
+        pending ||
+        !id ||
+        !editable() ||
+        (bp().assemblies ?? []).some((g) => g.id !== draft.id && g.ids.includes(id))
+      )
+        return;
+      draft.ids.has(id) ? draft.ids.delete(id) : draft.ids.add(id);
+      draw();
+      onState();
+    },
+    cancel() {
+      if (pending) return;
+      draft = null;
+      draw();
+      onState();
+    },
     update(next) {
       frame = next;
-      const nextKey = JSON.stringify([next.metadata.blueprint, next.metadata.mode]);
+      const nextKey = JSON.stringify([
+        next.metadata.blueprint,
+        next.metadata.mode,
+        draft ? getCursor() : null,
+      ]);
       if (nextKey !== key) {
         key = nextKey;
-        if (draft && (!editable() || draft.source !== JSON.stringify(bp()))) {
-          draft = null;
-          say('Assembly creation closed because the machine changed.');
+        if (draft && (!editable() || draft.source !== identity())) {
+          say('Machine changed. Your draft is retained; revalidate before applying.');
         }
         draw();
       }

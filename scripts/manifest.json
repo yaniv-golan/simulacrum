@@ -1003,7 +1003,7 @@
       "id": "copied-graph-integrity",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Mirror and reusable assembly copies allocate fresh identities, preserve authored fields and internal connections, and remain independent through editing and persistence. Named assembly aliases bind ordinary endpoints; grouping does not change compiled physics. Interface edits preserve ordinary state, named surface previews include all editor members, and saved snapshots remain distinguishable and inspectable.",
+      "guarantee": "Mirror and reusable assembly copies allocate fresh identities, preserve authored fields and internal connections, and remain independent through editing and persistence. Named assembly aliases bind ordinary endpoints; grouping does not change compiled physics. Interface edits preserve ordinary state, named surface previews include all editor members, and saved snapshots remain distinguishable and inspectable. Saved assembly browsing and placement proposals do not mutate the machine; placement starts only in Build, and assembly selection cannot target a hidden member with part shortcuts. Browser redraws preserve focus and navigation. Stale proposals require explicit revalidation, and pending or uncertain insertions cannot be dispatched twice.",
       "owners": [
         {
           "path": "src/model/mirror-assembly.mjs",
@@ -1012,6 +1012,10 @@
         {
           "path": "src/model/reusable-assemblies.mjs",
           "anchor": "insertAssembly"
+        },
+        {
+          "path": "src/presentation/assembly-placement.mjs",
+          "anchor": "createAssemblyPlacement"
         }
       ],
       "checks": ["invariant-controls", "verify-assemblies-browser", "verify-assembly-ux-browser"],
@@ -1024,6 +1028,10 @@
           {
             "path": "test/reusable-assemblies.test.mjs",
             "anchor": "assembly capture and repeated insertion preserve ordinary graphs, aliases and independent bindings"
+          },
+          {
+            "path": "test/assembly-placement.test.mjs",
+            "anchor": "an applied placement with a missing or failed reply reconciles against authored state"
           }
         ],
         "negative": [
@@ -1034,6 +1042,14 @@
           {
             "path": "test/reusable-assemblies.test.mjs",
             "anchor": "assembly admission rejects dangling aliases, overlapping groups, malformed definitions and nested capture"
+          },
+          {
+            "path": "test/assembly-placement.test.mjs",
+            "anchor": "assembly preview rejects stale source until explicitly revalidated"
+          },
+          {
+            "path": "test/assembly-placement.test.mjs",
+            "anchor": "placement admission preserves the previous proposal outside Build"
           }
         ]
       },
