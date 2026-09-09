@@ -160,6 +160,11 @@ export function buildModuleGraph(
       purpose === 'test-selection' && (path.startsWith('scripts/') || path.startsWith('test/'));
     if (lstatSync(resolve(root, path)).isSymbolicLink()) continue;
     const info = { dependencies: new Set(), imports: [], dom: false };
+    const opaque = (expression) => {
+      info.opaqueInputs = true;
+      info.opaqueReads ??= [];
+      info.opaqueReads.push(expression);
+    };
     nodes.set(path, info);
     const add = (specifier, kind) => {
       const typeOnly = kind === 'type';
@@ -325,10 +330,11 @@ export function buildModuleGraph(
           // The URL visitor records this data edge. Unresolved files and all other
           // read forms retain the existing conservative whole-project fallback.
           const file = staticRead && resolve(root, dirname(path), target.arguments[0].value);
-          if (!file || !existsSync(file) || !statSync(file).isFile()) info.opaqueInputs = true;
+          if (!file || !existsSync(file) || !statSync(file).isFile())
+            opaque(script.slice(node.start, node.end));
         }
         if (tooling && node.type === 'CallExpression' && node.callee.name === 'fetch' && !runtime) {
-          info.opaqueInputs = true;
+          opaque(script.slice(node.start, node.end));
           return;
         }
         if (tooling && node.type === 'NewExpression' && node.callee.name === 'URL') {
@@ -340,8 +346,8 @@ export function buildModuleGraph(
           ) {
             const target = resolve(root, dirname(path), value.value);
             if (existsSync(target) && statSync(target).isFile()) add(value.value, 'data');
-            else info.opaqueInputs = true;
-          } else info.opaqueInputs = true;
+            else opaque(script.slice(node.start, node.end));
+          } else opaque(script.slice(node.start, node.end));
           return;
         }
         if (

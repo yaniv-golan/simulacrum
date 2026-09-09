@@ -2,15 +2,15 @@
   "version": 1,
   "dependencies": {
     "package-lock.json": "d7eb0fc6a6111c639f322b6d7adff6d7566c732f26dd695cb844b5b08182e4f7",
-    "package.json": "e4582aa2a24fced519a55f09496810f3bce395a3bbe3d1b069182f1361bc7f07",
+    "package.json": "8e04549bb4d768f121c0edf9036fcef653cead995034fd9242f9ccfcb9209bac",
     "scripts/analysis-snapshot.mjs": "ef4628c9a026cd935f9c42caeffdf4644935671250eee2170a358b88d18d243d",
     "scripts/check-documentation.mjs": "adf1496351f13a8c3ab04810c2ad7a4a566fdd5deb15874aa17790382e138525",
     "scripts/development-reference.mjs": "cd38e55e0fb5dd1f738bd061f605b42a8d2f75f6ea83c2a9288ea21e4042d4cf",
     "scripts/documentation.mjs": "5c21874539153bf6a8c7dd7bb56e85022f53a033b33bc2c5c8f6ae13d9ac5854",
-    "scripts/module-graph.mjs": "882d65af4a6b2eec7ef66161d1edc48451b78484c9639aea236814a40ce52eeb",
+    "scripts/module-graph.mjs": "1a42922f2ab45df26cd99c5e69babfb86b7957c1c61104f7be151233fba6d3f2",
     "scripts/navigation.mjs": "21299888a2f72faa2c0c24a19a8cd105cd27c822927858ecec0c504768e0d58b",
     "scripts/manifest.json#check=developer-documentation": "da797452e2b026fbd18d7224ee57d1b7fc2bb04da8fae08b3d8e49a5f3bc23c5",
-    "docs/development/reference.md": "03bf954ea54dd4e5ef6763ea68c2412cb22ede6f5d738a0c6e67f93cc143cf46",
+    "docs/development/reference.md": "cb138c6ef81eed92cfc9508d3b3225a12f4303914c2390d745fbda21541a6dd3",
     "package.json#script=docs:prepare": "12217c6795d7e7b9dd072d5f7c5c5f86522a3e11ca9d186fc4b0075831ca39f4",
     "package.json#script=docs:review": "cfe62878e316eb98829acab28bb8d8c45d224e6f3e9caf26fc6f202d334489c6",
     "package.json#script=docs:check": "507aa495a8e3083a872156aa128bfc7dccd108984ebe830ca7712bc9cc1395dd"

@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "assessments/protocol/F1.md": "1639ce944c2b24ef6d6715394c9aa306c09e610d87e41b22f3226a3d61ee990c",
-    "package.json#script=build": "fa8d7c70071ee5868cc28f384dcf73a041efeea031475bcfab06c3c3e4ef1b0e",
+    "package.json#script=build": "952bdd0ae6b61c346c4fd9450107496b32dd57090752cad260808d6331fd0485",
     "package.json#script=preview": "734491675c009f724e200a102cac97cd540c2e284972825fa04649d9ca611b23"
   }
 }

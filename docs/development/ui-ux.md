@@ -195,7 +195,7 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"c4a88da8906f9e8acfe1fe376ce508d7c780d5a557b7aa04380504df9ac91e93","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"31b44bf51bc5714f21353e12a1741a3f601d9d05a5cfe61ed37462b8a4d34789","disposition":"still accurate","rationale":"The linked workflow now records observed data with optional media. Real participant protocols and the distinction between automation and human acceptance remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"13931309dcf3f7c2e5eb49b6f17d6e1f771ab68dfdf985069ce0351364e1e427","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"677ca4560a8e54fd2beea8f08c30b691af0d5f2f91a3567536587405a720d14b","disposition":"still accurate","rationale":"Local and final npm commands now use the shared resource window; required rendered journeys and separation from real target-player acceptance remain unchanged."} -->
 
 Use the manifest's `workbench-content-lifecycle` invariant and
 [registered browser check](../../scripts/manifest.json#check=verify-workbench-content)

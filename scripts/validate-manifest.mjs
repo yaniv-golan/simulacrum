@@ -87,6 +87,10 @@ export function validateManifest(m) {
         scope.entrypoint.startsWith('src/') ||
         browser.some((c) => c.script === scope.entrypoint && scope.checks?.includes(c.id))
       ) ||
+      (scope.entrypoint.startsWith('src/') &&
+        (!Array.isArray(scope.consumers) ||
+          !scope.consumers.every((p) => typeof p === 'string') ||
+          !/^[a-f0-9]{64}$/.test(scope.roots ?? ''))) ||
       !Array.isArray(scope.externalImports ?? []) ||
       !(scope.externalImports ?? []).every((p) => typeof p === 'string') ||
       !Array.isArray(scope.dependencies) ||
@@ -149,6 +153,21 @@ export function validateManifest(m) {
       !scope.checks.every((id) => m.checks.some((c) => c.id === id))
     )
       throw Error('invalid browser review metadata scope');
+    if (
+      scope.reads !== undefined &&
+      (!Array.isArray(scope.reads) ||
+        !scope.reads.every(
+          (r) =>
+            typeof r.expression === 'string' &&
+            ['identity', 'fixture', 'runtime', 'source-analysis'].includes(r.purpose) &&
+            Array.isArray(r.excludedInputs) &&
+            r.excludedInputs.every((k) => ['documentation', 'unit-test'].includes(k)),
+        ) ||
+        !Array.isArray(scope.consumers) ||
+        !/^[a-f0-9]{64}$/.test(scope.roots ?? '') ||
+        !/^[a-f0-9]{64}$/.test(scope.consumerSourceHash ?? ''))
+    )
+      throw Error('invalid audited browser reads');
   }
   return m;
 }
