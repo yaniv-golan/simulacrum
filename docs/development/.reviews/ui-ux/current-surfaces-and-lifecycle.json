@@ -1,10 +1,10 @@
 {
   "version": 1,
   "dependencies": {
-    "src/presentation/workshop-view.mjs": "039fca8782ff4c0ffde3365738ec2b7a5591fb61fb675d1ae53fd363a3d12bc9",
-    "src/presentation/workshop.css": "441b91f533ad8451f6b57ad3a905ceef432c3eb46beabf20d2c37bcbfa1577fc",
+    "src/presentation/workshop-view.mjs": "ab8415a4ec4f98633c0b5e67f2dc25241d724ef339e5456660fec1e453324aa0",
+    "src/presentation/workshop.css": "4512ade4ef64ff83aa6c40dcdf0a29e0d4981dbb7f1cdf73610e2c2a3f858c0a",
     "src/presentation/workbench-content.mjs": "35e817a6787c38e52bc94437a4ee1606a5d956b4f1036966a84441200ee83474",
-    "src/application/workshop-app.mjs": "f252d321eca5a03d2a216a456ef9c6c44a3b1496aa6ae801a840c81ba40075da",
+    "src/application/workshop-app.mjs": "9e4e6cf3337aae3a352911f7a98e4963576ba284876b28fdf64a695f377e05a8",
     "src/presentation/motion-readout.mjs": "b0d1c4650b28d9f5db09b8ac8d3fc075aa17b7bcf3157fc12dc600cd98912079"
   }
 }

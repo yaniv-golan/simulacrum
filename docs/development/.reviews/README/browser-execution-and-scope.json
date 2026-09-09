@@ -6,7 +6,7 @@
     "scripts/browser-registry.mjs": "f5ab65c6ab54a5f05987485c45f9d1516b66b828c847d4854d4860c2c05e564c",
     "scripts/browser-selection.mjs": "3e83cacdc8ba6c4a49fc1ee4e2c2658e65a8c625cce8b14824cecf38bcb394a8",
     "scripts/invariant-coverage.mjs": "59f81d8cbc60269fe15917d702080cf1545bc33073ec5492ae14476e33957e8a",
-    "scripts/manifest.json": "2cb89f7169a0f70e22ada6cd4c39cbf01e85f0f23cddd40a117fe89c8ecdb1b3",
+    "scripts/manifest.json": "e8c606b159e92220727ca02f5f70d3ac02e8ced65c523add8c14fd6a6b881a8b",
     "scripts/module-graph.mjs": "1a42922f2ab45df26cd99c5e69babfb86b7957c1c61104f7be151233fba6d3f2",
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
     "scripts/test-selection.mjs": "73dac80216ee28b5644f04acd503f8776d1854090417fcc6ec9df4446686000e",
@@ -41,6 +41,6 @@
     "src/model/blueprint.schema.json": "be00ab5e9bbdd0038a8b9f5422edfdc14f2812fc7d7e957889bff455bb078ba2",
     "src/model/generated/blueprint-validator.mjs": "d7e98ea5e2382487d0040a2b359271f06114120ad2f6856c3e15ccccbcd20b2b",
     "scripts/browser-evidence.mjs": "aba560116ae7029a14d9cbeaba46612417e7684a0c73b0996f73c1f0eb77b68f",
-    "src/application/workshop-app.mjs": "f252d321eca5a03d2a216a456ef9c6c44a3b1496aa6ae801a840c81ba40075da"
+    "src/application/workshop-app.mjs": "9e4e6cf3337aae3a352911f7a98e4963576ba284876b28fdf64a695f377e05a8"
   }
 }

@@ -498,6 +498,7 @@ export async function mountWorkshopApp(root) {
     getAssemblyFrame: () => ({ ...frame(), cursor: workshop.observe().cursor }),
     onInteraction: logInteraction,
     guideSteps: starterSteps(),
+    builtInAssemblies: [{ id: 'builtin-spring-strut', definition: createSpringStrut() }],
     assemblyLibrary: createAssemblyLibrary({
       getItem: (key) => localStorage.getItem(key),
       setItem: (key, value) => localStorage.setItem(key, value),

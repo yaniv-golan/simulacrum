@@ -23,7 +23,7 @@ otherwise give the observation and a useful next check. Do not shrink text to ma
 more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
-<!-- doc-review {"version":1,"fingerprint":"572cbaccd9003a05702b9898cce6a4c2ebd7d17715ef50a8e6b82d2ffb875b83","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"4d57379a10f37a5407841072f062e1c39e78943d0941ec1908960a47623bc03f","disposition":"still accurate","rationale":"Native outside-click dismissal changes no activity admission, teaching sequence, independent attempt or authored recovery behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"fbd1432f36485012725515c6618c738740a36f53ac05371996387f6b84d87737","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"f433a4d372f2bbf852e28250092a97ba723e3a930841be5b1deba40e02d847d9","disposition":"still accurate","rationale":"No entry for the assembly fix: the existing Spring strut moves into authoring collections. The separately committed curated examples and their admission decisions remain intact."} -->
 
 Learn & examples is a curated collection of things players can learn to do.
 Adding a feature requires a teaching decision, not automatically a catalogue entry.
@@ -122,7 +122,7 @@ documentation workflow. Documentation checks detect stale references and reviews
 they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
-<!-- doc-review {"version":1,"fingerprint":"40ef0c8c9d247e24da25f3fe1cec4cf5c6d8ac3fcd48e3407c74765b30cbcc5b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c0f4f0c43912028fe94cd7ee8c5805d2ff6d52a7d75290f04acbc7d5868968c1","disposition":"updated","rationale":"The lifecycle now documents the top-right close control, Escape and outside-click dismissal, while clicks within content retain the dialog."} -->
+<!-- doc-review {"version":1,"fingerprint":"3d676d30037cc5ef4bfca733ab64192b7b66c99a1082052b0a5d1f507c4e0d9c","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"b27c2613e3d910c7d440b162f23c7bbd25740a01a37f510fb3ba108f0291da88","disposition":"still accurate","rationale":"The combined source retains curated examples and their dismissal routes, plus built-in and personal assembly collections. The assembly top-right icon retains the accessible Close label and focus return."} -->
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
 document and run actions in the header; parts in the left catalogue; separate edit
@@ -130,7 +130,10 @@ and view groups at the workbench edge; selected properties and operations in the
 inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
 
-Saved assemblies opens a bounded, searchable browser with rendered saved geometry.
+Assemblies opens a bounded, searchable browser with rendered geometry and All assemblies,
+Built-in and My saved filters. Spring strut is supplied as a built-in definition by the
+application; it is not seeded into personal browser storage. Built-ins share the placement
+preview and have no rename/remove actions. The separate Spring strut palette button is removed.
 Browsing, renaming and removing saved definitions remain separate from machine
 selection and Undo. Renaming returns focus to Place in machine; sorting preserves
 the current results/detail page on narrow screens. The machine picker lists assemblies alongside parts; Create

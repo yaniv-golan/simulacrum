@@ -13,6 +13,7 @@ const button = (text, action) => {
 /** Saved definitions have a separate selection and lifetime from machine instances. */
 export function createAssemblyBrowser({
   library,
+  builtInAssemblies = [],
   onPlace,
   onCreate,
   thumbnail,
@@ -21,17 +22,20 @@ export function createAssemblyBrowser({
 }) {
   const dialog = el('dialog');
   dialog.className = 'assembly-browser';
-  dialog.setAttribute('aria-label', 'Saved assemblies');
+  dialog.setAttribute('aria-label', 'Assemblies');
   const header = el('header'),
-    title = el('h2', 'Saved assemblies'),
-    close = button('Close', () => dialog.close());
+    title = el('h2', 'Assemblies'),
+    close = button('×', () => dialog.close());
+  close.className = 'assembly-close';
+  close.setAttribute('aria-label', 'Close');
+  close.title = 'Close';
   header.append(title, close);
   const search = el('input');
   search.type = 'search';
   search.placeholder = 'Search assemblies';
-  search.setAttribute('aria-label', 'Search saved assemblies');
+  search.setAttribute('aria-label', 'Search assemblies');
   const sort = el('select');
-  sort.setAttribute('aria-label', 'Sort saved assemblies');
+  sort.setAttribute('aria-label', 'Sort assemblies');
   for (const [v, t] of [
     ['recent', 'Recent first'],
     ['name', 'Name'],
@@ -40,16 +44,27 @@ export function createAssemblyBrowser({
     o.value = v;
     sort.append(o);
   }
+  const collection = el('select');
+  collection.setAttribute('aria-label', 'Assembly collection');
+  for (const [value, label] of [
+    ['all', 'All assemblies'],
+    ['builtin', 'Built-in'],
+    ['saved', 'My saved'],
+  ]) {
+    const option = el('option', label);
+    option.value = value;
+    collection.append(option);
+  }
   const filters = el('div');
   filters.className = 'assembly-filters';
-  filters.append(search, sort);
+  filters.append(search, collection, sort);
   const body = el('div');
   body.className = 'assembly-browser-body';
   const list = el('div'),
     detail = el('section');
   list.className = 'assembly-results';
   detail.className = 'assembly-detail';
-  detail.setAttribute('aria-label', 'Saved assembly details');
+  detail.setAttribute('aria-label', 'Assembly details');
   body.append(list, detail);
   const status = el('p');
   status.setAttribute('role', 'status');
@@ -97,7 +112,7 @@ export function createAssemblyBrowser({
     );
     if (!editable()) detail.append(el('p', 'Return to Build to place this assembly.'));
     const settings = el('details');
-    settings.append(el('summary', 'Inspect saved parts'));
+    settings.append(el('summary', item.builtIn ? 'Inspect parts' : 'Inspect saved parts'));
     for (const part of item.definition.parts) {
       settings.append(el('strong', part.name));
       for (const [key, value] of Object.entries(part.parameters))
@@ -113,6 +128,8 @@ export function createAssemblyBrowser({
           );
       }
     }
+    detail.append(settings);
+    if (item.builtIn) return;
     const actions = el('details');
     actions.append(el('summary', 'Saved item actions'));
     const name = el('input');
@@ -156,13 +173,20 @@ export function createAssemblyBrowser({
       confirm.querySelector('button').focus();
     });
     actions.append(remove);
-    detail.append(settings, actions);
+    detail.append(actions);
   }
   function draw() {
     observer?.disconnect();
     list.replaceChildren();
     try {
-      let all = library.list();
+      const saved = library.list();
+      const builtIns = builtInAssemblies.map((item) => ({ ...item, builtIn: true }));
+      const all =
+        collection.value === 'saved'
+          ? saved
+          : collection.value === 'builtin'
+            ? builtIns
+            : [...builtIns, ...saved];
       let items = all.filter((x) =>
         x.definition.name.toLowerCase().includes(search.value.toLowerCase()),
       );
@@ -170,9 +194,9 @@ export function createAssemblyBrowser({
         items.sort((a, b) => a.definition.name.localeCompare(b.definition.name));
       else items.reverse();
       if (!items.length) {
-        list.append(el('p', all.length ? 'No matching assemblies.' : 'No saved assemblies yet.'));
+        list.append(el('p', search.value ? 'No matching assemblies.' : 'No saved assemblies yet.'));
         list.append(
-          all.length
+          search.value
             ? button('Clear search', () => {
                 search.value = '';
                 draw();
@@ -183,7 +207,7 @@ export function createAssemblyBrowser({
                 onCreate();
               }),
         );
-        if (!all.length && !canCreate()) {
+        if (!search.value && !canCreate()) {
           list.lastElementChild.disabled = true;
           list.append(el('p', 'Place some ungrouped parts in Build, then create an assembly.'));
         }
@@ -206,7 +230,10 @@ export function createAssemblyBrowser({
         tile.append(
           image(item),
           el('strong', item.definition.name),
-          el('small', `${item.definition.parts.length} parts`),
+          el(
+            'small',
+            `${item.definition.parts.length} parts · ${item.builtIn ? 'Built-in' : 'My saved'}`,
+          ),
         );
         list.append(tile);
       }
@@ -239,6 +266,12 @@ export function createAssemblyBrowser({
     scroll = 0;
     draw();
     dialog.classList.remove('show-assembly-detail');
+  };
+  collection.onchange = () => {
+    scroll = 0;
+    selected = null;
+    dialog.classList.remove('show-assembly-detail');
+    draw();
   };
   sort.onchange = () => {
     scroll = 0;

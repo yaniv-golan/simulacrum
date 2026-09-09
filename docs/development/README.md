@@ -222,7 +222,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"3f491411ca85dae506ba43ec14affe288baac24618ed40616f3df3da3f5ee1a9","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"278bf9936a2952e93ac4389d4aaeba29ff2c602e81f76cb10b6b5ca4e25e3b34","disposition":"updated","rationale":"Combined runtime read-domain protection and host scheduling with the new learning-examples browser root. The shared formatter scope now includes that journey; failed or changed audits still expand coverage."} -->
+<!-- doc-review {"version":1,"fingerprint":"a1c5780d3609f4630893b74d09560c7507e00fdf8b26a165ac2428b37946a098","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"1a7b4b71074b916a5abca71eb8839e6412733ca478b9a114c38300a27cd8fcc5","disposition":"still accurate","rationale":"The newer assembly browser keeps the same registered checks and deadlines. Read-domain digests now bind its changed caller; host scheduling and conservative fallback remain as described."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

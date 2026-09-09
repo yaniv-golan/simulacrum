@@ -95,6 +95,7 @@ export function createWorkshopView(
     getCursor,
     getAssemblyFrame,
     assemblyLibrary,
+    builtInAssemblies = [],
     guideSteps = [],
   },
 ) {
@@ -280,11 +281,6 @@ export function createWorkshopView(
       ),
   });
   const palette = element('div', 'palette');
-  const strutCard = button('Spring strut', () => send({ type: 'spring-strut' }), 'part-card');
-  strutCard.dataset.command = 'spring-strut';
-  strutCard.title =
-    'Insert an ordinary base, rail, guide and moving carriage as one editable assembly.';
-  palette.append(strutCard);
   for (const type of PRIMARY_PARTS) {
     const card = button('', () => send({ type: 'place', partType: type }), 'part-card');
     card.dataset.partType = type;
@@ -630,6 +626,7 @@ export function createWorkshopView(
   const savedAssemblies = assemblyLibrary
     ? createAssemblyBrowser({
         library: assemblyLibrary,
+        builtInAssemblies,
         editable: () => frame?.metadata.mode === 'build',
         canCreate: () =>
           frame?.metadata.mode === 'build' &&
@@ -649,7 +646,7 @@ export function createWorkshopView(
         },
       })
     : null;
-  const savedLauncher = button('Saved assemblies', () => {
+  const savedLauncher = button('Assemblies', () => {
     if (assemblies.busy() || assemblyPlacement.active()) {
       setMessage('Finish or cancel the assembly operation first.');
       return;

@@ -1069,7 +1069,7 @@
       "id": "copied-graph-integrity",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Mirror and reusable assembly copies allocate fresh identities, preserve authored fields and internal connections, and remain independent through editing and persistence. Named assembly aliases bind ordinary endpoints; grouping does not change compiled physics. Interface edits preserve ordinary state, named surface previews include all editor members, and saved snapshots remain distinguishable and inspectable. Saved assembly browsing and placement proposals do not mutate the machine; placement starts only in Build, and assembly selection cannot target a hidden member with part shortcuts. Browser redraws preserve focus and navigation. Stale proposals require explicit revalidation, and pending or uncertain insertions cannot be dispatched twice.",
+      "guarantee": "Mirror and reusable assembly copies allocate fresh identities, preserve authored fields and internal connections, and remain independent through editing and persistence. Named assembly aliases bind ordinary endpoints; grouping does not change compiled physics. Interface edits preserve ordinary state, named surface previews include all editor members, and saved snapshots remain distinguishable and inspectable. Built-in definitions remain available independently of personal saved items and use the same placement preview. Assembly browsing and placement proposals do not mutate the machine; placement starts only in Build, and assembly selection cannot target a hidden member with part shortcuts. Browser redraws preserve focus and navigation. Stale proposals require explicit revalidation, and pending or uncertain insertions cannot be dispatched twice.",
       "owners": [
         {
           "path": "src/model/mirror-assembly.mjs",
@@ -3062,7 +3062,7 @@
         "test/f2.test.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "d8b323a3a801e8830ee896ded4170ac889ae3463fbf9f1e257584c3cecd5ee79"
+      "consumerSourceHash": "fc93418aa5a04956e3d9d1acaed81407aca2c90719393d96c67c9bf3c77e8570"
     },
     {
       "entrypoint": "scripts/app-fingerprint.mjs",
@@ -3166,7 +3166,7 @@
         "vite.config.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "d8b323a3a801e8830ee896ded4170ac889ae3463fbf9f1e257584c3cecd5ee79"
+      "consumerSourceHash": "fc93418aa5a04956e3d9d1acaed81407aca2c90719393d96c67c9bf3c77e8570"
     },
     {
       "entrypoint": "scripts/source-identity.mjs",
@@ -3288,7 +3288,7 @@
         "test/verification-run.test.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "d8b323a3a801e8830ee896ded4170ac889ae3463fbf9f1e257584c3cecd5ee79"
+      "consumerSourceHash": "fc93418aa5a04956e3d9d1acaed81407aca2c90719393d96c67c9bf3c77e8570"
     },
     {
       "entrypoint": "scripts/build-fingerprint.mjs",
@@ -3675,7 +3675,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "bfbfee93e8350111205e155eae30d12a66b2258b6ba26545c0987717aa7534ea"
+      "consumerSourceHash": "e9f168a2387efcc4d530e79d3fb514fccae4398677eedc8a834de5c42d50d892"
     },
     {
       "entrypoint": "scripts/module-graph.mjs",
@@ -3839,7 +3839,7 @@
         "vite.config.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "d8b323a3a801e8830ee896ded4170ac889ae3463fbf9f1e257584c3cecd5ee79"
+      "consumerSourceHash": "fc93418aa5a04956e3d9d1acaed81407aca2c90719393d96c67c9bf3c77e8570"
     },
     {
       "entrypoint": "scripts/playtest/verify-deployment.mjs",
@@ -3994,7 +3994,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "70a00b7bac684f5f99c6e451ae14e66149f5f55003f765c186f3d1b7686efe3a"
+      "consumerSourceHash": "adfecdab2fd6ba7b96b1cf2e6fbc5feffce11185c952e66b5f750c55ee3d68e8"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -4025,7 +4025,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "70a00b7bac684f5f99c6e451ae14e66149f5f55003f765c186f3d1b7686efe3a"
+      "consumerSourceHash": "adfecdab2fd6ba7b96b1cf2e6fbc5feffce11185c952e66b5f750c55ee3d68e8"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",

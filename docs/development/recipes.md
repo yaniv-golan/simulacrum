@@ -163,7 +163,7 @@ Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"4af47ac68778a73b11e83269d50a89159f6fafb71ccb40b28a172828e84c93fc","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"0c62488f971c8dad507427bdf6de6ef01f0c16d5ffd0fb412f2c7cebbe3524de","disposition":"still accurate","rationale":"Package and dependency-discovery metadata changed without altering graph operations, assembly interface semantics or retained behavioral tests."} -->
+<!-- doc-review {"version":1,"fingerprint":"127b7dfcf331e3d07ed46f69ee68a931d3eca26f475cce95738ed15e7a0d351e","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"7568a38992f42cb96028ac58d7a3453e81067de14895f2758311d242242d0f16","disposition":"still accurate","rationale":"Retained the newly documented built-in and saved collection workflow. The merged browser checks verify the shared preview and standard close control; graph copying and physics authority are unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -211,7 +211,9 @@ Identical keys can intentionally operate several receivers; the
 [assembly panel](../../src/presentation/assembly-library.mjs) shows bindings and opens
 the ordinary inspector to edit one receiver. Library items are independent snapshots with distinct generated names, editable saved
 names and inspectable authored settings. Placed instances use the contextual inspector and machine picker; saved items use
-a bounded requested browser with real mesh thumbnails and retained search. A free
+a bounded requested browser with real mesh thumbnails and retained search. Built-in
+definitions are injected by the application and displayed alongside personal saves;
+collection filtering does not change storage. A free
 insertion preview owns world precision and explicit confirmation, then named mounting
 uses its separate surface transaction. Stale source or cursor requires revalidation;
 uncertain replies reconcile only with the complete observed insertion result. The
