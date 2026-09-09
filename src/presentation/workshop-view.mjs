@@ -1020,7 +1020,9 @@ export function createWorkshopView(
   help.append(buildInfo);
   root.append(help);
   filebar.append(button('Help', () => help.showModal()));
-  const motionReadout = createMotionReadout(viewport);
+  const machinePanels = element('div', 'machine-panels');
+  viewport.append(machinePanels);
+  const motionReadout = createMotionReadout(machinePanels);
   const measurements = button('Measurements', () => {
     const open = measurements.getAttribute('aria-pressed') !== 'true';
     measurements.setAttribute('aria-pressed', String(open));
@@ -1028,7 +1030,7 @@ export function createWorkshopView(
   });
   measurements.setAttribute('aria-pressed', 'false');
   modebar.append(measurements);
-  const vehicleControls = createVehicleControls({ send, select, container: viewport });
+  const vehicleControls = createVehicleControls({ send, select, container: machinePanels });
   const connectionTest = createConnectionTest({
     holdReceiver: (id, duty) => vehicleControls.hold(id, duty),
     releaseReceiver: (id) => vehicleControls.releaseHold(id),

@@ -34,7 +34,7 @@ function copyData(value, ancestors) {
   if (keys.some((key) => typeof key !== 'string'))
     throw new TypeError('Symbol fields are not data');
   if (array && keys.length !== value.length + 1) throw new TypeError('Expected dense array');
-  const result = array ? [] : {};
+  const entries = [];
   ancestors.add(value);
   for (const key of keys) {
     if (array && key === 'length') continue;
@@ -43,15 +43,12 @@ function copyData(value, ancestors) {
       throw new TypeError('Expected enumerable data fields');
     if (array && (!/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length))
       throw new TypeError('Unexpected array field');
-    Object.defineProperty(result, key, {
-      value: copyData(descriptor.value, ancestors),
-      enumerable: true,
-      writable: false,
-      configurable: false,
-    });
+    entries.push([key, copyData(descriptor.value, ancestors)]);
   }
   ancestors.delete(value);
-  return Object.freeze(result);
+  // Construct all data properties together, then freeze them. fromEntries also
+  // preserves an own __proto__ key without invoking the prototype setter.
+  return Object.freeze(array ? entries.map(([, child]) => child) : Object.fromEntries(entries));
 }
 
 /** Owns revision history, including edits that leave simulation tick unchanged. */

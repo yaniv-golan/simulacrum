@@ -23,7 +23,7 @@ otherwise give the observation and a useful next check. Do not shrink text to ma
 more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Current surfaces and lifecycle
-<!-- doc-review {"version":1,"fingerprint":"ed5bd998bde6b7e171d6468e6fb376526e7d402207a55595fa8d443296fa2f56","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"2d90e471cb8ea8ccf89b470a85ba280507e30eb616909c2cd4028550623c3e2a","disposition":"still accurate","rationale":"Adaptive rendering changes only 3D shadow and pixel density. No control, persistent panel, teaching lifecycle, authored geometry or action placement is added or displaced."} -->
+<!-- doc-review {"version":1,"fingerprint":"cb4214185552a0a3fbecb2f413b61f6a10f78c7e95246c8aca7c42ceae85b1bc","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"f3427683933b1c849735809eca945572ff729334001b0416c59b49f195e08057","disposition":"updated","rationale":"Documented the shared lower workbench layout, narrow stacking and independent scrolling. Existing controls disclosure, requested measurements and unconditional recovery warning lifecycles remain owned by the same panels."} -->
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
 document and run actions in the header; parts in the left catalogue; separate edit
@@ -70,9 +70,14 @@ not a general success criterion for a spring. The requested panel labels whole-m
 motion and provides a keyboard-accessible measurement explanation. Successful machine loading, including same-ID saved revisions, clears prior results;
 failed loads preserve them. Recovery warnings remain visible with
 measurements closed. No measurement is permission to invent physical causality.
+Machine controls and measurements share a bounded layout at the lower workbench edge.
+They sit beside one another where space allows and stack on narrower workbenches,
+with independently scrollable contents and a reachable controls disclosure. The shared
+area leaves empty space transparent to canvas input; each panel retains its own
+visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"296a470c52fc13512bf7031de72390cb8243f41ecac533acd1a16c8fda206d7b","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"2dcaea4e2747c3f490706322dc24a57e827f3ca6e2714efd7b613ba9487f9541","disposition":"still accurate","rationale":"The registered journey covers download failure and bytes, cancellation, replacement, same-ID load result clearing with invalid-load preservation, held input release, dialog keys, clipboard and compact reflow. Human comprehension remains unevaluated."} -->
+<!-- doc-review {"version":1,"fingerprint":"dd4bc7673a7f118e922125dbdcbe944161da5d524f091e9b1b0a73ec141145e8","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"44cdeadda6d4164d3bbbbecd62d1c059c25a68a6fdd2af4ed2eeee0600897585","disposition":"still accurate","rationale":"The existing registered browser journey now checks nonoverlap and viewport containment at 900x650 and 1280x720 in Build, Run and Paused, expanded and collapsed, with receiver focus after scrolling. Existing state preservation and input checks remain present; automation is not human acceptance."} -->
 
 Use the manifest's `workbench-content-lifecycle` invariant and
 [registered browser check](../../scripts/manifest.json#check=verify-workbench-content)

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createObservationStore } from '../src/model/observation.mjs';
+import { createObservationStore, immutableCopy } from '../src/model/observation.mjs';
 const frame = (tick, x = 0) => ({ tick, bodies: [{ position: { x, y: 0, z: 0 } }] });
 test('observation has no mutable input or output aliases', () => {
   const initial = frame(0),
@@ -84,4 +84,40 @@ test('invalid publication is atomic and backwards ticks require restore', () => 
   assert.deepEqual(store.cursor(), before);
   assert.throws(() => createObservationStore(frame(0), { sessionId: '', maxDeltas: 2 }));
   assert.throws(() => createObservationStore(frame(0), { sessionId: 'a', maxDeltas: 0 }));
+});
+
+test('immutable copies preserve data keys and reject non-data descriptors', () => {
+  const input = JSON.parse('{"__proto__":{"tag":"data"},"constructor":[3,{"x":4}],"0":"zero"}');
+  const result = immutableCopy(input);
+  assert.deepEqual(result, input);
+  assert.equal(Object.getPrototypeOf(result), Object.prototype);
+  assert.ok(Object.hasOwn(result, '__proto__'));
+  assert.deepEqual(Object.getOwnPropertyDescriptor(result, '__proto__'), {
+    value: result.__proto__,
+    enumerable: true,
+    writable: false,
+    configurable: false,
+  });
+  input.__proto__.tag = 'changed';
+  input.constructor[1].x = 99;
+  assert.equal(result.__proto__.tag, 'data');
+  assert.equal(result.constructor[1].x, 4);
+  assert.ok(Object.isFrozen(result.constructor));
+  assert.ok(Object.isFrozen(result.constructor[1]));
+  let getterCalls = 0;
+  const getter = {
+    get x() {
+      getterCalls++;
+      return 1;
+    },
+  };
+  for (const bad of [
+    getter,
+    { [Symbol('hidden')]: 1 },
+    [, ,],
+    Object.assign([], { extra: 1 }),
+    Object.defineProperty({}, 'hidden', { value: 1 }),
+  ])
+    assert.throws(() => immutableCopy(bad), TypeError);
+  assert.equal(getterCalls, 0);
 });

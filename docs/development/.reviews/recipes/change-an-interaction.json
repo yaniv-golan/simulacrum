@@ -18,7 +18,7 @@
     "src/model/geometry.mjs": "90d75331b8f5261f9d1a6e4d803473bbdf4be12fc63b283d63e65d4312b80bd8",
     "src/model/messages.mjs": "330746d4797375dfdb33ef4435310e3739dc19e8d0319a9402f93c7fe10f3940",
     "src/model/mirror-assembly.mjs": "fc26e0f73dad94435f140ab21d51733bbc066ceb44d4bfd1fe6038e8cd4deaad",
-    "src/model/observation.mjs": "c27ee929b63bb959ada49caf34d3ab2898c7af04a072e4be94333c029e3af75b",
+    "src/model/observation.mjs": "f68a4b99fc7aefa837514faaf3b67ab747c118720ab86c6f0ecad2d4ad05240b",
     "src/model/power.mjs": "89978f57a012fcecf6006cfdb1e7d7e2f97e0f13bc49ecab3cd5255b85537887",
     "src/model/reasons.mjs": "9d24a09fbfaeff5445429f2f43c99fc07e690dc79cb355e5ccc1b6a1b86cabcc",
     "src/model/surfaces.mjs": "0d4b906f5e2100b42254369d284dc068e84c35199d40690ddeb8eef207f080cf",

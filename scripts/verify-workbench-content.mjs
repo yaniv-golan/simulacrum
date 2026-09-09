@@ -131,6 +131,63 @@ try {
     await page.locator('.motion-values').innerText(),
     /including detached parts/,
   ]);
+  // Both requested panels must remain separate and reachable in the workbench.
+  for (const mode of ['build', 'run', 'pause']) {
+    await page.locator(`[data-command=${mode}]`).click();
+    for (const viewport of [
+      { width: 900, height: 650 },
+      { width: 1280, height: 720 },
+    ]) {
+      await page.setViewportSize(viewport);
+      for (const expanded of [false, true]) {
+        const controls = page.locator('.vehicle-controls');
+        if ((await controls.getAttribute('open')) !== (expanded ? '' : null))
+          await controls.locator('summary').click();
+        const boxes = await page
+          .locator('.vehicle-controls, .motion-readout')
+          .evaluateAll((panels) =>
+            panels.map((panel) => {
+              const r = panel.getBoundingClientRect();
+              return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+            }),
+          );
+        const [a, b] = boxes;
+        evidence.assert('ok', [
+          a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top,
+          `Machine controls and Measurements must not overlap at ${viewport.width}, expanded=${expanded}`,
+        ]);
+        const stage = await page.locator('.viewport').boundingBox();
+        evidence.assert('ok', [
+          boxes.every(
+            (r) =>
+              r.left >= stage.x &&
+              r.right <= stage.x + stage.width &&
+              r.top >= stage.y &&
+              r.bottom <= stage.y + stage.height,
+          ),
+          'both panels stay inside the workbench',
+        ]);
+        if (expanded) {
+          await controls.locator('button').last().scrollIntoViewIfNeeded();
+          await controls.locator('button').last().focus();
+          evidence.assert('equal', [
+            await controls
+              .locator('button')
+              .last()
+              .evaluate((el) => el === document.activeElement),
+            true,
+          ]);
+        }
+        await controls.evaluate((el) => {
+          el.scrollTop = 0;
+        });
+        await page.screenshot({
+          path: `${out}/panels-${mode}-${viewport.width}-${expanded ? 'expanded' : 'collapsed'}.png`,
+        });
+      }
+    }
+  }
+  await page.locator('[data-command=build]').click();
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
   // Requested content must remain stable while the simulation updates.
   await page.locator('[data-command=run]').click();
@@ -163,22 +220,18 @@ try {
   const stable = (await read()).metadata.blueprint;
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
   evidence.assert('match', [await page.locator('.motion-values').innerText(), /Last run:/]);
-  await page
-    .locator('input[type=file]')
-    .setInputFiles({
-      name: 'invalid.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from('{'),
-    });
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'invalid.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{'),
+  });
   await page.waitForFunction(() => document.querySelector('input[type=file]').value === '');
   evidence.assert('match', [await page.locator('.motion-values').innerText(), /Last run:/]);
-  await page
-    .locator('input[type=file]')
-    .setInputFiles({
-      name: 'same-machine.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify(stable)),
-    });
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'same-machine.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(stable)),
+  });
   await page.getByText('Machine opened. Choose Run to try it.', { exact: true }).waitFor();
   evidence.assert('doesNotMatch', [await page.locator('.motion-values').innerText(), /Last run:/]);
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();

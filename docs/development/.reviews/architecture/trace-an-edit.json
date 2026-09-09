@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "src/application/workshop-app.mjs": "46c372ec91b7b1b68786d0e2a6d9167d53476b7f63f2195e8248c6d9362d267d",
-    "src/presentation/workshop-view.mjs": "429e3fbe264a45816b627054c70c2ab339dd4fb75adc1f9b1cbfa5690020237e",
+    "src/presentation/workshop-view.mjs": "cdc11f740ecd533d109d87e7c53f4d2b68667293cad73f90c06c7fb2fcf88926",
     "src/presentation/surface-controls.mjs": "d4124cc989ac08aea07ebde8104a810bfc136e24a6101c4fcb1ca5276a03b527",
     "src/presentation/placement-lifecycle.mjs": "02d5fc17f5ada7fe5c60d43c2bd8cc7963dc2ea8e7d0fb7238270fcc7a7f8015",
     "src/presentation/assembly-mirror.mjs": "d5b6819691909cfa5aef213acaf065e74e157d60f023f3e6ac227f689386f212",
@@ -23,7 +23,7 @@
     "src/model/generated/blueprint-validator.mjs": "d7e98ea5e2382487d0040a2b359271f06114120ad2f6856c3e15ccccbcd20b2b",
     "src/model/geometry.mjs": "90d75331b8f5261f9d1a6e4d803473bbdf4be12fc63b283d63e65d4312b80bd8",
     "src/model/mirror-assembly.mjs": "fc26e0f73dad94435f140ab21d51733bbc066ceb44d4bfd1fe6038e8cd4deaad",
-    "src/model/observation.mjs": "c27ee929b63bb959ada49caf34d3ab2898c7af04a072e4be94333c029e3af75b",
+    "src/model/observation.mjs": "f68a4b99fc7aefa837514faaf3b67ab747c118720ab86c6f0ecad2d4ad05240b",
     "src/model/power.mjs": "89978f57a012fcecf6006cfdb1e7d7e2f97e0f13bc49ecab3cd5255b85537887",
     "src/model/reasons.mjs": "9d24a09fbfaeff5445429f2f43c99fc07e690dc79cb355e5ccc1b6a1b86cabcc",
     "src/model/reusable-assemblies.mjs": "0892415010525d7ec506d812ee9a9ab160a567c379bd594bf1cdf8b538f90adc",

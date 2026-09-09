@@ -10,7 +10,7 @@ attachment, polarity, naming, reset or authored-property policy.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"0b30cac9baed06feaed828fa0d4ad6294f877372e15538523629fdaffea185e8","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"fed7e6740d0c4637c6a660c5e44d9007f476937948e19ed38f614658803288c4","disposition":"still accurate","rationale":"Dependency representation changed for reviews only; catalog, schema, geometry, mounting and compiler authoring paths remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"458d781c5515487673d89c8971686c9dd19b5dd95341b82791fad2ed158af02f","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"27e05c17484a384310004d0bd1f880da08a0fda773e81abd22591423664a3f24","disposition":"still accurate","rationale":"The copy optimization preserves admitted property values and nested isolation. Catalog, geometry, compiler-derived material and mass, resize checks and generated schema ownership are unchanged."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -27,7 +27,7 @@ validation with `node scripts/generate-schema.mjs` when schema changes.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"55a341e2ec73230848d35ccdf2607859e30acc9719c7b6336d1d7013ffbf493e","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"89cc8ae8a374fe52b5f38e9ddd2c09b24f7a2274dcfb97d1436fcda631d11b5c","disposition":"still accurate","rationale":"The new application diagnostic sequence is outside core history and cursors; the recipe still requires whole-candidate compilation and explicit rejected command effects."} -->
+<!-- doc-review {"version":1,"fingerprint":"44d9826a0d172a2c18e6e974322ef9abdf7185134c22cfc11f552364daf4fe8b","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"3054ed960a80ce320433a0be413ed86ca81c26672f7fc66a00a89e9f4b995bd7","disposition":"still accurate","rationale":"Batched immutable copies preserve finite-data rejection, own property names and independent frozen children. Candidate validation, compilation and one-transaction publication requirements are unchanged."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -47,7 +47,7 @@ Identify the player task, primary home, visibility/retrieval lifecycle and repla
 surface. Keep consequential state visible and verify unique actions remain reachable
 after removing or moving controls.
 
-<!-- doc-review {"version":1,"fingerprint":"9e7adc9580682899c5f79474978832b3cdd18d192433a28ba8a4736ce9cc2c7b","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"cece79761e10e6e0cde10f80dec769f3623b573fed34ddfd4c234470e70b7aa3","disposition":"still accurate","rationale":"The shared drag helper preserves real pointer input and finally releases on errors. Presentation preview ownership, cancellation and the referenced UI checks remain required. Load completion now returns the captured matching receipt handle, avoiding a later command racing the result read."} -->
+<!-- doc-review {"version":1,"fingerprint":"f927c69f5a8286f0d7ec0e9523966ad8d9026c1386257e4aa8beb8f6559930ad","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"d96c74e42b21719c8d5f1a90ff73c4258ec0acc3e67a20065f279d8cccc1d53a","disposition":"still accurate","rationale":"Only immutable snapshot construction changed beyond the documented panel reflow. Preview isolation, normal core commits, input cancellation and help containment remain owned by their existing modules."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -90,7 +90,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"9b7a3564f707b8df65392b6025253e91b9293331106b3b604ea748736df6f136","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"ac54eed451b274691541ee7e7eeda68c503dcc32294663cab3113a1984473cf8","disposition":"still accurate","rationale":"No diagnostic model or navigation behavior changed; review hashes alone changed and completed observation inputs remain the required diagnostic source."} -->
+<!-- doc-review {"version":1,"fingerprint":"56138c5d3a723fa8170c8c1d42d939e17dcd87c90a0402b29f849e87b3fb7a00","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"aa54fefdddabbcbae53476589aec9238128fe4c7e7fbd789887108c382fb6250","disposition":"still accurate","rationale":"Diagnostics still receive completed immutable values. The copying optimization changes no observed quantities, names, physical attribution or diagnostic decision owner."} -->
 
 Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -105,7 +105,7 @@ A symptom is not proof of the intended mechanism or cause.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"ef6099e09d2ea9bce5f1657987a156e307968e293569c4cd9b33e55aa68dac63","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"6605c37f18c9e3c69a23b009a438a0b86f7107dc8b96d3e61725b8bbe1cb9c0f","disposition":"still accurate","rationale":"Independent spring angular momentum tests were rerun successfully; this tooling change does not alter spring laws, physical tolerances, ordering or ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"4fdca6f628c78bf8fe76509fc7843496a2232332455ba72a05260083ce21185c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"b7b8eebb820dcfe2551699ccc9e2caa623f65d793a58892b7d73edb59a39a3f4","disposition":"still accurate","rationale":"No numerical law, physical configuration, tick order, checkpoint state or integration path changed. Observation copying still preserves values and rejects non-data inputs; analytical and deterministic checks remain required."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -132,7 +132,7 @@ Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"da7b22ac1109fa6f8c714ac6141ec031fcdc21642792228ecc8886b85a0a87db","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"2aa504a1731d5b25b796fefa34963b713a396ac659664b68e7578313ef73e614","disposition":"still accurate","rationale":"No assembly graph, alias or insertion semantics changed. New browser helpers retain caller assertions and do not replace the copied-graph and history contracts described here. Load completion now returns the captured matching receipt handle, avoiding a later command racing the result read."} -->
+<!-- doc-review {"version":1,"fingerprint":"88e0343d18038750aadf101e8db97e3d1a62f187dc3e6cb301ef0ebbe35952f6","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"2bda6dc72634d639f5b5d10398a20dd8e82e4049c08d0d8e5a974c565e9f72cf","disposition":"still accurate","rationale":"Copies retain own keys including __proto__, independent frozen nested objects and ordinary dense arrays. Membership, endpoint remapping, aliases, candidate compilation and history semantics are unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -205,7 +205,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"c53571bdc8bfa777c70f117640cc808a126837ea78e82705178cd574f388a4ee","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"9a83fd98ca2b7182e242a2d449257dde46caa7f75ceaa1ee2038ffbaef2cb83d","disposition":"still accurate","rationale":"The additional presentation resolution level changes neither overlay endpoints nor transform, wiring, telemetry or picking ownership. Existing spring CPU and cadence budgets remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"8dc339e7b3154510ed463eb6347348daaa9c7cbf0aa63475bd480d54a8fabac4","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"7f928d83d1fd3781d834802fb200efbb9af45fa39efac9f36b14e13168280d69","disposition":"still accurate","rationale":"The observation optimization does not alter rendering data or connection resources. The existing workbench check covers panel reflow, and new observation controls reject unsafe copying while retaining all graphics and spring budgets."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

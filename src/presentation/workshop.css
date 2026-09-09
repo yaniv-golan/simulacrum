@@ -1939,18 +1939,40 @@ body:has(.playtest-panel) .guide-feedback {
   accent-color: #f2b85f;
 }
 
-.vehicle-controls {
+.machine-panels {
   position: absolute;
-  left: 16px;
-  bottom: 48px;
-  width: min(330px, calc(100% - 32px));
-  max-height: 35%;
+  inset: auto 14px 45px 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  align-items: end;
+  gap: 8px;
+  max-height: 45%;
+  pointer-events: none;
+  z-index: 4;
+}
+.machine-panels > * {
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow: auto;
+  pointer-events: auto;
+}
+.vehicle-controls {
+  order: -1;
   overflow: auto;
   padding: 10px 12px;
   background: #172a33ee;
   border: 1px solid #55717a;
   border-top: 3px solid #efb85e;
   z-index: 4;
+}
+.vehicle-controls > summary {
+  position: sticky;
+  top: -10px;
+  padding: 4px 0;
+  background: #172a33;
+  z-index: 1;
 }
 .vehicle-controls[hidden] {
   display: none;
@@ -2026,32 +2048,19 @@ body:has(.playtest-panel) .guide-feedback {
   outline-offset: 2px;
 }
 .motion-readout {
-  position: absolute;
-  right: 14px;
-  bottom: 45px;
   display: grid;
   gap: 4px;
-  max-width: 45%;
   padding: 9px 12px;
   background: #172a33ee;
   border-left: 3px solid #86d9bc;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-  pointer-events: none;
 }
 .motion-readout[hidden] {
   display: none;
 }
 .motion-readout small {
   color: #abc0c6;
-}
-@media (max-width: 1050px) {
-  .motion-readout {
-    bottom: 18px;
-    right: 8px;
-    max-width: 55%;
-    font-size: 10px;
-  }
 }
 .follow-control[hidden] {
   display: none;
@@ -2061,9 +2070,6 @@ body:has(.playtest-panel) .guide-feedback {
   font-size: 13px;
   line-height: 1.5;
   color: #b7d9dc;
-}
-.vehicle-controls {
-  max-height: 45%;
 }
 .vehicle-controls p {
   margin: 6px 0;
@@ -2729,10 +2735,6 @@ body:has(.playtest-panel) .guide-feedback {
 }
 .workshop-dialog {
   overflow-wrap: anywhere;
-}
-.motion-readout {
-  max-height: calc(100% - 24px);
-  overflow: auto;
 }
 .motion-values details p {
   max-width: 32ch;
