@@ -41,6 +41,6 @@
     "src/model/blueprint.schema.json": "be00ab5e9bbdd0038a8b9f5422edfdc14f2812fc7d7e957889bff455bb078ba2",
     "src/model/generated/blueprint-validator.mjs": "d7e98ea5e2382487d0040a2b359271f06114120ad2f6856c3e15ccccbcd20b2b",
     "scripts/browser-evidence.mjs": "aba560116ae7029a14d9cbeaba46612417e7684a0c73b0996f73c1f0eb77b68f",
-    "src/application/workshop-app.mjs": "66e494e7f182cbc3e4044fbc133b8f12c36c283ad7a9e644b1b6a69df656134f"
+    "src/application/workshop-app.mjs": "46c372ec91b7b1b68786d0e2a6d9167d53476b7f63f2195e8248c6d9362d267d"
   }
 }

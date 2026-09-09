@@ -222,7 +222,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"c19d994559366e0236e8dd299d0fd28692c021a7bddb2147cb3304dbc1bc18da","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5bac78b4c539ac102b344ef3a3e4286b4c330f6c72ac6d753bed01cce2bc7136","disposition":"still accurate","rationale":"Adaptive graphics is registered as an exclusive performance browser check. The conservative selection, local scopes and completion-tier policies are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"80bc5e62a77c8107fca4766d21ef2af30996babc24219c3ccce3e2cfedbf3ba9","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"3798f1e7c63931a8f974cde665edefbcbc51763c5ff1292a3b0f94d972cc81a2","disposition":"still accurate","rationale":"Adaptive graphics is registered as an exclusive performance browser check. The conservative selection, local scopes and completion-tier policies are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

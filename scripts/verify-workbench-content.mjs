@@ -1,5 +1,5 @@
 import { createBrowserEvidence } from './browser-evidence.mjs';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 
 const evidence = createBrowserEvidence(),
   out = 'artifacts/workbench-content';
@@ -59,7 +59,11 @@ try {
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.getByRole('button', { name: 'Try driving example', exact: true }).click();
-  evidence.assert('match', [await page.locator('.example-message').innerText(), /Save.*New/]);
+  evidence.assert('match', [
+    await page.locator('.example-message').innerText(),
+    /Replace your current machine/,
+  ]);
+  await page.getByRole('button', { name: 'Cancel replacement', exact: true }).click();
   await page.getByRole('button', { name: 'Close examples', exact: true }).click();
   evidence.assert('deepEqual', [(await read()).metadata.blueprint, before.metadata.blueprint]);
   await page.getByRole('button', { name: 'Help', exact: true }).click();
@@ -90,6 +94,135 @@ try {
   );
   evidence.assert('deepEqual', [clipped, [], 'header actions remain reachable at smaller widths']);
   await page.screenshot({ path: `${out}/smaller.png` });
+  await page.locator('[data-command=build]').click();
+  const preserved = (await read()).metadata.blueprint;
+  const learn = page.getByRole('button', { name: 'Learn & examples', exact: true });
+  await learn.focus();
+  await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: 'Try driving example', exact: true }).click();
+  // A download error cannot clear or replace the current machine.
+  await page.evaluate(() => {
+    window.savedCreateObjectURL = URL.createObjectURL;
+    URL.createObjectURL = () => {
+      throw Error('download unavailable');
+    };
+  });
+  await page.getByRole('button', { name: 'Download current machine', exact: true }).click();
+  evidence.assert('match', [await page.locator('.example-message').innerText(), /could not start/]);
+  evidence.assert('deepEqual', [(await read()).metadata.blueprint, preserved]);
+  await page.evaluate(() => {
+    URL.createObjectURL = window.savedCreateObjectURL;
+  });
+  const downloadEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download current machine', exact: true }).click();
+  const download = await downloadEvent;
+  evidence.assert('deepEqual', [
+    JSON.parse(readFileSync(await download.path(), 'utf8')),
+    preserved,
+  ]);
+  evidence.assert('deepEqual', [(await read()).metadata.blueprint, preserved]);
+  await page.getByRole('button', { name: 'I saved the file — open example', exact: true }).click();
+  evidence.assert('notDeepEqual', [(await read()).metadata.blueprint, preserved]);
+  evidence.assert('equal', [await page.locator('.examples-browser').isVisible(), false]);
+  await page.getByRole('button', { name: 'Measurements', exact: true }).click();
+  evidence.assert('doesNotMatch', [await page.locator('.motion-values').innerText(), /Last run:/]);
+  await page.getByText('What is measured?', { exact: true }).click();
+  evidence.assert('match', [
+    await page.locator('.motion-values').innerText(),
+    /including detached parts/,
+  ]);
+  await page.getByRole('button', { name: 'Measurements', exact: true }).click();
+  // Requested content must remain stable while the simulation updates.
+  await page.locator('[data-command=run]').click();
+  await page.locator('canvas').focus();
+  await page.keyboard.down('w');
+  await page.waitForFunction(() =>
+    JSON.parse(window.render_game_to_text()).power.sources.some((s) => s.duty !== 0),
+  );
+  await page.getByRole('button', { name: 'Help', exact: true }).click();
+  await page.waitForFunction(() =>
+    JSON.parse(window.render_game_to_text()).power.sources.every((s) => s.duty === 0),
+  );
+  await page.keyboard.press('Escape');
+  evidence.assert('ok', [(await read()).power.sources.every((s) => s.duty === 0)]);
+  await page.keyboard.up('w');
+
+  await learn.click();
+  await page.locator('.spring-experiments > summary').click();
+  const springLaunch = page.getByRole('button', { name: 'Try spring playground', exact: true });
+  await springLaunch.focus();
+  const tick = (await read()).tick;
+  await page.waitForFunction((t) => JSON.parse(window.render_game_to_text()).tick > t + 10, tick);
+  evidence.assert('equal', [
+    await springLaunch.evaluate((el) => el === document.activeElement),
+    true,
+  ]);
+  await page.keyboard.press('Escape');
+  evidence.assert('equal', [await learn.evaluate((el) => el === document.activeElement), true]);
+  await page.locator('[data-command=build]').click();
+  const stable = (await read()).metadata.blueprint;
+  await page.getByRole('button', { name: 'Measurements', exact: true }).click();
+  evidence.assert('match', [await page.locator('.motion-values').innerText(), /Last run:/]);
+  await page
+    .locator('input[type=file]')
+    .setInputFiles({
+      name: 'invalid.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from('{'),
+    });
+  await page.waitForFunction(() => document.querySelector('input[type=file]').value === '');
+  evidence.assert('match', [await page.locator('.motion-values').innerText(), /Last run:/]);
+  await page
+    .locator('input[type=file]')
+    .setInputFiles({
+      name: 'same-machine.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(stable)),
+    });
+  await page.getByText('Machine opened. Choose Run to try it.', { exact: true }).waitFor();
+  evidence.assert('doesNotMatch', [await page.locator('.motion-values').innerText(), /Last run:/]);
+  await page.getByRole('button', { name: 'Measurements', exact: true }).click();
+
+  // A compact effective viewport exercises dialog reflow; this is not browser zoom.
+  await page.setViewportSize({ width: 640, height: 360 });
+  const helpLaunch = page.getByRole('button', { name: 'Help', exact: true });
+  await helpLaunch.focus();
+  await page.keyboard.press('Enter');
+  const helpDialog = page.getByRole('dialog', { name: 'Help', exact: true });
+  for (const key of ['Tab', 'Tab', 'Shift+Tab']) {
+    await page.keyboard.press(key);
+    evidence.assert('equal', [
+      await helpDialog.evaluate(
+        (el) => el.contains(document.activeElement) || document.activeElement === document.body,
+      ),
+      true,
+    ]);
+  }
+  await page.getByText('Build information', { exact: true }).click();
+  const buildValue = await page
+    .getByRole('textbox', { name: 'Build information', exact: true })
+    .inputValue();
+  evidence.assert('equal', [buildValue, await page.locator('[data-build-id]').innerText()]);
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.getByRole('button', { name: 'Copy build info', exact: true }).click();
+  evidence.assert('equal', [await page.evaluate(() => navigator.clipboard.readText()), buildValue]);
+  evidence.assert('equal', [
+    await helpDialog.evaluate((el) => el.scrollWidth <= el.clientWidth),
+    true,
+  ]);
+  await page.screenshot({ path: `${out}/help-small.png` });
+  await page.keyboard.press('Escape');
+  evidence.assert('equal', [
+    await helpLaunch.evaluate((el) => el === document.activeElement),
+    true,
+  ]);
+  evidence.assert('deepEqual', [(await read()).metadata.blueprint, stable]);
+  await learn.click();
+  // Expanded descriptions remain scrollable and the final action is really clickable.
+  await page.getByRole('button', { name: 'Compare zero damping', exact: true }).click();
+  await page.getByRole('button', { name: 'Cancel replacement', exact: true }).click();
+  await page.screenshot({ path: `${out}/examples-small.png` });
+  await page.keyboard.press('Escape');
   evidence.assert('deepEqual', [evidence.errors, []]);
   evidence.assertUnchanged();
   writeFileSync(

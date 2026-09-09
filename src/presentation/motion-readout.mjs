@@ -10,11 +10,21 @@ export function createMotionReadout(container) {
   const values = document.createElement('div');
   values.className = 'motion-values';
   values.hidden = true;
-  values.append(current, previous);
+  const heading = document.createElement('b');
+  heading.textContent = 'Whole-machine motion';
+  const explanation = document.createElement('details');
+  const summary = document.createElement('summary');
+  summary.textContent = 'What is measured?';
+  const description = document.createElement('p');
+  description.textContent =
+    'Speed and horizontal displacement of the mass-weighted machine center, including detached parts. Distance from start is not distance traveled. A spring can move while this value stays near zero. Runs with different controls or durations are not directly comparable.';
+  explanation.append(summary, description);
+  values.append(heading, current, previous, explanation);
   panel.append(values, warning);
   container.append(panel);
   let origin = null,
     startTick = 0,
+    lastMachine,
     lastMode,
     lastTick = 0,
     latest = null,
@@ -26,11 +36,25 @@ export function createMotionReadout(container) {
     panel.hidden = values.hidden && warning.hidden;
   }
   return {
+    clear() {
+      origin = null;
+      latest = null;
+      previousText = '';
+      previous.textContent = '';
+      current.textContent = 'No run measured yet';
+    },
     setVisible(value) {
       requested = value;
       refreshVisibility();
     },
     update(frame) {
+      if (lastMachine !== frame.metadata.blueprint.id) {
+        origin = null;
+        latest = null;
+        previousText = '';
+        lastMode = undefined;
+        lastMachine = frame.metadata.blueprint.id;
+      }
       const mode = frame.metadata.mode,
         motion = machineMotion(frame);
       if (mode === 'build') {

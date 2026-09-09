@@ -2686,6 +2686,7 @@ body:has(.playtest-panel) .guide-feedback {
   font-size: 13px;
 }
 .motion-values {
+  pointer-events: auto;
   display: grid;
   gap: 4px;
 }
@@ -2705,4 +2706,34 @@ body:has(.playtest-panel) .guide-feedback {
     max-width: 100%;
     flex-wrap: wrap;
   }
+}
+
+.example-replacement:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0;
+}
+.example-card {
+  border-top: 1px solid #526873;
+  padding: 12px 0;
+}
+.example-card h3,
+.example-card p {
+  margin: 0 0 10px;
+}
+.build-info input {
+  width: 100%;
+  min-width: 0;
+  margin: 8px 0;
+}
+.workshop-dialog {
+  overflow-wrap: anywhere;
+}
+.motion-readout {
+  max-height: calc(100% - 24px);
+  overflow: auto;
+}
+.motion-values details p {
+  max-width: 32ch;
 }

@@ -205,7 +205,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"052fd93428c96243e63799aa63ea7878fc3f6a42acb4a6609096295d52e22e11","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"6507e6801531b792e2772e7a8e1042274e29c8edbd2a4871f406d594c6cb5e4b","disposition":"still accurate","rationale":"Graphics quality changes shadow targets and canvas density without altering connection endpoints, displayed transforms, selection ownership or the spring performance limits; the new adaptive section documents the additional behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"c53571bdc8bfa777c70f117640cc808a126837ea78e82705178cd574f388a4ee","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"9a83fd98ca2b7182e242a2d449257dde46caa7f75ceaa1ee2038ffbaef2cb83d","disposition":"still accurate","rationale":"The additional presentation resolution level changes neither overlay endpoints nor transform, wiring, telemetry or picking ownership. Existing spring CPU and cadence budgets remain unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

@@ -23,7 +23,7 @@ otherwise give the observation and a useful next check. Do not shrink text to ma
 more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Current surfaces and lifecycle
-<!-- doc-review {"version":1,"fingerprint":"0366cf0931ffd66c34a496ed70baa0d9a98e76dd1d62b93489d1a3b1f0b0727b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"0d48d88ec14429ed63072f2ce5e8866e440ce3f69ab4fe8981d7c6d70650ddcd","disposition":"still accurate","rationale":"Adaptive rendering changes only 3D shadow and pixel density. No control, persistent panel, teaching lifecycle, authored geometry or action placement is added or displaced."} -->
+<!-- doc-review {"version":1,"fingerprint":"ed5bd998bde6b7e171d6468e6fb376526e7d402207a55595fa8d443296fa2f56","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"2d90e471cb8ea8ccf89b470a85ba280507e30eb616909c2cd4028550623c3e2a","disposition":"still accurate","rationale":"Adaptive rendering changes only 3D shadow and pixel density. No control, persistent panel, teaching lifecycle, authored geometry or action placement is added or displaced."} -->
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
 document and run actions in the header; parts in the left catalogue; separate edit
@@ -46,12 +46,17 @@ preference. View state must not imply that authored parts have physically moved.
 
 Learn & examples opens a bounded browser. Starting a lesson moves its current step
 into the parts area; leaving removes it. New examples enlarge this browser, not the
-ordinary toolbar. Existing machines are preserved: example entry currently explains
-Save then New, rather than silently replacing work. A future replacement flow must
-preserve cancellation and make save success explicit.
+ordinary toolbar. Examples have individual outcome descriptions. Existing machines
+require explicit replacement confirmation, with Download, Cancel and an explicit
+replace action. A browser download request is not proof of a saved file: after download,
+the player confirms they saved it before opening. Cancel and download failure preserve
+the machine. [Example loading](../../src/application/workshop-app.mjs#source) uses ordinary load admission without an intermediate empty
+machine; a rejected replacement keeps the dialog open. The catalogue retains focus,
+expanded groups and scroll while simulation updates. Starting examples requires Build.
 
 Help is an explicit, keyboard-accessible dialog. It contains control and wiring
-explanations instead of keeping paragraphs over the canvas. No automatic hint/tour
+explanations instead of keeping paragraphs over the canvas. Build information is
+readable and copyable here; the served marker remains for assessment evidence. No automatic hint/tour
 is currently implemented. Future optional hints require an explicit trigger,
 dismissal/completion condition and retrieval route, with no timer hiding required
 instructions. Honor dismissal where persistence exists; local resets are not proof
@@ -61,11 +66,13 @@ by a teaching preference.
 The [motion panel](../../src/presentation/motion-readout.mjs#source) separates requested
 measurements from boundary warnings. Stopping preserves the last run for inspection.
 Measurements describe the actual quantity and scope: whole-machine displacement is
-not a general success criterion for a spring. Recovery warnings remain visible with
+not a general success criterion for a spring. The requested panel labels whole-machine
+motion and provides a keyboard-accessible measurement explanation. Successful machine loading, including same-ID saved revisions, clears prior results;
+failed loads preserve them. Recovery warnings remain visible with
 measurements closed. No measurement is permission to invent physical causality.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"5302ec36e6cc5377cb28e37d57901fad3d3b999a789dd21262f2a1a5db4418ae","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"17a94c6c84e38cb73468143d937852855b286da85fe565cd8bd72e76ea1a4a26","disposition":"still accurate","rationale":"New test helpers retain actual pointer interactions and do not substitute for layout, prediction or human acceptance evidence. Documentation normalization does not change verification tier obligations."} -->
+<!-- doc-review {"version":1,"fingerprint":"296a470c52fc13512bf7031de72390cb8243f41ecac533acd1a16c8fda206d7b","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"2dcaea4e2747c3f490706322dc24a57e827f3ca6e2714efd7b613ba9487f9541","disposition":"still accurate","rationale":"The registered journey covers download failure and bytes, cancellation, replacement, same-ID load result clearing with invalid-load preservation, held input release, dialog keys, clipboard and compact reflow. Human comprehension remains unevaluated."} -->
 
 Use the manifest's `workbench-content-lifecycle` invariant and
 [registered browser check](../../scripts/manifest.json#check=verify-workbench-content)

@@ -285,12 +285,12 @@ export async function mountWorkshopApp(root) {
         };
       }
       if (command.type === 'spring-example') {
-        if (frame().metadata.blueprint.parts.length)
+        if (frame().metadata.blueprint.parts.length && command.replace !== true)
           return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
         command = { type: 'load', save: createSpringPlayground({ damping: command.damping ?? 8 }) };
       }
       if (command.type === 'driving-example') {
-        if (frame().metadata.blueprint.parts.length)
+        if (frame().metadata.blueprint.parts.length && command.replace !== true)
           return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
         command = { type: 'load', save: createDrivingMachine() };
       }
@@ -371,6 +371,7 @@ export async function mountWorkshopApp(root) {
         } else clock.start();
       }
       render();
+      if (command.type === 'load') view.clearMeasurements();
       if (['place', 'connect', 'run'].includes(command.type)) reflection(command.type, timing);
       view.setMessage(
         command.type === 'run'
@@ -403,7 +404,7 @@ export async function mountWorkshopApp(root) {
       blueprint,
       `${blueprint.name.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-') || 'machine'}.json`,
     );
-    view.setMessage('Machine saved.');
+    view.setMessage('Machine download started. Check your browser downloads for the saved file.');
   }
   function onFailure() {
     const bundle = workshop.failureBundle();

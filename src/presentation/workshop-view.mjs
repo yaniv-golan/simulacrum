@@ -296,72 +296,127 @@ export function createWorkshopView(
   });
   filebar.append(learnButton);
   const guide = element('section', 'starter-guide');
+  let pendingExample = null,
+    renderedGuideActive;
+  const replacement = element('div', 'example-replacement');
+  replacement.hidden = true;
+  const cancelReplacement = button('Cancel replacement', () => {
+    replacement.hidden = true;
+    exampleMessage.textContent = '';
+    const trigger = pendingExample?.trigger;
+    pendingExample = null;
+    trigger?.focus();
+  });
+  const confirmReplacement = button('Replace without saving', async () => {
+    const pending = pendingExample;
+    if (!pending) return;
+    confirmReplacement.disabled = true;
+    downloadCopy.disabled = true;
+    cancelReplacement.disabled = true;
+    try {
+      await openExample(pending);
+    } finally {
+      confirmReplacement.disabled = false;
+      downloadCopy.disabled = false;
+      cancelReplacement.disabled = false;
+    }
+  });
+  const downloadCopy = button('Download current machine', async () => {
+    try {
+      await onSave();
+      exampleMessage.textContent =
+        'Download started. Check that the file is saved before replacing your machine. If you cancelled the download, download again or cancel replacement.';
+      confirmReplacement.textContent = 'I saved the file — open example';
+    } catch {
+      exampleMessage.textContent =
+        'The download could not start. Your machine is unchanged. Try downloading again or cancel replacement.';
+    }
+  });
+  replacement.append(downloadCopy, confirmReplacement, cancelReplacement);
+  examples.insertBefore(replacement, exampleMessage.nextSibling);
+  examples.addEventListener('close', () => {
+    replacement.hidden = true;
+    pendingExample = null;
+  });
+  async function openExample(entry) {
+    if (frame.metadata.mode !== 'build') {
+      exampleMessage.textContent =
+        'Return to Build before opening an example. Your current machine is unchanged.';
+      return;
+    }
+    const result = await send(entry.command);
+    if (!result?.ok) {
+      exampleMessage.textContent = 'The example could not open. Your current machine is unchanged.';
+      return;
+    }
+    if (entry.guide) {
+      guideActive = true;
+      empty.hidden = true;
+      refreshGuide();
+    }
+    examples.close();
+    partsHeading.focus();
+  }
+  function chooseExample(entry, trigger) {
+    if (frame.metadata.mode !== 'build') {
+      exampleMessage.textContent =
+        'Return to Build before opening an example. Your current machine is unchanged.';
+      return;
+    }
+    if (!frame.metadata.blueprint.parts.length) return openExample(entry);
+    pendingExample = { ...entry, trigger };
+    exampleMessage.textContent = `Replace your current machine with ${entry.name}? This replaces the machine and its Undo history. Download a copy first if you want to keep it.`;
+    confirmReplacement.textContent = 'Replace without saving';
+    replacement.hidden = false;
+    cancelReplacement.focus();
+  }
   function refreshGuide() {
+    // Static requested content must retain focus, disclosure and scroll during ticks.
+    if (!guideActive && renderedGuideActive === false) return;
+    renderedGuideActive = guideActive;
     guide.replaceChildren();
     guide.classList.toggle('active-guide', guideActive);
     if (!guideActive) {
       examples.append(guide);
-      guide.append(
-        element('h2', '', 'Build a rolling machine'),
-        element(
-          'p',
-          '',
-          'A supported chassis and three wheels keep the motor clear of the floor. Place and connect each part yourself.',
-        ),
+      const addExample = (parent, name, description, label, command, guided = false) => {
+        const card = element('section', 'example-card');
+        const launch = button(label, () => chooseExample({ name, command, guide: guided }, launch));
+        if (command.damping !== 0) launch.dataset.command = guided ? 'start-guide' : command.type;
+        card.append(element('h3', '', name), element('p', '', description), launch);
+        parent.append(card);
+      };
+      addExample(
+        guide,
+        'Build a rolling machine',
+        'Start with an empty workbench. Place and connect a chassis, motor and wheels one step at a time. Leave the guide whenever you want.',
+        'Start guided build',
+        { type: 'new' },
+        true,
       );
-      const start = button('Start guided build', () => {
-        if (frame.metadata.blueprint.parts.length) {
-          exampleMessage.textContent =
-            'Choose New for an empty workbench, then start the guided build.';
-          return;
-        }
-        guideActive = true;
-        examples.close();
-        empty.hidden = true;
-        refreshGuide();
-      });
-      start.dataset.command = 'start-guide';
-      const driveExample = button('Try driving example', () => {
-        if (frame.metadata.blueprint.parts.length) {
-          exampleMessage.textContent =
-            'Save your machine, then choose New to open the driving example.';
-          return;
-        }
-        examples.close();
-        send({ type: 'driving-example' });
-      });
-      driveExample.dataset.command = 'driving-example';
-      const springs = button('Try spring playground', () => {
-        if (frame.metadata.blueprint.parts.length) {
-          exampleMessage.textContent =
-            'Save your machine, then choose New to open the spring playground.';
-          return;
-        }
-        examples.close();
-        send({ type: 'spring-example' });
-      });
-      springs.dataset.command = 'spring-example';
-      const undamped = button('Compare zero damping', () => {
-        if (frame.metadata.blueprint.parts.length) {
-          exampleMessage.textContent = 'Save, then choose New to open the zero-damping comparison.';
-          return;
-        }
-        examples.close();
-        send({ type: 'spring-example', damping: 0 });
-      });
+      addExample(
+        guide,
+        'Driving machine',
+        'Open an editable four-wheel machine. W/S drives and A/D turns. Change the machine, then try driving away and returning.',
+        'Try driving example',
+        { type: 'driving-example', replace: true },
+      );
       const springExperiments = element('details', 'spring-experiments');
-      springExperiments.append(element('summary', '', 'Spring experiments'), springs, undamped);
-      guide.append(
-        start,
-        driveExample,
-        element(
-          'p',
-          '',
-          'An editable four-wheel machine: W/S to drive, A/D to turn. Try driving away, turning around and returning.',
-        ),
+      springExperiments.append(element('summary', '', 'Spring experiments'));
+      addExample(
         springExperiments,
+        'Spring playground',
+        'Open a supported sliding carriage and spring. Run to watch it bounce and settle; change stiffness, damping or load and try again.',
+        'Try spring playground',
+        { type: 'spring-example', replace: true },
       );
-
+      addExample(
+        springExperiments,
+        'Zero damping',
+        'Open the same spring setup with damping set to zero. Watch how long it keeps bouncing. This replaces the current machine; it does not open a side-by-side comparison.',
+        'Compare zero damping',
+        { type: 'spring-example', damping: 0, replace: true },
+      );
+      guide.append(springExperiments);
       return;
     }
     left.insertBefore(guide, partsHeading);
@@ -939,6 +994,30 @@ export function createWorkshopView(
     hint,
     button('Close help', () => help.close()),
   );
+  const buildInfo = element('details', 'build-info');
+  const buildText = element('input');
+  buildText.readOnly = true;
+  buildText.setAttribute('aria-label', 'Build information');
+  buildText.value = buildId.textContent;
+  const copyStatus = element('p');
+  copyStatus.setAttribute('role', 'status');
+  buildInfo.append(
+    element('summary', '', 'Build information'),
+    buildText,
+    button('Copy build info', async () => {
+      try {
+        await navigator.clipboard.writeText(buildText.value);
+        copyStatus.textContent = 'Build information copied.';
+      } catch {
+        buildText.focus();
+        buildText.select();
+        copyStatus.textContent =
+          'Copy is unavailable. The build information is selected; use Ctrl/Cmd+C.';
+      }
+    }),
+    copyStatus,
+  );
+  help.append(buildInfo);
   root.append(help);
   filebar.append(button('Help', () => help.showModal()));
   const motionReadout = createMotionReadout(viewport);
@@ -3355,6 +3434,7 @@ export function createWorkshopView(
     render,
     setMessage,
     setRecordingState,
+    clearMeasurements: () => motionReadout.clear(),
     readInteractionState: () => ({
       rendering: {
         frames: renderedFrames,
