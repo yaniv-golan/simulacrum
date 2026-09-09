@@ -3,10 +3,21 @@ import { createEmptyBlueprint } from '../src/model/blueprint.mjs';
 import { createSpringStrut } from '../src/model/fixtures/spring-playground.mjs';
 import { insertAssembly } from '../src/model/reusable-assemblies.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import {
+  SPRING_PERFORMANCE,
+  measureSpringSimulation,
+  evaluateSpringSimulation,
+  evaluateSpringBrowser,
+  springBenchmarkEnvironment,
+} from './measure-springs.mjs';
 const evidence = createBrowserEvidence(),
   out = 'artifacts/spring-performance';
 mkdirSync(out, { recursive: true });
-const browser = await evidence.launch({ profile: 'ui' }),
+const browser = await evidence.launch({
+    profile: 'performance',
+    // Headless macOS otherwise selects SwiftShader. Measure the native graphics backend.
+    args: process.platform === 'darwin' ? ['--use-angle=metal'] : [],
+  }),
   page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 const fixtures = new Map();
 for (const count of [0, 1, 8, 32]) {
@@ -22,7 +33,17 @@ for (const count of [0, 1, 8, 32]) {
   writeFileSync(file, JSON.stringify(b));
   fixtures.set(count, file);
 }
+const report = {
+  ...evidence.identity,
+  environment: springBenchmarkEnvironment(),
+  policy: SPRING_PERFORMANCE,
+  status: 'failed',
+  trials: [],
+  idle: [],
+};
 try {
+  report.simulation = await measureSpringSimulation();
+  report.simulationAcceptance = evaluateSpringSimulation(report.simulation);
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   const load = async (count) => {
     await page.locator('input[type=file]').setInputFiles(fixtures.get(count));
@@ -42,54 +63,88 @@ try {
       const { metadata, physics, energy, springs } = JSON.parse(window.render_game_to_text());
       return { metadata, physics, energy, springs, cursor: window.workshopProbe.observe().cursor };
     });
-  const samples = [];
-  for (const count of [0, 1, 8, 32]) {
-    const beforeLoad = await stableState();
-    await load(count);
-    const loaded = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
-    if (count === 32) {
-      evidence.assert('equal', [loaded.springs.length, 8]);
-      const result = await page.evaluate(() => window.workshopProbe.readLastCommandResult());
-      evidence.assert('equal', [result.result.ok, false]);
-      evidence.assert('equal', [result.input.type, 'load']);
-      evidence.assert('equal', [result.input.save.parts.length, 128]);
-      evidence.assert('deepEqual', [await stableState(), beforeLoad]);
-      samples.push({
-        count,
-        rejected: true,
-        result: await page.evaluate(() => window.workshopProbe.readLastCommandResult()),
-      });
-      continue;
-    }
-    evidence.assert('equal', [loaded.springs.length, count]);
-    await page.locator('[data-command=run]').click();
-    const cadence = await page.evaluate(
-      () =>
-        new Promise((resolve) => {
-          const samples = [];
-          let previous = performance.now();
-          function tick(now) {
-            samples.push(now - previous);
+  const collect = async (running) =>
+    page.evaluate(
+      async ({ policy, running }) => {
+        const waitFrames = (n) =>
+          new Promise((resolve) => {
+            let left = n;
+            const tick = () => (--left ? requestAnimationFrame(tick) : resolve());
+            requestAnimationFrame(tick);
+          });
+        await waitFrames(policy.warmupFrames);
+        const read = () => JSON.parse(window.render_game_to_text());
+        const startTick = read().tick,
+          startRendering = window.workshopProbe.readInteractionState().rendering.frames;
+        const visible = !document.hidden,
+          cadenceMs = [];
+        let startTime, previous;
+        await new Promise((resolve) => {
+          const tick = (now) => {
+            if (previous !== undefined) cadenceMs.push(now - previous);
+            else startTime = now;
             previous = now;
-            if (samples.length === 90) resolve(samples);
+            if (cadenceMs.length === policy.sampleFrames) resolve();
             else requestAnimationFrame(tick);
-          }
+          };
           requestAnimationFrame(tick);
-        }),
+        });
+        const endTick = read().tick,
+          rendering = window.workshopProbe.readInteractionState().rendering;
+        const frames = rendering.frames - startRendering;
+        return {
+          warmupFrames: policy.warmupFrames,
+          cadenceMs,
+          elapsedMs: previous - startTime,
+          startTick,
+          endTick,
+          visible: visible && !document.hidden,
+          renderCostsMs: running ? rendering.costsMs.slice(-frames) : [],
+          renderedFrames: frames,
+        };
+      },
+      { policy: SPRING_PERFORMANCE, running },
     );
-    await page.getByRole('button', { name: 'Pause', exact: true }).click();
-    const rendering = await page.evaluate(
-      () => window.workshopProbe.readInteractionState().rendering,
-    );
-    const frame = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
-    evidence.assert('equal', [frame.status, 'ready'], { frame });
-    samples.push({ count, cadenceMs: cadence, rendering, tick: frame.tick });
-    await page.locator('[data-command=build]').click();
-    await page.waitForFunction(
-      () => JSON.parse(window.render_game_to_text()).metadata.mode === 'build',
-    );
-  }
   await load(0);
+  report.browserEnvironment = await page.evaluate(() => {
+    const gl = document.querySelector('canvas').getContext('webgl2'),
+      debug = gl.getExtension('WEBGL_debug_renderer_info');
+    return {
+      userAgent: navigator.userAgent,
+      hardwareConcurrency: navigator.hardwareConcurrency,
+      devicePixelRatio,
+      viewport: [innerWidth, innerHeight],
+      renderer: debug
+        ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL)
+        : gl.getParameter(gl.RENDERER),
+    };
+  });
+  report.idle.push(await collect(false));
+  for (let trial = 0; trial < SPRING_PERFORMANCE.repetitions; trial++)
+    for (const count of trial % 2 ? [8, 1, 0] : [0, 1, 8]) {
+      await load(count);
+      await page.locator('[data-command=run]').click();
+      const sample = await collect(true);
+      await page.getByRole('button', { name: 'Pause', exact: true }).click();
+      const frame = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+      evidence.assert('equal', [frame.status, 'ready'], { frame });
+      report.trials.push({ trial, count, ...sample });
+      await page.locator('[data-command=build]').click();
+      await page.waitForFunction(
+        () => JSON.parse(window.render_game_to_text()).metadata.mode === 'build',
+      );
+    }
+  await load(8);
+  const beforeLoad = await stableState();
+  await load(32);
+  const rejection = await page.evaluate(() => window.workshopProbe.readLastCommandResult());
+  evidence.assert('equal', [rejection.result.ok, false]);
+  evidence.assert('equal', [rejection.input.type, 'load']);
+  evidence.assert('equal', [rejection.input.save.parts.length, 128]);
+  evidence.assert('deepEqual', [await stableState(), beforeLoad]);
+  report.rejection = rejection;
+  await load(0);
+  report.idle.push(await collect(false));
   const client = await page.context().newCDPSession(page);
   await client.send('HeapProfiler.collectGarbage');
   const before = await client.send('Runtime.getHeapUsage');
@@ -112,23 +167,16 @@ try {
   ]);
   evidence.assert('deepEqual', [evidence.errors, []]);
   evidence.assertUnchanged();
-  writeFileSync(
-    `${out}/result.json`,
-    JSON.stringify(
-      {
-        ...evidence.identity,
-        samples,
-        resources,
-        heap: { before, after },
-        errors: evidence.errors,
-      },
-      null,
-      2,
-    ),
-  );
+  report.resources = resources;
+  report.heap = { before, after };
+  report.browserAcceptance = evaluateSpringBrowser(report.trials, report.idle);
+  report.status = 'passed';
 } catch (error) {
+  report.failure = error.message;
   await evidence.captureFailure(error);
   throw error;
 } finally {
+  report.errors = evidence.errors;
+  writeFileSync(`${out}/result.json`, JSON.stringify(report, null, 2));
   await browser.close();
 }

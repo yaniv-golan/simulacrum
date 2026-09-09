@@ -22,7 +22,7 @@
     "src/simulation/session.mjs": "d4a191d39cd2e8b68042464ccd0d673b479ef2f1b7781e40b886718321ffd646",
     "test/shared-power.test.mjs": "5160a0505ed1f79071397f07a29d2a2da4b966f694c3118e33b44b2c5933f65f",
     "test/session.test.mjs": "9c6b12344ad2450dd1d8970d6f2f0ecbe003156a1d23d8e77a24965b1cd1dd10",
-    "test/spring-physics.test.mjs": "9d90c6b5f250e87863223e172774464bc99af3f35c22432a5a6dba98f33b80a0",
+    "test/spring-physics.test.mjs": "6d2a33bc03a0a9eff9086844ba216fb8468ed0d7f11a7f715e5d74963c97e471",
     "src/core/workshop.mjs": "553d0293aa3e9de52351f9a999951702803ca8d96f9bdbc6ff8c3a8685c42b13",
     "src/model/assembly.mjs": "55607bf350d60ed93bf6db3b51aadbf1c7b702d4e73f1fe3f635cbaca0870e2a",
     "src/model/blueprint.mjs": "06b56bc7ce56605c030b097b84076fd2a8033d6cd14f0c9f596dad27f7a1b29a",

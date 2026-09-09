@@ -1665,7 +1665,7 @@
       "id": "guided-spring-passivity",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Guided springs preserve axial freedom, passive accounting and ordinary authored construction.",
+      "guarantee": "Guided springs preserve axial freedom, passive and angular-momentum accounting, ordinary authored construction and independently allocated simulation/render/cadence budgets.",
       "owners": [
         {
           "path": "src/simulation/physics/world.mjs",
@@ -1682,6 +1682,14 @@
         {
           "path": "src/simulation/session.mjs",
           "anchor": "createSession"
+        },
+        {
+          "path": "scripts/measure-springs.mjs",
+          "anchor": "evaluateSpringSimulation"
+        },
+        {
+          "path": "scripts/measure-springs.mjs",
+          "anchor": "evaluateSpringBrowser"
         }
       ],
       "checks": ["invariant-controls", "verify-spring-browser", "verify-spring-performance"],
@@ -1722,6 +1730,18 @@
           {
             "path": "test/spring-view.test.mjs",
             "anchor": "coil retains wire radius, buffers and disposal across full travel"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "offset spring chains conserve orbital plus rotational angular momentum under body and joint ordering"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "off-center spring impulse transfers equal orbital and spin angular momentum"
+          },
+          {
+            "path": "test/spring-performance.test.mjs",
+            "anchor": "spring performance accepts complete trials at independently allocated budget boundaries"
           }
         ],
         "negative": [
@@ -1740,6 +1760,14 @@
           {
             "path": "test/spring-physics.test.mjs",
             "anchor": "excess spring frequency rejects before impulses and eight is the assembly bound"
+          },
+          {
+            "path": "test/spring-performance.test.mjs",
+            "anchor": "spring performance rejects simulation, renderer, cadence and real-time regressions independently"
+          },
+          {
+            "path": "test/spring-performance.test.mjs",
+            "anchor": "spring performance cannot pass missing trials, warmup, hidden pages or unhealthy controls"
           }
         ]
       },

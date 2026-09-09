@@ -127,7 +127,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"b310546d4e3823163b885f13433fe276e4c6cd66adebd87525c205a38ddd6d68","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"92024745baf60c108c51988719096d6c778e7c2c413efaf3bbe6c4feae65298b","disposition":"updated","rationale":"Documented direct CSS source byte coverage added to documentation review; generated browser reference now includes the workbench content journey."} -->
+<!-- doc-review {"version":1,"fingerprint":"b886cd74ef2d546a5cb10a80c302d6f09dc45dc6e36d46899f26a5c52640a43c","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"c046d28c865f6fe758dee811b0a92a404815b00291ebdb2b6978ac97c7b128c3","disposition":"still accurate","rationale":"Generated reference now includes spring angular-momentum and performance control pointers. The documentation refresh, source identity and per-section review procedure remain unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -217,7 +217,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"cfe86584a6d8ea2fe3bb7a9c6564a05f1b27ae1188c329bbb58bdbbbcd49b73a","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"1a68daf5cc3336b12ffa29256daa5b4a8d09f2d7b10e3891da68572a4e159a02","disposition":"still accurate","rationale":"The manifest adds a normal workshop browser check; runtime admission, conservative selection, source identity and completion tier ordering are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a069a071767ce68b8616cc98687039bc6ef064b29e0c5f988d6afff352ebf08b","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7d04d79ac4e133d8f7a5bdeaa4cb95938664dca9a3cfd55b7f4829cf6bcbc4f9","disposition":"still accurate","rationale":"Spring invariant ownership adds performance evaluators and regression controls. The existing exclusive spring performance check and conservative browser selection contracts are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

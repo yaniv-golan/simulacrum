@@ -105,7 +105,7 @@ A symptom is not proof of the intended mechanism or cause.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"8893db5e254ff39a481f37f487316940204e853700bab124e79ec5135b7acd79","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"7c98b03ef1876bfd058a211e3b310ecbd218bf1e2305bd86249d9122165da25a","disposition":"still accurate","rationale":"Only session formatting changed since this section review. Added numeric spring law ownership and coupled-order, frequency-bound, checkpoint-history controls. One integration and completed ledger ownership are preserved."} -->
+<!-- doc-review {"version":1,"fingerprint":"fe68cce494ad77cc612cd4df8d912e2daccfc26e3363aabee960dd031fc4c124","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"cb9f1ed999393f3a14663c9dff12caabdfe0932b345b835c6392c60cb1fce851","disposition":"updated","rationale":"Added the independent orbital-plus-rotational angular-momentum oracle, centered controls, rotation and independent body/joint/endpoint ordering. Physics ownership and one integration are unchanged."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -123,7 +123,11 @@ For guided springs, preserve five constrained degrees of freedom, simultaneous
 coupled damping, bounded frequency admission and signed integration/contact residuals.
 Use [spring physics controls](../../test/spring-physics.test.mjs) and
 [checkpoint/editing controls](../../test/spring-playground.test.mjs), including reversed
-connection order and pre-swap rejection of invalid derived history.
+connection order and pre-swap rejection of invalid derived history. Off-center controls
+compute total angular momentum as orbital momentum plus world-rotated box inertia
+times angular velocity, with centered, rotated and independently reordered bodies,
+joints and endpoints. Preserve both the tight two-body impulse and accumulated
+chain checks; checking linear momentum alone misses lost moment arms.
 Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
@@ -201,7 +205,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"a50d964a3ab648c923f6ba7b693c0268fe7a9030c4efa27a9710537a32174eed","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"bbee35fabaea8069e58ff72aad85dd37ff55b2951947b03c8ee3c8c14906b7a5","disposition":"still accurate","rationale":"Spring browser journey now opens Learn and examples before choosing Spring experiments; numeric/rendered transform assertions and connection visibility owners are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e4cb47455684d48bf5c8dabda6dd41b57cd2a7a24e82bb87176ef811e3ec54ba","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"a1c0fdca975c898cd3f489de45172db7a4f9fe29fe792ef96955d65d8a78cb77","disposition":"updated","rationale":"Corrected the spring performance sentence while preserving the enforced budgets, environment controls and native Metal configuration; other overlay behavior is unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -249,5 +253,21 @@ adds zero-force and travel marks. Decorative geometry has no physics authority.
 [Spring rendering controls](../../test/spring-view.test.mjs) cover travel and disposal;
 the registered [spring browser probe](../../scripts/verify-spring-browser.mjs#implementation)
 checks numeric controls and completed/rendered transforms, while the
-[performance probe](../../scripts/verify-spring-performance.mjs#implementation) measures
-render cost and retained resources at the admitted bound.
+[performance probe](../../scripts/verify-spring-performance.mjs#implementation)
+enforces the [spring performance policy](../../scripts/measure-springs.mjs#source)
+at zero, one and eight springs; 32 must reject without changing state. Three
+counterbalanced repetitions follow 240 simulation ticks or 60 browser frames of
+warmup. Each repetition must pass: complete tick p95 at most 3.333 ms (40% of
+a 120 Hz tick), actuator/constraint p95 at most 2 ms, renderer CPU submission p95
+at most 6 ms, frame cadence p95 at most 40 ms (30 Hz with 20% scheduling margin),
+no stall above 500 ms, and simulated/wall time ratio from 0.95 to 1.05.
+Node phase timings isolate simulation; browser renderer timing is CPU submission,
+not GPU time, so cadence is enforced separately. Before/after visible idle controls
+require p95 at most 20 ms; zero-spring Node ticks require at most 1.042 ms.
+Environment failures do not relax budgets. Reports retain raw samples, CPU, browser,
+GPU renderer and source identity. This spring benchmark requests native Metal on
+macOS because the headless default can select software rendering; other platforms
+retain their default backend and the same budgets. Repeat on supported target hardware for hardware
+qualification. [Budget controls](../../test/spring-performance.test.mjs) exercise
+limits and incomplete/unhealthy trials. Replacement probes also bound retained
+geometry, textures and heap.

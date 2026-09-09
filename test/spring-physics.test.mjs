@@ -289,3 +289,201 @@ test('excess spring frequency rejects before impulses and eight is the assembly 
   });
   admitted.dispose();
 });
+
+// Independent rigid-box inertia and world-space angular momentum oracle.
+const cross3 = (a, b) => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
+const rotate3 = (q, v) => {
+  const t = cross3(q.slice(0, 3), v).map((x) => 2 * x),
+    u = cross3(q.slice(0, 3), t);
+  return v.map((x, i) => x + q[3] * t[i] + u[i]);
+};
+function angularMomentum(rows, descriptions, origin) {
+  const orbital = [0, 0, 0],
+    rotational = [0, 0, 0];
+  rows.forEach((row, i) => {
+    const h = descriptions[i].halfExtents,
+      m = descriptions[i].mass;
+    const inertia = [
+      (m * (h[1] ** 2 + h[2] ** 2)) / 3,
+      (m * (h[0] ** 2 + h[2] ** 2)) / 3,
+      (m * (h[0] ** 2 + h[1] ** 2)) / 3,
+    ];
+    const localW = rotate3(
+      [...row.rotation.slice(0, 3).map((x) => -x), row.rotation[3]],
+      row.angularVelocity,
+    );
+    const spin = rotate3(
+      row.rotation,
+      localW.map((x, k) => x * inertia[k]),
+    );
+    const orbit = cross3(
+      row.position.map((x, k) => x - origin[k]),
+      row.velocity.map((x) => m * x),
+    );
+    for (let k = 0; k < 3; k++) {
+      orbital[k] += orbit[k];
+      rotational[k] += spin[k];
+    }
+  });
+  return { orbital, rotational, total: orbital.map((x, k) => x + rotational[k]) };
+}
+test('offset spring chains conserve orbital plus rotational angular momentum under body and joint ordering', async () => {
+  for (const offset of [0, 0.1])
+    for (const angle of [0, 0.7]) {
+      const q = [1, 2, 3]
+        .map((x) => (x / Math.sqrt(14)) * Math.sin(angle / 2))
+        .concat(Math.cos(angle / 2));
+      const bodies = [0, 1, 2].map((i) => ({
+        ...body(i * 0.35, i + 1),
+        position: rotate3(q, [2 * offset * i, i * 0.35, 0]).map((x, k) => x + [1, 2, -1][k]),
+        rotation: q,
+        halfExtents: [0.08, 0.1, 0.12],
+        velocity: [0.3, -0.2, 0.1],
+      }));
+      const joints = [0, 1].map((i) => ({
+        ...spring,
+        a: i,
+        b: i + 1,
+        anchorA: [offset, 0, 0],
+        anchorB: [-offset, 0, 0],
+        stiffness: 80,
+        damping: 3,
+      }));
+      const outcomes = [];
+      for (const order of [
+        [0, 1, 2],
+        [2, 0, 1],
+      ])
+        for (const reverseJoints of [false, true])
+          for (const reverseEnds of [false, true]) {
+            const descriptions = order.map((i) => bodies[i]);
+            let mapped = joints.map((j) => ({
+              ...j,
+              a: order.indexOf(j.a),
+              b: order.indexOf(j.b),
+            }));
+            if (reverseJoints) mapped.reverse();
+            if (reverseEnds)
+              mapped = mapped.map((j) => ({
+                ...j,
+                a: j.b,
+                b: j.a,
+                anchorA: j.anchorB,
+                anchorB: j.anchorA,
+                axisA: [0, -1, 0],
+                axisB: [0, -1, 0],
+              }));
+            const w = await createPhysicsWorld({
+              gravity: [0, 0, 0],
+              bodies: descriptions,
+              joints: mapped,
+            });
+            try {
+              const origins = [
+                  [0, 0, 0],
+                  [4, -2, 3],
+                ],
+                initial = origins.map((o) => angularMomentum(w.read(), descriptions, o));
+              let largestSpin = 0;
+              for (let tick = 0; tick < 60; tick++) {
+                w.prepareConstraints();
+                w.applyPreparedConstraints();
+                const before = origins.map((o) => angularMomentum(w.read(), descriptions, o));
+                w.applySprings();
+                origins.forEach((o, i) => {
+                  const after = angularMomentum(w.read(), descriptions, o);
+                  assert.ok(
+                    Math.hypot(...after.total.map((x, k) => x - before[i].total[k])) < 2e-6,
+                    'spring impulse conserves total L',
+                  );
+                });
+                w.step();
+                origins.forEach((o, i) => {
+                  const after = angularMomentum(w.read(), descriptions, o);
+                  assert.ok(
+                    Math.hypot(...after.total.map((x, k) => x - initial[i].total[k])) < 1e-4,
+                    JSON.stringify({ offset, angle, tick, before: initial[i], after }),
+                  );
+                });
+                const state = angularMomentum(w.read(), descriptions, origins[0]);
+                largestSpin = Math.max(largestSpin, Math.hypot(...state.rotational));
+              }
+              if (offset)
+                assert.ok(
+                  largestSpin > 1e-3,
+                  'offset spring must exchange orbital and spin angular momentum',
+                );
+              else
+                assert.ok(
+                  largestSpin < 1e-4,
+                  JSON.stringify({
+                    message: 'centered positive control needs no spin',
+                    largestSpin,
+                    angle,
+                    order,
+                    reverseEnds,
+                  }),
+                );
+              const rows = w.read();
+              outcomes.push([0, 1, 2].map((i) => rows[order.indexOf(i)]));
+            } finally {
+              w.dispose();
+            }
+          }
+      for (const rows of outcomes.slice(1))
+        rows.forEach((r, i) => {
+          for (const key of ['position', 'velocity'])
+            assert.ok(
+              Math.hypot(...r[key].map((x, k) => x - outcomes[0][i][key][k])) < 1e-4,
+              JSON.stringify({
+                message: `ordering changed ${key}`,
+                offset,
+                angle,
+                actual: r[key],
+                expected: outcomes[0][i][key],
+              }),
+            );
+          const spin = angularMomentum([r], [bodies[i]], r.position).rotational,
+            expectedSpin = angularMomentum(
+              [outcomes[0][i]],
+              [bodies[i]],
+              outcomes[0][i].position,
+            ).rotational;
+          assert.ok(
+            Math.hypot(...spin.map((x, k) => x - expectedSpin[k])) < 1e-4,
+            'ordering preserves spin angular momentum',
+          );
+        });
+    }
+});
+
+test('off-center spring impulse transfers equal orbital and spin angular momentum', async () => {
+  const descriptions = [body(0), { ...body(0.35), position: [0.2, 0.35, 0] }].map((b) => ({
+    ...b,
+    halfExtents: [0.1, 0.1, 0.1],
+  }));
+  const w = await createPhysicsWorld({
+    gravity: [0, 0, 0],
+    bodies: descriptions,
+    joints: [{ ...spring, anchorA: [0.1, 0, 0], anchorB: [-0.1, 0, 0], damping: 0 }],
+  });
+  try {
+    w.prepareConstraints();
+    w.applyPreparedConstraints();
+    w.applySprings();
+    const state = angularMomentum(w.read(), descriptions, [0, 0, 0]);
+    assert.ok(
+      Math.hypot(...state.total) < 1e-7,
+      'retained two-body probe conserves total angular momentum',
+    );
+    assert.ok(Math.hypot(...state.rotational) > 1e-4, 'offset impulse produces spin');
+    assert.ok(Math.hypot(...state.orbital) > 1e-4, 'orbital contribution cannot be omitted');
+    for (let k = 0; k < 3; k++) assert.ok(Math.abs(state.orbital[k] + state.rotational[k]) < 1e-7);
+  } finally {
+    w.dispose();
+  }
+});
