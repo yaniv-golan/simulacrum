@@ -23,7 +23,7 @@ otherwise give the observation and a useful next check. Do not shrink text to ma
 more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Current surfaces and lifecycle
-<!-- doc-review {"version":1,"fingerprint":"1511803b0c378abd8505b02bed254dc09b53beb2ca2854ba68ad1716ddead313","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"5934bab638d82df9fe3cee32eaf316cd27df41b88c2ff3b7ae2240a179a882ff","disposition":"still accurate","rationale":"No player-facing surface changed; application command receipt sequencing is diagnostic only. Inspector, toolbar, learning and measurement visibility rules remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"0366cf0931ffd66c34a496ed70baa0d9a98e76dd1d62b93489d1a3b1f0b0727b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"0d48d88ec14429ed63072f2ce5e8866e440ce3f69ab4fe8981d7c6d70650ddcd","disposition":"still accurate","rationale":"Adaptive rendering changes only 3D shadow and pixel density. No control, persistent panel, teaching lifecycle, authored geometry or action placement is added or displaced."} -->
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
 document and run actions in the header; parts in the left catalogue; separate edit

@@ -1,3 +1,4 @@
+import { createGraphicsQuality, applyGraphicsQuality } from './graphics-quality.mjs';
 import { movementScope } from './workbench-content.mjs';
 import { portLabel, portPurpose } from './port-wording.mjs';
 import { PRIMARY_PARTS, MORE_PARTS } from './part-palette.mjs';
@@ -579,6 +580,7 @@ export function createWorkshopView(
   footer.append(modeLabel, tickLabel, message, shortcut);
   body.append(left, viewport, rightPanel);
   root.append(header, body, footer, partHelp.panel);
+  const graphicsQuality = createGraphicsQuality();
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x18252d);
@@ -3038,6 +3040,7 @@ export function createWorkshopView(
     if (!width || !height) return;
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * graphicsQuality.read().scale);
     renderer.setSize(width, height, false);
     invalidateScene();
   });
@@ -3240,9 +3243,32 @@ export function createWorkshopView(
   window.addEventListener('blur', blur);
 
   renderPaletteIcons();
-  let animation;
-  function draw() {
+  let animation,
+    previousFrameTime,
+    previousFrameRendered = false;
+  function draw(now = performance.now()) {
     if (disposed) return;
+    const beforeQuality = graphicsQuality.read().level;
+    const quality = graphicsQuality.observe({
+      now,
+      frameMs: now - previousFrameTime,
+      active: previousFrameRendered,
+      visible: !document.hidden,
+    });
+    previousFrameTime = now;
+    previousFrameRendered = false;
+    if (quality.level !== beforeQuality) {
+      applyGraphicsQuality({
+        renderer,
+        scene,
+        shadow: keyLight.shadow,
+        quality,
+        pixelRatio: Math.min(window.devicePixelRatio, 2),
+        width: stage.clientWidth,
+        height: stage.clientHeight,
+      });
+      invalidateScene();
+    }
     if (guideVisual && frame?.metadata.mode !== 'build') showGuideConnection(null);
     for (const cue of guideCues.children)
       if (cue.userData.guideMarker) {
@@ -3320,6 +3346,7 @@ export function createWorkshopView(
       renderCosts.push(performance.now() - renderStart);
       if (renderCosts.length > 240) renderCosts.shift();
       renderedFrames++;
+      previousFrameRendered = true;
     }
     animation = requestAnimationFrame(draw);
   }
@@ -3331,6 +3358,8 @@ export function createWorkshopView(
     readInteractionState: () => ({
       rendering: {
         frames: renderedFrames,
+        quality: graphicsQuality.read(),
+        pixelRatio: renderer.getPixelRatio(),
         costsMs: [...renderCosts],
         geometries: renderer.info.memory.geometries,
         textures: renderer.info.memory.textures,

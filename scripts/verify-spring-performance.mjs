@@ -97,6 +97,7 @@ try {
           visible: visible && !document.hidden,
           renderCostsMs: running ? rendering.costsMs.slice(-frames) : [],
           renderedFrames: frames,
+          quality: rendering.quality,
         };
       },
       { policy: SPRING_PERFORMANCE, running },

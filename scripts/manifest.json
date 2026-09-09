@@ -769,6 +769,16 @@
       "smoke": true,
       "timeoutMs": 45000,
       "ruleId": "player-authority"
+    },
+    {
+      "id": "verify-adaptive-graphics",
+      "script": "scripts/verify-adaptive-graphics.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "performance",
+      "smoke": false,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract"
     }
   ],
   "invariants": [
@@ -1812,6 +1822,54 @@
         ]
       },
       "qualificationBars": ["F1"]
+    },
+    {
+      "id": "adaptive-graphics",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Visible rendered cadence controls only graphical fidelity, with gradual reduction, cautious recovery and no physics or authored-state changes.",
+      "owners": [
+        {
+          "path": "src/presentation/graphics-quality.mjs",
+          "anchor": "createGraphicsQuality"
+        },
+        {
+          "path": "src/presentation/workshop-view.mjs",
+          "anchor": "createWorkshopView"
+        },
+        {
+          "path": "src/presentation/graphics-quality.mjs",
+          "anchor": "applyGraphicsQuality"
+        }
+      ],
+      "checks": ["invariant-controls", "verify-adaptive-graphics"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/graphics-quality.test.mjs",
+            "anchor": "graphics starts at full fidelity and retains it on fast or isolated slow frames"
+          },
+          {
+            "path": "test/graphics-quality.test.mjs",
+            "anchor": "sustained pressure lowers one graphics level at a time and stops at the floor"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/graphics-quality.test.mjs",
+            "anchor": "graphics recovery needs sustained headroom and backs off after a failed upgrade"
+          },
+          {
+            "path": "test/graphics-quality.test.mjs",
+            "anchor": "idle and hidden frames cannot lower quality or manufacture recovery evidence"
+          },
+          {
+            "path": "test/graphics-quality.test.mjs",
+            "anchor": "graphics transitions refresh shadow shader variants and release old targets without changing geometry"
+          }
+        ]
+      },
+      "qualificationBars": []
     }
   ],
   "browserLocalScopes": [

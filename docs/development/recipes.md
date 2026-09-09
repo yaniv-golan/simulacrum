@@ -205,7 +205,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"ac0f8c51c50f05ccf58b13911f517d5155fad58725f52c5f79158927e035d5ec","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"c03d0486d8bce8cdd7161c77fddb62f1bc4f7f02f5bdc4015a56d30ab87a94e7","disposition":"still accurate","rationale":"The shared evidence helper captures a fresh matching load receipt and new documentation controls preserve exact binary bytes. Neither change alters connection geometry, visibility, picking or simulation projections required by this recipe."} -->
+<!-- doc-review {"version":1,"fingerprint":"052fd93428c96243e63799aa63ea7878fc3f6a42acb4a6609096295d52e22e11","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"6507e6801531b792e2772e7a8e1042274e29c8edbd2a4871f406d594c6cb5e4b","disposition":"still accurate","rationale":"Graphics quality changes shadow targets and canvas density without altering connection endpoints, displayed transforms, selection ownership or the spring performance limits; the new adaptive section documents the additional behavior."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -271,3 +271,33 @@ retain their default backend and the same budgets. Repeat on supported target ha
 qualification. [Budget controls](../../test/spring-performance.test.mjs) exercise
 limits and incomplete/unhealthy trials. Replacement probes also bound retained
 geometry, textures and heap.
+
+
+### Adaptive graphics
+<!-- doc-review {"version":1,"fingerprint":"b711de0cb28ca6af91415340f3c1b3606f71ffd348b3fe24aa261fc354bc14d6","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"2b940c1aec41c64b1ba4278219cc865892a16bd3f9e35260fd00bf6d60c2f656","disposition":"updated","rationale":"Updated the documented resolution floor to 40 percent and explained the 36 percent pixel-work reduction from the preceding 50 percent step. The six-level controller retains original warmup, cadence windows, hysteresis, shadow release and shader refresh behavior."} -->
+
+The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
+receives visible rendered-frame timings only. It starts at full fidelity and uses
+45-frame p95 windows after warmup. Above 35 ms it lowers one level; recovery needs
+eight windows below 20 ms and at least 30 seconds since a downgrade. Idle and hidden
+frames reset the evidence window. This avoids treating a hidden tab as slow hardware
+or an idle machine as recovery evidence. The owner never receives a blueprint,
+controller, GPU name or simulation object.
+
+Only shadow-map resolution and canvas pixel density change. Full quality retains
+antialiasing, the original pixel-ratio cap and 2048-pixel shadows. Lower levels reduce
+shadows first, then canvas resolution, with a 40% resolution floor and shadows off. The final 50% to 40% step
+reduces pixel work by 36%, leaving the full scene present while sacrificing fine detail.
+DOM controls, authored geometry, picking, simulation rate and completed observations
+remain unchanged. Shadow enable/disable refreshes shader variants; old shadow targets
+are released. Resize uses the current scale without changing CSS coordinates.
+No permanent panel or action is added; the existing 3D view owns this behavior.
+
+The [graphics controls](../../test/graphics-quality.test.mjs) cover full startup,
+stepwise reduction, delayed recovery, idle/hidden rejection and shader/resource
+transitions. The [browser check](../../scripts/verify-adaptive-graphics.mjs#source)
+uses actual Metal (on macOS) and SwiftShader WebGL fallback, verifies unchanged
+blueprints, real-time stepping, visible scene pixels, resized canvas dimensions,
+and the existing 40 ms cadence budget after warmup. Quality reduction cannot promise
+that every machine or competing workload meets that budget; failure remains failure
+at the minimum level. Agent screenshots are not target-player acceptance.

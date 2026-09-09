@@ -127,7 +127,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"5a330a56a25fa0977012411f10cd10f41e1ca569452a4962dabf43193e332c62","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"2a74d1bb28e7f2264ad3f4bca402c63e4a513a82f22c515bb9d1c484560fc652","disposition":"updated","rationale":"Whitespace-only JavaScript review equivalence now preserves binary dependency bytes without UTF-8 decoding. Independent WASM-byte counterexamples fail on altered bytes; exact build identities and semantic review requirements remain intact."} -->
+<!-- doc-review {"version":1,"fingerprint":"380be1e96ae7b0605b64c736c059ca15ece9606ec8507f155c6e5b0b9b484278","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"869e12db4faae1d94f98d2fc276d8b818250624b96c83516066a271e60763537","disposition":"still accurate","rationale":"Generated reference now includes the adaptive graphics check and invariant owners; regeneration and section-specific review procedures are unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -222,7 +222,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"1b85c7583de57b5a6ed0e01a290c5c38f1228c0b616647d6f72b9e74639719ac","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7483ea7675ebc7022612cf0441d07f488ebaebff09763ecae7e7abda5ffdfb1f","disposition":"updated","rationale":"Added unknown input path reporting and the three shared interaction helpers with fresh command sequence receipts, caller-owned atomicity projections and ordinary pointer semantics. Load completion now returns the captured matching receipt handle, avoiding a later command racing the result read."} -->
+<!-- doc-review {"version":1,"fingerprint":"c19d994559366e0236e8dd299d0fd28692c021a7bddb2147cb3304dbc1bc18da","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5bac78b4c539ac102b344ef3a3e4286b4c330f6c72ac6d753bed01cce2bc7136","disposition":"still accurate","rationale":"Adaptive graphics is registered as an exclusive performance browser check. The conservative selection, local scopes and completion-tier policies are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

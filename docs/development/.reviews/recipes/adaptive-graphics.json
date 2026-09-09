@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "dependencies": {
+    "src/presentation/graphics-quality.mjs": "d50c1228e8e624320c0abdd49d6774df22dd40ea7e90ed7340ff61cb5840b434",
+    "test/graphics-quality.test.mjs": "09f5698a2d3a49aefdd7b973d90bd5646c100dbc49964ee1125752594ff83197",
+    "scripts/verify-adaptive-graphics.mjs": "868c5ba4b4d3e3ca8dd9dcce88a992bcc5fc9d5460444aa74468fa41fe3feb74"
+  }
+}
