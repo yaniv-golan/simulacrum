@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"46b697c10c6978605202010f0ba60113caf3ba33fc2c1870e89d9a709d00dc19","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"5cc5d1c5bab38e332cea5a923f9cd872b55e157081da44f1b613c8921982fe46","disposition":"still accurate","rationale":"The change handles native contact readback errors and allocations; catalog, schema, primitive geometry, mounting and compiler/render geometry agreement are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"2aeb99fb16be9295702d682e490b4b05b147658999aa23548136aad3f15e0453","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"dfd582ab4326b827284ff79b495aef3a0ba7f6cb6694b60e8403cb63f0aa27ba","disposition":"still accurate","rationale":"Package verification scheduling changed, but catalog/schema admission, canonical geometry and compiler/render agreement remain the same part-authoring path."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -33,7 +33,7 @@ validation with `node scripts/generate-schema.mjs` when schema changes.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"2a39d49be4460f4a28d26a55dff5efefffc08188b5488b05c20d2af13e37aca5","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"fe8ca18a5085449982e44504a655bbe0de18498460562c6b9d93a1cd095664e8","disposition":"still accurate","rationale":"Contact diagnostic failures now propagate after native cleanup. Core command validation, candidate compilation, atomic history and stale-cursor behavior are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"d21d74b6ce2e79737ef697a88bfae6870bcb855caf568c99c1500bf1b30a6a6f","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"a61b89aa046b0c78fce4fd270d83ed5ebc525da37809d125fc3f030fc965283f","disposition":"still accurate","rationale":"Package wrappers do not alter core command validation, candidate publication, transaction ownership or editing assertions."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -53,7 +53,7 @@ Identify the player task, primary home, visibility/retrieval lifecycle and repla
 surface. Keep consequential state visible and verify unique actions remain reachable
 after removing or moving controls.
 
-<!-- doc-review {"version":1,"fingerprint":"5692b6bd68545352bde9f853754911994035e32686e0ce9003824472ac631790","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"a5845bceaec216f055cc36e8f9dafa2d2a5c64f38dfec554769fffc6c74b0141","disposition":"still accurate","rationale":"Both changes preserve pointer and preview lifetimes; assembly member targeting remains ordinary inspection while contact readback stays in simulation."} -->
+<!-- doc-review {"version":1,"fingerprint":"b4001c8338d87f65e58e15e4e42bf4c9dc1a2a180122c9bbb05b81fa974a36bc","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"2c478f593092890130d583cd4bcd8d3964c877d1e998b4012bae125f14723959","disposition":"still accurate","rationale":"Graph read expressions and command wrappers affect selection orchestration only; real mirror/help browser assertions, pointer lifetimes and core commitment are retained."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -96,7 +96,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"33c32adb3860294e18194e184c965fa000fd84f7a33e046f2539c60579e5145a","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"83e2266635a2bf4aaadbd265bb0479d310798026fe36a68f891cb2d02091dd77","disposition":"still accurate","rationale":"Contact availability and rejection are enforced within the numeric read model. Diagnostic functions still consume observations and return evidence without editing authored state; no inference from identity was added."} -->
+<!-- doc-review {"version":1,"fingerprint":"2e2c8985f53fafa80c57f1ecad69cf53e53186832f1729d7265c570b031bdd40","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"8909cfcf11c2a378bbc1d954d63fe2429c577c6c0b7ba1c11f17499ac55eb313","disposition":"still accurate","rationale":"No diagnostic owner or observable symptom changed; verification scheduling does not alter the positive, quiet and missing-data examples required here."} -->
 
 Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -111,7 +111,7 @@ A symptom is not proof of the intended mechanism or cause.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"2da8a63d2b6f1b7d9c5fd537da6ce8ba1458c97a4b48663658a64ccb519743c4","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"b18efb5b933cb1bf2d8782f03fbd437e02000d43f4c5e3e0c1b254e3a247b582","disposition":"updated","rationale":"Added native callback rejection, cleanup, empty-manifold availability and exact-readback equivalence guidance. Solver laws, tick ordering, energy assertions and existing spring requirements remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"0ddfd91bbbd96fed3d151fc9d61c4271573cd4105769260ecced7dd6941966ac","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"d143f4e7e36720a484c2312807f5cf4f1e9e50ec3dad379e1ed8e4ba67a4aa75","disposition":"still accurate","rationale":"The package now coordinates verification workloads; physics door, numeric laws, native artifact and all listed analytical/contact budgets remain unchanged."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -163,7 +163,7 @@ Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"31196ab4c263ddec72150a303316d6a461731c7c6f9160f9f6cba534598eb144","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"cdd9a5aca1e689e820057dda3f6efbf8e351a2c17130fd1512e0079f14955e64","disposition":"still accurate","rationale":"The UI browser coverage and native solver merge retain copied graph invariants, named endpoint aliases and ordinary atomic insertion."} -->
+<!-- doc-review {"version":1,"fingerprint":"4af47ac68778a73b11e83269d50a89159f6fafb71ccb40b28a172828e84c93fc","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"0c62488f971c8dad507427bdf6de6ef01f0c16d5ffd0fb412f2c7cebbe3524de","disposition":"still accurate","rationale":"Package and dependency-discovery metadata changed without altering graph operations, assembly interface semantics or retained behavioral tests."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -242,7 +242,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"7b243ab390ad7fa660b0a4941c5e887d5b89652fcf39cdc208dfc7d258eb4bbc","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"a7c601c097f12fbb3cde771a6a797f1d5cda72374f084a0abf0b92fc52e8b5f0","disposition":"still accurate","rationale":"Outside-click dismissal applies only to the requested examples dialog. Connection visibility, picking, disposal and spring rendering budgets are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"2d2f1d024305ce52636fca184fc3b7ba47571dc63509d5da1dd07ff1a64c998e","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"1d29723dc5c32eeca8eec88b1e269b846ff76feba94545bf25031e82c5bad35e","disposition":"updated","rationale":"Retained current v2 rendering and teaching claims and the narrowly bound spring budget controls. Opaque identity payloads remain excluded without dropping verifier, measurement or resource assertions."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -317,7 +317,7 @@ Environment failures do not relax budgets. Reports retain raw samples, CPU, brow
 GPU renderer and source identity. This spring benchmark requests native Metal on
 macOS because the headless default can select software rendering; other platforms
 retain their default backend and the same budgets. Repeat on supported target hardware for hardware
-qualification. [Budget controls](../../test/spring-performance.test.mjs) exercise
+qualification. [Budget controls](../../test/spring-performance.test.mjs#implementation) exercise
 limits and incomplete/unhealthy trials. Replacement probes also bound retained
 geometry, textures and heap.
 

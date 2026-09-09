@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"8861ba24e47a1a2f7660e086ff64eac3d187f90d83a60b3bfe7cf2f07783a204","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"c8c292fa1f20104ce7f95c7584fa96cbf7e357b67738cf335726907e8967d88e","disposition":"still accurate","rationale":"The root AGENTS change adds a link and decision requirement for learning content. Layer edges, runtime state ownership and manifest allocation remain as described in this overview."} -->
+<!-- doc-review {"version":1,"fingerprint":"111bf5a228e5d52be0979a7501280d47331c73426eec026b1bd13c4a9127b8f3","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"d876c1ce01d3747aa383c2c9dfb2a5410324d8eae2d6056f42516131247d7057","disposition":"still accurate","rationale":"Manifest validation now checks browser reverse-consumer and read-audit shapes; the registry remains the same policy owner and runtime/layer authorities are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"9b76433ef98da716545ca2edec392161f63d86a08ee4694847f406c4520d166d","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"12d60181ba5d25cd0361fdd477a33fe38863dd383f2f075cf57d8e4c5f6b4dcc","disposition":"still accurate","rationale":"Native dialog outside-click dismissal changes only presentation state and sends no authored command; edit admission and history ownership are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"ed349cd31952417c8fc3252cd6c07018f6a5ea3fa08d994d39764e28b0c7dd4d","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"8a44003e0ab6ed4add54ed77e5ae1f6fb247478a03b9efbafbd1db32cc716a10","disposition":"still accurate","rationale":"Retained the latest v2 teaching composition and application command flow while merging verification tooling. Runtime, history, physics and presentation owners remain unchanged by this merge."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -56,7 +56,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"f118634f8c4b7009481f8c842b0fb7f4192d4e213358013c2336d4577a682e23","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"5f2c6f5c69a74c269baf7c4da1a7ed19d56c1ef0c8a87d4f2104a023188cb69f","disposition":"still accurate","rationale":"Contact admission remains in read-contacts and immutable publication remains in observation. No geometry, material, compiler or presentation decision moved during collector cleanup."} -->
+<!-- doc-review {"version":1,"fingerprint":"8e61f15394a93b6f5ccbd1d2d60000110e0e3bc84276a2184901ce5ae27b1e25","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"20489f4e17d14cd90667b84142fac53dbec4f2393545694863a3b89a8cad9e2e","disposition":"still accurate","rationale":"The package wraps verification execution but changes no catalog, geometry, graph, spring, observation or rendering owner listed here."} -->
 
 | Decision                                              | Production owner                                                                                                                                                                                                                                             | Example consumer                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |

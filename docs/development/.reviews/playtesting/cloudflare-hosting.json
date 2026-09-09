@@ -6,7 +6,7 @@
     "scripts/playtest/worker.mjs": "fb47b7557423ab5169d83c319b217e4266ac629f7629b542c8838bc41d4113af",
     "src/application/capture-outbox.mjs": "4224e18cef1b3532390cc50c8969a65b539f18d56c244255ae242f8c8c66f858",
     "scripts/playtest/download.mjs": "653732a2144c62777539d34f617f73991dc8d46fe3f9a25dc74e99321b8f28bf",
-    "package.json#script=build": "fa8d7c70071ee5868cc28f384dcf73a041efeea031475bcfab06c3c3e4ef1b0e",
+    "package.json#script=build": "952bdd0ae6b61c346c4fd9450107496b32dd57090752cad260808d6331fd0485",
     "package.json#script=playtest:local": "eb354fb3f029c126a66fe445b1b53e6a435555f30027c3e3718d83bbeae61c77",
     "package.json#script=playtest:download": "3d07abdbda3164ed5ff2f54426a361f5be6b9a26d1c57100f46d25216e5cfd18"
   }

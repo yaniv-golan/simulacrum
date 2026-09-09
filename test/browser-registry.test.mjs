@@ -26,7 +26,9 @@ test('multiple explicit checks are deduplicated; unknown IDs and malformed optio
   assert.throws(() => parseBrowserArgs(['--checks', id, '--files', 'src/main.mjs']), /conflict/);
 });
 test('runtime roots include engine consumers without test imports; unknown and opaque inputs expand coverage', async () => {
-  const { selectAffectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const { selectAffectedBrowserChecks, browserGraphEntrypoints } = await import(
+    '../scripts/browser-selection.mjs'
+  );
   const checks = [
     { id: 'app', script: 'scripts/app.mjs', environment: 'workshop' },
     { id: 'probe', script: 'scripts/probe.mjs', environment: 'probe' },
@@ -86,7 +88,9 @@ test('performance and self-hosted checks cannot opt into parallel execution', ()
 });
 
 test('local feature boundary narrows only its reviewed dependency shape; shared and new inputs expand', async () => {
-  const { selectAffectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const { selectAffectedBrowserChecks, browserGraphEntrypoints } = await import(
+    '../scripts/browser-selection.mjs'
+  );
   const checks = [
     { id: 'help', script: 'help-check', environment: 'workshop' },
     { id: 'integration', script: 'integration-check', environment: 'workshop' },
@@ -114,7 +118,9 @@ test('local feature boundary narrows only its reviewed dependency shape; shared 
 });
 
 test('documentation composes with local scopes without exempting runtime data or unknown inputs', async () => {
-  const { selectAffectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const { selectAffectedBrowserChecks, browserGraphEntrypoints } = await import(
+    '../scripts/browser-selection.mjs'
+  );
   const checks = [
     { id: 'mirror', script: 'scripts/mirror.mjs', environment: 'workshop' },
     { id: 'other', script: 'other', environment: 'self' },
@@ -171,7 +177,9 @@ test('live mirror verifier stays bounded and metadata obeys its audited boundary
 });
 
 test('opaque readers retain coverage for documentation-only and mixed scoped changes', async () => {
-  const { selectAffectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const { selectAffectedBrowserChecks, browserGraphEntrypoints } = await import(
+    '../scripts/browser-selection.mjs'
+  );
   const checks = [
     { id: 'reader', script: 'reader', environment: 'self' },
     { id: 'mirror', script: 'mirror', environment: 'workshop' },
@@ -195,9 +203,14 @@ test('opaque readers retain coverage for documentation-only and mixed scoped cha
 
 test('recording client scope retains both adapters, durable receipt and workshop lifecycle witnesses', async () => {
   const { buildModuleGraph } = await import('../scripts/module-graph.mjs');
-  const { selectAffectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const { selectAffectedBrowserChecks, browserGraphEntrypoints } = await import(
+    '../scripts/browser-selection.mjs'
+  );
   const m = readManifest(),
-    graph = buildModuleGraph(process.cwd(), { purpose: 'test-selection' }),
+    graph = buildModuleGraph(process.cwd(), {
+      purpose: 'test-selection',
+      entrypoints: browserGraphEntrypoints(process.cwd()),
+    }),
     file = 'src/application/remote-playtest.mjs';
   const select = () =>
     selectAffectedBrowserChecks({
@@ -228,7 +241,9 @@ test('recording client scope retains both adapters, durable receipt and workshop
 
 test('audited review metadata exclusion rejects changed readers, direct data dependencies and unknown opacity', async () => {
   const { createHash } = await import('node:crypto');
-  const { selectAffectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const { selectAffectedBrowserChecks, browserGraphEntrypoints } = await import(
+    '../scripts/browser-selection.mjs'
+  );
   const file = 'docs/development/.reviews/README/section.json',
     source = 'known output-only reader';
   const node = { dependencies: new Set(), imports: [], opaqueInputs: true };
@@ -251,7 +266,7 @@ test('audited review metadata exclusion rejects changed readers, direct data dep
       readSource: () => source,
       ...overrides,
     });
-  assert.equal(select().checks.length, 0);
+  assert.equal(select().checks.length, 1);
   assert.equal(select({ readSource: () => source + 'new input' }).checks.length, 1);
   node.dependencies.add(file);
   graph.nodes.set(file, { dependencies: new Set() });
@@ -264,4 +279,216 @@ test('audited review metadata exclusion rejects changed readers, direct data dep
   node.dependencies.clear();
   assert.equal(select({ files: ['docs/development/README.md'] }).checks.length, 1);
   assert.equal(select({ metadataEnvironmentSafe: false }).checks.length, 1);
+});
+
+test('shared scopes expand for new reverse consumers and new browser roots', async () => {
+  const { selectAffectedBrowserChecks, browserScopeConsumers, browserScopeRoots } = await import(
+    '../scripts/browser-selection.mjs'
+  );
+  const checks = ['a', 'b', 'c'].map((id) => ({
+    id,
+    script: `scripts/${id}.mjs`,
+    environment: 'workshop',
+  }));
+  const nodes = new Map([
+    ['src/shared.mjs', { dependencies: [] }],
+    ['index.html', { dependencies: [] }],
+    ...checks.map((c) => [c.script, { dependencies: ['src/shared.mjs'], opaqueInputs: true }]),
+  ]);
+  nodes.get(checks[2].script).dependencies = [];
+  const graph = { nodes, errors: [] };
+  const scope = {
+    entrypoint: 'src/shared.mjs',
+    dependencies: [],
+    checks: ['a', 'b'],
+    consumers: browserScopeConsumers(graph, 'src/shared.mjs'),
+    roots: browserScopeRoots(checks),
+  };
+  const select = () =>
+    selectAffectedBrowserChecks({ checks, graph, files: ['src/shared.mjs'], scopes: [scope] });
+  assert.equal(select().checks.length, 2);
+  nodes.get(checks[2].script).dependencies.push('src/shared.mjs');
+  assert.equal(select().checks.length, 3);
+  nodes.get(checks[2].script).dependencies = [];
+  checks.push({ id: 'd', script: 'scripts/d.mjs', environment: 'self' });
+  nodes.set('scripts/d.mjs', { dependencies: [] });
+  assert.equal(select().checks.length, 4);
+});
+
+test('read audits distinguish metadata from fixtures and reject new reads, consumers and runtime documents', async () => {
+  const { createHash } = await import('node:crypto');
+  const {
+    selectAffectedBrowserChecks,
+    browserScopeConsumers,
+    browserScopeRoots,
+    browserConsumerSourceHash,
+  } = await import('../scripts/browser-selection.mjs');
+  const checks = [
+    { id: 'a', script: 'scripts/a.mjs', environment: 'workshop' },
+    { id: 'b', script: 'scripts/b.mjs', environment: 'self' },
+  ];
+  const graph = {
+    errors: [],
+    nodes: new Map([
+      ['index.html', { dependencies: [] }],
+      ['scripts/a.mjs', { dependencies: ['scripts/read.mjs'] }],
+      ['scripts/b.mjs', { dependencies: [] }],
+      [
+        'scripts/read.mjs',
+        { dependencies: [], opaqueInputs: true, opaqueReads: ['readFileSync(file)'] },
+      ],
+      ['test/example.test.mjs', { dependencies: [] }],
+    ]),
+  };
+  const audit = {
+    entrypoint: 'scripts/read.mjs',
+    sourceSha256: createHash('sha256').update('reviewed').digest('hex'),
+    dependencies: [],
+    externalImports: [],
+    reads: [
+      {
+        expression: 'readFileSync(file)',
+        purpose: 'fixture',
+        excludedInputs: ['documentation', 'unit-test'],
+      },
+    ],
+    consumers: browserScopeConsumers(graph, 'scripts/read.mjs'),
+    roots: browserScopeRoots(checks),
+    consumerSourceHash: browserConsumerSourceHash(graph, 'scripts/read.mjs', () => 'reviewed'),
+  };
+  const select = (files) =>
+    selectAffectedBrowserChecks({
+      checks,
+      graph,
+      files,
+      metadataScopes: [audit],
+      readSource: () => 'reviewed',
+    });
+  assert.equal(select(['docs/guide.md', 'test/example.test.mjs']).checks.length, 0);
+  assert.equal(select(['config/fixture.json']).checks.length, 2);
+  graph.nodes.get('scripts/read.mjs').opaqueReads.push('readFileSync(newInput)');
+  assert.equal(select(['docs/guide.md']).checks.length, 2);
+  graph.nodes.get('scripts/read.mjs').opaqueReads.pop();
+  graph.nodes.get('scripts/b.mjs').dependencies.push('scripts/read.mjs');
+  assert.equal(select(['docs/guide.md']).checks.length, 2);
+  graph.nodes.get('scripts/b.mjs').dependencies = [];
+  graph.nodes.get('scripts/a.mjs').dependencies.push('docs/guide.md');
+  graph.nodes.set('docs/guide.md', { dependencies: [] });
+  assert.equal(select(['docs/guide.md']).checks.length, 2);
+});
+
+test('seven-file mirror repair selects all formatter journeys without fingerprint-only payloads', async () => {
+  const { affectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const docs = [
+    'docs/development/.reviews/recipes/change-a-presentation-overlay.json',
+    'docs/development/.reviews/recipes/change-an-interaction.json',
+    'docs/development/.reviews/recipes/change-multi-part-authoring.json',
+    'docs/development/recipes.md',
+  ];
+  const code = [
+    'scripts/verify-mirror-browser.mjs',
+    'src/model/messages.mjs',
+    'test/failure-messages.test.mjs',
+  ];
+  const expected = [
+    'verify-mirror-browser',
+    'verify-assembly-ux-browser',
+    'verify-assemblies-browser',
+    'verify-surface-browser',
+    'verify-connection-test-browser',
+    'verify-workshop',
+    'verify-spring-browser',
+    'verify-learning-examples',
+  ].sort();
+  assert.deepEqual(
+    affectedBrowserChecks([...docs, ...code])
+      .checks.map((c) => c.id)
+      .sort(),
+    expected,
+  );
+  assert.deepEqual(
+    affectedBrowserChecks(code)
+      .checks.map((c) => c.id)
+      .sort(),
+    expected,
+  );
+  assert.equal(affectedBrowserChecks(docs).checks.length, 0);
+  assert.equal(affectedBrowserChecks([code[2]]).checks.length, 0);
+  assert.equal(
+    affectedBrowserChecks(['config/unknown-fixture.json']).checks.length,
+    browserChecks().length,
+  );
+});
+
+test('read audit rejects stale callers and sibling argument providers for every metadata class', async () => {
+  const { createHash } = await import('node:crypto');
+  const {
+    selectAffectedBrowserChecks,
+    browserScopeConsumers,
+    browserScopeRoots,
+    browserConsumerSourceHash,
+  } = await import('../scripts/browser-selection.mjs');
+  const reader = 'scripts/read.mjs',
+    caller = 'scripts/caller.mjs',
+    provider = 'scripts/path.mjs';
+  const source = new Map([
+    [reader, 'readFileSync(file)'],
+    [caller, 'read(path)'],
+    [provider, 'fixture.json'],
+  ]);
+  const checks = [{ id: 'runtime', script: caller, environment: 'self' }];
+  const graph = {
+    errors: [],
+    nodes: new Map([
+      [
+        reader,
+        { dependencies: [], imports: [], opaqueInputs: true, opaqueReads: ['readFileSync(file)'] },
+      ],
+      [caller, { dependencies: [reader, provider] }],
+      [provider, { dependencies: [] }],
+      ['test/example.test.mjs', { dependencies: [] }],
+    ]),
+  };
+  graph.nodes.set('test/unrelated.test.mjs', { dependencies: [reader] });
+  source.set('test/unrelated.test.mjs', 'test fixture reader');
+  const audit = {
+    entrypoint: reader,
+    sourceSha256: createHash('sha256').update(source.get(reader)).digest('hex'),
+    dependencies: [],
+    externalImports: [],
+    reads: [
+      {
+        expression: 'readFileSync(file)',
+        purpose: 'fixture',
+        excludedInputs: ['documentation', 'unit-test'],
+      },
+    ],
+    consumers: browserScopeConsumers(graph, reader),
+    roots: browserScopeRoots(checks),
+    consumerSourceHash: browserConsumerSourceHash(graph, reader, (p) => source.get(p), checks),
+  };
+  const select = (file) =>
+    selectAffectedBrowserChecks({
+      checks,
+      graph,
+      files: [file],
+      metadataScopes: [audit],
+      readSource: (p) => source.get(p),
+    });
+  for (const file of [
+    'docs/guide.md',
+    'docs/development/.reviews/README/section.json',
+    'test/example.test.mjs',
+  ]) {
+    assert.equal(select(file).checks.length, 0);
+    source.set('test/unrelated.test.mjs', 'changed test-only reader');
+    assert.equal(select(file).checks.length, 0);
+    source.set('test/unrelated.test.mjs', 'test fixture reader');
+    source.set(caller, 'changed caller');
+    assert.equal(select(file).checks.length, 1, 'changed caller ' + file);
+    source.set(caller, 'read(path)');
+    source.set(provider, file);
+    assert.equal(select(file).checks.length, 1, 'changed argument provider ' + file);
+    source.set(provider, 'fixture.json');
+  }
 });

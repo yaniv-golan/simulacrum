@@ -9,7 +9,7 @@
     "docs/development/playtesting.md#remote-setup": "20fcd996cfd8df29134f1ffa145272e2091dc870d34911a1e41af5efc366e923",
     "package.json#script=inspect:change": "3dce2ce48429d4242732dc4e49c06d644a407c094520685458a92cc0c4c09bc3",
     "package.json#script=docs:prepare": "12217c6795d7e7b9dd072d5f7c5c5f86522a3e11ca9d186fc4b0075831ca39f4",
-    "package.json#script=verify:local": "e562f569798a2101fa9e8a7a2feadcd8c8b865702c87fb65441621ceeb310b35",
-    "package.json#script=verify:final": "b4ba58befcb628054c4158a3f0f448fb957bb93d6c44f21f2fbb5f5c4d87b607"
+    "package.json#script=verify:local": "fcfc9caf4ab9785495e9a84ae3c91645c38477299cbf42dc8df326ee1708ddfd",
+    "package.json#script=verify:final": "62fe67eeeb3a97126218055b27f719afbfc625fba43098f8c9732cd8e6602916"
   }
 }

@@ -24,9 +24,9 @@ These are registered commands and checks, not evidence that they passed.
 | npm run bar:P1 | node scripts/bars.mjs P1 |
 | npm run bar:S1 | node scripts/bars.mjs S1 |
 | npm run bars | node scripts/bars.mjs |
-| npm run build | node scripts/check-breadth-cli.mjs && vite build |
+| npm run build | node scripts/verification-window.mjs scripts/build-app.mjs |
 | npm run build-fingerprint | node scripts/build-fingerprint.mjs |
-| npm run ci | node scripts/ci.mjs |
+| npm run ci | node scripts/verification-window.mjs scripts/ci.mjs |
 | npm run dev | vite --host 127.0.0.1 |
 | npm run docs:check | node scripts/docs.mjs check |
 | npm run docs:generate | node scripts/docs.mjs generate |
@@ -48,16 +48,16 @@ These are registered commands and checks, not evidence that they passed.
 | npm run replay | node scripts/replay.mjs |
 | npm run rules | node scripts/rules.mjs |
 | npm run rules:explain | node scripts/explain-invariant.mjs |
-| npm run test:all | node scripts/test-affected.mjs --all |
-| npm run test:browser | node scripts/verify-browser-suite.mjs |
-| npm run test:browser:affected | node scripts/verify-browser-suite.mjs |
-| npm run test:browser:smoke | node scripts/verify-browser-suite.mjs smoke |
-| npm run test:determinism | node scripts/verify-m1.mjs |
-| npm run test:performance | node scripts/verify-browser-suite.mjs performance |
-| npm run test:unit | node scripts/test-affected.mjs |
+| npm run test:all | node scripts/verification-window.mjs scripts/test-affected.mjs --all |
+| npm run test:browser | node scripts/verification-window.mjs scripts/verify-browser-suite.mjs |
+| npm run test:browser:affected | node scripts/verification-window.mjs scripts/verify-browser-suite.mjs |
+| npm run test:browser:smoke | node scripts/verification-window.mjs scripts/verify-browser-suite.mjs smoke |
+| npm run test:determinism | node scripts/verification-window.mjs scripts/verify-m1.mjs |
+| npm run test:performance | node scripts/verification-window.mjs scripts/verify-browser-suite.mjs performance |
+| npm run test:unit | node scripts/verification-window.mjs scripts/test-affected.mjs |
 | npm run typecheck | node scripts/check-boundary-types.mjs |
-| npm run verify:final | node scripts/verify-final.mjs |
-| npm run verify:local | node scripts/verify-local.mjs |
+| npm run verify:final | node scripts/verification-window.mjs scripts/verify-final.mjs |
+| npm run verify:local | node scripts/verification-window.mjs scripts/verify-local.mjs |
 
 ## Structural checks
 
@@ -71,6 +71,7 @@ These are registered commands and checks, not evidence that they passed.
 | developer-documentation | gate-integrity | M3b | [scripts/check-documentation.mjs](../../scripts/check-documentation.mjs) |
 | verification-runtime | gate-integrity | M3b | [scripts/runtime-preflight.mjs](../../scripts/runtime-preflight.mjs) |
 | verification-workflow | gate-integrity | M3b | [scripts/verification-tiers.mjs](../../scripts/verification-tiers.mjs) |
+| verification-scope-configuration | gate-integrity | M3b | [scripts/verification-window.mjs](../../scripts/verification-window.mjs) |
 
 ## Invariant owners
 
@@ -104,3 +105,6 @@ These are registered commands and checks, not evidence that they passed.
 | capture-bounded-sampling | [sampleCapture](../../scripts/playtest/capture-samples.mjs), [readCorpus](../../scripts/playtest/corpus.mjs) | invariant-controls, verify-cloud-playtest, verify-remote-playtest |
 | capture-observation-stream | [decodeCaptureEvents](../../src/application/capture-stream.mjs) | invariant-controls |
 | capture-observation-review | [sceneParts](../../src/presentation/capture-review-model.mjs) | invariant-controls |
+| local-browser-scope-safety | [selectAffectedBrowserChecks](../../scripts/browser-selection.mjs) | verification-scope-configuration |
+| verification-resource-window | [withVerificationWindow](../../scripts/verification-window.mjs) | verification-scope-configuration |
+| observable-test-completion | [waitUntil](../../scripts/wait-until.mjs) | verification-scope-configuration |

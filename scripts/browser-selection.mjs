@@ -11,6 +11,61 @@ export function browserGraphEntrypoints(root) {
       /\.(?:mjs|cjs|js|d\.ts)$/.test(p) || p === 'index.html' || p === 'test/browser/index.html',
   );
 }
+export function browserScopeConsumers(graph, entrypoint) {
+  const reached = new Set([entrypoint]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [path, node] of graph.nodes)
+      if (!reached.has(path) && [...node.dependencies].some((p) => reached.has(p))) {
+        reached.add(path);
+        changed = true;
+      }
+  }
+  reached.delete(entrypoint);
+  return [...reached].sort();
+}
+export function browserConsumerSourceHash(graph, path, readSource, checks) {
+  const reachable = new Set(
+    checks?.flatMap((c) => [
+      c.script,
+      ...(c.environment === 'workshop'
+        ? ['index.html']
+        : c.environment === 'probe'
+          ? ['test/browser/index.html']
+          : []),
+    ]),
+  );
+  for (const input of reachable)
+    for (const dependency of graph.nodes.get(input)?.dependencies ?? []) reachable.add(dependency);
+  const inputs = new Set(
+    browserScopeConsumers(graph, path).filter((p) => !checks || reachable.has(p)),
+  );
+  for (const input of inputs)
+    for (const dependency of graph.nodes.get(input)?.dependencies ?? []) inputs.add(dependency);
+  const hash = createHash('sha256');
+  for (const input of [...inputs].sort()) {
+    let bytes = readSource(input);
+    if (input === 'scripts/manifest.json') {
+      // Digest values are self-referential provenance, not read-domain configuration.
+      // Keep every other field, including purposes, exclusions and dependency lists.
+      const manifest = JSON.parse(bytes);
+      for (const audit of manifest.browserReviewMetadataScopes ?? []) {
+        delete audit.sourceSha256;
+        delete audit.consumerSourceHash;
+      }
+      bytes = JSON.stringify(manifest);
+    }
+    hash.update(input).update('\0').update(bytes).update('\0');
+  }
+  return hash.digest('hex');
+}
+
+export function browserScopeRoots(checks) {
+  return createHash('sha256')
+    .update(JSON.stringify(checks.map((c) => `${c.id}:${c.environment}:${c.script}`).sort()))
+    .digest('hex');
+}
 /** URL-loaded application roots are dependencies too. Unresolved inputs never authorize omission. */
 export function selectAffectedBrowserChecks({
   checks,
@@ -33,14 +88,15 @@ export function selectAffectedBrowserChecks({
   ]);
   const seen = new Set();
   let unresolved = false,
-    metadataAudited = metadataEnvironmentSafe;
+    readKindsAudited = metadataEnvironmentSafe;
   for (const path of queue) {
     if (seen.has(path)) continue;
     seen.add(path);
     const node = graph.nodes.get(path);
     if (!node) {
       unresolved = true;
-      metadataAudited = false;
+      readKindsAudited = false;
+      readKindsAudited = false;
       continue;
     }
     if (node.opaqueInputs) {
@@ -49,45 +105,66 @@ export function selectAffectedBrowserChecks({
       try {
         hash = createHash('sha256').update(readSource(path)).digest('hex');
       } catch {
-        metadataAudited = false;
+        readKindsAudited = false;
       }
+      const audit = metadataScopes.find(
+        (scope) =>
+          scope.entrypoint === path &&
+          scope.sourceSha256 === hash &&
+          JSON.stringify([...scope.dependencies].sort()) ===
+            JSON.stringify([...node.dependencies].sort()) &&
+          JSON.stringify([...scope.externalImports].sort()) ===
+            JSON.stringify(
+              (node.imports ?? [])
+                .filter((x) => x.target === null)
+                .map((x) => x.specifier)
+                .sort(),
+            ),
+      );
+      if (!audit) readKindsAudited = false;
       if (
-        !metadataScopes.some(
-          (scope) =>
-            scope.entrypoint === path &&
-            scope.sourceSha256 === hash &&
-            JSON.stringify([...scope.dependencies].sort()) ===
-              JSON.stringify([...node.dependencies].sort()) &&
-            JSON.stringify([...scope.externalImports].sort()) ===
-              JSON.stringify(
-                (node.imports ?? [])
-                  .filter((x) => x.target === null)
-                  .map((x) => x.specifier)
-                  .sort(),
-              ),
-        )
+        !audit?.reads ||
+        JSON.stringify(audit.reads.map((r) => r.expression).sort()) !==
+          JSON.stringify([...(node.opaqueReads ?? [])].sort()) ||
+        !audit.reads.every(
+          (r) =>
+            ['identity', 'fixture', 'runtime', 'source-analysis'].includes(r.purpose) &&
+            ['documentation', 'unit-test'].every((kind) => r.excludedInputs?.includes(kind)),
+        ) ||
+        JSON.stringify(audit.consumers) !== JSON.stringify(browserScopeConsumers(graph, path)) ||
+        JSON.stringify(audit.roots) !== JSON.stringify(browserScopeRoots(checks)) ||
+        audit.consumerSourceHash !== browserConsumerSourceHash(graph, path, readSource, checks)
       )
-        metadataAudited = false;
+        readKindsAudited = false;
     }
     queue.push(...node.dependencies);
   }
   const documentation = (files ?? []).filter(
     (p) =>
-      (!unresolved ||
-        (metadataAudited && /^docs\/development\/\.reviews\/[\w-]+\/[\w-]+\.json$/.test(p))) &&
+      (!unresolved || readKindsAudited) &&
       !graph.nodes.has(p) &&
       !p.startsWith('docs/internal/') &&
       (['AGENTS.md', 'README.md'].includes(p) ||
         /^docs\/[\w./-]+\.md$/.test(p) ||
         /^docs\/development\/\.reviews\/[\w-]+\/[\w-]+\.json$/.test(p)),
   );
-  const runtimeFiles = (files ?? []).filter((p) => !documentation.includes(p));
+  const unitTests = (files ?? []).filter(
+    (p) =>
+      (!unresolved || readKindsAudited) &&
+      /^test\/.+\.test\.(?:mjs|js|cjs)$/.test(p) &&
+      graph.nodes.has(p) &&
+      !seen.has(p),
+  );
+  const runtimeFiles = (files ?? []).filter(
+    (p) => !documentation.includes(p) && !unitTests.includes(p),
+  );
   if (files?.length && !runtimeFiles.length && !graph.errors.length)
     return {
       files,
       documentation,
+      unitTests,
       fallback: null,
-      scope: 'documentation',
+      scope: unitTests.length ? 'non-runtime' : 'documentation',
       checks: [],
       reasons: [],
     };
@@ -108,6 +185,10 @@ export function selectAffectedBrowserChecks({
         const node = graph.nodes.get(file);
         return (
           scope.entrypoint === file &&
+          (!file.startsWith('src/') ||
+            (JSON.stringify(scope.consumers) ===
+              JSON.stringify(browserScopeConsumers(graph, file)) &&
+              JSON.stringify(scope.roots) === JSON.stringify(browserScopeRoots(checks)))) &&
           JSON.stringify(
             (node.imports ?? [])
               .filter((i) => i.target === null)
@@ -127,6 +208,7 @@ export function selectAffectedBrowserChecks({
       return {
         files,
         documentation,
+        unitTests,
         fallback: null,
         scope: 'local-contract',
         checks: checks.filter((c) => ids.has(c.id)),
@@ -183,6 +265,7 @@ export function selectAffectedBrowserChecks({
   return {
     files,
     documentation,
+    unitTests,
     fallback,
     unknownInputs,
     checks: checks.filter((c) => reasons.some((r) => r.id === c.id)),

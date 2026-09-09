@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"10752e738e464fcd009ac49a40abf1be134b1bd38b58e13b43cfdbad3ad87f0a","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"90ef402d1f7ddfc3c4e28737af55cf528147bc32d911b9040235f8350c27deda","disposition":"still accurate","rationale":"The root AGENTS change adds the learning-content admission trigger. This entry still correctly directs agents to AGENTS, architecture and recipes; Node 24.18.x and package commands are unchanged by this policy edit."} -->
+<!-- doc-review {"version":1,"fingerprint":"b88d3031dcdb5795fd47cc947926416fcfceda419d9f3c5333fe502067749727","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"c9fe3b6650e6ce9bf466a04e220a2aa6b65c93f30dafeb1798a94bf190d0a64d","disposition":"still accurate","rationale":"The build command now acquires a cooperative host window before the same breadth admission and Vite build; Node setup, dev and preview instructions remain valid."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -87,7 +87,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"f4d3fe39ffb46abb7af5a694ef8647540b4787e48586a8d8d71aa0f3af712ec1","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"b1deb22bc87e018b15f9c92c54bdc0a89767b5b66089c4b5d9b9de4e37bf128c","disposition":"still accurate","rationale":"The merged package keeps the documented verification commands and Node range; its pinned native physics artifact does not change tier semantics."} -->
+<!-- doc-review {"version":1,"fingerprint":"7f2109821b74ead60500112d695d000a569bc519a31d80ee804f5e1aa67b08d8","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"8dddbc59f5b9f47af1b197947208577e9ecdcbea1d210a84531bc940181dab12","disposition":"still accurate","rationale":"The npm commands now enter a shared window; selected tests, completion prerequisites, exit meanings and required browser tiers are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -127,7 +127,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"4aa17f1d907b4b88072b46e80839c627d63d0e93c33a46ed3e90d85344fbcb95","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"dbc2810fb5e8fc2eaba045480993227079d6a6b8ee8b146367eb76eb5f1ec79f","disposition":"still accurate","rationale":"The regenerated reference adds the registered learning-example browser check; manifest-derived discovery and per-section review remain the documented workflow."} -->
+<!-- doc-review {"version":1,"fingerprint":"48c8d88d9fd8a377f1b3674ecf7ed8ca786b96a90d20aecabf46013f7d1d318e","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"ad1a07316d58aaf9180dc54b2f3690edf6713335f8a2987f54255aed003367d8","disposition":"still accurate","rationale":"The integrated reference combines verification-window commands with the learning-examples check. Source-bound generation and explicit section review still follow this workflow."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -222,7 +222,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"9ad0440af44f01a21fe00d5cf8df1b1b5b56e5454f744668ab0ff9e5dff1b1bb","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"990e49b9e634574b0597f273e4d0d293e53ad0bcf06c012b338280de6d89f14a","disposition":"still accurate","rationale":"The learning-example check uses the existing parallel UI profile and a 45-second deadline. No browser selection boundary, worker policy or qualification scope changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"3f491411ca85dae506ba43ec14affe288baac24618ed40616f3df3da3f5ee1a9","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"278bf9936a2952e93ac4389d4aaeba29ff2c602e81f76cb10b6b5ca4e25e3b34","disposition":"updated","rationale":"Combined runtime read-domain protection and host scheduling with the new learning-examples browser root. The shared formatter scope now includes that journey; failed or changed audits still expand coverage."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -230,9 +230,32 @@ opaque file/subprocess inputs conservatively expand selection. In the current ap
 shared runtime and identity dependencies often select the full browser suite.
 `browserLocalScopes` in the manifest is an explicit local-only behavioral contract: a named
 entrypoint, its frozen direct dependency shape, and required feature/integration checks.
+Source scopes also bind the transitive reverse-consumer set and browser-root inventory.
+New consumers and roots restore broad coverage; outgoing imports alone are insufficient.
 Part-help presentation edits select four checks; its standalone verifier selects two.
 Mirror presentation edits select mirror, assembly UX and manipulation checks; its standalone verifier selects the mirror check. The remote recording client selects both backend adapters, durable feedback receipts, workshop lifecycle and construction checks; new service/import edges or opaque inputs restore conservative coverage.
-Known documentation Markdown and current review records select no browsers only when every relevant verifier/served-root graph is resolved and the files are not runtime data dependencies. An additional manifest `browserReviewMetadataScopes` boundary permits only `docs/development/.reviews/<document>/<section>.json` to skip browsers when every reachable opaque reader matches its audited exact source and import shape, no static data edge reaches that review file, and no feedback source override is active. These readers use review metadata only for source identity, never workshop behavior; CI still validates the review itself. New, changed or missing readers fail closed. This is not an exemption for Markdown, unknown JSON or runtime data. Other reachable opaque readers or unresolved roots retain conservative coverage, including for mixed documentation and scoped changes. CI still validates documentation in both tiers. Documentation composes with scoped runtime changes; unknown data and shared tooling stay conservative. Unknown-input fallback reports name the triggering paths separately from dependency chains.
+Known documentation and unit-test files can be excluded from browser execution only
+when absent from reachable runtime data/module edges and every reachable opaque reader
+has a current audited boundary. `browserReviewMetadataScopes` binds each individual
+opaque expression, its purpose (identity, fixture, runtime or source analysis), exclusions,
+exact owner source/import shape, reverse consumers, consumer dependency-closure digest and browser roots.
+The closure starts at callers reachable from the registered browser and served roots,
+and includes their modules/data producing read arguments. Unreachable unit-test
+consumers do not bind runtime payload domains; new reachable consumers/roots still
+invalidate the audit. Only the audit digest fields
+themselves are excluded from manifest hashing to avoid self-reference; read-domain
+configuration stays bound. A failed rich audit has no weaker exemption fallback.
+A fixture read is never treated as an identity read: unknown fixture/data files still
+expand coverage. The exclusion covers documentation and standalone unit-test changes
+only, not arbitrary JSON. Runtime-imported tests/documents are runtime inputs. CI still
+runs their required tests and documentation checks. Changed readers or callers, new
+opaque reads, new consumers, graph errors and feedback source overrides fail closed.
+These are reviewed behavioral contracts, not an automatic proof about dynamic code.
+Never refresh their hashes without inspecting the affected reads and consumers.
+Mixed changes compose these classifications with existing local scopes. Reports retain
+excluded paths and the causes of conservative expansion. Shared formatter coverage
+includes mirror, assembly, mounting, connection, workshop and spring journeys; it is
+not restricted to the feature that motivated the edit.
 Changed shared modules, consumers, unknown files, or new imports expand coverage. These
 contracts do not apply to full qualification and do not claim that imports prove behavior.
 When extending a boundary, review its integration checks as well as dependency changes.
@@ -273,3 +296,37 @@ is recorded only after cleanup. Saved errors retain both execution and cleanup c
 [CI](../../scripts/ci.mjs#implementation) stops on the first failed structural prerequisite before starting unit work.
 The [tier coordinator](../../scripts/verification-tiers.mjs#implementation) keeps prerequisite
 ordering and local outcome reporting separate from the qualification gate.
+
+## Shared verification window
+<!-- doc-review {"version":1,"fingerprint":"52d2022001a840d3a59c9ebe02568b2a503421e8750f1b4706f790f03050309e","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"e23af62595e6a30c7df596009b992ce296a259cb571c3481aa9f658862c06c76","disposition":"updated","rationale":"Canonical completion/browser admission is now marked non-green before runtime validation or lock waiting, with explicit failed reports when no child starts. CLI resolves its real path, and child-owned completed reports retain their qualification outcome. Resource ownership and deadlines are unchanged."} -->
+
+The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
+supported npm build, CI, completion, focused unit and browser commands across worktrees
+on this host. Nested commands inherit the owning window. Completion/browser admission marks its
+canonical report non-green before runtime checks or lock waiting; failed admission
+replaces an older pass even when no child starts. Waiting is bounded to five
+minutes, separately from each check's unchanged execution budget. Queued work records
+competing owner identity and queue/run durations in `artifacts/verification-windows/`;
+host load averages provide context, not proof of a timing failure's cause. Read-only
+summary/explanation commands do not wait for the window. Raw direct script invocations
+and unrelated applications do not participate: this is cooperative scheduling, not
+CPU/GPU reservation or permission to relax performance thresholds. Preserve failed runs;
+there is no automatic retry-to-green policy.
+
+A crashed owner is never evicted by age. Inspect its process tree and establish that
+all descendants stopped, then use `node scripts/verification-window.mjs recover <owner-token>
+--process-tree-stopped`. Recovery refuses a live PID, including a potentially reused PID,
+or mismatched token. An unpublished/corrupt owner record needs manual inspection and
+cleanup after quiescence; do not remove a window because it looks old. The flag is an
+operator attestation, not proof supplied by the tool. Normal cleanup verifies ownership
+and fences removal before another owner can enter.
+
+For asynchronous tests, use [waitUntil](../../scripts/wait-until.mjs#source) with an observable
+completion predicate and a named deadline. It propagates observation errors; it does not
+interrupt synchronous blocking code. Keep deliberate sampling/quiet windows where the
+assertion concerns a duration. The recording tests use completion predicates for stop,
+storage closure and final media persistence; fixture turn pumps do not establish success.
+
+Isolated integration remains separate from these changes. Verify in a worktree; applying
+work must check destination index, tracked and untracked content, not merely HEAD. This
+window does not make source installation atomic or authorize a merge.

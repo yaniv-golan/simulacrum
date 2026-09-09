@@ -1,3 +1,4 @@
+import { waitUntil } from '../scripts/wait-until.mjs';
 import { IDBFactory } from 'fake-indexeddb';
 import { mountRemotePlaytest as mountLegacyCapture } from './fixtures/legacy-capture-client.mjs';
 import { openCaptureOutbox } from '../src/application/capture-outbox.mjs';
@@ -294,9 +295,7 @@ test('outbox limit stops once even when the final event cannot fit', async (t) =
   f.huge(true);
   f.mount.emit('over-limit', {});
   // IndexedDB and the packet timer may need more than a fixed number of turns.
-  const stopDeadline = performance.now() + 2000;
-  while (f.mount.active() && performance.now() < stopDeadline)
-    await new Promise((resolve) => setImmediate(resolve));
+  await waitUntil(() => !f.mount.active(), 'recording stop after outbox limit');
   f.huge(false);
   assert.equal(f.mount.active(), false);
   assert.ok(f.calls() <= 3, 'one rejected event and at most one terminal event');
@@ -325,7 +324,7 @@ test('dispose removes mount resources and closes storage after final media is pe
   assert.ok(f.nodes.filter((n) => ['section', 'dialog'].includes(n.tag)).every((n) => n.removed));
   assert.equal(f.closed(), false, 'final recorder data may still need a transaction');
   f.recorders[0].flush();
-  await settle();
+  await waitUntil(() => f.closed(), 'storage close after final recorder flush');
   assert.ok(f.rows.some((row) => row.url.includes('/media?')));
   assert.equal(f.closed(), true);
 });
@@ -355,7 +354,10 @@ test('finish keeps durable uploads available for retry while disposal releases t
   await f.start();
   await settle();
   f.finish();
-  await settle();
+  await waitUntil(
+    () => !f.mount.active() && f.rows.some((row) => row.url.includes('/media?')),
+    'finish and final media persistence',
+  );
   assert.equal(f.mount.active(), false);
   assert.equal(f.intervals.size, 1, 'upload retry remains after Finish');
   assert.equal(f.closed(), false);

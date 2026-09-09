@@ -496,3 +496,14 @@ test('review equivalence never decodes binary dependency bytes', (t) => {
   f.put('src/model/asset.wasm', Buffer.from([254]));
   assert.match(f.inspect().errors.join('\n'), /stale documentation review/);
 });
+
+test('overlay claims retain performance assertions without unrelated fingerprint payloads', () => {
+  const report = inspectDocumentation(process.cwd());
+  const section = report.sections.find(
+    (s) => s.file === 'docs/development/recipes.md' && s.id === 'change-a-presentation-overlay',
+  );
+  assert.ok(section.dependencies['scripts/measure-springs.mjs']);
+  assert.ok(section.dependencies['test/spring-performance.test.mjs']);
+  assert.ok(section.dependencies['scripts/browser-evidence.mjs']);
+  assert.equal(section.dependencies['src/model/messages.mjs'], undefined);
+});

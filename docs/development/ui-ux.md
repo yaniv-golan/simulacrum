@@ -200,7 +200,7 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"68e4e0de871f2c41597762c0d5e9876fa35124b77b4a23a36f332ee66c1333ff","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"87408929c7b14cb6f5fd35802fb45d43374e3408e0271d1690d5b555eb9e3792","disposition":"still accurate","rationale":"The existing workbench journey now also proves clicks inside retain the dialog and outside clicks dismiss it before reopening and continuing construction. Its documented lifecycle and preservation responsibilities remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"ff26f73c609c97c23e5a0ac1fe19a8cd5786d65135aab754fa3dd2299bfa340f","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"055ea54bdaf6e412bd016d4bae5a03d4ac9f9e5f8d5b9dcc8ae6b9dc89b61e49","disposition":"still accurate","rationale":"Retained both learning-examples and workbench-content requirements; verification commands now acquire the host window without replacing rendered review or target-player acceptance."} -->
 
 Use the manifest's `workbench-content-lifecycle` invariant and
 [registered browser check](../../scripts/manifest.json#check=verify-workbench-content)

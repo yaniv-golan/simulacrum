@@ -113,7 +113,21 @@
       "rule": "Players and their agents share one command surface and physical constraints."
     }
   ],
-  "milestones": ["M0", "M1", "M2", "M3", "M3b", "M4", "M4b", "M5", "M6", "M7", "M8", "M8b", "M9"],
+  "milestones": [
+    "M0",
+    "M1",
+    "M2",
+    "M3",
+    "M3b",
+    "M4",
+    "M4b",
+    "M5",
+    "M6",
+    "M7",
+    "M8",
+    "M8b",
+    "M9"
+  ],
   "checks": [
     {
       "id": "layers",
@@ -184,6 +198,15 @@
       "ruleId": "gate-integrity",
       "module": "scripts/verification-tiers.mjs",
       "export": "checkVerificationTiers",
+      "timeoutMs": 1000
+    },
+    {
+      "id": "verification-scope-configuration",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "description": "supported command resource-window admission; scope and wait controls run in invariant battery",
+      "module": "scripts/verification-window.mjs",
+      "export": "checkVerificationConfiguration",
       "timeoutMs": 1000
     }
   ],
@@ -342,7 +365,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -408,7 +431,9 @@
     "runtime": "docs/contracts/runtime-v1.md",
     "course": "docs/contracts/course-v1.md"
   },
-  "physicsPackages": ["@dimforge/rapier3d-deterministic-compat"],
+  "physicsPackages": [
+    "@dimforge/rapier3d-deterministic-compat"
+  ],
   "browserChecks": [
     {
       "id": "qualify-workshop",
@@ -803,7 +828,9 @@
           "anchor": "createWorkshop"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -826,7 +853,10 @@
           }
         ]
       },
-      "qualificationBars": ["F1", "L0"]
+      "qualificationBars": [
+        "F1",
+        "L0"
+      ]
     },
     {
       "id": "preview-isolation",
@@ -847,7 +877,10 @@
           "anchor": "createPlacementLifecycle"
         }
       ],
-      "checks": ["invariant-controls", "verify-mirror-browser"],
+      "checks": [
+        "invariant-controls",
+        "verify-mirror-browser"
+      ],
       "controls": {
         "positive": [
           {
@@ -870,7 +903,10 @@
           }
         ]
       },
-      "qualificationBars": ["F1", "L0"]
+      "qualificationBars": [
+        "F1",
+        "L0"
+      ]
     },
     {
       "id": "input-cancellation",
@@ -915,7 +951,10 @@
           }
         ]
       },
-      "qualificationBars": ["F1", "L0"]
+      "qualificationBars": [
+        "F1",
+        "L0"
+      ]
     },
     {
       "id": "geometry-agreement",
@@ -932,7 +971,11 @@
           "anchor": "compileAssembly"
         }
       ],
-      "checks": ["invariant-controls", "verify-property-focus", "verify-surface-browser"],
+      "checks": [
+        "invariant-controls",
+        "verify-property-focus",
+        "verify-surface-browser"
+      ],
       "controls": {
         "positive": [
           {
@@ -947,7 +990,10 @@
           }
         ]
       },
-      "qualificationBars": ["F1", "L0"]
+      "qualificationBars": [
+        "F1",
+        "L0"
+      ]
     },
     {
       "id": "identity-material-admission",
@@ -964,7 +1010,9 @@
           "anchor": "MATERIALS"
         }
       ],
-      "checks": ["identity"],
+      "checks": [
+        "identity"
+      ],
       "controls": {
         "positive": [
           {
@@ -979,7 +1027,10 @@
           }
         ]
       },
-      "qualificationBars": ["F1", "L0"]
+      "qualificationBars": [
+        "F1",
+        "L0"
+      ]
     },
     {
       "id": "checkpoint-next-step",
@@ -992,7 +1043,9 @@
           "anchor": "createSession"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -1007,7 +1060,10 @@
           }
         ]
       },
-      "qualificationBars": ["F1", "L0"]
+      "qualificationBars": [
+        "F1",
+        "L0"
+      ]
     },
     {
       "id": "copied-graph-integrity",
@@ -1028,7 +1084,11 @@
           "anchor": "createAssemblyPlacement"
         }
       ],
-      "checks": ["invariant-controls", "verify-assemblies-browser", "verify-assembly-ux-browser"],
+      "checks": [
+        "invariant-controls",
+        "verify-assemblies-browser",
+        "verify-assembly-ux-browser"
+      ],
       "controls": {
         "positive": [
           {
@@ -1063,7 +1123,9 @@
           }
         ]
       },
-      "qualificationBars": ["F1"]
+      "qualificationBars": [
+        "F1"
+      ]
     },
     {
       "id": "connection-display-isolation",
@@ -1080,7 +1142,11 @@
           "anchor": "pickableObjects"
         }
       ],
-      "checks": ["invariant-controls", "verify-connection-test-browser", "verify-exploded-browser"],
+      "checks": [
+        "invariant-controls",
+        "verify-connection-test-browser",
+        "verify-exploded-browser"
+      ],
       "controls": {
         "positive": [
           {
@@ -1095,7 +1161,9 @@
           }
         ]
       },
-      "qualificationBars": ["F1"]
+      "qualificationBars": [
+        "F1"
+      ]
     },
     {
       "id": "capture-write-admission",
@@ -1108,7 +1176,9 @@
           "anchor": "createPlaytestServer"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -1160,7 +1230,9 @@
           "anchor": "CaptureStore"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -1212,7 +1284,9 @@
           "anchor": "openCaptureOutbox"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -1248,7 +1322,9 @@
           "anchor": "ReleaseCoordinator"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -1292,7 +1368,9 @@
           "anchor": "CaptureStore"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -1344,7 +1422,9 @@
           "anchor": "verifyCredentialIsolation"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -1372,7 +1452,9 @@
           "anchor": "retryUpload"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -1412,7 +1494,9 @@
           "anchor": "assertPackageVerification"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -1464,7 +1548,9 @@
           "anchor": "retrieveEvidence"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -1540,7 +1626,9 @@
           "anchor": "deriveExperimentInputs"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -1608,7 +1696,9 @@
           "anchor": "writeCorpus"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -1732,7 +1822,11 @@
           "anchor": "springTopologyDomain"
         }
       ],
-      "checks": ["invariant-controls", "verify-spring-browser", "verify-spring-performance"],
+      "checks": [
+        "invariant-controls",
+        "verify-spring-browser",
+        "verify-spring-performance"
+      ],
       "controls": {
         "positive": [
           {
@@ -1871,7 +1965,9 @@
           }
         ]
       },
-      "qualificationBars": ["F1"]
+      "qualificationBars": [
+        "F1"
+      ]
     },
     {
       "id": "workbench-content-lifecycle",
@@ -1900,7 +1996,10 @@
           "anchor": "springInspector"
         }
       ],
-      "checks": ["verify-workbench-content", "verify-learning-examples"],
+      "checks": [
+        "verify-workbench-content",
+        "verify-learning-examples"
+      ],
       "controls": {
         "positive": [
           {
@@ -1915,7 +2014,9 @@
           }
         ]
       },
-      "qualificationBars": ["F1"]
+      "qualificationBars": [
+        "F1"
+      ]
     },
     {
       "id": "adaptive-graphics",
@@ -1936,7 +2037,10 @@
           "anchor": "applyGraphicsQuality"
         }
       ],
-      "checks": ["invariant-controls", "verify-adaptive-graphics"],
+      "checks": [
+        "invariant-controls",
+        "verify-adaptive-graphics"
+      ],
       "controls": {
         "positive": [
           {
@@ -1984,7 +2088,10 @@
           "anchor": "readContacts"
         }
       ],
-      "checks": ["invariant-controls", "verify-spring-performance"],
+      "checks": [
+        "invariant-controls",
+        "verify-spring-performance"
+      ],
       "controls": {
         "positive": [
           {
@@ -2040,7 +2147,11 @@
           "anchor": "captureBrowserTimeoutMs"
         }
       ],
-      "checks": ["invariant-controls", "verify-remote-playtest", "verify-cloud-playtest"],
+      "checks": [
+        "invariant-controls",
+        "verify-remote-playtest",
+        "verify-cloud-playtest"
+      ],
       "controls": {
         "positive": [
           {
@@ -2068,7 +2179,11 @@
           "anchor": "downloadCapture"
         }
       ],
-      "checks": ["invariant-controls", "verify-remote-playtest", "verify-cloud-playtest"],
+      "checks": [
+        "invariant-controls",
+        "verify-remote-playtest",
+        "verify-cloud-playtest"
+      ],
       "controls": {
         "positive": [
           {
@@ -2104,7 +2219,11 @@
           "anchor": "readCorpus"
         }
       ],
-      "checks": ["invariant-controls", "verify-cloud-playtest", "verify-remote-playtest"],
+      "checks": [
+        "invariant-controls",
+        "verify-cloud-playtest",
+        "verify-remote-playtest"
+      ],
       "controls": {
         "positive": [
           {
@@ -2152,7 +2271,9 @@
           "anchor": "decodeCaptureEvents"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -2180,7 +2301,9 @@
           "anchor": "sceneParts"
         }
       ],
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "controls": {
         "positive": [
           {
@@ -2192,6 +2315,96 @@
           {
             "path": "test/capture-review.test.mjs",
             "anchor": "review rejects oversized/hostile geometry and remote media"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "local-browser-scope-safety",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Local browser coverage expands when audited inputs, reverse consumers or browser roots change; non-runtime classification cannot omit runtime documents or fixtures.",
+      "owners": [
+        {
+          "path": "scripts/browser-selection.mjs",
+          "anchor": "selectAffectedBrowserChecks"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/browser-registry.test.mjs",
+            "anchor": "seven-file mirror repair selects all formatter journeys without fingerprint-only payloads"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/browser-registry.test.mjs",
+            "anchor": "shared scopes expand for new reverse consumers and new browser roots"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "verification-resource-window",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Supported build and verification commands serialize across worktrees on this host, record waiting separately and never infer abandoned process quiescence from age.",
+      "owners": [
+        {
+          "path": "scripts/verification-window.mjs",
+          "anchor": "withVerificationWindow"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "verification windows serialize contenders, retain timing and release after failure"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "waiting is bounded; stale windows require explicit recovery and exact ownership"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "observable-test-completion",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Asynchronous state waits use observed completion and a named bounded deadline rather than a guessed count of event-loop turns.",
+      "owners": [
+        {
+          "path": "scripts/wait-until.mjs",
+          "anchor": "waitUntil"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/wait-until.test.mjs",
+            "anchor": "observable waits tolerate delayed completion and fail with a named deadline"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/wait-until.test.mjs",
+            "anchor": "observable waits tolerate delayed completion and fail with a named deadline"
           }
         ]
       },
@@ -2211,7 +2424,14 @@
         "verify-part-help-browser",
         "verify-ui-lifecycle-browser",
         "verify-workshop"
-      ]
+      ],
+      "consumers": [
+        "index.html",
+        "src/application/workshop-app.mjs",
+        "src/presentation/workshop-view.mjs",
+        "test/browser/part-help-fixture.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da"
     },
     {
       "entrypoint": "scripts/verify-part-help-window.mjs",
@@ -2220,8 +2440,17 @@
         "src/presentation/part-help-content.mjs",
         "src/presentation/part-help-diagram.mjs"
       ],
-      "checks": ["verify-part-help-window", "verify-part-help-browser"],
-      "externalImports": ["vite", "playwright", "node:fs", "node:os", "node:path"]
+      "checks": [
+        "verify-part-help-window",
+        "verify-part-help-browser"
+      ],
+      "externalImports": [
+        "vite",
+        "playwright",
+        "node:fs",
+        "node:os",
+        "node:path"
+      ]
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -2230,18 +2459,30 @@
         "scripts/browser-evidence.mjs",
         "scripts/source-identity.mjs"
       ],
-      "externalImports": ["node:fs"],
-      "checks": ["verify-mirror-browser"]
+      "externalImports": [
+        "node:fs"
+      ],
+      "checks": [
+        "verify-mirror-browser"
+      ]
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
-      "dependencies": ["src/model/messages.mjs"],
+      "dependencies": [
+        "src/model/messages.mjs"
+      ],
       "externalImports": [],
       "checks": [
         "verify-mirror-browser",
         "verify-assembly-ux-browser",
         "verify-manipulation-browser"
-      ]
+      ],
+      "consumers": [
+        "index.html",
+        "src/application/workshop-app.mjs",
+        "src/presentation/workshop-view.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -2258,7 +2499,45 @@
         "verify-remote-playtest",
         "verify-ui-lifecycle-browser",
         "verify-workshop"
-      ]
+      ],
+      "consumers": [
+        "index.html",
+        "src/application/workshop-app.mjs",
+        "test/remote-playtest.test.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da"
+    },
+    {
+      "entrypoint": "src/model/messages.mjs",
+      "dependencies": [
+        "src/model/reasons.mjs"
+      ],
+      "externalImports": [],
+      "checks": [
+        "verify-mirror-browser",
+        "verify-assembly-ux-browser",
+        "verify-assemblies-browser",
+        "verify-surface-browser",
+        "verify-connection-test-browser",
+        "verify-workshop",
+        "verify-spring-browser",
+        "verify-learning-examples"
+      ],
+      "consumers": [
+        "index.html",
+        "src/application/workshop-app.mjs",
+        "src/presentation/assembly-library.mjs",
+        "src/presentation/assembly-mirror.mjs",
+        "src/presentation/assembly-placement-view.mjs",
+        "src/presentation/connection-test.mjs",
+        "src/presentation/surface-controls.mjs",
+        "src/presentation/workshop-view.mjs",
+        "test/connection-test.test.mjs",
+        "test/failure-messages.test.mjs",
+        "test/receiver-input-owner.test.mjs",
+        "test/surface-pending.test.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da"
     }
   ],
   "experimentInputScopes": [
@@ -2266,19 +2545,34 @@
       "family": "capacity",
       "entrypoint": "scripts/playtest/load.mjs",
       "sourceSha256": "e9b07a0deb6b39f30beeb55546a4d955ebe426c4923c8716ebdc4b4b1e6bed3e",
-      "dependencies": ["scripts/playtest/verify-deployment.mjs"],
-      "externalImports": ["node:crypto", "node:fs/promises"],
+      "dependencies": [
+        "scripts/playtest/verify-deployment.mjs"
+      ],
+      "externalImports": [
+        "node:crypto",
+        "node:fs/promises"
+      ],
       "runtimeBoundary": "synthetic-capacity-envelope-v1",
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ]
     },
     {
       "family": "capacity",
       "entrypoint": "scripts/playtest/download.mjs",
       "sourceSha256": "bc9db82d5c5fd6f6efaf697f9c608816693baa81d26d65b68e1a03130271d46c",
-      "dependencies": ["scripts/playtest/protocol.mjs"],
-      "externalImports": ["node:fs/promises", "node:path", "node:url"],
+      "dependencies": [
+        "scripts/playtest/protocol.mjs"
+      ],
+      "externalImports": [
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
       "runtimeBoundary": "synthetic-capacity-envelope-v1",
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ]
     },
     {
       "family": "capacity",
@@ -2289,9 +2583,15 @@
         "scripts/playtest/download.mjs",
         "scripts/playtest/release-config.mjs"
       ],
-      "externalImports": ["node:crypto", "node:fs/promises", "node:path"],
+      "externalImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path"
+      ],
       "runtimeBoundary": "synthetic-capacity-envelope-v1",
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ]
     },
     {
       "family": "endurance",
@@ -2305,36 +2605,65 @@
         "scripts/playtest/load.mjs",
         "scripts/playtest/local-cloud.mjs"
       ],
-      "externalImports": ["node:fs", "node:os", "node:path"],
+      "externalImports": [
+        "node:fs",
+        "node:os",
+        "node:path"
+      ],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/playtest/load.mjs",
       "sourceSha256": "e9b07a0deb6b39f30beeb55546a4d955ebe426c4923c8716ebdc4b4b1e6bed3e",
-      "dependencies": ["scripts/playtest/verify-deployment.mjs"],
-      "externalImports": ["node:crypto", "node:fs/promises"],
+      "dependencies": [
+        "scripts/playtest/verify-deployment.mjs"
+      ],
+      "externalImports": [
+        "node:crypto",
+        "node:fs/promises"
+      ],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/playtest/local-cloud.mjs",
       "sourceSha256": "c381ec585af9674e757cd2cd40fbfad4e76ae0dcbe963e02259f5bbe8debb831",
       "dependencies": [],
-      "externalImports": ["esbuild", "miniflare", "node:fs/promises", "node:path", "node:path"],
+      "externalImports": [
+        "esbuild",
+        "miniflare",
+        "node:fs/promises",
+        "node:path",
+        "node:path"
+      ],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/playtest/download.mjs",
       "sourceSha256": "bc9db82d5c5fd6f6efaf697f9c608816693baa81d26d65b68e1a03130271d46c",
-      "dependencies": ["scripts/playtest/protocol.mjs"],
-      "externalImports": ["node:fs/promises", "node:path", "node:url"],
+      "dependencies": [
+        "scripts/playtest/protocol.mjs"
+      ],
+      "externalImports": [
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ]
     },
     {
       "family": "endurance",
@@ -2345,15 +2674,23 @@
         "scripts/browser-session.mjs",
         "scripts/source-identity.mjs"
       ],
-      "externalImports": ["node:assert/strict", "node:crypto", "node:fs"],
+      "externalImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs"
+      ],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/playtest-server.mjs",
       "sourceSha256": "87014b07b00aaa9eddde52d37bb047e27a35cb3e19fde58a1b6df5809c1f1ca9",
-      "dependencies": ["scripts/playtest/protocol.mjs"],
+      "dependencies": [
+        "scripts/playtest/protocol.mjs"
+      ],
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -2364,7 +2701,9 @@
         "node:url"
       ],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ]
     },
     {
       "family": "endurance",
@@ -2375,42 +2714,73 @@
         "scripts/playtest/download.mjs",
         "scripts/playtest/release-config.mjs"
       ],
-      "externalImports": ["node:crypto", "node:fs/promises", "node:path"],
+      "externalImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path"
+      ],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/app-fingerprint.mjs",
       "sourceSha256": "1da859aea6e084565ed4458b932e9975c1db1627dc16ea5a457068dc374effea",
-      "dependencies": ["scripts/module-graph.mjs"],
-      "externalImports": ["node:child_process", "node:crypto", "node:fs"],
+      "dependencies": [
+        "scripts/module-graph.mjs"
+      ],
+      "externalImports": [
+        "node:child_process",
+        "node:crypto",
+        "node:fs"
+      ],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/source-identity.mjs",
       "sourceSha256": "e6d17d47613f5a704e08cf7a0324ee12d52a4852bc3168b50ae75579a59458f2",
       "dependencies": [],
-      "externalImports": ["node:child_process", "node:crypto", "node:fs"],
+      "externalImports": [
+        "node:child_process",
+        "node:crypto",
+        "node:fs"
+      ],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/module-graph.mjs",
       "sourceSha256": "f80a86eba9377b0ee95b30c31a3db8a55b2a149e0fb4618d900b7b4820db0883",
       "dependencies": [],
-      "externalImports": ["acorn", "css-tree", "node:fs", "node:path", "parse5", "typescript"],
+      "externalImports": [
+        "acorn",
+        "css-tree",
+        "node:fs",
+        "node:path",
+        "parse5",
+        "typescript"
+      ],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/playtest/capture-fault.mjs",
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": ["invariant-controls"],
+      "checks": [
+        "invariant-controls"
+      ],
       "sourceSha256": "9bf6de50ea7cd6041a718c926daa8b678eec2afcfb4d3cf8aca1641233a73a3b",
       "dependencies": [],
       "externalImports": []
@@ -2419,103 +2789,770 @@
   "browserReviewMetadataScopes": [
     {
       "entrypoint": "scripts/verify-exploded-browser.mjs",
-      "sourceSha256": "ac4a0f871d1d1919cccf8b6e66b206d54705cc8ade10e861c7565fea9bf2a8bb",
-      "dependencies": ["scripts/browser-evidence.mjs"],
-      "externalImports": ["node:fs"],
-      "checks": ["invariant-controls"]
+      "sourceSha256": "89a51ff44fac888377bd621c9b155397f499aad71d01f70a79a7ec669c3f37d2",
+      "dependencies": [
+        "scripts/browser-evidence.mjs"
+      ],
+      "externalImports": [
+        "node:fs"
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "readFileSync(await (await download).path(), 'utf8')",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "entrypoint": "scripts/verify-feedback-receipts.mjs",
-      "sourceSha256": "a09d63862e926a0d34d992a083825e4eb98a9107e20738e877bdbd09e19af9b0",
-      "dependencies": ["scripts/browser-evidence.mjs"],
-      "externalImports": ["node:crypto", "node:fs", "node:http"],
-      "checks": ["invariant-controls"]
+      "sourceSha256": "1b3a385c5d32849362d8c28d18bba0a3834c91bea636447c9b6e8edd723a97b3",
+      "dependencies": [
+        "scripts/browser-evidence.mjs",
+        "src/application/capture-stream.mjs"
+      ],
+      "externalImports": [
+        "node:crypto",
+        "node:fs",
+        "node:http"
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "readFileSync(process.env.FEEDBACK_SOURCE || 'src/application/remote-playtest.mjs')",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync('src/presentation/workshop.css')",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync('src/application/capture-stream.mjs')",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync('src/application/capture-outbox.mjs')",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "new URL(request.url())",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "new URL(route.request().url())",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "fetch(url, options)",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "entrypoint": "scripts/verify-recording-browser.mjs",
-      "sourceSha256": "5bdf55aeb3ecd557f86ace3d7cd1de8c328baa280933de4263224e1995e0fd4f",
-      "dependencies": ["scripts/browser-evidence.mjs"],
-      "externalImports": ["node:fs"],
-      "checks": ["invariant-controls"]
+      "sourceSha256": "8e7f4cceffa6181f479b50d85a24aab34d1f2af2d409e6f49fcad5d9f5ff1156",
+      "dependencies": [
+        "scripts/browser-evidence.mjs"
+      ],
+      "externalImports": [
+        "node:fs"
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "readFileSync(await file.path(), 'utf8')",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(await (await second).path(), 'utf8')",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "entrypoint": "scripts/verify-remote-playtest.mjs",
-      "sourceSha256": "633812c85da6c5799140227572cc536bc9c37c915a1d58c642543eb5cfc7828b",
+      "sourceSha256": "fef6bd1f3268fcefd96e90040b956243947a26169f76becb1ce76bf6ed97e1d2",
       "dependencies": [
         "scripts/browser-evidence.mjs",
         "scripts/playtest-server.mjs",
         "scripts/playtest/capture-fault.mjs",
+        "scripts/playtest/capture-samples.mjs",
         "scripts/playtest/download.mjs",
         "scripts/playtest/load.mjs",
-        "scripts/playtest/local-cloud.mjs"
+        "scripts/playtest/local-cloud.mjs",
+        "scripts/playtest/release-policy.mjs",
+        "src/application/capture-stream.mjs"
       ],
-      "externalImports": ["node:fs", "node:os", "node:path"],
-      "checks": ["invariant-controls"]
+      "externalImports": [
+        "node:fs",
+        "node:os",
+        "node:path"
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "new URL(response.url())",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readdirSync(data)",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(join(dir, 'events.ndjson'), 'utf8')",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(join(dir, 'session.json'), 'utf8')",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [
+        "scripts/verify-cloud-playtest.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "5c5dc49ce8c8c011faa4ea72ed9b52b1a15a3cc0b7599c224188cdf0c3637eab"
     },
     {
       "entrypoint": "scripts/browser-evidence.mjs",
-      "sourceSha256": "202f757c5cadfd06967aca15fd131e142d743f7fdae633c1520e537c3e00113c",
+      "sourceSha256": "7ef87c76a73050eaa045804bcfe34f7d677b3c8247b5216251225091d845f23f",
       "dependencies": [
         "scripts/app-fingerprint.mjs",
         "scripts/browser-session.mjs",
         "scripts/source-identity.mjs"
       ],
-      "externalImports": ["node:assert/strict", "node:crypto", "node:fs"],
-      "checks": ["invariant-controls"]
+      "externalImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs"
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "readFileSync(file, 'utf8')",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(path)",
+          "purpose": "identity",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [
+        "scripts/qualify-workshop.mjs",
+        "scripts/verify-adaptive-graphics.mjs",
+        "scripts/verify-assemblies-browser.mjs",
+        "scripts/verify-assembly-ux-browser.mjs",
+        "scripts/verify-attachment-status.mjs",
+        "scripts/verify-browser.mjs",
+        "scripts/verify-camera-recovery.mjs",
+        "scripts/verify-cloud-playtest.mjs",
+        "scripts/verify-connection-test-browser.mjs",
+        "scripts/verify-direct-edit-browser.mjs",
+        "scripts/verify-edit-cycles.mjs",
+        "scripts/verify-energy-browser.mjs",
+        "scripts/verify-exploded-browser.mjs",
+        "scripts/verify-feedback-receipts.mjs",
+        "scripts/verify-guide-feedback.mjs",
+        "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-learning-examples.mjs",
+        "scripts/verify-manipulation-browser.mjs",
+        "scripts/verify-mirror-browser.mjs",
+        "scripts/verify-motion-diagnostics.mjs",
+        "scripts/verify-part-help-browser.mjs",
+        "scripts/verify-part-help-window.mjs",
+        "scripts/verify-port-explanations.mjs",
+        "scripts/verify-property-focus.mjs",
+        "scripts/verify-recording-browser.mjs",
+        "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-selection-browser.mjs",
+        "scripts/verify-snap-intent.mjs",
+        "scripts/verify-socket-preview.mjs",
+        "scripts/verify-spring-browser.mjs",
+        "scripts/verify-spring-performance.mjs",
+        "scripts/verify-starter-browser.mjs",
+        "scripts/verify-surface-browser.mjs",
+        "scripts/verify-ui-lifecycle-browser.mjs",
+        "scripts/verify-vehicle-controls.mjs",
+        "scripts/verify-workbench-content.mjs",
+        "scripts/verify-workshop.mjs",
+        "test/browser-evidence.test.mjs",
+        "test/f2.test.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "d8b323a3a801e8830ee896ded4170ac889ae3463fbf9f1e257584c3cecd5ee79"
     },
     {
       "entrypoint": "scripts/app-fingerprint.mjs",
       "sourceSha256": "1da859aea6e084565ed4458b932e9975c1db1627dc16ea5a457068dc374effea",
-      "dependencies": ["scripts/module-graph.mjs"],
-      "externalImports": ["node:child_process", "node:crypto", "node:fs"],
-      "checks": ["invariant-controls"]
+      "dependencies": [
+        "scripts/module-graph.mjs"
+      ],
+      "externalImports": [
+        "node:child_process",
+        "node:crypto",
+        "node:fs"
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], {\n    encoding: 'utf8',\n    maxBuffer: 64 * 1024 * 1024,\n  })",
+          "purpose": "identity",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(path)",
+          "purpose": "identity",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [
+        "scripts/assess.mjs",
+        "scripts/bars.mjs",
+        "scripts/browser-evidence.mjs",
+        "scripts/build-fingerprint.mjs",
+        "scripts/check-entry.mjs",
+        "scripts/checks.mjs",
+        "scripts/ci.mjs",
+        "scripts/gate-structural.mjs",
+        "scripts/gate.mjs",
+        "scripts/qualify-m1.mjs",
+        "scripts/qualify-workshop.mjs",
+        "scripts/replay.mjs",
+        "scripts/verification-run.mjs",
+        "scripts/verify-adaptive-graphics.mjs",
+        "scripts/verify-assemblies-browser.mjs",
+        "scripts/verify-assembly-ux-browser.mjs",
+        "scripts/verify-attachment-status.mjs",
+        "scripts/verify-browser-suite.mjs",
+        "scripts/verify-browser.mjs",
+        "scripts/verify-camera-recovery.mjs",
+        "scripts/verify-cloud-playtest.mjs",
+        "scripts/verify-connection-test-browser.mjs",
+        "scripts/verify-direct-edit-browser.mjs",
+        "scripts/verify-edit-cycles.mjs",
+        "scripts/verify-energy-browser.mjs",
+        "scripts/verify-energy-runtime.mjs",
+        "scripts/verify-exploded-browser.mjs",
+        "scripts/verify-feedback-receipts.mjs",
+        "scripts/verify-final.mjs",
+        "scripts/verify-guide-feedback.mjs",
+        "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-learning-examples.mjs",
+        "scripts/verify-local.mjs",
+        "scripts/verify-m1.mjs",
+        "scripts/verify-m3.mjs",
+        "scripts/verify-manipulation-browser.mjs",
+        "scripts/verify-mirror-browser.mjs",
+        "scripts/verify-motion-diagnostics.mjs",
+        "scripts/verify-part-help-browser.mjs",
+        "scripts/verify-part-help-window.mjs",
+        "scripts/verify-port-explanations.mjs",
+        "scripts/verify-property-focus.mjs",
+        "scripts/verify-recording-browser.mjs",
+        "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-selection-browser.mjs",
+        "scripts/verify-snap-intent.mjs",
+        "scripts/verify-socket-preview.mjs",
+        "scripts/verify-spring-browser.mjs",
+        "scripts/verify-spring-performance.mjs",
+        "scripts/verify-starter-browser.mjs",
+        "scripts/verify-surface-browser.mjs",
+        "scripts/verify-ui-lifecycle-browser.mjs",
+        "scripts/verify-vehicle-controls.mjs",
+        "scripts/verify-workbench-content.mjs",
+        "scripts/verify-workshop.mjs",
+        "test/browser-evidence.test.mjs",
+        "test/browser-report.test.mjs",
+        "test/ci-order.test.mjs",
+        "test/determinism.test.mjs",
+        "test/f2.test.mjs",
+        "test/fixtures/browser-suite-cleanup.mjs",
+        "test/free-build-continuity.test.mjs",
+        "test/m3-determinism.test.mjs",
+        "test/runtime-preflight.test.mjs",
+        "test/starter-vehicle.test.mjs",
+        "test/verification-run.test.mjs",
+        "vite.config.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "d8b323a3a801e8830ee896ded4170ac889ae3463fbf9f1e257584c3cecd5ee79"
     },
     {
       "entrypoint": "scripts/source-identity.mjs",
       "sourceSha256": "e6d17d47613f5a704e08cf7a0324ee12d52a4852bc3168b50ae75579a59458f2",
       "dependencies": [],
-      "externalImports": ["node:child_process", "node:crypto", "node:fs"],
-      "checks": ["invariant-controls"]
+      "externalImports": [
+        "node:child_process",
+        "node:crypto",
+        "node:fs"
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "execFileSync(\n    'git',\n    ['ls-files', '-z', '--cached', '--others', '--exclude-standard'],\n    { encoding: 'utf8' },\n  )",
+          "purpose": "identity",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(path)",
+          "purpose": "identity",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' })",
+          "purpose": "identity",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [
+        "scripts/bars.mjs",
+        "scripts/browser-evidence.mjs",
+        "scripts/browser-selection.mjs",
+        "scripts/change-inspection.mjs",
+        "scripts/check-entry.mjs",
+        "scripts/checks.mjs",
+        "scripts/ci.mjs",
+        "scripts/gate-structural.mjs",
+        "scripts/gate.mjs",
+        "scripts/inspect-change.mjs",
+        "scripts/measure-springs.mjs",
+        "scripts/playtest/calibrate.mjs",
+        "scripts/playtest/ci-release.mjs",
+        "scripts/playtest/experiment-inputs.mjs",
+        "scripts/playtest/prepare-release.mjs",
+        "scripts/playtest/release.mjs",
+        "scripts/qualify-m1.mjs",
+        "scripts/qualify-workshop.mjs",
+        "scripts/verification-run.mjs",
+        "scripts/verify-adaptive-graphics.mjs",
+        "scripts/verify-assemblies-browser.mjs",
+        "scripts/verify-assembly-ux-browser.mjs",
+        "scripts/verify-attachment-status.mjs",
+        "scripts/verify-browser-suite.mjs",
+        "scripts/verify-browser.mjs",
+        "scripts/verify-camera-recovery.mjs",
+        "scripts/verify-cloud-playtest.mjs",
+        "scripts/verify-connection-test-browser.mjs",
+        "scripts/verify-direct-edit-browser.mjs",
+        "scripts/verify-edit-cycles.mjs",
+        "scripts/verify-energy-browser.mjs",
+        "scripts/verify-energy-runtime.mjs",
+        "scripts/verify-exploded-browser.mjs",
+        "scripts/verify-feedback-receipts.mjs",
+        "scripts/verify-final.mjs",
+        "scripts/verify-guide-feedback.mjs",
+        "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-learning-examples.mjs",
+        "scripts/verify-local.mjs",
+        "scripts/verify-m3.mjs",
+        "scripts/verify-manipulation-browser.mjs",
+        "scripts/verify-mirror-browser.mjs",
+        "scripts/verify-motion-diagnostics.mjs",
+        "scripts/verify-part-help-browser.mjs",
+        "scripts/verify-part-help-window.mjs",
+        "scripts/verify-port-explanations.mjs",
+        "scripts/verify-property-focus.mjs",
+        "scripts/verify-recording-browser.mjs",
+        "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-selection-browser.mjs",
+        "scripts/verify-snap-intent.mjs",
+        "scripts/verify-socket-preview.mjs",
+        "scripts/verify-spring-browser.mjs",
+        "scripts/verify-spring-performance.mjs",
+        "scripts/verify-starter-browser.mjs",
+        "scripts/verify-surface-browser.mjs",
+        "scripts/verify-ui-lifecycle-browser.mjs",
+        "scripts/verify-vehicle-controls.mjs",
+        "scripts/verify-workbench-content.mjs",
+        "scripts/verify-workshop.mjs",
+        "test/browser-evidence.test.mjs",
+        "test/browser-registry.test.mjs",
+        "test/browser-report.test.mjs",
+        "test/calibration-evidence.test.mjs",
+        "test/change-inspection.test.mjs",
+        "test/ci-order.test.mjs",
+        "test/ci-release-admission.test.mjs",
+        "test/experiment-inputs.test.mjs",
+        "test/f2.test.mjs",
+        "test/fixtures/browser-suite-cleanup.mjs",
+        "test/m3-determinism.test.mjs",
+        "test/playtest-calibration.test.mjs",
+        "test/playtest-release.test.mjs",
+        "test/release-pipeline.test.mjs",
+        "test/runtime-preflight.test.mjs",
+        "test/source-identity.test.mjs",
+        "test/spring-performance.test.mjs",
+        "test/starter-vehicle.test.mjs",
+        "test/verification-run.test.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "d8b323a3a801e8830ee896ded4170ac889ae3463fbf9f1e257584c3cecd5ee79"
     },
     {
       "entrypoint": "scripts/build-fingerprint.mjs",
       "sourceSha256": "75989ba1d17dd1062c9a18cb32df38da7ba60ff16f88c86ab1562ba92ed1ce92",
-      "dependencies": ["scripts/app-fingerprint.mjs"],
-      "externalImports": ["node:crypto", "node:fs"],
-      "checks": ["invariant-controls"]
+      "dependencies": [
+        "scripts/app-fingerprint.mjs"
+      ],
+      "externalImports": [
+        "node:crypto",
+        "node:fs"
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "readFileSync(new URL(`../assessments/protocol/${barId}.md`, import.meta.url))",
+          "purpose": "identity",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "new URL(`../assessments/protocol/${barId}.md`, import.meta.url)",
+          "purpose": "identity",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [
+        "scripts/assess.mjs",
+        "scripts/bars.mjs",
+        "scripts/gate.mjs",
+        "scripts/qualify-m1.mjs",
+        "scripts/replay.mjs",
+        "scripts/verify-browser.mjs",
+        "scripts/verify-edit-cycles.mjs",
+        "scripts/verify-energy-runtime.mjs",
+        "scripts/verify-final.mjs",
+        "scripts/verify-m1.mjs",
+        "scripts/verify-m3.mjs",
+        "scripts/verify-motion-diagnostics.mjs",
+        "scripts/verify-starter-browser.mjs",
+        "scripts/verify-workshop.mjs",
+        "test/determinism.test.mjs",
+        "test/free-build-continuity.test.mjs",
+        "test/m3-determinism.test.mjs",
+        "test/starter-vehicle.test.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "8135ed44d4de0ef141acc7d2e0e1750a8360cee61a45826ea38eb4cff36f65b1"
     },
     {
       "entrypoint": "scripts/playtest/capture-fault.mjs",
       "sourceSha256": "9bf6de50ea7cd6041a718c926daa8b678eec2afcfb4d3cf8aca1641233a73a3b",
       "dependencies": [],
       "externalImports": [],
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "new URL(request.url())",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [
+        "scripts/verify-cloud-playtest.mjs",
+        "scripts/verify-remote-playtest.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "5c5dc49ce8c8c011faa4ea72ed9b52b1a15a3cc0b7599c224188cdf0c3637eab"
     },
     {
       "entrypoint": "scripts/playtest/load.mjs",
-      "sourceSha256": "e9b07a0deb6b39f30beeb55546a4d955ebe426c4923c8716ebdc4b4b1e6bed3e",
-      "dependencies": ["scripts/playtest/verify-deployment.mjs"],
-      "externalImports": ["node:crypto", "node:fs/promises"],
-      "checks": ["invariant-controls"]
+      "sourceSha256": "ba2958b590cb568c80857633094d5239f27298494d994b12cb181cf7952ce6ab",
+      "dependencies": [
+        "scripts/playtest/verify-deployment.mjs"
+      ],
+      "externalImports": [
+        "node:crypto",
+        "node:fs/promises"
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "fetch(new URL(`/join?token=${encodeURIComponent(invite.token)}`, origin), {\n      redirect: 'manual',\n      signal: AbortSignal.timeout(15000),\n    })",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "new URL(`/join?token=${encodeURIComponent(invite.token)}`, origin)",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "fetch(new URL(path, origin), {\n        method: 'POST',\n        headers: { cookie, origin, 'content-type': mime },\n        body,\n        redirect: 'error',\n        signal: AbortSignal.timeout(45000),\n        ...(shaped ? { duplex: 'half' } : {}),\n      })",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "new URL(path, origin)",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFile(\n                m === 0\n                  ? capture.mediaFiles[(seq * clients + index) % capture.mediaFiles.length]\n                  : capture.maximumMediaFile,\n              )",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFile(capture.mediaFiles[0])",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [
+        "scripts/playtest/calibrate.mjs",
+        "scripts/playtest/calibration-bundle.mjs",
+        "scripts/playtest/calibration-evidence.mjs",
+        "scripts/playtest/capture-samples.mjs",
+        "scripts/playtest/ci-release.mjs",
+        "scripts/playtest/corpus.mjs",
+        "scripts/playtest/experiment-transport.mjs",
+        "scripts/playtest/experiments.mjs",
+        "scripts/playtest/release.mjs",
+        "scripts/verify-cloud-playtest.mjs",
+        "scripts/verify-remote-playtest.mjs",
+        "test/calibration-bundle.test.mjs",
+        "test/calibration-evidence.test.mjs",
+        "test/ci-release-admission.test.mjs",
+        "test/experiment-transport.test.mjs",
+        "test/playtest-calibration.test.mjs",
+        "test/playtest-corpus.test.mjs",
+        "test/playtest-load.test.mjs",
+        "test/playtest-release.test.mjs",
+        "test/release-experiments.test.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "5c5dc49ce8c8c011faa4ea72ed9b52b1a15a3cc0b7599c224188cdf0c3637eab"
     },
     {
       "entrypoint": "scripts/playtest/local-cloud.mjs",
-      "sourceSha256": "c381ec585af9674e757cd2cd40fbfad4e76ae0dcbe963e02259f5bbe8debb831",
+      "sourceSha256": "66e915cda215738b8a0fcc5d913d7b7e739f7e7f0ba5417f52b37533151afb9e",
       "dependencies": [],
-      "externalImports": ["esbuild", "miniflare", "node:fs/promises", "node:path", "node:path"],
-      "checks": ["invariant-controls"]
+      "externalImports": [
+        "esbuild",
+        "miniflare",
+        "node:fs/promises",
+        "node:path",
+        "node:path"
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "new URL(request.url)",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFile(actual)",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [
+        "scripts/verify-cloud-playtest.mjs",
+        "scripts/verify-remote-playtest.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "5c5dc49ce8c8c011faa4ea72ed9b52b1a15a3cc0b7599c224188cdf0c3637eab"
     },
     {
       "entrypoint": "scripts/playtest/download.mjs",
-      "sourceSha256": "bc9db82d5c5fd6f6efaf697f9c608816693baa81d26d65b68e1a03130271d46c",
-      "dependencies": ["scripts/playtest/protocol.mjs"],
-      "externalImports": ["node:fs/promises", "node:path", "node:url"],
-      "checks": ["invariant-controls"]
+      "sourceSha256": "f274dc39279aee6e84a26e364695f15317f01bf80c3c11cf3cd9563de50f001f",
+      "dependencies": [
+        "scripts/playtest/protocol.mjs"
+      ],
+      "externalImports": [
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "new URL(path, origin)",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [
+        "scripts/playtest/calibrate.mjs",
+        "scripts/playtest/calibration-bundle.mjs",
+        "scripts/playtest/calibration-evidence.mjs",
+        "scripts/playtest/capture-samples.mjs",
+        "scripts/playtest/ci-release.mjs",
+        "scripts/playtest/corpus.mjs",
+        "scripts/playtest/experiment-transport.mjs",
+        "scripts/playtest/experiments.mjs",
+        "scripts/playtest/load.mjs",
+        "scripts/playtest/release.mjs",
+        "scripts/playtest/verify-deployment.mjs",
+        "scripts/verify-cloud-playtest.mjs",
+        "scripts/verify-remote-playtest.mjs",
+        "test/calibration-bundle.test.mjs",
+        "test/calibration-evidence.test.mjs",
+        "test/ci-release-admission.test.mjs",
+        "test/experiment-transport.test.mjs",
+        "test/playtest-calibration.test.mjs",
+        "test/playtest-corpus.test.mjs",
+        "test/playtest-load.test.mjs",
+        "test/playtest-release.test.mjs",
+        "test/release-experiments.test.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "5c5dc49ce8c8c011faa4ea72ed9b52b1a15a3cc0b7599c224188cdf0c3637eab"
     },
     {
       "entrypoint": "scripts/playtest-server.mjs",
-      "sourceSha256": "87014b07b00aaa9eddde52d37bb047e27a35cb3e19fde58a1b6df5809c1f1ca9",
-      "dependencies": ["scripts/playtest/protocol.mjs"],
+      "sourceSha256": "5730cf6d34aaf6372c12a1507c67b3b9e4cf4168e2663599677f5dfe772ff98c",
+      "dependencies": [
+        "scripts/playtest/protocol.mjs"
+      ],
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -2525,39 +3562,496 @@
         "node:stream",
         "node:url"
       ],
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "readdirSync(privateRoot)",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readdirSync(privateRoot, { withFileTypes: true })",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readdirSync(privateRoot, { withFileTypes: true })",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(join(dir, 'session.json'), 'utf8')",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readdirSync(dir)",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(log)",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(join(dir, record.media.file))",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readdirSync(dir)",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "new URL(req.url, 'http://localhost')",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "new URL(req.headers.origin)",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFile(mediaPath)",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFile(actual)",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [
+        "index.html",
+        "scripts/verify-cloud-playtest.mjs",
+        "scripts/verify-remote-playtest.mjs",
+        "src/application/remote-playtest.mjs",
+        "src/application/workshop-app.mjs",
+        "test/playtest-admission.test.mjs",
+        "test/playtest-recovery.test.mjs",
+        "test/playtest-server.test.mjs",
+        "test/remote-playtest.test.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "bfbfee93e8350111205e155eae30d12a66b2258b6ba26545c0987717aa7534ea"
     },
     {
       "entrypoint": "scripts/module-graph.mjs",
-      "sourceSha256": "f80a86eba9377b0ee95b30c31a3db8a55b2a149e0fb4618d900b7b4820db0883",
+      "sourceSha256": "d88d14921fc9414f8b6944eec26f7c13d8b8ac0914a9cef702cd14f96ace0796",
       "dependencies": [],
-      "externalImports": ["acorn", "css-tree", "node:fs", "node:path", "parse5", "typescript"],
-      "checks": ["invariant-controls"]
+      "externalImports": [
+        "acorn",
+        "css-tree",
+        "node:fs",
+        "node:path",
+        "parse5",
+        "typescript"
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "readdirSync(resolve(root, directory), { withFileTypes: true })",
+          "purpose": "source-analysis",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(resolve(root, 'package.json'), 'utf8')",
+          "purpose": "source-analysis",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(resolve(root, path), 'utf8')",
+          "purpose": "source-analysis",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(resolve(root, path), 'utf8')",
+          "purpose": "source-analysis",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(resolve(root, path), 'utf8')",
+          "purpose": "source-analysis",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "readFileSync(resolve(root, path), 'utf8')",
+          "purpose": "source-analysis",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [
+        "scripts/analysis-snapshot.mjs",
+        "scripts/app-fingerprint.mjs",
+        "scripts/assess.mjs",
+        "scripts/bars.mjs",
+        "scripts/browser-evidence.mjs",
+        "scripts/browser-selection.mjs",
+        "scripts/build-fingerprint.mjs",
+        "scripts/change-inspection.mjs",
+        "scripts/check-documentation.mjs",
+        "scripts/check-entry.mjs",
+        "scripts/check-physics-boundary.mjs",
+        "scripts/checks.mjs",
+        "scripts/ci.mjs",
+        "scripts/docs.mjs",
+        "scripts/documentation.mjs",
+        "scripts/gate-structural.mjs",
+        "scripts/gate.mjs",
+        "scripts/inspect-change.mjs",
+        "scripts/navigate.mjs",
+        "scripts/playtest/ci-release.mjs",
+        "scripts/playtest/experiment-inputs.mjs",
+        "scripts/playtest/release.mjs",
+        "scripts/qualify-m1.mjs",
+        "scripts/qualify-workshop.mjs",
+        "scripts/replay.mjs",
+        "scripts/test-affected.mjs",
+        "scripts/verification-run.mjs",
+        "scripts/verify-adaptive-graphics.mjs",
+        "scripts/verify-assemblies-browser.mjs",
+        "scripts/verify-assembly-ux-browser.mjs",
+        "scripts/verify-attachment-status.mjs",
+        "scripts/verify-browser-suite.mjs",
+        "scripts/verify-browser.mjs",
+        "scripts/verify-camera-recovery.mjs",
+        "scripts/verify-cloud-playtest.mjs",
+        "scripts/verify-connection-test-browser.mjs",
+        "scripts/verify-direct-edit-browser.mjs",
+        "scripts/verify-edit-cycles.mjs",
+        "scripts/verify-energy-browser.mjs",
+        "scripts/verify-energy-runtime.mjs",
+        "scripts/verify-exploded-browser.mjs",
+        "scripts/verify-feedback-receipts.mjs",
+        "scripts/verify-final.mjs",
+        "scripts/verify-guide-feedback.mjs",
+        "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-learning-examples.mjs",
+        "scripts/verify-local.mjs",
+        "scripts/verify-m1.mjs",
+        "scripts/verify-m3.mjs",
+        "scripts/verify-manipulation-browser.mjs",
+        "scripts/verify-mirror-browser.mjs",
+        "scripts/verify-motion-diagnostics.mjs",
+        "scripts/verify-part-help-browser.mjs",
+        "scripts/verify-part-help-window.mjs",
+        "scripts/verify-port-explanations.mjs",
+        "scripts/verify-property-focus.mjs",
+        "scripts/verify-recording-browser.mjs",
+        "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-selection-browser.mjs",
+        "scripts/verify-snap-intent.mjs",
+        "scripts/verify-socket-preview.mjs",
+        "scripts/verify-spring-browser.mjs",
+        "scripts/verify-spring-performance.mjs",
+        "scripts/verify-starter-browser.mjs",
+        "scripts/verify-surface-browser.mjs",
+        "scripts/verify-ui-lifecycle-browser.mjs",
+        "scripts/verify-vehicle-controls.mjs",
+        "scripts/verify-workbench-content.mjs",
+        "scripts/verify-workshop.mjs",
+        "test/analysis-snapshot.test.mjs",
+        "test/browser-evidence.test.mjs",
+        "test/browser-registry.test.mjs",
+        "test/browser-report.test.mjs",
+        "test/calibration-evidence.test.mjs",
+        "test/change-inspection.test.mjs",
+        "test/ci-order.test.mjs",
+        "test/ci-release-admission.test.mjs",
+        "test/determinism.test.mjs",
+        "test/documentation-scope.test.mjs",
+        "test/documentation.test.mjs",
+        "test/experiment-inputs.test.mjs",
+        "test/f2.test.mjs",
+        "test/fixtures/browser-suite-cleanup.mjs",
+        "test/free-build-continuity.test.mjs",
+        "test/m3-determinism.test.mjs",
+        "test/module-graph.test.mjs",
+        "test/physics-boundary.test.mjs",
+        "test/playtest-release.test.mjs",
+        "test/runtime-preflight.test.mjs",
+        "test/starter-vehicle.test.mjs",
+        "test/structural.test.mjs",
+        "test/test-selection.test.mjs",
+        "test/verification-run.test.mjs",
+        "vite.config.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "d8b323a3a801e8830ee896ded4170ac889ae3463fbf9f1e257584c3cecd5ee79"
     },
     {
       "entrypoint": "scripts/playtest/verify-deployment.mjs",
-      "sourceSha256": "abeaa83f67b584f07b307861ad140c3b07d0d9801f4a210c622e249f7687403f",
+      "sourceSha256": "2ea6118b7f0a3dff7f04c13a17837108dcb6bd4d13350a3476f7b3434165dfbf",
       "dependencies": [
         "scripts/playtest/credential-isolation.mjs",
         "scripts/playtest/download.mjs",
         "scripts/playtest/release-config.mjs"
       ],
-      "externalImports": ["node:crypto", "node:fs/promises", "node:path"],
-      "checks": ["invariant-controls"]
+      "externalImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path"
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "fetch(`https://api.cloudflare.com/client/v4/${path}`, {\n      ...options,\n      headers: { ...options.headers, authorization: `Bearer ${token}` },\n      redirect: 'error',\n      signal: AbortSignal.timeout(15000),\n    })",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "fetch(new URL('/admin/playtest/' + path, origin), {\n    method,\n    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },\n    ...(body === undefined ? {} : { body: JSON.stringify(body) }),\n    redirect: 'error',\n    signal: AbortSignal.timeout(45000),\n  })",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "new URL('/admin/playtest/' + path, origin)",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "fetch(\n    new URL(`/join?token=${encodeURIComponent(invitation.token)}`, config.origin),\n    { redirect: 'manual', signal: AbortSignal.timeout(15000) },\n  )",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "new URL(`/join?token=${encodeURIComponent(invitation.token)}`, config.origin)",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "fetch(new URL(path, config.origin), {\n      ...options,\n      redirect: 'manual',\n      signal: AbortSignal.timeout(15000),\n    })",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "new URL(path, config.origin)",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "fetch(new URL(path, config.origin), {\n      method: 'POST',\n      headers: { cookie, origin: config.origin, 'content-type': 'application/json' },\n      body: JSON.stringify(body),\n      redirect: 'error',\n      signal: AbortSignal.timeout(45000),\n    })",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "new URL(path, config.origin)",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        },
+        {
+          "expression": "new URL(route, origin)",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [
+        "scripts/playtest/calibrate.mjs",
+        "scripts/playtest/calibration-bundle.mjs",
+        "scripts/playtest/calibration-evidence.mjs",
+        "scripts/playtest/capture-samples.mjs",
+        "scripts/playtest/ci-release.mjs",
+        "scripts/playtest/corpus.mjs",
+        "scripts/playtest/experiment-transport.mjs",
+        "scripts/playtest/experiments.mjs",
+        "scripts/playtest/load.mjs",
+        "scripts/playtest/release.mjs",
+        "scripts/verify-cloud-playtest.mjs",
+        "scripts/verify-remote-playtest.mjs",
+        "test/calibration-bundle.test.mjs",
+        "test/calibration-evidence.test.mjs",
+        "test/ci-release-admission.test.mjs",
+        "test/experiment-transport.test.mjs",
+        "test/playtest-calibration.test.mjs",
+        "test/playtest-corpus.test.mjs",
+        "test/playtest-load.test.mjs",
+        "test/playtest-release.test.mjs",
+        "test/release-experiments.test.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "5c5dc49ce8c8c011faa4ea72ed9b52b1a15a3cc0b7599c224188cdf0c3637eab"
     },
     {
       "entrypoint": "scripts/playtest/worker.mjs",
-      "sourceSha256": "b0e8aa3dc30cf93ab72dffcab27b620829608559284267ef25c4733b6eece48b",
-      "dependencies": ["scripts/playtest/cloud-store.mjs", "scripts/playtest/protocol.mjs"],
+      "sourceSha256": "ec9477af64060ff35066a001a31b8cc18a8ffa13f9fbc1ba8050fa6385c5e314",
+      "dependencies": [
+        "scripts/playtest/cloud-store.mjs",
+        "scripts/playtest/protocol.mjs"
+      ],
       "externalImports": [],
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "new URL(request.url)",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [
+        "index.html",
+        "src/application/remote-playtest.mjs",
+        "src/application/workshop-app.mjs",
+        "test/cloud-playtest.test.mjs",
+        "test/remote-playtest.test.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "70a00b7bac684f5f99c6e451ae14e66149f5f55003f765c186f3d1b7686efe3a"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
-      "sourceSha256": "95c868ecfb83e420de602e0bb7e9db3204854747deba2ccf7cc870a7217f19b1",
-      "dependencies": ["scripts/playtest/protocol.mjs"],
+      "sourceSha256": "19e3ce45515dca1b6f7c4e81abafafc93a316f011424331d4705c909a07cc835",
+      "dependencies": [
+        "scripts/playtest/protocol.mjs"
+      ],
       "externalImports": [],
-      "checks": ["invariant-controls"]
+      "checks": [
+        "invariant-controls"
+      ],
+      "reads": [
+        {
+          "expression": "new URL(request.url)",
+          "purpose": "runtime",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [
+        "index.html",
+        "scripts/playtest/worker.mjs",
+        "src/application/remote-playtest.mjs",
+        "src/application/workshop-app.mjs",
+        "test/cloud-playtest.test.mjs",
+        "test/remote-playtest.test.mjs"
+      ],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "70a00b7bac684f5f99c6e451ae14e66149f5f55003f765c186f3d1b7686efe3a"
+    },
+    {
+      "entrypoint": "scripts/verify-workbench-content.mjs",
+      "checks": [
+        "invariant-controls"
+      ],
+      "sourceSha256": "9f32bd0348d988661182b691e40e22f6e21c048c275804a43ee6e1da6e2b576b",
+      "dependencies": [
+        "scripts/browser-evidence.mjs"
+      ],
+      "externalImports": [
+        "node:fs"
+      ],
+      "reads": [
+        {
+          "expression": "readFileSync(await download.path(), 'utf8')",
+          "purpose": "fixture",
+          "excludedInputs": [
+            "documentation",
+            "unit-test"
+          ]
+        }
+      ],
+      "consumers": [],
+      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ]
 }
