@@ -47,7 +47,7 @@ Identify the player task, primary home, visibility/retrieval lifecycle and repla
 surface. Keep consequential state visible and verify unique actions remain reachable
 after removing or moving controls.
 
-<!-- doc-review {"version":1,"fingerprint":"1fe88c07b1e534bc141ab9b069060f456cfef79e9cb0c985ff0d17c2b22365d2","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"b46d2c4ebf840603f3f8709734cfd6fbcd2bc6fa2e6efd3e246b815e03a9d461","disposition":"still accurate","rationale":"Only immutable snapshot construction changed beyond the documented panel reflow. Preview isolation, normal core commits, input cancellation and help containment remain owned by their existing modules."} -->
+<!-- doc-review {"version":1,"fingerprint":"dd6778bcdbc0fffde7b77aba3ffea3337a0c516e48d9a119abd61896ed6838b6","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"a66922c80bc2dc84b67226304b6c433338a3434762c2de02cbadcc2fd8977f59","disposition":"still accurate","rationale":"Mirror status now names the failed part and explains unavailable mounts. Proposal admission, cancellation and transaction ownership are unchanged; browser checks include cell and motor refusals."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -132,7 +132,7 @@ Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"4394d5658f9a17895e368b22a1d0ae0bb1b08d41659194ce39bb239b0434d6e4","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"28472902399937107202c93bd284b7757008f8dbdb770a018aa82274b4b29921","disposition":"still accurate","rationale":"Copies retain own keys including __proto__, independent frozen nested objects and ordinary dense arrays. Membership, endpoint remapping, aliases, candidate compilation and history semantics are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"92134d344a47f3536bae680ac4266813e6885dc8eac226c91f3e9837413de6fc","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"fc89f42af41d00a1fdc6e6407c2f08c76237496644855e2f3d9937998e4669b9","disposition":"still accurate","rationale":"Refusal text now resolves the existing part path. Reflection and copied connection policy remain unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -205,7 +205,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"cd5b4879140dc34f2fe63cf9a9005500d22849cbfbf09a334f6f6576a2c93a14","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"6f436e1c5e625be93887b0de0aa57d520f2475c0dd7e94b0ae25f472e9f4b89c","disposition":"still accurate","rationale":"New remote codec/review sources expand conservative provenance dependencies. Screenshot rendering adds no authoring or physics write, and overlay lifecycle and spring benchmark rules remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"be2b384de53cddf73a6a6c803b426e3fb825d78ec946d11edb094fdc1810a69b","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"7981eb14ea5743d4409d0469d5554b5703f6453b524a1007f5c8861530c758f5","disposition":"still accurate","rationale":"Only mirror refusal wording and its browser assertions changed. Connection overlay resources, visibility and ownership remain unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

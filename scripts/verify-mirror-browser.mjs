@@ -166,32 +166,40 @@ try {
   ]);
   // A receiver mounted to a motor's left side cannot reflect to its shaft side.
   // Author the same unsupported geometry as the model counterexample through the UI.
-  await page.reload();
-  await page.waitForFunction(() => window.render_game_to_text);
-  await page.getByRole('button', { name: 'Powered Motor', exact: true }).click();
-  await page.locator('.more-parts > summary').click();
-  await page.getByRole('button', { name: 'Command Receiver', exact: true }).click();
-  await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
-  await page
-    .getByRole('combobox', { name: 'Mounting face', exact: true })
-    .selectOption({ label: 'Bottom' });
-  await page
-    .getByRole('combobox', { name: 'Target surface', exact: true })
-    .selectOption({ label: 'Powered Motor · Left' });
-  await page.getByRole('button', { name: 'Attach', exact: true }).click();
-  const unsupported = await snapshot('unsupported-source');
-  await startMirror();
-  evidence.assert('equal', [
-    await page.locator('.mirror-status').textContent(),
-    'These parts cannot be mirrored with their current shapes or connections.',
-  ]);
-  evidence.assert('equal', [
-    await page.getByRole('button', { name: 'Create mirrored copy', exact: true }).isDisabled(),
-    true,
-  ]);
-  evidence.assert('deepEqual', [await snapshot('unrepresentable-message'), unsupported]);
-  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  evidence.assert('deepEqual', [(await frame()).metadata.blueprint, unsupported]);
+  for (const [support, source, face] of [
+    ['Powered Motor', 'Command Receiver', 'Bottom'],
+    ['Power Cell', 'Powered Motor', 'Left'],
+  ]) {
+    await page.reload();
+    await page.waitForFunction(() => window.render_game_to_text);
+    await page.getByRole('button', { name: support, exact: true }).click();
+    await page.locator('.more-parts > summary').click();
+    await page.getByRole('button', { name: source, exact: true }).click();
+    await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
+    await page
+      .getByRole('combobox', { name: 'Mounting face', exact: true })
+      .selectOption({ label: face });
+    await page
+      .getByRole('combobox', { name: 'Target surface', exact: true })
+      .selectOption({ label: `${support} · Left` });
+    await page.getByRole('button', { name: 'Attach', exact: true }).click();
+    const unsupported = await snapshot(`${support}-unsupported-source`);
+    await startMirror();
+    evidence.assert('equal', [
+      await page.locator('.mirror-status').textContent(),
+      `${support} has no mounting face at the mirrored position. Try another mirror plane, or mount the parts on a support with faces on both sides before mirroring.`,
+    ]);
+    evidence.assert('equal', [
+      await page.getByRole('button', { name: 'Create mirrored copy', exact: true }).isDisabled(),
+      true,
+    ]);
+    evidence.assert('deepEqual', [
+      await snapshot(`${support}-unrepresentable-message`),
+      unsupported,
+    ]);
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    evidence.assert('deepEqual', [(await frame()).metadata.blueprint, unsupported]);
+  }
   evidence.assert('deepEqual', [errors, []]);
   if (!provisional) evidence.assertUnchanged();
   writeFileSync(

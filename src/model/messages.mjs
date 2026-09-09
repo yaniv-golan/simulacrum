@@ -121,6 +121,8 @@ const ownValue = (object, key) =>
   object !== null && (typeof object === 'object' || typeof object === 'function')
     ? Object.getOwnPropertyDescriptor(object, key)?.value
     : undefined;
+const mirrorPartPath =
+  /^parts\/([A-Za-z0-9_-]{1,64})\/(surface|geometry|ports\/[A-Za-z0-9_-]{1,64})$/;
 function safePath(value) {
   if (
     typeof value !== 'string' ||
@@ -128,6 +130,7 @@ function safePath(value) {
     /[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/.test(value)
   )
     return '';
+  if (mirrorPartPath.test(value)) return value;
   // Error paths describe authored fields, never filesystem paths or stack traces.
   return /^(?:\/(?:parts|connections|version|id|name)(?:\/.*)?|(?:command|mode|name|id|key|primitive|connections|a|b)(?:[./].*)?)$/.test(
     value,
@@ -152,6 +155,27 @@ export function explainFailure(error, blueprint) {
     message = explainReason(failure.reasonCode),
     path = failure.path;
   if (!path) return message;
+  const mirrorPart = mirrorPartPath.exec(path);
+  if (failure.reasonCode === 'MIRROR_UNREPRESENTABLE' && mirrorPart) {
+    const parts = ownValue(blueprint, 'parts');
+    let name;
+    if (Array.isArray(parts)) {
+      for (let i = 0; i < parts.length; i++) {
+        const part = ownValue(parts, String(i));
+        if (ownValue(part, 'id') === mirrorPart[1]) name = ownValue(part, 'name');
+      }
+    }
+    if (typeof name !== 'string' || !name.trim()) return message;
+    name = name
+      .replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g, ' ')
+      .trim()
+      .slice(0, 128);
+    if (mirrorPart[2] === 'surface')
+      return `${name} has no mounting face at the mirrored position. Try another mirror plane, or mount the parts on a support with faces on both sides before mirroring.`;
+    if (mirrorPart[2].startsWith('ports/'))
+      return `${name} has no matching connector at the mirrored position. Try another mirror plane or a different attachment before mirroring.`;
+    return `${name}'s shape or material layout cannot be mirrored with the same part. Choose a different part to copy, or build the opposite side separately.`;
+  }
   const overlap = /^\/parts\/(\d+)\/overlaps\/(\d+)$/.exec(path);
   if (failure.reasonCode === 'SURFACE_OVERLAP' && overlap) {
     const names = overlap.slice(1).map((index) => {

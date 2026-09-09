@@ -38,7 +38,7 @@
     "test/copied-graph.test.mjs": "e456cfd5debb74c1e5cbf6062774e043359bdbc422a0c97ee8fedb0ef2cab530",
     "src/model/blueprint.schema.json": "be00ab5e9bbdd0038a8b9f5422edfdc14f2812fc7d7e957889bff455bb078ba2",
     "src/application/assembly-library.mjs": "d43ad2fb2382faa78119ff9e66676d9ea2e8b59106314e6576891460c54ab24f",
-    "src/model/messages.mjs": "330746d4797375dfdb33ef4435310e3739dc19e8d0319a9402f93c7fe10f3940",
+    "src/model/messages.mjs": "214e6fbfb4248cf13027826a187b7fd7e5dd695d5f93078a06a7fbb4d7fa0012",
     "src/presentation/assembly-library.mjs": "a8d48d203f5a3c9a9249eba841ee41edeca603edefd1a3e3f73aa0cd38047435",
     "test/contracts/editing.mjs": "7a0ceb94b3009b0a3144e30fd5d6ba4d1418d7d706a3b8fc3a8c89ce0b8b2122",
     "test/reusable-assemblies.test.mjs": "39ba5794bdf318262daee4a6f2b6f6d68a43e54e73741754f8b61ae32ea95c76",
