@@ -2768,6 +2768,14 @@ body:has(.playtest-panel) .guide-feedback {
   gap: 12px;
   align-items: center;
 }
+.assembly-browser .assembly-close {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 24px;
+  line-height: 1;
+}
 .assembly-browser h2 {
   margin: 0;
   flex: 1;
@@ -2919,7 +2927,10 @@ body:has(.playtest-panel) .guide-feedback {
     max-width: 200px;
   }
   .assembly-filters select {
-    max-width: 120px;
+    max-width: 140px;
+  }
+  .assembly-card .assembly-thumbnail {
+    aspect-ratio: 2.8;
   }
 }
 
@@ -3010,4 +3021,24 @@ body:has(.playtest-panel) .guide-feedback {
 
 .assembly-results > p {
   grid-column: 1 / -1;
+}
+
+.assembly-browser > [role='status'] {
+  margin: 0;
+}
+.assembly-browser > [role='status']:empty {
+  display: none;
+}
+@media (max-width: 480px) {
+  .assembly-filters {
+    flex-wrap: wrap;
+  }
+  .assembly-filters input {
+    flex-basis: 100%;
+  }
+  .assembly-filters select {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+  }
 }

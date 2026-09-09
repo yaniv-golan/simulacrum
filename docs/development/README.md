@@ -222,7 +222,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"49041777a7f7ee1b7b02ab015336b4a88dc30e591ab7109c0bcdf1c3d3072a2a","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d377552721aedde6f106de7404684ec1cb9a6db155555560efb26d4006e7d0e3","disposition":"still accurate","rationale":"Merged native contact controls and assembly UX checks retain existing browser IDs, profiles, selection and deadlines."} -->
+<!-- doc-review {"version":1,"fingerprint":"be3a6acb192b1eeaa1210e03efd5ffcc8c7940b640b29ffa9abd3f78585adb95","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"349897fbf49cd9eec78fb013c49fba0710f989047fef916fc1c62410bd57c207","disposition":"still accurate","rationale":"The registered assembly browser journey now covers a built-in definition and collection filtering; conservative browser selection, runtime profiles and deadlines remain unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

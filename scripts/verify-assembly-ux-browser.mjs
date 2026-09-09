@@ -56,8 +56,8 @@ try {
     await load(rover);
     const group = await selectAssembly(p, 'Rover corner');
     await group.getByRole('button', { name: 'Save to library', exact: true }).click();
-    await p.getByRole('button', { name: 'Saved assemblies', exact: true }).click();
-    return p.getByRole('dialog', { name: 'Saved assemblies', exact: true });
+    await p.getByRole('button', { name: 'Assemblies', exact: true }).click();
+    return p.getByRole('dialog', { name: 'Assemblies', exact: true });
   }
   async function insertedCorner(p, load) {
     const dialog = await savedCorner(p, load);
@@ -132,7 +132,7 @@ try {
     const dialog = await savedCorner(p, load);
     await p.setViewportSize({ width: 640, height: 360 });
     await dialog
-      .getByRole('combobox', { name: 'Sort saved assemblies', exact: true })
+      .getByRole('combobox', { name: 'Sort assemblies', exact: true })
       .selectOption('name');
     evidence.assert('equal', [await dialog.locator('.assembly-results').isVisible(), true]);
     evidence.assert('equal', [await dialog.locator('.assembly-detail').isVisible(), false]);
@@ -227,15 +227,15 @@ try {
     const g = await selectAssembly(p, 'Rover corner');
     await g.getByRole('button', { name: 'Save to library', exact: true }).click();
     await g.getByRole('button', { name: 'Save to library', exact: true }).click();
-    await p.getByRole('button', { name: 'Saved assemblies', exact: true }).click();
+    await p.getByRole('button', { name: 'Assemblies', exact: true }).click();
     evidence.assert('equal', [
       await p
-        .getByRole('dialog', { name: 'Saved assemblies', exact: true })
+        .getByRole('dialog', { name: 'Assemblies', exact: true })
         .getByRole('button', { name: 'Rover corner-2', exact: true })
         .count(),
       1,
     ]);
-    const dialog = p.getByRole('dialog', { name: 'Saved assemblies', exact: true });
+    const dialog = p.getByRole('dialog', { name: 'Assemblies', exact: true });
     await dialog.getByRole('button', { name: 'Rover corner-2', exact: true }).click();
     await dialog.getByText('Inspect saved parts', { exact: true }).click();
     evidence.assert('match', [await dialog.locator('.assembly-detail').textContent(), /gain.*1/i]);
@@ -249,13 +249,13 @@ try {
         .textContent(),
       /Rover corner-2 · Power/,
     ]);
-    await p.getByRole('button', { name: 'Saved assemblies', exact: true }).click();
+    await p.getByRole('button', { name: 'Assemblies', exact: true }).click();
     evidence.assert('equal', [await g.isVisible(), false]);
   });
   await attempt('sidebar-layout', async (p, load) => {
     await load(rover);
     await selectAssembly(p, 'Rover corner');
-    await p.getByRole('button', { name: 'Saved assemblies', exact: true }).click();
+    await p.getByRole('button', { name: 'Assemblies', exact: true }).click();
     evidence.assert('equal', [await p.locator('.assembly-instance').first().isVisible(), false]);
   });
   await attempt('draft-origin-and-cancel', async (p, load, observed) => {
@@ -316,8 +316,8 @@ try {
     evidence.assert('deepEqual', [created.parts, before.parts]);
     evidence.assert('deepEqual', [created.connections, before.connections]);
     // Display rounding must not become an authored edit when a field is only visited.
-    await p.getByRole('button', { name: 'Saved assemblies', exact: true }).click();
-    const dialog = p.getByRole('dialog', { name: 'Saved assemblies', exact: true });
+    await p.getByRole('button', { name: 'Assemblies', exact: true }).click();
+    const dialog = p.getByRole('dialog', { name: 'Assemblies', exact: true });
     await dialog.getByRole('button', { name: 'My assembly', exact: true }).click();
     await dialog.getByRole('button', { name: 'Place in machine', exact: true }).click();
     const placement = p.getByRole('region', { name: 'Assembly placement', exact: true });
@@ -339,10 +339,10 @@ try {
     const group = await selectAssembly(p, 'Rover corner');
     await group.getByRole('button', { name: 'Save to library', exact: true }).click();
     const before = (await observed()).metadata.blueprint;
-    const launcher = p.getByRole('button', { name: 'Saved assemblies', exact: true });
+    const launcher = p.getByRole('button', { name: 'Assemblies', exact: true });
     await launcher.click();
-    const dialog = p.getByRole('dialog', { name: 'Saved assemblies', exact: true });
-    const search = dialog.getByRole('searchbox', { name: 'Search saved assemblies', exact: true });
+    const dialog = p.getByRole('dialog', { name: 'Assemblies', exact: true });
+    const search = dialog.getByRole('searchbox', { name: 'Search assemblies', exact: true });
     await search.fill('not a saved assembly');
     evidence.assert('equal', [
       await dialog.getByText('No matching assemblies.', { exact: true }).isVisible(),

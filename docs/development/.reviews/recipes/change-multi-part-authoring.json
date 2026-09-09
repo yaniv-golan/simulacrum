@@ -50,8 +50,8 @@
     "scripts/browser-session.mjs": "92ef0cbb5957b8997d5779b6fd4d15912bd3fc3584732cae377b671f6a69ace7",
     "scripts/module-graph.mjs": "882d65af4a6b2eec7ef66161d1edc48451b78484c9639aea236814a40ce52eeb",
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
-    "scripts/verify-assemblies-browser.mjs": "a747ff889a2b783990432b9bde94fd43526f6d36e5f27a7457f44d5dc827063d",
-    "scripts/verify-assembly-ux-browser.mjs": "4a4704562969d2e9a4e4b72c8aa85da5933153a03bd5b1deaa94f5357ce2f387",
+    "scripts/verify-assemblies-browser.mjs": "a5d499efcbfdd23341ac6e54c467813ad5af5cc18875682d03cc6bf47038809b",
+    "scripts/verify-assembly-ux-browser.mjs": "6e0b4b195e50ea6291037677130dcad24747d5ee4cfb01370ca011d2b3e0ca74",
     "test/fixtures/reusable-rover.json": "81307569c94d568e66136259f57e0b74477520ac0f3d4c23a72db660ab7e53e8"
   }
 }

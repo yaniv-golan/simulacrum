@@ -163,7 +163,7 @@ Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"31196ab4c263ddec72150a303316d6a461731c7c6f9160f9f6cba534598eb144","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"cdd9a5aca1e689e820057dda3f6efbf8e351a2c17130fd1512e0079f14955e64","disposition":"still accurate","rationale":"The UI browser coverage and native solver merge retain copied graph invariants, named endpoint aliases and ordinary atomic insertion."} -->
+<!-- doc-review {"version":1,"fingerprint":"c4c23657ce629f0657e393d896468afb4eb16686caf9abc3f048543ffbf98a7c","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"bde9694f60a1e1c37cce6f079aa1c7a15b9de40de38f11aa11497d38728de238","disposition":"updated","rationale":"Documented application-supplied built-in definitions alongside personal saves with shared preview and no storage mutation from collection filtering."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -211,7 +211,9 @@ Identical keys can intentionally operate several receivers; the
 [assembly panel](../../src/presentation/assembly-library.mjs) shows bindings and opens
 the ordinary inspector to edit one receiver. Library items are independent snapshots with distinct generated names, editable saved
 names and inspectable authored settings. Placed instances use the contextual inspector and machine picker; saved items use
-a bounded requested browser with real mesh thumbnails and retained search. A free
+a bounded requested browser with real mesh thumbnails and retained search. Built-in
+definitions are injected by the application and displayed alongside personal saves;
+collection filtering does not change storage. A free
 insertion preview owns world precision and explicit confirmation, then named mounting
 uses its separate surface transaction. Stale source or cursor requires revalidation;
 uncertain replies reconcile only with the complete observed insertion result. The
@@ -242,7 +244,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"ce5426b1235c76a65521d28b796177f574e85a01aeeb40479b204811c252a44a","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"5971b41a5160a1aea3d20f1ce3d31486f87902c61b29dd756b7a0da057b999ca","disposition":"still accurate","rationale":"The native contact reader and assembly controls leave overlay visibility, picking, disposal and documented spring graphics budgets unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"011bc62d005b8385b901474ba11630dfbd25e1e9abf1fcf5389dcb38f86c1381","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"34197d729f52a1b6106347289448d042af11b73f65a5e893b02fbc95e8e10350","disposition":"still accurate","rationale":"Collection filters and compact card sizing affect only requested assembly content. Wiring overlay visibility, picking, GPU ownership and spring performance limits are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

@@ -27,6 +27,45 @@ try {
   await context.tracing.start({ screenshots: true, snapshots: true });
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.waitForFunction(() => window.render_game_to_text);
+  const emptyMachine = (await observed()).metadata.blueprint;
+  await page.getByRole('button', { name: 'Assemblies', exact: true }).click();
+  const browserDialog = page.locator('.assembly-browser');
+  evidence.assert('equal', [
+    await browserDialog.getByRole('button', { name: 'Spring strut', exact: true }).count(),
+    1,
+  ]);
+  await browserDialog.getByRole('button', { name: 'Spring strut', exact: true }).click();
+  evidence.assert('equal', [
+    await browserDialog.getByText('Saved item actions', { exact: true }).count(),
+    0,
+  ]);
+  await browserDialog.getByRole('button', { name: 'Place in machine', exact: true }).click();
+  evidence.assert('deepEqual', [(await observed()).metadata.blueprint, emptyMachine]);
+  const strutPlacement = page.getByRole('region', { name: 'Assembly placement', exact: true });
+  await strutPlacement.getByRole('button', { name: 'Cancel placement', exact: true }).click();
+  await browserDialog
+    .getByRole('combobox', { name: 'Assembly collection', exact: true })
+    .selectOption('saved');
+  evidence.assert('equal', [
+    await browserDialog.getByText('No saved assemblies yet.', { exact: true }).isVisible(),
+    true,
+  ]);
+  await browserDialog
+    .getByRole('combobox', { name: 'Assembly collection', exact: true })
+    .selectOption('builtin');
+  await browserDialog.getByRole('button', { name: 'Spring strut', exact: true }).click();
+  await browserDialog.getByRole('button', { name: 'Place in machine', exact: true }).click();
+  await strutPlacement.getByRole('button', { name: 'Place', exact: true }).click();
+  const strut = await snapshot('builtin-strut');
+  evidence.assert('equal', [strut.parts.length, 4]);
+  evidence.assert('equal', [strut.assemblies[0].name, 'Spring strut']);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  evidence.assert('deepEqual', [(await observed()).metadata.blueprint, emptyMachine]);
+  await page.getByRole('button', { name: 'Assemblies', exact: true }).click();
+  await browserDialog
+    .getByRole('combobox', { name: 'Assembly collection', exact: true })
+    .selectOption('all');
+  await browserDialog.getByRole('button', { name: 'Close', exact: true }).click();
   await page.getByRole('button', { name: 'Powered Motor', exact: true }).click();
   await page.getByRole('button', { name: 'Grip Wheel', exact: true }).click();
   await page.getByRole('button', { name: '⊙ Wheel axle Available', exact: true }).click();
@@ -48,11 +87,11 @@ try {
   evidence.assert('equal', [original.assemblies.length, 1]);
   evidence.assert('equal', [original.parts.length, 2]);
   evidence.assert('equal', [original.connections.length, 1]);
-  await page.getByRole('button', { name: 'Saved assemblies', exact: true }).click();
-  await page.getByRole('searchbox', { name: 'Search saved assemblies' }).fill('missing');
+  await page.getByRole('button', { name: 'Assemblies', exact: true }).click();
+  await page.getByRole('searchbox', { name: 'Search assemblies' }).fill('missing');
   evidence.assert('equal', [await page.locator('.assembly-card').count(), 0]);
-  await page.getByRole('searchbox', { name: 'Search saved assemblies' }).fill('drive');
-  const libraryDialog = page.getByRole('dialog', { name: 'Saved assemblies', exact: true });
+  await page.getByRole('searchbox', { name: 'Search assemblies' }).fill('drive');
+  const libraryDialog = page.getByRole('dialog', { name: 'Assemblies', exact: true });
   await libraryDialog.getByRole('button', { name: 'Drive module', exact: true }).click();
   await libraryDialog.locator('.assembly-thumbnail img').first().waitFor({ state: 'visible' });
   evidence.assert('ok', [
@@ -116,7 +155,7 @@ try {
   await (await download).saveAs(`${out}/machine.json`);
   await page.reload();
   await page.waitForFunction(() => window.render_game_to_text);
-  await page.getByRole('button', { name: 'Saved assemblies', exact: true }).click();
+  await page.getByRole('button', { name: 'Assemblies', exact: true }).click();
   evidence.assert('equal', [
     await libraryDialog.getByRole('button', { name: 'Drive module', exact: true }).count(),
     1,
@@ -132,7 +171,7 @@ try {
   );
   const loaded = await snapshot('loaded');
   evidence.assert('deepEqual', [loaded, rotated]);
-  await page.getByRole('button', { name: 'Saved assemblies', exact: true }).click();
+  await page.getByRole('button', { name: 'Assemblies', exact: true }).click();
   await libraryDialog.getByRole('button', { name: 'Drive module', exact: true }).click();
   await libraryDialog.getByText('Saved item actions', { exact: true }).click();
   await libraryDialog
@@ -141,7 +180,19 @@ try {
   evidence.assert('deepEqual', [(await observed()).metadata.blueprint, rotated]);
   await libraryDialog.getByRole('button', { name: 'Remove saved item', exact: true }).click();
   evidence.assert('deepEqual', [(await observed()).metadata.blueprint, rotated]);
+  await libraryDialog
+    .getByRole('combobox', { name: 'Assembly collection', exact: true })
+    .selectOption('saved');
   evidence.assert('equal', [await page.locator('.assembly-card').count(), 0]);
+  await libraryDialog
+    .getByRole('combobox', { name: 'Assembly collection', exact: true })
+    .selectOption('builtin');
+  evidence.assert('equal', [
+    await libraryDialog.getByRole('button', { name: 'Spring strut', exact: true }).count(),
+    1,
+  ]);
+  await page.setViewportSize({ width: 640, height: 360 });
+  await snapshot('builtin-browser-compact');
   evidence.assert('deepEqual', [evidence.errors, []]);
   evidence.assertUnchanged();
   writeFileSync(
