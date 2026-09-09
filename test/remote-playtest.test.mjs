@@ -293,7 +293,10 @@ test('outbox limit stops once even when the final event cannot fit', async (t) =
   assert.equal(f.calls(), 1);
   f.huge(true);
   f.mount.emit('over-limit', {});
-  await settle();
+  // IndexedDB and the packet timer may need more than a fixed number of turns.
+  const stopDeadline = performance.now() + 2000;
+  while (f.mount.active() && performance.now() < stopDeadline)
+    await new Promise((resolve) => setImmediate(resolve));
   f.huge(false);
   assert.equal(f.mount.active(), false);
   assert.ok(f.calls() <= 3, 'one rejected event and at most one terminal event');
