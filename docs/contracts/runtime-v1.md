@@ -306,6 +306,7 @@ connected bodies, and torque/midpoint-speed work receipts are checked against
 whole-island kinetic change. Passive projection loss is separately reported as
 `energy.constraintDissipationJ`; it never becomes motor heat. The energy identity is
 `deltaMechanical = actuatorWorkJ + externalWorkJ + integrationDeltaJ
+
 - constraintDissipationJ - dampingWorkJ + balanceResidualJ` (damping work is zero without springs).
 
 ## Guided springs (M3b)
@@ -327,22 +328,42 @@ and rail collisions remain active, including the guide/carriage pair; ordinary
 fixed mounts retain their existing pair-contact exclusion. Compound solids and articulated ends are not
 part of this representation.
 
-The elastic kick uses SI `-k x`, with implicit relative damping. For an island,
-`(I + dt C W) J = -dt (K x + C v)`, where `W` is the bilateral-constrained axial
-mobility, including moment arms, and `C` and `K` are diagonal damping/stiffness.
-All spring impulses in an island are solved together. The velocity predictor
-includes `5/8 dt` of constrained gravity acceleration, matching the pinned four
-Rapier solver subdivisions' displacement weighting. It avoids damping-dependent
-static deflection. The single integration and nine phases are unchanged.
+Elasticity uses SI `-k x` inside each of the four frozen native temporal
+subdivisions (`h = dt/4`), alongside the bilateral joint solve and before unilateral
+limits and contacts. Elastic and bilateral rows in each independent joint component
+are solved together. Post-integration lever arms are refreshed without resampling
+the elastic force. Scalar joint reactions use one common application point; normalized
+quaternion basis arithmetic avoids a tiny guide force from representation error.
+The single integration and nine phases are unchanged.
 
-This is a semi-implicit spring realization, not a fully backward-Euler elastic
-law: its undamped oscillator preserves modified energy
-`E - dt k x v / 2`, instead of suppressing the intended bounce. Admission bounds
+The undamped scalar oscillator preserves modified energy `E - h k x v / 2`,
+up to numerical error, rather than suppressing the intended bounce. Admission retains
 `dt² trace(K W) <= 0.09`; exceeding it produces preserved failure evidence before
-any spring impulse is applied. At most eight springs are admitted. Geometry alone does not promise arbitrary load
-or stiffness support. Per-guide settings are bounded to k=0–300, c=0–100 and
-0.08–0.40 m travel, with ordered limits and zero-force length inside travel.
-Stops are unilateral prismatic limits, not pose clamps or a breakage model.
+impulses are applied. At most eight springs are admitted, with k=0–300 N/m,
+c=0–100 N·s/m and 0.08–0.40 m travel. Limits must be ordered and contain the
+zero-force length. Stops are unilateral prismatic limits, not pose clamps or a
+breakage model. Isolated completed-tick impact bounds do not qualify unseen substep
+penetration or actual mechanism clearances.
+
+Active elastic components must have an acyclic native joint graph after identifying
+immovable bodies as ground. Unsupported cycles are refused before native construction;
+this is a bounded numerical domain, not a claim that the mechanism is physically
+invalid. Fixed edges and inactive guide rows still count. A fixed path, including
+separate grounded fixed components, proves zero relative mobility: native elastic
+actuation is then omitted while authored stiffness, rest length and potential remain.
+Unrelated nonelastic components retain their existing solve. Internal weld prestress
+and fracture attribution are outside this model.
+
+During power/signals, the physics door prepares passive projection and simultaneous
+damper impulses without changing bodies. Their equation is
+`(I + dt C W) J = -dt C v`, with constrained axial mobility `W` and diagonal damping
+`C`. Power allocation includes that predicted dissipative impulse; actuators/constraints
+applies the same prepared result before funded motor impulses. Elasticity follows in
+integration, so it does not appear as a fictitious pre-motor kick. Intervening impulses
+reject while an allocation awaits application. Prepared data is tick-local and discarded
+on integration or restore. Spring worlds require completed preparation/application
+before integration. Loaded sag and energy require independent physical verification;
+a passing isolated oscillator is not suspension qualification.
 
 Completed frames include `springs`. `speed` measures separation change over the
 completed tick; `endpointVelocity` separately retains the instantaneous solver
@@ -358,10 +379,52 @@ discrete `dt sum(c_i v'_i²)` from the simultaneous solve, not an independent
 measurement of contact heat. Mechanical energy now includes elastic potential.
 The balance becomes
 `deltaMechanical = actuatorWorkJ + externalWorkJ + integrationDeltaJ
+
 - constraintDissipationJ - dampingWorkJ + balanceResidualJ`.
-`integrationDeltaJ` includes the spring kick's kinetic change and elastic change,
-with damper work removed from that residual to avoid double counting. It remains
-an explicitly unattributed signed integration/contact residual: numerical error,
-gravity integration, stops and collisions are not separately identifiable heat.
-Checkpoint admission binds spring energy to restored geometry and configuration;
-completed spring values also enter deterministic projection.
+`integrationDeltaJ` includes kinetic and elastic changes through native integration,
+  with damper work removed from that residual to avoid double counting. It remains
+  an explicitly unattributed signed integration/contact residual: numerical error,
+  gravity integration, stops and collisions are not separately identifiable heat.
+  Checkpoint admission binds spring energy to restored geometry and configuration;
+  completed spring values also enter deterministic projection.
+
+## Completed contact observations (M3b)
+
+The physics door returns copied numeric contact rows; the session publishes them
+only with completed frames. `sampleTick` identifies the completed tick and
+`intervalSeconds` is 1/120 s, or zero for the initial frame. Canonical `a < b` indices
+refer to compiled physics bodies, including the explicitly appended environment body.
+Each row retains local geometric points and signed separation. The normal is the
+frozen solver manifold direction, not necessarily a final-pose geometric normal.
+`normalImpulse`, `frictionImpulse` and `pureTwistImpulse` act on body b, with equal
+and opposite reactions on a. Linear impulses use N s; pure twist uses N m s.
+Pure twist excludes the moments of linear impulses and is not total angular impulse.
+
+Normal and friction observations sum solved temporal subdivisions exactly once,
+excluding the previous tick's retained warm-start seed. Legacy solver accumulators
+remain unchanged. Friction is stored once per solver group, with `frictionGroupSize`
+identifying its coverage; it must not be multiplied by contact-point count. Unselected
+geometric points have absent impulses. Unprocessed manifolds, including sleeping
+contacts without current writeback, are unavailable rather than measured zero.
+A current measured zero and a predictive geometric contact do not establish support.
+
+Collection runs inside integration/contacts and caps each sample at 4096 rows. Overflow
+fails the diagnostic before completed publication; it is not reported as zero reaction.
+Validation failures inside native contact callbacks return through wrapper cleanup and
+then reject the whole sample, including unmapped colliders. An empty manifold has no
+contact normal to validate; it still makes the sample unavailable if solver contacts
+exist without current writeback. Rejected reads do not mutate the native world.
+The application pins one CCD slice. Multiple slices are unavailable because the patch
+does not retain disappeared pairs between CCD slices. These observations include
+solver velocity stabilization; they do not measure continuous contact time or contact
+heat. Support classification and qualification require independent apparatus and
+error bounds beyond this numeric observation contract.
+
+Opaque physics envelopes use version 3. Native motor configuration is included in physical-plant restoration validation. Older envelopes reject before native
+snapshot deserialization. Native contact observations serialize with the solver;
+restore validates their structure, interval semantics and canonical references before
+swapping owners. Solver iteration and CCD settings and exposed joint limits must
+match the admitted plant. Immediate and subsequent
+completed projections must match uninterrupted execution. This establishes structural
+admissibility and continuation, not historical truth of arbitrary self-consistent
+checkpoint bytes; qualified history must rerun declared tick-zero inputs independently.

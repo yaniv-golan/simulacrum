@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"53cc97a69b3ea776cb790aac1d64c70d013749713c2b56569e59c8b35980a0e1","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"d805b410b8f4dfd3bee1bcf30f7c45eae609e0b5befa67d7b247cfd1e2fab246","disposition":"still accurate","rationale":"AGENTS now requires the UI content policy; the architecture-first entrypoint, Node range and served identity guidance remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"5fd4c1f85e851ba6c808703a3727b3211ab5834838cb404e40b15e191627b5f7","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"83711ec759b774d244527fd4bb1884dee7d0e2b4d6d60ac21946d05d6b837364","disposition":"still accurate","rationale":"Architecture and recipe introductions retain the same ownership entrypoints. The package change replaces the Rapier artifact; Node range, installation and development commands are unchanged."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -222,7 +222,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"f627589246175c2b864bc2024a72d59336adf70171534764629feb3aa7874f38","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5f1072c93cbc30b31ecd9065680852a9b84c68c504152b46f14e0bca8543bc8b","disposition":"still accurate","rationale":"The remote client explicitly adds capture-stream to its audited dependency shape. Existing backend, receipt, lifecycle and construction checks remain required; screenshot composition does not alter receipt ordering."} -->
+<!-- doc-review {"version":1,"fingerprint":"51f21f78005ebd63b6b4a2d80062cdffa8e2d5baf17cd8ed5775ed6dcf9c0540","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"b9657627fa747ca7ca7861a3bdb98547481f614ca6bcc815ae4cc6d7a4b31a8a","disposition":"still accurate","rationale":"The manifest adds a native-backed contact rejection control to existing invariant ownership; browser check identities, execution profiles and conservative selection policy are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

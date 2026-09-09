@@ -1,0 +1,1254 @@
+--- a/src/dynamics/joint/generic_joint.rs
++++ b/src/dynamics/joint/generic_joint.rs
+@@ -360,8 +360,7 @@
+             // The angular motor row's coefficient formula depends on the motor
+             // model, so lanes must also share it.
+             let motors = (self.motor_axes.bits() & !self.locked_axes.bits()) as u32;
+-            let model = (self.motors[crate::math::DIM].model
+-                == crate::dynamics::MotorModel::ForceBased) as u32;
++            let model = self.motors[crate::math::DIM].model as u32;
+             locked | (limits << 8) | (motors << 16) | (model << 24)
+         }
+         #[cfg(feature = "dim3")]
+--- a/src/dynamics/joint/motor_model.rs
++++ b/src/dynamics/joint/motor_model.rs
+@@ -28,6 +28,10 @@
+     AccelerationBased,
+     /// Spring constants produce absolute forces (mass-dependent).
+     ForceBased,
++    /// Semiimplicit force-based spring. The stable denominator avoids subtracting
++    /// nearly equal coefficients when representing an explicit elastic force.
++    /// EPSILON regularization bounds the otherwise singular undamped row.
++    SymplecticSpring,
+ }
+ 
+ impl MotorModel {
+@@ -41,6 +45,14 @@
+         damping: Real,
+     ) -> (Real, Real, Real) {
+         match self {
++            MotorModel::SymplecticSpring => {
++                // Keep ERP/CFM = dt*k even below the generic reciprocal cutoff.
++                // Saturate only reciprocal representability, never authored stiffness.
++                let denom = dt * (damping + Real::EPSILON * dt * stiffness);
++                let cfm_gain = (1.0 / denom).min(Real::MAX / 16.0);
++                let erp_inv_dt = (stiffness * dt) * cfm_gain;
++                (erp_inv_dt, 0.0, cfm_gain)
++            }
+             MotorModel::AccelerationBased => {
+                 let erp_inv_dt = stiffness * crate::utils::inv(dt * stiffness + damping);
+                 let cfm_coeff = crate::utils::inv(dt * dt * stiffness + dt * damping);
+--- a/src/dynamics/solver/contact_constraint/contact_constraint_element.rs
++++ b/src/dynamics/solver/contact_constraint/contact_constraint_element.rs
+@@ -29,6 +29,7 @@
+     pub impulse_accumulator: na::Vector1<N>,
+     #[cfg(feature = "dim3")]
+     pub impulse_accumulator: na::Vector2<N>,
++    pub diagnostic_impulse_accumulator: TangentImpulse<N>,
+     #[cfg(feature = "dim2")]
+     pub r: [N; 1],
+     #[cfg(feature = "dim3")]
+@@ -46,6 +47,7 @@
+             rhs_wo_bias: [N::zero(); DIM - 1],
+             impulse: na::zero(),
+             impulse_accumulator: na::zero(),
++            diagnostic_impulse_accumulator: na::zero(),
+             #[cfg(feature = "dim2")]
+             r: [N::zero(); 1],
+             #[cfg(feature = "dim3")]
+@@ -184,6 +186,7 @@
+     pub rhs_wo_bias: N,
+     pub impulse: N,
+     pub impulse_accumulator: N,
++    pub diagnostic_impulse_accumulator: N,
+     pub r: N,
+     /// Per-point softness (see `ContactConstraintNormalPartSlim::cfm_factor`):
+     /// separated (speculative) points are solved rigidly.
+@@ -207,6 +210,7 @@
+             rhs_wo_bias: N::zero(),
+             impulse: N::zero(),
+             impulse_accumulator: N::zero(),
++            diagnostic_impulse_accumulator: N::zero(),
+             r: N::zero(),
+             cfm_factor: N::zero(),
+             #[cfg(feature = "block-solver")]
+@@ -436,6 +440,7 @@
+     pub rhs_wo_bias: N,
+     pub impulse: N,
+     pub impulse_accumulator: N,
++    pub diagnostic_impulse_accumulator: N,
+     pub r: N,
+     /// Per-point softness. Separated (speculative) points are solved RIGIDLY
+     /// (`massScale = 1`, `impulseScale = 0`): perfectly inelastic touchdowns damp stack
+@@ -612,6 +617,7 @@
+     pub rhs_wo_bias: [N; 2],
+     pub impulse: na::Vector2<N>,
+     pub impulse_accumulator: na::Vector2<N>,
++    pub diagnostic_impulse_accumulator: TangentImpulse<N>,
+     pub r: [N; 3],
+ }
+ 
+@@ -708,6 +714,7 @@
+     pub rhs: N,
+     pub impulse: N,
+     pub impulse_accumulator: N,
++    pub diagnostic_impulse_accumulator: N,
+     pub r: N,
+ }
+ 
+--- a/src/dynamics/solver/contact_constraint/contact_with_coulomb_friction.rs
++++ b/src/dynamics/solver/contact_constraint/contact_with_coulomb_friction.rs
+@@ -247,6 +247,7 @@
+                 // reused without zeroing (`reset_buffer_reusing`), so stale bytes survive in
+                 // fields `generate` doesn't write.
+                 out_constraint.normal_part[k].impulse_accumulator = SimdReal::zero();
++                out_constraint.normal_part[k].diagnostic_impulse_accumulator = SimdReal::zero();
+                 // Zero effective mass on inactive slots: the scalar normal solve
+                 // is then an exact no-op (impulse stays at its zeroed warm-start).
+                 out_constraint.normal_part[k].r = projected_mass.select(active, SimdReal::zero());
+@@ -256,6 +257,7 @@
+             out_constraint.tangent_part[k].impulse = warmstart_tangent_impulse;
+             // See the normal part: explicit zero, the buffers are not zeroed.
+             out_constraint.tangent_part[k].impulse_accumulator = na::zero();
++            out_constraint.tangent_part[k].diagnostic_impulse_accumulator = na::zero();
+ 
+             for j in 0..DIM - 1 {
+                 let torque_dir1 = dp1.gcross(tangents1[j]);
+@@ -430,12 +432,16 @@
+                 // the twist-friction `update`).
+                 normal_part.cfm_factor =
+                     cfm_factor.select(dist.simd_le(SimdReal::zero()), SimdReal::splat(1.0));
++                normal_part.diagnostic_impulse_accumulator += normal_part.impulse.select(
++                    solved_dt.simd_ne(SimdReal::zero()), SimdReal::zero());
+                 normal_part.impulse_accumulator += normal_part.impulse;
+                 normal_part.impulse *= warmstart_coeff;
+             }
+ 
+             // tangent parts.
+             {
++                tangent_part.diagnostic_impulse_accumulator += tangent_part.impulse.map(|x| x.select(
++                    solved_dt.simd_ne(SimdReal::zero()), SimdReal::zero()));
+                 tangent_part.impulse_accumulator += tangent_part.impulse;
+                 tangent_part.impulse *= warmstart_coeff;
+ 
+@@ -701,6 +707,14 @@
+                 warmstart_tangent_world.y.into(),
+                 warmstart_tangent_world.z.into(),
+             );
++            let friction_impulse = self.tangent_part[k].diagnostic_impulse_accumulator + self.tangent_part[k].impulse;
++            #[cfg(feature = "dim3")]
++            let friction_world = utils::canonicalize_zero(self.tangent1 * friction_impulse.x + tangent2 * friction_impulse.y);
++            #[cfg(feature = "dim2")]
++            let friction_world = utils::canonicalize_zero(self.dir1.orthonormal_basis()[0] * friction_impulse.x);
++            let applied_normal: [_; SIMD_WIDTH] = utils::canonicalize_zero(
++                self.normal_part[k].diagnostic_impulse_accumulator + self.normal_part[k].impulse
++            ).into();
+             let impulses: [_; SIMD_WIDTH] =
+                 utils::canonicalize_zero(self.normal_part[k].total_impulse()).into();
+             let tangent_impulses = utils::canonicalize_zero(self.tangent_part[k].total_impulse());
+@@ -722,6 +736,15 @@
+                         active_contact.data.warmstart_tangent_world =
+                             crate::math::Vector::new(wx[ii], wy[ii], wz[ii]);
+                     }
++                    #[cfg(feature = "dim3")]
++                    { active_contact.data.applied_friction_impulse = Some(crate::math::Vector::new(
++                        friction_world.x.extract(ii), friction_world.y.extract(ii), friction_world.z.extract(ii))); }
++                    #[cfg(feature = "dim2")]
++                    { active_contact.data.applied_friction_impulse = Some(crate::math::Vector::new(
++                        friction_world.x.extract(ii), friction_world.y.extract(ii))); }
++                    active_contact.data.applied_twist_impulse = Some(crate::math::Vector::ZERO);
++                    active_contact.data.applied_friction_group_size = 1;
++                    active_contact.data.applied_normal_impulse = Some(applied_normal[ii]);
+                     active_contact.data.impulse = impulses[ii];
+                     active_contact.data.tangent_impulse = tangent_impulses.extract(ii);
+                 }
+--- a/src/dynamics/solver/contact_constraint/contact_with_twist_friction.rs
++++ b/src/dynamics/solver/contact_constraint/contact_with_twist_friction.rs
+@@ -282,6 +282,7 @@
+                 out_constraint.normal_part[k].impulse =
+                     warmstart_impulse.select(active, SimdReal::zero());
+                 out_constraint.normal_part[k].impulse_accumulator = SimdReal::zero();
++                out_constraint.normal_part[k].diagnostic_impulse_accumulator = SimdReal::zero();
+                 out_constraint.normal_part[k].r = projected_mass.select(active, SimdReal::zero());
+             }
+ 
+@@ -299,12 +300,14 @@
+          */
+         out_constraint.tangent_part.impulse = tangent_warmstart;
+         out_constraint.tangent_part.impulse_accumulator = na::zero();
++        out_constraint.tangent_part.diagnostic_impulse_accumulator = na::zero();
+         // The twist part only acts on lanes with more than one point (a single point offers no
+         // lever arm): zero the warm-start of single-point lanes so a lane whose count just
+         // dropped to one can't kick with its stale stored twist impulse.
+         out_constraint.twist_part.impulse =
+             twist_warmstart.select(counts_simd.simd_gt(SimdReal::splat(1.0)), SimdReal::zero());
+         out_constraint.twist_part.impulse_accumulator = SimdReal::zero();
++        out_constraint.twist_part.diagnostic_impulse_accumulator = SimdReal::zero();
+ 
+         out_builder.local_friction_center1 = poses1.inverse_transform_point(friction_center);
+         out_builder.local_friction_center2 = poses2.inverse_transform_point(friction_center2);
+@@ -492,6 +495,8 @@
+                 // rocking. Only penetrating points get the soft treatment.
+                 normal_part.cfm_factor =
+                     cfm_factor.select(dist.simd_le(SimdReal::zero()), SimdReal::splat(1.0));
++                normal_part.diagnostic_impulse_accumulator += normal_part.impulse.select(
++                    solved_dt.simd_ne(SimdReal::zero()), SimdReal::zero());
+                 normal_part.impulse_accumulator += normal_part.impulse;
+                 normal_part.impulse *= warmstart_coeff;
+             }
+@@ -506,8 +511,12 @@
+                 let bias = (p1 - p2).gdot(tangents1[j]) * inv_dt;
+                 tangent_part.rhs[j] = tangent_part.rhs_wo_bias[j] + bias;
+             }
++            tangent_part.diagnostic_impulse_accumulator += tangent_part.impulse.map(|x| x.select(
++                solved_dt.simd_ne(SimdReal::zero()), SimdReal::zero()));
+             tangent_part.impulse_accumulator += tangent_part.impulse;
+             tangent_part.impulse *= warmstart_coeff;
++            twist_part.diagnostic_impulse_accumulator += twist_part.impulse.select(
++                solved_dt.simd_ne(SimdReal::zero()), SimdReal::zero());
+             twist_part.impulse_accumulator += twist_part.impulse;
+             twist_part.impulse *= warmstart_coeff;
+         }
+@@ -788,12 +797,18 @@
+             warmstart_tangent_world.y.into(),
+             warmstart_tangent_world.z.into(),
+         );
++        let friction_impulse = self.tangent_part.diagnostic_impulse_accumulator + self.tangent_part.impulse;
++        let friction_world = utils::canonicalize_zero(self.tangent1 * friction_impulse.x + tangent2 * friction_impulse.y);
++        let twist_world = utils::canonicalize_zero(self.dir1 * (self.twist_part.diagnostic_impulse_accumulator + self.twist_part.impulse));
+         let warmstart_twist_impulses: [_; SIMD_WIDTH] =
+             utils::canonicalize_zero(self.twist_part.impulse).into();
+ 
+         for k in 0..self.num_contacts as usize {
+             let warmstart_impulses: [_; SIMD_WIDTH] =
+                 utils::canonicalize_zero(self.normal_part[k].impulse).into();
++            let applied_normal: [_; SIMD_WIDTH] = utils::canonicalize_zero(
++                self.normal_part[k].diagnostic_impulse_accumulator + self.normal_part[k].impulse
++            ).into();
+             let impulses: [_; SIMD_WIDTH] =
+                 utils::canonicalize_zero(self.normal_part[k].total_impulse()).into();
+ 
+@@ -807,6 +822,16 @@
+                     let manifold = unsafe { manifolds_all.get_mut(self.manifold_id[ii]) };
+                     let active_contact = &mut manifold.points[contact_id as usize];
+                     active_contact.data.warmstart_impulse = warmstart_impulses[ii];
++                    if k == 0 {
++                        active_contact.data.applied_friction_impulse = Some(crate::math::Vector::new(
++                            friction_world.x.extract(ii), friction_world.y.extract(ii), friction_world.z.extract(ii)));
++                        active_contact.data.applied_twist_impulse = Some(crate::math::Vector::new(
++                            twist_world.x.extract(ii), twist_world.y.extract(ii), twist_world.z.extract(ii)));
++                        active_contact.data.applied_friction_group_size = (0..self.num_contacts as usize)
++                            .filter(|&slot| self.manifold_contact_id[slot][ii] != u8::MAX)
++                            .count() as u8;
++                    }
++                    active_contact.data.applied_normal_impulse = Some(applied_normal[ii]);
+                     active_contact.data.impulse = impulses[ii];
+                     active_contact.data.warmstart_tangent_impulse =
+                         warmstart_tangent_impulses.extract(ii);
+--- a/src/dynamics/solver/contact_constraint/generic_contact_constraint.rs
++++ b/src/dynamics/solver/contact_constraint/generic_contact_constraint.rs
+@@ -237,6 +237,7 @@
+                     rhs_wo_bias: Default::default(),
+                     cfm_factor: Default::default(),
+                     impulse_accumulator: Default::default(),
++                    diagnostic_impulse_accumulator: Default::default(),
+                     impulse: pt_data.warmstart_impulse,
+                     r,
+                     #[cfg(feature = "block-solver")]
+@@ -246,6 +247,7 @@
+ 
+             // Tangent parts.
+             {
++                out_constraint.tangent_part[k].diagnostic_impulse_accumulator = na::zero();
+                 // 3D: project the world-space friction warm-start onto the
+                 // current tangent basis (see `ContactData::warmstart_tangent_world`).
+                 #[cfg(feature = "dim3")]
+@@ -469,12 +471,16 @@
+ 
+                 normal_part.rhs_wo_bias = rhs_wo_bias;
+                 normal_part.rhs = new_rhs;
++                if solved_dt != 0.0 {
++                    normal_part.diagnostic_impulse_accumulator += normal_part.impulse;
++                }
+                 normal_part.impulse_accumulator += normal_part.impulse;
+                 normal_part.impulse *= params.warmstart_coefficient;
+             }
+ 
+             // Tangent part.
+             {
++                if solved_dt != 0.0 { tangent_part.diagnostic_impulse_accumulator += tangent_part.impulse; }
+                 tangent_part.impulse_accumulator += tangent_part.impulse;
+                 tangent_part.impulse *= params.warmstart_coefficient;
+ 
+@@ -714,6 +720,16 @@
+                 active_contact.data.warmstart_tangent_world =
+                     utils::canonicalize_zero(self.tangent1 * imp.x + tangent2 * imp.y);
+             }
++            let friction = self.tangent_part[k].diagnostic_impulse_accumulator + self.tangent_part[k].impulse;
++            #[cfg(feature = "dim3")]
++            { active_contact.data.applied_friction_impulse = Some(utils::canonicalize_zero(self.tangent1 * friction.x + tangent2 * friction.y)); }
++            #[cfg(feature = "dim2")]
++            { active_contact.data.applied_friction_impulse = Some(utils::canonicalize_zero(self.dir1.orthonormal_basis()[0] * friction.x)); }
++            active_contact.data.applied_twist_impulse = Some(crate::math::Vector::ZERO);
++            active_contact.data.applied_friction_group_size = 1;
++            active_contact.data.applied_normal_impulse = Some(utils::canonicalize_zero(
++                self.normal_part[k].diagnostic_impulse_accumulator + self.normal_part[k].impulse
++            ));
+             active_contact.data.impulse =
+                 utils::canonicalize_zero(self.normal_part[k].total_impulse());
+             active_contact.data.tangent_impulse =
+--- a/src/dynamics/solver/joint_constraint/joint_constraint_builder.rs
++++ b/src/dynamics/solver/joint_constraint/joint_constraint_builder.rs
+@@ -7,6 +7,8 @@
+ use crate::dynamics::{GenericJoint, ImpulseJoint, IntegrationParameters, JointIndex};
+ use crate::math::{ANG_DIM, Real, SPATIAL_DIM};
+ use crate::prelude::RigidBodySet;
++#[cfg(feature = "dim2")]
++use crate::na::SimdPartialOrd;
+ 
+ use {
+     crate::dynamics::SpringCoefficients,
+@@ -421,13 +423,25 @@
+             use crate::dynamics::MotorModel;
+             let dt = SimdReal::splat(params.dt);
+             let zero = SimdReal::splat(0.0);
+-            let erp_inv_dt = self.motor_stiffness
+-                * crate::utils::simd_inv(dt * self.motor_stiffness + self.motor_damping);
+-            let cfm =
+-                crate::utils::simd_inv(dt * dt * self.motor_stiffness + dt * self.motor_damping);
++            let (erp_inv_dt, cfm) = if self.motor_model == MotorModel::SymplecticSpring {
++                let denom = dt
++                    * (self.motor_damping
++                        + SimdReal::splat(Real::EPSILON) * dt * self.motor_stiffness);
++                let cfm =
++                    (SimdReal::splat(1.0) / denom).simd_min(SimdReal::splat(Real::MAX / 16.0));
++                ((self.motor_stiffness * dt) * cfm, cfm)
++            } else {
++                (
++                    self.motor_stiffness
++                        * crate::utils::simd_inv(dt * self.motor_stiffness + self.motor_damping),
++                    crate::utils::simd_inv(
++                        dt * dt * self.motor_stiffness + dt * self.motor_damping,
++                    ),
++                )
++            };
+             let (cfm_coeff, cfm_gain) = match self.motor_model {
+                 MotorModel::AccelerationBased => (cfm, zero),
+-                MotorModel::ForceBased => (zero, cfm),
++                MotorModel::ForceBased | MotorModel::SymplecticSpring => (zero, cfm),
+             };
+             MotorParameters {
+                 erp_inv_dt,
+--- a/src/dynamics/solver/joint_constraint/joint_constraint_helper.rs
++++ b/src/dynamics/solver/joint_constraint/joint_constraint_helper.rs
+@@ -97,27 +97,16 @@
+         frame2: &N::Pose,
+         world_com1: &N::Vector,
+         world_com2: &N::Vector,
+-        locked_lin_axes: u8,
++        _locked_lin_axes: u8,
+     ) -> Self {
+         let mut frame1 = *frame1;
+         let basis = frame1.rotation().to_mat();
+         let lin_err = frame2.translation() - frame1.translation();
+ 
+-        // Adjust the point of application of the force for the first body,
+-        // by snapping free axes to the second frame's center (to account for
+-        // the allowed relative movement).
+-        {
+-            let mut new_center1 = frame2.translation(); // First, assume all dofs are free.
+-
+-            // Then snap the locked ones.
+-            for i in 0..DIM {
+-                if locked_lin_axes & (1 << i) != 0 {
+-                    let axis = basis.column(i);
+-                    new_center1 -= axis * lin_err.gdot(axis);
+-                }
+-            }
+-            frame1.set_translation(new_center1);
+-        }
++        // The derivative of an axis expressed in frame 1 contributes to its
++        // moment arm. Equal/opposite linear reactions therefore share frame 2's
++        // point, including when a locked coordinate has positional error.
++        frame1.set_translation(frame2.translation());
+ 
+         let r1 = frame1.translation() - *world_com1;
+         let r2 = frame2.translation() - *world_com2;
+--- a/src/dynamics/solver/staged_island_solver/joints.rs
++++ b/src/dynamics/solver/staged_island_solver/joints.rs
+@@ -34,6 +34,13 @@
+         joint_indices: &[JointIndex],
+         contact_color_masks: &[u128],
+     ) {
++        let has_symplectic = joint_indices.iter().any(|i| {
++            let data = &impulse_joints[*i].weight.data;
++            data.motors.iter().enumerate().any(|(axis, motor)| {
++                data.motor_axes.bits() & (1 << axis) != 0
++                    && motor.model == crate::dynamics::MotorModel::SymplecticSpring
++            })
++        });
+         // Group boundaries can move without an epoch bump (a component split
+         // keeps the partition key sequence sorted), so the group-major layout
+         // is validated by comparing the body ranges explicitly.
+@@ -184,7 +191,7 @@
+                         self.joint_sig_scratch.clear();
+                         for joint_i in subset {
+                             let joint = &impulse_joints[*joint_i].weight;
+-                            if joint.data.supports_simd_constraints() {
++                            if !has_symplectic && joint.data.supports_simd_constraints() {
+                                 self.joint_sig_scratch
+                                     .push((joint.data.simd_row_signature(), *joint_i));
+                             } else {
+@@ -322,6 +329,17 @@
+         impulse_joints: &mut [JointGraphEdge],
+         contact_color_masks: &[u128],
+     ) {
++        let has_symplectic = self
++            .joint_constraints
++            .two_body_interactions
++            .iter()
++            .any(|i| {
++                let data = &impulse_joints[*i].weight.data;
++                data.motors.iter().enumerate().any(|(axis, motor)| {
++                    data.motor_axes.bits() & (1 << axis) != 0
++                        && motor.model == crate::dynamics::MotorModel::SymplecticSpring
++                })
++            });
+         let joints = &mut self.joint_constraints;
+         self.joint_colors.group_interactions(
+             island_bodies.len(),
+@@ -358,7 +376,7 @@
+                 self.joint_sig_scratch.clear();
+                 for joint_i in color {
+                     let joint = &impulse_joints[*joint_i].weight;
+-                    if joint.data.supports_simd_constraints() {
++                    if !has_symplectic && joint.data.supports_simd_constraints() {
+                         self.joint_sig_scratch
+                             .push((joint.data.simd_row_signature(), *joint_i));
+                     } else {
+--- a/src/dynamics/solver/staged_island_solver/solve.rs
++++ b/src/dynamics/solver/staged_island_solver/solve.rs
+@@ -1,6 +1,7 @@
+ //! One solve pass of a substep: joint colors, worker-0 joint overflow, contact
+ //! colors, then the worker-0 contact overflow (all completion-gated stages).
+ 
++use crate::alloc_prelude::*;
+ use crate::dynamics::IntegrationParameters;
+ use crate::dynamics::solver::JointConstraintsSet;
+ use crate::math::Real;
+@@ -129,8 +130,17 @@
+     // wait at the barrier). Skipped entirely when empty (the jointless case).
+     if !group.joint_overflow.is_empty() || has_generic_joints {
+         if worker_id == 0 {
+-            for joint_id in group.joint_overflow.clone() {
+-                solve_joint(joint_id);
++            #[cfg(feature = "dim3")]
++            let block_done = !warmstart_joints
++                && group.joint_chunks.is_empty()
++                && !has_generic_joints
++                && unsafe { solve_spring_components(ctx, group, wo_bias, params) };
++            #[cfg(not(feature = "dim3"))]
++            let block_done = false;
++            if !block_done {
++                for joint_id in group.joint_overflow.clone() {
++                    solve_joint(joint_id);
++                }
+             }
+ 
+             if has_generic_joints {
+@@ -207,3 +217,581 @@
+     }
+     sync.sync(stage, 1)
+ }
++
++#[cfg(feature = "dim3")]
++unsafe fn solve_spring_components(
++    ctx: &SharedCtx,
++    group: &GroupLayout,
++    wo_bias: bool,
++    params: &IntegrationParameters,
++) -> bool {
++    let builders: Vec<usize> = group.joint_overflow.clone().collect();
++    let joints = unsafe { &*ctx.joint_constraints };
++    let bodies = unsafe { &(*ctx.velocity_solver).solver_bodies };
++    let mut parent: Vec<usize> = (0..builders.len()).collect();
++    let mut owner = vec![usize::MAX; bodies.len()];
++    let mut size = vec![1; builders.len()];
++    fn root(parent: &mut [usize], mut i: usize) -> usize {
++        while parent[i] != i {
++            parent[i] = parent[parent[i]];
++            i = parent[i];
++        }
++        i
++    }
++    for (i, &builder) in builders.iter().enumerate() {
++        for row in ctx.joint_rows[builder].clone() {
++            let c = &joints.velocity_constraints[row];
++            for body in [c.solver_vel1[0] as usize, c.solver_vel2[0] as usize] {
++                if body >= bodies.len() || bodies.poses[body].im.length_squared() == 0.0 {
++                    continue;
++                }
++                if owner[body] == usize::MAX {
++                    owner[body] = i;
++                } else {
++                    let mut a = root(&mut parent, i);
++                    let mut b = root(&mut parent, owner[body]);
++                    if a != b {
++                        if size[a] < size[b] {
++                            std::mem::swap(&mut a, &mut b);
++                        }
++                        parent[b] = a;
++                        size[a] += size[b];
++                    }
++                }
++            }
++        }
++    }
++    let mut components = vec![Vec::new(); builders.len()];
++    for (i, &builder) in builders.iter().enumerate() {
++        components[root(&mut parent, i)].push(builder);
++    }
++    for component in components.iter().filter(|c| !c.is_empty()) {
++        if !unsafe { solve_spring_component(ctx, component, wo_bias, params) } {
++            let vs = unsafe { &mut *ctx.velocity_solver };
++            let joints = unsafe { &mut *ctx.joint_constraints };
++            for &builder in component {
++                for row in ctx.joint_rows[builder].clone() {
++                    let c = &mut joints.velocity_constraints[row];
++                    if wo_bias {
++                        c.remove_bias_from_rhs();
++                    }
++                    c.solve(&mut vs.solver_bodies);
++                }
++            }
++        }
++    }
++    true
++}
++
++#[cfg(feature = "dim3")]
++unsafe fn solve_spring_component(
++    ctx: &SharedCtx,
++    builders: &[usize],
++    wo_bias: bool,
++    params: &IntegrationParameters,
++) -> bool {
++    use crate::dynamics::solver::joint_constraint::WritebackId;
++    use crate::utils::AngularInertiaOps;
++    let vs = unsafe { &mut *ctx.velocity_solver };
++    let joints = unsafe { &mut *ctx.joint_constraints };
++    let ids: Vec<usize> = builders
++        .iter()
++        .flat_map(|j| ctx.joint_rows[*j].clone())
++        .collect();
++    // Choose the solve from the authored motor model, independent of coefficients.
++    if !ids.iter().any(|i| {
++        let row = &joints.velocity_constraints[*i];
++        if let WritebackId::Motor(axis) = row.writeback_id {
++            let joint = unsafe { &*ctx.joints.add(row.joint_id[0]) };
++            joint.weight.data.motors[axis].model == crate::dynamics::MotorModel::SymplecticSpring
++        } else {
++            false
++        }
++    }) {
++        return false;
++    }
++    if wo_bias {
++        // Preserve the elastic sample while refreshing lever arms after motion.
++        let old_rhs: Vec<(Real, Real)> = ids
++            .iter()
++            .map(|i| {
++                let c = &joints.velocity_constraints[*i];
++                (c.rhs, c.rhs_wo_bias)
++            })
++            .collect();
++        let JointConstraintsSet {
++            velocity_constraints_builder,
++            velocity_constraints,
++            ..
++        } = joints;
++        for &j in builders {
++            velocity_constraints_builder[j].update(
++                params,
++                1,
++                Some(1.0),
++                &vs.solver_bodies,
++                velocity_constraints,
++            );
++        }
++        for (n, &i) in ids.iter().enumerate() {
++            let c = &mut joints.velocity_constraints[i];
++            if matches!(c.writeback_id, WritebackId::Motor(_)) {
++                c.rhs = old_rhs[n].0;
++                c.rhs_wo_bias = old_rhs[n].1;
++            }
++        }
++    }
++    let unlimited: Vec<usize> = ids
++        .iter()
++        .copied()
++        .filter(|i| {
++            !matches!(
++                joints.velocity_constraints[*i].writeback_id,
++                WritebackId::Limit(_)
++            )
++        })
++        .collect();
++    let n = unlimited.len();
++    let mut bodies = vec![[usize::MAX; 2]; n];
++    let mut q = vec![[[0.0f64; 6]; 2]; n];
++    let mut response = q.clone();
++    let mut rhs = vec![0.0f64; n];
++    for (i, &id) in unlimited.iter().enumerate() {
++        let c = &mut joints.velocity_constraints[id];
++        if wo_bias {
++            c.remove_bias_from_rhs();
++        }
++        rhs[i] = c.rhs as f64 - c.cfm_gain as f64 * c.impulse as f64;
++        for (slot, (body, sign, a, _ia, im)) in [
++            (
++                c.solver_vel1[0] as usize,
++                -1.0,
++                c.ang_jac1,
++                c.ii_ang_jac1,
++                c.im1,
++            ),
++            (
++                c.solver_vel2[0] as usize,
++                1.0,
++                c.ang_jac2,
++                c.ii_ang_jac2,
++                c.im2,
++            ),
++        ]
++        .into_iter()
++        .enumerate()
++        {
++            if body >= vs.solver_bodies.len() {
++                continue;
++            }
++            bodies[i][slot] = body;
++            let vel = &vs.solver_bodies.vels[body];
++            let inertia = vs.solver_bodies.poses[body].ii;
++            let columns = [
++                crate::math::Vector::X,
++                crate::math::Vector::Y,
++                crate::math::Vector::Z,
++            ]
++            .map(|axis| inertia.transform_vector(axis));
++            for k in 0..3 {
++                q[i][slot][k] = sign * c.lin_jac[k] as f64;
++                q[i][slot][3 + k] = sign * a[k] as f64;
++                response[i][slot][k] = sign * c.lin_jac[k] as f64 * im[k] as f64;
++                response[i][slot][3 + k] = sign
++                    * (0..3)
++                        .map(|j| columns[j][k] as f64 * a[j] as f64)
++                        .sum::<f64>();
++                rhs[i] += q[i][slot][k] * vel.linear[k] as f64
++                    + q[i][slot][3 + k] * vel.angular[k] as f64;
++            }
++        }
++    }
++    let cfm: Vec<f64> = unlimited
++        .iter()
++        .map(|&id| joints.velocity_constraints[id].cfm_gain as f64)
++        .collect();
++    let mut node_ids = Vec::new();
++    let mut node_map = vec![usize::MAX; vs.solver_bodies.len()];
++    let mut ground = None;
++    let mut edges = Vec::new();
++    let mut cursor = 0;
++    for &builder in builders {
++        let count = ctx.joint_rows[builder]
++            .clone()
++            .filter(|i| {
++                !matches!(
++                    joints.velocity_constraints[*i].writeback_id,
++                    WritebackId::Limit(_)
++                )
++            })
++            .count();
++        if count == 0 {
++            continue;
++        }
++        assert!(count <= 6, "unsupported spring joint row count");
++        let mut ends = [0; 2];
++        for slot in 0..2 {
++            let body = bodies[cursor][slot];
++            ends[slot] = if body == usize::MAX {
++                *ground.get_or_insert_with(|| {
++                    node_ids.push(usize::MAX);
++                    node_ids.len() - 1
++                })
++            } else {
++                if node_map[body] == usize::MAX {
++                    node_map[body] = node_ids.len();
++                    node_ids.push(body);
++                }
++                node_map[body]
++            };
++        }
++        edges.push((ends, cursor..cursor + count));
++        cursor += count;
++    }
++    assert_eq!(cursor, n);
++    let nodes = node_ids.len();
++    let root = ground.unwrap_or(0);
++    let mut adjacency = vec![Vec::new(); nodes];
++    for (e, (ends, _)) in edges.iter().enumerate() {
++        adjacency[ends[0]].push((e, ends[1]));
++        adjacency[ends[1]].push((e, ends[0]));
++    }
++    let mut parent = vec![usize::MAX; nodes];
++    let mut parent_edge = vec![usize::MAX; nodes];
++    let mut order = vec![root];
++    parent[root] = root;
++    let mut visit = 0;
++    while visit < order.len() {
++        let node = order[visit];
++        visit += 1;
++        for &(edge, next) in &adjacency[node] {
++            if next == parent[node] {
++                continue;
++            }
++            assert_eq!(parent[next], usize::MAX, "cyclic active spring component");
++            parent[next] = node;
++            parent_edge[next] = edge;
++            order.push(next);
++        }
++    }
++    assert_eq!(order.len(), nodes, "disconnected spring component");
++    let mut mass = vec![[[0.0f64; 6]; 6]; nodes];
++    let mut force = vec![[0.0f64; 6]; nodes];
++    for (node, &body) in node_ids.iter().enumerate() {
++        if body == usize::MAX {
++            continue;
++        }
++        let pose = &vs.solver_bodies.poses[body];
++        let mut inverse = [[0.0; 6]; 6];
++        let columns = [
++            crate::math::Vector::X,
++            crate::math::Vector::Y,
++            crate::math::Vector::Z,
++        ]
++        .map(|axis| pose.ii.transform_vector(axis));
++        for i in 0..3 {
++            inverse[i][i] = pose.im[i] as f64;
++            for j in 0..3 {
++                inverse[3 + i][3 + j] = columns[j][i] as f64;
++            }
++        }
++        // A rigid body's translational and angular mass blocks are independent.
++        // Invert the diagonal translation and the three-dimensional inertia
++        // separately; later articulated masses still use the full six rows.
++        let mut angular = [[0.0; 6]; 6];
++        for i in 0..3 {
++            assert!(inverse[i][i] > 0.0 && inverse[i][i].is_finite());
++            mass[node][i][i] = 1.0 / inverse[i][i];
++            for j in 0..3 {
++                angular[i][j] = inverse[3 + i][3 + j];
++            }
++        }
++        let angular_mass = spring_inverse(angular, 3);
++        for i in 0..3 {
++            for j in 0..3 {
++                mass[node][3 + i][3 + j] = angular_mass[i][j];
++            }
++        }
++    }
++    let mut child_inverse = vec![[[0.0f64; 6]; 6]; nodes];
++    let mut edge_inverse = child_inverse.clone();
++    let mut edge_target = force.clone();
++    for &child in order.iter().rev() {
++        if child == root {
++            continue;
++        }
++        let (ends, rows) = &edges[parent_edge[child]];
++        let cs = usize::from(ends[1] == child);
++        let ps = 1 - cs;
++        let p = parent[child];
++        let m = rows.len();
++        let h = spring_inverse(mass[child], 6);
++        child_inverse[child] = h;
++        let hf = spring_mv(&h, &force[child], 6);
++        let mut schur = [[0.0; 6]; 6];
++        let mut target = [0.0; 6];
++        for (i, row) in rows.clone().enumerate() {
++            target[i] = rhs[row] + spring_dot(&q[row][cs], &hf);
++            let hq = spring_mv(&h, &q[row][cs], 6);
++            for (j, other) in rows.clone().enumerate() {
++                schur[i][j] = spring_dot(&q[other][cs], &hq);
++            }
++            schur[i][i] += cfm[row];
++        }
++        let inverse = spring_inverse(schur, m);
++        edge_inverse[child] = inverse;
++        edge_target[child] = target;
++        if p == root && ground.is_some() {
++            continue;
++        }
++        let it = spring_mv(&inverse, &target, m);
++        // Associate Q^T S^-1 Q as two small matrix products rather than
++        // repeating the inner product for every pair of body coordinates.
++        let mut iq = [[0.0; 6]; 6];
++        for i in 0..m {
++            for (j, other) in rows.clone().enumerate() {
++                for b in 0..6 {
++                    if q[other][ps][b] != 0.0 {
++                        iq[i][b] += inverse[i][j] * q[other][ps][b];
++                    }
++                }
++            }
++        }
++        for (i, row) in rows.clone().enumerate() {
++            for a in 0..6 {
++                if q[row][ps][a] == 0.0 {
++                    continue;
++                }
++                force[p][a] -= q[row][ps][a] * it[i];
++                for b in 0..6 {
++                    mass[p][a][b] += q[row][ps][a] * iq[i][b];
++                }
++            }
++        }
++    }
++    let mut velocity = vec![[0.0f64; 6]; nodes];
++    if ground.is_none() {
++        velocity[root] = spring_mv(&spring_inverse(mass[root], 6), &force[root], 6);
++    }
++    let mut delta = vec![0.0f64; n];
++    for &child in &order {
++        if child == root {
++            continue;
++        }
++        let (ends, rows) = &edges[parent_edge[child]];
++        let cs = usize::from(ends[1] == child);
++        let ps = 1 - cs;
++        let p = parent[child];
++        let m = rows.len();
++        let mut target = edge_target[child];
++        for (i, row) in rows.clone().enumerate() {
++            target[i] += spring_dot(&q[row][ps], &velocity[p]);
++        }
++        let impulse = spring_mv(&edge_inverse[child], &target, m);
++        let mut f = force[child];
++        for (i, row) in rows.clone().enumerate() {
++            delta[row] = impulse[i];
++            for k in 0..6 {
++                f[k] -= q[row][cs][k] * impulse[i];
++            }
++        }
++        velocity[child] = spring_mv(&child_inverse[child], &f, 6);
++    }
++    // Iterative refinement reuses the tree factors and checks the original
++    // equations. It corrects cancellation without relaxing the error bound.
++    let roundoff = 1024.0 * n as f64 * f64::EPSILON;
++    let tolerance = roundoff / (1.0 - roundoff);
++    for refinement in 0..=3 {
++        let mut response_sum = vec![[0.0f64; 6]; vs.solver_bodies.len()];
++        let mut absolute_sum = response_sum.clone();
++        for i in 0..n {
++            for slot in 0..2 {
++                let body = bodies[i][slot];
++                if body == usize::MAX {
++                    continue;
++                }
++                for k in 0..6 {
++                    let value = response[i][slot][k] * delta[i];
++                    response_sum[body][k] += value;
++                    absolute_sum[body][k] += value.abs();
++                }
++            }
++        }
++        let mut residual = vec![0.0; n];
++        let mut accurate = true;
++        for i in 0..n {
++            let mut actual = cfm[i] * delta[i];
++            let mut scale = rhs[i].abs() + actual.abs();
++            for slot in 0..2 {
++                let body = bodies[i][slot];
++                if body == usize::MAX {
++                    continue;
++                }
++                actual += spring_dot(&q[i][slot], &response_sum[body]);
++                for k in 0..6 {
++                    scale += q[i][slot][k].abs() * absolute_sum[body][k];
++                }
++            }
++            residual[i] = rhs[i] - actual;
++            accurate &= actual.is_finite() && residual[i].abs() <= tolerance * scale;
++        }
++        if accurate {
++            break;
++        }
++        assert!(
++            refinement < 3,
++            "coupled spring tree backward error failed after refinement"
++        );
++        force.fill([0.0; 6]);
++        for &child in order.iter().rev() {
++            if child == root {
++                continue;
++            }
++            let (ends, rows) = &edges[parent_edge[child]];
++            let cs = usize::from(ends[1] == child);
++            let ps = 1 - cs;
++            let p = parent[child];
++            let m = rows.len();
++            let hf = spring_mv(&child_inverse[child], &force[child], 6);
++            let mut target = [0.0; 6];
++            for (i, row) in rows.clone().enumerate() {
++                target[i] = residual[row] + spring_dot(&q[row][cs], &hf);
++            }
++            edge_target[child] = target;
++            if p == root && ground.is_some() {
++                continue;
++            }
++            let it = spring_mv(&edge_inverse[child], &target, m);
++            for (i, row) in rows.clone().enumerate() {
++                for k in 0..6 {
++                    force[p][k] -= q[row][ps][k] * it[i];
++                }
++            }
++        }
++        velocity.fill([0.0; 6]);
++        if ground.is_none() {
++            velocity[root] = spring_mv(&spring_inverse(mass[root], 6), &force[root], 6);
++        }
++        for &child in &order {
++            if child == root {
++                continue;
++            }
++            let (ends, rows) = &edges[parent_edge[child]];
++            let cs = usize::from(ends[1] == child);
++            let ps = 1 - cs;
++            let p = parent[child];
++            let m = rows.len();
++            let mut target = edge_target[child];
++            for (i, row) in rows.clone().enumerate() {
++                target[i] += spring_dot(&q[row][ps], &velocity[p]);
++            }
++            let impulse = spring_mv(&edge_inverse[child], &target, m);
++            let mut f = force[child];
++            for (i, row) in rows.clone().enumerate() {
++                delta[row] += impulse[i];
++                for k in 0..6 {
++                    f[k] -= q[row][cs][k] * impulse[i];
++                }
++            }
++            velocity[child] = spring_mv(&child_inverse[child], &f, 6);
++        }
++    }
++    for (i, &id) in unlimited.iter().enumerate() {
++        let c = &mut joints.velocity_constraints[id];
++        let total = (c.impulse as f64 + delta[i])
++            .clamp(c.impulse_bounds[0] as f64, c.impulse_bounds[1] as f64);
++        delta[i] = total - c.impulse as f64;
++        c.impulse = total as Real;
++    }
++    let mut velocity_delta = vec![[0.0f64; 6]; vs.solver_bodies.len()];
++    for i in 0..n {
++        for slot in 0..2 {
++            let body = bodies[i][slot];
++            if body == usize::MAX {
++                continue;
++            }
++            for k in 0..6 {
++                velocity_delta[body][k] += response[i][slot][k] * delta[i];
++            }
++        }
++    }
++    for (body, change) in velocity_delta.iter().enumerate() {
++        for k in 0..3 {
++            vs.solver_bodies.vels[body].linear[k] -= change[k] as Real;
++            vs.solver_bodies.vels[body].angular[k] -= change[3 + k] as Real;
++        }
++    }
++    for id in ids {
++        let c = &mut joints.velocity_constraints[id];
++        if matches!(c.writeback_id, WritebackId::Limit(_)) {
++            if wo_bias {
++                c.remove_bias_from_rhs();
++            }
++            c.solve(&mut vs.solver_bodies);
++        }
++    }
++    true
++}
++
++#[cfg(feature = "dim3")]
++fn spring_dot(a: &[f64; 6], b: &[f64; 6]) -> f64 {
++    (0..6).map(|i| a[i] * b[i]).sum()
++}
++#[cfg(feature = "dim3")]
++fn spring_mv(a: &[[f64; 6]; 6], b: &[f64; 6], n: usize) -> [f64; 6] {
++    let mut out = [0.0; 6];
++    for i in 0..n {
++        for j in 0..n {
++            out[i] += a[i][j] * b[j];
++        }
++    }
++    out
++}
++#[cfg(feature = "dim3")]
++fn spring_inverse(a: [[f64; 6]; 6], n: usize) -> [[f64; 6]; 6] {
++    let mut scale = [1.0f64; 6];
++    for i in 0..n {
++        assert!(
++            a[i][i] > 0.0 && a[i][i].is_finite(),
++            "invalid spring factor diagonal"
++        );
++        scale[i] = a[i][i].sqrt();
++    }
++    let mut l = [[0.0f64; 6]; 6];
++    for i in 0..n {
++        for j in 0..=i {
++            let mut value = a[i][j] / (scale[i] * scale[j]);
++            for k in 0..j {
++                value -= l[i][k] * l[j][k];
++            }
++            if i == j {
++                assert!(value > 0.0 && value.is_finite(), "singular spring factor");
++                l[i][j] = value.sqrt();
++            } else {
++                l[i][j] = value / l[j][j];
++            }
++        }
++    }
++    let mut inverse = [[0.0f64; 6]; 6];
++    for column in 0..n {
++        let mut x = [0.0; 6];
++        for i in 0..n {
++            let mut value = if i == column { 1.0 } else { 0.0 };
++            for k in 0..i {
++                value -= l[i][k] * x[k];
++            }
++            x[i] = value / l[i][i];
++        }
++        for i in (0..n).rev() {
++            let mut value = x[i];
++            for k in i + 1..n {
++                value -= l[k][i] * x[k];
++            }
++            x[i] = value / l[i][i];
++        }
++        for i in 0..n {
++            inverse[i][column] = x[i] / (scale[i] * scale[column]);
++        }
++    }
++    inverse
++}
+--- a/src/geometry/contact_pair.rs
++++ b/src/geometry/contact_pair.rs
+@@ -56,6 +56,15 @@
+     ///
+     /// The impulse applied to the second collider's rigid-body is given by `-impulse`.
+     pub impulse: Real,
++    /// Net normal momentum transfer during the latest pipeline step with max_ccd_substeps <= 1.
++    /// None means unprocessed or unsupported CCD slicing. Includes stabilization.
++    pub applied_normal_impulse: Option<Real>,
++    /// Friction momentum on manifold body 1; stored once per friction group.
++    pub applied_friction_impulse: Option<Vector>,
++    /// Pure twisting angular impulse on manifold body 1, once per group.
++    pub applied_twist_impulse: Option<Vector>,
++    /// Number of solved points sharing this stored friction contribution; zero on non-owning points.
++    pub applied_friction_group_size: u8,
+     /// The friction impulse along the vector orthonormal to the contact normal, applied to the first
+     /// collider's rigid-body.
+     pub tangent_impulse: TangentImpulse<Real>,
+@@ -90,6 +99,10 @@
+     fn default() -> Self {
+         Self {
+             impulse: 0.0,
++            applied_normal_impulse: None,
++            applied_friction_impulse: None,
++            applied_twist_impulse: None,
++            applied_friction_group_size: 0,
+             tangent_impulse: na::zero(),
+             warmstart_impulse: 0.0,
+             warmstart_tangent_impulse: na::zero(),
+--- a/src/geometry/narrow_phase/queries.rs
++++ b/src/geometry/narrow_phase/queries.rs
+@@ -9,6 +9,18 @@
+ use parry::query::PersistentQueryDispatcher;
+ 
+ impl NarrowPhase {
++    pub(crate) fn clear_contact_diagnostics(&mut self) {
++        for edge in &mut self.contact_graph.graph.edges {
++            for manifold in &mut edge.weight.manifolds {
++                for contact in &mut manifold.points {
++                    contact.data.applied_normal_impulse = None;
++                    contact.data.applied_friction_impulse = None;
++                    contact.data.applied_twist_impulse = None;
++                    contact.data.applied_friction_group_size = 0;
++                }
++            }
++        }
++    }
+     /// Per-body masks (indexed by rigid-body arena index) of the solver colors used
+     /// by each body's active contact pairs. Read by the staged island solver to
+     /// color joints in the same color space as the contacts.
+--- a/src/pipeline/physics_pipeline/substep.rs
++++ b/src/pipeline/physics_pipeline/substep.rs
+@@ -279,6 +279,7 @@
+         hooks: &dyn PhysicsHooks,
+         events: &dyn EventHandler,
+     ) {
++        narrow_phase.clear_contact_diagnostics();
+         self.counters.reset();
+         self.counters.step_started();
+         self.quarantine.clear();
+@@ -565,6 +566,12 @@
+             }
+         }
+ 
++        // This diagnostic does not collect contacts destroyed between CCD slices.
++        // Fail closed instead of publishing only the final slice as a full-step impulse.
++        if integration_parameters.max_ccd_substeps > 1 {
++            narrow_phase.clear_contact_diagnostics();
++        }
++
+         // Finally, make sure we update the world mass-properties of the rigid-bodies
+         // that moved. Otherwise, users may end up applying forces with respect to an
+         // outdated center of mass.
+--- a/src/utils/rotation_ops.rs
++++ b/src/utils/rotation_ops.rs
+@@ -110,7 +110,25 @@
+ impl RotationOps<Real> for Rotation {
+     #[inline]
+     fn to_mat(self) -> Mat3 {
+-        Matrix::from_quat(self)
++        let (x, y, z, w) = (self.x, self.y, self.z, self.w);
++        let n = x * x + y * y + z * z + w * w;
++        Matrix::from_cols(
++            crate::math::Vector::new(
++                (w * w + x * x - y * y - z * z) / n,
++                2.0 * (x * y + w * z) / n,
++                2.0 * (x * z - w * y) / n,
++            ),
++            crate::math::Vector::new(
++                2.0 * (x * y - w * z) / n,
++                (w * w - x * x + y * y - z * z) / n,
++                2.0 * (y * z + w * x) / n,
++            ),
++            crate::math::Vector::new(
++                2.0 * (x * z + w * y) / n,
++                2.0 * (y * z - w * x) / n,
++                (w * w - x * x - y * y + z * z) / n,
++            ),
++        )
+     }
+ 
+     #[inline]
+--- a/typescript/src.ts/dynamics/impulse_joint.ts
++++ b/typescript/src.ts/dynamics/impulse_joint.ts
+@@ -44,6 +44,7 @@
+ export enum MotorModel {
+     AccelerationBased,
+     ForceBased,
++    SymplecticSpring,
+ }
+ 
+ /**
+@@ -294,6 +295,10 @@
+      * Controls whether contacts are computed between colliders attached
+      * to the rigid-bodies linked by this joint.
+      */
++    public motorConfiguration(): number[] {
++        return Array.from(this.rawSet.jointMotorConfiguration(this.handle));
++    }
++
+     public setContactsEnabled(enabled: boolean) {
+         this.rawSet.jointSetContactsEnabled(this.handle, enabled);
+     }
+--- a/typescript/src.ts/geometry/narrow_phase.ts
++++ b/typescript/src.ts/geometry/narrow_phase.ts
+@@ -202,6 +202,21 @@
+         return this.raw.contact_fid2(i);
+     }
+ 
++    public contactAppliedFrictionImpulse(i: number): Vector | undefined {
++        const raw = this.raw.contact_applied_friction_impulse(i);
++        return raw ? VectorOps.fromRaw(raw) : undefined;
++    }
++    public contactAppliedTwistImpulse(i: number): Vector | undefined {
++        const raw = this.raw.contact_applied_twist_impulse(i);
++        return raw ? VectorOps.fromRaw(raw) : undefined;
++    }
++    public contactAppliedFrictionGroupSize(i: number): number {
++        return this.raw.contact_applied_friction_group_size(i);
++    }
++    public contactAppliedNormalImpulse(i: number): number | undefined {
++        return this.raw.contact_applied_normal_impulse(i);
++    }
++
+     public contactImpulse(i: number): number {
+         return this.raw.contact_impulse(i);
+     }
+--- a/typescript/src/dynamics/impulse_joint.rs
++++ b/typescript/src/dynamics/impulse_joint.rs
+@@ -162,6 +162,24 @@
+         self.map_mut(handle, |j| {
+             j.data.contacts_enabled = enabled;
+         });
++    }
++
++    /// Copied immutable motor settings, excluding accumulated impulse history.
++    pub fn jointMotorConfiguration(&self, handle: FlatHandle) -> Vec<f64> {
++        self.map(handle, |j| {
++            let mut values = vec![j.data.motor_axes.bits() as f64];
++            for motor in &j.data.motors {
++                values.extend([
++                    motor.model as u8 as f64,
++                    motor.target_pos as f64,
++                    motor.target_vel as f64,
++                    motor.stiffness as f64,
++                    motor.damping as f64,
++                    motor.max_force as f64,
++                ]);
++            }
++            values
++        })
+     }
+ 
+     /// Are the limits for this joint enabled?
+--- a/typescript/src/dynamics/joint.rs
++++ b/typescript/src/dynamics/joint.rs
+@@ -91,6 +91,7 @@
+ pub enum RawMotorModel {
+     AccelerationBased,
+     ForceBased,
++    SymplecticSpring,
+ }
+ 
+ impl From<RawMotorModel> for MotorModel {
+@@ -98,6 +99,7 @@
+         match model {
+             RawMotorModel::AccelerationBased => MotorModel::AccelerationBased,
+             RawMotorModel::ForceBased => MotorModel::ForceBased,
++            RawMotorModel::SymplecticSpring => MotorModel::SymplecticSpring,
+         }
+     }
+ }
+--- a/typescript/src/geometry/narrow_phase.rs
++++ b/typescript/src/geometry/narrow_phase.rs
+@@ -228,6 +228,19 @@
+         unsafe { (&(*self.0).points).get(i).map(|c| c.fid2.0).unwrap_or(0) }
+     }
+ 
++    pub fn contact_applied_friction_impulse(&self, i: usize) -> Option<crate::math::RawVector> {
++        unsafe { (&(*self.0).points).get(i).and_then(|c| c.data.applied_friction_impulse).map(Into::into) }
++    }
++    pub fn contact_applied_twist_impulse(&self, i: usize) -> Option<crate::math::RawVector> {
++        unsafe { (&(*self.0).points).get(i).and_then(|c| c.data.applied_twist_impulse).map(Into::into) }
++    }
++    pub fn contact_applied_friction_group_size(&self, i: usize) -> u32 {
++        unsafe { (&(*self.0).points).get(i).map(|c| c.data.applied_friction_group_size as u32).unwrap_or(0) }
++    }
++    pub fn contact_applied_normal_impulse(&self, i: usize) -> Option<Real> {
++        unsafe { (&(*self.0).points).get(i).and_then(|c| c.data.applied_normal_impulse) }
++    }
++
+     pub fn contact_impulse(&self, i: usize) -> Real {
+         unsafe {
+             (&(*self.0).points)

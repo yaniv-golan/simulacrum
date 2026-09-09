@@ -115,6 +115,7 @@ export async function createSession(
     status = 'ready',
     failure = null;
   let initial = world.read();
+  let contactSample = world.contacts();
   let sensors = sampleSensors(0, copy(initial), config.power);
   let torques = [],
     receipts = [];
@@ -157,6 +158,7 @@ export async function createSession(
     status,
     physics,
     springs: springReadings(),
+    contacts: { ...contactSample, sampleTick: tick, intervalSeconds: tick === 0 ? 0 : DT },
     metadata,
     energy: copy(energy),
     power: power.read(),
@@ -283,6 +285,7 @@ export async function createSession(
             }
             case 'power-signals': {
               world.prepareConstraints();
+              if (hasSprings()) world.prepareSprings();
               const coupling = [];
               for (const [i, m] of config.power.motors.entries()) {
                 if (m.joint < 0) continue;
@@ -364,6 +367,7 @@ export async function createSession(
             case 'integration-contacts': {
               const before = world.mechanicalEnergy();
               world.step();
+              contactSample = world.contacts();
               integrationDeltaJ =
                 total(world.mechanicalEnergy()) -
                 total(before) +
@@ -544,6 +548,7 @@ export async function createSession(
       const nextFrame = {
         ...frame(nextInitial),
         springs: springReadings(candidate, nextSensors.bodies, nextConfig, true),
+        contacts: { ...candidate.contacts(), sampleTick: 0, intervalSeconds: 0 },
         tick: 0,
         status: 'ready',
         metadata: nextMetadata,
@@ -570,6 +575,7 @@ export async function createSession(
       observations.publish(nextFrame, { restored: true });
       const previous = world;
       world = candidate;
+      contactSample = world.contacts();
       candidate = null;
       config = nextConfig;
       power = nextPower;
@@ -738,6 +744,7 @@ export async function createSession(
           : [],
       ),
     );
+    contactSample = world.contacts();
     power = candidatePower;
     torques = [];
     receipts = [];

@@ -106,3 +106,15 @@ const highlightPath: ConnectionPathHighlight = (ids) => {
   void edge;
 };
 highlightPath(paths.powerConnectionIds);
+
+import { readContacts } from '../../src/simulation/physics/read-contacts.mjs';
+import type { ContactSample, DeepReadonly } from '../../src/model/boundaries.js';
+declare const contactReader: Parameters<typeof readContacts>[0];
+export const contacts: DeepReadonly<ContactSample> = {
+  sampleTick: 1,
+  ...readContacts(contactReader, [0, 1]),
+};
+const contactChecked: IsUnchecked<
+  ReturnType<typeof readContacts>['rows'][number]['normal'][number]
+> = false;
+void contactChecked;

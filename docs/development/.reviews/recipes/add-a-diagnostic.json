@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "src/model/boundaries.d.ts": "73455a4fce8c8d161198d6a16646ce15d398a42ed563eee83690ff5c136ba938",
+    "src/model/boundaries.d.ts": "b145ea62eda5968ddb5e480ffed342f9632e04a798372885c2c632ea15119350",
     "src/model/catalog.mjs": "ed3388946005de707233a3d1dda10cd9827b700e136030fa60200b97efd778c8",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",
     "src/model/generated/blueprint-types.d.ts": "bd194a365248f2562dbb641baeb96a8dc7fb86a4ab9a9c1d5f156c2f441c12a5",
@@ -19,8 +19,8 @@
     "src/model/observation.mjs": "f2a62892ae0e9dc95734fb107d1588b007265604ad5aca49ade62b2004d61ec1",
     "src/model/surfaces.mjs": "0d4b906f5e2100b42254369d284dc068e84c35199d40690ddeb8eef207f080cf",
     "test/opposed-drive-diagnostic.test.mjs": "0f8761244270dad4ff9fe020e8e507c80a624774e4d7b11b03f63f77b62a49a0",
-    "package-lock.json": "f44632025fc6a2b08f70e71a45243005e5f59483a19702a2d67f741b69e7f5e5",
-    "package.json": "ac1208b1973128edabff7a63b2257e32f3be1970f2f3164b8c6d4b3ba4d6598e",
+    "package-lock.json": "d7eb0fc6a6111c639f322b6d7adff6d7566c732f26dd695cb844b5b08182e4f7",
+    "package.json": "e4582aa2a24fced519a55f09496810f3bce395a3bbe3d1b069182f1361bc7f07",
     "src/core/workshop.mjs": "bc3fc351f6587b067fb8f77b5cdd4a9e8551985ea423815e1bdb135e9986a84e",
     "src/model/editing.mjs": "11e29e8e17b767e73955370a3293b05bbc6741c3693c9498e2294fde5d904b83",
     "src/model/mirror-assembly.mjs": "fc26e0f73dad94435f140ab21d51733bbc066ceb44d4bfd1fe6038e8cd4deaad",
@@ -28,7 +28,7 @@
     "src/model/reasons.mjs": "9d24a09fbfaeff5445429f2f43c99fc07e690dc79cb355e5ccc1b6a1b86cabcc",
     "src/model/reusable-assemblies.mjs": "cf277bd01ae9497117ec72f6f208fda0396808b2cad8fa441a91332355c45f85",
     "src/model/starter-vehicle.mjs": "44938497aca2571d4a4482de0ce40ef9b3e9c68d590024094c773c257c2b137e",
-    "src/model/tick.mjs": "2bfb9694a86d22f1e91a9c193be661aa231b666812923bc75971e073efc57955",
+    "src/model/tick.mjs": "3c995e51792d4a1359788aafa67735e4f1f04877e0a5f32071a2668492d32664",
     "src/model/workshop-command.d.ts": "46844a2fd5ce0585c39a416a3717ffe8ba4c356495d4ee37e006d4f5793d8313",
     "src/model/workshop-command.mjs": "b513ac52b92f9c8bedd1428e65ba8a30e83f00ae0a50b5821e1693da5b7c3605",
     "src/simulation/controllers.mjs": "f964f401080de7afae8ad3eceaeab49d45656c7908d5aa5faddbbe08a3cb8380",
@@ -36,9 +36,11 @@
     "src/simulation/physics/law/motor.mjs": "82183f1ab4dc82adb3048faa13c3942f647f52d4583ff6a549b530f15f38eba6",
     "src/simulation/physics/law/spring.mjs": "74bdb066048224fff4db21ddfb52afe41875e5b78a1e949eed0283c9b09d6535",
     "src/simulation/physics/read-body.mjs": "af1e109c7c7ae5eb2ffd49455e23756818c8769eb4403fa31866aa06aceb9518",
-    "src/simulation/physics/world.mjs": "9377af91614d60570998ac0ed0f71d4d658814e561ed823250409db47e6e5eeb",
+    "src/simulation/physics/read-contacts.mjs": "d07685f5496b10f694853493f88f246fb9b0640e3403a7a3c703140dc9464b97",
+    "src/simulation/physics/spring-topology.mjs": "f160f668feec702335fa1317f374790b96daa75ad3108bac4030f352f17afb49",
+    "src/simulation/physics/world.mjs": "d823c142ce0e9119cfaa0cba9ec90b18f993d8a0495c774c1c4c74bc957e44d4",
     "src/simulation/power.mjs": "53e4acad70385dc3ba77fed61a53d48a93b62c08ea0e45be5798d3a2bf857bcf",
-    "src/simulation/session.mjs": "86525d81e432db5a43f981de9a0e198fd7afda8739f55a9a0aad8ddb0285259d",
+    "src/simulation/session.mjs": "5e56e9c98fe5bde91c6f73deeace93cc2831e5235effe6bded84bebe638fd978",
     "test/motion-diagnostics.test.mjs": "e09bd5398f5476fed396a67335bd3dcfbe941cf5b26d0244959c76e1f845eabc"
   }
 }

@@ -1,7 +1,8 @@
 # Change recipes
 
 ## Choose a recipe
-<!-- doc-review {"version":1,"fingerprint":"268fda4646b90f3ced9224a44f96bed3ef03c5b8e1319df6f89ef45d1066925a","dependencies":"docs/development/.reviews/recipes/choose-a-recipe.json","dependencyDigest":"b8b9b29dfda321d1e6bc52fd82f6f34928642f45884cef31e5e9a6f7db1af03b","disposition":"still accurate","rationale":"Architecture overview now routes manifest values through gate/rules; choosing an owner, following consumers and using the existing command authority is unchanged."} -->
+
+<!-- doc-review {"version":1,"fingerprint":"ff6cb6d7b406ca3eb42caadd11b358a4a3db11b3d3d0ee8f292e03f3b9bd3ded","dependencies":"docs/development/.reviews/recipes/choose-a-recipe.json","dependencyDigest":"e91fcb2e87fb600c07e144973c4c935b3eb9920185659e9f0382c14f415a2c83","disposition":"still accurate","rationale":"The architecture routes numeric spring topology admission through the physics door. Reverse-consumer navigation and existing core command ownership remain the entrypoints; no alternative authoring policy was introduced."} -->
 
 Use the [map](architecture.md#overview) to locate the owner, inspect its reverse consumers with
 `node scripts/navigate.mjs <symbol-or-path>`, then use focused tests. Admit changes
@@ -10,7 +11,7 @@ attachment, polarity, naming, reset or authored-property policy.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"dddcd1230caf729ac47c91e393340850baaa09b0bd13ba1c049c8286eef7f242","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"175a45329d197114d99af5d0e332655ee47b6c8bc0517bfe7ea0620e3d42ac24","disposition":"still accurate","rationale":"The copy optimization preserves admitted property values and nested isolation. Catalog, geometry, compiler-derived material and mass, resize checks and generated schema ownership are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"46b697c10c6978605202010f0ba60113caf3ba33fc2c1870e89d9a709d00dc19","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"5cc5d1c5bab38e332cea5a923f9cd872b55e157081da44f1b613c8921982fe46","disposition":"still accurate","rationale":"The change handles native contact readback errors and allocations; catalog, schema, primitive geometry, mounting and compiler/render geometry agreement are unchanged."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -27,7 +28,7 @@ validation with `node scripts/generate-schema.mjs` when schema changes.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"c5bb9047ff441220271199cb95c00872066d4949fb6dfbf2750b61edc7a519c6","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"4ddd00b4b1f770e52d804c3ecdc2630a97aed97e4ccd491bb92631757c3e546e","disposition":"still accurate","rationale":"Batched immutable copies preserve finite-data rejection, own property names and independent frozen children. Candidate validation, compilation and one-transaction publication requirements are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"2a39d49be4460f4a28d26a55dff5efefffc08188b5488b05c20d2af13e37aca5","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"fe8ca18a5085449982e44504a655bbe0de18498460562c6b9d93a1cd095664e8","disposition":"still accurate","rationale":"Contact diagnostic failures now propagate after native cleanup. Core command validation, candidate compilation, atomic history and stale-cursor behavior are unchanged."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -47,7 +48,7 @@ Identify the player task, primary home, visibility/retrieval lifecycle and repla
 surface. Keep consequential state visible and verify unique actions remain reachable
 after removing or moving controls.
 
-<!-- doc-review {"version":1,"fingerprint":"dd6778bcdbc0fffde7b77aba3ffea3337a0c516e48d9a119abd61896ed6838b6","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"a66922c80bc2dc84b67226304b6c433338a3434762c2de02cbadcc2fd8977f59","disposition":"still accurate","rationale":"Mirror status now names the failed part and explains unavailable mounts. Proposal admission, cancellation and transaction ownership are unchanged; browser checks include cell and motor refusals."} -->
+<!-- doc-review {"version":1,"fingerprint":"67257ebdb655f4ffe6832c6bc61788f51315e72738bcf0918d4a6261f2d1337f","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"e117e96cb72a79592e98a2919b6b372ebe0d6057d6a580472467059d603d0f36","disposition":"still accurate","rationale":"No input or presentation handlers changed. Native contact validation runs in simulation and does not alter preview, pointer lifecycle, mirror controls or receiver authority."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -90,7 +91,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"e6556f16644397847cca6d96f4cf80a836ed8f2c3bb4def0ad7173d29d4fb5d9","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"b394168b9f05b2c9e8beeab15cd7ce6ddf788916db26e3cca3e17823d48ccbe1","disposition":"still accurate","rationale":"Diagnostics still receive completed immutable values. The copying optimization changes no observed quantities, names, physical attribution or diagnostic decision owner."} -->
+<!-- doc-review {"version":1,"fingerprint":"33c32adb3860294e18194e184c965fa000fd84f7a33e046f2539c60579e5145a","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"83e2266635a2bf4aaadbd265bb0479d310798026fe36a68f891cb2d02091dd77","disposition":"still accurate","rationale":"Contact availability and rejection are enforced within the numeric read model. Diagnostic functions still consume observations and return evidence without editing authored state; no inference from identity was added."} -->
 
 Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -105,7 +106,7 @@ A symptom is not proof of the intended mechanism or cause.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"5c0b40cc53e050c9cc4d126d41836d798324245444d772057547700c46dd39dd","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"9375d500e5a268af2d09b8348ec8d4b9e2d9d157caf126e89ee23df7621a6444","disposition":"still accurate","rationale":"No numerical law, physical configuration, tick order, checkpoint state or integration path changed. Observation copying still preserves values and rejects non-data inputs; analytical and deterministic checks remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"2da8a63d2b6f1b7d9c5fd537da6ce8ba1458c97a4b48663658a64ccb519743c4","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"b18efb5b933cb1bf2d8782f03fbd437e02000d43f4c5e3e0c1b254e3a247b582","disposition":"updated","rationale":"Added native callback rejection, cleanup, empty-manifold availability and exact-readback equivalence guidance. Solver laws, tick ordering, energy assertions and existing spring requirements remain unchanged."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -120,7 +121,11 @@ Worked example: a motor-work change needs independent energy accounting in
 [session tests](../../test/session.test.mjs), and deterministic multi-process checks.
 Use analytical expectations and passive mirrored controls before tuning a controller.
 For guided springs, preserve five constrained degrees of freedom, simultaneous
-coupled damping, bounded frequency admission and signed integration/contact residuals.
+coupled damping, solver-integrated elasticity, bounded frequency/topology admission and
+signed integration/contact residuals. [Topology admission](../../src/simulation/physics/spring-topology.mjs)
+uses authored fixed connectivity and ground, never approximate row deletion. Dependency
+changes follow the pinned [spring/contact build recipe](../../vendor/rapier-contact/README.md);
+retain loaded sag, coupled energy, completed-tick stop bounds and native motor restore controls.
 Use [spring physics controls](../../test/spring-physics.test.mjs) and
 [checkpoint/editing controls](../../test/spring-playground.test.mjs), including reversed
 connection order and pre-swap rejection of invalid derived history. Off-center controls
@@ -128,11 +133,32 @@ compute total angular momentum as orbital momentum plus world-rotated box inerti
 times angular velocity, with centered, rotated and independently reordered bodies,
 joints and endpoints. Preserve both the tight two-body impulse and accumulated
 chain checks; checking linear momentum alone misses lost moment arms.
+Exercise production spring preparation before passive projection. The
+[powered hinge controls](../../test/powered-hinge.test.mjs) compare predicted and
+applied speeds, independently compute impulse work, and cover nonzero initial
+velocity, compression/extension, depleted power and checkpoint continuation.
+Spring preparation must not mutate bodies; motor allocation includes the predicted
+coupled damping impulse, and actuator application consumes that allocation before motor
+impulses. Elasticity is resolved inside the four native subdivisions. Preserve zero-stiffness axial freedom, tiny-stiffness force controls and
+long-duration discrete modified-energy bounds. Loaded spring/contact equilibrium needs
+its separate analytical ground-supported controls; isolated oscillator checks do not
+establish suspension mounting, individual wheel load equality or controlled behavior.
+The [dependency recipe](../../vendor/rapier-contact/README.md) binds the bounded spring
+and read-only contact patch, artifact and upgrade/removal requirements.
+
+Completed contact data comes from the [numeric reader](../../src/simulation/physics/read-contacts.mjs).
+Use independent momentum/load expectations, current-interval availability and canonical
+signed pair impulses; friction groups are counted once. Pure twist is not total angular
+impulse, and geometric contact alone does not establish support. Exercise invalid data
+and overflow through native callbacks as well as mocks: return through wrapper cleanup
+before rethrowing a collection failure. Empty manifolds have no normal to validate,
+but their unavailable solver state must remain visible. Readback optimizations must
+preserve complete canonical samples and native snapshot/next-step identity.
 Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"92134d344a47f3536bae680ac4266813e6885dc8eac226c91f3e9837413de6fc","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"fc89f42af41d00a1fdc6e6407c2f08c76237496644855e2f3d9937998e4669b9","disposition":"still accurate","rationale":"Refusal text now resolves the existing part path. Reflection and copied connection policy remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"df5586fe44871059e88187daac4bde669124ebff10e70c90ae83f7eef87f94fe","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"5432618644a4913ac2d8843ab7f92f4887aa4e14d027ddb5795841dfa0e7837f","disposition":"still accurate","rationale":"Only completed contact readback changed. Connection membership, copied graph invariants, group transforms, alias ports and whole-candidate compilation retain their existing owners and behavior."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -205,7 +231,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"be2b384de53cddf73a6a6c803b426e3fb825d78ec946d11edb094fdc1810a69b","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"7981eb14ea5743d4409d0469d5554b5703f6453b524a1007f5c8861530c758f5","disposition":"still accurate","rationale":"Only mirror refusal wording and its browser assertions changed. Connection overlay resources, visibility and ownership remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"d82a90e6dc84beaf2684c983f28427f7a51e2e02b593b18e64c00251f82fd63d","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"3860d0e5fbdd88d411e261391003ba6cd8873f522bbcf5217f650c1becfec41c","disposition":"still accurate","rationale":"The broad dependency footprint sees the contact reader, runtime clarification and new native control. Overlay placement, selection and projection transforms are unchanged; no UI surface was added."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -261,9 +287,21 @@ warmup. Each repetition must pass: complete tick p95 at most 3.333 ms (40% of
 a 120 Hz tick), actuator/constraint p95 at most 2 ms, renderer CPU submission p95
 at most 6 ms, frame cadence p95 at most 40 ms (30 Hz with 20% scheduling margin),
 no stall above 500 ms, and simulated/wall time ratio from 0.95 to 1.05.
+Dense one/eight-spring trials and connected 22/34-body trials require integration/contact
+p95 at most 1 ms, leaving 1/3 ms of the tick allocation for other phases. The connected
+workloads cover zero/one/eight springs plus fixed links: 22 bodies matches the ordinary
+four-wheel cart size; 34 retains the one-spring/32-fixed-link counterexample that exposed
+dense solver scaling. All 36 simulation cases must pass; fixture geometry and topology
+are checked, so removing connected bodies cannot improve a qualifying result. These
+sizes do not qualify larger assemblies. In each dense loaded-contact trial, every intended moving
+body must carry a signed upward floor impulse of at least 0.040875 N s (half its known
+1 kg weight impulse; the extended spring presses down too). Missing bodies, unrelated
+pairs and reversed directions cannot satisfy this workload check. It is not a general
+suspension support threshold.
 Node phase timings isolate simulation; browser renderer timing is CPU submission,
 not GPU time, so cadence is enforced separately. Before/after visible idle controls
-require p95 at most 20 ms; zero-spring Node ticks require at most 1.042 ms.
+require p95 at most 20 ms; empty zero-spring Node ticks require at most 1.042 ms.
+Connected zero-spring worlds retain the 3.333 ms whole-tick budget.
 Environment failures do not relax budgets. Reports retain raw samples, CPU, browser,
 GPU renderer and source identity. This spring benchmark requests native Metal on
 macOS because the headless default can select software rendering; other platforms
@@ -272,9 +310,9 @@ qualification. [Budget controls](../../test/spring-performance.test.mjs) exercis
 limits and incomplete/unhealthy trials. Replacement probes also bound retained
 geometry, textures and heap.
 
-
 ### Adaptive graphics
-<!-- doc-review {"version":1,"fingerprint":"b711de0cb28ca6af91415340f3c1b3606f71ffd348b3fe24aa261fc354bc14d6","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"2b940c1aec41c64b1ba4278219cc865892a16bd3f9e35260fd00bf6d60c2f656","disposition":"updated","rationale":"Updated the documented resolution floor to 40 percent and explained the 36 percent pixel-work reduction from the preceding 50 percent step. The six-level controller retains original warmup, cadence windows, hysteresis, shadow release and shader refresh behavior."} -->
+
+<!-- doc-review {"version":1,"fingerprint":"4b18fcc23f1bb10380cead9b66a700861199bc887964afcda6cec5f2080890d5","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"2b940c1aec41c64b1ba4278219cc865892a16bd3f9e35260fd00bf6d60c2f656","disposition":"still accurate","rationale":"Reviewed the six-level quality owner and browser policy:45-frame windows,35ms downgrade,20ms recovery,30-second delay and40percent floor remain unchanged. Native spring solver work cannot change graphics level authority or establish other-hardware acceptance."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

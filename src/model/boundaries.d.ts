@@ -102,3 +102,25 @@ export interface TorqueResult {
   kineticAfterJ: number;
   kineticDeltaJ: number;
 }
+
+/** Copied completed solver observations. All impulse vectors act on canonical body b. */
+export interface ContactObservation {
+  a: number;
+  b: number;
+  localPointA: Vec3;
+  localPointB: Vec3;
+  distance: number;
+  normal: Vec3;
+  normalImpulse: Vec3 | null;
+  frictionImpulse: Vec3 | null;
+  pureTwistImpulse: Vec3 | null;
+  frictionGroupSize: number;
+  solved: boolean;
+  available: boolean;
+}
+export interface ContactSample {
+  sampleTick: number;
+  intervalSeconds: number;
+  available: boolean;
+  rows: readonly ContactObservation[];
+}

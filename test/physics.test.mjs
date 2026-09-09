@@ -283,3 +283,350 @@ test('shape discriminator and cylinder equal radial dimensions are strict', asyn
     }),
   );
 });
+
+test('completed contact normal impulse matches static load and immediate impact momentum', async () => {
+  const makeBody = (position, fixed = false, velocity = [0, 0, 0]) => ({
+    shape: 'box',
+    position,
+    rotation: [0, 0, 0, 1],
+    velocity,
+    mass: 1,
+    halfExtents: [0.5, 0.5, 0.5],
+    fixed,
+    friction: 0,
+    restitution: 0,
+  });
+  for (const gravity of [
+    [0, -9.81, 0],
+    [0, 0, 0],
+  ]) {
+    const w = await createPhysicsWorld({
+      gravity,
+      joints: [],
+      bodies: [
+        makeBody([0, -0.5, 0], true),
+        makeBody([0, 0.55, 0], false, gravity[1] ? [0, 0, 0] : [0, -2, 0]),
+      ],
+    });
+    try {
+      let sawContact = false;
+      for (let tick = 0; tick < 120; tick++) {
+        const before = w.read()[1].velocity[1];
+        w.step();
+        const after = w.read()[1].velocity[1];
+        const contacts = w.contacts();
+        const expected = after - before - gravity[1] / 120;
+        assert.ok(contacts.available);
+        if (contacts.available) {
+          const normal = contacts.rows.reduce((sum, row) => sum + (row.normalImpulse?.[1] ?? 0), 0);
+          assert.ok(Math.abs(normal - expected) < 2e-6, JSON.stringify({ tick, normal, expected }));
+          sawContact ||= normal > 1e-4;
+        }
+      }
+      assert.ok(sawContact);
+    } finally {
+      w.dispose();
+    }
+  }
+});
+
+test('contact friction is counted once and canonical body order preserves momentum', async () => {
+  for (const mass of [0.01, 1, 100])
+    for (const reverse of [false, true]) {
+      const ground = {
+        ...body,
+        position: [0, -0.5, 0],
+        halfExtents: [10, 0.5, 10],
+        velocity: [0, 0, 0],
+        fixed: true,
+        mass,
+      };
+      const slider = {
+        ...body,
+        position: [0, 0.5, 0],
+        halfExtents: [0.5, 0.5, 0.5],
+        velocity: [2, 0, 1],
+        mass,
+      };
+      const w = await createPhysicsWorld({
+        gravity: [0, -9.81, 0],
+        joints: [],
+        bodies: reverse ? [slider, ground] : [ground, slider],
+      });
+      try {
+        const index = reverse ? 0 : 1;
+        let wrongError = 0,
+          frictionSamples = 0;
+        for (let tick = 0; tick < 120; tick++) {
+          const before = w.read()[index].velocity;
+          w.step();
+          const after = w.read()[index].velocity,
+            sample = w.contacts();
+          assert.ok(sample.available);
+          const expected = after.map((x, i) => mass * (x - before[i] + (i === 1 ? 9.81 / 120 : 0)));
+          const impulse = [0, 0, 0],
+            duplicated = [0, 0, 0];
+          for (const row of sample.rows) {
+            assert.ok(row.a < row.b);
+            const sign = row.b === index ? 1 : -1;
+            for (let i = 0; i < 3; i++) {
+              impulse[i] +=
+                sign * ((row.normalImpulse?.[i] ?? 0) + (row.frictionImpulse?.[i] ?? 0));
+              duplicated[i] +=
+                sign *
+                ((row.normalImpulse?.[i] ?? 0) +
+                  (row.frictionImpulse?.[i] ?? 0) * row.frictionGroupSize);
+            }
+            frictionSamples += Number(Math.hypot(...(row.frictionImpulse ?? [])) > 1e-8 * mass);
+          }
+          for (let i = 0; i < 3; i++) {
+            assert.ok(Math.abs(impulse[i] - expected[i]) < 2e-5 * mass);
+            wrongError = Math.max(wrongError, Math.abs(duplicated[i] - expected[i]));
+          }
+        }
+        assert.ok(frictionSamples > 0);
+        assert.ok(
+          wrongError > 1e-3 * mass,
+          'duplicating shared friction must violate the independent momentum oracle',
+        );
+      } finally {
+        w.dispose();
+      }
+    }
+});
+
+test('contact observations restore immediately and continue exactly without aliases', async () => {
+  const w = await createPhysicsWorld({
+    gravity: [0, -9.81, 0],
+    joints: [],
+    bodies: [
+      {
+        ...body,
+        position: [0, -0.5, 0],
+        halfExtents: [10, 0.5, 10],
+        velocity: [0, 0, 0],
+        fixed: true,
+      },
+      { ...body, position: [0, 0.5, 0], halfExtents: [0.5, 0.5, 0.5] },
+    ],
+  });
+  try {
+    for (let i = 0; i < 20; i++) w.step();
+    const cp = w.snapshot(),
+      sample = w.contacts();
+    assert.ok(sample.rows.some((r) => r.solved));
+    const alias = w.contacts();
+    alias.rows[0].normal.fill(999);
+    assert.deepEqual(w.contacts(), sample);
+    w.step();
+    const next = w.contacts(),
+      physics = w.read();
+    w.restore(cp);
+    assert.deepEqual(w.contacts(), sample);
+    w.step();
+    assert.deepEqual(w.contacts(), next);
+    assert.deepEqual(w.read(), physics);
+  } finally {
+    w.dispose();
+  }
+});
+
+test('contact admission distinguishes predictive, unprocessed and measured zero samples', async () => {
+  const { readContacts } = await import('../src/simulation/physics/read-contacts.mjs');
+  const xyz = (x = 0, y = 0, z = 0) => ({ x, y, z });
+  let normal = xyz(0, 1),
+    impulse,
+    solverContacts = 1,
+    friction,
+    group = 0;
+  const m = {
+    normal: () => normal,
+    numContacts: () => 1,
+    numSolverContacts: () => solverContacts,
+    contactAppliedNormalImpulse: () => impulse,
+    contactAppliedFrictionImpulse: () => friction,
+    contactAppliedTwistImpulse: () => (friction ? xyz() : undefined),
+    contactAppliedFrictionGroupSize: () => group,
+    localContactPoint1: () => xyz(),
+    localContactPoint2: () => xyz(),
+    contactDist: () => 0.001,
+  };
+  let connected = true;
+  const reader = {
+    integrationParameters: { maxCcdSubsteps: 1 },
+    getRigidBody: (handle) => ({ collider: () => ({ handle }) }),
+    getCollider: (handle) => ({ handle }),
+    contactPairsWith: (c, fn) => {
+      if (connected) fn({ handle: 1 - c.handle });
+    },
+    contactPair: (a, b, fn) => fn(m, false),
+  };
+  const read = () => readContacts(reader, [0, 1]);
+  assert.equal(read().available, false, 'sleeping or unprocessed contact cannot imply zero load');
+  assert.equal(read().rows[0].normalImpulse, null);
+  solverContacts = 0;
+  assert.equal(
+    read().available,
+    true,
+    'predictive geometry without a solver row is a known zero contribution',
+  );
+  assert.equal(read().rows[0].solved, false);
+  solverContacts = 1;
+  impulse = 0;
+  friction = xyz();
+  group = 1;
+  assert.equal(read().available, true);
+  assert.deepEqual(read().rows[0].normalImpulse, [0, 0, 0]);
+  assert.deepEqual(
+    read(),
+    JSON.parse(JSON.stringify(read())),
+    'contact transport preserves signed-zero canonicalization',
+  );
+  m.localContactPoint1 = () => xyz(-0, -0, -0);
+  m.localContactPoint2 = () => xyz(-0, -0, -0);
+  m.contactDist = () => -0;
+  normal = xyz(-0, 1, -0);
+  for (const flipped of [false, true]) {
+    reader.contactPair = (a, b, fn) => fn(m, flipped);
+    assert.deepEqual(read(), JSON.parse(JSON.stringify(read())));
+  }
+  reader.contactPair = (a, b, fn) => fn(m, false);
+  impulse = 0.1;
+  friction = xyz(0.02);
+  group = 1;
+  const loaded = read();
+  assert.equal(loaded.available, true);
+  impulse = undefined;
+  friction = undefined;
+  group = 0;
+  assert.equal(read().available, false, 'a subsequent unavailable sample cannot retain the load');
+  assert.equal(loaded.rows[0].normalImpulse[1], 0.1, 'completed copies remain unchanged');
+  connected = false;
+  assert.deepEqual(read().rows, []);
+  assert.equal(read().available, true);
+  connected = true;
+  impulse = 0.1;
+  friction = xyz();
+  group = 1;
+  for (normal of [xyz(), xyz(0, 2), xyz(0, NaN)]) assert.throws(read, /contact/);
+  normal = xyz(0, 1);
+  for (const invalid of [null, false, NaN, Infinity]) {
+    m.contactDist = () => invalid;
+    assert.throws(read, /non-finite contact/);
+  }
+  m.contactDist = () => 0;
+  reader.integrationParameters.maxCcdSubsteps = 2;
+  assert.equal(read().available, false);
+  reader.integrationParameters.maxCcdSubsteps = 1;
+  m.numContacts = () => 0;
+  normal = xyz(); // Empty manifolds have no meaningful contact normal.
+  solverContacts = 1;
+  assert.deepEqual(read(), { intervalSeconds: 1 / 120, available: false, rows: [] });
+  solverContacts = 0;
+  assert.deepEqual(read(), { intervalSeconds: 1 / 120, available: true, rows: [] });
+});
+
+test('contact collection admits its bound and fails closed on overflow', async () => {
+  const { readContacts } = await import('../src/simulation/physics/read-contacts.mjs');
+  let pairs = 1024;
+  const m = {
+    normal: () => ({ x: 0, y: 1, z: 0 }),
+    numContacts: () => 4,
+    numSolverContacts: () => 4,
+    contactAppliedNormalImpulse: () => 0.1,
+    contactAppliedFrictionImpulse: (i) => (i === 0 ? { x: 0, y: 0, z: 0 } : undefined),
+    contactAppliedTwistImpulse: (i) => (i === 0 ? { x: 0, y: 0, z: 0 } : undefined),
+    contactAppliedFrictionGroupSize: (i) => (i === 0 ? 4 : 0),
+    localContactPoint1: (i) => ({ x: i, y: 0, z: 0 }),
+    localContactPoint2: (i) => ({ x: i, y: 0, z: 0 }),
+    contactDist: () => 0,
+  };
+  const reader = {
+    integrationParameters: { maxCcdSubsteps: 1 },
+    getRigidBody: (handle) => ({ collider: () => ({ handle }) }),
+    getCollider: (handle) => ({ handle }),
+    contactPairsWith: (c, fn) => {
+      if (c.handle === 0) for (let i = 1; i <= pairs; i++) fn({ handle: i });
+    },
+    contactPair: (a, b, fn) => fn(m, false),
+  };
+  const mapping = Array.from({ length: 1026 }, (_, i) => i);
+  assert.equal(readContacts(reader, mapping).rows.length, 4096);
+  pairs++;
+  assert.throws(() => readContacts(reader, mapping), /capacity/);
+});
+
+test('native contact callbacks reject invalid data and overflow after normal cleanup', async () => {
+  const { default: R } = await import('@dimforge/rapier3d-deterministic-compat');
+  const { readContacts } = await import('../src/simulation/physics/read-contacts.mjs');
+  await R.init();
+  const native = new R.World({ x: 0, y: 0, z: 0 });
+  try {
+    const a = native.createRigidBody(R.RigidBodyDesc.fixed());
+    const b = native.createRigidBody(
+      R.RigidBodyDesc.dynamic().setTranslation(0, 0.19, 0).setCanSleep(false),
+    );
+    native.createCollider(R.ColliderDesc.cuboid(0.1, 0.1, 0.1), a);
+    native.createCollider(R.ColliderDesc.cuboid(0.1, 0.1, 0.1).setMass(1), b);
+    native.step();
+    const mapping = [a.handle, b.handle],
+      read = () => readContacts(native, mapping);
+    const positive = read(),
+      before = native.takeSnapshot();
+    assert.ok(positive.rows.length > 0);
+    assert.throws(() => readContacts(native, [a.handle]), /unmapped contact collider/);
+    assert.deepEqual(read(), positive, 'outer callback failure must not poison the next query');
+    const original = native.contactPair.bind(native);
+    let mode = 'normal',
+      repetitions = 1,
+      returned = 0;
+    native.contactPair = (a, b, callback) =>
+      original(a, b, (manifold, flipped) => {
+        const view = new Proxy(manifold, {
+          get(target, key) {
+            if (key === 'normal' && mode !== 'normal')
+              return () => {
+                if (mode === 'falsy') throw undefined;
+                return { x: 0, y: 0, z: 0 };
+              };
+            const value = target[key];
+            return typeof value === 'function' ? value.bind(target) : value;
+          },
+        });
+        for (let i = 0; i < repetitions; i++) {
+          callback(view, flipped);
+          returned++;
+        }
+      });
+    mode = 'invalid';
+    assert.throws(read, /invalid contact normal/);
+    assert.ok(returned > 0, 'collection failure must return normally to native cleanup');
+    mode = 'falsy';
+    let caught = false;
+    try {
+      read();
+    } catch (error) {
+      caught = true;
+      assert.equal(error, undefined);
+    }
+    assert.equal(caught, true, 'a falsy thrown value must still reject');
+    mode = 'normal';
+    assert.deepEqual(read(), positive, 'a failed query must not poison the next query');
+    assert.equal(4096 % positive.rows.length, 0);
+    repetitions = 4096 / positive.rows.length;
+    assert.equal(read().rows.length, 4096);
+    repetitions++;
+    returned = 0;
+    assert.throws(read, /capacity/);
+    assert.ok(returned > 0, 'overflow must unwind normally before rethrowing');
+    repetitions = 1;
+    assert.deepEqual(read(), positive);
+    assert.deepEqual(
+      native.takeSnapshot(),
+      before,
+      'all reads and rejected reads are non-mutating',
+    );
+  } finally {
+    native.free();
+  }
+});

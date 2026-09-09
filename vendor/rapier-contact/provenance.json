@@ -1,0 +1,15 @@
+{
+  "upstreamCommit": "3e12c2679cb1940a876bde93af9cec0cf2f57944",
+  "npmVersion": "0.20.0",
+  "rustVersion": "0.35.1",
+  "rustc": "1.94.0 (4a4ef493e 2026-03-02)",
+  "wasmBindgen": "0.2.128",
+  "wasmPack": "0.12.1",
+  "node": "24.18.0",
+  "sourceArchiveSha256": "9c3da08780410f7e519e95772185c21e4c76216855019fd69eef3f1cb69644e4",
+  "patchSha256": "635e1fadfe887ac0e5c2b0e0d3e2e5bcbbd11ec1539831b4212d263dc63330ce",
+  "wasmSha256": "9148b8d513c4af31683dca413ae93c128024dd125c63a5f3921d6f9fa02fec71",
+  "wasmOpt": "111",
+  "packageSha256": "28389955d5ebe95eb74e3505d08d27bcf240a2f8b859dc098518bc2da6d624d5",
+  "localRebuild": "Two clean fixed-path builds produced identical WASM and package hashes on the recorded toolchain."
+}

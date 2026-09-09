@@ -267,3 +267,36 @@ test('checkpoint restores admitted metadata across later display mode changes', 
     a.dispose();
   }
 });
+
+test('completed contact samples publish their interval and resume through both clock drivers', async () => {
+  const contactConfig = {
+    ...config,
+    bodies: [
+      { ...config.bodies[0], position: [0, -0.5, 0], halfExtents: [10, 0.5, 10], fixed: true },
+      { ...config.bodies[0], position: [0, 0.5, 0], halfExtents: [0.5, 0.5, 0.5] },
+    ],
+  };
+  const a = await createSession(contactConfig),
+    b = await createSession(contactConfig);
+  const read = (s) => s.observe().frames.at(-1).contacts;
+  try {
+    assert.equal(read(a).intervalSeconds, 0);
+    a.step(20);
+    b.advanceTime((20 * 1000) / 120);
+    assert.deepEqual(read(a), read(b));
+    assert.equal(read(a).sampleTick, 20);
+    assert.equal(read(a).intervalSeconds, 1 / 120);
+    assert.ok(read(a).rows.some((r) => r.solved));
+    const sample = read(a),
+      cp = a.checkpoint();
+    a.step(10);
+    const future = read(a);
+    assert.doesNotThrow(() => a.restore(cp));
+    assert.deepEqual(read(a), sample);
+    a.step(10);
+    assert.deepEqual(read(a), future);
+  } finally {
+    a.dispose();
+    b.dispose();
+  }
+});

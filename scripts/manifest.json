@@ -1675,7 +1675,7 @@
       "id": "guided-spring-passivity",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Guided springs preserve axial freedom, passive and angular-momentum accounting, ordinary authored construction and independently allocated simulation/render/cadence budgets.",
+      "guarantee": "Guided springs preserve axial freedom, coupled elastic energy, loaded sag, passive and angular-momentum accounting, bounded topology and completed-tick stop behavior, ordinary authored construction and independently allocated simulation/render/cadence budgets.",
       "owners": [
         {
           "path": "src/simulation/physics/world.mjs",
@@ -1700,11 +1700,23 @@
         {
           "path": "scripts/measure-springs.mjs",
           "anchor": "evaluateSpringBrowser"
+        },
+        {
+          "path": "src/simulation/physics/spring-topology.mjs",
+          "anchor": "springTopologyDomain"
         }
       ],
       "checks": ["invariant-controls", "verify-spring-browser", "verify-spring-performance"],
       "controls": {
         "positive": [
+          {
+            "path": "test/powered-hinge.test.mjs",
+            "anchor": "power allocation includes spring-induced motor speed before actuator work"
+          },
+          {
+            "path": "test/powered-hinge.test.mjs",
+            "anchor": "prepared spring kick is read-only and actuator work matches its independent impulse oracle"
+          },
           {
             "path": "test/spring-law.test.mjs",
             "anchor": "spring matches independent semi-implicit solution and signed ledger"
@@ -1752,9 +1764,57 @@
           {
             "path": "test/spring-performance.test.mjs",
             "anchor": "spring performance accepts complete trials at independently allocated budget boundaries"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "off-center damper kick conserves orbital plus spin momentum before integration"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "zero stiffness and damping leave the admitted axial motion free"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "tiny admitted elastic stiffness preserves force units without a hard servo cutoff"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "undamped discrete modified energy and frequency remain bounded for 240 seconds near admission limit"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "rotating offset spring chains retain total angular momentum across mass ratios"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "ground-supported spring deflection is independent of damping and body ordering"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "free spring stops bound completed-tick impacts and preserve the isolated energy and momentum accounts"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "coupled offset elasticity retains its subdivision energy envelope without projection loss"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "fixed-path spring inactivity preserves authored energy and rejects a forged active native motor on restore"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "ground closes an otherwise tree-shaped spring path"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "inactive internal guide and fixed cycles remain native edges near active spring"
           }
         ],
         "negative": [
+          {
+            "path": "test/powered-hinge.test.mjs",
+            "anchor": "prepared spring allocations reject intervening impulses before state changes"
+          },
           {
             "path": "test/spring-law.test.mjs",
             "anchor": "spring damping is relative and locked mobility is bounded"
@@ -1778,6 +1838,10 @@
           {
             "path": "test/spring-performance.test.mjs",
             "anchor": "spring performance cannot pass missing trials, warmup, hidden pages or unhealthy controls"
+          },
+          {
+            "path": "test/spring-performance.test.mjs",
+            "anchor": "connected spring performance rejects missing bodies and slow connected integration"
           }
         ]
       },
@@ -1866,6 +1930,66 @@
           {
             "path": "test/graphics-quality.test.mjs",
             "anchor": "graphics transitions refresh shadow shader variants and release old targets without changing geometry"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "completed-contact-impulses",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Completed contact samples contain canonical copied linear solver impulses over one pinned CCD interval, with friction groups counted once; unavailable observations cannot claim support. Restore preserves samples and continuation. Pure twist is not total angular impulse.",
+      "owners": [
+        {
+          "path": "src/simulation/physics/world.mjs",
+          "anchor": "createPhysicsWorld"
+        },
+        {
+          "path": "src/simulation/session.mjs",
+          "anchor": "createSession"
+        },
+        {
+          "path": "src/simulation/physics/read-contacts.mjs",
+          "anchor": "readContacts"
+        }
+      ],
+      "checks": ["invariant-controls", "verify-spring-performance"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "completed contact normal impulse matches static load and immediate impact momentum"
+          },
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "contact observations restore immediately and continue exactly without aliases"
+          },
+          {
+            "path": "test/session.test.mjs",
+            "anchor": "completed contact samples publish their interval and resume through both clock drivers"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "contact friction is counted once and canonical body order preserves momentum"
+          },
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "contact admission distinguishes predictive, unprocessed and measured zero samples"
+          },
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "contact collection admits its bound and fails closed on overflow"
+          },
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "native contact callbacks reject invalid data and overflow after normal cleanup"
+          },
+          {
+            "path": "test/spring-performance.test.mjs",
+            "anchor": "spring contact performance rejects missing load and integration cost regressions"
           }
         ]
       },
