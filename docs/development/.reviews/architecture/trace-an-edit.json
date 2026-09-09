@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "src/application/workshop-app.mjs": "e3fbac24965e262e518c22e9c7f0cfd6fd4aa5e59d2bb316285c7e6ae3260960",
-    "src/presentation/workshop-view.mjs": "1f5056150d8c873eedc08637067fd01c61b790eaf36d116be4c8ee892cec0646",
+    "src/presentation/workshop-view.mjs": "6817c3dab026adae79af27be6fd43a3954c01ce23ef5c8f2385cfabe5b7afdc1",
     "src/presentation/surface-controls.mjs": "b67e0b2922bab1579766c858ab3c9e5b46b4416e52b81394395a08e91284f03d",
     "src/presentation/placement-lifecycle.mjs": "f40d3abfa4f9f55fcd8027990668efd48de22b544de0b8b7041b3a05ea735174",
     "src/presentation/assembly-mirror.mjs": "4d80854e0367bfd3a77604b4a8a45cb150660e134de5b4253547c4e84d95a31b",

@@ -61,6 +61,12 @@ test selection, registered browser checks and affected explanations without exec
 Remove `--summary` to execute. Reuse the existing boundary and invariant test contracts;
 register new guarantees in the manifest rather than another hand-maintained inventory.
 
+For player-facing changes, read the [UI and content policy](docs/development/ui-ux.md)
+before choosing placement or copy. State the player's task, owning region, visibility
+lifecycle and displaced UI. Preserve consequential state and unique actions; examples
+and explanations do not earn permanent canvas space by being new. Verify the affected
+journey and rendered layout, and report automation separately from player evidence.
+
 ## Work and milestones
 
 Run the actual current gate before advancing. M1 decides the physics library and

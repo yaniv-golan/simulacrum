@@ -11,6 +11,7 @@ const out = 'artifacts/manipulation-ux';
 mkdirSync(out, { recursive: true });
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 16; i++) await page.locator('[data-command=guide-step]').click();
   await page.getByRole('button', { name: 'Leave guide', exact: true }).click();
@@ -22,7 +23,7 @@ try {
     .click();
   browserEvidence.assert('match', [
     await page.locator('.move-scope').textContent(),
-    /connected parts · 8 parts/,
+    /Moves 8 parts together/,
   ]);
   const read = () =>
     page.evaluate(() => window.workshopProbe.observe().frames[0].metadata.blueprint);
@@ -72,7 +73,7 @@ try {
   await page.locator('[data-command=undo]').click();
   browserEvidence.assert('equal', [(await read()).parts.length, 8]);
   await page.keyboard.press('Escape');
-  browserEvidence.assert('equal', [await page.locator('.selection-actions').isVisible(), false]);
+  browserEvidence.assert('equal', [await page.locator('.move-scope').isVisible(), false]);
   browserEvidence.assert('match', [
     await page.locator('.selection-hint').textContent(),
     /Select a part/,

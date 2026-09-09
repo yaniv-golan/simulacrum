@@ -11,6 +11,7 @@ mkdirSync('artifacts/recording-browser', { recursive: true });
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.waitForFunction(() => window.workshopProbe);
+  await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
   const first = await page.locator('[data-command=guide-step]').boundingBox();
   for (let i = 0; i < 16; i++) {

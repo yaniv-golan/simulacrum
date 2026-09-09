@@ -42,7 +42,12 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"5cca3cbaa6df3dd110148a49a223c1dc3685da1167826403d88ab2824efdbe9d","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"929ab040b2128f4ca98e91acdf400763ecb2e3b9375916006feb3b886d4058de","disposition":"still accurate","rationale":"Only session formatting changed since this section review. The new guided spring diagram uses the existing static help lifecycle and adds linear motion wording. Surface mounting, cancellation and ordinary core commits remain the prescribed interaction pattern."} -->
+First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
+Identify the player task, primary home, visibility/retrieval lifecycle and replaced
+surface. Keep consequential state visible and verify unique actions remain reachable
+after removing or moving controls.
+
+<!-- doc-review {"version":1,"fingerprint":"c79b96c27116b8b70ec7c8bb9ec8729f4471844fc983244547197fc60a8c54a4","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"34b440e544857e5c06acb2c95e272683894879164830310bd02a259ef1f22738","disposition":"updated","rationale":"Added the UI policy decisions before interaction implementation. Mirror verifier uses the new truthful scope label and still exercises preview cancellation and ordinary commands."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -123,7 +128,7 @@ Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"56a462e2fba24c396c2252c49fc6780e2de6de88075b2a72a8bd0b0b969385db","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"7618345785cb633475eae8182257ce97f56773ffc51c6a8b58d5a01914d2c144","disposition":"still accurate","rationale":"Only session formatting changed since this section review. Mechanical membership now explicitly includes spring connectivity. Ordinary insertion preserves settings/materials and remaps endpoints; reflected mounts use independent geometry expectations under the documented copied-graph contract."} -->
+<!-- doc-review {"version":1,"fingerprint":"51f4e38c50a2b003a648f65477a376515365603b5d5d395b81974af449f97bd2","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"9544fb0b543eac29f7b99560bf2f6b1a962ee698f43e81becc7b3add40ceda14","disposition":"still accurate","rationale":"The existing assembly UX verifier now also clicks the automatic diagnostic to reach its finding; assembly authoring, named interfaces and library semantics are unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -196,7 +201,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"1e1e49dbf90268b9cd0370cfa733bcd25d94fa6d7deab0ed9a4fbcb635d3abff","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"73f5d28fb59b411d8fb85e201f10aac5b9c6315fa568ab396ebbd3b4f03335c0","disposition":"still accurate","rationale":"The performance probe now binds the attempted oversized load receipt and compares the complete blueprint, physics, energy, spring readings and cursor after rejection. Retained geometry, completed-transform and performance measurement ownership described here remains unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a50d964a3ab648c923f6ba7b693c0268fe7a9030c4efa27a9710537a32174eed","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"bbee35fabaea8069e58ff72aad85dd37ff55b2951947b03c8ee3c8c14906b7a5","disposition":"still accurate","rationale":"Spring browser journey now opens Learn and examples before choosing Spring experiments; numeric/rendered transform assertions and connection visibility owners are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

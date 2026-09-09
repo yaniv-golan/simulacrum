@@ -1,3 +1,4 @@
+import { movementScope } from './workbench-content.mjs';
 import { portLabel, portPurpose } from './port-wording.mjs';
 import { PRIMARY_PARTS, MORE_PARTS } from './part-palette.mjs';
 import { createPartHelp } from './part-help.mjs';
@@ -245,15 +246,6 @@ export function createWorkshopView(
   header.append(brand, modebar, filebar);
   const body = element('main', 'workshop-body'),
     left = element('aside', 'parts-panel');
-  left.append(
-    element('div', 'eyebrow', 'YOUR WORKBENCH'),
-    element('h1', '', 'Build. Run. Improve.'),
-    element(
-      'p',
-      'intro',
-      'Start with the guided rolling machine, or choose parts to build freely. Run applies gravity; support your motor above the floor.',
-    ),
-  );
   const partsHeading = element('h2', '', 'Parts');
   partsHeading.tabIndex = -1;
   left.append(partsHeading);
@@ -286,11 +278,28 @@ export function createWorkshopView(
   let guideReceipt = null,
     guideVisual = null,
     guidePulseStarted = 0;
+  const examples = element('dialog', 'workshop-dialog examples-browser');
+  examples.setAttribute('aria-label', 'Learn & examples');
+  const exampleMessage = element('p', 'example-message');
+  exampleMessage.setAttribute('role', 'status');
+  examples.append(
+    element('h2', '', 'Learn & examples'),
+    exampleMessage,
+    button('Close examples', () => examples.close()),
+  );
+  root.append(examples);
+  const learnButton = button('Learn & examples', () => {
+    exampleMessage.textContent = '';
+    if (guideActive) guide.scrollIntoView({ block: 'nearest' });
+    else examples.showModal();
+  });
+  filebar.append(learnButton);
   const guide = element('section', 'starter-guide');
   function refreshGuide() {
     guide.replaceChildren();
     guide.classList.toggle('active-guide', guideActive);
     if (!guideActive) {
+      examples.append(guide);
       guide.append(
         element('h2', '', 'Build a rolling machine'),
         element(
@@ -301,35 +310,42 @@ export function createWorkshopView(
       );
       const start = button('Start guided build', () => {
         if (frame.metadata.blueprint.parts.length) {
-          setMessage('Choose New for an empty workbench, then start the guided build.');
+          exampleMessage.textContent =
+            'Choose New for an empty workbench, then start the guided build.';
           return;
         }
         guideActive = true;
+        examples.close();
         empty.hidden = true;
         refreshGuide();
       });
       start.dataset.command = 'start-guide';
       const driveExample = button('Try driving example', () => {
         if (frame.metadata.blueprint.parts.length) {
-          setMessage('Save your machine, then choose New to open the driving example.');
+          exampleMessage.textContent =
+            'Save your machine, then choose New to open the driving example.';
           return;
         }
+        examples.close();
         send({ type: 'driving-example' });
       });
       driveExample.dataset.command = 'driving-example';
       const springs = button('Try spring playground', () => {
         if (frame.metadata.blueprint.parts.length) {
-          setMessage('Save your machine, then choose New to open the spring playground.');
+          exampleMessage.textContent =
+            'Save your machine, then choose New to open the spring playground.';
           return;
         }
+        examples.close();
         send({ type: 'spring-example' });
       });
       springs.dataset.command = 'spring-example';
       const undamped = button('Compare zero damping', () => {
         if (frame.metadata.blueprint.parts.length) {
-          setMessage('Save, then choose New to open the zero-damping comparison.');
+          exampleMessage.textContent = 'Save, then choose New to open the zero-damping comparison.';
           return;
         }
+        examples.close();
         send({ type: 'spring-example', damping: 0 });
       });
       const springExperiments = element('details', 'spring-experiments');
@@ -347,6 +363,7 @@ export function createWorkshopView(
 
       return;
     }
+    left.insertBefore(guide, partsHeading);
     const bp = frame?.metadata.blueprint,
       step = bp && guideSteps.find((s) => !s.done(bp));
     const completed = bp ? guideSteps.filter((s) => s.done(bp)).length : 0;
@@ -430,7 +447,7 @@ export function createWorkshopView(
       ),
     );
   }
-  left.append(guide, palette);
+  left.append(palette);
   refreshGuide();
   const more = element('details', 'more-parts');
   more.append(element('summary', '', 'More parts'));
@@ -480,11 +497,6 @@ export function createWorkshopView(
   const partList = element('div', 'part-list');
   const viewport = element('section', 'viewport');
   viewport.setAttribute('aria-label', 'Three dimensional workbench');
-  const overlay = element('div', 'viewport-caption');
-  overlay.append(
-    element('span', 'live-dot'),
-    element('span', '', 'Build a machine. Learn what makes it work.'),
-  );
   const hint = element(
     'div',
     'canvas-hint',
@@ -503,7 +515,7 @@ export function createWorkshopView(
       document.querySelector('meta[name=build-id]')?.content ?? '',
     );
   buildId.dataset.buildId = '';
-  viewport.append(stage, overlay, empty, hint, buildId);
+  viewport.append(stage, empty, buildId);
   const rightPanel = element('aside', 'inspector-panel'),
     machinePicker = element('details', 'machine-picker'),
     partCount = element('summary', 'section-label', 'Machine · 0');
@@ -549,8 +561,6 @@ export function createWorkshopView(
   const selectionLabel = element('div', 'selection-label');
   selectionLabel.hidden = true;
   viewport.append(selectionLabel);
-  const selectionActions = element('div', 'selection-actions');
-  selectionActions.hidden = true;
   const scopeLabel = element('strong', 'move-scope');
   const mirrorButton = button('Mirror parts…', () => {
     if (!selected) return;
@@ -559,14 +569,6 @@ export function createWorkshopView(
     mirror.start(frame, selected);
   });
   mirrorButton.dataset.command = 'mirror-assembly';
-  selectionActions.append(
-    scopeLabel,
-    button('Move · W', () => setTool('translate')),
-    button('Rotate · E', () => setTool('rotate')),
-    button('Clear · Esc', () => select(null)),
-    mirrorButton,
-  );
-  viewport.append(selectionActions);
   const footer = element('footer', 'workshop-footer'),
     modeLabel = element('span', 'mode-label', 'BUILD'),
     tickLabel = element('span', 'tick-label', 'Tick 0'),
@@ -836,7 +838,12 @@ export function createWorkshopView(
   const tools = element('div', 'edit-toolbar');
   const checkButton = button('Check machine', showMachineCheck);
   checkButton.dataset.command = 'check-machine';
-  tools.append(checkButton, surfaceSnapLabel);
+  modebar.append(checkButton);
+  const editGroup = element('div', 'edit-tool-group');
+  editGroup.setAttribute('role', 'group');
+  editGroup.setAttribute('aria-label', 'Edit tools');
+  tools.append(editGroup);
+  editGroup.append(surfaceSnapLabel);
   for (const [value, label] of [
     ['select', 'Select · V'],
     ['translate', 'Move · W'],
@@ -846,12 +853,17 @@ export function createWorkshopView(
       setTool(value);
     });
     b.dataset.editTool = value;
-    tools.append(b);
+    editGroup.append(b);
   }
+  editGroup.append(scopeLabel);
+  const viewGroup = element('div', 'view-tool-group');
+  viewGroup.setAttribute('role', 'group');
+  viewGroup.setAttribute('aria-label', 'View');
+  tools.append(viewGroup);
   const explodeButton = button('Exploded view', () => setExploded(!exploded));
   explodeButton.dataset.command = 'explode-view';
   explodeButton.setAttribute('aria-pressed', 'false');
-  tools.append(
+  viewGroup.append(
     button('Frame machine · F', () => {
       explodeCameraTween = null;
       editing.focus();
@@ -860,11 +872,6 @@ export function createWorkshopView(
   );
   const wiringLabel = element('label', 'follow-control'),
     wiring = element('input'),
-    wiringHelp = element(
-      'span',
-      'wiring-help',
-      'Shows power and signal connections. These lines do not restrict movement.',
-    ),
     wiringNotice = element('span', 'wiring-notice', 'Inspection connections shown.');
   wiring.type = 'checkbox';
   wiring.checked = true;
@@ -877,7 +884,8 @@ export function createWorkshopView(
     updateConnections();
     invalidateScene();
   });
-  tools.append(wiringLabel, wiringHelp, wiringNotice);
+  wiringLabel.title = 'Show power and signal links. These links do not hold parts together.';
+  viewGroup.append(wiringLabel, wiringNotice);
   const inspectionBanner = element('div', 'inspection-banner');
   inspectionBanner.hidden = true;
   inspectionBanner.append(
@@ -896,26 +904,49 @@ export function createWorkshopView(
   follow.checked = true;
   follow.setAttribute('aria-label', 'Follow motion');
   followLabel.append(follow, document.createTextNode('Follow motion'));
-  tools.append(followLabel, health);
-  tools.append(
-    element(
-      'span',
-      'edit-hint',
-      'Move/Rotate moves attached parts together. Use Adjust mount to reposition an attachment.',
-    ),
-  );
+  viewGroup.append(followLabel);
+  tools.append(health);
   viewport.append(tools);
-  const help = element('details', 'keyboard-help');
+  const help = element('dialog', 'workshop-dialog');
+  help.setAttribute('aria-label', 'Help');
   help.append(
-    element('summary', '', 'Controls · ?'),
+    element('h2', '', 'Controls'),
+    element('h3', '', 'Build'),
     element(
       'p',
       '',
-      'Build: V selects direct movement; drag a part to move it; drag empty space to orbit; right-drag to pan. Arrows move 2.5 cm in camera directions · Page Up/Down changes height · Alt + arrows rotates 90° · C or Ctrl/Cmd+C duplicates toward camera, skipping occupied 1 m positions · X/Delete removes the selected part · Esc clears · Ctrl/Cmd+Z undoes. Move/rotate affects attached parts; copying makes one disconnected part. Run: saved receiver bindings operate the machine. W/S or arrows drive; A/D or arrows steer when configured. Machine controls lists every action.',
+      'Drag a part to move it; attached parts move together. Use Adjust mount in the inspector to reposition an attachment. Move W and Rotate E show handles; V returns to direct dragging.',
     ),
+    element(
+      'p',
+      '',
+      'Arrows move 2.5 cm. Page Up/Down changes height. Alt + arrows rotates 90°. C copies one disconnected part; Delete removes it. Escape cancels or clears. Ctrl/Cmd+Z undoes.',
+    ),
+    element('h3', '', 'View'),
+    element(
+      'p',
+      '',
+      'Drag empty space to orbit. Right-drag pans; scroll zooms. F brings the machine into view. Wiring shows power and signal links; these links do not hold parts together.',
+    ),
+    element('h3', '', 'Run and pause'),
+    element(
+      'p',
+      '',
+      'Machine controls shows the keys configured on this machine. Space runs or pauses. Return to Build restores the editable starting machine.',
+    ),
+    hint,
+    button('Close help', () => help.close()),
   );
-  viewport.append(help);
+  root.append(help);
+  filebar.append(button('Help', () => help.showModal()));
   const motionReadout = createMotionReadout(viewport);
+  const measurements = button('Measurements', () => {
+    const open = measurements.getAttribute('aria-pressed') !== 'true';
+    measurements.setAttribute('aria-pressed', String(open));
+    motionReadout.setVisible(open);
+  });
+  measurements.setAttribute('aria-pressed', 'false');
+  modebar.append(measurements);
   const vehicleControls = createVehicleControls({ send, select, container: viewport });
   const connectionTest = createConnectionTest({
     holdReceiver: (id, duty) => vehicleControls.hold(id, duty),
@@ -1015,6 +1046,7 @@ export function createWorkshopView(
     onInteraction?.('tool', { from: activeTool, to: value });
     activeTool = value;
     editing.setTool(value);
+    refreshSelectionVisuals();
     hint.textContent =
       value === 'select'
         ? 'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear'
@@ -1059,11 +1091,17 @@ export function createWorkshopView(
       outline.visible = primary || member;
       outline.material.color.setHex(primary ? 0xffc778 : 0x8cf5cf);
     }
-    selectionActions.hidden =
-      surface.active() || exploded || !selected || frame?.metadata.mode !== 'build';
-    mirrorButton.disabled = (frame?.metadata.blueprint.parts.length ?? 0) < 2;
-    scopeLabel.textContent =
-      group.length > 1 ? `Move connected parts · ${group.length} parts` : 'Move this part';
+    mirrorButton.disabled =
+      (frame?.metadata.blueprint.parts.length ?? 0) < 2 ||
+      frame?.metadata.mode !== 'build' ||
+      exploded;
+    scopeLabel.textContent = movementScope({
+      mode: frame?.metadata.mode,
+      tool: activeTool,
+      count: group.length,
+      blocked: surface.active() || exploded || mirror?.active(),
+    });
+    scopeLabel.hidden = !scopeLabel.textContent;
     scopeLabel.title =
       group.length > 1
         ? 'Mint outlines show everything that moves. Disconnect a mount or shaft to separate parts.'
@@ -2258,7 +2296,7 @@ export function createWorkshopView(
     });
     turn.disabled = mode !== 'build';
     placement.append(turn);
-    right.append(placement);
+    right.append(mirrorButton, placement);
 
     for (const details of right.querySelectorAll('details'))
       details.open =
@@ -2869,9 +2907,6 @@ export function createWorkshopView(
         },
         started: performance.now(),
       };
-    tools.querySelector('.edit-hint').textContent = on
-      ? 'Inspection only · Return to machine to edit'
-      : 'Move/Rotate moves attached parts together. Use Adjust mount to reposition an attachment.';
     explodeButton.textContent = on ? 'Machine view' : 'Exploded view';
     explodeButton.setAttribute('aria-pressed', String(on));
     inspectionBanner.hidden = !on;
@@ -3091,7 +3126,8 @@ export function createWorkshopView(
     }
     if (key === '?') {
       event.preventDefault();
-      help.open = !help.open;
+      if (help.open) help.close();
+      else help.showModal();
       return;
     }
     if (
@@ -3270,49 +3306,12 @@ export function createWorkshopView(
         );
       selectionLabel.style.left = `${x}px`;
       selectionLabel.style.top = `${y}px`;
-      selectionActions.style.left = `${x}px`;
-      selectionActions.hidden =
-        surface.active() ||
-        directDrag.hasMoved() ||
-        editing.isHandleActive() ||
-        exploded ||
-        explodeAmount > 0 ||
-        point.z > 1 ||
-        frame.metadata.mode !== 'build';
-
-      const bounds = new THREE.Box3();
-      for (const id of mechanicalGroup(frame.metadata.blueprint, selected))
-        bounds.expandByObject(meshes.get(id));
-      let top = y;
-      for (const bx of [bounds.min.x, bounds.max.x])
-        for (const by of [bounds.min.y, bounds.max.y])
-          for (const bz of [bounds.min.z, bounds.max.z]) {
-            const corner = new THREE.Vector3(bx, by, bz).project(camera);
-            top = Math.min(top, (-corner.y * 0.5 + 0.5) * stage.clientHeight);
-          }
-      const actionHeight = selectionActions.offsetHeight,
-        labelHeight = selectionLabel.offsetHeight;
-      let actionsTop = Math.max(
-        tools.offsetTop + tools.offsetHeight + 12,
-        Math.min(top, y - labelHeight) - actionHeight - 12,
-      );
-      if (actionsTop + actionHeight > y - labelHeight - 8 && actionsTop < y + 8) {
-        const separation = 140 + selectionLabel.offsetWidth / 2 + 10,
-          side =
-            x + separation <= stage.clientWidth - 140
-              ? x + separation
-              : x - separation >= 140
-                ? x - separation
-                : null;
-        if (side !== null) selectionActions.style.left = `${side}px`;
-        else actionsTop = y + 12;
-      }
-      selectionActions.style.top = `${actionsTop}px`;
     }
     inspectionFill.position.copy(camera.position);
     inspectionFill.target.position.copy(controls.target);
     ground.visible = camera.position.y > groundData.position[1] + groundData.halfExtents[1] + 0.005;
     if (sceneDirty) {
+      refreshSelectionVisuals();
       refreshInspector();
       surface.renderOverlay();
       sceneDirty = false;

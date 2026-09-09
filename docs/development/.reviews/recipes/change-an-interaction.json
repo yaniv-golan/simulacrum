@@ -1,6 +1,7 @@
 {
   "version": 1,
   "dependencies": {
+    "docs/development/ui-ux.md#before-changing-player-facing-ui": "9626c71b2f3884ded42437d9eae1efc17299f5536387bfa6045c37b162d2a9c5",
     "package-lock.json": "f44632025fc6a2b08f70e71a45243005e5f59483a19702a2d67f741b69e7f5e5",
     "package.json": "ac1208b1973128edabff7a63b2257e32f3be1970f2f3164b8c6d4b3ba4d6598e",
     "src/model/assembly.mjs": "55607bf350d60ed93bf6db3b51aadbf1c7b702d4e73f1fe3f635cbaca0870e2a",
@@ -48,7 +49,7 @@
     "scripts/browser-session.mjs": "d2befbbf0652cdf14d380dc1c694eabd9bb8dbd27215254ba6e22a9f8b3b4740",
     "scripts/module-graph.mjs": "efb5d29da98f47dfb241180a619b5b44d88608871cbacc5b8b66d1fa01bf143e",
     "scripts/source-identity.mjs": "1d0f001521fa9bf3133b6fdcbc90ffbc33c11186650f78c429712b90d1c43bf0",
-    "scripts/verify-mirror-browser.mjs": "0261435ed39e1d99d0f7f409a0306eda535e0e05cad705ca7047ab0e7755006a",
+    "scripts/verify-mirror-browser.mjs": "0d98a9c3de4ee4d1fff0904a1c4c5577f2253468790e9c0fcdf93259c7a73ea0",
     "src/model/connection-test-paths.mjs": "ae3f9f3e2b350d833b8757ddb6cc326cf8c1b356202976e74b95ae96e7bc157d",
     "src/presentation/part-help-input.mjs": "79ebcd26eb9fbc152749d139a68ba4e0fc980e857fa2a3a7e89917b67a02e0da",
     "src/presentation/vehicle-controls.mjs": "53c11c5e68e3359ceecb0e962b2be39aaaa5942d12abbf792d5eb4dde3b46d3e",

@@ -7,15 +7,29 @@ export function createMotionReadout(container) {
     previous = document.createElement('small'),
     warning = document.createElement('strong');
   warning.setAttribute('role', 'status');
-  panel.append(current, previous, warning);
+  const values = document.createElement('div');
+  values.className = 'motion-values';
+  values.hidden = true;
+  values.append(current, previous);
+  panel.append(values, warning);
   container.append(panel);
   let origin = null,
     startTick = 0,
     lastMode,
     lastTick = 0,
     latest = null,
-    previousText = '';
+    previousText = '',
+    requested = false,
+    hasMotion = false;
+  function refreshVisibility() {
+    values.hidden = !requested || !hasMotion;
+    panel.hidden = values.hidden && warning.hidden;
+  }
   return {
+    setVisible(value) {
+      requested = value;
+      refreshVisibility();
+    },
     update(frame) {
       const mode = frame.metadata.mode,
         motion = machineMotion(frame);
@@ -24,7 +38,7 @@ export function createMotionReadout(container) {
           previousText = `Last run: ${latest.distance.toFixed(2)} m from start in ${latest.seconds.toFixed(1)} s`;
         origin = null;
         latest = null;
-        current.textContent = 'Run to measure motion';
+        current.textContent = previousText ? '' : 'No run measured yet';
       } else if (motion) {
         if (!origin || frame.tick < lastTick) {
           origin = motion.center;
@@ -39,7 +53,8 @@ export function createMotionReadout(container) {
       const boundary = mode === 'build' ? null : machineBoundary(frame);
       warning.textContent = boundary?.message ?? '';
       warning.hidden = !boundary;
-      panel.hidden = !motion;
+      hasMotion = Boolean(motion);
+      refreshVisibility();
       panel.title =
         'Mass-weighted machine center. Distance is horizontal displacement, not path length. Detached parts are included. Last run may have different controls or duration.';
       previous.textContent = previousText;

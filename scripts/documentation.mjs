@@ -444,9 +444,9 @@ export function inspectDocumentation(root = process.cwd(), { files } = {}) {
       return { [path + (fragment ? '#' + fragment : '')]: hash(authored) };
     }
     if (fragment === 'source') {
-      if (!/\.(mjs|cjs|js)$/.test(path))
-        throw Error(`unsupported source scope ${url}; reference a JavaScript module`);
-      module(path); // A broken source is not a valid reviewed boundary.
+      if (!/\.(mjs|cjs|js|css)$/.test(path))
+        throw Error(`unsupported source scope ${url}; reference JavaScript or CSS`);
+      if (!path.endsWith('.css')) module(path); // JavaScript must parse; CSS scope binds bytes.
       activeScopeNotes = [
         `direct source coverage for ${path}; imported behavior requires explicit dependency links or implementation scope`,
       ];

@@ -189,6 +189,9 @@ try {
     evidence.assert('ok', [
       health.y >= follow.y + follow.height || health.y + health.height <= follow.y,
     ]);
+    await p.locator('.machine-health').click();
+    await p.getByRole('dialog', { name: 'Check machine' }).waitFor({ state: 'visible' });
+    await p.locator('[data-diagnostic-code="MISSING_POWER"]').waitFor({ state: 'visible' });
   });
   evidence.assertUnchanged();
   writeFileSync(`${out}/result.json`, JSON.stringify({ ...evidence.identity, results }, null, 2));

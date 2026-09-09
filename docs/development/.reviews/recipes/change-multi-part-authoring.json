@@ -49,7 +49,7 @@
     "scripts/module-graph.mjs": "efb5d29da98f47dfb241180a619b5b44d88608871cbacc5b8b66d1fa01bf143e",
     "scripts/source-identity.mjs": "1d0f001521fa9bf3133b6fdcbc90ffbc33c11186650f78c429712b90d1c43bf0",
     "scripts/verify-assemblies-browser.mjs": "00bc2f8a5c11e3cf310cec56456b3553c00403f42c01758fc65d75f8d5c232d0",
-    "scripts/verify-assembly-ux-browser.mjs": "f2e5e476a298d8cb2a14cfabfafbf837923ca3f3d3951dfa337f079e6395270b",
+    "scripts/verify-assembly-ux-browser.mjs": "6e3614ed434054ada5d898befb700e5849613a67364954e301813585efcde5ef",
     "test/fixtures/reusable-rover.json": "81307569c94d568e66136259f57e0b74477520ac0f3d4c23a72db660ab7e53e8"
   }
 }

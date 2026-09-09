@@ -12,6 +12,7 @@ const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
 page.setDefaultTimeout(6000);
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 8; i++) await page.locator('[data-command=guide-step]').click();
   const read = () =>

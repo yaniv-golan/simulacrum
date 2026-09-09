@@ -35,6 +35,24 @@ const receipt = {
   disposition: 'still accurate',
   rationale: 'The helper still derives its output from the explicitly supplied numeric input.',
 };
+test('CSS source scope makes layout changes stale without binding unrelated stylesheets', (t) => {
+  const f = fixture(t);
+  f.put('src/presentation/layout.css', '.tools { font-size: 14px; }');
+  f.put(
+    'docs/development/guide.md',
+    '# Layout\n[layout](../../src/presentation/layout.css#source) keeps controls readable.\n',
+  );
+  assert.equal(
+    f.inspect().errors.some((x) => x.includes('unsupported source scope')),
+    false,
+  );
+  reviewSection(f.root, 'docs/development/guide.md', 'layout', receipt);
+  assert.deepEqual(f.inspect().errors, []);
+  f.put('src/presentation/unrelated.css', '.other { color: red; }');
+  assert.deepEqual(f.inspect().errors, []);
+  f.put('src/presentation/layout.css', '.tools { font-size: 8px; }');
+  assert.match(f.inspect().errors.join('\n'), /stale documentation review/);
+});
 test('Markdown references, anchors, symbols and canonical commands/IDs validate; fences are examples', (t) => {
   const f = fixture(t);
   f.put('README.md', '# Start\nSee [guide][g].\n[g]: docs/development/guide.md#owner\n');

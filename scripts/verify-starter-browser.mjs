@@ -23,6 +23,7 @@ try {
     await page.locator('meta[name=build-id]').getAttribute('content'),
     build,
   ]);
+  await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 16; i++) {
     await page.locator('[data-command=guide-step]').click();

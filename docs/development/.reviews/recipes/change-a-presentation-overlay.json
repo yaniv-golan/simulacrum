@@ -25,7 +25,7 @@
     "scripts/browser-session.mjs": "d2befbbf0652cdf14d380dc1c694eabd9bb8dbd27215254ba6e22a9f8b3b4740",
     "scripts/module-graph.mjs": "efb5d29da98f47dfb241180a619b5b44d88608871cbacc5b8b66d1fa01bf143e",
     "scripts/source-identity.mjs": "1d0f001521fa9bf3133b6fdcbc90ffbc33c11186650f78c429712b90d1c43bf0",
-    "scripts/verify-spring-browser.mjs": "b8d973544657447a265f097a3b085bf27b54ad51756f663c275b3fe5b8f6f58a",
+    "scripts/verify-spring-browser.mjs": "57c104396c274a50fb9ebe2291c9140be9ab9045aa8eb0f5459cdffc781d6323",
     "scripts/verify-spring-performance.mjs": "87e5dffcc21d9d921b97fbddf3574cd6c232c2582a407a68ce251539a26d3d36",
     "src/model/assembly.mjs": "55607bf350d60ed93bf6db3b51aadbf1c7b702d4e73f1fe3f635cbaca0870e2a",
     "src/model/blueprint.mjs": "06b56bc7ce56605c030b097b84076fd2a8033d6cd14f0c9f596dad27f7a1b29a",

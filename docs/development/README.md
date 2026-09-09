@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"2cceaba329a36bd349171dec09d3779ae4372ec526895ad8fe09203446489336","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"5041269c22597cace3b5f44b8bc60cde1e06038b2ee88260fe619de86d07e638","disposition":"still accurate","rationale":"Architecture overview now links the registry reader for composition and gate/rules for live values; architecture-first discovery and the single completion-command workflow remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"53cc97a69b3ea776cb790aac1d64c70d013749713c2b56569e59c8b35980a0e1","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"d805b410b8f4dfd3bee1bcf30f7c45eae609e0b5befa67d7b247cfd1e2fab246","disposition":"still accurate","rationale":"AGENTS now requires the UI content policy; the architecture-first entrypoint, Node range and served identity guidance remain accurate."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -8,6 +8,11 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Working loop
+<!-- doc-review {"version":1,"fingerprint":"f937c11e443f01425571b939eb2eba81bf4788c112b8a17824c0c53194f971c0","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"ada749125e632d8ece4fdd979daab565086e6bd09d7c36081a86094b2ad69da3","disposition":"updated","rationale":"Added the canonical UI policy entrypoint while retaining manifest-owned checks and existing discovery and completion commands."} -->
+
+Player-facing changes also follow the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
+It owns placement, teaching lifecycle and qualitative review; the manifest owns its
+executable guarantees. Use the existing discovery and completion commands below.
 
 1. Read the architecture map and matching recipe; locate the production owner with
    `docs:navigate` before adding a helper. Run `inspect:change -- --files <paths>`
@@ -122,7 +127,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"bf8a8b6908ce59354adfd0f614223573ed3569589ea4059e73aaf5a4a86de548","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"8f1daa885946e2de6bd9f0bbd35cf7bd741b9fc0353cb65eabaf59790a8f45bc","disposition":"still accurate","rationale":"Generated reference now includes spring owners; regeneration, section-specific semantic review and source-bound receipts remain the same workflow."} -->
+<!-- doc-review {"version":1,"fingerprint":"b310546d4e3823163b885f13433fe276e4c6cd66adebd87525c205a38ddd6d68","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"92024745baf60c108c51988719096d6c778e7c2c413efaf3bbe6c4feae65298b","disposition":"updated","rationale":"Documented direct CSS source byte coverage added to documentation review; generated browser reference now includes the workbench content journey."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -143,6 +148,10 @@ current commands and manifest-owned check/owner pointers.
 Record formal reviews after source closure, not after each tuning edit. Navigation-only links should target
 a stable overview heading; implementation explanations must keep their source/body dependencies. A later source
 change still invalidates affected reviews and must be reviewed before final verification.
+
+Use `workshop.css#source` for layout claims: it binds the stylesheet's bytes so a CSS-only
+edit makes the explanation stale. It does not claim imported styles are covered or
+that hashing a stylesheet validates its layout; browser review remains required.
 
 1. Run `npm run docs:prepare`. It regenerates derived command/check references before listing
    affected sections and changed dependencies. It may update the generated reference, but
@@ -208,7 +217,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"ec55dcb1da36f6fa471c0f6aea527dd6f3d0767dbe40ba2b76d4c8c64e714fe6","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"6df40d663f061e0c4918d4bf4f32bede8fd1a5d7731e6cbed69f6505bfe052eb","disposition":"still accurate","rationale":"New spring browser and performance checks are exclusive manifest entries. Shared catalog/schema/physics changes conservatively expand selection; the documented scheduler and scope admission are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"cfe86584a6d8ea2fe3bb7a9c6564a05f1b27ae1188c329bbb58bdbbbcd49b73a","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"1a68daf5cc3336b12ffa29256daa5b4a8d09f2d7b10e3891da68572a4e159a02","disposition":"still accurate","rationale":"The manifest adds a normal workshop browser check; runtime admission, conservative selection, source identity and completion tier ordering are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

@@ -131,6 +131,7 @@ try {
     await page.keyboard.press('ArrowRight');
     workloadActions.push('build-edit');
     await page.keyboard.press('Delete');
+    await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
     await page.getByRole('button', { name: 'Try driving example', exact: true }).click();
     driveStart = await readFrame();
     await page.locator('[data-command=run]').click();

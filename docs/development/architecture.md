@@ -1,7 +1,7 @@
 # Architecture and policy owners
 
 ## Overview
-<!-- doc-review {"version":1,"fingerprint":"c3cbe0c33a6bdbd65cb422315062a64b318661fea4bfe86ee996ee71a52258ec","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"75742dd8772283b5b284784250f9c2205272a3b56c6bf9c3b8b33763d24e70b6","disposition":"still accurate","rationale":"Runtime now owns guided spring configuration and energy accounting as well as existing clock/state contracts. Registry ownership and layer boundaries remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"2123bbcc2a383d5ed1c2c22f8bf62d965be0d631d7dbfb9f46316c928606e29b","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"b351b5909aa84434358b4185f248b95e3a00808dc3eb446a6133dd60cf6392a2","disposition":"still accurate","rationale":"AGENTS adds UI workflow requirements without changing layer imports, registry ownership or runtime and Course authority."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -9,7 +9,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"f2fb998787a70da0d66addf7e62c725a8518c413aecbab0955274b55cbba94df","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"f67ef3c527f517ba5b1f95dc61e4428797e8f44b446849033049f15c08c475ee","disposition":"updated","rationale":"Added conditional Build camera recovery: preserve visible reset context and reframe out-of-view restored machines without changing direction. Spring controls and the existing core/session authority path are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"76cdf95344162d769380671e75c917f41e06278279b0b12d58beb670859d47da","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"9524ed09841ba4bd8f44a10f97302e95e44b967dc854fe62a3c547c5f5084481","disposition":"still accurate","rationale":"The conditional scope refresh and diagnostic toolbar placement remain presentation-only; input and authoring changes still flow through the documented owners and core."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. Assembly capture and placement forms also remain transient; their accepted edits use the same core.

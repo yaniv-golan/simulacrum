@@ -43,13 +43,14 @@ try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.waitForFunction(() => window.workshopProbe);
   build = await page.locator('meta[name=build-id]').getAttribute('content');
+  await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 16; i++) {
     await page.locator('[data-command=guide-step]').click();
     if (i === 7) {
       await page.screenshot({ path: `${out}/guide-step-eight.png` });
       const label = await page.locator('.selection-label').boundingBox(),
-        toolbar = await page.locator('.selection-actions').boundingBox();
+        toolbar = await page.locator('.edit-toolbar').boundingBox();
       browserEvidence.assert('ok', [
         label && toolbar,
         'guided selection exposes its label and toolbar',

@@ -76,7 +76,7 @@ try {
   const original = await snapshot('built-source');
   evidence.assert('equal', [original.assemblies[0].ids.length, 1]);
   evidence.assert('equal', [
-    await page.getByText('Move connected parts · 3 parts', { exact: true }).isVisible(),
+    await page.getByText('Moves 3 parts together', { exact: true }).isVisible(),
     true,
   ]);
   await page.locator('.assembly-library > summary').click();

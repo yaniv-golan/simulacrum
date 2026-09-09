@@ -287,19 +287,6 @@ h3 {
   display: block;
   touch-action: none;
 }
-.viewport-caption {
-  position: absolute;
-  top: 22px;
-  left: 24px;
-  right: 20px;
-  font-size: 11px;
-  letter-spacing: 0.02em;
-  color: #afc2ca;
-  display: flex;
-  gap: 9px;
-  align-items: center;
-  pointer-events: none;
-}
 .live-dot {
   width: 6px;
   height: 6px;
@@ -308,14 +295,8 @@ h3 {
   box-shadow: 0 0 10px #a5cbb644;
 }
 .canvas-hint {
-  position: absolute;
-  bottom: 22px;
-  left: 0;
-  width: 100%;
-  text-align: center;
-  font-size: 11px;
-  color: #90a8b3;
-  pointer-events: none;
+  font-size: 13px;
+  color: #b4ccc4;
 }
 .empty-hint {
   position: absolute;
@@ -1048,35 +1029,6 @@ h3 {
   margin: 4px;
 }
 
-.selection-actions {
-  position: absolute;
-  z-index: 12;
-  transform: translateX(-50%);
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px;
-  width: 280px;
-  padding: 7px;
-  border: 1px solid #49656a;
-  border-radius: 9px;
-  background: #172a32ee;
-  box-shadow: 0 3px 12px #0005;
-}
-.selection-actions[hidden] {
-  display: none;
-}
-.selection-actions strong {
-  flex-basis: 100%;
-  text-align: center;
-  color: #a2ebd4;
-  font-size: 12px;
-}
-.selection-actions button {
-  padding: 5px 7px;
-  font-size: 12px;
-  min-height: 30px;
-}
 .manipulation-scope {
   color: #a2ebd4;
   font-size: 13px;
@@ -2673,4 +2625,84 @@ body:has(.playtest-panel) .guide-feedback {
   background: #20313a;
   font-size: 12px;
   line-height: 1.5;
+}
+
+/* Stable command groups; requested reference surfaces never live over the machine. */
+.edit-toolbar {
+  top: 12px;
+  right: 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  pointer-events: none;
+}
+.edit-tool-group,
+.view-tool-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  pointer-events: auto;
+}
+.move-scope {
+  font-size: 12px;
+  color: #a2ebd4;
+  padding: 4px;
+}
+.move-scope[hidden],
+.motion-values[hidden] {
+  display: none;
+}
+.edit-toolbar .machine-health {
+  pointer-events: auto;
+}
+.workshop-dialog {
+  color: #e6eff1;
+  background: #172a32;
+  border: 1px solid #627b77;
+  border-radius: 8px;
+  width: min(540px, calc(100vw - 40px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 20px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.workshop-dialog::backdrop {
+  background: #0008;
+}
+.workshop-dialog .starter-guide {
+  margin-top: 12px;
+}
+.examples-browser .starter-guide {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+.example-message:empty {
+  display: none;
+}
+.motion-readout,
+.motion-readout small {
+  font-size: 13px;
+}
+.motion-values {
+  display: grid;
+  gap: 4px;
+}
+.part-actions {
+  flex-wrap: wrap;
+}
+@media (max-width: 1100px) {
+  .workshop-header {
+    height: auto;
+    min-height: 74px;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 16px;
+  }
+  .modebar,
+  .filebar {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
 }

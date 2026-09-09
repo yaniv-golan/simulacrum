@@ -9,6 +9,7 @@ const b = await browserEvidence.launch({ profile: 'ui', ...{} }),
 try {
   await browserEvidence.goto(p, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await p.waitForFunction(() => window.workshopProbe);
+  await p.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await p.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 16; i++) await p.locator('[data-command=guide-step]').click();
   await p.locator('.machine-picker > summary').click();

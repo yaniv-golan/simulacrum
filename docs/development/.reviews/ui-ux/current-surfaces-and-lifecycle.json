@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "dependencies": {
+    "src/presentation/workshop-view.mjs": "6817c3dab026adae79af27be6fd43a3954c01ce23ef5c8f2385cfabe5b7afdc1",
+    "src/presentation/workshop.css": "5786bcdb3d968fd0b8b6789dcb6baa2b31a68a6a45fc0d5726918f742f2ee3e9",
+    "src/presentation/workbench-content.mjs": "c28e2866a4535231e7492296287b1cd2a800e03c9b3f9b736b2df1b4f63a38cb",
+    "src/presentation/motion-readout.mjs": "d21def9e5a05736cf96b85bb5b9d89e38939b863b40a191805dcf585a760c099"
+  }
+}

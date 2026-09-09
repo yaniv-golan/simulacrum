@@ -10,6 +10,7 @@ const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
 mkdirSync('artifacts/selection-ux', { recursive: true });
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 4; i++) await page.locator('[data-command=guide-step]').click();
   await page.getByRole('button', { name: 'Leave guide', exact: true }).click();
@@ -62,6 +63,7 @@ try {
     '0.5',
   ]);
   await page.locator('[data-command=new]').click();
+  await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 16; i++) await page.locator('[data-command=guide-step]').click();
   if (!(await page.locator('.machine-picker').evaluate((el) => el.open)))
