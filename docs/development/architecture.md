@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"d8165a42292dfd7ce78c601343375ddb17e476b48dcc00c03ca9349f0d3b2252","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"b816704590cadaaaaf74e403ab96b4f5fde76386e35b39956cf372c328a49a77","disposition":"still accurate","rationale":"Runtime v1 now specifies atomic callback rejection and empty-manifold availability. Runtime and manifest authority, layers and single-integration ownership remain as described."} -->
+<!-- doc-review {"version":1,"fingerprint":"8861ba24e47a1a2f7660e086ff64eac3d187f90d83a60b3bfe7cf2f07783a204","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"c8c292fa1f20104ce7f95c7584fa96cbf7e357b67738cf335726907e8967d88e","disposition":"still accurate","rationale":"The root AGENTS change adds a link and decision requirement for learning content. Layer edges, runtime state ownership and manifest allocation remain as described in this overview."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

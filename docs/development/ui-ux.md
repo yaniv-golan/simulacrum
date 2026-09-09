@@ -22,6 +22,105 @@ than repeating the label. Name causes only when the evidence establishes them;
 otherwise give the observation and a useful next check. Do not shrink text to make
 more explanations fit. Spatial relationships often need a preview or diagram.
 
+## Learning content policy
+<!-- doc-review {"version":1,"fingerprint":"142374b4aa0ba7c11be8329aa39684190dbb04aa88972be68c5711e965106efc","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"ee6ada73368fb7e3420e4735b2d1aae34dd7cb4749e635bafc2ff1ac76ff7b5e","disposition":"updated","rationale":"Recorded the learning policy against the isolated commit source. Existing guide prompts, inspector-owned parameter edits and preset replacement remain the referenced entrypoints; this documentation change adds no product behavior or claim of comprehension."} -->
+
+Learn & examples is a curated collection of things players can learn to do.
+Adding a feature requires a teaching decision, not automatically a catalogue entry.
+Apply this policy when adding or changing lessons, examples, experiments, challenges
+or their contextual invitations. It governs content admission; it does not require
+a new browser layout, progress system or tutorial engine.
+
+**Decide whether content is needed**
+
+In the normal change description, record **no entry / extend / replace / add** and:
+
+- The concrete player need and intended outcome: after this activity, what can the
+  player build, predict, diagnose or change? Identify observed confusion, a foundational
+  gap or a new construction capability. An untested foundational need is a hypothesis,
+  not a player observation.
+- The closest existing lesson, example or contextual explanation and why improving
+  it is sufficient or insufficient. If none exists, state that. A new part name,
+  impressive fixture or differently worded outcome is not sufficient justification.
+- For a separate activity, its distinct purpose, prerequisite and observable result;
+  for replacement, what useful content and actions it preserves. Do not create a
+  second decision database or duplicate the part/command inventory.
+
+Prefer no entry when ordinary controls or contextual help suffice. Fix confusing
+interaction before teaching a workaround. Extend when a variation serves the same
+experience; replace when the existing content is misleading or superseded; add when
+a distinct experience remains necessary after this comparison. These decisions are
+reviewable judgments, not a numeric score that proves educational value.
+
+**Choose the teaching format**
+
+| Format | Required player experience |
+| --- | --- |
+| Guided build | Use ordinary authoring actions, explain consequential connections, then offer a concrete independent edit or repair. |
+| Editable example or experiment | Show an inspectable behavior and offer a meaningful change or prediction. For comparisons, name what changes and what stays constant. |
+| Challenge | State the goal, constraints and observable success; offer optional hints and allow alternative solutions that satisfy the goal. |
+
+These are content contracts, not required tabs or exclusive categories. One fixture
+may support several formats. Reuse canonical explanations and fixtures where practical;
+allow separate instruction, independent practice and transfer activities with the
+same skill outcome when their distinct purposes justify them. Do not inflate the
+catalogue with parameter-only variants, or eliminate useful practice solely because
+two activities teach the same skill.
+
+**Author and place the experience**
+
+Before launch, state the outcome, format, essential prerequisites and whether the
+action edits the current machine or opens a replacement. Add an actual fixture preview
+when spatial understanding or choosing between entries needs it; do not substitute a
+decorative image or require a preview system solely to admit a useful small activity.
+Start with one concrete goal and enough instruction for an immediate attempt. Follow
+action with visible consequence and explanation where useful. Offer a meaningful next
+change, prediction or repair without requiring quizzes or lesson completion for free play.
+
+Keep part settings in the inspector, control reference in Help, fault explanations
+with faults and reusable components in their authoring library. Contextual help may link
+to an activity; it must not create a duplicate settings owner or hide essential actions.
+Use the existing requested-content, keyboard access, dismissal and replacement
+lifecycles below. An ordinary parameter edit preserves the rest of the machine;
+loading a preset resets authored choices and is an explicit replacement, not a
+single-variable comparison. Define retained state and recovery for any new lifecycle.
+
+Examples use ordinary player-authorable components, commands and physical laws within
+the admitted milestone. Teaching may highlight and explain; it may not grant hidden
+forces or successful behavior. Required observations and measurements must exist and
+describe the actual quantity; lack of instrumentation cannot justify invented success.
+An intentional failure needs an inspectable symptom and a reachable repair/restart.
+
+**Curate and review**
+
+Order content by player goals and readiness, not feature release order. Keep the
+starting selection deliberate and the remaining content retrievable. Prerequisites
+advise readiness; they do not lock sandbox capabilities behind lessons. Automatic
+recommendations require a demonstrated discovery need, explicit trigger and respectful
+dismissal/retrieval behavior; this policy does not itself authorize a hints subsystem.
+The exact category layout remains a usability decision, not a mandated three-tab design.
+
+When adding or revising content, inspect neighboring entries for extension, consolidation
+or replacement. Retire obsolete or misleading content while preserving useful learning
+and unique actions. Revisit affected content when its controls, fixture or physical
+behavior changes; do not demand a catalogue-wide rewrite for every feature.
+
+Verify loading, claimed behavior, ordinary edits, reset/replacement, cancellation and
+state preservation through existing relevant checks. For material learning journeys,
+use the player review described below to assess finding an activity, predicting an
+effect, making an independent change and recovering from failure. Authored-step
+completion proves neither comprehension nor enjoyment. Separate automation, source
+inspection and observed player evidence; cosmetic edits need no new participant session.
+
+The current [browser and guided-build presentation](../../src/presentation/workshop-view.mjs#source),
+[guide step generation](../../src/application/starter-guide.mjs#source),
+[example loading](../../src/application/workshop-app.mjs#source) and
+[spring parameter controls](../../src/presentation/spring-controls.mjs#source) are
+implementation entrypoints for applying these rules, not additional policy owners.
+Their source dependencies make affected content review discoverable through the normal
+documentation workflow. Documentation checks detect stale references and reviews;
+they do not automatically judge whether a new activity deserves admission.
+
 ## Current surfaces and lifecycle
 <!-- doc-review {"version":1,"fingerprint":"7ef64f62d6138a3a3b603bdc487bf7a4c733a7f67425bfacffb8ec5820e32b65","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"637e5595c5629627f1307f641a0a5aa858f7b5f2be5fdab4261ee72e50ba129a","disposition":"still accurate","rationale":"Canvas screenshot capture is an injected recording callback with no new permanent workshop panel; existing shell regions, requested measurements and lower-panel layout are unchanged."} -->
 

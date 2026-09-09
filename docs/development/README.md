@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"5fd4c1f85e851ba6c808703a3727b3211ab5834838cb404e40b15e191627b5f7","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"83711ec759b774d244527fd4bb1884dee7d0e2b4d6d60ac21946d05d6b837364","disposition":"still accurate","rationale":"Architecture and recipe introductions retain the same ownership entrypoints. The package change replaces the Rapier artifact; Node range, installation and development commands are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"10752e738e464fcd009ac49a40abf1be134b1bd38b58e13b43cfdbad3ad87f0a","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"90ef402d1f7ddfc3c4e28737af55cf528147bc32d911b9040235f8350c27deda","disposition":"still accurate","rationale":"The root AGENTS change adds the learning-content admission trigger. This entry still correctly directs agents to AGENTS, architecture and recipes; Node 24.18.x and package commands are unchanged by this policy edit."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and

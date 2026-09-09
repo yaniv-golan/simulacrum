@@ -2,12 +2,17 @@
 
 ## Choose a recipe
 
-<!-- doc-review {"version":1,"fingerprint":"ff6cb6d7b406ca3eb42caadd11b358a4a3db11b3d3d0ee8f292e03f3b9bd3ded","dependencies":"docs/development/.reviews/recipes/choose-a-recipe.json","dependencyDigest":"e91fcb2e87fb600c07e144973c4c935b3eb9920185659e9f0382c14f415a2c83","disposition":"still accurate","rationale":"The architecture routes numeric spring topology admission through the physics door. Reverse-consumer navigation and existing core command ownership remain the entrypoints; no alternative authoring policy was introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"8b9cd953f8c59a9111de88bfe239e04853a6e79127fa5846de94a07387359639","dependencies":"docs/development/.reviews/recipes/choose-a-recipe.json","dependencyDigest":"e296ce7d53b758add9e49b917498ff1d88aa40c63f62e5be6e3b8c6a3f5bf7b2","disposition":"updated","rationale":"Added the canonical learning-content admission link for part and interaction work. Navigation and ordinary command ownership remain unchanged; this section introduces no alternate policy owner."} -->
 
 Use the [map](architecture.md#overview) to locate the owner, inspect its reverse consumers with
 `node scripts/navigate.mjs <symbol-or-path>`, then use focused tests. Admit changes
 through the public command surface. A view-local convenience must not become a second
 attachment, polarity, naming, reset or authored-property policy.
+
+Part additions and interaction changes that add or change teaching also follow the
+[learning content admission rules](ui-ux.md#learning-content-policy). Record the
+admission decision before adding an example or contextual invitation; a new part does
+not automatically earn an entry.
 
 ## Add or extend a part
 
@@ -231,7 +236,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"d82a90e6dc84beaf2684c983f28427f7a51e2e02b593b18e64c00251f82fd63d","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"3860d0e5fbdd88d411e261391003ba6cd8873f522bbcf5217f650c1becfec41c","disposition":"still accurate","rationale":"The broad dependency footprint sees the contact reader, runtime clarification and new native control. Overlay placement, selection and projection transforms are unchanged; no UI surface was added."} -->
+<!-- doc-review {"version":1,"fingerprint":"a7911c933424d2d7d29a73fb450d189e0fe48492be3e6b7b27c9de4765c1c2fc","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"e58c31090dfac48eac11908525355ff33e4730e344b0ae9f4ddc092275a85dd6","disposition":"still accurate","rationale":"Only AGENTS admission guidance and learning-policy prose changed in this dependency scope. No overlay renderer, visibility, picking, command or resource owner changed; the existing overlay recipe remains accurate."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
