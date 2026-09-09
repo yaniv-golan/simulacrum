@@ -6,7 +6,7 @@
     "scripts/browser-registry.mjs": "73c0bd7257f16146dc500641e0a4d81e367f1ae239328697af8421113dd938e9",
     "scripts/browser-selection.mjs": "60643e0d1cf87d3d6352f494077b533cc9d25481bc3fd72890587a54c918b411",
     "scripts/invariant-coverage.mjs": "316b138841fbf9385a3103d2417c7cba28083d4ed17db9dc165ac7427b55d31f",
-    "scripts/manifest.json": "5e92e93d95cd799c445bd81447780f2cdd1ef45228ddc0c275c163cb77357572",
+    "scripts/manifest.json": "e05a2cb833ed7fe55378bd03df2649c591c0de128b186711a507e734145fb89d",
     "scripts/module-graph.mjs": "efb5d29da98f47dfb241180a619b5b44d88608871cbacc5b8b66d1fa01bf143e",
     "scripts/source-identity.mjs": "1d0f001521fa9bf3133b6fdcbc90ffbc33c11186650f78c429712b90d1c43bf0",
     "scripts/test-selection.mjs": "077d44bf0edf082dd21af44c2836263b21437368eeaddbdb5af5a4e21ecf53c4",
@@ -18,11 +18,11 @@
     "scripts/runtime-preflight.mjs": "92e2a833c64589fbd16bc0f954726d84bb7cebbfc9d071cef5b0d192ca9854d7",
     "scripts/verification-run.mjs": "c2d4c2adfedcb46bfba7bdaf962798706f94341117d526e3c2c9445cc33871f9",
     "scripts/verify-browser-suite.mjs": "3b6254cd22f22732c97bb4fdc12f583accbd341f7a9b63b896e5df16e5ce5067",
-    "src/model/boundaries.d.ts": "9b2a01a18d52d8bb78130b6ebfb583fae90900d0db7db6bdec32b41ff42b6c98",
-    "src/model/catalog.mjs": "abad4686c17d94ed44092563ac8f24421d1cce93fcbd695e8bee6f488804db09",
+    "src/model/boundaries.d.ts": "73455a4fce8c8d161198d6a16646ce15d398a42ed563eee83690ff5c136ba938",
+    "src/model/catalog.mjs": "346697fa0afb51648c3c42392b4cb974853eb9af34c84017cfba24b2b21c6930",
     "src/model/control-bindings.mjs": "ccdd408b593910d9ad2ad0de345b5339243742e7939ce0a364792fc44af0196f",
-    "src/model/features.mjs": "519df94c080306c199038bf574242c474eb72e045caff473a0186c0378fa86cf",
-    "src/model/generated/blueprint-types.d.ts": "16738efb3cd9058550980d72721f9776f27df5bacc884fa234e59371ea836ce8",
+    "src/model/features.mjs": "badd3a17e07b510439f51537ac227f8a6e68b613c70d51c8da6c138074731501",
+    "src/model/generated/blueprint-types.d.ts": "bd194a365248f2562dbb641baeb96a8dc7fb86a4ab9a9c1d5f156c2f441c12a5",
     "scripts/browser-session.mjs": "d2befbbf0652cdf14d380dc1c694eabd9bb8dbd27215254ba6e22a9f8b3b4740",
     "scripts/check-invariant-controls.mjs": "5d192dc873f0d0feb834d53fdfa8b9218529334a5392fb6f4e40b6c2b8323a83",
     "scripts/ci.mjs": "18ce3be7efe83af086f6aeb50559b0723902a7607028e7e1b1531edb7ea67fe1",
@@ -38,7 +38,7 @@
     "scripts/generate-schema.mjs": "67da83309c8b78a11911f8f8fc8cdc1220a9c244315e42c3f49f40b9ed21e68e",
     "scripts/verification-outcome.mjs": "b4442aedff2819f3edba44e5044c696824423d0c13ce1f4f9aa83a0b5bab422f",
     "scripts/verify-final.mjs": "1711367b8b801ff71a6fe8c3628281fe9bf7b2122b98f63cf9739b38461de5ec",
-    "src/model/blueprint.schema.json": "fb7f8f08138407ea0b6d6159bb6a3844d8e01bd7803f5ec58d1aab62f1662f89",
-    "src/model/generated/blueprint-validator.mjs": "35a9d388bc38a01aece1c9f99a69619993ccdda78e851ccc395a7c66cdbfa7d2"
+    "src/model/blueprint.schema.json": "be00ab5e9bbdd0038a8b9f5422edfdc14f2812fc7d7e957889bff455bb078ba2",
+    "src/model/generated/blueprint-validator.mjs": "33321ba6a6dbea41b9e90009bd1bd9bd5fc04624f0d7fc92fff75459016cb806"
   }
 }

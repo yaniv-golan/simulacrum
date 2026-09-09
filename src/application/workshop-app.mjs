@@ -1,5 +1,6 @@
 import { createAssemblyLibrary } from './assembly-library.mjs';
 import { palettePlacement } from '../model/palette-placement.mjs';
+import { createSpringPlayground, createSpringStrut } from '../model/fixtures/spring-playground.mjs';
 import { createDrivingMachine } from '../model/fixtures/driving-machine.mjs';
 import { createWorkshop } from '../core/workshop.mjs';
 import { createEmptyBlueprint, loadSave } from '../model/blueprint.mjs';
@@ -266,6 +267,21 @@ export async function mountWorkshopApp(root) {
         workshop.step(1);
         render();
         return { ok: true, reasonCode: 'OK', path: '' };
+      }
+      if (command.type === 'spring-strut') {
+        const bp = frame().metadata.blueprint;
+        const x = bp.parts.length ? Math.max(...bp.parts.map((p) => p.position[0])) + 0.6 : 0;
+        command = {
+          type: 'insert-assembly',
+          definition: createSpringStrut(),
+          position: [x, 0.02, 0],
+          rotation: [0, 0, 0, 1],
+        };
+      }
+      if (command.type === 'spring-example') {
+        if (frame().metadata.blueprint.parts.length)
+          return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
+        command = { type: 'load', save: createSpringPlayground({ damping: command.damping ?? 8 }) };
       }
       if (command.type === 'driving-example') {
         if (frame().metadata.blueprint.parts.length)

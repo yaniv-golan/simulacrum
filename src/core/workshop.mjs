@@ -189,7 +189,7 @@ export async function createWorkshop(
             ? resolveSurfaceEndpoint(part, proposal.endpoint)
             : CATALOG[part.type].ports.find((port) => port.id === proposal.endpoint.port);
           const a =
-            ['fixed', 'shaft'].includes(port.kind) ||
+            ['fixed', 'shaft', 'spring'].includes(port.kind) ||
             (port.kind === 'signal' && port.direction === 'input')
               ? proposal.target
               : proposal.endpoint;
@@ -339,7 +339,7 @@ export async function createWorkshop(
               ? resolveSurfaceEndpoint(part, command.a)
               : CATALOG[part.type].ports.find((p) => p.id === command.a?.port));
           if (!port) return result(false, 'INVALID_ENDPOINT', 'a');
-          if (['fixed', 'shaft'].includes(port.kind))
+          if (['fixed', 'shaft', 'spring'].includes(port.kind))
             next = snapConnection(next, command.a, command.b);
           next.connections.push({ id: command.id, kind: port.kind, a: command.a, b: command.b });
           break;

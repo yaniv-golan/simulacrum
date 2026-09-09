@@ -10,7 +10,7 @@ attachment, polarity, naming, reset or authored-property policy.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"8e291210c8ee0cf1056151d1762624726f2d144966c2263c65900c9b0d2e2334","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"c6bfa32d33ed40f4bde084c5471fdf7e2a8cda1807faf1433cbedf6d350edfea","disposition":"still accurate","rationale":"Wrangler and storage-test dependencies do not change the catalog, schema, geometry, compiler, wheel-diameter contracts or part milestone admission described by this recipe."} -->
+<!-- doc-review {"version":1,"fingerprint":"2a2554aca1e4455bfba6cb470dc888fcc29a3ce077bd79944e0abd3f13098053","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"c326af87389ee54f6baa5bf47db1bed5c519bcb07512279941050dff773d0273","disposition":"still accurate","rationale":"Only session formatting changed since this section review. Guide/carriage extend catalog and schema at M3b and regenerate validators/types. Pads remain canonical geometry with authored materials, compiler admission and ordinary surface mounts as described."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -27,7 +27,7 @@ validation with `node scripts/generate-schema.mjs` when schema changes.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"1a0e5a8158d5421bb786a28a08743d9aa27b64ae75f8f08321dfac276976d37f","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"d4008bb8e2ad3f5669c591c71be92c9b8ce6de15bef654c0c123c043abe3d410","disposition":"still accurate","rationale":"Capture API commands live outside the workshop authoring surface. The referenced core command shape validation, candidate compilation, atomic history and surface-mount counterexamples are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4c45647f4762192c1fdd7ffa7bd02dcb66087054c1d3485e9696c6f51fb39a56","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"2ed743d661d92200593d676836f38a129c86dd7f1f142331a6ef4e640a50bd3e","disposition":"still accurate","rationale":"Only session formatting changed since this section review. Spring convenience actions map to existing load/insert-assembly commands and parameter edits. Candidate compilation and atomic history remain the core admission route; no new command authority bypass was added."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -42,7 +42,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"b347469310a5df54ef2a35368a71f8aeaa530d088f4dfe88c741179c562ac8a9","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"6c4eeae48656fb69ebe606af91d67842439ed9c23287cc6b2852e399d4b1d5b9","disposition":"still accurate","rationale":"Discovery gains runtime service alternatives, while the mirror and help verifiers retain their implementation and registered execution. No surface/mirror preview, receiver cancellation, tooltip, scroll or reference-window behavior changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"5cca3cbaa6df3dd110148a49a223c1dc3685da1167826403d88ab2824efdbe9d","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"929ab040b2128f4ca98e91acdf400763ecb2e3b9375916006feb3b886d4058de","disposition":"still accurate","rationale":"Only session formatting changed since this section review. The new guided spring diagram uses the existing static help lifecycle and adds linear motion wording. Surface mounting, cancellation and ordinary core commits remain the prescribed interaction pattern."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -85,7 +85,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"4035b6b4071ff4f044cdb8639e5089fcbab8e4313246b08c88f335d0de3f32e6","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"bd4d79ec80ef77ebedafeec473dc7c4c63f5d9787079ec3be686bb73caa48117","disposition":"still accurate","rationale":"Deployment diagnostics and capture status do not alter diagnoseMotion, completed-observation consumption, opposed-drive controls or the separation between a symptom and its cause."} -->
+<!-- doc-review {"version":1,"fingerprint":"859ffd68a97ad422feb49525f1ef1c40d6d91c6ace114fa4a4f5dcdb31a2cb42","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"db6b288ffc90d2a1925a15c1a265080ffe0f70f6dc68225ba927efc8f4c439fb","disposition":"still accurate","rationale":"Only session formatting changed since this section review. Spring inspector reads completed length/speed/energy and explains limits; it neither repairs state nor infers intent. Existing diagnoseMotion ownership and symptom-versus-cause guidance remain accurate."} -->
 
 Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -100,11 +100,12 @@ A symptom is not proof of the intended mechanism or cause.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"54c62e5cbb8d086c84d657df1eab600387b0df91971dafe68549dee183321312","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ee35245f7438dc8069cd674ba2809972cf97c00aa1e21396bcc924687c20edac","disposition":"still accurate","rationale":"No physics, compiler, phase ordering, energy accounting or controller source changed. Added capture/deployment packages leave the narrow physics door and required physical qualification procedure intact."} -->
+<!-- doc-review {"version":1,"fingerprint":"8893db5e254ff39a481f37f487316940204e853700bab124e79ec5135b7acd79","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"7c98b03ef1876bfd058a211e3b310ecbd218bf1e2305bd86249d9122165da25a","disposition":"still accurate","rationale":"Only session formatting changed since this section review. Added numeric spring law ownership and coupled-order, frequency-bound, checkpoint-history controls. One integration and completed ledger ownership are preserved."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
-[constraint law](../../src/simulation/physics/law/constraints.mjs). Configuration comes
+[constraint law](../../src/simulation/physics/law/constraints.mjs) and
+[spring law](../../src/simulation/physics/law/spring.mjs). Configuration comes
 from the compiler; laws receive numerical inputs, not identities. The session owns
 phase ordering and one integration; do not introduce a second clock or hidden support.
 
@@ -113,14 +114,19 @@ Worked example: a motor-work change needs independent energy accounting in
 [shared power tests](../../test/shared-power.test.mjs), checkpoint-next-step tests in
 [session tests](../../test/session.test.mjs), and deterministic multi-process checks.
 Use analytical expectations and passive mirrored controls before tuning a controller.
+For guided springs, preserve five constrained degrees of freedom, simultaneous
+coupled damping, bounded frequency admission and signed integration/contact residuals.
+Use [spring physics controls](../../test/spring-physics.test.mjs) and
+[checkpoint/editing controls](../../test/spring-playground.test.mjs), including reversed
+connection order and pre-swap rejection of invalid derived history.
 Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"842eb3b18940a26996c603babebd1ff4569282c206893cf9bd9f5715be2b9810","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"40a7700ed164635cca1b7d34c43a36291c285e9c0de32e17a0cf9c7454bb016c","disposition":"still accurate","rationale":"Runtime network discovery was extended for recording adapters only. Mechanical traversal, assembly aliases, copied-graph contracts, library persistence, transforms and the shared assembly browser flows remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"56a462e2fba24c396c2252c49fc6780e2de6de88075b2a72a8bd0b0b969385db","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"7618345785cb633475eae8182257ce97f56773ffc51c6a8b58d5a01914d2c144","disposition":"still accurate","rationale":"Only session formatting changed since this section review. Mechanical membership now explicitly includes spring connectivity. Ordinary insertion preserves settings/materials and remaps endpoints; reflected mounts use independent geometry expectations under the documented copied-graph contract."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
-means fixed/shaft connectivity, not an editor selection, electrical network, or stored
+means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
 library group. Classify a selection's internal and crossing connections before choosing
 which edges an operation may copy. The classifier reports facts; the operation owns
 whether a crossing edge is omitted, rejected or explicitly rebound. Mount admission
@@ -190,7 +196,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"edc333fd77fe504d5ed5a4e2755a7f61dbd3e3182e82c823aa10836fbd53efb0","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"eeb5f5af3f51cf43b262f98b73ec5ace92d25fec9e1119d01649dfdd8d5f3ae3","disposition":"still accurate","rationale":"The package changes do not modify connection rendering, reveal/highlight ownership, visibility, ray picking or GPU resources. Existing overlay invariants and browser checks remain the prescribed validation."} -->
+<!-- doc-review {"version":1,"fingerprint":"1e1e49dbf90268b9cd0370cfa733bcd25d94fa6d7deab0ed9a4fbcb635d3abff","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"73f5d28fb59b411d8fb85e201f10aac5b9c6315fa568ab396ebbd3b4f03335c0","disposition":"still accurate","rationale":"The performance probe now binds the attempted oversized load receipt and compares the complete blueprint, physics, energy, spring readings and cursor after rejection. Retained geometry, completed-transform and performance measurement ownership described here remains unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -231,3 +237,12 @@ paused updates, cancellation and remount cleanup through the shared browser harn
 Use existing registered connection-test/exploded browser checks and the interaction
 probe for visible versus structured state. A view toggle is not an editing transaction;
 do not route it through authoring just to reuse Undo tests.
+
+The [guided coil renderer](../../src/presentation/spring-view.mjs) retains its vertex
+buffers and fixed wire radius while following completed endpoint transforms. Selection
+adds zero-force and travel marks. Decorative geometry has no physics authority.
+[Spring rendering controls](../../test/spring-view.test.mjs) cover travel and disposal;
+the registered [spring browser probe](../../scripts/verify-spring-browser.mjs#implementation)
+checks numeric controls and completed/rendered transforms, while the
+[performance probe](../../scripts/verify-spring-performance.mjs#implementation) measures
+render cost and retained resources at the admitted bound.

@@ -125,6 +125,7 @@ export const CATALOG = freeze({
     ports: [],
   },
   plate: {
+    mountingPads: { bottom: [0.04, 0.04] },
     mountingFaces: ['right', 'left', 'top', 'bottom', 'front', 'back'],
     type: 'plate',
     name: 'Plate',
@@ -141,6 +142,36 @@ export const CATALOG = freeze({
       },
     ],
     ports: [],
+  },
+  springGuide: {
+    ...component(
+      'springGuide',
+      'Spring guide',
+      [0.08, 0.01, 0.08],
+      'steel',
+      [{ ...port('slide', 'spring', [0, 0.01, 0]), rotation: aboutZ(Math.PI / 2) }],
+      {
+        stiffness: rating(100, 0, 300, 'N/m'),
+        damping: rating(2, 0, 100, 'N s/m'),
+        restLength: rating(0.3, 0.08, 0.4, 'm'),
+        minLength: rating(0.08, 0.08, 0.39, 'm'),
+        maxLength: rating(0.4, 0.09, 0.4, 'm'),
+      },
+    ),
+    milestone: 'M3b',
+    mountingFaces: ['bottom', 'left', 'right', 'front', 'back'],
+  },
+  springCarriage: {
+    ...component(
+      'springCarriage',
+      'Spring carriage',
+      [0.06, 0.01, 0.08],
+      'steel',
+      [{ ...port('slide', 'spring', [0, -0.01, 0]), rotation: aboutZ(Math.PI / 2) }],
+      {},
+    ),
+    milestone: 'M3b',
+    mountingFaces: ['top', 'left', 'right', 'front', 'back'],
   },
   powerCell: component('powerCell', 'Power Cell', [0.1, 0.05, 0.06], 'steel', [power()], {
     voltage: rating(24, 0.1, 240, 'V'),

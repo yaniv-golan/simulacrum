@@ -106,7 +106,7 @@ export function createConnectionView(parent) {
           });
         }
         markers(
-          electrical ? [0, 1] : [0],
+          electrical || spec.kind === 'spring' ? [0, 1] : [0],
           electrical ? 0.007 : 0.009,
           () => new THREE.MeshStandardMaterial({ color, metalness: 0.5, roughness: 0.35 }),
         );

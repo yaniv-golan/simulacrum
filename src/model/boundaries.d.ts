@@ -15,7 +15,7 @@ export interface Primitive {
 }
 export interface Port {
   id: string;
-  kind: 'shaft' | 'power' | 'signal';
+  kind: 'shaft' | 'power' | 'signal' | 'spring';
   multiplicity: 'one' | 'many';
   direction: 'input' | 'output' | 'bidirectional';
   position: Vec3;
@@ -69,6 +69,15 @@ export type JointConfiguration = { a: number; b: number; anchorA: Vec3; anchorB:
       axisA?: never;
       axisB?: never;
       limits?: never;
+    }
+  | {
+      kind: 'spring';
+      axisA: Vec3;
+      axisB: Vec3;
+      limits: readonly [number, number];
+      stiffness: number;
+      damping: number;
+      restLength: number;
     }
   | {
       kind: 'revolute';

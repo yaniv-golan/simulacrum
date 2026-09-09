@@ -23,7 +23,7 @@ export function mechanicalGroup(
     changed = false;
     for (const edge of blueprint.connections)
       if (
-        (edge.kind === 'fixed' || edge.kind === 'shaft') &&
+        (edge.kind === 'fixed' || edge.kind === 'shaft' || edge.kind === 'spring') &&
         !omitted.has(edge.id) &&
         eligible(edge) &&
         (group.has(edge.a.part) || group.has(edge.b.part))

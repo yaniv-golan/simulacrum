@@ -739,6 +739,26 @@
       "smoke": false,
       "timeoutMs": 30000,
       "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-spring-browser",
+      "script": "scripts/verify-spring-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-spring-performance",
+      "script": "scripts/verify-spring-performance.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "performance",
+      "smoke": false,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract"
     }
   ],
   "invariants": [
@@ -1630,6 +1650,90 @@
         ]
       },
       "qualificationBars": []
+    },
+    {
+      "id": "guided-spring-passivity",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Guided springs preserve axial freedom, passive accounting and ordinary authored construction.",
+      "owners": [
+        {
+          "path": "src/simulation/physics/world.mjs",
+          "anchor": "createPhysicsWorld"
+        },
+        {
+          "path": "src/simulation/physics/law/spring.mjs",
+          "anchor": "springImpulse"
+        },
+        {
+          "path": "src/simulation/physics/law/spring.mjs",
+          "anchor": "coupledSpringImpulses"
+        },
+        {
+          "path": "src/simulation/session.mjs",
+          "anchor": "createSession"
+        }
+      ],
+      "checks": ["invariant-controls", "verify-spring-browser", "verify-spring-performance"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/spring-law.test.mjs",
+            "anchor": "spring matches independent semi-implicit solution and signed ledger"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "guided spring oscillates, locks five DOFs, restores exactly and supports a load"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "coupled damping matches the independent simultaneous solution under reversed connection order"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "inverted gravity and freefall obey load direction instead of spring identity"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "damped displacement follows the independent underdamped oscillator solution"
+          },
+          {
+            "path": "test/spring-playground.test.mjs",
+            "anchor": "spring assembly insertion preserves material, settings and endpoint identities"
+          },
+          {
+            "path": "test/spring-playground.test.mjs",
+            "anchor": "mirrored spring machine preserves ordinary guided connectivity and settings"
+          },
+          {
+            "path": "test/spring-determinism.test.mjs",
+            "anchor": "spring drop and stop projections match four processes and both production clocks"
+          },
+          {
+            "path": "test/spring-view.test.mjs",
+            "anchor": "coil retains wire radius, buffers and disposal across full travel"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/spring-law.test.mjs",
+            "anchor": "spring damping is relative and locked mobility is bounded"
+          },
+          {
+            "path": "test/spring-playground.test.mjs",
+            "anchor": "derived spring speed rejects overflow before any checkpoint owner changes"
+          },
+          {
+            "path": "test/spring-playground.test.mjs",
+            "anchor": "spring authoring rejects invalid pairs, travel and misalignment atomically"
+          },
+          {
+            "path": "test/spring-physics.test.mjs",
+            "anchor": "excess spring frequency rejects before impulses and eight is the assembly bound"
+          }
+        ]
+      },
+      "qualificationBars": ["F1"]
     }
   ],
   "browserLocalScopes": [

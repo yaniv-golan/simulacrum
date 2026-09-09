@@ -154,7 +154,7 @@
           "$ref": "#/$defs/id"
         },
         "kind": {
-          "enum": ["fixed", "shaft", "power", "signal"]
+          "enum": ["fixed", "shaft", "power", "signal", "spring"]
         },
         "a": {
           "$ref": "#/$defs/endpoint"

@@ -2,6 +2,7 @@ import { CATALOG } from '../model/catalog.mjs';
 import { portLabel } from './port-wording.mjs';
 // Only schematic placement: no physical pose, mounting or admission policy.
 const layouts = {
+  spring: { guide: [0, 0], carriage: [1, 0] },
   power: { cell: [0, 0], bus: [1, 0], first: [2, 0], second: [2, 1] },
   drive: { cell: [0, 0], motor: [1, 0], wheel: [2, 0], support: [1, 1] },
   free: { bearing: [0, 0], wheel: [2, 0], support: [0, 1] },
@@ -9,6 +10,7 @@ const layouts = {
 };
 export const connectionKindText = {
   mount: 'Fixed mounting',
+  spring: 'Guided slide',
   power: 'Power wire',
   shaft: 'Rotating attachment',
 };
@@ -58,7 +60,10 @@ export function createPartHelpDiagram(id, example, thumbnail) {
       const svg = svgEl('svg', { viewBox: '0 0 40 28' });
       svg.append(
         svgEl('path', {
-          d: 'M8 22 A13 10 0 1 1 31 20 M31 13 L31 20 L24 19',
+          d:
+            id === 'spring'
+              ? 'M5 14 L35 14 M11 8 L5 14 L11 20 M29 8 L35 14 L29 20'
+              : 'M8 22 A13 10 0 1 1 31 20 M31 13 L31 20 L24 19',
           fill: 'none',
           stroke: 'currentColor',
           'stroke-width': 2,

@@ -22,6 +22,7 @@ try {
       .locator('.parts-panel .part-icon')
       .evaluateAll((imgs) => imgs.every((i) => i.complete && i.naturalWidth > 0)),
   ]);
+  await page.locator('[data-part-type=poweredMotor]').scrollIntoViewIfNeeded();
   const card = await page.locator('[data-part-type=poweredMotor]').boundingBox(),
     canvas = await page.locator('canvas').first().boundingBox();
   const x = canvas.x + canvas.width * 0.5,

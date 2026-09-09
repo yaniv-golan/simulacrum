@@ -7,6 +7,28 @@ const help = (purpose, explanation, needs, steps, examples = []) => ({
   examples,
 });
 export const PART_HELP = {
+  springGuide: help(
+    'A captured spring that guides a sliding carriage',
+    'Slides along this axis; does not swivel. This open-rail mechanism resists both compression and extension. The coil is decorative: collision and mass use the solid pads and ordinary rail, not individual turns.',
+    'A Spring carriage on the Slide port. Bolt the guide to a supported base. No power is needed. Up to eight guided springs per workshop.',
+    [
+      'Connect Slide to a Spring carriage. Bolt a platform to the carriage top.',
+      'In Build, change stiffness (N/m), damping (N s/m), zero-force length and travel. Run applies gravity.',
+      'Damping resists motion, not static weight. Upright resting length also includes carriage and platform weight: compression = moving mass × 9.81 / stiffness.',
+      'Zero damping has bounded numerical energy error. Integration/contact residual includes stops and numerical error; it is not measured stop heat.',
+    ],
+    ['spring'],
+  ),
+  springCarriage: help(
+    'The moving end of a guided spring',
+    'This pad moves along the guide axis. Fixed mounts on it follow the moving end; it cannot swivel.',
+    'Connect its Slide port to a Spring guide, then mount a platform to its top.',
+    [
+      'Choose the guide to change the spring settings. Disconnect Slide to remove the spring force.',
+      'The carriage has its own weight even after you remove the extra load.',
+    ],
+    ['spring'],
+  ),
   beam: help(
     'A narrow support for your machine',
     'Joins parts into a rigid frame. Use it for a rail or crossbar.',
@@ -143,6 +165,13 @@ const end = (node, port) => ({ node, port });
 const edge = (kind, a, b) => ({ kind, a, b });
 // Schematic coordinates are deliberately separate from physical fixture transforms.
 export const PART_EXAMPLES = {
+  spring: {
+    title: 'Guided spring',
+    nodes: { guide: 'springGuide', carriage: 'springCarriage' },
+    edges: [edge('spring', end('guide', 'slide'), end('carriage', 'slide'))],
+    motions: { carriage: 'Slides along the axis; does not swivel' },
+    notes: ['Mount the guide to a base and the carriage to a platform. The spring needs no power.'],
+  },
   power: {
     title: 'Power branching',
     nodes: {

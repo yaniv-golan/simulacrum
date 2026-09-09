@@ -134,6 +134,12 @@ export function validateBlueprint(blueprint) {
       endpoints.add(key);
     }
   }
+  for (const [index, part] of blueprint.parts.entries())
+    if (part.type === 'springGuide') {
+      const p = part.parameters;
+      if (p.minLength >= p.maxLength || p.restLength < p.minLength || p.restLength > p.maxLength)
+        return result('INVALID_BLUEPRINT', `/parts/${index}/parameters`);
+    }
   const connections = new Set(),
     occupied = new Set();
   for (let index = 0; index < blueprint.connections.length; index++) {
@@ -153,6 +159,12 @@ export function validateBlueprint(blueprint) {
           return result(error.reasonCode, path);
         }
     }
+    if (
+      connection.kind === 'spring' &&
+      [parts.get(connection.a.part)?.type, parts.get(connection.b.part)?.type].sort().join(',') !==
+        'springCarriage,springGuide'
+    )
+      return result('INVALID_BLUEPRINT', path);
     for (const side of ['a', 'b']) {
       const endpoint = connection[side],
         part = parts.get(endpoint.part);

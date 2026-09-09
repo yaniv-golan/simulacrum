@@ -306,4 +306,62 @@ connected bodies, and torque/midpoint-speed work receipts are checked against
 whole-island kinetic change. Passive projection loss is separately reported as
 `energy.constraintDissipationJ`; it never becomes motor heat. The energy identity is
 `deltaMechanical = actuatorWorkJ + externalWorkJ + integrationDeltaJ
-- constraintDissipationJ + balanceResidualJ`.
+- constraintDissipationJ - dampingWorkJ + balanceResidualJ` (damping work is zero without springs).
+
+## Guided springs (M3b)
+
+A `spring` connection joins an ordinary Spring guide to a Spring carriage. Its
+numeric physics joint permits axial translation and constrains the other five
+relative degrees of freedom. The guide owns stiffness (N/m), damping (N s/m),
+zero-force length and travel (m); edits are Build-only. Current save version 3
+admits this additional connection and part vocabulary. Wrong pairings, invalid
+travel and misaligned loaded endpoints reject before authoring publication.
+Disconnecting removes both the guide constraint and elastic/damping interaction.
+External mounts follow their respective bodies. No authored body becomes fixed.
+
+The first representation uses solid pads and an ordinary solid open rail, with one
+body per part. The coil and connector rod are decoration; their mass is lumped
+into the pads, not charged again. They have no turn/rod collision or mounting
+surfaces. There is no closed cylinder with a fictitious hollow interior. External pad
+and rail collisions remain active, including the guide/carriage pair; ordinary
+fixed mounts retain their existing pair-contact exclusion. Compound solids and articulated ends are not
+part of this representation.
+
+The elastic kick uses SI `-k x`, with implicit relative damping. For an island,
+`(I + dt C W) J = -dt (K x + C v)`, where `W` is the bilateral-constrained axial
+mobility, including moment arms, and `C` and `K` are diagonal damping/stiffness.
+All spring impulses in an island are solved together. The velocity predictor
+includes `5/8 dt` of constrained gravity acceleration, matching the pinned four
+Rapier solver subdivisions' displacement weighting. It avoids damping-dependent
+static deflection. The single integration and nine phases are unchanged.
+
+This is a semi-implicit spring realization, not a fully backward-Euler elastic
+law: its undamped oscillator preserves modified energy
+`E - dt k x v / 2`, instead of suppressing the intended bounce. Admission bounds
+`dt² trace(K W) <= 0.09`; exceeding it produces preserved failure evidence before
+any spring impulse is applied. At most eight springs are admitted. Geometry alone does not promise arbitrary load
+or stiffness support. Per-guide settings are bounded to k=0–300, c=0–100 and
+0.08–0.40 m travel, with ordered limits and zero-force length inside travel.
+Stops are unilateral prismatic limits, not pose clamps or a breakage model.
+
+Completed frames include `springs`. `speed` measures separation change over the
+completed tick; `endpointVelocity` separately retains the instantaneous solver
+velocity used by the law. The preceding sensor snapshot supplies the displacement
+comparison, including after checkpoint restoration. At the initial frame speed is
+zero. Length, extension, force estimate, travel and spring potential derive from
+the completed state. Instantaneous force is an inspection estimate, not a contact
+force or measured stop load.
+
+For configurations containing springs, the energy ledger adds `springPotentialJ`
+and `dampingWorkJ`. Initial strain is authored starting energy. Damper work is the
+discrete `dt sum(c_i v'_i²)` from the simultaneous solve, not an independent
+measurement of contact heat. Mechanical energy now includes elastic potential.
+The balance becomes
+`deltaMechanical = actuatorWorkJ + externalWorkJ + integrationDeltaJ
+- constraintDissipationJ - dampingWorkJ + balanceResidualJ`.
+`integrationDeltaJ` includes the spring kick's kinetic change and elastic change,
+with damper work removed from that residual to avoid double counting. It remains
+an explicitly unattributed signed integration/contact residual: numerical error,
+gravity integration, stops and collisions are not separately identifiable heat.
+Checkpoint admission binds spring energy to restored geometry and configuration;
+completed spring values also enter deterministic projection.

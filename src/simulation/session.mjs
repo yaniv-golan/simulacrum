@@ -118,8 +118,10 @@ export async function createSession(
   let sensors = sampleSensors(0, copy(initial), config.power);
   let torques = [],
     receipts = [];
+  const hasSprings = () => config.joints.some((j) => j.kind === 'spring');
   const emptyEnergy = (mechanical = world.mechanicalEnergy()) => ({
     ...mechanical,
+    ...(mechanical.springPotentialJ !== undefined ? { dampingWorkJ: 0 } : {}),
     actuatorWorkJ: 0,
     externalWorkJ: 0,
     integrationDeltaJ: 0,
@@ -127,11 +129,34 @@ export async function createSession(
     balanceResidualJ: 0,
   });
   let energy = emptyEnergy();
-  const total = (e) => e.kineticJ + e.potentialJ;
+  const total = (e) => e.kineticJ + e.potentialJ + (e.springPotentialJ ?? 0);
+  function priorSpringLength(j, bodies) {
+    const a = bodies[j.a],
+      b = bodies[j.b],
+      axis = rotate(a.rotation, j.axisA);
+    const pa = rotate(a.rotation, j.anchorA).map((x, i) => x + a.position[i]),
+      pb = rotate(b.rotation, j.anchorB).map((x, i) => x + b.position[i]);
+    return axis.reduce((sum, x, i) => sum + x * (pb[i] - pa[i]), 0);
+  }
+  function springReadings(
+    candidate = world,
+    previous = sensors.bodies,
+    configuration = config,
+    initialFrame = tick === 0,
+  ) {
+    return candidate.springs().map((reading) => ({
+      ...reading,
+      endpointVelocity: reading.speed,
+      speed: initialFrame
+        ? 0
+        : (reading.length - priorSpringLength(configuration.joints[reading.index], previous)) / DT,
+    }));
+  }
   const frame = (physics, timings = {}) => ({
     tick,
     status,
     physics,
+    springs: springReadings(),
     metadata,
     energy: copy(energy),
     power: power.read(),
@@ -231,7 +256,8 @@ export async function createSession(
       let actuatorWorkJ = 0,
         externalWorkJ = 0,
         integrationDeltaJ = 0,
-        constraintDissipationJ = 0;
+        constraintDissipationJ = 0,
+        springReceipt = { dampingWorkJ: 0, kineticDeltaJ: 0 };
       try {
         for (const phase of PHASES) {
           const start = performance.now();
@@ -305,6 +331,7 @@ export async function createSession(
             }
             case 'actuators-constraints':
               constraintDissipationJ = world.applyPreparedConstraints();
+              if (hasSprings()) springReceipt = world.applySprings();
               receipts = torques.map((torque, i) => {
                 const r =
                   torque.joint < 0
@@ -337,7 +364,11 @@ export async function createSession(
             case 'integration-contacts': {
               const before = world.mechanicalEnergy();
               world.step();
-              integrationDeltaJ = total(world.mechanicalEnergy()) - total(before);
+              integrationDeltaJ =
+                total(world.mechanicalEnergy()) -
+                total(before) +
+                springReceipt.kineticDeltaJ +
+                springReceipt.dampingWorkJ;
               break;
             }
             case 'structure-failure': {
@@ -369,6 +400,7 @@ export async function createSession(
             case 'telemetry':
               energy = {
                 ...world.mechanicalEnergy(),
+                ...(hasSprings() ? { dampingWorkJ: springReceipt.dampingWorkJ } : {}),
                 actuatorWorkJ,
                 externalWorkJ,
                 integrationDeltaJ,
@@ -379,7 +411,8 @@ export async function createSession(
                   actuatorWorkJ -
                   externalWorkJ -
                   integrationDeltaJ +
-                  constraintDissipationJ,
+                  constraintDissipationJ +
+                  springReceipt.dampingWorkJ,
               };
               tick = next;
               pending = [];
@@ -510,6 +543,7 @@ export async function createSession(
         nextSensors = sampleSensors(0, copy(nextInitial), nextConfig.power);
       const nextFrame = {
         ...frame(nextInitial),
+        springs: springReadings(candidate, nextSensors.bodies, nextConfig, true),
         tick: 0,
         status: 'ready',
         metadata: nextMetadata,
@@ -626,9 +660,11 @@ export async function createSession(
         'integrationDeltaJ',
         'constraintDissipationJ',
         'balanceResidualJ',
+        ...(hasSprings() ? ['springPotentialJ', 'dampingWorkJ'] : []),
       ]) ||
       !Object.values(cp.energy).every(Number.isFinite) ||
-      cp.energy.constraintDissipationJ < 0
+      cp.energy.constraintDissipationJ < 0 ||
+      (hasSprings() && (cp.energy.springPotentialJ < 0 || cp.energy.dampingWorkJ < 0))
     )
       invalid();
     if (
@@ -689,10 +725,16 @@ export async function createSession(
       {
         kineticJ: cp.energy.kineticJ,
         potentialJ: cp.energy.potentialJ,
+        ...(hasSprings() ? { springPotentialJ: cp.energy.springPotentialJ } : {}),
       },
       config.power.motors.flatMap((m, i) =>
         m.positionControl && m.joint >= 0
           ? [{ joint: m.joint, angle: cp.power.motors[i].position.angle }]
+          : [],
+      ),
+      config.joints.flatMap((j, index) =>
+        j.kind === 'spring'
+          ? [{ joint: index, length: priorSpringLength(j, cp.sensors.bodies) }]
           : [],
       ),
     );

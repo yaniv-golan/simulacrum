@@ -10,6 +10,8 @@ import { proposeMirroredAssembly } from '../model/mirror-assembly.mjs';
 import { createMotionReadout } from './motion-readout.mjs';
 import { createVehicleControls } from './vehicle-controls.mjs';
 import { findPlacementOverlap } from '../model/surfaces.mjs';
+import { springInspector } from './spring-controls.mjs';
+import { createSpringView } from './spring-view.mjs';
 import { partPrimitives, shaftSegments } from '../model/geometry.mjs';
 import * as THREE from 'three';
 import { createResourceCache, partAppearanceKey } from './resource-cache.mjs';
@@ -54,7 +56,13 @@ const parameterHelp = {
   defaultDuty: '−1 reverse · 0 off · 1 forward. Sets drive strength, not a guaranteed speed.',
   capacityJ: 'More stored energy supports a longer run.',
 };
-const labels = { power: 'Power', shaft: 'Shaft', fixed: 'Mount', signal: 'Signal' };
+const labels = {
+  spring: 'Slide',
+  power: 'Power',
+  shaft: 'Shaft',
+  fixed: 'Mount',
+  signal: 'Signal',
+};
 
 const materialColor = { aluminium: 0x9aadb2, steel: 0x657d8b, rubber: 0x323d46 };
 const format = (value, digits = 1) => (Number.isFinite(value) ? value.toFixed(digits) : '—');
@@ -112,6 +120,7 @@ export function createWorkshopView(
     inputTime = performance.now(),
     surface;
   // RAF still owns control damping and animation; GPU work follows scene invalidation.
+  const renderCosts = [];
   let renderedFrames = 0,
     sceneDirty = true;
   const invalidateScene = () => {
@@ -262,6 +271,11 @@ export function createWorkshopView(
       ),
   });
   const palette = element('div', 'palette');
+  const strutCard = button('Spring strut', () => send({ type: 'spring-strut' }), 'part-card');
+  strutCard.dataset.command = 'spring-strut';
+  strutCard.title =
+    'Insert an ordinary base, rail, guide and moving carriage as one editable assembly.';
+  palette.append(strutCard);
   for (const type of PRIMARY_PARTS) {
     const card = button('', () => send({ type: 'place', partType: type }), 'part-card');
     card.dataset.partType = type;
@@ -303,6 +317,23 @@ export function createWorkshopView(
         send({ type: 'driving-example' });
       });
       driveExample.dataset.command = 'driving-example';
+      const springs = button('Try spring playground', () => {
+        if (frame.metadata.blueprint.parts.length) {
+          setMessage('Save your machine, then choose New to open the spring playground.');
+          return;
+        }
+        send({ type: 'spring-example' });
+      });
+      springs.dataset.command = 'spring-example';
+      const undamped = button('Compare zero damping', () => {
+        if (frame.metadata.blueprint.parts.length) {
+          setMessage('Save, then choose New to open the zero-damping comparison.');
+          return;
+        }
+        send({ type: 'spring-example', damping: 0 });
+      });
+      const springExperiments = element('details', 'spring-experiments');
+      springExperiments.append(element('summary', '', 'Spring experiments'), springs, undamped);
       guide.append(
         start,
         driveExample,
@@ -311,6 +342,7 @@ export function createWorkshopView(
           '',
           'An editable four-wheel machine: W/S to drive, A/D to turn. Try driving away, turning around and returning.',
         ),
+        springExperiments,
       );
 
       return;
@@ -553,6 +585,7 @@ export function createWorkshopView(
   renderer.domElement.setAttribute('aria-label', 'Machine view');
   stage.append(renderer.domElement);
   const scene = new THREE.Scene();
+  const springView = createSpringView(scene);
   scene.fog = new THREE.Fog(0x18252d, 8, 30);
   const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 100);
   camera.position.set(1.45, 1.15, 1.65);
@@ -1036,6 +1069,48 @@ export function createWorkshopView(
         ? 'Mint outlines show everything that moves. Disconnect a mount or shaft to separate parts.'
         : 'Power and signal wires do not attach parts physically.';
   }
+  function refreshSprings() {
+    const blueprint = frame.metadata.blueprint;
+    const springRows = [];
+    for (const edge of blueprint.connections.filter((c) => c.kind === 'spring')) {
+      const a = blueprint.parts.find((p) => p.id === edge.a.part),
+        b = blueprint.parts.find((p) => p.id === edge.b.part);
+      const end = (p, e) =>
+        meshes
+          .get(p.id)
+          .localToWorld(
+            new THREE.Vector3(...CATALOG[p.type].ports.find((x) => x.id === e.port).position),
+          );
+      meshes.get(a.id).updateMatrixWorld(true);
+      meshes.get(b.id).updateMatrixWorld(true);
+      springRows.push({
+        id: edge.id,
+        a: a.type === 'springGuide' ? end(a, edge.a) : end(b, edge.b),
+        b: a.type === 'springGuide' ? end(b, edge.b) : end(a, edge.a),
+        settings: (a.type === 'springGuide' ? a : b).parameters,
+        selected: [a.id, b.id].includes(selected),
+      });
+    }
+    springView.update(springRows, selected);
+    const readout = right.querySelector('.spring-readout');
+    if (readout) {
+      const edge = blueprint.connections.find(
+        (c) => c.kind === 'spring' && [c.a.part, c.b.part].includes(selected),
+      );
+      const guidePart =
+        edge &&
+        blueprint.parts.find(
+          (p) => [edge.a.part, edge.b.part].includes(p.id) && p.type === 'springGuide',
+        );
+      const state =
+        guidePart && frame.springs?.find((x) => x.bodyA === blueprint.parts.indexOf(guidePart));
+      readout.textContent = !edge
+        ? 'Unattached · no spring force'
+        : state
+          ? `${state.length <= state.minLength + 0.001 ? 'Fully compressed' : state.length >= state.maxLength - 0.001 ? 'Fully extended' : 'Attached · slides; does not swivel'} · ${format(state.length, 3)} m length · ${format(-state.extension, 3)} m compression · ${format(state.speed, 3)} m/s · ${format(state.length - state.minLength, 3)} m to compression stop · ${format(state.maxLength - state.length, 3)} m to extension stop · ${format(state.potentialJ, 3)} J spring energy`
+          : 'Attached · slides; does not swivel';
+    }
+  }
   function select(id) {
     invalidateScene();
     surface?.cancel(false);
@@ -1054,6 +1129,7 @@ export function createWorkshopView(
     inspectorKey = '';
     refreshInspector();
     refreshLive();
+    refreshSprings();
     refreshPartList();
     refreshSelectionVisuals();
     updateConnections();
@@ -1543,7 +1619,8 @@ export function createWorkshopView(
         (c) => c.kind === 'fixed' && (c.a.part === part.id || c.b.part === part.id),
       );
       const axleEdges = frame.metadata.blueprint.connections.filter(
-        (c) => c.kind === 'shaft' && (c.a.part === part.id || c.b.part === part.id),
+        (c) =>
+          ['shaft', 'spring'].includes(c.kind) && (c.a.part === part.id || c.b.part === part.id),
       );
       if (!edges.length && !axleEdges.length) mounting.append(element('p', '', 'Unattached'));
       for (const edge of edges.length ? [] : axleEdges) {
@@ -1551,11 +1628,13 @@ export function createWorkshopView(
           (p) => p.id === (edge.a.part === part.id ? edge.b.part : edge.a.part),
         );
         mounting.append(
-          element('p', '', `Axle attached to ${peer.name}`),
+          element('p', '', `${edge.kind === 'spring' ? 'Slide' : 'Axle'} attached to ${peer.name}`),
           element(
             'p',
             'parameter-help',
-            'The axle holds these parts together and allows rotation.',
+            edge.kind === 'spring'
+              ? 'Slides along the guide axis; does not swivel.'
+              : 'The axle holds these parts together and allows rotation.',
           ),
         );
       }
@@ -1762,6 +1841,7 @@ export function createWorkshopView(
         right.append(ownership);
       }
     }
+    springInspector({ part, right, editable, element, send });
     if (part.type === 'logicController')
       right.append(
         element(
@@ -1903,7 +1983,7 @@ export function createWorkshopView(
         continue;
       }
       if (!occupied(part, port)) {
-        const mechanical = ['fixed', 'shaft'].includes(port.kind),
+        const mechanical = ['fixed', 'shaft', 'spring'].includes(port.kind),
           targets = element('div', 'connection-targets');
         targets.append(
           element(
@@ -2191,6 +2271,7 @@ export function createWorkshopView(
       replacement?.focus({ preventScroll: true });
     }
     refreshLive();
+    refreshSprings();
   }
   function shaftSpeed(motor) {
     return motorShaftSpeed(frame, motor.node);
@@ -2639,8 +2720,8 @@ export function createWorkshopView(
       edge.kind ??
       (edge.a.surface ? 'fixed' : CATALOG[a.type].ports.find((p) => p.id === edge.a.port).kind);
     if (!completed)
-      return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Will bolt these parts together.' : kind === 'shaft' ? 'Will join the axle, allowing rotation.' : kind === 'power' ? 'Will add a power cable.' : 'Will connect the control signal.'}`;
-    return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Bolted together: they move as one.' : kind === 'shaft' ? 'Axle connected: the wheel can turn.' : kind === 'power' ? 'Power wired: energy can reach the motor.' : 'Signal connected: commands can pass.'}`;
+      return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Will bolt these parts together.' : kind === 'spring' ? 'Will attach the sliding carriage at the zero-force length.' : kind === 'shaft' ? 'Will join the axle, allowing rotation.' : kind === 'power' ? 'Will add a power cable.' : 'Will connect the control signal.'}`;
+    return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Bolted together: they move as one.' : kind === 'spring' ? 'Spring attached: slides along its axis; does not swivel.' : kind === 'shaft' ? 'Axle connected: the wheel can turn.' : kind === 'power' ? 'Power wired: energy can reach the motor.' : 'Signal connected: commands can pass.'}`;
   }
   function showGuideConnection(edge, completed = false) {
     if (edge && !completed && guideVisual?.id === edge.id && !guideVisual.completed) return;
@@ -2846,6 +2927,7 @@ export function createWorkshopView(
       else if (!blueprint.parts.some((part) => part.id === selected)) selected = null;
       if (sourcePort && !blueprint.parts.some((part) => part.id === sourcePort.part))
         sourcePort = null;
+      renderCosts.length = 0;
       rebuildMeshes(blueprint);
       inspectorKey = '';
     }
@@ -2859,10 +2941,17 @@ export function createWorkshopView(
       mesh.quaternion.fromArray(pose.rotation);
     }
     if (blueprint.parts.length > previousCount) editing.focus();
+    else if (
+      previousMode &&
+      previousMode !== 'build' &&
+      frame.metadata.mode === 'build' &&
+      readRenderedCenters().some(
+        (p) => Math.abs(p.x) >= 1 || Math.abs(p.y) >= 1 || Math.abs(p.z) >= 1,
+      )
+    )
+      editing.focus({ recover: false });
     explodeButton.disabled = frame.metadata.mode === 'run' || blueprint.parts.length < 2;
     refreshSelectionVisuals();
-    if (previousMode && previousMode !== 'build' && frame.metadata.mode === 'build')
-      editing.focus();
     editing.select(selected);
     undo.disabled = frame.metadata.mode !== 'build' || !frame.metadata.editing?.undoCount;
     redo.disabled = frame.metadata.mode !== 'build' || !frame.metadata.editing?.redoCount;
@@ -2870,6 +2959,7 @@ export function createWorkshopView(
     updateConnections();
     refreshInspector();
     refreshLive();
+    refreshSprings();
     refreshHealth();
     failureButton.hidden = frame.status !== 'failed';
     empty.hidden = blueprint.parts.length > 0 || guideActive;
@@ -3226,7 +3316,10 @@ export function createWorkshopView(
       refreshInspector();
       surface.renderOverlay();
       sceneDirty = false;
+      const renderStart = performance.now();
       renderer.render(scene, camera);
+      renderCosts.push(performance.now() - renderStart);
+      if (renderCosts.length > 240) renderCosts.shift();
       renderedFrames++;
     }
     animation = requestAnimationFrame(draw);
@@ -3237,7 +3330,12 @@ export function createWorkshopView(
     setMessage,
     setRecordingState,
     readInteractionState: () => ({
-      rendering: { frames: renderedFrames },
+      rendering: {
+        frames: renderedFrames,
+        costsMs: [...renderCosts],
+        geometries: renderer.info.memory.geometries,
+        textures: renderer.info.memory.textures,
+      },
       selected,
       sourcePort,
       testConnectionIds: [...testConnectionIds],
@@ -3300,6 +3398,7 @@ export function createWorkshopView(
       surface.dispose();
       editing.dispose();
       controls.dispose();
+      springView.dispose();
       partResources.dispose();
       connectionView.dispose();
       for (const object of [portCues, ground]) disposePart(object);

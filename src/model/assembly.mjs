@@ -73,7 +73,7 @@ export function snapConnection(blueprint, a, b) {
   const A = endpoint(blueprint, a, 'a'),
     B = endpoint(blueprint, b, 'b');
   if (A.index === B.index) reject('SELF_CONNECTION', 'b.part');
-  if (!['fixed', 'shaft'].includes(A.port.kind)) return structuredClone(blueprint);
+  if (!['fixed', 'shaft', 'spring'].includes(A.port.kind)) return structuredClone(blueprint);
   return snapFrames(blueprint, A, B);
 }
 function snapFrames(blueprint, A, B) {
@@ -81,7 +81,16 @@ function snapFrames(blueprint, A, B) {
     rotation = normalize(
       multiply(multiply(target.rotation, matingRotation(A.port)), inverse(B.port.rotation)),
     );
-  const position = subtract(target.position, rotate(rotation, B.port.position));
+  const springOffset =
+    A.port.kind === 'spring'
+      ? rotate(target.rotation, [
+          (A.part.type === 'springGuide' ? 1 : -1) *
+            (A.part.type === 'springGuide' ? A.part : B.part).parameters.restLength,
+          0,
+          0,
+        ])
+      : [0, 0, 0];
+  const position = subtract(add(target.position, springOffset), rotate(rotation, B.port.position));
   const group = new Set(mechanicalGroup(blueprint, B.part.id));
   if (group.has(A.part.id)) {
     const gap = Math.hypot(...subtract(position, B.part.position)),
@@ -217,6 +226,40 @@ export function compileAssembly(
       power.signalWires.push(
         A.port.direction === 'output' ? [A.index, B.index] : [B.index, A.index],
       );
+      connections.push({ id: connection.id, reasonCode: 'OK' });
+      continue;
+    }
+    if (connection.kind === 'spring') {
+      const G = A.part.type === 'springGuide' ? A : B,
+        C = G === A ? B : A;
+      const g = worldPort(G),
+        c = worldPort(C),
+        axis = rotate(g.rotation, [1, 0, 0]);
+      const delta = subtract(c.position, g.position),
+        length = delta.reduce((sum, x, i) => sum + x * axis[i], 0),
+        p = G.part.parameters;
+      const transverse = Math.hypot(...delta.map((x, i) => x - length * axis[i]));
+      const dot = Math.abs(g.rotation.reduce((sum, x, i) => sum + x * c.rotation[i], 0));
+      if (
+        transverse > 1e-6 ||
+        1 - Math.min(1, dot) > 1e-10 ||
+        length < p.minLength - 1e-6 ||
+        length > p.maxLength + 1e-6
+      )
+        reject('MISALIGNED', path);
+      joints.push({
+        kind: 'spring',
+        a: G.index,
+        b: C.index,
+        anchorA: [...G.port.position],
+        anchorB: [...C.port.position],
+        axisA: rotate(G.port.rotation, [1, 0, 0]),
+        axisB: rotate(C.port.rotation, [1, 0, 0]),
+        stiffness: p.stiffness,
+        damping: p.damping,
+        restLength: p.restLength,
+        limits: [p.minLength, p.maxLength],
+      });
       connections.push({ id: connection.id, reasonCode: 'OK' });
       continue;
     }

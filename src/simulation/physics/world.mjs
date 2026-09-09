@@ -1,3 +1,4 @@
+import { coupledSpringImpulses } from './law/spring.mjs';
 import { readBody } from './read-body.mjs';
 import { createConstraintProjection } from './law/constraints.mjs';
 import { CYLINDER_SEGMENTS } from '../../model/geometry.mjs';
@@ -164,7 +165,8 @@ export async function createPhysicsWorld(configuration) {
   if (!Array.isArray(configuration.joints) || configuration.joints.length > 8192)
     throw new TypeError('invalid joints');
   const joints = configuration.joints.map((joint) => {
-    if (!['fixed', 'revolute'].includes(joint?.kind)) throw new TypeError('invalid joint kind');
+    if (!['fixed', 'revolute', 'spring'].includes(joint?.kind))
+      throw new TypeError('invalid joint kind');
     record(
       joint,
       joint.kind === 'fixed'
@@ -178,6 +180,7 @@ export async function createPhysicsWorld(configuration) {
             'axisA',
             'axisB',
             ...(Object.hasOwn(joint, 'limits') ? ['limits'] : []),
+            ...(joint.kind === 'spring' ? ['stiffness', 'damping', 'restLength'] : []),
           ],
     );
     if (
@@ -191,6 +194,7 @@ export async function createPhysicsWorld(configuration) {
     )
       throw new TypeError('invalid joint body binding');
     if (
+      joint.kind !== 'spring' &&
       Object.hasOwn(joint, 'limits') &&
       (!Array.isArray(joint.limits) ||
         joint.limits.length !== 2 ||
@@ -201,9 +205,30 @@ export async function createPhysicsWorld(configuration) {
         joint.limits[1] > 3)
     )
       throw new TypeError('invalid angular limits');
+    if (
+      joint.kind === 'spring' &&
+      (![joint.stiffness, joint.damping, joint.restLength].every(Number.isFinite) ||
+        joint.stiffness < 0 ||
+        joint.stiffness > 300 ||
+        joint.damping < 0 ||
+        joint.damping > 100 ||
+        !Array.isArray(joint.limits) ||
+        joint.limits.length !== 2 ||
+        !joint.limits.every(Number.isFinite) ||
+        joint.limits[0] < 0.08 ||
+        joint.limits[1] > 0.4 ||
+        joint.limits[0] >= joint.limits[1] ||
+        joint.restLength < joint.limits[0] ||
+        joint.restLength > joint.limits[1] ||
+        joint.axisA.some((x, i) => Math.abs(x - joint.axisB[i]) > 1e-10))
+    )
+      throw new TypeError('invalid spring settings');
     const common = {
       ...(joint.limits ? { limits: [...joint.limits] } : {}),
       kind: joint.kind,
+      ...(joint.kind === 'spring'
+        ? { stiffness: joint.stiffness, damping: joint.damping, restLength: joint.restLength }
+        : {}),
       a: joint.a,
       b: joint.b,
       anchorA: vector(joint.anchorA),
@@ -217,6 +242,8 @@ export async function createPhysicsWorld(configuration) {
         }
       : { ...common, axisA: unit(joint.axisA), axisB: unit(joint.axisB) };
   });
+  if (joints.filter((j) => j.kind === 'spring').length > 8)
+    throw new RangeError('at most 8 guided springs');
   await (initialization ??= RAPIER.init());
   let world = new RAPIER.World(xyz(gravity)),
     handles = [];
@@ -270,12 +297,14 @@ export async function createPhysicsWorld(configuration) {
               xyz(joint.anchorB),
               xyzw(joint.rotationB),
             )
-          : RAPIER.JointData.revoluteWithAxes(
-              xyz(joint.anchorA),
-              xyz(joint.anchorB),
-              xyz(joint.axisA),
-              xyz(joint.axisB),
-            );
+          : joint.kind === 'spring'
+            ? RAPIER.JointData.prismatic(xyz(joint.anchorA), xyz(joint.anchorB), xyz(joint.axisA))
+            : RAPIER.JointData.revoluteWithAxes(
+                xyz(joint.anchorA),
+                xyz(joint.anchorB),
+                xyz(joint.axisA),
+                xyz(joint.axisB),
+              );
       const connection = world.createImpulseJoint(
         data,
         world.getRigidBody(handles[joint.a]),
@@ -283,7 +312,7 @@ export async function createPhysicsWorld(configuration) {
         true,
       );
       if (joint.limits) connection.setLimits(...joint.limits);
-      connection.setContactsEnabled(false);
+      connection.setContactsEnabled(joint.kind === 'spring');
       jointHandles.push(connection.handle);
     }
   } catch (error) {
@@ -310,7 +339,7 @@ export async function createPhysicsWorld(configuration) {
         rotationA: rotationArray(joint.frameX1()),
         rotationB: rotationArray(joint.frameX2()),
         contactsEnabled: joint.contactsEnabled(),
-        ...(joint.type() === RAPIER.JointType.Revolute
+        ...([RAPIER.JointType.Revolute, RAPIER.JointType.Prismatic].includes(joint.type())
           ? { limitsEnabled: joint.limitsEnabled(), limits: [joint.limitsMin(), joint.limitsMax()] }
           : {}),
       }),
@@ -406,7 +435,19 @@ export async function createPhysicsWorld(configuration) {
       kineticJ += kinetic(b);
       potentialJ -= b.mass() * array(b.worldCom()).reduce((sum, x, i) => sum + x * gravity[i], 0);
     }
-    return { kineticJ, potentialJ };
+    return {
+      kineticJ,
+      potentialJ,
+      ...(joints.some((j) => j.kind === 'spring')
+        ? {
+            springPotentialJ: joints.reduce(
+              (sum, j, i) =>
+                sum + (j.kind === 'spring' ? springState(i, candidate, mapping).potentialJ : 0),
+              0,
+            ),
+          }
+        : {}),
+    };
   }
   let preparedTorqueIslands = new Map(),
     constraintsApplied = true;
@@ -518,7 +559,9 @@ export async function createPhysicsWorld(configuration) {
       const point = pointA.map((x, k) => (x + pointB[k]) / 2);
       const ra = point.map((x, k) => x - clusters[a / 6].centre[k]);
       const rb = point.map((x, k) => x - clusters[b / 6].centre[k]);
-      for (const d of axes) {
+      const axis = rotate(qa, j.axisA),
+        t = unit(cross(axis, Math.abs(axis[0]) < 0.9 ? axes[0] : axes[1]));
+      for (const d of j.kind === 'spring' ? [t, cross(axis, t)] : axes) {
         const row = Array(n).fill(0),
           aa = cross(ra, d),
           bb = cross(rb, d);
@@ -530,9 +573,7 @@ export async function createPhysicsWorld(configuration) {
         }
         rows.push(row);
       }
-      const axis = rotate(qa, j.axisA),
-        t = unit(cross(axis, Math.abs(axis[0]) < 0.9 ? axes[0] : axes[1]));
-      for (const d of [t, cross(axis, t)]) {
+      for (const d of j.kind === 'spring' ? axes : [t, cross(axis, t)]) {
         const row = Array(n).fill(0);
         for (let i = 0; i < 3; i++) {
           row[a + 3 + i] = -d[i];
@@ -618,9 +659,60 @@ export async function createPhysicsWorld(configuration) {
       vector,
       apply,
       force,
+      gravityResponse: () =>
+        projection.response(
+          clusters.flatMap((c) => [...gravity.map((x) => (c.fixed ? 0 : x * c.mass)), 0, 0, 0]),
+        ).velocity,
+      axialForce(a, b, axis, pointA, pointB) {
+        const f = Array(n).fill(0);
+        for (const [body, sign, point] of [
+          [a, -1, pointA],
+          [b, 1, pointB],
+        ]) {
+          const offset = offsets.get(body),
+            r = point.map((x, i) => x - clusters[offset / 6].centre[i]),
+            torque = cross(r, axis);
+          for (let i = 0; i < 3; i++) {
+            f[offset + i] += sign * axis[i];
+            f[offset + 3 + i] += sign * torque[i];
+          }
+        }
+        return f;
+      },
       applyPassive,
       projectedVector,
       kinetic: () => indices.reduce((s, i) => s + kinetic(bodyAt(i)), 0),
+    };
+  }
+  function springState(index, physics = world, mapping = handles) {
+    const j = joints[index];
+    if (j?.kind !== 'spring') throw new TypeError('joint has no spring');
+    const a = physics.getRigidBody(mapping[j.a]),
+      b = physics.getRigidBody(mapping[j.b]),
+      qa = rotationArray(a.rotation()),
+      qb = rotationArray(b.rotation());
+    const axis = rotate(qa, j.axisA);
+    const pointA = rotate(qa, j.anchorA).map((x, i) => x + array(a.translation())[i]);
+    const pointB = rotate(qb, j.anchorB).map((x, i) => x + array(b.translation())[i]);
+    const length = axis.reduce((sum, x, i) => sum + x * (pointB[i] - pointA[i]), 0);
+    const va = array(a.velocityAtPoint(xyz(pointA))),
+      vb = array(b.velocityAtPoint(xyz(pointB)));
+    const speed = axis.reduce((sum, x, i) => sum + x * (vb[i] - va[i]), 0);
+    return {
+      index,
+      bodyA: j.a,
+      bodyB: j.b,
+      axis,
+      pointA,
+      pointB,
+      length,
+      speed,
+      extension: length - j.restLength,
+      potentialJ: 0.5 * j.stiffness * (length - j.restLength) ** 2,
+      forceN: -j.stiffness * (length - j.restLength) - j.damping * speed,
+      minLength: j.limits[0],
+      maxLength: j.limits[1],
+      restLength: j.restLength,
     };
   }
   function measuredJointAngle(physics, index, bodyHandles) {
@@ -666,6 +758,65 @@ export async function createPhysicsWorld(configuration) {
       }
       constraintsApplied = true;
       return loss;
+    },
+    springs() {
+      alive();
+      return joints.flatMap((j, i) => (j.kind === 'spring' ? [springState(i)] : []));
+    },
+    applySprings() {
+      alive();
+      if (!constraintsApplied) throw new Error('passive constraints not applied');
+      const groups = new Map();
+      for (const [i, j] of joints.entries()) {
+        if (j.kind !== 'spring') continue;
+        const state = springState(i),
+          island = preparedTorqueIslands.get(j.a);
+        if (!island) throw new Error('spring island missing');
+        const f = island.axialForce(j.a, j.b, state.axis, state.pointA, state.pointB),
+          response = island.projection.response(f);
+        if (!groups.has(island)) groups.set(island, []);
+        groups.get(island).push({ j, state, f, response });
+      }
+      const allocations = [];
+      for (const [island, rows] of groups) {
+        const mobility = rows.map((a) =>
+          rows.map((b) => a.f.reduce((sum, x, k) => sum + x * b.response.velocity[k], 0)),
+        );
+        const trace = rows.reduce(
+          (sum, r, i) => sum + DT * DT * r.j.stiffness * Math.max(0, mobility[i][i]),
+          0,
+        );
+        if (trace > 0.09)
+          throw new RangeError(
+            'spring island exceeds validated frequency range; reduce stiffness or number of springs',
+          );
+        const acceleration = island.gravityResponse();
+        const receipt = coupledSpringImpulses({
+          extensions: rows.map((r) => r.state.extension),
+          speeds: rows.map(
+            (r) =>
+              r.state.speed + 0.625 * DT * r.f.reduce((sum, x, k) => sum + x * acceleration[k], 0),
+          ),
+          stiffnesses: rows.map((r) => r.j.stiffness),
+          dampings: rows.map((r) => r.j.damping),
+          mobility,
+          dt: DT,
+        });
+        const impulse = Array(rows[0].f.length).fill(0);
+        rows.forEach((row, i) =>
+          row.response.impulse.forEach((x, k) => (impulse[k] += x * receipt.impulses[i])),
+        );
+        allocations.push({ island, impulse, receipt });
+      }
+      let dampingWorkJ = 0,
+        kineticDeltaJ = 0;
+      for (const { island, impulse, receipt } of allocations) {
+        const before = island.kinetic();
+        island.apply(impulse);
+        kineticDeltaJ += island.kinetic() - before;
+        dampingWorkJ += receipt.dampingWorkJ;
+      }
+      return { dampingWorkJ, kineticDeltaJ };
     },
     mechanicalEnergy() {
       alive();
@@ -788,7 +939,7 @@ export async function createPhysicsWorld(configuration) {
       alive();
       return encode(world.takeSnapshot(), handles, JSON.parse(configurationIdentity));
     },
-    restore(bytes, expectedEnergy, expectedJointAngles = []) {
+    restore(bytes, expectedEnergy, expectedJointAngles = [], previousSpringLengths) {
       alive();
       const decoded = decode(bytes);
       if (JSON.stringify(decoded.configuration) !== configurationIdentity)
@@ -807,11 +958,16 @@ export async function createPhysicsWorld(configuration) {
           throw new Error('snapshot topology or step mismatch');
         assertFinite(readWorld(candidate, decoded.handles));
         if (expectedEnergy) {
-          record(expectedEnergy, ['kineticJ', 'potentialJ']);
+          record(expectedEnergy, [
+            'kineticJ',
+            'potentialJ',
+            ...(joints.some((j) => j.kind === 'spring') ? ['springPotentialJ'] : []),
+          ]);
           const measured = energyOf(candidate, decoded.handles);
           if (
             expectedEnergy.kineticJ !== measured.kineticJ ||
-            expectedEnergy.potentialJ !== measured.potentialJ
+            expectedEnergy.potentialJ !== measured.potentialJ ||
+            expectedEnergy.springPotentialJ !== measured.springPotentialJ
           )
             throw new Error('snapshot energy mismatch');
         }
@@ -826,6 +982,29 @@ export async function createPhysicsWorld(configuration) {
             measuredJointAngle(candidate, expected.joint, decoded.handles) !== expected.angle
           )
             throw new Error('snapshot joint angle mismatch');
+        }
+        if (previousSpringLengths !== undefined) {
+          if (
+            !Array.isArray(previousSpringLengths) ||
+            previousSpringLengths.length !== joints.filter((j) => j.kind === 'spring').length
+          )
+            throw new TypeError('invalid spring history');
+          const seen = new Set();
+          for (const previous of previousSpringLengths) {
+            record(previous, ['joint', 'length']);
+            if (
+              !Number.isInteger(previous.joint) ||
+              joints[previous.joint]?.kind !== 'spring' ||
+              seen.has(previous.joint) ||
+              !Number.isFinite(previous.length) ||
+              !Number.isFinite(
+                (springState(previous.joint, candidate, decoded.handles).length - previous.length) /
+                  DT,
+              )
+            )
+              throw new TypeError('invalid spring history');
+            seen.add(previous.joint);
+          }
         }
         if (JSON.stringify(plant(candidate, decoded.handles)) !== originalPlant)
           throw new Error('snapshot physical plant mismatch');

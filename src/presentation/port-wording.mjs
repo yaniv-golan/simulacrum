@@ -2,6 +2,7 @@ export function portLabel(part, port) {
   if (port.kind === 'power') return 'Power';
   if (port.kind === 'signal')
     return port.direction === 'input' ? 'Control input' : 'Control output';
+  if (port.kind === 'spring') return 'Slide · spring';
   if (port.kind === 'fixed')
     return port.id === 'mount' ? 'Mount' : `Mount · ${port.id.replace(/([A-Z])/g, ' $1')}`;
   if (part.type === 'gripWheel') return 'Wheel axle';
@@ -11,6 +12,8 @@ export function portLabel(part, port) {
   return port.id === 'shaft' ? 'Axle' : `Axle · ${port.id}`;
 }
 export function portPurpose(part, port) {
+  if (port.kind === 'spring')
+    return 'Attaches the carriage to its guide. Slides along this axis; does not swivel. Disconnecting removes both the guide constraint and spring force.';
   if (port.kind === 'fixed')
     return (
       'Bolts two parts together. They cannot move or turn relative to each other.' +

@@ -2647,3 +2647,30 @@ body:has(.playtest-panel) .guide-feedback {
   line-height: 1;
   border-radius: 50%;
 }
+
+.spring-setting {
+  display: grid;
+  grid-template-columns: 1fr 74px;
+  gap: 4px 8px;
+  align-items: center;
+  margin: 10px 0;
+  font-size: 12px;
+}
+.spring-setting input {
+  min-width: 0;
+  width: 100%;
+}
+.spring-setting input[type='range'],
+.spring-setting .parameter-help {
+  grid-column: 1 / -1;
+}
+.spring-setting .parameter-help:empty {
+  display: none;
+}
+.spring-readout {
+  border-left: 3px solid #f2b85f;
+  padding: 8px;
+  background: #20313a;
+  font-size: 12px;
+  line-height: 1.5;
+}
