@@ -27,6 +27,9 @@ const config = {
     },
   ],
 };
+// Finite, command-admitted f64 impulse whose kinetic energy (p²/2m, m=1)
+// overflows Number.MAX_VALUE during completed telemetry publication.
+const overflowEnergyImpulse = 2 * Math.sqrt(Number.MAX_VALUE);
 test('one fixed clock yields identical state under elapsed and tick drivers', async () => {
   const a = await createSession(config),
     b = await createSession(config);
@@ -70,10 +73,24 @@ test('impulses are scheduled once and command rejection does not mutate state', 
   }
 });
 test('a physics numeric failure poisons advancement and preserves replay inputs', async () => {
+  const control = await createSession(config);
+  try {
+    assert.equal(control.act({ type: 'impulse', body: 0, value: [1e39, 0, 0] }).ok, true);
+    control.step(1);
+    assert.equal(control.failureBundle(), null);
+    const velocity = control.observe().frames.at(-1).physics[0].velocity;
+    assert.ok(velocity.every(Number.isFinite) && velocity[0] > 0);
+    assert.equal(control.observe().cursor.tick, 1);
+  } finally {
+    control.dispose();
+  }
   const a = await createSession(config);
   try {
-    a.act({ type: 'impulse', body: 0, value: [1e39, 0, 0] });
-    assert.throws(() => a.step(1), /physics numeric range/);
+    assert.equal(
+      a.act({ type: 'impulse', body: 0, value: [overflowEnergyImpulse, 0, 0] }).ok,
+      true,
+    );
+    assert.throws(() => a.step(1), /Expected acyclic finite JSON data/);
     assert.equal(a.failureBundle().reasonCode, 'PHYSICS_FAILURE');
     assert.equal(a.failureBundle().failedTick, 1);
     assert.equal(a.failureBundle().inputs.length, 1);
@@ -137,7 +154,10 @@ test('failure at anchor boundary preserves previous interval inputs', async () =
   try {
     a.act({ type: 'impulse', body: 0, value: [1, 0, 0] });
     a.step(1200);
-    a.act({ type: 'impulse', body: 0, value: [1e39, 0, 0] });
+    assert.equal(
+      a.act({ type: 'impulse', body: 0, value: [overflowEnergyImpulse, 0, 0] }).ok,
+      true,
+    );
     assert.throws(() => a.step(1));
     const bundle = a.failureBundle();
     assert.equal(bundle.anchor.tick, 0);
@@ -175,7 +195,10 @@ test('pending inputs survive restore exactly once and poison can recover by rest
     a.restore(cp);
     a.step(1);
     assert.deepEqual(a.observe().frames[0].physics, expected);
-    a.act({ type: 'impulse', body: 0, value: [1e39, 0, 0] });
+    assert.equal(
+      a.act({ type: 'impulse', body: 0, value: [overflowEnergyImpulse, 0, 0] }).ok,
+      true,
+    );
     assert.throws(() => a.step(1));
     const cursor = a.observe().cursor;
     assert.throws(() => a.advanceTime(100), /SESSION_FAILED/);

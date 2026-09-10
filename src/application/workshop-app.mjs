@@ -1,6 +1,16 @@
 import { createAssemblyLibrary } from './assembly-library.mjs';
 import { palettePlacement } from '../model/palette-placement.mjs';
 import { createSpringPlayground, createSpringStrut } from '../model/fixtures/spring-playground.mjs';
+import { createSpringLauncher } from '../model/fixtures/spring-launcher.mjs';
+import {
+  createSuspensionComparison,
+  createGuidedSuspensionModule,
+} from '../model/fixtures/guided-suspension.mjs';
+import {
+  createArticulatedSuspensionBench,
+  createPinEndedStrut,
+  createActiveSuspensionBench,
+} from '../model/fixtures/articulated-suspension.mjs';
 import { createDrivingMachine } from '../model/fixtures/driving-machine.mjs';
 import { createWorkshop } from '../core/workshop.mjs';
 import { createEmptyBlueprint, loadSave } from '../model/blueprint.mjs';
@@ -26,6 +36,7 @@ export async function mountWorkshopApp(root) {
   let view,
     clock,
     lastRenderedCursor = null,
+    measurementCursor = undefined,
     runMeasurement = null,
     disposed = false,
     lastInput = null,
@@ -167,6 +178,9 @@ export async function mountWorkshopApp(root) {
   }
   function render() {
     if (disposed) return;
+    const measurements = workshop.observe('scene', 'full', measurementCursor);
+    view.ingestMeasurements(measurements);
+    measurementCursor = measurements.cursor;
     const observation = workshop.observe();
     view.render(observation.frames[0]);
     lastRenderedCursor = observation.cursor;
@@ -284,10 +298,42 @@ export async function mountWorkshopApp(root) {
           rotation: [0, 0, 0, 1],
         };
       }
+      if (
+        command.type === 'guided-suspension-module' ||
+        command.type === 'pin-ended-strut-module'
+      ) {
+        const bp = frame().metadata.blueprint;
+        const x = bp.parts.length ? Math.max(...bp.parts.map((p) => p.position[0])) + 0.6 : 0;
+        command = {
+          type: 'insert-assembly',
+          definition:
+            command.type === 'pin-ended-strut-module'
+              ? createPinEndedStrut()
+              : createGuidedSuspensionModule({ driven: command.driven === true }),
+          position: [x, 0.5, 0],
+          rotation: [0, 0, 0, 1],
+        };
+      }
+      const suspensionExample = {
+        'guided-suspension-example': createSuspensionComparison,
+        'rigid-suspension-example': () => createSuspensionComparison({ rigid: true }),
+        'articulated-suspension-example': createArticulatedSuspensionBench,
+        'active-suspension-example': createActiveSuspensionBench,
+      }[command.type];
+      if (suspensionExample) {
+        if (frame().metadata.blueprint.parts.length && command.replace !== true)
+          return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
+        command = { type: 'load', save: suspensionExample() };
+      }
       if (command.type === 'spring-example') {
         if (frame().metadata.blueprint.parts.length && command.replace !== true)
           return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
         command = { type: 'load', save: createSpringPlayground({ damping: command.damping ?? 8 }) };
+      }
+      if (command.type === 'spring-launcher-example') {
+        if (frame().metadata.blueprint.parts.length && command.replace !== true)
+          return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
+        command = { type: 'load', save: createSpringLauncher() };
       }
       if (command.type === 'driving-example') {
         if (frame().metadata.blueprint.parts.length && command.replace !== true)
@@ -535,6 +581,7 @@ export async function mountWorkshopApp(root) {
     observe: () => workshop.observe(),
     readLastCommandResult: () => structuredClone(lastCommandResult),
     readRenderedTransforms: () => view.readRenderedTransforms(),
+    readRenderedSpringEndpoints: () => view.readRenderedSpringEndpoints(),
     readRenderedCenters: () => view.readRenderedCenters(),
     readInteractionState: () => view.readInteractionState(),
     metrics: () => structuredClone(metrics),

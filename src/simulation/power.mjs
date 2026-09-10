@@ -1,4 +1,5 @@
 import { motorStep, sharedPowerStep, sampledPositionDuty } from './physics/law/motor.mjs';
+import { receiverControlConfiguration } from './receiver-arbiter.mjs';
 const clone = (x) => structuredClone(x);
 const fail = (code) => {
   throw Object.assign(new Error(code), { reasonCode: code, path: 'power' });
@@ -17,7 +18,12 @@ export function createPowerNetwork(configuration) {
   const node = (n) => Number.isSafeInteger(n) && n >= 0;
   const array = (key) => Array.isArray(config[key]) && config[key].length <= 8192;
   if (
-    !exact(config, 'cells,motors,wires,signalWires,receivers,controllers,sensors') ||
+    !exact(
+      config,
+      'cells,motors,wires,signalWires,receivers,controllers,sensors' +
+        (Object.hasOwn(config, 'regulators') ? ',regulators' : ''),
+    ) ||
+    (Object.hasOwn(config, 'regulators') && !array('regulators')) ||
     !['cells', 'motors', 'wires', 'signalWires', 'receivers', 'controllers', 'sensors'].every(array)
   )
     fail('INVALID_POWER_CONFIGURATION');
@@ -98,11 +104,20 @@ export function createPowerNetwork(configuration) {
     config.receivers,
     config.controllers,
     config.sensors,
+    config.regulators ?? [],
   ])
     if (new Set(entries.map((e) => e.node)).size !== entries.length)
       fail('INVALID_POWER_CONFIGURATION');
   for (const sensor of config.sensors)
-    if (
+    if (sensor.kind === 'travel') {
+      if (
+        !exact(sensor, 'node,kind,joint') ||
+        !node(sensor.node) ||
+        !Number.isSafeInteger(sensor.joint) ||
+        sensor.joint < -1
+      )
+        fail('INVALID_POWER_CONFIGURATION');
+    } else if (
       !exact(sensor, 'node,body,axis') ||
       !node(sensor.node) ||
       !node(sensor.body) ||
@@ -112,6 +127,7 @@ export function createPowerNetwork(configuration) {
       Math.abs(Math.hypot(...sensor.axis) - 1) > 1e-9
     )
       fail('INVALID_POWER_CONFIGURATION');
+  receiverControlConfiguration(config);
   const sources = config.receivers;
   const parent = new Map();
   const root = (n) => {
@@ -192,7 +208,8 @@ export function createPowerNetwork(configuration) {
     });
     candidate.sources.forEach((s, i) => {
       if (
-        Object.keys(s).sort().join(',') !== 'duty,node' ||
+        !exact(s, 'duty,node' + (Object.hasOwn(s, 'enabled') ? ',enabled' : '')) ||
+        (Object.hasOwn(s, 'enabled') && s.enabled !== false) ||
         s.node !== sources[i].node ||
         !finite(s.duty) ||
         Math.abs(s.duty) > 1
@@ -285,16 +302,35 @@ export function createPowerNetwork(configuration) {
         if (
           !source ||
           seen.has(command.node) ||
-          Object.keys(command).sort().join(',') !== 'duty,node' ||
+          !exact(command, 'duty,node' + (Object.hasOwn(command, 'enabled') ? ',enabled' : '')) ||
+          (Object.hasOwn(command, 'enabled') && typeof command.enabled !== 'boolean') ||
           !finite(command.duty) ||
           Math.abs(command.duty) > 1
         )
           fail('INVALID_SIGNAL_COMMAND');
         seen.add(command.node);
         source.duty = command.duty;
+        if (command.enabled === false) source.enabled = false;
+        else delete source.enabled;
       }
       const controls = config.motors.map((motor, i) => {
         const source = signalFor(motor)[0];
+        const disabled =
+          source && next.sources.find((s) => s.node === source.node).enabled === false;
+        if (disabled) {
+          if (motor.positionControl) {
+            const sample = speeds.find((s) => s.node === motor.node);
+            if (!sample || !finite(sample.angle, sample.speed) || Math.abs(sample.angle) > Math.PI)
+              fail('INVALID_MOTOR_SAMPLE');
+            next.motors[i].position = {
+              ...state.motors[i].position,
+              angle: sample.angle,
+              controlDuty: 0,
+              integralDuty: 0,
+            };
+          }
+          return { duty: 0 };
+        }
         const command =
           (source ? next.sources.find((s) => s.node === source.node).duty : motor.defaultDuty) *
           (motor.inputPolarity ?? 1);
@@ -520,6 +556,7 @@ export function createPowerNetwork(configuration) {
           !exact(
             sample,
             'node,speedBefore,speedAfter,workJ,kineticDeltaJ,kineticBeforeJ,kineticAfterJ' +
+              (Object.hasOwn(sample, 'constraintWorkJ') ? ',constraintWorkJ' : '') +
               (motor.positionControl ? ',angle' : ''),
           ) ||
           !finite(
@@ -529,6 +566,7 @@ export function createPowerNetwork(configuration) {
             sample.kineticDeltaJ,
             sample.kineticBeforeJ,
             sample.kineticAfterJ,
+            Object.hasOwn(sample, 'constraintWorkJ') ? sample.constraintWorkJ : 0,
           ) ||
           (motor.positionControl && (!finite(sample.angle) || Math.abs(sample.angle) > Math.PI)) ||
           sample.kineticBeforeJ < 0 ||
@@ -538,7 +576,8 @@ export function createPowerNetwork(configuration) {
         const allocation = pending.allocations[i],
           record = next.motors[i];
         // The physics door measures the discrete kick before contacts/gravity.
-        // The independent full-inertia KE receipt must agree with impulse work.
+        // Full-inertia KE agrees with funded motor work plus independently
+        // measured signed work of regularized constraint reactions.
         const work = sample.workJ,
           expectedWork = (allocation.torque * (sample.speedBefore + sample.speedAfter) * dt) / 2;
         const workTolerance =
@@ -559,7 +598,8 @@ export function createPowerNetwork(configuration) {
           Math.abs(sample.kineticDeltaJ - (sample.kineticAfterJ - sample.kineticBeforeJ)) >
             receiptTolerance ||
           Math.abs(work - expectedWork) > workTolerance ||
-          Math.abs(work - sample.kineticDeltaJ) > receiptTolerance ||
+          Math.abs(work + (sample.constraintWorkJ ?? 0) - sample.kineticDeltaJ) >
+            receiptTolerance ||
           Math.abs(sample.speedBefore - allocation.speed) >
             ENERGY_RELATIVE_TOLERANCE * Math.max(1, Math.abs(allocation.speed))
         )

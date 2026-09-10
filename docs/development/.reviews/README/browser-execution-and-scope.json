@@ -1,12 +1,12 @@
 {
   "version": 1,
   "dependencies": {
-    "package-lock.json": "d7eb0fc6a6111c639f322b6d7adff6d7566c732f26dd695cb844b5b08182e4f7",
-    "package.json": "bc57ef83b8c3f0ceeae4e1399e6988ee5527e8461408c7e290c6fc6bc9d09d25",
+    "package-lock.json": "2ced29c88ff5fd2951e086c917a4d3401ae7caf7441f7e72bf3de6d1e71e4caa",
+    "package.json": "af6c70b40ffb56a8a285a04f71ed41da6e65b621e3bdfd7ce5195247b9862ca2",
     "scripts/browser-registry.mjs": "f5ab65c6ab54a5f05987485c45f9d1516b66b828c847d4854d4860c2c05e564c",
     "scripts/browser-selection.mjs": "3e83cacdc8ba6c4a49fc1ee4e2c2658e65a8c625cce8b14824cecf38bcb394a8",
     "scripts/invariant-coverage.mjs": "59f81d8cbc60269fe15917d702080cf1545bc33073ec5492ae14476e33957e8a",
-    "scripts/manifest.json": "e8c606b159e92220727ca02f5f70d3ac02e8ced65c523add8c14fd6a6b881a8b",
+    "scripts/manifest.json": "f57da7f3a152968640e9dfffaa9a9ab92556f3b1076b5500139410713a5c3a01",
     "scripts/module-graph.mjs": "1a42922f2ab45df26cd99c5e69babfb86b7957c1c61104f7be151233fba6d3f2",
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
     "scripts/test-selection.mjs": "73dac80216ee28b5644f04acd503f8776d1854090417fcc6ec9df4446686000e",
@@ -18,11 +18,11 @@
     "scripts/runtime-preflight.mjs": "243c17a7df72eb827c51b4ac7d48356714e8d74b9396d5b384a671bb22521b61",
     "scripts/verification-run.mjs": "8cae64aa0e790b42ceeddcbece333d13c2d6cb21b0320d46295c1b30ba714fe7",
     "scripts/verify-browser-suite.mjs": "fdc8caa55e9dd463d5d7191147dacd23dc80fdfe75347a064f9aa0001a0757c0",
-    "src/model/boundaries.d.ts": "b145ea62eda5968ddb5e480ffed342f9632e04a798372885c2c632ea15119350",
-    "src/model/catalog.mjs": "ed3388946005de707233a3d1dda10cd9827b700e136030fa60200b97efd778c8",
+    "src/model/boundaries.d.ts": "277a81651b4691db911c125b4030ee88316a141afed345905c8ab0984f9f83be",
+    "src/model/catalog.mjs": "911a5c528f132537cc54add60366216fbdd4babc29d789c597e439338e160861",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",
     "src/model/features.mjs": "21aabd2277331945e36a23c8a6eddd1e9d8007cca181844f7dd358f2ba43e9ed",
-    "src/model/generated/blueprint-types.d.ts": "bd194a365248f2562dbb641baeb96a8dc7fb86a4ab9a9c1d5f156c2f441c12a5",
+    "src/model/generated/blueprint-types.d.ts": "ff76b9b17bc09c81d3fb0b8ad157d81e00b24542d5025e7b5c96f18ddf36ed25",
     "scripts/browser-session.mjs": "92ef0cbb5957b8997d5779b6fd4d15912bd3fc3584732cae377b671f6a69ace7",
     "scripts/check-invariant-controls.mjs": "fc528759bd20f28307d62aef17183e9485b0594d89aa18f5c632ff0e3ae135ed",
     "scripts/ci.mjs": "31c08a1591a2db199473b89888bb9f596c4ac4787a09ee6332729c6268b11230",
@@ -35,12 +35,12 @@
     "scripts/check-physics-boundary.mjs": "c7cf8046dc6e06160fdddfb234949c519c5b8814a5f0e8d2e3fdbc84066fba07",
     "scripts/checks.mjs": "ac7a11341da619d7d33324fa062124bc667aa3465a13c82028d747f0fe97f5af",
     "scripts/gate.mjs": "7a8d0870baef283d688a15a71f1d60c18766a58f218e1cb4a77c016a3abd559c",
-    "scripts/generate-schema.mjs": "1fffd2a55bdb3ce04a9c95c19c093046d31786c958f637037343e4335a198e66",
+    "scripts/generate-schema.mjs": "99c2488c0db92b02f80e2c8509978ee5552f034e508d6d9a50fbd74da2cef901",
     "scripts/verification-outcome.mjs": "b28832154ca392e72f053afb09c02f41f1665df3bcebdb763b9a9de9873c741d",
     "scripts/verify-final.mjs": "094b5d448fb3228100a2c0400692317209269e92e007c3a407f133c433caae0b",
-    "src/model/blueprint.schema.json": "be00ab5e9bbdd0038a8b9f5422edfdc14f2812fc7d7e957889bff455bb078ba2",
-    "src/model/generated/blueprint-validator.mjs": "d7e98ea5e2382487d0040a2b359271f06114120ad2f6856c3e15ccccbcd20b2b",
+    "src/model/blueprint.schema.json": "c0c2e8fc174bd539cd614e94dfb05f6a9e925ee1ca174a56f6ec32b0b787f77d",
+    "src/model/generated/blueprint-validator.mjs": "94756bfc67ad54eb70a26083c9d0c932b68d520bc26c72026ff1a67815268d5b",
     "scripts/browser-evidence.mjs": "aba560116ae7029a14d9cbeaba46612417e7684a0c73b0996f73c1f0eb77b68f",
-    "src/application/workshop-app.mjs": "9e4e6cf3337aae3a352911f7a98e4963576ba284876b28fdf64a695f377e05a8"
+    "src/application/workshop-app.mjs": "034c55769581d421a02f2776318eeb0584c6fa2ba7b14596caa5905d57a3c6e8"
   }
 }

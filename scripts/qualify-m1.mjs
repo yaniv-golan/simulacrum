@@ -14,7 +14,7 @@ const node = await verifyM1();
 const session = await createSession(node.configuration, identity);
 let bundle;
 try {
-  session.act({ type: 'impulse', body: 0, value: [1e39, 0, 0] });
+  session.act({ type: 'impulse', body: 0, value: [2 * Math.sqrt(Number.MAX_VALUE), 0, 0] });
   try {
     session.step(1);
   } catch {}

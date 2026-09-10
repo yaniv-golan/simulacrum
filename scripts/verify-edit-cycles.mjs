@@ -100,8 +100,8 @@ try {
         'deepEqual',
         [
           reset.frame.physics[i].position,
-          part.position.map(Math.fround),
-          'Build resets authored position at physics float32 precision',
+          part.position,
+          'Build resets the exact authored position',
         ],
         { frame: reset.frame },
       );

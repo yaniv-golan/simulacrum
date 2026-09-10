@@ -15,6 +15,11 @@ export function receiverControlOwner(blueprint, id) {
   const peer = edge.a.part === id ? edge.b : edge.a;
   return blueprint.parts.find((part) => part.id === peer.part) ?? null;
 }
+/** @param {import('./boundaries.js').DeepReadonly<Blueprint>} blueprint @param {string} id */
+export function receiverAllowsManual(blueprint, id) {
+  const owner = receiverControlOwner(blueprint, id);
+  return !owner || owner.type === 'positionRegulator';
+}
 
 /** Read authored connectivity only; this graph grants no actuator authority.
  * @param {import('./boundaries.js').DeepReadonly<Blueprint>} blueprint @param {string} id
@@ -64,7 +69,7 @@ export function connectionTestPaths(blueprint, id) {
   const manualReceiver =
     signalOwner?.type === 'commandReceiver' &&
     signalEndpoint?.port === 'signal' &&
-    !receiverControlOwner(blueprint, signalOwner.id)
+    receiverAllowsManual(blueprint, signalOwner.id)
       ? signalOwner
       : null;
   return {

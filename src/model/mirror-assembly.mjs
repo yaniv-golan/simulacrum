@@ -196,6 +196,12 @@ export function proposeMirroredAssembly(blueprint, options) {
     }
     next.connections.push(copy);
   }
+  for (const part of next.parts.filter((p) => Object.values(idMap).includes(p.id)))
+    if (part.springBinding) {
+      if (connectionIdMap[part.springBinding])
+        part.springBinding = connectionIdMap[part.springBinding];
+      else delete part.springBinding;
+    }
   const candidate = loadSave(next);
   if (!candidate.ok) reject(candidate.reasonCode, candidate.path, next);
   const compiled = compileAssembly(candidate.blueprint),

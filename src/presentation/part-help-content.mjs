@@ -7,6 +7,49 @@ const help = (purpose, explanation, needs, steps, examples = []) => ({
   examples,
 });
 export const PART_HELP = {
+  spacerBlock: help(
+    'Separates nearby mounted hardware',
+    'A solid 40 × 30 × 40 mm block. Its 30 mm thickness provides clearance between two mounting faces, with ordinary material mass and fixed connections.',
+    'Mount its bottom face to a support, then mount hardware on its top face.',
+    ['Check clearance throughout the motion of connected arms and bearings.'],
+  ),
+  mountingBlock: help(
+    'Offsets a mounting face past nearby hardware',
+    'A solid 20 × 20 × 160 mm block with small mounting faces. It carries loads through ordinary fixed connections; it is not a sliding joint or an invisible brace.',
+    'Mount one end to a narrow guide or carriage face, then attach an ordinary beam at the other end.',
+    [
+      'Check clearance over the full spring travel. A brace attached to the carriage moves with it.',
+      'Closing a fixed connection from the brace to the guide makes the suspension rigid. Leaving that fastener open preserves spring travel; all hardware still has mass.',
+    ],
+  ),
+  shaftMount: help(
+    'Bolts an ordinary arm onto an axle',
+    'A solid block with one shaft connection and flat mounting faces. It turns with the connected axle; the motor or bearing supplies the pivot.',
+    'Connect Shaft to a motor or bearing, then mount a beam to a flat face.',
+    [
+      'Mount a beam end to the top or side for a crank or gate. Check its full swing for collisions.',
+      'Its material and solid size determine its mass. It is not a hollow clamp or an invisible hinge.',
+    ],
+  ),
+  travelSensor: help(
+    'Measures one spring’s length and speed',
+    'Reports the distance along a selected spring guide and how quickly that distance changes. It does not measure chassis height or tilt.',
+    'Select a spring connection in Build, then wire Signal to a Position Regulator.',
+    [
+      'An unbound or missing spring gives an invalid reading. Automatic control switches Off until you repair the binding and rearm it.',
+      'Copy the sensor with its spring to remap the binding. A sensor copied alone starts unbound.',
+    ],
+  ),
+  positionRegulator: help(
+    'Adjusts a powered mechanism toward a chosen spring length',
+    'Uses the wired Travel Sensor’s previous completed reading. Proportional correction responds to length error; damping responds to length-change speed. Rate limiting bounds changes in the hinge target.',
+    'Wire Travel Sensor → Position Regulator → Command Receiver → Powered Hinge. The hinge still needs a charged Power Cell.',
+    [
+      'Start in Manual and check which direction changes spring length. Set polarity accordingly.',
+      'Choose Automatic explicitly. A deliberate key or test command takes over in Manual.',
+      'Off disconnects active drive; it is not a brake or a centered hinge target. Springs and gravity can still move the mechanism.',
+    ],
+  ),
   springGuide: help(
     'A captured spring that guides a sliding carriage',
     'Slides along this axis; does not swivel. This open-rail mechanism resists both compression and extension. The coil is decorative: collision and mass use the solid pads and ordinary rail, not individual turns.',

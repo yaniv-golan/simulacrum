@@ -292,3 +292,52 @@ test('an admitted fixed path locking a powered shaft heats the winding without m
     s.dispose();
   }
 });
+
+test('only rigid paths and separately grounded rigid clusters suppress actuator mobility', async () => {
+  for (const variant of ['free-pin', 'transitive-weld', 'separate-ground']) {
+    const c = chain();
+    if (variant === 'transitive-weld')
+      c.joints.push({
+        kind: 'fixed',
+        a: 0,
+        b: 2,
+        anchorA: [0.2, 0, 0],
+        anchorB: [0, 0, 0],
+        rotationA: [0, 0, 0, 1],
+        rotationB: [0, 0, 0, 1],
+      });
+    if (variant === 'separate-ground') {
+      c.bodies[0].fixed = true;
+      c.bodies[2].fixed = true;
+    }
+    const world = await createPhysicsWorld(c);
+    try {
+      if (variant !== 'free-pin') assert.equal(world.jointState(0).effectiveInverseInertia, 0);
+      world.prepareConstraints();
+      world.applyPreparedConstraints();
+      const state = world.jointState(0),
+        response = world.torquePairResponse(0, 1, [1, 0, 0], 0, 1, [1, 0, 0]);
+      if (variant === 'free-pin') {
+        assert.ok(state.effectiveInverseInertia > 200);
+        assert.ok(response > 200, 'a revolute edge is not a rigid path');
+        assert.ok(world.applyTorquePair(0, 1, [1, 0, 0], 1).kineticDeltaJ > 0);
+      } else {
+        assert.equal(state.effectiveInverseInertia, 0);
+        assert.equal(state.speed, 0);
+        assert.equal(response, 0);
+        const before = world.read(),
+          receipt = world.applyTorquePair(0, 1, [1, 0, 0], 1);
+        assert.equal(receipt.workJ, 0);
+        assert.equal(receipt.constraintWorkJ, 0);
+        assert.equal(receipt.kineticDeltaJ, 0);
+        assert.deepEqual(
+          world.read(),
+          before,
+          'internal torque cannot deform an authored rigid cluster',
+        );
+      }
+    } finally {
+      world.dispose();
+    }
+  }
+});

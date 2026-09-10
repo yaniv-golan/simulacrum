@@ -2,8 +2,8 @@
   "version": 1,
   "dependencies": {
     "scripts/playtest/release-policy.json": "8e02ce60547dedf86c4e0c929a633110b24c0afb5b2c06f71dd700b1f32397fb",
-    "package-lock.json": "d7eb0fc6a6111c639f322b6d7adff6d7566c732f26dd695cb844b5b08182e4f7",
-    "package.json": "8e04549bb4d768f121c0edf9036fcef653cead995034fd9242f9ccfcb9209bac",
+    "package-lock.json": "2ced29c88ff5fd2951e086c917a4d3401ae7caf7441f7e72bf3de6d1e71e4caa",
+    "package.json": "cbfd07f85a876169e89727610385a1146c97caa3dc2684aa876be772421514f2",
     "scripts/module-graph.mjs": "1a42922f2ab45df26cd99c5e69babfb86b7957c1c61104f7be151233fba6d3f2",
     "scripts/playtest/calibration-evidence.mjs": "52e563f7e05f7043be6097f57b71f7bc85fb1c76229ba15dd8374807396a4df0",
     "scripts/playtest/capture-samples.mjs": "55daead9d88a9afe2a2e4eeb34b473cf3fe9e54e7b8098831cac39c0c299c937",

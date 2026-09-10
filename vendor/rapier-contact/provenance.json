@@ -1,15 +1,26 @@
 {
   "upstreamCommit": "3e12c2679cb1940a876bde93af9cec0cf2f57944",
-  "npmVersion": "0.20.0",
-  "rustVersion": "0.35.1",
-  "rustc": "1.94.0 (4a4ef493e 2026-03-02)",
-  "wasmBindgen": "0.2.128",
-  "wasmPack": "0.12.1",
-  "node": "24.18.0",
   "sourceArchiveSha256": "9c3da08780410f7e519e95772185c21e4c76216855019fd69eef3f1cb69644e4",
-  "patchSha256": "635e1fadfe887ac0e5c2b0e0d3e2e5bcbbd11ec1539831b4212d263dc63330ce",
-  "wasmSha256": "9148b8d513c4af31683dca413ae93c128024dd125c63a5f3921d6f9fa02fec71",
-  "wasmOpt": "111",
-  "packageSha256": "28389955d5ebe95eb74e3505d08d27bcf240a2f8b859dc098518bc2da6d624d5",
-  "localRebuild": "Two clean fixed-path builds produced identical WASM and package hashes on the recorded toolchain."
+  "patchSha256": "0c7f75aae982391f75a1d6b42423dc373eeac68ad87c8fd2b6057da03852e257",
+  "version": "0.20.0-simulacrum.spring.7.f64",
+  "precision": "f64",
+  "packageSha256": "3a3254f90596b97071826f7066cd3396ea19b4da502159142600cc7593160654",
+  "wasmSha256": "a217559b2e719c6ccb685962439e1a0e8fd5f17ea6d947b7589662c3970b611b",
+  "toolchain": {
+    "node": "24.18.0",
+    "rust": "1.94.0",
+    "wasmBindgen": "0.2.128",
+    "wasmOpt": "111",
+    "typescript": "5.9.3"
+  },
+  "reproducibility": {
+    "cleanBuilds": 2,
+    "samePackageSha256": true,
+    "sameWasmSha256": true
+  },
+  "parry": {
+    "version": "0.30.2",
+    "sourceArchiveSha256": "8c5f71cd1d7f0c475116a52c61baa8d0de69fc258bc4debf86cb4c4ca8f35f3f",
+    "patchSha256": "c72cfb28e54bd8a3c036fe1369484051ac5acfae35c4419fe477daadf10c2e25"
+  }
 }

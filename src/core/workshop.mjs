@@ -9,6 +9,7 @@ import { resolveSurfaceEndpoint } from '../model/surfaces.mjs';
 import { transformGroup } from '../model/editing.mjs';
 import { proposeMirroredAssembly } from '../model/mirror-assembly.mjs';
 import { CATALOG } from '../model/catalog.mjs';
+import { ENVIRONMENT_PRESETS } from '../model/environment.mjs';
 import {
   createEmptyBlueprint,
   createPart,
@@ -103,15 +104,41 @@ export async function createWorkshop(
             mode: 'build',
             editing: current.editing,
           });
-        } else session.setMetadata({ ...current, mode: command.type === 'run' ? 'run' : 'paused' });
+        } else {
+          if (command.type === 'pause') {
+            const suspended = session.act({ type: 'suspend-controls' });
+            if (!suspended.ok) return suspended;
+          }
+          session.setMetadata({ ...current, mode: command.type === 'run' ? 'run' : 'paused' });
+        }
         return result(true);
       }
-      if (command.type === 'control') {
+      if (command.type === 'control' || command.type === 'control-release') {
         if (keys !== 'duty,id,type') return result(false, 'INVALID_COMMAND', 'command');
         const node = current.blueprint.parts.findIndex(
           (p) => p.id === command.id && p.type === 'commandReceiver',
         );
-        return session.act({ type: 'receiver', node, duty: command.duty });
+        return session.act({
+          type: command.type === 'control' ? 'receiver' : 'receiver-release',
+          node,
+          duty: command.duty,
+        });
+      }
+      if (command.type === 'suspend-controls') {
+        if (keys !== 'type') return result(false, 'INVALID_COMMAND', 'command');
+        return session.act(command);
+      }
+      if (command.type === 'control-mode' || command.type === 'regulator-target') {
+        if (keys !== (command.type === 'control-mode' ? 'id,mode,type' : 'id,target,type'))
+          return result(false, 'INVALID_COMMAND', 'command');
+        const node = current.blueprint.parts.findIndex(
+          (p) => p.id === command.id && p.type === 'commandReceiver',
+        );
+        return session.act(
+          command.type === 'control-mode'
+            ? { type: 'receiver-mode', node, mode: command.mode }
+            : { type: 'regulator-target', node, target: command.target },
+        );
       }
       if (current.mode !== 'build') return result(false, 'EDIT_REQUIRES_BUILD', 'mode');
       if (['undo', 'redo'].includes(command.type)) {
@@ -142,6 +169,17 @@ export async function createWorkshop(
       }
       let next = structuredClone(current.blueprint);
       switch (command.type) {
+        case 'choose-environment':
+          if (
+            keys !== 'environment,type' ||
+            typeof command.environment !== 'string' ||
+            !Object.hasOwn(ENVIRONMENT_PRESETS, command.environment)
+          )
+            return result(false, 'INVALID_COMMAND', 'environment');
+          if ((next.environment ?? 'flat') === command.environment) return result(true);
+          if (command.environment === 'flat') delete next.environment;
+          else next.environment = command.environment;
+          break;
         case 'create-assembly':
           if (keys !== 'ids,name,ports,type') return result(false, 'INVALID_COMMAND', 'command');
           next = groupAssembly(next, command);
@@ -230,6 +268,19 @@ export async function createWorkshop(
           const part = next.parts.find((part) => part.id === command.id);
           if (!part) return result(false, 'UNKNOWN_PART', 'id');
           part.name = command.name.trim();
+          break;
+        }
+        case 'bind-travel-sensor': {
+          if (keys !== 'connection,id,type') return result(false, 'INVALID_COMMAND', 'command');
+          const sensor = next.parts.find((p) => p.id === command.id && p.type === 'travelSensor');
+          if (
+            !sensor ||
+            (command.connection !== null &&
+              !next.connections.some((c) => c.id === command.connection && c.kind === 'spring'))
+          )
+            return result(false, 'INVALID_COMMAND', 'connection');
+          if (command.connection === null) delete sensor.springBinding;
+          else sensor.springBinding = command.connection;
           break;
         }
         case 'delete':

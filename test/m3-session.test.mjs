@@ -215,12 +215,17 @@ test('attached passive inertia does not disappear from measured circuit energy',
 });
 test('separately powered motors sharing a rotor account for coupled kicks and replay', async () => {
   const c = motorConfiguration();
-  c.bodies.push({ ...body(), position: [0, 0, 0] }, { ...body(), position: [20, 0, 0] });
+  // Separate the two motor housings along the shared free axis. Coincident
+  // housings would collide while both joints force their centers together.
+  // Axial offsets leave the pure angular kick inertia and coupling unchanged.
+  c.bodies[0].position = [-0.3, 0, 0];
+  c.joints[0].anchorA = [0.3, 0, 0];
+  c.bodies.push({ ...body(), position: [0.3, 0, 0] }, { ...body(), position: [20, 0, 0] });
   c.joints.push({
     kind: 'revolute',
     a: 3,
     b: 1,
-    anchorA: [0, 0, 0],
+    anchorA: [-0.3, 0, 0],
     anchorB: [0, 0, 0],
     axisA: [1, 0, 0],
     axisB: [1, 0, 0],
@@ -237,6 +242,8 @@ test('separately powered motors sharing a rotor account for coupled kicks and re
   try {
     s.step(1);
     const first = s.observe().frames[0];
+    assert.equal(first.contacts.available, true);
+    assert.equal(first.contacts.rows.length, 0, 'initial motor housings have physical clearance');
     const inertia = 0.02 / 3,
       dt = 1 / 120,
       k = 0.1;
@@ -247,7 +254,16 @@ test('separately powered motors sharing a rotor account for coupled kicks and re
       Math.abs(first.power.motors[1].current - current2) < 1e-7,
       'shared rotor changes the second current allocation',
     );
-    s.step(119);
+    for (let tick = 2; tick <= 120; tick++) {
+      s.step();
+      const current = s.observe().frames[0];
+      assert.equal(current.contacts.available, true);
+      assert.equal(
+        current.contacts.rows.length,
+        0,
+        'the angular coupling apparatus stays contact-free',
+      );
+    }
     const frame = s.observe().frames[0];
     assert.equal(frame.tick, 120);
     assert.ok(frame.power.motors.every((m) => m.shaftWorkJ > 0));

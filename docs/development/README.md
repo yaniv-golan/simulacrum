@@ -87,7 +87,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"7f2109821b74ead60500112d695d000a569bc519a31d80ee804f5e1aa67b08d8","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"8dddbc59f5b9f47af1b197947208577e9ecdcbea1d210a84531bc940181dab12","disposition":"still accurate","rationale":"The npm commands now enter a shared window; selected tests, completion prerequisites, exit meanings and required browser tiers are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b1c929154c22cbbf4dfedf1fb396060b29a53374f4b86971d29cc290a0e40de5","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"9baf7daabb6ff01e6fe92123d49f43de7d25c9a8d502a4abac9d2474a965fcc9","disposition":"still accurate","rationale":"The dependency update changes only the pinned native physics package; Node admission, verification commands, completion tiers, conservative browser selection and human evidence requirements are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -127,7 +127,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"48c8d88d9fd8a377f1b3674ecf7ed8ca786b96a90d20aecabf46013f7d1d318e","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"ad1a07316d58aaf9180dc54b2f3690edf6713335f8a2987f54255aed003367d8","disposition":"still accurate","rationale":"The integrated reference combines verification-window commands with the learning-examples check. Source-bound generation and explicit section review still follow this workflow."} -->
+<!-- doc-review {"version":1,"fingerprint":"031766323198550477f20f62ce4db21af88c19e8e66edd51c74b04d7866be459","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"f15afb164e63844dfd764eab71244511f4ee8d50e490926aa0b1f903ceffc032","disposition":"still accurate","rationale":"The native package identity invalidates dependent reviews through the existing content graph. Regeneration, section-specific review and final-source documentation closure still apply without a policy change."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -222,7 +222,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"a1c5780d3609f4630893b74d09560c7507e00fdf8b26a165ac2428b37946a098","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"1a7b4b71074b916a5abca71eb8839e6412733ca478b9a114c38300a27cd8fcc5","disposition":"still accurate","rationale":"The newer assembly browser keeps the same registered checks and deadlines. Read-domain digests now bind its changed caller; host scheduling and conservative fallback remain as described."} -->
+<!-- doc-review {"version":1,"fingerprint":"368c91077de36d3b9430b080f6f63f6262a16a99541611354306b9ee1eb6b7ac","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"ab5f07db155b001e1a2673d0081adc48b5a1ca79c2e2032326e0416f397efc21","disposition":"still accurate","rationale":"Four audited reverse-consumer hashes changed after the workshop qualification assertion was corrected. All read expressions, source boundaries, dependencies, consumers, roots and scheduling rules remain unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -298,7 +298,7 @@ The [tier coordinator](../../scripts/verification-tiers.mjs#implementation) keep
 ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
-<!-- doc-review {"version":1,"fingerprint":"52d2022001a840d3a59c9ebe02568b2a503421e8750f1b4706f790f03050309e","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"e23af62595e6a30c7df596009b992ce296a259cb571c3481aa9f658862c06c76","disposition":"updated","rationale":"Canonical completion/browser admission is now marked non-green before runtime validation or lock waiting, with explicit failed reports when no child starts. CLI resolves its real path, and child-owned completed reports retain their qualification outcome. Resource ownership and deadlines are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"334ec4e8c934c26cd3f2210d38b1e2dca7a32575512f8ecc0b2ea1cd95ab952a","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"7fcc48572820fee3a466a5963bf1991ba2dbb58528c4b0120f9b9497f838ca01","disposition":"still accurate","rationale":"Native factor reuse changes simulation cost inside a check. It does not change cooperative scheduling, leases, runner concurrency, timeouts or admission."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees

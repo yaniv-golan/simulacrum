@@ -5,6 +5,56 @@ import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 import { snapConnection, compileAssembly } from '../src/model/assembly.mjs';
 import { createSession } from '../src/simulation/session.mjs';
 import * as motorLaw from '../src/simulation/physics/law/motor.mjs';
+import { createPowerNetwork } from '../src/simulation/power.mjs';
+
+test('disabled receiver opens the drive at nonzero speed and never commands a centered servo', () => {
+  for (const speed of [-3, 3]) {
+    const c = fixture().power;
+    const n = createPowerNetwork(c),
+      dt = 1 / 120,
+      node = c.motors[0].node;
+    const result = n.step(
+      dt,
+      [{ node, speed, angle: 0.3 }],
+      [{ node: 4, duty: 0, enabled: false }],
+      [{ node, inertia: 0.1 }],
+    );
+    assert.equal(result.torques[0].value, 0);
+    const state = n.completeStep(dt, [
+      {
+        node,
+        speedBefore: speed,
+        speedAfter: speed,
+        workJ: 0,
+        kineticDeltaJ: 0,
+        kineticBeforeJ: 0.45,
+        kineticAfterJ: 0.45,
+        angle: 0.3,
+      },
+    ]);
+    assert.equal(state.motors[0].current, 0);
+    assert.equal(state.motors[0].shaftWorkJ, 0);
+    assert.equal(state.motors[0].position.integralDuty, 0);
+    assert.equal(state.cells[0].energyJ, c.cells[0].initialJ);
+    const resumed = createPowerNetwork(c);
+    resumed.restore(n.snapshot());
+    assert.equal(
+      resumed.step(dt, [{ node, speed, angle: 0.3 }], [], [{ node, inertia: 0.1 }]).torques[0]
+        .value,
+      0,
+    );
+    const positive = createPowerNetwork(c);
+    assert.notEqual(
+      positive.step(
+        dt,
+        [{ node, speed, angle: 0.3 }],
+        [{ node: 4, duty: 0 }],
+        [{ node, inertia: 0.1 }],
+      ).torques[0].value,
+      0,
+    );
+  }
+});
 function fixture() {
   let b = createEmptyBlueprint('hinge-test', 'Hinge test');
   b.parts = [

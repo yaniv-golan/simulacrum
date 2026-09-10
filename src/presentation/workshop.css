@@ -2716,7 +2716,7 @@ body:has(.playtest-panel) .guide-feedback {
 .part-actions {
   flex-wrap: wrap;
 }
-@media (max-width: 1100px) {
+@media (max-width: 1350px) {
   .workshop-header {
     height: auto;
     min-height: 74px;
@@ -3057,5 +3057,43 @@ body:has(.playtest-panel) .guide-feedback {
     flex: 1;
     min-width: 0;
     max-width: none;
+  }
+}
+
+.environment-choice {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  font-size: 11px;
+  color: #afc4cf;
+}
+.environment-choice select {
+  max-width: 155px;
+  padding: 4px;
+  font: inherit;
+}
+
+/* Wrapped toolbars leave less inspector height on short desktop windows. */
+@media (min-width: 1101px) and (max-width: 1350px) and (max-height: 760px) {
+  .inspector .selected-part-header {
+    padding: 6px 0 5px;
+  }
+  .inspector .part-actions {
+    margin-top: 4px;
+  }
+  .inspector .part-live {
+    margin: 4px 0;
+    padding-block: 4px;
+  }
+  .inspector .primary-setting {
+    padding-block: 4px;
+  }
+  .inspector .port-button {
+    padding-block: 4px;
+    min-height: 33px;
+  }
+  .inspector .port-button::before {
+    top: 7px;
   }
 }

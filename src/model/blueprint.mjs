@@ -135,7 +135,11 @@ export function validateBlueprint(blueprint) {
     }
   }
   for (const [index, part] of blueprint.parts.entries())
-    if (part.type === 'springGuide') {
+    if (part.type === 'positionRegulator') {
+      const p = part.parameters;
+      if (p.minTarget >= p.maxTarget || p.target < p.minTarget || p.target > p.maxTarget)
+        return result('INVALID_BLUEPRINT', `/parts/${index}/parameters`);
+    } else if (part.type === 'springGuide') {
       const p = part.parameters;
       if (p.minLength >= p.maxLength || p.restLength < p.minLength || p.restLength > p.maxLength)
         return result('INVALID_BLUEPRINT', `/parts/${index}/parameters`);

@@ -40,7 +40,11 @@ import { CATALOG, MATERIALS } from '../model/catalog.mjs';
 import { diagnoseMotion, motorShaftSpeed } from '../model/motion-diagnostics.mjs';
 import { explainReason, explainFailure, normalizeFailure } from '../model/messages.mjs';
 import { CYLINDER_SEGMENTS } from '../model/geometry.mjs';
-import { BUILD_ENVIRONMENT } from '../model/environment.mjs';
+import {
+  BUILD_ENVIRONMENT,
+  ENVIRONMENT_PRESETS,
+  environmentObstacles,
+} from '../model/environment.mjs';
 import './workshop.css';
 export const WORKSHOP_VIEW_MILESTONE = UI_FEATURES.construction.milestone;
 const parameterLabels = {
@@ -261,6 +265,21 @@ export function createWorkshopView(
   undo.dataset.command = 'undo';
   redo.dataset.command = 'redo';
   filebar.prepend(undo, redo);
+  const environmentLabel = element('label', 'environment-choice', 'Environment '),
+    environmentSelect = element('select');
+  environmentSelect.setAttribute('aria-label', 'Environment');
+  for (const [value, preset] of Object.entries(ENVIRONMENT_PRESETS)) {
+    const option = element('option', '', preset.label);
+    option.value = value;
+    environmentSelect.append(option);
+  }
+  environmentSelect.addEventListener('change', async () => {
+    const chosen = environmentSelect.value;
+    await send({ type: 'choose-environment', environment: chosen });
+    environmentSelect.value = frame?.metadata.blueprint.environment ?? 'flat';
+  });
+  environmentLabel.append(environmentSelect);
+  filebar.append(environmentLabel);
   header.append(brand, modebar, filebar);
   const body = element('main', 'workshop-body'),
     left = element('aside', 'parts-panel');
@@ -429,6 +448,83 @@ export function createWorkshopView(
         'Try spring playground',
         { type: 'spring-example', replace: true },
       );
+      const springExperiments = element('details', 'spring-experiments');
+      springExperiments.append(element('summary', '', 'Spring experiments'));
+      addExample(
+        springExperiments,
+        'Spring launcher',
+        'Experiment · Stored energy',
+        'Run to let the powered gate hold a compressed spring. Hold L to open the gate and release the separate wheel. The compressed spring stores energy; operating the gate uses battery power. Return to Build to reset this one-shot experiment.',
+        'Try spring launcher',
+        { type: 'spring-launcher-example', replace: true },
+      );
+      addExample(
+        springExperiments,
+        'Guided wheel suspension',
+        'Editable example · Suspension travel',
+        'Four sliding springs carry a powered cart over a rounded bump. Run and hold W/S to drive. Select the same chassis in each cart and open Measurements; compare matching windows and speed just before the bump. The same key press may give different speeds: in Build, select the receiver and adjust Keyboard settings → Output strength. Then change stiffness, damping or load. Smoother motion does not necessarily use less energy.',
+        'Try suspension cart',
+        { type: 'guided-suspension-example', replace: true },
+      );
+      addExample(
+        springExperiments,
+        'Rigid wheel comparison',
+        'Editable example · Same cart, bolted suspension',
+        'The same cart has four extra bolts that lock its suspension braces. Compare the same chassis and measurement window at matching approach speed; adjust the receiver’s Keyboard settings → Output strength in Build if needed. Disconnect a brace bolt in Build to free that spring.',
+        'Try rigid cart',
+        { type: 'rigid-suspension-example', replace: true },
+      );
+      addExample(
+        springExperiments,
+        'Articulated spring ends',
+        'Editable example · Pivoting strut',
+        'A wheel arm loads a spring through two real pivot pins. Run to see it settle, then inspect both bearings. The guide slides along its own axis; the pins let the whole strut change angle. Try Manual movement in Active suspension to see the pivots move farther. Every mount remains editable; check clearance after changing it.',
+        'Try articulated strut',
+        { type: 'articulated-suspension-example', replace: true },
+      );
+      addExample(
+        springExperiments,
+        'Active suspension',
+        'Experiment · Manual and automatic control',
+        'A powered upper rocker changes spring length. Run in Manual and hold W/S to shorten/lengthen it; Manual can hold a fixed load. Select the rocker receiver and choose Automatic to use the travel sensor for a requested length. Try 0.26–0.33 m and compare target changes. Check clearance after editing mounts. Zero takes Manual control; Off removes drive power and does not lock the arm.',
+        'Try active suspension',
+        { type: 'active-suspension-example', replace: true },
+      );
+      const modules = element('section', 'example-card');
+      modules.append(
+        element('h3', '', 'Reusable suspension'),
+        element(
+          'p',
+          '',
+          'Add an editable module to this machine. Connect its chassis mount and wheel axle; the driven version also exposes power and command ports. Save it in Assemblies to reuse your changes.',
+        ),
+      );
+      for (const driven of [false, true]) {
+        const insert = button(
+          driven ? 'Add driven suspension module' : 'Add passive suspension module',
+          async () => {
+            const result = await send({ type: 'guided-suspension-module', driven });
+            if (result?.ok) examples.close();
+          },
+        );
+        insert.dataset.command = driven ? 'driven-suspension-module' : 'passive-suspension-module';
+        modules.append(insert);
+      }
+      modules.append(
+        element(
+          'p',
+          '',
+          'The pin-ended strut has two real pivot bearings. Attach its Upper pin mount and Lower pin mount to 40 mm mounting faces; the pins let the complete strut swivel.',
+        ),
+      );
+      const insertPinStrut = button('Add pin-ended strut', async () => {
+        const result = await send({ type: 'pin-ended-strut-module' });
+        if (result?.ok) examples.close();
+      });
+      insertPinStrut.dataset.command = 'pin-ended-strut-module';
+      modules.append(insertPinStrut);
+      springExperiments.append(modules);
+      guide.append(springExperiments);
       return;
     }
     left.insertBefore(guide, partsHeading);
@@ -824,6 +920,27 @@ export function createWorkshopView(
     ground.add(stripe);
   }
   scene.add(ground);
+  const environmentGroup = new THREE.Group();
+  scene.add(environmentGroup);
+  function refreshEnvironment(blueprint) {
+    for (const mesh of [...environmentGroup.children]) {
+      disposePart(mesh);
+      environmentGroup.remove(mesh);
+    }
+    for (const descriptor of environmentObstacles(blueprint.environment)) {
+      const [halfLength, radius] = descriptor.halfExtents;
+      const mesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(radius, radius, halfLength * 2, CYLINDER_SEGMENTS).rotateZ(
+          -Math.PI / 2,
+        ),
+        new THREE.MeshStandardMaterial({ color: 0xd3a352, roughness: 0.8 }),
+      );
+      mesh.position.fromArray(descriptor.position);
+      mesh.quaternion.fromArray(descriptor.rotation);
+      mesh.castShadow = mesh.receiveShadow = true;
+      environmentGroup.add(mesh);
+    }
+  }
   const guideCues = new THREE.Group();
   scene.add(guideCues);
   const partResources = createResourceCache({
@@ -1290,6 +1407,7 @@ export function createWorkshopView(
   raycaster.params.Line.threshold = 0.012;
   let pointerStart = null;
   function refreshSelectionVisuals() {
+    motionReadout.selectBody(selected, getAssemblyFrame?.() ?? frame);
     const edge = frame?.metadata.blueprint.connections.find((c) => c.id === tracedConnection);
     const group = assemblies?.contextual()
       ? assemblies.drafting()
@@ -2154,6 +2272,36 @@ export function createWorkshopView(
       }
     }
     springInspector({ part, right, editable, element, send });
+    if (part.type === 'travelSensor') {
+      const label = element('label', 'setting');
+      label.append(element('span', '', 'Measured spring'));
+      const binding = element('select');
+      binding.setAttribute('aria-label', 'Measured spring');
+      binding.disabled = !editable;
+      const empty = element(
+        'option',
+        '',
+        part.springBinding ? 'Missing spring — choose a connection' : 'Unbound',
+      );
+      empty.value = '';
+      binding.append(empty);
+      for (const edge of frame.metadata.blueprint.connections.filter((c) => c.kind === 'spring')) {
+        const option = element(
+          'option',
+          '',
+          [edge.a.part, edge.b.part]
+            .map((id) => parts.find((p) => p.id === id)?.name ?? id)
+            .join(' ↔ '),
+        );
+        option.value = edge.id;
+        binding.append(option);
+      }
+      binding.value = part.springBinding ?? '';
+      binding.onchange = () =>
+        send({ type: 'bind-travel-sensor', id: part.id, connection: binding.value || null });
+      label.append(binding);
+      right.append(label);
+    }
     if (part.type === 'logicController')
       right.append(
         element(
@@ -2163,6 +2311,64 @@ export function createWorkshopView(
         ),
       );
     if (part.type === 'commandReceiver') {
+      const modeControls = element('div', 'drive-buttons');
+      for (const value of ['manual', 'automatic', 'off']) {
+        const control = button(value[0].toUpperCase() + value.slice(1), () =>
+          send({ type: 'control-mode', id: part.id, mode: value }),
+        );
+        control.disabled = frame.metadata.mode !== 'run';
+        modeControls.append(control);
+      }
+      right.append(
+        modeControls,
+        element(
+          'p',
+          'parameter-help',
+          'Off removes active drive; it is not a brake. Manual input takes over until you choose Automatic again.',
+        ),
+      );
+      const incoming = frame.metadata.blueprint.connections.find(
+        (c) =>
+          c.kind === 'signal' && [c.a, c.b].some((e) => e.part === part.id && e.port === 'command'),
+      );
+      const regulator =
+        incoming &&
+        parts.find(
+          (p) => p.id === (incoming.a.part === part.id ? incoming.b.part : incoming.a.part),
+        );
+      if (regulator?.type === 'positionRegulator') {
+        const label = element('label', 'setting'),
+          input = element('input');
+        label.append(element('span', '', 'Target spring length (m)'));
+        input.type = 'number';
+        input.step = '0.001';
+        input.min = regulator.parameters.minTarget;
+        input.max = regulator.parameters.maxTarget;
+        input.value =
+          frame.receiverControl?.receivers.find(
+            (r) => r.node === parts.findIndex((p) => p.id === part.id),
+          )?.target ?? regulator.parameters.target;
+        input.disabled = frame.metadata.mode !== 'run';
+        input.setAttribute('aria-label', 'Target spring length');
+        const status = element('span', 'parameter-help');
+        status.setAttribute('role', 'status');
+        input.onchange = async () => {
+          const result = await send({
+            type: 'regulator-target',
+            id: part.id,
+            target: Number(input.value),
+          });
+          if (!result?.ok) {
+            input.value =
+              frame.receiverControl?.receivers.find(
+                (r) => r.node === parts.findIndex((p) => p.id === part.id),
+              )?.target ?? regulator.parameters.target;
+            status.textContent = `Kept ${input.value} m. Choose ${regulator.parameters.minTarget}–${regulator.parameters.maxTarget} m.`;
+          } else status.textContent = '';
+        };
+        label.append(input, status);
+        right.append(label);
+      }
       vehicleControls.inspector(part, right, editable);
       const driving = element('div', 'drive-buttons');
       driving.append(
@@ -2650,22 +2856,61 @@ export function createWorkshopView(
     }
     if (part.type === 'commandReceiver') {
       const source = frame.power?.sources.find((source) => source.node === index);
+      const control = frame.receiverControl?.receivers.find((r) => r.node === index);
       const outputs = portConnections(part, { id: 'signal' }).map((connection) => {
         const peer = connection.a.part === part.id ? connection.b.part : connection.a.part;
         return (
           frame.metadata.blueprint.parts.find((candidate) => candidate.id === peer)?.name ?? peer
         );
       });
+      const mode = control?.mode ?? 'manual';
+      const reason = {
+        OPERATOR_OFF: 'Drive disabled',
+        SUSPENDED: 'Suspended · choose Automatic to rearm',
+        INVALID_SENSOR: 'Invalid travel reading · check the sensor binding',
+        NO_REGULATOR: 'Connect and enable a position regulator',
+      }[control?.reason];
       target.textContent =
         frame.metadata.mode === 'build'
           ? outputs.length
             ? `Control output wired to ${outputs.join(', ')}`
             : 'Control output not wired · connect it to a motor or hinge'
           : frame.metadata.mode === 'paused'
-            ? 'Paused · keyboard output resets on resume'
-            : `Control output ${format(source?.duty ?? 0, 2)}`;
+            ? `Paused · ${mode}${mode === 'automatic' ? ' switches Off on resume' : mode === 'manual' ? ' output resets on resume' : ' · drive disabled'}`
+            : `${mode} · ${reason ? reason + ' · ' : ''}Control output ${format(source?.duty ?? 0, 2)}`;
+      const edges = frame.metadata.blueprint.connections;
+      const upstream = (id, port) => {
+        const edge = edges.find(
+          (c) => c.kind === 'signal' && [c.a, c.b].some((e) => e.part === id && e.port === port),
+        );
+        return edge && (edge.a.part === id ? edge.b.part : edge.a.part);
+      };
+      const regulator = frame.metadata.blueprint.parts.find(
+        (p) => p.id === upstream(part.id, 'command') && p.type === 'positionRegulator',
+      );
+      if (regulator) {
+        const sensorIndex = frame.metadata.blueprint.parts.findIndex(
+          (p) => p.id === upstream(regulator.id, 'signal') && p.type === 'travelSensor',
+        );
+        const reading = frame.sensors?.readings.find((r) => r.node === sensorIndex);
+        target.append(
+          element(
+            'div',
+            'suspension-reading',
+            reading?.valid
+              ? `Measured spring length ${format(reading.length, 3)} m · ${format(reading.speed, 3)} m/s`
+              : 'Measured spring length unavailable',
+          ),
+        );
+      }
     }
-    if (!cell && !motor && part.type !== 'commandReceiver') {
+    if (part.type === 'travelSensor') {
+      const reading = frame.sensors?.readings.find((r) => r.node === index);
+      target.textContent = reading?.valid
+        ? `${format(reading.length, 3)} m spring length · ${format(reading.speed, 3)} m/s`
+        : 'Invalid reading · bind a spring connection in Build';
+    }
+    if (!cell && !motor && !['commandReceiver', 'travelSensor'].includes(part.type)) {
       const speed = frame.physics[index]?.angularVelocity;
       target.textContent =
         frame.metadata.mode === 'build'
@@ -3239,6 +3484,7 @@ export function createWorkshopView(
         sourcePort = null;
       renderCosts.length = 0;
       rebuildMeshes(blueprint);
+      refreshEnvironment(blueprint);
       inspectorKey = '';
     }
     if (exploded && (frame.metadata.mode === 'run' || key !== blueprintKey))
@@ -3263,6 +3509,8 @@ export function createWorkshopView(
     explodeButton.disabled = frame.metadata.mode === 'run' || blueprint.parts.length < 2;
     refreshSelectionVisuals();
     editing.select(selected);
+    environmentSelect.value = blueprint.environment ?? 'flat';
+    environmentSelect.disabled = frame.metadata.mode !== 'build';
     undo.disabled = frame.metadata.mode !== 'build' || !frame.metadata.editing?.undoCount;
     redo.disabled = frame.metadata.mode !== 'build' || !frame.metadata.editing?.redoCount;
     refreshGuide();
@@ -3652,7 +3900,17 @@ export function createWorkshopView(
       return canvas.toDataURL('image/jpeg', 0.65);
     },
     clearMeasurements: () => motionReadout.clear(),
+    ingestMeasurements: (observation) => motionReadout.ingest(observation),
     readInteractionState: () => ({
+      bodyMeasurement: motionReadout.readBody(),
+      environment: {
+        selected: frame?.metadata.blueprint.environment ?? 'flat',
+        obstacles: environmentGroup.children.map((mesh) => ({
+          position: mesh.position.toArray(),
+          rotation: mesh.quaternion.toArray(),
+          bounds: new THREE.Box3().setFromObject(mesh).getSize(new THREE.Vector3()).toArray(),
+        })),
+      },
       rendering: {
         frames: renderedFrames,
         quality: graphicsQuality.read(),
@@ -3699,6 +3957,7 @@ export function createWorkshopView(
       },
     }),
     readRenderedTransforms,
+    readRenderedSpringEndpoints: () => springView.readRenderedEndpoints(),
     readRenderedCenters,
     camera,
     dispose() {
@@ -3729,7 +3988,7 @@ export function createWorkshopView(
       springView.dispose();
       partResources.dispose();
       connectionView.dispose();
-      for (const object of [portCues, ground]) disposePart(object);
+      for (const object of [portCues, ground, environmentGroup]) disposePart(object);
       keyLight.shadow.dispose();
       renderer.dispose();
       root.replaceChildren();

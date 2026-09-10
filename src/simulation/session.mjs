@@ -2,6 +2,7 @@ import { DT, PHASES } from '../model/tick.mjs';
 import { createObservationStore, immutableCopy } from '../model/observation.mjs';
 import { createControllerDispatcher } from './controllers.mjs';
 import { createPowerNetwork } from './power.mjs';
+import { createReceiverArbiter, receiverControlConfiguration } from './receiver-arbiter.mjs';
 import { createPhysicsWorld } from './physics/world.mjs';
 let sessionSequence = 0;
 const physicalConfig = ({ gravity, bodies, joints }) => ({ gravity, bodies, joints });
@@ -26,6 +27,7 @@ function admitConfiguration(input) {
     ...c.power.receivers,
     ...c.power.controllers,
     ...c.power.sensors,
+    ...(c.power.regulators ?? []),
   ].map((x) => x.node);
   if (
     new Set(nodes).size !== nodes.length ||
@@ -68,7 +70,13 @@ function admitConfiguration(input) {
       throw Error('INVALID_CONFIGURATION');
   }
   for (const sensor of c.power.sensors)
-    if (
+    if (sensor.kind === 'travel') {
+      if (
+        sensor.joint >= c.joints.length ||
+        (sensor.joint >= 0 && c.joints[sensor.joint].kind !== 'spring')
+      )
+        throw Error('INVALID_CONFIGURATION');
+    } else if (
       !Number.isInteger(sensor.body) ||
       sensor.body !== sensor.node ||
       sensor.body >= c.bodies.length
@@ -76,17 +84,46 @@ function admitConfiguration(input) {
       throw Error('INVALID_CONFIGURATION');
   return { config: c, power };
 }
-function sampleSensors(tick, bodies, powerConfig) {
+function travelReading(sensor, bodies, joints) {
+  const joint = joints[sensor.joint];
+  if (!joint) return { node: sensor.node, valid: false, length: 0, speed: 0 };
+  const a = bodies[joint.a],
+    b = bodies[joint.b];
+  const cross = (u, v) => [
+    u[1] * v[2] - u[2] * v[1],
+    u[2] * v[0] - u[0] * v[2],
+    u[0] * v[1] - u[1] * v[0],
+  ];
+  const ra = rotate(a.rotation, joint.anchorA),
+    rb = rotate(b.rotation, joint.anchorB);
+  const axis = rotate(a.rotation, joint.axisA);
+  const gap = rb.map((v, i) => b.position[i] + v - a.position[i] - ra[i]);
+  const va = cross(a.angularVelocity, ra),
+    vb = cross(b.angularVelocity, rb);
+  const axisRate = cross(a.angularVelocity, axis);
+  const length = gap.reduce((sum, v, i) => sum + axis[i] * v, 0);
+  const speed = gap.reduce(
+    (sum, v, i) =>
+      sum + axisRate[i] * v + axis[i] * (b.velocity[i] + vb[i] - a.velocity[i] - va[i]),
+    0,
+  );
+  return { node: sensor.node, valid: length >= 0, length: Math.max(0, length), speed };
+}
+function sampleSensors(tick, bodies, powerConfig, joints) {
   return {
     tick,
     bodies,
-    readings: powerConfig.sensors.map((s) => ({
-      node: s.node,
-      speed: rotate(bodies[s.body].rotation, s.axis).reduce(
-        (sum, v, i) => sum + v * bodies[s.body].angularVelocity[i],
-        0,
-      ),
-    })),
+    readings: powerConfig.sensors.map((s) =>
+      s.kind === 'travel'
+        ? travelReading(s, bodies, joints)
+        : {
+            node: s.node,
+            speed: rotate(bodies[s.body].rotation, s.axis).reduce(
+              (sum, v, i) => sum + v * bodies[s.body].angularVelocity[i],
+              0,
+            ),
+          },
+    ),
   };
 }
 const finiteTree = (value) =>
@@ -107,6 +144,7 @@ export async function createSession(
     world = await createPhysicsWorld(physicalConfig(config));
   identity = copy(identity);
   let dispatcher = createControllerDispatcher(config.power, hostPrograms);
+  let receiverControl = createReceiverArbiter(receiverControlConfiguration(config.power));
   let tick = 0,
     accumulator = 0,
     sequence = 0,
@@ -116,7 +154,7 @@ export async function createSession(
     failure = null;
   let initial = world.read();
   let contactSample = world.contacts();
-  let sensors = sampleSensors(0, copy(initial), config.power);
+  let sensors = sampleSensors(0, copy(initial), config.power, config.joints);
   let torques = [],
     receipts = [];
   const hasSprings = () => config.joints.some((j) => j.kind === 'spring');
@@ -127,6 +165,7 @@ export async function createSession(
     externalWorkJ: 0,
     integrationDeltaJ: 0,
     constraintDissipationJ: 0,
+    constraintWorkJ: 0,
     balanceResidualJ: 0,
   });
   let energy = emptyEnergy();
@@ -163,6 +202,7 @@ export async function createSession(
     energy: copy(energy),
     power: power.read(),
     sensors: copy(sensors),
+    receiverControl: receiverControl.snapshot(),
     phaseTimings: timings,
     phaseStatus: Object.fromEntries(
       PHASES.map((p) => [
@@ -190,7 +230,7 @@ export async function createSession(
   function checkpoint() {
     if (status === 'failed') throw Error('SESSION_FAILED');
     return copy({
-      version: 2,
+      version: 3,
       tick,
       accumulator,
       sequence,
@@ -198,6 +238,7 @@ export async function createSession(
       sensors,
       energy,
       power: power.snapshot(),
+      receiverControl: receiverControl.snapshot(),
       physics: Array.from(world.snapshot()),
       configuration: config,
       identity,
@@ -222,8 +263,27 @@ export async function createSession(
         command.value.length === 3 &&
         command.value.every(Number.isFinite)
       );
+    if (command.type === 'suspend-controls') return keys === 'type';
+    if (command.type === 'receiver-mode')
+      return (
+        keys === 'mode,node,type' &&
+        config.power.receivers.some((r) => r.node === command.node) &&
+        ['manual', 'automatic', 'off'].includes(command.mode)
+      );
+    if (command.type === 'regulator-target') {
+      const c = receiverControlConfiguration(config.power).find(
+        (r) => r.node === command.node,
+      )?.regulator;
+      return (
+        keys === 'node,target,type' &&
+        c &&
+        Number.isFinite(command.target) &&
+        command.target >= c.minTarget &&
+        command.target <= c.maxTarget
+      );
+    }
     return (
-      command.type === 'receiver' &&
+      ['receiver', 'receiver-release', 'program-receiver'].includes(command.type) &&
       keys === 'duty,node,type' &&
       config.power.receivers.some((r) => r.node === command.node) &&
       Number.isFinite(command.duty) &&
@@ -233,8 +293,17 @@ export async function createSession(
   function act(command) {
     const no = (reasonCode) => ({ ok: false, reasonCode, path: 'command' });
     if (status === 'failed') return no('SESSION_FAILED');
-    if (!validCommand(command)) return no('INVALID_COMMAND');
-    if (pending.length >= 64 || sequence >= Number.MAX_SAFE_INTEGER) return no('INPUT_LIMIT');
+    if (!validCommand(command) || command.type === 'program-receiver') return no('INVALID_COMMAND');
+    const suspension = command.type === 'suspend-controls';
+    if (suspension && pending.some((e) => e.command.type === 'suspend-controls'))
+      return { ok: true, reasonCode: 'OK', path: '' };
+    // One reserved safety event lets Pause/blur latch automatic control even when
+    // the ordinary input queue is full. Repeated suspension is idempotent.
+    if (
+      (!suspension && pending.filter((e) => e.command.type !== 'suspend-controls').length >= 64) ||
+      sequence >= Number.MAX_SAFE_INTEGER - (suspension ? 0 : 1)
+    )
+      return no('INPUT_LIMIT');
     const event = { tick: tick + 1, sequence: sequence++, command: copy(command) };
     pending.push(event);
     history.push(event);
@@ -256,6 +325,7 @@ export async function createSession(
         next = tick + 1;
       const startEnergy = world.mechanicalEnergy();
       let actuatorWorkJ = 0,
+        constraintWorkJ = 0,
         externalWorkJ = 0,
         integrationDeltaJ = 0,
         constraintDissipationJ = 0,
@@ -265,18 +335,19 @@ export async function createSession(
           const start = performance.now();
           switch (phase) {
             case 'sensor-snapshot':
-              sensors = sampleSensors(tick, world.read(), config.power);
+              sensors = sampleSensors(tick, world.read(), config.power, config.joints);
               break;
             case 'controller-commands': {
               for (const output of dispatcher.run({
                 tick: sensors.tick,
-                readings: sensors.readings,
+                readings: sensors.readings.filter((r) => !Object.hasOwn(r, 'length')),
               })) {
-                if (pending.length >= 64) throw Error('INPUT_LIMIT');
+                if (pending.filter((e) => e.command.type !== 'suspend-controls').length >= 64)
+                  throw Error('INPUT_LIMIT');
                 const event = {
                   tick: next,
                   sequence: sequence++,
-                  command: { type: 'receiver', ...output },
+                  command: { type: 'program-receiver', ...output },
                 };
                 pending.push(event);
                 history.push(event);
@@ -308,10 +379,26 @@ export async function createSession(
                   ? { speed: 0, angle: 0, effectiveInverseInertia: 0 }
                   : world.jointState(m.joint),
               );
-              const commands = new Map(
-                pending
-                  .filter((e) => e.command.type === 'receiver')
-                  .map((e) => [e.command.node, { node: e.command.node, duty: e.command.duty }]),
+              const commands = receiverControl.step(
+                next,
+                {
+                  tick: sensors.tick,
+                  readings: sensors.readings.filter((r) => Object.hasOwn(r, 'length')),
+                },
+                pending.flatMap(({ command: c }) => {
+                  if (c.type === 'receiver')
+                    return [{ type: 'manual', node: c.node, duty: c.duty }];
+                  if (c.type === 'receiver-release')
+                    return [{ type: 'release', node: c.node, duty: c.duty }];
+                  if (c.type === 'program-receiver')
+                    return [{ type: 'program', node: c.node, duty: c.duty }];
+                  if (c.type === 'receiver-mode')
+                    return [{ type: 'mode', node: c.node, mode: c.mode }];
+                  if (c.type === 'regulator-target')
+                    return [{ type: 'target', node: c.node, target: c.target }];
+                  if (c.type === 'suspend-controls') return [{ type: 'suspend' }];
+                  return [];
+                }),
               );
               torques = power.step(
                 DT,
@@ -320,7 +407,7 @@ export async function createSession(
                   speed: states[i].speed,
                   ...(m.positionControl ? { angle: states[i].angle } : {}),
                 })),
-                [...commands.values()],
+                commands.map(({ node, duty, enabled }) => ({ node, duty, enabled })),
                 config.power.motors.map((m, i) => ({
                   node: m.node,
                   inertia:
@@ -342,6 +429,7 @@ export async function createSession(
                         speedBefore: 0,
                         speedAfter: 0,
                         workJ: 0,
+                        constraintWorkJ: 0,
                         kineticDeltaJ: 0,
                         kineticBeforeJ: 0,
                         kineticAfterJ: 0,
@@ -353,6 +441,7 @@ export async function createSession(
                         torque.value,
                       );
                 actuatorWorkJ += r.workJ;
+                constraintWorkJ += r.constraintWorkJ;
                 return { node: config.power.motors[i].node, ...r };
               });
               break;
@@ -409,10 +498,12 @@ export async function createSession(
                 externalWorkJ,
                 integrationDeltaJ,
                 constraintDissipationJ,
+                constraintWorkJ,
                 balanceResidualJ:
                   total(world.mechanicalEnergy()) -
                   total(startEnergy) -
                   actuatorWorkJ -
+                  constraintWorkJ -
                   externalWorkJ -
                   integrationDeltaJ +
                   constraintDissipationJ +
@@ -537,14 +628,15 @@ export async function createSession(
       admitted = admitConfiguration(configuration),
       nextConfig = admitted.config,
       nextPower = admitted.power,
-      nextDispatcher = createControllerDispatcher(nextConfig.power, hostPrograms);
+      nextDispatcher = createControllerDispatcher(nextConfig.power, hostPrograms),
+      nextReceiverControl = createReceiverArbiter(receiverControlConfiguration(nextConfig.power));
     replacing = true;
     let candidate;
     try {
       candidate = await createPhysicsWorld(physicalConfig(nextConfig));
       if (disposed) throw Error('SESSION_DISPOSED');
       const nextInitial = immutableCopy(candidate.read()),
-        nextSensors = sampleSensors(0, copy(nextInitial), nextConfig.power);
+        nextSensors = sampleSensors(0, copy(nextInitial), nextConfig.power, nextConfig.joints);
       const nextFrame = {
         ...frame(nextInitial),
         springs: springReadings(candidate, nextSensors.bodies, nextConfig, true),
@@ -555,9 +647,10 @@ export async function createSession(
         sensors: nextSensors,
         energy: emptyEnergy(candidate.mechanicalEnergy()),
         power: nextPower.read(),
+        receiverControl: nextReceiverControl.snapshot(),
       };
       const nextAnchor = copy({
-        version: 2,
+        version: 3,
         tick: 0,
         accumulator: 0,
         sequence: 0,
@@ -565,6 +658,7 @@ export async function createSession(
         sensors: nextSensors,
         energy: emptyEnergy(candidate.mechanicalEnergy()),
         power: nextPower.snapshot(),
+        receiverControl: nextReceiverControl.snapshot(),
         physics: Array.from(candidate.snapshot()),
         configuration: nextConfig,
         identity,
@@ -580,6 +674,7 @@ export async function createSession(
       config = nextConfig;
       power = nextPower;
       dispatcher = nextDispatcher;
+      receiverControl = nextReceiverControl;
       torques = [];
       receipts = [];
       energy = emptyEnergy();
@@ -634,12 +729,13 @@ export async function createSession(
         'sensors',
         'energy',
         'power',
+        'receiverControl',
         'physics',
         'configuration',
         'identity',
         'metadata',
       ]) ||
-      cp.version !== 2 ||
+      cp.version !== 3 ||
       !Number.isSafeInteger(cp.tick) ||
       cp.tick < 0 ||
       cp.tick === Number.MAX_SAFE_INTEGER ||
@@ -652,7 +748,8 @@ export async function createSession(
       cp.physics.length > 32 * 1024 * 1024 ||
       !cp.physics.every((x) => Number.isInteger(x) && x >= 0 && x <= 255) ||
       !Array.isArray(cp.pending) ||
-      cp.pending.length > 64 ||
+      cp.pending.filter((e) => e?.command?.type !== 'suspend-controls').length > 64 ||
+      cp.pending.filter((e) => e?.command?.type === 'suspend-controls').length > 1 ||
       JSON.stringify(cp.configuration) !== JSON.stringify(config) ||
       JSON.stringify(cp.identity) !== JSON.stringify(identity)
     )
@@ -665,6 +762,7 @@ export async function createSession(
         'externalWorkJ',
         'integrationDeltaJ',
         'constraintDissipationJ',
+        'constraintWorkJ',
         'balanceResidualJ',
         ...(hasSprings() ? ['springPotentialJ', 'dampingWorkJ'] : []),
       ]) ||
@@ -697,6 +795,7 @@ export async function createSession(
       cp.sensors.tick,
       cp.sensors.bodies,
       config.power,
+      config.joints,
     ).readings;
     if (
       !Array.isArray(cp.sensors.readings) ||
@@ -704,14 +803,7 @@ export async function createSession(
     )
       invalid();
     for (const [index, reading] of cp.sensors.readings.entries())
-      if (
-        !exact(reading, ['node', 'speed']) ||
-        !Number.isFinite(reading.speed) ||
-        !Number.isFinite(expectedReadings[index].speed) ||
-        reading.node !== expectedReadings[index].node ||
-        reading.speed !== expectedReadings[index].speed
-      )
-        invalid();
+      if (JSON.stringify(reading) !== JSON.stringify(expectedReadings[index])) invalid();
     for (const [index, event] of cp.pending.entries())
       if (
         !exact(event, ['tick', 'sequence', 'command']) ||
@@ -723,6 +815,18 @@ export async function createSession(
         invalid();
     const candidatePower = createPowerNetwork(config.power);
     candidatePower.restore(cp.power);
+    const candidateControl = createReceiverArbiter(receiverControlConfiguration(config.power));
+    candidateControl.restore(cp.receiverControl);
+    if (cp.receiverControl.tick !== cp.tick) invalid();
+    for (const receiver of cp.receiverControl.receivers) {
+      const source = cp.power.sources.find((s) => s.node === receiver.node);
+      if (
+        !source ||
+        source.duty !== receiver.duty ||
+        (source.enabled !== false) !== (receiver.mode !== 'off')
+      )
+        invalid();
+    }
     // All session-owned fields are admitted before the physics door validates and
     // atomically swaps its opaque snapshot. The resulting frame contains only
     // validated finite values, so publication cannot discover a late schema error.
@@ -746,6 +850,7 @@ export async function createSession(
     );
     contactSample = world.contacts();
     power = candidatePower;
+    receiverControl = candidateControl;
     torques = [];
     receipts = [];
     energy = copy(cp.energy);

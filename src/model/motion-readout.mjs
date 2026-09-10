@@ -44,3 +44,83 @@ export function machineBoundary(frame, ground = BUILD_ENVIRONMENT.ground) {
     };
   return null;
 }
+
+/** Bounded numeric readout. RMS is of 100ms-average vertical acceleration, not instantaneous peaks. */
+export function createBodyMotionAccumulator() {
+  let samples = [],
+    startTick = null,
+    endTick = null,
+    origin = null,
+    displacement = 0,
+    accelerationSamples = 0,
+    meanSquare = 0,
+    reason = null;
+  function reset() {
+    samples = [];
+    startTick = endTick = origin = null;
+    displacement = 0;
+    accelerationSamples = 0;
+    meanSquare = 0;
+    reason = null;
+  }
+  const invalidate = (message) => {
+    reason ??= message;
+  };
+  return Object.freeze({
+    reset,
+    invalidate,
+    add(sample) {
+      if (reason) return;
+      if (
+        !sample ||
+        !Number.isSafeInteger(sample.tick) ||
+        sample.tick < 0 ||
+        !Number.isFinite(sample.y) ||
+        !Number.isFinite(sample.vy)
+      ) {
+        invalidate('Invalid completed sample');
+        return;
+      }
+      const last = samples.at(-1);
+      if (last && sample.tick === last.tick) {
+        if (sample.y !== last.y || sample.vy !== last.vy)
+          invalidate('Conflicting same-tick sample');
+        return;
+      }
+      if (last && sample.tick !== last.tick + 1) {
+        invalidate('Missing or out-of-order completed sample');
+        return;
+      }
+      if (startTick === null) {
+        startTick = sample.tick;
+        origin = sample.y;
+      }
+      endTick = sample.tick;
+      displacement = sample.y - origin;
+      if (!Number.isFinite(displacement)) {
+        invalidate('Measurement overflow');
+        return;
+      }
+      samples.push({ tick: sample.tick, y: sample.y, vy: sample.vy });
+      if (samples.length === 13) {
+        const acceleration = (sample.vy - samples[0].vy) / 0.1;
+        accelerationSamples++;
+        meanSquare += (acceleration * acceleration - meanSquare) / accelerationSamples;
+        if (!Number.isFinite(meanSquare) || !Number.isFinite(displacement))
+          invalidate('Measurement overflow');
+        samples.shift();
+      }
+    },
+    read() {
+      return Object.freeze({
+        status: reason ? 'invalid' : accelerationSamples ? 'ready' : 'waiting',
+        reason,
+        startTick,
+        endTick,
+        displacement: reason ? null : displacement,
+        accelerationSamples,
+        accelerationRms: !reason && accelerationSamples ? Math.sqrt(meanSquare) : null,
+      });
+    },
+  });
+}

@@ -1,6 +1,6 @@
-import { mechanicalGroup } from './connection-graph.mjs';
 import { partPrimitives, CYLINDER_SEGMENTS, shaftSegments } from './geometry.mjs';
 import { CATALOG } from './catalog.mjs';
+import { environmentObstacles } from './environment.mjs';
 import { normalizeQuaternion, multiplyQuaternion, rotateVector } from './transforms.mjs';
 export { multiplyQuaternion, rotateVector } from './transforms.mjs';
 // M3b planar mounting. Frames use X outward, Y along u, Z along v; SI metres/radians.
@@ -115,7 +115,9 @@ export function solidsOverlap(a, b) {
   }
   // Bounds are only a broad phase: a wheel's empty corners are not solid.
   const hull = (part, bounds) => {
-    const cylinder = !part.envelopeHalf && partPrimitives(part)[0].kind === 'cylinder';
+    const cylinder =
+      part.envelopeKind === 'cylinder' ||
+      (!part.envelopeHalf && partPrimitives(part)[0].kind === 'cylinder');
     const local = cylinder
       ? Array.from({ length: CYLINDER_SEGMENTS * 2 }, (_, i) => [
           i < CYLINDER_SEGMENTS ? -bounds.half[0] : bounds.half[0],
@@ -227,24 +229,26 @@ export function surfaceConnectionAligned(blueprint, edge) {
     1 - Math.min(1, Math.abs(expected.reduce((sum, v, i) => sum + v * b.rotation[i], 0))) <= 1e-10
   );
 }
-/** Admit solid placements and surface attachment topology at load and compilation. */
+/** Admit solid placement. Aligned closed mechanisms are ordinary authored graphs. */
 export function validatePlacementGeometry(blueprint) {
+  for (const [index, obstacle] of environmentObstacles(blueprint.environment).entries()) {
+    const bounds = {
+      position: obstacle.position,
+      rotation: obstacle.rotation,
+      envelopeHalf: obstacle.halfExtents,
+      envelopeKind: obstacle.shape,
+    };
+    for (const [partIndex, part] of blueprint.parts.entries())
+      if (placementEnvelopes(part).some((envelope) => solidsOverlap(envelope, bounds)))
+        throw Object.assign(Error('SURFACE_OVERLAP'), {
+          reasonCode: 'SURFACE_OVERLAP',
+          path: `/parts/${partIndex}/environment/${index}`,
+        });
+  }
   const overlap = findPlacementOverlap(blueprint.parts);
   if (overlap)
     throw Object.assign(Error('SURFACE_OVERLAP'), {
       reasonCode: 'SURFACE_OVERLAP',
       path: `/parts/${blueprint.parts.indexOf(overlap[0])}/overlaps/${blueprint.parts.indexOf(overlap[1])}`,
     });
-
-  for (const edge of blueprint.connections.filter(
-    (c) => c.a.surface && c.b.surface && surfaceConnectionAligned(blueprint, c),
-  )) {
-    const group = new Set(
-      mechanicalGroup(blueprint, edge.b.part, {
-        omitConnectionIds: [edge.id],
-        eligible: (connection) => surfaceConnectionAligned(blueprint, connection),
-      }),
-    );
-    if (group.has(edge.a.part)) reject('MOUNT_HELD_BY_ANOTHER_CONNECTION');
-  }
 }

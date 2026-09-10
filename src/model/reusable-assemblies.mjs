@@ -119,6 +119,12 @@ export function insertAssembly(input, definition, position, rotation) {
     bp.connections.push(copy);
   }
   const instance = structuredClone(group);
+  for (const part of bp.parts.filter((p) => Object.values(idMap).includes(p.id)))
+    if (part.springBinding) {
+      if (connectionIdMap[part.springBinding])
+        part.springBinding = connectionIdMap[part.springBinding];
+      else delete part.springBinding;
+    }
   instance.name = availablePartName(bp.assemblies ?? [], group.name);
   instance.id = fresh(new Set((bp.assemblies ?? []).map((group) => group.id)), 'assembly');
   instance.ids = group.ids.map((id) => idMap[id]);

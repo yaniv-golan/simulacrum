@@ -772,7 +772,7 @@
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
-      "timeoutMs": 45000,
+      "timeoutMs": 90000,
       "ruleId": "runtime-contract"
     },
     {
@@ -912,7 +912,7 @@
       "id": "input-cancellation",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Receiver overrides reset on pause and focus loss; placement cancellation clears pointer/proposal ownership and stale completions are refused.",
+      "guarantee": "Receiver input has explicit Manual, Automatic and Off ownership; deliberate manual input wins automatic output, synthetic release cannot claim ownership, suspension clears queued held input and latches automatic drive Off, and checkpoint restoration preserves matching control and power state. Placement cancellation retains its pointer/proposal ownership contract.",
       "owners": [
         {
           "path": "src/presentation/vehicle-controls.mjs",
@@ -921,13 +921,26 @@
         {
           "path": "src/presentation/placement-lifecycle.mjs",
           "anchor": "createPlacementLifecycle"
+        },
+        {
+          "path": "src/simulation/receiver-arbiter.mjs",
+          "anchor": "createReceiverArbiter"
+        },
+        {
+          "path": "src/simulation/power.mjs",
+          "anchor": "createPowerNetwork"
+        },
+        {
+          "path": "src/simulation/session.mjs",
+          "anchor": "createSession"
         }
       ],
       "checks": [
         "invariant-controls",
         "verify-ui-lifecycle-browser",
         "verify-part-help-browser",
-        "verify-part-help-window"
+        "verify-part-help-window",
+        "verify-spring-browser"
       ],
       "controls": {
         "positive": [
@@ -938,6 +951,22 @@
           {
             "path": "test/placement-lifecycle.test.mjs",
             "anchor": "placement commits valid previews once, rejects stale completions and cancels pointer ownership"
+          },
+          {
+            "path": "test/suspension-control.test.mjs",
+            "anchor": "Off wins all event permutations and is a disabled drive, not a zero target"
+          },
+          {
+            "path": "test/suspension-control.test.mjs",
+            "anchor": "Pause clears queued held manual drive even when its release cannot enter a full queue"
+          },
+          {
+            "path": "test/suspension-control.test.mjs",
+            "anchor": "receiver checkpoint rejects power authority disagreement atomically"
+          },
+          {
+            "path": "test/powered-hinge.test.mjs",
+            "anchor": "disabled receiver opens the drive at nonzero speed and never commands a centered servo"
           }
         ],
         "negative": [
@@ -948,6 +977,22 @@
           {
             "path": "test/placement-lifecycle.test.mjs",
             "anchor": "placement commits valid previews once, rejects stale completions and cancels pointer ownership"
+          },
+          {
+            "path": "test/suspension-control.test.mjs",
+            "anchor": "Off wins all event permutations and is a disabled drive, not a zero target"
+          },
+          {
+            "path": "test/suspension-control.test.mjs",
+            "anchor": "Pause clears queued held manual drive even when its release cannot enter a full queue"
+          },
+          {
+            "path": "test/suspension-control.test.mjs",
+            "anchor": "receiver checkpoint rejects power authority disagreement atomically"
+          },
+          {
+            "path": "test/powered-hinge.test.mjs",
+            "anchor": "disabled receiver opens the drive at nonzero speed and never commands a centered servo"
           }
         ]
       },
@@ -1791,7 +1836,7 @@
       "id": "guided-spring-passivity",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Guided springs preserve axial freedom, coupled elastic energy, loaded sag, passive and angular-momentum accounting, bounded topology and completed-tick stop behavior, ordinary authored construction and independently allocated simulation/render/cadence budgets.",
+      "guarantee": "Guided and articulated springs preserve axial freedom, coupled elastic energy, loaded sag, signed reaction-work and angular-momentum accounting, cyclic topology and completed-tick stops. Ordinary powered upper-rocker sensing and regulation, physical contact release, authored construction, replay and independently allocated simulation/render/cadence budgets retain executable controls.",
       "owners": [
         {
           "path": "src/simulation/physics/world.mjs",
@@ -1820,6 +1865,34 @@
         {
           "path": "src/simulation/physics/spring-topology.mjs",
           "anchor": "springTopologyDomain"
+        },
+        {
+          "path": "src/simulation/physics/native-response.mjs",
+          "anchor": "readNativeResponse"
+        },
+        {
+          "path": "src/model/fixtures/spring-launcher.mjs",
+          "anchor": "createSpringLauncher"
+        },
+        {
+          "path": "src/model/fixtures/guided-suspension.mjs",
+          "anchor": "createPoweredSuspensionCart"
+        },
+        {
+          "path": "src/model/fixtures/guided-suspension.mjs",
+          "anchor": "createGuidedSuspensionModule"
+        },
+        {
+          "path": "src/model/fixtures/articulated-suspension.mjs",
+          "anchor": "createActiveSuspensionBench"
+        },
+        {
+          "path": "src/model/environment.mjs",
+          "anchor": "environmentObstacles"
+        },
+        {
+          "path": "src/model/fixtures/articulated-suspension.mjs",
+          "anchor": "createPinEndedStrut"
         }
       ],
       "checks": [
@@ -1928,6 +2001,178 @@
           {
             "path": "test/spring-physics.test.mjs",
             "anchor": "inactive internal guide and fixed cycles remain native edges near active spring"
+          },
+          {
+            "path": "test/native-response.test.mjs",
+            "anchor": "f64 runtime identity and old envelopes reject before deserialization"
+          },
+          {
+            "path": "test/native-response.test.mjs",
+            "anchor": "owned native response is copied and read-only after mutation and world disposal"
+          },
+          {
+            "path": "test/native-response.test.mjs",
+            "anchor": "a previously admitted tree larger than 128 bodies uses the same response path"
+          },
+          {
+            "path": "test/spring-reference.test.mjs",
+            "anchor": "compare"
+          },
+          {
+            "path": "test/spring-journeys.test.mjs",
+            "anchor": "powered contact gate holds and releases separate spring projectile with powerless and jam controls"
+          },
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "loaded fixed mounting chains preserve rigid geometry without an active elastic motor"
+          },
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "loaded wheel axles settle with bounded constrained velocity residuals"
+          },
+          {
+            "path": "test/launcher-energy.test.mjs",
+            "anchor": "launcher release meets fixed-time energy separation with matched quiet controls"
+          },
+          {
+            "path": "test/launcher-energy-counterexample.test.mjs",
+            "anchor": "launcher energy acceptance rejects a funded gate even when its unloaded controls stay quiet"
+          },
+          {
+            "path": "test/spring-journeys.test.mjs",
+            "anchor": "launcher preload is reconstructible through ordinary Build commands and Undo"
+          },
+          {
+            "path": "test/spring-journeys.test.mjs",
+            "anchor": "passive pin mating admits axial articulation while rejecting tilt and rigid-shaft twist"
+          },
+          {
+            "path": "test/constraint-work.test.mjs",
+            "anchor": "independent regularized reaction work has either sign and never becomes driver heat"
+          },
+          {
+            "path": "test/constraint-work.test.mjs",
+            "anchor": "reaction accounting cannot conceal an unfunded motor kick or malformed numeric receipt"
+          },
+          {
+            "path": "test/constraint-work.test.mjs",
+            "anchor": "ordinary loaded articulated hinge accounts signed reaction work through session and checkpoint"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "ordinary pin-ended suspension carries wheel load through its real foot and tire"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "upper rocker has loaded manual authority over the common target interval"
+          },
+          {
+            "path": "test/suspension-regulation.test.mjs",
+            "anchor": "travel regulation tracks three targets with a rubber arm and rejects disabled control"
+          },
+          {
+            "path": "test/suspension-regulation-aluminium.test.mjs",
+            "anchor": "travel regulation tracks three targets with an authored aluminium arm"
+          },
+          {
+            "path": "test/suspension-regulation-steel.test.mjs",
+            "anchor": "travel regulation tracks three targets with an authored steel arm"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "ordinary commands author the articulated loop and preload it after closure"
+          },
+          {
+            "path": "test/launcher-replay.test.mjs",
+            "anchor": "launcher release checkpoint repeats exactly and a half-turn reverses its physical trajectory"
+          },
+          {
+            "path": "test/constraint-projection.test.mjs",
+            "anchor": "only rigid paths and separately grounded rigid clusters suppress actuator mobility"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "saved environment admits only fixed presets and compiles exact geometry after the ground"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "environment selection is an atomic Build edit with save, history and checkpoint identity"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "bump overlap rejects selection and loading without inventing contact at empty cylinder corners"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "assembly insertion retains receiving environment and does not import source terrain"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "recorded scene includes the same saved environment geometry without part identity authority"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "environment overlap admission retains canonical protruding shaft envelopes"
+          },
+          {
+            "path": "test/native-response.test.mjs",
+            "anchor": "finite native motor bounds retain their impulse budget beside bilateral rows"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "support rejects reversed normal and a single incidental touch"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "support floor separates a calibrated resting mass from unloaded touching geometry"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "authored pin-ended topology preserves endpoint frames while the entire strut swivels"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "manual rocker motion exercises both ordinary spring-end pins"
+          },
+          {
+            "path": "test/suspension-load.test.mjs",
+            "anchor": "automatic suspension rejects an applied and removed laboratory load within two seconds for a three-second hold"
+          },
+          {
+            "path": "test/suspension-load-wiring.test.mjs",
+            "anchor": "automatic suspension rejects reversed sensing and disconnected regulation during load changes"
+          },
+          {
+            "path": "test/suspension-load-power.test.mjs",
+            "anchor": "automatic suspension rejects depleted and current-limited power during load changes"
+          },
+          {
+            "path": "test/spring-view.test.mjs",
+            "anchor": "rendered coil endpoint readback follows actual buffers and world transforms"
+          },
+          {
+            "path": "test/spring-view.test.mjs",
+            "anchor": "rendered coil follows nearly downward endpoints without snapping its axis"
+          },
+          {
+            "path": "test/guided-suspension.test.mjs",
+            "anchor": "passive and driven suspension modules mount through named ports and remain physical after save, copy and mirror"
+          },
+          {
+            "path": "test/guided-suspension.test.mjs",
+            "anchor": "ordinary guided and braced carts complete a matched-speed bump trial with lower vertical acceleration"
+          },
+          {
+            "path": "test/guided-suspension.test.mjs",
+            "anchor": "ordinary Build commands reconstruct both complete comparison carts and their preload"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "pin-ended strut inserts with two real mounts and preserves its pin joints after save and rotation"
+          },
+          {
+            "path": "test/suspension-clearance.test.mjs",
+            "anchor": "finite active and manual bench travel retains moving hardware and decorative coil clearance"
           }
         ],
         "negative": [
@@ -1962,6 +2207,178 @@
           {
             "path": "test/spring-performance.test.mjs",
             "anchor": "connected spring performance rejects missing bodies and slow connected integration"
+          },
+          {
+            "path": "test/native-response.test.mjs",
+            "anchor": "f64 runtime identity and old envelopes reject before deserialization"
+          },
+          {
+            "path": "test/native-response.test.mjs",
+            "anchor": "owned native response is copied and read-only after mutation and world disposal"
+          },
+          {
+            "path": "test/native-response.test.mjs",
+            "anchor": "a previously admitted tree larger than 128 bodies uses the same response path"
+          },
+          {
+            "path": "test/spring-reference.test.mjs",
+            "anchor": "compare"
+          },
+          {
+            "path": "test/spring-journeys.test.mjs",
+            "anchor": "powered contact gate holds and releases separate spring projectile with powerless and jam controls"
+          },
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "loaded fixed mounting chains preserve rigid geometry without an active elastic motor"
+          },
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "loaded wheel axles settle with bounded constrained velocity residuals"
+          },
+          {
+            "path": "test/launcher-energy.test.mjs",
+            "anchor": "launcher release meets fixed-time energy separation with matched quiet controls"
+          },
+          {
+            "path": "test/launcher-energy-counterexample.test.mjs",
+            "anchor": "launcher energy acceptance rejects a funded gate even when its unloaded controls stay quiet"
+          },
+          {
+            "path": "test/spring-journeys.test.mjs",
+            "anchor": "launcher preload is reconstructible through ordinary Build commands and Undo"
+          },
+          {
+            "path": "test/spring-journeys.test.mjs",
+            "anchor": "passive pin mating admits axial articulation while rejecting tilt and rigid-shaft twist"
+          },
+          {
+            "path": "test/constraint-work.test.mjs",
+            "anchor": "independent regularized reaction work has either sign and never becomes driver heat"
+          },
+          {
+            "path": "test/constraint-work.test.mjs",
+            "anchor": "reaction accounting cannot conceal an unfunded motor kick or malformed numeric receipt"
+          },
+          {
+            "path": "test/constraint-work.test.mjs",
+            "anchor": "ordinary loaded articulated hinge accounts signed reaction work through session and checkpoint"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "ordinary pin-ended suspension carries wheel load through its real foot and tire"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "upper rocker has loaded manual authority over the common target interval"
+          },
+          {
+            "path": "test/suspension-regulation.test.mjs",
+            "anchor": "travel regulation tracks three targets with a rubber arm and rejects disabled control"
+          },
+          {
+            "path": "test/suspension-regulation-aluminium.test.mjs",
+            "anchor": "travel regulation tracks three targets with an authored aluminium arm"
+          },
+          {
+            "path": "test/suspension-regulation-steel.test.mjs",
+            "anchor": "travel regulation tracks three targets with an authored steel arm"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "ordinary commands author the articulated loop and preload it after closure"
+          },
+          {
+            "path": "test/launcher-replay.test.mjs",
+            "anchor": "launcher release checkpoint repeats exactly and a half-turn reverses its physical trajectory"
+          },
+          {
+            "path": "test/constraint-projection.test.mjs",
+            "anchor": "only rigid paths and separately grounded rigid clusters suppress actuator mobility"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "saved environment admits only fixed presets and compiles exact geometry after the ground"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "environment selection is an atomic Build edit with save, history and checkpoint identity"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "bump overlap rejects selection and loading without inventing contact at empty cylinder corners"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "assembly insertion retains receiving environment and does not import source terrain"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "recorded scene includes the same saved environment geometry without part identity authority"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "environment overlap admission retains canonical protruding shaft envelopes"
+          },
+          {
+            "path": "test/native-response.test.mjs",
+            "anchor": "finite native motor bounds retain their impulse budget beside bilateral rows"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "support rejects reversed normal and a single incidental touch"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "support floor separates a calibrated resting mass from unloaded touching geometry"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "authored pin-ended topology preserves endpoint frames while the entire strut swivels"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "manual rocker motion exercises both ordinary spring-end pins"
+          },
+          {
+            "path": "test/suspension-load.test.mjs",
+            "anchor": "automatic suspension rejects an applied and removed laboratory load within two seconds for a three-second hold"
+          },
+          {
+            "path": "test/suspension-load-wiring.test.mjs",
+            "anchor": "automatic suspension rejects reversed sensing and disconnected regulation during load changes"
+          },
+          {
+            "path": "test/suspension-load-power.test.mjs",
+            "anchor": "automatic suspension rejects depleted and current-limited power during load changes"
+          },
+          {
+            "path": "test/spring-view.test.mjs",
+            "anchor": "rendered coil endpoint readback follows actual buffers and world transforms"
+          },
+          {
+            "path": "test/spring-view.test.mjs",
+            "anchor": "rendered coil follows nearly downward endpoints without snapping its axis"
+          },
+          {
+            "path": "test/guided-suspension.test.mjs",
+            "anchor": "passive and driven suspension modules mount through named ports and remain physical after save, copy and mirror"
+          },
+          {
+            "path": "test/guided-suspension.test.mjs",
+            "anchor": "ordinary guided and braced carts complete a matched-speed bump trial with lower vertical acceleration"
+          },
+          {
+            "path": "test/guided-suspension.test.mjs",
+            "anchor": "ordinary Build commands reconstruct both complete comparison carts and their preload"
+          },
+          {
+            "path": "test/suspension-journeys.test.mjs",
+            "anchor": "pin-ended strut inserts with two real mounts and preserves its pin joints after save and rotation"
+          },
+          {
+            "path": "test/suspension-clearance.test.mjs",
+            "anchor": "finite active and manual bench travel retains moving hardware and decorative coil clearance"
           }
         ]
       },
@@ -1973,7 +2390,7 @@
       "id": "workbench-content-lifecycle",
       "ruleId": "player-authority",
       "dueAt": "M3b",
-      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset.",
+      "guarantee": "Movement scope predicts multi-part Build operations; lessons and measurements are requested, and existing selection operations remain reachable. Automated examples do not establish target-player usability. Independent example changes use ordinary inspector edits and Undo; zero-damping comparison preserves other authored choices instead of loading a preset. Selected-body vertical motion consumes consecutive completed ticks, labels the 100 ms acceleration filter and measurement origin, resets for selection or observation identity, and exposes missing history or numeric overflow instead of a smooth value.",
       "owners": [
         {
           "path": "src/presentation/workshop-view.mjs",
@@ -1994,6 +2411,14 @@
         {
           "path": "src/presentation/spring-controls.mjs",
           "anchor": "springInspector"
+        },
+        {
+          "path": "src/model/motion-readout.mjs",
+          "anchor": "createBodyMotionAccumulator"
+        },
+        {
+          "path": "src/application/workshop-app.mjs",
+          "anchor": "mountWorkshopApp"
         }
       ],
       "checks": [
@@ -2005,12 +2430,28 @@
           {
             "path": "test/workbench-content.test.mjs",
             "anchor": "scope predicts multi-part direct dragging and rotation before the gesture"
+          },
+          {
+            "path": "test/motion-readout.test.mjs",
+            "anchor": "selected-body acceleration uses every completed sample and a declared 100ms filter"
+          },
+          {
+            "path": "test/motion-readout.test.mjs",
+            "anchor": "selected measurement lifecycle preserves every tick, isolates selection and exposes history loss"
           }
         ],
         "negative": [
           {
             "path": "test/workbench-content.test.mjs",
             "anchor": "scope refuses irrelevant or blocked movement claims"
+          },
+          {
+            "path": "test/motion-readout.test.mjs",
+            "anchor": "selected-body missing, stale, conflicting and nonfinite samples cannot become smooth results"
+          },
+          {
+            "path": "test/motion-readout.test.mjs",
+            "anchor": "selected-body displacement overflow invalidates immediately during warmup"
           }
         ]
       },
@@ -2073,7 +2514,7 @@
       "id": "completed-contact-impulses",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Completed contact samples contain canonical copied linear solver impulses over one pinned CCD interval, with friction groups counted once; unavailable observations cannot claim support. Restore preserves samples and continuation. Pure twist is not total angular impulse.",
+      "guarantee": "Completed contact samples contain canonical copied linear solver impulses over one pinned CCD interval, with friction groups counted once; unavailable observations cannot claim support. Restore preserves samples and continuation. Pure twist is not total angular impulse. Paired contact witnesses remain local to the contacting shapes through native simplex reduction, including rolling, reflected and reordered bodies. Near-tangent convex contact normals must remain valid separating directions rather than amplify a roundoff-sized witness difference. Authored launcher roller contacts resolve the declared near-rest and bounded fast isolated impacts with signed transfer, bounded completed overlap and no kinetic-energy creation. The ordinary curved-path starter retains two metres of spatial excursion and continued final-second rolling, with its original powerless endpoint drift bound.",
       "owners": [
         {
           "path": "src/simulation/physics/world.mjs",
@@ -2096,6 +2537,10 @@
         "positive": [
           {
             "path": "test/physics.test.mjs",
+            "anchor": "rolling convex wheels retain local paired contact witnesses through simplex reduction"
+          },
+          {
+            "path": "test/physics.test.mjs",
             "anchor": "completed contact normal impulse matches static load and immediate impact momentum"
           },
           {
@@ -2105,9 +2550,29 @@
           {
             "path": "test/session.test.mjs",
             "anchor": "completed contact samples publish their interval and resume through both clock drivers"
+          },
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "tangent parallel convex cylinders retain a separating contact normal under ordering and rotation"
+          },
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "launcher roller contacts resolve near-rest and bounded fast impacts without crossing or energy creation"
+          },
+          {
+            "path": "test/starter-vehicle.test.mjs",
+            "anchor": "starter motion requires spatial excursion and every final rolling interval, while allowing a loop"
+          },
+          {
+            "path": "test/starter-vehicle.test.mjs",
+            "anchor": "ordinary starter travels continuously for thirty seconds with powerless control"
           }
         ],
         "negative": [
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "rolling convex wheels retain local paired contact witnesses through simplex reduction"
+          },
           {
             "path": "test/physics.test.mjs",
             "anchor": "contact friction is counted once and canonical body order preserves momentum"
@@ -2127,6 +2592,18 @@
           {
             "path": "test/spring-performance.test.mjs",
             "anchor": "spring contact performance rejects missing load and integration cost regressions"
+          },
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "tangent parallel convex cylinders retain a separating contact normal under ordering and rotation"
+          },
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "launcher roller contacts resolve near-rest and bounded fast impacts without crossing or energy creation"
+          },
+          {
+            "path": "test/starter-vehicle.test.mjs",
+            "anchor": "starter motion requires spatial excursion and every final rolling interval, while allowing a loop"
           }
         ]
       },
@@ -3062,7 +3539,7 @@
         "test/f2.test.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "fc93418aa5a04956e3d9d1acaed81407aca2c90719393d96c67c9bf3c77e8570"
+      "consumerSourceHash": "da06b5ffdd32d6fb417b422edef49fec72fde89fe79fdd859948283bd366869a"
     },
     {
       "entrypoint": "scripts/app-fingerprint.mjs",
@@ -3166,7 +3643,7 @@
         "vite.config.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "fc93418aa5a04956e3d9d1acaed81407aca2c90719393d96c67c9bf3c77e8570"
+      "consumerSourceHash": "da06b5ffdd32d6fb417b422edef49fec72fde89fe79fdd859948283bd366869a"
     },
     {
       "entrypoint": "scripts/source-identity.mjs",
@@ -3288,7 +3765,7 @@
         "test/verification-run.test.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "fc93418aa5a04956e3d9d1acaed81407aca2c90719393d96c67c9bf3c77e8570"
+      "consumerSourceHash": "da06b5ffdd32d6fb417b422edef49fec72fde89fe79fdd859948283bd366869a"
     },
     {
       "entrypoint": "scripts/build-fingerprint.mjs",
@@ -3342,7 +3819,7 @@
         "test/starter-vehicle.test.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "8135ed44d4de0ef141acc7d2e0e1750a8360cee61a45826ea38eb4cff36f65b1"
+      "consumerSourceHash": "561f49c020e61236ca1a1f37b05168b824104d57261cc7c1a18d32fc54415205"
     },
     {
       "entrypoint": "scripts/playtest/capture-fault.mjs",
@@ -3675,7 +4152,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "e9f168a2387efcc4d530e79d3fb514fccae4398677eedc8a834de5c42d50d892"
+      "consumerSourceHash": "faa71bec6e4ce988a46cc94cc80afcca9e0ff73c9145c60bea997197591ef36b"
     },
     {
       "entrypoint": "scripts/module-graph.mjs",
@@ -3839,7 +4316,7 @@
         "vite.config.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "fc93418aa5a04956e3d9d1acaed81407aca2c90719393d96c67c9bf3c77e8570"
+      "consumerSourceHash": "da06b5ffdd32d6fb417b422edef49fec72fde89fe79fdd859948283bd366869a"
     },
     {
       "entrypoint": "scripts/playtest/verify-deployment.mjs",
@@ -3994,7 +4471,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "adfecdab2fd6ba7b96b1cf2e6fbc5feffce11185c952e66b5f750c55ee3d68e8"
+      "consumerSourceHash": "515b1ac089caebc8e451d77d4908e123855ce07f0e72c44e73fbe21eb281b524"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -4025,7 +4502,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "adfecdab2fd6ba7b96b1cf2e6fbc5feffce11185c952e66b5f750c55ee3d68e8"
+      "consumerSourceHash": "515b1ac089caebc8e451d77d4908e123855ce07f0e72c44e73fbe21eb281b524"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",

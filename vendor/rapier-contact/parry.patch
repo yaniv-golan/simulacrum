@@ -1,0 +1,404 @@
+--- a/src/query/contact/contact_support_map_support_map.rs
++++ b/src/query/contact/contact_support_map_support_map.rs
+@@ -55,17 +55,63 @@
+         Vector::X
+     };
+ 
+-    simplex.reset(CsoPoint::from_shapes(pos12, g1, g2, dir));
++    let initial_support = CsoPoint::from_shapes(pos12, g1, g2, dir);
++    // At touching configurations the vanishing GJK simplex may not define a
++    // direction. Retain an independently checked support plane instead of an
++    // arbitrary normal from EPA's degenerate initial polytope.
++    let gamma = 64.0 * Real::EPSILON / (1.0 - 64.0 * Real::EPSILON);
++    let norm = |v: Vector| {
++        v.to_array()
++            .into_iter()
++            .fold(0.0 as Real, |n, x| n.hypot(x))
++    };
++    let scaled_norm = |v: Vector| {
++        let largest = v
++            .to_array()
++            .into_iter()
++            .fold(0.0 as Real, |m, x| m.max(x.abs()));
++        if largest == 0.0 {
++            0.0
++        } else {
++            (gamma * largest) * norm(v / largest)
++        }
++    };
++    let plane_error = scaled_norm(initial_support.orig1)
++        + scaled_norm(initial_support.orig2)
++        + scaled_norm(pos12.translation);
++    let certificate_dir = dir.try_normalize().filter(|n| n.is_finite());
++    let tangent_plane =
++        certificate_dir.filter(|n| n.dot(initial_support.point).abs() <= plane_error);
++    let certify_touching = |result: GJKResult| match result {
++        GJKResult::ClosestPoints(p1, p2, n) if tangent_plane.is_some() => {
++            let error = plane_error + scaled_norm(p1) + scaled_norm(p2);
++            if norm(p2 - p1) <= error {
++                GJKResult::ClosestPoints(p1, p2, tangent_plane.unwrap())
++            } else {
++                GJKResult::ClosestPoints(p1, p2, n)
++            }
++        }
++        other => other,
++    };
++    simplex.reset(initial_support);
+ 
+-    let cpts = gjk::closest_points(pos12, g1, g2, prediction, true, simplex);
++    let cpts = gjk::closest_points_with_initial_dir(
++        pos12,
++        g1,
++        g2,
++        prediction,
++        true,
++        simplex,
++        certificate_dir,
++    );
+     if cpts != GJKResult::Intersection {
+-        return cpts;
++        return certify_touching(cpts);
+     }
+ 
+     // The point is inside of the CSO: use the fallback algorithm
+     let mut epa = EPA::new();
+     if let Some((p1, p2, n)) = epa.closest_points(pos12, g1, g2, simplex) {
+-        return GJKResult::ClosestPoints(p1, p2, n);
++        return certify_touching(GJKResult::ClosestPoints(p1, p2, n));
+     }
+ 
+     // Everything failed
+--- a/src/query/contact_manifolds/contact_manifolds_pfm_pfm.rs
++++ b/src/query/contact_manifolds/contact_manifolds_pfm_pfm.rs
+@@ -123,7 +123,42 @@
+                     PackedFeatureId::UNKNOWN,
+                     (p2_1 - p1).dot(local_n1),
+                 );
+-                manifold.points.push(contact);
++                // GJK may return the same witness as a polygon vertex, differing
++                // only by transform/barycentric rounding. Keeping both lets tiny
++                // errors choose between different warmstart histories in reduction.
++                // Both local endpoints must coincide; distinct physical contacts stay.
++                let norm = |p: Vector| {
++                    p.to_array()
++                        .into_iter()
++                        .fold(0.0 as Real, |length, x| length.hypot(x))
++                };
++                let gamma = 64.0 * Real::EPSILON / (1.0 - 64.0 * Real::EPSILON);
++                // Scale before taking the norm, so finite coordinates cannot
++                // overflow the error bound even if their unscaled norm would.
++                let coordinate_bound = |p: Vector| {
++                    let largest = p
++                        .to_array()
++                        .into_iter()
++                        .fold(0.0 as Real, |m, x| m.max(x.abs()));
++                    if largest == 0.0 {
++                        0.0
++                    } else {
++                        (gamma * largest) * norm(p / largest)
++                    }
++                };
++                let bound = coordinate_bound(pos12.translation)
++                    .max(coordinate_bound(contact.local_p1))
++                    .max(coordinate_bound(contact.local_p2));
++                let duplicate = manifold.points.iter().any(|point| {
++                    let bound = bound
++                        .max(coordinate_bound(point.local_p1))
++                        .max(coordinate_bound(point.local_p2));
++                    norm(point.local_p1 - contact.local_p1) <= bound
++                        && norm(point.local_p2 - contact.local_p2) <= bound
++                });
++                if !duplicate {
++                    manifold.points.push(contact);
++                }
+             }
+ 
+             if normal_constraints1.is_some() || normal_constraints2.is_some() {
+--- a/src/query/gjk/gjk.rs
++++ b/src/query/gjk/gjk.rs
+@@ -362,10 +362,41 @@
+     G1: ?Sized + SupportMap,
+     G2: ?Sized + SupportMap,
+ {
++    closest_points_with_initial_dir(pos12, g1, g2, max_dist, exact_dist, simplex, None)
++}
++
++pub(crate) fn closest_points_with_initial_dir<G1, G2>(
++    pos12: &Pose,
++    g1: &G1,
++    g2: &G2,
++    max_dist: Real,
++    exact_dist: bool,
++    simplex: &mut VoronoiSimplex,
++    initial_dir: Option<Vector>,
++) -> GJKResult
++where
++    G1: ?Sized + SupportMap,
++    G2: ?Sized + SupportMap,
++{
+     let _eps = crate::math::DEFAULT_EPSILON;
+     let _eps_tol: Real = eps_tol();
+     let _eps_rel: Real = <Real as ComplexField>::sqrt(_eps_tol);
+ 
++    // A distance bound and the support direction that proves it are one witness.
++    // Never return an unrelated residual direction after the simplex vanishes.
++    let mut best_min_bound = -Real::max_value();
++    let mut best_bound_dir = Vector::X;
++    let mut support_scale: Real = 0.0;
++    if let Some(n) = initial_dir
++        .and_then(|n| n.try_normalize())
++        .filter(|n| n.is_finite())
++    {
++        let support = CsoPoint::from_shapes(pos12, g1, g2, n);
++        best_min_bound = -n.dot(support.point);
++        best_bound_dir = n;
++        support_scale = support.point.length();
++    }
++
+     // TODO: reset the simplex if it is empty?
+     let mut proj = simplex.project_origin_and_reduce();
+ 
+@@ -374,6 +405,10 @@
+     if let Some(proj_dir) = proj.try_normalize() {
+         old_dir = -proj_dir;
+     } else {
++        if exact_dist && best_min_bound >= -_eps_rel * support_scale {
++            let (p1, p2) = result(simplex, false);
++            return GJKResult::ClosestPoints(p1, p2, best_bound_dir);
++        }
+         return GJKResult::Intersection;
+     }
+ 
+@@ -384,9 +419,7 @@
+     // maximized over the directions probed. Its sign classifies the origin: `> 0`
+     // means separation, `~ 0` puts it on the CSO boundary (touching),
+     // `< 0` bounds the penetration depth.
+-    let mut best_min_bound = -Real::max_value();
+-    // Largest CSO support magnitude seen, used to scale the tolerance below.
+-    let mut support_scale: Real = 0.0;
++    // Largest CSO support magnitude includes the initial support above.
+     let mut nb_perturbs = 0usize;
+     const MAX_PERTURBATIONS: usize = 2 * DIM;
+ 
+@@ -399,7 +432,12 @@
+             dir = normalized;
+             max_bound = dist;
+         } else {
+-            // The origin is on the simplex.
++            // The origin is on the simplex. Preserve an already certified
++            // near-boundary support plane with the existing GJK tolerance.
++            if exact_dist && best_min_bound >= -_eps_rel * support_scale {
++                let (p1, p2) = result(simplex, false);
++                return GJKResult::ClosestPoints(p1, p2, best_bound_dir);
++            }
+             return GJKResult::Intersection;
+         }
+ 
+@@ -408,15 +446,15 @@
+                 // Separation certified: the converged witnesses are the answer.
+                 if exact_dist {
+                     let (p1, p2) = result(simplex, true);
+-                    return GJKResult::ClosestPoints(p1, p2, old_dir); // upper bounds inconsistencies
++                    return GJKResult::ClosestPoints(p1, p2, best_bound_dir); // upper bounds inconsistencies
+                 } else {
+                     return GJKResult::Proximity(old_dir);
+                 }
+             } else if exact_dist && best_min_bound >= -_eps_rel * support_scale {
+                 // Origin on the CSO boundary: the pair is touching, so the witnesses
+-                // describe the contact.
++                // describe the contact. The associated bound owns its normal.
+                 let (p1, p2) = result(simplex, true);
+-                return GJKResult::ClosestPoints(p1, p2, old_dir);
++                return GJKResult::ClosestPoints(p1, p2, best_bound_dir);
+             } else if nb_perturbs < MAX_PERTURBATIONS {
+                 // Try slight perturbations to avoid getting stuck into a numerical ambiguity.
+                 nb_perturbs += 1;
+@@ -432,7 +470,10 @@
+ 
+         assert!(min_bound.is_finite());
+ 
+-        best_min_bound = best_min_bound.max(min_bound);
++        if min_bound > best_min_bound {
++            best_min_bound = min_bound;
++            best_bound_dir = dir;
++        }
+         support_scale = support_scale.max(cso_point.point.length());
+ 
+         if min_bound > max_dist {
+@@ -453,13 +494,13 @@
+             if best_min_bound > 0.0 {
+                 if exact_dist {
+                     let (p1, p2) = result(simplex, false);
+-                    return GJKResult::ClosestPoints(p1, p2, dir);
++                    return GJKResult::ClosestPoints(p1, p2, best_bound_dir);
+                 } else {
+                     return GJKResult::Proximity(dir);
+                 }
+             } else if exact_dist && best_min_bound >= -_eps_rel * support_scale {
+                 let (p1, p2) = result(simplex, false);
+-                return GJKResult::ClosestPoints(p1, p2, dir);
++                return GJKResult::ClosestPoints(p1, p2, best_bound_dir);
+             } else if nb_perturbs < MAX_PERTURBATIONS {
+                 // The duplicate support point cannot enrich the simplex; jump back to
+                 // the top of the loop where the stagnation branch will perturb `dir`.
+--- a/src/query/gjk/voronoi_simplex3.rs
++++ b/src/query/gjk/voronoi_simplex3.rs
+@@ -9,7 +9,7 @@
+ /// A simplex of dimension up to 3 that uses Voronoï regions for computing point projections.
+ #[derive(Clone, Debug)]
+ pub struct VoronoiSimplex {
+-    prev_vertices: [usize; 4],
++    prev_vertices: [CsoPoint; 4],
+     prev_proj: [Real; 3],
+     prev_dim: usize,
+ 
+@@ -28,7 +28,7 @@
+     /// Creates a new empty simplex.
+     pub fn new() -> VoronoiSimplex {
+         VoronoiSimplex {
+-            prev_vertices: [0, 1, 2, 3],
++            prev_vertices: [CsoPoint::ZERO; 4],
+             prev_proj: [0.0; 3],
+             prev_dim: 0,
+             vertices: [CsoPoint::ZERO; 4],
+@@ -40,7 +40,6 @@
+     /// Swap two vertices of this simplex.
+     pub fn swap(&mut self, i1: usize, i2: usize) {
+         self.vertices.swap(i1, i2);
+-        self.prev_vertices.swap(i1, i2);
+     }
+ 
+     /// Resets this simplex to a single point.
+@@ -54,7 +53,7 @@
+     pub fn add_point(&mut self, pt: CsoPoint) -> bool {
+         self.prev_dim = self.dim;
+         self.prev_proj = self.proj;
+-        self.prev_vertices = [0, 1, 2, 3];
++        self.prev_vertices = self.vertices;
+ 
+         match self.dim {
+             0 => {
+@@ -109,7 +108,7 @@
+     /// The i-th point of the simplex before the last call to `project_origin_and_reduce`.
+     pub fn prev_point(&self, i: usize) -> &CsoPoint {
+         assert!(i <= self.prev_dim, "Index out of bounds.");
+-        &self.vertices[self.prev_vertices[i]]
++        &self.prev_vertices[i]
+     }
+ 
+     /// Projects the origin on the boundary of this simplex and reduces `self` the smallest subsimplex containing the origin.
+@@ -343,3 +342,114 @@
+         }
+     }
+ }
++
++#[cfg(test)]
++mod review {
++    use super::*;
++    fn vertex(p: Vector, id: f64) -> CsoPoint {
++        let orig2 = Vector::new(id * 100.0, id * 3.0, -id);
++        CsoPoint {
++            point: p,
++            orig1: p + orig2,
++            orig2,
++        }
++    }
++    fn triangle() -> VoronoiSimplex {
++        let mut s = VoronoiSimplex::new();
++        s.reset(vertex(Vector::new(-1.0, -1.0, 1.0), 1.0));
++        s.project_origin_and_reduce();
++        assert!(s.add_point(vertex(Vector::new(1.0, -1.0, 1.0), 2.0)));
++        s.project_origin_and_reduce();
++        assert!(s.add_point(vertex(Vector::new(0.0, 1.0, 1.0), 3.0)));
++        s.project_origin_and_reduce();
++        assert_eq!(s.dimension(), 2);
++        s
++    }
++    fn witnesses(s: &VoronoiSimplex, prev: bool) -> (Vector, Vector) {
++        let mut w = (Vector::ZERO, Vector::ZERO);
++        for i in 0..=if prev {
++            s.prev_dimension()
++        } else {
++            s.dimension()
++        } {
++            let p = if prev { s.prev_point(i) } else { s.point(i) };
++            let c = if prev {
++                s.prev_proj_coord(i)
++            } else {
++                s.proj_coord(i)
++            };
++            w.0 += p.orig1 * c;
++            w.1 += p.orig2 * c;
++        }
++        w
++    }
++    fn face(index: u32) {
++        let a = Vector::new(-1.0, -1.0, 1.0);
++        let b = Vector::new(1.0, -1.0, 1.0);
++        let c = Vector::new(0.0, 1.0, 1.0);
++        let d = [
++            Vector::new(-4.0, -4.0, 2.0),
++            Vector::new(-3.0, 4.0, -2.0),
++            Vector::new(1.0, -3.0, -2.0),
++            Vector::new(-4.0, -4.0, -2.0),
++        ][index as usize];
++        let (_, loc) =
++            Tetrahedron::new(a, b, c, d).project_local_point_and_get_location(Vector::ZERO, true);
++        assert!(
++            matches!(loc,TetrahedronPointLocation::OnFace(i,_) if i==index),
++            "fixture must exercise the named tetrahedron face"
++        );
++        let mut s = triangle();
++        let expected = witnesses(&s, false);
++        assert!(s.add_point(vertex(d, 4.0)));
++        let projection = s.project_origin_and_reduce();
++        assert_eq!(s.dimension(), 2);
++        let current = witnesses(&s, false);
++        assert!(
++            ((current.0 - current.1) - projection).length() < 1e-12,
++            "current projection changed"
++        );
++        let actual = witnesses(&s, true);
++        println!(
++            "face {index} D={d:?} previous witness error={}",
++            (actual.1 - expected.1).length()
++        );
++        assert!(
++            (actual.0 - expected.0).length() < 1e-12,
++            "previous first witness corrupted"
++        );
++        assert!(
++            (actual.1 - expected.1).length() < 1e-12,
++            "previous second witness corrupted"
++        );
++    }
++    #[test]
++    fn face_abc_positive() {
++        face(0)
++    }
++    #[test]
++    fn face_abd() {
++        face(1)
++    }
++    #[test]
++    fn face_acd() {
++        face(2)
++    }
++    #[test]
++    fn face_bcd() {
++        face(3)
++    }
++    #[test]
++    fn overlapping_swaps() {
++        let mut s = triangle();
++        let expected = witnesses(&s, false);
++        assert!(s.add_point(vertex(Vector::new(0.0, 2.0, 0.0), 4.0)));
++        s.swap(0, 1);
++        s.swap(1, 2);
++        let actual = witnesses(&s, true);
++        assert!(
++            (actual.1 - expected.1).length() < 1e-12,
++            "previous witness corrupted by overlapping swaps"
++        );
++    }
++}

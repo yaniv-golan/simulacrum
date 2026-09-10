@@ -31,7 +31,7 @@ export function createControllerDispatcher(powerConfig, programs) {
     {
       controllers: powerConfig.controllers,
       receivers: powerConfig.receivers,
-      sensors: powerConfig.sensors,
+      sensors: powerConfig.sensors.filter((s) => s.kind !== 'travel'),
       signalWires: powerConfig.signalWires,
     },
     code,

@@ -908,14 +908,6 @@ test('free spring stops bound completed-tick impacts and preserve the isolated e
   const fixed = (a, b) => ({ kind: 'fixed', a, b });
   const hinge = (a, b) => ({ kind: 'revolute', a, b });
   const spring = (a, b, stiffness = 3) => ({ kind: 'spring', a, b, stiffness });
-  const reject = (b, j) =>
-    assert.throws(
-      () => admitSpringTopology(b, j),
-      (e) =>
-        e instanceof RangeError &&
-        e.reasonCode === 'SPRING_TOPOLOGY_UNQUALIFIED' &&
-        Number.isInteger(e.jointIndex),
-    );
   test('active tree, zero authored stiffness, and exact fixed-component inactivity', () => {
     assert.deepEqual(admitSpringTopology(bodies(3), [spring(0, 1), hinge(1, 2)]).activeElastic, [
       0,
@@ -928,7 +920,7 @@ test('free spring stops bound completed-tick impacts and preserve the isolated e
   });
   test('movable interruption cannot certify zero elastic mobility', () => {
     const j = [fixed(0, 1), hinge(1, 2), spring(0, 2)];
-    reject(bodies(3), j);
+    assert.deepEqual(admitSpringTopology(bodies(3), j).activeElastic, [2]);
     assert.deepEqual(admitSpringTopology(bodies(3), [fixed(0, 1), spring(1, 2)]).activeElastic, [
       1,
     ]);
@@ -936,14 +928,25 @@ test('free spring stops bound completed-tick impacts and preserve the isolated e
   test('ground closes an otherwise tree-shaped spring path', () => {
     const b = bodies(3);
     b[0].fixed = b[2].fixed = true;
-    reject(b, [spring(0, 1), spring(1, 2)]);
+    assert.deepEqual(admitSpringTopology(b, [spring(0, 1), spring(1, 2)]).activeElastic, [0, 1]);
     b[2].fixed = false;
     assert.deepEqual(admitSpringTopology(b, [spring(0, 1), spring(1, 2)]).activeElastic, [0, 1]);
   });
   test('inactive internal guide and fixed cycles remain native edges near active spring', () => {
-    reject(bodies(4), [fixed(0, 1), spring(0, 1), spring(1, 2), hinge(2, 3)]);
-    reject(bodies(4), [fixed(0, 1), fixed(1, 2), fixed(2, 0), spring(2, 3)]);
-    reject(bodies(3), [spring(0, 1), spring(1, 2), spring(2, 0, 0)]);
+    assert.deepEqual(
+      admitSpringTopology(bodies(4), [fixed(0, 1), spring(0, 1), spring(1, 2), hinge(2, 3)])
+        .activeElastic,
+      [2],
+    );
+    assert.deepEqual(
+      admitSpringTopology(bodies(4), [fixed(0, 1), fixed(1, 2), fixed(2, 0), spring(2, 3)])
+        .activeElastic,
+      [3],
+    );
+    assert.deepEqual(
+      admitSpringTopology(bodies(3), [spring(0, 1), spring(1, 2), spring(2, 0, 0)]).activeElastic,
+      [0, 1],
+    );
   });
   test('unrelated cyclic nonelastic component stays supported, including shared fixed ground', () => {
     const b = bodies(5);
@@ -955,9 +958,9 @@ test('free spring stops bound completed-tick impacts and preserve the isolated e
   });
   test('body, edge and endpoint ordering preserve physical admission decisions', () => {
     const cases = [
-      { b: bodies(3), j: [spring(0, 1), fixed(1, 2)], ok: true },
-      { b: bodies(3), j: [spring(0, 1), hinge(1, 2), hinge(2, 0)], ok: false },
-      { b: bodies(3), j: [fixed(0, 1), fixed(1, 2), spring(0, 2)], ok: true },
+      { b: bodies(3), j: [spring(0, 1), fixed(1, 2)], active: true },
+      { b: bodies(3), j: [spring(0, 1), hinge(1, 2), hinge(2, 0)], active: true },
+      { b: bodies(3), j: [fixed(0, 1), fixed(1, 2), spring(0, 2)], active: false },
     ];
     for (const c of cases)
       for (const order of [
@@ -973,12 +976,9 @@ test('free spring stops bound completed-tick impacts and preserve the isolated e
                 a: order.indexOf(swap ? j.b : j.a),
                 b: order.indexOf(swap ? j.a : j.b),
               }));
-            if (!c.ok) reject(b, js);
-            else {
+            {
               const result = admitSpringTopology(b, js);
-              const expected = js.flatMap((j, i) =>
-                j.kind === 'spring' && c.j.length === 2 ? [i] : [],
-              );
+              const expected = js.flatMap((j, i) => (j.kind === 'spring' && c.active ? [i] : []));
               assert.deepEqual(result.activeElastic, expected);
               assert.ok(Object.isFrozen(result) && Object.isFrozen(result.activeElastic));
             }

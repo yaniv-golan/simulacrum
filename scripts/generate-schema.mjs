@@ -11,6 +11,7 @@ export function buildBlueprintSchema() {
   const part = schema.$defs.part;
   part.properties.type = { type: 'string', enum: Object.keys(CATALOG) };
   part.properties.controlBinding = structuredClone(CONTROL_BINDING_SCHEMA);
+  part.properties.springBinding = { $ref: '#/$defs/id' };
   part.properties.authoredMaterial.properties.body = {
     type: 'string',
     enum: Object.keys(MATERIALS),
@@ -21,6 +22,7 @@ export function buildBlueprintSchema() {
       properties: {
         controlBinding:
           type === 'commandReceiver' ? structuredClone(CONTROL_BINDING_SCHEMA) : false,
+        springBinding: type === 'travelSensor' ? { $ref: '#/$defs/id' } : false,
         parameters: {
           type: 'object',
           additionalProperties: false,

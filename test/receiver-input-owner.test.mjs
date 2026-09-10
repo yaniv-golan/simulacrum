@@ -1,3 +1,4 @@
+import { createReceiverArbiter } from '../src/simulation/receiver-arbiter.mjs';
 import { createControllerDispatcher } from '../src/simulation/controllers.mjs';
 import assert from 'node:assert/strict';
 import { createConnectionTest } from '../src/presentation/connection-test.mjs';
@@ -95,7 +96,7 @@ window.dispatchEvent(event('keyup', { code: 'KeyW', key: 'w' }));
 await flush();
 check(
   commands.map((c) => c.duty),
-  [1],
+  [1, 1], // A fresh key deliberately takes ownership even when a pointer holds the same duty.
 );
 window.dispatchEvent(event('pointerup'));
 await flush();
@@ -112,17 +113,21 @@ for (const reset of ['blur', 'pause']) {
     tester.update(paused);
   }
   await flush();
-  check(
-    commands.map((c) => c.duty),
-    [1, -1, 0],
-  );
+  check(commands, [
+    { type: 'control', id: 'r', duty: 1 },
+    { type: 'control', id: 'r', duty: -1 },
+    ...(reset === 'blur' ? [{ type: 'suspend-controls' }] : []),
+    { type: 'control-release', id: 'r', duty: 0 },
+  ]);
   window.dispatchEvent(event('pointerup'));
   window.dispatchEvent(event('keyup', { code: 'KeyW', key: 'w' }));
   await flush();
-  check(
-    commands.map((c) => c.duty),
-    [1, -1, 0],
-  );
+  check(commands, [
+    { type: 'control', id: 'r', duty: 1 },
+    { type: 'control', id: 'r', duty: -1 },
+    ...(reset === 'blur' ? [{ type: 'suspend-controls' }] : []),
+    { type: 'control-release', id: 'r', duty: 0 },
+  ]);
   keyboard.update(frame);
   tester.update(frame);
 }
@@ -194,4 +199,95 @@ assert(nodes(root).some((n) => n.textContent === 'Controlled by Controller'));
 keyboard.dispose();
 tester.dispose();
 
+// Regulator wiring permits the same ordinary input route as an unowned receiver.
+const regulated = structuredClone(bp);
+regulated.parts.push({ id: 'regulator', name: 'Regulator', type: 'positionRegulator' });
+regulated.parts[1].controlBinding = {
+  mode: 'hold',
+  drive: { gain: 1, positiveKeys: ['KeyW'], negativeKeys: [] },
+  steer: { gain: -1, positiveKeys: ['KeyW'], negativeKeys: [] },
+};
+regulated.connections.push({
+  kind: 'signal',
+  a: { part: 'regulator', port: 'out' },
+  b: { part: 'r', port: 'command' },
+});
+const regulatorFrame = { ...frame, metadata: { ...frame.metadata, blueprint: regulated } };
+const received = [];
+const automatic = createReceiverArbiter([
+  {
+    node: 1,
+    duty: 0,
+    regulator: {
+      node: 2,
+      sensor: 3,
+      target: 0.25,
+      minTarget: 0.1,
+      maxTarget: 0.4,
+      proportionalGain: 4,
+      dampingGain: 0,
+      polarity: 1,
+      neutral: 0,
+      maxRate: 120,
+      enabled: true,
+    },
+  },
+]);
+let tick = 0;
+const advance = (events) =>
+  automatic.step(
+    ++tick,
+    { tick: tick - 1, readings: [{ node: 3, valid: true, length: 0.2, speed: 0 }] },
+    events,
+  )[0];
+advance([{ type: 'mode', node: 1, mode: 'automatic' }]);
+const localRoot = new Element('root');
+const localKeyboard = createVehicleControls({
+  container: localRoot,
+  select() {},
+  send: async (command) => {
+    received.push(command);
+    return { ok: true };
+  },
+});
+const localTester = createConnectionTest({
+  container: localRoot,
+  send,
+  select() {},
+  choosePort() {},
+  holdReceiver: (id, duty) => localKeyboard.hold(id, duty),
+  releaseReceiver: (id) => localKeyboard.releaseHold(id),
+});
+localKeyboard.update(regulatorFrame);
+const testSection = localTester.render(regulatorFrame, regulated.parts[0], false);
+assert(
+  nodes(testSection).some((n) => n.textContent === 'Hold +'),
+  'regulator allows Connect & test',
+);
+assert(nodes(localRoot).some((n) => n.textContent.includes('Keys take over in Manual')));
+window.dispatchEvent(event('keydown', { code: 'KeyW', key: 'w' }));
+await flush();
+assert.deepEqual(
+  received,
+  [{ type: 'control', id: 'r', duty: 0 }],
+  'fresh net-zero key is deliberate input',
+);
+assert.equal(advance([{ type: 'manual', node: 1, duty: received[0].duty }]).mode, 'manual');
+window.dispatchEvent(event('keyup', { code: 'KeyW', key: 'w' }));
+await flush();
+await localKeyboard.hold('r', 1);
+advance([{ type: 'manual', node: 1, duty: 1 }]);
+advance([{ type: 'mode', node: 1, mode: 'automatic' }]);
+received.length = 0;
+await localKeyboard.releaseHold('r');
+assert.deepEqual(received, [{ type: 'control-release', id: 'r', duty: 0 }]);
+assert.equal(advance([{ type: 'release', node: 1, duty: received[0].duty }]).mode, 'automatic');
+received.length = 0;
+window.dispatchEvent(event('blur'));
+await flush();
+assert.deepEqual(received, [{ type: 'suspend-controls' }]);
+assert.equal(advance([{ type: 'suspend' }]).mode, 'off');
+assert.equal(advance([]).mode, 'off');
+localKeyboard.dispose();
+localTester.dispose();
 assert.deepEqual(failures, []);

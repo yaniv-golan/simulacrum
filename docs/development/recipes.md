@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"2aeb99fb16be9295702d682e490b4b05b147658999aa23548136aad3f15e0453","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"dfd582ab4326b827284ff79b495aef3a0ba7f6cb6694b60e8403cb63f0aa27ba","disposition":"still accurate","rationale":"Package verification scheduling changed, but catalog/schema admission, canonical geometry and compiler/render agreement remain the same part-authoring path."} -->
+<!-- doc-review {"version":1,"fingerprint":"a8ce923b45c2aa4c675897b10286ea84839f9767d1d5961590c9b70f12323dd7","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"f7f4281cf84086b3eb56ccd94f71c02f54a47f21af4686826db7930164755c88","disposition":"still accurate","rationale":"The solver convergence correction adds no part types or parameters and preserves compiler admission, physical derivation, help and player-facing part workflow. Existing model-to-physics ownership remains unchanged. Native7 reuses factors only inside fixed-pose biased iterations; the numerical right-hand side and limits remain fresh, and no layer authority changes."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -33,7 +33,7 @@ validation with `node scripts/generate-schema.mjs` when schema changes.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"d21d74b6ce2e79737ef697a88bfae6870bcb855caf568c99c1500bf1b30a6a6f","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"a61b89aa046b0c78fce4fd270d83ed5ebc525da37809d125fc3f030fc965283f","disposition":"still accurate","rationale":"Package wrappers do not alter core command validation, candidate publication, transaction ownership or editing assertions."} -->
+<!-- doc-review {"version":1,"fingerprint":"5b4dbda3adc574edb7d9787820961894297def92f88317ce82266b9e34dc039b","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"6d4cbe8458f7a13c28eb6a66804090a680635009bdcd84fa2e423a53d62efc67","disposition":"still accurate","rationale":"No command surface or admission behavior changed. The updated physics door still receives only admitted configuration and numeric actions; the command recipe and atomic candidate workflow remain applicable. Native7 reuses factors only inside fixed-pose biased iterations; the numerical right-hand side and limits remain fresh, and no layer authority changes."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -53,7 +53,7 @@ Identify the player task, primary home, visibility/retrieval lifecycle and repla
 surface. Keep consequential state visible and verify unique actions remain reachable
 after removing or moving controls.
 
-<!-- doc-review {"version":1,"fingerprint":"b4001c8338d87f65e58e15e4e42bf4c9dc1a2a180122c9bbb05b81fa974a36bc","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"2c478f593092890130d583cd4bcd8d3964c877d1e998b4012bae125f14723959","disposition":"still accurate","rationale":"Graph read expressions and command wrappers affect selection orchestration only; real mirror/help browser assertions, pointer lifetimes and core commitment are retained."} -->
+<!-- doc-review {"version":1,"fingerprint":"18aa79c6687c1cd6057676c69a5239814541a5543e02fc156681a93c10d32c5b","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"835eb52887482e83e2ac1dda54255a5d406710c7891ebfebea7a2429154b3650","disposition":"still accurate","rationale":"The physics iteration setting does not alter pointer previews, input ownership, vehicle-control dispatch or commit/cancel behavior. The existing interaction recipe remains accurate. Native7 reuses factors only inside fixed-pose biased iterations; the numerical right-hand side and limits remain fresh, and no layer authority changes."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -96,7 +96,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"2e2c8985f53fafa80c57f1ecad69cf53e53186832f1729d7265c570b031bdd40","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"8909cfcf11c2a378bbc1d954d63fe2429c577c6c0b7ba1c11f17499ac55eb313","disposition":"still accurate","rationale":"No diagnostic owner or observable symptom changed; verification scheduling does not alter the positive, quiet and missing-data examples required here."} -->
+<!-- doc-review {"version":1,"fingerprint":"4e21c77923e09dda0d9400b4a4edefd7e3f290d4a24ad77aace5c7eb39e90acd","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"17923c83d166a368aa32d9f9ba3cd443e7b0c844e40fffc221017d592c7c40e8","disposition":"still accurate","rationale":"Solver convergence changes measured physical values but not completed telemetry ownership, selected-body sampling cadence, RMS definition or invalidation. Diagnostics still cannot infer intent or repair authored state. Native7 reuses factors only inside fixed-pose biased iterations; the numerical right-hand side and limits remain fresh, and no layer authority changes."} -->
 
 Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -109,9 +109,17 @@ and [motion diagnostics tests](../../test/motion-diagnostics.test.mjs). Include 
 symptom, a similar valid configuration that must remain quiet, and missing-data cases.
 A symptom is not proof of the intended mechanism or cause.
 
+Selected-body Measurements uses the [numeric accumulator](../../src/model/motion-readout.mjs)
+and [presentation lifecycle](../../src/presentation/motion-readout.mjs). The application
+feeds every completed observation delta through a separate cursor; rendering cadence
+never supplies acceleration samples. Label the RMS of 100 ms-average vertical
+acceleration, selected body and window. Gaps invalidate the result; selection and
+session identity changes start a visible new window. Preserve the existing boundary
+warnings when requested measurements close.
+
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"0ddfd91bbbd96fed3d151fc9d61c4271573cd4105769260ecced7dd6941966ac","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"d143f4e7e36720a484c2312807f5cf4f1e9e50ec3dad379e1ed8e4ba67a4aa75","disposition":"still accurate","rationale":"The package now coordinates verification workloads; physics door, numeric laws, native artifact and all listed analytical/contact budgets remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"d8453751342dfc16a65b01469a10060ab38632372b4ace75dae863c46c1f9c3a","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"5cfe5ca3b41fadd41734737e1692362ac201a72a77a7e629bbc406a6d11c288f","disposition":"still accurate","rationale":"Workshop qualification now compares the completed frame in its JSON representation with the JSON text read model, because JSON canonicalizes negative zero. Raw mesh position and quaternion assertions remain strict and the physical state is unchanged. The documented f64 precision, conservation and completed-state verification contracts remain accurate."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -131,6 +139,29 @@ signed integration/contact residuals. [Topology admission](../../src/simulation/
 uses authored fixed connectivity and ground, never approximate row deletion. Dependency
 changes follow the pinned [spring/contact build recipe](../../vendor/rapier-contact/README.md);
 retain loaded sag, coupled energy, completed-tick stop bounds and native motor restore controls.
+The physics door freezes four temporal subdivisions and thirty-two internal projected
+Gauss-Seidel passes. Contact impulses can otherwise leave substantial constrained
+axle velocities after the joint solve. Preserve the passive settling and free-axis
+controls when changing this accuracy setting; more passes cost simulation time and
+rendering quality reductions cannot compensate for that cost. These finite
+convergence checks do not establish convergence for arbitrary assemblies.
+Native factor reuse is limited to a fixed-pose biased iteration batch. Preserve
+fresh velocity/impulse right-hand sides, limit solving and residual refinement on
+every pass, and discard factors before integration or an unbiased refresh.
+Changing that lifetime requires exact cached/uncached state and cold-restore controls.
+The [owned native response](../../src/simulation/physics/native-response.mjs) shares f64
+rows with integration and supports cyclic components and unbounded bilateral components without an active spring. Preserve finite motor impulse budgets on the bounded fallback path. The native source also preserves GJK previous-simplex witnesses, support-bound/direction pairing at vanishing-simplex exits, distinct contact geometry and the coupled Coulomb impulse-disk optimum; retain their wrong-witness, near-tangent cylinder ordering/rotation, duplicate-contact, anisotropic-friction and loaded fixed-chain controls. The near-boundary classification retains the existing tolerance but applies it to additional zero-simplex exits; it does not qualify all floating-point geometry. The [independent complete-tick
+reference](../../test/spring-reference.test.mjs) checks frozen high-precision fixtures;
+it is not a universal interval theorem. [Reaction-work controls](../../test/constraint-work.test.mjs)
+check signed constraint work independently of motor funding and heat.
+[Ordinary suspension journeys](../../test/suspension-journeys.test.mjs) exercise
+loaded manual authority and previous-tick travel regulation; [launcher controls](../../test/spring-journeys.test.mjs)
+require actual contact retention, release, powerless/jammed controls and replay.
+The [release energy oracle](../../test/launcher-energy.test.mjs) counts positive
+motor/reaction work, each body's gravitational drop and independent rotational
+plus translational energy; quiet controls alone do not prove spring causation.
+[Contact-speed controls](../../test/physics.test.mjs) exercise actual roller shapes
+in isolated low/high-speed collisions, not every complete launcher configuration.
 Use [spring physics controls](../../test/spring-physics.test.mjs) and
 [checkpoint/editing controls](../../test/spring-playground.test.mjs), including reversed
 connection order and pre-swap rejection of invalid derived history. Off-center controls
@@ -159,11 +190,19 @@ and overflow through native callbacks as well as mocks: return through wrapper c
 before rethrowing a collection failure. Empty manifolds have no normal to validate,
 but their unavailable solver state must remain visible. Readback optimizations must
 preserve complete canonical samples and native snapshot/next-step identity.
+The [suspension contract helpers](../../test/contracts/suspension.mjs) share signed
+100 ms support, pin-frame and finite clearance oracles across the registered journey,
+regulation and load tests. The active bench's 0.26–0.33 m target and manual sweeps do
+not qualify arbitrary guide travel or pin angles. Its declared 10 N laboratory load
+uses ordinary recorded external impulses, separately from the three authored material
+cases. Preserve external-work accounting and the 2 s acquisition/3 s hold test;
+never move a mounting point or change mass invisibly to manufacture disturbance recovery.
+
 Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"127b7dfcf331e3d07ed46f69ee68a931d3eca26f475cce95738ed15e7a0d351e","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"7568a38992f42cb96028ac58d7a3453e81067de14895f2758311d242242d0f16","disposition":"still accurate","rationale":"Retained the newly documented built-in and saved collection workflow. The merged browser checks verify the shared preview and standard close control; graph copying and physics authority are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"28ce151c767e4cfd57e5d82329b62341c6ffe39c0cc68e202bdcab4d46cd3815","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"99df1aa387a979b79e94826b9f7bbb7def9ab8ec3dd861aff979084f6a94a662","disposition":"still accurate","rationale":"The convergence setting does not alter captured components, named mounts, bindings, copying, mirroring, saved environments or atomic placement. Existing external-mount clearance limitations remain applicable. Native7 reuses factors only inside fixed-pose biased iterations; the numerical right-hand side and limits remain fresh, and no layer authority changes."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -171,6 +210,19 @@ library group. Classify a selection's internal and crossing connections before c
 which edges an operation may copy. The classifier reports facts; the operation owns
 whether a crossing edge is omitted, rejected or explicitly rebound. Mount admission
 must retain its stricter aligned-edge eligibility when testing alternate support paths.
+
+Authored references also include a travel sensor's `springBinding` connection ID.
+Copy and mirror operations remap bindings to copied internal spring connections and
+clear bindings when that connection is omitted. Regulator sensor association comes
+from ordinary wiring. Check these references alongside endpoint remapping so an
+otherwise valid copy cannot silently measure the source machine's spring.
+Environment belongs to the receiving blueprint, not a captured assembly. Preserve
+that preset during insertion and validate placement against its canonical obstacles.
+The guided-wheel and [pin-ended strut](../../src/model/fixtures/articulated-suspension.mjs#symbol=createPinEndedStrut)
+modules are ordinary assembly captures. Their named external mounts must work through
+normal connection commands after insertion, save/load and proper rotation; retaining
+port labels alone does not establish physical connectivity. New external mounting
+arrangements require their own clearance checks.
 
 Use [rigid frame math](../../src/model/transforms.mjs) for translations and proper rotations.
 [Mirror proposals](../../src/model/mirror-assembly.mjs) separately own reflection and
@@ -244,7 +296,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"2d2f1d024305ce52636fca184fc3b7ba47571dc63509d5da1dd07ff1a64c998e","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"1d29723dc5c32eeca8eec88b1e269b846ff76feba94545bf25031e82c5bad35e","disposition":"updated","rationale":"Retained current v2 rendering and teaching claims and the narrowly bound spring budget controls. Opaque identity payloads remain excluded without dropping verifier, measurement or resource assertions."} -->
+<!-- doc-review {"version":1,"fingerprint":"a4cce8b0344199d5fc1d0574667aead4f9257bdac31b73286f9e644a994d263b","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"0a70b653ec2add7350be3fc5816045a8d3f9514849451647a55bc681fb07f65d","disposition":"still accurate","rationale":"The coil fix changes only orientation derived from displayed endpoint vectors. Buffer retention, thickness, visibility, resource disposal and completed simulation ownership remain unchanged; the new measured near-downward case checks actual rendered vertices at the existing one-micrometre bound."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -289,9 +341,10 @@ do not route it through authoring just to reuse Undo tests.
 The [guided coil renderer](../../src/presentation/spring-view.mjs) retains its vertex
 buffers and fixed wire radius while following completed endpoint transforms. Selection
 adds zero-force and travel marks. Decorative geometry has no physics authority.
-[Spring rendering controls](../../test/spring-view.test.mjs) cover travel and disposal;
+[Spring rendering controls](../../test/spring-view.test.mjs) cover travel, disposal and
+endpoint readback derived from actual tube-ring vertices and mesh world transforms;
 the registered [spring browser probe](../../scripts/verify-spring-browser.mjs#implementation)
-checks numeric controls and completed/rendered transforms, while the
+checks numeric controls and completed/rendered body and coil endpoints, while the
 [performance probe](../../scripts/verify-spring-performance.mjs#implementation)
 enforces the [spring performance policy](../../scripts/measure-springs.mjs#source)
 at zero, one and eight springs; 32 must reject without changing state. Three
@@ -302,11 +355,11 @@ at most 6 ms, frame cadence p95 at most 40 ms (30 Hz with 20% scheduling margin)
 no stall above 500 ms, and simulated/wall time ratio from 0.95 to 1.05.
 Dense one/eight-spring trials and connected 22/34-body trials require integration/contact
 p95 at most 1 ms, leaving 1/3 ms of the tick allocation for other phases. The connected
-workloads cover zero/one/eight springs plus fixed links: 22 bodies matches the ordinary
-four-wheel cart size; 34 retains the one-spring/32-fixed-link counterexample that exposed
+workloads cover zero/one/eight springs plus fixed links: 22 bodies retains the earlier
+four-wheel baseline; 34 retains the one-spring/32-fixed-link counterexample that exposed
 dense solver scaling. All 36 simulation cases must pass; fixture geometry and topology
 are checked, so removing connected bodies cannot improve a qualifying result. These
-sizes do not qualify larger assemblies. In each dense loaded-contact trial, every intended moving
+sizes do not qualify larger assemblies, including the current 44-part sprung/rigid comparison. In each dense loaded-contact trial, every intended moving
 body must carry a signed upward floor impulse of at least 0.040875 N s (half its known
 1 kg weight impulse; the extended spring presses down too). Missing bodies, unrelated
 pairs and reversed directions cannot satisfy this workload check. It is not a general

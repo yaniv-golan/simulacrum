@@ -213,7 +213,8 @@ export async function qualifyWorkshop(
         final: state.frame,
       });
       evidence.assert('equal', [state.frame.status, 'ready', `cycle ${cycle} simulation failed`]);
-      evidence.assert('deepEqual', [state.frame, state.text]);
+      // The text read model is JSON, which canonically encodes negative zero as zero.
+      evidence.assert('deepEqual', [JSON.parse(JSON.stringify(state.frame)), state.text]);
       for (const [index, part] of blueprint.parts.entries()) {
         const rendered = state.transforms.find((value) => value.id === part.id);
         evidence.assert('deepEqual', [rendered.position, state.frame.physics[index].position], {

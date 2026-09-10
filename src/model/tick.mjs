@@ -38,6 +38,7 @@ export function deterministicProjection(frame) {
     energy: frame.energy,
     power: frame.power,
     sensors: frame.sensors,
+    receiverControl: frame.receiverControl,
     status: frame.status,
   };
 }

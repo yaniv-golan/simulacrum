@@ -63,7 +63,7 @@ test('comparison names first divergent tick and rejects missing ticks', () => {
 test('failure replay reproduces cause and completed projection; wrong trace fails', async () => {
   const session = await createSession(configuration, { build: 'test-only' });
   try {
-    session.act({ type: 'impulse', body: 0, value: [1e39, 0, 0] });
+    session.act({ type: 'impulse', body: 0, value: [2 * Math.sqrt(Number.MAX_VALUE), 0, 0] });
     assert.throws(() => session.step(1));
     const bundle = session.failureBundle();
     assert.ok(bundle);
@@ -80,7 +80,7 @@ test('failure replay reproduces cause and completed projection; wrong trace fail
 test('replay rejects a changed failure reason', async () => {
   const session = await createSession(configuration, { build: 'test-only' });
   try {
-    session.act({ type: 'impulse', body: 0, value: [1e39, 0, 0] });
+    session.act({ type: 'impulse', body: 0, value: [2 * Math.sqrt(Number.MAX_VALUE), 0, 0] });
     assert.throws(() => session.step());
     const bundle = session.failureBundle();
     bundle.reasonCode = 'WRONG';
@@ -92,7 +92,7 @@ test('replay rejects a changed failure reason', async () => {
 test('replay restores already queued anchor inputs exactly once', async () => {
   const session = await createSession(configuration, { build: 'test-only' });
   try {
-    session.act({ type: 'impulse', body: 0, value: [1e39, 0, 0] });
+    session.act({ type: 'impulse', body: 0, value: [2 * Math.sqrt(Number.MAX_VALUE), 0, 0] });
     const checkpoint = session.checkpoint();
     session.restore(checkpoint);
     assert.throws(() => session.step());

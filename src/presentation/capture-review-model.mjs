@@ -1,5 +1,6 @@
 import { partPrimitives } from '../model/geometry.mjs';
 import { CATALOG } from '../model/catalog.mjs';
+import { environmentObstacles } from '../model/environment.mjs';
 export const safeMedia = (value) =>
   typeof value === 'string' && /^[a-zA-Z0-9_-]+\.(webm|mp4|png)$/.test(value);
 export function reviewTimeline(decoded) {
@@ -46,7 +47,7 @@ export function sceneParts(observation) {
   const parts = observation?.metadata?.blueprint?.parts;
   if (!Array.isArray(parts) || parts.length > 512)
     throw Error('Unsupported or oversized recorded blueprint');
-  return parts.map((part, index) => {
+  const authored = parts.map((part, index) => {
     if (!Object.hasOwn(CATALOG, part.type)) throw Error('Unsupported recorded part');
     const pose = observation.physics?.[index] ?? part;
     if (!vector(pose?.position, 3) || !vector(pose?.rotation, 4))
@@ -68,4 +69,12 @@ export function sceneParts(observation) {
       }),
     };
   });
+  return authored.concat(
+    environmentObstacles(observation.metadata.blueprint.environment).map((obstacle, index) => ({
+      id: `environment-${index}`,
+      position: [...obstacle.position],
+      rotation: [...obstacle.rotation],
+      primitives: [{ kind: obstacle.shape, halfExtents: [...obstacle.halfExtents] }],
+    })),
+  );
 }

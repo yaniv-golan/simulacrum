@@ -1,14 +1,15 @@
 import { springTopologyDomain } from './spring-topology.mjs';
+import { readNativeResponse } from './native-response.mjs';
 import { coupledSpringImpulses } from './law/spring.mjs';
 import { readBody } from './read-body.mjs';
 import { readContacts } from './read-contacts.mjs';
-import { createConstraintProjection } from './law/constraints.mjs';
 import { CYLINDER_SEGMENTS } from '../../model/geometry.mjs';
 const MAX_BODIES = 4097; // 4096 authored primitives plus the workshop ground.
 // Sole library importer. The closure exports capabilities and copied numeric
 // values; no Rapier world, body, collider, vector or query object crosses it.
 import RAPIER from '@dimforge/rapier3d-deterministic-compat';
 import { DT } from '../../model/tick.mjs';
+const PHYSICS_BACKEND = '0.20.0-simulacrum.spring.7.f64';
 let initialization;
 function record(value, keys) {
   if (
@@ -72,7 +73,14 @@ function hash(bytes) {
   return h >>> 0;
 }
 function encode(payload, handles, configuration) {
-  const metadata = new TextEncoder().encode(JSON.stringify({ version: 3, handles, configuration }));
+  const metadata = new TextEncoder().encode(
+    JSON.stringify({
+      version: 4,
+      backend: PHYSICS_BACKEND,
+      handles,
+      configuration,
+    }),
+  );
   const bytes = new Uint8Array(12 + metadata.length + payload.length),
     view = new DataView(bytes.buffer);
   view.setUint32(0, 0x53494d31);
@@ -98,9 +106,10 @@ function decode(input) {
   const metadata = JSON.parse(
     new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(12, 12 + size)),
   );
-  record(metadata, ['version', 'handles', 'configuration']);
+  record(metadata, ['version', 'backend', 'handles', 'configuration']);
   if (
-    metadata.version !== 3 ||
+    metadata.version !== 4 ||
+    metadata.backend !== PHYSICS_BACKEND ||
     !Array.isArray(metadata.handles) ||
     metadata.handles.length > MAX_BODIES ||
     metadata.handles.some((handle) => !Number.isFinite(handle)) ||
@@ -229,7 +238,11 @@ export async function createPhysicsWorld(configuration) {
       ...(joint.limits ? { limits: [...joint.limits] } : {}),
       kind: joint.kind,
       ...(joint.kind === 'spring'
-        ? { stiffness: joint.stiffness, damping: joint.damping, restLength: joint.restLength }
+        ? {
+            stiffness: joint.stiffness,
+            damping: joint.damping,
+            restLength: joint.restLength,
+          }
         : {}),
       a: joint.a,
       b: joint.b,
@@ -246,14 +259,20 @@ export async function createPhysicsWorld(configuration) {
   });
   if (joints.filter((j) => j.kind === 'spring').length > 8)
     throw new RangeError('at most 8 guided springs');
-  const activeElastic = new Set(springTopologyDomain(descriptions, joints).activeElastic);
-  await (initialization ??= RAPIER.init());
+  const topology = springTopologyDomain(descriptions, joints),
+    activeElastic = new Set(topology.activeElastic);
+  await (initialization ??= RAPIER.init().then(() => {
+    if (RAPIER.version() !== PHYSICS_BACKEND) throw new Error('physics backend mismatch');
+  }));
   let world = new RAPIER.World(xyz(gravity)),
     handles = [];
   const jointHandles = [];
   try {
     world.timestep = DT;
     world.integrationParameters.numSolverIterations = 4; // Frozen temporal solver subdivision.
+    // Contact impulses disturb coupled joint velocities. Additional internal passes
+    // resolve that alternating solve without changing the temporal subdivision.
+    world.integrationParameters.numInternalPgsIterations = 32;
     world.integrationParameters.maxCcdSubsteps = 1; // Contact diagnostics cover one physical interval.
     for (const body of descriptions) {
       const descriptor = (
@@ -272,7 +291,7 @@ export async function createPhysicsWorld(configuration) {
         // Preserve canonical solid-cylinder mass and inertia independently of contact mesh.
         const [h, r] = body.halfExtents,
           segments = CYLINDER_SEGMENTS;
-        const vertices = new Float32Array(
+        const vertices = new Float64Array(
           Array.from({ length: segments * 2 }, (_, i) => {
             const angle = ((i % segments) * 2 * Math.PI) / segments;
             return [i < segments ? -h : h, r * Math.cos(angle), r * Math.sin(angle)];
@@ -330,11 +349,18 @@ export async function createPhysicsWorld(configuration) {
     world.free();
     throw error;
   }
-  const configurationIdentity = JSON.stringify({ gravity, bodies: descriptions, joints });
+  const configurationIdentity = JSON.stringify({
+    gravity,
+    bodies: descriptions,
+    joints,
+  });
   function dimensions(collider) {
     if (collider.shapeType() === RAPIER.ShapeType.Cuboid) return array(collider.halfExtents());
     if (collider.shapeType() === RAPIER.ShapeType.ConvexPolyhedron)
-      return { vertices: Array.from(collider.vertices()), indices: Array.from(collider.indices()) };
+      return {
+        vertices: Array.from(collider.vertices()),
+        indices: Array.from(collider.indices()),
+      };
     throw new Error('unsupported snapshot shape');
   }
   function plant(candidate, mapping) {
@@ -352,7 +378,10 @@ export async function createPhysicsWorld(configuration) {
         contactsEnabled: joint.contactsEnabled(),
         motors: joint.motorConfiguration(),
         ...([RAPIER.JointType.Revolute, RAPIER.JointType.Prismatic].includes(joint.type())
-          ? { limitsEnabled: joint.limitsEnabled(), limits: [joint.limitsMin(), joint.limitsMax()] }
+          ? {
+              limitsEnabled: joint.limitsEnabled(),
+              limits: [joint.limitsMin(), joint.limitsMax()],
+            }
           : {}),
       }),
     );
@@ -360,7 +389,7 @@ export async function createPhysicsWorld(configuration) {
     if (connections.some((joint) => joint.a < 0 || joint.b < 0))
       throw new Error('invalid snapshot joint bindings');
     return {
-      gravity: array(candidate.gravity).map(Math.fround),
+      gravity: array(candidate.gravity),
       timestep: candidate.timestep,
       solverIterations: candidate.integrationParameters.numSolverIterations,
       internalPgsIterations: candidate.integrationParameters.numInternalPgsIterations,
@@ -474,228 +503,83 @@ export async function createPhysicsWorld(configuration) {
     a[0] * b[1] - a[1] * b[0],
   ];
   function makeTorqueIsland(indices) {
-    const matvec = (m, v) => m.map((r) => r.reduce((s, x, i) => s + x * v[i], 0));
-    const inverse3 = (m) => {
-      const [a, b, c] = m[0],
-        [, d, e] = m[1],
-        f = m[2][2],
-        det = a * (d * f - e * e) - b * (b * f - c * e) + c * (b * e - c * d);
-      if (!(det > 0)) throw new Error('invalid rigid inertia');
-      return [
-        [d * f - e * e, c * e - b * f, b * e - c * d],
-        [c * e - b * f, a * f - c * c, b * c - a * e],
-        [b * e - c * d, b * c - a * e, a * d - b * b],
-      ].map((r) => r.map((x) => x / det));
-    };
-    const parent = new Map(indices.map((i) => [i, i])),
-      root = (i) => {
-        while (parent.get(i) !== i) i = parent.get(i);
-        return i;
-      };
-    for (const j of joints)
-      if (j.kind === 'fixed' && parent.has(j.a)) parent.set(root(j.b), root(j.a));
-    const groups = new Map();
-    for (const i of indices) {
-      const r = root(i);
-      if (!groups.has(r)) groups.set(r, []);
-      groups.get(r).push(i);
-    }
-    const clusters = [...groups.values()].map((members) => {
-      const mass = members.reduce((s, i) => s + bodyAt(i).mass(), 0),
-        fixed = members.some((i) => bodyAt(i).isFixed());
-      const centre = [0, 0, 0];
-      for (const i of members) {
-        const p = array(bodyAt(i).translation()),
-          m = bodyAt(i).mass();
-        for (let k = 0; k < 3; k++) centre[k] += (m * p[k]) / mass;
-      }
-      const inertia = Array.from({ length: 3 }, () => [0, 0, 0]);
-      const parts = members.map((i) => {
-        const b = bodyAt(i),
-          r = array(b.translation()).map((x, k) => x - centre[k]),
-          m = b.mass(),
-          a = b.effectiveWorldInvInertia();
-        const own = b.isFixed()
-          ? [
-              [0, 0, 0],
-              [0, 0, 0],
-              [0, 0, 0],
-            ]
-          : inverse3([
-              [a.m11, a.m12, a.m13],
-              [a.m12, a.m22, a.m23],
-              [a.m13, a.m23, a.m33],
-            ]);
-        const square = r.reduce((s, x) => s + x * x, 0);
-        for (let row = 0; row < 3; row++)
-          for (let col = 0; col < 3; col++)
-            inertia[row][col] += own[row][col] + m * ((row === col ? square : 0) - r[row] * r[col]);
-        return { i, r, m, own };
-      });
-      return {
-        members,
-        parts,
-        mass,
-        centre,
-        fixed,
-        inverse: fixed
-          ? [
-              [0, 0, 0],
-              [0, 0, 0],
-              [0, 0, 0],
-            ]
-          : inverse3(inertia),
-      };
-    });
-    const offsets = new Map();
-    clusters.forEach((c, i) => c.members.forEach((b) => offsets.set(b, i * 6)));
-    const n = clusters.length * 6,
-      inverse = Array.from({ length: n }, () => Array(n).fill(0));
-    for (const [i, c] of clusters.entries()) {
-      for (let k = 0; k < 3; k++) inverse[i * 6 + k][i * 6 + k] = c.fixed ? 0 : 1 / c.mass;
-      for (let r = 0; r < 3; r++)
-        for (let col = 0; col < 3; col++)
-          inverse[i * 6 + 3 + r][i * 6 + 3 + col] = c.inverse[r][col];
-    }
-    const rows = [],
-      axes = [
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 0, 1],
-      ];
-    for (const j of joints) {
-      if (j.kind === 'fixed' || !offsets.has(j.a) || !offsets.has(j.b)) continue;
-      const a = offsets.get(j.a),
-        b = offsets.get(j.b);
-      if (a === b) continue;
-      const qa = rotationArray(bodyAt(j.a).rotation()),
-        qb = rotationArray(bodyAt(j.b).rotation());
-      const pointA = rotate(qa, j.anchorA).map((x, k) => x + array(bodyAt(j.a).translation())[k]);
-      const pointB = rotate(qb, j.anchorB).map((x, k) => x + array(bodyAt(j.b).translation())[k]);
-      // Equal and opposite reactions use one shared point even with solver drift.
-      const point = pointA.map((x, k) => (x + pointB[k]) / 2);
-      const ra = point.map((x, k) => x - clusters[a / 6].centre[k]);
-      const rb = point.map((x, k) => x - clusters[b / 6].centre[k]);
-      const axis = rotate(qa, j.axisA),
-        t = unit(cross(axis, Math.abs(axis[0]) < 0.9 ? axes[0] : axes[1]));
-      for (const d of j.kind === 'spring' ? [t, cross(axis, t)] : axes) {
-        const row = Array(n).fill(0),
-          aa = cross(ra, d),
-          bb = cross(rb, d);
-        for (let i = 0; i < 3; i++) {
-          row[a + i] = -d[i];
-          row[b + i] = d[i];
-          row[a + 3 + i] = -aa[i];
-          row[b + 3 + i] = bb[i];
-        }
-        rows.push(row);
-      }
-      for (const d of j.kind === 'spring' ? axes : [t, cross(axis, t)]) {
-        const row = Array(n).fill(0);
-        for (let i = 0; i < 3; i++) {
-          row[a + 3 + i] = -d[i];
-          row[b + 3 + i] = d[i];
-        }
-        rows.push(row);
-      }
-    }
-    const projection = createConstraintProjection(inverse, rows);
-    function clusterVelocity(c) {
-      if (c.fixed) return [0, 0, 0, 0, 0, 0];
-      const momentum = [0, 0, 0],
-        angular = [0, 0, 0];
-      for (const p of c.parts) {
-        const b = bodyAt(p.i),
-          v = array(b.linvel()),
-          w = array(b.angvel()),
-          own = matvec(p.own, w),
-          orbital = cross(
-            p.r,
-            v.map((x) => x * p.m),
-          );
-        for (let i = 0; i < 3; i++) {
-          momentum[i] += p.m * v[i];
-          angular[i] += own[i] + orbital[i];
-        }
-      }
-      return [...momentum.map((x) => x / c.mass), ...matvec(c.inverse, angular)];
-    }
-    const vector = () => clusters.flatMap(clusterVelocity);
-    const apply = (impulse) => {
-      for (const [i, c] of clusters.entries()) {
-        if (c.fixed) continue;
-        const v = impulse.slice(i * 6, i * 6 + 3).map((x) => x / c.mass),
-          w = matvec(c.inverse, impulse.slice(i * 6 + 3, i * 6 + 6));
-        for (const p of c.parts) {
-          const spin = cross(w, p.r);
-          bodyAt(p.i).applyImpulse(xyz(v.map((x, k) => p.m * (x + spin[k]))), true);
-          bodyAt(p.i).applyTorqueImpulse(xyz(matvec(p.own, w)), true);
-        }
-      }
-    };
-    const initialVector = vector(),
-      correction = projection.project(initialVector).velocity,
-      projectedVector = initialVector.map((x, i) => x + correction[i]);
-    const passiveImpulses = [];
-    for (const [index, c] of clusters.entries()) {
-      const v = projectedVector.slice(index * 6, index * 6 + 3),
-        w = projectedVector.slice(index * 6 + 3, index * 6 + 6);
-      for (const p of c.parts) {
-        const b = bodyAt(p.i),
-          oldV = array(b.linvel()),
-          oldW = array(b.angvel()),
-          spin = cross(w, p.r);
-        passiveImpulses.push({
-          index: p.i,
-          linear: v.map((x, k) => p.m * (x + spin[k] - oldV[k])),
-          angular: matvec(
-            p.own,
-            w.map((x, k) => x - oldW[k]),
-          ),
+    const offsets = new Map(indices.map((body, i) => [body, i * 6]));
+    const n = indices.length * 6;
+    const centres = indices.map((i) => array(bodyAt(i).translation()));
+    const factor = world.impulseJoints.raw.prepareBilateralResponse(
+      world.bodies.raw,
+      new Float64Array(indices.map((i) => handles[i])),
+      new Float64Array(
+        joints.flatMap((j, i) => (offsets.has(j.a) && offsets.has(j.b) ? [jointHandles[i]] : [])),
+      ),
+      world.integrationParameters.raw,
+    );
+    const projection = readNativeResponse(factor, indices.length);
+    try {
+      const vector = () =>
+        indices.flatMap((i) => {
+          const body = bodyAt(i);
+          return body.isFixed()
+            ? [0, 0, 0, 0, 0, 0]
+            : [...array(body.linvel()), ...array(body.angvel())];
         });
-      }
-    }
-    const applyPassive = () => {
-      for (const p of passiveImpulses) {
-        bodyAt(p.index).applyImpulse(xyz(p.linear), true);
-        bodyAt(p.index).applyTorqueImpulse(xyz(p.angular), true);
-      }
-    };
-    const force = (a, b, axis) => {
-      const f = Array(n).fill(0);
-      for (let i = 0; i < 3; i++) {
-        f[offsets.get(a) + 3 + i] -= axis[i];
-        f[offsets.get(b) + 3 + i] += axis[i];
-      }
-      return f;
-    };
-    return {
-      indices,
-      offsets,
-      projection,
-      vector,
-      apply,
-      force,
-      axialForce(a, b, axis, pointA, pointB) {
-        const f = Array(n).fill(0);
-        for (const [body, sign, point] of [
-          [a, -1, pointA],
-          [b, 1, pointB],
-        ]) {
-          const offset = offsets.get(body),
-            r = point.map((x, i) => x - clusters[offset / 6].centre[i]),
-            torque = cross(r, axis);
-          for (let i = 0; i < 3; i++) {
-            f[offset + i] += sign * axis[i];
-            f[offset + 3 + i] += sign * torque[i];
-          }
+      const apply = (impulse) => {
+        for (const [slot, index] of indices.entries()) {
+          const body = bodyAt(index);
+          if (body.isFixed()) continue;
+          body.applyImpulse(xyz(impulse.slice(slot * 6, slot * 6 + 3)), true);
+          body.applyTorqueImpulse(xyz(impulse.slice(slot * 6 + 3, slot * 6 + 6)), true);
         }
-        return f;
-      },
-      applyPassive,
-      projectedVector,
-      kinetic: () => indices.reduce((s, i) => s + kinetic(bodyAt(i)), 0),
-    };
+      };
+      const initial = vector(),
+        passive = projection.project(initial);
+      const projectedVector = initial.map((value, i) => value + passive.velocity[i]);
+      const force = (a, b, axis) => {
+        const out = Array(n).fill(0);
+        for (let k = 0; k < 3; k++) {
+          out[offsets.get(a) + 3 + k] -= axis[k];
+          out[offsets.get(b) + 3 + k] += axis[k];
+        }
+        return out;
+      };
+      return {
+        indices,
+        offsets,
+        projection,
+        vector,
+        apply,
+        force,
+        projectedVector,
+        dispose: projection.dispose,
+        applyPassive: () => apply(passive.impulse),
+        kinetic: () => indices.reduce((sum, i) => sum + kinetic(bodyAt(i)), 0),
+        axialForce(a, b, axis, pointA, pointB) {
+          const out = Array(n).fill(0);
+          for (const [body, sign, point] of [
+            [a, -1, pointA],
+            [b, 1, pointB],
+          ]) {
+            const offset = offsets.get(body);
+            const torque = cross(
+              point.map((value, k) => value - centres[offset / 6][k]),
+              axis,
+            );
+            for (let k = 0; k < 3; k++) {
+              out[offset + k] += sign * axis[k];
+              out[offset + 3 + k] += sign * torque[k];
+            }
+          }
+          return out;
+        },
+      };
+    } catch (error) {
+      projection.dispose();
+      throw error;
+    }
+  }
+  function clearPreparedTorqueIslands() {
+    for (const island of new Set(preparedTorqueIslands.values())) island.dispose();
+    preparedTorqueIslands = new Map();
   }
   function springState(index, physics = world, mapping = handles) {
     const j = joints[index];
@@ -794,7 +678,7 @@ export async function createPhysicsWorld(configuration) {
   }
   return Object.freeze({
     prepareConstraints() {
-      preparedTorqueIslands = new Map();
+      clearPreparedTorqueIslands();
       preparedSprings = null;
       springsApplied = false;
       constraintsApplied = true;
@@ -863,6 +747,8 @@ export async function createPhysicsWorld(configuration) {
     torquePairResponse(a, b, axisWorld, c, d, otherAxisWorld) {
       const axis = unit(axisWorld),
         other = unit(otherAxisWorld);
+      for (const index of [a, b, c, d]) bodyAt(index);
+      if (topology.isRigidPair(a, b) || topology.isRigidPair(c, d)) return 0;
       const island = preparedTorqueIslands.get(a);
       if (island && island === preparedTorqueIslands.get(b)) {
         if (island !== preparedTorqueIslands.get(c) || island !== preparedTorqueIslands.get(d))
@@ -895,7 +781,7 @@ export async function createPhysicsWorld(configuration) {
       const bodyA = bodyAt(a),
         bodyB = bodyAt(b),
         axis = unit(axisWorld);
-      if (a === b || !Number.isFinite(torqueNm) || !Number.isFinite(Math.fround(torqueNm * DT)))
+      if (a === b || !Number.isFinite(torqueNm) || !Number.isFinite(torqueNm * DT))
         throw new TypeError('invalid torque allocation');
       const speed = () =>
         axis.reduce(
@@ -904,12 +790,35 @@ export async function createPhysicsWorld(configuration) {
         );
       const island = preparedTorqueIslands.get(a);
       if (island && !constraintsApplied) throw new Error('passive constraints not applied');
+      const before = island ? island.kinetic() : kinetic(bodyA) + kinetic(bodyB);
+      // A torque inside one authored rigid assembly is internal stress. Native
+      // CFM stabilizes constraints; it does not grant this winding a shaft DOF.
+      if (topology.isRigidPair(a, b))
+        return {
+          speedBefore: 0,
+          speedAfter: 0,
+          workJ: 0,
+          constraintWorkJ: 0,
+          kineticBeforeJ: before,
+          kineticAfterJ: before,
+          kineticDeltaJ: 0,
+        };
       const speedBefore = speed(),
-        before = island ? island.kinetic() : kinetic(bodyA) + kinetic(bodyB),
         impulse = axis.map((value) => value * torqueNm * DT);
+      let constraintWorkJ = 0;
       if (island) {
-        const projected = island.projection.response(island.force(a, b, axis)).impulse;
-        island.apply(projected.map((x) => x * torqueNm * DT));
+        const raw = island.force(a, b, axis),
+          projected = island.projection.response(raw).impulse,
+          prior = island.vector(),
+          scaled = projected.map((x) => x * torqueNm * DT);
+        island.apply(scaled);
+        const current = island.vector();
+        // Independent impulse work of the regularized constraint reactions.
+        // It may have either sign; it is neither funded motor work nor heat.
+        constraintWorkJ = scaled.reduce(
+          (sum, value, i) => sum + ((value - raw[i] * torqueNm * DT) * (prior[i] + current[i])) / 2,
+          0,
+        );
       } else {
         bodyA.applyTorqueImpulse(xyz(impulse.map((value) => -value)), true);
         bodyB.applyTorqueImpulse(xyz(impulse), true);
@@ -920,6 +829,7 @@ export async function createPhysicsWorld(configuration) {
         speedBefore,
         speedAfter,
         workJ: (torqueNm * DT * (speedBefore + speedAfter)) / 2,
+        constraintWorkJ,
         kineticBeforeJ: before,
         kineticAfterJ: after,
         kineticDeltaJ: after - before,
@@ -957,17 +867,20 @@ export async function createPhysicsWorld(configuration) {
                   0,
                 )
             : rawSpeed;
+      const locked = topology.isRigidPair(config.a, config.b);
       return {
         angle,
-        speed,
-        effectiveInverseInertia: preparedTorqueIslands.has(config.a)
-          ? (() => {
-              const island = preparedTorqueIslands.get(config.a),
-                f = island.force(config.a, config.b, axis),
-                v = island.projection.response(f).velocity;
-              return f.reduce((sum, x, i) => sum + x * v[i], 0);
-            })()
-          : getAxisInverseInertia(config.a, axis) + getAxisInverseInertia(config.b, axis),
+        speed: locked ? 0 : speed,
+        effectiveInverseInertia: locked
+          ? 0
+          : preparedTorqueIslands.has(config.a)
+            ? (() => {
+                const island = preparedTorqueIslands.get(config.a),
+                  f = island.force(config.a, config.b, axis),
+                  v = island.projection.response(f).velocity;
+                return f.reduce((sum, x, i) => sum + x * v[i], 0);
+              })()
+            : getAxisInverseInertia(config.a, axis) + getAxisInverseInertia(config.b, axis),
       };
     },
     step() {
@@ -975,7 +888,7 @@ export async function createPhysicsWorld(configuration) {
       if (joints.some((j) => j.kind === 'spring') && !springsApplied)
         throw new Error('spring preparation and damping must precede integration');
       world.step();
-      preparedTorqueIslands = new Map();
+      clearPreparedTorqueIslands();
       preparedSprings = null;
       springsApplied = false;
       constraintsApplied = true;
@@ -1065,7 +978,7 @@ export async function createPhysicsWorld(configuration) {
       }
       const previous = world;
       world = candidate;
-      preparedTorqueIslands = new Map();
+      clearPreparedTorqueIslands();
       preparedSprings = null;
       springsApplied = false;
       constraintsApplied = true;
@@ -1074,17 +987,20 @@ export async function createPhysicsWorld(configuration) {
     },
     applyImpulse(index, impulse) {
       alive();
-      if (preparedSprings && !springsApplied)
-        throw new Error('prepared spring allocation cannot accept an intervening impulse');
+      if (!constraintsApplied || (preparedSprings && !springsApplied))
+        throw new Error(
+          'prepared spring/constraint allocation cannot accept an intervening impulse',
+        );
       if (!Number.isInteger(index) || index < 0 || index >= handles.length)
         throw new TypeError('invalid body index');
       const value = vector(impulse);
-      if (value.some((number) => !Number.isFinite(Math.fround(number))))
+      if (value.some((number) => !Number.isFinite(number)))
         throw new RangeError('impulse exceeds physics numeric range');
       world.getRigidBody(handles[index]).applyImpulse(xyz(value), true);
     },
     dispose() {
       if (world) {
+        clearPreparedTorqueIslands();
         world.free();
         world = null;
         handles = [];

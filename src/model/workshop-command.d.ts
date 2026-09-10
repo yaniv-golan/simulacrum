@@ -23,6 +23,7 @@ export type ControlBinding = NonNullable<
   Extract<Part, { type: 'commandReceiver' }>['controlBinding']
 >;
 export type WorkshopCommand =
+  | { type: 'choose-environment'; environment: 'flat' | 'rounded-bump' }
   | { type: 'create-assembly'; name: string; ids: string[]; ports: AssemblyPort[] }
   | { type: 'edit-assembly'; id: string; name: string; ids: string[]; ports: AssemblyPort[] }
   | {
@@ -44,6 +45,11 @@ export type WorkshopCommand =
   | { type: 'run' | 'pause' | 'build' }
   | { type: 'undo' | 'redo' }
   | { type: 'control'; id: string; duty: number }
+  | { type: 'control-release'; id: string; duty: number }
+  | { type: 'suspend-controls' }
+  | { type: 'control-mode'; id: string; mode: 'manual' | 'automatic' | 'off' }
+  | { type: 'regulator-target'; id: string; target: number }
+  | { type: 'bind-travel-sensor'; id: string; connection: string | null }
   | { type: 'insert'; part: Part }
   | { type: 'place'; id: string; partType: PartType; position: Position }
   | { type: 'rename'; id: string; name: string }

@@ -1,6 +1,6 @@
 import { ownsPartHelpInput } from './part-help-input.mjs';
 import { controlCommand } from '../model/workshop-command.mjs';
-import { receiverControlOwner } from '../model/connection-test-paths.mjs';
+import { receiverControlOwner, receiverAllowsManual } from '../model/connection-test-paths.mjs';
 import {
   CONTROL_KEYS,
   DEFAULT_CONTROL_BINDING,
@@ -49,7 +49,9 @@ export function createVehicleControls({ send, select, container }) {
   const receivers = () =>
     frame?.metadata.blueprint.parts.filter((p) => p.type === 'commandReceiver') ?? [];
   const owner = (id) => receiverControlOwner(frame.metadata.blueprint, id);
-  const eligible = (id) => receivers().some((part) => part.id === id) && !owner(id);
+  const eligible = (id) =>
+    receivers().some((part) => part.id === id) &&
+    receiverAllowsManual(frame.metadata.blueprint, id);
   const enqueue = (command) => {
     sequence = sequence.then(() => {
       // A load or mode change may finish before an already queued key event.
@@ -63,21 +65,27 @@ export function createVehicleControls({ send, select, container }) {
     overrides.clear();
     pressed.clear();
     states.clear();
-    for (const [id, duty] of duties) if (duty !== 0) enqueue(controlCommand(id, 0));
+    for (const [id, duty] of duties)
+      if (duty !== 0) enqueue({ type: 'control-release', id, duty: 0 });
     duties.clear();
     return sequence;
   }
-  function emit(id, duty) {
-    if (!eligible(id) || (duties.get(id) ?? 0) === duty) return sequence;
+  function emit(id, duty, force = false, release = false) {
+    if (!eligible(id) || (!force && (duties.get(id) ?? 0) === duty)) return sequence;
     duties.set(id, duty);
-    return enqueue(controlCommand(id, duty));
+    return enqueue(release ? { type: 'control-release', id, duty } : controlCommand(id, duty));
   }
-  function apply() {
+  function apply(release = false, deliberateKey = null) {
     for (const part of receivers()) {
       if (!eligible(part.id)) continue;
       const output = evaluateControlBinding(bindingOf(part), pressed, states.get(part.id));
       states.set(part.id, output.state);
-      emit(part.id, overrides.get(part.id) ?? output.duty);
+      emit(
+        part.id,
+        overrides.get(part.id) ?? output.duty,
+        deliberateKey !== null && keysOf(bindingOf(part)).includes(deliberateKey),
+        release,
+      );
     }
   }
   function update(next) {
@@ -121,17 +129,19 @@ export function createVehicleControls({ send, select, container }) {
           el('strong', part.name),
           el(
             'span',
-            owner(part.id) ? `Controlled by ${owner(part.id).name}` : keyText(bindingOf(part)),
+            eligible(part.id) ? keyText(bindingOf(part)) : `Controlled by ${owner(part.id).name}`,
           ),
           el(
             'small',
-            owner(part.id)
+            !eligible(part.id)
               ? 'Wired controller owns this receiver · keyboard and manual input unavailable'
-              : wired
-                ? bindingOf(part).mode === 'toggle'
-                  ? 'Toggle · resets when paused'
-                  : `Hold · release sends zero${inverted ? ' · reversed drive' : ''}`
-                : 'Not wired · connect Control output to a motor or hinge',
+              : owner(part.id)?.type === 'positionRegulator'
+                ? 'Keys take over in Manual · choose Automatic explicitly to rearm'
+                : wired
+                  ? bindingOf(part).mode === 'toggle'
+                    ? 'Toggle · resets when paused'
+                    : `Hold · release sends zero${inverted ? ' · reversed drive' : ''}`
+                  : 'Not wired · connect Control output to a motor or hinge',
           ),
         );
         const level = el('output', '0');
@@ -165,13 +175,13 @@ export function createVehicleControls({ send, select, container }) {
     event.stopImmediatePropagation();
     if (event.repeat || pressed.has(event.code)) return;
     pressed.add(event.code);
-    apply();
+    apply(false, event.code);
   }
   function keyup(event) {
     if (!pressed.has(event.code)) return;
     event.preventDefault();
     pressed.delete(event.code);
-    apply();
+    apply(true);
   }
   function focus(event) {
     if (
@@ -181,11 +191,15 @@ export function createVehicleControls({ send, select, container }) {
       clear();
   }
   function visibility() {
-    if (document.hidden) clear();
+    if (document.hidden) suspend();
+  }
+  function suspend() {
+    if (frame?.metadata.mode === 'run') send({ type: 'suspend-controls' });
+    return clear();
   }
   window.addEventListener('keydown', keydown, true);
   window.addEventListener('keyup', keyup, true);
-  window.addEventListener('blur', clear);
+  window.addEventListener('blur', suspend);
   document.addEventListener('focusin', focus);
   document.addEventListener('visibilitychange', visibility);
   return {
@@ -195,22 +209,22 @@ export function createVehicleControls({ send, select, container }) {
     hold(id, duty) {
       if (frame?.metadata.mode !== 'run' || !eligible(id)) return;
       overrides.set(id, duty);
-      return emit(id, duty);
+      return emit(id, duty, true);
     },
     releaseHold(id) {
       if (!overrides.delete(id)) return sequence;
-      apply();
+      apply(true);
       return sequence;
     },
     drive(id, duty) {
       if (frame?.metadata.mode !== 'run' || !eligible(id)) return;
       states.delete(id);
-      return emit(id, overrides.get(id) ?? duty);
+      return emit(id, overrides.get(id) ?? duty, true);
     },
     inspector(part, target, editable) {
       const section = el('details', '', 'receiver-controls');
       section.append(el('summary', `Keyboard settings · ${keyText(bindingOf(part))}`));
-      if (owner(part.id))
+      if (owner(part.id) && owner(part.id).type !== 'positionRegulator')
         section.append(
           el(
             'p',
@@ -344,7 +358,7 @@ export function createVehicleControls({ send, select, container }) {
     dispose() {
       window.removeEventListener('keydown', keydown, true);
       window.removeEventListener('keyup', keyup, true);
-      window.removeEventListener('blur', clear);
+      window.removeEventListener('blur', suspend);
       document.removeEventListener('focusin', focus);
       document.removeEventListener('visibilitychange', visibility);
       panel.remove();

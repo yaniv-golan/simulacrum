@@ -3,7 +3,7 @@ import * as THREE from 'three';
  * completed body transforms. Fixed wire thickness; one retained buffer per connection. */
 export function createSpringView(scene) {
   const entries = new Map(),
-    up = new THREE.Vector3(0, 1, 0),
+    axis = new THREE.Vector3(),
     direction = new THREE.Vector3();
   const samples = 128,
     sides = 6,
@@ -63,7 +63,12 @@ export function createSpringView(scene) {
       mesh.visible = length > 0.001;
       if (!mesh.visible) continue;
       mesh.position.copy(row.a);
-      mesh.quaternion.setFromUnitVectors(up, direction.normalize());
+      // atan2 retains the transverse direction near downward; the generic
+      // unit-vector helper snaps a small antiparallel cone to exactly 180 degrees.
+      const transverse = Math.hypot(direction.x, direction.z);
+      if (transverse === 0) axis.set(0, 0, 1);
+      else axis.set(direction.z / transverse, 0, -direction.x / transverse);
+      mesh.quaternion.setFromAxisAngle(axis, Math.atan2(transverse, direction.y));
       mesh.material.color.setHex(row.selected ? 0xffcf80 : 0xa6b7bf);
       if (entry.length !== length) {
         const p = mesh.geometry.attributes.position.array;
@@ -105,6 +110,31 @@ export function createSpringView(scene) {
   }
   return {
     update,
+    readRenderedEndpoints() {
+      return [...entries].map(([id, { mesh }]) => {
+        const vertices = mesh.geometry.attributes.position;
+        const ringCenter = (ring) => {
+          const center = new THREE.Vector3();
+          // The seventh vertex repeats the first to close the tube seam.
+          for (let side = 0; side < sides; side++)
+            center.add(
+              new THREE.Vector3().fromBufferAttribute(vertices, ring * (sides + 1) + side),
+            );
+          return center.multiplyScalar(1 / sides);
+        };
+        // Coil centreline ends sit one wire radius inside each attachment.
+        // Recover attachment axes from actual rendered tube vertices, not cached inputs.
+        const a = ringCenter(0).sub(new THREE.Vector3(radius, wire, 0));
+        const b = ringCenter(samples).sub(new THREE.Vector3(radius, -wire, 0));
+        mesh.updateWorldMatrix(true, false);
+        return {
+          id,
+          visible: mesh.visible,
+          a: mesh.localToWorld(a).toArray(),
+          b: mesh.localToWorld(b).toArray(),
+        };
+      });
+    },
     dispose() {
       for (const entry of entries.values()) release(entry);
       entries.clear();

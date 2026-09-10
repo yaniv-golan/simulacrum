@@ -106,6 +106,16 @@ const hubTilt = Math.atan2(0.07, 0.1),
 const aboutZ = (angle) => [0, 0, Math.sin(angle / 2), Math.cos(angle / 2)];
 /** @type {Readonly<Record<import('./generated/blueprint-types.js').PartType, CatalogDefinition>>} */
 export const CATALOG = freeze({
+  spacerBlock: {
+    ...component('spacerBlock', 'Spacer block', [0.02, 0.015, 0.02], 'aluminium', [], {}),
+    milestone: 'M3b',
+    mountingFaces: ['right', 'left', 'top', 'bottom', 'front', 'back'],
+  },
+  mountingBlock: {
+    ...component('mountingBlock', 'Mounting block', [0.01, 0.01, 0.08], 'aluminium', [], {}),
+    milestone: 'M3b',
+    mountingFaces: ['right', 'left', 'top', 'bottom', 'front', 'back'],
+  },
   beam: {
     mountingFaces: ['right', 'left', 'top', 'bottom', 'front', 'back'],
     type: 'beam',
@@ -282,6 +292,19 @@ export const CATALOG = freeze({
     ),
     mountingFaces: [],
   },
+  shaftMount: {
+    ...component(
+      'shaftMount',
+      'Axle adapter',
+      [0.025, 0.04, 0.04],
+      'steel',
+      [port('shaft', 'shaft', [-0.025, 0, 0])],
+      {},
+    ),
+    milestone: 'M3b',
+    mountingFaces: ['right', 'top', 'bottom', 'front', 'back'],
+    mountingPads: { right: [0.02, 0.02] },
+  },
   gripWheel: {
     ...component(
       'gripWheel',
@@ -302,6 +325,38 @@ export const CATALOG = freeze({
     [signal('signal', 'output')],
     { axis: { ...rating(0, 0, 2, '0=X, 1=Y, 2=Z'), type: 'integer' } },
   ),
+  travelSensor: {
+    ...component(
+      'travelSensor',
+      'Travel Sensor',
+      [0.025, 0.015, 0.025],
+      'aluminium',
+      [signal('signal', 'output')],
+      {},
+    ),
+    milestone: 'M3b',
+  },
+  positionRegulator: {
+    ...component(
+      'positionRegulator',
+      'Position Regulator',
+      [0.04, 0.02, 0.03],
+      'aluminium',
+      [signal('signal', 'input'), signal('out', 'output')],
+      {
+        target: rating(0.25, 0.08, 0.4, 'm'),
+        minTarget: rating(0.08, 0.08, 0.39, 'm'),
+        maxTarget: rating(0.4, 0.09, 0.4, 'm'),
+        proportionalGain: rating(4, 0, 100, '1/m'),
+        dampingGain: rating(0.2, 0, 100, 's/m'),
+        polarity: { ...rating(1, -1, 1, 'sign'), type: 'integer', enum: [-1, 1] },
+        neutral: rating(0, -1, 1, 'ratio'),
+        maxRate: rating(1, 0.01, 100, 'ratio/s'),
+        enabled: { ...rating(1, 0, 1, 'on'), type: 'integer', enum: [0, 1] },
+      },
+    ),
+    milestone: 'M3b',
+  },
   commandReceiver: {
     ...component(
       'commandReceiver',

@@ -35,7 +35,21 @@ Runtime readers validate that current schema before accepting authored data.
 A completed-tick checkpoint contains all state affecting future execution: library
 snapshot, networks, controller state, previous sensor snapshot, input queue, clock
 accumulator, random generator, evaluator state and recorder anchor. Admission and
-restore validate before replacing state. No live library object escapes the physics
+restore validate before replacing state. Session checkpoint version 3 includes receiver
+arbitration state and the signed constraint-work ledger. Physics envelope version 4
+binds the double-precision native backend before deserialization; older opaque
+checkpoints are rejected explicitly. Blueprint save version 3 is unchanged.
+
+Version 3 also admits an optional `environment` preset: `flat` or `rounded-bump`.
+Omission means the flat floor. `choose-environment` is an atomic Build edit with
+ordinary history and save/checkpoint identity. One model descriptor supplies the
+rounded bump's fixed collision and rendered geometry; example identity has no
+authority. Selecting or loading terrain rejects overlap with canonical part
+envelopes, including protruding shafts. Assembly insertion preserves the receiving
+environment. The compiler's explicit `ground: null` option removes the floor only;
+an explicitly selected obstacle remains part of that configuration.
+
+No live library object escapes the physics
 door. A failed tick poisons the session; it publishes failure evidence, cannot continue
 or issue a checkpoint, and may recover only by validated restore or a new session.
 
@@ -74,8 +88,9 @@ Every 1,200 completed ticks create a replay anchor, retaining at most two interv
 and 600 detailed telemetry frames. Each anchor embeds the complete checkpoint,
 blueprint, programs, environment, configuration and implementation identity needed
 for its interval. Inputs carry epoch, tick, sequence and payload. Admission is bounded
-at 64 commands/tick and 64 KiB/command; exceeding either fails `INPUT_LIMIT` without
-mutation. Blueprint/program size bounds belong to the runtime schema. Evidence records
+at 64 ordinary commands/tick and 64 KiB/command; exceeding either fails `INPUT_LIMIT` without
+mutation. One additional idempotent suspension event is reserved so a full ordinary
+input queue cannot prevent Pause or focus-loss cancellation. Blueprint/program size bounds belong to the runtime schema. Evidence records
 its retained start tick explicitly and does not claim earlier history is present.
 The failure bundle contains that anchor plus every accepted input through failure;
 no interval is silently truncated. Failed step inputs are retained with their outcome.
@@ -164,15 +179,18 @@ integration call; it includes contact/constraint dissipation, stabilization and
 gravity-integration error. It is **not driver heat**, and a positive value is
 visible numerical energy injection, not a certified physical source. The balance
 remainder exposes kick roundoff. These diagnostics do not certify conservative
-contact behavior. Rapier's temporal solver iteration count is frozen at four;
-there is still exactly one production world.step per tick. Analytical freefall
+contact behavior. Rapier's temporal solver subdivision count is frozen at four,
+with thirty-two internal projected Gauss-Seidel passes for contact/joint convergence.
+These are numerical solver settings applied uniformly to every world; there is
+still exactly one production world.step per 1/120 s tick. Both iteration settings
+are bound into checkpoint plant identity. Analytical freefall
 and passive attached-inertia tests check separate integration effects.
 
 Electrical funding uses the existing per-transfer Float32 tolerance. The
 independent kinetic-energy subtraction check scales that same relative roundoff
 factor by the endpoint kinetic energies, because subtraction at high spin can
 lose precision even when the work is small. It does not enlarge the electrical
-funding tolerance. Completed checkpoints use version 2 and include this ledger;
+funding tolerance. Completed session checkpoints use version 3 and include this ledger;
 older checkpoint versions are rejected, without migration. Machine save format
 remains 3.
 
@@ -270,8 +288,9 @@ Connection testing uses ordinary Run and receiver commands. It never suspends
 gravity, anchors a machine, bypasses a signal owner or supplies hidden energy.
 Keyboard and test holds share one receiver input owner. A test hold temporarily
 overrides the receiver's keyboard output; releasing it restores that output.
-Focus loss and mode changes clear both inputs. Wired controller ownership excludes
-both keyboard and test overrides. Live
+Focus loss and mode changes clear both inputs. A wired script controller excludes
+both keyboard and test overrides. A wired position regulator permits deliberate
+manual takeover through the same input owner. Live
 readouts come from completed telemetry. All-machine motion during a test is
 explicit in the interface.
 
@@ -303,9 +322,14 @@ inertia with parallel-axis terms; free clusters conserve linear and angular
 momentum. Revolute reactions share an anchor midpoint. Contacts and angular stops
 remain in the single integration. Projected motor impulses include all bilaterally
 connected bodies, and torque/midpoint-speed work receipts are checked against
-whole-island kinetic change. Passive projection loss is separately reported as
+whole-island kinetic change plus independently measured reaction work. For each
+body, reaction work is the projected impulse minus the applied motor impulse, dotted
+with actual midpoint velocity. It can have either sign because bilateral rows use
+finite regularization. The power receipt checks `deltaK = motorWork + constraintWork`
+without charging reaction work to the battery or classifying it as heat.
+Passive projection loss is separately reported as
 `energy.constraintDissipationJ`; it never becomes motor heat. The energy identity is
-`deltaMechanical = actuatorWorkJ + externalWorkJ + integrationDeltaJ
+`deltaMechanical = actuatorWorkJ + constraintWorkJ + externalWorkJ + integrationDeltaJ
 
 - constraintDissipationJ - dampingWorkJ + balanceResidualJ` (damping work is zero without springs).
 
@@ -325,7 +349,10 @@ body per part. The coil and connector rod are decoration; their mass is lumped
 into the pads, not charged again. They have no turn/rod collision or mounting
 surfaces. There is no closed cylinder with a fictitious hollow interior. External pad
 and rail collisions remain active, including the guide/carriage pair; ordinary
-fixed mounts retain their existing pair-contact exclusion. Compound solids and articulated ends are not
+fixed mounts retain their existing pair-contact exclusion. Articulated ends use
+ordinary passive bearings and solid axle adapters outside the unchanged five-DOF guide.
+A passive pin admits axial twist while retaining axis alignment and collision checks;
+rigid shaft connections retain full orientation alignment. Compound solids are not
 part of this representation.
 
 Elasticity uses SI `-k x` inside each of the four frozen native temporal
@@ -345,13 +372,13 @@ zero-force length. Stops are unilateral prismatic limits, not pose clamps or a
 breakage model. Isolated completed-tick impact bounds do not qualify unseen substep
 penetration or actual mechanism clearances.
 
-Active elastic components must have an acyclic native joint graph after identifying
-immovable bodies as ground. Unsupported cycles are refused before native construction;
-this is a bounded numerical domain, not a claim that the mechanism is physically
-invalid. Fixed edges and inactive guide rows still count. A fixed path, including
+Active elastic components admit closed joint graphs. The double-precision native
+response uses sparse tree factors and a Schur border for loop-closing rows, with
+strict residual checks and bounded per-joint refinement. It retains the actual
+authored body/joint limits; large loop-rank performance is not qualified. A fixed path, including
 separate grounded fixed components, proves zero relative mobility: native elastic
 actuation is then omitted while authored stiffness, rest length and potential remain.
-Unrelated nonelastic components retain their existing solve. Internal weld prestress
+Supported unbounded bilateral components use the same factorization even without an active elastic axis. Finite motor caps and unsupported mobility retain the bounded solver. Internal weld prestress
 and fracture attribution are outside this model.
 
 During power/signals, the physics door prepares passive projection and simultaneous
@@ -378,7 +405,7 @@ and `dampingWorkJ`. Initial strain is authored starting energy. Damper work is t
 discrete `dt sum(c_i v'_i²)` from the simultaneous solve, not an independent
 measurement of contact heat. Mechanical energy now includes elastic potential.
 The balance becomes
-`deltaMechanical = actuatorWorkJ + externalWorkJ + integrationDeltaJ
+`deltaMechanical = actuatorWorkJ + constraintWorkJ + externalWorkJ + integrationDeltaJ
 
 - constraintDissipationJ - dampingWorkJ + balanceResidualJ`.
 `integrationDeltaJ` includes kinetic and elastic changes through native integration,
@@ -420,7 +447,7 @@ solver velocity stabilization; they do not measure continuous contact time or co
 heat. Support classification and qualification require independent apparatus and
 error bounds beyond this numeric observation contract.
 
-Opaque physics envelopes use version 3. Native motor configuration is included in physical-plant restoration validation. Older envelopes reject before native
+Opaque physics envelopes use version 4 and bind the pinned f64 backend identity. Native motor configuration is included in physical-plant restoration validation. Older envelopes reject before native
 snapshot deserialization. Native contact observations serialize with the solver;
 restore validates their structure, interval semantics and canonical references before
 swapping owners. Solver iteration and CCD settings and exposed joint limits must
@@ -428,3 +455,31 @@ match the admitted plant. Immediate and subsequent
 completed projections must match uninterrupted execution. This establishes structural
 admissibility and continuation, not historical truth of arbitrary self-consistent
 checkpoint bytes; qualified history must rerun declared tick-zero inputs independently.
+
+## Suspension controls and physical examples (M3b)
+
+A Travel sensor has an explicit spring-connection binding. It reports signed axial
+length and speed from completed geometry; a missing binding is invalid, never an
+identity-based fallback. Copying remaps an internal binding and clears an external
+one. A Position regulator receives that sensor through an ordinary signal wire
+and drives a receiver through another wire. Its fixed proportional/derivative
+controller uses authored target bounds, polarity, neutral and output slew rate.
+It controls spring extension, not world height, and creates no direct force.
+
+Receivers start in Manual. Automatic requires an enabled, correctly wired regulator
+and a valid previous-tick sample. An invalid sample latches Off. A deliberate
+manual command, including zero, takes ownership; key release changes the manual
+level without implicitly returning to Automatic. Off wins a simultaneous request
+and disables the driver before position control, producing zero active current,
+torque and work. Off is neither a brake nor the hinge's zero-angle target.
+Pause, browser blur and hidden-tab events latch Automatic Off and clear Manual
+output; a fresh explicit action is required to rearm. Merely focusing a target
+field does not cancel Automatic. Modes, targets, queued events and output slew
+state are checkpointed and replayed; script output cannot forge manual provenance.
+
+The guided cart, pin-ended bench, powered upper-rocker suspension and launcher
+are ordinary editable blueprints. Reusable guided modules expose normal chassis,
+wheel, power and command endpoints. The launcher uses an actual powered hinge
+gate to retain an authored compressed spring and releases a separate rolling wheel
+through contact. It is a one-shot experiment reset through Build. No example name
+changes physics, creates a fixed support or supplies a release impulse.

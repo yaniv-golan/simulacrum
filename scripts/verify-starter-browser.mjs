@@ -73,7 +73,18 @@ try {
     last.physics[0].position[0] - start[0],
     last.physics[0].position[2] - start[2],
   );
-  browserEvidence.assert('ok', [travel > 2, `sustained travel ${travel}`]);
+  const maximumSampledExcursion = Math.max(
+    ...[...samples, last].map((sample) =>
+      Math.hypot(
+        sample.physics[0].position[0] - start[0],
+        sample.physics[0].position[2] - start[2],
+      ),
+    ),
+  );
+  browserEvidence.assert('ok', [
+    maximumSampledExcursion > 2,
+    `spatial excursion ${maximumSampledExcursion}`,
+  ]);
   browserEvidence.assert('ok', [samples.every((f) => f.status === 'ready')]);
   // A rolling machine can circle back near its earlier position. Measure each
   // final-second interval, not a chord across the loop or a later Pause frame.
@@ -134,6 +145,7 @@ try {
         samples,
         last,
         travel,
+        maximumSampledExcursion,
         finalTenSecondsSampledTravel: moving,
         finalIntervals,
         checks: [
@@ -150,7 +162,7 @@ try {
     ),
   );
   console.log(
-    `starter browser passed: ${travel.toFixed(3)}m net travel; ${moving.toFixed(3)}m final interval`,
+    `starter browser passed: ${travel.toFixed(3)}m endpoint displacement; ${maximumSampledExcursion.toFixed(3)}m excursion; ${moving.toFixed(3)}m final sampled path`,
   );
 } catch (error) {
   await browserEvidence.captureFailure(error);

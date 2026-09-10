@@ -11,7 +11,7 @@ import {
 } from './surfaces.mjs';
 import { CATALOG, MATERIALS } from './catalog.mjs';
 import { validateBlueprint } from './blueprint.mjs';
-import { BUILD_ENVIRONMENT } from './environment.mjs';
+import { BUILD_ENVIRONMENT, environmentObstacles } from './environment.mjs';
 import { immutableCopy } from './observation.mjs';
 import {
   transformPoseBetweenFrames,
@@ -67,6 +67,12 @@ function worldPort({ part, port }) {
   };
 }
 const matingRotation = (port) => (port.kind === 'fixed' ? [0, 1, 0, 0] : [0, 0, 0, 1]);
+const freePin = (A, B) => A.port.joint === 'revolute' || B.port.joint === 'revolute';
+const axisAgreement = (a, b, axis = [1, 0, 0]) => {
+  const u = rotate(a, axis),
+    v = rotate(b, axis);
+  return u.reduce((sum, x, i) => sum + x * v[i], 0);
+};
 /** Surface normals oppose; shaft frames coincide. Connected groups move rigidly. */
 export function snapConnection(blueprint, a, b) {
   validate(blueprint);
@@ -94,7 +100,9 @@ function snapFrames(blueprint, A, B) {
   const group = new Set(mechanicalGroup(blueprint, B.part.id));
   if (group.has(A.part.id)) {
     const gap = Math.hypot(...subtract(position, B.part.position)),
-      dot = Math.abs(rotation.reduce((sum, v, i) => sum + v * normalize(B.part.rotation)[i], 0));
+      dot = freePin(A, B)
+        ? axisAgreement(rotation, B.part.rotation, rotate(B.port.rotation, [1, 0, 0]))
+        : Math.abs(rotation.reduce((sum, v, i) => sum + v * normalize(B.part.rotation)[i], 0));
     if (gap > 1e-6 || 1 - Math.min(1, dot) > 1e-10) reject('INCOMPATIBLE_CONNECTION_LOOP', 'b');
     return structuredClone(blueprint);
   }
@@ -210,6 +218,12 @@ export function compileAssembly(
           axis: [0, 1, 2].map((i) => (i === p.axis ? 1 : 0)),
         });
         break;
+      case 'travelSensor':
+        power.sensors.push({ node, kind: 'travel', joint: -1 });
+        break;
+      case 'positionRegulator':
+        (power.regulators ??= []).push({ node, sensor: -1, ...p, enabled: p.enabled === 1 });
+        break;
     }
   }
   for (const [i, connection] of blueprint.connections.entries()) {
@@ -267,7 +281,9 @@ export function compileAssembly(
       b = worldPort(B),
       distance = Math.hypot(...subtract(a.position, b.position));
     const expected = normalize(multiply(a.rotation, matingRotation(A.port)));
-    const dot = Math.abs(expected.reduce((sum, v, j) => sum + v * b.rotation[j], 0));
+    const dot = freePin(A, B)
+      ? axisAgreement(expected, b.rotation)
+      : Math.abs(expected.reduce((sum, v, j) => sum + v * b.rotation[j], 0));
     if (distance > 1e-6 || 1 - Math.min(1, dot) > 1e-10) {
       connections.push({ id: connection.id, reasonCode: 'MISALIGNED' });
       continue;
@@ -321,6 +337,26 @@ export function compileAssembly(
     }
   }
   // Environment bodies follow authored bodies so every part and network index stays stable.
+  for (const sensor of power.sensors.filter((s) => s.kind === 'travel')) {
+    const binding = blueprint.parts[sensor.node].springBinding;
+    const edge = blueprint.connections.find((c) => c.id === binding && c.kind === 'spring');
+    if (edge) {
+      const a = blueprint.parts.findIndex((p) => p.id === edge.a.part);
+      const b = blueprint.parts.findIndex((p) => p.id === edge.b.part);
+      sensor.joint = joints.findIndex(
+        (j) => j.kind === 'spring' && ((j.a === a && j.b === b) || (j.a === b && j.b === a)),
+      );
+    }
+  }
+  for (const regulator of power.regulators ?? []) {
+    const inputs = power.signalWires.filter((w) => w[1] === regulator.node);
+    if (
+      inputs.length > 1 ||
+      inputs.some((w) => !power.sensors.some((s) => s.node === w[0] && s.kind === 'travel'))
+    )
+      reject('UNSUPPORTED_SIGNAL_TOPOLOGY', 'connections');
+    regulator.sensor = inputs[0]?.[0] ?? -1;
+  }
   if (ground !== null)
     bodies.push({
       shape: 'box',
@@ -333,6 +369,8 @@ export function compileAssembly(
       friction: ground.friction,
       restitution: ground.restitution,
     });
+  // Explicit ground:null overrides the floor only; saved obstacles remain authored.
+  bodies.push(...structuredClone(environmentObstacles(blueprint.environment)));
   return { configuration: { gravity: [...gravity], bodies, joints, power }, mapping, connections };
 }
 

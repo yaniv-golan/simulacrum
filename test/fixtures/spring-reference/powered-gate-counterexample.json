@@ -1,0 +1,380 @@
+{
+  "version": 3,
+  "id": "spring-launcher",
+  "name": "Spring launcher",
+  "parts": [
+    {
+      "id": "base",
+      "type": "chassis",
+      "name": "Chassis",
+      "position": [0, 0.020000000000000018, 0],
+      "rotation": [0, 0, 0, 1],
+      "authoredMaterial": {},
+      "parameters": {}
+    },
+    {
+      "id": "guide",
+      "type": "springGuide",
+      "name": "Spring guide",
+      "position": [-0.019999999999999997, 0.16000000000000014, 0],
+      "rotation": [-0.7071067811865475, 0.7071067811865475, 0, 0],
+      "authoredMaterial": {},
+      "parameters": {
+        "stiffness": 100,
+        "damping": 0.5,
+        "restLength": 0.3,
+        "minLength": 0.08,
+        "maxLength": 0.4
+      }
+    },
+    {
+      "id": "carriage",
+      "type": "springCarriage",
+      "name": "Spring carriage",
+      "position": [-0.13, 0.16000000000000014, 0],
+      "rotation": [-0.7071067811865476, 0.7071067811865475, 0, 0],
+      "authoredMaterial": {},
+      "parameters": {}
+    },
+    {
+      "id": "support",
+      "type": "plate",
+      "name": "Plate",
+      "position": [0, 0.16000000000000014, 0],
+      "rotation": [0, 0, 0.7071067811865475, 0.7071067811865475],
+      "authoredMaterial": {},
+      "parameters": {}
+    },
+    {
+      "id": "extension",
+      "type": "chassis",
+      "name": "Chassis",
+      "position": [-0.28, 0.020000000000000018, 0],
+      "rotation": [0, 0, 0, -1],
+      "authoredMaterial": {},
+      "parameters": {}
+    },
+    {
+      "id": "gate-motor",
+      "type": "poweredHinge",
+      "name": "Powered Hinge",
+      "position": [-0.36, 0.06499999999999995, 0.14999999999999997],
+      "rotation": [0, -0.7071067811865476, 0, 0.7071067811865475],
+      "authoredMaterial": {},
+      "parameters": {
+        "torqueConstant": 0.6,
+        "resistance": 2,
+        "currentLimit": 8,
+        "defaultTarget": 0,
+        "inputPolarity": 1,
+        "lowerLimit": -1.5,
+        "upperLimit": 1.5,
+        "proportionalGain": 10,
+        "dampingGain": 0.1,
+        "integralGain": 3
+      }
+    },
+    {
+      "id": "gate-adapter",
+      "type": "shaftMount",
+      "name": "Axle adapter",
+      "position": [-0.36, 0.13999999999999968, 0.14999999999999997],
+      "rotation": [-0.5000000000000001, -0.5000000000000001, 0.5, 0.5],
+      "authoredMaterial": {},
+      "parameters": {}
+    },
+    {
+      "id": "gate",
+      "type": "beam",
+      "name": "Beam",
+      "position": [-0.36, 0.13999999999999968, -0.09000000000000005],
+      "rotation": [-0.7071067811865476, 0, 0.7071067811865475, 0],
+      "authoredMaterial": {},
+      "parameters": {}
+    },
+    {
+      "id": "power-bed",
+      "type": "chassis",
+      "name": "Chassis",
+      "position": [0.28, 0.020000000000000018, 0],
+      "rotation": [0, 0, 0, 1],
+      "authoredMaterial": {},
+      "parameters": {}
+    },
+    {
+      "id": "projectile",
+      "type": "gripWheel",
+      "name": "Grip Wheel",
+      "position": [-0.24, 0.14, 0],
+      "rotation": [0, 0.7071067811865476, 0, 0.7071067811865476],
+      "authoredMaterial": {},
+      "parameters": {
+        "diameter": 0.2
+      }
+    },
+    {
+      "id": "cell",
+      "type": "powerCell",
+      "name": "Power Cell",
+      "position": [0.28, 0.08999999999999986, 0],
+      "rotation": [0, 1, 0, 0],
+      "authoredMaterial": {},
+      "parameters": {
+        "voltage": 24,
+        "capacityJ": 36000,
+        "internalResistance": 0.1,
+        "currentLimit": 20
+      }
+    },
+    {
+      "id": "release",
+      "type": "commandReceiver",
+      "name": "Hold L to open gate",
+      "position": [0.08999999999999998, 0.06000000000000005, 0],
+      "rotation": [0, 1, 0, 0],
+      "authoredMaterial": {},
+      "parameters": {
+        "duty": 0
+      },
+      "controlBinding": {
+        "mode": "hold",
+        "drive": {
+          "gain": 1,
+          "positiveKeys": ["KeyL"],
+          "negativeKeys": []
+        },
+        "steer": {
+          "gain": 0,
+          "positiveKeys": ["KeyD", "ArrowRight"],
+          "negativeKeys": ["KeyA", "ArrowLeft"]
+        }
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "joint-0",
+      "kind": "fixed",
+      "a": {
+        "part": "base",
+        "surface": {
+          "region": "top",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "support",
+        "surface": {
+          "region": "left",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "joint-1",
+      "kind": "fixed",
+      "a": {
+        "part": "support",
+        "surface": {
+          "region": "top",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "guide",
+        "surface": {
+          "region": "bottom",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "joint-2",
+      "kind": "spring",
+      "a": {
+        "part": "guide",
+        "port": "slide"
+      },
+      "b": {
+        "part": "carriage",
+        "port": "slide"
+      }
+    },
+    {
+      "id": "joint-3",
+      "kind": "fixed",
+      "a": {
+        "part": "base",
+        "surface": {
+          "region": "left",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "extension",
+        "surface": {
+          "region": "right",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "joint-4",
+      "kind": "fixed",
+      "a": {
+        "part": "extension",
+        "surface": {
+          "region": "top",
+          "u": 0.08,
+          "v": 0.15,
+          "twist": 1.5707963267948966
+        }
+      },
+      "b": {
+        "part": "gate-motor",
+        "surface": {
+          "region": "bottom",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "joint-5",
+      "kind": "shaft",
+      "a": {
+        "part": "gate-motor",
+        "port": "shaft"
+      },
+      "b": {
+        "part": "gate-adapter",
+        "port": "shaft"
+      }
+    },
+    {
+      "id": "joint-6",
+      "kind": "fixed",
+      "a": {
+        "part": "gate-adapter",
+        "surface": {
+          "region": "top",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "gate",
+        "surface": {
+          "region": "left",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "joint-7",
+      "kind": "fixed",
+      "a": {
+        "part": "base",
+        "surface": {
+          "region": "right",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "power-bed",
+        "surface": {
+          "region": "left",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "joint-8",
+      "kind": "fixed",
+      "a": {
+        "part": "power-bed",
+        "surface": {
+          "region": "top",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "cell",
+        "surface": {
+          "region": "bottom",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "joint-9",
+      "kind": "fixed",
+      "a": {
+        "part": "base",
+        "surface": {
+          "region": "top",
+          "u": -0.09,
+          "v": 0,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "release",
+        "surface": {
+          "region": "bottom",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "power",
+      "kind": "power",
+      "a": {
+        "part": "cell",
+        "port": "power"
+      },
+      "b": {
+        "part": "gate-motor",
+        "port": "power"
+      }
+    },
+    {
+      "id": "release-signal",
+      "kind": "signal",
+      "a": {
+        "part": "release",
+        "port": "signal"
+      },
+      "b": {
+        "part": "gate-motor",
+        "port": "signal"
+      }
+    }
+  ]
+}

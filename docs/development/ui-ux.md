@@ -23,7 +23,7 @@ otherwise give the observation and a useful next check. Do not shrink text to ma
 more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
-<!-- doc-review {"version":1,"fingerprint":"fbd1432f36485012725515c6618c738740a36f53ac05371996387f6b84d87737","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"f433a4d372f2bbf852e28250092a97ba723e3a930841be5b1deba40e02d847d9","disposition":"still accurate","rationale":"No entry for the assembly fix: the existing Spring strut moves into authoring collections. The separately committed curated examples and their admission decisions remain intact."} -->
+<!-- doc-review {"version":1,"fingerprint":"1b3f397cc12baa68d8ffde1b6e8df910cead531c0b9d651a6819e6c6b286f71b","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"e02fb2f3bbeb76638de35bba4b5d0580cee5001f6d25127f11471efa00f7caa6","disposition":"still accurate","rationale":"The four spring activities and reusable modules extend the existing requested collection for new construction capabilities. Their examples and instructions remain hypotheses about usefulness, not participant evidence; the existing content-decision and teaching-format policy still applies."} -->
 
 Learn & examples is a curated collection of things players can learn to do.
 Adding a feature requires a teaching decision, not automatically a catalogue entry.
@@ -122,13 +122,35 @@ documentation workflow. Documentation checks detect stale references and reviews
 they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
-<!-- doc-review {"version":1,"fingerprint":"3d676d30037cc5ef4bfca733ab64192b7b66c99a1082052b0a5d1f507c4e0d9c","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"b27c2613e3d910c7d440b162f23c7bbd25740a01a37f510fb3ba108f0291da88","disposition":"still accurate","rationale":"The combined source retains curated examples and their dismissal routes, plus built-in and personal assembly collections. The assembly top-right icon retains the accessible Close label and focus return."} -->
+<!-- doc-review {"version":1,"fingerprint":"615a3c4dc6dee9ef77d4f4dccf2a1f574cb8e97e772bac5090989cf6f9a549ff","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c17f8dce8bc175a5138dcc0109846ee70ba2c3468517b5fd656c87513b41fdff","disposition":"still accurate","rationale":"At 1101–1350 pixel widths and heights at most760 pixels, smaller inspector spacing retains the primary control, all three ports and Engineering details inside the viewport. Fonts, text, actions, picker, header wrapping, selection ownership and visibility lifecycle are unchanged. The existing1280×720 assertion and screenshot now pass."} -->
+
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
 document and run actions in the header; parts in the left catalogue; separate edit
 and view groups at the workbench edge; selected properties and operations in the
 inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
+
+The selected receiver inspector owns Manual, Automatic and Off controls. Automatic
+regulation shows measured and target total spring length, rather than extension from
+rest length. Invalid targets preserve the accepted setting and explain the allowed
+range. Pausing or losing window visibility leaves Automatic Off until deliberately
+rearmed; the paused inspector keeps Off visible. Travel-sensor binding is a Build-only
+operation in the selected sensor inspector. These controls leave with their selection.
+
+The document controls expose a Build-only Flat / Rounded bump environment choice;
+Run and Paused retain its value without admitting an edit. The saved preset supplies
+the same geometry to simulation, workshop rendering and recording review. The header
+wraps its existing control groups on narrower workbenches so Environment, Help and
+other document/run actions remain visible.
+
+Measurements retains whole-machine motion and boundary warnings, and shows vertical
+motion for the selected body when requested. Its acceleration value is the RMS of
+100 ms-average vertical acceleration, computed from every completed 120 Hz sample,
+not display frames or instantaneous shock peaks. The readout names the selected
+body, origin tick, window and sample count. New runs, selection and restored session
+identity start a visibly new window; missing completed history makes the measurement
+unavailable. Closing measurements neither resets the plant nor hides boundary faults.
 
 Assemblies opens a bounded, searchable browser with rendered geometry and All assemblies,
 Built-in and My saved filters. Spring strut is supplied as a built-in definition by the
@@ -168,7 +190,7 @@ preference. View state must not imply that authored parts have physically moved.
 Learn & examples opens a bounded browser. The top-right close control, Escape, or a
 click outside dismisses it; clicks within its content keep it open. Starting a lesson moves its current step
 into the parts area; leaving removes it. New examples enlarge this browser, not the
-ordinary toolbar. The three activities identify their format and outcome: a guided
+ordinary toolbar. The introductory activities identify their format and outcome: a guided
 rolling build with an independent motor-setting attempt, a keyboard driving task, and
 a spring-settling experiment. The spring inspector offers a requested damping comparison
 through the ordinary Damping edit and Undo, preserving other tuning instead of loading
@@ -179,6 +201,18 @@ the player confirms they saved it before opening. Cancel and download failure pr
 the machine. [Example loading](../../src/application/workshop-app.mjs#source) uses ordinary load admission without an intermediate empty
 machine; a rejected replacement keeps the dialog open. The catalogue retains focus,
 expanded groups and scroll while simulation updates. Starting examples requires Build.
+
+The requested Spring experiments collection includes editable sprung and rigid carts
+on the same saved rounded bump, a pin-ended arm, manual/automatic adjustment and a
+contact-release experiment. The rigid cart uses visible brace fasteners; disconnecting
+them changes ordinary connectivity. Compare the same selected chassis body, matching
+approach speed and measurement windows; different throttle histories or a smoother
+ride do not establish lower energy use. Passive/driven wheel modules and the pin-ended
+strut insert into the current machine through ordinary assembly commands. Pin mounts
+and all parts remain editable; check clearance after changing mounting geometry.
+These examples extend construction possibilities, not evidence of player comprehension
+or qualification outside their tested finite operating envelopes.
+
 
 Help is an explicit, keyboard-accessible dialog. It contains control and wiring
 explanations instead of keeping paragraphs over the canvas. Build information is
@@ -203,7 +237,8 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"ff26f73c609c97c23e5a0ac1fe19a8cd5786d65135aab754fa3dd2299bfa340f","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"055ea54bdaf6e412bd016d4bae5a03d4ac9f9e5f8d5b9dcc8ae6b9dc89b61e49","disposition":"still accurate","rationale":"Retained both learning-examples and workbench-content requirements; verification commands now acquire the host window without replacing rendered review or target-player acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"a57eb54606fc2c952a79deb5633013a2a785e78fc0d0660e8433ea0a43d3d001","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"055ea54bdaf6e412bd016d4bae5a03d4ac9f9e5f8d5b9dcc8ae6b9dc89b61e49","disposition":"still accurate","rationale":"Preserved learning examples, workbench content and target-player acceptance requirements; restored a coherent source-bound receipt after merging documentation metadata."} -->
+
 
 Use the manifest's `workbench-content-lifecycle` invariant and
 [registered browser check](../../scripts/manifest.json#check=verify-workbench-content)

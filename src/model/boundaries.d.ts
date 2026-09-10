@@ -95,6 +95,7 @@ export interface PhysicsConfiguration {
 }
 export type CompletedBodies = DeepReadonly<BodyObservation[]>;
 export interface TorqueResult {
+  constraintWorkJ: number;
   speedBefore: number;
   speedAfter: number;
   workJ: number;

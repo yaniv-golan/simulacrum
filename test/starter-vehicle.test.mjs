@@ -6,18 +6,26 @@ import { createStarterVehicle } from '../src/model/starter-vehicle.mjs';
 import { compileAssembly } from '../src/model/assembly.mjs';
 import { createSession } from '../src/simulation/session.mjs';
 import { deterministicProjection } from '../src/model/tick.mjs';
+import { finalRollingIntervals } from '../scripts/starter-motion.mjs';
 import { sourceIdentity } from '../scripts/source-identity.mjs';
 import { appFingerprint } from '../scripts/build-fingerprint.mjs';
 const horizontal = (a, b) => Math.hypot(a[0] - b[0], a[2] - b[2]);
 const digest = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const protocol = Object.freeze({
-  version: 1,
+  version: 2,
   ticks: 3600,
-  minimumTravel: 2,
+  minimumExcursion: 2,
   minimumFinalTenSecondsTravel: 0.3,
   maximumPowerlessTravel: 0.1,
   minimumHousingClearance: 0.005,
 });
+function assessPoweredMotion({ maximumExcursion, finalSamples }) {
+  assert.ok(maximumExcursion > protocol.minimumExcursion, `excursion ${maximumExcursion}`);
+  const intervals = finalRollingIntervals(finalSamples);
+  const sampledTravel = intervals.reduce((sum, value) => sum + value, 0);
+  assert.ok(sampledTravel > protocol.minimumFinalTenSecondsTravel);
+  return { intervals, sampledTravel };
+}
 function lowerFace(body, halfExtents) {
   const [x, y, z, w] = body.rotation;
   return (
@@ -38,7 +46,10 @@ test('ordinary starter travels continuously for thirty seconds with powerless co
       start = session.observe().frames[0].physics[0].position;
     let middle,
       checkpoint,
-      minimumClearance = Infinity;
+      minimumClearance = Infinity,
+      maximumExcursion = 0,
+      pathTravel = 0,
+      previousPosition = start;
     const samples = [],
       hashes = [];
     try {
@@ -46,6 +57,9 @@ test('ordinary starter travels continuously for thirty seconds with powerless co
         session.step(1);
         const frame = session.observe().frames[0];
         assert.equal(frame.status, 'ready');
+        maximumExcursion = Math.max(maximumExcursion, horizontal(frame.physics[0].position, start));
+        pathTravel += horizontal(frame.physics[0].position, previousPosition);
+        previousPosition = frame.physics[0].position;
         minimumClearance = Math.min(
           minimumClearance,
           lowerFace(frame.physics[1], compiled.configuration.bodies[1].halfExtents),
@@ -56,6 +70,7 @@ test('ordinary starter travels continuously for thirty seconds with powerless co
         if (tick % 120 === 0)
           samples.push({
             tick,
+            physics: [{ position: frame.physics[0].position }],
             position: frame.physics[0].position,
             motor: frame.power.motors[0],
             cell: frame.power.cells[0],
@@ -74,6 +89,8 @@ test('ordinary starter travels continuously for thirty seconds with powerless co
         travel,
         finalTravel,
         minimumClearance,
+        maximumExcursion,
+        pathTravel,
         samples,
         hashes,
       };
@@ -83,11 +100,10 @@ test('ordinary starter travels continuously for thirty seconds with powerless co
         `housing clearance ${minimumClearance}`,
       );
       if (powered) {
-        assert.ok(travel > protocol.minimumTravel, `travel ${travel}`);
-        assert.ok(
-          finalTravel > protocol.minimumFinalTenSecondsTravel,
-          `final travel ${finalTravel}`,
-        );
+        result.finalRolling = assessPoweredMotion({
+          maximumExcursion,
+          finalSamples: samples.filter((row) => row.tick >= 2400),
+        });
         assert.ok(end.power.cells[0].energyJ < blueprint.parts[2].parameters.capacityJ);
       } else {
         assert.ok(travel < protocol.maximumPowerlessTravel, `unpowered drift ${travel}`);
@@ -144,4 +160,41 @@ test('starter compiled physics ignores identifiers and wrong traces are rejected
   const wrong = structuredClone(bp);
   wrong.parts[1].parameters.torqueConstant = 0.1;
   assert.notDeepEqual(compileAssembly(wrong).configuration, compileAssembly(bp).configuration);
+});
+
+test('starter motion requires spatial excursion and every final rolling interval, while allowing a loop', () => {
+  const circle = Array.from({ length: 11 }, (_, i) => ({
+    tick: 2400 + i * 120,
+    physics: [
+      { position: [2 * Math.cos((i * Math.PI) / 5), 0.1, 2 * Math.sin((i * Math.PI) / 5)] },
+    ],
+  }));
+  const initial = circle[0].physics[0].position;
+  const maximumExcursion = Math.max(
+    ...circle.map((s) => horizontal(s.physics[0].position, initial)),
+  );
+  assert.ok(horizontal(circle.at(-1).physics[0].position, initial) < 1e-12);
+  assert.equal(
+    assessPoweredMotion({ maximumExcursion, finalSamples: circle }).intervals.length,
+    10,
+  );
+  // High-frequency jitter can accumulate path length while staying near its origin.
+  const jitter = structuredClone(circle);
+  jitter.forEach((s, i) => {
+    s.physics[0].position = [i % 2 ? 0.01 : -0.01, 0.1, 0];
+  });
+  assert.throws(
+    () => assessPoweredMotion({ maximumExcursion: 0.02, finalSamples: jitter }),
+    /excursion/,
+  );
+  const stopped = structuredClone(circle);
+  for (let i = 6; i < stopped.length; i++) stopped[i].physics = structuredClone(stopped[5].physics);
+  assert.throws(
+    () => assessPoweredMotion({ maximumExcursion, finalSamples: stopped }),
+    /movement stopped/,
+  );
+  assert.throws(
+    () => assessPoweredMotion({ maximumExcursion, finalSamples: circle.slice(1) }),
+    /coverage/,
+  );
 });

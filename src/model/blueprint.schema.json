@@ -5,6 +5,7 @@
   "additionalProperties": false,
   "required": ["version", "id", "name", "parts", "connections"],
   "properties": {
+    "environment": { "type": "string", "enum": ["flat", "rounded-bump"] },
     "version": {
       "const": 3
     },
