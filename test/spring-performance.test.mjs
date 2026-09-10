@@ -142,3 +142,21 @@ test('connected spring performance rejects missing bodies and slow connected int
     );
   }
 });
+
+test('integration allocation is 2 ms while whole-tick and browser budgets remain independent', () => {
+  const cases = simulation();
+  for (const c of cases) c.phases['integration-contacts'].fill(2);
+  assert.equal(evaluateSpringSimulation(cases).length, 36);
+  assert.equal(policy.integrationP95Ms, 2);
+  assert.equal(policy.tickP95Ms, (1000 / 120) * 0.4);
+  assert.equal(policy.constraintP95Ms, 2);
+  assert.equal(policy.renderP95Ms, 6);
+  assert.equal(policy.cadenceP95Ms, 40);
+  assert.equal(policy.realTimeRatioMin, 0.95);
+  const slow = cases.find((c) => c.connectedBodies === 34 && c.count === 8);
+  slow.timesMs.fill(policy.tickP95Ms + 0.01);
+  assert.throws(() => evaluateSpringSimulation(cases), /exceeds/);
+  slow.timesMs.fill(policy.tickP95Ms);
+  slow.phases['integration-contacts'].fill(2.01);
+  assert.throws(() => evaluateSpringSimulation(cases), /integration and contacts.*exceeds/);
+});

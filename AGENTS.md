@@ -138,6 +138,12 @@ source/build and experiment identity. Run final checks on the same final source.
 
 ## Collaboration
 
+Concurrent implementation tasks must use separate worktrees. Run completion on an isolated
+candidate with `npm run verify:candidate -- local` (or `final` for qualification).
+Prepare and review documentation before capture. Candidate evidence applies only to its
+recorded bytes; a changed integration destination needs new verification. Direct tiers
+remain available for already frozen release/CI copies and development probes.
+
 Keep changes reviewable. Do not stage, commit, push, merge, rename branches, publish
 or deploy without explicit authorization. Keep internal plans, review history, private
 paths and coordination outside public tracked files. Reference implementations are

@@ -2,9 +2,9 @@
   "version": 1,
   "dependencies": {
     "scripts/playtest/release-policy.json": "8e02ce60547dedf86c4e0c929a633110b24c0afb5b2c06f71dd700b1f32397fb",
-    "package-lock.json": "2ced29c88ff5fd2951e086c917a4d3401ae7caf7441f7e72bf3de6d1e71e4caa",
-    "package.json": "cbfd07f85a876169e89727610385a1146c97caa3dc2684aa876be772421514f2",
-    "scripts/module-graph.mjs": "1a42922f2ab45df26cd99c5e69babfb86b7957c1c61104f7be151233fba6d3f2",
+    "package-lock.json": "be238b589bac1db94398632880eef13287353f499c5df623f4006cc402f6e672",
+    "package.json": "ff0a6ac5bac42b8056aae85fe0b38ef194bd6fb0ca65ca71ac4b83df094b0165",
+    "scripts/module-graph.mjs": "e9930c64623e3515ed9949b07530e9cbcfc70caf6da86e484402625045e0dd0e",
     "scripts/playtest/calibration-evidence.mjs": "52e563f7e05f7043be6097f57b71f7bc85fb1c76229ba15dd8374807396a4df0",
     "scripts/playtest/capture-samples.mjs": "55daead9d88a9afe2a2e4eeb34b473cf3fe9e54e7b8098831cac39c0c299c937",
     "scripts/playtest/corpus.mjs": "1348f094e30af0b2eb9b710da15d66f41d0b8a2af4f4482a8c497b4b22c50872",

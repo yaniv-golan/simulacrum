@@ -294,3 +294,44 @@ test('history is bounded and successful load resets it', async () => {
     w.dispose();
   }
 });
+
+test('Build reset retains f64 transforms; JSON text canonicalizes signed zero only', async () => {
+  const w = await createWorkshop();
+  try {
+    assert.equal(
+      (
+        await w.act({
+          type: 'place',
+          partType: 'beam',
+          id: 'precise',
+          position: [0.10000000000000003, 2, -0],
+        })
+      ).ok,
+      true,
+    );
+    const before = w
+      .observe()
+      .frames[0].physics.map((body) => ({ position: body.position, rotation: body.rotation }));
+    assert.notEqual(before[0].position[0], Math.fround(before[0].position[0]));
+    assert.equal((await w.act({ type: 'run' })).ok, true);
+    w.step(3);
+    assert.equal((await w.act({ type: 'build' })).ok, true);
+    const after = w
+      .observe()
+      .frames[0].physics.map((body) => ({ position: body.position, rotation: body.rotation }));
+    assert.deepEqual(after, before);
+    assert.throws(() =>
+      assert.deepEqual(
+        after.map((b) => ({ ...b, position: b.position.map(Math.fround) })),
+        before,
+      ),
+    );
+    const raw = { ...w.observe().frames[0], signedZero: -0 };
+    const text = JSON.parse(JSON.stringify(raw));
+    assert.equal(Object.is(raw.signedZero, -0), true);
+    assert.equal(Object.is(text.signedZero, 0), true);
+    assert.deepEqual(text.physics, JSON.parse(JSON.stringify(raw.physics)));
+  } finally {
+    w.dispose();
+  }
+});

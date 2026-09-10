@@ -393,6 +393,7 @@ test('seven-file mirror repair selects all formatter journeys without fingerprin
   const expected = [
     'verify-mirror-browser',
     'verify-assembly-ux-browser',
+    'verify-assembly-library-browser',
     'verify-assemblies-browser',
     'verify-surface-browser',
     'verify-connection-test-browser',

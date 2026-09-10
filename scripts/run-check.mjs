@@ -89,6 +89,7 @@ export function runProcess(
         elapsedMs: performance.now() - started,
         code: closeCode,
         signal: closeSignal,
+        failureKind: timedOut ? 'watchdog' : closeCode !== 0 ? 'check-failure' : null,
       };
       if (timedOut || closeCode !== 0) {
         const summary = `${timedOut ? `timed out after ${timeoutMs} ms` : `check exited ${closeCode ?? closeSignal}`}: ${command} ${args.join(' ')}`;

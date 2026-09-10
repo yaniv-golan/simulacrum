@@ -1,4 +1,8 @@
-import { createGraphicsQuality, applyGraphicsQuality } from './graphics-quality.mjs';
+import {
+  createGraphicsQuality,
+  applyGraphicsQuality,
+  createGraphicsRenderer,
+} from './graphics-quality.mjs';
 import { movementScope } from './workbench-content.mjs';
 import { portLabel, portPurpose } from './port-wording.mjs';
 import { PRIMARY_PARTS, MORE_PARTS } from './part-palette.mjs';
@@ -837,6 +841,7 @@ export function createWorkshopView(
   root.append(header, body, footer, partHelp.panel);
   const graphicsQuality = createGraphicsQuality();
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  const graphicsRenderer = createGraphicsRenderer(renderer);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x18252d);
   renderer.shadowMap.enabled = true;
@@ -3876,7 +3881,7 @@ export function createWorkshopView(
       surface.renderOverlay();
       sceneDirty = false;
       const renderStart = performance.now();
-      renderer.render(scene, camera);
+      graphicsRenderer.render(scene, camera, quality);
       renderCosts.push(performance.now() - renderStart);
       if (renderCosts.length > 240) renderCosts.shift();
       renderedFrames++;
@@ -3890,7 +3895,7 @@ export function createWorkshopView(
     setMessage,
     setRecordingState,
     captureScreenshot: () => {
-      renderer.render(scene, camera);
+      graphicsRenderer.render(scene, camera, graphicsQuality.read());
       const canvas = document.createElement('canvas');
       canvas.width = Math.min(renderer.domElement.width, 1280);
       canvas.height = Math.round(
@@ -3990,6 +3995,7 @@ export function createWorkshopView(
       connectionView.dispose();
       for (const object of [portCues, ground, environmentGroup]) disposePart(object);
       keyLight.shadow.dispose();
+      graphicsRenderer.dispose();
       renderer.dispose();
       root.replaceChildren();
     },

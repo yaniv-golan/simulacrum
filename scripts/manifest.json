@@ -716,6 +716,16 @@
       "ruleId": "runtime-contract"
     },
     {
+      "id": "verify-assembly-library-browser",
+      "script": "scripts/verify-assembly-library-browser.mjs",
+      "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract"
+    },
+    {
       "id": "verify-assemblies-browser",
       "script": "scripts/verify-assemblies-browser.mjs",
       "execution": "parallel",
@@ -2886,6 +2896,156 @@
         ]
       },
       "qualificationBars": []
+    },
+    {
+      "id": "candidate-source-isolation",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Candidate capture preserves the source index, bytes, deletions and local selection; detected capture drift rejects. Origin edits after capture do not qualify the origin or invalidate the isolated candidate.",
+      "owners": [
+        {
+          "path": "scripts/candidate.mjs",
+          "anchor": "captureCandidate"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/candidate.test.mjs",
+            "anchor": "candidate preserves exact dirty index"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/candidate.test.mjs",
+            "anchor": "candidate preserves exact dirty index"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "private-evidence-boundary",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Private evidence is excluded from graph roots while resolved incoming private dependencies and explicit private roots reject. Unknown changed inputs remain conservative.",
+      "owners": [
+        {
+          "path": "scripts/module-graph.mjs",
+          "anchor": "private dependency forbidden"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/module-graph.test.mjs",
+            "anchor": "private executable evidence"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/module-graph.test.mjs",
+            "anchor": "private executable evidence"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "assembly-scenario-partition",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Both registered assembly checks retain all fifteen scenarios exactly once with existing action and watchdog limits.",
+      "owners": [
+        {
+          "path": "scripts/assembly-scenarios.mjs",
+          "anchor": "assemblyPartition"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/assembly-partitions.test.mjs",
+            "anchor": "assembly partitions"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/assembly-partitions.test.mjs",
+            "anchor": "assembly partitions"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "native-qualification-controls",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Opt-in native qualification requires distinct hash-bound baseline/candidate/control packages, behavioral control failures and two matching current recipe builds. Structural registration is not native qualification.",
+      "owners": [
+        {
+          "path": "scripts/native-qualification.mjs",
+          "anchor": "qualifyNative"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/native-qualification.test.mjs",
+            "anchor": "native qualification rejects"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/native-qualification.test.mjs",
+            "anchor": "native qualification rejects"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "build-reset-precision",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Build reset preserves completed f64 transforms; JSON text intentionally canonicalizes negative zero.",
+      "owners": [
+        {
+          "path": "src/core/workshop.mjs",
+          "anchor": "command.type === 'build'"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/workshop.test.mjs",
+            "anchor": "Build reset retains f64"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/workshop.test.mjs",
+            "anchor": "Build reset retains f64"
+          }
+        ]
+      },
+      "qualificationBars": []
     }
   ],
   "browserLocalScopes": [
@@ -2908,7 +3068,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125"
     },
     {
       "entrypoint": "scripts/verify-part-help-window.mjs",
@@ -2952,14 +3112,15 @@
       "checks": [
         "verify-mirror-browser",
         "verify-assembly-ux-browser",
-        "verify-manipulation-browser"
+        "verify-manipulation-browser",
+        "verify-assembly-library-browser"
       ],
       "consumers": [
         "index.html",
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -2982,7 +3143,7 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -2998,7 +3159,8 @@
         "verify-connection-test-browser",
         "verify-workshop",
         "verify-spring-browser",
-        "verify-learning-examples"
+        "verify-learning-examples",
+        "verify-assembly-library-browser"
       ],
       "consumers": [
         "index.html",
@@ -3014,7 +3176,7 @@
         "test/receiver-input-owner.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125"
     }
   ],
   "experimentInputScopes": [
@@ -3287,7 +3449,7 @@
         }
       ],
       "consumers": [],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -3364,7 +3526,7 @@
         }
       ],
       "consumers": [],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -3398,7 +3560,7 @@
         }
       ],
       "consumers": [],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -3460,8 +3622,8 @@
       "consumers": [
         "scripts/verify-cloud-playtest.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "5c5dc49ce8c8c011faa4ea72ed9b52b1a15a3cc0b7599c224188cdf0c3637eab"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "consumerSourceHash": "a6ad24c8e6c4393d4d8c16027c4dd3f1ddce2f1c5b99e983f051ef5b5c50de19"
     },
     {
       "entrypoint": "scripts/browser-evidence.mjs",
@@ -3501,6 +3663,7 @@
         "scripts/qualify-workshop.mjs",
         "scripts/verify-adaptive-graphics.mjs",
         "scripts/verify-assemblies-browser.mjs",
+        "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
         "scripts/verify-browser.mjs",
@@ -3538,8 +3701,8 @@
         "test/browser-evidence.test.mjs",
         "test/f2.test.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "da06b5ffdd32d6fb417b422edef49fec72fde89fe79fdd859948283bd366869a"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "consumerSourceHash": "41c675e4fc09e787dcde260ca48caef31b263175db136d8dc0d26acf06700420"
     },
     {
       "entrypoint": "scripts/app-fingerprint.mjs",
@@ -3589,6 +3752,7 @@
         "scripts/verification-run.mjs",
         "scripts/verify-adaptive-graphics.mjs",
         "scripts/verify-assemblies-browser.mjs",
+        "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
         "scripts/verify-browser-suite.mjs",
@@ -3642,8 +3806,8 @@
         "test/verification-run.test.mjs",
         "vite.config.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "da06b5ffdd32d6fb417b422edef49fec72fde89fe79fdd859948283bd366869a"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "consumerSourceHash": "41c675e4fc09e787dcde260ca48caef31b263175db136d8dc0d26acf06700420"
     },
     {
       "entrypoint": "scripts/source-identity.mjs",
@@ -3705,6 +3869,7 @@
         "scripts/verification-run.mjs",
         "scripts/verify-adaptive-graphics.mjs",
         "scripts/verify-assemblies-browser.mjs",
+        "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
         "scripts/verify-browser-suite.mjs",
@@ -3764,8 +3929,8 @@
         "test/starter-vehicle.test.mjs",
         "test/verification-run.test.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "da06b5ffdd32d6fb417b422edef49fec72fde89fe79fdd859948283bd366869a"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "consumerSourceHash": "41c675e4fc09e787dcde260ca48caef31b263175db136d8dc0d26acf06700420"
     },
     {
       "entrypoint": "scripts/build-fingerprint.mjs",
@@ -3818,8 +3983,8 @@
         "test/m3-determinism.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "561f49c020e61236ca1a1f37b05168b824104d57261cc7c1a18d32fc54415205"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "consumerSourceHash": "dc382855f925d370d4b8b94b179a4862369de4fcbe96ec5060ac7c3af178d377"
     },
     {
       "entrypoint": "scripts/playtest/capture-fault.mjs",
@@ -3843,8 +4008,8 @@
         "scripts/verify-cloud-playtest.mjs",
         "scripts/verify-remote-playtest.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "5c5dc49ce8c8c011faa4ea72ed9b52b1a15a3cc0b7599c224188cdf0c3637eab"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "consumerSourceHash": "a6ad24c8e6c4393d4d8c16027c4dd3f1ddce2f1c5b99e983f051ef5b5c50de19"
     },
     {
       "entrypoint": "scripts/playtest/load.mjs",
@@ -3931,8 +4096,8 @@
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "5c5dc49ce8c8c011faa4ea72ed9b52b1a15a3cc0b7599c224188cdf0c3637eab"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "consumerSourceHash": "a6ad24c8e6c4393d4d8c16027c4dd3f1ddce2f1c5b99e983f051ef5b5c50de19"
     },
     {
       "entrypoint": "scripts/playtest/local-cloud.mjs",
@@ -3970,8 +4135,8 @@
         "scripts/verify-cloud-playtest.mjs",
         "scripts/verify-remote-playtest.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "5c5dc49ce8c8c011faa4ea72ed9b52b1a15a3cc0b7599c224188cdf0c3637eab"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "consumerSourceHash": "a6ad24c8e6c4393d4d8c16027c4dd3f1ddce2f1c5b99e983f051ef5b5c50de19"
     },
     {
       "entrypoint": "scripts/playtest/download.mjs",
@@ -4021,8 +4186,8 @@
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "5c5dc49ce8c8c011faa4ea72ed9b52b1a15a3cc0b7599c224188cdf0c3637eab"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "consumerSourceHash": "a6ad24c8e6c4393d4d8c16027c4dd3f1ddce2f1c5b99e983f051ef5b5c50de19"
     },
     {
       "entrypoint": "scripts/playtest-server.mjs",
@@ -4151,12 +4316,12 @@
         "test/playtest-server.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "faa71bec6e4ce988a46cc94cc80afcca9e0ff73c9145c60bea997197591ef36b"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "consumerSourceHash": "2de833951065aca3e99265ff2b3e2e7893ba6c4143055cc63e7df58412e044a5"
     },
     {
       "entrypoint": "scripts/module-graph.mjs",
-      "sourceSha256": "d88d14921fc9414f8b6944eec26f7c13d8b8ac0914a9cef702cd14f96ace0796",
+      "sourceSha256": "6fd9c3efb0fc707d752be6af8d5eaf77654f231e1a6ef782b4a6534e6332051f",
       "dependencies": [],
       "externalImports": [
         "acorn",
@@ -4249,6 +4414,7 @@
         "scripts/verification-run.mjs",
         "scripts/verify-adaptive-graphics.mjs",
         "scripts/verify-assemblies-browser.mjs",
+        "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
         "scripts/verify-browser-suite.mjs",
@@ -4315,8 +4481,8 @@
         "test/verification-run.test.mjs",
         "vite.config.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "da06b5ffdd32d6fb417b422edef49fec72fde89fe79fdd859948283bd366869a"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "consumerSourceHash": "41c675e4fc09e787dcde260ca48caef31b263175db136d8dc0d26acf06700420"
     },
     {
       "entrypoint": "scripts/playtest/verify-deployment.mjs",
@@ -4439,8 +4605,8 @@
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "5c5dc49ce8c8c011faa4ea72ed9b52b1a15a3cc0b7599c224188cdf0c3637eab"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "consumerSourceHash": "a6ad24c8e6c4393d4d8c16027c4dd3f1ddce2f1c5b99e983f051ef5b5c50de19"
     },
     {
       "entrypoint": "scripts/playtest/worker.mjs",
@@ -4470,8 +4636,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "515b1ac089caebc8e451d77d4908e123855ce07f0e72c44e73fbe21eb281b524"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "consumerSourceHash": "e09a6d661cf86def2f1951c75dfc1cbc5d33207fe270db22a7302b0655dfd062"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -4501,8 +4667,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
-      "consumerSourceHash": "515b1ac089caebc8e451d77d4908e123855ce07f0e72c44e73fbe21eb281b524"
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "consumerSourceHash": "e09a6d661cf86def2f1951c75dfc1cbc5d33207fe270db22a7302b0655dfd062"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -4527,7 +4693,7 @@
         }
       ],
       "consumers": [],
-      "roots": "c80245fe79862f4b1ab327fcf5390cc75f32cb84b22bbf8c8ab7524a777593da",
+      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ]

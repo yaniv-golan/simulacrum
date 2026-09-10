@@ -178,6 +178,10 @@ async function executeBrowserSuite(
               ok: false,
               elapsedMs: error.elapsedMs,
               errors: errorMessages(error),
+              failureKind: error.failureKind ?? 'unknown',
+              checkKind: check.tier,
+              measurementConditions:
+                'Not inferred from a failure; inspect retained benchmark controls and verification-window report.',
             });
             writeFileSync(
               `artifacts/browser-suite/${check.id}.log`,

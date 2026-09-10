@@ -177,3 +177,41 @@ test('playtest guidance binds setup advice without inheriting unrelated release 
   );
   assert.equal(f.inspect().sections[0].stale, true);
 });
+
+test('implicit package version coverage excludes command scripts but explicit package claims retain them', (t) => {
+  const f = fixture(t);
+  const pkg = { dependencies: { three: '1' }, scripts: { dev: 'vite' } };
+  f.put('package.json', JSON.stringify(pkg));
+  f.put('src/owner.mjs', "import * as THREE from 'three';export const material=THREE.Material;");
+  f.put(document, '# Owner\n[owner](../../src/owner.mjs#implementation)\n');
+  f.review();
+  pkg.scripts.extra = 'node tool.mjs';
+  f.put('package.json', JSON.stringify(pkg));
+  assert.equal(f.inspect().sections[0].stale, false);
+  pkg.dependencies.three = '2';
+  f.put('package.json', JSON.stringify(pkg));
+  assert.equal(f.inspect().sections[0].stale, true);
+  f.put(
+    document,
+    '# Owner\n[owner](../../src/owner.mjs#implementation) and [commands](../../package.json)\n',
+  );
+  f.review();
+  pkg.scripts.extra = 'different';
+  f.put('package.json', JSON.stringify(pkg));
+  assert.equal(f.inspect().sections[0].stale, true);
+});
+
+test('install lifecycle scripts retain their indirect npm command dependencies', (t) => {
+  const f = fixture(t),
+    pkg = {
+      dependencies: { three: '1' },
+      scripts: { postinstall: 'npm run patch', patch: 'first' },
+    };
+  f.put('package.json', JSON.stringify(pkg));
+  f.put('src/owner.mjs', "import * as THREE from 'three';export const material=THREE.Material;");
+  f.put(document, '# Owner\n[owner](../../src/owner.mjs#implementation)\n');
+  f.review();
+  pkg.scripts.patch = 'second';
+  f.put('package.json', JSON.stringify(pkg));
+  assert.equal(f.inspect().sections[0].stale, true);
+});

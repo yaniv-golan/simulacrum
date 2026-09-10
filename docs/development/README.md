@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"b88d3031dcdb5795fd47cc947926416fcfceda419d9f3c5333fe502067749727","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"c9fe3b6650e6ce9bf466a04e220a2aa6b65c93f30dafeb1798a94bf190d0a64d","disposition":"still accurate","rationale":"The build command now acquires a cooperative host window before the same breadth admission and Vite build; Node setup, dev and preview instructions remain valid."} -->
+<!-- doc-review {"version":1,"fingerprint":"b93e14f95d133e8afe83fe8b03618c44e37a220497bde6f1f7bf78e67039527e","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"95e00037eb8fe7a170a7744c6ec757e27eda187e82fde64d2521d2a4fe44d6ca","disposition":"still accurate","rationale":"Node setup and live developer entrypoints remain unchanged; AGENTS now requires isolated concurrent work and candidate completion."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -8,7 +8,7 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Working loop
-<!-- doc-review {"version":1,"fingerprint":"f937c11e443f01425571b939eb2eba81bf4788c112b8a17824c0c53194f971c0","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"ada749125e632d8ece4fdd979daab565086e6bd09d7c36081a86094b2ad69da3","disposition":"updated","rationale":"Added the canonical UI policy entrypoint while retaining manifest-owned checks and existing discovery and completion commands."} -->
+<!-- doc-review {"version":1,"fingerprint":"1014ee47156564fac8605840874b33fe5189c4013649b17cd343ac2386c665ec","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"ada749125e632d8ece4fdd979daab565086e6bd09d7c36081a86094b2ad69da3","disposition":"updated","rationale":"The loop now selects the frozen candidate command, retaining docs preparation and human acceptance boundaries."} -->
 
 Player-facing changes also follow the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 It owns placement, teaching lifecycle and qualitative review; the manifest owns its
@@ -27,8 +27,8 @@ executable guarantees. Use the existing discovery and completion commands below.
    record formal dispositions once source changes have settled, before final verification.
 5. Inspect browser behavior when presentation or input changes. Focused tests,
    `typecheck` and `ci` are optional development probes, not prerequisites to repeat.
-   Choose one completion command: `verify:local` for local closure on one source identity,
-   or `verify:final` for merge/milestone qualification. Both already run CI.
+   Choose one completion command: `verify:candidate -- local` for local closure,
+   or `verify:candidate -- final` for merge/milestone qualification. Both capture an isolated source and run the existing tier, which already runs CI.
    For a release candidate, `release:prepare` owns complete verification in its frozen copy;
    do not run a completion tier first solely as preparation. Read the gate result:
    automated success cannot supply a missing human assessment.
@@ -87,7 +87,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"b1c929154c22cbbf4dfedf1fb396060b29a53374f4b86971d29cc290a0e40de5","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"9baf7daabb6ff01e6fe92123d49f43de7d25c9a8d502a4abac9d2474a965fcc9","disposition":"still accurate","rationale":"The dependency update changes only the pinned native physics package; Node admission, verification commands, completion tiers, conservative browser selection and human evidence requirements are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"580f3f661f6eb8a2205635a3d1ce4feff0afb0a5254c20d0bd402c54c9f7c213","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"852eb1524354233ea203762f79f19f287555c05bea544898ae319e35528a0b88","disposition":"still accurate","rationale":"The package changes add candidate/native qualification aliases and replace the pinned Rapier archive with spring.8; existing local/final/CI/browser aliases, Node range, prerequisite ordering and exit classification are unchanged. New native qualification is opt-in and does not replace the required completion tier."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -127,7 +127,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"031766323198550477f20f62ce4db21af88c19e8e66edd51c74b04d7866be459","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"f15afb164e63844dfd764eab71244511f4ee8d50e490926aa0b1f903ceffc032","disposition":"still accurate","rationale":"The native package identity invalidates dependent reviews through the existing content graph. Regeneration, section-specific review and final-source documentation closure still apply without a policy change."} -->
+<!-- doc-review {"version":1,"fingerprint":"19167319fbfb4dcddc7a6c0f70cdabd938b6c736c77a2bb42f7acb83490818e2","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"bee0ad2c93e05f3e9a784c532a39e3871e7944db038940eac8d1ab9a08bc9801","disposition":"still accurate","rationale":"externalConfig now omits npm scripts only for implicit external-package coverage without installation lifecycle hooks; the section already describes this distinction and retains explicit command/file dependencies. The spring.8 package and lockfile changes correctly invalidate actual dependency coverage; module-graph private-root rejection does not turn documentation receipts into behavior evidence."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -194,6 +194,11 @@ parsing confirms identical syntax structure and exact tokens/comments. This catc
 newline-sensitive behavior; changed literals, comments, syntax or unparseable fragments
 remain source changes. Other file formats remain byte-sensitive. This equivalence applies
 only to explanation review, never build identities or verification receipts.
+Implicit external-package coverage retains package configuration and lockfile bytes,
+but excludes npm scripts when no install lifecycle hook is present: a command-only
+change does not change an imported library. Lifecycle hooks retain all scripts because
+they can invoke other package commands and alter installed dependencies.
+Explicit package/command references and literal file reads still bind those scripts.
 Module references conservatively cover the module and its
 local dependencies; symbol references use `file.mjs#symbol=name` to narrow coverage.
 Use ordinary Markdown links for module-wide claims. References such as
@@ -222,7 +227,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"368c91077de36d3b9430b080f6f63f6262a16a99541611354306b9ee1eb6b7ac","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"ab5f07db155b001e1a2673d0081adc48b5a1ca79c2e2032326e0416f397efc21","disposition":"still accurate","rationale":"Four audited reverse-consumer hashes changed after the workshop qualification assertion was corrected. All read expressions, source boundaries, dependencies, consumers, roots and scheduling rules remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e7e903c78dfb447bfa7916e174b4885e6d3645af3147a8205389a3e9a3683ecf","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c0e43bedf8742c834194d7d50b09d0c6a4778906dbf7341588cbd0948792d699","disposition":"still accurate","rationale":"The manifest adds the second registered assembly browser partition with the same 60000 ms deadline and parallel workshop metadata. Both wrappers use the shared scenario owner and root-bound selection. The browser runner adds failure kind/check kind/context without changing dispatch policy; changed native dependency remains conservative shared coverage, not a local-only exemption."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -298,7 +303,7 @@ The [tier coordinator](../../scripts/verification-tiers.mjs#implementation) keep
 ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
-<!-- doc-review {"version":1,"fingerprint":"334ec4e8c934c26cd3f2210d38b1e2dca7a32575512f8ecc0b2ea1cd95ab952a","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"7fcc48572820fee3a466a5963bf1991ba2dbb58528c4b0120f9b9497f838ca01","disposition":"still accurate","rationale":"Native factor reuse changes simulation cost inside a check. It does not change cooperative scheduling, leases, runner concurrency, timeouts or admission."} -->
+<!-- doc-review {"version":1,"fingerprint":"4ca1b9fd2bd668ab0e4c85a3a1c945875ecb965da9ca778ef59e7ff08cd02762","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"a328fb1c9d21947f63430e0e334621ac39091c8cb34721a35d05e361082ec103","disposition":"still accurate","rationale":"The added native:qualify alias explicitly enters verification-window; verify:candidate enters that same window for its captured local/final execution. Existing nested ownership, five-minute lock waiting, unchanged per-check watchdogs and cooperative rather than host-exclusive scheduling remain implemented."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -330,3 +335,36 @@ storage closure and final media persistence; fixture turn pumps do not establish
 Isolated integration remains separate from these changes. Verify in a worktree; applying
 work must check destination index, tracked and untracked content, not merely HEAD. This
 window does not make source installation atomic or authorize a merge.
+
+## Isolated candidate completion
+<!-- doc-review {"version":1,"fingerprint":"252d8a143cc43b8b8c0f0e448f2449dc92b80a13d3ad184e9770430ed15505c2","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"ef16fb90bcc8e5bbbcfdaab6ee374b9d7cd2401a0bde191a068a07bcd34508ed","disposition":"updated","rationale":"Clarified that originStillMatches is reported only after tier completion and candidate stability validation; npm installation or earlier failures still retain clone and error but need not compute this field. Reviewed exact index/blob/byte/mode/deletion capture, separate npm install, source drift checks and both 60-second assembly partitions against the named owners. Native package replacement remains included in the captured bytes."} -->
+
+Concurrent implementations use separate Git worktrees. Start one with
+`git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
+pinned dependencies, and edit there. Do not include another task's dirty work.
+
+After `docs:prepare` and semantic review, run `npm run verify:candidate -- local`
+(or `-- local --base <commit>`). For merge/release qualification use `-- final`.
+The [candidate capture](../../scripts/candidate.mjs#implementation) retains the exact
+index, existing tracked/nonignored untracked bytes, modes and deletion state in a
+fresh clone with its own dependencies. Unmerged indexes, symlinks, secret-like names
+and detected source drift reject capture. Before/after inventories detect observed
+drift; they are not an atomic filesystem snapshot. Tracked ignored files remain inputs.
+
+The [candidate command](../../scripts/verify-candidate.mjs#implementation) retains
+its clone and reports on failure. `artifacts/verification-candidate.json` identifies
+the retained candidate; after tier completion and candidate stability validation it reports
+whether the origin still matches. Work may continue in the origin
+after capture; that does not invalidate candidate evidence or qualify changed origin
+bytes. Inspect candidate results before manually integrating. No commit or merge is
+automatic. Direct local/final tiers remain for already frozen CI/release sources.
+
+The two assembly UX entrypoints share [one scenario owner](../../scripts/assembly-ux-cases.mjs#implementation).
+Each retains the 60-second process watchdog and existing action deadlines; independent
+artifact directories report setup, actions and cleanup separately. Watchdog exhaustion
+is a harness deadline failure, not a product frame-time measurement. Browser reports
+retain check kind and failure kind without inferring that host load caused a failure.
+
+Private `docs/internal` files are absent from discovery roots and graph.files. Resolved
+public imports/reads into them reject; unresolved dynamic inputs still require conservative
+coverage. This does not exclude tracked private files from source fingerprints.

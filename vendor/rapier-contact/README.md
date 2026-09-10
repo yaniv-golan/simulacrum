@@ -5,7 +5,7 @@ patch and rebuild recipe. The package uses uniform f64 physical arithmetic and
 Float64Array physical bindings. Debug colors remain Float32Array; index and handle
 encodings retain their original integer/opaque semantics.
 
-The application checks runtime version `0.20.0-simulacrum.spring.7.f64`. Physics
+The application checks runtime version `0.20.0-simulacrum.spring.8.f64`. Physics
 snapshot envelope version 4 records that backend identity and rejects previous
 precision/layout envelopes before native deserialization. Authored configurations
 are unchanged; opaque checkpoints from earlier backend versions are incompatible.
@@ -24,8 +24,11 @@ this factorization even when no elastic axis is active. Finite motor caps and
 unsupported body mobility retain the ordinary bounded solver. Within each fixed-pose
 biased iteration batch, worker-local factors are reused for the same ordered
 component. Every pass still rebuilds the velocity/impulse-dependent right-hand side,
-checks the original residual, and applies limits in the original order. The cache
-is discarded before integration; unbiased refreshes, later substeps and restored
+checks the original residual, and applies limits in the original order. Prepared row geometry, component partitioning, admission and raw tree responses
+share that batch lifetime. Raw responses are reused only for an exactly equal RHS;
+residual checks and clamp/body updates still execute on every pass. Body-local
+response accumulation retains the original row/endpoint order and f64 arithmetic.
+The cache is discarded before integration; unbiased refreshes, later substeps and restored
 worlds start with fresh factors.
 
 `parry.patch` fixes previous-simplex witness ownership in Parry 0.30.2. It also
@@ -47,12 +50,38 @@ wasm-bindgen 0.2.128, wasm-opt 111, Python 3, npm and patch available on PATH.
 Install repository dependencies first; the recipe uses its pinned TypeScript 5.9.3.
 It verifies the pinned Rapier and Parry sources, applies both patches, runs the
 pure friction regression tests and builds only the
-3D f64 package. It uses `/tmp/simulacrum-rapier-contact-build-v2` as a fixed path
-and refuses to overwrite an existing run. Preserve or remove that directory
-explicitly before another build. The generated package remains in that directory.
+3D f64 package. It acquires `/tmp/simulacrum-rapier-contact-build-v2` exclusively as the physical
+compilation root so Cargo external dependency identities remain stable. Each run
+starts with fresh sources and targets. On normal success or failure, all files move
+to its separately reserved output directory; the compilation root is then released.
+An occupied root is never stolen. After interruption, inspect its `owner.txt`, wait
+for any compiler descendants to exit, preserve the files, and remove the empty root
+manually before rebuilding. Interrupted or failed archival never silently releases
+the root. The generated package is retained in the output directory.
 
 Set `RAPIER_SOURCE_ARCHIVE` to an existing copy of the pinned archive to skip its
 download. `PARRY_SOURCE_ARCHIVE` selects the pinned Parry crate archive; otherwise
 the recipe checks the Cargo cache before downloading it. `RAPIER_OFFLINE=1`
 requires both source archives and all npm/Cargo dependencies already available.
 Provenance records the exact source, patch, toolchain, WASM and package hashes.
+
+## Repeatable qualification
+
+`npm run native:qualify -- /path/to/inputs.json` executes the retained six-case,
+2640-tick cache comparison plus cold restores, stale-factor/RHS controls and two
+clean rebuilds. This heavy native-change qualification is separate from CI. It
+does not qualify arbitrary assemblies or other platforms. Input roles are `baseline`,
+`candidate`, `staleFactor`, `staleRhs`; each supplies absolute `package`, `patch`,
+`packageSha256`, `patchSha256`, and `version` (spring.6, spring.7 or spring.8 f64). Preserve
+the controlled source patches and build evidence with those artifacts. Each non-candidate role also requires `reviewedDifferenceSha256` (SHA256 of candidate
+patch bytes, a NUL byte, then control patch bytes) and `reviewRationale` describing the
+reviewed change. The runner freezes all inputs, rebuilds each role from its patch,
+compares the package bytes, and executes that newly built package. This is semantic
+review of a controlled change, not a role-name assertion. It derives all variants
+from one frozen application snapshot and checks their bytes again after execution.
+The current candidate must match provenance.json. Each run retains its private
+directory and fails on absent controls, infrastructure-only failures or differing
+package/WASM outputs. Existing RAPIER_OFFLINE and source archive inputs apply.
+`RAPIER_BUILD_DIR` chooses a new, nonexistent retained output directory outside the
+compilation root; otherwise mktemp reserves one. Builds are serialized across
+checkouts while their retained outputs remain separate. No installed package changes.

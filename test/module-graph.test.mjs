@@ -147,3 +147,45 @@ test('server hints identify listen calls but not unrelated listening event names
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('private executable evidence is not a root but incoming edges reject', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'private-graph-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const put = (p, s) => {
+    mkdirSync(join(root, p, '..'), { recursive: true });
+    writeFileSync(join(root, p), s);
+  };
+  put('docs/internal/probe.mjs', 'invalid retained experiment ???');
+  put('src/model/a.mjs', 'export const value=1;');
+  let g = buildModuleGraph(root);
+  assert.equal(g.files.includes('docs/internal/probe.mjs'), false);
+  assert.deepEqual(g.errors, []);
+  for (const source of [
+    "import '../../docs/internal/probe.mjs'",
+    "import '../../docs/../docs/internal/probe.mjs'",
+    "import {readFileSync} from 'node:fs';readFileSync(new URL('../../docs/internal/probe.mjs',import.meta.url))",
+  ]) {
+    put('src/model/a.mjs', source);
+    g = buildModuleGraph(root, { purpose: 'test-selection' });
+    assert.match(g.errors.join('\n'), /private dependency/);
+  }
+  put('src/model/a.mjs', 'export const value=1;');
+  for (const purpose of ['resources', 'test-selection']) {
+    put(
+      'scripts/read.mjs',
+      "import {readFileSync} from 'node:fs'; readFileSync('docs/internal/probe.mjs','utf8')",
+    );
+    assert.match(buildModuleGraph(root, { purpose }).errors.join('\n'), /private dependency/);
+  }
+  assert.match(
+    buildModuleGraph(root, { entrypoints: ['docs/internal/probe.mjs'] }).errors.join('\n'),
+    /private entrypoint/,
+  );
+  assert.match(
+    buildModuleGraph(root, {
+      dataDependencies: { 'src/model/a.mjs': ['../../docs/internal/probe.mjs'] },
+    }).errors.join('\n'),
+    /private dependency/,
+  );
+  assert.deepEqual(affectedTests(buildModuleGraph(root), ['docs/internal/new.mjs']), []);
+});

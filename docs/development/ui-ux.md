@@ -23,7 +23,7 @@ otherwise give the observation and a useful next check. Do not shrink text to ma
 more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
-<!-- doc-review {"version":1,"fingerprint":"1b3f397cc12baa68d8ffde1b6e8df910cead531c0b9d651a6819e6c6b286f71b","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"e02fb2f3bbeb76638de35bba4b5d0580cee5001f6d25127f11471efa00f7caa6","disposition":"still accurate","rationale":"The four spring activities and reusable modules extend the existing requested collection for new construction capabilities. Their examples and instructions remain hypotheses about usefulness, not participant evidence; the existing content-decision and teaching-format policy still applies."} -->
+<!-- doc-review {"version":1,"fingerprint":"8dfcde2b7a7194516af215c5dc6d637d2b75b55d9fe7d5414f17a5bdd0c320cf","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"93822d35cd5afd8effde7099691ce0e5888010a52bd7e048a94bb132490328e6","disposition":"still accurate","rationale":"workshop-view changes only renderer composition, display/screenshot render calls and disposal. It adds no activity, invitation, teaching copy or content lifecycle. The policy still governs future admission and existing ordinary-command examples; no entry is warranted for this rendering implementation change."} -->
 
 Learn & examples is a curated collection of things players can learn to do.
 Adding a feature requires a teaching decision, not automatically a catalogue entry.
@@ -122,7 +122,7 @@ documentation workflow. Documentation checks detect stale references and reviews
 they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
-<!-- doc-review {"version":1,"fingerprint":"615a3c4dc6dee9ef77d4f4dccf2a1f574cb8e97e772bac5090989cf6f9a549ff","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c17f8dce8bc175a5138dcc0109846ee70ba2c3468517b5fd656c87513b41fdff","disposition":"still accurate","rationale":"At 1101–1350 pixel widths and heights at most760 pixels, smaller inspector spacing retains the primary control, all three ports and Engineering details inside the viewport. Fonts, text, actions, picker, header wrapping, selection ownership and visibility lifecycle are unchanged. The existing1280×720 assertion and screenshot now pass."} -->
+<!-- doc-review {"version":1,"fingerprint":"b6d10c94a883cf54b994b9b6770e6d27770785e4390404b8700eab5146750637","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"406a2b71c35f3bba5d3dfc074120c57d74838f4447839b131833e7a29ac36377","disposition":"still accurate","rationale":"The view keeps the existing DOM shell, requested content, selection state, replacement confirmation and inspector controls. The graphics wrapper renders the existing scene/camera and disposes its added render target resources with the view; it does not change surface placement, keyboard/input ownership or any stated visibility lifecycle. This source review does not claim fresh rendered or participant evidence."} -->
 
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:

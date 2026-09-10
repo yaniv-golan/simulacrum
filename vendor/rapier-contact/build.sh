@@ -3,9 +3,62 @@
 set -euo pipefail
 recipe_dir=$(cd -- "$(dirname -- "$0")" && pwd)
 workspace_dir=$(cd -- "$recipe_dir/../.." && pwd)
+# Cargo includes external path dependency identities in crate metadata. Keep the
+# physical compilation root stable; retain each invocation in its own output.
 contact_build_dir=/tmp/simulacrum-rapier-contact-build-v2
-mkdir "$contact_build_dir"
-trap 'echo "Build files retained at $contact_build_dir"' EXIT
+if [[ -n "${RAPIER_BUILD_DIR:-}" ]]; then
+  contact_output_dir="$RAPIER_BUILD_DIR"
+  mkdir "$contact_output_dir"
+else
+  contact_output_dir=$(mktemp -d "${TMPDIR:-/tmp}/simulacrum-rapier-contact.XXXXXXXX")
+fi
+contact_output_dir=$(cd -- "$contact_output_dir" && pwd -P)
+python3 - "$contact_build_dir" "$contact_output_dir" <<'CHECK_PATHS'
+from pathlib import Path
+import sys
+scratch, output = map(lambda x: Path(x).resolve(), sys.argv[1:])
+if output == scratch or scratch in output.parents:
+    raise SystemExit("Retained output must be outside the compilation root")
+CHECK_PATHS
+# This atomic directory acquisition is also the cross-checkout build lock.
+# Never remove or steal an existing root: its compiler may still be running.
+mkdir -m 700 "$contact_build_dir" || {
+  echo "Native build root occupied: $contact_build_dir; inspect its owner before recovery" >&2
+  exit 1
+}
+contact_build_dir=$(cd -- "$contact_build_dir" && pwd -P)
+printf '%s\n' "pid=$$" "output=$contact_output_dir" > "$contact_build_dir/owner.txt"
+contact_interrupted=0
+retain_build() {
+  contact_exit=$?
+  trap - EXIT
+  if [[ "$contact_interrupted" == 1 ]]; then
+    echo "Interrupted build retained at $contact_build_dir; root remains occupied" >&2
+    exit "$contact_exit"
+  fi
+  cd /
+  if ! python3 - "$contact_build_dir" "$contact_output_dir" <<'RETAIN_BUILD'
+from pathlib import Path
+import shutil, sys
+scratch, output = map(Path, sys.argv[1:])
+for child in scratch.iterdir():
+    target = output / child.name
+    if target.exists() or target.is_symlink():
+        raise SystemExit(f"Refusing to replace retained evidence: {target}")
+    shutil.move(str(child), str(target))
+scratch.rmdir()
+RETAIN_BUILD
+  then
+    echo "Archival incomplete; inspect $contact_build_dir and $contact_output_dir" >&2
+    exit 1
+  fi
+  echo "Build files retained at $contact_output_dir"
+  exit "$contact_exit"
+}
+trap retain_build EXIT
+# Leave the lock and files intact on signals; descendants may still be writing.
+trap 'contact_interrupted=1; exit 130' INT
+trap 'contact_interrupted=1; exit 143' TERM
 offline_flags=()
 if [[ "${RAPIER_OFFLINE:-0}" == 1 ]]; then offline_flags=(--offline); fi
 if [[ -n "${RAPIER_SOURCE_ARCHIVE:-}" ]]; then
@@ -66,7 +119,7 @@ mv "$contact_build_dir/wasm/optimized.wasm" "$contact_build_dir/wasm/rapier_wasm
 python3 - "$contact_build_dir/wasm/package.json" <<'PY'
 import json,sys
 from pathlib import Path
-Path(sys.argv[1]).write_text(json.dumps({'name':'@dimforge/rapier3d-deterministic-compat','version':'0.20.0-simulacrum.spring.7.f64','description':'Pinned uniform-f64 spring and contact runtime.'}))
+Path(sys.argv[1]).write_text(json.dumps({'name':'@dimforge/rapier3d-deterministic-compat','version':'0.20.0-simulacrum.spring.8.f64','description':'Pinned uniform-f64 spring and contact runtime.'}))
 PY
 cd ../../rapier-compat
 mkdir -p builds/3d-deterministic/wasm-build

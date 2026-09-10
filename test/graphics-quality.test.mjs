@@ -124,3 +124,40 @@ test('graphics transitions refresh shadow shader variants and release old target
   assert.equal(objects[0].geometry, geometry);
   assert.equal(objects[1].geometry, geometry);
 });
+
+test('low quality renders the complete scene once into a retained single-sample target', async () => {
+  const { createGraphicsRenderer } = await import('../src/presentation/graphics-quality.mjs');
+  const calls = [],
+    scene = {},
+    camera = {};
+  let width = 320,
+    height = 240;
+  const renderer = {
+    outputColorSpace: 'srgb',
+    getDrawingBufferSize: (size) => size.set(width, height),
+    setRenderTarget: (target) => calls.push(['target', target]),
+    render: (...args) => calls.push(['render', ...args]),
+  };
+  const graphics = createGraphicsRenderer(renderer);
+  graphics.render(scene, camera, GRAPHICS_LEVELS[0]);
+  assert.deepEqual(calls, [['render', scene, camera]]);
+  calls.length = 0;
+  graphics.render(scene, camera, GRAPHICS_LEVELS[3]);
+  const target = calls[0][1];
+  assert.equal(target.samples, 0);
+  assert.equal(target.width, width);
+  assert.equal(target.height, height);
+  assert.deepEqual(calls[1], ['render', scene, camera]);
+  assert.deepEqual(calls[2], ['target', null]);
+  assert.equal(calls[3][1].children[0].material.map, target.texture);
+  calls.length = 0;
+  width = 400;
+  graphics.render(scene, camera, GRAPHICS_LEVELS[5]);
+  assert.equal(calls[0][1], target);
+  assert.equal(target.width, width);
+  let released = 0;
+  target.addEventListener('dispose', () => released++);
+  graphics.render(scene, camera, GRAPHICS_LEVELS[0]);
+  assert.equal(released, 1);
+  graphics.dispose();
+});

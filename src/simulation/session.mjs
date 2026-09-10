@@ -330,6 +330,9 @@ export async function createSession(
         integrationDeltaJ = 0,
         constraintDissipationJ = 0,
         springReceipt = { dampingWorkJ: 0, kineticDeltaJ: 0 };
+      // These samples belong only to this tick's completed native states.
+      // No physics mutations occur between each capture and its later reads.
+      let afterEnvironmentEnergy, afterIntegrationEnergy, completedBodies;
       try {
         for (const phase of PHASES) {
           const start = performance.now();
@@ -450,22 +453,24 @@ export async function createSession(
               for (const event of pending)
                 if (event.command.type === 'impulse')
                   world.applyImpulse(event.command.body, event.command.value);
-              externalWorkJ = total(world.mechanicalEnergy()) - total(before);
+              afterEnvironmentEnergy = world.mechanicalEnergy();
+              externalWorkJ = total(afterEnvironmentEnergy) - total(before);
               break;
             }
             case 'integration-contacts': {
-              const before = world.mechanicalEnergy();
-              world.step();
+              const before = afterEnvironmentEnergy;
+              completedBodies = world.step();
               contactSample = world.contacts();
+              afterIntegrationEnergy = world.mechanicalEnergy();
               integrationDeltaJ =
-                total(world.mechanicalEnergy()) -
+                total(afterIntegrationEnergy) -
                 total(before) +
                 springReceipt.kineticDeltaJ +
                 springReceipt.dampingWorkJ;
               break;
             }
             case 'structure-failure': {
-              const bodies = world.read();
+              const bodies = completedBodies;
               if (!finiteTree(bodies)) throw Error('NON_FINITE_STATE');
               if (
                 bodies.length !== initial.length ||
@@ -492,7 +497,7 @@ export async function createSession(
               break;
             case 'telemetry':
               energy = {
-                ...world.mechanicalEnergy(),
+                ...afterIntegrationEnergy,
                 ...(hasSprings() ? { dampingWorkJ: springReceipt.dampingWorkJ } : {}),
                 actuatorWorkJ,
                 externalWorkJ,
@@ -500,7 +505,7 @@ export async function createSession(
                 constraintDissipationJ,
                 constraintWorkJ,
                 balanceResidualJ:
-                  total(world.mechanicalEnergy()) -
+                  total(afterIntegrationEnergy) -
                   total(startEnergy) -
                   actuatorWorkJ -
                   constraintWorkJ -
@@ -524,7 +529,7 @@ export async function createSession(
           nextAnchor = checkpoint();
           checkpointMs = performance.now() - start;
         }
-        observations.publish(frame(world.read(), timings), {
+        observations.publish(frame(completedBodies, timings), {
           timing: {
             startedAt,
             phaseMs: Object.values(timings).reduce((sum, value) => sum + value, 0),

@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 /** Presentation-only budgets. No model, simulation, device-name or saved-state inputs. */
 export const GRAPHICS_LEVELS = Object.freeze([
   Object.freeze({ name: 'Full', scale: 1, shadowSize: 2048 }),
@@ -82,4 +83,59 @@ export function applyGraphicsQuality({
   shadow.mapPass = null;
   shadow.mapSize.set(quality.shadowSize || 512, quality.shadowSize || 512);
   renderer.shadowMap.needsUpdate = true;
+}
+
+/** Retain the full scene while avoiding per-triangle multisampling under pressure.
+ * The existing canvas/context and all scene/picking resources stay in place. */
+export function createGraphicsRenderer(renderer) {
+  const size = new THREE.Vector2();
+  let target = null,
+    screen = null;
+  const camera = new THREE.Camera();
+  function release() {
+    target?.dispose();
+    if (screen) {
+      screen.children[0].geometry.dispose();
+      screen.children[0].material.dispose();
+    }
+    target = screen = null;
+  }
+  return {
+    render(scene, sceneCamera, quality) {
+      if (quality.shadowSize > 0) {
+        release();
+        renderer.render(scene, sceneCamera);
+        return;
+      }
+      renderer.getDrawingBufferSize(size);
+      if (!target) {
+        target = new THREE.WebGLRenderTarget(size.x, size.y, {
+          depthBuffer: true,
+          samples: 0,
+          colorSpace: renderer.outputColorSpace,
+        });
+        screen = new THREE.Scene();
+        const quad = new THREE.Mesh(
+          new THREE.PlaneGeometry(2, 2),
+          new THREE.MeshBasicMaterial({
+            map: target.texture,
+            depthTest: false,
+            depthWrite: false,
+            toneMapped: false,
+          }),
+        );
+        quad.frustumCulled = false;
+        screen.add(quad);
+      }
+      target.setSize(size.x, size.y);
+      renderer.setRenderTarget(target);
+      try {
+        renderer.render(scene, sceneCamera);
+      } finally {
+        renderer.setRenderTarget(null);
+      }
+      renderer.render(screen, camera);
+    },
+    dispose: release,
+  };
 }

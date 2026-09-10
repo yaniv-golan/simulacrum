@@ -20,7 +20,12 @@ export function listProjectFiles(root, directory = '') {
   return readdirSync(resolve(root, directory), { withFileTypes: true })
     .flatMap((entry) => {
       const path = [directory, entry.name].filter(Boolean).join('/');
-      if (excluded.has(entry.name) || entry.name.startsWith('.dev.vars')) return [];
+      if (
+        path === 'docs/internal' ||
+        excluded.has(entry.name) ||
+        entry.name.startsWith('.dev.vars')
+      )
+        return [];
       if (entry.isSymbolicLink()) return [path];
       return entry.isDirectory() ? listProjectFiles(root, path) : [path];
     })
@@ -119,6 +124,13 @@ export function buildModuleGraph(
           sourceExtensions.has(extname(path)) ||
           (purpose === 'test-selection' && path.endsWith('.d.ts')),
       );
+  for (let i = pending.length - 1; i >= 0; i--) {
+    const normalized = relative(root, resolve(root, pending[i])).replaceAll('\\', '/');
+    if (normalized === 'docs/internal' || normalized.startsWith('docs/internal/')) {
+      errors.push(`${pending[i]}: private entrypoint forbidden`);
+      pending.splice(i, 1);
+    }
+  }
   function targetFor(path, specifier, typeOnly = false, kind = 'module') {
     if (!specifier.startsWith('.') && !specifier.startsWith('/')) return null;
     let target = relative(
@@ -129,6 +141,10 @@ export function buildModuleGraph(
         specifier.split(/[?#]/)[0].replace(/^\//, ''),
       ),
     ).replaceAll('\\', '/');
+    if (target === 'docs/internal' || target.startsWith('docs/internal/')) {
+      errors.push(`${path}: private dependency forbidden: ${specifier}`);
+      return null;
+    }
     if (target.startsWith('../')) {
       errors.push(`${path}: dependency escapes project: ${specifier}`);
       return null;
@@ -296,6 +312,25 @@ export function buildModuleGraph(
         if (node.type === 'NewExpression' && node.callee.name === 'Function')
           errors.push(`${path}: unsupported dynamic code Function`);
         // Node tooling can inspect generated files, directories and subprocesses.
+        // Literal filesystem paths are cwd-relative, even in resource analysis.
+        if (
+          node.type === 'CallExpression' &&
+          ['readFileSync', 'readFile'].includes(node.callee.name ?? node.callee.property?.name) &&
+          node.arguments[0]?.type === 'Literal' &&
+          typeof node.arguments[0].value === 'string'
+        ) {
+          const filename = relative(root, resolve(root, node.arguments[0].value)).replaceAll(
+            '\\',
+            '/',
+          );
+          if (filename === 'docs/internal' || filename.startsWith('docs/internal/'))
+            errors.push(`${path}: private dependency forbidden: ${node.arguments[0].value}`);
+          else if (
+            existsSync(resolve(root, filename)) &&
+            realpathSync(resolve(root, filename)) !== resolve(root, filename)
+          )
+            errors.push(`${path}: symlink dependency ${node.arguments[0].value}`);
+        }
         // These are opaque whole-project inputs for its consuming tests, not broken
         // browser asset URLs. Resource/fingerprint analysis remains strict.
         if (

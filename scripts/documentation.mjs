@@ -308,7 +308,28 @@ export function inspectDocumentation(root = process.cwd(), { files } = {}) {
       );
     const externalConfig = () => {
       for (const file of ['package.json', 'package-lock.json'])
-        if (existsSync(resolve(root, file))) add(file, read(file));
+        if (existsSync(resolve(root, file))) {
+          let value = read(file);
+          if (file === 'package.json') {
+            try {
+              const configuration = JSON.parse(value);
+              if (
+                ![
+                  'preinstall',
+                  'install',
+                  'postinstall',
+                  'prepublish',
+                  'preprepare',
+                  'prepare',
+                  'postprepare',
+                ].some((name) => Object.hasOwn(configuration.scripts ?? {}, name))
+              )
+                delete configuration.scripts;
+              value = JSON.stringify(configuration);
+            } catch {}
+          }
+          add(file, value);
+        }
     };
     const add = (file, value) => {
       if (!selected.has(file)) selected.set(file, new Set());

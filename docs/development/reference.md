@@ -40,6 +40,7 @@ These are registered commands and checks, not evidence that they passed.
 | npm run gate:M0 | node scripts/gate.mjs M0 |
 | npm run gate:structural | node scripts/gate-structural.mjs |
 | npm run inspect:change | node scripts/inspect-change.mjs |
+| npm run native:qualify | node scripts/verification-window.mjs scripts/native-qualification.mjs |
 | npm run playtest:download | node scripts/playtest/download.mjs |
 | npm run playtest:local | wrangler dev --port 8787 |
 | npm run preview | vite preview --host 127.0.0.1 |
@@ -56,6 +57,7 @@ These are registered commands and checks, not evidence that they passed.
 | npm run test:performance | node scripts/verification-window.mjs scripts/verify-browser-suite.mjs performance |
 | npm run test:unit | node scripts/verification-window.mjs scripts/test-affected.mjs |
 | npm run typecheck | node scripts/check-boundary-types.mjs |
+| npm run verify:candidate | node scripts/verify-candidate.mjs |
 | npm run verify:final | node scripts/verification-window.mjs scripts/verify-final.mjs |
 | npm run verify:local | node scripts/verification-window.mjs scripts/verify-local.mjs |
 
@@ -108,3 +110,8 @@ These are registered commands and checks, not evidence that they passed.
 | local-browser-scope-safety | [selectAffectedBrowserChecks](../../scripts/browser-selection.mjs) | verification-scope-configuration |
 | verification-resource-window | [withVerificationWindow](../../scripts/verification-window.mjs) | verification-scope-configuration |
 | observable-test-completion | [waitUntil](../../scripts/wait-until.mjs) | verification-scope-configuration |
+| candidate-source-isolation | [captureCandidate](../../scripts/candidate.mjs) | verification-scope-configuration |
+| private-evidence-boundary | [private dependency forbidden](../../scripts/module-graph.mjs) | verification-scope-configuration |
+| assembly-scenario-partition | [assemblyPartition](../../scripts/assembly-scenarios.mjs) | verification-scope-configuration |
+| native-qualification-controls | [qualifyNative](../../scripts/native-qualification.mjs) | verification-scope-configuration |
+| build-reset-precision | [command.type === 'build'](../../src/core/workshop.mjs) | verification-scope-configuration |

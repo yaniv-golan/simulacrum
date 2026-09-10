@@ -121,3 +121,14 @@ test('synchronous spawn rejection does not retain termination listeners', async 
   assert.equal(result.stdout.trim(), 'after rejection');
   assert.equal(process.listenerCount('SIGTERM'), before);
 });
+
+test('watchdog and nonzero exit retain different failure kinds', async () => {
+  await assert.rejects(
+    runProcess(process.execPath, ['-e', 'while(true){}'], { timeoutMs: 100 }),
+    (e) => e.failureKind === 'watchdog',
+  );
+  await assert.rejects(
+    runProcess(process.execPath, ['-e', 'process.exit(1)'], { timeoutMs: 1000 }),
+    (e) => e.failureKind === 'check-failure',
+  );
+});

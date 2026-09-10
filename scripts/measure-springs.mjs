@@ -16,7 +16,7 @@ export const SPRING_PERFORMANCE = Object.freeze({
   tickP95Ms: (1000 / 120) * 0.4,
   constraintP95Ms: 2,
   loadedImpulseMinNs: 9.81 / 120 / 2, // Half the known 1 kg weight impulse; springs press down too.
-  integrationP95Ms: 1, // Leaves 1/3 ms of the 3 1/3 ms tick allocation for other phases.
+  integrationP95Ms: 2, // Independent phase cap; the complete tick must still fit 3 1/3 ms.
   renderP95Ms: 6,
   cadenceP95Ms: 40,
   stallMs: 500,

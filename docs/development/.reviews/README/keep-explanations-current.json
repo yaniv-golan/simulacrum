@@ -1,16 +1,16 @@
 {
   "version": 1,
   "dependencies": {
-    "package-lock.json": "2ced29c88ff5fd2951e086c917a4d3401ae7caf7441f7e72bf3de6d1e71e4caa",
-    "package.json": "cbfd07f85a876169e89727610385a1146c97caa3dc2684aa876be772421514f2",
+    "package-lock.json": "be238b589bac1db94398632880eef13287353f499c5df623f4006cc402f6e672",
+    "package.json": "ff0a6ac5bac42b8056aae85fe0b38ef194bd6fb0ca65ca71ac4b83df094b0165",
     "scripts/analysis-snapshot.mjs": "ef4628c9a026cd935f9c42caeffdf4644935671250eee2170a358b88d18d243d",
     "scripts/check-documentation.mjs": "adf1496351f13a8c3ab04810c2ad7a4a566fdd5deb15874aa17790382e138525",
     "scripts/development-reference.mjs": "cd38e55e0fb5dd1f738bd061f605b42a8d2f75f6ea83c2a9288ea21e4042d4cf",
-    "scripts/documentation.mjs": "5c21874539153bf6a8c7dd7bb56e85022f53a033b33bc2c5c8f6ae13d9ac5854",
-    "scripts/module-graph.mjs": "1a42922f2ab45df26cd99c5e69babfb86b7957c1c61104f7be151233fba6d3f2",
+    "scripts/documentation.mjs": "c283e122b87a4f66b910f7d472c6ca4c372d29d7abeb6fb5a95d03ed089aa443",
+    "scripts/module-graph.mjs": "e9930c64623e3515ed9949b07530e9cbcfc70caf6da86e484402625045e0dd0e",
     "scripts/navigation.mjs": "21299888a2f72faa2c0c24a19a8cd105cd27c822927858ecec0c504768e0d58b",
     "scripts/manifest.json#check=developer-documentation": "da797452e2b026fbd18d7224ee57d1b7fc2bb04da8fae08b3d8e49a5f3bc23c5",
-    "docs/development/reference.md": "2c3a9771268847ee8584b432c2623d475bc85b17594348bb03c9a176bdba5701",
+    "docs/development/reference.md": "cfae2b266360e89bc80ab2d2698790f3a36490ed4fca1209bdcd7c33543c7abe",
     "package.json#script=docs:prepare": "12217c6795d7e7b9dd072d5f7c5c5f86522a3e11ca9d186fc4b0075831ca39f4",
     "package.json#script=docs:review": "cfe62878e316eb98829acab28bb8d8c45d224e6f3e9caf26fc6f202d334489c6",
     "package.json#script=docs:check": "507aa495a8e3083a872156aa128bfc7dccd108984ebe830ca7712bc9cc1395dd"

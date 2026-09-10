@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "dependencies": {
+    "scripts/candidate.mjs": "a708554e53d8bc216219ee2cc5a818bc1855dc8cc9e64d144ae59bac2ad796eb",
+    "package.json": "f4e4bca9bb70eacc191948466792bcaed5ff3d13032d4fa9fdb9b0c549a5cbf8",
+    "scripts/run-check.mjs": "7011e62a4b58026048c12e5db989230177387f10de3e221a84db1c3b2116e85d",
+    "scripts/runtime-preflight.mjs": "243c17a7df72eb827c51b4ac7d48356714e8d74b9396d5b384a671bb22521b61",
+    "scripts/verify-candidate.mjs": "9e71516b26aa3270a72576e608dfcb8d9ab1150028a37abfca7d389e6eb82011",
+    "scripts/assembly-scenarios.mjs": "b42cdd927d1f748ad70c32bb4b4d269f1d44aebb687026cea2b746f358b771fb",
+    "scripts/assembly-ux-cases.mjs": "76d37589083ae0f05898483606b737b38b9f2ea5018af1b26cd75c4045ed52e8",
+    "src/model/blueprint.mjs": "e0144cf72dd67d31f076460c83e3e0c8c5ecabb5b7530df7e76f6d12bfe50c8d",
+    "src/model/boundaries.d.ts": "277a81651b4691db911c125b4030ee88316a141afed345905c8ab0984f9f83be",
+    "src/model/catalog.mjs": "911a5c528f132537cc54add60366216fbdd4babc29d789c597e439338e160861",
+    "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",
+    "src/model/environment.mjs": "2409601431d8919540401bba53335b26f14d058327a4ec16cdfc8edfd3732dbf",
+    "src/model/generated/blueprint-types.d.ts": "ff76b9b17bc09c81d3fb0b8ad157d81e00b24542d5025e7b5c96f18ddf36ed25",
+    "src/model/generated/blueprint-validator.mjs": "94756bfc67ad54eb70a26083c9d0c932b68d520bc26c72026ff1a67815268d5b",
+    "src/model/geometry.mjs": "90d75331b8f5261f9d1a6e4d803473bbdf4be12fc63b283d63e65d4312b80bd8",
+    "src/model/observation.mjs": "f2a62892ae0e9dc95734fb107d1588b007265604ad5aca49ade62b2004d61ec1",
+    "src/model/surfaces.mjs": "7025893fbf4ea801df4c2aabbe9a30e91af280e41ef32010cf0f671b0674e7f8",
+    "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
+    "test/fixtures/reusable-rover.json": "81307569c94d568e66136259f57e0b74477520ac0f3d4c23a72db660ab7e53e8",
+    "package.json#script=verify:candidate": "0a3f48ca2413c756a50ee6bb10ac51d684393eeecc217bc67fedde53e25e4756"
+  }
+}

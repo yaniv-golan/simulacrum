@@ -17,8 +17,8 @@
     "src/model/assembly.mjs": "6d3152ecb77251a4833aa7bc319327c6d1555a0698820cf86c54fc55aed86d8f",
     "src/model/compile-body.mjs": "f6b6a0caadca8e14c7bd97ae7fadc875458690140f5a06a1c0d4c1ef06c05665",
     "src/model/connection-graph.mjs": "491eb5cfbfb737fc0cc161e3b82dcc5a09fc7ccf9d9a6bf864b6bf0506b67259",
-    "package-lock.json": "2ced29c88ff5fd2951e086c917a4d3401ae7caf7441f7e72bf3de6d1e71e4caa",
-    "package.json": "cbfd07f85a876169e89727610385a1146c97caa3dc2684aa876be772421514f2",
+    "package-lock.json": "be238b589bac1db94398632880eef13287353f499c5df623f4006cc402f6e672",
+    "package.json": "ff0a6ac5bac42b8056aae85fe0b38ef194bd6fb0ca65ca71ac4b83df094b0165",
     "src/core/workshop.mjs": "97990d48850f2bdde1cbafb1e5fb7e46999b9cbcd960baaefc268e4e701d5a5e",
     "src/model/editing.mjs": "11e29e8e17b767e73955370a3293b05bbc6741c3693c9498e2294fde5d904b83",
     "src/model/mirror-assembly.mjs": "c4e88ff872960d6d980d3db2ed4e98be37dee772a4474ce6fc6e057b3e17b09f",
@@ -35,10 +35,10 @@
     "src/simulation/physics/read-body.mjs": "af1e109c7c7ae5eb2ffd49455e23756818c8769eb4403fa31866aa06aceb9518",
     "src/simulation/physics/read-contacts.mjs": "d07685f5496b10f694853493f88f246fb9b0640e3403a7a3c703140dc9464b97",
     "src/simulation/physics/spring-topology.mjs": "6c7a9001cc61431d66a52385c681f868b4d66578f8fdc29c6e5eef4d823dd7dc",
-    "src/simulation/physics/world.mjs": "b90ff2b9b25494a430236a5bd21fb568d6ef2d88e3acd670923e383d4ab3aaf9",
+    "src/simulation/physics/world.mjs": "730c2bcea3f52a069d4d5ddfc1ec95f75c4486dc69f7f3b416a5a261f12a8a68",
     "src/simulation/power.mjs": "e3aafe2701f9abf50c341fba95e1fa2bc801c20179e62b42aa1342552c75e915",
     "src/simulation/receiver-arbiter.mjs": "8fe83acceeb76aa8eeb7abda569daaabfcf5be66cb2f44dd17b5d76635c75f7b",
-    "src/simulation/session.mjs": "e9daf0bd631cb43201bc3087fcdf58642861e95c79ca21a0b1616909517b3b97",
+    "src/simulation/session.mjs": "2a6a26f6a7085d3c10610af6386ebae4d8bac23bf94a37b24d6b2e5ed22fb2fa",
     "test/wheel-diameter.test.mjs": "4eff306b94d63d9065c8fb659c48db05b77ca79c25fe2008193c73cfb7945c62",
     "test/assembly.test.mjs": "bfcee8479007f30f09405ed17eec18843fb5dc19d40363b6569d0dc871f90a5c"
   }
