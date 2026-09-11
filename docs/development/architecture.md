@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"5bd93e1d946dafc328a0ce9ff03f2c77c75a9ac1f7035908af2c3ab052516cae","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"c6443670f88fbaf92f1ecfb03d8b4ec2ad249e4e02e63fa7038e5b220b1273ae","disposition":"still accurate","rationale":"M0 developer tooling changes no runtime layer imports or physical authority. Architecture navigation still names the same runtime owners."} -->
+<!-- doc-review {"version":1,"fingerprint":"e9d6a19c9651400e4fa20244ba597a7b1015049415fbabc34a0f4e9cad588956","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"8025d8aa49591f70cf6abf19190808109c6a866c9a9f8e0bc257c6c673fb919b","disposition":"still accurate","rationale":"The existing manifest reader also requires consumers and root binding for script local scopes. It remains the canonical check/milestone metadata owner; runtime layer ownership is unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

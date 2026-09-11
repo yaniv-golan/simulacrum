@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { decodeCaptureEvents } from '../src/application/capture-stream.mjs';
 import { createFixtureEvidence } from './browser-evidence.mjs';
 // M3b: feedback receipts must follow server acknowledgement and final media flush.
@@ -462,8 +463,10 @@ try {
     await page.locator('[data-recovery]').innerText(),
     /recording has not resumed/i,
   ]);
-  mkdirSync('artifacts/reload-recovery', { recursive: true });
-  await page.screenshot({ path: 'artifacts/reload-recovery/outage-after-reload.png' });
+  mkdirSync(browserArtifactPath('artifacts/reload-recovery'), { recursive: true });
+  await page.screenshot({
+    path: browserArtifactPath('artifacts/reload-recovery/outage-after-reload.png'),
+  });
   const outageNotice = await page.locator('[data-recovery]').innerText();
   statusCode = 200;
   badReceipt = true;
@@ -502,10 +505,12 @@ try {
   browserEvidence.assert('equal', [sessionPosts, sessionsBeforeReload]);
   const receivedNotice = await page.locator('[data-recovery]').innerText();
   browserEvidence.assert('match', [receivedNotice, /recording has not resumed/i]);
-  await page.screenshot({ path: 'artifacts/reload-recovery/received-after-reload.png' });
+  await page.screenshot({
+    path: browserArtifactPath('artifacts/reload-recovery/received-after-reload.png'),
+  });
   browserEvidence.assertUnchanged();
   writeFileSync(
-    'artifacts/reload-recovery/result.json',
+    browserArtifactPath('artifacts/reload-recovery/result.json'),
     JSON.stringify(
       {
         ...browserEvidence.identity,

@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"e7003dfd92ace15cf5398e515bd82dcc324bb11810649a6223f976aa7d1c1448","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"6b376f07166602b138de43cfc70ff4456246f661b1735fa35185bf8343fa67f5","disposition":"updated","rationale":"Added sphere geometry and independent mass/inertia controls, curved admission and ordinary overrides. Empty contact records now canonicalize after validation on load and insertion, preserving explicit zero and input ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"b074f240d88655b7d3af28be572c892390ac765e172064544a28084f11c7d844","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"34d5ba7e4ba142c3fd974606ef5ed53cd6e9497a72bbb2fd8fdc0e0cf4053ad3","disposition":"updated","rationale":"Added the three partitioned launcher test owners so physical retention, energy and repair controls remain discoverable. All ten original Ball test bodies were compared byte-for-byte; no assertion, simulated duration or per-file watchdog changed."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -32,6 +32,11 @@ endpoints, resize overlap, Undo and save/load, then rendered geometry. Rebuild g
 validation with `node scripts/generate-schema.mjs` when schema changes.
 
 A Ball uses canonical sphere radius on all axes and solid-sphere mass/inertia.
+Long launcher controls are partitioned into [launch and energy](../../test/ball-launcher.test.mjs#source),
+[side-guide retention](../../test/ball-guide-retention.test.mjs#source) and
+[catcher repair](../../test/ball-catcher-repair.test.mjs#source) files. Test bodies,
+physical durations and the per-file watchdog are unchanged.
+
 Follow [sphere controls](../../test/ball.test.mjs#source) through free placement,
 resize and history; curved solids need narrow-phase placement against box corners
 and the canonical cylinder hull. Balls have no planar mounting regions or ports.
@@ -61,7 +66,7 @@ Identify the player task, primary home, visibility/retrieval lifecycle and repla
 surface. Keep consequential state visible and verify unique actions remain reachable
 after removing or moving controls.
 
-<!-- doc-review {"version":1,"fingerprint":"e40874504c9517efd16d824515dba64efb96d47e23c8a9b06d749453b9ce8b47","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"541bf3503841c9940edcdb601aba912b9b2cb7275d8549e6dc2ece2d2236671a","disposition":"still accurate","rationale":"File loads reserve document replacement before File.text; retry and load reject the overlapping action synchronously with a recorded receipt. Renderer shape probes return copied numeric geometry/rotation only. Existing control ownership, input cancellation and Build/Run authority remain intact."} -->
+<!-- doc-review {"version":1,"fingerprint":"57da3404b4923713d90992a6f7c95151843d3fed710dd6dd3c5f540cbe38e91c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"911ecee0638a08fe4b93fbae48d8965a130f65cfca02a944a02afc202c63025f","disposition":"still accurate","rationale":"Browser verifier output paths now route through an injected attempt root; the user input, command receipt, rendered-state and negative-control assertions in these linked journeys are preserved."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -223,7 +228,7 @@ settings and slop. Re-run existing contact/constraint cases when changing this p
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"db33465f89fb36f6eb8c51d87ba0fe004f90f3fad52ab2ab3975684524e9bebf","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"3938f9f44477405f4fe12e132ad752252322e98ff06f62d5bcb1a0315e4092b8","disposition":"still accurate","rationale":"The catcher uses ordinary disjoint editor membership and physical solids. Ball material and optional contact fields pass through existing authored-value copies; no group physics or new library storage semantics were introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"3ba970da0946bc6e4f648c46da9b0c0c2edac1a949eacc7c6ecef50cebf0cac7","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"4cfc292a7828794a5b997765e3c61770a69c76b931d0b984c0a24f4bb91743fe","disposition":"still accurate","rationale":"Assembly verifier screenshots and traces use the attempt-owned artifact helper. Canonical group commands, physical connection boundaries, ordinary authoring transactions and retained browser assertions remain unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -318,7 +323,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"c20eb4517151254f63d2afaaaa3d94df864b6af9effc45d8ad6b711669b66bb7","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"2a700d447e489d90031b4010b16d01a995036a3987627c3cb96d170e7fe80717","disposition":"still accurate","rationale":"Sphere meshes and orientation stripes do not change connection spec ownership, path visibility, retained coil geometry or resource disposal. Impact presentation has no connection or simulation write path."} -->
+<!-- doc-review {"version":1,"fingerprint":"1582b953e108822aea6defc8dd17fe2a8c12016a5ab3f3f6d90f036448cbdce4","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"7c109eb4f40863ac6aeecc7a396d320c87ef6837a57ace2f2c9620d847046801","disposition":"still accurate","rationale":"Overlay and spring verifier output paths changed only for retained evidence ownership. Geometry, rendering authority, telemetry agreement and resource/performance assertions remain unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -402,7 +407,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"8d0ec977aac7e69160689263c44467d46e1b31ac3efeec86b1b396fa5618b217","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"c6bfb71de3ea63d104067247f392a3a8ecf3bf5a5eede8afdd605079a02eb368","disposition":"updated","rationale":"Documented retained single-sample scene target at no-shadow levels, original canvas presentation and release on recovery/disposal. Quality windows, thresholds,40percent floor, rendering-only authority and40ms browser limit remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"567942c2c045582fdee214f291c2c738e6889e965a075b820afde1b641130460","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"496d54962c5ef9550596df99c05a217bcfd2ef17f79ccc0c705339526d939884","disposition":"still accurate","rationale":"Adaptive graphics still uses Metal and SwiftShader with unchanged cadence and pixel assertions. Its report directory now belongs to the calling browser attempt; no quality or timing threshold changed."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

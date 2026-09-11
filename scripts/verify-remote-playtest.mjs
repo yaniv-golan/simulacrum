@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 import { createCaptureReviewIndex } from '../src/application/capture-stream.mjs';
 import { sampleCapture } from './playtest/capture-samples.mjs';
@@ -14,7 +15,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const privateRoot = process.env.PLAYTEST_VERIFY_PRIVATE_ROOT;
-const output = privateRoot ? join(privateRoot, 'screens') : 'artifacts/remote-playtest';
+const output = browserArtifactPath(
+  'artifacts/remote-playtest',
+  privateRoot ? join(privateRoot, 'screens') : undefined,
+);
 const expectedFaultErrors = [];
 const browserEvidence = createBrowserEvidence({
   expectedErrors: expectedFaultErrors,
@@ -24,7 +28,10 @@ const browserEvidence = createBrowserEvidence({
   ...(privateRoot
     ? {
         writeArtifact: (file, value) => {
-          const dir = join(privateRoot, 'evidence');
+          const dir = browserArtifactPath(
+            'artifacts/browser-evidence/remote-playtest',
+            join(privateRoot, 'evidence'),
+          );
           mkdirSync(dir, { recursive: true });
           writeFileSync(
             join(dir, file),
@@ -39,7 +46,9 @@ const recordingMode = process.env.PLAYTEST_RECORDING_MODE || 'data';
 if (!['data', 'video'].includes(recordingMode)) throw Error('Invalid recording mode');
 const adapter = process.env.PLAYTEST_VERIFY_ADAPTER || 'node';
 const remoteOrigin = process.env.PLAYTEST_VERIFY_ORIGIN;
-const data = mkdtempSync(join(privateRoot || tmpdir(), 'remote-playtest-')),
+const dataRoot = browserArtifactPath('artifacts/remote-playtest-data', privateRoot || tmpdir());
+mkdirSync(dataRoot, { recursive: true });
+const data = mkdtempSync(join(dataRoot, 'remote-playtest-')),
   token = process.env.PLAYTEST_VERIFY_TOKEN || 'browser-verification-token-'.repeat(3),
   adminToken = process.env.PLAYTEST_ADMIN_TOKEN || 'local-admin-test-'.repeat(4);
 let server, cloud;
@@ -145,6 +154,23 @@ try {
     !process.env.PLAYTEST_CAPTURE_FAULT &&
     process.env.PLAYTEST_ACTIVE_WORKLOAD !== 'true'
   ) {
+    const readWorkshop = () => page.evaluate(() => window.workshopProbe.observe());
+    browserEvidence.assert('equal', [
+      (await readWorkshop()).frames[0].metadata.blueprint.parts.length,
+      0,
+      'empty recorded workbench is an explicit starting condition',
+    ]);
+    await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
+    await page.getByRole('button', { name: 'Try driving example', exact: true }).click();
+    browserEvidence.assert('equal', [
+      await page.getByRole('button', { name: 'Replace without saving', exact: true }).isVisible(),
+      false,
+      'empty workbench needs no replacement confirmation',
+    ]);
+    browserEvidence.assert('ok', [
+      (await readWorkshop()).frames[0].metadata.blueprint.parts.length > 0,
+      'empty-workbench example actually loaded',
+    ]);
     const bp = createEmptyBlueprint('recorded-ball', 'Recorded Ball');
     bp.parts.push(createPart('ball', 'ball', [0, 3, 0]));
     mkdirSync(output, { recursive: true });
@@ -233,6 +259,26 @@ try {
       await retryFault.stop();
     }
     await page.locator('[data-command=build]').click();
+    const populated = await readWorkshop();
+    browserEvidence.assert('equal', [
+      populated.frames[0].metadata.blueprint.parts.length,
+      1,
+      'recorded Ball remains populated before replacement',
+    ]);
+    await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
+    await page.getByRole('button', { name: 'Try driving example', exact: true }).click();
+    await page.getByRole('button', { name: 'Cancel replacement', exact: true }).click();
+    browserEvidence.assert('deepEqual', [
+      await readWorkshop(),
+      populated,
+      'cancelling recorded replacement preserves blueprint, cursor and consequential state',
+    ]);
+    await page.getByRole('button', { name: 'Try driving example', exact: true }).click();
+    await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
+    browserEvidence.assert('ok', [
+      (await readWorkshop()).frames[0].metadata.blueprint.parts.length > 1,
+      'confirmed recorded replacement actually changes the machine',
+    ]);
   }
   const activeWorkload = process.env.PLAYTEST_ACTIVE_WORKLOAD === 'true';
   const workloadActions = [];
@@ -243,8 +289,12 @@ try {
     await page.keyboard.press('ArrowRight');
     workloadActions.push('build-edit');
     await page.keyboard.press('Delete');
+    const beforeReplacement = await readFrame();
     await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
     await page.getByRole('button', { name: 'Try driving example', exact: true }).click();
+    if (beforeReplacement.metadata.blueprint.parts.length) {
+      await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
+    }
     driveStart = await readFrame();
     await page.locator('[data-command=run]').click();
     await page

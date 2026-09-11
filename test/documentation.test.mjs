@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { symlinkSync, renameSync } from 'node:fs';
+import fs, { symlinkSync, renameSync } from 'node:fs';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
-import { inspectDocumentation, reviewSection } from '../scripts/documentation.mjs';
+import { syncBuiltinESMExports } from 'node:module';
+import { inspectDocumentation, reviewSection, reviewSections } from '../scripts/documentation.mjs';
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'documentation-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -507,3 +508,170 @@ test('overlay claims retain performance assertions without unrelated fingerprint
   assert.ok(section.dependencies['scripts/browser-evidence.mjs']);
   assert.equal(section.dependencies['src/model/messages.mjs'], undefined);
 });
+
+test('batch groups document publication and retains recoverable output after an interrupted write', (t) => {
+  const f = fixture(t),
+    file = 'docs/development/guide.md';
+  f.put(
+    file,
+    Array.from(
+      { length: 5 },
+      (_, i) => `# Section ${i}\n[run](../../src/model/tool.mjs#symbol=run).\n`,
+    ).join('\n'),
+  );
+  const rows = Array.from({ length: 5 }, (_, i) => ({ file, id: `section-${i}`, ...receipt }));
+  const before = readFileSync(join(f.root, file), 'utf8');
+  const original = fs.renameSync;
+  let documents = 0;
+  t.mock.method(fs, 'renameSync', (from, to) => {
+    if (String(to) === join(fs.realpathSync(f.root), file)) {
+      documents++;
+      throw Error('injected publication interruption');
+    }
+    return original(from, to);
+  });
+  syncBuiltinESMExports();
+  let failure;
+  try {
+    reviewSections(f.root, rows);
+  } catch (error) {
+    failure = error;
+  }
+  t.mock.restoreAll();
+  syncBuiltinESMExports();
+  assert.match(failure?.message ?? '', /interruption/);
+  assert.equal(documents, 1);
+  assert.equal(readFileSync(join(f.root, file), 'utf8'), before);
+  assert.ok(failure.recoveryPath);
+  const recovery = JSON.parse(readFileSync(failure.recoveryPath, 'utf8'));
+  assert.equal(recovery.outputs.find((row) => row.file === file).before, before);
+  assert.ok(f.inspect().errors.length);
+  reviewSections(f.root, rows);
+  assert.deepEqual(f.inspect().errors, []);
+  rmSync(dirname(failure.recoveryPath), { recursive: true, force: true });
+});
+
+test('batch rejects source and prose drift at publication without successful closure', (t) => {
+  const f = fixture(t),
+    file = 'docs/development/guide.md';
+  f.put(file, '# Owner\n[run](../../src/model/tool.mjs#symbol=run).\n');
+  const original = fs.renameSync;
+  t.mock.method(fs, 'renameSync', (from, to) => {
+    const result = original(from, to);
+    if (String(to) === join(fs.realpathSync(f.root), file))
+      f.put('src/model/tool.mjs', 'export const run = 99;');
+    return result;
+  });
+  syncBuiltinESMExports();
+  let failure;
+  try {
+    reviewSections(f.root, [{ file, id: 'owner', ...receipt }]);
+  } catch (error) {
+    failure = error;
+  }
+  t.mock.restoreAll();
+  syncBuiltinESMExports();
+  assert.match(failure?.message ?? '', /changed during review/);
+  assert.ok(f.inspect().sections[0].stale);
+  rmSync(dirname(failure.recoveryPath), { recursive: true, force: true });
+});
+
+test('batch analysis work stays bounded while retaining individual decisions across documents', (t) => {
+  const f = fixture(t),
+    file = 'docs/development/guide.md';
+  const writeFixture = (count) =>
+    f.put(
+      file,
+      Array.from(
+        { length: count },
+        (_, i) => `# Section ${i}\n[run](../../src/model/tool.mjs#symbol=run).\n`,
+      ).join('\n'),
+    );
+  const original = fs.readFileSync;
+  let reads = 0;
+  t.mock.method(fs, 'readFileSync', (path, ...args) => {
+    if (String(path) === join(fs.realpathSync(f.root), 'package.json')) reads++;
+    return original(path, ...args);
+  });
+  syncBuiltinESMExports();
+  let single, batch;
+  try {
+    writeFixture(1);
+    reviewSections(f.root, [{ file, id: 'section-0', ...receipt }]);
+    single = reads;
+    reads = 0;
+    writeFixture(15);
+    reviewSections(
+      f.root,
+      Array.from({ length: 15 }, (_, i) => ({ file, id: `section-${i}`, ...receipt })),
+    );
+    batch = reads;
+  } finally {
+    t.mock.restoreAll();
+    syncBuiltinESMExports();
+  }
+  assert.equal(batch, single, 'source/configuration analysis must not repeat per section');
+  assert.deepEqual(f.inspect().errors, []);
+});
+
+test('batch receipts equal individual decisions for new and existing sections in multiple documents', (t) => {
+  const a = fixture(t),
+    b = fixture(t),
+    files = ['docs/development/guide.md', 'docs/development/second.md'];
+  for (const f of [a, b])
+    for (const file of files)
+      f.put(
+        file,
+        '# Owner\n[run](../../src/model/tool.mjs#symbol=run).\n\n# Other\n[other](../../src/model/tool.mjs#symbol=unrelated).\n',
+      );
+  const rows = files.flatMap((file) => ['owner', 'other'].map((id) => ({ file, id, ...receipt })));
+  for (const f of [a, b]) reviewSection(f.root, files[0], 'owner', receipt);
+  const expected = rows.map(({ file, id, ...decision }) =>
+    reviewSection(a.root, file, id, decision),
+  );
+  const actual = reviewSections(b.root, rows);
+  assert.deepEqual(actual, expected);
+  for (const file of files)
+    assert.equal(
+      readFileSync(join(a.root, file), 'utf8'),
+      readFileSync(join(b.root, file), 'utf8'),
+    );
+  assert.deepEqual(a.inspect(files), b.inspect(files));
+});
+
+for (const change of ['source', 'prose', 'configuration', 'referenced file', 'inventory'])
+  test(`batch refuses ${change} drift during analysis before any review writes`, (t) => {
+    const f = fixture(t),
+      file = 'docs/development/guide.md';
+    f.put('policy.json', '{"amount":1}');
+    f.put(
+      file,
+      '# Owner\n[run](../../src/model/tool.mjs#symbol=run). [policy](../../policy.json).\n',
+    );
+    const original = fs.readFileSync;
+    let reads = 0;
+    t.mock.method(fs, 'readFileSync', (path, ...args) => {
+      const result = original(path, ...args);
+      if (String(path) === join(fs.realpathSync(f.root), file) && ++reads === 3) {
+        if (change === 'source') f.put('src/model/tool.mjs', 'export const run = 99;');
+        if (change === 'prose') f.put(file, String(result) + '\nChanged explanation.\n');
+        if (change === 'configuration')
+          f.put('package.json', '{"moduleGraph":{"runtimeURLArguments":{}}}');
+        if (change === 'referenced file') f.put('policy.json', '{"amount":2}');
+        if (change === 'inventory') f.put('src/model/new.mjs', 'export const added=1;');
+      }
+      return result;
+    });
+    syncBuiltinESMExports();
+    let failure;
+    try {
+      reviewSections(f.root, [{ file, id: 'owner', ...receipt }]);
+    } catch (error) {
+      failure = error;
+    } finally {
+      t.mock.restoreAll();
+      syncBuiltinESMExports();
+    }
+    assert.match(failure?.message ?? '', /changed during review/);
+    assert.equal(fs.existsSync(join(f.root, 'docs/development/.reviews')), false);
+  });

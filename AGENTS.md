@@ -108,6 +108,19 @@ stale review evidence; a previous report cannot narrow required checks. See the
 
 ## Verification
 
+| Intent | Default command |
+| --- | --- |
+| Development probe | Focused unit/browser command; no completion claim |
+| Local completion | `npm run verify:candidate -- local` |
+| Integration or milestone qualification | `npm run verify:candidate -- final` |
+| Authorized experimental publication | Existing release preparation and exception policy |
+
+Direct tiers remain for already frozen CI/release copies. Complete source-writing
+`docs:prepare` and `docs:review` operations before capturing completion. Documentation
+review requires a single writer to its documents/sidecars during invocation; use your
+isolated worktree. Drift checks detect observed changes, not arbitrary concurrent
+writes between filesystem operations.
+
 Use analytical solutions, conservation accounting and symmetry for physical claims;
 two processes and both production clock drivers for deterministic projection hashes;
 rendered/simulated transform agreement then text state then pixels for UI claims;

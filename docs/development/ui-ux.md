@@ -260,7 +260,7 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"a57eb54606fc2c952a79deb5633013a2a785e78fc0d0660e8433ea0a43d3d001","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"055ea54bdaf6e412bd016d4bae5a03d4ac9f9e5f8d5b9dcc8ae6b9dc89b61e49","disposition":"still accurate","rationale":"Preserved learning examples, workbench content and target-player acceptance requirements; restored a coherent source-bound receipt after merging documentation metadata."} -->
+<!-- doc-review {"version":1,"fingerprint":"1b6d33231a3ac6040329d937f51dbc6adfed4b786c5ad0ddd0ae218a47c5ea6d","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"a8261eb093cc81f312a3e34a5d0afdea0b2a2e56b60c29558b25725314d41b14","disposition":"still accurate","rationale":"Tooling now publishes browser progress and retains each attempt evidence. Actual player journeys, viewport and negative-path requirements remain unchanged, and automated evidence still cannot substitute for human acceptance."} -->
 
 
 Use the manifest's `workbench-content-lifecycle` invariant and

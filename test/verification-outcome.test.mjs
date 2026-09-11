@@ -55,3 +55,23 @@ test('only complete automation and accepted human evidence qualify', () => {
   assert.equal(out.qualification.status, 'PASS');
   assert.equal(out.exitCode, 0);
 });
+
+test('absent gate is not evaluated rather than an invented structural failure', () => {
+  const out = verificationOutcome(
+    [
+      { id: 'ci', ok: true },
+      { id: 'browser', ok: false },
+    ],
+    [],
+  );
+  assert.equal(out.exitCode, 1);
+  assert.ok(!out.automation.failures.includes('structural checks'));
+  assert.ok(!out.automation.failures.includes('milestone obligations'));
+  assert.equal(out.phases.find((row) => row.id === 'gate').status, 'NOT_EVALUATED');
+  assert.match(out.phases.find((row) => row.id === 'gate').reason, /browser/);
+  for (const value of [undefined, -1, NaN, '0']) {
+    const rows = result([]);
+    rows[2].result.failed = value;
+    assert.equal(verificationOutcome(rows, []).exitCode, 1);
+  }
+});

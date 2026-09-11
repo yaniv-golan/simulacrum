@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -7,7 +8,7 @@ const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
   errors = browserEvidence.errors;
 
-const out = 'artifacts/manipulation-ux';
+const out = browserArtifactPath('artifacts/manipulation-ux');
 mkdirSync(out, { recursive: true });
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');

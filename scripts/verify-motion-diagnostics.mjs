@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -9,7 +10,7 @@ const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   errors = browserEvidence.errors;
 page.setDefaultTimeout(6000);
 
-const directory = 'artifacts/motion-diagnostics';
+const directory = browserArtifactPath('artifacts/motion-diagnostics');
 mkdirSync(directory, { recursive: true });
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');

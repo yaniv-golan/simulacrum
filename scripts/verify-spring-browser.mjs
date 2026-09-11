@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import assert from 'node:assert/strict';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { createSpringStrut } from '../src/model/fixtures/spring-playground.mjs';
@@ -31,7 +32,7 @@ assert.throws(() =>
 );
 assert.throws(() => assertMinimumPixels({ ...pixelControl, width: 800, height: 600 }));
 const evidence = createBrowserEvidence(),
-  out = 'artifacts/spring-browser';
+  out = browserArtifactPath('artifacts/spring-browser');
 mkdirSync(out, { recursive: true });
 const browser = await evidence.launch({ profile: 'focus' });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });

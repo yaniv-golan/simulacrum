@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -123,7 +124,7 @@ export async function qualifyWorkshop(
     errors,
   };
 
-  mkdirSync('artifacts/m3b', { recursive: true });
+  mkdirSync(browserArtifactPath('artifacts/m3b'), { recursive: true });
   try {
     await page.goto(url);
     await page.waitForFunction(() => window.workshopProbe);
@@ -234,8 +235,11 @@ export async function qualifyWorkshop(
     ]);
     evidence.assert('equal', [appFingerprint(), build]);
     report.metrics = await page.evaluate(() => window.workshopProbe.metrics());
-    await page.screenshot({ path: 'artifacts/m3b/f2.png' });
-    writeFileSync('artifacts/m3b/f2.json', JSON.stringify(report, null, 2) + '\n');
+    await page.screenshot({ path: browserArtifactPath('artifacts/m3b/f2.png') });
+    writeFileSync(
+      browserArtifactPath('artifacts/m3b/f2.json'),
+      JSON.stringify(report, null, 2) + '\n',
+    );
     return report;
   } catch (error) {
     await evidence.captureFailure(error);
@@ -243,8 +247,13 @@ export async function qualifyWorkshop(
     report.metrics = await page
       .evaluate(() => window.workshopProbe?.metrics() ?? [])
       .catch(() => []);
-    await page.screenshot({ path: 'artifacts/m3b/f2-failed.png' }).catch(() => {});
-    writeFileSync('artifacts/m3b/f2-attempt.json', JSON.stringify(report, null, 2) + '\n');
+    await page
+      .screenshot({ path: browserArtifactPath('artifacts/m3b/f2-failed.png') })
+      .catch(() => {});
+    writeFileSync(
+      browserArtifactPath('artifacts/m3b/f2-attempt.json'),
+      JSON.stringify(report, null, 2) + '\n',
+    );
     throw error;
   } finally {
     await browser.close();

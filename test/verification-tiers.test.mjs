@@ -47,3 +47,26 @@ test('failed preflight stops expensive phases and cannot claim local completion'
     0,
   );
 });
+
+test('completion priority arguments preserve tier and normalized provenance', async () => {
+  const { parseCompletionArgs } = await import('../scripts/verification-tiers.mjs');
+  assert.deepEqual(
+    parseCompletionArgs('local', [
+      '--base',
+      'HEAD~1',
+      '--priority-files',
+      'scripts/verify-browser.mjs',
+    ]),
+    {
+      base: 'HEAD~1',
+      priorityFiles: ['scripts/verify-browser.mjs'],
+      priorityProvenance: 'explicit integration paths',
+    },
+  );
+  assert.throws(() => parseCompletionArgs('final', ['--base', 'HEAD']), /Usage/);
+  assert.throws(
+    () => parseCompletionArgs('local', ['--priority-files', '../escape']),
+    /inside project/,
+  );
+  assert.throws(() => parseCompletionArgs('final', ['--priority-files']), /Usage/);
+});

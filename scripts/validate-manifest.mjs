@@ -87,10 +87,9 @@ export function validateManifest(m) {
         scope.entrypoint.startsWith('src/') ||
         browser.some((c) => c.script === scope.entrypoint && scope.checks?.includes(c.id))
       ) ||
-      (scope.entrypoint.startsWith('src/') &&
-        (!Array.isArray(scope.consumers) ||
-          !scope.consumers.every((p) => typeof p === 'string') ||
-          !/^[a-f0-9]{64}$/.test(scope.roots ?? ''))) ||
+      !Array.isArray(scope.consumers) ||
+      !scope.consumers.every((p) => typeof p === 'string') ||
+      !/^[a-f0-9]{64}$/.test(scope.roots ?? '') ||
       !Array.isArray(scope.externalImports ?? []) ||
       !(scope.externalImports ?? []).every((p) => typeof p === 'string') ||
       !Array.isArray(scope.dependencies) ||

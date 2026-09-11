@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { createSession } from '../src/simulation/session.mjs';
@@ -48,8 +49,8 @@ try {
       identity,
       'source changed during browser verification',
     ]);
-    mkdirSync('artifacts/browser-m1', { recursive: true });
-    await page.screenshot({ path: 'artifacts/browser-m1/raf.png' });
+    mkdirSync(browserArtifactPath('artifacts/browser-m1'), { recursive: true });
+    await page.screenshot({ path: browserArtifactPath('artifacts/browser-m1/raf.png') });
     const result = {
       ...browserEvidence.identity,
       app: identity,
@@ -61,7 +62,10 @@ try {
       errors,
     };
     browserEvidence.assertUnchanged();
-    writeFileSync('artifacts/browser-m1/raf.json', JSON.stringify(result, null, 2) + '\n');
+    writeFileSync(
+      browserArtifactPath('artifacts/browser-m1/raf.json'),
+      JSON.stringify(result, null, 2) + '\n',
+    );
     console.log(JSON.stringify(result));
   } finally {
     reference.dispose();

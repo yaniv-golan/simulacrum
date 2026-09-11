@@ -1,6 +1,7 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { mkdirSync } from 'node:fs';
-mkdirSync('artifacts/ux-repairs', { recursive: true });
+mkdirSync(browserArtifactPath('artifacts/ux-repairs'), { recursive: true });
 
 const browserEvidence = createBrowserEvidence();
 
@@ -29,7 +30,7 @@ try {
     await p.getByRole('button', { name: 'Snap to surface', exact: true }).isEnabled(),
     true,
   ]);
-  await p.screenshot({ path: 'artifacts/ux-repairs/attached.png' });
+  await p.screenshot({ path: browserArtifactPath('artifacts/ux-repairs/attached.png') });
   console.log('PASS axle status');
 } catch (error) {
   await browserEvidence.captureFailure(error);

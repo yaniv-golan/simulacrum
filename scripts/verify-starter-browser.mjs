@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { finalRollingIntervals } from './starter-motion.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -15,7 +16,7 @@ const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
 
 let last;
 const frame = () => page.evaluate(() => window.workshopProbe.observe().frames[0]);
-mkdirSync('artifacts/starter-browser', { recursive: true });
+mkdirSync(browserArtifactPath('artifacts/starter-browser'), { recursive: true });
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.waitForFunction(() => window.workshopProbe);
@@ -95,7 +96,7 @@ try {
     centers.every((p) => Math.abs(p.x) < 1 && Math.abs(p.y) < 1 && Math.abs(p.z) < 1),
     'follow keeps machine in view',
   ]);
-  await page.screenshot({ path: 'artifacts/starter-browser/sustained.png' });
+  await page.screenshot({ path: browserArtifactPath('artifacts/starter-browser/sustained.png') });
   await page.locator('[data-command=build]').click();
   if (!(await page.locator('.machine-picker').evaluate((el) => el.open)))
     await page.locator('.machine-picker > summary').click();
@@ -133,7 +134,7 @@ try {
   browserEvidence.assert('equal', [appFingerprint(), build]);
   browserEvidence.assertUnchanged();
   writeFileSync(
-    'artifacts/starter-browser/qualification.json',
+    browserArtifactPath('artifacts/starter-browser/qualification.json'),
     JSON.stringify(
       {
         ...browserEvidence.identity,
@@ -167,9 +168,11 @@ try {
 } catch (error) {
   await browserEvidence.captureFailure(error);
 
-  await page.screenshot({ path: 'artifacts/starter-browser/failed.png' }).catch(() => {});
+  await page
+    .screenshot({ path: browserArtifactPath('artifacts/starter-browser/failed.png') })
+    .catch(() => {});
   writeFileSync(
-    'artifacts/starter-browser/failure.json',
+    browserArtifactPath('artifacts/starter-browser/failure.json'),
     JSON.stringify({ source, build, errors, samples, last, message: error.message }, null, 2),
   );
   throw error;

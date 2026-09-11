@@ -1,10 +1,11 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { assemblyPartition } from './assembly-scenarios.mjs';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 export async function runAssemblyCases(partition, evidence, browser) {
   if (![0, 1].includes(partition)) throw Error('Invalid assembly partition');
   let scenarioIndex = 0;
-  const out = `artifacts/assembly-ux-browser-${partition}`;
+  const out = browserArtifactPath(`artifacts/assembly-ux-browser-${partition}`);
   mkdirSync(out, { recursive: true });
   const results = [];
   const rover = JSON.parse(

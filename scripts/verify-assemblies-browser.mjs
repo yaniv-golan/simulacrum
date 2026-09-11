@@ -1,7 +1,8 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 const evidence = createBrowserEvidence(),
-  out = process.argv[3] ?? 'artifacts/assemblies-browser';
+  out = browserArtifactPath('artifacts/assemblies-browser', process.argv[3]);
 mkdirSync(out, { recursive: true });
 const browser = await evidence.launch({ profile: 'ui' });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } }),

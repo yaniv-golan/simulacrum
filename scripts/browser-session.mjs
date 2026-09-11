@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, basename } from 'node:path';
@@ -38,7 +39,7 @@ export function attachBrowserSession(
     expectedErrors = [],
   } = {},
 ) {
-  const directory = `artifacts/browser-evidence/${name}`,
+  const directory = browserArtifactPath(`artifacts/browser-evidence/${name}`),
     pages = [],
     contexts = new Set(),
     records = [],

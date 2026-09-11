@@ -1,3 +1,4 @@
+import { normalizeSelectedFiles } from './test-selection.mjs';
 import { readManifest } from './validate-manifest.mjs';
 import { readdirSync, readFileSync } from 'node:fs';
 export function browserChecks() {
@@ -64,11 +65,12 @@ export function parseBrowserArgs(args) {
     if (arg.startsWith('--')) {
       if (seen.has(arg)) throw Error(`duplicate option: ${arg}`);
       seen.add(arg);
-      if (arg === '--checks' || arg === '--files') {
+      if (arg === '--checks' || arg === '--files' || arg === '--priority-files') {
         const values = [];
         while (i + 1 < args.length && !args[i + 1].startsWith('-')) values.push(args[++i]);
         if (!values.length) throw Error(`${arg} needs values`);
-        if (arg === '--files') result.files = values;
+        if (arg === '--priority-files') result.priorityFiles = normalizeSelectedFiles(values);
+        else if (arg === '--files') result.files = values;
         else {
           if (result.mode) throw Error('conflicting browser selectors');
           result.mode = values;

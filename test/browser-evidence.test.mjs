@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, existsSync, symlinkSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createBrowserEvidence, createFixtureEvidence } from '../scripts/browser-evidence.mjs';
@@ -399,4 +399,39 @@ test('rejected edit helper catches mutation; real pointer drag scrolls and relea
     /interrupted/,
   );
   assert.equal(calls.at(-1), 'up');
+});
+
+test('browser artifacts preserve standalone paths and isolate repeated checks under their run roots', async (t) => {
+  const { browserArtifactPath } = await import('../scripts/browser-artifacts.mjs');
+  const dir = mkdtempSync(join(tmpdir(), 'browser-artifact-roots-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const previous = process.env.SIMULACRUM_BROWSER_ARTIFACT_ROOT;
+  t.after(() => {
+    if (previous === undefined) delete process.env.SIMULACRUM_BROWSER_ARTIFACT_ROOT;
+    else process.env.SIMULACRUM_BROWSER_ARTIFACT_ROOT = previous;
+  });
+  delete process.env.SIMULACRUM_BROWSER_ARTIFACT_ROOT;
+  assert.equal(browserArtifactPath('artifacts/check/result.json'), 'artifacts/check/result.json');
+  assert.equal(browserArtifactPath('artifacts/check', '/custom/output'), '/custom/output');
+  for (const run of ['first', 'second']) {
+    process.env.SIMULACRUM_BROWSER_ARTIFACT_ROOT = join(dir, run);
+    assert.equal(browserArtifactPath('artifacts/check', '/custom/output'), join(dir, run, 'check'));
+    const evidence = createBrowserEvidence({
+      name: 'same-check',
+      readBuild: () => run,
+      readSource: () => ({ run }),
+    });
+    await evidence.captureFailure(new Error(run));
+  }
+  const first = join(dir, 'first/browser-evidence/same-check/failure.json');
+  const second = join(dir, 'second/browser-evidence/same-check/failure.json');
+  assert.equal(JSON.parse(readFileSync(first)).build, 'first');
+  assert.equal(JSON.parse(readFileSync(second)).build, 'second');
+  assert.equal(existsSync(join(dir, 'check')), false);
+  assert.throws(() => browserArtifactPath('artifacts/../../escape'), /artifact path/);
+  assert.throws(() => browserArtifactPath('/outside'), /artifact path/);
+  symlinkSync(dir, join(dir, 'second', 'escape'));
+  assert.throws(() => browserArtifactPath('artifacts/escape/result.json'), /symlink/);
+  process.env.SIMULACRUM_BROWSER_ARTIFACT_ROOT = 'relative/root';
+  assert.throws(() => browserArtifactPath('artifacts/check'), /absolute/);
 });

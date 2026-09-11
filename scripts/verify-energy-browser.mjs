@@ -1,10 +1,11 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { sourceIdentity } from './source-identity.mjs';
 const browserEvidence = createBrowserEvidence();
 
-const out = 'artifacts/energy-browser';
+const out = browserArtifactPath('artifacts/energy-browser');
 mkdirSync(out, { recursive: true });
 const source = sourceIdentity(),
   browser = await browserEvidence.launch({ profile: 'ui', ...{} }),

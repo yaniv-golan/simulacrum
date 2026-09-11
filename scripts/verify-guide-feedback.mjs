@@ -1,9 +1,10 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 const browserEvidence = createBrowserEvidence();
 
-const out = 'artifacts/guide-feedback';
+const out = browserArtifactPath('artifacts/guide-feedback');
 mkdirSync(out, { recursive: true });
 const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),

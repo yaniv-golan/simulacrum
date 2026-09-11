@@ -1,3 +1,4 @@
+import { normalizeSelectedFiles } from './test-selection.mjs';
 /** A failed prerequisite prevents expensive downstream work. Qualification uses a separate gate. */
 export async function runVerificationPhases(phases) {
   const rows = [];
@@ -52,4 +53,32 @@ export async function checkVerificationTiers() {
   ]);
   if (ran) throw Error('failed prerequisites did not stop browser execution');
   return { ok: true };
+}
+
+/** Priority is scheduling metadata, never a verification selector. */
+export function parseCompletionArgs(tier, args) {
+  const result = {
+    base: 'HEAD',
+    priorityFiles: [],
+    priorityProvenance: 'explicit integration paths',
+  };
+  const usage = () =>
+    Error(
+      'Usage: local [--base <commit>] [--priority-files <paths...>] | final [--priority-files <paths...>]',
+    );
+  if (!['local', 'final'].includes(tier)) throw usage();
+  const seen = new Set();
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (seen.has(arg)) throw usage();
+    seen.add(arg);
+    if (arg === '--base' && tier === 'local' && args[i + 1] && !args[i + 1].startsWith('--'))
+      result.base = args[++i];
+    else if (arg === '--priority-files') {
+      while (args[i + 1] && !args[i + 1].startsWith('-')) result.priorityFiles.push(args[++i]);
+      if (!result.priorityFiles.length) throw usage();
+    } else throw usage();
+  }
+  result.priorityFiles = [...new Set(normalizeSelectedFiles(result.priorityFiles))];
+  return result;
 }

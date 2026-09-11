@@ -6,11 +6,11 @@
     "scripts/analysis-snapshot.mjs": "ef4628c9a026cd935f9c42caeffdf4644935671250eee2170a358b88d18d243d",
     "scripts/check-documentation.mjs": "adf1496351f13a8c3ab04810c2ad7a4a566fdd5deb15874aa17790382e138525",
     "scripts/development-reference.mjs": "cd38e55e0fb5dd1f738bd061f605b42a8d2f75f6ea83c2a9288ea21e4042d4cf",
-    "scripts/documentation.mjs": "c283e122b87a4f66b910f7d472c6ca4c372d29d7abeb6fb5a95d03ed089aa443",
+    "scripts/documentation.mjs": "5ecac22091c0b61fde480a9cf5c7fef1855c030640617d2fcea978a2d6648891",
     "scripts/module-graph.mjs": "e9930c64623e3515ed9949b07530e9cbcfc70caf6da86e484402625045e0dd0e",
     "scripts/navigation.mjs": "21299888a2f72faa2c0c24a19a8cd105cd27c822927858ecec0c504768e0d58b",
     "scripts/manifest.json#check=developer-documentation": "da797452e2b026fbd18d7224ee57d1b7fc2bb04da8fae08b3d8e49a5f3bc23c5",
-    "docs/development/reference.md": "bd9640d3dd0fc17434af9cd479b5250d375f81e8a8c3ee629b20e62beefc682f",
+    "docs/development/reference.md": "e532e3cee722b24bded69a27db1601176d81b3228e1beb4dbd731d857bdb6f61",
     "package.json#script=docs:prepare": "12217c6795d7e7b9dd072d5f7c5c5f86522a3e11ca9d186fc4b0075831ca39f4",
     "package.json#script=docs:review": "cfe62878e316eb98829acab28bb8d8c45d224e6f3e9caf26fc6f202d334489c6",
     "package.json#script=docs:check": "507aa495a8e3083a872156aa128bfc7dccd108984ebe830ca7712bc9cc1395dd"

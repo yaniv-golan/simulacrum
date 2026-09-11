@@ -1,3 +1,4 @@
+import { browserScopeConsumers, browserScopeRoots } from '../scripts/browser-selection.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { browserChecks, validateBrowserCoverage } from '../scripts/browser-registry.mjs';
@@ -103,7 +104,13 @@ test('local feature boundary narrows only its reviewed dependency shape; shared 
   );
   nodes.set('help', { dependencies: ['shared'], opaqueInputs: false });
   const scopes = [
-    { entrypoint: 'help', dependencies: ['shared'], checks: ['help', 'integration'] },
+    {
+      entrypoint: 'help',
+      dependencies: ['shared'],
+      checks: ['help', 'integration'],
+      consumers: [],
+      roots: browserScopeRoots(checks),
+    },
   ];
   const select = (files) =>
     selectAffectedBrowserChecks({ checks, graph: { nodes, errors: [] }, files, scopes });
@@ -132,7 +139,15 @@ test('documentation composes with local scopes without exempting runtime data or
     ['index.html', { dependencies: [] }],
   ]);
   const graph = { nodes, errors: [] };
-  const scopes = [{ entrypoint: 'scripts/mirror.mjs', dependencies: [], checks: ['mirror'] }];
+  const scopes = [
+    {
+      entrypoint: 'scripts/mirror.mjs',
+      dependencies: [],
+      checks: ['mirror'],
+      consumers: browserScopeConsumers(graph, 'scripts/mirror.mjs'),
+      roots: browserScopeRoots(checks),
+    },
+  ];
   const doc = 'docs/development/.reviews/README/developer-guide.json';
   const select = (files) => selectAffectedBrowserChecks({ checks, graph, files, scopes });
   assert.equal(select([doc]).checks.length, 0);

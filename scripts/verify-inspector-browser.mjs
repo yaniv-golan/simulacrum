@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -8,7 +9,7 @@ const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   errors = browserEvidence.errors;
 page.setDefaultTimeout(6000);
 
-const out = process.argv[3] ?? 'artifacts/inspector-browser';
+const out = browserArtifactPath('artifacts/inspector-browser', process.argv[3]);
 mkdirSync(out, { recursive: true });
 const read = () => page.evaluate(() => window.workshopProbe.observe().frames[0].metadata.blueprint);
 const selectPart = async (name) => {

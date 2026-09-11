@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -7,7 +8,7 @@ const browser = await browserEvidence.launch({ profile: 'recording', ...{} }),
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
   errors = browserEvidence.errors;
 
-mkdirSync('artifacts/recording-browser', { recursive: true });
+mkdirSync(browserArtifactPath('artifacts/recording-browser'), { recursive: true });
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.waitForFunction(() => window.workshopProbe);
@@ -58,7 +59,7 @@ try {
   browserEvidence.assert('ok', [
     capture.events.every((e, i) => e.seq === i + 1 && e.context.cursor),
   ]);
-  await page.screenshot({ path: 'artifacts/recording-browser/recording.png' });
+  await page.screenshot({ path: browserArtifactPath('artifacts/recording-browser/recording.png') });
   await browserEvidence.reload(page);
   await page.waitForFunction(() => window.workshopProbe);
   await page.locator('.recording-panel summary').click();
@@ -71,7 +72,7 @@ try {
   browserEvidence.assert('deepEqual', [errors, []]);
   browserEvidence.assertUnchanged();
   writeFileSync(
-    'artifacts/recording-browser/result.json',
+    browserArtifactPath('artifacts/recording-browser/result.json'),
     JSON.stringify(
       {
         ...browserEvidence.identity,

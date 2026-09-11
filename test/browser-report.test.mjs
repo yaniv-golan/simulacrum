@@ -104,3 +104,151 @@ test('real suite owns cleanup inside failed receipts and preserves simultaneous 
     if (row.childFail) assert.match(JSON.stringify(row.report), /injected child failure/);
   }
 });
+
+test('progress is visible before completion and later attempts preserve earlier evidence', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'suite-progress-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  let first;
+  await assert.rejects(
+    withBrowserReport(
+      'all',
+      {},
+      async (report, publish) => {
+        first = report;
+        writeFileSync(join(report.directory, 'failure.log'), 'original failure');
+        report.runs.push({
+          id: 'fast',
+          status: 'failed',
+          ok: false,
+          log: join(report.directory, 'failure.log'),
+        });
+        publish();
+        const live = JSON.parse(readFileSync(report.reportPath));
+        assert.equal(live.status, 'running');
+        assert.equal(live.ok, false);
+        assert.equal(live.runs[0].id, 'fast');
+        throw Error('deliberate failure');
+      },
+      dir,
+    ),
+    /deliberate failure/,
+  );
+  await withBrowserReport(
+    'all',
+    {},
+    async (report) => {
+      assert.notEqual(report.runId, first.runId);
+      writeFileSync(join(report.directory, 'failure.log'), 'later success');
+    },
+    dir,
+  );
+  const retained = JSON.parse(readFileSync(first.reportPath));
+  assert.equal(retained.status, 'failed');
+  assert.equal(readFileSync(retained.runs[0].log, 'utf8'), 'original failure');
+  assert.notEqual(JSON.parse(readFileSync(join(dir, 'last-run.json'))).runId, first.runId);
+});
+
+test('actual suite separates canonical selection from priority execution', () => {
+  const child = spawnSync(
+    process.execPath,
+    [join(repo, 'test/fixtures/browser-suite-cleanup.mjs')],
+    { encoding: 'utf8' },
+  );
+  assert.equal(child.status, 0, child.stderr);
+  const rows = child.stdout
+    .split('\n')
+    .filter((s) => s.startsWith('PRIORITY '))
+    .map((s) => JSON.parse(s.slice(9)));
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows[0].order, rows[0].selected);
+  assert.deepEqual(rows[1].order, [...rows[1].selected].reverse());
+  assert.deepEqual(
+    rows[0].report.runs.map((r) => r.id),
+    rows[1].report.runs.map((r) => r.id),
+  );
+  assert.equal(rows[1].report.status, 'failed');
+  assert.equal(
+    rows[1].liveRuns[1].find((r) => r.id === rows[1].report.runs[1].id).status,
+    'failed',
+  );
+  assert.equal(
+    rows[0].liveRuns[1].find((r) => r.id === rows[0].report.runs[0].id).status,
+    'passed',
+  );
+  assert.equal(rows[0].report.runs.filter((r) => r.ok === false).length, 1);
+  assert.equal(rows[1].report.runs.filter((r) => r.ok === false).length, 1);
+});
+
+test('final alias publication failure cannot leave authoritative success', async (t) => {
+  const fs = (await import('node:fs')).default;
+  const { syncBuiltinESMExports } = await import('node:module');
+  const dir = mkdtempSync(join(tmpdir(), 'suite-publication-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const rename = fs.renameSync;
+  let reportPath,
+    injected = false;
+  fs.renameSync = (from, to) => {
+    if (
+      !injected &&
+      to.endsWith('last-run.json') &&
+      JSON.parse(readFileSync(from)).status === 'passed'
+    ) {
+      injected = true;
+      throw Error('injected publication failure');
+    }
+    return rename(from, to);
+  };
+  syncBuiltinESMExports();
+  try {
+    await assert.rejects(
+      withBrowserReport(
+        'all',
+        {},
+        async (report) => {
+          reportPath = report.reportPath;
+        },
+        dir,
+      ),
+      /publication failure/,
+    );
+    assert.equal(JSON.parse(readFileSync(reportPath)).ok, false);
+    assert.equal(JSON.parse(readFileSync(reportPath)).status, 'failed');
+  } finally {
+    fs.renameSync = rename;
+    syncBuiltinESMExports();
+  }
+});
+
+test('same-context suite reuse references retained original evidence for success and failures', () => {
+  const child = spawnSync(
+    process.execPath,
+    [join(repo, 'test/fixtures/browser-suite-cleanup.mjs')],
+    { encoding: 'utf8' },
+  );
+  assert.equal(child.status, 0, child.stderr);
+  const rows = child.stdout
+    .split('\n')
+    .filter((line) => line.startsWith('REUSE_EVIDENCE '))
+    .map((line) => JSON.parse(line.slice(15)));
+  assert.equal(rows.length, 3);
+  for (const row of rows) {
+    assert.equal(row.executions, 1);
+    const [original, reused] = row.reports;
+    assert.notEqual(original.runId, reused.runId);
+    assert.equal(original.runs[0].reused, false);
+    assert.equal(reused.runs[0].reused, true);
+    assert.deepEqual(original.runs[0].evidenceOrigin, reused.runs[0].evidenceOrigin);
+    assert.equal(reused.runs[0].evidenceOrigin.runId, original.runId);
+    assert.equal(reused.runs[0].evidenceOrigin.reportPath, original.reportPath);
+    assert.equal(reused.runs[0].evidenceDirectory, original.runs[0].evidenceDirectory);
+    assert.equal(reused.runs[0].log, original.runs[0].log);
+    assert.equal(original.runs[0].ok, !(row.childFailed || row.cleanupFailed));
+    assert.equal(reused.runs[0].ok, original.runs[0].ok);
+    assert.equal(row.retainedBytes, row.originalBytes);
+    assert.ok(row.originalBytes.length);
+    assert.ok(row.originalLog.length);
+    if (row.cleanupFailed) assert.match(row.originalLog, /child passed.*witness.json/);
+    assert.equal(row.retainedLog, row.originalLog);
+    assert.deepEqual(row.retainedReport, original);
+  }
+});

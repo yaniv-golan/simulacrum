@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { deterministicProjection } from '../src/model/tick.mjs';
 import { CATALOG } from '../src/model/catalog.mjs';
 import * as THREE from 'three';
@@ -5,7 +6,7 @@ import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 const evidence = createBrowserEvidence();
-const out = 'artifacts/connection-test-browser';
+const out = browserArtifactPath('artifacts/connection-test-browser');
 mkdirSync(out, { recursive: true });
 const browser = await evidence.launch({ profile: 'ui', ...{} });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });

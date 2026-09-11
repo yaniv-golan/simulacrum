@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -8,7 +9,7 @@ const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   errors = browserEvidence.errors;
 const frame = () => page.evaluate(() => window.workshopProbe.observe().frames[0]);
 
-mkdirSync('artifacts/direct-edit', { recursive: true });
+mkdirSync(browserArtifactPath('artifacts/direct-edit'), { recursive: true });
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.waitForFunction(() => window.workshopProbe);
@@ -33,7 +34,7 @@ try {
   const original = (await frame()).metadata.blueprint.parts[0];
   browserEvidence.assert('equal', [original.type, 'poweredMotor']);
   browserEvidence.assert('equal', [original.position[1], 0.06]);
-  await page.screenshot({ path: 'artifacts/direct-edit/dragged.png' });
+  await page.screenshot({ path: browserArtifactPath('artifacts/direct-edit/dragged.png') });
   const center = await page.evaluate(() => window.workshopProbe.readRenderedCenters()[0]);
   const px = canvas.x + (center.x * 0.5 + 0.5) * canvas.width,
     py = canvas.y + (-center.y * 0.5 + 0.5) * canvas.height;
@@ -45,7 +46,7 @@ try {
     original.position,
     'drag preview cannot write physical pose',
   ]);
-  await page.screenshot({ path: 'artifacts/direct-edit/move-preview.png' });
+  await page.screenshot({ path: browserArtifactPath('artifacts/direct-edit/move-preview.png') });
   await page.mouse.up();
   browserEvidence.assert('notDeepEqual', [
     (await frame()).metadata.blueprint.parts[0].position,
@@ -163,7 +164,7 @@ try {
   browserEvidence.assert('deepEqual', [errors, []]);
   browserEvidence.assertUnchanged();
   writeFileSync(
-    'artifacts/direct-edit/result.json',
+    browserArtifactPath('artifacts/direct-edit/result.json'),
     JSON.stringify(
       {
         ...browserEvidence.identity,

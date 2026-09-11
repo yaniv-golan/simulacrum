@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
@@ -8,7 +9,7 @@ const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   errors = browserEvidence.errors;
 page.setDefaultTimeout(6000);
 
-const out = 'artifacts/exploded-view';
+const out = browserArtifactPath('artifacts/exploded-view');
 mkdirSync(out, { recursive: true });
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');

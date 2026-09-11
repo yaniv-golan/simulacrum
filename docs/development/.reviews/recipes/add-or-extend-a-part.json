@@ -42,6 +42,9 @@
     "src/simulation/session.mjs": "2a6a26f6a7085d3c10610af6386ebae4d8bac23bf94a37b24d6b2e5ed22fb2fa",
     "test/wheel-diameter.test.mjs": "4eff306b94d63d9065c8fb659c48db05b77ca79c25fe2008193c73cfb7945c62",
     "test/assembly.test.mjs": "bfcee8479007f30f09405ed17eec18843fb5dc19d40363b6569d0dc871f90a5c",
-    "test/ball.test.mjs": "7ebac9b002ad7d34c68ca33905246e8b5bd7a86fe677fb10e185ef3d9cbb095c"
+    "test/ball-launcher.test.mjs": "c973dcfa9476ed0f996af79db1e1c0cfd2b7448d03fb0641662d0bf8176c63cf",
+    "test/ball-guide-retention.test.mjs": "eaa557fa716d521012eb337915558fa5f1d353f4adbcbac75e429b23ebab75c3",
+    "test/ball-catcher-repair.test.mjs": "d28c0cc4e5194074a90a102c2a2d947c9b3b49adc51f14bea44861e912c73345",
+    "test/ball.test.mjs": "2f1bc6622849415ed99e2de49430a22699bc0a33d7347facc1cfd6ec37a66935"
   }
 }

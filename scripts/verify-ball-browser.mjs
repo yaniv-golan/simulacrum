@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
@@ -5,7 +6,7 @@ import { createBallDrop } from '../src/model/fixtures/ball-drop.mjs';
 import { createSpringLauncher } from '../src/model/fixtures/spring-launcher.mjs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 const evidence = createBrowserEvidence(),
-  out = 'artifacts/ball-browser';
+  out = browserArtifactPath('artifacts/ball-browser');
 mkdirSync(out, { recursive: true });
 const browser = await evidence.launch({ profile: 'focus' });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });

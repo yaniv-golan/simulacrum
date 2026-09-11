@@ -7,7 +7,7 @@ import {
 import { runCI } from './ci.mjs';
 import { affectedBrowserChecks } from './browser-selection.mjs';
 import { verifyBrowserSuite } from './verify-browser-suite.mjs';
-import { runVerificationPhases, localOutcome } from './verification-tiers.mjs';
+import { runVerificationPhases, localOutcome, parseCompletionArgs } from './verification-tiers.mjs';
 const started = performance.now();
 const report = {
   scope: 'local',
@@ -23,14 +23,11 @@ const write = () => {
 write();
 try {
   initializeVerificationEnvironment();
-  const args = process.argv.slice(2);
-  if (args.length && !(args.length === 2 && args[0] === '--base'))
-    throw Error(
-      'Usage: verify:local [--base <commit>]. Default base is HEAD; clean source selects all checks.',
-    );
+  const options = parseCompletionArgs('local', process.argv.slice(2));
+  report.priority = options;
   const base = execFileSync(
     'git',
-    ['rev-parse', '--verify', '--end-of-options', `${args[1] ?? 'HEAD'}^{commit}`],
+    ['rev-parse', '--verify', '--end-of-options', `${options.base}^{commit}`],
     { encoding: 'utf8' },
   ).trim();
   const context = createVerificationContext();
@@ -67,7 +64,7 @@ try {
         selection.checks.length
           ? verifyBrowserSuite(
               selection.checks.map((c) => c.id),
-              { context, selection },
+              { context, selection, ...options },
             )
           : [],
     ],

@@ -6,13 +6,18 @@ import {
   statSync,
   realpathSync,
   lstatSync,
+  readlinkSync,
+  renameSync,
+  mkdtempSync,
+  rmSync,
 } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { resolve, relative, dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { parse } from 'acorn';
-import { buildModuleGraph } from './module-graph.mjs';
+import { buildModuleGraph, listProjectFiles } from './module-graph.mjs';
 // Review equivalence only: execution/build identities remain byte-exact.
 function reviewSource(path, value) {
   if (!/\.(?:mjs|cjs|js)$/.test(path)) return value;
@@ -138,7 +143,7 @@ function dispositionError(review) {
   return null;
 }
 /** Inspect current references and section receipts. files is a bounded fixture/inventory override. */
-export function inspectDocumentation(root = process.cwd(), { files } = {}) {
+export function inspectDocumentation(root = process.cwd(), { files, observedReads } = {}) {
   root = realpathSync(root);
   const errors = [],
     sections = [],
@@ -162,7 +167,17 @@ export function inspectDocumentation(root = process.cwd(), { files } = {}) {
   } catch {}
   let activeScopeNotes = [];
   const fileHashes = new Map();
-  const read = (path) => readFileSync(ownedPath(root, path), 'utf8');
+  const readBytes = (path) => {
+    const bytes = readFileSync(ownedPath(root, path));
+    if (observedReads && !receiptMetadata(path)) {
+      const digest = hash(bytes);
+      if (observedReads.has(path) && observedReads.get(path) !== digest)
+        throw Error('documentation or source changed during review; inspect again');
+      observedReads.set(path, digest);
+    }
+    return bytes;
+  };
+  const read = (path) => readBytes(path).toString('utf8');
   const fail = (file, id, message) => `${file}${id ? `#${id}` : ''}: ${message}`;
   function local(from, url) {
     const [rawPath, ...fragment] = url.split('#');
@@ -342,7 +357,7 @@ export function inspectDocumentation(root = process.cwd(), { files } = {}) {
           hash(
             file.endsWith('.md')
               ? authoredMarkdown(document(file))
-              : reviewSource(file, readFileSync(ownedPath(root, file))),
+              : reviewSource(file, readBytes(file)),
           ),
         );
       add(file, `bytes:${fileHashes.get(file)}`);
@@ -741,75 +756,164 @@ export function inspectDocumentation(root = process.cwd(), { files } = {}) {
   }
   return { errors, sections, generated };
 }
-function prepareReview(root, file, id, { disposition, rationale } = {}) {
-  root = realpathSync(root);
-  const invalid = dispositionError({ disposition, rationale });
-  if (invalid) throw Error(invalid);
-  if (!/^docs\/development\/.+\.md$/.test(file) || file.split('/').includes('..'))
-    throw Error('review scope must be one public developer document');
-  const before = readFileSync(ownedPath(root, file), 'utf8');
-  const inspected = inspectDocumentation(root, { files: [file] }),
-    matches = inspected.sections.filter((row) => row.id === id),
-    section = matches[0];
-  if (matches.length > 1)
-    throw Error(`duplicate section ID ${file}#${id}; choose unique headings before review`);
-  if (!section) throw Error(`unknown implementation-backed section ${file}#${id}`);
-  if (section.issues.length) throw Error(section.issues.join('\n'));
-  return { before, section };
+// Byte-exact, invocation-local guard. Include the public inventory so additions,
+// configuration changes and opaque inputs cannot disappear behind semantic hashes.
+// Review metadata is checked separately against each prepared output.
+function reviewSnapshot(root, extraPaths = []) {
+  return new Map(
+    [...new Set([...listProjectFiles(root), ...extraPaths])]
+      .sort()
+      .filter((file) => !receiptMetadata(file))
+      .map((file) => {
+        const path = resolve(root, file),
+          stat = lstatSync(path);
+        return [
+          file,
+          stat.isSymbolicLink() ? `symlink:${readlinkSync(path)}` : hash(readFileSync(path)),
+        ];
+      }),
+  );
 }
 
 /** Each row is a separate reviewed decision. Validate the whole submission before writing. */
 export function reviewSections(root, rows) {
+  root = realpathSync(root);
   if (!Array.isArray(rows) || !rows.length) throw Error('review batch must be a nonempty array');
-  const seen = new Set();
+  const seen = new Set(),
+    documents = new Map();
   for (const row of rows) {
     if (!row || Object.keys(row).sort().join(',') !== 'disposition,file,id,rationale')
       throw Error('each review needs file, id, disposition and rationale');
+    const invalid = dispositionError(row);
+    if (invalid) throw Error(invalid);
+    if (
+      typeof row.file !== 'string' ||
+      !/^docs\/development\/.+\.md$/.test(row.file) ||
+      row.file.split('/').some((part) => ['..', '.', ''].includes(part))
+    )
+      throw Error('review scope must be one public developer document');
+    if (typeof row.id !== 'string' || !row.id || row.id.includes('/') || row.id.includes('\\'))
+      throw Error('review section ID must be a nonempty heading identifier');
     const key = `${row.file}#${row.id}`;
     if (seen.has(key)) throw Error(`duplicate review: ${key}`);
     seen.add(key);
-    prepareReview(root, row.file, row.id, row);
+    ownedPath(root, sidecarPath(row.file, row.id));
+    if (!documents.has(row.file))
+      documents.set(row.file, {
+        before: readFileSync(ownedPath(root, row.file), 'utf8'),
+        edits: [],
+      });
   }
-  // Revalidate each section at write time. A concurrent change can stop the batch;
-  // already written individual receipts remain valid, never a blanket approval.
-  return rows.map((row) => reviewSection(root, row.file, row.id, row));
+  const snapshot = reviewSnapshot(root);
+  const files = [...documents.keys()];
+  const observedReads = new Map();
+  const inspected = inspectDocumentation(root, { files, observedReads });
+  for (const [path, digest] of observedReads) {
+    if (snapshot.has(path) && snapshot.get(path) !== digest)
+      throw Error('documentation or source changed during review; inspect again');
+    snapshot.set(path, digest);
+  }
+  // Referenced files may lie outside the ordinary graph inventory.
+  const inventory = new Set(listProjectFiles(root));
+  const extraPaths = [...observedReads.keys()].filter((path) => !inventory.has(path));
+  const outputs = [],
+    reviews = [];
+  for (const { file, id, disposition, rationale } of rows) {
+    const matches = inspected.sections.filter(
+      (section) => section.file === file && section.id === id,
+    );
+    if (matches.length > 1)
+      throw Error(`duplicate section ID ${file}#${id}; choose unique headings before review`);
+    const section = matches[0];
+    if (!section) throw Error(`unknown implementation-backed section ${file}#${id}`);
+    if (section.issues.length) throw Error(section.issues.join('\n'));
+    const review = {
+      version: VERSION,
+      fingerprint: section.fingerprint,
+      dependencies: sidecarPath(file, id),
+      dependencyDigest: hash(stable(section.dependencies)),
+      disposition,
+      rationale: rationale.trim(),
+    };
+    reviews.push(review);
+    const receipt = section.receipts[0];
+    documents.get(file).edits.push({
+      start: receipt ? receipt.position.start.offset : section.headingEnd,
+      end: receipt ? receipt.position.end.offset : section.headingEnd,
+      text: `${receipt ? '' : '\n'}<!-- doc-review ${JSON.stringify(review)} -->`,
+    });
+    const path = ownedPath(root, review.dependencies);
+    outputs.push({
+      file: review.dependencies,
+      before: existsSync(path) ? readFileSync(path, 'utf8') : null,
+      after:
+        JSON.stringify({ version: VERSION, dependencies: section.dependencies }, null, 2) + '\n',
+    });
+  }
+  for (const [file, { before, edits }] of documents) {
+    let after = before;
+    for (const edit of edits.sort((a, b) => b.start - a.start))
+      after = after.slice(0, edit.start) + edit.text + after.slice(edit.end);
+    outputs.push({ file, before, after });
+  }
+  const drift = () => Error('documentation or source changed during review; inspect again');
+  const assertSnapshot = () => {
+    if (
+      stable(Object.fromEntries(reviewSnapshot(root, extraPaths))) !==
+      stable(Object.fromEntries(snapshot))
+    )
+      throw drift();
+  };
+  const assertOutput = (output, expected) => {
+    const path = ownedPath(root, output.file);
+    if ((existsSync(path) ? readFileSync(path, 'utf8') : null) !== expected) throw drift();
+  };
+  assertSnapshot();
+  for (const output of outputs) assertOutput(output, output.before);
+  // A recoverable journal, not a multi-file transaction. Never roll back over
+  // concurrent edits. Failed callers receive the original and intended bytes.
+  const recoveryDirectory = mkdtempSync(resolve(tmpdir(), 'documentation-review-'));
+  const recoveryPath = resolve(recoveryDirectory, 'recovery.json');
+  writeFileSync(recoveryPath, JSON.stringify({ version: VERSION, root, outputs }, null, 2) + '\n', {
+    mode: 0o600,
+  });
+  try {
+    for (const output of outputs) {
+      assertOutput(output, output.before);
+      const destination = ownedPath(root, output.file);
+      mkdirSync(dirname(destination), { recursive: true });
+      const temporary = `${destination}.review-${randomUUID()}.tmp`;
+      try {
+        writeFileSync(temporary, output.after, { flag: 'wx' });
+        assertOutput(output, output.before);
+        renameSync(temporary, destination);
+      } finally {
+        rmSync(temporary, { force: true });
+      }
+      if (!receiptMetadata(output.file)) snapshot.set(output.file, hash(output.after));
+    }
+    assertSnapshot();
+    for (const output of outputs) assertOutput(output, output.after);
+    // Reinspect the union once after publication, including all sidecar digests.
+    const published = inspectDocumentation(root, { files });
+    for (const { file, id } of rows) {
+      const section = published.sections.find(
+        (section) => section.file === file && section.id === id,
+      );
+      if (!section || section.stale || section.issues.length) throw drift();
+    }
+    assertSnapshot();
+    for (const output of outputs) assertOutput(output, output.after);
+  } catch (error) {
+    error.recoveryPath = recoveryPath;
+    error.message += `; recoverable review output: ${recoveryPath}`;
+    throw error;
+  }
+  rmSync(recoveryDirectory, { recursive: true, force: true });
+  return reviews;
 }
 
-/** Record exactly one current section disposition; never bulk-accept stale prose. */
+/** Record exactly one current section disposition through the batch mechanism. */
 export function reviewSection(root, file, id, { disposition, rationale } = {}) {
-  root = realpathSync(root);
-  const { before, section } = prepareReview(root, file, id, { disposition, rationale });
-  const current = inspectDocumentation(root, { files: [file] }).sections.find(
-    (row) => row.id === id,
-  );
-  if (
-    readFileSync(ownedPath(root, file), 'utf8') !== before ||
-    current?.fingerprint !== section.fingerprint
-  )
-    throw Error('documentation or source changed during review; inspect again');
-  const review = {
-    version: VERSION,
-    fingerprint: section.fingerprint,
-    dependencies: sidecarPath(file, id),
-    dependencyDigest: hash(stable(section.dependencies)),
-    disposition,
-    rationale: rationale.trim(),
-  };
-  const comment = `<!-- doc-review ${JSON.stringify(review)} -->`;
-  let next;
-  if (section.receipts.length) {
-    const receipt = section.receipts[0];
-    next =
-      before.slice(0, receipt.position.start.offset) +
-      comment +
-      before.slice(receipt.position.end.offset);
-  } else
-    next = before.slice(0, section.headingEnd) + '\n' + comment + before.slice(section.headingEnd);
-  mkdirSync(dirname(ownedPath(root, review.dependencies)), { recursive: true });
-  writeFileSync(
-    ownedPath(root, review.dependencies),
-    JSON.stringify({ version: VERSION, dependencies: section.dependencies }, null, 2) + '\n',
-  );
-  writeFileSync(ownedPath(root, file), next);
-  return review;
+  return reviewSections(root, [{ file, id, disposition, rationale }])[0];
 }

@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -5,7 +6,7 @@ import { sourceIdentity } from './source-identity.mjs';
 import { appFingerprint } from './build-fingerprint.mjs';
 const browserEvidence = createBrowserEvidence();
 
-const out = 'artifacts/edit-cycles';
+const out = browserArtifactPath('artifacts/edit-cycles');
 mkdirSync(out, { recursive: true });
 const source = sourceIdentity(),
   build = appFingerprint(),

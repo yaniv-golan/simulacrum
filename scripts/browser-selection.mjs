@@ -185,10 +185,8 @@ export function selectAffectedBrowserChecks({
         const node = graph.nodes.get(file);
         return (
           scope.entrypoint === file &&
-          (!file.startsWith('src/') ||
-            (JSON.stringify(scope.consumers) ===
-              JSON.stringify(browserScopeConsumers(graph, file)) &&
-              JSON.stringify(scope.roots) === JSON.stringify(browserScopeRoots(checks)))) &&
+          JSON.stringify(scope.consumers) === JSON.stringify(browserScopeConsumers(graph, file)) &&
+          JSON.stringify(scope.roots) === JSON.stringify(browserScopeRoots(checks)) &&
           JSON.stringify(
             (node.imports ?? [])
               .filter((i) => i.target === null)
@@ -289,4 +287,49 @@ export function affectedBrowserChecks(files) {
   if (JSON.stringify(sourceIdentity()) !== JSON.stringify(source))
     throw Error('source changed during browser selection');
   return { source, ...selection };
+}
+
+/** Positive static associations affect order only; opaque/unknown input never narrows coverage. */
+export function prioritizeBrowserChecks(checks, files, provenance = 'explicit integration paths') {
+  const normalized = normalizeSelectedFiles(files ?? []);
+  if (!normalized.length) return { checks, reasons: [], files: normalized, provenance };
+  const graph = buildModuleGraph(process.cwd(), {
+    purpose: 'test-selection',
+    entrypoints: browserGraphEntrypoints(process.cwd()),
+  });
+  if (graph.errors.length) throw Error('Cannot prioritize checks: dependency graph errors');
+  const targets = new Set(normalized),
+    reasons = [];
+  for (const check of checks) {
+    const queue = [
+      [check.script],
+      ...(check.environment === 'workshop'
+        ? [['index.html']]
+        : check.environment === 'probe'
+          ? [['test/browser/index.html']]
+          : []),
+    ];
+    const seen = new Set();
+    for (const chain of queue) {
+      const path = chain.at(-1);
+      if (seen.has(path)) continue;
+      seen.add(path);
+      if (targets.has(path)) {
+        reasons.push({ id: check.id, path: chain, reason: 'static integration dependency' });
+        break;
+      }
+      for (const dependency of graph.nodes.get(path)?.dependencies ?? [])
+        queue.push([...chain, dependency]);
+    }
+  }
+  const prioritized = new Set(reasons.map((row) => row.id));
+  return {
+    checks: [
+      ...checks.filter((row) => prioritized.has(row.id)),
+      ...checks.filter((row) => !prioritized.has(row.id)),
+    ],
+    reasons,
+    files: normalized,
+    provenance,
+  };
 }

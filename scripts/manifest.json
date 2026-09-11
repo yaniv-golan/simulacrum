@@ -3109,15 +3109,15 @@
             "anchor": "rolling drop leaves its beam, flies and contacts the moving spring plate"
           },
           {
-            "path": "test/ball.test.mjs",
+            "path": "test/ball-launcher.test.mjs",
             "anchor": "default ball launcher enters and remains in its ordinary catcher for two seconds"
           },
           {
-            "path": "test/ball.test.mjs",
+            "path": "test/ball-launcher.test.mjs",
             "anchor": "ball launch energy exceeds all accounted non-spring sources without creating energy"
           },
           {
-            "path": "test/ball.test.mjs",
+            "path": "test/ball-guide-retention.test.mjs",
             "anchor": "ball side guides retain a held projectile; removing them permits sideways escape"
           },
           {
@@ -3125,7 +3125,7 @@
             "anchor": "empty contact overrides canonicalize on load and ordinary insertion"
           },
           {
-            "path": "test/ball.test.mjs",
+            "path": "test/ball-catcher-repair.test.mjs",
             "anchor": "an ordinary preload edit repairs a real shortfall after moving the catcher farther"
           },
           {
@@ -3159,6 +3159,150 @@
       "qualificationBars": [
         "F1"
       ]
+    },
+    {
+      "id": "verification-live-evidence",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Live reports remain non-green until cleanup, retain attempt-owned evidence and distinguish skipped gates from executed failures.",
+      "owners": [
+        {
+          "path": "scripts/verify-browser-suite.mjs",
+          "anchor": "withBrowserReport"
+        }
+      ],
+      "checks": [
+        "verification-workflow"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "progress is visible before completion and later attempts preserve earlier evidence"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "same-context suite reuse references retained original evidence for success and failures"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "final alias publication failure cannot leave authoritative success"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "verification-priority-coverage",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Integration priority changes execution order only, retaining canonical required coverage and tier outcome semantics.",
+      "owners": [
+        {
+          "path": "scripts/browser-selection.mjs",
+          "anchor": "prioritizeBrowserChecks"
+        }
+      ],
+      "checks": [
+        "verification-workflow"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "actual suite separates canonical selection from priority execution"
+          },
+          {
+            "path": "test/candidate-priority.test.mjs",
+            "anchor": "candidate ${tier} forwards captured priority and preserves exit ${code}"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "actual CLI admission failures replace previous success; summary discovery leaves it alone"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "documentation-batch-review",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Individual semantic decisions share bounded analysis; observed drift and interrupted publication reject batch completion under single-writer ownership.",
+      "owners": [
+        {
+          "path": "scripts/documentation.mjs",
+          "anchor": "reviewSections"
+        }
+      ],
+      "checks": [
+        "developer-documentation"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/documentation.test.mjs",
+            "anchor": "batch analysis work stays bounded while retaining individual decisions across documents"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/documentation.test.mjs",
+            "anchor": "batch rejects source and prose drift at publication without successful closure"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "browser-scope-reviewed-application",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Scope proposals expose graph and read-boundary changes; explicit per-row review and successful source-bound candidate witnesses precede manifest application. Unknown reads and observed source drift reject; repeated unchanged application claims no new verification.",
+      "owners": [
+        {
+          "path": "scripts/browser-scope-proposal.mjs",
+          "anchor": "deriveScopeProposal"
+        },
+        {
+          "path": "scripts/browser-scope-apply.mjs",
+          "anchor": "applyScopeProposal"
+        },
+        {
+          "path": "scripts/browser-scope-witness-contract.mjs",
+          "anchor": "validateScopeWitnessResult"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/browser-scope-proposal.test.mjs",
+            "anchor": "preparation binds deterministic graph facts"
+          },
+          {
+            "path": "test/browser-scope-apply.test.mjs",
+            "anchor": "apply verifies captured bytes"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/browser-scope-proposal.test.mjs",
+            "anchor": "witness admission rejects substituted requests"
+          },
+          {
+            "path": "test/browser-scope-apply.test.mjs",
+            "anchor": "stale proposal and review reject"
+          }
+        ]
+      },
+      "qualificationBars": []
     }
   ],
   "browserLocalScopes": [
@@ -3181,11 +3325,13 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "externalImports": []
     },
     {
       "entrypoint": "scripts/verify-part-help-window.mjs",
       "dependencies": [
+        "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
         "src/presentation/part-help-content.mjs",
         "src/presentation/part-help-diagram.mjs"
@@ -3195,17 +3341,20 @@
         "verify-part-help-browser"
       ],
       "externalImports": [
-        "vite",
-        "playwright",
         "node:fs",
         "node:os",
-        "node:path"
-      ]
+        "node:path",
+        "playwright",
+        "vite"
+      ],
+      "consumers": [],
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
       "dependencies": [
         "scripts/app-fingerprint.mjs",
+        "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
         "scripts/source-identity.mjs"
       ],
@@ -3214,7 +3363,9 @@
       ],
       "checks": [
         "verify-mirror-browser"
-      ]
+      ],
+      "consumers": [],
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -3541,8 +3692,9 @@
   "browserReviewMetadataScopes": [
     {
       "entrypoint": "scripts/verify-exploded-browser.mjs",
-      "sourceSha256": "89a51ff44fac888377bd621c9b155397f499aad71d01f70a79a7ec669c3f37d2",
+      "sourceSha256": "eaeeb38df6133bb524f1abe73dac0c38c5ae581bb7bd876c49e779d86c9fa878",
       "dependencies": [
+        "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs"
       ],
       "externalImports": [
@@ -3567,8 +3719,9 @@
     },
     {
       "entrypoint": "scripts/verify-feedback-receipts.mjs",
-      "sourceSha256": "1b3a385c5d32849362d8c28d18bba0a3834c91bea636447c9b6e8edd723a97b3",
+      "sourceSha256": "13b44d363d19601b91b8dcada5be21b22e0462ead227d684054da3b334b6af76",
       "dependencies": [
+        "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
         "src/application/capture-stream.mjs"
       ],
@@ -3644,8 +3797,9 @@
     },
     {
       "entrypoint": "scripts/verify-recording-browser.mjs",
-      "sourceSha256": "8e7f4cceffa6181f479b50d85a24aab34d1f2af2d409e6f49fcad5d9f5ff1156",
+      "sourceSha256": "1efaf7afdec7a773ca8e9a2d8c09baa5df2d9b813f887a152df467cce4a48ad3",
       "dependencies": [
+        "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs"
       ],
       "externalImports": [
@@ -3678,8 +3832,9 @@
     },
     {
       "entrypoint": "scripts/verify-remote-playtest.mjs",
-      "sourceSha256": "8a0a362b1d9b43e180c201a2c11e79cb05b043e2536044172956b6e9ceaa68f7",
+      "sourceSha256": "35022aa7d0be68ad9cd9ba72fbb8dff72aae67116c495b932fb712937ce9669b",
       "dependencies": [
+        "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
         "scripts/playtest-server.mjs",
         "scripts/playtest/capture-fault.mjs",
@@ -3737,7 +3892,7 @@
         "scripts/verify-cloud-playtest.mjs"
       ],
       "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
-      "consumerSourceHash": "fc1b5a0c57c2bc53a8b5b8b23492deeb6a74853f528dba3f37bbc0605394b101"
+      "consumerSourceHash": "a7f13b4571a26ac14d16e86bd713629385cc8ae20fadbb6b45d4e79ff28f5500"
     },
     {
       "entrypoint": "scripts/browser-evidence.mjs",
@@ -3817,7 +3972,7 @@
         "test/f2.test.mjs"
       ],
       "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
-      "consumerSourceHash": "33393dd05347b1302cd2574a89bacda82ea6ebb2012314ac45523a5b0323343d"
+      "consumerSourceHash": "85b85aeb5db8f231d8e404bf353ecb254756c14c701d096d322c94ea0228de49"
     },
     {
       "entrypoint": "scripts/app-fingerprint.mjs",
@@ -3855,6 +4010,7 @@
         "scripts/assess.mjs",
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
+        "scripts/browser-scope-witnesses.mjs",
         "scripts/build-fingerprint.mjs",
         "scripts/check-entry.mjs",
         "scripts/checks.mjs",
@@ -3923,7 +4079,7 @@
         "vite.config.mjs"
       ],
       "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
-      "consumerSourceHash": "33393dd05347b1302cd2574a89bacda82ea6ebb2012314ac45523a5b0323343d"
+      "consumerSourceHash": "85b85aeb5db8f231d8e404bf353ecb254756c14c701d096d322c94ea0228de49"
     },
     {
       "entrypoint": "scripts/source-identity.mjs",
@@ -3966,6 +4122,11 @@
       "consumers": [
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
+        "scripts/browser-scope-apply.mjs",
+        "scripts/browser-scope-proposal.mjs",
+        "scripts/browser-scope-witness-contract.mjs",
+        "scripts/browser-scope-witnesses.mjs",
+        "scripts/browser-scopes.mjs",
         "scripts/browser-selection.mjs",
         "scripts/change-inspection.mjs",
         "scripts/check-entry.mjs",
@@ -4029,6 +4190,8 @@
         "test/browser-evidence.test.mjs",
         "test/browser-registry.test.mjs",
         "test/browser-report.test.mjs",
+        "test/browser-scope-apply.test.mjs",
+        "test/browser-scope-proposal.test.mjs",
         "test/calibration-evidence.test.mjs",
         "test/change-inspection.test.mjs",
         "test/ci-order.test.mjs",
@@ -4047,7 +4210,7 @@
         "test/verification-run.test.mjs"
       ],
       "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
-      "consumerSourceHash": "33393dd05347b1302cd2574a89bacda82ea6ebb2012314ac45523a5b0323343d"
+      "consumerSourceHash": "85b85aeb5db8f231d8e404bf353ecb254756c14c701d096d322c94ea0228de49"
     },
     {
       "entrypoint": "scripts/build-fingerprint.mjs",
@@ -4101,7 +4264,7 @@
         "test/starter-vehicle.test.mjs"
       ],
       "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
-      "consumerSourceHash": "4030a898231e787952ec0198bd8e5d7079190d06b6aa8b4797899273a6a8ab20"
+      "consumerSourceHash": "ebb43bd84662ea986124a5cd76434c1d600a69a40779c713c558eac99c84fa06"
     },
     {
       "entrypoint": "scripts/playtest/capture-fault.mjs",
@@ -4126,7 +4289,7 @@
         "scripts/verify-remote-playtest.mjs"
       ],
       "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
-      "consumerSourceHash": "fc1b5a0c57c2bc53a8b5b8b23492deeb6a74853f528dba3f37bbc0605394b101"
+      "consumerSourceHash": "a7f13b4571a26ac14d16e86bd713629385cc8ae20fadbb6b45d4e79ff28f5500"
     },
     {
       "entrypoint": "scripts/playtest/load.mjs",
@@ -4214,7 +4377,7 @@
         "test/release-experiments.test.mjs"
       ],
       "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
-      "consumerSourceHash": "fc1b5a0c57c2bc53a8b5b8b23492deeb6a74853f528dba3f37bbc0605394b101"
+      "consumerSourceHash": "a7f13b4571a26ac14d16e86bd713629385cc8ae20fadbb6b45d4e79ff28f5500"
     },
     {
       "entrypoint": "scripts/playtest/local-cloud.mjs",
@@ -4253,7 +4416,7 @@
         "scripts/verify-remote-playtest.mjs"
       ],
       "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
-      "consumerSourceHash": "fc1b5a0c57c2bc53a8b5b8b23492deeb6a74853f528dba3f37bbc0605394b101"
+      "consumerSourceHash": "a7f13b4571a26ac14d16e86bd713629385cc8ae20fadbb6b45d4e79ff28f5500"
     },
     {
       "entrypoint": "scripts/playtest/download.mjs",
@@ -4304,7 +4467,7 @@
         "test/release-experiments.test.mjs"
       ],
       "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
-      "consumerSourceHash": "fc1b5a0c57c2bc53a8b5b8b23492deeb6a74853f528dba3f37bbc0605394b101"
+      "consumerSourceHash": "a7f13b4571a26ac14d16e86bd713629385cc8ae20fadbb6b45d4e79ff28f5500"
     },
     {
       "entrypoint": "scripts/playtest-server.mjs",
@@ -4434,7 +4597,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
-      "consumerSourceHash": "64fcc9d356de11211064ccdaa4ef05dfe66889c35c90f9b75bf0b12ee35e8ec7"
+      "consumerSourceHash": "4e61baba1f3364bd94a7a52fcee27e838a6ee1b70941fbdb04b69562f78c5635"
     },
     {
       "entrypoint": "scripts/module-graph.mjs",
@@ -4507,6 +4670,11 @@
         "scripts/assess.mjs",
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
+        "scripts/browser-scope-apply.mjs",
+        "scripts/browser-scope-proposal.mjs",
+        "scripts/browser-scope-witness-contract.mjs",
+        "scripts/browser-scope-witnesses.mjs",
+        "scripts/browser-scopes.mjs",
         "scripts/browser-selection.mjs",
         "scripts/build-fingerprint.mjs",
         "scripts/change-inspection.mjs",
@@ -4577,6 +4745,8 @@
         "test/browser-evidence.test.mjs",
         "test/browser-registry.test.mjs",
         "test/browser-report.test.mjs",
+        "test/browser-scope-apply.test.mjs",
+        "test/browser-scope-proposal.test.mjs",
         "test/calibration-evidence.test.mjs",
         "test/change-inspection.test.mjs",
         "test/ci-order.test.mjs",
@@ -4600,7 +4770,7 @@
         "vite.config.mjs"
       ],
       "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
-      "consumerSourceHash": "33393dd05347b1302cd2574a89bacda82ea6ebb2012314ac45523a5b0323343d"
+      "consumerSourceHash": "85b85aeb5db8f231d8e404bf353ecb254756c14c701d096d322c94ea0228de49"
     },
     {
       "entrypoint": "scripts/playtest/verify-deployment.mjs",
@@ -4724,7 +4894,7 @@
         "test/release-experiments.test.mjs"
       ],
       "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
-      "consumerSourceHash": "fc1b5a0c57c2bc53a8b5b8b23492deeb6a74853f528dba3f37bbc0605394b101"
+      "consumerSourceHash": "a7f13b4571a26ac14d16e86bd713629385cc8ae20fadbb6b45d4e79ff28f5500"
     },
     {
       "entrypoint": "scripts/playtest/worker.mjs",
@@ -4793,8 +4963,9 @@
       "checks": [
         "invariant-controls"
       ],
-      "sourceSha256": "9f32bd0348d988661182b691e40e22f6e21c048c275804a43ee6e1da6e2b576b",
+      "sourceSha256": "c364f386baed4d697fc8ec11877a8f1428aa823bc32e27c9a4a343331fb762ee",
       "dependencies": [
+        "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs"
       ],
       "externalImports": [

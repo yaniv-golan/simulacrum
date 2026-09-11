@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import * as THREE from 'three';
@@ -6,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 const browserEvidence = createBrowserEvidence();
 
-const out = 'artifacts/surface-browser';
+const out = browserArtifactPath('artifacts/surface-browser');
 mkdirSync(out, { recursive: true });
 const fixture = {
   ...createEmptyBlueprint('surface-test', 'Surface test'),

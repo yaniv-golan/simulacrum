@@ -24,6 +24,7 @@ These are registered commands and checks, not evidence that they passed.
 | npm run bar:P1 | node scripts/bars.mjs P1 |
 | npm run bar:S1 | node scripts/bars.mjs S1 |
 | npm run bars | node scripts/bars.mjs |
+| npm run browser:scopes | node scripts/browser-scopes.mjs |
 | npm run build | node scripts/verification-window.mjs scripts/build-app.mjs |
 | npm run build-fingerprint | node scripts/build-fingerprint.mjs |
 | npm run ci | node scripts/verification-window.mjs scripts/ci.mjs |
@@ -116,3 +117,7 @@ These are registered commands and checks, not evidence that they passed.
 | native-qualification-controls | [qualifyNative](../../scripts/native-qualification.mjs) | verification-scope-configuration |
 | build-reset-precision | [command.type === 'build'](../../src/core/workshop.mjs) | verification-scope-configuration |
 | ball-workshop-experience | [createRetry](../../src/application/retry.mjs), [contactProperties](../../src/model/contact-properties.mjs), [createImpactEvents](../../src/presentation/impact-sound.mjs) | invariant-controls, verify-ball-browser, verify-remote-playtest |
+| verification-live-evidence | [withBrowserReport](../../scripts/verify-browser-suite.mjs) | verification-workflow |
+| verification-priority-coverage | [prioritizeBrowserChecks](../../scripts/browser-selection.mjs) | verification-workflow |
+| documentation-batch-review | [reviewSections](../../scripts/documentation.mjs) | developer-documentation |
+| browser-scope-reviewed-application | [deriveScopeProposal](../../scripts/browser-scope-proposal.mjs), [applyScopeProposal](../../scripts/browser-scope-apply.mjs), [validateScopeWitnessResult](../../scripts/browser-scope-witness-contract.mjs) | verification-scope-configuration |

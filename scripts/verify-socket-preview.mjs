@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import * as THREE from 'three';
@@ -7,7 +8,7 @@ import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 import { snapConnection } from '../src/model/assembly.mjs';
 const browserEvidence = createBrowserEvidence();
 
-const out = 'artifacts/socket-preview';
+const out = browserArtifactPath('artifacts/socket-preview');
 mkdirSync(out, { recursive: true });
 const bp = {
   ...createEmptyBlueprint('preview', 'Preview'),

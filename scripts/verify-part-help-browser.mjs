@@ -1,10 +1,11 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { CATALOG } from '../src/model/catalog.mjs';
 import { PRIMARY_PARTS, MORE_PARTS } from '../src/presentation/part-palette.mjs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 const evidence = createBrowserEvidence(),
-  out = 'artifacts/part-help-browser';
+  out = browserArtifactPath('artifacts/part-help-browser');
 mkdirSync(out, { recursive: true });
 const browser = await evidence.launch({ profile: 'ui' });
 const results = [];

@@ -13,8 +13,12 @@ export function invariantTestFiles(root = process.cwd()) {
     ),
   ].sort();
 }
-export async function checkInvariantControls(root = process.cwd(), { metadataOnly = false } = {}) {
+export async function checkInvariantControls(
+  root = process.cwd(),
+  { metadataOnly = false, executeTests } = {},
+) {
   const tests = invariantTestFiles(root);
   if (metadataOnly) return { tests };
+  if (executeTests) return executeTests(tests);
   return runProcess(process.execPath, ['--test', ...tests], { cwd: root, timeoutMs: 30000 });
 }

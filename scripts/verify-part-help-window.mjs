@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { createServer } from 'vite';
 import { chromium } from 'playwright';
@@ -44,7 +45,7 @@ const evidence = createBrowserEvidence({
     });
   },
 });
-const out = 'artifacts/part-help-window';
+const out = browserArtifactPath('artifacts/part-help-window');
 mkdirSync(out, { recursive: true });
 const server = await createServer({ server: { host: '127.0.0.1', port: 0 }, logLevel: 'error' });
 await server.listen();

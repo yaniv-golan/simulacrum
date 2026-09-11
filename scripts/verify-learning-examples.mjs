@@ -1,7 +1,8 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 const evidence = createBrowserEvidence(),
-  out = 'artifacts/learning-examples';
+  out = browserArtifactPath('artifacts/learning-examples');
 mkdirSync(out, { recursive: true });
 const browser = await evidence.launch({ profile: 'ui' });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });

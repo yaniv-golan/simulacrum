@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -79,11 +80,11 @@ try {
     text: JSON.parse(window.render_game_to_text()),
     metrics: window.workshopProbe.metrics(),
   }));
-  mkdirSync('artifacts/browser-workshop', { recursive: true });
-  await page.screenshot({ path: 'artifacts/browser-workshop/workshop.png' });
+  mkdirSync(browserArtifactPath('artifacts/browser-workshop'), { recursive: true });
+  await page.screenshot({ path: browserArtifactPath('artifacts/browser-workshop/workshop.png') });
   browserEvidence.assertUnchanged();
   writeFileSync(
-    'artifacts/browser-workshop/attempt.json',
+    browserArtifactPath('artifacts/browser-workshop/attempt.json'),
     JSON.stringify(
       { source, build, served, browser: browser.version(), errors, ...state },
       null,
@@ -156,14 +157,14 @@ try {
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   const download = await downloadPromise;
-  await download.saveAs('artifacts/browser-workshop/saved-machine.json');
+  await download.saveAs(browserArtifactPath('artifacts/browser-workshop/saved-machine.json'));
   await page.locator('[data-command=new]').click();
   await page.waitForFunction(
     () => window.workshopProbe.observe().frames[0].metadata.blueprint.parts.length === 0,
   );
   await page
     .locator('input[type=file]')
-    .setInputFiles('artifacts/browser-workshop/saved-machine.json');
+    .setInputFiles(browserArtifactPath('artifacts/browser-workshop/saved-machine.json'));
   await page.waitForFunction(
     () => window.workshopProbe.observe().frames[0].metadata.blueprint.parts.length === 4,
   );
@@ -171,10 +172,13 @@ try {
     await page.evaluate(() => window.workshopProbe.observe().frames[0].metadata.blueprint),
     saved,
   ]);
-  writeFileSync('artifacts/browser-workshop/future-save.json', JSON.stringify({ version: 999 }));
+  writeFileSync(
+    browserArtifactPath('artifacts/browser-workshop/future-save.json'),
+    JSON.stringify({ version: 999 }),
+  );
   await page
     .locator('input[type=file]')
-    .setInputFiles('artifacts/browser-workshop/future-save.json');
+    .setInputFiles(browserArtifactPath('artifacts/browser-workshop/future-save.json'));
   await page.waitForFunction(() =>
     document.querySelector('.status-message').textContent.includes('newer'),
   );
@@ -188,10 +192,13 @@ try {
     invalidMotorIndex = invalidSave.parts.findIndex((part) => part.type === 'poweredMotor');
   invalidSave.parts[invalidMotorIndex].name = 'Left drive';
   invalidSave.parts[invalidMotorIndex].parameters.defaultDuty = 'private invalid value';
-  writeFileSync('artifacts/browser-workshop/invalid-field.json', JSON.stringify(invalidSave));
+  writeFileSync(
+    browserArtifactPath('artifacts/browser-workshop/invalid-field.json'),
+    JSON.stringify(invalidSave),
+  );
   await page
     .locator('input[type=file]')
-    .setInputFiles('artifacts/browser-workshop/invalid-field.json');
+    .setInputFiles(browserArtifactPath('artifacts/browser-workshop/invalid-field.json'));
   const invalidPath = `/parts/${invalidMotorIndex}/parameters/defaultDuty`;
   await page.waitForFunction(
     (path) => document.querySelector('.status-message').textContent.includes(path),
@@ -232,17 +239,17 @@ try {
     delete document.hidden;
   });
   writeFileSync(
-    'artifacts/browser-workshop/instrumentation-negative.json',
+    browserArtifactPath('artifacts/browser-workshop/instrumentation-negative.json'),
     JSON.stringify(negative, null, 2) + '\n',
   );
   browserEvidence.assert('deepEqual', [errors, []]);
   browserEvidence.assert('equal', [appFingerprint(), build]);
 
-  mkdirSync('artifacts/browser-workshop', { recursive: true });
-  await page.screenshot({ path: 'artifacts/browser-workshop/workshop.png' });
+  mkdirSync(browserArtifactPath('artifacts/browser-workshop'), { recursive: true });
+  await page.screenshot({ path: browserArtifactPath('artifacts/browser-workshop/workshop.png') });
   browserEvidence.assertUnchanged();
   writeFileSync(
-    'artifacts/browser-workshop/smoke.json',
+    browserArtifactPath('artifacts/browser-workshop/smoke.json'),
     JSON.stringify(
       { source, build, served, browser: browser.version(), errors, ...state },
       null,

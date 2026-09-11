@@ -1,3 +1,4 @@
+import { parseCompletionArgs } from './verification-tiers.mjs';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -15,17 +16,14 @@ write();
 try {
   assertRuntime();
   const [tier, ...args] = process.argv.slice(2);
-  if (
-    !['local', 'final'].includes(tier) ||
-    (args.length && !(tier === 'local' && args.length === 2 && args[0] === '--base'))
-  )
-    throw Error('Usage: verify:candidate -- local [--base <commit>] | final');
+  const options = parseCompletionArgs(tier, args);
+  report.priority = options;
   const directory = mkdtempSync(join(tmpdir(), 'simulacrum-candidate-'));
   report.directory = directory;
   report.tier = tier;
   write();
   const candidate = await captureCandidate(origin, join(directory, 'source'), {
-    base: args[1] ?? 'HEAD',
+    base: options.base,
   });
   report.candidate = candidate;
   write();
@@ -42,6 +40,7 @@ try {
         'scripts/verification-window.mjs',
         `scripts/verify-${tier}.mjs`,
         ...(tier === 'local' ? ['--base', candidate.base] : []),
+        ...(options.priorityFiles.length ? ['--priority-files', ...options.priorityFiles] : []),
       ],
       { cwd: candidate.destination, timeoutMs: 3600000, inheritOutput: true },
     );

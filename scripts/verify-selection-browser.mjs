@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -7,7 +8,7 @@ const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1280, height: 720 } }),
   errors = browserEvidence.errors;
 
-mkdirSync('artifacts/selection-ux', { recursive: true });
+mkdirSync(browserArtifactPath('artifacts/selection-ux'), { recursive: true });
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
@@ -87,11 +88,11 @@ try {
     '16 / 16 steps',
   ]);
   await page.getByRole('button', { name: 'Clear selection', exact: true }).click();
-  await page.screenshot({ path: 'artifacts/selection-ux/repaired.png' });
+  await page.screenshot({ path: browserArtifactPath('artifacts/selection-ux/repaired.png') });
   browserEvidence.assert('deepEqual', [errors, []]);
   browserEvidence.assertUnchanged();
   writeFileSync(
-    'artifacts/selection-ux/result.json',
+    browserArtifactPath('artifacts/selection-ux/result.json'),
     JSON.stringify(
       {
         ...browserEvidence.identity,

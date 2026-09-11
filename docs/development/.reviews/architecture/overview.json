@@ -2,8 +2,8 @@
   "version": 1,
   "dependencies": {
     "docs/contracts/runtime-v1.md": "3cb4f139b67837d4a2c241453c4f16d4181a67fc4ccf8ee0030ea18cd55ff07e",
-    "AGENTS.md": "a6e7e12e2a1983f601e46eba053b50cf7421759cf901e94f8742d33de0b7747e",
-    "scripts/validate-manifest.mjs": "ee96c084f833549c2872d7a62088b47b201d1b37fbfa3c277172779f6c08d3f9",
+    "AGENTS.md": "a2012ab4b0fc65e48506e41cf574c18b67b51215e53ee91361b0a30addd817aa",
+    "scripts/validate-manifest.mjs": "622e2e81fd415bdf04faad1579a95bf1eef084dbb1eefdb0b38a786fb7aee3ac",
     "package.json#script=gate": "9adcc469f55b82e3c42003509ffc7c366dfacf650d18aac9fb332ae0348ec885",
     "package.json#script=rules": "4dfc0f5f951a09d79ebe39ccc3318e76c1050f947daad81e197102bca05518c4"
   }

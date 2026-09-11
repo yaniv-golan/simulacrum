@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { sourceIdentity } from './source-identity.mjs';
@@ -5,7 +6,7 @@ import { appFingerprint } from './app-fingerprint.mjs';
 
 const evidence = createBrowserEvidence(),
   provisional = process.argv.includes('--provisional');
-const out = process.argv[3] ?? 'artifacts/mirror-browser';
+const out = browserArtifactPath('artifacts/mirror-browser', process.argv[3]);
 mkdirSync(out, { recursive: true });
 const browser = await evidence.launch({ profile: 'focus', ...{ headless: false } });
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });

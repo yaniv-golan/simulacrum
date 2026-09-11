@@ -1,4 +1,4 @@
-import { runVerificationPhases } from './verification-tiers.mjs';
+import { runVerificationPhases, parseCompletionArgs } from './verification-tiers.mjs';
 import { verificationOutcome, formatVerificationOutcome } from './verification-outcome.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createVerificationContext } from './verification-run.mjs';
@@ -18,12 +18,13 @@ const write = () => {
 };
 write();
 try {
-  if (process.argv.length > 2) throw Error('verify-final accepts no arguments');
+  const options = parseCompletionArgs('final', process.argv.slice(2));
+  report.priority = options;
   const context = createVerificationContext();
   Object.assign(report, context.identity);
   const results = await runVerificationPhases([
     ['ci', () => runCI(context)],
-    ['browser', () => verifyBrowserSuite('all', { context })],
+    ['browser', () => verifyBrowserSuite('all', { context, ...options })],
     ['gate', () => runGate(undefined, context)],
   ]);
   Object.assign(report, { results, checks: context.receipts() });

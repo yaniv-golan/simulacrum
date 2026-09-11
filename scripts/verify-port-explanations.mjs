@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -11,7 +12,7 @@ const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   errors = browserEvidence.errors;
 page.setDefaultTimeout(6000);
 
-mkdirSync('artifacts/feedback-fixes', { recursive: true });
+mkdirSync(browserArtifactPath('artifacts/feedback-fixes'), { recursive: true });
 const read = () => page.evaluate(() => window.workshopProbe.observe().frames[0].metadata.blueprint);
 async function select(name) {
   if (!(await page.locator('.machine-picker').evaluate((el) => el.open)))
@@ -79,7 +80,7 @@ try {
     await page.locator('.port-explanation').textContent(),
     /holds the wheel too; no separate fixed mount/,
   ]);
-  await page.screenshot({ path: 'artifacts/feedback-fixes/wheel-ports.png' });
+  await page.screenshot({ path: browserArtifactPath('artifacts/feedback-fixes/wheel-ports.png') });
   browserEvidence.assert('deepEqual', [await read(), before]);
   await select('Motor');
   await page.getByRole('button', { name: 'Adjust mount', exact: true }).click();
@@ -161,8 +162,13 @@ try {
       b: { part: 'motor2', port: 'power' },
     },
   );
-  writeFileSync('artifacts/feedback-fixes/two-motors.json', JSON.stringify(twoMotors));
-  await page.locator('input[type=file]').setInputFiles('artifacts/feedback-fixes/two-motors.json');
+  writeFileSync(
+    browserArtifactPath('artifacts/feedback-fixes/two-motors.json'),
+    JSON.stringify(twoMotors),
+  );
+  await page
+    .locator('input[type=file]')
+    .setInputFiles(browserArtifactPath('artifacts/feedback-fixes/two-motors.json'));
   await select('Second wheel');
   await page.locator('.port-button[data-port-id=axle]').click();
   await page
@@ -184,7 +190,7 @@ try {
     running.power.motors.every((m) => m.shaftWorkJ > 0),
     'both motors physically deliver work',
   ]);
-  await page.screenshot({ path: 'artifacts/feedback-fixes/two-motors.png' });
+  await page.screenshot({ path: browserArtifactPath('artifacts/feedback-fixes/two-motors.png') });
   await page.locator('[data-command=build]').click();
   const diameter = page.getByLabel('Wheel diameter (mm)', { exact: true });
   const beforeSize = await read();
@@ -202,11 +208,13 @@ try {
         .frames[0].metadata.blueprint.parts.find((p) => p.id === 'wheel2').parameters.diameter ===
       0.405,
   );
-  await page.screenshot({ path: 'artifacts/feedback-fixes/wheel-diameter.png' });
+  await page.screenshot({
+    path: browserArtifactPath('artifacts/feedback-fixes/wheel-diameter.png'),
+  });
   browserEvidence.assert('deepEqual', [errors, []]);
   browserEvidence.assertUnchanged();
   writeFileSync(
-    'artifacts/feedback-fixes/ports.json',
+    browserArtifactPath('artifacts/feedback-fixes/ports.json'),
     JSON.stringify(
       {
         ...browserEvidence.identity,

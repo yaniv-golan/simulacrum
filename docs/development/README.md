@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"b93e14f95d133e8afe83fe8b03618c44e37a220497bde6f1f7bf78e67039527e","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"95e00037eb8fe7a170a7744c6ec757e27eda187e82fde64d2521d2a4fe44d6ca","disposition":"still accurate","rationale":"Node setup and live developer entrypoints remain unchanged; AGENTS now requires isolated concurrent work and candidate completion."} -->
+<!-- doc-review {"version":1,"fingerprint":"95a65aa915cca636b43c7ba2a1d600524b90c7007750a1eef2e106d38167e0ea","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"3ae6651f82718044229baac3ea14d98a0d4f816f0c3bb03c8ba5a9853a1d90d2","disposition":"still accurate","rationale":"AGENTS now exposes the existing candidate tier decision table. Pinned Node setup, owner navigation and displayed build identity remain unchanged."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -87,7 +87,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"580f3f661f6eb8a2205635a3d1ce4feff0afb0a5254c20d0bd402c54c9f7c213","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"852eb1524354233ea203762f79f19f287555c05bea544898ae319e35528a0b88","disposition":"still accurate","rationale":"The package changes add candidate/native qualification aliases and replace the pinned Rapier archive with spring.8; existing local/final/CI/browser aliases, Node range, prerequisite ordering and exit classification are unchanged. New native qualification is opt-in and does not replace the required completion tier."} -->
+<!-- doc-review {"version":1,"fingerprint":"ddb67dcd42f33e875979154bb081608f0d2b21db7226069690a8fa0382f679ca","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"04765cb86eb2a670f04436a16ac123d71f144a694edcacd96a9e0fe5879a3b4f","disposition":"still accurate","rationale":"The added browser:scopes command maintains reviewed scope metadata and does not replace development probes or local/final candidate completion. Existing tier commands and budgets are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -127,7 +127,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"8dc62b14650b97ae1ee88eab2066fb17e43d948f4a53bff30651dbc04d7f8c19","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"29e6f88c11907a1822f6b830845e5a2aaa14d182c6ed9da0e343fe679630a610","disposition":"still accurate","rationale":"The regenerated reference adds the Ball invariant and browser check. Prepare, individual dispositions, sidecar binding and final-source checking retain their documented behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"770a3014f24616a0e2b0a6deb8877286b83e75892917963f880763840978c8ba","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"d559e725c7b62216c1e40104c6217c8727adaee0c3a41422680319b954b740c7","disposition":"still accurate","rationale":"Regenerated navigation now includes scope proposal/application owners. Semantic section decisions and regenerate-before-review ordering remain unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -221,13 +221,19 @@ covers the checking algorithm, not the contents of every document it can inspect
 An unrelated edit, timestamp change or same-content commit cannot refresh a stale
 review. Dynamic inputs can force broad conservative coverage; the impact report
 explains that fallback. Narrow, statically resolvable owner links keep routine
-review scope smaller. There is no accept-all command; batch submission preserves individual decisions. Uncertain source scope expands coverage.
+review scope smaller. There is no accept-all command; batch submission preserves individual decisions.
+The batch shares two inspections across the union of reviewed documents, prepares
+same-document edits together and checks source inventory before and after publication.
+Each file is replaced atomically; the batch is not a multi-file transaction. Failed
+publication retains a recovery journal whose path is printed. Do not overwrite newer
+work during recovery. Use a single writer for reviewed documents/sidecars: drift
+checks detect observed changes, but cannot prevent an arbitrary editor racing a rename. Uncertain source scope expands coverage.
 These gates establish current references and an explicit review record. They cannot
 prove that prose is true or that an agent understood it; behavioral tests and source
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"237395b68d48ee1493470710390ea82d48b33abc2a1697bcd073ee00804e09da","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"3219914eb4518d2138ba15e9e280ceb6a4c42aa551208b85ce7da92890fabfef","disposition":"still accurate","rationale":"Reviewed the remote verifier new ordinary Ball fixture import and its existing upload-fault helper. Its read expressions still access generated capture fixtures, not public documentation or unit-test data; refreshed exact dependencies, consumer hashes and roots without broadening exclusions."} -->
+<!-- doc-review {"version":1,"fingerprint":"95df55729e000db8f946db0e06d86343ace3f2fca935fab0e2ea8a85d3da41be","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"8f26a8af58e4147c14fa1af5b5ca318fada93588bdb42d842cd9a5fbeb2b0b4d","disposition":"updated","rationale":"Documented authored declarations, per-row review, old/new witness union, actual invariant test execution, candidate/receipt binding, single-writer limitation and idempotent NOT_EVALUATED behavior. All local scope consumers and roots are now validated."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -235,7 +241,7 @@ opaque file/subprocess inputs conservatively expand selection. In the current ap
 shared runtime and identity dependencies often select the full browser suite.
 `browserLocalScopes` in the manifest is an explicit local-only behavioral contract: a named
 entrypoint, its frozen direct dependency shape, and required feature/integration checks.
-Source scopes also bind the transitive reverse-consumer set and browser-root inventory.
+All local scopes also bind the transitive reverse-consumer set and browser-root inventory.
 New consumers and roots restore broad coverage; outgoing imports alone are insufficient.
 Part-help presentation edits select four checks; its standalone verifier selects two.
 Mirror presentation edits select mirror, assembly UX and manipulation checks; its standalone verifier selects the mirror check. The remote recording client selects both backend adapters, durable feedback receipts, workshop lifecycle and construction checks; new service/import edges or opaque inputs restore conservative coverage.
@@ -257,6 +263,37 @@ runs their required tests and documentation checks. Changed readers or callers, 
 opaque reads, new consumers, graph errors and feedback source overrides fail closed.
 These are reviewed behavioral contracts, not an automatic proof about dynamic code.
 Never refresh their hashes without inspecting the affected reads and consumers.
+
+The [proposal owner](../../scripts/browser-scope-proposal.mjs#implementation),
+[application owner](../../scripts/browser-scope-apply.mjs#implementation),
+[witness runner](../../scripts/browser-scope-witnesses.mjs#implementation) and
+[receipt admission](../../scripts/browser-scope-witness-contract.mjs#implementation)
+own this maintenance flow.
+Use `npm run browser:scopes -- prepare --out artifacts/scope-proposal.json` to compare
+recorded boundaries with the current graph. This is read-only for source: the proposal
+contains old/proposed rows, changed fields, required witnesses and exact source identity.
+Review hashes alongside the source; a hash cannot explain the old implementation.
+New opaque reads remain blocked until explicitly classified. Optional
+`--declarations artifacts/scope-declarations.json` accepts an array of
+`{kind: "metadata", entrypoint, reads, checks}` (or `kind: "local"` without reads).
+Each read supplies `expression`, `purpose` and `excludedInputs`; computed hashes are
+not accepted as declarations. Existing classifications carry forward visibly.
+
+Write a review JSON with `proposalDigest` and separate `decisions` containing each
+changed `key`, `accept: true` and a specific `rationale`. Then run
+`npm run browser:scopes -- apply artifacts/scope-proposal.json --review artifacts/scope-review.json`.
+Apply captures an isolated candidate, installs dependencies and runs the union of old
+and proposed witnesses under the shared verification window. Metadata invariant controls
+execute their actual tests; imported pass reports cannot authorize application. Exact
+request, successful receipts and candidate identity must agree. Only then is the manifest
+replaced; source/index drift rejects. Run one writer on this worktree: observed drift
+checks do not provide filesystem compare-and-swap or automatic rollback of concurrent edits.
+Evidence and the previous manifest are retained under `artifacts/browser-scopes/`.
+Repeating an already applied proposal reports `already-current` and witnesses
+`NOT_EVALUATED`, not a new pass. Prepare again after source changes. This command
+maintains scope metadata; it does not replace local/final completion or install a feature
+candidate into another checkout.
+
 Mixed changes compose these classifications with existing local scopes. Reports retain
 excluded paths and the causes of conservative expansion. Shared formatter coverage
 includes mirror, assembly, mounting, connection, workshop and spring journeys; it is
@@ -281,6 +318,27 @@ The [shared browser launch boundary](../../scripts/browser-session.mjs#implement
 the child process execution policy, so passing a profile through a variable cannot bypass
 exclusive execution. This is an engineering guard, not a sandbox for hostile verifier code.
 Reports preserve manifest order, all failures, worker configuration and source identity.
+`--priority-files <repository-paths...>` on local/final/candidate completion uses
+positive static dependencies to order likely integration checks earlier. Required
+coverage stays unchanged; unknown associations retain ordinary ordering. Candidate
+reports retain the supplied paths and provenance; browser reports record execution
+order separately from canonical result order. For example:
+`npm run verify:candidate -- final --priority-files scripts/verify-recording-browser.mjs`.
+Exclusive checks still drain other work before starting.
+
+Browser results publish after each transition and completed check, before the suite
+finishes. Each attempt owns a retained report, per-check logs and artifact directories;
+completion lines print the log path. `last-run.json` and suite-name reports are latest
+aliases, not permanent evidence paths. The [artifact path owner](../../scripts/browser-artifacts.mjs#source)
+routes registered child writers into the injected attempt directory; standalone paths
+remain unchanged. Same-invocation receipt reuse points explicitly to the original
+run, report, log and evidence directory; it does not create a second execution or
+advertise empty replacement evidence. A failed publication rejects the run and attempts to retire any
+already published success. Persistent storage failure can prevent that repair and
+must be resolved before trusting the affected files. Missing prerequisite-dependent
+phases are reported as not evaluated rather than invented structural failures.
+Local exit 0 means automation passed with qualification not evaluated; final exit 2
+means automation passed but human acceptance still blocks qualification.
 Each attempt replaces its report with a non-green running record before build/server startup;
 CLI admission, startup and cleanup failures produce failed reports, also available as `last-run.json`.
 Summary-only discovery does not replace execution evidence. [Local completion](../../scripts/verify-local.mjs#implementation) and
@@ -303,7 +361,7 @@ The [tier coordinator](../../scripts/verification-tiers.mjs#implementation) keep
 ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
-<!-- doc-review {"version":1,"fingerprint":"4ca1b9fd2bd668ab0e4c85a3a1c945875ecb965da9ca778ef59e7ff08cd02762","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"a328fb1c9d21947f63430e0e334621ac39091c8cb34721a35d05e361082ec103","disposition":"still accurate","rationale":"The added native:qualify alias explicitly enters verification-window; verify:candidate enters that same window for its captured local/final execution. Existing nested ownership, five-minute lock waiting, unchanged per-check watchdogs and cooperative rather than host-exclusive scheduling remain implemented."} -->
+<!-- doc-review {"version":1,"fingerprint":"01e180859dac0d8043c1d5b032769874c341d7ca4bfc1d1e58c2b758757158d2","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"c2c021591db45c5ab0691efc6cacb77ac0e2ee777e759fc17f1254d3b5f2ff78","disposition":"still accurate","rationale":"The apply command uses the existing shared window for candidate witness execution. Prepare is a read-only source probe; existing resource admission and recovery semantics are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -337,14 +395,17 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"4174e9e8c312eed2b9be7b0c97f2ece37e6598c4f93b11298fc8c5a0afb2ae22","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"663c7f7f39d49aedb7b765fa3a8f535f9355980624e4979c13b84c25d646517a","disposition":"still accurate","rationale":"Ball changes are carried into a separate worktree based on committed615279e. Completion uses the existing exact-byte candidate capture, separate dependency install and final origin/candidate comparisons; geometry admission does not change the capture contract."} -->
+<!-- doc-review {"version":1,"fingerprint":"8fa486ab4ce1a3016b6153c7eff6a2fa534b9a09a274da5778d24af21e74b0ba","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"6154ccedfbe8102cba73fa475d390b7ba0d8b655a13cdd4bccfd5a305960649f","disposition":"still accurate","rationale":"Scope application reuses candidate capture for maintenance witnesses but does not install feature candidates or replace local/final completion. The described identity and completion contracts remain valid."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
 pinned dependencies, and edit there. Do not include another task's dirty work.
 
 After `docs:prepare` and semantic review, run `npm run verify:candidate -- local`
-(or `-- local --base <commit>`). For merge/release qualification use `-- final`.
+(or `-- local --base <commit>`). For merge/release qualification use `-- final`. Both accept optional
+`--priority-files <repository-paths...>`; the wrapper validates and records these
+scheduling hints before capture and forwards them into the frozen tier. They never
+replace local base selection or final required coverage.
 The [candidate capture](../../scripts/candidate.mjs#implementation) retains the exact
 index, existing tracked/nonignored untracked bytes, modes and deletion state in a
 fresh clone with its own dependencies. Unmerged indexes, symlinks, secret-like names

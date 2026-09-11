@@ -1,3 +1,4 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { createEmptyBlueprint } from '../src/model/blueprint.mjs';
 import { createSpringStrut } from '../src/model/fixtures/spring-playground.mjs';
@@ -11,7 +12,7 @@ import {
   springBenchmarkEnvironment,
 } from './measure-springs.mjs';
 const evidence = createBrowserEvidence(),
-  out = 'artifacts/spring-performance';
+  out = browserArtifactPath('artifacts/spring-performance');
 mkdirSync(out, { recursive: true });
 let browser;
 const fixtures = new Map();

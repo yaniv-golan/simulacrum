@@ -1,10 +1,11 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { createEmptyBlueprint } from '../src/model/blueprint.mjs';
 import { createSpringStrut } from '../src/model/fixtures/spring-playground.mjs';
 import { insertAssembly } from '../src/model/reusable-assemblies.mjs';
 import { springQuantile, SPRING_PERFORMANCE } from './measure-springs.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
-const out = 'artifacts/adaptive-graphics';
+const out = browserArtifactPath('artifacts/adaptive-graphics');
 mkdirSync(out, { recursive: true });
 let blueprint = createEmptyBlueprint('adaptive-check', 'Springs');
 for (let i = 0; i < 8; i++)

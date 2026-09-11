@@ -1,8 +1,9 @@
+import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 const evidence = createBrowserEvidence();
-const out = process.argv[3] ?? 'artifacts/vehicle-controls';
+const out = browserArtifactPath('artifacts/vehicle-controls', process.argv[3]);
 mkdirSync(out, { recursive: true });
 const browser = await evidence.launch({
   profile: 'focus',
