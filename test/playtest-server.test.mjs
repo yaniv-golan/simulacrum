@@ -1,3 +1,4 @@
+import { packCapturePacket } from '../src/application/capture-packet.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, readFile, readdir, rm, symlink } from 'node:fs/promises';
@@ -218,4 +219,34 @@ test('data mode blocks screen uploads across restart and video requires explicit
     { method: 'POST', headers: { 'content-type': 'audio/webm' }, body: 'voice' },
   );
   assert.equal(voice.status, 201);
+});
+
+test('compressed receipts attest exact opaque bytes', async (t) => {
+  const f = await fixture(t);
+  const { sessionId } = await (
+    await f.post('/api/playtest/v2/session', {
+      requestId: 'gzip-start',
+      metadata: { recordingMode: 'data' },
+    })
+  ).json();
+  const post = f.post;
+  const packet = packCapturePacket({
+    id: 'compressed-1',
+    kind: 'capture-batch',
+    data: {
+      schema: 1,
+      events: [{ id: 'event-1', kind: 'sample', data: { text: 'observation '.repeat(1000) } }],
+    },
+  });
+  const path = `/api/playtest/v2/${sessionId}/event`;
+  assert.equal(packet.data.encoding, 'gzip-base64');
+  const first = await post(path, packet);
+  assert.equal(first.status, 201);
+  const receipt = await first.json();
+  assert.deepEqual(await (await post(path, packet)).json(), receipt);
+  assert.equal(
+    (await post(path, { ...packet, id: 'invalid', data: { ...packet.data, uncompressedBytes: 1 } }))
+      .status,
+    201,
+  );
 });

@@ -1,3 +1,4 @@
+import { packCapturePacket, unpackCapturePacket } from '../src/application/capture-packet.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
@@ -326,12 +327,12 @@ test('receipt recovery survives R2 and SQL acknowledgment faults without double 
       transaction = store.transaction.bind(store);
     let fail = true;
     if (point === 'reserved')
-      r2.get = async (...args) => {
+      r2.put = async (...args) => {
         if (fail) {
           fail = false;
-          throw Error('lost read');
+          throw Error('lost before write');
         }
-        return get(...args);
+        return put(...args);
       };
     if (point === 'r2-written')
       r2.put = async (...args) => {
@@ -601,4 +602,367 @@ test('data sessions reject screen uploads and disabled video cannot be admitted'
     ).status,
     200,
   );
+});
+
+test('compressed receipts attest opaque bytes and review rejects invalid expansion', async (t) => {
+  const st = state(),
+    r2 = bucket(),
+    store = new CaptureStore(st, { RECORDINGS: r2, INVITATION_GENERATION: '1' });
+  const { sessionId } = await start(store);
+  const post = (p, b) => store.fetch(req(p, b));
+  const packet = packCapturePacket({
+    id: 'compressed-1',
+    kind: 'capture-batch',
+    data: {
+      schema: 1,
+      events: [{ id: 'event-1', kind: 'sample', data: { text: 'observation '.repeat(1000) } }],
+    },
+  });
+  assert.throws(() =>
+    unpackCapturePacket({ ...packet, data: { ...packet.data, uncompressedBytes: 1 } }),
+  );
+  const path = `/api/playtest/v2/${sessionId}/event`;
+  assert.equal(packet.data.encoding, 'gzip-base64');
+  for (const data of [
+    { ...packet.data, uncompressedBytes: 2 * 1024 ** 2 + 1 },
+    { ...packet.data, encoding: 'zip' },
+    { ...packet.data, payload: '*===' },
+  ])
+    assert.equal((await post(path, { ...packet, id: 'bad-envelope', data })).status, 400);
+  const first = await post(path, packet);
+  assert.equal(first.status, 201);
+  const receipt = await first.json();
+  assert.deepEqual(await (await post(path, packet)).json(), receipt);
+  assert.equal(
+    (await post(path, { ...packet, id: 'invalid', data: { ...packet.data, uncompressedBytes: 1 } }))
+      .status,
+    201,
+  );
+});
+
+test('small uploads fill the bounded32 request allowance without serial storage stalls', async () => {
+  const st = state(),
+    r2 = bucket(),
+    store = new CaptureStore(st, { RECORDINGS: r2, INVITATION_GENERATION: '1' });
+  const { sessionId } = await start(store),
+    gate = Promise.withResolvers(),
+    put = r2.put.bind(r2);
+  let entered = 0;
+  r2.put = async (...args) => {
+    entered++;
+    await gate.promise;
+    return put(...args);
+  };
+  const calls = Array.from({ length: 32 }, (_, i) => {
+    const body = JSON.stringify({ id: 'parallel-' + i, data: 'x'.repeat(10000) });
+    return store.fetch(
+      new Request(`https://capture.invalid/api/playtest/v2/${sessionId}/event`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'content-length': String(Buffer.byteLength(body)),
+          'x-invitation-generation': '1',
+        },
+        body,
+      }),
+    );
+  });
+  let reached;
+  try {
+    for (let i = 0; i < 100 && entered < 32; i++) await new Promise((r) => setTimeout(r, 2));
+    reached = entered;
+    assert.equal(
+      (await store.fetch(req(`/api/playtest/v2/${sessionId}/event`, { id: 'overflow' }))).status,
+      429,
+    );
+  } finally {
+    gate.resolve();
+  }
+  const results = await Promise.all(calls);
+  assert.equal(reached, 32);
+  assert(results.every((r) => r.status === 201));
+  assert.deepEqual(store.readers.status(), { count: 0, bytes: 0 });
+  st.db.close();
+});
+
+test('declared body size is enforced before storage or accounting can be bypassed', async () => {
+  const st = state(),
+    r2 = bucket(),
+    store = new CaptureStore(st, { RECORDINGS: r2, INVITATION_GENERATION: '1' }),
+    { sessionId } = await start(store);
+  const body = JSON.stringify({ id: 'size', data: 'content' });
+  for (const size of ['1', String(body.length + 1), 'nope', String(2 * 1024 ** 2 + 1)]) {
+    const r = await store.fetch(
+      new Request(`https://capture.invalid/api/playtest/v2/${sessionId}/event`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'content-length': size,
+          'x-invitation-generation': '1',
+        },
+        body,
+      }),
+    );
+    assert([400, 413].includes(r.status), `${size}: ${r.status}`);
+  }
+  assert.equal(r2.values.size, 0);
+  assert.deepEqual(store.readers.status(), { count: 0, bytes: 0 });
+  st.db.close();
+});
+
+test('upload byte reservation survives response timeout until R2 settles', async () => {
+  const st = state(),
+    r2 = bucket(),
+    store = new CaptureStore(st, { RECORDINGS: r2, INVITATION_GENERATION: '1' }),
+    { sessionId } = await start(store),
+    wait = Promise.withResolvers();
+  r2.put = () => wait.promise;
+  const io = store.io.bind(store);
+  store.io = (fn, deadline, hold) => io(fn, Date.now() + 5, hold);
+  const result = await store.fetch(req(`/api/playtest/v2/${sessionId}/event`, { id: 'held' }));
+  try {
+    assert.equal(result.status, 503);
+    assert.equal(store.readers.status().count, 1);
+    assert(store.readers.status().bytes > 0);
+  } finally {
+    wait.resolve();
+    await new Promise((r) => setImmediate(r));
+  }
+  assert.deepEqual(store.readers.status(), { count: 0, bytes: 0 });
+  st.db.close();
+});
+
+test('small media shares bounded request and byte admission with events', async () => {
+  for (const declared of [true, false]) {
+    const st = state(),
+      r2 = bucket(),
+      store = new CaptureStore(st, { RECORDINGS: r2, INVITATION_GENERATION: '1' }),
+      { sessionId } = await start(store),
+      gate = Promise.withResolvers(),
+      put = r2.put.bind(r2);
+    let entered = 0;
+    r2.put = async (...args) => {
+      entered++;
+      await gate.promise;
+      return put(...args);
+    };
+    const media = (i) =>
+      new Request(
+        `https://capture.invalid/api/playtest/v2/${sessionId}/media?kind=voice&clip=voice&seq=${i}`,
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'audio/webm',
+            'x-invitation-generation': '1',
+            ...(declared ? { 'content-length': '4' } : {}),
+          },
+          body: new Uint8Array(4),
+        },
+      );
+    const count = declared ? 32 : 2;
+    const active = Array.from({ length: count }, (_, i) => store.fetch(media(i)));
+    let snapshot, third, extra;
+    try {
+      for (let i = 0; i < 100 && entered < count; i++) await new Promise((r) => setTimeout(r, 2));
+      snapshot = store.readers.status();
+      third = await store.fetch(media(count));
+      extra = store.fetch(req(`/api/playtest/v2/${sessionId}/event`, { id: 'mixed-overflow' }));
+    } finally {
+      gate.resolve();
+    }
+    assert((await Promise.all(active)).every((r) => r.status === 201));
+    assert.equal(third.status, 429);
+    assert.equal((await extra).status, 429);
+    assert.equal(snapshot.bytes, declared ? 128 : 20 * 1024 ** 2);
+    assert.deepEqual(store.readers.status(), { count: 0, bytes: 0 });
+    st.db.close();
+  }
+});
+
+test('busy uploads preserve a bounded independent control storage lane', async () => {
+  const st = state(),
+    store = new CaptureStore(st, {}),
+    gate = Promise.withResolvers(),
+    hold = { pending: 0, release() {} };
+  const uploads = [
+    store.io(() => gate.promise, Date.now() + 1000, hold),
+    store.io(() => gate.promise, Date.now() + 1000, hold),
+  ];
+  try {
+    assert.equal(await store.io(() => 42), 42);
+    const controls = [store.io(() => gate.promise), store.io(() => gate.promise)];
+    await assert.rejects(
+      store.io(() => 43),
+      /saturated/,
+    );
+    gate.resolve();
+    await Promise.all(controls);
+  } finally {
+    gate.resolve();
+    await Promise.all(uploads);
+    st.db.close();
+  }
+});
+
+test('cleanup settles eight marker writes, preserves partial success and retains failed capacity', async () => {
+  const st = state(),
+    r2 = bucket(),
+    store = new CaptureStore(st, { RECORDINGS: r2, INVITATION_GENERATION: '1' });
+  const { sessionId } = await start(store);
+  for (let i = 0; i < 9; i++)
+    assert.equal(
+      (await store.fetch(req(`/api/playtest/v2/${sessionId}/event`, { id: `cleanup-${i}` })))
+        .status,
+      201,
+    );
+  const charged = store.usage().bytes,
+    put = r2.put.bind(r2),
+    gates = [];
+  store.run("UPDATE sessions SET state='deleting' WHERE id=?", sessionId);
+  r2.put = async (key, bytes, options) => {
+    assert.equal(bytes.length, 0);
+    assert.deepEqual(options, { customMetadata: { deleted: '1' } });
+    const gate = Promise.withResolvers();
+    gates.push(gate);
+    await gate.promise;
+    return put(key, bytes, options);
+  };
+  const cleaning = store.alarm();
+  try {
+    for (let i = 0; i < 100 && gates.length < 8; i++) await new Promise((r) => setTimeout(r, 1));
+    assert.equal(gates.length, 8);
+    assert.equal(await store.io(() => 42), 42);
+    assert.equal(await store.io(() => 43, Date.now() + 1000, { pending: 0, release() {} }), 43);
+    await assert.rejects(store.fence('f'.repeat(32)), /saturated/);
+    gates[1].resolve();
+    await new Promise((r) => setImmediate(r));
+    assert.equal(store.one("SELECT COUNT(*) AS n FROM uploads WHERE state='fenced'").n, 1);
+    gates[0].reject(Error('synthetic marker failure'));
+    for (const gate of gates.slice(2)) gate.resolve();
+    await cleaning;
+    assert.equal(gates.length, 8, 'no next batch after failure');
+    assert.equal(store.one("SELECT COUNT(*) AS n FROM uploads WHERE state='fenced'").n, 7);
+    assert.equal(store.usage().bytes, charged);
+    assert.equal(store.one('SELECT state FROM sessions WHERE id=?', sessionId).state, 'deleting');
+    r2.put = put;
+    store.run('UPDATE sessions SET nextAttempt=0 WHERE id=?', sessionId);
+    await store.alarm();
+    await store.alarm();
+    assert.equal(store.usage().bytes, 0);
+    assert.equal(store.one('SELECT state FROM sessions WHERE id=?', sessionId).state, 'deleted');
+  } finally {
+    r2.put = put;
+    for (const gate of gates) gate.resolve();
+    await cleaning;
+    st.db.close();
+  }
+});
+
+test('cleanup timeout retains its operation slot until the marker settles', async () => {
+  const st = state(),
+    gate = Promise.withResolvers(),
+    store = new CaptureStore(st, { RECORDINGS: { put: () => gate.promise } });
+  try {
+    await assert.rejects(store.fence('a'.repeat(32), Date.now() + 5), /deadline/);
+    assert.equal(store.cleanupInflight, 1);
+    assert.equal(store.inflight, 1);
+    assert.equal(store.circuit, true);
+    gate.resolve();
+    await new Promise((r) => setImmediate(r));
+    assert.equal(store.cleanupInflight, 0);
+    assert.equal(store.inflight, 0);
+    assert.equal(store.circuit, false);
+  } finally {
+    gate.resolve();
+    st.db.close();
+  }
+});
+
+test('cleanup batches respect the one hundred key allowance', async () => {
+  const st = state(),
+    r2 = bucket(),
+    store = new CaptureStore(st, { RECORDINGS: r2, INVITATION_GENERATION: '1' });
+  try {
+    const { sessionId } = await start(store);
+    for (let i = 0; i < 101; i++)
+      assert.equal(
+        (await store.fetch(req(`/api/playtest/v2/${sessionId}/event`, { id: `budget-${i}` })))
+          .status,
+        201,
+      );
+    store.run("UPDATE sessions SET state='deleting' WHERE id=?", sessionId);
+    await store.alarm();
+    assert.equal(store.one("SELECT COUNT(*) AS n FROM uploads WHERE state='fenced'").n, 100);
+    assert.equal(store.one('SELECT state FROM sessions WHERE id=?', sessionId).state, 'deleting');
+    await store.alarm();
+    assert.equal(store.usage().bytes, 0);
+  } finally {
+    st.db.close();
+  }
+});
+
+test('cleanup starts no next batch after its ten second start budget', async () => {
+  const st = state(),
+    r2 = bucket(),
+    store = new CaptureStore(st, { RECORDINGS: r2, INVITATION_GENERATION: '1' });
+  const originalNow = Date.now,
+    put = r2.put.bind(r2);
+  try {
+    const { sessionId } = await start(store);
+    for (let i = 0; i < 16; i++)
+      await store.fetch(req(`/api/playtest/v2/${sessionId}/event`, { id: `clock-${i}` }));
+    store.run("UPDATE sessions SET state='deleting' WHERE id=?", sessionId);
+    let clock = originalNow(),
+      markers = 0;
+    Date.now = () => clock;
+    r2.put = (...args) => {
+      if (++markers === 1) clock += 11000;
+      return put(...args);
+    };
+    await store.alarm();
+    assert.equal(markers, 8);
+    assert.equal(store.one('SELECT state FROM sessions WHERE id=?', sessionId).state, 'deleting');
+    Date.now = originalNow;
+    r2.put = put;
+    await store.alarm();
+    assert.equal(store.usage().bytes, 0);
+  } finally {
+    Date.now = originalNow;
+    r2.put = put;
+    st.db.close();
+  }
+});
+
+test('reconciliation rearms overdue alarms without postponing imminent scheduled work', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: 100000 });
+  const st = state(),
+    store = new CaptureStore(st, {});
+  let current,
+    scheduled = [];
+  st.storage.getAlarm = async () => current;
+  st.storage.setAlarm = async (value) => {
+    scheduled.push(value);
+    current = value;
+  };
+  try {
+    for (const overdue of [1, 99999, 100000]) {
+      current = overdue;
+      scheduled = [];
+      await store.reconcile();
+      assert.deepEqual(scheduled, [100000], 'explicitly rearm overdue work immediately');
+    }
+    current = 100500;
+    scheduled = [];
+    await store.reconcile();
+    assert.deepEqual(scheduled, [], 'preserve an earlier imminent alarm');
+    for (const missingOrLate of [null, 200000]) {
+      current = missingOrLate;
+      scheduled = [];
+      await store.reconcile();
+      assert.deepEqual(scheduled, [101000]);
+    }
+  } finally {
+    st.db.close();
+    t.mock.timers.reset();
+  }
 });

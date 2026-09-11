@@ -635,8 +635,10 @@ test('final capture drain accepts delayed delivery but rejects stalled or incomp
   const { experimentReservation } = await import('../scripts/playtest/experiments.mjs');
   const budget = experimentReservation({ run: [], smokeSeconds: 60 }, null);
   assert.equal(budget.requiredMs, captureBrowserTimeoutMs(60) + 1200000);
-  assert.equal(captureBrowserTimeoutMs(60), 480000);
-  assert.equal(captureBrowserTimeoutMs(1800), 2220000);
+  // Archive processing has its own finite allowance, independent of delivery.
+  assert.ok(captureBrowserTimeoutMs(1800) >= (1800 + 120 + 120 + 60 + 900) * 1000);
+  assert.ok(captureBrowserTimeoutMs(1800) <= 50 * 60000);
+  assert.equal(captureBrowserTimeoutMs(60), 1260000);
   assert.throws(() => captureBrowserTimeoutMs(-1), /duration/);
 });
 
@@ -680,4 +682,73 @@ test('served asset integrity checks canonical index URL and rejects wrong bytes 
     ),
     /integrity/,
   );
+});
+
+test('private export bounds parallel reads and preserves journal order on completion or failure', async (t) => {
+  const { downloadCapture } = await import('../scripts/playtest/download.mjs');
+  const root = await mkdtemp(join(tmpdir(), 'capture-parallel-export-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const sessionId = 'a'.repeat(32);
+  for (const corrupt of [false, true]) {
+    let active = 0,
+      peak = 0,
+      requested = 0;
+    const rows = Array.from({ length: 9 }, (_, i) => {
+      const raw = JSON.stringify({ id: `e${i + 1}`, kind: 'sample', data: { seq: i + 1 } });
+      const sha256 = createHash('sha256').update(raw).digest('hex');
+      return {
+        sessionId,
+        objectKey: (i + 1).toString(16).padStart(32, '0'),
+        bytes: Buffer.byteLength(raw),
+        sha256,
+        uploadHash: sha256,
+        receipt: { sequence: i + 1 },
+        raw,
+      };
+    });
+    const directory = join(root, corrupt ? 'corrupt' : 'good');
+    const result = downloadCapture({
+      origin: 'https://example.invalid',
+      sessionId,
+      token: 'x'.repeat(32),
+      directory,
+      fetcher: async (url) => {
+        if (url.pathname.endsWith('/snapshot'))
+          return Response.json({
+            cutoff: rows.length,
+            session: { sessionId },
+            uploads: rows.map(({ raw, ...row }) => row),
+          });
+        requested++;
+        active++;
+        peak = Math.max(peak, active);
+        const row = rows.find((r) => r.objectKey === url.searchParams.get('key'));
+        await new Promise((resolve) => setTimeout(resolve, 5 * (5 - (row.receipt.sequence % 4))));
+        active--;
+        return new Response(row.raw + (corrupt && row.receipt.sequence === 3 ? ' ' : ''));
+      },
+    });
+    if (corrupt) {
+      await assert.rejects(result, /checksum/);
+      assert.equal(requested, 4, 'do not schedule further batches after integrity failure');
+      await assert.rejects(readFile(join(directory, 'events.ndjson')), { code: 'ENOENT' });
+    } else {
+      await result;
+      const journal = (await readFile(join(directory, 'events.ndjson'), 'utf8'))
+        .trim()
+        .split('\n')
+        .map(JSON.parse);
+      assert.deepEqual(
+        journal.map((r) => r.receipt.sequence),
+        rows.map((r) => r.receipt.sequence),
+      );
+      for (const row of rows)
+        assert.equal(
+          await readFile(join(directory, `event-${row.receipt.sequence}.json`), 'utf8'),
+          row.raw,
+        );
+    }
+    assert.equal(peak, 2, 'exactly two bounded object reads overlap');
+    assert.equal(active, 0, 'all started reads settle before returning');
+  }
 });

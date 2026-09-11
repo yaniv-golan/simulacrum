@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"95a65aa915cca636b43c7ba2a1d600524b90c7007750a1eef2e106d38167e0ea","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"3ae6651f82718044229baac3ea14d98a0d4f816f0c3bb03c8ba5a9853a1d90d2","disposition":"still accurate","rationale":"AGENTS now exposes the existing candidate tier decision table. Pinned Node setup, owner navigation and displayed build identity remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f4dada44a8f5895a522250b1aa75926edacf69f079bb729a2af7262d68b980f8","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"2b22722a5e8a1ceb598e830765166c4ae56ef3ff5003da4eb539b4c055a0dd4e","disposition":"still accurate","rationale":"The combined AGENTS retains owner discovery and pinned Node setup; recording exception policy does not change this entrypoint or recipe routing."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -8,7 +8,9 @@ Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overvi
 serve a stable build. The page displays its build identity.
 
 ## Working loop
-<!-- doc-review {"version":1,"fingerprint":"1014ee47156564fac8605840874b33fe5189c4013649b17cd343ac2386c665ec","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"ada749125e632d8ece4fdd979daab565086e6bd09d7c36081a86094b2ad69da3","disposition":"updated","rationale":"The loop now selects the frozen candidate command, retaining docs preparation and human acceptance boundaries."} -->
+
+<!-- doc-review {"version":1,"fingerprint":"13688894026ca8a5c01106b31e692302441722a0de019ca903c1d0a219c8603b","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"ada749125e632d8ece4fdd979daab565086e6bd09d7c36081a86094b2ad69da3","disposition":"still accurate","rationale":"The combined guide retains one captured completion tier after documentation review; release preparation remains a separate frozen path. Recording packet compression does not alter the developer entrypoints or authorize bypassing automated checks."} -->
+
 
 Player-facing changes also follow the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 It owns placement, teaching lifecycle and qualitative review; the manifest owns its
@@ -34,7 +36,9 @@ executable guarantees. Use the existing discovery and completion commands below.
    automated success cannot supply a missing human assessment.
 
 ## Find owners and checks
-<!-- doc-review {"version":1,"fingerprint":"fadc458dbb1c8b6b2f1dbb858a5c2b13a18c1f6f79c8074497aa85949ad3a268","dependencies":"docs/development/.reviews/README/find-owners-and-checks.json","dependencyDigest":"c6275df393eb8b04ad047ae48f7f56667f094d7dce4c67f59f6d2766bed45c13","disposition":"updated","rationale":"Added rules --failures as a manifest-derived view; explicit controls and check IDs are shown without claiming execution or inferring coverage from names."} -->
+
+<!-- doc-review {"version":1,"fingerprint":"37450138a14dd6c4fd1759a77b8849041de56b166f5bba53b6d2e9166561f554","dependencies":"docs/development/.reviews/README/find-owners-and-checks.json","dependencyDigest":"c6275df393eb8b04ad047ae48f7f56667f094d7dce4c67f59f6d2766bed45c13","disposition":"still accurate","rationale":"The integrated module graph still derives current owners, declarations and conservative tests. New capture-packet edges and native qualification commands are discoverable; static summaries remain non-executing and opaque readers retain explicit audits."} -->
+
 
 ```sh
 node scripts/navigate.mjs availablePartName
@@ -87,7 +91,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"ddb67dcd42f33e875979154bb081608f0d2b21db7226069690a8fa0382f679ca","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"04765cb86eb2a670f04436a16ac123d71f144a694edcacd96a9e0fe5879a3b4f","disposition":"still accurate","rationale":"The added browser:scopes command maintains reviewed scope metadata and does not replace development probes or local/final candidate completion. Existing tier commands and budgets are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"743947f54ebb40b738c8f87116dba9412dfa43369e997d16d433d3f70fc0216c","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"8482db0dd5a141837024e1fa35ce51189404631dc167bf2905af592c890cc56f","disposition":"still accurate","rationale":"The package adds the packet codec dependency while retaining all tier commands. Remote setup uses data recording, which does not change local versus final exit semantics or participant evidence boundaries."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -127,7 +131,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"770a3014f24616a0e2b0a6deb8877286b83e75892917963f880763840978c8ba","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"d559e725c7b62216c1e40104c6217c8727adaee0c3a41422680319b954b740c7","disposition":"still accurate","rationale":"Regenerated navigation now includes scope proposal/application owners. Semantic section decisions and regenerate-before-review ordering remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"d60e5fb3b854b642eab4779056c526eb67c5e60d22ee752d08d6a1bf32e17052","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"70b92a22cc6aeb703e570526e3d9acf9dec7f2408674b9d849728e58949c7ddb","disposition":"still accurate","rationale":"The generated reference now includes the combined manifest and package. Batch semantic dispositions and source-bound sidecars still work as described; packet dependencies change hashes, not the review procedure."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -233,7 +237,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"95df55729e000db8f946db0e06d86343ace3f2fca935fab0e2ea8a85d3da41be","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"8f26a8af58e4147c14fa1af5b5ca318fada93588bdb42d842cd9a5fbeb2b0b4d","disposition":"updated","rationale":"Documented authored declarations, per-row review, old/new witness union, actual invariant test execution, candidate/receipt binding, single-writer limitation and idempotent NOT_EVALUATED behavior. All local scope consumers and roots are now validated."} -->
+<!-- doc-review {"version":1,"fingerprint":"ff6adbd52f2b6385205846b7962ab5eae4dd736678eb15372c755e34f2562eff","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c24cd88989b354a8374e100884724a22234d0d959dd912bdc02b167c7e2965be","disposition":"still accurate","rationale":"The manifest was reformatted by the pinned formatter without changing parsed JSON. Execution tiers, local scope declarations, witness fingerprints and conservative fallback are unchanged by formatting."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -361,7 +365,7 @@ The [tier coordinator](../../scripts/verification-tiers.mjs#implementation) keep
 ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
-<!-- doc-review {"version":1,"fingerprint":"01e180859dac0d8043c1d5b032769874c341d7ca4bfc1d1e58c2b758757158d2","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"c2c021591db45c5ab0691efc6cacb77ac0e2ee777e759fc17f1254d3b5f2ff78","disposition":"still accurate","rationale":"The apply command uses the existing shared window for candidate witness execution. Prepare is a read-only source probe; existing resource admission and recovery semantics are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"77439077ede03c46708aa86ed668d8e7e845a2e869e3043ae1d43250522833f9","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"91fe46b67fbe3c94bd66f48f4112a9bb2100a9b07a9054c309c0ef077be5dfe8","disposition":"still accurate","rationale":"Package dependency changes do not change the window wrappers or ownership protocol. Scope apply acquired the normal shared lease and serialized the browser measurements."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -395,7 +399,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"8fa486ab4ce1a3016b6153c7eff6a2fa534b9a09a274da5778d24af21e74b0ba","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"6154ccedfbe8102cba73fa475d390b7ba0d8b655a13cdd4bccfd5a305960649f","disposition":"still accurate","rationale":"Scope application reuses candidate capture for maintenance witnesses but does not install feature candidates or replace local/final completion. The described identity and completion contracts remain valid."} -->
+<!-- doc-review {"version":1,"fingerprint":"07da6668d560b77039140a138e937ab2debecdd0f9abcaaaca52a8427d2149dd","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"f1e312e1edb76ea03d0cf56bd885870becbf27e18ecc5f9a673dcabc0e6c35ac","disposition":"still accurate","rationale":"The same candidate commands capture the combined unstaged recording changes and index. Added compression dependency is installed from the pinned lockfile; identity and installation limitations remain accurate."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

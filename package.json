@@ -86,6 +86,7 @@
   },
   "dependencies": {
     "@dimforge/rapier3d-deterministic-compat": "file:vendor/rapier-contact/dimforge-rapier3d-deterministic-compat-0.20.0-simulacrum.spring.8.f64.tgz",
+    "fflate": "0.8.3",
     "three": "^0.185.1"
   },
   "moduleGraph": {

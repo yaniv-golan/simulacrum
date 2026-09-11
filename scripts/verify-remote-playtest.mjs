@@ -84,12 +84,49 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
 
 page.setDefaultTimeout(15000);
 let capturedSession, retryEpochs;
+const outboxSamples = [],
+  resourceSamples = [];
+const uploadTimings = [];
+const uploadStarted = new WeakMap();
+const uploadStatus = new WeakMap();
+let sampleOutbox = async () => null;
+const phaseTimings = [];
+function phase(name) {
+  const now = Date.now();
+  if (phaseTimings.length) phaseTimings.at(-1).elapsedMs = now - phaseTimings.at(-1).startedAt;
+  phaseTimings.push({ name, startedAt: now });
+  mkdirSync(output, { recursive: true });
+  writeFileSync(join(output, 'phases.json'), JSON.stringify(phaseTimings), { mode: 0o600 });
+  console.log('capture phase', name);
+}
+page.on('request', (request) => {
+  if (/^\/api\/playtest\/v2\/[a-f0-9]{32}\/(event|media)$/.test(new URL(request.url()).pathname))
+    uploadStarted.set(request, Date.now());
+});
+page.on('requestfinished', (request) => {
+  const started = uploadStarted.get(request);
+  if (started && uploadTimings.length < 10000)
+    uploadTimings.push({
+      at: Date.now(),
+      ms: Date.now() - started,
+      outcome: 'finished',
+      status: uploadStatus.get(request) ?? null,
+    });
+});
+page.on('requestfailed', (request) => {
+  const started = uploadStarted.get(request);
+  if (started && uploadTimings.length < 10000)
+    uploadTimings.push({ at: Date.now(), ms: Date.now() - started, outcome: 'failed' });
+});
 page.on('response', (response) => {
+  if (uploadStarted.has(response.request()))
+    uploadStatus.set(response.request(), response.status());
   if (new URL(response.url()).pathname === '/api/playtest/v2/session' && response.ok())
     capturedSession = response.json().then((value) => value.sessionId);
 });
 try {
   await page.context().grantPermissions(['microphone']);
+  phase('setup');
   console.log('opening');
   await browserEvidence.goto(page, `${origin}/join?token=${token}`);
   console.log('loaded');
@@ -113,18 +150,17 @@ try {
       console.log(await page.locator('body').innerText());
       throw e;
     });
+  phase('capture');
   console.log('sharing');
-  const captureSeconds = Number(process.env.PLAYTEST_CAPTURE_SECONDS || 0);
+  const captureSeconds = Number(process.env.PLAYTEST_CAPTURE_SECONDS ?? 3);
   if (!Number.isFinite(captureSeconds) || captureSeconds < 0 || captureSeconds > 1800)
     throw Error('Invalid capture duration');
-  const outboxSamples = [];
-  const resourceSamples = [];
   const metrics =
     process.env.PLAYTEST_CHARACTERIZATION === 'true'
       ? await page.context().newCDPSession(page)
       : null;
   if (metrics) await metrics.send('Performance.enable');
-  const sampleOutbox = () =>
+  sampleOutbox = () =>
     page.evaluate(async () => {
       const db = await new Promise((resolve, reject) => {
         const r = indexedDB.open('simulacrum-playtest-outbox-v2', 1);
@@ -139,6 +175,9 @@ try {
             resolve({
               at: Date.now(),
               pending: r.result.filter((row) => row.body).length,
+              retained: r.result.length,
+              blocked: r.result.filter((row) => row.outcome === 'blocked').length,
+              received: r.result.filter((row) => row.outcome === 'received').length,
               bytes: r.result.reduce((n, row) => n + (row.body?.size || 0), 0),
             });
           tx.onerror = () => reject(tx.error);
@@ -280,7 +319,7 @@ try {
       'confirmed recorded replacement actually changes the machine',
     ]);
   }
-  const activeWorkload = process.env.PLAYTEST_ACTIVE_WORKLOAD === 'true';
+  const activeWorkload = process.env.PLAYTEST_ACTIVE_WORKLOAD !== 'false';
   const workloadActions = [];
   let driveStart, driveEnd;
   const readFrame = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
@@ -297,10 +336,11 @@ try {
     }
     driveStart = await readFrame();
     await page.locator('[data-command=run]').click();
-    await page
-      .locator('canvas')
-      .first()
-      .click({ position: { x: 20, y: 20 } });
+    const canvas = page.locator('canvas').first();
+    const canvasBounds = await canvas.boundingBox();
+    await canvas.click({
+      position: { x: canvasBounds.width / 2, y: canvasBounds.height / 2 },
+    });
     await page.keyboard.down('w');
     workloadActions.push('drive');
   }
@@ -346,6 +386,7 @@ try {
     workloadActions.push('return-build');
   }
   mkdirSync(output, { recursive: true });
+  phase('feedback');
   await page.screenshot({ path: join(output, 'recording-bar.png') });
   await page.locator('[data-part-type=poweredMotor]').click();
   await page.keyboard.press('ArrowRight');
@@ -368,6 +409,7 @@ try {
   await page.waitForTimeout(3200);
   if (faultName === 'reload-recovery')
     fault = await installCaptureFault(page, faultName, expectedFaultErrors);
+  phase('completion');
   await page.getByRole('button', { name: 'Finish session', exact: true }).click();
   if (faultName === 'reload-recovery') {
     await page.waitForTimeout(500);
@@ -410,6 +452,7 @@ try {
   if (finalOutbox.bytes || finalOutbox.pending)
     throw Error('Finished capture retains unacknowledged payloads');
   if (fault) fault.state.recovered = true;
+  phase('export');
   const exportStarted = Date.now();
   if (adapter === 'cloud' || remoteOrigin) {
     const id = await capturedSession;
@@ -423,6 +466,7 @@ try {
     });
   }
   const exportMs = Date.now() - exportStarted;
+  phase('index');
   const id = readdirSync(data)[0],
     dir = join(data, id),
     records = readFileSync(join(dir, 'events.ndjson'), 'utf8').trim().split('\n').map(JSON.parse),
@@ -492,7 +536,9 @@ try {
   ]);
   browserEvidence.assert('deepEqual', [errors, []]);
   mkdirSync(output, { recursive: true });
+  phase('screenshot');
   await page.screenshot({ path: join(output, 'completed.png') });
+  phase('report');
   browserEvidence.assertUnchanged();
   writeFileSync(
     join(output, 'result.json'),
@@ -543,8 +589,10 @@ try {
           voiceChunks: records.filter((row) => row.media?.kind === 'voice').length,
           screenChunks: records.filter((row) => row.media?.kind === 'screen').length,
           exportMs,
+          phaseTimings,
           outboxSamples,
           resourceSamples,
+          uploadTimings,
           finalOutbox,
           storageBytes: records.reduce(
             (n, row) => n + (row.media?.bytes || row.rawEvent?.bytes || 0),
@@ -578,6 +626,34 @@ try {
     );
   console.log('remote capture browser passed', adapter);
 } catch (error) {
+  phase('failed');
+  let finalFailureOutbox, diagnosticTimeout;
+  try {
+    finalFailureOutbox = await Promise.race([
+      sampleOutbox(),
+      new Promise((resolve) => {
+        diagnosticTimeout = setTimeout(() => resolve({ unavailable: true }), 5000);
+      }),
+    ]);
+  } catch {
+    finalFailureOutbox = { unavailable: true };
+  } finally {
+    clearTimeout(diagnosticTimeout);
+  }
+  // Preserve bounded numeric diagnostics even when receipt or drain fails.
+  // Do not export invitation URLs, payload bodies, comments or credentials.
+  mkdirSync(output, { recursive: true });
+  writeFileSync(
+    join(output, 'transport-failure.json'),
+    JSON.stringify({
+      outboxSamples,
+      resourceSamples,
+      uploadTimings,
+      finalFailureOutbox,
+      phaseTimings,
+    }),
+    { mode: 0o600 },
+  );
   await browserEvidence.captureFailure(error);
 
   await page.screenshot({ path: join(output, 'failure.png') });

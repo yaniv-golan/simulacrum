@@ -30,7 +30,11 @@ export function compareCaptureWindows(capture) {
   );
   return [360, 600, 1800].map((seconds) => {
     const start = capture.outboxSamples[0].at - 3000;
-    const samples = capture.outboxSamples.filter((s) => s.at <= start + seconds * 1000);
+    // The full run already passed coverage validation; timer jitter must not clip its final sample.
+    const samples =
+      seconds === 1800
+        ? capture.outboxSamples
+        : capture.outboxSamples.filter((s) => s.at <= start + seconds * 1000);
     // Prefixes expose the growth predicate only. They have no independent stop/drain.
     let growth = 'not detected';
     try {

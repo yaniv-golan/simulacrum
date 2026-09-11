@@ -146,3 +146,32 @@ test('terminal errors isolate the whole session and Retry-After is a minimum', a
   await box.deleteSession(other);
   box.close();
 });
+
+test('pending uploads follow durable insertion order across numeric IDs and reopen', async (t) => {
+  const original = globalThis.indexedDB;
+  globalThis.indexedDB = new IDBFactory();
+  t.after(() => (globalThis.indexedDB = original));
+  let box = await openCaptureOutbox();
+  t.after(() => box.close());
+  for (const id of ['packet-9', 'packet-10', 'packet-11'])
+    await box.enqueue({
+      url: `/api/playtest/v2/${'a'.repeat(32)}/event`,
+      body: new Blob([JSON.stringify({ id })]),
+      type: 'application/json',
+    });
+  box.close();
+  box = await openCaptureOutbox();
+  for (const [i, id] of ['packet-9', 'packet-10', 'packet-11'].entries()) {
+    const row = await box.next();
+    assert.equal(row.logicalKey, `event:${id}`);
+    await box.acknowledge(row, {
+      protocolVersion: 2,
+      sessionId: row.sessionId,
+      logicalKey: row.logicalKey,
+      uploadHash: row.uploadHash,
+      sequence: i + 1,
+      receivedAt: new Date().toISOString(),
+    });
+  }
+  assert.equal(await box.next(), undefined);
+});

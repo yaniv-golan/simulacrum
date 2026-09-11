@@ -10,6 +10,7 @@ function uploadFailureMessage(code) {
           : 'Uploads not received yet — retrying automatically. Keep this tab open.';
 }
 
+import { packCapturePacket } from './capture-packet.mjs';
 import { createCaptureEncoder, captureStreamLimits } from './capture-stream.mjs';
 import { openCaptureOutbox } from './capture-outbox.mjs';
 /** Consented remote usability capture; never an authority for simulation state. */
@@ -34,7 +35,7 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
   const outbox = await openCaptureOutbox();
   let durableRows = [],
     durableGroups = [];
-  const reconcile = async () => {
+  const readDurableState = async () => {
     durableRows = await outbox.items();
     durableGroups = await outbox.groups();
     const picker = completion.querySelector('[data-session]');
@@ -79,6 +80,13 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
       if (group) receipt.sealed = group.sealed;
     }
   };
+  // A stale read must not overwrite a newer enqueue/acknowledgement observation.
+  let reconciliation = Promise.resolve();
+  const reconcile = () => {
+    const current = reconciliation.catch(() => {}).then(readDurableState);
+    reconciliation = current;
+    return current;
+  };
   let startAttempt = null;
   let encoder,
     packetSeq = 0,
@@ -87,6 +95,7 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
     packetTimer = null;
   let recordingMode = 'data',
     captureBytes = 0,
+    captureWireBytes = 0,
     completionReason = '';
   let session = null,
     origin = 0,
@@ -289,7 +298,7 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
     try {
       const id = await outbox.enqueue({ url, body, type, group: receipt?.id || null });
       if (receipt) uploadReceipts.set(id, receipt);
-      queued++;
+      await reconcile();
       void pump();
     } catch (error) {
       if (receipt) receipt.error = true;
@@ -305,13 +314,23 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
     clearTimeout(packetTimer);
     packetTimer = null;
     if (!packet.length) return;
-    const body = JSON.stringify({
-      id: `packet-${++packetSeq}`,
-      kind: 'capture-batch',
-      data: { schema: 1, events: packet },
-    });
+    const body = JSON.stringify(
+      packCapturePacket({
+        id: `packet-${++packetSeq}`,
+        kind: 'capture-batch',
+        data: { schema: 1, events: packet },
+      }),
+    );
     packet = [];
     packetBytes = 0;
+    captureWireBytes += new TextEncoder().encode(body).byteLength;
+    if (captureWireBytes >= captureStreamLimits.captureWireBytes - 2 * captureStreamLimits.bytes)
+      queueMicrotask(() => {
+        if (active) {
+          completionReason = 'This recording reached its size limit. ';
+          stop();
+        }
+      });
     void send(
       `/api/playtest/v2/${session}/event`,
       new Blob([body], { type: 'application/json' }),
@@ -348,7 +367,11 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
       captureBytes += bytes + 256;
       if (receipt || kind === 'session-end' || kind === 'session-start') flushEvents(receipt);
       else if (!packetTimer) packetTimer = setTimeout(flushEvents, 1000);
-      if (kind !== 'session-end' && (seq >= 95000 || captureBytes >= 64 * 1024 * 1024)) {
+      if (
+        kind !== 'session-end' &&
+        (seq >= 95000 ||
+          captureBytes >= captureStreamLimits.encodedBytes - 2 * captureStreamLimits.bytes)
+      ) {
         completionReason = 'This recording reached its size limit. ';
         stop();
       }
@@ -519,7 +542,7 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
       session = created.sessionId;
       seq = 0;
       packetSeq = 0;
-      captureBytes = 0;
+      ((captureBytes = 0), (captureWireBytes = 0));
       completionReason = '';
       encoder = createCaptureEncoder();
       origin = performance.now();

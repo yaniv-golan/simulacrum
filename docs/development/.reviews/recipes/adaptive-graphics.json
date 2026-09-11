@@ -2,8 +2,8 @@
   "version": 1,
   "dependencies": {
     "src/presentation/graphics-quality.mjs": "16316ff41411b1c0168089ace828dc927b62d32af10c91f02aec023d8bdc81f8",
-    "package-lock.json": "be238b589bac1db94398632880eef13287353f499c5df623f4006cc402f6e672",
-    "package.json": "ff0a6ac5bac42b8056aae85fe0b38ef194bd6fb0ca65ca71ac4b83df094b0165",
+    "package-lock.json": "e2a9be6c485d53a4d363cb4fb0ccf00c5695891bd61ddcea2ae29d89f485be8a",
+    "package.json": "835e65cd75af1fddff38db8924ddfaf887b181101fbcb0668fba738bda6b6fc4",
     "test/graphics-quality.test.mjs": "fc56ad710a0d7a0a738704b61bf44d10da2d35c764172ab0097ab8c773892244",
     "scripts/verify-adaptive-graphics.mjs": "2f71e24a5cedde3ddddb1df2124af1320c6c90caea6cc251d21f64aff7520b94"
   }

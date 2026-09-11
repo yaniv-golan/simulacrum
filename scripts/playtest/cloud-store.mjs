@@ -1,6 +1,8 @@
 // M3b: one stable store owns all capacity and receipt decisions. R2 is not transactional with SQL.
 import {
   LIMITS,
+  validateEventEnvelope,
+  bodyReservation,
   admission,
   readBounded,
   json,
@@ -11,15 +13,19 @@ import {
   fail,
 } from './protocol.mjs';
 const encode = (value) => new TextEncoder().encode(JSON.stringify(value));
+const markerLane = Symbol('zero-byte deletion markers');
 const reply = (value, status = 200) =>
   Response.json(value, { status, headers: { 'cache-control': 'no-store' } });
 export class CaptureStore {
   constructor(state, env) {
     this.state = state;
     this.env = env;
-    this.readers = admission();
+    this.readers = admission(32);
     this.pending = new Set();
     this.inflight = 0;
+    this.uploadInflight = 0;
+    this.controlInflight = 0;
+    this.cleanupInflight = 0;
     this.circuit = false;
     this.cleaning = false;
     this.sql = state.storage.sql;
@@ -79,19 +85,25 @@ export class CaptureStore {
       throw fail(413, 'metadata-capacity');
     this.run('UPDATE ledger SET lifetime=lifetime+? WHERE id=1', bytes);
   }
-  async io(fn, deadline = Date.now() + 10000) {
-    if (this.inflight >= 2) throw fail(503, 'Storage operations saturated');
+  async io(fn, deadline = Date.now() + 10000, hold, kind) {
+    const cleanup = kind === markerLane;
+    const lane = cleanup ? 'cleanupInflight' : hold ? 'uploadInflight' : 'controlInflight';
+    if (this[lane] >= (cleanup ? 8 : hold ? 32 : 2) || this.circuit)
+      throw fail(503, 'Storage operations saturated');
     this.inflight++;
+    this[lane]++;
     let timer;
     const operation = Promise.resolve().then(fn);
-    operation.then(
-      () => {
-        if (--this.inflight === 0) this.circuit = false;
-      },
-      () => {
-        if (--this.inflight === 0) this.circuit = false;
-      },
-    );
+    if (hold) hold.pending++;
+    const settled = () => {
+      this[lane]--;
+      if (--this.inflight === 0) this.circuit = false;
+      if (hold) {
+        hold.pending--;
+        hold.release();
+      }
+    };
+    operation.then(settled, settled);
     try {
       return await Promise.race([
         operation,
@@ -109,8 +121,16 @@ export class CaptureStore {
       clearTimeout(timer);
     }
   }
+  fence(key, deadline = Date.now() + 10000) {
+    return this.io(
+      () => this.env.RECORDINGS.put(key, new Uint8Array(), { customMetadata: { deleted: '1' } }),
+      deadline,
+      undefined,
+      markerLane,
+    );
+  }
   async fetch(request) {
-    let release;
+    let release, hold;
     try {
       const url = new URL(request.url),
         path = url.pathname;
@@ -131,19 +151,30 @@ export class CaptureStore {
       if (!media && request.headers.get('content-type')?.split(';')[0] !== 'application/json')
         throw fail(415, 'Expected JSON');
       const limit = start ? LIMITS.startBytes : media ? LIMITS.mediaBytes : LIMITS.eventBytes;
-      release = this.readers.acquire(limit);
+      const reservation = bodyReservation(request.headers, limit);
+      release = this.readers.acquire(reservation);
+      hold = {
+        pending: 0,
+        finished: false,
+        release: () => {
+          if (hold.finished && hold.pending === 0) {
+            release?.();
+          }
+        },
+      };
       const deadline = Date.now() + 40000;
-      const bytes = await readBounded(request.body, limit);
+      const bytes = await readBounded(request.body, reservation);
+      if (request.headers.has('content-length') && bytes.length !== reservation)
+        throw fail(400, 'Content length mismatch');
       if (Date.now() >= deadline) throw fail(408, 'Operation deadline');
       if (start)
         return await this.create(bytes, generation, request.headers.get('x-synthetic-run'));
-      const event = media ? null : json(bytes);
-      if (event && !safeId.test(event.id || '')) throw fail(400, 'Event id required');
+      // Do not retain parsed payloads across storage awaits or interpret their contents here.
       const logicalKey = media
         ? `media:${media.kind}:${media.clip}:${media.seq}`
-        : `event:${event.id}`;
-      const hash = await uploadHash(bytes, media?.mime || ''),
-        rawHash = await digest(bytes);
+        : `event:${validateEventEnvelope(json(bytes))}`;
+      const rawHash = await digest(bytes),
+        hash = media ? await uploadHash(bytes, media.mime) : rawHash;
       if (Date.now() >= deadline) throw fail(408, 'Operation deadline');
       return await this.upload(
         match[1],
@@ -154,6 +185,7 @@ export class CaptureStore {
         rawHash,
         media,
         deadline,
+        hold,
       );
     } catch (error) {
       return Response.json(
@@ -167,7 +199,12 @@ export class CaptureStore {
         },
       );
     } finally {
-      release?.();
+      if (hold) {
+        hold.finished = true;
+        hold.release();
+      } else {
+        release?.();
+      }
     }
   }
   async create(bytes, generation, synthetic) {
@@ -245,7 +282,7 @@ export class CaptureStore {
       result.retry ? 200 : 201,
     );
   }
-  async upload(id, generation, key, bytes, hash, rawHash, media, deadline) {
+  async upload(id, generation, key, bytes, hash, rawHash, media, deadline, hold) {
     const active = `${id}/${key}`;
     if (this.pending.has(active)) throw fail(503, 'Upload already active');
     this.pending.add(active);
@@ -290,10 +327,12 @@ export class CaptureStore {
           JSON.stringify(data),
         );
         this.run('UPDATE sessions SET bytes=bytes+?,records=records+1 WHERE id=?', charge, id);
-        return { ...data, state: 'pending' };
+        return { ...data, state: 'pending', newlyReserved: true };
       });
       if (record.state === 'committed') return reply(record.receipt);
-      let object = await this.io(() => this.env.RECORDINGS.get(record.objectKey), deadline);
+      let object = record.newlyReserved
+        ? null
+        : await this.io(() => this.env.RECORDINGS.get(record.objectKey), deadline, hold);
       this.live(id, generation);
       if (!object) {
         if (Date.now() >= deadline) throw fail(503, 'Operation deadline');
@@ -305,9 +344,10 @@ export class CaptureStore {
               customMetadata: { sha256: rawHash },
             }),
           deadline,
+          hold,
         );
         if (!object)
-          object = await this.io(() => this.env.RECORDINGS.get(record.objectKey), deadline);
+          object = await this.io(() => this.env.RECORDINGS.get(record.objectKey), deadline, hold);
       }
       this.live(id, generation);
       if (object?.customMetadata?.deleted === '1') throw fail(410, 'Deleted payload');
@@ -316,8 +356,9 @@ export class CaptureStore {
       // R2 verifies supplied SHA-256 on create. Existing objects are also read/hash checked.
       if (
         object.arrayBuffer &&
-        (await digest(new Uint8Array(await this.io(() => object.arrayBuffer(), deadline)))) !==
-          rawHash
+        (await digest(
+          new Uint8Array(await this.io(() => object.arrayBuffer(), deadline, hold)),
+        )) !== rawHash
       )
         throw fail(409, 'Stored payload checksum');
       if (Date.now() >= deadline) throw fail(503, 'Operation deadline');
@@ -505,9 +546,13 @@ export class CaptureStore {
     });
   }
   async reconcile() {
-    const target = Date.now() + 1000,
-      current = await this.state.storage.getAlarm();
-    if (!current || current > target) await this.state.storage.setAlarm(target);
+    const current = await this.state.storage.getAlarm(),
+      now = Date.now(),
+      target = now + 1000;
+    // A past timestamp is not evidence that an alarm will still execute after
+    // retries fail. Rearm it now, without pushing due work ahead of every poll.
+    if (current !== null && current <= now) await this.state.storage.setAlarm(now);
+    else if (current === null || current > target) await this.state.storage.setAlarm(target);
   }
   async alarm() {
     if (this.cleaning) return;
@@ -525,18 +570,25 @@ export class CaptureStore {
       for (const session of sessions) {
         try {
           this.run("UPDATE sessions SET state='deleting' WHERE id=?", session.id);
-          for (const row of this.run(
+          const rows = this.run(
             "SELECT objectKey FROM uploads WHERE session=? AND state!='fenced' LIMIT 100",
             session.id,
-          )) {
+          );
+          for (let offset = 0; offset < rows.length; ) {
             if (processed >= 100 || Date.now() - start >= 10000) return;
-            processed++;
-            await this.io(() =>
-              this.env.RECORDINGS.put(row.objectKey, new Uint8Array(), {
-                customMetadata: { deleted: '1' },
+            const batch = rows.slice(offset, offset + Math.min(8, 100 - processed));
+            offset += batch.length;
+            processed += batch.length;
+            // Preserve every confirmed fence even if a peer fails. Unknown PUTs
+            // retain their lane until settlement; their rows remain retryable.
+            const results = await Promise.allSettled(
+              batch.map(async (row) => {
+                await this.fence(row.objectKey);
+                this.run("UPDATE uploads SET state='fenced' WHERE objectKey=?", row.objectKey);
               }),
             );
-            this.run("UPDATE uploads SET state='fenced' WHERE objectKey=?", row.objectKey);
+            const failure = results.find((result) => result.status === 'rejected');
+            if (failure) throw failure.reason;
           }
           this.transaction(() => {
             if (

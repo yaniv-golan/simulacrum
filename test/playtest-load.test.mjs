@@ -158,7 +158,11 @@ test('active driving evidence rejects gravity-only motion and changed body inven
   );
 });
 
-async function capacityModeWitness(t, recordingMode) {
+async function capacityModeWitness(
+  t,
+  recordingMode,
+  { cleanupFailure = false, latencyFailure = false } = {},
+) {
   const { mkdtemp, writeFile, rm } = await import('node:fs/promises');
   const { tmpdir } = await import('node:os');
   const { join } = await import('node:path');
@@ -174,6 +178,8 @@ async function capacityModeWitness(t, recordingMode) {
   let sessions = 0;
   globalThis.fetch = async (url, options = {}) => {
     const u = new URL(url);
+    if (cleanupFailure && options.method === 'DELETE')
+      return Response.json({ error: 'cleanup outage' }, { status: 503 });
     if (u.pathname === '/admin/playtest/sessions') return Response.json([]);
     if (u.pathname.includes('/admin/')) return Response.json({ ok: true, token: 'synthetic' });
     if (u.pathname === '/join')
@@ -185,6 +191,8 @@ async function capacityModeWitness(t, recordingMode) {
     const key = media
       ? `media:${u.searchParams.get('kind')}:${u.searchParams.get('clip')}:${u.searchParams.get('seq')}`
       : `event:${JSON.parse(bytes).id}`;
+    if (latencyFailure && key === 'event:load-0-0')
+      await new Promise((resolve) => setTimeout(resolve, 6000));
     deliveries.push({ key, bytes: bytes.length, sessionId });
     return Response.json({
       protocolVersion: 2,
@@ -224,7 +232,23 @@ async function capacityModeWitness(t, recordingMode) {
       t.mock.timers.tick(100);
       await new Promise((resolve) => setImmediate(resolve));
     }
-    const result = await pending;
+    let result;
+    if (cleanupFailure) {
+      const error = await pending.catch((error) => error);
+      assert(error instanceof AggregateError);
+      assert.equal(error.errors.length, latencyFailure ? 2 : 1);
+      assert.match(error.errors.at(-1).message, /Synthetic control failed 503/);
+      result = error.result;
+      assert(result, 'completed measurement survives cleanup failure');
+      const serialized = JSON.parse(JSON.stringify(error));
+      assert.match(serialized.failures.at(-1).message, /Synthetic control failed 503/);
+      assert.equal(serialized.result.completed, result.completed);
+      if (latencyFailure) {
+        assert.match(error.errors[0].message, /Capture load target failed/);
+        assert.strictEqual(error.errors[0].result, result);
+        assert(result.p95Ms >= 5000);
+      } else assert(result.p95Ms < 5000);
+    } else result = await pending;
     assert.equal(deliveries.filter((d) => d.key.startsWith('event:') && d.bytes > 1000).length, 20);
     assert.equal(result.scheduled, recordingMode === 'video' ? 100 : 40);
     assert.equal(result.completed, result.scheduled);
@@ -250,3 +274,8 @@ test('capacity sends retained samples and envelope stress with distinct acknowle
   capacityModeWitness(t, 'video'));
 test('data capacity covers wire events and admitted voice without screen media', (t) =>
   capacityModeWitness(t, 'data'));
+
+test('successful capacity measurement survives failed cleanup without reporting success', (t) =>
+  capacityModeWitness(t, 'data', { cleanupFailure: true }));
+test('capacity target failure and cleanup failure retain both causes and measurements', (t) =>
+  capacityModeWitness(t, 'data', { cleanupFailure: true, latencyFailure: true }));

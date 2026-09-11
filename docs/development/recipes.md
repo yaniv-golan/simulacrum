@@ -2,7 +2,9 @@
 
 ## Choose a recipe
 
-<!-- doc-review {"version":1,"fingerprint":"8b9cd953f8c59a9111de88bfe239e04853a6e79127fa5846de94a07387359639","dependencies":"docs/development/.reviews/recipes/choose-a-recipe.json","dependencyDigest":"e296ce7d53b758add9e49b917498ff1d88aa40c63f62e5be6e3b8c6a3f5bf7b2","disposition":"updated","rationale":"Added the canonical learning-content admission link for part and interaction work. Navigation and ordinary command ownership remain unchanged; this section introduces no alternate policy owner."} -->
+<!-- doc-review {"version":1,"fingerprint":"d6e8aebba04a00908fc8d6f1758b3cb37a1049e362356a36084f72105261474d","dependencies":"docs/development/.reviews/recipes/choose-a-recipe.json","dependencyDigest":"300fa1026f83833cf2ff65e01df621a50584f1cfb52150f3469c8f0d8118668f","disposition":"still accurate","rationale":"Architecture overview still identifies the same runtime and manifest owners. Recording transport changes add no alternative authoring policy or implementation owner."} -->
+
+
 
 Use the [map](architecture.md#overview) to locate the owner, inspect its reverse consumers with
 `node scripts/navigate.mjs <symbol-or-path>`, then use focused tests. Admit changes
@@ -16,7 +18,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"b074f240d88655b7d3af28be572c892390ac765e172064544a28084f11c7d844","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"34d5ba7e4ba142c3fd974606ef5ed53cd6e9497a72bbb2fd8fdc0e0cf4053ad3","disposition":"updated","rationale":"Added the three partitioned launcher test owners so physical retention, energy and repair controls remain discoverable. All ten original Ball test bodies were compared byte-for-byte; no assertion, simulated duration or per-file watchdog changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"38b278f90f9cfbdde37ad024b18fac04194ef5087111d7260832ac78bee599bd","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"07784d9b850ff3d56756ca8fe45e79d839a4be61fae5778aa35bb7a338d99b57","disposition":"still accurate","rationale":"The fflate dependency affects recording transport only. Catalog/schema/geometry ownership and the preserved partitioned Ball test bodies remain unchanged."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -46,7 +48,9 @@ canonicalizes empty contact records without changing explicit zero or mutating t
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"b50493a541897e118e1031a4dad939a316b4225e32d02d7163d41b41be014780","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"425515e49bc8185cff53fdd5e1c2eec629604bb416837e8683420b6e91bbfb5a","disposition":"still accurate","rationale":"contactProperty uses strict command keys, full candidate validation, normal undo history and null removal of an override. It conforms to the existing command recipe without a second admission owner."} -->
+<!-- doc-review {"version":1,"fingerprint":"4b48f2524dd396db33402bc7945eb13548860475f943dd5ab8e3282e457d42ce","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"06d306d4dc4cd32da0d8cfd9eca12e4093129ff23091d8db713909ebaff96116","disposition":"still accurate","rationale":"contactProperty uses strict command keys, full candidate validation, normal undo history and null removal of an override. It conforms to the existing command recipe without a second admission owner."} -->
+
+
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -61,12 +65,13 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
+<!-- doc-review {"version":1,"fingerprint":"5932c5b18ea9c17a3198b065f9f3025d9899a3ed2f94821ce58ac21d16e3320b","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"e126c7d9f0b8e0058ac5b02ce2a3de776cd578e47bd50d97bfc2f8e629a50745","disposition":"still accurate","rationale":"The integration removes a duplicate review comment without changing recipe guidance. Artifact-owned verifier outputs and recording compression do not alter preview, cancellation, command admission or help input ownership."} -->
+
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
 surface. Keep consequential state visible and verify unique actions remain reachable
 after removing or moving controls.
 
-<!-- doc-review {"version":1,"fingerprint":"57da3404b4923713d90992a6f7c95151843d3fed710dd6dd3c5f540cbe38e91c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"911ecee0638a08fe4b93fbae48d8965a130f65cfca02a944a02afc202c63025f","disposition":"still accurate","rationale":"Browser verifier output paths now route through an injected attempt root; the user input, command receipt, rendered-state and negative-control assertions in these linked journeys are preserved."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -109,7 +114,9 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"e31b5836a4202b6c051d58b3eca8761ed27c7d1535b570db89827bf15996b146","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"2c6935bb2959bf443342609fa358085b8483ab3e1b9652d4bd154e75bce3b5a3","disposition":"still accurate","rationale":"Impact sound consumes completed contact rows with missing-data invalidation; it adds no diagnostic inference or physical write. Selected-body measurements retain their existing numeric accumulator and sampling definition."} -->
+<!-- doc-review {"version":1,"fingerprint":"9142468e01e6c9bc1e16de2bd4b3db9ace428ba56b97a98b3042a5f71d95a8ef","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"8d141d7d35d7a4b3193ad1444d6a843e978efe7f38847f56f85528e69b582bcb","disposition":"still accurate","rationale":"Impact sound consumes completed contact rows with missing-data invalidation; it adds no diagnostic inference or physical write. Selected-body measurements retain their existing numeric accumulator and sampling definition."} -->
+
+
 
 Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -132,7 +139,9 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"1c170e5e8f4ce9ebeb71edb6f1ba18d20dcb912e1d62ad7b0d5847b982996afc","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"d2322644a8d973230a9beac793637bc043421a6246cb707a78bdd9e1d0f786d2","disposition":"updated","rationale":"Added native sphere mass and inertia controls, pair restitution, roll/slide, checkpoint and clock comparisons, and the bounded sphere-versus-plate CCD policy. High-speed sphere-sphere sweeps remain explicitly unqualified; solver subdivisions and pass counts are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"5393a71878293ff61504eae5b41cdeb8c105a5e1314ccf28c34fe47d5248b6c4","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"59cef390ecfd8c978aa67ec21a1031d6ea747d66839ed6f8d9ee5e8fbf24157f","disposition":"updated","rationale":"Added native sphere mass and inertia controls, pair restitution, roll/slide, checkpoint and clock comparisons, and the bounded sphere-versus-plate CCD policy. High-speed sphere-sphere sweeps remain explicitly unqualified; solver subdivisions and pass counts are unchanged."} -->
+
+
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -228,7 +237,7 @@ settings and slop. Re-run existing contact/constraint cases when changing this p
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"3ba970da0946bc6e4f648c46da9b0c0c2edac1a949eacc7c6ecef50cebf0cac7","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"4cfc292a7828794a5b997765e3c61770a69c76b931d0b984c0a24f4bb91743fe","disposition":"still accurate","rationale":"Assembly verifier screenshots and traces use the attempt-owned artifact helper. Canonical group commands, physical connection boundaries, ordinary authoring transactions and retained browser assertions remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"bf9fda007f35aba4efb3700cc43ebfb97e9bb16569bbd89b1e425c432f3286e8","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"0ac4ec5e61953fe7f323b25a11162141d26906f3cef441e98a6340bb1de8f42e","disposition":"still accurate","rationale":"The combined browser evidence closure changes artifact output paths and source dependencies, not assembly capture, copied references or atomic insertion. The assembly UX partition and its original assertions remain intact."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -323,7 +332,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"1582b953e108822aea6defc8dd17fe2a8c12016a5ab3f3f6d90f036448cbdce4","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"7c109eb4f40863ac6aeecc7a396d320c87ef6837a57ace2f2c9620d847046801","disposition":"still accurate","rationale":"Overlay and spring verifier output paths changed only for retained evidence ownership. Geometry, rendering authority, telemetry agreement and resource/performance assertions remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a6856b1d2f14aa9c63a8197d391ea9332a2189ed5cb92e7076761f1720f388d3","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"9ab994d1d2e53a27a07b330970bfe19456f0a94f67e0312cbf888d0dfde87109","disposition":"still accurate","rationale":"Only recording dependencies and source/evidence bookkeeping changed in this recipe closure. Wiring visibility, GPU ownership and every stated spring timing budget remain unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -407,7 +416,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"567942c2c045582fdee214f291c2c738e6889e965a075b820afde1b641130460","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"496d54962c5ef9550596df99c05a217bcfd2ef17f79ccc0c705339526d939884","disposition":"still accurate","rationale":"Adaptive graphics still uses Metal and SwiftShader with unchanged cadence and pixel assertions. Its report directory now belongs to the calling browser attempt; no quality or timing threshold changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"267e08e3ca09815170168b2c71bc3b95dddd9f68d541b1111ea0b19b31033b1a","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"f1101a8759099df2b77eb903aeaa504c62b656adb4a3915e0597aece63083c86","disposition":"still accurate","rationale":"The dependency lock now pins recording compression explicitly. Graphics-quality controls and timing budgets are unchanged; no recording transport change selects graphics quality."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

@@ -23,7 +23,9 @@ otherwise give the observation and a useful next check. Do not shrink text to ma
 more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
-<!-- doc-review {"version":1,"fingerprint":"ab4cc1cca3491f194c7f68fd3ba182e2f6ed6209ea54438ad203b5ac03ab08bd","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"ff5cb493666854763f80bbb093120753e84dbee83a96b10448a7c519ac5cbc0d","disposition":"still accurate","rationale":"The Ball launcher replaces the loose wheel in the existing entry, and rolling/drop extends the existing Spring collection. Real catcher shortfall and preload repair are now demonstrated; no additional lesson or claimed human engagement was introduced."} -->
+
+<!-- doc-review {"version":1,"fingerprint":"193f2342f96689d0e3c0d289e9a4179d1da10866304187a3da3b54a35d654dbc","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"ff5cb493666854763f80bbb093120753e84dbee83a96b10448a7c519ac5cbc0d","disposition":"still accurate","rationale":"The Ball launcher replaces the loose wheel in the existing entry, and rolling/drop extends the existing Spring collection. Real catcher shortfall and preload repair are now demonstrated; no additional lesson or claimed human engagement was introduced."} -->
+
 
 Learn & examples is a curated collection of things players can learn to do.
 Adding a feature requires a teaching decision, not automatically a catalogue entry.
@@ -122,7 +124,9 @@ documentation workflow. Documentation checks detect stale references and reviews
 they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
-<!-- doc-review {"version":1,"fingerprint":"07a6566da4b13f80ae2cf761843c28203c94c8e62d5a63a74af7bf78f6c378af","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c9fc7ffb4464568650e6f478b861e1807fa4f6849ec5f7f8659b74173634be11","disposition":"updated","rationale":"Documented symmetric illustrative contact timbres and file-load/retry exclusion. Arbitrary valid numeric contact values are accepted while sliders remain coarse. Retry and Sound remain in the bounded machine-controls region; minimum-quality marking was visually inspected."} -->
+
+<!-- doc-review {"version":1,"fingerprint":"e855d661adbad560528ded50cd89c2e29afa78d29a062c72a2f0c89478bb0be7","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c9fc7ffb4464568650e6f478b861e1807fa4f6849ec5f7f8659b74173634be11","disposition":"updated","rationale":"Documented symmetric illustrative contact timbres and file-load/retry exclusion. Arbitrary valid numeric contact values are accepted while sliders remain coarse. Retry and Sound remain in the bounded machine-controls region; minimum-quality marking was visually inspected."} -->
+
 
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
@@ -260,7 +264,7 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"1b6d33231a3ac6040329d937f51dbc6adfed4b786c5ad0ddd0ae218a47c5ea6d","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"a8261eb093cc81f312a3e34a5d0afdea0b2a2e56b60c29558b25725314d41b14","disposition":"still accurate","rationale":"Tooling now publishes browser progress and retains each attempt evidence. Actual player journeys, viewport and negative-path requirements remain unchanged, and automated evidence still cannot substitute for human acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"7831a6898a3c3ff11ae82d1d13923409f7351bf60347c5abf8baad0408721d41","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"7144a81b21411f419534e3cc79c177ac929f6bde6fdcf024f5911b691a804705","disposition":"still accurate","rationale":"The linked playtesting setup now describes data recording and compressed packets. UI review remains a separate rendered journey and agent observations still cannot supply designated-player acceptance."} -->
 
 
 Use the manifest's `workbench-content-lifecycle` invariant and

@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { releaseEligible, assertVerificationJobs } from '../scripts/playtest/ci-verification.mjs';
 test('release routing preserves independent PR checks and rejects missing required work', () => {
-  assert.equal(releaseEligible('push', 'v2'), true);
+  assert.equal(releaseEligible('push', 'main'), true);
   for (const event of ['pull_request', 'schedule'])
-    assert.equal(releaseEligible(event, 'v2'), false);
+    assert.equal(releaseEligible(event, 'main'), false);
   assert.equal(releaseEligible('push', 'other'), false);
-  assert.equal(releaseEligible('workflow_dispatch', 'v2'), true);
+  assert.equal(releaseEligible('push', 'v2'), false);
+  assert.equal(releaseEligible('workflow_dispatch', 'v2'), false);
+  assert.equal(releaseEligible('workflow_dispatch', 'main'), true);
   assert.equal(releaseEligible('workflow_dispatch', 'other'), false);
   const release = {
     route: 'success',
@@ -48,6 +50,11 @@ test('workflow routes once and aggregate is always evaluated before admission', 
   assert.equal((workflow.match(/npm run release:prepare/g) || []).length, 1);
   assert.match(workflow, /verification:\n    if: always\(\)/);
   assert.match(workflow, /staging-admission:\n    needs: \[release-package, verification\]/);
+  assert.ok(
+    workflow.includes(
+      "if: needs.release-package.outputs.eligible == 'true' && vars.DEPLOY_STAGING_ENABLED == 'true'",
+    ),
+  );
   for (const path of ['.github/workflows/ci.yml', '.github/workflows/deploy-production.yml']) {
     assert.equal(
       (

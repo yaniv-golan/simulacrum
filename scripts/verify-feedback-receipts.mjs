@@ -1,4 +1,5 @@
 import { browserArtifactPath } from './browser-artifacts.mjs';
+import { unpackCapturePacket } from '../src/application/capture-packet.mjs';
 import { decodeCaptureEvents } from '../src/application/capture-stream.mjs';
 import { createFixtureEvidence } from './browser-evidence.mjs';
 // M3b: feedback receipts must follow server acknowledgement and final media flush.
@@ -19,6 +20,8 @@ const browserEvidence = createFixtureEvidence({
     'src/presentation/workshop.css',
     'src/application/capture-outbox.mjs',
     'src/application/capture-stream.mjs',
+    'src/application/capture-packet.mjs',
+    'package-lock.json',
     'scripts/verify-feedback-receipts.mjs',
   ],
 });
@@ -28,22 +31,32 @@ const source = readFileSync(process.env.FEEDBACK_SOURCE || 'src/application/remo
 const server = createServer((req, res) => {
   res.setHeader(
     'Content-Type',
-    ['/remote.mjs', '/capture-outbox.mjs', '/capture-stream.mjs'].includes(req.url)
+    [
+      '/remote.mjs',
+      '/capture-outbox.mjs',
+      '/capture-stream.mjs',
+      '/capture-packet.mjs',
+      '/fflate.mjs',
+    ].includes(req.url)
       ? 'text/javascript'
       : req.url === '/style.css'
         ? 'text/css'
         : 'text/html',
   );
   res.end(
-    req.url === '/capture-stream.mjs'
-      ? readFileSync('src/application/capture-stream.mjs')
-      : req.url === '/capture-outbox.mjs'
-        ? readFileSync('src/application/capture-outbox.mjs')
-        : req.url === '/remote.mjs'
-          ? source
-          : req.url === '/style.css'
-            ? css
-            : '<link rel="stylesheet" href="/style.css"><meta name="build-id" content="receipt-test"><script type="module">import {mountRemotePlaytest} from "/remote.mjs";window.mountCapture=()=>mountRemotePlaytest({context:()=>({}),checkpoint:()=>({}),screenshot:()=>{throw Error("screenshot unavailable")}});window.remoteCapture=await window.mountCapture();</script>',
+    req.url === '/fflate.mjs'
+      ? readFileSync('node_modules/fflate/esm/browser.js')
+      : req.url === '/capture-packet.mjs'
+        ? readFileSync('src/application/capture-packet.mjs')
+        : req.url === '/capture-stream.mjs'
+          ? readFileSync('src/application/capture-stream.mjs')
+          : req.url === '/capture-outbox.mjs'
+            ? readFileSync('src/application/capture-outbox.mjs')
+            : req.url === '/remote.mjs'
+              ? source
+              : req.url === '/style.css'
+                ? css
+                : '<link rel="stylesheet" href="/style.css"><meta name="build-id" content="receipt-test"><script type="importmap">{"imports":{"fflate":"/fflate.mjs"}}</script><script type="module">import {unpackCapturePacket} from "/capture-packet.mjs";window.unpackCapturePacket=unpackCapturePacket;import {captureStreamLimits} from "/capture-stream.mjs";window.captureStreamLimits=captureStreamLimits;import {mountRemotePlaytest} from "/remote.mjs";window.mountCapture=()=>mountRemotePlaytest({context:()=>({}),checkpoint:()=>({}),screenshot:()=>{throw Error("screenshot unavailable")}});window.remoteCapture=await window.mountCapture();</script>',
   );
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
@@ -59,7 +72,9 @@ try {
   await page.addInitScript(() => {
     window.originalConsoleError = console.error;
     window.packetHas = (body, kind) =>
-      (body.kind === 'capture-batch' ? body.data.events : [body]).some((e) => e.kind === kind);
+      (body.kind === 'capture-batch' ? window.unpackCapturePacket(body).data.events : [body]).some(
+        (e) => e.kind === kind,
+      );
     const originalTimeout = window.setTimeout;
     window.setTimeout = (callback, delay, ...args) =>
       originalTimeout(callback, delay === 45000 && window.hangNext ? 100 : delay, ...args);
@@ -121,6 +136,8 @@ try {
   });
   let sequence = 0,
     held = null,
+    holdFinalReceipt = false,
+    heldFinalReceipt = null,
     disposalUpload = null,
     disposalArrival = Promise.withResolvers(),
     holdComment = true,
@@ -130,7 +147,9 @@ try {
     failNextSession = false;
   const uploads = [];
   const hasEvent = (packet, kind) =>
-    (packet.kind === 'capture-batch' ? packet.data.events : [packet]).some((e) => e.kind === kind);
+    (packet.kind === 'capture-batch' ? unpackCapturePacket(packet).data.events : [packet]).some(
+      (e) => e.kind === kind,
+    );
   const receipt = (route) => {
     const request = route.request(),
       url = new URL(request.url()),
@@ -170,6 +189,14 @@ try {
       });
     }
     uploads.push({ url: route.request().url(), body: route.request().postData() });
+    if (
+      holdFinalReceipt &&
+      path.endsWith('/event') &&
+      hasEvent(route.request().postDataJSON(), 'session-end')
+    ) {
+      heldFinalReceipt = route;
+      return;
+    }
     if (path.endsWith('/event') && hasEvent(route.request().postDataJSON(), 'disposal-witness')) {
       disposalUpload = route;
       disposalArrival.resolve();
@@ -835,6 +862,86 @@ try {
     ),
   ]);
   await page.evaluate(() => window.remoteCapture.dispose());
+  // A stale reconciliation must never report success before the final receipt.
+  await page.evaluate(async () => {
+    window.remoteCapture = await window.mountCapture();
+  });
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.waitForFunction(() => window.remoteCapture.active());
+  await page.waitForFunction(async () => {
+    const db = await new Promise((resolve) => {
+      const r = indexedDB.open('simulacrum-playtest-outbox-v2', 1);
+      r.onsuccess = () => resolve(r.result);
+    });
+    try {
+      return await new Promise((resolve) => {
+        const tx = db.transaction('items', 'readonly'),
+          r = tx.objectStore('items').getAll();
+        tx.oncomplete = () => resolve(r.result.every((row) => !row.body));
+      });
+    } finally {
+      db.close();
+    }
+  });
+  holdFinalReceipt = true;
+  await page.evaluate(() => {
+    const original = IDBDatabase.prototype.transaction;
+    let held = false;
+    IDBDatabase.prototype.transaction = function (...args) {
+      const tx = original.apply(this, args);
+      if (!held && args[0] === 'groups' && args[1] === 'readonly') {
+        held = true;
+        let callback;
+        Object.defineProperty(tx, 'oncomplete', {
+          configurable: true,
+          get: () => callback,
+          set: (value) => {
+            callback = value;
+          },
+        });
+        tx.addEventListener('complete', (event) => {
+          window.releaseStaleRead = () => callback?.call(tx, event);
+        });
+      }
+      return tx;
+    };
+    window.restoreTransactions = () => {
+      IDBDatabase.prototype.transaction = original;
+    };
+    window.prematureCompletion = false;
+    window.completionObserver = new MutationObserver(() => {
+      if (
+        document
+          .querySelector('[data-completion-status]')
+          ?.textContent.includes('You can close this tab')
+      )
+        window.prematureCompletion = true;
+    });
+    window.completionObserver.observe(document.body, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
+    window.dispatchEvent(new Event('focus'));
+  });
+  await page.waitForFunction(() => typeof window.releaseStaleRead === 'function');
+  await page.getByRole('button', { name: 'Finish session', exact: true }).click();
+  await page.evaluate(() => window.releaseStaleRead());
+  for (let i = 0; i < 100 && !heldFinalReceipt; i++) await page.waitForTimeout(50);
+  browserEvidence.assert('ok', [heldFinalReceipt, 'Final upload must reach the withheld receipt']);
+  browserEvidence.assert('equal', [await page.evaluate(() => window.prematureCompletion), false]);
+  await page.evaluate(() => {
+    window.completionObserver.disconnect();
+    window.restoreTransactions();
+  });
+  holdFinalReceipt = false;
+  await heldFinalReceipt.fulfill({ json: receipt(heldFinalReceipt) });
+  await page.waitForFunction(() =>
+    document
+      .querySelector('[data-completion-status]')
+      ?.textContent.includes('You can close this tab'),
+  );
+  await page.evaluate(() => window.remoteCapture.dispose());
   // Producer bounds finish an intact stream instead of creating an unreviewable session.
   const boundedUploadsStart = uploads.length;
   await page.evaluate(async () => {
@@ -842,9 +949,11 @@ try {
   });
   await page.getByRole('button', { name: 'Start recording' }).click();
   await page.waitForFunction(() => window.remoteCapture.active());
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
+    const { captureStreamLimits } = window;
     const payload = 'b'.repeat(1024 * 1024);
-    for (let i = 0; i < 65 && window.remoteCapture.active(); i++)
+    const count = Math.ceil(captureStreamLimits.encodedBytes / payload.length) + 1;
+    for (let i = 0; i < count && window.remoteCapture.active(); i++)
       window.remoteCapture.emit('bounded-recording-witness', { payload });
   });
   browserEvidence.assert('equal', [

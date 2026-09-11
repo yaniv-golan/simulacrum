@@ -121,6 +121,7 @@ export async function openCaptureOutbox() {
           logicalKey,
           uploadHash,
           outcome: 'pending',
+          enqueueOrder: rows.items.reduce((n, row) => Math.max(n, row.enqueueOrder || 0), 0) + 1,
           attempts: 0,
           nextAttempt: 0,
         });
@@ -145,6 +146,8 @@ export async function openCaptureOutbox() {
     async next(now = Date.now()) {
       const rows = await read('items');
       const blocked = new Set(rows.filter((r) => r.outcome === 'blocked').map((r) => r.sessionId));
+      // Legacy rows precede new work; insertion order is durable across remounts.
+      rows.sort((a, b) => (a.enqueueOrder || 0) - (b.enqueueOrder || 0));
       return rows.find(
         (r) => r.outcome === 'pending' && !blocked.has(r.sessionId) && r.nextAttempt <= now,
       );

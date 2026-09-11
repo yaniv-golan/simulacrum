@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"e9d6a19c9651400e4fa20244ba597a7b1015049415fbabc34a0f4e9cad588956","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"8025d8aa49591f70cf6abf19190808109c6a866c9a9f8e0bc257c6c673fb919b","disposition":"still accurate","rationale":"The existing manifest reader also requires consumers and root binding for script local scopes. It remains the canonical check/milestone metadata owner; runtime layer ownership is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b826150ac6e08306a5a8909f47147453377a584e86fa9a49de8e5e073538c730","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"b6566fc6bbf76a44dade6c916042f3ea4e0367c3816780f0b66e63b50ff5f2c1","disposition":"still accurate","rationale":"The merged AGENTS changes experimental publication requirements only. Runtime and layer authority remain in the named contracts and manifest reader."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,9 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"84f63b6d880c44fa2820bee67c6e5f5aad9b5ee846511577853ff9c2a25d1046","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"61c3976f54b6bf5c4ee330da6debc63ebc9c3417e2acbbccb1ba4d55663aaeb0","disposition":"updated","rationale":"Ball shape and authored contacts use canonical model admission and the physics door. Retry composes Build/Run and now excludes asynchronous file loads before either resets; blocked requests retain receipts. Audio receives both completed-contact materials, not identity or a live physics object."} -->
+<!-- doc-review {"version":1,"fingerprint":"f02b039b0e5b0987c7e81890f6a485b2fc1502509286742f87754ddfb64a4fde","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"d2fc1566d0eb8998db051bddc575094ecd70a70d269a5a5541fe80ffa66c3e94","disposition":"updated","rationale":"Ball shape and authored contacts use canonical model admission and the physics door. Retry composes Build/Run and now excludes asynchronous file loads before either resets; blocked requests retain receipts. Audio receives both completed-contact materials, not identity or a live physics object."} -->
+
+
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -64,7 +66,9 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"75547462bfc5f26cb3cf043ffd3b9f05b4e8d150acfdc65c2eee537e038e5eb1","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"33c54643cd002d2d8716490357b4f2874f581afee1eafabbe2c65f383f29c89a","disposition":"updated","rationale":"Added contactProperties as the common material/default override owner for compiler and inspector. Sphere geometry remains under partPrimitives and physical inertia under compilation and the physics door."} -->
+<!-- doc-review {"version":1,"fingerprint":"af1b578414b073a686db0eea5e3c325a5aad8d3451a3b67e1b79fcfba4a4d2e7","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"1916491817c94a69aedef0850325fc56f88712656b41707cf92e0cd45fa50879","disposition":"updated","rationale":"Added contactProperties as the common material/default override owner for compiler and inspector. Sphere geometry remains under partPrimitives and physical inertia under compilation and the physics door."} -->
+
+
 
 | Decision                                              | Production owner                                                                                                                                                                                                                                             | Example consumer                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |

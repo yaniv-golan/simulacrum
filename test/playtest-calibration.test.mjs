@@ -10,6 +10,11 @@ const capture = (bytes = () => 0) => ({
   outboxSamples: Array.from({ length: 600 }, (_, i) => ({ at: (i + 1) * 3000, bytes: bytes(i) })),
 });
 test('comparison retains failing long and short windows without granting profile approval', () => {
+  const jittered = {
+    ...capture(),
+    outboxSamples: Array.from({ length: 598 }, (_, i) => ({ at: 3000 + i * 3011, bytes: 0 })),
+  };
+  assert.equal(calibration.compareCaptureWindows(jittered)[2].growth, 'not detected');
   const bounded = calibration.compareCaptureWindows(capture());
   assert.deepEqual(
     bounded.map((x) => x.growth),

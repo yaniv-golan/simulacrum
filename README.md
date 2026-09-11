@@ -6,7 +6,11 @@ then run the machine to understand its motion and failure.
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
 Human acceptance, sandboxed programs and locomotion qualification remain incomplete.
-The [released version](https://github.com/yaniv-golan/simulacrum/releases) remains available.
+The `main` branch contains the v2 workshop. The previous implementation is retained
+at the [`v1-final-2026-09-11` tag](https://github.com/yaniv-golan/simulacrum/tree/v1-final-2026-09-11)
+and `archive/v1` branch for reference. Legacy v1 machine files are not a supported
+import format for v2; keep their originals and use v1 to open them.
+The [released versions](https://github.com/yaniv-golan/simulacrum/releases) remain available.
 
 Use Node 24.18.x (with nvm installed):
 

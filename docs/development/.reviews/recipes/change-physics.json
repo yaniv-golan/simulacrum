@@ -1,8 +1,8 @@
 {
   "version": 1,
   "dependencies": {
-    "package-lock.json": "be238b589bac1db94398632880eef13287353f499c5df623f4006cc402f6e672",
-    "package.json": "ff0a6ac5bac42b8056aae85fe0b38ef194bd6fb0ca65ca71ac4b83df094b0165",
+    "package-lock.json": "e2a9be6c485d53a4d363cb4fb0ccf00c5695891bd61ddcea2ae29d89f485be8a",
+    "package.json": "835e65cd75af1fddff38db8924ddfaf887b181101fbcb0668fba738bda6b6fc4",
     "src/model/boundaries.d.ts": "9d3322be89ca89f3f4836273a0f4de47b83f16d879430b2968d521e6322dd6d1",
     "src/model/catalog.mjs": "5f540272b16d1d0b39f3335638ade42673b94cfb4a4b30b599d97e272ebc457f",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",

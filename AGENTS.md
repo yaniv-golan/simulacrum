@@ -137,7 +137,9 @@ Use `npm run verify:local` for local completion (CI plus conservatively affected
 Use `npm run verify:final` for merge/release or milestone qualification; local success never
 advances a milestone or supplies human evidence. Explicit browser check IDs are development
 probes, not a substitute for either completion tier. Do not delete an assertion
-or skip a required tier to recover speed. Never combine multiple script names in one npm-run invocation: use separate
+or skip a required tier to recover speed. Experimental publication follows the distinct
+release policy below; it does not convert deferred qualification into a pass.
+Never combine multiple script names in one npm-run invocation: use separate
 invocations or an aggregate that propagates every failure.
 
 Every new test must be seen failing. Include positive controls and plausible wrong
@@ -148,6 +150,31 @@ Human bars F1/F3/F4/F5 require real eligible participants and the served build i
 Never fabricate observations. Follow the versioned protocols in assessments/protocol.
 F1 requires acceptance by the designated target player; returning sessions are eligible. Qualifying evidence records full
 source/build and experiment identity. Run final checks on the same final source.
+
+## Experimental release policy
+
+Publishing an experimental build is distinct from milestone qualification. For an
+initial side project with no established audience, an explicitly authorized release
+may defer hosted endurance/capacity qualification and pending F1 human acceptance.
+F1 remains required to qualify its milestone; publication does not advance it or
+supply human evidence. This is a release category, not permission to ignore failed
+automation or to omit the local verification tier.
+
+Use the existing explicit exception path described in
+[release operations](docs/development/playtesting.md#release-operations). Preserve
+the exact package's passing automated release verification. Require a short live
+recording, upload, drain, export and review check, authentication/origin/admin access
+checks, private storage and logging checks, synthetic cleanup, and an inspected
+recording-disable path. Production must pass its own short checks. A failed mandatory
+check blocks completion; recover or disable recording instead of declaring success.
+
+Record the release as an exception, identify deferred checks, and preserve prior
+failures with explicit acknowledgement. Never describe this as endurance/load
+qualification or human acceptance. Long hosted characterization and stress tests
+are not mandatory for this release category or every routine experimental release;
+run them when usage, recording/backend changes or observed failures warrant them.
+Fully qualified releases retain their measured-evidence requirements. Deployment
+authorization, artifact integrity, publisher ownership and recovery rules still apply.
 
 ## Collaboration
 

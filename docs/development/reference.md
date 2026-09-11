@@ -88,9 +88,9 @@ These are registered commands and checks, not evidence that they passed.
 | checkpoint-next-step | [createSession](../../src/simulation/session.mjs) | invariant-controls |
 | copied-graph-integrity | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [insertAssembly](../../src/model/reusable-assemblies.mjs), [createAssemblyPlacement](../../src/presentation/assembly-placement.mjs) | invariant-controls, verify-assemblies-browser, verify-assembly-ux-browser |
 | connection-display-isolation | [connectionRenderSpecs](../../src/presentation/connection-render.mjs), [pickableObjects](../../src/presentation/connection-view.mjs) | invariant-controls, verify-connection-test-browser, verify-exploded-browser |
-| capture-write-admission | [createPlaytestServer](../../scripts/playtest-server.mjs) | invariant-controls |
+| capture-write-admission | [createPlaytestServer](../../scripts/playtest-server.mjs), [CaptureStore](../../scripts/playtest/cloud-store.mjs), [bodyReservation](../../scripts/playtest/protocol.mjs) | invariant-controls |
 | capture-cloud-integrity | [CaptureStore](../../scripts/playtest/cloud-store.mjs) | invariant-controls |
-| capture-receipt-ownership | [openCaptureOutbox](../../src/application/capture-outbox.mjs) | invariant-controls |
+| capture-receipt-ownership | [openCaptureOutbox](../../src/application/capture-outbox.mjs), [mountRemotePlaytest](../../src/application/remote-playtest.mjs) | invariant-controls, verify-feedback-receipts |
 | release-publisher-ownership | [ReleaseCoordinator](../../scripts/playtest/release-control.mjs) | invariant-controls |
 | capture-synthetic-cleanup | [CaptureStore](../../scripts/playtest/cloud-store.mjs) | invariant-controls |
 | release-effective-isolation | [verifyCredentialIsolation](../../scripts/playtest/credential-isolation.mjs) | invariant-controls |
@@ -121,3 +121,4 @@ These are registered commands and checks, not evidence that they passed.
 | verification-priority-coverage | [prioritizeBrowserChecks](../../scripts/browser-selection.mjs) | verification-workflow |
 | documentation-batch-review | [reviewSections](../../scripts/documentation.mjs) | developer-documentation |
 | browser-scope-reviewed-application | [deriveScopeProposal](../../scripts/browser-scope-proposal.mjs), [applyScopeProposal](../../scripts/browser-scope-apply.mjs), [validateScopeWitnessResult](../../scripts/browser-scope-witness-contract.mjs) | verification-scope-configuration |
+| capture-packet-compression | [unpackCapturePacket](../../src/application/capture-packet.mjs) | invariant-controls, verify-remote-playtest, verify-cloud-playtest |

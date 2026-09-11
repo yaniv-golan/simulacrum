@@ -119,3 +119,35 @@ export async function readBounded(stream, limit, { idleMs = 5000, totalMs = 2500
     reader.releaseLock();
   }
 }
+
+// Storage acknowledges opaque wire bytes; review owns decompression and replay validity.
+export function validateEventEnvelope(event) {
+  if (!safeId.test(event.id || '')) throw fail(400, 'Event id required');
+  if (event?.data?.encoding !== undefined) {
+    const d = event.data;
+    if (
+      event.kind !== 'capture-batch' ||
+      d.schema !== 1 ||
+      d.encoding !== 'gzip-base64' ||
+      Object.keys(d).sort().join(',') !== 'encoding,payload,schema,uncompressedBytes' ||
+      !Number.isSafeInteger(d.uncompressedBytes) ||
+      d.uncompressedBytes < 1 ||
+      d.uncompressedBytes > LIMITS.eventBytes ||
+      typeof d.payload !== 'string' ||
+      !d.payload.length ||
+      d.payload.length > LIMITS.eventBytes ||
+      d.payload.length % 4 ||
+      !/^[A-Za-z0-9+/]*={0,2}$/.test(d.payload)
+    )
+      throw fail(400, 'Invalid compressed envelope');
+  }
+  return event.id;
+}
+export function bodyReservation(headers, maximum) {
+  const declared = headers.get('content-length');
+  if (declared === null) return maximum;
+  if (!/^(0|[1-9][0-9]*)$/.test(declared) || !Number.isSafeInteger(Number(declared)))
+    throw fail(400, 'Invalid content length');
+  if (Number(declared) > maximum) throw fail(413, 'Request too large');
+  return Number(declared);
+}

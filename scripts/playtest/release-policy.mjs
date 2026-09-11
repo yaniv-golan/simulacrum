@@ -19,9 +19,10 @@ export const feedbackReceiptMs = 120000;
 export function captureBrowserTimeoutMs(captureSeconds) {
   if (!Number.isInteger(captureSeconds) || captureSeconds < 0 || captureSeconds > 1800)
     throw Error('Invalid capture duration');
-  // Feedback receipts and final drain each have a dedicated bounded allowance.
-  // Setup and verified export retain a separate three-minute allowance.
-  return captureSeconds * 1000 + feedbackReceiptMs + finalDrainMs + 180000;
+  // Delivery deadlines stay independent of archive processing. A measured 30-minute
+  // archive required over four minutes just for two-at-a-time verified reads.
+  // Give setup one minute and checksum export plus indexing a finite 15 minutes.
+  return captureSeconds * 1000 + feedbackReceiptMs + finalDrainMs + 60000 + 900000;
 }
 export async function waitForCaptureDrain({
   read,

@@ -163,3 +163,42 @@ test('encoder bounds keyframe distance during same-time event bursts', () => {
     assert.ok(seq - last < 256);
   }
 });
+
+test('capture deltas update bounded array entries without repeating stable body data', () => {
+  const encoder = createCaptureEncoder();
+  const before = {
+    bodies: Array.from({ length: 20 }, (_, i) => ({
+      name: 'body-' + i,
+      stable: 's'.repeat(1000),
+      position: [0, 0, 0],
+    })),
+  };
+  const after = structuredClone(before);
+  after.bodies[10].position[0] = 1;
+  const first = encoder.encode(event(1, before));
+  const second = encoder.encode(event(2, after));
+  assert.ok(JSON.stringify(second).length < 1000);
+  assert.deepEqual(decodeCaptureEvents([first, second]).events[1].context, after);
+  for (const key of ['length', '20', '-1', '01', '__proto__']) {
+    const wrong = {
+      ...second,
+      contextFrame: {
+        schema: 1,
+        kind: 'delta',
+        base: 1,
+        ops: [{ op: 'set', path: ['bodies', key], value: {} }],
+      },
+    };
+    assert.equal(decodeCaptureEvents([first, wrong]).status, 'invalid');
+  }
+  const removed = {
+    ...second,
+    contextFrame: {
+      schema: 1,
+      kind: 'delta',
+      base: 1,
+      ops: [{ op: 'delete', path: ['bodies', '1'] }],
+    },
+  };
+  assert.equal(decodeCaptureEvents([first, removed]).status, 'invalid');
+});

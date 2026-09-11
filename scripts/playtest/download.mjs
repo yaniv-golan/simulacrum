@@ -70,33 +70,49 @@ export async function downloadCapture({
     if (page.cutoff !== cutoff || page.session.sessionId !== sessionId)
       throw Error('Export identity mismatch');
     if (!page.uploads.length && after < cutoff) throw Error('Missing journal sequence');
-    for (const row of page.uploads) {
-      if (
-        row.receipt.sequence !== after + 1 ||
-        row.sessionId !== sessionId ||
-        !/^[a-f0-9]{32}$/.test(row.objectKey)
-      )
-        throw Error('Invalid export pointer');
-      const bytes = await get(`/admin/playtest/${sessionId}/object?key=${row.objectKey}`);
-      if (bytes.length !== row.bytes || (await digest(bytes)) !== row.sha256)
-        throw Error('Export checksum mismatch');
-      if (row.media) {
-        if (!/^[A-Za-z0-9_-]+\.bin$/.test(row.media.file)) throw Error('Invalid media filename');
-        await writeFile(join(root, row.media.file), bytes, { mode: 0o600, flag: 'wx' });
+    // Keep network latency from multiplying by the archive length, without
+    // unbounded reads or any journal reordering. The store admits two R2 operations.
+    // Settle a group before failing.
+    for (let offset = 0; offset < page.uploads.length; offset += 2) {
+      const batch = page.uploads.slice(offset, offset + 2);
+      for (const [index, row] of batch.entries()) {
+        if (
+          row.receipt.sequence !== after + index + 1 ||
+          row.sessionId !== sessionId ||
+          !/^[a-f0-9]{32}$/.test(row.objectKey)
+        )
+          throw Error('Invalid export pointer');
       }
-      const rawFile = `event-${row.receipt.sequence}.json`;
-      if (!row.media) await writeFile(join(root, rawFile), bytes, { mode: 0o600, flag: 'wx' });
-      records.push({
-        receipt: row.receipt,
-        uploadHash: row.uploadHash,
-        ...(row.media
-          ? { media: { ...row.media, bytes: row.bytes, sha256: row.sha256 } }
-          : {
-              event: JSON.parse(new TextDecoder().decode(bytes)),
-              rawEvent: { file: rawFile, bytes: row.bytes, sha256: row.sha256 },
-            }),
-      });
-      after = row.receipt.sequence;
+      const results = await Promise.allSettled(
+        batch.map(async (row) => {
+          const bytes = await get(`/admin/playtest/${sessionId}/object?key=${row.objectKey}`);
+          if (bytes.length !== row.bytes || (await digest(bytes)) !== row.sha256)
+            throw Error('Export checksum mismatch');
+          return bytes;
+        }),
+      );
+      const failure = results.find((result) => result.status === 'rejected');
+      if (failure) throw failure.reason;
+      for (const [index, row] of batch.entries()) {
+        const bytes = results[index].value;
+        if (row.media) {
+          if (!/^[A-Za-z0-9_-]+\.bin$/.test(row.media.file)) throw Error('Invalid media filename');
+          await writeFile(join(root, row.media.file), bytes, { mode: 0o600, flag: 'wx' });
+        }
+        const rawFile = `event-${row.receipt.sequence}.json`;
+        if (!row.media) await writeFile(join(root, rawFile), bytes, { mode: 0o600, flag: 'wx' });
+        records.push({
+          receipt: row.receipt,
+          uploadHash: row.uploadHash,
+          ...(row.media
+            ? { media: { ...row.media, bytes: row.bytes, sha256: row.sha256 } }
+            : {
+                event: JSON.parse(new TextDecoder().decode(bytes)),
+                rawEvent: { file: rawFile, bytes: row.bytes, sha256: row.sha256 },
+              }),
+        });
+        after = row.receipt.sequence;
+      }
     }
   } while (after < cutoff);
   await writeFile(

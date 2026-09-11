@@ -97,6 +97,42 @@ try {
   );
   assert.equal(snapshot.status, 200);
   assert.equal((await snapshot.json()).uploads.length, 1);
+  // Exercise near the complete shared wire budget inside real workerd, not only the SQL fake.
+  const burst = await Promise.all(
+    Array.from({ length: 32 }, (_, i) => {
+      const body = JSON.stringify({ id: `bounded-${i}`, data: { text: 'x'.repeat(600000) } });
+      return mf.dispatchFetch(`https://capture.invalid/api/playtest/v2/${sessionId}/event`, {
+        method: 'POST',
+        headers: {
+          cookie,
+          origin: 'https://capture.invalid',
+          'content-type': 'application/json',
+          'content-length': String(new TextEncoder().encode(body).length),
+        },
+        body,
+      });
+    }),
+  );
+  for (const response of burst) assert.equal(response.status, 201, await response.clone().text());
+  const mediaBurst = await Promise.all(
+    Array.from({ length: 32 }, (_, i) =>
+      mf.dispatchFetch(
+        `https://capture.invalid/api/playtest/v2/${sessionId}/media?kind=voice&clip=bounded&seq=${i}`,
+        {
+          method: 'POST',
+          headers: {
+            cookie,
+            origin: 'https://capture.invalid',
+            'content-type': 'audio/webm',
+            'content-length': '600000',
+          },
+          body: new Uint8Array(600000),
+        },
+      ),
+    ),
+  );
+  for (const response of mediaBurst)
+    assert.equal(response.status, 201, await response.clone().text());
   const maximum = new Uint8Array(10 * 1024 ** 2);
   const uploads = await Promise.all(
     [0, 1].map((seq) =>
@@ -112,7 +148,7 @@ try {
   );
   for (const response of uploads) assert.equal(response.status, 201, await response.clone().text());
   console.log(
-    'workerd: persisted restart, concurrent 10 MiB uploads, invitation, SQLite/R2 create, exact retry and private export passed',
+    'workerd: persisted restart,32 concurrent events and media near20 MiB, concurrent 10 MiB uploads, invitation, SQLite/R2 create, exact retry and private export passed',
   );
 } finally {
   await mf.dispose();

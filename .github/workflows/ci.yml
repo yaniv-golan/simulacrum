@@ -115,7 +115,7 @@ jobs:
           VERIFICATION_JOBS: ${{ toJSON(needs) }}
   staging-admission:
     needs: [release-package, verification]
-    if: needs.release-package.outputs.eligible == 'true'
+    if: needs.release-package.outputs.eligible == 'true' && vars.DEPLOY_STAGING_ENABLED == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -183,7 +183,9 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
     memory = { scope: 'load generator process', peakRss: process.memoryUsage().rss };
   let completed = 0,
     scheduled = 0,
-    byteCount = 0;
+    byteCount = 0,
+    measurement,
+    primaryError;
   const sample = setInterval(() => {
     memory.peakRss = Math.max(memory.peakRss, process.memoryUsage().rss);
     backlog.push({ at: Date.now(), pending: scheduled - completed });
@@ -216,7 +218,7 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
       }
       return fetch(new URL(path, origin), {
         method: 'POST',
-        headers: { cookie, origin, 'content-type': mime },
+        headers: { cookie, origin, 'content-type': mime, 'content-length': String(bytes.length) },
         body,
         redirect: 'error',
         signal: AbortSignal.timeout(45000),
@@ -378,12 +380,39 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
       storageBytes: capture.storageBytes,
       network: { uplinkMbps: 5, rttMs: 100 },
     };
+    measurement = result;
     if (p95 >= 5000 || result.finalBacklog !== 0)
       throw Object.assign(Error('Capture load target failed'), { result });
     return result;
+  } catch (error) {
+    primaryError = error;
+    throw error;
   } finally {
     clearInterval(sample);
-    await cleanupSynthetic(origin, run.id);
+    try {
+      await cleanupSynthetic(origin, run.id);
+    } catch (cleanupError) {
+      const errors = primaryError ? [primaryError, cleanupError] : [cleanupError];
+      // AggregateError.errors is not enumerable. Preserve private, serializable
+      // diagnostics as well as the actual causes and any completed measurement.
+      const describe = (error) => ({
+        name: error.name || 'Error',
+        message: String(error.message ?? error),
+        ...(error instanceof AggregateError ? { errors: error.errors.map(describe) } : {}),
+      });
+      throw Object.assign(
+        new AggregateError(
+          errors,
+          errors.map((error) => String(error.message ?? error)).join('; '),
+        ),
+        {
+          failures: errors.map(describe),
+          ...(measurement || primaryError?.result
+            ? { result: measurement ?? primaryError.result }
+            : {}),
+        },
+      );
+    }
   }
 }
 

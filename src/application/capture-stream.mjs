@@ -1,3 +1,4 @@
+import { unpackCapturePacket } from './capture-packet.mjs';
 /** Versioned, bounded observations. This codec never executes recorded commands or programs. */
 export const captureStreamLimits = Object.freeze({
   bytes: 2 * 1024 * 1024,
@@ -6,6 +7,9 @@ export const captureStreamLimits = Object.freeze({
   batch: 128,
   events: 100000,
   expandedBytes: 256 * 1024 * 1024,
+  wireBytes: 128 * 1024 * 1024,
+  captureWireBytes: 112 * 1024 * 1024,
+  encodedBytes: 384 * 1024 * 1024,
 });
 const forbidden = new Set(['__proto__', 'prototype', 'constructor']);
 const own = (value, key) => Object.hasOwn(value, key);
@@ -62,6 +66,17 @@ function envelope(event) {
 }
 function difference(before, after, path, ops) {
   if (JSON.stringify(before) === JSON.stringify(after)) return;
+  if (Array.isArray(before) && Array.isArray(after) && before.length === after.length) {
+    const start = ops.length;
+    for (let i = 0; i < after.length; i++) {
+      difference(before[i], after[i], [...path, String(i)], ops);
+      if (ops.length > captureStreamLimits.operations) return;
+    }
+    const replacement = { op: 'set', path, value: after };
+    if (JSON.stringify(ops.slice(start)).length > JSON.stringify(replacement).length)
+      ops.splice(start, ops.length - start, replacement);
+    return;
+  }
   if (!object(before) || !object(after)) {
     ops.push({ op: 'set', path, value: after });
     return;
@@ -131,11 +146,19 @@ function apply(context, ops) {
     }
     let target = result;
     for (const key of operation.path.slice(0, -1)) {
-      if (!object(target) || !own(target, key)) fail('missing path');
+      if (
+        (!object(target) && !Array.isArray(target)) ||
+        !own(target, key) ||
+        (Array.isArray(target) && !/^(0|[1-9][0-9]*)$/.test(key))
+      )
+        fail('missing path');
       target = target[key];
     }
     const key = operation.path.at(-1);
-    if (!object(target)) fail('non-object path');
+    if (Array.isArray(target)) {
+      if (operation.op !== 'set' || !/^(0|[1-9][0-9]*)$/.test(key) || !own(target, key))
+        fail('array path');
+    } else if (!object(target)) fail('non-object path');
     if (operation.op === 'delete') {
       if (!own(target, key)) fail('missing delete');
       delete target[key];
@@ -147,7 +170,18 @@ export function decodeCaptureEvents(input, { indexed = false } = {}) {
   const events = [],
     gaps = [];
   const flat = [],
-    bases = [];
+    bases = [],
+    packets = [];
+  let cachedPacket = -1,
+    cachedEvents;
+  function readEncoded(reference) {
+    if (cachedPacket !== reference.packet) {
+      const packet = unpackCapturePacket(packets[reference.packet]);
+      cachedEvents = packet.kind === 'capture-batch' ? packet.data.events : [packet];
+      cachedPacket = reference.packet;
+    }
+    return cachedEvents[reference.slot];
+  }
   const result = (status, error) => ({
     events,
     gaps,
@@ -160,7 +194,7 @@ export function decodeCaptureEvents(input, { indexed = false } = {}) {
             if (!events[index].available) return { ...events[index], context: null };
             let context = null;
             for (let i = bases[index]; i <= index; i++) {
-              const event = flat[i];
+              const event = readEncoded(flat[i]);
               context =
                 event.contextFrame?.kind === 'delta'
                   ? apply(context, event.contextFrame.ops)
@@ -173,11 +207,20 @@ export function decodeCaptureEvents(input, { indexed = false } = {}) {
   });
   try {
     if (!Array.isArray(input) || input.length > captureStreamLimits.events) fail('event count');
-    let retainedBytes = 0;
+    let retainedBytes = 0,
+      wireBytes = 0;
+    const expandedLimit = indexed
+      ? captureStreamLimits.encodedBytes
+      : captureStreamLimits.expandedBytes;
     for (const raw of input) {
-      const packet = copy(raw);
+      const stored = copy(raw);
+      wireBytes += new TextEncoder().encode(JSON.stringify(stored)).byteLength;
+      if (wireBytes > captureStreamLimits.wireBytes) fail('wire session byte limit');
+      const packet = copy(unpackCapturePacket(stored));
+      const packetIndex = packets.length;
+      packets.push(stored);
       retainedBytes += new TextEncoder().encode(JSON.stringify(packet)).byteLength;
-      if (retainedBytes > captureStreamLimits.expandedBytes) fail('session byte limit');
+      if (retainedBytes > expandedLimit) fail('session byte limit');
       if (packet.kind === 'capture-batch') {
         if (
           packet.data?.schema !== 1 ||
@@ -186,22 +229,37 @@ export function decodeCaptureEvents(input, { indexed = false } = {}) {
           packet.data.events.length > captureStreamLimits.batch
         )
           fail('batch');
-        for (const event of packet.data.events) {
+        for (const [slot, event] of packet.data.events.entries()) {
           if (event.kind === 'capture-batch') fail('nested batch');
-          flat.push(event);
+          envelope(event);
+          flat.push({ seq: event.seq, packet: packetIndex, slot });
         }
-      } else flat.push(packet);
+      } else {
+        envelope(packet);
+        flat.push({ seq: packet.seq, packet: packetIndex, slot: 0 });
+      }
       if (flat.length > captureStreamLimits.events) fail('expanded event count');
     }
-    flat.forEach(envelope);
     flat.sort((a, b) => a.seq - b.seq);
+    // A producer flushes consecutive events together. Arrival order may differ,
+    // but crossing packet ranges would amplify decoding with the one-packet cache.
+    const visitedPackets = new Set();
+    let previousPacket = -1;
+    for (const reference of flat) {
+      if (reference.packet !== previousPacket) {
+        if (visitedPackets.has(reference.packet)) fail('interleaved packets');
+        visitedPackets.add(reference.packet);
+        previousPacket = reference.packet;
+      }
+    }
     let previousSeq = 0,
       previousTime = 0,
       context = null,
       contextSeq = null,
       ended = false,
       independent = -1;
-    for (const [index, event] of flat.entries()) {
+    for (const [index, reference] of flat.entries()) {
+      const event = readEncoded(reference);
       if (event.seq <= previousSeq) fail('duplicate sequence');
       if (event.seq === 1 && event.kind !== 'session-start') fail('missing session start');
       if (event.seq !== 1 && event.kind === 'session-start') fail('repeated session start');
@@ -270,7 +328,7 @@ export function decodeCaptureEvents(input, { indexed = false } = {}) {
       bases.push(independent);
       if (!indexed)
         retainedBytes += new TextEncoder().encode(JSON.stringify(decodedContext)).byteLength;
-      if (retainedBytes > captureStreamLimits.expandedBytes) fail('expanded session byte limit');
+      if (retainedBytes > expandedLimit) fail('expanded session byte limit');
       const decodedEvent = indexed
         ? { ...event, available: decodedContext !== null }
         : { ...event, context: copy(decodedContext) };

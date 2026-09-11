@@ -1,7 +1,13 @@
 // M3b: private, bounded remote playtest capture. Receipts order completed uploads at the server.
 import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
-import { admission, readBounded, safeId, mediaTypes } from './playtest/protocol.mjs';
+import {
+  validateEventEnvelope,
+  admission,
+  readBounded,
+  safeId,
+  mediaTypes,
+} from './playtest/protocol.mjs';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import {
   mkdirSync,
@@ -399,7 +405,7 @@ export function createPlaytestServer({
         );
         if (!media) {
           event = json(bytes);
-          if (!safeId.test(event.id || '')) throw fail(400, 'Event id required');
+          validateEventEnvelope(event);
           key = `event:${event.id}`;
         }
         const hash = digest(Buffer.concat([Buffer.from(media ? media.mime : ''), bytes]));
