@@ -22,13 +22,33 @@ export function check() {
       getNewLine: () => '\n',
     };
   }
-  function diagnostics(files) {
-    return ts.getPreEmitDiagnostics(ts.createProgram(files, parsed.options));
+  function diagnostics(builder) {
+    // Preserve every pre-emit diagnostic category; only semantic diagnostics
+    // use the builder's dependency-aware, in-memory cache.
+    const program = builder.getProgram();
+    return ts.sortAndDeduplicateDiagnostics([
+      ...program.getConfigFileParsingDiagnostics(),
+      ...program.getOptionsDiagnostics(),
+      ...program.getSyntacticDiagnostics(),
+      ...program.getGlobalDiagnostics(),
+      ...builder.getSemanticDiagnostics(),
+      ...(parsed.options.declaration || parsed.options.composite
+        ? program.getDeclarationDiagnostics()
+        : []),
+    ]);
   }
+  // Keep the positive control isolated from wrong fixtures while reusing
+  // unchanged files and their diagnostics within this invocation only.
+  const compilerHost = ts.createIncrementalCompilerHost(parsed.options);
+  const positiveProgram = ts.createSemanticDiagnosticsBuilderProgram(
+    parsed.fileNames,
+    parsed.options,
+    compilerHost,
+  );
   for (const file of parsed.fileNames.filter((file) => file.endsWith('.mjs')))
     if (!/^\/\/ @ts-check\b/m.test(readFileSync(file, 'utf8')))
       throw Error(`Checked boundary source lost @ts-check: ${file}`);
-  const positive = diagnostics(parsed.fileNames);
+  const positive = diagnostics(positiveProgram);
   if (positive.length) throw Error(ts.formatDiagnosticsWithColorAndContext(positive, host()));
   const wrong = new Map(
     [
@@ -51,7 +71,14 @@ export function check() {
       ['wrong-path-highlight', 2322],
     ].map(([name, code]) => [root + `test/types/${name}.mts`, code]),
   );
-  const negative = diagnostics([...parsed.fileNames, ...wrong.keys()]);
+  const negative = diagnostics(
+    ts.createSemanticDiagnosticsBuilderProgram(
+      [...parsed.fileNames, ...wrong.keys()],
+      parsed.options,
+      compilerHost,
+      positiveProgram,
+    ),
+  );
   for (const [file, code] of wrong) {
     const errors = negative.filter((d) => d.file?.fileName === file);
     if (!errors.length || errors.some((d) => d.code !== code))
@@ -93,7 +120,7 @@ export function check() {
       else walk(child);
   }
   walk(source);
-  const program = ts.createProgram(parsed.fileNames, parsed.options),
+  const program = positiveProgram.getProgram(),
     checker = program.getTypeChecker();
   const declaration = program.getSourceFile(root + 'src/model/workshop-command.d.ts');
   const alias = declaration.statements.find(
