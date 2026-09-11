@@ -1,5 +1,5 @@
 // @ts-check
-import { MATERIALS } from './catalog.mjs';
+import { contactProperties } from './contact-properties.mjs';
 import { partPrimitives } from './geometry.mjs';
 import { normalizeQuaternion } from './transforms.mjs';
 
@@ -9,12 +9,14 @@ import { normalizeQuaternion } from './transforms.mjs';
  */
 export function compileBody(part) {
   const primitive = partPrimitives(part)[0];
-  const material = MATERIALS[part.authoredMaterial[primitive.id] ?? primitive.materialKey];
+  const material = contactProperties(part, primitive);
   // Cylinders use local X: [half length, radius, radius].
   const volume =
-    primitive.kind === 'cylinder'
-      ? 2 * Math.PI * primitive.halfExtents[0] * primitive.halfExtents[1] ** 2
-      : 8 * primitive.halfExtents.reduce((a, b) => a * b, 1);
+    primitive.kind === 'sphere'
+      ? (4 * Math.PI * primitive.halfExtents[0] ** 3) / 3
+      : primitive.kind === 'cylinder'
+        ? 2 * Math.PI * primitive.halfExtents[0] * primitive.halfExtents[1] ** 2
+        : 8 * primitive.halfExtents.reduce((a, b) => a * b, 1);
   return {
     shape: primitive.kind,
     position: [...part.position],

@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"6c335af6bcb7109b67e30b546db4d7d1df34a3c826ac08dd237470eb1bdfeb26","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"ded3859a740ad5df8bfe8a838f1a6768c69f7a68c9f7acf6dc5d6f26aa57b585","disposition":"still accurate","rationale":"The native dependency changes to spring.8 and renderer uses a retained target; catalog, geometry, schema, compiler and player-selectable material ownership remain unchanged. No part or authored property is added."} -->
+<!-- doc-review {"version":1,"fingerprint":"e7003dfd92ace15cf5398e515bd82dcc324bb11810649a6223f976aa7d1c1448","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"6b376f07166602b138de43cfc70ff4456246f661b1735fa35185bf8343fa67f5","disposition":"updated","rationale":"Added sphere geometry and independent mass/inertia controls, curved admission and ordinary overrides. Empty contact records now canonicalize after validation on load and insertion, preserving explicit zero and input ownership."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -31,9 +31,17 @@ and [assembly tests](../../test/assembly.test.mjs). Check schema rejection, mate
 endpoints, resize overlap, Undo and save/load, then rendered geometry. Rebuild generated
 validation with `node scripts/generate-schema.mjs` when schema changes.
 
+A Ball uses canonical sphere radius on all axes and solid-sphere mass/inertia.
+Follow [sphere controls](../../test/ball.test.mjs#source) through free placement,
+resize and history; curved solids need narrow-phase placement against box corners
+and the canonical cylinder hull. Balls have no planar mounting regions or ports.
+The optional `authoredContact.body` fields retain material defaults when omitted;
+reset removes an override rather than freezing the current material value. Admission
+canonicalizes empty contact records without changing explicit zero or mutating the input.
+
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"3f6b5fc057981acef8b54f90bb011fd50a795f77f3b58ddf51c93d36213ce4c8","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"1bb6de80ea1fdd4350c70e90fef1cb07bdeded5f02786675493d13ffe253aca9","disposition":"still accurate","rationale":"Session post-integration copied-state reuse does not change core command admission, candidate compilation or history transactions. The exact f64 Build-reset control exercises the existing command without adding authoring paths."} -->
+<!-- doc-review {"version":1,"fingerprint":"b50493a541897e118e1031a4dad939a316b4225e32d02d7163d41b41be014780","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"425515e49bc8185cff53fdd5e1c2eec629604bb416837e8683420b6e91bbfb5a","disposition":"still accurate","rationale":"contactProperty uses strict command keys, full candidate validation, normal undo history and null removal of an override. It conforms to the existing command recipe without a second admission owner."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -53,7 +61,7 @@ Identify the player task, primary home, visibility/retrieval lifecycle and repla
 surface. Keep consequential state visible and verify unique actions remain reachable
 after removing or moving controls.
 
-<!-- doc-review {"version":1,"fingerprint":"feda57d70f5f8e8b8b5f3361cb95929ab2be395d98bf0c79f83a1fe367b7c630","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"6772f53980477defbf640a72f22d200cd45cee04223c3c9af6fb7ee56596d1d4","disposition":"still accurate","rationale":"Graphics rendering now delegates scene rendering to a retained target at low quality; pointer previews, command commitment, help containment and vehicle receiver input owners are unchanged. Assembly scenario extraction preserves actions across two registered checks."} -->
+<!-- doc-review {"version":1,"fingerprint":"e40874504c9517efd16d824515dba64efb96d47e23c8a9b06d749453b9ce8b47","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"541bf3503841c9940edcdb601aba912b9b2cb7275d8549e6dc2ece2d2236671a","disposition":"still accurate","rationale":"File loads reserve document replacement before File.text; retry and load reject the overlapping action synchronously with a recorded receipt. Renderer shape probes return copied numeric geometry/rotation only. Existing control ownership, input cancellation and Build/Run authority remain intact."} -->
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -96,7 +104,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"4ad6922f99212f52859ecd12f705522109cfaf962e3f206d537e787ca81bb43a","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"5542b3f257645cb4fbc776b83036fc2288e08277cc6371a07d95e4059ed9f019","disposition":"still accurate","rationale":"The completed body snapshot is reused only across phases that leave native physics unchanged. Diagnostic input shape, completed observation timing, selected-body accumulator and warnings remain unchanged; measurement failures stay harness results."} -->
+<!-- doc-review {"version":1,"fingerprint":"e31b5836a4202b6c051d58b3eca8761ed27c7d1535b570db89827bf15996b146","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"2c6935bb2959bf443342609fa358085b8483ab3e1b9652d4bd154e75bce3b5a3","disposition":"still accurate","rationale":"Impact sound consumes completed contact rows with missing-data invalidation; it adds no diagnostic inference or physical write. Selected-body measurements retain their existing numeric accumulator and sampling definition."} -->
 
 Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -119,7 +127,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"7c592d7fda646719f4dce80595e9d597bf62088a7343ca384c194ef3da17d0a3","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"4c3c94baa92f3695f6a06fbe1d0cddaaa62ad6c79ee28ca58acf68577876efdf","disposition":"updated","rationale":"Documented the lifetime of reused completed body and energy samples and the required resampling if later phases mutate physics. Reviewed spring.8 fixed-pose factor/RHS reuse, original arithmetic order, residual refinement, cache invalidation and source-bound native qualification; numerical budgets and solver schedule remain independent."} -->
+<!-- doc-review {"version":1,"fingerprint":"1c170e5e8f4ce9ebeb71edb6f1ba18d20dcb912e1d62ad7b0d5847b982996afc","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"d2322644a8d973230a9beac793637bc043421a6246cb707a78bdd9e1d0f786d2","disposition":"updated","rationale":"Added native sphere mass and inertia controls, pair restitution, roll/slide, checkpoint and clock comparisons, and the bounded sphere-versus-plate CCD policy. High-speed sphere-sphere sweeps remain explicitly unqualified; solver subdivisions and pass counts are unchanged."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -204,9 +212,18 @@ never move a mounting point or change mass invisibly to manufacture disturbance 
 
 Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
+[Sphere physics controls](../../test/ball-physics.test.mjs#source) cover analytical
+fall/rolling, combined restitution, impact checkpoint continuation and fast contact.
+The door enables native full sweeps for dynamic spheres against ordinary targets;
+other full-sweep bodies are excluded by the vendored algorithm. This does not
+qualify arbitrary high-speed sphere-to-sphere impacts. Solver linear slop is capped
+at one tenth of the smallest sphere radius, leaving sphere-free scenes at their
+native tolerance. Temporal subdivisions remain unchanged; snapshots bind sweep
+settings and slop. Re-run existing contact/constraint cases when changing this policy.
+
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"94cfd5b933e7dd55b33a2cd1a17109d1e8e8b8ed918585108119d3d1d8c48d3f","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"53bc16b94e60f22a48bb98d64c1439fe9c1fc0e14f5dbad22e0652f28d4a94d2","disposition":"updated","rationale":"Linked both registered assembly partitions so the stated combined scenario coverage has both execution entrypoints. Model grouping, aliases, graph membership, insertion/history and library authority remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"db33465f89fb36f6eb8c51d87ba0fe004f90f3fad52ab2ab3975684524e9bebf","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"3938f9f44477405f4fe12e132ad752252322e98ff06f62d5bcb1a0315e4092b8","disposition":"still accurate","rationale":"The catcher uses ordinary disjoint editor membership and physical solids. Ball material and optional contact fields pass through existing authored-value copies; no group physics or new library storage semantics were introduced."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -301,7 +318,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"1a403e5a929a021de5fdf652efa0deb7246c7b3ad516aa312027846028d0243a","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"65c1ba47da78dfe3a5670fc5803c4595070297bd835254199c8370cda34d84fc","disposition":"updated","rationale":"Integration/contact cap is now the approved2ms; whole-tick3.333ms and actuator/render/cadence/realtime limits remain independent. Retained-target graphics changes no coil geometry, completed endpoint readback, visibility or authored connectivity."} -->
+<!-- doc-review {"version":1,"fingerprint":"c20eb4517151254f63d2afaaaa3d94df864b6af9effc45d8ad6b711669b66bb7","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"2a700d447e489d90031b4010b16d01a995036a3987627c3cb96d170e7fe80717","disposition":"still accurate","rationale":"Sphere meshes and orientation stripes do not change connection spec ownership, path visibility, retained coil geometry or resource disposal. Impact presentation has no connection or simulation write path."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

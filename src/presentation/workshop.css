@@ -1958,6 +1958,22 @@ body:has(.playtest-panel) .guide-feedback {
   overflow: auto;
   pointer-events: auto;
 }
+.machine-control-region {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.machine-control-region > * {
+  pointer-events: auto;
+}
+.machine-control-region > .vehicle-controls {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.machine-control-region > .attempt-controls {
+  flex: 0 0 auto;
+}
 .vehicle-controls {
   order: -1;
   overflow: auto;
@@ -3096,4 +3112,22 @@ body:has(.playtest-panel) .guide-feedback {
   .inspector .port-button::before {
     top: 7px;
   }
+}
+
+.attempt-controls {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  justify-self: start;
+  border-radius: 8px;
+  background: #192e38;
+}
+.contact-settings .setting {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+.contact-settings input[type='range'] {
+  width: 100%;
 }

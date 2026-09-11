@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"7c0ad28178436c395e0c2edead2a6fc4456f310d975f75a595984d4ef0048888","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"45af2b1930ac2497e9acf011248af129b6211d9916c631ed8678b7e40b9f774a","disposition":"still accurate","rationale":"The view now routes display and screenshot rendering through createGraphicsRenderer without changing ordinary command routing or transient previews. world.step returns a copied finite-checked post-integration body sample; session reuses it and adjacent energy samples within the same tick, preserving phase ownership, contact timing and immutable completed publication. Rapier spring.8 remains behind the same physics door."} -->
+<!-- doc-review {"version":1,"fingerprint":"84f63b6d880c44fa2820bee67c6e5f5aad9b5ee846511577853ff9c2a25d1046","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"61c3976f54b6bf5c4ee330da6debc63ebc9c3417e2acbbccb1ba4d55663aaeb0","disposition":"updated","rationale":"Ball shape and authored contacts use canonical model admission and the physics door. Retry composes Build/Run and now excludes asynchronous file loads before either resets; blocked requests retain receipts. Audio receives both completed-contact materials, not identity or a live physics object."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -26,6 +26,14 @@ named and ordinary endpoints, receiver keys and independent instances. Named mou
 open the surface preview; interface edits use core admission. Placed instances and
 saved snapshots have separate views, and saved authored settings are inspectable. Machine saves
 embed all internals; simulation has no library dependency.
+
+[Contact properties](../../src/model/contact-properties.mjs#symbol=contactProperties)
+resolve material defaults and explicit friction/restitution overrides before the
+physics door. Density remains material-owned. The inspector uses the same resolver.
+[Retry](../../src/application/retry.mjs#symbol=createRetry) composes ordinary Build
+and Run admission, releasing held controls and preserving the authored machine and
+view. Completed contacts feed [impact presentation](../../src/presentation/impact-sound.mjs#source);
+it has no simulation write path and resets its baseline on missing observations.
 
 The application/view links cover their own composition and input routing code. The core, model and simulation links separately bind the admitted behavior; remote payload contents are outside these claims.
 
@@ -56,11 +64,12 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"1d23b6ceda1bb769e7a1492527a12a2a3c4564f6efc97c083c6a3f8846466bff","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"4f9dfcb59599611a4756aa25253f2583b2bc40c284ebeaa5f013a2263d2a1b38","disposition":"still accurate","rationale":"The spring.8 dependency and post-integration sample reuse change implementation cost, not the listed canonical owners: numeric spring law/topology, physics door, session energy/contact accounting and completed observations remain in their existing layers. Graphics rendering consumes the same scene and does not duplicate authoring transforms, geometry admission or model policy."} -->
+<!-- doc-review {"version":1,"fingerprint":"75547462bfc5f26cb3cf043ffd3b9f05b4e8d150acfdc65c2eee537e038e5eb1","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"33c54643cd002d2d8716490357b4f2874f581afee1eafabbe2c65f383f29c89a","disposition":"updated","rationale":"Added contactProperties as the common material/default override owner for compiler and inspector. Sphere geometry remains under partPrimitives and physical inertia under compilation and the physics door."} -->
 
 | Decision                                              | Production owner                                                                                                                                                                                                                                             | Example consumer                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
 | Authored geometry and decoration boundary             | [partPrimitives](../../src/model/geometry.mjs#symbol=partPrimitives) / [shaftSegments](../../src/model/geometry.mjs#symbol=shaftSegments), [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG) / [MATERIALS](../../src/model/catalog.mjs#symbol=MATERIALS) | assembly compiler and workshop renderer                                                 |
+| Material defaults and explicit contact overrides | [contactProperties](../../src/model/contact-properties.mjs#symbol=contactProperties) | compiler and selected inspector |
 | Quaternion math and world directions                  | [transforms](../../src/model/transforms.mjs)                                                                                                                                                                                                                 | surfaces, assembly, mirror                                                              |
 | Unique player-visible names                           | [availablePartName](../../src/model/blueprint.mjs#symbol=availablePartName)                                                                                                                                                                                  | core insertion/copy/rename                                                              |
 | Surface frames and collision admission                | [resolveSurfaceEndpoint](../../src/model/surfaces.mjs#symbol=resolveSurfaceEndpoint) / [validatePlacementGeometry](../../src/model/surfaces.mjs#symbol=validatePlacementGeometry)                                                                            | compiler and surface proposal                                                           |

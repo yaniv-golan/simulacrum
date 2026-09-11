@@ -139,7 +139,7 @@ try {
   if (!(await page.locator('.machine-picker').evaluate((el) => el.open)))
     await page.locator('.machine-picker > summary').click();
   await page.locator('.part-list-item').first().click();
-  await page.locator('.part-settings summary').click();
+  await page.locator('.part-settings > summary').click();
   const input = page.getByRole('spinbutton', { name: 'Drive setting', exact: true });
   await input.focus();
   const before = (await frame()).metadata.blueprint;

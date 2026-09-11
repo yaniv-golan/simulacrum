@@ -26,9 +26,11 @@ export function checkIdentity() {
       const primitive = definition.primitives[0],
         [halfLength, radius, height] = primitive.halfExtents;
       const volume =
-        primitive.kind === 'cylinder'
-          ? 2 * Math.PI * halfLength * radius ** 2
-          : 8 * halfLength * radius * height;
+        primitive.kind === 'sphere'
+          ? (4 * Math.PI * halfLength ** 3) / 3
+          : primitive.kind === 'cylinder'
+            ? 2 * Math.PI * halfLength * radius ** 2
+            : 8 * halfLength * radius * height;
       assert.equal(original.configuration.bodies[0].mass, volume * row.density);
       assert.deepEqual(
         blueprint.parts[0].authoredMaterial,

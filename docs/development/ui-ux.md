@@ -23,7 +23,7 @@ otherwise give the observation and a useful next check. Do not shrink text to ma
 more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
-<!-- doc-review {"version":1,"fingerprint":"8dfcde2b7a7194516af215c5dc6d637d2b75b55d9fe7d5414f17a5bdd0c320cf","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"93822d35cd5afd8effde7099691ce0e5888010a52bd7e048a94bb132490328e6","disposition":"still accurate","rationale":"workshop-view changes only renderer composition, display/screenshot render calls and disposal. It adds no activity, invitation, teaching copy or content lifecycle. The policy still governs future admission and existing ordinary-command examples; no entry is warranted for this rendering implementation change."} -->
+<!-- doc-review {"version":1,"fingerprint":"ab4cc1cca3491f194c7f68fd3ba182e2f6ed6209ea54438ad203b5ac03ab08bd","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"ff5cb493666854763f80bbb093120753e84dbee83a96b10448a7c519ac5cbc0d","disposition":"still accurate","rationale":"The Ball launcher replaces the loose wheel in the existing entry, and rolling/drop extends the existing Spring collection. Real catcher shortfall and preload repair are now demonstrated; no additional lesson or claimed human engagement was introduced."} -->
 
 Learn & examples is a curated collection of things players can learn to do.
 Adding a feature requires a teaching decision, not automatically a catalogue entry.
@@ -122,7 +122,7 @@ documentation workflow. Documentation checks detect stale references and reviews
 they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
-<!-- doc-review {"version":1,"fingerprint":"b6d10c94a883cf54b994b9b6770e6d27770785e4390404b8700eab5146750637","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"406a2b71c35f3bba5d3dfc074120c57d74838f4447839b131833e7a29ac36377","disposition":"still accurate","rationale":"The view keeps the existing DOM shell, requested content, selection state, replacement confirmation and inspector controls. The graphics wrapper renders the existing scene/camera and disposes its added render target resources with the view; it does not change surface placement, keyboard/input ownership or any stated visibility lifecycle. This source review does not claim fresh rendered or participant evidence."} -->
+<!-- doc-review {"version":1,"fingerprint":"07a6566da4b13f80ae2cf761843c28203c94c8e62d5a63a74af7bf78f6c378af","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c9fc7ffb4464568650e6f478b861e1807fa4f6849ec5f7f8659b74173634be11","disposition":"updated","rationale":"Documented symmetric illustrative contact timbres and file-load/retry exclusion. Arbitrary valid numeric contact values are accepted while sliders remain coarse. Retry and Sound remain in the bounded machine-controls region; minimum-quality marking was visually inspected."} -->
 
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
@@ -213,6 +213,29 @@ and all parts remain editable; check clearance after changing mounting geometry.
 These examples extend construction possibilities, not evidence of player comprehension
 or qualification outside their tested finite operating envelopes.
 
+
+The Ball uses the existing part catalogue and selected inspector: diameter is a
+primary size edit; material and expandable Contact settings live in Engineering
+details. Bounciness and Grip may inherit Material default or use Custom values;
+changing material preserves visibly custom values, and choosing Material default
+removes the corresponding override. These edits are Build-only.
+
+The spring launcher now uses a loose Ball and an editable Catcher assembly of
+ordinary solids; its connected roller wheels remain. The existing entry invites
+moving the catcher and adjusting spring preload. Roll onto a spring extends the
+same requested experiments collection with a gravity-driven supported beam and
+spring plate. Neither addition creates a mandatory lesson or permanent explanation.
+These finite fixtures are construction examples, not general contact qualification.
+
+Try again and Sound occupy the existing machine-controls area. Try again appears
+in Run/Paused and composes Build then Run, preserving authored edits, history,
+selection and camera while creating a fresh attempt. Duplicate requests are blocked
+until completion. Sound starts off, requires an explicit gesture and can be muted;
+contact-derived timbres symmetrically combine both authored materials and are illustrative. Visual motion remains readable without
+sound. Missing contact history establishes a new silent baseline. File opening and retry
+exclude one another before asynchronous reading or reset; rejected actions retain
+recording receipts. Retry does not
+reload a preset or move an individual live body to recover it.
 
 Help is an explicit, keyboard-accessible dialog. It contains control and wiring
 explanations instead of keeping paragraphs over the canvas. Build information is

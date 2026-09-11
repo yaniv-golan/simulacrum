@@ -157,7 +157,8 @@ export async function createPhysicsWorld(configuration) {
     )
       throw new TypeError('invalid body properties');
     if (
-      !['box', 'cylinder'].includes(body.shape) ||
+      !['box', 'cylinder', 'sphere'].includes(body.shape) ||
+      (body.shape === 'sphere' && !halfExtents.every((r) => r === halfExtents[0])) ||
       (body.shape === 'cylinder' && halfExtents[1] !== halfExtents[2])
     )
       throw new TypeError('invalid physical shape');
@@ -273,6 +274,13 @@ export async function createPhysicsWorld(configuration) {
     // Contact impulses disturb coupled joint velocities. Additional internal passes
     // resolve that alternating solve without changing the temporal subdivision.
     world.integrationParameters.numInternalPgsIterations = 32;
+    // Bound sphere sweep penetration to a tenth of its radius; old scenes retain native slop.
+    world.integrationParameters.normalizedAllowedLinearError = Math.min(
+      world.integrationParameters.normalizedAllowedLinearError,
+      ...descriptions
+        .filter((body) => body.shape === 'sphere')
+        .map((body) => body.halfExtents[0] / 10),
+    );
     world.integrationParameters.maxCcdSubsteps = 1; // Contact diagnostics cover one physical interval.
     for (const body of descriptions) {
       const descriptor = (
@@ -281,12 +289,24 @@ export async function createPhysicsWorld(configuration) {
         .setTranslation(...body.position)
         .setRotation(xyzw(body.rotation))
         .setLinvel(...body.velocity)
-        .setCanSleep(false);
+        .setCanSleep(false)
+        // Native full sweeps ignore other full-sweep bodies. Reserve them for spheres
+        // so a fast sphere can sweep against an ordinary moving plate or beam.
+        .setCcdEnabled(!body.fixed && body.shape === 'sphere');
       const rigidBody = world.createRigidBody(descriptor);
       let collider;
       if (body.shape === 'box')
         collider = RAPIER.ColliderDesc.cuboid(...body.halfExtents).setMass(body.mass);
-      else {
+      else if (body.shape === 'sphere') {
+        const radius = body.halfExtents[0],
+          inertia = (2 * body.mass * radius ** 2) / 5;
+        collider = RAPIER.ColliderDesc.ball(radius).setMassProperties(
+          body.mass,
+          { x: 0, y: 0, z: 0 },
+          { x: inertia, y: inertia, z: inertia },
+          { x: 0, y: 0, z: 0, w: 1 },
+        );
+      } else {
         // Frozen regular 64-sided collision approximation, shared by every cylinder.
         // Preserve canonical solid-cylinder mass and inertia independently of contact mesh.
         const [h, r] = body.halfExtents,
@@ -355,6 +375,7 @@ export async function createPhysicsWorld(configuration) {
     joints,
   });
   function dimensions(collider) {
+    if (collider.shapeType() === RAPIER.ShapeType.Ball) return [collider.radius()];
     if (collider.shapeType() === RAPIER.ShapeType.Cuboid) return array(collider.halfExtents());
     if (collider.shapeType() === RAPIER.ShapeType.ConvexPolyhedron)
       return {
@@ -394,6 +415,7 @@ export async function createPhysicsWorld(configuration) {
       solverIterations: candidate.integrationParameters.numSolverIterations,
       internalPgsIterations: candidate.integrationParameters.numInternalPgsIterations,
       maxCcdSubsteps: candidate.integrationParameters.maxCcdSubsteps,
+      allowedLinearError: candidate.integrationParameters.normalizedAllowedLinearError,
       joints: connections,
       bodies: mapping.map((handle) => {
         const body = candidate.getRigidBody(handle);
@@ -402,6 +424,8 @@ export async function createPhysicsWorld(configuration) {
           rotation = collider.rotationWrtParent();
         return {
           type: body.bodyType(),
+          ccd: body.isCcdEnabled(),
+          softCcdPrediction: body.softCcdPrediction(),
           additionalSolverIterations: body.additionalSolverIterations(),
           mass: body.mass(),
           localCom: array(body.localCom()),

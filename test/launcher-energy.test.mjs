@@ -71,7 +71,9 @@ test('launcher release meets fixed-time energy separation with matched quiet con
     /mechanical energy creation/,
   );
   assert.ok(rotationDistance([0, 0, 0, 1], [0, Math.sin(0.1), 0, Math.cos(0.1)]) > 0.05 * 1.5);
-  const [loaded, ...controls] = await launchControls(createSpringLauncher);
+  const [loaded, ...controls] = await launchControls(() =>
+    createSpringLauncher({ projectile: 'gripWheel', catcher: false }),
+  );
   t.diagnostic(
     JSON.stringify({
       speed: loaded.speed,

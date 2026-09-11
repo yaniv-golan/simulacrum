@@ -106,6 +106,24 @@ const hubTilt = Math.atan2(0.07, 0.1),
 const aboutZ = (angle) => [0, 0, Math.sin(angle / 2), Math.cos(angle / 2)];
 /** @type {Readonly<Record<import('./generated/blueprint-types.js').PartType, CatalogDefinition>>} */
 export const CATALOG = freeze({
+  ball: {
+    type: 'ball',
+    name: 'Ball',
+    milestone: 'M3b',
+    ports: [],
+    mountingFaces: [],
+    parameterDefinitions: { diameter: rating(0.1, 0.02, 0.5, 'm') },
+    primitives: [
+      {
+        id: 'body',
+        kind: 'sphere',
+        halfExtents: [0.05, 0.05, 0.05],
+        position: [0, 0, 0],
+        rotation: [0, 0, 0, 1],
+        materialKey: 'rubber',
+      },
+    ],
+  },
   spacerBlock: {
     ...component('spacerBlock', 'Spacer block', [0.02, 0.015, 0.02], 'aluminium', [], {}),
     milestone: 'M3b',

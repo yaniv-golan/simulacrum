@@ -5,7 +5,10 @@
   "additionalProperties": false,
   "required": ["version", "id", "name", "parts", "connections"],
   "properties": {
-    "environment": { "type": "string", "enum": ["flat", "rounded-bump"] },
+    "environment": {
+      "type": "string",
+      "enum": ["flat", "rounded-bump"]
+    },
     "version": {
       "const": 3
     },
@@ -97,6 +100,28 @@
         },
         "parameters": {
           "type": "object"
+        },
+        "authoredContact": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "body": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "restitution": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "friction": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 2
+                }
+              }
+            }
+          }
         }
       }
     },

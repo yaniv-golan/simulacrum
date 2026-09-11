@@ -1,3 +1,4 @@
+import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 import { createCaptureReviewIndex } from '../src/application/capture-stream.mjs';
 import { sampleCapture } from './playtest/capture-samples.mjs';
 import { feedbackReceiptMs, waitForCaptureDrain } from './playtest/release-policy.mjs';
@@ -73,7 +74,7 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
   errors = browserEvidence.errors;
 
 page.setDefaultTimeout(15000);
-let capturedSession;
+let capturedSession, retryEpochs;
 page.on('response', (response) => {
   if (new URL(response.url()).pathname === '/api/playtest/v2/session' && response.ok())
     capturedSession = response.json().then((value) => value.sessionId);
@@ -137,6 +138,102 @@ try {
         db.close();
       }
     });
+  // Local synthetic capture: keep a real upload outstanding across application retry.
+  // Hosted characterization keeps its separately configured workload unchanged.
+  if (
+    !remoteOrigin &&
+    !process.env.PLAYTEST_CAPTURE_FAULT &&
+    process.env.PLAYTEST_ACTIVE_WORKLOAD !== 'true'
+  ) {
+    const bp = createEmptyBlueprint('recorded-ball', 'Recorded Ball');
+    bp.parts.push(createPart('ball', 'ball', [0, 3, 0]));
+    mkdirSync(output, { recursive: true });
+    const fixture = join(output, 'retry-ball.json');
+    writeFileSync(fixture, JSON.stringify(bp));
+    const retryFault = await installCaptureFault(page, 'reload-recovery', expectedFaultErrors);
+    try {
+      await browserEvidence.loadAndWait(page, fixture);
+      await page.locator('[data-command=run]').click();
+      await page.evaluate(() => window.advanceTime(1000));
+      for (let tries = 0; tries < 50 && !retryFault.state.injected; tries++)
+        await page.waitForTimeout(100);
+      browserEvidence.assert('ok', [retryFault.state.injected > 0, 'a real upload was attempted']);
+      browserEvidence.assert('ok', [(await sampleOutbox()).pending > 0]);
+      const before = await page.evaluate(() => window.workshopProbe.observe());
+      // A load requested while retry is pending must not run a different document.
+      await page.evaluate(() => {
+        document.querySelector('[data-command=retry]').click();
+        const input = document.querySelector('input[type=file]'),
+          transfer = new DataTransfer();
+        transfer.items.add(
+          new File(
+            [
+              JSON.stringify({
+                version: 3,
+                id: 'wrong-document',
+                name: 'Wrong document',
+                parts: [],
+                connections: [],
+              }),
+            ],
+            'other.json',
+            { type: 'application/json' },
+          ),
+        );
+        input.files = transfer.files;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      await page.waitForFunction(
+        (epoch) => window.workshopProbe.observe().cursor.epoch > epoch,
+        before.cursor.epoch,
+      );
+      await page.evaluate(() => window.advanceTime(100));
+      const after = await page.evaluate(() => window.workshopProbe.observe());
+      browserEvidence.assert('deepEqual', [
+        after.frames[0].metadata.blueprint,
+        before.frames[0].metadata.blueprint,
+      ]);
+      browserEvidence.assert('equal', [after.frames[0].metadata.mode, 'run']);
+      browserEvidence.assert('ok', [(await sampleOutbox()).pending > 0]);
+      browserEvidence.assert('equal', [
+        after.cursor.epoch,
+        before.cursor.epoch + 1,
+        'overlapping load must not cause a second reset',
+      ]);
+      retryEpochs = [before.cursor.epoch, after.cursor.epoch];
+      await page.evaluate(() => {
+        const input = document.querySelector('input[type=file]'),
+          transfer = new DataTransfer();
+        const save = JSON.stringify(JSON.parse(window.render_game_to_text()).metadata.blueprint);
+        transfer.items.add(new File([save], 'slow-read.json', { type: 'application/json' }));
+        input.files = transfer.files;
+        Object.defineProperty(input.files[0], 'text', {
+          value: () =>
+            new Promise((resolve) => {
+              window.finishBallFileRead = () => resolve(save);
+            }),
+        });
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        document.querySelector('[data-command=retry]').click();
+      });
+      browserEvidence.assert('equal', [
+        (await page.evaluate(() => window.workshopProbe.readLastCommandResult())).result.reasonCode,
+        'RETRY_PENDING',
+        'retry rejected while an earlier file read is pending',
+      ]);
+      await page.evaluate(() => {
+        window.finishBallFileRead();
+        delete window.finishBallFileRead;
+      });
+      await page.waitForFunction(() => {
+        const r = window.workshopProbe.readLastCommandResult();
+        return r?.input.type === 'load' && r.result.ok;
+      });
+    } finally {
+      await retryFault.stop();
+    }
+    await page.locator('[data-command=build]').click();
+  }
   const activeWorkload = process.env.PLAYTEST_ACTIVE_WORKLOAD === 'true';
   const workloadActions = [];
   let driveStart, driveEnd;
@@ -283,6 +380,42 @@ try {
     decoded = createCaptureReviewIndex(wireEvents),
     events = decoded.events;
   browserEvidence.assert('equal', [decoded.status, 'complete']);
+  if (retryEpochs) {
+    const contexts = events.map((_, i) => decoded.readEvent(i));
+    browserEvidence.assert('ok', [
+      contexts.some(
+        (e) =>
+          e.kind === 'command-result' &&
+          e.data.input?.type === 'load' &&
+          e.data.result?.reasonCode === 'RETRY_PENDING',
+      ),
+      'file load was rejected while retry was pending',
+    ]);
+    browserEvidence.assert('ok', [
+      contexts.some(
+        (e) =>
+          e.kind === 'command-result' &&
+          e.data.input?.type === 'retry' &&
+          e.data.result?.reasonCode === 'RETRY_PENDING',
+      ),
+      'retry was rejected while file read was pending',
+    ]);
+    for (const epoch of retryEpochs)
+      browserEvidence.assert('ok', [
+        contexts.some((e) => e.context?.cursor?.epoch === epoch),
+        'recording retains both retry epochs',
+      ]);
+    browserEvidence.assert('ok', [
+      contexts.some(
+        (e) => e.kind === 'command-result' && e.data.input?.type === 'retry' && e.data.result.ok,
+      ),
+      'actual application retry receipt retained',
+    ]);
+    browserEvidence.assert('ok', [
+      contexts.every((e) => e.context?.observation?.metadata?.blueprint?.id !== 'wrong-document'),
+      'overlapping load never replaced captured machine',
+    ]);
+  }
   for (const kind of [
     'session-start',
     'input',

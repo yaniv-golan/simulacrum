@@ -14,7 +14,10 @@ export function partPrimitives(part) {
       definition.parameterDefinitions.diameter.default) / 2;
   return definition.primitives.map((primitive) => ({
     ...primitive,
-    halfExtents: [primitive.halfExtents[0], radius, radius],
+    halfExtents:
+      primitive.kind === 'sphere'
+        ? [radius, radius, radius]
+        : [primitive.halfExtents[0], radius, radius],
   }));
 }
 

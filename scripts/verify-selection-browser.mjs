@@ -38,7 +38,7 @@ try {
     .locator('.part-list-item')
     .filter({ hasText: /^Motor$/ })
     .click();
-  await page.locator('.part-settings summary').click();
+  await page.locator('.part-settings > summary').click();
   await page.getByRole('spinbutton', { name: 'Drive setting', exact: true }).fill('0.5');
   await page.getByRole('spinbutton', { name: 'Drive setting', exact: true }).press('Tab');
   await page.waitForFunction(

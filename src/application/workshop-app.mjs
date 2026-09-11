@@ -1,6 +1,10 @@
 import { createAssemblyLibrary } from './assembly-library.mjs';
 import { palettePlacement } from '../model/palette-placement.mjs';
 import { createSpringPlayground, createSpringStrut } from '../model/fixtures/spring-playground.mjs';
+import { createRetry } from './retry.mjs';
+import { createImpactEvents, createImpactSound } from '../presentation/impact-sound.mjs';
+import { CATALOG } from '../model/catalog.mjs';
+import { createBallDrop } from '../model/fixtures/ball-drop.mjs';
 import { createSpringLauncher } from '../model/fixtures/spring-launcher.mjs';
 import {
   createSuspensionComparison,
@@ -39,6 +43,7 @@ export async function mountWorkshopApp(root) {
     measurementCursor = undefined,
     runMeasurement = null,
     disposed = false,
+    pendingLoads = 0,
     lastInput = null,
     pausedForVisibility = false,
     runSequence = 0;
@@ -176,10 +181,53 @@ export async function mountWorkshopApp(root) {
       explainFailure(normalizeFailure(error, 'SESSION_FAILED'), frame()?.metadata.blueprint),
     );
   }
+  const impactEvents = createImpactEvents(),
+    impactSound = createImpactSound();
+  const retry = createRetry({
+    prepare: async () => {
+      clock.pause();
+      cancelRun('replaced');
+      view.beginRetry();
+      await view.clearControls();
+    },
+    execute: (command) => executeCommand(command),
+    finish: () => {
+      view.endRetry();
+      render();
+    },
+  });
   function render() {
     if (disposed) return;
     const measurements = workshop.observe('scene', 'full', measurementCursor);
     view.ingestMeasurements(measurements);
+    const sounds = [];
+    if (!measurements.ok || document.hidden) {
+      impactEvents.reset();
+      impactSound.stop();
+    }
+    for (const completed of measurements.frames ?? []) {
+      if (!impactSound.enabled() || document.hidden || completed.metadata.mode !== 'run') {
+        impactEvents.reset();
+        impactSound.stop();
+        continue;
+      }
+      const events = impactEvents.read({
+        epoch: measurements.cursor.epoch,
+        tick: completed.tick,
+        available: completed.contacts.available,
+        rows: completed.contacts.rows,
+      });
+      for (const event of events) {
+        const materials = [event.a, event.b].flatMap((index) => {
+          const part = completed.metadata.blueprint.parts[index];
+          return part
+            ? [part.authoredMaterial.body ?? CATALOG[part.type].primitives[0].materialKey]
+            : [];
+        });
+        sounds.push({ ...event, materials });
+      }
+    }
+    impactSound.play(sounds.slice(-4));
     measurementCursor = measurements.cursor;
     const observation = workshop.observe();
     view.render(observation.frames[0]);
@@ -255,7 +303,18 @@ export async function mountWorkshopApp(root) {
   async function onCommand(input, context) {
     const trigger = lastRecordedInput;
     logInteraction('command-request', { input, trigger });
-    const result = await executeCommand(input, context);
+    const blocked =
+      (retry.pending() && !['control-release', 'suspend-controls'].includes(input?.type)) ||
+      (pendingLoads > 0 && input?.type === 'retry');
+    const result = blocked
+      ? { ok: false, reasonCode: 'RETRY_PENDING', path: 'mode' }
+      : await executeCommand(input, context);
+    if (blocked)
+      view.setMessage(
+        pendingLoads
+          ? 'Finish opening the machine before trying again.'
+          : 'Wait for this retry to finish, then try the action again.',
+      );
     lastCommandResult = structuredClone({
       sequence: ++commandResultSequence,
       input,
@@ -279,6 +338,11 @@ export async function mountWorkshopApp(root) {
       return { ok: true, reasonCode: 'OK', path: '' };
     }
     try {
+      if (command.type === 'retry') {
+        if (!['run', 'paused'].includes(frame().metadata.mode))
+          return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'mode' };
+        return await retry.run();
+      }
       if (command.type === 'step') {
         if (clock.running() || frame().metadata.mode !== 'paused') {
           view.setMessage('Pause a running machine before stepping one tick.');
@@ -329,6 +393,11 @@ export async function mountWorkshopApp(root) {
         if (frame().metadata.blueprint.parts.length && command.replace !== true)
           return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
         command = { type: 'load', save: createSpringPlayground({ damping: command.damping ?? 8 }) };
+      }
+      if (command.type === 'ball-drop-example') {
+        if (frame().metadata.blueprint.parts.length && command.replace !== true)
+          return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
+        command = { type: 'load', save: createBallDrop() };
       }
       if (command.type === 'spring-launcher-example') {
         if (frame().metadata.blueprint.parts.length && command.replace !== true)
@@ -479,6 +548,10 @@ export async function mountWorkshopApp(root) {
   }
   async function onLoad(file) {
     if (!file) return;
+    // Reserve document replacement before asynchronous file reading. A retry and
+    // a file load cannot each reset or start the other's authored document.
+    if (retry.pending()) return onCommand({ type: 'load', save: null });
+    pendingLoads++;
     try {
       const text = await file.text(),
         loaded = loadSave(text);
@@ -508,6 +581,8 @@ export async function mountWorkshopApp(root) {
     } catch (error) {
       view.setMessage('The file could not be opened. Choose a saved machine JSON file.');
       return { ok: false, reasonCode: 'INVALID_JSON', path: '' };
+    } finally {
+      pendingLoads--;
     }
   }
   function onRecording(action) {
@@ -536,6 +611,7 @@ export async function mountWorkshopApp(root) {
   }
   view = createWorkshopView(root, {
     onCommand,
+    onSound: (enabled) => impactSound.enable(enabled),
     onSave,
     onLoad,
     onFailure,
@@ -581,6 +657,7 @@ export async function mountWorkshopApp(root) {
     observe: () => workshop.observe(),
     readLastCommandResult: () => structuredClone(lastCommandResult),
     readRenderedTransforms: () => view.readRenderedTransforms(),
+    readRenderedShapes: () => view.readRenderedShapes(),
     readRenderedSpringEndpoints: () => view.readRenderedSpringEndpoints(),
     readRenderedCenters: () => view.readRenderedCenters(),
     readInteractionState: () => view.readInteractionState(),
@@ -588,6 +665,7 @@ export async function mountWorkshopApp(root) {
   });
   return Object.freeze({
     dispose() {
+      impactSound.dispose();
       remote?.dispose();
       disposed = true;
       document.removeEventListener('visibilitychange', visibilityChanged);

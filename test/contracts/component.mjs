@@ -45,7 +45,12 @@ export async function assertComponentContract({
   const chosen = MATERIALS[material ?? primitive.materialKey];
   const [x, y, z] = half;
   const mass =
-    chosen.density * (primitive.kind === 'cylinder' ? Math.PI * y * y * 2 * x : 8 * x * y * z);
+    chosen.density *
+    (primitive.kind === 'sphere'
+      ? (4 * Math.PI * x ** 3) / 3
+      : primitive.kind === 'cylinder'
+        ? Math.PI * y * y * 2 * x
+        : 8 * x * y * z);
   near(body.mass, mass, 'material and volume determine mass');
   assert.equal(body.friction, chosen.friction, 'selected material determines friction');
   assert.equal(body.restitution, chosen.restitution, 'selected material determines restitution');
@@ -80,13 +85,19 @@ export async function assertComponentContract({
     );
   }
   const inertia =
-    primitive.kind === 'cylinder'
-      ? [
-          (mass * y * y) / 2,
-          (mass * (3 * y * y + 4 * x * x)) / 12,
-          (mass * (3 * y * y + 4 * x * x)) / 12,
-        ]
-      : [(mass * (y * y + z * z)) / 3, (mass * (x * x + z * z)) / 3, (mass * (x * x + y * y)) / 3];
+    primitive.kind === 'sphere'
+      ? [(2 * mass * x * x) / 5, (2 * mass * x * x) / 5, (2 * mass * x * x) / 5]
+      : primitive.kind === 'cylinder'
+        ? [
+            (mass * y * y) / 2,
+            (mass * (3 * y * y + 4 * x * x)) / 12,
+            (mass * (3 * y * y + 4 * x * x)) / 12,
+          ]
+        : [
+            (mass * (y * y + z * z)) / 3,
+            (mass * (x * x + z * z)) / 3,
+            (mass * (x * x + y * y)) / 3,
+          ];
   const { gravity, bodies, joints } = compiled.configuration;
   const world = await createPhysicsWorld({ gravity, bodies, joints });
   try {

@@ -824,6 +824,16 @@
       "smoke": false,
       "timeoutMs": 90000,
       "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-ball-browser",
+      "script": "scripts/verify-ball-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract"
     }
   ],
   "invariants": [
@@ -1015,7 +1025,7 @@
       "id": "geometry-agreement",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Authored wheel geometry drives physical radius and mass; attachment admission rejects real intersections while allowing empty hull corners.",
+      "guarantee": "Authored wheel and sphere geometry drives physical dimensions, mass and inertia; placement rejects solid intersections while allowing empty hull corners.",
       "owners": [
         {
           "path": "src/model/geometry.mjs",
@@ -1029,19 +1039,28 @@
       "checks": [
         "invariant-controls",
         "verify-property-focus",
-        "verify-surface-browser"
+        "verify-surface-browser",
+        "verify-ball-browser"
       ],
       "controls": {
         "positive": [
           {
             "path": "test/wheel-diameter.test.mjs",
             "anchor": "wheel diameter changes physical radius and mass without moving its axle; undo and load preserve it"
+          },
+          {
+            "path": "test/ball.test.mjs",
+            "anchor": "solid ball radius, volume and native inertia follow authored size/material"
           }
         ],
         "negative": [
           {
             "path": "test/placement-overlap.test.mjs",
             "anchor": "wheel bounds corners are empty while real cylinder intersections are blocked"
+          },
+          {
+            "path": "test/ball.test.mjs",
+            "anchor": "sphere placement uses curved surface, including rotated boxes and cylinder hulls"
           }
         ]
       },
@@ -3046,6 +3065,100 @@
         ]
       },
       "qualificationBars": []
+    },
+    {
+      "id": "ball-workshop-experience",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Ordinary contact drives the ball; retries reset a complete authored run and optional impact presentation cannot write physical state. Material contact overrides retain normal authoring history.",
+      "owners": [
+        {
+          "path": "src/application/retry.mjs",
+          "anchor": "createRetry"
+        },
+        {
+          "path": "src/model/contact-properties.mjs",
+          "anchor": "contactProperties"
+        },
+        {
+          "path": "src/presentation/impact-sound.mjs",
+          "anchor": "createImpactEvents"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-ball-browser",
+        "verify-remote-playtest"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/ball.test.mjs",
+            "anchor": "contact overrides inherit, preserve custom zero, reset and survive copy/load on any part"
+          },
+          {
+            "path": "test/ball-physics.test.mjs",
+            "anchor": "sphere free fall and contact restitution follow analytic motion; checkpoint crosses impact"
+          },
+          {
+            "path": "test/ball-physics.test.mjs",
+            "anchor": "rolling drop agrees in four fresh processes and both production clock paths"
+          },
+          {
+            "path": "test/ball-physics.test.mjs",
+            "anchor": "rolling drop leaves its beam, flies and contacts the moving spring plate"
+          },
+          {
+            "path": "test/ball.test.mjs",
+            "anchor": "default ball launcher enters and remains in its ordinary catcher for two seconds"
+          },
+          {
+            "path": "test/ball.test.mjs",
+            "anchor": "ball launch energy exceeds all accounted non-spring sources without creating energy"
+          },
+          {
+            "path": "test/ball.test.mjs",
+            "anchor": "ball side guides retain a held projectile; removing them permits sideways escape"
+          },
+          {
+            "path": "test/ball.test.mjs",
+            "anchor": "empty contact overrides canonicalize on load and ordinary insertion"
+          },
+          {
+            "path": "test/ball.test.mjs",
+            "anchor": "an ordinary preload edit repairs a real shortfall after moving the catcher farther"
+          },
+          {
+            "path": "test/ball-experience.test.mjs",
+            "anchor": "audio denial and disposal during enable leave sound disabled and release voices"
+          },
+          {
+            "path": "test/ball-experience.test.mjs",
+            "anchor": "retry preserves authored edits/history and queued capture while resetting a whole run"
+          },
+          {
+            "path": "test/ball-experience.test.mjs",
+            "anchor": "material-pair timbre is symmetric and preparation failure cannot start a run"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/ball-experience.test.mjs",
+            "anchor": "retry resets before running, blocks duplicate requests and stops on rejection"
+          },
+          {
+            "path": "test/ball-experience.test.mjs",
+            "anchor": "impact events deduplicate snapshots and sustained contacts, mute and reset safely"
+          },
+          {
+            "path": "test/ball-physics.test.mjs",
+            "anchor": "minimum ball cannot tunnel through a thin plate at the default spring energy bound"
+          }
+        ]
+      },
+      "qualificationBars": [
+        "F1"
+      ]
     }
   ],
   "browserLocalScopes": [
@@ -3068,7 +3181,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51"
     },
     {
       "entrypoint": "scripts/verify-part-help-window.mjs",
@@ -3120,7 +3233,7 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -3143,7 +3256,7 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -3176,7 +3289,7 @@
         "test/receiver-input-owner.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51"
     }
   ],
   "experimentInputScopes": [
@@ -3449,7 +3562,7 @@
         }
       ],
       "consumers": [],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -3526,7 +3639,7 @@
         }
       ],
       "consumers": [],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -3560,12 +3673,12 @@
         }
       ],
       "consumers": [],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "entrypoint": "scripts/verify-remote-playtest.mjs",
-      "sourceSha256": "fef6bd1f3268fcefd96e90040b956243947a26169f76becb1ce76bf6ed97e1d2",
+      "sourceSha256": "8a0a362b1d9b43e180c201a2c11e79cb05b043e2536044172956b6e9ceaa68f7",
       "dependencies": [
         "scripts/browser-evidence.mjs",
         "scripts/playtest-server.mjs",
@@ -3575,7 +3688,8 @@
         "scripts/playtest/load.mjs",
         "scripts/playtest/local-cloud.mjs",
         "scripts/playtest/release-policy.mjs",
-        "src/application/capture-stream.mjs"
+        "src/application/capture-stream.mjs",
+        "src/model/blueprint.mjs"
       ],
       "externalImports": [
         "node:fs",
@@ -3622,8 +3736,8 @@
       "consumers": [
         "scripts/verify-cloud-playtest.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
-      "consumerSourceHash": "a6ad24c8e6c4393d4d8c16027c4dd3f1ddce2f1c5b99e983f051ef5b5c50de19"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "consumerSourceHash": "fc1b5a0c57c2bc53a8b5b8b23492deeb6a74853f528dba3f37bbc0605394b101"
     },
     {
       "entrypoint": "scripts/browser-evidence.mjs",
@@ -3666,6 +3780,7 @@
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser.mjs",
         "scripts/verify-camera-recovery.mjs",
         "scripts/verify-cloud-playtest.mjs",
@@ -3701,8 +3816,8 @@
         "test/browser-evidence.test.mjs",
         "test/f2.test.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
-      "consumerSourceHash": "41c675e4fc09e787dcde260ca48caef31b263175db136d8dc0d26acf06700420"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "consumerSourceHash": "33393dd05347b1302cd2574a89bacda82ea6ebb2012314ac45523a5b0323343d"
     },
     {
       "entrypoint": "scripts/app-fingerprint.mjs",
@@ -3755,6 +3870,7 @@
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
         "scripts/verify-camera-recovery.mjs",
@@ -3806,8 +3922,8 @@
         "test/verification-run.test.mjs",
         "vite.config.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
-      "consumerSourceHash": "41c675e4fc09e787dcde260ca48caef31b263175db136d8dc0d26acf06700420"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "consumerSourceHash": "33393dd05347b1302cd2574a89bacda82ea6ebb2012314ac45523a5b0323343d"
     },
     {
       "entrypoint": "scripts/source-identity.mjs",
@@ -3872,6 +3988,7 @@
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
         "scripts/verify-camera-recovery.mjs",
@@ -3929,8 +4046,8 @@
         "test/starter-vehicle.test.mjs",
         "test/verification-run.test.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
-      "consumerSourceHash": "41c675e4fc09e787dcde260ca48caef31b263175db136d8dc0d26acf06700420"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "consumerSourceHash": "33393dd05347b1302cd2574a89bacda82ea6ebb2012314ac45523a5b0323343d"
     },
     {
       "entrypoint": "scripts/build-fingerprint.mjs",
@@ -3983,8 +4100,8 @@
         "test/m3-determinism.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
-      "consumerSourceHash": "dc382855f925d370d4b8b94b179a4862369de4fcbe96ec5060ac7c3af178d377"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "consumerSourceHash": "4030a898231e787952ec0198bd8e5d7079190d06b6aa8b4797899273a6a8ab20"
     },
     {
       "entrypoint": "scripts/playtest/capture-fault.mjs",
@@ -4008,8 +4125,8 @@
         "scripts/verify-cloud-playtest.mjs",
         "scripts/verify-remote-playtest.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
-      "consumerSourceHash": "a6ad24c8e6c4393d4d8c16027c4dd3f1ddce2f1c5b99e983f051ef5b5c50de19"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "consumerSourceHash": "fc1b5a0c57c2bc53a8b5b8b23492deeb6a74853f528dba3f37bbc0605394b101"
     },
     {
       "entrypoint": "scripts/playtest/load.mjs",
@@ -4096,8 +4213,8 @@
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
-      "consumerSourceHash": "a6ad24c8e6c4393d4d8c16027c4dd3f1ddce2f1c5b99e983f051ef5b5c50de19"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "consumerSourceHash": "fc1b5a0c57c2bc53a8b5b8b23492deeb6a74853f528dba3f37bbc0605394b101"
     },
     {
       "entrypoint": "scripts/playtest/local-cloud.mjs",
@@ -4135,8 +4252,8 @@
         "scripts/verify-cloud-playtest.mjs",
         "scripts/verify-remote-playtest.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
-      "consumerSourceHash": "a6ad24c8e6c4393d4d8c16027c4dd3f1ddce2f1c5b99e983f051ef5b5c50de19"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "consumerSourceHash": "fc1b5a0c57c2bc53a8b5b8b23492deeb6a74853f528dba3f37bbc0605394b101"
     },
     {
       "entrypoint": "scripts/playtest/download.mjs",
@@ -4186,8 +4303,8 @@
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
-      "consumerSourceHash": "a6ad24c8e6c4393d4d8c16027c4dd3f1ddce2f1c5b99e983f051ef5b5c50de19"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "consumerSourceHash": "fc1b5a0c57c2bc53a8b5b8b23492deeb6a74853f528dba3f37bbc0605394b101"
     },
     {
       "entrypoint": "scripts/playtest-server.mjs",
@@ -4316,8 +4433,8 @@
         "test/playtest-server.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
-      "consumerSourceHash": "2de833951065aca3e99265ff2b3e2e7893ba6c4143055cc63e7df58412e044a5"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "consumerSourceHash": "64fcc9d356de11211064ccdaa4ef05dfe66889c35c90f9b75bf0b12ee35e8ec7"
     },
     {
       "entrypoint": "scripts/module-graph.mjs",
@@ -4417,6 +4534,7 @@
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
         "scripts/verify-camera-recovery.mjs",
@@ -4481,8 +4599,8 @@
         "test/verification-run.test.mjs",
         "vite.config.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
-      "consumerSourceHash": "41c675e4fc09e787dcde260ca48caef31b263175db136d8dc0d26acf06700420"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "consumerSourceHash": "33393dd05347b1302cd2574a89bacda82ea6ebb2012314ac45523a5b0323343d"
     },
     {
       "entrypoint": "scripts/playtest/verify-deployment.mjs",
@@ -4605,8 +4723,8 @@
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
-      "consumerSourceHash": "a6ad24c8e6c4393d4d8c16027c4dd3f1ddce2f1c5b99e983f051ef5b5c50de19"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "consumerSourceHash": "fc1b5a0c57c2bc53a8b5b8b23492deeb6a74853f528dba3f37bbc0605394b101"
     },
     {
       "entrypoint": "scripts/playtest/worker.mjs",
@@ -4636,8 +4754,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
-      "consumerSourceHash": "e09a6d661cf86def2f1951c75dfc1cbc5d33207fe270db22a7302b0655dfd062"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "consumerSourceHash": "a496136fea1f6749f4f4bf8992de785bdc02d68cbc33f6ed3eb71d741bcca09f"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -4667,8 +4785,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
-      "consumerSourceHash": "e09a6d661cf86def2f1951c75dfc1cbc5d33207fe270db22a7302b0655dfd062"
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
+      "consumerSourceHash": "a496136fea1f6749f4f4bf8992de785bdc02d68cbc33f6ed3eb71d741bcca09f"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -4693,7 +4811,7 @@
         }
       ],
       "consumers": [],
-      "roots": "eff0bf5271a5a65f532d9c173cf94218782d19441a1786d949d12e8df3e4f125",
+      "roots": "f36d5af4009d68743fa4f55ed4fbb4600a558df253145abf8f9f2551595aea51",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ]

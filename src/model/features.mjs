@@ -1,4 +1,8 @@
 export const UI_FEATURES = Object.freeze({
+  ballWorkshop: Object.freeze({
+    milestone: 'M3b',
+    entrypoint: 'src/presentation/workshop-view.mjs',
+  }),
   springPlayground: Object.freeze({
     milestone: 'M3b',
     entrypoint: 'src/presentation/spring-view.mjs',

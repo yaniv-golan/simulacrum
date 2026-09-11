@@ -3,13 +3,16 @@ import { createEmptyBlueprint, createPart } from '../blueprint.mjs';
 import { snapConnection } from '../assembly.mjs';
 import { DEFAULT_CONTROL_BINDING } from '../control-bindings.mjs';
 
-/** An overhead gate releases a steel wheel using an authored undamped spring. */
-export function createSpringLauncher() {
+/** An overhead gate releases a ball using an authored undamped spring. */
+export function createSpringLauncher({
+  projectile: projectileType = 'ball',
+  catcher: withCatcher = true,
+} = {}) {
   let blueprint = createEmptyBlueprint('spring-launcher', 'Spring launcher');
   const add = (type, id) => {
     const part = createPart(type, id, [blueprint.parts.length * 2, 2, 0]);
     // Explicit player-selectable materials keep the frame light; the aluminium drop
-    // stabilizes gate motion and the steel projectile receives the spring impulse.
+    // stabilizes gate motion. Projectile material is authored explicitly below.
     part.authoredMaterial.body = 'rubber';
     blueprint.parts.push(part);
     return part;
@@ -103,7 +106,9 @@ export function createSpringLauncher() {
   connect(port('gate-roller-bearing', 'shaft'), port('gate-roller', 'axle'), 'shaft');
   add('chassis', 'power-bed');
   connect(face('base', 'right'), face('power-bed', 'left'), 'fixed');
-  add('gripWheel', 'projectile').authoredMaterial.body = 'steel';
+  const ball = add(projectileType, 'projectile');
+  ball.parameters.diameter = 0.2;
+  ball.authoredMaterial.body = 'steel';
   add('powerCell', 'cell');
   const receiver = add('commandReceiver', 'release');
   receiver.name = 'Hold L to open gate';
@@ -136,5 +141,44 @@ export function createSpringLauncher() {
   const roller = blueprint.parts.find((p) => p.id === 'pusher-roller');
   projectile.position = [roller.position[0] - 0.15, 0.1, roller.position[2]];
   projectile.rotation = [0, Math.SQRT1_2, 0, Math.SQRT1_2];
+  if (projectileType === 'ball') {
+    // Low ordinary guide blocks clear the moving plate and prevent sideways escape.
+    for (const [side, z] of [
+      ['left', -0.165],
+      ['right', 0.165],
+    ]) {
+      for (let level = 0; level < 2; level++) {
+        const id = `ball-guide-${side}-${level}`;
+        const block = createPart('shaftMount', id, [-0.505, 0.04 + level * 0.08, z]);
+        block.name = `Ball guide ${side}`;
+        block.authoredMaterial.body = 'steel';
+        blueprint.parts.push(block);
+        if (level) connect(face(`ball-guide-${side}-0`, 'top'), face(id, 'bottom'), 'fixed');
+      }
+    }
+  }
+  if (!withCatcher) return blueprint;
+  // An ordinary U-shaped catcher; its mass and contact retain the moving ball.
+  const catcher = (id, position, rotation) => {
+    const part = createPart('chassis', id, position);
+    part.name = 'Catcher ' + id.split('-').at(-1);
+    part.rotation = rotation;
+    part.authoredMaterial.body = 'aluminium';
+    blueprint.parts.push(part);
+    return part;
+  };
+  const qz = [0, 0, Math.SQRT1_2, Math.SQRT1_2];
+  catcher('catcher-back', [-1.8, 0.14, -0.05], qz);
+  // The wall thickness becomes vertical support height after rotation.
+  catcher('catcher-left', [-1.56, 0.14, -0.31], [0.5, 0.5, 0.5, 0.5]);
+  catcher('catcher-right', [-1.56, 0.14, 0.21], [0.5, 0.5, 0.5, 0.5]);
+  blueprint.assemblies = [
+    {
+      id: 'catcher',
+      name: 'Catcher',
+      ids: ['catcher-back', 'catcher-left', 'catcher-right'],
+      ports: [],
+    },
+  ];
   return blueprint;
 }

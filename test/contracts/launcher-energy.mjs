@@ -28,20 +28,26 @@ export function launchMechanicalEnergy(configuration, states, reference) {
   for (const [i, body] of configuration.bodies.entries()) {
     if (body.fixed) continue;
     assert.ok(
-      ['box', 'cylinder'].includes(body.shape),
+      ['box', 'cylinder', 'sphere'].includes(body.shape),
       'independent inertia oracle requires a qualified primitive',
     );
     const state = states[i],
       [x, y, z] = body.halfExtents,
       mass = body.mass;
     const inertia =
-      body.shape === 'box'
-        ? [(mass * (y * y + z * z)) / 3, (mass * (x * x + z * z)) / 3, (mass * (x * x + y * y)) / 3]
-        : [
-            (mass * y * y) / 2,
-            (mass * (3 * y * y + 4 * x * x)) / 12,
-            (mass * (3 * y * y + 4 * x * x)) / 12,
-          ];
+      body.shape === 'sphere'
+        ? [0.4 * mass * x * x, 0.4 * mass * x * x, 0.4 * mass * x * x]
+        : body.shape === 'box'
+          ? [
+              (mass * (y * y + z * z)) / 3,
+              (mass * (x * x + z * z)) / 3,
+              (mass * (x * x + y * y)) / 3,
+            ]
+          : [
+              (mass * y * y) / 2,
+              (mass * (3 * y * y + 4 * x * x)) / 12,
+              (mass * (3 * y * y + 4 * x * x)) / 12,
+            ];
     const angular = rotateVector(inverseRotation(state.rotation), state.angularVelocity);
     kinetic += (mass * state.velocity.reduce((sum, value) => sum + value * value, 0)) / 2;
     kinetic += angular.reduce((sum, value, axis) => sum + inertia[axis] * value * value, 0) / 2;
@@ -80,7 +86,7 @@ export function assertNoCreation(trial) {
     `independent final mechanical energy creation ${trial.noncreation} J exceeds ${NONCREATION_ERROR_J} J`,
   );
 }
-async function launchTrial(blueprint) {
+export async function launchTrial(blueprint) {
   const config = compileAssembly(blueprint).configuration;
   assert.deepEqual(
     config.gravity,

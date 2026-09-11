@@ -45,9 +45,11 @@ export function createEditingControls({
       const shape = partPrimitives(part)[0],
         h = shape.halfExtents;
       const geometry =
-        shape.kind === 'cylinder'
-          ? new THREE.CylinderGeometry(h[1], h[1], 2 * h[0], 24).rotateZ(-Math.PI / 2)
-          : new THREE.BoxGeometry(...h.map((v) => 2 * v));
+        shape.kind === 'sphere'
+          ? new THREE.SphereGeometry(h[0], 32, 24)
+          : shape.kind === 'cylinder'
+            ? new THREE.CylinderGeometry(h[1], h[1], 2 * h[0], 24).rotateZ(-Math.PI / 2)
+            : new THREE.BoxGeometry(...h.map((v) => 2 * v));
       const mesh = new THREE.Mesh(
         geometry,
         new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.35, depthWrite: false }),

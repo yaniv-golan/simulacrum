@@ -7,6 +7,16 @@ const help = (purpose, explanation, needs, steps, examples = []) => ({
   examples,
 });
 export const PART_HELP = {
+  ball: help(
+    'Rolls, falls and receives pushes',
+    'A solid sphere. Diameter and material determine mass; the surface it hits also affects bounce. The stripe shows real rotation.',
+    'A slope to roll down, or a spring-driven plate to push it.',
+    [
+      'Place above a beam or beside a launcher.',
+      'Run and watch it move.',
+      'Return to Build to change its material or diameter.',
+    ],
+  ),
   spacerBlock: help(
     'Separates nearby mounted hardware',
     'A solid 40 × 30 × 40 mm block. Its 30 mm thickness provides clearance between two mounting faces, with ordinary material mass and fixed connections.',

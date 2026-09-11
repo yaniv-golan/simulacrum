@@ -276,7 +276,13 @@ test('shape discriminator and cylinder equal radial dimensions are strict', asyn
   const missing = { ...body };
   delete missing.shape;
   await assert.rejects(createPhysicsWorld({ ...config, bodies: [missing] }));
-  await assert.rejects(createPhysicsWorld({ ...config, bodies: [{ ...body, shape: 'sphere' }] }));
+  await assert.rejects(createPhysicsWorld({ ...config, bodies: [{ ...body, shape: 'capsule' }] }));
+  await assert.rejects(
+    createPhysicsWorld({
+      ...config,
+      bodies: [{ ...body, shape: 'sphere', halfExtents: [0.1, 0.2, 0.1] }],
+    }),
+  );
   await assert.rejects(
     createPhysicsWorld({
       ...config,
@@ -976,7 +982,7 @@ test('tangent parallel convex cylinders retain a separating contact normal under
 test('launcher roller contacts resolve near-rest and bounded fast impacts without crossing or energy creation', async () => {
   const { createSpringLauncher } = await import('../src/model/fixtures/spring-launcher.mjs');
   const { compileAssembly } = await import('../src/model/assembly.mjs');
-  const bp = createSpringLauncher(),
+  const bp = createSpringLauncher({ projectile: 'gripWheel', catcher: false }),
     configuration = compileAssembly(bp).configuration;
   const authored = (id) =>
     structuredClone(configuration.bodies[bp.parts.findIndex((p) => p.id === id)]);

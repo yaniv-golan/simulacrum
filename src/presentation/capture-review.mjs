@@ -58,9 +58,11 @@ export function mountCaptureReview(data, index) {
         for (const primitive of part.primitives) {
           const [x, y, z] = primitive.halfExtents;
           const geometry =
-            primitive.kind === 'cylinder'
-              ? new THREE.CylinderGeometry(y, y, x * 2, 24).rotateZ(-Math.PI / 2)
-              : new THREE.BoxGeometry(x * 2, y * 2, z * 2);
+            primitive.kind === 'sphere'
+              ? new THREE.SphereGeometry(x, 32, 24)
+              : primitive.kind === 'cylinder'
+                ? new THREE.CylinderGeometry(y, y, x * 2, 24).rotateZ(-Math.PI / 2)
+                : new THREE.BoxGeometry(x * 2, y * 2, z * 2);
           const mesh = new THREE.Mesh(
             geometry,
             new THREE.MeshStandardMaterial({ color: 0xb1cad7, wireframe: false }),

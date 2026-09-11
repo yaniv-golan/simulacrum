@@ -83,7 +83,44 @@ export function validateSurfacePair(target, a, source, b) {
     reject('SURFACE_OUT_OF_BOUNDS');
 }
 
+// Exact point distance to the canonical solid, in its authored local frame.
+// The cylinder cross-section is the same regular polygon used by native contacts.
+function sphereOverlap(sphere, other) {
+  const radius = partPrimitives(sphere)[0].halfExtents[0];
+  const primitive = other.envelopeHalf ? null : partPrimitives(other)[0];
+  const kind = other.envelopeKind ?? primitive?.kind ?? 'box';
+  const half = other.envelopeHalf ?? primitive.halfExtents;
+  const delta = sphere.position.map((v, i) => v - other.position[i]);
+  if (kind === 'sphere') return Math.hypot(...delta) < radius + half[0] - 1e-7;
+  const local = rotateVector(
+    other.rotation.map((v, i) => (i < 3 ? -v : v)),
+    delta,
+  );
+  let distance;
+  if (kind === 'box')
+    distance = Math.hypot(...local.map((v, i) => Math.max(0, Math.abs(v) - half[i])));
+  else {
+    const [x, y, z] = local;
+    let inside = true,
+      radial = Infinity;
+    for (let i = 0; i < CYLINDER_SEGMENTS; i++) {
+      const angle = (2 * Math.PI * i) / CYLINDER_SEGMENTS,
+        next = (2 * Math.PI * (i + 1)) / CYLINDER_SEGMENTS;
+      const ay = half[1] * Math.cos(angle),
+        az = half[1] * Math.sin(angle);
+      const dy = half[1] * Math.cos(next) - ay,
+        dz = half[1] * Math.sin(next) - az;
+      if (dy * (z - az) - dz * (y - ay) < 0) inside = false;
+      const t = Math.max(0, Math.min(1, ((y - ay) * dy + (z - az) * dz) / (dy * dy + dz * dz)));
+      radial = Math.min(radial, Math.hypot(y - ay - t * dy, z - az - t * dz));
+    }
+    distance = Math.hypot(Math.max(0, Math.abs(x) - half[0]), inside ? 0 : radial);
+  }
+  return distance < radius - 1e-7;
+}
 export function solidsOverlap(a, b) {
+  if (!a.envelopeHalf && partPrimitives(a)[0].kind === 'sphere') return sphereOverlap(a, b);
+  if (!b.envelopeHalf && partPrimitives(b)[0].kind === 'sphere') return sphereOverlap(b, a);
   const box = (part) => {
     const h = part.envelopeHalf ?? partPrimitives(part)[0].halfExtents;
     return {

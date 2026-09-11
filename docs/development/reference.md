@@ -82,7 +82,7 @@ These are registered commands and checks, not evidence that they passed.
 | rejected-edit-atomicity | [createWorkshop](../../src/core/workshop.mjs) | invariant-controls |
 | preview-isolation | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [createAssemblyMirror](../../src/presentation/assembly-mirror.mjs), [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs) | invariant-controls, verify-mirror-browser |
 | input-cancellation | [createVehicleControls](../../src/presentation/vehicle-controls.mjs), [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs), [createReceiverArbiter](../../src/simulation/receiver-arbiter.mjs), [createPowerNetwork](../../src/simulation/power.mjs), [createSession](../../src/simulation/session.mjs) | invariant-controls, verify-ui-lifecycle-browser, verify-part-help-browser, verify-part-help-window, verify-spring-browser |
-| geometry-agreement | [partPrimitives](../../src/model/geometry.mjs), [compileAssembly](../../src/model/assembly.mjs) | invariant-controls, verify-property-focus, verify-surface-browser |
+| geometry-agreement | [partPrimitives](../../src/model/geometry.mjs), [compileAssembly](../../src/model/assembly.mjs) | invariant-controls, verify-property-focus, verify-surface-browser, verify-ball-browser |
 | identity-material-admission | [compileAssembly](../../src/model/assembly.mjs), [MATERIALS](../../src/model/catalog.mjs) | identity |
 | checkpoint-next-step | [createSession](../../src/simulation/session.mjs) | invariant-controls |
 | copied-graph-integrity | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [insertAssembly](../../src/model/reusable-assemblies.mjs), [createAssemblyPlacement](../../src/presentation/assembly-placement.mjs) | invariant-controls, verify-assemblies-browser, verify-assembly-ux-browser |
@@ -115,3 +115,4 @@ These are registered commands and checks, not evidence that they passed.
 | assembly-scenario-partition | [assemblyPartition](../../scripts/assembly-scenarios.mjs) | verification-scope-configuration |
 | native-qualification-controls | [qualifyNative](../../scripts/native-qualification.mjs) | verification-scope-configuration |
 | build-reset-precision | [command.type === 'build'](../../src/core/workshop.mjs) | verification-scope-configuration |
+| ball-workshop-experience | [createRetry](../../src/application/retry.mjs), [contactProperties](../../src/model/contact-properties.mjs), [createImpactEvents](../../src/presentation/impact-sound.mjs) | invariant-controls, verify-ball-browser, verify-remote-playtest |

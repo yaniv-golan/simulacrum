@@ -60,7 +60,7 @@ export function sceneParts(observation) {
       rotation: pose.rotation,
       primitives: primitives.map((p) => {
         if (
-          !['box', 'cylinder'].includes(p.kind) ||
+          !['box', 'cylinder', 'sphere'].includes(p.kind) ||
           !vector(p.halfExtents, 3) ||
           p.halfExtents.some((n) => n <= 0 || n > 100)
         )

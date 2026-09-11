@@ -23,6 +23,13 @@ export type ControlBinding = NonNullable<
   Extract<Part, { type: 'commandReceiver' }>['controlBinding']
 >;
 export type WorkshopCommand =
+  | {
+      type: 'contactProperty';
+      id: string;
+      primitive: 'body';
+      property: 'friction' | 'restitution';
+      value: number | null;
+    }
   | { type: 'choose-environment'; environment: 'flat' | 'rounded-bump' }
   | { type: 'create-assembly'; name: string; ids: string[]; ports: AssemblyPort[] }
   | { type: 'edit-assembly'; id: string; name: string; ids: string[]; ports: AssemblyPort[] }

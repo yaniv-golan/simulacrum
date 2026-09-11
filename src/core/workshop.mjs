@@ -14,6 +14,7 @@ import {
   createEmptyBlueprint,
   createPart,
   loadSave,
+  canonicalizeContactOverrides,
   availablePartName,
 } from '../model/blueprint.mjs';
 import { compileAssembly, snapConnection, proposeSurfaceMount } from '../model/assembly.mjs';
@@ -324,6 +325,28 @@ export async function createWorkshop(
           }).blueprint;
           break;
         }
+        case 'contactProperty': {
+          if (
+            keys !== 'id,primitive,property,type,value' ||
+            command.primitive !== 'body' ||
+            !['friction', 'restitution'].includes(command.property)
+          )
+            return result(false, 'INVALID_COMMAND', 'command');
+          const part = next.parts.find((p) => p.id === command.id);
+          if (!part) return result(false, 'UNKNOWN_PART', 'id');
+          if (command.value === null) {
+            if (part.authoredContact?.body) {
+              delete part.authoredContact.body[command.property];
+              if (!Object.keys(part.authoredContact.body).length) delete part.authoredContact.body;
+              if (!Object.keys(part.authoredContact).length) delete part.authoredContact;
+            }
+          } else {
+            part.authoredContact ??= {};
+            part.authoredContact.body ??= {};
+            part.authoredContact.body[command.property] = command.value;
+          }
+          break;
+        }
         case 'material': {
           if (keys !== 'id,material,primitive,type')
             return result(false, 'INVALID_COMMAND', 'command');
@@ -448,6 +471,7 @@ export async function createWorkshop(
         return result(true);
       }
       const nextCompiled = compileAssembly(next);
+      canonicalizeContactOverrides(next);
       const editing =
         command.type === 'load'
           ? { undoCount: 0, redoCount: 0 }

@@ -222,7 +222,10 @@ export function loadSave(input) {
     } catch (error) {
       return result(error.reasonCode, error.path ?? 'connections');
     }
-  return validation.ok ? { ...validation, blueprint: structuredClone(parsed) } : validation;
+  if (!validation.ok) return validation;
+  const blueprint = structuredClone(parsed);
+  canonicalizeContactOverrides(blueprint);
+  return { ...validation, blueprint };
 }
 function authored(value) {
   const validation = validateBlueprint(value);
@@ -289,5 +292,15 @@ export function availablePartName(parts, requested) {
     const suffix = `-${n}`,
       candidate = base.slice(0, 128 - suffix.length) + suffix;
     if (!used.has(candidate)) return candidate;
+  }
+}
+
+/** Remove empty optional records after admission, without changing explicit zero. */
+export function canonicalizeContactOverrides(blueprint) {
+  for (const part of blueprint.parts) {
+    if (!part.authoredContact) continue;
+    for (const [id, values] of Object.entries(part.authoredContact))
+      if (Object.keys(values).length === 0) delete part.authoredContact[id];
+    if (Object.keys(part.authoredContact).length === 0) delete part.authoredContact;
   }
 }

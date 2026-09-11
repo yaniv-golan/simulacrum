@@ -21,6 +21,7 @@ import { createVehicleControls } from './vehicle-controls.mjs';
 import { findPlacementOverlap } from '../model/surfaces.mjs';
 import { springInspector } from './spring-controls.mjs';
 import { createSpringView } from './spring-view.mjs';
+import { contactProperties } from '../model/contact-properties.mjs';
 import { partPrimitives, shaftSegments } from '../model/geometry.mjs';
 import * as THREE from 'three';
 import { createResourceCache, partAppearanceKey } from './resource-cache.mjs';
@@ -95,6 +96,7 @@ export function createWorkshopView(
   root,
   {
     onCommand,
+    onSound,
     onSave,
     onLoad,
     onFailure,
@@ -456,9 +458,17 @@ export function createWorkshopView(
       springExperiments.append(element('summary', '', 'Spring experiments'));
       addExample(
         springExperiments,
+        'Roll onto a spring',
+        'Experiment · Rolling and falling',
+        'A supported beam slopes toward a spring plate. Run to watch the Ball roll, leave the edge and land. Try again to repeat. In Build, change its material or the spring damping and predict what changes.',
+        'Try rolling drop',
+        { type: 'ball-drop-example', replace: true },
+      );
+      addExample(
+        springExperiments,
         'Spring launcher',
         'Experiment · Stored energy',
-        'Run to let the powered gate hold a compressed spring. Hold L to open the gate and release the separate wheel. The compressed spring stores energy; operating the gate uses battery power. Return to Build to reset this one-shot experiment.',
+        'Run to let the powered gate hold a compressed spring. Hold L to open the gate and send the Ball toward the catcher. The compressed spring stores energy; operating the gate uses battery power. Choose Try again for another shot. In Build, move the Catcher farther away and change the spring’s rest length to adjust preload.',
         'Try spring launcher',
         { type: 'spring-launcher-example', replace: true },
       );
@@ -1256,7 +1266,22 @@ export function createWorkshopView(
   });
   measurements.setAttribute('aria-pressed', 'false');
   modebar.append(measurements);
-  const vehicleControls = createVehicleControls({ send, select, container: machinePanels });
+  const machineControlRegion = element('div', 'machine-control-region');
+  machinePanels.append(machineControlRegion);
+  const vehicleControls = createVehicleControls({ send, select, container: machineControlRegion });
+  let retryCamera = null;
+  const retryButton = button('Try again', () => send({ type: 'retry' }));
+  retryButton.dataset.command = 'retry';
+  retryButton.title = 'Restart from your latest setup, keeping your edits and camera.';
+  const soundButton = button('Sound off', async () => {
+    const enabled = await onSound?.(soundButton.getAttribute('aria-pressed') !== 'true');
+    soundButton.setAttribute('aria-pressed', String(!!enabled));
+    soundButton.textContent = enabled ? 'Sound on' : 'Sound off';
+  });
+  soundButton.setAttribute('aria-pressed', 'false');
+  const attemptControls = element('div', 'attempt-controls');
+  attemptControls.append(retryButton, soundButton);
+  machineControlRegion.append(attemptControls);
   const connectionTest = createConnectionTest({
     holdReceiver: (id, duty) => vehicleControls.hold(id, duty),
     releaseReceiver: (id) => vehicleControls.releaseHold(id),
@@ -2190,7 +2215,7 @@ export function createWorkshopView(
       }
       right.append(controls);
     }
-    if (part.type === 'gripWheel') {
+    if (definition.parameterDefinitions.diameter) {
       const dimensions = element('div', 'setting primary-setting'),
         number = element('input'),
         slider = element('input'),
@@ -2201,14 +2226,14 @@ export function createWorkshopView(
       number.type = 'number';
       slider.type = 'range';
       for (const control of [number, slider]) {
-        control.min = '100';
-        control.max = '1000';
+        control.min = String(definition.parameterDefinitions.diameter.minimum * 1000);
+        control.max = String(definition.parameterDefinitions.diameter.maximum * 1000);
         control.step = control === number ? 'any' : '10';
         control.value = String(value);
         control.disabled = !editable;
         control.setAttribute(
           'aria-label',
-          control === number ? 'Wheel diameter (mm)' : 'Wheel diameter',
+          `${part.type === 'ball' ? 'Ball' : 'Wheel'} diameter${control === number ? ' (mm)' : ''}`,
         );
       }
       const candidate = () => ({
@@ -2226,14 +2251,14 @@ export function createWorkshopView(
       function previewDiameter(control) {
         number.value = slider.value = control.value;
         if (!number.checkValidity()) {
-          notice.textContent = 'Choose a diameter from 100 to 1,000 mm.';
+          notice.textContent = `Choose a diameter from ${number.min} to ${number.max} mm.`;
           return;
         }
         const next = candidate(),
           other = obstruction(next);
         editing.showPreview([next], { color: other ? 0xff836f : 0x8cf5cf });
         notice.textContent = other
-          ? `Too large here: overlaps ${other.name}. Choose a smaller diameter.`
+          ? `Too large here: overlaps ${other.name}. Move the part to make room, then resize.`
           : 'Size preview · release the slider or confirm the number to apply.';
         invalidateScene();
       }
@@ -2745,6 +2770,67 @@ export function createWorkshopView(
     );
     materialLabel.append(materials);
     settings.append(materialLabel);
+    const contact = element('details', 'contact-settings');
+    contact.append(element('summary', '', 'Contact settings'));
+    const effective = contactProperties(part, partPrimitives(part)[0]);
+    for (const [property, label, max] of [
+      ['restitution', 'Bounciness', 1],
+      ['friction', 'Grip', 2],
+    ]) {
+      const row = element('label', 'setting');
+      row.append(element('span', '', label));
+      const custom = part.authoredContact?.body?.[property] !== undefined;
+      const mode = element('select');
+      mode.setAttribute('aria-label', `${label} source`);
+      for (const [value, text] of [
+        ['default', 'Material default'],
+        ['custom', 'Custom'],
+      ]) {
+        const option = element('option', '', text);
+        option.value = value;
+        mode.append(option);
+      }
+      mode.value = custom ? 'custom' : 'default';
+      mode.disabled = editable === false;
+      const change = (value) =>
+        send({ type: 'contactProperty', id: part.id, primitive: 'body', property, value });
+      mode.onchange = () => change(mode.value === 'default' ? null : effective[property]);
+      const input = element('input');
+      input.type = 'number';
+      input.min = '0';
+      input.max = String(max);
+      input.step = 'any';
+      input.value = String(effective[property]);
+      input.setAttribute('aria-label', label);
+      input.disabled = !custom || !editable;
+      input.onchange = () => {
+        if (input.checkValidity() && Number.isFinite(input.valueAsNumber))
+          change(input.valueAsNumber);
+        else {
+          input.reportValidity();
+          input.value = String(effective[property]);
+        }
+      };
+      const slider = element('input');
+      slider.type = 'range';
+      slider.min = '0';
+      slider.max = String(max);
+      slider.step = '0.05';
+      slider.value = String(effective[property]);
+      slider.disabled = !custom || !editable;
+      slider.setAttribute('aria-label', `${label} slider`);
+      slider.onchange = () => change(slider.valueAsNumber);
+      row.append(mode, input);
+      contact.append(row, slider);
+    }
+    contact.append(
+      element(
+        'small',
+        '',
+        'Both surfaces affect bounce. Grip resists sliding; neither setting directly controls jump height. Custom values stay when you change material.',
+      ),
+    );
+    settings.append(contact);
     right.append(settings);
     connectionTest.render(frame, part, editable, right);
     const placement = element('details', 'placement-settings');
@@ -3113,15 +3199,21 @@ export function createWorkshopView(
           port.kind === 'power' ? 0xf8bd68 : 0x6edbd2,
           port.position,
         );
-    const outline = new THREE.LineSegments(
-      new THREE.EdgesGeometry(mesh.geometry, 25),
-      new THREE.LineBasicMaterial({
-        color: 0xffc778,
-        depthTest: false,
-        transparent: true,
-        opacity: 0.95,
-      }),
-    );
+    const outline =
+      partPrimitives(part)[0].kind === 'sphere'
+        ? new THREE.Mesh(
+            mesh.geometry.clone().scale(1.025, 1.025, 1.025),
+            new THREE.MeshBasicMaterial({ color: 0xffc778, side: THREE.BackSide }),
+          )
+        : new THREE.LineSegments(
+            new THREE.EdgesGeometry(mesh.geometry, 25),
+            new THREE.LineBasicMaterial({
+              color: 0xffc778,
+              depthTest: false,
+              transparent: true,
+              opacity: 0.95,
+            }),
+          );
     outline.renderOrder = 10;
     outline.visible = false;
     mesh.add(outline);
@@ -3137,11 +3229,13 @@ export function createWorkshopView(
     // CylinderGeometry starts on Y. Rotate the geometry, leaving the mesh frame
     // equal to the actual body frame with its cylinder along local X.
     const geometry =
-      definition.kind === 'cylinder'
-        ? new THREE.CylinderGeometry(radius, radius, 2 * halfLength, CYLINDER_SEGMENTS).rotateZ(
-            -Math.PI / 2,
-          )
-        : new THREE.BoxGeometry(...definition.halfExtents.map((value) => value * 2));
+      definition.kind === 'sphere'
+        ? new THREE.SphereGeometry(radius, 32, 24)
+        : definition.kind === 'cylinder'
+          ? new THREE.CylinderGeometry(radius, radius, 2 * halfLength, CYLINDER_SEGMENTS).rotateZ(
+              -Math.PI / 2,
+            )
+          : new THREE.BoxGeometry(...definition.halfExtents.map((value) => value * 2));
     const mesh = new THREE.Mesh(
       geometry,
       new THREE.MeshStandardMaterial({
@@ -3153,6 +3247,19 @@ export function createWorkshopView(
     mesh.userData.partId = part.id;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    if (definition.kind === 'sphere') {
+      const mark = new THREE.Mesh(
+        new THREE.SphereGeometry(radius * 1.01, 32, 16, 0, Math.PI / 5, 0.2, Math.PI - 0.4),
+        new THREE.MeshStandardMaterial({ color: 0xffbf69, roughness: 0.7 }),
+      );
+      const band = new THREE.Mesh(
+        new THREE.SphereGeometry(radius * 1.01, 32, 4, 0, 2 * Math.PI, 1.2, 0.16),
+        new THREE.MeshStandardMaterial({ color: 0xffbf69, roughness: 0.7 }),
+      );
+      band.rotation.z = 0.55;
+      mesh.add(mark, band);
+      mesh.userData.rotationMark = mark;
+    }
     if (definition.kind === 'cylinder') {
       // Painted radial marks reveal real rotation. They inherit the body's full
       // transform; there is no separate animation or simulated wheel angle.
@@ -3503,6 +3610,7 @@ export function createWorkshopView(
     }
     if (blueprint.parts.length > previousCount) editing.focus();
     else if (
+      !retryCamera &&
       previousMode &&
       previousMode !== 'build' &&
       frame.metadata.mode === 'build' &&
@@ -3529,6 +3637,8 @@ export function createWorkshopView(
     tickLabel.textContent = `Tick ${frame.tick}`;
     modeLabel.textContent =
       frame.status === 'failed' ? 'STOPPED' : frame.metadata.mode.toUpperCase();
+    retryButton.hidden = frame.metadata.mode === 'build';
+    retryButton.disabled = !!retryCamera;
     run.disabled = frame.metadata.mode === 'run';
     pause.disabled = frame.metadata.mode !== 'run';
     stepButton.disabled = frame.metadata.mode !== 'paused';
@@ -3892,6 +4002,20 @@ export function createWorkshopView(
   draw();
   return {
     render,
+    clearControls: () => vehicleControls.clear(),
+    beginRetry() {
+      retryCamera = { position: camera.position.clone(), target: controls.target.clone() };
+      retryButton.disabled = true;
+    },
+    endRetry() {
+      if (retryCamera) {
+        camera.position.copy(retryCamera.position);
+        controls.target.copy(retryCamera.target);
+        retryCamera = null;
+        followCenter = null;
+        invalidateScene();
+      }
+    },
     setMessage,
     setRecordingState,
     captureScreenshot: () => {
@@ -3962,6 +4086,18 @@ export function createWorkshopView(
       },
     }),
     readRenderedTransforms,
+    readRenderedShapes: () =>
+      [...meshes].map(([id, mesh]) => {
+        mesh.geometry.computeBoundingBox();
+        const size = mesh.geometry.boundingBox.getSize(new THREE.Vector3());
+        const mark = mesh.userData.rotationMark;
+        return {
+          id,
+          size: size.toArray(),
+          markRotation: mark ? mark.getWorldQuaternion(new THREE.Quaternion()).toArray() : null,
+          markVisible: mark ? mark.visible && mesh.visible : null,
+        };
+      }),
     readRenderedSpringEndpoints: () => springView.readRenderedEndpoints(),
     readRenderedCenters,
     camera,

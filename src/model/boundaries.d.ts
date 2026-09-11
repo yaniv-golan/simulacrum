@@ -7,7 +7,7 @@ export type DeepReadonly<T> = T extends object
   : T;
 export interface Primitive {
   id: 'body';
-  kind: 'box' | 'cylinder';
+  kind: 'box' | 'cylinder' | 'sphere';
   halfExtents: Vec3;
   position: Vec3;
   rotation: Quaternion;
@@ -44,7 +44,7 @@ export interface CatalogDefinition {
   controlBindingMilestone?: string;
 }
 export interface BodyConfiguration {
-  shape: 'box' | 'cylinder';
+  shape: 'box' | 'cylinder' | 'sphere';
   position: Position;
   rotation: Rotation;
   velocity: Position;

@@ -127,7 +127,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"19167319fbfb4dcddc7a6c0f70cdabd938b6c736c77a2bb42f7acb83490818e2","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"bee0ad2c93e05f3e9a784c532a39e3871e7944db038940eac8d1ab9a08bc9801","disposition":"still accurate","rationale":"externalConfig now omits npm scripts only for implicit external-package coverage without installation lifecycle hooks; the section already describes this distinction and retains explicit command/file dependencies. The spring.8 package and lockfile changes correctly invalidate actual dependency coverage; module-graph private-root rejection does not turn documentation receipts into behavior evidence."} -->
+<!-- doc-review {"version":1,"fingerprint":"8dc62b14650b97ae1ee88eab2066fb17e43d948f4a53bff30651dbc04d7f8c19","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"29e6f88c11907a1822f6b830845e5a2aaa14d182c6ed9da0e343fe679630a610","disposition":"still accurate","rationale":"The regenerated reference adds the Ball invariant and browser check. Prepare, individual dispositions, sidecar binding and final-source checking retain their documented behavior."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -227,7 +227,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"e7e903c78dfb447bfa7916e174b4885e6d3645af3147a8205389a3e9a3683ecf","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c0e43bedf8742c834194d7d50b09d0c6a4778906dbf7341588cbd0948792d699","disposition":"still accurate","rationale":"The manifest adds the second registered assembly browser partition with the same 60000 ms deadline and parallel workshop metadata. Both wrappers use the shared scenario owner and root-bound selection. The browser runner adds failure kind/check kind/context without changing dispatch policy; changed native dependency remains conservative shared coverage, not a local-only exemption."} -->
+<!-- doc-review {"version":1,"fingerprint":"237395b68d48ee1493470710390ea82d48b33abc2a1697bcd073ee00804e09da","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"3219914eb4518d2138ba15e9e280ceb6a4c42aa551208b85ce7da92890fabfef","disposition":"still accurate","rationale":"Reviewed the remote verifier new ordinary Ball fixture import and its existing upload-fault helper. Its read expressions still access generated capture fixtures, not public documentation or unit-test data; refreshed exact dependencies, consumer hashes and roots without broadening exclusions."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -337,7 +337,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"252d8a143cc43b8b8c0f0e448f2449dc92b80a13d3ad184e9770430ed15505c2","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"ef16fb90bcc8e5bbbcfdaab6ee374b9d7cd2401a0bde191a068a07bcd34508ed","disposition":"updated","rationale":"Clarified that originStillMatches is reported only after tier completion and candidate stability validation; npm installation or earlier failures still retain clone and error but need not compute this field. Reviewed exact index/blob/byte/mode/deletion capture, separate npm install, source drift checks and both 60-second assembly partitions against the named owners. Native package replacement remains included in the captured bytes."} -->
+<!-- doc-review {"version":1,"fingerprint":"4174e9e8c312eed2b9be7b0c97f2ece37e6598c4f93b11298fc8c5a0afb2ae22","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"663c7f7f39d49aedb7b765fa3a8f535f9355980624e4979c13b84c25d646517a","disposition":"still accurate","rationale":"Ball changes are carried into a separate worktree based on committed615279e. Completion uses the existing exact-byte candidate capture, separate dependency install and final origin/candidate comparisons; geometry admission does not change the capture contract."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
