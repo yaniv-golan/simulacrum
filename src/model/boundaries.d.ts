@@ -42,6 +42,7 @@ export interface CatalogDefinition {
   mountingPads?: Readonly<Record<string, readonly [number, number]>>;
   controlBindingDefault?: import('./generated/blueprint-types.js').Part['controlBinding'];
   controlBindingMilestone?: string;
+  sensorSupply?: Readonly<{ resistance: number; minVoltage: number }>;
 }
 export interface BodyConfiguration {
   shape: 'box' | 'cylinder' | 'sphere';

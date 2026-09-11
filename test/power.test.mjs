@@ -180,3 +180,26 @@ test('large kinetic energy cannot conceal a forged motor work identity', () => {
     /ENERGY_INVARIANT/,
   );
 });
+test('multiple sensors share a motor supply, brown out under its load and recover with conserved energy', () => {
+  const cfg = config();
+  cfg.cells[0].currentLimit = 0.1;
+  cfg.sensors = [4, 5].map((node) => ({
+    node,
+    body: node,
+    axis: [1, 0, 0],
+    supply: { resistance: 100, minVoltage: 1 },
+  }));
+  cfg.wires.push([0, 4], [0, 5]);
+  const network = createPowerNetwork(cfg);
+  const loaded = execute(network).telemetry;
+  assert.ok(loaded.sensors.every((s) => !s.powered && s.current > 0));
+  const recovered = execute(network, { commands: [{ node: 3, duty: 0 }] }).telemetry;
+  assert.ok(recovered.sensors.every((s) => s.powered));
+  close(recovered.sensors[0].current, recovered.sensors[1].current);
+  const spent = 100 - recovered.cells[0].energyJ;
+  const heat =
+    recovered.cells[0].heatJ +
+    recovered.sensors.reduce((sum, s) => sum + s.heatJ, 0) +
+    recovered.motors.reduce((sum, m) => sum + m.heatJ + m.driverHeatJ + m.energyResidualJ, 0);
+  close(spent, heat + recovered.motors.reduce((sum, m) => sum + m.shaftWorkJ, 0));
+});

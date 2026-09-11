@@ -91,7 +91,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"743947f54ebb40b738c8f87116dba9412dfa43369e997d16d433d3f70fc0216c","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"8482db0dd5a141837024e1fa35ce51189404631dc167bf2905af592c890cc56f","disposition":"still accurate","rationale":"The package adds the packet codec dependency while retaining all tier commands. Remote setup uses data recording, which does not change local versus final exit semantics or participant evidence boundaries."} -->
+<!-- doc-review {"version":1,"fingerprint":"d670a46ee185926489941bf95bbfbe3b96e9bb921e8427cb4ae34c820552f96f","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"c049c3854a068a32faa053715e4522ae6dd9581005725a6c519669d2df8af79c","disposition":"still accurate","rationale":"The new powered sensing and controller checks use existing test, browser and candidate entrypoints; Node 24.18 and the distinction between probes and completion remain unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -131,7 +131,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"d60e5fb3b854b642eab4779056c526eb67c5e60d22ee752d08d6a1bf32e17052","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"70b92a22cc6aeb703e570526e3d9acf9dec7f2408674b9d849728e58949c7ddb","disposition":"still accurate","rationale":"The generated reference now includes the combined manifest and package. Batch semantic dispositions and source-bound sidecars still work as described; packet dependencies change hashes, not the review procedure."} -->
+<!-- doc-review {"version":1,"fingerprint":"2d5492f2fda4ee38e8fdcdb677ea127fcc03ae69aa6195c31c51def7942fc1d6","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"5a47e9c57b3b75b31253aa3875a09e24a80618119eccce15f0f36c38a87bab2e","disposition":"still accurate","rationale":"The generated reference now includes the new status, capture and diagnostic controls. The regeneration-before-review sequence and individual source-bound dispositions remain unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -237,7 +237,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"ff6adbd52f2b6385205846b7962ab5eae4dd736678eb15372c755e34f2562eff","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c24cd88989b354a8374e100884724a22234d0d959dd912bdc02b167c7e2965be","disposition":"still accurate","rationale":"The manifest was reformatted by the pinned formatter without changing parsed JSON. Execution tiers, local scope declarations, witness fingerprints and conservative fallback are unchanged by formatting."} -->
+<!-- doc-review {"version":1,"fingerprint":"252c32a52cbffc5373385ed94e04e8f074e7791b710b21b2d0760080bfff7bce","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"3144769889b9a8f3c98a9faf34a6caa2a11949af91b9ff4bd115bf3a0cc2eb1a","disposition":"still accurate","rationale":"Seven caller-closure fingerprints were reviewed; their read expressions, exclusions and checks remain unchanged. Scope application still requires isolated invariant witnesses."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -399,7 +399,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"07da6668d560b77039140a138e937ab2debecdd0f9abcaaaca52a8427d2149dd","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"f1e312e1edb76ea03d0cf56bd885870becbf27e18ecc5f9a673dcabc0e6c35ac","disposition":"still accurate","rationale":"The same candidate commands capture the combined unstaged recording changes and index. Added compression dependency is installed from the pinned lockfile; identity and installation limitations remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"568b19fa111a162d6d3269d114fa14cf78ad422933cb1818659842474fd54996","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"0d7acd37d23b05c55c161d54de145325cdbaee3fb2e7193a286227abb99d1cc6","disposition":"still accurate","rationale":"New status schema types and lower sensor admission limits change candidate bytes but not isolated capture, dirty-source inclusion, source stability or the separate local and final tiers."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

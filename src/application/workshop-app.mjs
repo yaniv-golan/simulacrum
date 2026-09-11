@@ -1,3 +1,7 @@
+import { createControllerHistory } from './controller-history.mjs';
+import { createSensorWorkshop } from '../model/fixtures/sensor-workshop.mjs';
+import { createDeliveryEvaluator } from '../model/learning-evaluators.mjs';
+import { createLearningWorkspace } from './learning-workspace.mjs';
 import { createAssemblyLibrary } from './assembly-library.mjs';
 import { palettePlacement } from '../model/palette-placement.mjs';
 import { createSpringPlayground, createSpringStrut } from '../model/fixtures/spring-playground.mjs';
@@ -15,6 +19,10 @@ import {
   createPinEndedStrut,
   createActiveSuspensionBench,
 } from '../model/fixtures/articulated-suspension.mjs';
+import {
+  createLearningDelivery,
+  DELIVERY_EVALUATION,
+} from '../model/fixtures/learning-delivery.mjs';
 import { createDrivingMachine } from '../model/fixtures/driving-machine.mjs';
 import { createWorkshop } from '../core/workshop.mjs';
 import { createEmptyBlueprint, loadSave } from '../model/blueprint.mjs';
@@ -30,6 +38,16 @@ export async function mountWorkshopApp(root) {
   const buildId = document.querySelector('meta[name="build-id"]')?.content ?? 'unidentified';
   const workshop = await createWorkshop(createEmptyBlueprint('machine', 'My machine'), {
     build: buildId,
+  });
+  const controllerHistory = createControllerHistory();
+  let learningEvaluator = null;
+  const learning = createLearningWorkspace({
+    evaluateAttempt: (attempt, frame) => learningEvaluator?.(attempt, frame) ?? null,
+    readFrame: () => frame(),
+    send: (c) => onCommand(c),
+    storage: localStorage,
+    buildId,
+    changed: () => view?.refreshLearning?.(),
   });
   const metrics = [];
   let remote = null;
@@ -199,6 +217,7 @@ export async function mountWorkshopApp(root) {
   function render() {
     if (disposed) return;
     const measurements = workshop.observe('scene', 'full', measurementCursor);
+    controllerHistory.ingest(measurements);
     view.ingestMeasurements(measurements);
     const sounds = [];
     if (!measurements.ok || document.hidden) {
@@ -228,6 +247,7 @@ export async function mountWorkshopApp(root) {
       }
     }
     impactSound.play(sounds.slice(-4));
+    learning.ingest(measurements);
     measurementCursor = measurements.cursor;
     const observation = workshop.observe();
     view.render(observation.frames[0]);
@@ -378,6 +398,22 @@ export async function mountWorkshopApp(root) {
           rotation: [0, 0, 0, 1],
         };
       }
+      let nextLearningEvaluator = learningEvaluator;
+      if (
+        [
+          'load',
+          'new',
+          'driving-example',
+          'spring-example',
+          'ball-drop-example',
+          'spring-launcher-example',
+          'guided-suspension-example',
+          'rigid-suspension-example',
+          'articulated-suspension-example',
+          'active-suspension-example',
+        ].includes(command.type)
+      )
+        nextLearningEvaluator = null;
       const suspensionExample = {
         'guided-suspension-example': createSuspensionComparison,
         'rigid-suspension-example': () => createSuspensionComparison({ rigid: true }),
@@ -403,6 +439,21 @@ export async function mountWorkshopApp(root) {
         if (frame().metadata.blueprint.parts.length && command.replace !== true)
           return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
         command = { type: 'load', save: createSpringLauncher() };
+      }
+      if (command.type === 'sensor-rule-example') {
+        if (frame().metadata.blueprint.parts.length && command.replace !== true)
+          return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
+        nextLearningEvaluator = null;
+        command = { type: 'load', save: createSensorWorkshop(command.sensor) };
+      }
+      if (command.type === 'learning-delivery-example') {
+        if (frame().metadata.blueprint.parts.length && command.replace !== true)
+          return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
+        nextLearningEvaluator = createDeliveryEvaluator(DELIVERY_EVALUATION);
+        command = {
+          type: 'load',
+          save: createLearningDelivery({ policy: command.policy ?? 'learning' }),
+        };
       }
       if (command.type === 'driving-example') {
         if (frame().metadata.blueprint.parts.length && command.replace !== true)
@@ -464,11 +515,16 @@ export async function mountWorkshopApp(root) {
       if (command.type === 'undo') editMessage = 'Last edit undone. Choose Redo to apply it again.';
       if (command.type === 'redo') editMessage = 'Edit reapplied. Choose Undo to reverse it.';
       logInteraction('command-execute', { command, trigger: lastRecordedInput });
+      const resumeAfterRejectedRestore =
+        command.type === 'restore-build' && frame().metadata.mode === 'run' && !document.hidden;
+      if (command.type === 'restore-build') clock.pause();
       const result = await workshop.act(command);
       if (!result.ok) {
+        if (resumeAfterRejectedRestore) clock.start();
         view.setMessage(explainFailure(result, frame().metadata.blueprint));
         return result;
       }
+      learningEvaluator = nextLearningEvaluator;
       if (command.type === 'place') placementSequence++;
       if (command.type === 'run') {
         cancelRun('replaced');
@@ -486,7 +542,11 @@ export async function mountWorkshopApp(root) {
         } else clock.start();
       }
       render();
-      if (command.type === 'load') view.clearMeasurements();
+      if (['load', 'restore-build'].includes(command.type)) view.clearMeasurements();
+      if (command.type === 'restore-build') {
+        clock.pause();
+        cancelRun('restore-build');
+      }
       if (['place', 'connect', 'run'].includes(command.type)) reflection(command.type, timing);
       view.setMessage(
         command.type === 'run'
@@ -610,6 +670,8 @@ export async function mountWorkshopApp(root) {
     refreshRecording();
   }
   view = createWorkshopView(root, {
+    learning,
+    controllerHistory,
     onCommand,
     onSound: (enabled) => impactSound.enable(enabled),
     onSave,
@@ -666,6 +728,7 @@ export async function mountWorkshopApp(root) {
   return Object.freeze({
     dispose() {
       impactSound.dispose();
+      learning.dispose();
       remote?.dispose();
       disposed = true;
       document.removeEventListener('visibilitychange', visibilityChanged);

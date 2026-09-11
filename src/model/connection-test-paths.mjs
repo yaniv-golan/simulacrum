@@ -18,7 +18,9 @@ export function receiverControlOwner(blueprint, id) {
 /** @param {import('./boundaries.js').DeepReadonly<Blueprint>} blueprint @param {string} id */
 export function receiverAllowsManual(blueprint, id) {
   const owner = receiverControlOwner(blueprint, id);
-  return !owner || owner.type === 'positionRegulator';
+  return (
+    !owner || ['positionRegulator', 'learningController', 'logicController'].includes(owner.type)
+  );
 }
 
 /** Read authored connectivity only; this graph grants no actuator authority.

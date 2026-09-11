@@ -1,3 +1,4 @@
+import { channelDefinition } from './sensors.mjs';
 import { mechanicalGroup } from './connection-graph.mjs';
 import { compileBody } from './compile-body.mjs';
 import { partPrimitives } from './geometry.mjs';
@@ -208,8 +209,48 @@ export function compileAssembly(
       case 'commandReceiver':
         power.receivers.push({ node, duty: p.duty });
         break;
+      case 'learningController':
+        power.controllers.push({
+          node,
+          duty: 0,
+          learning: { model: part.learningModel ?? null, inputs: [], outputs: [] },
+        });
+        break;
+      case 'rangeSensor':
+      case 'linearMotionSensor':
+      case 'tiltSensor':
+      case 'jointAngleSensor':
+      case 'contactSensor': {
+        const kind = part.type.slice(0, -6);
+        power.sensors.push({
+          node,
+          body: node,
+          kind,
+          ...(['range', 'linearMotion', 'contact'].includes(kind) ? { origin: [0, 0, 0.025] } : {}),
+          ...(['range', 'contact'].includes(kind) ? { axis: [0, 0, 1] } : {}),
+          ...(kind === 'range' ? { range: p.range } : {}),
+          ...(kind === 'jointAngle' ? { joint: -1, zero: p.zero, sign: p.sign } : {}),
+          ...(kind === 'contact' ? { halfWidth: 0.025, halfHeight: 0.015 } : {}),
+        });
+        break;
+      }
+      case 'targetSensor':
+        power.sensors.push({
+          node,
+          kind: 'target',
+          body: node,
+          target: blueprint.parts.findIndex((x) => x.id === part.targetBinding),
+          range: p.range,
+        });
+        break;
       case 'logicController':
-        power.controllers.push({ node, duty: p.duty });
+        power.controllers.push({
+          node,
+          duty: p.duty,
+          ...(part.controllerProgram
+            ? { program: { authoring: part.controllerProgram, inputs: [], outputs: [] } }
+            : {}),
+        });
         break;
       case 'rotationSensor':
         power.sensors.push({
@@ -336,6 +377,85 @@ export function compileAssembly(
       });
     }
   }
+  for (const sensor of power.sensors)
+    sensor.supply = { ...CATALOG[blueprint.parts[sensor.node].type].sensorSupply };
+  // Channel bindings follow explicit endpoint names, never array positions or identity.
+  power.signalWires = power.signalWires.filter(
+    (w, i, all) => all.findIndex((v) => v[0] === w[0] && v[1] === w[1]) === i,
+  );
+  for (const controller of power.controllers.filter((c) => c.learning || c.program)) {
+    const part = blueprint.parts[controller.node],
+      policy = controller.learning ?? controller.program;
+    for (const edge of blueprint.connections.filter((c) => c.kind === 'signal')) {
+      const endpoints = [edge.a, edge.b];
+      const own = endpoints.find((e) => e.part === part.id);
+      if (!own) continue;
+      const other = endpoints.find((e) => e !== own),
+        node = blueprint.parts.findIndex((p) => p.id === other.part),
+        source = blueprint.parts[node];
+      if (own.port.startsWith('input') || own.port === 'signal') {
+        const channel = [
+          'targetSensor',
+          'rangeSensor',
+          'linearMotionSensor',
+          'tiltSensor',
+          'jointAngleSensor',
+          'contactSensor',
+        ].includes(source.type)
+          ? other.port
+          : source.type === 'rotationSensor' && other.port === 'signal'
+            ? 'angularSpeed'
+            : source.type === 'travelSensor'
+              ? other.port === 'signal'
+                ? 'length'
+                : 'speed'
+              : null;
+        if (!channel) reject('UNSUPPORTED_SIGNAL_TOPOLOGY', 'connections');
+        const { unit, scale, frame } = channelDefinition(
+          power.sensors.find((s) => s.node === node)?.kind,
+          channel,
+        );
+        policy.inputs.push({
+          port: own.port === 'signal' ? 'input1' : own.port,
+          node,
+          channel,
+          unit,
+          scale,
+          ...(controller.learning &&
+          part.learningModel?.version !== 1 &&
+          (part.learningModel?.version === 2 ||
+            blueprint.connections.some((wire) => {
+              if (wire.kind !== 'signal') return false;
+              const endpoint = [wire.a, wire.b].find(
+                (e) => e.part === part.id && (e.port.startsWith('input') || e.port === 'signal'),
+              );
+              if (!endpoint) return false;
+              const sourceEndpoint = wire.a === endpoint ? wire.b : wire.a;
+              return (
+                blueprint.parts.find((p) => p.id === sourceEndpoint.part)?.type !== 'targetSensor'
+              );
+            }))
+            ? {
+                kind: power.sensors.find((s) => s.node === node)?.kind ?? 'rotation',
+                frame,
+                encoding: 'value-status-v1',
+              }
+            : {}),
+        });
+      } else {
+        if (source.type !== 'commandReceiver' || other.port !== 'command')
+          reject('UNSUPPORTED_SIGNAL_TOPOLOGY', 'connections');
+        policy.outputs.push({
+          port: own.port === 'out' ? 'out1' : own.port,
+          node,
+          channel: 'duty',
+          unit: 'ratio',
+        });
+      }
+    }
+    policy.inputs.sort((a, b) => a.port.localeCompare(b.port));
+    policy.outputs.sort((a, b) => a.port.localeCompare(b.port));
+  }
   // Environment bodies follow authored bodies so every part and network index stays stable.
   for (const sensor of power.sensors.filter((s) => s.kind === 'travel')) {
     const binding = blueprint.parts[sensor.node].springBinding;
@@ -345,6 +465,17 @@ export function compileAssembly(
       const b = blueprint.parts.findIndex((p) => p.id === edge.b.part);
       sensor.joint = joints.findIndex(
         (j) => j.kind === 'spring' && ((j.a === a && j.b === b) || (j.a === b && j.b === a)),
+      );
+    }
+  }
+  for (const sensor of power.sensors.filter((s) => s.kind === 'jointAngle')) {
+    const binding = blueprint.parts[sensor.node].jointBinding;
+    const edge = blueprint.connections.find((c) => c.id === binding && c.kind === 'shaft');
+    if (edge) {
+      const a = blueprint.parts.findIndex((p) => p.id === edge.a.part),
+        b = blueprint.parts.findIndex((p) => p.id === edge.b.part);
+      sensor.joint = joints.findIndex(
+        (j) => j.kind === 'revolute' && ((j.a === a && j.b === b) || (j.a === b && j.b === a)),
       );
     }
   }

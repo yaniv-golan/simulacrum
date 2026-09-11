@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"193f2342f96689d0e3c0d289e9a4179d1da10866304187a3da3b54a35d654dbc","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"ff5cb493666854763f80bbb093120753e84dbee83a96b10448a7c519ac5cbc0d","disposition":"still accurate","rationale":"The Ball launcher replaces the loose wheel in the existing entry, and rolling/drop extends the existing Spring collection. Real catcher shortfall and preload repair are now demonstrated; no additional lesson or claimed human engagement was introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"735c1fa1802cc5cfcdda9a15eb49c6f688dddfe8162ed00480bd89567a3f425a","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"3b33968259da0234a2c51f2565450110fca816227c9c98feacaa20b650248776","disposition":"still accurate","rationale":"The existing optional sensor experiment collection is extended with a passive loaded-pad material comparison and specific mount/encoder edits. It adds no compulsory lesson or permanent panel; observed player understanding remains separate from browser automation."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"e855d661adbad560528ded50cd89c2e29afa78d29a062c72a2f0c89478bb0be7","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c9fc7ffb4464568650e6f478b861e1807fa4f6849ec5f7f8659b74173634be11","disposition":"updated","rationale":"Documented symmetric illustrative contact timbres and file-load/retry exclusion. Arbitrary valid numeric contact values are accepted while sliders remain coarse. Retry and Sound remain in the bounded machine-controls region; minimum-quality marking was visually inspected."} -->
+<!-- doc-review {"version":1,"fingerprint":"731447d76874767b109fb8f2b29f66c0c8e15ec033d33299fc793698af1ad5d7","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c589af7eab7de06ea5de26821ba9b149d86f2aa41687f89e4323ad254d220b64","disposition":"updated","rationale":"Documented status-based rules, persisted draft Undo, cancelable restoration and shared historical decision inspection. The loaded-pad experiment and tilt/encoder edits remain in the requested learning collection; repairs return through Build."} -->
 
 
 
@@ -135,12 +135,27 @@ and view groups at the workbench edge; selected properties and operations in the
 inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
 
-The selected receiver inspector owns Manual, Automatic and Off controls. Automatic
+The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic
 regulation shows measured and target total spring length, rather than extension from
 rest length. Invalid targets preserve the accepted setting and explain the allowed
 range. Pausing or losing window visibility leaves Automatic Off until deliberately
 rearmed; the paused inspector keeps Off visible. Travel-sensor binding is a Build-only
 operation in the selected sensor inspector. These controls leave with their selection.
+
+The selected sensor inspector owns power/status readouts and explicit spring/joint
+bindings. Requested range/contact/axis overlays leave with selection; the joint
+angle diagram distinguishes an unavailable reading from zero. The selected Logic
+Controller inspector owns rules, generated code, draft preservation and Build-only
+Apply. Rules may compare values or healthy missing-reading statuses. Editing code
+disables rules; persisted Undo and cancelable Restore preserve the prior source.
+Requested decision inspection shows the completed inputs, branch and applied
+ownership together. Recent historical decisions survive repairs and offer export;
+they do not replace live readings or become training examples.
+The requested teaching window owns training, frozen candidates, failed-attempt
+inspection and saved versions. Its live takeover strip remains reachable during
+teaching or an active attempt. None of these surfaces grants broader observations
+or inserts a permanent sensor dashboard. Optional contact/range/tilt/joint/motion
+variants stay within the learning example collection. The passive loaded-pad variant invites an aluminium-to-steel material edit; tilt and encoder variants invite mount, zero and sign changes.
 
 The document controls expose a Build-only Flat / Rounded bump environment choice;
 Run and Paused retain its value without admitting an edit. The saved preset supplies

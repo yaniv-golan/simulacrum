@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"b826150ac6e08306a5a8909f47147453377a584e86fa9a49de8e5e073538c730","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"b6566fc6bbf76a44dade6c916042f3ea4e0367c3816780f0b66e63b50ff5f2c1","disposition":"still accurate","rationale":"The merged AGENTS changes experimental publication requirements only. Runtime and layer authority remain in the named contracts and manifest reader."} -->
+<!-- doc-review {"version":1,"fingerprint":"3eb4a4b5bec6c3f046c43a2deff2858d719d6d5539c6ba4d2a1e98e2e3ae99f6","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"3e5f0babaf809f0723bc3389449ab8771bf5efd2fb998c24667fe247086af99c","disposition":"still accurate","rationale":"Runtime now documents invalid browser drafts, NaN truthiness, first observation capture and fault-only attempts. Ownership and qualification authorities remain the runtime contract and manifest."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"f02b039b0e5b0987c7e81890f6a485b2fc1502509286742f87754ddfb64a4fde","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"d2fc1566d0eb8998db051bddc575094ecd70a70d269a5a5541fe80ffa66c3e94","disposition":"updated","rationale":"Ball shape and authored contacts use canonical model admission and the physics door. Retry composes Build/Run and now excludes asynchronous file loads before either resets; blocked requests retain receipts. Audio receives both completed-contact materials, not identity or a live physics object."} -->
+<!-- doc-review {"version":1,"fingerprint":"75fb87a72bfc82a545e35529065e0b9dd587105b8432beddac214bb1dd499cea","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"89928dba7a07b08135355428f7f9db8cd959a3243b2ef7ec4c798bbb16e5cf5d","disposition":"still accurate","rationale":"Compiler truthiness changes emitted WASM inside the existing injected executor. UI invalid text stays outside installed state; the atomic core edit and single simulation tick route are unchanged."} -->
 
 
 
@@ -18,7 +18,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
 3. [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop) admits commands, prepares a candidate and commits accepted edits as one history operation. Rejected/no-op edits preserve their specified cursor/history effects; Undo/Redo restores authored candidates.
 4. [validateBlueprint](../../src/model/blueprint.mjs#symbol=validateBlueprint), [placement admission](../../src/model/surfaces.mjs) and [compileAssembly](../../src/model/assembly.mjs#symbol=compileAssembly) validate stored values, physical intersections and connection geometry before simulation receives configuration.
-5. [Session](../../src/simulation/session.mjs) owns stepping, checkpoint and completed publication. [Controllers](../../src/simulation/controllers.mjs) produce program commands; the [receiver arbiter](../../src/simulation/receiver-arbiter.mjs) owns Manual/Automatic/Off and prior-tick travel regulation; [power](../../src/simulation/power.mjs) resolves circuits; the [physics door](../../src/simulation/physics/world.mjs) alone imports the physics library. Completed contact collection uses the numeric [contact reader](../../src/simulation/physics/read-contacts.mjs); session assigns the completed interval and includes collection in integration timing.
+5. [Session](../../src/simulation/session.mjs) owns stepping, checkpoint and completed publication. [Controllers](../../src/simulation/controllers.mjs) produce program commands; the [receiver arbiter](../../src/simulation/receiver-arbiter.mjs) owns Manual/Automatic/Learned/Off, explicit takeover and prior-tick travel regulation; [power](../../src/simulation/power.mjs) resolves circuits; the [physics door](../../src/simulation/physics/world.mjs) alone imports the physics library. Completed contact collection uses the numeric [contact reader](../../src/simulation/physics/read-contacts.mjs); session assigns the completed interval and includes collection in integration timing.
 6. [Observation store](../../src/model/observation.mjs) publishes immutable completed snapshots. Presentation consumes these observations, never a live physics object. The application drains a separate observation cursor into selected-body Measurements so its 120 Hz samples do not depend on rendering cadence.
 
 The [assembly library](../../src/application/assembly-library.mjs#implementation) owns
@@ -66,7 +66,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"af1b578414b073a686db0eea5e3c325a5aad8d3451a3b67e1b79fcfba4a4d2e7","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"1916491817c94a69aedef0850325fc56f88712656b41707cf92e0cd45fa50879","disposition":"updated","rationale":"Added contactProperties as the common material/default override owner for compiler and inspector. Sphere geometry remains under partPrimitives and physical inertia under compilation and the physics door."} -->
+<!-- doc-review {"version":1,"fingerprint":"6680657e45b6b7d848170a62c768b59a5cb82ac2b3cdc1ca778e39259b328ddf","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"2d624e5bb254a0a659ff2f35f6fd34d8ee7663bb4ba459662a7e008bbf807872","disposition":"still accurate","rationale":"NaN truth conversion remains in the canonical compiler. Draft preservation and attempt retention stay with their existing owners; geometry, sensor sampling and receiver ownership are unchanged."} -->
 
 
 
@@ -102,5 +102,38 @@ replace the collision geometry. Preserve independent physical test calculations 
 sharing production policy: an oracle that calls the implementation proves little.
 
 A cell can supply multiple motors; multiple cells on one circuit remain unsupported.
-Shared motor torque accounting and the completed energy ledger belong to simulation.
+Shared motor torque and powered sensor-load accounting and the completed energy ledger belong to simulation.
 Ground contact and workshop motion are not Course qualification.
+
+
+## Shared sensing and behavior authoring
+<!-- doc-review {"version":1,"fingerprint":"0f4bff233f07eda5df1441f18bad20a2f83045677cada835fbeaacf2663e43ec","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"23cea49fb14e5372f31528719bef5bfdc897648b3d2511b32ee51e5ff178a413","disposition":"updated","rationale":"Documented exportable invalid editor text, canonical TypeScript truthiness, first valid observation capture and fault-only records outside training."} -->
+
+[Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
+[Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;
+[power](../../src/simulation/power.mjs) funds each sensor. The selected
+[sensor inspector](../../src/presentation/sensor-controls.mjs) and
+[measurement overlay](../../src/presentation/sensor-view.mjs) consume completed data.
+
+[Rules and draft admission](../../src/model/controller-authoring.mjs) own source
+identity. The [bounded compiler](../../src/scripting/controller-program.mjs) admits
+TypeScript and emits WASM; [executor construction](../../src/scripting/controller-executors.mjs)
+is injected by core. Simulation has no scripting import edge. The controller editor
+owns drafts and preservation, including exportable oversized text that cannot be applied;
+accepted programs use ordinary atomic Build history. Numeric truth tests retain
+TypeScript zero/NaN semantics.
+[Decision projection](../../src/model/controller-decision.mjs) reads completed inputs
+and applied ownership without evaluating a policy. Application-owned
+[recent history](../../src/application/controller-history.mjs) drains the completed
+cursor independently of training. Its [requested inspector](../../src/presentation/controller-history.mjs)
+retains historical source/reading distinctions and returns repairs to Build.
+
+[Learning model admission/training](../../src/model/learning-model.mjs) owns versioned
+feature transforms and frozen numeric weights. The [workspace](../../src/application/learning-workspace.mjs)
+owns teaching history, training candidates and user-requested installation. Capture
+starts with the first valid observation and retains fault-only attempts outside training. Independent
+[experiment evaluation](../../src/model/learning-evaluators.mjs) receives explicit role
+bindings from application selection and supplies no policy observations. Both regular
+and learned dispatch use the same receiver arbiter and powered actuator path. Optional
+sensor experiments extend the existing learning entry; they create no identity-based
+physics or permanent per-sensor dashboard.

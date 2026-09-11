@@ -3131,3 +3131,170 @@ body:has(.playtest-panel) .guide-feedback {
 .contact-settings input[type='range'] {
   width: 100%;
 }
+.learning-workspace {
+  position: absolute;
+  z-index: 45;
+  right: 16px;
+  top: 90px;
+  width: min(440px, calc(100% - 32px));
+  max-height: calc(100% - 110px);
+  background: #1a2f38;
+  color: #e4eef0;
+  border: 1px solid #75898b;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px #10232940;
+  display: flex;
+  flex-direction: column;
+}
+.learning-workspace[hidden],
+.learning-live[hidden] {
+  display: none;
+}
+.learning-workspace header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  gap: 10px;
+}
+.learning-workspace h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.learning-status {
+  padding: 0 12px;
+  margin: 0 0 8px;
+}
+.learning-body {
+  overflow: auto;
+  padding: 0 12px 12px;
+}
+.learning-body nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-bottom: 1px solid #a9b6b6;
+  padding-bottom: 8px;
+}
+.learning-body button,
+.learning-body input,
+.learning-body select {
+  margin: 4px;
+  max-width: 100%;
+}
+.learning-body label {
+  display: block;
+}
+.learning-body pre {
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.learning-card {
+  border-top: 1px solid #a9b6b6;
+  padding: 10px 0;
+  overflow-wrap: anywhere;
+}
+.learning-card input[type='range'] {
+  width: 95%;
+}
+.learning-workspace:has(~ .learning-live:not([hidden])) {
+  max-height: calc(100% - 240px);
+}
+.learning-live {
+  position: absolute;
+  z-index: 46;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(650px, calc(100% - 32px));
+  max-height: 120px;
+  overflow: auto;
+  padding: 8px 12px;
+  background: #163e43;
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.learning-live > span {
+  flex: 0 0 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.learning-workspace button {
+  color: #e4eef0;
+}
+.learning-workspace button:disabled {
+  color: #9daeb2;
+  opacity: 0.65;
+}
+.learning-body {
+  line-height: 1.45;
+}
+.learning-card > strong {
+  display: block;
+  margin: 4px 0 8px;
+}
+.learning-body input:not([type='range']),
+.learning-body select {
+  background: #10242b;
+  color: #e4eef0;
+  padding: 6px;
+  border: 1px solid #73878b;
+  border-radius: 4px;
+}
+.learning-body input::placeholder {
+  color: #a8babe;
+}
+
+.controller-editor {
+  border-top: 1px solid #789;
+  margin-top: 12px;
+  padding-top: 8px;
+}
+.controller-editor textarea {
+  box-sizing: border-box;
+  width: 100%;
+  font: 12px monospace;
+  background: #132830;
+  color: #eef5f6;
+}
+.controller-editor fieldset {
+  min-width: 0;
+  padding: 6px;
+}
+.controller-editor label {
+  display: block;
+  margin: 4px 0;
+}
+.controller-editor input,
+.controller-editor select {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+.controller-editor button {
+  margin: 4px 2px;
+}
+.controller-editor pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.controller-rule {
+  border-bottom: 1px solid #789;
+  padding-bottom: 8px;
+}
+
+.controller-live,
+.controller-history pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  line-height: 1.45;
+}
+.controller-history select {
+  max-width: 100%;
+}

@@ -18,7 +18,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"38b278f90f9cfbdde37ad024b18fac04194ef5087111d7260832ac78bee599bd","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"07784d9b850ff3d56756ca8fe45e79d839a4be61fae5778aa35bb7a338d99b57","disposition":"still accurate","rationale":"The fflate dependency affects recording transport only. Catalog/schema/geometry ownership and the preserved partitioned Ball test bodies remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a6e5e3e22af03101393718c4f108069814fa49d4c1a728cf3c52eb22407765d4","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"e9909a90546769bf57c881a005b5e14300c664c19b0c849a39ff21c836379ca2","disposition":"still accurate","rationale":"No part, geometry, schema or physical configuration changed. The compiler emits corrected numeric truth tests; ordinary whole-candidate part admission is unchanged."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -48,7 +48,7 @@ canonicalizes empty contact records without changing explicit zero or mutating t
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"4b48f2524dd396db33402bc7945eb13548860475f943dd5ab8e3282e457d42ce","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"06d306d4dc4cd32da0d8cfd9eca12e4093129ff23091d8db713909ebaff96116","disposition":"still accurate","rationale":"contactProperty uses strict command keys, full candidate validation, normal undo history and null removal of an override. It conforms to the existing command recipe without a second admission owner."} -->
+<!-- doc-review {"version":1,"fingerprint":"2f38454af7d3e717e168a58367181537bd62558960a21482befbe043f49c3a2e","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"c929abc3151b0713464b9adb72c568f02d22c7dcb84f0de88f96c169f0a58ea3","disposition":"still accurate","rationale":"Oversized text cannot call installation; admitted drafts still use the same atomic Build-only command. No command shapes or rejected-state contracts changed."} -->
 
 
 
@@ -65,7 +65,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"5932c5b18ea9c17a3198b065f9f3025d9899a3ed2f94821ce58ac21d16e3320b","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"e126c7d9f0b8e0058ac5b02ce2a3de776cd578e47bd50d97bfc2f8e629a50745","disposition":"still accurate","rationale":"The integration removes a duplicate review comment without changing recipe guidance. Artifact-owned verifier outputs and recording compression do not alter preview, cancellation, command admission or help input ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"defb1f2bbcdf9b5a5f955f26b086650061d45870d1f65892653bac6c94dff9a3","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"417a8afecdb5b3b27a95f7de51f9dbfe9dfabd10b644bbaa3414b2b67b36e287","disposition":"still accurate","rationale":"The existing selected-controller editor retains invalid text and exposes recovery without a new surface. Core submission and keyboard/receiver authority remain unchanged."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -114,11 +114,11 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"9142468e01e6c9bc1e16de2bd4b3db9ace428ba56b97a98b3042a5f71d95a8ef","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"8d141d7d35d7a4b3193ad1444d6a843e978efe7f38847f56f85528e69b582bcb","disposition":"still accurate","rationale":"Impact sound consumes completed contact rows with missing-data invalidation; it adds no diagnostic inference or physical write. Selected-body measurements retain their existing numeric accumulator and sampling definition."} -->
+<!-- doc-review {"version":1,"fingerprint":"56815cb5ff6acb742ea5734634d5ef57d8361cb5752a4a3b38aee2fa6c5541c5","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"22f6bfbe1cc2b7bf18614004ba343e2a0b2a36addae28c864a56a73cc15d22f4","disposition":"still accurate","rationale":"Fault-only attempts retain historical faults with empty training rows. Existing completed-value projection and Build repair navigation remain the diagnostic route."} -->
 
 
 
-Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
+For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
 owns navigation and wording layout. Do not repair authored state or infer intention
 from a machine name.
@@ -128,6 +128,11 @@ assembly and suggest checking direction. Read [opposed-drive tests](../../test/o
 and [motion diagnostics tests](../../test/motion-diagnostics.test.mjs). Include a real
 symptom, a similar valid configuration that must remain quiet, and missing-data cases.
 A symptom is not proof of the intended mechanism or cause.
+
+For controller decisions, use [completed decision projection](../../src/model/controller-decision.mjs)
+and [application history](../../src/application/controller-history.mjs). Keep diagnostic
+fault records separate from teaching rows and retain the historical source; returning
+to Build for repair must not reinterpret old observations with a new program.
 
 Selected-body Measurements uses the [numeric accumulator](../../src/model/motion-readout.mjs)
 and [presentation lifecycle](../../src/presentation/motion-readout.mjs). The application
@@ -139,7 +144,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"5393a71878293ff61504eae5b41cdeb8c105a5e1314ccf28c34fe47d5248b6c4","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"59cef390ecfd8c978aa67ec21a1031d6ea747d66839ed6f8d9ee5e8fbf24157f","disposition":"updated","rationale":"Added native sphere mass and inertia controls, pair restitution, roll/slide, checkpoint and clock comparisons, and the bounded sphere-versus-plate CCD policy. High-speed sphere-sphere sweeps remain explicitly unqualified; solver subdivisions and pass counts are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"723993843ef13b1f58cdaa51713a51bd9569908c7258bfdaa543284cf21d2b15","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"d08ea4ec6127befe89a65517924fe739bd92b49089f31c1ff5922f81cfdc0097","disposition":"still accurate","rationale":"Changes affect emitted control conditions and application capture, with no physics door, integration, power, contact or law edits. Existing physical verification requirements remain applicable."} -->
 
 
 
@@ -237,7 +242,7 @@ settings and slop. Re-run existing contact/constraint cases when changing this p
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"bf9fda007f35aba4efb3700cc43ebfb97e9bb16569bbd89b1e425c432f3286e8","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"0ac4ec5e61953fe7f323b25a11162141d26906f3cef441e98a6340bb1de8f42e","disposition":"still accurate","rationale":"The combined browser evidence closure changes artifact output paths and source dependencies, not assembly capture, copied references or atomic insertion. The assembly UX partition and its original assertions remain intact."} -->
+<!-- doc-review {"version":1,"fingerprint":"03fdda4420c30645d572380c707c02e7e64f9b4bbb5f2a67112a6c3690ca596c","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"358fe54cf0b8cf07f2e7d929709236f7071e042dcb7f21047f64cd1deb801985","disposition":"still accurate","rationale":"Invalid browser text is not authored machine state. Installed programs and sensor references still copy through existing graph operations; no endpoint remapping or transaction changes."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -246,9 +251,7 @@ which edges an operation may copy. The classifier reports facts; the operation o
 whether a crossing edge is omitted, rejected or explicitly rebound. Mount admission
 must retain its stricter aligned-edge eligibility when testing alternate support paths.
 
-Authored references also include a travel sensor's `springBinding` connection ID.
-Copy and mirror operations remap bindings to copied internal spring connections and
-clear bindings when that connection is omitted. Regulator sensor association comes
+Authored references include travel `springBinding` and encoder `jointBinding` connection IDs, and a legacy paired sensor's `targetBinding` part ID. Copy and mirror operations remap bindings to copied internal connections/parts and clear bindings when the referenced object is omitted. Installed learning feature definitions remain tied to named channels, never array position. Regulator sensor association comes
 from ordinary wiring. Check these references alongside endpoint remapping so an
 otherwise valid copy cannot silently measure the source machine's spring.
 Environment belongs to the receiving blueprint, not a captured assembly. Preserve
@@ -332,7 +335,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"a6856b1d2f14aa9c63a8197d391ea9332a2189ed5cb92e7076761f1720f388d3","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"9ab994d1d2e53a27a07b330970bfe19456f0a94f67e0312cbf888d0dfde87109","disposition":"still accurate","rationale":"Only recording dependencies and source/evidence bookkeeping changed in this recipe closure. Wiring visibility, GPU ownership and every stated spring timing budget remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"9a710b975c1047d8bc4edf31aeee73ce96009903cd5c5d8096e9c436ff0a5584","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"ba403dc2dca994e36ebf05f6a55d1436073d671f79df9046bd666f01cfbf1bc2","disposition":"still accurate","rationale":"The changes add requested textual decision history and wrapped readouts. Sensor overlays still consume completed telemetry; contact-query caching supplies the same measurements and changes no renderer geometry or visibility ownership."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

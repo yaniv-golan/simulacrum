@@ -61,7 +61,13 @@ export function captureAssembly(input, { name, ids, ports }) {
     version: bp.version,
     id: 'definition',
     name,
-    parts: bp.parts.filter((part) => selected.has(part.id)),
+    parts: bp.parts
+      .filter((part) => selected.has(part.id))
+      .map((part) => {
+        const copy = structuredClone(part);
+        if (copy.targetBinding && !selected.has(copy.targetBinding)) delete copy.targetBinding;
+        return copy;
+      }),
     connections: edges
       .filter((edge) => edge.classification === 'internal')
       .map((edge) => edge.connection),
@@ -97,6 +103,7 @@ export function insertAssembly(input, definition, position, rotation) {
   const frame = { position, rotation };
   // Shape validation alone: repositioning only the origin need not preserve connections.
   const targetPart = { ...structuredClone(origin), position, rotation };
+  delete targetPart.targetBinding;
   admitted({
     version: bp.version,
     id: 'frame',
@@ -119,12 +126,22 @@ export function insertAssembly(input, definition, position, rotation) {
     bp.connections.push(copy);
   }
   const instance = structuredClone(group);
-  for (const part of bp.parts.filter((p) => Object.values(idMap).includes(p.id)))
+  for (const part of bp.parts.filter((p) => Object.values(idMap).includes(p.id))) {
+    if (part.targetBinding) {
+      if (idMap[part.targetBinding]) part.targetBinding = idMap[part.targetBinding];
+      else delete part.targetBinding;
+    }
     if (part.springBinding) {
       if (connectionIdMap[part.springBinding])
         part.springBinding = connectionIdMap[part.springBinding];
       else delete part.springBinding;
     }
+    if (part.jointBinding) {
+      if (connectionIdMap[part.jointBinding])
+        part.jointBinding = connectionIdMap[part.jointBinding];
+      else delete part.jointBinding;
+    }
+  }
   instance.name = availablePartName(bp.assemblies ?? [], group.name);
   instance.id = fresh(new Set((bp.assemblies ?? []).map((group) => group.id)), 'assembly');
   instance.ids = group.ids.map((id) => idMap[id]);

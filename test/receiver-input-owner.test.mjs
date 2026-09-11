@@ -175,11 +175,7 @@ controlled.connections.push({
 const owned = { ...frame, metadata: { ...frame.metadata, blueprint: controlled } };
 keyboard.update(owned);
 const section = tester.render(owned, controlled.parts[0], false);
-assert(
-  nodes(section).some(
-    (n) => n.textContent === 'Test uses the wired controller. Manual override is unavailable.',
-  ),
-);
+assert(nodes(section).some((n) => n.textContent === 'Hold +'));
 window.dispatchEvent(event('keydown', { code: 'KeyW', key: 'w' }));
 await flush();
 await keyboard.drive('r', -1);
@@ -194,8 +190,11 @@ assert.deepEqual(
   [],
   'wired controller may legally omit this tick',
 );
-check(commands, []);
-assert(nodes(root).some((n) => n.textContent === 'Controlled by Controller'));
+assert(
+  commands.some((c) => c.type === 'control' && c.id === 'r'),
+  'keys and hold controls retain explicit manual takeover',
+);
+assert(!nodes(root).some((n) => n.textContent === 'Controlled by Controller'));
 keyboard.dispose();
 tester.dispose();
 

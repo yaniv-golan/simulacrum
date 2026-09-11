@@ -847,6 +847,12 @@ const automaticParts = [
 ];
 const automaticConnections = [
   ...manualConnections,
+  {
+    id: 'travel-power',
+    kind: 'power',
+    a: { part: 'rocker-cell', port: 'power' },
+    b: { part: 'travel', port: 'power' },
+  },
   ...[
     {
       id: 'mount-travel',

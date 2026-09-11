@@ -101,6 +101,7 @@ export async function automatic(material, disabled = false) {
     s = await createSession(configuration(bp)),
     windows = [];
   try {
+    s.step(2); // Establish completed operating power before explicit arming.
     assert.ok(s.act({ type: 'receiver-mode', node, mode: 'automatic' }).ok);
     for (const target of [0.26, 0.3, 0.33]) {
       assert.ok(s.act({ type: 'regulator-target', node, target }).ok);
@@ -190,6 +191,7 @@ export async function loadRejection(variant = 'automatic') {
     arm = bp.parts.findIndex((p) => p.id === 'arm');
   const windows = [];
   try {
+    s.step(2); // Establish completed operating power before explicit arming.
     assert.ok(s.act({ type: 'receiver-mode', node, mode: 'automatic' }).ok);
     const targetReceipt = s.act({ type: 'regulator-target', node, target: 0.3 });
     assert.equal(targetReceipt.ok, variant !== 'disconnected');

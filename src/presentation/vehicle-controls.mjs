@@ -197,8 +197,8 @@ export function createVehicleControls({ send, select, container }) {
     if (frame?.metadata.mode === 'run') send({ type: 'suspend-controls' });
     return clear();
   }
-  window.addEventListener('keydown', keydown, true);
-  window.addEventListener('keyup', keyup, true);
+  window.addEventListener('keydown', keydown, { capture: true });
+  window.addEventListener('keyup', keyup, { capture: true });
   window.addEventListener('blur', suspend);
   document.addEventListener('focusin', focus);
   document.addEventListener('visibilitychange', visibility);
@@ -224,7 +224,10 @@ export function createVehicleControls({ send, select, container }) {
     inspector(part, target, editable) {
       const section = el('details', '', 'receiver-controls');
       section.append(el('summary', `Keyboard settings · ${keyText(bindingOf(part))}`));
-      if (owner(part.id) && owner(part.id).type !== 'positionRegulator')
+      if (
+        owner(part.id) &&
+        !['positionRegulator', 'learningController'].includes(owner(part.id).type)
+      )
         section.append(
           el(
             'p',
@@ -356,8 +359,8 @@ export function createVehicleControls({ send, select, container }) {
       target.append(anchor);
     },
     dispose() {
-      window.removeEventListener('keydown', keydown, true);
-      window.removeEventListener('keyup', keyup, true);
+      window.removeEventListener('keydown', keydown, { capture: true });
+      window.removeEventListener('keyup', keyup, { capture: true });
       window.removeEventListener('blur', suspend);
       document.removeEventListener('focusin', focus);
       document.removeEventListener('visibilitychange', visibility);

@@ -4,7 +4,7 @@
     "scripts/playtest/release-policy.json": "d88a3074e0095b3fb3646064d55f3b8e260d1c88680f55d8f72fea0c048b9275",
     "package-lock.json": "e2a9be6c485d53a4d363cb4fb0ccf00c5695891bd61ddcea2ae29d89f485be8a",
     "package.json": "835e65cd75af1fddff38db8924ddfaf887b181101fbcb0668fba738bda6b6fc4",
-    "scripts/module-graph.mjs": "e9930c64623e3515ed9949b07530e9cbcfc70caf6da86e484402625045e0dd0e",
+    "scripts/module-graph.mjs": "7feb25de7c3c5dbe100ec128f394d727bed0def6511e22c479a48f87a1848e54",
     "scripts/playtest/calibration-evidence.mjs": "52e563f7e05f7043be6097f57b71f7bc85fb1c76229ba15dd8374807396a4df0",
     "scripts/playtest/capture-samples.mjs": "55daead9d88a9afe2a2e4eeb34b473cf3fe9e54e7b8098831cac39c0c299c937",
     "scripts/playtest/corpus.mjs": "1348f094e30af0b2eb9b710da15d66f41d0b8a2af4f4482a8c497b4b22c50872",

@@ -19,8 +19,8 @@ try {
   browserEvidence.assert('equal', [served, build, 'served build must match source']);
   browserEvidence.assert('equal', [
     await page.locator('[data-part-type="logicController"]').count(),
-    0,
-    'a controller with no player execution surface must not be offered as usable',
+    1,
+    'the controller is available with its Rules and Code authoring surface',
   ]);
   for (const type of ['powerCell', 'poweredMotor', 'gripWheel']) {
     await page.locator(`[data-part-type="${type}"]`).click();

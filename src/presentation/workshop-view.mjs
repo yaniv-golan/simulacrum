@@ -1,3 +1,7 @@
+import { mountControllerHistory } from './controller-history.mjs';
+import { sensorInspector, updateSensorInspector } from './sensor-controls.mjs';
+import { createSensorView } from './sensor-view.mjs';
+import { createControllerEditor, updateControllerEditor } from './controller-editor.mjs';
 import {
   createGraphicsQuality,
   applyGraphicsQuality,
@@ -22,6 +26,7 @@ import { findPlacementOverlap } from '../model/surfaces.mjs';
 import { springInspector } from './spring-controls.mjs';
 import { createSpringView } from './spring-view.mjs';
 import { contactProperties } from '../model/contact-properties.mjs';
+import { createLearningControls, targetSensorInspector } from './learning-controls.mjs';
 import { partPrimitives, shaftSegments } from '../model/geometry.mjs';
 import * as THREE from 'three';
 import { createResourceCache, partAppearanceKey } from './resource-cache.mjs';
@@ -105,10 +110,15 @@ export function createWorkshopView(
     getCursor,
     getAssemblyFrame,
     assemblyLibrary,
+    learning,
+    controllerHistory,
     builtInAssemblies = [],
     guideSteps = [],
   },
 ) {
+  const learningControls = learning
+    ? createLearningControls(root, learning, { inspectPart: (id) => select(id) })
+    : null;
   const wiringPreferences = createWiringPreferences();
   root.classList.add('workshop');
   let explodeStarted = 0,
@@ -186,6 +196,7 @@ export function createWorkshopView(
       return result;
     }
   };
+  const controllerEditor = createControllerEditor({ send });
   const partThumbnails = new Map();
   function partIcon(type) {
     const img = element('img', 'part-icon');
@@ -428,6 +439,7 @@ export function createWorkshopView(
           launch,
         );
         parent.append(card);
+        return card;
       };
       addExample(
         guide,
@@ -446,6 +458,57 @@ export function createWorkshopView(
         'Try driving example',
         { type: 'driving-example', replace: true },
       );
+      const sensingCard = addExample(
+        guide,
+        'Teach a cargo delivery',
+        'Editable challenge · Keyboard driving first',
+        'Open a cart with a loose package and a bay marker. Select Delivery learner, then Teach a controller. Drive forward with W; stop near the marker without losing the package. Stop teaching, return to Build, train and install a candidate, then Try it. Inspect failures and change examples, sensing or construction. The powered forward range sensor sees the first physical obstacle; closing speed is relative to that surface.',
+        'Try learning delivery',
+        { type: 'learning-delivery-example', replace: true },
+      );
+      const variants = element('details');
+      variants.append(element('summary', '', 'Start with a rule · optional sensor experiments'));
+      variants.append(
+        element(
+          'p',
+          '',
+          'Try contact → reverse first. Select Change this rule, change one value, then Apply in Build. Run and enable Automatic on both receivers. Your driving keys always take over. Use the range variant to anticipate the obstacle; inspect tilt, axle angle or motion without a balancing challenge.',
+        ),
+      );
+      for (const [sensor, label] of [
+        ['contact', 'Try contact rules'],
+        ['range', 'Try range rules'],
+        ['contactLoad', 'Feel the pad load'],
+        ['tilt', 'Inspect tilt'],
+        ['jointAngle', 'Inspect axle angle'],
+        ['linearMotion', 'Inspect linear motion'],
+      ]) {
+        const launch = button(label, () =>
+          chooseExample(
+            { name: label, command: { type: 'sensor-rule-example', sensor, replace: true } },
+            launch,
+          ),
+        );
+        variants.append(launch);
+      }
+      variants.append(
+        element(
+          'p',
+          '',
+          'Predict, then change one thing in Build: on the load bench, change the plate material from aluminium to steel and compare normal load. On the tilt rover, use Adjust mount to rotate the sensor, then compare its gravity-relative reading. On the axle rover, change the encoder Zero or Sign in Engineering details and watch the same rotating axle. Undo restores each edit; opening another example replaces the machine.',
+        ),
+      );
+      const baseline = button('Try delivery rules', () =>
+        chooseExample(
+          {
+            name: 'Delivery with rules',
+            command: { type: 'learning-delivery-example', policy: 'rules', replace: true },
+          },
+          baseline,
+        ),
+      );
+      variants.append(baseline);
+      sensingCard.append(variants);
       addExample(
         guide,
         'Make a spring settle',
@@ -859,6 +922,7 @@ export function createWorkshopView(
   renderer.domElement.setAttribute('aria-label', 'Machine view');
   stage.append(renderer.domElement);
   const scene = new THREE.Scene();
+  const sensorView = createSensorView(scene);
   const springView = createSpringView(scene);
   scene.fog = new THREE.Fog(0x18252d, 8, 30);
   const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 100);
@@ -1546,6 +1610,9 @@ export function createWorkshopView(
     editing?.clearPreview();
     inspectorKey = '';
     refreshInspector();
+    updateSensorInspector(frame, right);
+    updateControllerEditor(frame, right);
+    sensorView.update(frame, selected);
     refreshLive();
     refreshSprings();
     refreshPartList();
@@ -1814,6 +1881,7 @@ export function createWorkshopView(
   function refreshInspector() {
     if (!frame) return;
     right.hidden = !!assemblies?.contextual() || !!assemblyPlacement?.active();
+    sensorView.update(frame, right.hidden ? null : selected);
     if (right.hidden) return;
     const parts = frame.metadata.blueprint.parts,
       part = parts.find((item) => item.id === selected),
@@ -2302,6 +2370,12 @@ export function createWorkshopView(
       }
     }
     springInspector({ part, right, editable, element, send });
+    targetSensorInspector({ part, blueprint: frame.metadata.blueprint, right, editable, send });
+    if (part.type === 'learningController' && learningControls) {
+      const teach = button('Teach a controller', () => learningControls.open(part.id, teach));
+      teach.dataset.learningOpener = part.id;
+      right.append(teach);
+    }
     if (part.type === 'travelSensor') {
       const label = element('label', 'setting');
       label.append(element('span', '', 'Measured spring'));
@@ -2332,17 +2406,21 @@ export function createWorkshopView(
       label.append(binding);
       right.append(label);
     }
-    if (part.type === 'logicController')
-      right.append(
-        element(
-          'p',
-          'connection-preview',
-          'Programmable controller unavailable in this build. Use a Command Receiver for keyboard control.',
-        ),
-      );
+    controllerEditor.mount({ part, blueprint: frame.metadata.blueprint, right, editable });
+    mountControllerHistory({
+      right,
+      part,
+      blueprint: frame.metadata.blueprint,
+      history: controllerHistory,
+      send,
+      inspectPart: select,
+    });
+    sensorInspector({ part, blueprint: frame.metadata.blueprint, right, editable, send });
+    updateSensorInspector(frame, right);
+    updateControllerEditor(frame, right);
     if (part.type === 'commandReceiver') {
       const modeControls = element('div', 'drive-buttons');
-      for (const value of ['manual', 'automatic', 'off']) {
+      for (const value of ['manual', 'automatic', 'learned', 'off']) {
         const control = button(value[0].toUpperCase() + value.slice(1), () =>
           send({ type: 'control-mode', id: part.id, mode: value }),
         );
@@ -2895,6 +2973,8 @@ export function createWorkshopView(
     }
   }
   function refreshLive() {
+    updateSensorInspector(frame, right);
+    updateControllerEditor(frame, right);
     const part = frame.metadata.blueprint.parts.find((part) => part.id === selected),
       target = right.querySelector('[data-live-part]');
     if (!part || !target) return;
@@ -2988,8 +3068,8 @@ export function createWorkshopView(
           element(
             'div',
             'suspension-reading',
-            reading?.valid
-              ? `Measured spring length ${format(reading.length, 3)} m · ${format(reading.speed, 3)} m/s`
+            reading?.channels.length.status === 'ok'
+              ? `Measured spring length ${format(reading.channels.length.value, 3)} m · ${format(reading.channels.speed.value, 3)} m/s`
               : 'Measured spring length unavailable',
           ),
         );
@@ -2997,11 +3077,14 @@ export function createWorkshopView(
     }
     if (part.type === 'travelSensor') {
       const reading = frame.sensors?.readings.find((r) => r.node === index);
-      target.textContent = reading?.valid
-        ? `${format(reading.length, 3)} m spring length · ${format(reading.speed, 3)} m/s`
-        : 'Invalid reading · bind a spring connection in Build';
+      target.textContent =
+        reading?.channels.length.status === 'ok'
+          ? `${format(reading.channels.length.value, 3)} m spring length · ${format(reading.channels.speed.value, 3)} m/s`
+          : `Measurement ${reading?.channels.length.status ?? 'unavailable'} · check power and spring binding in Build`;
     }
-    if (!cell && !motor && !['commandReceiver', 'travelSensor'].includes(part.type)) {
+    if (part.type.endsWith('Sensor') && part.type !== 'travelSensor') {
+      target.textContent = `Sensor sample tick ${frame.sensors.tick} · readings below`;
+    } else if (!cell && !motor && !['commandReceiver', 'travelSensor'].includes(part.type)) {
       const speed = frame.physics[index]?.angularVelocity;
       target.textContent =
         frame.metadata.mode === 'build'
@@ -3564,6 +3647,7 @@ export function createWorkshopView(
     const previousCount = frame?.metadata.blueprint.parts.length ?? 0;
     const previousMode = frame?.metadata.mode;
     frame = next;
+    learningControls?.refreshVisible();
     if (previousMode && previousMode !== next.metadata.mode) {
       sourcePort = null;
       previewEndpoint = null;
@@ -4001,6 +4085,7 @@ export function createWorkshopView(
   }
   draw();
   return {
+    refreshLearning: () => learningControls?.refresh(),
     render,
     clearControls: () => vehicleControls.clear(),
     beginRetry() {
@@ -4125,7 +4210,9 @@ export function createWorkshopView(
       window.removeEventListener('blur', blur);
       surface.dispose();
       editing.dispose();
+      learningControls?.dispose();
       controls.dispose();
+      sensorView.dispose();
       springView.dispose();
       partResources.dispose();
       connectionView.dispose();

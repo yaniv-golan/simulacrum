@@ -2,6 +2,7 @@
 /** @typedef {import('./boundaries.js').CatalogDefinition} CatalogDefinition */
 /** @typedef {import('./boundaries.js').Port} Port */
 /** @typedef {import('./boundaries.js').Vec3} Vec3 */
+import { SENSOR_DEFINITIONS, SENSOR_SUPPLY } from './sensors.mjs';
 import { DEFAULT_CONTROL_BINDING } from './control-bindings.mjs';
 // Geometry dimensions are in metres. Material values are explicit selectable
 // workshop parameters; friction values are nominal, not measured surface pairs.
@@ -87,6 +88,7 @@ function component(
     type,
     name,
     milestone: 'M3',
+    ...(type.endsWith('Sensor') ? { sensorSupply: SENSOR_SUPPLY } : {}),
     parameterDefinitions,
     mountingFaces: kind === 'box' ? ['bottom', 'left'] : ['right'],
     primitives: [
@@ -335,12 +337,103 @@ export const CATALOG = freeze({
     ),
     mountingPads: { right: [0.02, 0.02] },
   },
+  rangeSensor: {
+    ...component(
+      'rangeSensor',
+      'Range Sensor',
+      [0.025, 0.015, 0.025],
+      'aluminium',
+      [power(), ...Object.keys(SENSOR_DEFINITIONS.range).map((c) => signal(c, 'output'))],
+      { range: rating(10, 0.1, 100, 'm') },
+    ),
+    mountingFaces: ['bottom', 'left', 'back'],
+    milestone: 'M3b',
+  },
+  linearMotionSensor: {
+    ...component(
+      'linearMotionSensor',
+      'Linear Motion Sensor',
+      [0.025, 0.015, 0.025],
+      'aluminium',
+      [power(), ...Object.keys(SENSOR_DEFINITIONS.linearMotion).map((c) => signal(c, 'output'))],
+      {},
+    ),
+    mountingFaces: ['bottom', 'left', 'back'],
+    milestone: 'M3b',
+  },
+  tiltSensor: {
+    ...component(
+      'tiltSensor',
+      'Tilt Sensor',
+      [0.025, 0.015, 0.025],
+      'aluminium',
+      [power(), ...Object.keys(SENSOR_DEFINITIONS.tilt).map((c) => signal(c, 'output'))],
+      {},
+    ),
+    mountingFaces: ['bottom', 'left', 'back'],
+    milestone: 'M3b',
+  },
+  jointAngleSensor: {
+    ...component(
+      'jointAngleSensor',
+      'Joint Angle Sensor',
+      [0.025, 0.015, 0.025],
+      'aluminium',
+      [power(), ...Object.keys(SENSOR_DEFINITIONS.jointAngle).map((c) => signal(c, 'output'))],
+      {
+        zero: rating(0, -Math.PI, Math.PI, 'rad'),
+        sign: { ...rating(1, -1, 1, 'sign'), type: 'integer', enum: [-1, 1] },
+      },
+    ),
+    mountingFaces: ['bottom', 'left', 'back'],
+    milestone: 'M3b',
+  },
+  contactSensor: {
+    ...component(
+      'contactSensor',
+      'Contact Pad Sensor',
+      [0.025, 0.015, 0.025],
+      'aluminium',
+      [power(), ...Object.keys(SENSOR_DEFINITIONS.contact).map((c) => signal(c, 'output'))],
+      {},
+    ),
+    mountingFaces: ['bottom', 'left', 'back'],
+    milestone: 'M3b',
+  },
+  targetSensor: {
+    ...component(
+      'targetSensor',
+      'Target Distance Sensor',
+      [0.025, 0.015, 0.025],
+      'aluminium',
+      [power(), signal('distance', 'output'), signal('speed', 'output')],
+      { range: rating(20, 0.1, 100, 'm') },
+    ),
+    milestone: 'M3b',
+  },
+  learningController: {
+    ...component(
+      'learningController',
+      'Learning Controller',
+      [0.05, 0.025, 0.04],
+      'aluminium',
+      [
+        ...Array.from({ length: 16 }, (_, i) => signal('input' + (i + 1), 'input')),
+        ...Array.from({ length: 8 }, (_, i) => ({
+          ...signal('out' + (i + 1), 'output'),
+          multiplicity: /** @type {const} */ ('one'),
+        })),
+      ],
+      {},
+    ),
+    milestone: 'M3b',
+  },
   rotationSensor: component(
     'rotationSensor',
     'Axis Rotation Sensor',
     [0.025, 0.015, 0.025],
     'aluminium',
-    [signal('signal', 'output')],
+    [power(), signal('signal', 'output')],
     { axis: { ...rating(0, 0, 2, '0=X, 1=Y, 2=Z'), type: 'integer' } },
   ),
   travelSensor: {
@@ -349,7 +442,7 @@ export const CATALOG = freeze({
       'Travel Sensor',
       [0.025, 0.015, 0.025],
       'aluminium',
-      [signal('signal', 'output')],
+      [power(), signal('signal', 'output'), signal('speed', 'output')],
       {},
     ),
     milestone: 'M3b',
@@ -392,7 +485,15 @@ export const CATALOG = freeze({
     'Logic Controller',
     [0.04, 0.02, 0.03],
     'aluminium',
-    [signal('signal', 'input'), signal('out', 'output')],
+    [
+      signal('signal', 'input'),
+      signal('out', 'output'),
+      ...Array.from({ length: 16 }, (_, i) => signal('input' + (i + 1), 'input')),
+      ...Array.from({ length: 8 }, (_, i) => ({
+        ...signal('out' + (i + 1), 'output'),
+        multiplicity: /** @type {const} */ ('one'),
+      })),
+    ],
     { duty: rating(0, -1, 1, 'ratio') },
   ),
   chassis: {
