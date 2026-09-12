@@ -132,6 +132,15 @@ and view groups at the workbench edge; selected properties and operations in the
 inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
 
+Catalogue images occupy a 52-pixel square within the existing parts column. Square
+production renders improve silhouette size without widening the region or reducing
+label text. The column retains scrolling, help buttons and keyboard focus. Catalogue,
+part-help and assembly previews use the workshop's part meshes and cosmetic finishes;
+preview lighting shares the same reflection field. These changes serve recognition
+and connection authoring, add no persistent panel, and displace no unique action.
+Learning-content disposition is **no entry**: existing connection rows and part help
+explain the same endpoints; a surface treatment introduces no new construction concept.
+
 The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic
 regulation shows measured and target total spring length, rather than extension from
 rest length. Invalid targets preserve the accepted setting and explain the allowed

@@ -430,6 +430,19 @@ geometry and exploded dashed styling retain their existing behavior. Gear meshes
 use dashed relationships without a solid supporting rod; their root-cylinder
 marks follow completed body transforms. Preserve the [gear rendering controls](../../test/gear-view.test.mjs).
 
+Electrical port hardware is part of the production part mesh, shared with catalogue and
+assembly previews. [Surface finishes](../../src/presentation/part-finish.mjs#source)
+provide cosmetic material response, subtle roughness grain and a disposable studio
+reflection field. Paint is nonmetallic surface treatment; exposed surfaces follow the
+authored material. These finishes do not change model material values. [Assembly
+thumbnails](../../src/presentation/assembly-thumbnails.mjs#implementation) compose the production connection and spring views at saved authored
+endpoints, including their geometry in framing and disposing temporary resources. Socket collars keep authored endpoint positions;
+the housing surface supplies their outward visual normal. Nearest-port spacing bounds
+their size. One aperture represents one endpoint regardless of permitted wire count.
+Invisible original picking volumes preserve targeting; normal wires add no duplicate
+beads. Bright authoring cues also shrink to fit neighbouring electrical endpoints;
+exploded markers remain schematic interaction overlays.
+
 Use exact IDs from [connectionTestPaths](../../src/model/connection-test-paths.mjs#symbol=connectionTestPaths) for
 path highlights. The [Connect & test panel](../../src/presentation/connection-test.mjs#source)
 owns both the highlighted row and a separate reveal of its currently displayed paths

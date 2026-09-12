@@ -1301,7 +1301,7 @@
       "id": "connection-display-isolation",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking.",
+      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build.",
       "owners": [
         {
           "path": "src/presentation/connection-render.mjs",
@@ -1310,6 +1310,10 @@
         {
           "path": "src/presentation/connection-view.mjs",
           "anchor": "pickableObjects"
+        },
+        {
+          "path": "src/presentation/part-finish.mjs",
+          "anchor": "createPortHardware"
         }
       ],
       "checks": [
@@ -1328,6 +1332,26 @@
           {
             "path": "test/connection-render.test.mjs",
             "anchor": "hidden render resources neither intercept rays nor churn geometry and restore current endpoints"
+          },
+          {
+            "path": "test/connection-render.test.mjs",
+            "anchor": "ordinary electrical links do not cover authored sockets with duplicate endpoint beads"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "every electrical socket stays on its authored endpoint and fits its nearest connector clearance"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "dense authoring highlights remain separate without enlarging sparse markers"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "selectable finishes separate satin aluminium, steel and nonmetal rubber without material mutation"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "assembly previews include authored wires and spring coils and release their resources"
           }
         ]
       },
