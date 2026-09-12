@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"1739dc1ab68010142994f741f13a5c117e4a882b9618e38c26f7b5cdb36c2fba","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"c85b1890f0f14c2f61911e58f6b8794070be909e398dbd65b1671dccbbf14f9f","disposition":"still accurate","rationale":"The new generated coupler owners and invariant use the existing generated reference and per-section review workflow. No documentation discovery, sidecar admission or review command behavior changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"1571ddd02a7569e8fb2753e26d1191a06863dc325dc7777412961d8c185b82f7","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"a3762e50120062c6db50fe11945c55ca4600e7bcdfb6c58e3a56e52a89aaeb9c","disposition":"still accurate","rationale":"Merged generated discovery includes both appearance and release owners. Regeneration and individual source-bound review requirements remain unchanged; neither branch changes documentation tooling."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"0db72e5e7a19d231bd128573068a89e87c5b97982d5fd84e8fdac8edeed3f18c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"2eb71baeecae51c095d1eb1fc90a880451c1847b7c7cfc4cc310056a94bf1faa","disposition":"still accurate","rationale":"The new release journey is registered as a parallel workshop browser check. Reviewed scope refresh preserves every existing classification and check; only root and consumer inventories change. Existing unknown-read fallback and witness requirements still apply. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
+<!-- doc-review {"version":1,"fingerprint":"f99986ece0e94b5ec51260c4b3d1a5b68a33eb808ee881021b3712938b9f2963","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"b0325fd07eadfc9457bacd7427c6d0d02e94084641d8b5bf6cea67387bff7e35","disposition":"still accurate","rationale":"Combined manifest retains appearance controls and the release browser registration. Reviewed metadata updates only consumer hashes; required checks, read purposes and execution classifications are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -444,7 +444,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"cb287f8c458c44e950051dc99062cadbff927ea0c197dcf289154a6f2b546b4e","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"2c9fc25a5bad2f79923ca06fd87fd4c7c1e44e38719f28122faa4d241394c513","disposition":"still accurate","rationale":"The coupler changes application source and registered tests, not capture, installation or candidate verification. The documented source-bound isolated candidate and origin preflight remain required for these bytes. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
+<!-- doc-review {"version":1,"fingerprint":"fb00f200ba7ee1e0183ee64f1f8c309decd456ee2b681de97fec84078905ac61","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"6d3e65c2721188637f141a064c417d51089ca6056cd9d988177084e2827e715f","disposition":"still accurate","rationale":"The merge combines two source branches using explicit incoming and destination references. Candidate capture, source drift admission and merge-tier requirements are unchanged by either feature."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

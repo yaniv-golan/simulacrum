@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CATALOG } from '../model/catalog.mjs';
+import { resolveSurfaceEndpoint } from '../model/surfaces.mjs';
 import { createConnectionView } from './connection-view.mjs';
 import { connectionRenderSpecs } from './connection-render.mjs';
 import { createSpringView } from './spring-view.mjs';
@@ -14,7 +15,10 @@ export function createAssemblyConnections(group, definition) {
   const parts = new Map(definition.parts.map((part) => [part.id, part]));
   const resolveEndpoint = (endpoint) => {
     const part = parts.get(endpoint.part);
-    const port = CATALOG[part?.type]?.ports.find((port) => port.id === endpoint.port);
+    if (!part) return null;
+    const port = endpoint.surface
+      ? resolveSurfaceEndpoint(part, endpoint)
+      : CATALOG[part.type]?.ports.find((port) => port.id === endpoint.port);
     return port
       ? new THREE.Vector3(...port.position)
           .applyQuaternion(new THREE.Quaternion(...part.rotation))

@@ -1352,6 +1352,10 @@
           {
             "path": "test/presentation-resources.test.mjs",
             "anchor": "assembly previews include authored wires and spring coils and release their resources"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "assembly previews retain offset surface fasteners under authored rotation without mutating saved parts"
           }
         ]
       },
@@ -5596,7 +5600,7 @@
         }
       ],
       "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
-      "consumerSourceHash": "bb307b64d0585d405dc052023ec6c74fd9c0c98e0e1f8a830b328d985f26c5fa",
+      "consumerSourceHash": "d500ab2725b51c3d1d52015cdeaedd0b0a5ced43e4d578fe42dc7a6c4f4f73b6",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -5973,7 +5977,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
-      "consumerSourceHash": "4db587f3524b25ab8c92ec5d859f70a1136286a6574efe2ec17e30e697474505"
+      "consumerSourceHash": "e22ae7ccf238cd382f1036dc7d75854ba12056f9b00eba3a879843cea3309cf6"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -6004,7 +6008,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
-      "consumerSourceHash": "4db587f3524b25ab8c92ec5d859f70a1136286a6574efe2ec17e30e697474505"
+      "consumerSourceHash": "e22ae7ccf238cd382f1036dc7d75854ba12056f9b00eba3a879843cea3309cf6"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",

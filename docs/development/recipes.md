@@ -417,7 +417,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"0415101af1cdfc008f8d3482e3412c270d3f0f9a0ff320dbb90e81ea632d1f10","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"c6bad8a0070ad16e614dc731ec7e85b3d71dabe62e78eb3c701ce09088a13e9c","disposition":"still accurate","rationale":"The existing overlay remains derived presentation state. The coupler filters its opened attachment using completed power telemetry while retaining wires and other mounts; the documented graph ownership and transform agreement rules remain applicable."} -->
+<!-- doc-review {"version":1,"fingerprint":"ed1f19d1ead9bb1f6824e1ad52db1ee94457b515df6ad372ca696f736d058665","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"2e034b497cca7edaacc22777e03979094fbcc4b0625a160f646005bf0e6cf45e","disposition":"updated","rationale":"The merged section retains appearance guidance for paint, previews, connection resources and disposal. Completed coupler state filters only the opened attachment before the same connection renderer; wires and retained mounts remain present."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -436,7 +436,9 @@ provide cosmetic material response, subtle roughness grain and a disposable stud
 reflection field. Paint is nonmetallic surface treatment; exposed surfaces follow the
 authored material. These finishes do not change model material values. [Assembly
 thumbnails](../../src/presentation/assembly-thumbnails.mjs#implementation) compose the production connection and spring views at saved authored
-endpoints, including their geometry in framing and disposing temporary resources. Socket collars keep authored endpoint positions;
+endpoints, including their geometry in framing and disposing temporary resources. Surface mounts
+use the same model surface resolver as the workshop, retaining saved face offsets and
+part rotations; named ports retain their catalogue positions. Socket collars keep authored endpoint positions;
 the housing surface supplies their outward visual normal. Nearest-port spacing bounds
 their size. One aperture represents one endpoint regardless of permitted wire count.
 Invisible original picking volumes preserve targeting; normal wires add no duplicate

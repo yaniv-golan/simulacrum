@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"251aed485e7110fab158dd45eedc5078eb246d6970c8fd5d60d173b3e9b0df2c","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"397d308413912eeb3db07fd9df24769fea997645068045d26ec1b0caee0dc431","disposition":"updated","rationale":"Added coupler catalog/compiler, coil funding, next-tick session planning and native joint removal ownership. Explained snapshot-copy numeric response admission and completed power/physics checkpoint cross-validation."} -->
+<!-- doc-review {"version":1,"fingerprint":"82307225cf118a114ba961cae626015c240d21f9a7b981451ee1222f7ee97a99","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"ef86dcd69172ebabb810bddffb278b1f5ecf360b6628973f9b1f147c4f977e48","disposition":"still accurate","rationale":"Merged workshop view composes cosmetic appearance and filters only completed opened latch attachments. Catalog/compiler, power/session/native release and immutable observation ownership described here remain accurate; neither feature adds a new authority path."} -->
 
 
 
@@ -77,7 +77,7 @@ starting attachments. The preview copy never replaces the live plant or supplies
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"4a3b7fed80a80f00e4aae8c267b3b9dceed9501b7ad41df01e9df82012159449","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"2ae2d2934a9bfa3bb4361007abd21d15f2ed5c48410f4f7ddbb61ec07dbf8a68","disposition":"still accurate","rationale":"Release uses ordinary catalog material and surface geometry, compiled numeric node/joint ownership and existing power laws. It adds no role-based physical decisions or new presentation-to-simulation authority."} -->
+<!-- doc-review {"version":1,"fingerprint":"fbbe7c8810fced8afd576a462e75493138552eb13191ce241ca0c30a293cc63b","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"56f446dbb58cee7c659b83d47af5082242322106b807d166c25c7da0ac766819","disposition":"still accurate","rationale":"Retained model geometry and material admission remain canonical. Appearance finishes and socket decoration stay cosmetic; release topology is owned by the physics door with compiled numeric joints, not names or render geometry."} -->
 
 
 

@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"ece18124b5233c9da56d8c23a3250f29baa764ea305fca7df093db0d9badb637","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"5caeacf8224afcf540901974f2a7f0071a473501c8ef5ba09c7ed14e1ce0578f","disposition":"still accurate","rationale":"Applied no entry: existing keyboard driving content covers receiver and power wiring, while selected part help explains the latch and recovery. No lesson, experiment, challenge or permanent learning surface was added. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
+<!-- doc-review {"version":1,"fingerprint":"4feab388aed807cefc9926f35c78bc3cac0442c48f150488676a32b44e8a9392","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"8d7a754ce2743352aad36e7ea995a5ca33106218ddfd83c0e82ad19f847342ff","disposition":"still accurate","rationale":"Both branches admit no new learning entry: cosmetic appearance adds no concept and coupler controls are explained through existing receiver content and contextual part help. Merge adds no permanent teaching surface."} -->
 
 Learn & examples is a curated collection of things players can learn to do.
 Adding a feature requires a teaching decision, not automatically a catalogue entry.
@@ -124,7 +124,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"1a0aedf3e5bff6f988e77185cce441e9d3940f2630f79b3d9ba40e15f302698c","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"a93c76c6d98afa9256574a468591c7263d816ab69f333298da3a3f884d608ff1","disposition":"updated","rationale":"Recorded coupler task ownership in the existing palette, snap controls, selected inspector and part help; explained Build recovery and no separate lesson. Registered empty-workshop browser journey includes narrow layout and does not claim human acceptance. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
+<!-- doc-review {"version":1,"fingerprint":"8aabb6307963500f4a6645b262adbfa4bcc0cf0465df4d2934315fdfe0a4fe88","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"ebe0fb7052d008b793d89c37b524447b80a206035e0bcf375b80fd580b3bd4a2","disposition":"updated","rationale":"Merged prose preserves the 52-pixel catalogue slot, shared appearance previews and existing focus lifecycle alongside coupler selected status, help, Build recovery and actual Try again/interruption browser evidence. No additional panel is introduced."} -->
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
 document and run actions in the header; parts in the left catalogue; separate edit
