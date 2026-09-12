@@ -1,3 +1,4 @@
+import { writeBrowserHistory, readBrowserHistory } from '../../scripts/browser-history.mjs';
 import { registerHooks } from 'node:module';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -28,12 +29,23 @@ globalThis.candidateTransport = {
     const hint = JSON.parse(
       readFileSync(join(options.cwd, 'artifacts/browser-suite/scheduling-history.json')),
     ).runs;
-    if (hint[0]?.id !== 'verify-recording-browser' || hint[0]?.ok !== false)
+    if (hint.find((row) => row.id === 'verify-recording-browser')?.ok !== false)
       throw Error('fresh candidate lost origin scheduling history');
+    writeBrowserHistory(join(options.cwd, 'artifacts/browser-suite/scheduling-history.json'), [
+      { id: 'verify-recording-browser', ok: true, elapsedMs: 1 },
+    ]);
     writeFileSync(
-      join(options.cwd, 'artifacts/browser-suite/scheduling-history.json'),
-      JSON.stringify({ runs: [{ id: 'verify-recording-browser', ok: true, elapsedMs: 1 }] }),
+      join(options.cwd, 'artifacts/browser-suite/last-run.json'),
+      JSON.stringify({
+        runId: 'current-run',
+        startedAt: new Date().toISOString(),
+        runs: [{ id: 'verify-recording-browser', ok: true, elapsedMs: 1 }],
+      }),
     );
+    // Another completed candidate fails a check that this candidate never ran.
+    writeBrowserHistory(join(root, 'artifacts/browser-suite/scheduling-history.json'), [
+      { id: 'untouched', ok: false },
+    ]);
     const forwarded = parseCompletionArgs(tier, args.slice(2));
     writeFileSync(
       join(options.cwd, `artifacts/verification-${tier}.json`),
@@ -76,7 +88,12 @@ process.chdir(root);
 mkdirSync('artifacts/browser-suite', { recursive: true });
 writeFileSync(
   'artifacts/browser-suite/scheduling-history.json',
-  JSON.stringify({ runs: [{ id: 'verify-recording-browser', ok: false }] }),
+  JSON.stringify({
+    runs: [
+      { id: 'verify-recording-browser', ok: false },
+      { id: 'untouched', ok: true, elapsedMs: 8 },
+    ],
+  }),
 );
 process.argv = [
   process.execPath,
@@ -91,9 +108,16 @@ try {
   await import('../../scripts/verify-candidate.mjs');
   const report = JSON.parse(readFileSync('artifacts/verification-candidate.json', 'utf8'));
   if (
-    JSON.parse(readFileSync('artifacts/browser-suite/scheduling-history.json')).runs[0]?.ok !== true
+    readBrowserHistory('artifacts/browser-suite/scheduling-history.json').get(
+      'verify-recording-browser',
+    )?.ok !== true
   )
     throw Error('candidate did not return scheduling hints');
+  if (
+    readBrowserHistory('artifacts/browser-suite/scheduling-history.json').get('untouched')?.ok !==
+    false
+  )
+    throw Error('inherited history erased a newer failure');
   console.log('TRANSPORT ' + JSON.stringify({ calls, captured, report }));
 } finally {
   process.chdir(repo);

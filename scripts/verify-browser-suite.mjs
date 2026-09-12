@@ -17,34 +17,7 @@ import {
   initializeVerificationEnvironment,
 } from './verification-run.mjs';
 import { runCheckSequence, packParallelChecks, balanceParallelChecks } from './check-sequence.mjs';
-// Retain execution and cleanup causes without letting one hide the other.
-function errorMessages(error, seen = new Set()) {
-  if (seen.has(error)) return [];
-  seen.add(error);
-  return [
-    error?.message ?? String(error),
-    ...(error?.errors ?? []).flatMap((e) => errorMessages(e, seen)),
-    ...(error?.cause ? errorMessages(error.cause, seen) : []),
-  ];
-}
-async function withCleanup(execute, cleanup) {
-  const failures = [];
-  let result;
-  try {
-    result = await execute();
-  } catch (error) {
-    failures.push(error);
-  }
-  try {
-    await cleanup();
-  } catch (error) {
-    failures.push(error);
-  }
-  if (failures.length === 1) throw failures[0];
-  if (failures.length > 1)
-    throw new AggregateError(failures, failures.flatMap((e) => errorMessages(e)).join('; '));
-  return result;
-}
+import { errorMessages, withCleanup } from './verification-cleanup.mjs';
 const stamp = 'dist/.verification-source.json';
 export async function prepareBrowserBuild(context) {
   initializeVerificationEnvironment();
@@ -130,7 +103,10 @@ export async function withBrowserReport(
       }
     report.finishedAt = new Date().toISOString();
     try {
-      writeBrowserHistory(historyPath, report.runs);
+      writeBrowserHistory(
+        historyPath,
+        report.runs.filter((row) => !row.reused),
+      );
     } catch (error) {
       report.historyWarning = `Scheduling hints could not be saved: ${error.message}`;
     }
@@ -349,7 +325,12 @@ async function executeBrowserSuite(
             retainOrigin(result.evidenceOrigin);
             if (!evidenceOrigin || !existsSync(row.log) || !existsSync(row.evidenceDirectory))
               throw Error('Retained browser evidence is missing');
-            Object.assign(row, { ok: true, status: 'passed', elapsedMs: result.elapsedMs });
+            Object.assign(row, {
+              ok: true,
+              status: 'passed',
+              elapsedMs: result.elapsedMs,
+              observedAt: performance.timeOrigin + performance.now(),
+            });
             publish();
             console.log(
               `${row.reused ? 'REUSE PASS' : 'PASS'} ${check.id} ${Math.round(result.elapsedMs)}ms — ${row.log}`,
@@ -359,6 +340,7 @@ async function executeBrowserSuite(
             Object.assign(row, {
               status: 'failed',
               ok: false,
+              observedAt: performance.timeOrigin + performance.now(),
               elapsedMs: error.elapsedMs,
               errors: errorMessages(error),
               failureKind: error.failureKind ?? 'unknown',

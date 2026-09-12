@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"26e885c7dc880dfb8b8c4fd371b38be94cf4d32ecf9587ff29b095e419bbcb7f","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"872dba6133a8bada74d2075d4e88b0ba1a5aedc76ee5e0b0f38411d1524b5ca7","disposition":"still accurate","rationale":"Merged references retain actuator and catalog owners. Exact-text parsing reuse and watchdog headroom do not alter regeneration, per-section fingerprints, source-byte discovery or stale-review rejection."} -->
+<!-- doc-review {"version":1,"fingerprint":"87944351014bf51a05d1899b3dc45fa2893d0459585820b54dedec37353dd635","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"fae79141b6e53becef9f7d7eb8b277dbc2b881ffeb5af9f1a58a75690b917f9e","disposition":"still accurate","rationale":"Generated reference now includes the added verification cleanup and scheduling-history controls. The preparation, per-section source review and current-sidecar checks are unchanged; the workflow still requires semantic review after source closure."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"9f6c07f08d4fec47cbff57fae658f9cd4113a5db1671bc554d48f4798f806d5b","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7057b5d1a4248833162d34fb3c6b5922baffed874004f7a52ff3ec57c8807ecd","disposition":"still accurate","rationale":"Manifest remains the execution authority. Starter and shared sensing are exclusive after observed sampling/contact failures; explicit worker probes do not override that admission. Required checks and exhaustive completion are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"792f786096b08f0c924f752e2626e46bdbdc0eeffaa8a31860c0cb1e511b2fc5","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5c482789b5bd86614a76e557bfee946076000036c8369ab9a53185ada489093b","disposition":"still accurate","rationale":"Hint publication now reclaims only temporary files whose recorded writer PID is absent; live or uncertain owners are retained. Immutable records and two-record pruning preserve concurrent outcomes. The described attempt-specific transport, warning-only hint failures and exhaustive receipt-independent scheduling remain accurate."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -377,8 +377,13 @@ exhaustive. Failed IDs are ordering hints only and join touched checks at the fr
 the schedule. The [history helper](../../scripts/browser-history.mjs#implementation)
 retains outcomes and successful durations in `artifacts/browser-suite/scheduling-history.json`.
 The candidate wrapper copies hints from the originating checkout into the fresh clone
-and returns updated hints after execution; source capture and receipt admission remain independent. Unstarted checks retain
-their prior hints, and fresh successful execution clears a failure hint. Missing or
+and returns only observations produced during that attempt; inherited and reused outcomes
+are not republished. Attempt report identities and completion times keep delayed older results
+from replacing newer hints. Unstarted checks retain their prior hints, and a newer
+successful execution clears a failure hint. Hint updates publish immutable observations and a compatibility snapshot; readers merge
+them by observation time, retaining only two recent records per check after successful pruning.
+Interrupted publication cannot leave a blocking writer lock.
+Source capture and receipt admission remain independent. Missing or
 malformed history never changes coverage; failure to save hints is reported as a warning.
 History supplies no passing receipt and never authorizes omission or resumption.
 
@@ -475,7 +480,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"1860845273fd287700b5d24ad098cb1ba111d7ef26cc1bc49478f65fc0d38059","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"3477eb5e917d08f332e9b384362c355ffb0720cb7e02b8ea84b978ab2ede81ff","disposition":"still accurate","rationale":"The catalog helper now measures only authored Place and the refreshed manifest retains conservative scopes. Candidate capture, frozen identity, dependency installation and receipts are unchanged; previous failed source cannot supply completion."} -->
+<!-- doc-review {"version":1,"fingerprint":"a6ad192fc6908e024a28a736a718335e8b0d77c94d7fb8dd7cbc2d087e4fd4ac","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"1d9d4c7761676cd21764c8376522077fbeeb2a2f4def85bfe5747e5799562d6c","disposition":"still accurate","rationale":"Final history cleanup only reclaims abandoned temporary artifacts and adds a regression control. Current-report transport, unchanged-run exclusion, legacy suite-start freshness, candidate source capture and completion tier ownership remain as described."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
@@ -488,6 +493,9 @@ scheduling hints before capture and forwards them into the frozen tier. They nev
 replace local base selection or final required coverage. Candidate browser runs also read
 and update scheduling hints in the originating checkout’s ignored artifacts directory.
 Those hints carry failed IDs and durations across fresh captures, never reusable receipts.
+Returning hints compares the browser report identity with its pre-attempt pointer, including
+on resume, and preserves newer originating-checkout observations. Older frozen runners
+without per-check times use their suite start as a conservative freshness bound.
 The [candidate capture](../../scripts/candidate.mjs#implementation) retains the exact
 index, existing tracked/nonignored untracked bytes, modes and deletion state in a
 fresh clone with its own dependencies. Unmerged indexes, symlinks, secret-like names

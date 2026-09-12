@@ -351,7 +351,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -3461,6 +3461,10 @@
         {
           "path": "scripts/verify-browser-suite.mjs",
           "anchor": "withBrowserReport"
+        },
+        {
+          "path": "scripts/verification-cleanup.mjs",
+          "anchor": "withCleanup"
         }
       ],
       "checks": ["verification-workflow"],
@@ -3479,6 +3483,10 @@
           {
             "path": "test/browser-report.test.mjs",
             "anchor": "final alias publication failure cannot leave authoritative success"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "cleanup attempts every resource despite phase publication and close failures"
           }
         ]
       },
@@ -3497,6 +3505,10 @@
         {
           "path": "scripts/ci.mjs",
           "anchor": "runCI"
+        },
+        {
+          "path": "scripts/browser-history.mjs",
+          "anchor": "returnBrowserHistory"
         }
       ],
       "checks": ["verification-workflow"],
@@ -3539,6 +3551,22 @@
           {
             "path": "test/browser-report.test.mjs",
             "anchor": "actual suite allows four-worker probes and rejects completion-context overrides"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "history rejects late stale outcomes and preserves newer observations"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "history publication cannot be permanently blocked by an interrupted writer"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "legacy candidate returns only newly executed report outcomes"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "history removes abandoned temporary files while preserving live writers"
           }
         ]
       },
@@ -4661,10 +4689,10 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "fa4b0e8cbf63328bffeb2bb092741da2b9d01fd67633aafe3689ae3f3a7b94d6",
+      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
       "externalImports": ["node:fs", "node:os", "node:path"],
       "consumers": ["scripts/verify-cloud-playtest.mjs"],
-      "sourceSha256": "22778ee28083b71a4163d438538ef213b22e3a5654fc13519b3b8fc79b53738f",
+      "sourceSha256": "980b7c598b8a6a845a3a49526b6299bb54dd9f5c49ecd37f53fe9e74f3f23998",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -4677,6 +4705,7 @@
         "scripts/playtest/load.mjs",
         "scripts/playtest/local-cloud.mjs",
         "scripts/playtest/release-policy.mjs",
+        "scripts/verification-cleanup.mjs",
         "src/application/capture-stream.mjs",
         "src/model/blueprint.mjs"
       ]
@@ -4696,7 +4725,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "e8f3c38236adf830cca7ad8153389b5b433dcf195117f7852c32a0bfd31f6446",
+      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
       "externalImports": ["node:assert/strict", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/qualify-workshop.mjs",
@@ -4769,7 +4798,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "e8f3c38236adf830cca7ad8153389b5b433dcf195117f7852c32a0bfd31f6446",
+      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
       "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/assess.mjs",
@@ -4881,7 +4910,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "ee149c2cca3b206d530791c9932e83442557ff2ecb95b0bdac40313c88fcec81",
+      "consumerSourceHash": "7547100d6f8413c04edb22b7ede3a31ddfa4f22011772e1d51e91007d25c3c07",
       "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/bars.mjs",
@@ -5054,7 +5083,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "fa4b0e8cbf63328bffeb2bb092741da2b9d01fd67633aafe3689ae3f3a7b94d6",
+      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
       "externalImports": [],
       "consumers": ["scripts/verify-cloud-playtest.mjs", "scripts/verify-remote-playtest.mjs"],
       "sourceSha256": "9bf6de50ea7cd6041a718c926daa8b678eec2afcfb4d3cf8aca1641233a73a3b",
@@ -5096,7 +5125,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "fa4b0e8cbf63328bffeb2bb092741da2b9d01fd67633aafe3689ae3f3a7b94d6",
+      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
       "externalImports": ["node:crypto", "node:fs/promises"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
@@ -5139,7 +5168,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "fa4b0e8cbf63328bffeb2bb092741da2b9d01fd67633aafe3689ae3f3a7b94d6",
+      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
       "externalImports": ["esbuild", "miniflare", "node:fs/promises", "node:path", "node:path"],
       "consumers": ["scripts/verify-cloud-playtest.mjs", "scripts/verify-remote-playtest.mjs"],
       "sourceSha256": "66e915cda215738b8a0fcc5d913d7b7e739f7e7f0ba5417f52b37533151afb9e",
@@ -5156,7 +5185,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "fa4b0e8cbf63328bffeb2bb092741da2b9d01fd67633aafe3689ae3f3a7b94d6",
+      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
       "externalImports": ["node:fs/promises", "node:path", "node:url"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
@@ -5251,7 +5280,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "4cde1c9b332ae92f7a60df9a71d2442da14184fb363e3407d3975d66ac780d37",
+      "consumerSourceHash": "57f1c36dbc105c0de95339d1aeed1005d64640f17a1e95e1bd8961f84804f36e",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -5311,7 +5340,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "e8f3c38236adf830cca7ad8153389b5b433dcf195117f7852c32a0bfd31f6446",
+      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
       "externalImports": ["acorn", "css-tree", "node:fs", "node:path", "parse5", "typescript"],
       "consumers": [
         "scripts/analysis-snapshot.mjs",
@@ -5501,7 +5530,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "fa4b0e8cbf63328bffeb2bb092741da2b9d01fd67633aafe3689ae3f3a7b94d6",
+      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
       "externalImports": ["node:crypto", "node:fs/promises", "node:path"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
