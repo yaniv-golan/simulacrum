@@ -182,9 +182,11 @@ async function guidedTrial(rigid) {
     const settled = session.observe().frames[0],
       settledHeights = chassis.map((index) => settled.physics[index].position[1]);
     // Different, disclosed run-up commands match the physical entry condition.
-    // The comparison below checks the measured entry speeds within two percent.
-    // Both runs use the identical command throughout the measurement window.
-    session.act({ type: 'receiver', node: receiver, duty: rigid ? 0.8 : 0.71 });
+    // Calibrated from measured entry speeds; .69 matches the braced cart at .8.
+    // The comparison below still checks the entry speeds within two percent.
+    // Both runs queue .8 at the approach threshold for the following tick;
+    // the retained RMS window includes that sample and its prior 100 ms history.
+    session.act({ type: 'receiver', node: receiver, duty: rigid ? 0.8 : 0.69 });
     for (let tick = 0; tick < 1200; tick++) {
       session.step();
       const frame = session.observe().frames[0];
@@ -334,6 +336,7 @@ test('ordinary guided and braced carts complete a matched-speed bump trial with 
   assert.equal(upwardSupportForce({ a: 0, b: 1, normalImpulse: [1 / 120, 0, 0] }, 0), 0);
   const sprung = await guidedTrial(false),
     rigid = await guidedTrial(true);
+  t.diagnostic(JSON.stringify({ sprungEntry: sprung.entry, rigidEntry: rigid.entry }));
   t.diagnostic(JSON.stringify(assessComparison(sprung, rigid)));
   const unsupported = structuredClone(sprung);
   for (const row of unsupported.rows) row.supported = [];

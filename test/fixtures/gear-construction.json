@@ -1,0 +1,194 @@
+{
+  "version": 3,
+  "id": "gear-construction",
+  "name": "Grounded gear transmission",
+  "parts": [
+    {
+      "id": "part-2",
+      "type": "chassis",
+      "name": "Chassis",
+      "position": [-0.9, 0.12, 0],
+      "rotation": [0, 0, 0, 1],
+      "authoredMaterial": {},
+      "parameters": {}
+    },
+    {
+      "id": "part-3",
+      "type": "poweredMotor",
+      "name": "Powered Motor",
+      "position": [-0.96, 0.2, -0.08999999999999998],
+      "rotation": [0, 1, 0, 0],
+      "authoredMaterial": {},
+      "parameters": {
+        "torqueConstant": 0.4,
+        "resistance": 1,
+        "currentLimit": 10,
+        "defaultDuty": 1,
+        "inputPolarity": 1
+      }
+    },
+    {
+      "id": "part-4",
+      "type": "poweredMotor",
+      "name": "Powered Motor-2",
+      "position": [-0.96, 0.2, 0.08999999999999998],
+      "rotation": [0, 1, 0, 0],
+      "authoredMaterial": {},
+      "parameters": {
+        "torqueConstant": 0.4,
+        "resistance": 1,
+        "currentLimit": 10,
+        "defaultDuty": 1,
+        "inputPolarity": 1
+      }
+    },
+    {
+      "id": "part-5",
+      "type": "gear12",
+      "name": "12T spur gear",
+      "position": [-1.09, 0.2, -0.08999999999999998],
+      "rotation": [0, 1, 0, 0],
+      "authoredMaterial": {},
+      "parameters": {}
+    },
+    {
+      "id": "part-6",
+      "type": "gear24",
+      "name": "24T spur gear",
+      "position": [-1.09, 0.2, 0.08999999999999998],
+      "rotation": [0, 1, 0, 0],
+      "authoredMaterial": {},
+      "parameters": {}
+    },
+    {
+      "id": "part-7",
+      "type": "powerCell",
+      "name": "Power Cell",
+      "position": [-0.9, 0.04999999999999999, 0],
+      "rotation": [1, 0, 0, 0],
+      "authoredMaterial": {},
+      "parameters": {
+        "voltage": 24,
+        "capacityJ": 36000,
+        "internalResistance": 0.1,
+        "currentLimit": 20
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "surface-1",
+      "kind": "fixed",
+      "a": {
+        "part": "part-2",
+        "surface": {
+          "region": "top",
+          "u": 0.06,
+          "v": -0.09,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "part-3",
+        "surface": {
+          "region": "bottom",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "surface-2",
+      "kind": "fixed",
+      "a": {
+        "part": "part-2",
+        "surface": {
+          "region": "top",
+          "u": 0.06,
+          "v": 0.09,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "part-4",
+        "surface": {
+          "region": "bottom",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "connection-3",
+      "kind": "shaft",
+      "a": {
+        "part": "part-3",
+        "port": "shaft"
+      },
+      "b": {
+        "part": "part-5",
+        "port": "left"
+      }
+    },
+    {
+      "id": "connection-4",
+      "kind": "shaft",
+      "a": {
+        "part": "part-4",
+        "port": "shaft"
+      },
+      "b": {
+        "part": "part-6",
+        "port": "left"
+      }
+    },
+    {
+      "id": "surface-3",
+      "kind": "fixed",
+      "a": {
+        "part": "part-2",
+        "surface": {
+          "region": "bottom",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      },
+      "b": {
+        "part": "part-7",
+        "surface": {
+          "region": "bottom",
+          "u": 0,
+          "v": 0,
+          "twist": 0
+        }
+      }
+    },
+    {
+      "id": "connection-5",
+      "kind": "power",
+      "a": {
+        "part": "part-7",
+        "port": "power"
+      },
+      "b": {
+        "part": "part-3",
+        "port": "power"
+      }
+    },
+    {
+      "id": "connection-6",
+      "kind": "gear",
+      "a": {
+        "part": "part-5",
+        "port": "mesh"
+      },
+      "b": {
+        "part": "part-6",
+        "port": "mesh"
+      }
+    }
+  ]
+}

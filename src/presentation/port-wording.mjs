@@ -1,4 +1,5 @@
 export function portLabel(part, port) {
+  if (port.kind === 'gear') return 'Gear mesh';
   if (port.kind === 'power') return 'Power';
   if (port.kind === 'signal')
     return port.direction === 'input' ? 'Control input' : 'Control output';
@@ -12,6 +13,8 @@ export function portLabel(part, port) {
   return port.id === 'shaft' ? 'Axle' : `Axle · ${port.id}`;
 }
 export function portPurpose(part, port) {
+  if (port.kind === 'gear')
+    return 'Transfers rotation between aligned gears on independently supported shafts. Mount both shafts on the same rigid support first. Both gears stay in place when connected; this mesh does not support either shaft.';
   if (port.kind === 'spring')
     return 'Attaches the carriage to its guide. Slides along this axis; does not swivel. Disconnecting removes both the guide constraint and spring force.';
   if (port.kind === 'fixed')

@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"193f2342f96689d0e3c0d289e9a4179d1da10866304187a3da3b54a35d654dbc","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"ff5cb493666854763f80bbb093120753e84dbee83a96b10448a7c519ac5cbc0d","disposition":"still accurate","rationale":"The Ball launcher replaces the loose wheel in the existing entry, and rolling/drop extends the existing Spring collection. Real catcher shortfall and preload repair are now demonstrated; no additional lesson or claimed human engagement was introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"4bb7da50f94fec0cf3aef2ac05f122ab38003a277afe4ef21079a3a1ebd7828f","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"a7275662d6c3894b8782901a5a068e25609bd502a313b1dc890f2ba4eb1649e3","disposition":"still accurate","rationale":"One gear experiment is admitted for a distinct speed-versus-load prediction and reachable motor-current repair. Its prerequisite and replacement behavior are declared, and physical witnesses remain separate from the hypothesized teaching need and human comprehension."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"e855d661adbad560528ded50cd89c2e29afa78d29a062c72a2f0c89478bb0be7","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c9fc7ffb4464568650e6f478b861e1807fa4f6849ec5f7f8659b74173634be11","disposition":"updated","rationale":"Documented symmetric illustrative contact timbres and file-load/retry exclusion. Arbitrary valid numeric contact values are accepted while sliders remain coarse. Retry and Sound remain in the bounded machine-controls region; minimum-quality marking was visually inspected."} -->
+<!-- doc-review {"version":1,"fingerprint":"ccd467c398b0e44c0be3616eccd44e74da83f1cdd764b795f8d4454ac3c8e102","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"e7191017ab1fea09155f9067966d4b9ff725696acf069b3fda61564f61f96dec","disposition":"updated","rationale":"Documented empty-workshop construction, ordinary axle separation and the gear-limit message in the existing surface. No permanent panel, additional learning entry or automatic repair was introduced."} -->
 
 
 
@@ -218,6 +218,23 @@ These examples extend construction possibilities, not evidence of player compreh
 or qualification outside their tested finite operating envelopes.
 
 
+Spur gears use More parts, selected Connections and the existing part-help window.
+Gear mesh explicitly leaves parts in place and requires independently supported
+aligned shafts. The requested Learn & examples browser adds one editable gear-lift
+experiment: predict the slower rotor, run the loaded arm, then disconnect the mesh
+or reduce motor current and retry. Its prerequisite is motor/shaft authoring. This
+adds a distinct speed-versus-load experiment; the rolling-machine example teaches
+power and connection basics without a transmission load comparison. The need is a
+foundational teaching hypothesis, not observed player confusion. It uses the existing
+replacement/download/cancel lifecycle and adds no permanent workbench panel.
+The [gear browser check](../../scripts/gear-browser-cases.mjs#implementation) exercises ordinary
+palette, mesh, undo, save/reload and run actions, including construction from an
+empty workshop with ordinary surface mounts, supported shafts and power wiring.
+The lift uses an ordinary extension axle to separate its arm plane from the gears.
+A gear motion-limit stop offers Build, shaft-support, motor-current and grounded
+restart guidance through the existing message surface. It does not imply broken teeth.
+Physical witnesses remain separate from player comprehension.
+
 The Ball uses the existing part catalogue and selected inspector: diameter is a
 primary size edit; material and expandable Contact settings live in Engineering
 details. Bounciness and Grip may inherit Material default or use Custom values;
@@ -264,7 +281,7 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"7831a6898a3c3ff11ae82d1d13923409f7351bf60347c5abf8baad0408721d41","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"7144a81b21411f419534e3cc79c177ac929f6bde6fdcf024f5911b691a804705","disposition":"still accurate","rationale":"The linked playtesting setup now describes data recording and compressed packets. UI review remains a separate rendered journey and agent observations still cannot supply designated-player acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"ea88328e5b6c036ea17267c95bc6b246ab2dfe4576e4eef871b9811fb1ccda44","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"00eed0e5467c828758c00c639be0ddc58bbb5280f8c33e4b8831f8392dbfa11e","disposition":"updated","rationale":"The existing learning verifier now checks full empty construction, save reload, default power and visible recovery. The explanation preserves rendered review and explicitly separates automation from human comprehension."} -->
 
 
 Use the manifest's `workbench-content-lifecycle` invariant and
@@ -278,7 +295,10 @@ states; the [browser journey](../../scripts/verify-workbench-content.mjs#source)
 checks requested learning/results, scope against changed parts, preserved operations
 and non-mutating help. The [learning example journey](../../scripts/verify-learning-examples.mjs#source)
 checks the independent motor edit, Run and Undo, and a zero-damping comparison that
-preserves other spring tuning. It also checks cancellation of example replacement.
+preserves other spring tuning. It also checks cancellation of example replacement
+and the gear extension: construction from an empty workshop, palette insertion,
+mesh disconnect/reconnect without
+movement, Undo, downloaded save/reload and physical stepping.
 Existing manipulation, inspector, mirror, connection and input
 checks retain their guarantees when locators move. Extend the appropriate check for
 new behavior; demonstrate new tests failing before the repair. Do not bless arbitrary

@@ -122,3 +122,4 @@ These are registered commands and checks, not evidence that they passed.
 | documentation-batch-review | [reviewSections](../../scripts/documentation.mjs) | developer-documentation |
 | browser-scope-reviewed-application | [deriveScopeProposal](../../scripts/browser-scope-proposal.mjs), [applyScopeProposal](../../scripts/browser-scope-apply.mjs), [validateScopeWitnessResult](../../scripts/browser-scope-witness-contract.mjs) | verification-scope-configuration |
 | capture-packet-compression | [unpackCapturePacket](../../src/application/capture-packet.mjs) | invariant-controls, verify-remote-playtest, verify-cloud-playtest |
+| supported-spur-transmission | [compileGearMeshes](../../src/model/gear-mesh.mjs), [coupledGearImpulses](../../src/simulation/physics/law/gear.mjs), [createPhysicsWorld](../../src/simulation/physics/world.mjs), [createWorkshopView](../../src/presentation/workshop-view.mjs) | invariant-controls, measure-gears |

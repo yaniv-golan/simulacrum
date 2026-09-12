@@ -5,6 +5,7 @@ import { createRetry } from './retry.mjs';
 import { createImpactEvents, createImpactSound } from '../presentation/impact-sound.mjs';
 import { CATALOG } from '../model/catalog.mjs';
 import { createBallDrop } from '../model/fixtures/ball-drop.mjs';
+import { createGearLift } from '../model/fixtures/gear-lift.mjs';
 import { createSpringLauncher } from '../model/fixtures/spring-launcher.mjs';
 import {
   createSuspensionComparison,
@@ -393,6 +394,11 @@ export async function mountWorkshopApp(root) {
         if (frame().metadata.blueprint.parts.length && command.replace !== true)
           return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
         command = { type: 'load', save: createSpringPlayground({ damping: command.damping ?? 8 }) };
+      }
+      if (command.type === 'gear-lift-example') {
+        if (frame().metadata.blueprint.parts.length && command.replace !== true)
+          return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
+        command = { type: 'load', save: createGearLift() };
       }
       if (command.type === 'ball-drop-example') {
         if (frame().metadata.blueprint.parts.length && command.replace !== true)

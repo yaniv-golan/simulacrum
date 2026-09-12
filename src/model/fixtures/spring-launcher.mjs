@@ -52,8 +52,8 @@ export function createSpringLauncher({
   connect(face('pusher-spacer', 'top'), face('pusher-bearing', 'bottom'), 'fixed');
   connect(port('pusher-bearing', 'shaft'), port('pusher-roller', 'axle'), 'shaft');
   // Ordinary Build sequence: assemble at 175 mm, then set the zero-force length
-  // to 385 mm. With 300 N/m stiffness, the authored preload stores 6.615 J.
-  blueprint.parts.find((p) => p.id === 'guide').parameters.restLength = 0.385;
+  // to 400 mm. With 300 N/m stiffness, the authored preload stores 7.59375 J.
+  blueprint.parts.find((p) => p.id === 'guide').parameters.restLength = 0.4;
   add('chassis', 'side-bed');
   connect(face('base', 'front'), face('side-bed', 'back'), 'fixed');
   let previous = 'side-bed';

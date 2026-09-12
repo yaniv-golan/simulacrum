@@ -1,3 +1,4 @@
+import { compileGearMeshes } from './gear-mesh.mjs';
 import { mechanicalGroup } from './connection-graph.mjs';
 import { compileBody } from './compile-body.mjs';
 import { partPrimitives } from './geometry.mjs';
@@ -29,6 +30,8 @@ export const ASSEMBLY_REASON_CODES = Object.freeze([
   'PORT_OCCUPIED',
   'MISALIGNED',
   'UNSUPPORTED_SHAFT_TOPOLOGY',
+  'UNSUPPORTED_GEAR_TOPOLOGY',
+  'GEAR_MISALIGNED',
 ]);
 function reject(reasonCode, path) {
   const error = new Error(reasonCode);
@@ -243,6 +246,10 @@ export function compileAssembly(
       connections.push({ id: connection.id, reasonCode: 'OK' });
       continue;
     }
+    if (connection.kind === 'gear') {
+      connections.push({ id: connection.id, reasonCode: 'OK' });
+      continue;
+    }
     if (connection.kind === 'spring') {
       const G = A.part.type === 'springGuide' ? A : B,
         C = G === A ? B : A;
@@ -336,6 +343,7 @@ export function compileAssembly(
       });
     }
   }
+  joints.push(...compileGearMeshes(blueprint, joints));
   // Environment bodies follow authored bodies so every part and network index stays stable.
   for (const sensor of power.sensors.filter((s) => s.kind === 'travel')) {
     const binding = blueprint.parts[sensor.node].springBinding;

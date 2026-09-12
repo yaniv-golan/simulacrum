@@ -106,6 +106,42 @@ const hubTilt = Math.atan2(0.07, 0.1),
 const aboutZ = (angle) => [0, 0, Math.sin(angle / 2), Math.cos(angle / 2)];
 /** @type {Readonly<Record<import('./generated/blueprint-types.js').PartType, CatalogDefinition>>} */
 export const CATALOG = freeze({
+  gear12: {
+    ...component(
+      'gear12',
+      '12T spur gear',
+      [0.01, 0.05, 0.05],
+      'steel',
+      [
+        port('left', 'shaft', [-0.01, 0, 0]),
+        port('right', 'shaft', [0.01, 0, 0]),
+        { ...port('mesh', 'gear', [0, 0, 0]), multiplicity: 'many' },
+      ],
+      {},
+      'cylinder',
+    ),
+    milestone: 'M3b',
+    mountingFaces: [],
+    gear: { teeth: 12, module: 0.01, pitchRadius: 0.06, stiffness: 20000, damping: 20 },
+  },
+  gear24: {
+    ...component(
+      'gear24',
+      '24T spur gear',
+      [0.01, 0.11, 0.11],
+      'steel',
+      [
+        port('left', 'shaft', [-0.01, 0, 0]),
+        port('right', 'shaft', [0.01, 0, 0]),
+        { ...port('mesh', 'gear', [0, 0, 0]), multiplicity: 'many' },
+      ],
+      {},
+      'cylinder',
+    ),
+    milestone: 'M3b',
+    mountingFaces: [],
+    gear: { teeth: 24, module: 0.01, pitchRadius: 0.12, stiffness: 20000, damping: 20 },
+  },
   ball: {
     type: 'ball',
     name: 'Ball',

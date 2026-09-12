@@ -15,7 +15,7 @@ export interface Primitive {
 }
 export interface Port {
   id: string;
-  kind: 'shaft' | 'power' | 'signal' | 'spring';
+  kind: 'shaft' | 'power' | 'signal' | 'spring' | 'gear';
   multiplicity: 'one' | 'many';
   direction: 'input' | 'output' | 'bidirectional';
   position: Vec3;
@@ -42,6 +42,7 @@ export interface CatalogDefinition {
   mountingPads?: Readonly<Record<string, readonly [number, number]>>;
   controlBindingDefault?: import('./generated/blueprint-types.js').Part['controlBinding'];
   controlBindingMilestone?: string;
+  gear?: { teeth: number; module: number; pitchRadius: number; stiffness: number; damping: number };
 }
 export interface BodyConfiguration {
   shape: 'box' | 'cylinder' | 'sphere';
@@ -68,6 +69,16 @@ export type JointConfiguration = { a: number; b: number; anchorA: Vec3; anchorB:
       rotationB: Quaternion;
       axisA?: never;
       axisB?: never;
+      limits?: never;
+    }
+  | {
+      kind: 'gear';
+      axisA: Vec3;
+      axisB: Vec3;
+      radiusA: number;
+      radiusB: number;
+      stiffness: number;
+      damping: number;
       limits?: never;
     }
   | {
@@ -124,4 +135,38 @@ export interface ContactSample {
   intervalSeconds: number;
   available: boolean;
   rows: readonly ContactObservation[];
+}
+
+/** One coupled mesh solve. Signed reaction work is distinct from dissipation. */
+export interface GearImpulseResult {
+  dampingWorkJ: number;
+  numericalLossJ: number;
+  kineticDeltaJ: number;
+  potentialDeltaJ: number;
+  rawWorkJ: number;
+  constraintWorkJ: number;
+}
+/** Completed mesh telemetry; strain is the checkpointed completed geometric travel in metres. */
+export interface GearObservation {
+  index: number;
+  strain: number;
+  potentialJ: number;
+  speed: number;
+  completedSlipM: number;
+  predictorSlipM: number;
+  splitDriftM: number;
+  splitStepM: number;
+  splitElasticDeltaJ: number;
+}
+/** These fields are present only for scenes containing a mesh. */
+export interface GearEnergyLedger {
+  gearPotentialJ?: number;
+  gearDampingWorkJ?: number;
+  gearNumericalLossJ?: number;
+  gearConstraintWorkJ?: number;
+  gearSplitElasticDeltaJ?: number;
+}
+export interface GearPhysicsBoundary {
+  applyGears(): GearImpulseResult;
+  gears(): readonly GearObservation[];
 }

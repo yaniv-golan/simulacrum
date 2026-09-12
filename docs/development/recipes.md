@@ -18,7 +18,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"38b278f90f9cfbdde37ad024b18fac04194ef5087111d7260832ac78bee599bd","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"07784d9b850ff3d56756ca8fe45e79d839a4be61fae5778aa35bb7a338d99b57","disposition":"still accurate","rationale":"The fflate dependency affects recording transport only. Catalog/schema/geometry ownership and the preserved partitioned Ball test bodies remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b1bde6a725f66c097a5b722e9433565c731d782918ed50e349b3694eef0fadf9","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"918911b9182af41da6a349071810d471dde866b1d9ed0b2cb4c5e6782702e0e7","disposition":"still accurate","rationale":"The gear lift adds an ordinary steel axle for visibility. Gear catalog geometry, explicit supported mesh admission and original authoring assertions remain unchanged."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -46,9 +46,19 @@ The optional `authoredContact.body` fields retain material defaults when omitted
 reset removes an override rather than freezing the current material value. Admission
 canonicalizes empty contact records without changing explicit zero or mutating the input.
 
+The 12T and 24T spur gears use solid root cylinders for collision, inertia and
+material selection, with separate fixed pitch radii for transmission. Painted radial
+marks depict body rotation without pretending to collide as teeth. The
+[gear compiler](../../src/model/gear-mesh.mjs) admits explicit meshes only between
+independently revolute-supported rotors on one rigid carrier: a forest of at most
+eight edges. Limited bearings and extra non-revolute rotor supports reject. A mesh
+neither snaps nor provides shaft support; ordinary Connect/Disconnect and history
+remain the editing owners. Preserve the [authoring controls](../../test/gear-authoring.test.mjs)
+when changing admission.
+
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"4b48f2524dd396db33402bc7945eb13548860475f943dd5ab8e3282e457d42ce","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"06d306d4dc4cd32da0d8cfd9eca12e4093129ff23091d8db713909ebaff96116","disposition":"still accurate","rationale":"contactProperty uses strict command keys, full candidate validation, normal undo history and null removal of an override. It conforms to the existing command recipe without a second admission owner."} -->
+<!-- doc-review {"version":1,"fingerprint":"cf8f2923b5ff74a80ddda506d9235ee7abf73b6e9b74d7217573757b37660351","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"59f1f3b367513cea5703809531fa11a0f76740972fcba132831d46290087b970","disposition":"still accurate","rationale":"Construction and recovery use existing connect, transform, Build and Run commands. Session failure wording adds no transaction owner or command shape."} -->
 
 
 
@@ -65,7 +75,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"5932c5b18ea9c17a3198b065f9f3025d9899a3ed2f94821ce58ac21d16e3320b","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"e126c7d9f0b8e0058ac5b02ce2a3de776cd578e47bd50d97bfc2f8e629a50745","disposition":"still accurate","rationale":"The integration removes a duplicate review comment without changing recipe guidance. Artifact-owned verifier outputs and recording compression do not alter preview, cancellation, command admission or help input ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"e08906ad451b5f17a951946964fb81b334832e86f8e22c9b9443ac9acfd47c86","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"0475c5c4fa0b3ac87fe349f57d8a9a6721a58421b180c9d99b40e2ac198fc5a7","disposition":"still accurate","rationale":"GEAR_MOTION_LIMIT uses the existing message surface and Build recovery controls. The construction journey exercises ordinary surface controls without changing preview or input ownership."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -114,7 +124,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"9142468e01e6c9bc1e16de2bd4b3db9ace428ba56b97a98b3042a5f71d95a8ef","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"8d141d7d35d7a4b3193ad1444d6a843e978efe7f38847f56f85528e69b582bcb","disposition":"still accurate","rationale":"Impact sound consumes completed contact rows with missing-data invalidation; it adds no diagnostic inference or physical write. Selected-body measurements retain their existing numeric accumulator and sampling definition."} -->
+<!-- doc-review {"version":1,"fingerprint":"7f76d3e7904411fafe19562640f7b5b8a9734624aaea7ac97f0509b959e7545e","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"964151c2684ae0e712fd9c6bc906400d74b66d2b70604882ff5de2f8aec4694e","disposition":"still accurate","rationale":"The gear motion limit reports a physics-door reason through completed failure publication. It suggests player-authored recovery without inferring intent, automatically repairing state or changing measurement sampling."} -->
 
 
 
@@ -139,7 +149,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"5393a71878293ff61504eae5b41cdeb8c105a5e1314ccf28c34fe47d5248b6c4","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"59cef390ecfd8c978aa67ec21a1031d6ea747d66839ed6f8d9ee5e8fbf24157f","disposition":"updated","rationale":"Added native sphere mass and inertia controls, pair restitution, roll/slide, checkpoint and clock comparisons, and the bounded sphere-versus-plate CCD policy. High-speed sphere-sphere sweeps remain explicitly unqualified; solver subdivisions and pass counts are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e48cf699f1654155f1d883aff214d1be3afed4e3a3baa31b3c8318cf796ec3d5","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"347f576bb084be641c5037cfc3a1ac16a92402b49c239a94882b557b9bc86441","disposition":"updated","rationale":"Explained native residual admission, fixed-component contacts and snapshot compatibility, immutable sensing reuse and bounded gear limits. The common launcher now stores 7.59375 J at the existing rest-length limit; actual isolated impacts retain prior cases and extend to 6.5 m/s with unchanged overlap and noncreation limits."} -->
 
 
 
@@ -166,11 +176,21 @@ Gauss-Seidel passes. Contact impulses can otherwise leave substantial constraine
 axle velocities after the joint solve. Preserve the passive settling and free-axis
 controls when changing this accuracy setting; more passes cost simulation time and
 rendering quality reductions cannot compensate for that cost. These finite
-convergence checks do not establish convergence for arbitrary assemblies.
+convergence checks do not establish convergence for arbitrary assemblies. The launcher
+uses the existing 0.4 m rest-length limit after assembly at 0.175 m, storing
+7.59375 J at 300 N/m. Its steel projectile and ordinary geometry remain shared
+across Ball and wheel variants. Preserve the independent spring-source allowance,
+quiet controls and catcher repair witnesses when changing that authored preload;
+also recheck the isolated roller impact speeds against the larger stored energy.
 Native factor reuse is limited to a fixed-pose biased iteration batch. Preserve
 fresh velocity/impulse right-hand sides, limit solving and residual refinement on
 every pass, and discard factors before integration or an unbiased refresh.
 Changing that lifetime requires exact cached/uncached state and cold-restore controls.
+Tree and cyclic original-equation residual checks share a coefficient-weighted
+minimum-subnormal rounding allowance in addition to the existing relative bound.
+Preserve ordinary-scale inaccurate-residual and nonfinite rejection, plus actual
+native stepping and restore controls at gradual underflow. This numerical error
+bound does not clamp velocities or replace the original equations.
 The session reuses copied post-integration body and energy samples only while
 subsequent phases leave native physical state unchanged. If structure or thermal
 work starts mutating bodies, resample after that mutation before publishing or
@@ -215,7 +235,16 @@ impulse, and geometric contact alone does not establish support. Exercise invali
 and overflow through native callbacks as well as mocks: return through wrapper cleanup
 before rethrowing a collection failure. Empty manifolds have no normal to validate,
 but their unavailable solver state must remain visible. Readback optimizations must
-preserve complete canonical samples and native snapshot/next-step identity.
+preserve complete canonical samples and native snapshot/next-step identity. Contact
+filtering excludes only bodies connected through authored fixed joints, including
+transitive paths. It preserves separate grounded groups, articulated paths and
+external supports. The private event queue enables the native hook entry point;
+collider hook flags participate in snapshot plant admission. Older byte snapshots
+without these flags reject rather than silently changing continuation semantics;
+authored blueprint saves remain loadable. Validate loaded support
+and energy because removing redundant self contacts also removes their numerical
+damping. Sensors reuse the immutable previous completed body snapshot before queued
+commands apply; publication admits that body root once while copying new sensor data.
 The [suspension contract helpers](../../test/contracts/suspension.mjs#implementation) share signed
 100 ms support, pin-frame and finite clearance oracles across the registered journey,
 regulation and load tests. The active bench's 0.26–0.33 m target and manual sweeps do
@@ -223,6 +252,33 @@ not qualify arbitrary guide travel or pin angles. Its declared 10 N laboratory l
 uses ordinary recorded external impulses, separately from the three authored material
 cases. Preserve external-work accounting and the 2 s acquisition/3 s hold test;
 never move a mounting point or change mass invisibly to manufacture disturbance recovery.
+
+The [gear law](../../src/simulation/physics/law/gear.mjs) solves compliant tangential
+mesh impulses together by backward Euler using native bilateral mobility. Equal and
+opposite impulses act at the same world pitch point, including carrier reactions.
+The [numeric admission](../../src/simulation/physics/gear-topology.mjs) independently
+checks support geometry. Meshes join solver islands but create no native bearing.
+Session applies mesh impulses after motors and before the single native integration.
+
+Completed geometric slip supplies the next elastic strain. Its correction from the
+pre-integration predictor adds signed numerical elastic work, separately from
+physical damping, backward-Euler loss and signed bilateral reaction work. A native
+contact occurring after the mesh solve can contribute this split error; a closed
+energy ledger alone does not prove passivity. Preserve absolute strain and per-step
+split bounds, independent passive/gravity/contact energy envelopes, and snapshot
+validation of all mesh memory before swapping live state. The [gear runtime controls](../../test/gear-physics.test.mjs)
+cover finite ratios, load tradeoffs, carrier momentum and restore; the scalar law's
+energy identity is not a whole-machine qualification. This is a bounded compliant
+transmission, without backlash, tooth collision or moving-centre planetary support.
+Abrupt impacts can exceed the per-step split bound even below the elastic strain
+limit. Runtime rejection reports `GEAR_MOTION_LIMIT` with support, current and
+grounded-restart guidance; it is a simulation limit, not simulated tooth breakage.
+The [capacity controls](../../test/gear-capacity.test.mjs) retain a coupled eight-mesh
+chain and reject a ninth independently supported mesh. The registered exclusive
+[gear measurement](../../scripts/measure-gears.mjs#source) runs finite 60-second loaded
+12/34-body apparatuses and repeated zero/one/eight-mesh timing controls against
+the existing 120 Hz tick and phase budgets. These simulation measurements do not
+qualify browser cadence or arbitrary larger machines.
 
 Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
@@ -237,7 +293,7 @@ settings and slop. Re-run existing contact/constraint cases when changing this p
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"bf9fda007f35aba4efb3700cc43ebfb97e9bb16569bbd89b1e425c432f3286e8","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"0ac4ec5e61953fe7f323b25a11162141d26906f3cef441e98a6340bb1de8f42e","disposition":"still accurate","rationale":"The combined browser evidence closure changes artifact output paths and source dependencies, not assembly capture, copied references or atomic insertion. The assembly UX partition and its original assertions remain intact."} -->
+<!-- doc-review {"version":1,"fingerprint":"8719e726b6c91f27461b58ddac95b67c23605d8402f84b42c51d16d3abe6f247","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"304716bc01047d81142e4ab4706945d2bd739126b027e3588ddbf36beb64c79d","disposition":"still accurate","rationale":"The axial extension is an ordinary fixed shaft assembly and construction uses existing model commands. Physics contact suppression changes no authoring transforms, group selection or reusable definition admission."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -332,7 +388,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"a6856b1d2f14aa9c63a8197d391ea9332a2189ed5cb92e7076761f1720f388d3","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"9ab994d1d2e53a27a07b330970bfe19456f0a94f67e0312cbf888d0dfde87109","disposition":"still accurate","rationale":"Only recording dependencies and source/evidence bookkeeping changed in this recipe closure. Wiring visibility, GPU ownership and every stated spring timing budget remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a373702d287459fc9bcc9e3b30a12fec6680da6a192f4cfe3b89021bc6558196","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"fb6c39eb979ca0d5a2fdba8690ec27fa8de42afc7b3c1d51677ae42e13ecce2c","disposition":"still accurate","rationale":"No presentation overlay implementation changed. Completed body reuse preserves immutable readings; fixed-component self-contact filtering changes physical contact admission without granting the renderer state ownership."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -340,8 +396,10 @@ connection overlay. The checked producer takes narrow display inputs; the checke
 [connection renderer](../../src/presentation/connection-view.mjs) owns GPU resources.
 The workshop view resolves endpoints from displayed meshes, including exploded offsets.
 The renderer never changes authored connectivity or sends a command. Visibility is an
-explicit required field. Normal electrical links use straight schematic lines; mechanical
-geometry and exploded dashed styling retain their existing behavior.
+explicit required field. Normal electrical links use straight schematic lines; fixed/shaft mechanical
+geometry and exploded dashed styling retain their existing behavior. Gear meshes
+use dashed relationships without a solid supporting rod; their root-cylinder
+marks follow completed body transforms. Preserve the [gear rendering controls](../../test/gear-view.test.mjs).
 
 Use exact IDs from [connectionTestPaths](../../src/model/connection-test-paths.mjs#symbol=connectionTestPaths) for
 path highlights. The [Connect & test panel](../../src/presentation/connection-test.mjs#source)
@@ -416,7 +474,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"267e08e3ca09815170168b2c71bc3b95dddd9f68d541b1111ea0b19b31033b1a","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"f1101a8759099df2b77eb903aeaa504c62b656adb4a3915e0597aece63083c86","disposition":"still accurate","rationale":"The dependency lock now pins recording compression explicitly. Graphics-quality controls and timing budgets are unchanged; no recording transport change selects graphics quality."} -->
+<!-- doc-review {"version":1,"fingerprint":"a5eb8d66c231e6cd1c0280c00bdb54472bc064c9b860d639984c7aba7da69c23","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"70dab5f60156fb50dcd2c931dbfa28f3d93e9d76e81d943f65c9d300847c0882","disposition":"still accurate","rationale":"Only the native dependency changed; graphics quality levels, thresholds, resource lifecycle and independence from simulation remain unchanged."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

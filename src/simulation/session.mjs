@@ -157,10 +157,19 @@ export async function createSession(
   let sensors = sampleSensors(0, copy(initial), config.power, config.joints);
   let torques = [],
     receipts = [];
+  const hasGears = () => config.joints.some((j) => j.kind === 'gear');
   const hasSprings = () => config.joints.some((j) => j.kind === 'spring');
   const emptyEnergy = (mechanical = world.mechanicalEnergy()) => ({
     ...mechanical,
     ...(mechanical.springPotentialJ !== undefined ? { dampingWorkJ: 0 } : {}),
+    ...(mechanical.gearPotentialJ !== undefined
+      ? {
+          gearDampingWorkJ: 0,
+          gearNumericalLossJ: 0,
+          gearConstraintWorkJ: 0,
+          gearSplitElasticDeltaJ: 0,
+        }
+      : {}),
     actuatorWorkJ: 0,
     externalWorkJ: 0,
     integrationDeltaJ: 0,
@@ -169,7 +178,8 @@ export async function createSession(
     balanceResidualJ: 0,
   });
   let energy = emptyEnergy();
-  const total = (e) => e.kineticJ + e.potentialJ + (e.springPotentialJ ?? 0);
+  const total = (e) =>
+    e.kineticJ + e.potentialJ + (e.springPotentialJ ?? 0) + (e.gearPotentialJ ?? 0);
   function priorSpringLength(j, bodies) {
     const a = bodies[j.a],
       b = bodies[j.b],
@@ -192,16 +202,17 @@ export async function createSession(
         : (reading.length - priorSpringLength(configuration.joints[reading.index], previous)) / DT,
     }));
   }
-  const frame = (physics, timings = {}) => ({
+  const frame = (physics, timings = {}, gears = hasGears() ? world.gears() : null) => ({
     tick,
     status,
-    physics,
+    physics: immutableCopy(physics),
     springs: springReadings(),
+    ...(gears ? { gears } : {}),
     contacts: { ...contactSample, sampleTick: tick, intervalSeconds: tick === 0 ? 0 : DT },
     metadata,
     energy: copy(energy),
     power: power.read(),
-    sensors: copy(sensors),
+    sensors,
     receiverControl: receiverControl.snapshot(),
     phaseTimings: timings,
     phaseStatus: Object.fromEntries(
@@ -329,7 +340,9 @@ export async function createSession(
         externalWorkJ = 0,
         integrationDeltaJ = 0,
         constraintDissipationJ = 0,
-        springReceipt = { dampingWorkJ: 0, kineticDeltaJ: 0 };
+        springReceipt = { dampingWorkJ: 0, kineticDeltaJ: 0 },
+        gearReceipt = { dampingWorkJ: 0, numericalLossJ: 0, constraintWorkJ: 0 },
+        gearSplitElasticDeltaJ = 0;
       // These samples belong only to this tick's completed native states.
       // No physics mutations occur between each capture and its later reads.
       let afterEnvironmentEnergy, afterIntegrationEnergy, completedBodies;
@@ -338,7 +351,14 @@ export async function createSession(
           const start = performance.now();
           switch (phase) {
             case 'sensor-snapshot':
-              sensors = sampleSensors(tick, world.read(), config.power, config.joints);
+              // The previous completed body snapshot is unchanged until this tick
+              // applies commands. Reuse its admitted immutable data for sensors.
+              sensors = sampleSensors(
+                tick,
+                observations.observe().frames[0].physics,
+                config.power,
+                config.joints,
+              );
               break;
             case 'controller-commands': {
               for (const output of dispatcher.run({
@@ -447,6 +467,7 @@ export async function createSession(
                 constraintWorkJ += r.constraintWorkJ;
                 return { node: config.power.motors[i].node, ...r };
               });
+              if (hasGears()) gearReceipt = world.applyGears();
               break;
             case 'environment-forces': {
               const before = world.mechanicalEnergy();
@@ -462,11 +483,16 @@ export async function createSession(
               completedBodies = world.step();
               contactSample = world.contacts();
               afterIntegrationEnergy = world.mechanicalEnergy();
+              if (hasGears())
+                gearSplitElasticDeltaJ = world
+                  .gears()
+                  .reduce((sum, r) => sum + r.splitElasticDeltaJ, 0);
               integrationDeltaJ =
                 total(afterIntegrationEnergy) -
                 total(before) +
                 springReceipt.kineticDeltaJ +
-                springReceipt.dampingWorkJ;
+                springReceipt.dampingWorkJ -
+                gearSplitElasticDeltaJ;
               break;
             }
             case 'structure-failure': {
@@ -499,6 +525,14 @@ export async function createSession(
               energy = {
                 ...afterIntegrationEnergy,
                 ...(hasSprings() ? { dampingWorkJ: springReceipt.dampingWorkJ } : {}),
+                ...(hasGears()
+                  ? {
+                      gearDampingWorkJ: gearReceipt.dampingWorkJ,
+                      gearNumericalLossJ: gearReceipt.numericalLossJ,
+                      gearConstraintWorkJ: gearReceipt.constraintWorkJ,
+                      gearSplitElasticDeltaJ,
+                    }
+                  : {}),
                 actuatorWorkJ,
                 externalWorkJ,
                 integrationDeltaJ,
@@ -512,7 +546,11 @@ export async function createSession(
                   externalWorkJ -
                   integrationDeltaJ +
                   constraintDissipationJ +
-                  springReceipt.dampingWorkJ,
+                  springReceipt.dampingWorkJ +
+                  gearReceipt.dampingWorkJ +
+                  gearReceipt.numericalLossJ -
+                  gearReceipt.constraintWorkJ -
+                  gearSplitElasticDeltaJ,
               };
               tick = next;
               pending = [];
@@ -549,11 +587,14 @@ export async function createSession(
           anchor: previousInterval?.anchor ?? anchor,
           inputs: [...(previousInterval?.inputs ?? []), ...history],
           failedTick: next,
-          reasonCode: ['NON_FINITE_STATE', 'INVARIANT_VIOLATION', 'ENERGY_INVARIANT'].includes(
-            error.message,
-          )
-            ? error.message
-            : 'PHYSICS_FAILURE',
+          reasonCode:
+            error.reasonCode === 'GEAR_MOTION_LIMIT'
+              ? 'GEAR_MOTION_LIMIT'
+              : ['NON_FINITE_STATE', 'INVARIANT_VIOLATION', 'ENERGY_INVARIANT'].includes(
+                    error.message,
+                  )
+                ? error.message
+                : 'PHYSICS_FAILURE',
           completed: observations.observe().frames.at(-1),
         });
         observations.publish({
@@ -643,7 +684,11 @@ export async function createSession(
       const nextInitial = immutableCopy(candidate.read()),
         nextSensors = sampleSensors(0, copy(nextInitial), nextConfig.power, nextConfig.joints);
       const nextFrame = {
-        ...frame(nextInitial),
+        ...frame(
+          nextInitial,
+          {},
+          nextConfig.joints.some((j) => j.kind === 'gear') ? candidate.gears() : null,
+        ),
         springs: springReadings(candidate, nextSensors.bodies, nextConfig, true),
         contacts: { ...candidate.contacts(), sampleTick: 0, intervalSeconds: 0 },
         tick: 0,
@@ -770,9 +815,22 @@ export async function createSession(
         'constraintWorkJ',
         'balanceResidualJ',
         ...(hasSprings() ? ['springPotentialJ', 'dampingWorkJ'] : []),
+        ...(hasGears()
+          ? [
+              'gearPotentialJ',
+              'gearDampingWorkJ',
+              'gearNumericalLossJ',
+              'gearConstraintWorkJ',
+              'gearSplitElasticDeltaJ',
+            ]
+          : []),
       ]) ||
       !Object.values(cp.energy).every(Number.isFinite) ||
       cp.energy.constraintDissipationJ < 0 ||
+      (hasGears() &&
+        (cp.energy.gearPotentialJ < 0 ||
+          cp.energy.gearDampingWorkJ < 0 ||
+          cp.energy.gearNumericalLossJ < 0)) ||
       (hasSprings() && (cp.energy.springPotentialJ < 0 || cp.energy.dampingWorkJ < 0))
     )
       invalid();
@@ -841,6 +899,7 @@ export async function createSession(
         kineticJ: cp.energy.kineticJ,
         potentialJ: cp.energy.potentialJ,
         ...(hasSprings() ? { springPotentialJ: cp.energy.springPotentialJ } : {}),
+        ...(hasGears() ? { gearPotentialJ: cp.energy.gearPotentialJ } : {}),
       },
       config.power.motors.flatMap((m, i) =>
         m.positionControl && m.joint >= 0

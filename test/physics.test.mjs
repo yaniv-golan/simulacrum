@@ -986,10 +986,11 @@ test('launcher roller contacts resolve near-rest and bounded fast impacts withou
     configuration = compileAssembly(bp).configuration;
   const authored = (id) =>
     structuredClone(configuration.bodies[bp.parts.findIndex((p) => p.id === id)]);
-  // 6 m/s exceeds sqrt(2*6.615/(0.9*.431969))=5.834 m/s: all stored
+  // 6.5 m/s exceeds sqrt(2*7.59375/(0.9*.431969))=6.251 m/s: all stored
   // energy plus the alternative-source allowance placed in the lightest roller.
   // 0.01 m/s moves only83 micrometres per tick. These isolated geometry tests
   // qualify these contact speeds, not every preload or whole-machine impact.
+  const impactSpeeds = [0, 0.01, 6, 6.5];
   const spring = configuration.joints.find((j) => j.kind === 'spring');
   const anchor = (index, local) =>
     rotateFixedAnchor(configuration.bodies[index].rotation, local).map(
@@ -1005,7 +1006,7 @@ test('launcher roller contacts resolve near-rest and bounded fast impacts withou
   assert.ok(
     Math.sqrt(
       (2 * stored) / 0.9 / Math.min(authored('pusher-roller').mass, authored('gate-roller').mass),
-    ) <= 6,
+    ) <= Math.max(...impactSpeeds),
   );
   const kinetic = (bodies, states) =>
     states.reduce((sum, state, i) => {
@@ -1048,7 +1049,7 @@ test('launcher roller contacts resolve near-rest and bounded fast impacts withou
     else assert.ok(Math.abs(transfer) <= 1e-10, 'rest control has no impact impulse');
   };
   for (const id of ['pusher-roller', 'gate-roller'])
-    for (const speed of [0, 0.01, 6])
+    for (const speed of impactSpeeds)
       for (const turned of [false, true])
         for (const reversed of [false, true]) {
           const bodies = [authored('projectile'), authored(id)];

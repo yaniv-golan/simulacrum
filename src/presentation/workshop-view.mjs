@@ -74,6 +74,7 @@ const labels = {
   spring: 'Slide',
   power: 'Power',
   shaft: 'Shaft',
+  gear: 'Gear mesh',
   fixed: 'Mount',
   signal: 'Signal',
 };
@@ -445,6 +446,14 @@ export function createWorkshopView(
         'Open a four-wheel machine. Press Run: W/S drives and A/D turns. Try driving away, turning around and returning to where you started. For another experiment, return to Build, select Shared cell and lower Voltage in Engineering details. Predict how it will drive; try again, then return to Build and Undo to restore the setting.',
         'Try driving example',
         { type: 'driving-example', replace: true },
+      );
+      addExample(
+        guide,
+        'Lift with gears',
+        'Editable experiment · Motor and shaft connections first',
+        'Open a motor, two supported gears and a loaded arm. Predict which gear turns more slowly, then Run. The 12T gear drives the 24T gear with reduction. Return to Build and disconnect their Gear mesh: does the arm still rise? Reconnect it and try reducing the motor current limit. Opening this example replaces the current machine.',
+        'Try gear lift',
+        { type: 'gear-lift-example', replace: true },
       );
       addExample(
         guide,
@@ -2532,16 +2541,19 @@ export function createWorkshopView(
       }
       if (!occupied(part, port)) {
         const mechanical = ['fixed', 'shaft', 'spring'].includes(port.kind),
+          gearMesh = port.kind === 'gear',
           targets = element('div', 'connection-targets');
         targets.append(
           element(
             'p',
             'connection-preview',
-            mechanical
-              ? 'Choose a connection. The smaller connected group moves; the larger one stays in place.'
-              : connections.length
-                ? 'Optional: add another wire. Existing wiring is connected.'
-                : 'Choose where to wire. Both parts stay in place.',
+            gearMesh
+              ? 'Choose an aligned gear on a separately supported shaft. Both parts stay in place. The centre spacing must equal the sum of pitch radii.'
+              : mechanical
+                ? 'Choose a connection. The smaller connected group moves; the larger one stays in place.'
+                : connections.length
+                  ? 'Optional: add another wire. Existing wiring is connected.'
+                  : 'Choose where to wire. Both parts stay in place.',
           ),
         );
         explanation.append(targets);
@@ -2578,7 +2590,7 @@ export function createWorkshopView(
                 const movement = `${moving.name}${movingCount > 1 ? ` and ${movingCount - 1} attached parts` : ''}`;
                 count++;
                 const targetButton = button(
-                  `${mechanical ? 'Attach to' : 'Wire'} ${target.name} · ${targetPort.id}${mechanical ? '' : ' (parts stay put)'}`,
+                  `${gearMesh ? 'Mesh with' : mechanical ? 'Attach to' : 'Wire'} ${target.name} · ${targetPort.id}${mechanical ? '' : ' (parts stay put)'}`,
                   async () => {
                     connectionError.hidden = true;
                     const result = await send({ type: 'connect', ...endpoints() });
@@ -2612,7 +2624,7 @@ export function createWorkshopView(
                       setMessage(
                         mechanical
                           ? `${movement} moved to ${stationary.name}. Connected. Undo to restore.`
-                          : `${part.name} wired to ${target.name}. Both parts stayed in place.`,
+                          : `${part.name} ${gearMesh ? 'meshed with' : 'wired to'} ${target.name}. Both parts stayed in place.`,
                       );
                     } else {
                       connectionError.textContent = `Connection not made. ${explainFailure(result ?? {}, frame?.metadata.blueprint)}`;
@@ -3264,11 +3276,15 @@ export function createWorkshopView(
       // Painted radial marks reveal real rotation. They inherit the body's full
       // transform; there is no separate animation or simulated wheel angle.
       for (const side of [-1, 1])
-        for (let spoke = 0; spoke < 3; spoke++) {
-          const angle = (spoke * 2 * Math.PI) / 3,
+        for (let spoke = 0; spoke < (CATALOG[part.type].gear?.teeth ?? 3); spoke++) {
+          const angle = (spoke * 2 * Math.PI) / (CATALOG[part.type].gear?.teeth ?? 3),
             x = side * (halfLength + 0.0002);
           const points = [
-            new THREE.Vector3(x, 0, 0),
+            new THREE.Vector3(
+              x,
+              Math.cos(angle) * radius * (CATALOG[part.type].gear ? 0.55 : 0),
+              Math.sin(angle) * radius * (CATALOG[part.type].gear ? 0.55 : 0),
+            ),
             new THREE.Vector3(x, Math.cos(angle) * radius * 0.82, Math.sin(angle) * radius * 0.82),
           ];
           const line = new THREE.Line(
@@ -3389,8 +3405,8 @@ export function createWorkshopView(
       edge.kind ??
       (edge.a.surface ? 'fixed' : CATALOG[a.type].ports.find((p) => p.id === edge.a.port).kind);
     if (!completed)
-      return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Will bolt these parts together.' : kind === 'spring' ? 'Will attach the sliding carriage at the zero-force length.' : kind === 'shaft' ? 'Will join the axle, allowing rotation.' : kind === 'power' ? 'Will add a power cable.' : 'Will connect the control signal.'}`;
-    return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Bolted together: they move as one.' : kind === 'spring' ? 'Spring attached: slides along its axis; does not swivel.' : kind === 'shaft' ? 'Axle connected: the wheel can turn.' : kind === 'power' ? 'Power wired: energy can reach the motor.' : 'Signal connected: commands can pass.'}`;
+      return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Will bolt these parts together.' : kind === 'spring' ? 'Will attach the sliding carriage at the zero-force length.' : kind === 'shaft' ? 'Will join the axle, allowing rotation.' : kind === 'gear' ? 'Will mesh the supported gears without moving them.' : kind === 'power' ? 'Will add a power cable.' : 'Will connect the control signal.'}`;
+    return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Bolted together: they move as one.' : kind === 'spring' ? 'Spring attached: slides along its axis; does not swivel.' : kind === 'shaft' ? 'Axle connected: the wheel can turn.' : kind === 'gear' ? 'Gear mesh connected: supported shafts exchange rotation.' : kind === 'power' ? 'Power wired: energy can reach the motor.' : 'Signal connected: commands can pass.'}`;
   }
   function showGuideConnection(edge, completed = false) {
     if (edge && !completed && guideVisual?.id === edge.id && !guideVisual.completed) return;

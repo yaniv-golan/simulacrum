@@ -5,7 +5,7 @@ patch and rebuild recipe. The package uses uniform f64 physical arithmetic and
 Float64Array physical bindings. Debug colors remain Float32Array; index and handle
 encodings retain their original integer/opaque semantics.
 
-The application checks runtime version `0.20.0-simulacrum.spring.8.f64`. Physics
+The application checks runtime version `0.20.0-simulacrum.spring.9.f64`. Physics
 snapshot envelope version 4 records that backend identity and rejects previous
 precision/layout envelopes before native deserialization. Authored configurations
 are unchanged; opaque checkpoints from earlier backend versions are incompatible.
@@ -16,7 +16,12 @@ application's bilateral response uses an owned numerical factor from the same
 row/CFM convention and factorization. If tree refinement stalls at extreme stop
 row scales, the final correction uses independent native joint blocks (at most six
 rows each). Acceptance still checks every original equation with the same residual
-bound and three-correction limit. Factors contain no live world references;
+bound and three-correction limit. Both tree and cyclic original-equation checks
+include a coefficient-weighted minimum-subnormal rounding allowance when the
+relative term underflows. Ordinary rows that satisfy the finite relative bound
+return before the underflow calculation. The normal relative tolerance is unchanged; finite
+inputs and finite bounds remain required, and no physical state is clamped.
+Factors contain no live world references;
 the physics door releases them at the end of their preparation lifetime. Derived
 world inertia refreshes from local mass properties and world-axis lock settings
 following each existing rotation integration. Unbounded bilateral components use
@@ -49,7 +54,7 @@ Run `build.sh` with Node 24.18.0, Rust 1.94.0 and its wasm32-unknown-unknown tar
 wasm-bindgen 0.2.128, wasm-opt 111, Python 3, npm and patch available on PATH.
 Install repository dependencies first; the recipe uses its pinned TypeScript 5.9.3.
 It verifies the pinned Rapier and Parry sources, applies both patches, runs the
-pure friction regression tests and builds only the
+pure friction and residual-bound regression tests and builds only the
 3D f64 package. It acquires `/tmp/simulacrum-rapier-contact-build-v2` exclusively as the physical
 compilation root so Cargo external dependency identities remain stable. Each run
 starts with fresh sources and targets. On normal success or failure, all files move
@@ -72,7 +77,7 @@ Provenance records the exact source, patch, toolchain, WASM and package hashes.
 clean rebuilds. This heavy native-change qualification is separate from CI. It
 does not qualify arbitrary assemblies or other platforms. Input roles are `baseline`,
 `candidate`, `staleFactor`, `staleRhs`; each supplies absolute `package`, `patch`,
-`packageSha256`, `patchSha256`, and `version` (spring.6, spring.7 or spring.8 f64). Preserve
+`packageSha256`, `patchSha256`, and `version` (spring.6, spring.7, spring.8 or spring.9 f64). Preserve
 the controlled source patches and build evidence with those artifacts. Each non-candidate role also requires `reviewedDifferenceSha256` (SHA256 of candidate
 patch bytes, a NUL byte, then control patch bytes) and `reviewRationale` describing the
 reviewed change. The runner freezes all inputs, rebuilds each role from its patch,

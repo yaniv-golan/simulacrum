@@ -21,7 +21,7 @@ const hash = (x) => {
       view = new DataView(bytes.buffer),
       size = view.getUint32(4);
     const meta = JSON.parse(new TextDecoder().decode(bytes.subarray(12, 12 + size)));
-    assert.match(meta.backend, /^0\.20\.0-simulacrum\.spring\.[678]\.f64$/);
+    assert.match(meta.backend, /^0\.20\.0-simulacrum\.spring\.[6789]\.f64$/);
     meta.backend = '0.20.0-simulacrum.spring.6.f64';
     const encoded = new TextEncoder().encode(JSON.stringify(meta));
     assert.equal(encoded.length, size);

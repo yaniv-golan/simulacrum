@@ -349,7 +349,9 @@ body per part. The coil and connector rod are decoration; their mass is lumped
 into the pads, not charged again. They have no turn/rod collision or mounting
 surfaces. There is no closed cylinder with a fictitious hollow interior. External pad
 and rail collisions remain active, including the guide/carriage pair; ordinary
-fixed mounts retain their existing pair-contact exclusion. Articulated ends use
+fixed mounts exclude contact within each transitive component of authored fixed
+joints. Distinct grounded components and paths through bearings or spring guides
+do not share that exclusion; their contacts and external support contacts remain active. Articulated ends use
 ordinary passive bearings and solid axle adapters outside the unchanged five-DOF guide.
 A passive pin admits axial twist while retaining axis alignment and collision checks;
 rigid shaft connections retain full orientation alignment. Compound solids are not

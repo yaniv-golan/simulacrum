@@ -91,7 +91,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"743947f54ebb40b738c8f87116dba9412dfa43369e997d16d433d3f70fc0216c","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"8482db0dd5a141837024e1fa35ce51189404631dc167bf2905af592c890cc56f","disposition":"still accurate","rationale":"The package adds the packet codec dependency while retaining all tier commands. Remote setup uses data recording, which does not change local versus final exit semantics or participant evidence boundaries."} -->
+<!-- doc-review {"version":1,"fingerprint":"30e30b1d58d225a3d3ce8eb615678d8e918d7396503b6b2be520b34f5144e1af","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"bdafff1a009a6ad14d087a819737c93b8f921db1c23aee0b769f54e29c11ee1f","disposition":"still accurate","rationale":"Native spring.9 updates the dependency artifact; supported Node, preflight, required local/final tiers and same-source verification commands remain unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -131,7 +131,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"d60e5fb3b854b642eab4779056c526eb67c5e60d22ee752d08d6a1bf32e17052","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"70b92a22cc6aeb703e570526e3d9acf9dec7f2408674b9d849728e58949c7ddb","disposition":"still accurate","rationale":"The generated reference now includes the combined manifest and package. Batch semantic dispositions and source-bound sidecars still work as described; packet dependencies change hashes, not the review procedure."} -->
+<!-- doc-review {"version":1,"fingerprint":"5ad37e082a413fe6ccb38bfd144b54a862e3f22d2e5176d026e276cad1e03d1c","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"d3024610632494653cd82fc8420c62e87bb9965d046fe00aa3390d3e96d26f75","disposition":"still accurate","rationale":"The generated reference now includes the gear capacity check; prepare, separate semantic dispositions and post-source-closure verification retain their stated ownership."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -237,7 +237,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"ff6adbd52f2b6385205846b7962ab5eae4dd736678eb15372c755e34f2562eff","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c24cd88989b354a8374e100884724a22234d0d959dd912bdc02b167c7e2965be","disposition":"still accurate","rationale":"The manifest was reformatted by the pinned formatter without changing parsed JSON. Execution tiers, local scope declarations, witness fingerprints and conservative fallback are unchanged by formatting."} -->
+<!-- doc-review {"version":1,"fingerprint":"ad2b7142b9f05fd23962accca47518e8a55d9834bf839c700ebb9b25ace0846d","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"6cc8d76d400a6b9dee426da5be37ff55a503bc870936e27d7b3a2753c6882c85","disposition":"still accurate","rationale":"The new gear measurement root and construction-message consumer were reviewed through the documented proposal workflow. All 88 registered unit files and 16 required browser witnesses passed in the isolated candidate before scope metadata was applied. Reader declarations and local behavioral boundaries are unchanged; completion remains a separate required tier."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -365,7 +365,7 @@ The [tier coordinator](../../scripts/verification-tiers.mjs#implementation) keep
 ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
-<!-- doc-review {"version":1,"fingerprint":"77439077ede03c46708aa86ed668d8e7e845a2e869e3043ae1d43250522833f9","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"91fe46b67fbe3c94bd66f48f4112a9bb2100a9b07a9054c309c0ef077be5dfe8","disposition":"still accurate","rationale":"Package dependency changes do not change the window wrappers or ownership protocol. Scope apply acquired the normal shared lease and serialized the browser measurements."} -->
+<!-- doc-review {"version":1,"fingerprint":"26affe3e81b3d95b2c794c7e33bcad6002116f95a3911cb5b43b5b3b6c736649","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"e12fb4be5dae2f7d29c848994d227da36fbe3c7e01f6585f36d120bc7df5291f","disposition":"still accurate","rationale":"The package changes only the native dependency. Shared queue ownership, five-minute default wait and unchanged per-check deadlines remain accurate."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -399,7 +399,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"07da6668d560b77039140a138e937ab2debecdd0f9abcaaaca52a8427d2149dd","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"f1e312e1edb76ea03d0cf56bd885870becbf27e18ecc5f9a673dcabc0e6c35ac","disposition":"still accurate","rationale":"The same candidate commands capture the combined unstaged recording changes and index. Added compression dependency is installed from the pinned lockfile; identity and installation limitations remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"661cb3580ec7a7b34453ae21619116da9390e53713bac6f68588acd260202816","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"c272fa9dc5d3f4a6bece65d319b0cc436b9c26e6fcfb4f8f1c47f2bc46fbdb0b","disposition":"still accurate","rationale":"Native dependency bytes now differ, so candidate capture installs the new package. Capture, source identity, retained failures and manual installation boundaries remain unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

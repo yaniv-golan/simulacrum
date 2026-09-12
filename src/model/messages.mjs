@@ -31,6 +31,10 @@ const messages = {
   INVALID_GROUND: 'The ground configuration is invalid. Restore the default workshop environment.',
   INVALID_GRAVITY: 'Gravity must contain three finite values.',
   INVALID_ENDPOINT: 'Choose an existing connector on each part.',
+  GEAR_MISALIGNED:
+    'Align both shaft axes, then set the gear centres one pitch-radius sum apart (180 mm for 12T and 24T). Connecting a gear mesh does not move parts.',
+  UNSUPPORTED_GEAR_TOPOLOGY:
+    'Mount each gear on its own rotating shaft, with both shafts attached to the same rigid support. Use at most eight meshes, without a closed loop.',
   MISALIGNED: 'These connectors are not aligned. Reconnect them to snap the parts together.',
   INCOMPATIBLE_CONNECTION_LOOP:
     'These parts already belong to the same mechanism, and the mounts do not meet. Choose another mount or reposition the mechanism.',
@@ -52,6 +56,8 @@ const messages = {
   INPUT_LIMIT: 'Too many commands arrived at once. Release the controls and try again.',
   INVARIANT_VIOLATION:
     'A simulation consistency check failed. Return to Build; the failure record is available.',
+  GEAR_MOTION_LIMIT:
+    'Gear motion exceeded this model’s limits. Return to Build; check shaft supports, reduce motor current, or start with the machine resting on the floor.',
   PHYSICS_FAILURE: 'The physics step failed. Return to Build; the failure record is available.',
   INVALID_PREDICATE: 'Choose a supported stopping condition.',
   INVALID_TICK_COUNT: 'Choose a whole number of ticks from 0 to 28,800.',

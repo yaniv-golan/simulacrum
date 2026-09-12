@@ -12,7 +12,7 @@ export function admitNativeInputs(config) {
     const row = config[role];
     if (
       !row ||
-      !/^0\.20\.0-simulacrum\.spring\.[678]\.f64$/.test(row.version) ||
+      !/^0\.20\.0-simulacrum\.spring\.[6789]\.f64$/.test(row.version) ||
       !row.package ||
       !row.patch
     )

@@ -1,3 +1,5 @@
+import { admitGearTopology } from './gear-topology.mjs';
+import { coupledGearImpulses } from './law/gear.mjs';
 import { springTopologyDomain } from './spring-topology.mjs';
 import { readNativeResponse } from './native-response.mjs';
 import { coupledSpringImpulses } from './law/spring.mjs';
@@ -9,7 +11,7 @@ const MAX_BODIES = 4097; // 4096 authored primitives plus the workshop ground.
 // values; no Rapier world, body, collider, vector or query object crosses it.
 import RAPIER from '@dimforge/rapier3d-deterministic-compat';
 import { DT } from '../../model/tick.mjs';
-const PHYSICS_BACKEND = '0.20.0-simulacrum.spring.8.f64';
+const PHYSICS_BACKEND = '0.20.0-simulacrum.spring.9.f64';
 let initialization;
 function record(value, keys) {
   if (
@@ -72,10 +74,11 @@ function hash(bytes) {
   for (const byte of bytes) h = Math.imul(h ^ byte, 16777619);
   return h >>> 0;
 }
-function encode(payload, handles, configuration) {
+function encode(payload, handles, configuration, gearState) {
   const metadata = new TextEncoder().encode(
     JSON.stringify({
-      version: 4,
+      version: gearState.length ? 5 : 4,
+      ...(gearState.length ? { gearState } : {}),
       backend: PHYSICS_BACKEND,
       handles,
       configuration,
@@ -106,9 +109,15 @@ function decode(input) {
   const metadata = JSON.parse(
     new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(12, 12 + size)),
   );
-  record(metadata, ['version', 'backend', 'handles', 'configuration']);
+  record(metadata, [
+    'version',
+    'backend',
+    'handles',
+    'configuration',
+    ...(metadata.version === 5 ? ['gearState'] : []),
+  ]);
   if (
-    metadata.version !== 4 ||
+    ![4, 5].includes(metadata.version) ||
     metadata.backend !== PHYSICS_BACKEND ||
     !Array.isArray(metadata.handles) ||
     metadata.handles.length > MAX_BODIES ||
@@ -118,6 +127,7 @@ function decode(input) {
     throw new TypeError('invalid physics snapshot handles');
   return {
     handles: metadata.handles,
+    gearState: metadata.gearState ?? [],
     configuration: metadata.configuration,
     payload: bytes.slice(12 + size),
   };
@@ -177,7 +187,7 @@ export async function createPhysicsWorld(configuration) {
   if (!Array.isArray(configuration.joints) || configuration.joints.length > 8192)
     throw new TypeError('invalid joints');
   const joints = configuration.joints.map((joint) => {
-    if (!['fixed', 'revolute', 'spring'].includes(joint?.kind))
+    if (!['fixed', 'revolute', 'spring', 'gear'].includes(joint?.kind))
       throw new TypeError('invalid joint kind');
     record(
       joint,
@@ -193,6 +203,7 @@ export async function createPhysicsWorld(configuration) {
             'axisB',
             ...(Object.hasOwn(joint, 'limits') ? ['limits'] : []),
             ...(joint.kind === 'spring' ? ['stiffness', 'damping', 'restLength'] : []),
+            ...(joint.kind === 'gear' ? ['stiffness', 'damping', 'radiusA', 'radiusB'] : []),
           ],
     );
     if (
@@ -235,9 +246,31 @@ export async function createPhysicsWorld(configuration) {
         joint.axisA.some((x, i) => Math.abs(x - joint.axisB[i]) > 1e-10))
     )
       throw new TypeError('invalid spring settings');
+    if (
+      joint.kind === 'gear' &&
+      (joint.limits ||
+        ![joint.radiusA, joint.radiusB, joint.stiffness, joint.damping].every(Number.isFinite) ||
+        joint.radiusA <= 0 ||
+        joint.radiusB <= 0 ||
+        joint.radiusA > 1 ||
+        joint.radiusB > 1 ||
+        joint.stiffness <= 0 ||
+        joint.stiffness > 20000 ||
+        joint.damping < 0 ||
+        joint.damping > 100)
+    )
+      throw new TypeError('invalid gear settings');
     const common = {
       ...(joint.limits ? { limits: [...joint.limits] } : {}),
       kind: joint.kind,
+      ...(joint.kind === 'gear'
+        ? {
+            radiusA: joint.radiusA,
+            radiusB: joint.radiusB,
+            stiffness: joint.stiffness,
+            damping: joint.damping,
+          }
+        : {}),
       ...(joint.kind === 'spring'
         ? {
             stiffness: joint.stiffness,
@@ -260,6 +293,17 @@ export async function createPhysicsWorld(configuration) {
   });
   if (joints.filter((j) => j.kind === 'spring').length > 8)
     throw new RangeError('at most 8 guided springs');
+  admitGearTopology(descriptions, joints);
+  const gearIndices = joints.flatMap((j, i) => (j.kind === 'gear' ? [i] : []));
+  let gearMemory = gearIndices.map((index) => ({
+    index,
+    strain: 0,
+    completedSlipM: 0,
+    predictorSlipM: 0,
+    splitDriftM: 0,
+    splitStepM: 0,
+    splitElasticDeltaJ: 0,
+  }));
   const topology = springTopologyDomain(descriptions, joints),
     activeElastic = new Set(topology.activeElastic);
   await (initialization ??= RAPIER.init().then(() => {
@@ -267,6 +311,39 @@ export async function createPhysicsWorld(configuration) {
   }));
   let world = new RAPIER.World(xyz(gravity)),
     handles = [];
+  // Only authored fixed paths constitute one rigid assembly. Distinct grounded
+  // groups and articulated paths retain their ordinary contacts.
+  const fixedParents = descriptions.map((_, i) => i);
+  const fixedRoot = (i) => {
+    while (fixedParents[i] !== i) i = fixedParents[i];
+    return i;
+  };
+  for (const joint of joints)
+    if (joint.kind === 'fixed') fixedParents[fixedRoot(joint.b)] = fixedRoot(joint.a);
+  const fixedRoots = descriptions.map((_, i) => fixedRoot(i));
+  const fixedSizes = new Map();
+  for (const root of fixedRoots) fixedSizes.set(root, (fixedSizes.get(root) ?? 0) + 1);
+  let fixedByHandle = new Map();
+  const rebuildFixedHandles = () => {
+    fixedByHandle = new Map(handles.map((handle, i) => [handle, fixedRoots[i]]));
+  };
+  // This Rapier binding only dispatches hooks through stepWithEvents. No collider
+  // enables events; the auto-drained queue solely selects that native entry point.
+  const contactEvents = [...fixedSizes.values()].some((size) => size > 1)
+    ? new RAPIER.EventQueue(true)
+    : undefined;
+  const contactHooks = {
+    filterContactPair(_colliderA, _colliderB, bodyA, bodyB) {
+      const a = fixedByHandle.get(bodyA),
+        b = fixedByHandle.get(bodyB);
+      return a !== undefined && b !== undefined && a === b
+        ? null
+        : RAPIER.SolverFlags.COMPUTE_IMPULSE;
+    },
+    filterIntersectionPair() {
+      return true;
+    },
+  };
   const jointHandles = [];
   try {
     world.timestep = DT;
@@ -326,12 +403,24 @@ export async function createPhysicsWorld(configuration) {
         );
       }
       world.createCollider(
-        collider.setFriction(body.friction).setRestitution(body.restitution),
+        collider
+          .setFriction(body.friction)
+          .setRestitution(body.restitution)
+          .setActiveHooks(
+            fixedSizes.get(fixedRoots[handles.length]) > 1
+              ? RAPIER.ActiveHooks.FILTER_CONTACT_PAIRS
+              : RAPIER.ActiveHooks.NONE,
+          ),
         rigidBody,
       );
       handles.push(rigidBody.handle);
     }
+    rebuildFixedHandles();
     for (const joint of joints) {
+      if (joint.kind === 'gear') {
+        jointHandles.push(null);
+        continue;
+      }
       const data =
         joint.kind === 'fixed'
           ? RAPIER.JointData.fixed(
@@ -367,6 +456,7 @@ export async function createPhysicsWorld(configuration) {
     }
   } catch (error) {
     world.free();
+    contactEvents?.free();
     throw error;
   }
   const configurationIdentity = JSON.stringify({
@@ -439,6 +529,7 @@ export async function createPhysicsWorld(configuration) {
           colliderMass: collider.mass(),
           friction: collider.friction(),
           restitution: collider.restitution(),
+          activeHooks: collider.activeHooks(),
           offset: array(collider.translationWrtParent()),
           rotation: [rotation.x, rotation.y, rotation.z, rotation.w],
         };
@@ -494,7 +585,7 @@ export async function createPhysicsWorld(configuration) {
       0.5 * w.reduce((sum, n, i) => sum + inertia[i] * n * n, 0)
     );
   }
-  function energyOf(candidate, mapping) {
+  function energyOf(candidate, mapping, memory = gearMemory) {
     let kineticJ = 0,
       potentialJ = 0;
     for (const handle of mapping) {
@@ -506,6 +597,14 @@ export async function createPhysicsWorld(configuration) {
     return {
       kineticJ,
       potentialJ,
+      ...(gearIndices.length
+        ? {
+            gearPotentialJ: memory.reduce(
+              (sum, r) => sum + 0.5 * joints[r.index].stiffness * r.strain * r.strain,
+              0,
+            ),
+          }
+        : {}),
       ...(joints.some((j) => j.kind === 'spring')
         ? {
             springPotentialJ: joints.reduce(
@@ -520,7 +619,9 @@ export async function createPhysicsWorld(configuration) {
   let preparedTorqueIslands = new Map(),
     constraintsApplied = true,
     preparedSprings = null,
-    springsApplied = false;
+    springsApplied = false,
+    gearsApplied = false,
+    gearBefore = null;
   const cross = (a, b) => [
     a[1] * b[2] - a[2] * b[1],
     a[2] * b[0] - a[0] * b[2],
@@ -534,7 +635,9 @@ export async function createPhysicsWorld(configuration) {
       world.bodies.raw,
       new Float64Array(indices.map((i) => handles[i])),
       new Float64Array(
-        joints.flatMap((j, i) => (offsets.has(j.a) && offsets.has(j.b) ? [jointHandles[i]] : [])),
+        joints.flatMap((j, i) =>
+          j.kind !== 'gear' && offsets.has(j.a) && offsets.has(j.b) ? [jointHandles[i]] : [],
+        ),
       ),
       world.integrationParameters.raw,
     );
@@ -700,11 +803,228 @@ export async function createPhysicsWorld(configuration) {
     }
     return allocations;
   }
+  const dot = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+  function gearGeometry(index, physics = world, mapping = handles, tolerance = 0.005) {
+    const j = joints[index],
+      a = physics.getRigidBody(mapping[j.a]),
+      b = physics.getRigidBody(mapping[j.b]),
+      qa = rotationArray(a.rotation()),
+      qb = rotationArray(b.rotation()),
+      axis = rotate(qa, j.axisA),
+      other = rotate(qb, j.axisB),
+      centreA = rotate(qa, j.anchorA).map((x, i) => x + array(a.translation())[i]),
+      centreB = rotate(qb, j.anchorB).map((x, i) => x + array(b.translation())[i]),
+      delta = centreB.map((x, i) => x - centreA[i]),
+      distance = Math.hypot(...delta),
+      radial = delta.map((x) => x / distance);
+    if (
+      !Number.isFinite(distance) ||
+      Math.abs(distance - j.radiusA - j.radiusB) > tolerance ||
+      Math.abs(dot(delta, axis)) > tolerance ||
+      Math.abs(dot(axis, other)) < 0.99999
+    )
+      throw Object.assign(new RangeError('gear mesh lost alignment'), {
+        reasonCode: 'GEAR_MOTION_LIMIT',
+      });
+    if (
+      Math.max(Math.hypot(...array(a.angvel())), Math.hypot(...array(b.angvel()))) * DT >=
+      Math.PI / 2
+    )
+      throw Object.assign(
+        new RangeError('gear rotation exceeds unambiguous phase sampling domain'),
+        { reasonCode: 'GEAR_MOTION_LIMIT' },
+      );
+    const tangent = unit(cross(axis, radial)),
+      point = centreA.map((x, i) => x + (delta[i] * j.radiusA) / (j.radiusA + j.radiusB));
+    return {
+      axis,
+      tangent,
+      point,
+      localA: rotate(conjugate(qa), radial),
+      localB: rotate(conjugate(qb), radial),
+      axisB: rotate(conjugate(qb), axis),
+      speed: dot(
+        tangent,
+        array(b.velocityAtPoint(xyz(point))).map(
+          (x, i) => x - array(a.velocityAtPoint(xyz(point)))[i],
+        ),
+      ),
+    };
+  }
+  function validateGearMemory(input) {
+    if (!Array.isArray(input) || input.length !== gearIndices.length)
+      throw new TypeError('invalid gear snapshot state');
+    return input.map((r, i) => {
+      record(r, [
+        'index',
+        'strain',
+        'completedSlipM',
+        'predictorSlipM',
+        'splitDriftM',
+        'splitStepM',
+        'splitElasticDeltaJ',
+      ]);
+      if (
+        r.index !== gearIndices[i] ||
+        ![
+          r.strain,
+          r.completedSlipM,
+          r.predictorSlipM,
+          r.splitDriftM,
+          r.splitStepM,
+          r.splitElasticDeltaJ,
+        ].every(Number.isFinite) ||
+        Math.abs(r.strain) > 0.02 ||
+        Math.abs(r.splitStepM) > 0.002 ||
+        r.completedSlipM !== r.strain ||
+        r.splitDriftM !== r.completedSlipM - r.predictorSlipM
+      )
+        throw new TypeError('invalid gear snapshot state');
+      return { ...r };
+    });
+  }
+  /** @returns {import('../../model/boundaries.js').GearObservation[]} */
+  function gearReadings() {
+    return gearMemory.map((r) => ({
+      ...r,
+      potentialJ: 0.5 * joints[r.index].stiffness * r.strain * r.strain,
+      speed: gearGeometry(r.index).speed,
+    }));
+  }
+  // Native gravity/contact integration follows the predictor. Reconcile elastic
+  // travel to measured phase; expose its signed energy change as numerical split
+  // work, not damping or externally supplied energy. Cumulative predictor drift
+  // remains visible; only per-step mismatch and actual strain bound admission.
+  function completeGearSlip() {
+    if (!gearBefore) return;
+    const angle = (before, after, axis) =>
+      Math.atan2(dot(axis, cross(before, after)), dot(before, after));
+    const next = gearMemory.map((r, i) => {
+      const old = gearBefore[i],
+        current = gearGeometry(r.index),
+        j = joints[r.index],
+        slip =
+          j.radiusA * angle(old.localA, current.localA, j.axisA) +
+          j.radiusB * angle(old.localB, current.localB, old.axisB),
+        completedSlipM = r.completedSlipM + slip;
+      return {
+        ...r,
+        strain: completedSlipM,
+        completedSlipM,
+        splitDriftM: completedSlipM - r.predictorSlipM,
+        splitStepM: completedSlipM - r.strain,
+        splitElasticDeltaJ: 0.5 * j.stiffness * (completedSlipM ** 2 - r.strain ** 2),
+      };
+    });
+    if (next.some((r) => Math.abs(r.splitStepM) > 0.002 || Math.abs(r.strain) > 0.02))
+      throw Object.assign(
+        new RangeError('gear mesh completed strain or split step exceeds domain'),
+        { reasonCode: 'GEAR_MOTION_LIMIT' },
+      );
+    gearMemory = next;
+  }
+  /** @returns {import('../../model/boundaries.js').GearImpulseResult} */
+  function applyGears() {
+    alive();
+    if (!constraintsApplied) throw new Error('passive constraints not applied');
+    if (gearsApplied) throw new Error('gears already applied');
+    if (preparedSprings && !springsApplied)
+      throw new Error('spring damping must precede gear solve');
+    const groups = new Map(),
+      beforeGeometry = gearIndices.map((i) => gearGeometry(i));
+    for (const [slot, index] of gearIndices.entries()) {
+      const j = joints[index],
+        island = preparedTorqueIslands.get(j.a),
+        geometry = beforeGeometry[slot];
+      if (!island || island !== preparedTorqueIslands.get(j.b))
+        throw new Error('gear island missing');
+      const f = island.axialForce(j.a, j.b, geometry.tangent, geometry.point, geometry.point),
+        response = island.projection.response(f);
+      if (!groups.has(island)) groups.set(island, []);
+      groups.get(island).push({ slot, j, f, response });
+    }
+    const allocations = [];
+    for (const [island, rows] of groups) {
+      const prior = island.vector(),
+        mobility = rows.map((a) => rows.map((b) => dot(a.f, b.response.velocity))),
+        receipt = coupledGearImpulses({
+          extensions: rows.map((r) => gearMemory[r.slot].strain),
+          speeds: rows.map((r) => dot(r.f, prior)),
+          stiffnesses: rows.map((r) => r.j.stiffness),
+          dampings: rows.map((r) => r.j.damping),
+          mobility,
+          dt: DT,
+        });
+      if (receipt.extensions.some((x) => Math.abs(x) > 0.02))
+        throw Object.assign(new RangeError('gear strain exceeds compliant mesh domain'), {
+          reasonCode: 'GEAR_MOTION_LIMIT',
+        });
+      const impulse = Array(prior.length).fill(0),
+        raw = Array(prior.length).fill(0);
+      rows.forEach((r, i) =>
+        r.f.forEach((x, k) => {
+          raw[k] += x * receipt.impulses[i];
+          impulse[k] += r.response.impulse[k] * receipt.impulses[i];
+        }),
+      );
+      allocations.push({ island, rows, prior, receipt, impulse, raw });
+    }
+    const result = {
+      dampingWorkJ: 0,
+      numericalLossJ: 0,
+      kineticDeltaJ: 0,
+      potentialDeltaJ: 0,
+      rawWorkJ: 0,
+      constraintWorkJ: 0,
+    };
+    for (const { island, rows, prior, receipt, impulse, raw } of allocations) {
+      const before = island.kinetic();
+      island.apply(impulse);
+      const current = island.vector(),
+        average = current.map((v, i) => (v + prior[i]) / 2);
+      result.kineticDeltaJ += island.kinetic() - before;
+      result.rawWorkJ += dot(raw, average);
+      result.constraintWorkJ += dot(
+        impulse.map((x, i) => x - raw[i]),
+        average,
+      );
+      result.dampingWorkJ += receipt.dampingWorkJ;
+      result.numericalLossJ += receipt.numericalLossJ;
+      rows.forEach((r, i) => {
+        const memory = gearMemory[r.slot],
+          strain = receipt.extensions[i];
+        result.potentialDeltaJ +=
+          0.5 * r.j.stiffness * (strain * strain - memory.strain * memory.strain);
+        gearMemory[r.slot] = {
+          ...memory,
+          strain,
+          predictorSlipM: memory.predictorSlipM + strain - memory.strain,
+          splitDriftM: memory.completedSlipM - (memory.predictorSlipM + strain - memory.strain),
+          splitStepM: 0,
+          splitElasticDeltaJ: 0,
+        };
+      });
+    }
+    gearsApplied = true;
+    gearBefore = beforeGeometry;
+    return result;
+  }
+  try {
+    for (const index of gearIndices) gearGeometry(index, world, handles, 1e-5);
+  } catch (error) {
+    world.free();
+    contactEvents?.free();
+    throw error;
+  }
   return Object.freeze({
+    applyGears,
+    gears: gearReadings,
     prepareConstraints() {
       clearPreparedTorqueIslands();
       preparedSprings = null;
       springsApplied = false;
+      gearsApplied = false;
+      gearBefore = null;
       constraintsApplied = true;
       const parent = handles.map((_, i) => i),
         root = (i) => {
@@ -911,10 +1231,15 @@ export async function createPhysicsWorld(configuration) {
       alive();
       if (joints.some((j) => j.kind === 'spring') && !springsApplied)
         throw new Error('spring preparation and damping must precede integration');
-      world.step();
+      if (gearIndices.length && !gearsApplied)
+        throw new Error('gear solve must precede integration');
+      world.step(contactEvents, contactHooks);
+      completeGearSlip();
       clearPreparedTorqueIslands();
       preparedSprings = null;
       springsApplied = false;
+      gearsApplied = false;
+      gearBefore = null;
       constraintsApplied = true;
       const states = readWorld(world, handles);
       assertFinite(states);
@@ -927,13 +1252,16 @@ export async function createPhysicsWorld(configuration) {
     },
     snapshot() {
       alive();
-      return encode(world.takeSnapshot(), handles, JSON.parse(configurationIdentity));
+      if (gearIndices.length && gearsApplied)
+        throw new Error('snapshot requires completed gear step');
+      return encode(world.takeSnapshot(), handles, JSON.parse(configurationIdentity), gearMemory);
     },
     restore(bytes, expectedEnergy, expectedJointAngles = [], previousSpringLengths) {
       alive();
       const decoded = decode(bytes);
       if (JSON.stringify(decoded.configuration) !== configurationIdentity)
         throw new Error('snapshot configuration mismatch');
+      const memory = validateGearMemory(decoded.gearState);
       let candidate;
       try {
         candidate = RAPIER.World.restoreSnapshot(decoded.payload);
@@ -941,7 +1269,7 @@ export async function createPhysicsWorld(configuration) {
         if (
           candidate.bodies.len() !== decoded.handles.length ||
           candidate.colliders.len() !== decoded.handles.length ||
-          candidate.impulseJoints.len() !== joints.length ||
+          candidate.impulseJoints.len() !== joints.length - gearIndices.length ||
           candidate.multibodyJoints.len() !== 0 ||
           candidate.timestep !== world.timestep
         )
@@ -952,12 +1280,14 @@ export async function createPhysicsWorld(configuration) {
             'kineticJ',
             'potentialJ',
             ...(joints.some((j) => j.kind === 'spring') ? ['springPotentialJ'] : []),
+            ...(gearIndices.length ? ['gearPotentialJ'] : []),
           ]);
-          const measured = energyOf(candidate, decoded.handles);
+          const measured = energyOf(candidate, decoded.handles, memory);
           if (
             expectedEnergy.kineticJ !== measured.kineticJ ||
             expectedEnergy.potentialJ !== measured.potentialJ ||
-            expectedEnergy.springPotentialJ !== measured.springPotentialJ
+            expectedEnergy.springPotentialJ !== measured.springPotentialJ ||
+            expectedEnergy.gearPotentialJ !== measured.gearPotentialJ
           )
             throw new Error('snapshot energy mismatch');
         }
@@ -996,6 +1326,7 @@ export async function createPhysicsWorld(configuration) {
             seen.add(previous.joint);
           }
         }
+        for (const index of gearIndices) gearGeometry(index, candidate, decoded.handles);
         readContacts(candidate, decoded.handles);
         if (JSON.stringify(plant(candidate, decoded.handles)) !== originalPlant)
           throw new Error('snapshot physical plant mismatch');
@@ -1005,11 +1336,15 @@ export async function createPhysicsWorld(configuration) {
       }
       const previous = world;
       world = candidate;
+      gearMemory = memory;
       clearPreparedTorqueIslands();
       preparedSprings = null;
       springsApplied = false;
+      gearsApplied = false;
+      gearBefore = null;
       constraintsApplied = true;
       handles = [...decoded.handles];
+      rebuildFixedHandles();
       previous.free();
     },
     applyImpulse(index, impulse) {
@@ -1029,6 +1364,7 @@ export async function createPhysicsWorld(configuration) {
       if (world) {
         clearPreparedTorqueIslands();
         world.free();
+        contactEvents?.free();
         world = null;
         handles = [];
       }

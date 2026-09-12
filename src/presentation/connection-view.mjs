@@ -51,12 +51,12 @@ export function createConnectionView(parent) {
           updates.push((ends) => marker.position.copy(ends[index]));
         }
       }
-      if (spec.exploded || (!electrical && spec.failed)) {
+      if (spec.kind === 'gear' || spec.exploded || (!electrical && spec.failed)) {
         const highlighted = spec.exploded && spec.highlighted,
           line = new THREE.Line(
             new THREE.BufferGeometry().setFromPoints(spec.ends),
             new THREE.LineDashedMaterial({
-              color: spec.exploded ? (highlighted ? 0xffffff : color) : 0xff9a47,
+              color: highlighted ? 0xffffff : spec.failed ? 0xff9a47 : color,
               dashSize: 0.025,
               gapSize: 0.015,
               ...(spec.exploded ? { transparent: true, opacity: highlighted ? 1 : 0.8 } : {}),

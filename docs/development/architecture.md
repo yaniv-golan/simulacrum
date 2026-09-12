@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"b826150ac6e08306a5a8909f47147453377a584e86fa9a49de8e5e073538c730","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"b6566fc6bbf76a44dade6c916042f3ea4e0367c3816780f0b66e63b50ff5f2c1","disposition":"still accurate","rationale":"The merged AGENTS changes experimental publication requirements only. Runtime and layer authority remain in the named contracts and manifest reader."} -->
+<!-- doc-review {"version":1,"fingerprint":"03908dfb1658b80d9c645c18127a8666bc4c06681cfa4aad40a627955586ada7","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"9de9519a0f58b4cbed8cc551f64892697c09f7f016b269fcaf3cdd63eb82694a","disposition":"still accurate","rationale":"The runtime contract now explicitly excludes transitive fixed assembly contacts. Runtime ownership remains in that contract and milestone allocation remains manifest-owned."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"f02b039b0e5b0987c7e81890f6a485b2fc1502509286742f87754ddfb64a4fde","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"d2fc1566d0eb8998db051bddc575094ecd70a70d269a5a5541fe80ffa66c3e94","disposition":"updated","rationale":"Ball shape and authored contacts use canonical model admission and the physics door. Retry composes Build/Run and now excludes asynchronous file loads before either resets; blocked requests retain receipts. Audio receives both completed-contact materials, not identity or a live physics object."} -->
+<!-- doc-review {"version":1,"fingerprint":"60759dab0d169d33d1e31f1eaf21fdafdae9fdf21275c0d7e714f7a7af9b1633","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"55bba93bd9170c502be6cd5f13fc5df178791fb8c9d2aa2bfd0039d52db3728d","disposition":"still accurate","rationale":"Fixed-component filtering stays inside the physics door. Session reuses an immutable completed body snapshot for next-tick sensing before commands; completed publication, clock and core transaction owners remain unchanged."} -->
 
 
 
@@ -66,7 +66,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"af1b578414b073a686db0eea5e3c325a5aad8d3451a3b67e1b79fcfba4a4d2e7","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"1916491817c94a69aedef0850325fc56f88712656b41707cf92e0cd45fa50879","disposition":"updated","rationale":"Added contactProperties as the common material/default override owner for compiler and inspector. Sphere geometry remains under partPrimitives and physical inertia under compilation and the physics door."} -->
+<!-- doc-review {"version":1,"fingerprint":"bbc24fc0842da9a09ecbeca3cc857ed2d5c25e25846d355cb2e19445bed42337","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"db9d052d0374a34d9f69476754f3ea47a6fb4b318407b360d4eeba71d680d289","disposition":"still accurate","rationale":"The filter derives from numerical fixed joints at the physics door; authoring membership, materials, geometry, rendering and contact readback retain the owners listed here."} -->
 
 
 

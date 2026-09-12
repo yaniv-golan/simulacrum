@@ -1,11 +1,11 @@
 {
   "upstreamCommit": "3e12c2679cb1940a876bde93af9cec0cf2f57944",
   "sourceArchiveSha256": "9c3da08780410f7e519e95772185c21e4c76216855019fd69eef3f1cb69644e4",
-  "patchSha256": "00b417fd0d4f2e0a87c7d5db3203aa3d49cf47a2ef5ada166686d4ef59db3831",
-  "version": "0.20.0-simulacrum.spring.8.f64",
+  "patchSha256": "c687b000ff57ec1f84c513b6eea934186a6735eaec5eff7671107ffc4a4f9a23",
+  "version": "0.20.0-simulacrum.spring.9.f64",
   "precision": "f64",
-  "packageSha256": "5cbf2b9caa8e46b7393a7ff83c66f0eab23accc878a730d94479b96f907f9eff",
-  "wasmSha256": "72bfe621e9b0cb99ac589e00218b16f8408288e77a5b5b3879f338d33263201c",
+  "packageSha256": "85635a3650b5dd5bfb10480fe3371e8abd828016f20babf3992ec2b6569978dc",
+  "wasmSha256": "bc0aec1c1a593faa852293c21bd69b717b5edeaee81d984ffc1837759dc50398",
   "toolchain": {
     "node": "24.18.0",
     "rust": "1.94.0",

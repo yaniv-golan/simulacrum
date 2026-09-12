@@ -1433,7 +1433,7 @@
              }
  
              if has_generic_joints {
-@@ -207,3 +294,1028 @@
+@@ -207,3 +294,1031 @@
      }
      sync.sync(stage, 1)
  }
@@ -2259,7 +2259,7 @@
 +                    }
 +                }
 +                residual[i] = rhs[i] - actual;
-+                accurate &= actual.is_finite() && residual[i].abs() <= tolerance * scale;
++                accurate &= residual_bound::residual_accurate(n, tolerance, row_q, actual, residual[i], scale);
 +            }
 +            if accurate {
 +                break;
@@ -2462,12 +2462,15 @@
 +#[cfg(feature = "dim3")]
 +#[path = "spring_cycles.rs"]
 +pub(crate) mod spring_cycles;
++#[cfg(feature = "dim3")]
++#[path = "residual_bound.rs"]
++mod residual_bound;
 --- /dev/null
 +++ b/src/dynamics/solver/staged_island_solver/spring_cycles.rs
 @@ -0,0 +1,507 @@
 +//! Sparse spring factorization. Tree factors stay sparse; only loop-closing
 +//! rows form a dense Schur border. No row, CFM term, or residual check is dropped.
-+use super::{spring_dot, spring_inverse, spring_mv};
++use super::{residual_bound::residual_accurate, spring_dot, spring_inverse, spring_mv};
 +use crate::alloc_prelude::*;
 +use core::ops::Range;
 +type V = [f64; 6];
@@ -2913,7 +2916,7 @@
 +                    }
 +                }
 +                residual[i] = rhs[i] - actual;
-+                accurate &= actual.is_finite() && residual[i].abs() <= tolerance * scale;
++                accurate &= residual_accurate(n, tolerance, &q[i], actual, residual[i], scale);
 +            }
 +            // A nonzero cyclic solve receives at least one full-equation correction:
 +            // passing a backward bound alone can hide border cancellation error.
@@ -3224,7 +3227,7 @@
 +
 +[[package]]
 +name = "dimforge_rapier3d-deterministic"
-+version = "0.20.0-simulacrum.spring.8.f64"
++version = "0.20.0-simulacrum.spring.9.f64"
 +dependencies = [
 + "bincode",
 + "js-sys",
@@ -3994,7 +3997,7 @@
 @@ -0,0 +1,62 @@
 +[package]
 +name = "dimforge_rapier3d-deterministic" # Can't be named rapier3d which conflicts with the dependency.
-+version = "0.20.0-simulacrum.spring.8.f64"
++version = "0.20.0-simulacrum.spring.9.f64"
 +authors = ["Sébastien Crozet <developer@crozet.re>"]
 +description = "3-dimensional physics engine in Rust - official JS bindings."
 +documentation = "https://rapier.rs/rustdoc/rapier3d/index.html"
@@ -8186,3 +8189,70 @@
          self.0.max_force_magnitude
      }
  }
+
+--- /dev/null
++++ b/src/dynamics/solver/staged_island_solver/residual_bound.rs
+@@ -0,0 +1,63 @@
++//! Backward-error acceptance for native bilateral equations, including gradual
++//! underflow. Relative rounding bounds alone become zero below the normal range.
++#[inline]
++pub(crate) fn residual_accurate(n: usize, tolerance: f64, q: &[[f64;6];2], actual: f64, residual: f64, scale: f64) -> bool {
++    if n == 0 || !tolerance.is_finite() || tolerance < 0.0 || !actual.is_finite()
++        || !residual.is_finite() || !scale.is_finite() || scale < 0.0
++        || !q.iter().flatten().all(|v| v.is_finite()) { return false; }
++    let relative_bound = tolerance * scale;
++    if !relative_bound.is_finite() { return false; }
++    // Most rows already meet the original relative bound. Avoid subnormal
++    // arithmetic there. For finite q and usize n the additive underflow budget
++    // is finite and too small to overflow any finite relative_bound.
++    if residual.abs() <= relative_bound { return true; }
++    // The response accumulation has at most 2*n product/add terms; its absolute
++    // underflow error is subsequently multiplied by each row coefficient. The
++    // existing 1024*n operation budget conservatively covers those operations,
++    // the final dot products, CFM product and residual subtraction. One minimum
++    // subnormal per rounded operation is conservative (round-to-nearest needs
++    // at most half). Multiply each coefficient before summing to avoid overflow
++    // in an otherwise harmless sum(abs(q)). No input/state/impulse is clamped.
++    let unit = (1024.0 * n as f64) * f64::from_bits(1);
++    let underflow = unit + q.iter().flatten().map(|v| unit * v.abs()).sum::<f64>();
++    let bound = relative_bound + underflow;
++    bound.is_finite() && residual.abs() <= bound
++}
++#[cfg(test)]
++mod tests {
++    use super::residual_accurate;
++    const Q: [[f64;6];2] = [[1.0,0.0,0.0,0.0,0.0,0.0];2];
++    #[test]
++    fn gradual_underflow_keeps_diagonal_tiny_equations_admissible() {
++        for n in [1,5,10,48] {
++            let g=1024.0*n as f64*f64::EPSILON; let tol=g/(1.0-g);
++            assert!(residual_accurate(n,tol,&Q,1e-320,f64::from_bits(1),2e-320));
++            assert!(residual_accurate(n,tol,&Q,-1e-320,-f64::from_bits(1),2e-320));
++        }
++    }
++    #[test]
++    fn row_coefficients_propagate_tiny_response_rounding_without_an_arbitrary_floor() {
++        let mut q=Q;q[0][0]=1e100;
++        assert!(residual_accurate(10,1e-11,&q,1e-230,1e-230,2e-230));
++        assert!(!residual_accurate(10,1e-11,&Q,1e-230,1e-230,2e-230));
++        assert!(!residual_accurate(10,1e-11,&q,1e-215,1e-215,2e-215));
++    }
++    #[test]
++    fn materially_bad_normal_and_tiny_residuals_still_reject() {
++        assert!(!residual_accurate(10,1e-11,&Q,1.0,1e-6,2.0));
++        assert!(!residual_accurate(10,1e-11,&Q,1e-300,1e-305,2e-300));
++        assert!(residual_accurate(10,1e-11,&Q,1.0,1e-12,2.0));
++    }
++    #[test]
++    fn nonfinite_or_negative_error_scales_do_not_hide_failed_solves() {
++        for bad in [f64::NAN,f64::INFINITY,f64::NEG_INFINITY] {
++            assert!(!residual_accurate(10,1e-11,&Q,bad,0.0,1.0));
++            assert!(!residual_accurate(10,1e-11,&Q,1.0,bad,1.0));
++            assert!(!residual_accurate(10,1e-11,&Q,1.0,0.0,bad));
++            let mut q=Q;q[0][0]=bad;
++            assert!(!residual_accurate(10,1e-11,&q,1.0,0.0,1.0));
++        }
++        assert!(!residual_accurate(10,1e-11,&Q,1.0,0.0,-1.0));
++        assert!(!residual_accurate(10,f64::MAX,&Q,1.0,0.0,2.0));
++    }
++}

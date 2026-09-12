@@ -1,3 +1,4 @@
+import { verifyGearJourney } from './gear-browser-cases.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -74,6 +75,7 @@ try {
   evidence.assert('deepEqual', [(await read()).metadata.blueprint, tunedSpring]);
   await page.screenshot({ path: `${out}/examples.png` });
   await page.keyboard.press('Escape');
+  await verifyGearJourney({ page, evidence, out: `${out}/gears` });
   evidence.assert('deepEqual', [evidence.errors, []]);
   evidence.assertUnchanged();
   writeFileSync(

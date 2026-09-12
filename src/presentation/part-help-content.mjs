@@ -6,7 +6,21 @@ const help = (purpose, explanation, needs, steps, examples = []) => ({
   steps,
   examples,
 });
+const gearHelp = (teeth, pitchRadius) =>
+  help(
+    'Trades rotation speed for available torque',
+    `A ${teeth}-tooth spur gear with a ${pitchRadius} mm pitch radius. A 12T gear driving a 24T gear gives roughly half the speed in the opposite direction and greater available torque. Tooth marks show actual body rotation. The smaller solid root cylinder supplies collision and mass; the explicit mesh models compliant tooth engagement, not individual tooth collisions.`,
+    'A motor or bearing for each shaft, fixed to the same rigid support. Gear centres must be 120 mm apart for 12T/12T, 180 mm for 12T/24T, or 240 mm for 24T/24T, with aligned axes and gear faces.',
+    [
+      'Attach each gear to its own supported shaft using either axle port. The other axle port can carry an output arm or wheel.',
+      'Select Gear mesh, then Mesh with the aligned gear. Connecting does not move either gear or create a bearing. Disconnecting stops torque transfer through that mesh.',
+      'Open Learn & examples → Lift with gears for an editable loaded mechanism. Predict which way the large gear turns before pressing Run.',
+      'A mesh flexes slightly under load. This model does not include backlash or tooth breakage. Up to eight mesh edges are supported; closed mesh loops and moving shaft supports are rejected.',
+    ],
+  );
 export const PART_HELP = {
+  gear12: gearHelp(12, 60),
+  gear24: gearHelp(24, 120),
   ball: help(
     'Rolls, falls and receives pushes',
     'A solid sphere. Diameter and material determine mass; the surface it hits also affects bounce. The stripe shows real rotation.',
