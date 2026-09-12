@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"235e84ed97ad7e199ab45381157edbec4e82073fe0c026cbf600a02c3efe1a7d","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"373df14ae46d66f50c6ed71d5351e4476279b3eae68ba235496e010f1f4f43fa","disposition":"still accurate","rationale":"The merge adds cosmetic finishes to the existing catalog and contextual help. It adds no teaching entry and preserves the existing extend-help disposition."} -->
+<!-- doc-review {"version":1,"fingerprint":"ff800bbb50a72a9ec2db6abfb18cc348b207abb607c5a8e2fc656c93c0a00c59","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"bcaffe5aceb21f9e13f72bb2c2ef07476fe68f7507663413f56d0f65cb1b3128","disposition":"still accurate","rationale":"Actuator and catalog retain contextual help and existing examples; adding actuator search vocabulary creates no learning entry or permanent teaching surface."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"6640875c6932647b44d0b2ffb4455a9ae3d1f5aa6acfbe337fee936fd424c18f","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8d46b962185ad282405380ff1ab80036cd96c266fc69d283ea9f3aafefb4601b","disposition":"updated","rationale":"Preserved catalog search, cancellation and narrow-layout lifecycle while documenting shared cosmetic finishes; the obsolete fixed 52-pixel catalog layout from main does not describe the new tile grid."} -->
+<!-- doc-review {"version":1,"fingerprint":"eef8acd1b4ad0d850b2e2a938483734eb89f183850e5a586070151b8bde0f75b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"10f4437528b725752656f58d95b55c16e58db0d2d2b766a1739f2a0f2819915c","disposition":"updated","rationale":"Updated actuator discovery to Motion and search while preserving selected settings, requested help and receiver controls. Catalog cancellation, narrow drawer and shared production previews remain as described."} -->
 
 
 
@@ -276,6 +276,20 @@ The lift uses an ordinary extension axle to separate its arm plane from the gear
 A gear motion-limit stop offers Build, shaft-support, motor-current and grounded
 restart guidance through the existing message surface. It does not imply broken teeth.
 Physical witnesses remain separate from player comprehension.
+
+The powered linear actuator uses the Motion catalog category and search, selected settings, existing receiver
+controls and requested part help. Connect the existing Spring carriage, a cell and a
+Command Receiver; W/up extends and S/down retracts. Releasing the keys opens active drive,
+so an unpowered suspended load can fall. The inspector distinguishes completed travel,
+stop proximity, low motion under power and electrical faults. Connection snap length
+sets the next attachment; it does not reposition a connected carriage. The decorative
+rod follows completed endpoints and adds no collider or physical support. Current
+limit, maximum driven speed and travel settings stay in the selected inspector, while
+material and winding details remain expandable. No permanent panel is added.
+Learning admission is **no entry**: contextual power/receiver and part help cover the
+bounded construction task; the passive spring lessons remain unchanged. This is a
+teaching hypothesis, not observed comprehension. The ordinary browser construction
+check includes a low-current failure, repair, key reversal, history and save/load.
 
 The Ball uses the existing part catalogue and selected inspector: diameter is a
 primary size edit; material and expandable Contact settings live in Engineering

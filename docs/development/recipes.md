@@ -18,7 +18,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"87663417f01e01e5fc5937971d29da2fe2174c9847a7aebadd5b3f4d3949e310","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"beeeb844be48c859486223e484eb0746ad90db6bb5c223ed08391f68a278f0af","disposition":"still accurate","rationale":"No catalog schema, geometry, material, mass, compiler or part type changed. The optional place cursor is authoring admission only; all described part construction and physical tests remain applicable."} -->
+<!-- doc-review {"version":1,"fingerprint":"6bbbcc37fc923c55be7bae007c7307c799390573de440b984d4a5c33f452d177","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"f1fca8f600500a91181305bbf6f5fe4e86e568209825bb062a1fc637f4d12335","disposition":"still accurate","rationale":"Main’s actuator remains an ordinary canonical part; integration adds Motion search vocabulary only. Existing schema, geometry, material and physical-test requirements are unchanged."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -58,7 +58,7 @@ when changing admission.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"2dbdecca5e702e5a312c8e26638cc61ea35f51ec69422cf9708cd3fa6817c9f2","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"543be9f27a3602efbcb9dcdd3b887eb2b78de5532fac5eaf7b50773cd38122fd","disposition":"still accurate","rationale":"The existing place command adds exact optional cursor shape admission and stale rejection before candidate construction. Input copying, compilation, one history transaction and rejected-state identity remain as described and are directly tested."} -->
+<!-- doc-review {"version":1,"fingerprint":"3ae6d137931b84d683eebddc06ecb4a7c96d66b5c0a243b1ce9f50baf84683c6","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"6cbcaa1ae253913c4a9610f2d76d4c214575e9aad0bfce2a8c02f7d1e6c4f76b","disposition":"still accurate","rationale":"Catalog placement adds optional expected-cursor admission to place; the actuator retains existing commands. Whole-candidate compilation, atomic rejection and history ownership remain unchanged."} -->
 
 
 
@@ -75,7 +75,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"d743874771ca7c57615fd48b5893e77bbc3cb49c53185493ca602f6c05a62352","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"7eae0f45be49097956568d8305325cce1a8f7915a3d192cdc7ff0fa9c5807f6f","disposition":"still accurate","rationale":"Catalog confirmation now delegates to existing surface controls, following this recipe. Preview remains transient and ordinary cursor-guarded commands own admission; cancellation and stale-result checks remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"81160d6826e1004c108cbd133dc8305a1cf636011c4466c13564dddb26db1f15","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"cc025b69e273bc14e0ad3b923007e12fb8a73f9bfe8ada6a674b44e85a0f6606","disposition":"still accurate","rationale":"Catalog pickup delegates preview confirmation to the existing placement and surface owners; the actuator construction helper now follows that public flow. Cancellation and stale-command boundaries remain required."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -125,7 +125,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"cc0f3c1e83f92b2921e3ceda01b8af20f9b04270d2575e5c1744a0d0b5563ceb","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"9cea4e7a9060cc06bca4bf72e94225b9dda663609779dc481e8eaa82d94f2b2d","disposition":"still accurate","rationale":"Place cursor rejection and catalog input changes do not alter completed diagnostics, measurement cursors, controller history or causal explanations."} -->
+<!-- doc-review {"version":1,"fingerprint":"f6b0da9297225a1fb146ca514d7830a4310a4d83940302b267706dd9cdfe56ae","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"3a0aa74d71a6b796ba1659da31d08104cca5fb2f6cb975c0196ed12e8242b6a9","disposition":"still accurate","rationale":"Actuator completed travel/current diagnostics are preserved. Discovery and cursor admission add no diagnostic writer, measurement cursor or causal inference."} -->
 
 
 
@@ -155,7 +155,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"344ed5f19002210764edc81314e3693b03a57c8a793b35fe1063ebd48e8a2e6e","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"f292019dc85886a83eae4f97543ef2224f4d2df96c34b69b5aef5b19d5642ccb","disposition":"still accurate","rationale":"The sole core delta admits an optional expected cursor for place. No simulation, numerical law, native dependency, integration, contact reader or physical test changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"daf448f5366339dc03b1ee14b73061bd8b10ca38a19aa3f501c48ba810937665","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"5b03b5efb78267536a7fd6e0f508bf56f35814d5104752f7c70e00707ad80f4e","disposition":"still accurate","rationale":"The integration preserves main’s actuator physics unchanged. Catalog changes only discovery and authoring admission; the recipe’s physical witnesses and authority restrictions remain applicable."} -->
 
 
 
@@ -297,9 +297,31 @@ at one tenth of the smallest sphere radius, leaving sphere-free scenes at their
 native tolerance. Temporal subdivisions remain unchanged; snapshots bind sweep
 settings and slop. Re-run existing contact/constraint cases when changing this policy.
 
+The [powered linear controls](../../test/linear-actuator.test.mjs#implementation) and
+[mixed-coordinate controls](../../test/linear-actuator-coupling.test.mjs#implementation)
+exercise the same electrical allocation and impulse-receipt owners with a zero-stiffness
+slide. Keep prepared passive damping in axial speed samples and use generalized mixed
+linear/rotary mobility in actual allocation order. Include both anchor moments and
+independent linear/angular momentum and full-inertia work checks. Authored maximum speed
+caps active drive voltage; external loading can overspeed it, so never clamp velocity.
+Completed travel, rather than intermediate drive-kick speed, establishes end-stop or
+barely-moving observations. Positive kick work at a stop can be dissipated during native
+integration; retain the signed integration ledger and independent complete-tick bounds.
+Connection snap length affects the next attachment, not an existing carriage pose.
+The [linear browser construction](../../scripts/verify-linear-actuator-browser.mjs#source)
+uses ordinary mounting, power and receiver keys, an underpowered lift repair, and
+a horizontal slide blocked by an authored obstacle before its end stop. Require
+measured face-to-obstacle contact, sustained stall heat, obstacle-removal repair,
+reverse motion and rendered endpoint agreement. The [linear clock controls](../../test/linear-actuator-determinism.test.mjs#implementation)
+compare four processes and both production clocks, and replay an actual failure bundle
+with a missing-input counterexample. Preserve nondefault actuator settings, material
+and independent wiring through capture, rotated insertion, mirrored copying and
+history using the powered linear controls. These finite controls do not
+qualify arbitrary mechanism loads or human acceptance.
+
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"d08b872400628ec7e2de4fd710751a4690349ea62c23a069ba8ae2d2c426719c","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"a868f8d921b2d23a562e443800fe621241eff6491bf210b4a5e661a256d08135","disposition":"still accurate","rationale":"Single-part catalog confirmation does not change mechanical traversal, assembly transforms, alias remapping, library persistence or insertion reconciliation. Updated browser call sites still construct parts through ordinary UI before these operations."} -->
+<!-- doc-review {"version":1,"fingerprint":"3b4a84d194b5b64c9fc0294544874cc5a63d6a4df7d3fdb1a524466e3d5d5ede","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"0cd46a442ed54c4935b155920020376a8d4e6f351f599fc64777de87e25f971f","disposition":"still accurate","rationale":"Catalog confirmation changes public single-part setup only. Assembly transforms, mount geometry, copy remapping and atomic history remain unchanged, including actuator preservation."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -392,7 +414,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"3ca425b05015638a9ad5b620385a6cb4768110559e8c897696090c55127b77a2","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"11518e76292e149100a74a1fe95bbe224a693aac876995219af335edab3f5f50","disposition":"updated","rationale":"Assembly previews now resolve surface-bound fixed mounts with the shared model helper, preserving face offsets and authored rotations alongside catalogue ports; the added regression covers both poses and resource disposal."} -->
+<!-- doc-review {"version":1,"fingerprint":"a0a24df5ad0c132169677f0b1b8488cf098daee7d5a83716efd3638c8d0e9f3e","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"861b9c2f59d95435a94bd030c1726a2fec4ba6da38e6507f7bdef05825e7d115","disposition":"updated","rationale":"Documented straight actuator rods and guide ordering in saved previews alongside the new surface resolver. The composer preserves authored offsets and rotations and disposes both retained renderers; passive coils and physical geometry are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -413,7 +435,9 @@ authored material. These finishes do not change model material values. [Assembly
 thumbnails](../../src/presentation/assembly-thumbnails.mjs#implementation) compose the production connection and spring views at saved authored
 endpoints, including their geometry in framing and disposing temporary resources. Surface mounts
 use the same model surface resolver as the workshop, retaining saved face offsets and
-part rotations; named ports retain their catalogue positions. Socket collars keep authored endpoint positions;
+part rotations; named ports retain their catalogue positions. Powered linear connections use
+the retained straight-rod view with guide-to-carriage endpoint ordering in either saved
+edge direction; passive springs keep their coil view. Socket collars keep authored endpoint positions;
 the housing surface supplies their outward visual normal. Nearest-port spacing bounds
 their size. One aperture represents one endpoint regardless of permitted wire count.
 Invisible original picking volumes preserve targeting; normal wires add no duplicate

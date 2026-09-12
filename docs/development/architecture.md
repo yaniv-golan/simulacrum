@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"602b050abceeba34cb208bb8393ef288db2b10442d1c18bb4c79fcaca984c4fe","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"b2ffa1a9db1eb92e917f1ea60b169a4a647db9dbed91c4aa8807508e1f46621f","disposition":"still accurate","rationale":"Shared cosmetic materials and assembly previews remain presentation resources; catalog previews still route mutations through the existing command and placement owners."} -->
+<!-- doc-review {"version":1,"fingerprint":"77e45dbae9fb9099382003e772c35422a40e356cd6e1da8fc7b58450390be559","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"84208d94f5a60786099e884165d7c33fd02147e0b7787514ae5c7971645fb3d1","disposition":"still accurate","rationale":"Catalog discovery and transient placement retain presentation ownership and submit existing core commands. Actuator rendering and controls from main remain composed by the same workshop owner."} -->
 
 
 
@@ -66,7 +66,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"d8450082efabffef367632ebc5c91e75f09e7c8a77bb31a5fafa04a4a6b20e62","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"b5c0f37ca15e7005277a13bc60621870f41623168d193f1447232893296dbd37","disposition":"still accurate","rationale":"Connection overlay beads were replaced by cosmetic socket hardware without changing canonical geometry, connection specifications or resource ownership. Search retains vocabulary-only authority."} -->
+<!-- doc-review {"version":1,"fingerprint":"ac82a317630afeebb779916cf679fe34835f7a010ce3232eb003d226d554b614","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"90c9c361c84eda20082c3a205e372d2fa35017047584a93c328aed2d92dab377","disposition":"still accurate","rationale":"Actuator power, anchor reactions and completed telemetry remain owned by existing model and simulation code. Catalog vocabulary now covers its canonical type without changing admission or physical behavior."} -->
 
 
 
@@ -101,13 +101,24 @@ Render-only decoration may illustrate a hub; it must not imply an authorable hol
 replace the collision geometry. Preserve independent physical test calculations when
 sharing production policy: an oracle that calls the implementation proves little.
 
-A cell can supply multiple motors; multiple cells on one circuit remain unsupported.
+Powered linear guides compile to the same five constrained sliding degrees of freedom
+as springs, with zero stiffness and damping. The catalog owns force per amp, winding
+resistance, current limit and maximum driven speed. The physics door prepares generalized
+axial rows with both anchor moments, samples projected velocity including passive damping,
+and applies measured equal-and-opposite drive impulses. The shared electrical network
+uses an explicit linear coordinate descriptor; its legacy `torqueConstant`, `torque`
+and `shaftWorkJ` fields represent N/A, N and axial work for that descriptor. The inspector
+labels these quantities in linear units. Completed spring-kind readings supply travel;
+they do not imply stored spring energy for a powered guide. Off or power loss releases
+active drive without a clutch. Native stops remain passive constraints.
+
+A cell can supply multiple rotary and linear drives; multiple cells on one circuit remain unsupported.
 Shared motor torque and powered sensor-load accounting and the completed energy ledger belong to simulation.
 Ground contact and workshop motion are not Course qualification.
 
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"254fcaeca60ae8917ca3161093f37fb6ca688b52d90594f653a120c3c1f3242c","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"529f9aaa466e80496e9e4f6ea6c6ec61cfa242902e4dedbfa88e321603ab6edf","disposition":"still accurate","rationale":"The observation store's new tickTiming.frameMs is wall-clock diagnostics only. Sensor descriptors, prior-completed sampling, funded sensor execution and decision/learning histories retain their existing owners and behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"0491c977db4688d8a1a32793f5fe6e45c6135a956022cb7b7fc69f6363ee836c","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"4c87ab2fb9f5be93b344d714d6ce2b5c09709262a2ced186d0b7030e44b2a638","disposition":"still accurate","rationale":"Travel sensors bind the same spring-kind connection and retain prior-completed sampling. No new sensor observation, controller authority, training path or arbitration policy is introduced."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

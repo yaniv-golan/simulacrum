@@ -16,6 +16,11 @@ export const PART_SEARCH = Object.freeze({
   plate: entry('Structure', 'platform', 'flat|floor|support'),
   steelAxle: entry('Motion', 'shaft|rod', 'transmit rotation', 'spin|rotation'),
   passiveBearing: entry('Motion', 'bearing', 'support axle|support shaft', 'rotation|spin'),
+  linearActuator: entry(
+    'Motion',
+    'linear actuator|electric cylinder',
+    'extend|retract|push|pull|linear motion',
+  ),
   poweredHinge: entry('Motion', 'hinge|joint', 'bend|steer|turn joint', 'rotation'),
   ball: entry('Motion', 'sphere', 'roll|drop|catch'),
   gear12: entry('Motion', 'cog|teeth|gearing', 'transmit rotation|torque|speed ratio', 'spin'),

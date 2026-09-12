@@ -1283,6 +1283,89 @@ export async function createPhysicsWorld(configuration) {
         kineticDeltaJ: after - before,
       };
     },
+    /** Generalized coupling of two authored drive coordinates, including anchor moments. */
+    driveResponse(target, source) {
+      const row = (index) => {
+        const j = joints[index];
+        if (!j || !['spring', 'revolute'].includes(j.kind)) throw TypeError('invalid drive joint');
+        const island = preparedTorqueIslands.get(j.a);
+        if (!island) throw Error('prepare drive constraints first');
+        const axis = rotate(rotationArray(bodyAt(j.a).rotation()), j.axisA);
+        const s = j.kind === 'spring' ? springState(index) : null;
+        return {
+          j,
+          island,
+          force: s
+            ? island.axialForce(j.a, j.b, axis, s.pointA, s.pointB)
+            : island.force(j.a, j.b, axis),
+        };
+      };
+      const a = row(target),
+        b = row(source);
+      if (
+        a.island !== b.island ||
+        topology.isRigidPair(a.j.a, a.j.b) ||
+        topology.isRigidPair(b.j.a, b.j.b)
+      )
+        return 0;
+      return dot(a.force, b.island.projection.response(b.force).velocity);
+    },
+    linearDriveState(index) {
+      const j = joints[index],
+        s = springState(index),
+        island = preparedTorqueIslands.get(j.a);
+      if (!island) throw Error('prepare drive constraints first');
+      const f = island.axialForce(j.a, j.b, s.axis, s.pointA, s.pointB);
+      const locked = topology.isRigidPair(j.a, j.b);
+      const velocity = constraintsApplied
+        ? island.vector()
+        : island.projectedVector.map(
+            (v, i) => v + (preparedSprings?.find((a) => a.island === island)?.velocity[i] ?? 0),
+          );
+      return {
+        speed: locked ? 0 : dot(f, velocity),
+        effectiveInverseInertia: locked
+          ? 0
+          : Math.max(0, dot(f, island.projection.response(f).velocity)),
+      };
+    },
+    applyLinearDrive(index, forceN) {
+      if (!constraintsApplied || !springsApplied)
+        throw Error('prepare passive sliding constraints first');
+      if (!Number.isFinite(forceN) || !Number.isFinite(forceN * DT))
+        throw TypeError('invalid axial force');
+      const j = joints[index],
+        s = springState(index),
+        island = preparedTorqueIslands.get(j.a);
+      if (!island) throw Error('prepare drive constraints first');
+      const before = island.kinetic(),
+        prior = island.vector();
+      const raw = island.axialForce(j.a, j.b, s.axis, s.pointA, s.pointB);
+      const locked = topology.isRigidPair(j.a, j.b);
+      const speedBefore = locked ? 0 : dot(raw, prior);
+      const impulse = locked
+        ? raw.map(() => 0)
+        : island.projection.response(raw).impulse.map((v) => v * forceN * DT);
+      island.apply(impulse);
+      const current = island.vector(),
+        speedAfter = locked ? 0 : dot(raw, current),
+        after = island.kinetic();
+      const constraintWorkJ = locked
+        ? 0
+        : impulse.reduce(
+            (sum, v, i) => sum + ((v - raw[i] * forceN * DT) * (prior[i] + current[i])) / 2,
+            0,
+          );
+      return {
+        speedBefore,
+        speedAfter,
+        workJ: (forceN * DT * (speedBefore + speedAfter)) / 2,
+        constraintWorkJ,
+        kineticBeforeJ: before,
+        kineticAfterJ: after,
+        kineticDeltaJ: after - before,
+      };
+    },
     jointState(index) {
       alive();
       if (
