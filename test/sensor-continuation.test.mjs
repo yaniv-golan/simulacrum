@@ -44,7 +44,9 @@ test('all seven powered sensor families and installed WASM restore exact next-ti
       s.step(1);
       const completed = s.observe().frames[0];
       assert.equal(completed.sensors.bodies, prior.physics, `${kind}: reuse admitted bodies`);
-      assert.throws(() => { completed.sensors.bodies[0].position[0] = 999; }, TypeError);
+      assert.throws(() => {
+        completed.sensors.bodies[0].position[0] = 999;
+      }, TypeError);
       assert.deepEqual(prior, retained, `${kind}: retained observation stays unchanged`);
       const cp = s.checkpoint();
       s.step(5);
