@@ -170,9 +170,14 @@ export async function createSession(
   let torques = [],
     receipts = [];
   const hasGears = () => config.joints.some((j) => j.kind === 'gear');
+  const hasRopes = () => config.joints.some((j) => j.kind === 'rope');
   const hasSprings = () => config.joints.some((j) => j.kind === 'spring');
   const emptyEnergy = (mechanical = world.mechanicalEnergy()) => ({
     ...mechanical,
+    ...(mechanical.ropePotentialJ !== undefined
+      ? Object.fromEntries(Object.keys(world.ropeEnergy()).map((k) => [k, 0]))
+      : {}),
+
     ...(mechanical.springPotentialJ !== undefined ? { dampingWorkJ: 0 } : {}),
     ...(mechanical.gearPotentialJ !== undefined
       ? {
@@ -191,7 +196,11 @@ export async function createSession(
   });
   let energy = emptyEnergy();
   const total = (e) =>
-    e.kineticJ + e.potentialJ + (e.springPotentialJ ?? 0) + (e.gearPotentialJ ?? 0);
+    e.kineticJ +
+    e.potentialJ +
+    (e.springPotentialJ ?? 0) +
+    (e.gearPotentialJ ?? 0) +
+    (e.ropePotentialJ ?? 0);
   function priorSpringLength(j, bodies) {
     const a = bodies[j.a],
       b = bodies[j.b],
@@ -219,6 +228,7 @@ export async function createSession(
     status,
     physics: immutableCopy(physics),
     springs: springReadings(),
+    ...(hasRopes() ? { ropes: world.ropes() } : {}),
     ...(gears ? { gears } : {}),
     contacts: { ...contactSample, sampleTick: tick, intervalSeconds: tick === 0 ? 0 : DT },
     metadata,
@@ -528,6 +538,7 @@ export async function createSession(
             }
             case 'integration-contacts': {
               const before = afterEnvironmentEnergy;
+              if (hasRopes()) world.applyRopes();
               completedBodies = world.step();
               contactSample = world.contacts();
               afterIntegrationEnergy = world.mechanicalEnergy();
@@ -535,12 +546,18 @@ export async function createSession(
                 gearSplitElasticDeltaJ = world
                   .gears()
                   .reduce((sum, r) => sum + r.splitElasticDeltaJ, 0);
+              const ropeWork = world.ropeEnergy();
               integrationDeltaJ =
                 total(afterIntegrationEnergy) -
                 total(before) +
                 springReceipt.kineticDeltaJ +
                 springReceipt.dampingWorkJ -
-                gearSplitElasticDeltaJ;
+                gearSplitElasticDeltaJ +
+                (hasRopes()
+                  ? ropeWork.ropeDampingWorkJ +
+                    ropeWork.ropeNumericalLossJ -
+                    ropeWork.ropeSplitWorkJ
+                  : 0);
               break;
             }
             case 'structure-failure': {
@@ -572,6 +589,8 @@ export async function createSession(
             case 'telemetry':
               energy = {
                 ...afterIntegrationEnergy,
+                ...(hasRopes() ? world.ropeEnergy() : {}),
+
                 ...(hasSprings() ? { dampingWorkJ: springReceipt.dampingWorkJ } : {}),
                 ...(hasGears()
                   ? {
@@ -598,7 +617,12 @@ export async function createSession(
                   gearReceipt.dampingWorkJ +
                   gearReceipt.numericalLossJ -
                   gearReceipt.constraintWorkJ -
-                  gearSplitElasticDeltaJ,
+                  gearSplitElasticDeltaJ +
+                  (hasRopes()
+                    ? world.ropeEnergy().ropeDampingWorkJ +
+                      world.ropeEnergy().ropeNumericalLossJ -
+                      world.ropeEnergy().ropeSplitWorkJ
+                    : 0),
               };
               tick = next;
               pending = [];
@@ -639,14 +663,13 @@ export async function createSession(
           anchor: previousInterval?.anchor ?? anchor,
           inputs: [...(previousInterval?.inputs ?? []), ...history],
           failedTick: next,
-          reasonCode:
-            error.reasonCode === 'GEAR_MOTION_LIMIT'
-              ? 'GEAR_MOTION_LIMIT'
-              : ['NON_FINITE_STATE', 'INVARIANT_VIOLATION', 'ENERGY_INVARIANT'].includes(
-                    error.message,
-                  )
-                ? error.message
-                : 'PHYSICS_FAILURE',
+          reasonCode: ['GEAR_MOTION_LIMIT', 'ROPE_MOTION_LIMIT'].includes(error.reasonCode)
+            ? error.reasonCode
+            : ['NON_FINITE_STATE', 'INVARIANT_VIOLATION', 'ENERGY_INVARIANT'].includes(
+                  error.message,
+                )
+              ? error.message
+              : 'PHYSICS_FAILURE',
           completed: observations.observe().frames.at(-1),
         });
         observations.publish({
@@ -769,6 +792,8 @@ export async function createSession(
         power: nextPower.read(),
         receiverControl: nextReceiverControl.snapshot(),
       };
+      if (nextConfig.joints.some((j) => j.kind === 'rope')) nextFrame.ropes = candidate.ropes();
+      else delete nextFrame.ropes;
       const nextAnchor = copy({
         version: 3,
         tick: 0,
@@ -887,6 +912,7 @@ export async function createSession(
         'constraintWorkJ',
         'balanceResidualJ',
         ...(hasSprings() ? ['springPotentialJ', 'dampingWorkJ'] : []),
+        ...(hasRopes() ? ['ropePotentialJ', ...Object.keys(world.ropeEnergy())] : []),
         ...(hasGears()
           ? [
               'gearPotentialJ',
@@ -899,6 +925,10 @@ export async function createSession(
       ]) ||
       !Object.values(cp.energy).every(Number.isFinite) ||
       cp.energy.constraintDissipationJ < 0 ||
+      (hasRopes() &&
+        (cp.energy.ropePotentialJ < 0 ||
+          cp.energy.ropeDampingWorkJ < 0 ||
+          cp.energy.ropeNumericalLossJ < 0)) ||
       (hasGears() &&
         (cp.energy.gearPotentialJ < 0 ||
           cp.energy.gearDampingWorkJ < 0 ||
@@ -1014,6 +1044,7 @@ export async function createSession(
         potentialJ: cp.energy.potentialJ,
         ...(hasSprings() ? { springPotentialJ: cp.energy.springPotentialJ } : {}),
         ...(hasGears() ? { gearPotentialJ: cp.energy.gearPotentialJ } : {}),
+        ...(hasRopes() ? { ropePotentialJ: cp.energy.ropePotentialJ } : {}),
       },
       config.power.motors.flatMap((m, i) =>
         m.positionControl && m.joint >= 0
@@ -1029,6 +1060,9 @@ export async function createSession(
         .filter((c) => c.opened)
         .map((c) => c.joint)
         .sort((a, b) => a - b),
+      hasRopes()
+        ? Object.fromEntries(Object.keys(world.ropeEnergy()).map((k) => [k, cp.energy[k]]))
+        : undefined,
     );
     contactSample = world.contacts();
     power = candidatePower;

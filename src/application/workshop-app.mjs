@@ -727,6 +727,7 @@ export async function mountWorkshopApp(root) {
     readRenderedTransforms: () => view.readRenderedTransforms(),
     readRenderedShapes: () => view.readRenderedShapes(),
     readRenderedSpringEndpoints: () => view.readRenderedSpringEndpoints(),
+    readRenderedRopeEndpoints: () => view.readRenderedRopeEndpoints(),
     readRenderedCenters: () => view.readRenderedCenters(),
     readInteractionState: () => view.readInteractionState(),
     metrics: () => structuredClone(metrics),

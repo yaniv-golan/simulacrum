@@ -14,6 +14,7 @@ export function createPartsBrowser({
   pick,
   drag,
   openAssemblies,
+  attachRope,
   storage,
   placementActive = () => false,
 }) {
@@ -46,6 +47,14 @@ export function createPartsBrowser({
   assemblies.onclick = () => {
     conceal();
     openAssemblies();
+  };
+  const rope = el('button', 'Rope', 'catalog-connection');
+  rope.onfocus = describeRope;
+  rope.onpointerenter = describeRope;
+  rope.onclick = () => {
+    if (!editable || placementActive()) return;
+    conceal();
+    attachRope?.();
   };
   const notice = el('p', '', 'catalog-notice');
   notice.setAttribute('role', 'status');
@@ -88,7 +97,15 @@ export function createPartsBrowser({
   let dragSession = null,
     dragFrame = null;
   const cards = new Map();
+  function describeRope() {
+    summary.hidden = false;
+    name.textContent = 'Rope';
+    purpose.textContent =
+      'Attach two parts with a flexible rope. Choose its length in the selected inspector.';
+    favorite.hidden = true;
+  }
   function describe(type, reason = '') {
+    favorite.hidden = false;
     selected = type;
     name.textContent = CATALOG[type].name;
     purpose.textContent = reason || PART_HELP[type].purpose;
@@ -187,6 +204,7 @@ export function createPartsBrowser({
     }
     // Reorder only on explicit browse/search actions, never on simulation frames.
     for (const { type } of rows) grid.append(cards.get(type).wrapper);
+    grid.append(rope);
     for (const [label, b] of tabs)
       b.setAttribute('aria-pressed', String(!query && label === category));
     count.textContent = rows.length
@@ -197,9 +215,17 @@ export function createPartsBrowser({
           ? 'Parts appear here after placement.'
           : 'Save parts using the favorite action.';
     assemblies.hidden = !/spring|suspension/i.test(query) || !openAssemblies;
+    rope.hidden =
+      !attachRope ||
+      !(query
+        ? /\b(rope|cable|tow|towing)\b/i.test(query)
+        : ['All parts', 'Structure'].includes(category));
+    rope.disabled = !editable || placementActive();
+    if (!rope.hidden && !rows.length) count.textContent = 'Rope · Connection tool';
     summary.hidden = !rows.length;
     if (rows.length)
       describe(visible.has(selected) ? selected : rows[0].type, visible.get(selected)?.reason);
+    if (!rows.length && !rope.hidden) describeRope();
     searching = Boolean(query);
   }
   function snapshot() {
@@ -317,6 +343,7 @@ export function createPartsBrowser({
         : next
           ? ''
           : 'Return to Build to add parts.';
+      rope.disabled = !next || placementActive();
       if (next === editable && message === availabilityNotice) return;
       availabilityNotice = message;
       editable = next;

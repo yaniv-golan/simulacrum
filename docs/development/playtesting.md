@@ -10,7 +10,7 @@ For an interaction report, use **Record an issue** in the left sidebar, then Sta
 
 ## Remote setup
 
-<!-- doc-review {"version":1,"fingerprint":"81e3cfec31271f105bd137821e3cc75feccba1d2b75b859ee16ffbeaad9ea005","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"62d903a7e118658974f1ef741c6b36fd5c411a3e121031d791116145c8d68c4f","disposition":"still accurate","rationale":"Catalog/type dependencies include both new parts in captured workshop data. Consent, upload limits, authentication, storage isolation, replay observation and server lifetime behavior are unchanged; the prose already separates served build identity from recording guarantees."} -->
+<!-- doc-review {"version":1,"fingerprint":"9d918f81408dcf4a2d528fbe8884a94546edda783313585cd4635cf529702b1b","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"5793fbc3626f7405a27b5c7f14031d394ea981276c227128e414c10f865840ce","disposition":"still accurate","rationale":"New Rope snapshot receipts remain session data. Recording transport, consent, upload limits, exporter reconstruction and remote setup are unchanged; the section explicitly distinguishes implementation coverage from the identity of the served build."} -->
 
 
 

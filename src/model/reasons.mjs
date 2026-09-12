@@ -1,3 +1,4 @@
+import { ROPE_REASON_CODES } from './rope.mjs';
 import { SURFACE_REASON_CODES } from './surfaces.mjs';
 import { MIRROR_REASON_CODES } from './mirror-assembly.mjs';
 import { BLUEPRINT_REASON_CODES } from './blueprint.mjs';
@@ -15,6 +16,7 @@ export const CORE_REASON_CODES = Object.freeze([
 // Each owner authors its own codes; the player surface exposes their union.
 export const REASON_CODES = Object.freeze([
   ...new Set([
+    ...ROPE_REASON_CODES,
     ...SURFACE_REASON_CODES,
     ...MIRROR_REASON_CODES,
     ...BLUEPRINT_REASON_CODES,

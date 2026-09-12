@@ -942,6 +942,17 @@
       "mergeSmoke": false
     },
     {
+      "id": "verify-rope-browser",
+      "script": "scripts/verify-rope-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
       "id": "verify-parts-catalog",
       "script": "scripts/verify-parts-catalog.mjs",
       "execution": "parallel",
@@ -1323,7 +1334,7 @@
       "id": "connection-display-isolation",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build.",
+      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build. The shared part builder preserves canonical solids, material authorship and resource disposal across consumers; static family coatings do not intercept picking or invent readings. Sensor face graphics distinguish measurement identities and refresh the selected angular axis.",
       "owners": [
         {
           "path": "src/presentation/connection-render.mjs",
@@ -1336,6 +1347,22 @@
         {
           "path": "src/presentation/part-finish.mjs",
           "anchor": "createPortHardware"
+        },
+        {
+          "path": "src/presentation/part-mesh.mjs",
+          "anchor": "createPartMesh"
+        },
+        {
+          "path": "src/presentation/part-visuals/sensors.mjs",
+          "anchor": "createSensorDetails"
+        },
+        {
+          "path": "src/presentation/part-visuals/electronics.mjs",
+          "anchor": "createElectronicsDetails"
+        },
+        {
+          "path": "src/presentation/part-visuals/mechanical.mjs",
+          "anchor": "createMechanicalDetails"
         }
       ],
       "checks": [
@@ -1378,6 +1405,38 @@
           {
             "path": "test/presentation-resources.test.mjs",
             "anchor": "assembly previews retain offset surface fasteners under authored rotation without mutating saved parts"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "shared part mesh retains canonical solids, authored state and disposable resources for the full catalogue"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "angular-rate face refreshes for authored axis changes while power and binding edits retain resources"
+          },
+          {
+            "path": "test/part-visuals-mechanical.test.mjs",
+            "anchor": "mechanical surface finishes stay inside authored envelopes and never intercept picking"
+          },
+          {
+            "path": "test/part-visuals-electronics.test.mjs",
+            "anchor": "bank paint follows real endpoint directions and positions including altered authored ports"
+          },
+          {
+            "path": "test/part-visuals-sensors.test.mjs",
+            "anchor": "contact membrane covers the full active +Z face; other faces only identify it"
+          },
+          {
+            "path": "test/part-visuals-sensors.test.mjs",
+            "anchor": "tilt uses a distinct gravity graticule, not the linear-motion triad"
+          },
+          {
+            "path": "test/part-visuals-sensors.test.mjs",
+            "anchor": "range lens is centred at the sensing ray origin and remains visible after the socket band"
+          },
+          {
+            "path": "test/part-visuals-mechanical.test.mjs",
+            "anchor": "powered slide paint clears the shared central interface and differs from passive spring seats"
           }
         ]
       },
@@ -4420,6 +4479,10 @@
         {
           "path": "src/simulation/physics/world.mjs",
           "anchor": "createPhysicsWorld"
+        },
+        {
+          "path": "src/presentation/release-state.mjs",
+          "anchor": "releasedAttachment"
         }
       ],
       "checks": [
@@ -4459,6 +4522,22 @@
           {
             "path": "test/release-session.test.mjs",
             "anchor": "Try again clears partial and opened latch state and permits a new powered release"
+          },
+          {
+            "path": "test/release-rope.test.mjs",
+            "anchor": "release labels distinguish the fixed latch from a retained rope on the same face"
+          },
+          {
+            "path": "test/release-rope.test.mjs",
+            "anchor": "released rope checkpoints retain both families and continue exactly across both clocks"
+          },
+          {
+            "path": "test/release-rope.test.mjs",
+            "anchor": "release retains an ordinary tensile tether with powered and absent-rope controls"
+          },
+          {
+            "path": "test/release-rope.test.mjs",
+            "anchor": "moving released rope assembly preserves independent momentum without external forces"
           }
         ],
         "negative": [
@@ -4473,6 +4552,10 @@
           {
             "path": "test/release-topology.test.mjs",
             "anchor": "gear carrier split is blocked but release of complete supported carrier is allowed"
+          },
+          {
+            "path": "test/release-rope.test.mjs",
+            "anchor": "released rope checkpoints retain both families and continue exactly across both clocks"
           }
         ]
       },
@@ -4520,6 +4603,247 @@
           {
             "path": "test/part-placement-pending.test.mjs",
             "anchor": "pending catalog placement cannot be replaced, cancelled or submitted twice"
+          }
+        ]
+      },
+      "qualificationBars": [
+        "F1"
+      ]
+    },
+    {
+      "id": "distributed-rope",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Authored massive tensile ropes preserve subdivision mass and compliance, completed node rendering, endpoint reactions, bounded slack and hanging behavior, applied-force readings, history and deterministic continuation within the declared collision-free rope domain. Completed-geometry work separates constitutive damping, implicit numerical loss and signed split work; session checkpoints and failure replay preserve rope telemetry and reject mismatched or internally inconsistent work receipts atomically.",
+      "owners": [
+        {
+          "path": "src/model/rope.mjs",
+          "anchor": "compileRopes"
+        },
+        {
+          "path": "src/simulation/physics/law/rope.mjs",
+          "anchor": "ropeVectorImpulses"
+        },
+        {
+          "path": "src/simulation/physics/world.mjs",
+          "anchor": "createPhysicsWorld"
+        },
+        {
+          "path": "src/simulation/session.mjs",
+          "anchor": "createSession"
+        },
+        {
+          "path": "src/presentation/rope-controls.mjs",
+          "anchor": "ropeInspector"
+        },
+        {
+          "path": "src/presentation/rope-view.mjs",
+          "anchor": "createRopeView"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-rope-browser"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/rope-vector.test.mjs",
+            "anchor": "nonlinear slack and transverse extension match independent radial solution"
+          },
+          {
+            "path": "test/rope-workshop.test.mjs",
+            "anchor": "rope creation, length edit, rejected edit, undo/redo, save, deletion and Build recovery"
+          },
+          {
+            "path": "test/rope-short.test.mjs",
+            "anchor": "short slack rope on ordinary contact supports remains usable"
+          },
+          {
+            "path": "test/rope-accounting.test.mjs",
+            "anchor": "off-centre taut rope conserves independently computed momentum and does not create energy"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "massive rope free fall and absence of unadvertised collisions"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "supported hanging load has finite tensile extension and settled load"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "slack and taut native snapshots continue exactly and reject corrupt restore atomically"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "declared length and subdivision extremes retain independently predicted hanging extension"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "completed applied tension includes damping and survives snapshot restore"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "static gravity equilibrium does not claim predictor energy as actual loss"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "taut small oscillations follow the analytical damped oscillator"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "rechecksummed invalid applied-force state is rejected before native restore"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "segment reversal rejects before any force can push along its current axis"
+          },
+          {
+            "path": "test/rope-view.test.mjs",
+            "anchor": "rope mesh vertices follow completed node endpoints and resources are retained and disposed"
+          },
+          {
+            "path": "test/rope-determinism.test.mjs",
+            "anchor": "rope projections match separate processes and both production clocks"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "ordinary rope descriptor saves and compiles distributed constant mass and series compliance"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "capacity and invalid material reject while ordinary positive control admits"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "rope identity and copied reusable graphs preserve authored material and numeric plant"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "rope joins mechanical authoring and mirrored reference attachments remain explicit"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "slack chain has no compression; extended positive control pulls"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "simultaneous adjacent links match independent symmetric analytical solution"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "energy includes elastic release, gravity-free impulse work and damping"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "invalid and asymmetric mobility reject before returning impulses"
+          },
+          {
+            "path": "test/rope-towing.test.mjs",
+            "anchor": "ordinary powered wheels tow a separate load while the neutral apparatus stays still"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "rope collider exclusion suppresses actual floor and node pairs with unfiltered controls"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope session slack/taut checkpoints preserve pending input, fractional clock and full continuation"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope session rejected restores preserve cursor, physics, force readings, energy and future inputs"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope failure bundle replays recorded commands from a restored nonzero anchor and rejects wrong traces"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "completed rope ledger separates dashpot, implicit geometry loss and signed force mismatch"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "session rope ledger matches independent momentum-work and analytic native integration error"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "static hanging rope has no phantom work, damping or numerical loss and native receipt restores"
+          },
+          {
+            "path": "test/rope-linear.test.mjs",
+            "anchor": "powered linear actuator pulls a Rope load with causal controls and exact checkpoint continuation"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/rope-vector.test.mjs",
+            "anchor": "nonlinear slack and transverse extension match independent radial solution"
+          },
+          {
+            "path": "test/rope-workshop.test.mjs",
+            "anchor": "rope creation, length edit, rejected edit, undo/redo, save, deletion and Build recovery"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "slack and taut native snapshots continue exactly and reject corrupt restore atomically"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "rechecksummed invalid applied-force state is rejected before native restore"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "segment reversal rejects before any force can push along its current axis"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "capacity and invalid material reject while ordinary positive control admits"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "slack chain has no compression; extended positive control pulls"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "invalid and asymmetric mobility reject before returning impulses"
+          },
+          {
+            "path": "test/rope-towing.test.mjs",
+            "anchor": "ordinary powered wheels tow a separate load while the neutral apparatus stays still"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "rope collider exclusion suppresses actual floor and node pairs with unfiltered controls"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope session slack/taut checkpoints preserve pending input, fractional clock and full continuation"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope session rejected restores preserve cursor, physics, force readings, energy and future inputs"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope failure bundle replays recorded commands from a restored nonzero anchor and rejects wrong traces"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "completed rope ledger separates dashpot, implicit geometry loss and signed force mismatch"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "session rope ledger matches independent momentum-work and analytic native integration error"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "static hanging rope has no phantom work, damping or numerical loss and native receipt restores"
+          },
+          {
+            "path": "test/rope-linear.test.mjs",
+            "anchor": "powered linear actuator pulls a Rope load with causal controls and exact checkpoint continuation"
           }
         ]
       },
@@ -5124,8 +5448,14 @@
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
       "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
-      "externalImports": ["node:fs", "node:os", "node:path"],
-      "consumers": ["scripts/verify-cloud-playtest.mjs"],
+      "externalImports": [
+        "node:fs",
+        "node:os",
+        "node:path"
+      ],
+      "consumers": [
+        "scripts/verify-cloud-playtest.mjs"
+      ],
       "sourceSha256": "980b7c598b8a6a845a3a49526b6299bb54dd9f5c49ecd37f53fe9e74f3f23998",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
@@ -5167,8 +5497,12 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
-      "externalImports": ["node:assert/strict", "node:crypto", "node:fs"],
+      "consumerSourceHash": "b8c3325fe3d6ca0439167fa2690c6d38b76a639ab5689f7c92d54939fc4f6bd4",
+      "externalImports": [
+        "node:assert/strict",
+        "node:crypto",
+        "node:fs"
+      ],
       "consumers": [
         "scripts/qualify-workshop.mjs",
         "scripts/verify-adaptive-graphics.mjs",
@@ -5249,8 +5583,12 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
-      "externalImports": ["node:child_process", "node:crypto", "node:fs"],
+      "consumerSourceHash": "b8c3325fe3d6ca0439167fa2690c6d38b76a639ab5689f7c92d54939fc4f6bd4",
+      "externalImports": [
+        "node:child_process",
+        "node:crypto",
+        "node:fs"
+      ],
       "consumers": [
         "scripts/assess.mjs",
         "scripts/bars.mjs",
@@ -5377,8 +5715,12 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "7547100d6f8413c04edb22b7ede3a31ddfa4f22011772e1d51e91007d25c3c07",
-      "externalImports": ["node:child_process", "node:crypto", "node:fs"],
+      "consumerSourceHash": "e99f5935e31a1b42a79b619ac939fdae88a284a41f4cf1ac39cec93cdf2ece6e",
+      "externalImports": [
+        "node:child_process",
+        "node:crypto",
+        "node:fs"
+      ],
       "consumers": [
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
@@ -5637,7 +5979,10 @@
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
       "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
-      "externalImports": ["node:crypto", "node:fs/promises"],
+      "externalImports": [
+        "node:crypto",
+        "node:fs/promises"
+      ],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
         "scripts/playtest/calibration-bundle.mjs",
@@ -5690,8 +6035,17 @@
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
       "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
-      "externalImports": ["esbuild", "miniflare", "node:fs/promises", "node:path", "node:path"],
-      "consumers": ["scripts/verify-cloud-playtest.mjs", "scripts/verify-remote-playtest.mjs"],
+      "externalImports": [
+        "esbuild",
+        "miniflare",
+        "node:fs/promises",
+        "node:path",
+        "node:path"
+      ],
+      "consumers": [
+        "scripts/verify-cloud-playtest.mjs",
+        "scripts/verify-remote-playtest.mjs"
+      ],
       "sourceSha256": "66e915cda215738b8a0fcc5d913d7b7e739f7e7f0ba5417f52b37533151afb9e",
       "entrypoint": "scripts/playtest/local-cloud.mjs",
       "dependencies": []
@@ -5712,7 +6066,11 @@
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
       "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
-      "externalImports": ["node:fs/promises", "node:path", "node:url"],
+      "externalImports": [
+        "node:fs/promises",
+        "node:path",
+        "node:url"
+      ],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
         "scripts/playtest/calibration-bundle.mjs",
@@ -5846,7 +6204,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "57f1c36dbc105c0de95339d1aeed1005d64640f17a1e95e1bd8961f84804f36e",
+      "consumerSourceHash": "b399d4db639ed72ce303198cf4770834c415cf960e8aef714d36a86726daa6db",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -5928,8 +6286,15 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
-      "externalImports": ["acorn", "css-tree", "node:fs", "node:path", "parse5", "typescript"],
+      "consumerSourceHash": "b8c3325fe3d6ca0439167fa2690c6d38b76a639ab5689f7c92d54939fc4f6bd4",
+      "externalImports": [
+        "acorn",
+        "css-tree",
+        "node:fs",
+        "node:path",
+        "parse5",
+        "typescript"
+      ],
       "consumers": [
         "scripts/analysis-snapshot.mjs",
         "scripts/app-fingerprint.mjs",
@@ -6154,7 +6519,11 @@
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
       "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
-      "externalImports": ["node:crypto", "node:fs/promises", "node:path"],
+      "externalImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path"
+      ],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
         "scripts/playtest/calibration-bundle.mjs",
@@ -6214,8 +6583,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
-      "consumerSourceHash": "214744db19b08bf050d2c3ca7762b92bd2117b7d2c03ea3f252c20edf2c838b5"
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "24fa160c5e1c4d2040d0938e7be9268941cd44a6ce5a2d0d4e844a832349e392"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -6245,8 +6614,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
-      "consumerSourceHash": "214744db19b08bf050d2c3ca7762b92bd2117b7d2c03ea3f252c20edf2c838b5"
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "24fa160c5e1c4d2040d0938e7be9268941cd44a6ce5a2d0d4e844a832349e392"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",

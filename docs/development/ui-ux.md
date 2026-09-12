@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"02ae0c4cb228393e069b0f458bed48161836f8bbf6d740a169d3273f56bcdb03","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"892e00e980b7504838df7feaa1322891df63443ec2e5dd5295aaabe7092c20b6","disposition":"still accurate","rationale":"The coupler and actuator add no lesson entry. Catalog integration extends requested help with links that reveal parts without placement; the existing admission policy and distinction between automation and human comprehension remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"f63560c411b8e7d223abdd6f8e1590e57162b12ca077a57672c109296b406698","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"14f692ae94af52ee33d195cc43c03e779b6ecb33863421e9416eacf0d44d506b","disposition":"still accurate","rationale":"Rope extends requested connection help and offers no new lesson or example entry. Build edits preserve the remaining machine, physical failure exposes a repair, and no teaching identity grants forces or successful behavior."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"6e1106fb5edbe2a7ae3b7bff6337cbfa8643b2614b4c235ee875db891b36cf20","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c9a32bb32cda4c17a496a0e77e4277f5f6f9973d161f0f59914cf942d9f6bcc4","disposition":"updated","rationale":"Retained the searchable catalog, cursor-guarded preview/placement, contextual coupler and actuator controls, and recording-aware spacing/scrolling. Both recording and placement remain reachable. The previously failed recording journeys are rerun on combined source; human acceptance remains separate."} -->
+<!-- doc-review {"version":1,"fingerprint":"7c998d8f0992ec01529df743cfa7dedbcf04925462bdbc7bf186dfa6c9b37302","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"e9c812c4d7dbae58badcfb69206e3edfe027d59fb523a9e5731e68668510c4c2","disposition":"updated","rationale":"Documented Rope discovery in the searchable catalog and requested selected inspector. Build owns attachment and material edits; Run exposes completed readings. Contextual help preserves explicit collision exclusions and nominal uncalibrated engineering assumptions. Shared canonical part meshes, authored-axis appearance and static family finishes remain intact; Rope retains its separate completed-node renderer."} -->
 
 
 
@@ -163,6 +163,18 @@ Learning admission: extend existing part help; no new lesson or example-browser 
 
 Catalogue, part-help and assembly previews use the workshop’s part meshes and cosmetic finishes; preview lighting shares the same reflection field. These shared finishes improve recognition and connection authoring without adding a persistent panel or a learning-content entry.
 
+The catalog offers Rope in Structure, All parts and rope/cable/towing searches.
+This connection tool opens the selected part's requested
+[rope inspector](../../src/presentation/rope-controls.mjs), shown only after requesting
+Rope or selecting a part with a rope attachment. It does not displace controls on
+unrelated parts. Build owns two explicit
+surface attachments, length, diameter and material edits. Run shows completed length
+and applied tension; authoring forms leave until Build returns. The same requested
+help states the floor/body/self-collision exclusions, nominal material assumptions
+and non-breaking overload stop. No lesson or permanent canvas panel is added.
+Rope geometry follows physical nodes in Machine view and is hidden in exploded view.
+Its contextual engineering explanation identifies stretch, damping and load limits
+as uncalibrated assumptions of the simplified nylon model.
 
 The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic
 regulation shows measured and target total spring length, rather than extension from
@@ -285,6 +297,8 @@ and inspect actuation or blocked-support status. Open attachments are identified
 in the inspector and removed from the connection overlay. Cargo moves under existing
 motion and forces. Build and Try again restore the authored start; saved machines retain
 their Build connections. Crossing wires do not support cargo or disconnect automatically.
+Ropes keep their authored attachments and tension after a fixed latch opens, including
+when a rope shares the latch face. Only the released fixed attachment receives the open label.
 
 Learning admission is **no entry**: the existing keyboard-driving activity covers cell
 and receiver wiring, while contextual coupler help explains latch versus mount, interrupted

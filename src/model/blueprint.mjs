@@ -166,6 +166,19 @@ export function validateBlueprint(blueprint) {
     if (connections.has(connection.id)) return result('DUPLICATE_ID', `${path}/id`);
     connections.add(connection.id);
     if (connection.a.part === connection.b.part) return result('SELF_CONNECTION', `${path}/b/part`);
+    if (connection.kind === 'rope') {
+      for (const side of ['a', 'b']) {
+        const endpoint = connection[side],
+          part = parts.get(endpoint.part);
+        if (!part) return result('UNKNOWN_PART', `${path}/${side}/part`);
+        try {
+          resolveSurfaceEndpoint(part, endpoint);
+        } catch (error) {
+          return result(error.reasonCode ?? 'INVALID_ENDPOINT', path);
+        }
+      }
+      continue;
+    }
     if (connection.a.surface || connection.b.surface) {
       if (!connection.a.surface || !connection.b.surface) return result('INVALID_BLUEPRINT', path);
       const a = parts.get(connection.a.part),
