@@ -162,7 +162,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"b84ee9c75bd714b5f203ba9cc373c8c018b7f04fad96f142df216f81b2a93d73","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"99e4dbe439db51c3cf2cb9653de50758f5e919ff5cbea452fd9dd14ff2d64abc","disposition":"updated","rationale":"Retained the new finite coil funding, next-tick release, sorted topology admission, copied native response and live-joint commit explanation. The combined version-eight restore validates opened joints and Rope work, preserves anchor forces, and names independent momentum/contact/replay controls without treating them as arbitrary docking qualification."} -->
+<!-- doc-review {"version":1,"fingerprint":"0dd87fe89bd567afd8c805012cf681f593c27bc6bb64e90c5f348faae7b05c5f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"633868734b4712c96bf9426a0b4d21b7cff907b866d6a71e94b718cab1f92af8","disposition":"still accurate","rationale":"The only implementation change reserves feedback badge space in CSS. The layout fixture now submits 9,996 characters, below the unchanged 10,000-character limit, so its existing receipt layout assertions can execute. UI prose explains the reserved row space. Native physics, phase ordering, Coupler/Rope restore, energy accounting and all cited physical controls are unchanged; conservative opaque identity dependencies account for this review impact."} -->
 
 
 

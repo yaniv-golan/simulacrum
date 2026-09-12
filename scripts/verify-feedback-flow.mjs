@@ -234,7 +234,7 @@ try {
   await page.getByRole('button', { name: 'Back to draft', exact: true }).click();
   await page
     .getByRole('textbox', { name: 'Your feedback', exact: true })
-    .fill('Long observation '.repeat(590));
+    .fill('Long observation '.repeat(588));
   await page.emulateMedia({ reducedMotion: 'reduce' });
   async function checkLayout(state) {
     for (const viewport of [

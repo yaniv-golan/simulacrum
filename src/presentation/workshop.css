@@ -1508,6 +1508,7 @@ h3 {
 }
 .playtest-panel [data-feedback] {
   order: 3;
+  min-inline-size: 8.5em;
 }
 .playtest-panel [hidden] {
   display: none;
@@ -3432,13 +3433,12 @@ h3 {
   }
 }
 
+/* Reserve the status line so background delivery never shifts toolbar controls. */
 .playtest-panel [data-feedback-state] {
   display: block;
+  min-block-size: 1.2em;
   font-size: 10px;
   line-height: 1.2;
-}
-.playtest-panel [data-feedback-state]:empty {
-  display: none;
 }
 
 /* The catalog owns discovery; requested detail stays in the existing help window. */
