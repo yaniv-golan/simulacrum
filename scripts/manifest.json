@@ -657,7 +657,7 @@
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
-      "timeoutMs": 45000,
+      "timeoutMs": 60000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
@@ -668,7 +668,7 @@
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
-      "timeoutMs": 45000,
+      "timeoutMs": 75000,
       "ruleId": "runtime-contract",
       "mergeSmoke": true
     },
@@ -734,7 +734,7 @@
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
-      "timeoutMs": 60000,
+      "timeoutMs": 90000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
@@ -3594,6 +3594,10 @@
           {
             "path": "test/check-sequence.test.mjs",
             "anchor": "four workers drain before exclusive work"
+          },
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "completion waits longer than focused probes without bypassing serialization"
           }
         ],
         "negative": [
@@ -3623,7 +3627,7 @@
           },
           {
             "path": "test/browser-report.test.mjs",
-            "anchor": "history removes abandoned temporary files while preserving live writers"
+            "anchor": "history uses one snapshot and accepts last-writer-wins hint loss"
           }
         ]
       },
