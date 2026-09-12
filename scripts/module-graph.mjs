@@ -506,6 +506,8 @@ export function validateLayers(graph, { physicsPackages = [] } = {}) {
       ) {
         if (!path.startsWith('src/simulation/physics/'))
           errors.push(`${path}: physics package outside physics boundary`);
+      } else if (owner === 'scripting' && edge.specifier === 'typescript') {
+        // Build-time authoring parser only; simulation cannot import scripting.
       } else if (owner !== 'presentation' && owner !== 'application')
         errors.push(`${path}: undeclared external dependency ${edge.specifier}`);
     }

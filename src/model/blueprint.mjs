@@ -3,6 +3,7 @@ import {
   validateSurfacePair,
   validatePlacementGeometry,
 } from './surfaces.mjs';
+import { admitLearningModel } from './learning-model.mjs';
 import validateSchema from './generated/blueprint-validator.mjs';
 import { CATALOG, MATERIALS } from './catalog.mjs';
 export const BLUEPRINT_REASON_CODES = Object.freeze([
@@ -89,6 +90,18 @@ export function validateBlueprint(blueprint) {
       if (!Object.hasOwn(MATERIALS, material))
         return result('UNKNOWN_MATERIAL', `${path}/authoredMaterial/${escape(primitive)}`);
     }
+    if (part.learningModel) {
+      try {
+        admitLearningModel(part.learningModel);
+      } catch {
+        return result('INVALID_BLUEPRINT', `${path}/learningModel`);
+      }
+    }
+    if (
+      part.targetBinding &&
+      (part.targetBinding === part.id || !blueprint.parts.some((p) => p.id === part.targetBinding))
+    )
+      return result('UNKNOWN_PART', `${path}/targetBinding`);
     parts.set(part.id, part);
   }
   const groupIds = new Set(),

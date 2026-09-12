@@ -10,7 +10,7 @@
     "scripts/browser-artifacts.mjs": "05ef6fc079ee5c185860889ec11ec6425a74968f56f24480c408a55239508399",
     "scripts/browser-evidence.mjs": "06b993645dd77f665e08bb381da5d9cb740cc8a717f79ed054ed1260ac786196",
     "scripts/browser-session.mjs": "a7ae2b98e1a1eb8a470af8cdc717d9df9a2112d074e641e8adfcc144db566e24",
-    "scripts/module-graph.mjs": "e9930c64623e3515ed9949b07530e9cbcfc70caf6da86e484402625045e0dd0e",
+    "scripts/module-graph.mjs": "7feb25de7c3c5dbe100ec128f394d727bed0def6511e22c479a48f87a1848e54",
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
     "package.json#script=test:unit": "47c53760722a20cdba859ddbf5bce7eefa36a8b33454c8851df0fe50f9c0def2",
     "package.json#script=test:all": "9e898b0fa36040779478a923ce048ca435faffe3439622216b1c4099e8842ce5",

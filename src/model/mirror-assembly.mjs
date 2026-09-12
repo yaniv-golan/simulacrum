@@ -196,12 +196,22 @@ export function proposeMirroredAssembly(blueprint, options) {
     }
     next.connections.push(copy);
   }
-  for (const part of next.parts.filter((p) => Object.values(idMap).includes(p.id)))
+  for (const part of next.parts.filter((p) => Object.values(idMap).includes(p.id))) {
+    if (part.targetBinding) {
+      if (idMap[part.targetBinding]) part.targetBinding = idMap[part.targetBinding];
+      else delete part.targetBinding;
+    }
     if (part.springBinding) {
       if (connectionIdMap[part.springBinding])
         part.springBinding = connectionIdMap[part.springBinding];
       else delete part.springBinding;
     }
+    if (part.jointBinding) {
+      if (connectionIdMap[part.jointBinding])
+        part.jointBinding = connectionIdMap[part.jointBinding];
+      else delete part.jointBinding;
+    }
+  }
   const candidate = loadSave(next);
   if (!candidate.ok) reject(candidate.reasonCode, candidate.path, next);
   const compiled = compileAssembly(candidate.blueprint),

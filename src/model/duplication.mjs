@@ -66,6 +66,8 @@ export function duplicatePart(blueprint, id, newId, direction) {
   const copy = structuredClone(original);
   // A copied sensor does not acquire authority over the original mechanism.
   delete copy.springBinding;
+  delete copy.jointBinding;
+  delete copy.targetBinding;
   copy.id = newId;
   copy.name = availablePartName(blueprint.parts, original.name);
   validate({ ...blueprint, parts: [...blueprint.parts, copy] });

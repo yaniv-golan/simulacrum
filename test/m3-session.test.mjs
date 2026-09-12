@@ -108,6 +108,7 @@ test('controller phase gets only declared completed sensor state and records rec
     rotationA: [0, 0, 0, 1],
     rotationB: [0, 0, 0, 1],
   });
+  c.power.wires.push([2, 5]);
   const views = [];
   const s = await createSession(c, {}, { secret: 'not a sensor' }, [
     {
@@ -122,14 +123,19 @@ test('controller phase gets only declared completed sensor state and records rec
     s.step(1);
     const completed = s.observe().frames[0];
     assert.equal(views.length, 1);
-    assert.deepEqual(views[0], { tick: 0, inputs: [{ node: 5, speed: 0 }] });
+    assert.deepEqual(views[0], {
+      inputs: [{ node: 5, channels: { angularSpeed: { status: 'no-power' } } }],
+    });
     assert.ok(Object.isFrozen(views[0].inputs[0]));
     assert.ok(completed.physics[1].angularVelocity[0] > 0);
     s.step(1);
-    assert.equal(views[1].tick, 1);
-    assert.ok(views[1].inputs[0].speed > 0);
-    assert.equal(views[1].inputs[0].speed, completed.physics[5].angularVelocity[0]);
-    assert.equal(views[0].inputs[0].speed, 0);
+    assert.equal(views[1].tick, undefined, 'tick is alignment metadata, not a policy input');
+    assert.ok(views[1].inputs[0].channels.angularSpeed.value > 0);
+    assert.equal(
+      views[1].inputs[0].channels.angularSpeed.value,
+      completed.physics[5].angularVelocity[0],
+    );
+    assert.deepEqual(views[0].inputs[0].channels.angularSpeed, { status: 'no-power' });
   } finally {
     s.dispose();
   }

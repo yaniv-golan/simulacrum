@@ -1,3 +1,6 @@
+import { CONTROLLER_LIMITS } from '../model/controller-authoring.mjs';
+import { SENSOR_SUPPLY, SENSOR_LIMITS } from '../model/sensors.mjs';
+import { admitLearningBindings } from '../model/learning-bindings.mjs';
 import { motorStep, sharedPowerStep, sampledPositionDuty } from './physics/law/motor.mjs';
 import { receiverControlConfiguration } from './receiver-arbiter.mjs';
 const clone = (x) => structuredClone(x);
@@ -24,7 +27,11 @@ export function createPowerNetwork(configuration) {
         (Object.hasOwn(config, 'regulators') ? ',regulators' : ''),
     ) ||
     (Object.hasOwn(config, 'regulators') && !array('regulators')) ||
-    !['cells', 'motors', 'wires', 'signalWires', 'receivers', 'controllers', 'sensors'].every(array)
+    !['cells', 'motors', 'wires', 'signalWires', 'receivers', 'controllers', 'sensors'].every(
+      array,
+    ) ||
+    config.sensors.length > SENSOR_LIMITS.count ||
+    config.controllers.length > CONTROLLER_LIMITS.count
   )
     fail('INVALID_POWER_CONFIGURATION');
   for (const cell of config.cells)
@@ -88,7 +95,16 @@ export function createPowerNetwork(configuration) {
     }
   for (const source of [...config.receivers, ...config.controllers])
     if (
-      !exact(source, 'node,duty') ||
+      !exact(
+        source,
+        'node,duty' +
+          (Object.hasOwn(source, 'learning') && config.controllers.includes(source)
+            ? ',learning'
+            : '') +
+          (Object.hasOwn(source, 'program') && config.controllers.includes(source)
+            ? ',program'
+            : ''),
+      ) ||
       !node(source.node) ||
       !finite(source.duty) ||
       Math.abs(source.duty) > 1
@@ -108,13 +124,79 @@ export function createPowerNetwork(configuration) {
   ])
     if (new Set(entries.map((e) => e.node)).size !== entries.length)
       fail('INVALID_POWER_CONFIGURATION');
-  for (const sensor of config.sensors)
+  for (const entry of config.sensors) {
+    const { supply, ...sensor } = entry;
+    if (
+      supply &&
+      (!exact(supply, 'resistance,minVoltage') ||
+        !finite(supply.resistance, supply.minVoltage) ||
+        supply.resistance < 1 ||
+        supply.resistance > 1e9 ||
+        supply.minVoltage <= 0 ||
+        supply.minVoltage > 100)
+    )
+      fail('INVALID_POWER_CONFIGURATION');
     if (sensor.kind === 'travel') {
       if (
         !exact(sensor, 'node,kind,joint') ||
         !node(sensor.node) ||
         !Number.isSafeInteger(sensor.joint) ||
         sensor.joint < -1
+      )
+        fail('INVALID_POWER_CONFIGURATION');
+    } else if (['range', 'linearMotion', 'tilt', 'jointAngle', 'contact'].includes(sensor.kind)) {
+      const keys = {
+        range: 'node,kind,body,origin,axis,range',
+        linearMotion: 'node,kind,body,origin',
+        tilt: 'node,kind,body',
+        jointAngle: 'node,kind,body,joint,zero,sign',
+        contact: 'node,kind,body,origin,axis,halfWidth,halfHeight',
+      }[sensor.kind];
+      if (!exact(sensor, keys) || !node(sensor.node) || sensor.body !== sensor.node)
+        fail('INVALID_POWER_CONFIGURATION');
+      for (const key of ['origin', 'axis'])
+        if (
+          sensor[key] &&
+          (!Array.isArray(sensor[key]) ||
+            sensor[key].length !== 3 ||
+            !sensor[key].every(Number.isFinite))
+        )
+          fail('INVALID_POWER_CONFIGURATION');
+      if (sensor.axis && Math.abs(Math.hypot(...sensor.axis) - 1) > 1e-9)
+        fail('INVALID_POWER_CONFIGURATION');
+      if (
+        sensor.kind === 'range' &&
+        (!finite(sensor.range) || sensor.range < 0.1 || sensor.range > 100)
+      )
+        fail('INVALID_POWER_CONFIGURATION');
+      if (
+        sensor.kind === 'jointAngle' &&
+        (!Number.isSafeInteger(sensor.joint) ||
+          sensor.joint < -1 ||
+          !finite(sensor.zero) ||
+          Math.abs(sensor.zero) > Math.PI ||
+          ![-1, 1].includes(sensor.sign))
+      )
+        fail('INVALID_POWER_CONFIGURATION');
+      if (
+        sensor.kind === 'contact' &&
+        (![sensor.halfWidth, sensor.halfHeight].every(
+          (v) => Number.isFinite(v) && v > 0 && v <= 1,
+        ) ||
+          sensor.axis.some((v, i) => v !== [0, 0, 1][i]))
+      )
+        fail('INVALID_POWER_CONFIGURATION');
+    } else if (sensor.kind === 'target') {
+      if (
+        !exact(sensor, 'node,kind,body,target,range') ||
+        !node(sensor.node) ||
+        sensor.body !== sensor.node ||
+        !Number.isInteger(sensor.target) ||
+        sensor.target < -1 ||
+        sensor.target === sensor.node ||
+        !Number.isFinite(sensor.range) ||
+        sensor.range < 0.1 ||
+        sensor.range > 100
       )
         fail('INVALID_POWER_CONFIGURATION');
     } else if (
@@ -127,6 +209,8 @@ export function createPowerNetwork(configuration) {
       Math.abs(Math.hypot(...sensor.axis) - 1) > 1e-9
     )
       fail('INVALID_POWER_CONFIGURATION');
+  }
+  admitLearningBindings(config);
   receiverControlConfiguration(config);
   const sources = config.receivers;
   const parent = new Map();
@@ -152,7 +236,19 @@ export function createPowerNetwork(configuration) {
     const signals = signalFor(motor);
     if (signals.length > 1 || signals.some((s) => !s)) fail('UNSUPPORTED_SIGNAL_TOPOLOGY');
   }
+  const sensorSupply = (sensor) => sensor.supply ?? SENSOR_SUPPLY;
   let state = {
+    ...(config.sensors.length
+      ? {
+          sensors: config.sensors.map((s) => ({
+            node: s.node,
+            current: 0,
+            voltage: 0,
+            heatJ: 0,
+            powered: false,
+          })),
+        }
+      : {}),
     cells: config.cells.map((c) => ({ node: c.node, energyJ: c.initialJ, heatJ: 0 })),
     sources: sources.map((s) => ({ node: s.node, duty: s.duty })),
     motors: config.motors.map((m) => ({
@@ -186,7 +282,8 @@ export function createPowerNetwork(configuration) {
   function validateState(candidate) {
     if (
       !candidate ||
-      Object.keys(candidate).sort().join(',') !== 'cells,motors,sources' ||
+      Object.keys(candidate).sort().join(',') !==
+        (config.sensors.length ? 'cells,motors,sensors,sources' : 'cells,motors,sources') ||
       !Array.isArray(candidate.cells) ||
       !Array.isArray(candidate.sources) ||
       !Array.isArray(candidate.motors) ||
@@ -195,6 +292,21 @@ export function createPowerNetwork(configuration) {
       candidate.motors.length !== config.motors.length
     )
       fail('INVALID_POWER_CHECKPOINT');
+    if (config.sensors.length) {
+      if (!Array.isArray(candidate.sensors) || candidate.sensors.length !== config.sensors.length)
+        fail('INVALID_POWER_CHECKPOINT');
+      candidate.sensors.forEach((s, i) => {
+        if (
+          !exact(s, 'node,current,voltage,heatJ,powered') ||
+          s.node !== config.sensors[i].node ||
+          !finite(s.current, s.voltage, s.heatJ) ||
+          Math.min(s.current, s.voltage, s.heatJ) < 0 ||
+          typeof s.powered !== 'boolean' ||
+          s.powered !== (s.voltage >= sensorSupply(config.sensors[i]).minVoltage && s.current > 0)
+        )
+          fail('INVALID_POWER_CHECKPOINT');
+      });
+    }
     candidate.cells.forEach((c, i) => {
       if (
         Object.keys(c).sort().join(',') !== 'energyJ,heatJ,node' ||
@@ -397,9 +509,11 @@ export function createPowerNetwork(configuration) {
         };
         return { duty };
       });
-      const shared = config.cells.some(
-        (c) => config.motors.filter((m) => root(m.node) === root(c.node)).length > 1,
-      );
+      const shared =
+        config.sensors.length > 0 ||
+        config.cells.some(
+          (c) => config.motors.filter((m) => root(m.node) === root(c.node)).length > 1,
+        );
       let sharedResult;
       if (shared) {
         const entries = config.motors.map((m, i) => {
@@ -428,6 +542,21 @@ export function createPowerNetwork(configuration) {
             limit: m.currentLimit,
           };
         });
+        for (const sensor of config.sensors) {
+          const cell = cellsFor(sensor)[0],
+            supply = sensorSupply(sensor);
+          entries.push({
+            cell: config.cells.indexOf(cell),
+            duty: 1,
+            speed: 0,
+            inertia: Infinity,
+            active: Boolean(cell && state.cells[config.cells.indexOf(cell)].energyJ > 0),
+            k: 0,
+            resistance: supply.resistance,
+            limit: cell ? cell.voltage / supply.resistance : 0,
+            load: true,
+          });
+        }
         sharedResult = sharedPowerStep(
           config.cells.map((c, i) => ({
             voltage: c.voltage,
@@ -447,6 +576,18 @@ export function createPowerNetwork(configuration) {
           );
           next.cells[i].heatJ += c.resistance * sharedResult.totals[i] ** 2 * dt;
         }
+      }
+      for (const [i, sensor] of config.sensors.entries()) {
+        const record = next.sensors[i],
+          cell = cellsFor(sensor)[0],
+          supply = sensorSupply(sensor),
+          current = sharedResult.currents[config.motors.length + i];
+        const voltage = current * supply.resistance;
+        record.current = current;
+        record.voltage = voltage;
+        record.powered = current > 0 && voltage >= supply.minVoltage;
+        // All terminal energy becomes sensor/limiter heat; source heat is counted once above.
+        if (cell) record.heatJ += sharedResult.voltages[config.cells.indexOf(cell)] * current * dt;
       }
       const torques = [],
         allocations = [];

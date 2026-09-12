@@ -21,9 +21,7 @@ test('catalog help coverage rejects an omitted supported loaded type', () => {
   assert.deepEqual(PRIMARY_PARTS, ['powerCell', 'poweredMotor', 'gripWheel']);
   assert.deepEqual(
     MORE_PARTS,
-    Object.keys(CATALOG).filter(
-      (type) => !PRIMARY_PARTS.includes(type) && type !== 'logicController',
-    ),
+    Object.keys(CATALOG).filter((type) => !PRIMARY_PARTS.includes(type)),
   );
   const loaded = {
     ...createEmptyBlueprint('help', 'Help'),

@@ -106,15 +106,17 @@ function solveSharedIsland(cells, motors, coupling, dt) {
     for (let i = 0; i < motors.length; i++) {
       const m = motors[i];
       const current = m.active
-        ? motorStep(
-            voltages[m.cell] * m.duty,
-            speeds[i],
-            m.k,
-            m.resistance,
-            m.limit * caps[m.cell],
-            m.inertia,
-            dt,
-          ).current
+        ? m.load
+          ? (voltages[m.cell] / m.resistance) * caps[m.cell]
+          : motorStep(
+              voltages[m.cell] * m.duty,
+              speeds[i],
+              m.k,
+              m.resistance,
+              m.limit * caps[m.cell],
+              m.inertia,
+              dt,
+            ).current
         : 0;
       currents.push(current);
       if (m.cell >= 0) totals[m.cell] += m.duty * current;
@@ -152,7 +154,7 @@ function solveSharedIsland(cells, motors, coupling, dt) {
         voltages[index] = cell.voltage - cell.resistance * limit;
         const weights = motors
           .filter((m) => m.active && m.cell === index && m.duty !== 0)
-          .map((m) => Math.abs(m.duty) * m.limit);
+          .map((m) => Math.abs(m.duty) * (m.load ? voltages[index] / m.resistance : m.limit));
         let low = 0,
           high = Math.min(1, limit / Math.min(...weights));
         // Scale the bracket to the available charge. An absolute [0,1] bracket

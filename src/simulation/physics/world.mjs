@@ -309,6 +309,7 @@ export async function createPhysicsWorld(configuration) {
   await (initialization ??= RAPIER.init().then(() => {
     if (RAPIER.version() !== PHYSICS_BACKEND) throw new Error('physics backend mismatch');
   }));
+  let contactPadCache = null;
   let world = new RAPIER.World(xyz(gravity)),
     handles = [];
   // Only authored fixed paths constitute one rigid assembly. Distinct grounded
@@ -1079,6 +1080,109 @@ export async function createPhysicsWorld(configuration) {
       springsApplied = true;
       return { dampingWorkJ, kineticDeltaJ };
     },
+    sensorPointVelocity({ body, origin }) {
+      const rigid = bodyAt(body);
+      if (!Array.isArray(origin) || origin.length !== 3 || !origin.every(Number.isFinite))
+        throw TypeError('invalid sensor origin');
+      const position = array(rigid.translation()),
+        offset = rotate(rotationArray(rigid.rotation()), origin);
+      return array(rigid.velocityAtPoint(xyz(position.map((v, i) => v + offset[i]))));
+    },
+    rangeSample({ body, origin, axis, range }) {
+      alive();
+      bodyAt(body);
+      if (
+        !Array.isArray(origin) ||
+        origin.length !== 3 ||
+        !origin.every(Number.isFinite) ||
+        !Number.isFinite(range) ||
+        range <= 0 ||
+        range > 100
+      )
+        throw TypeError('invalid range query');
+      const direction = unit(axis),
+        ray = new RAPIER.Ray(xyz(origin), xyz(direction));
+      let result = null;
+      // Direct shape queries include initial authored poses before broad-phase stepping.
+      // Stable body order also makes equal-distance ties deterministic.
+      for (let i = 0; i < handles.length; i++) {
+        if (i === body) continue;
+        const distance = bodyAt(i).collider(0).castRay(ray, range, true);
+        if (
+          Number.isFinite(distance) &&
+          distance >= 0 &&
+          distance <= range &&
+          (!result || distance < result.distance)
+        )
+          result = { distance, surface: i };
+      }
+      return result;
+    },
+    contactPadSample({ body, origin, axis, halfWidth, halfHeight }) {
+      alive();
+      const rigid = bodyAt(body),
+        normal = unit(axis);
+      if (
+        !Array.isArray(origin) ||
+        origin.length !== 3 ||
+        !origin.every(Number.isFinite) ||
+        ![halfWidth, halfHeight].every((v) => Number.isFinite(v) && v > 0)
+      )
+        throw TypeError('invalid contact pad');
+      if (!contactPadCache) {
+        const completed = readContacts(world, handles),
+          byBody = new Map();
+        for (const row of completed.rows)
+          for (const index of [row.a, row.b]) {
+            if (!byBody.has(index)) byBody.set(index, []);
+            byBody.get(index).push(row);
+          }
+        contactPadCache = { available: completed.available, byBody };
+      }
+      const sample = {
+          available: contactPadCache.available,
+          rows: contactPadCache.byBody.get(body) ?? [],
+        },
+        rotation = rotationArray(rigid.rotation());
+      const worldNormal = rotate(rotation, normal);
+      // Authored contact pads use their local +Z face; other faces are ordinary casing.
+      if (normal.some((v, i) => Math.abs(v - [0, 0, 1][i]) > 1e-12))
+        throw TypeError('unsupported contact face');
+      let touching = false,
+        normalImpulse = 0,
+        available = sample.available;
+      for (const row of sample.rows) {
+        if (row.a !== body && row.b !== body) continue;
+        const point = row.a === body ? row.localPointA : row.localPointB;
+        const outward = row.normal.map((v) => v * (row.a === body ? 1 : -1));
+        if (
+          Math.abs(point[2] - origin[2]) > 1e-5 ||
+          Math.abs(point[0] - origin[0]) > halfWidth + 1e-7 ||
+          Math.abs(point[1] - origin[1]) > halfHeight + 1e-7 ||
+          outward.reduce((s, v, i) => s + v * worldNormal[i], 0) < 0.999
+        )
+          continue;
+        // Manifold distance can predate cached-contact motion. Resolve its anchors
+        // against completed poses; a measured normal impulse also establishes touch
+        // within the solver's finite contact skin, without inventing proximity load.
+        const pointInWorld = (index, local) => {
+          const body = bodyAt(index),
+            position = body.translation();
+          return rotate(rotationArray(body.rotation()), local).map(
+            (v, i) => v + [position.x, position.y, position.z][i],
+          );
+        };
+        const a = pointInWorld(row.a, row.localPointA),
+          b = pointInWorld(row.b, row.localPointB);
+        const separation = row.normal.reduce((sum, v, i) => sum + v * (b[i] - a[i]), 0);
+        const impulse = row.normalImpulse ? Math.hypot(...row.normalImpulse) : 0;
+        if (separation > 1e-7 && !(row.available && impulse > 0)) continue;
+        touching = true;
+        available &&= row.available;
+        if (row.normalImpulse) normalImpulse += Math.hypot(...row.normalImpulse);
+      }
+      return { touching, normalImpulse, available };
+    },
     contacts() {
       alive();
       return readContacts(world, handles);
@@ -1228,6 +1332,7 @@ export async function createPhysicsWorld(configuration) {
       };
     },
     step() {
+      contactPadCache = null;
       alive();
       if (joints.some((j) => j.kind === 'spring') && !springsApplied)
         throw new Error('spring preparation and damping must precede integration');
@@ -1335,6 +1440,7 @@ export async function createPhysicsWorld(configuration) {
         throw error;
       }
       const previous = world;
+      contactPadCache = null;
       world = candidate;
       gearMemory = memory;
       clearPreparedTorqueIslands();

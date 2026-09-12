@@ -1,3 +1,4 @@
+import { createProgramExecutors } from '../src/scripting/controller-executors.mjs';
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { createSession } from '../src/simulation/session.mjs';
@@ -26,6 +27,8 @@ export async function replayBundle(bundle, { expectedBuild, expectedRuntime } = 
     bundle.anchor.configuration,
     bundle.identity,
     bundle.anchor.metadata,
+    [],
+    createProgramExecutors,
   );
   try {
     session.restore(bundle.anchor);
@@ -48,6 +51,8 @@ export async function replayBundle(bundle, { expectedBuild, expectedRuntime } = 
         .filter((input) => input.tick === tick)
         .sort((a, b) => a.sequence - b.sequence)) {
         if (pending.has(input.sequence)) continue;
+        // Frozen policies regenerate commands; the trace comparison below checks them.
+        if (['learned-receiver', 'program-receiver'].includes(input.command?.type)) continue;
         const outcome = session.act(input.command);
         if (!outcome.ok)
           throw Error(`replay input rejected at tick ${tick}: ${outcome.reasonCode}`);

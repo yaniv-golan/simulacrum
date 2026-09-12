@@ -43,6 +43,7 @@ export interface CatalogDefinition {
   controlBindingDefault?: import('./generated/blueprint-types.js').Part['controlBinding'];
   controlBindingMilestone?: string;
   gear?: { teeth: number; module: number; pitchRadius: number; stiffness: number; damping: number };
+  sensorSupply?: Readonly<{ resistance: number; minVoltage: number }>;
 }
 export interface BodyConfiguration {
   shape: 'box' | 'cylinder' | 'sphere';

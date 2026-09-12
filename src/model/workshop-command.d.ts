@@ -24,6 +24,12 @@ export type ControlBinding = NonNullable<
 >;
 export type WorkshopCommand =
   | {
+      type: 'install-controller-program';
+      id: string;
+      program: NonNullable<Extract<Part, { type: 'logicController' }>['controllerProgram']>;
+    }
+  | { type: 'bind-joint-sensor'; id: string; connection: string | null }
+  | {
       type: 'contactProperty';
       id: string;
       primitive: 'body';
@@ -54,8 +60,10 @@ export type WorkshopCommand =
   | { type: 'control'; id: string; duty: number }
   | { type: 'control-release'; id: string; duty: number }
   | { type: 'suspend-controls' }
-  | { type: 'control-mode'; id: string; mode: 'manual' | 'automatic' | 'off' }
+  | { type: 'control-mode'; id: string; mode: 'manual' | 'automatic' | 'learned' | 'off' }
   | { type: 'regulator-target'; id: string; target: number }
+  | { type: 'install-learning-model'; id: string; model: object | null }
+  | { type: 'bind-target-sensor'; id: string; target: string | null }
   | { type: 'bind-travel-sensor'; id: string; connection: string | null }
   | { type: 'insert'; part: Part }
   | { type: 'place'; id: string; partType: PartType; position: Position }
@@ -89,5 +97,5 @@ export type WorkshopCommand =
   | { type: 'connect'; id: string; a: Endpoint; b: Endpoint }
   | { type: 'bind-control'; id: string; binding: ControlBinding }
   | { type: 'parameter'; id: string; key: string; value: number }
-  | { type: 'load'; save: string | Blueprint };
+  | { type: 'load' | 'restore-build'; save: string | Blueprint };
 export type SendCommand = (command: WorkshopCommand) => Promise<CommandResult>;

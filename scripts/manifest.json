@@ -844,6 +844,26 @@
       "smoke": false,
       "timeoutMs": 90000,
       "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-learning-controller",
+      "script": "scripts/verify-learning-controller.mjs",
+      "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 120000,
+      "ruleId": "runtime-contract"
+    },
+    {
+      "id": "verify-shared-sensing",
+      "script": "scripts/verify-shared-sensing.mjs",
+      "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 120000,
+      "ruleId": "runtime-contract"
     }
   ],
   "invariants": [
@@ -3579,6 +3599,288 @@
       "qualificationBars": [
         "F1"
       ]
+    },
+    {
+      "id": "powered-shared-sensing",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "All authored sensor families use typed prior-tick channels; finite range is occluded, normal missing states remain explicit, and sensor energy is funded by the shared supply.",
+      "owners": [
+        {
+          "path": "src/model/sensors.mjs",
+          "anchor": "SENSOR_DEFINITIONS"
+        },
+        {
+          "path": "src/simulation/sensors.mjs",
+          "anchor": "sampleSensor"
+        },
+        {
+          "path": "src/simulation/power.mjs",
+          "anchor": "createPowerNetwork"
+        }
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/shared-sensors.test.mjs",
+            "anchor": "sensor point motion includes angular velocity and uses local axes"
+          },
+          {
+            "path": "test/sensor-power.test.mjs",
+            "anchor": "sensor current causes source droop, heat and charge loss without a motor"
+          },
+          {
+            "path": "test/sensor-continuation.test.mjs",
+            "anchor": "all seven powered sensor families and installed WASM restore exact next-tick continuation"
+          },
+          {
+            "path": "test/sensor-workshop.test.mjs",
+            "anchor": "ordinary contact rover reaches its pad and reverses from the completed touch reading"
+          },
+          {
+            "path": "test/port-wording.test.mjs",
+            "anchor": "every sensor exposes distinguishable measurement channels and an honest Power port"
+          },
+          {
+            "path": "test/shared-sensors.test.mjs",
+            "anchor": "physical ray boundaries and ties are exact; rotating beams change range without translation"
+          },
+          {
+            "path": "test/shared-sensors.test.mjs",
+            "anchor": "wheel spin cannot substitute for linear motion on a slipping trace"
+          },
+          {
+            "path": "test/shared-sensors.test.mjs",
+            "anchor": "one pad aggregates two supporting bodies and completed contact cache resets each step"
+          },
+          {
+            "path": "test/sensor-workshop.test.mjs",
+            "anchor": "loaded pad experiment exposes a predictable material edit through ordinary weight"
+          },
+          {
+            "path": "test/power.test.mjs",
+            "anchor": "multiple sensors share a motor supply, brown out under its load and recover with conserved energy"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/shared-sensors.test.mjs",
+            "anchor": "range rate requires consecutive compatible returns and never invents zero"
+          },
+          {
+            "path": "test/sensor-power.test.mjs",
+            "anchor": "a signal connection cannot power a sensor and depleted supply invalidates it"
+          },
+          {
+            "path": "test/sensor-power.test.mjs",
+            "anchor": "sensor brownout conserves the last fraction of charge under a current cap"
+          },
+          {
+            "path": "test/shared-sensors.test.mjs",
+            "anchor": "tilt singular axes stay unavailable and encoder zero/sign are wrapped"
+          },
+          {
+            "path": "test/sensor-power.test.mjs",
+            "anchor": "sensor networks have an explicit admitted component bound"
+          },
+          {
+            "path": "test/shared-sensors.test.mjs",
+            "anchor": "physical ray boundaries and ties are exact; rotating beams change range without translation"
+          },
+          {
+            "path": "test/shared-sensors.test.mjs",
+            "anchor": "wheel spin cannot substitute for linear motion on a slipping trace"
+          },
+          {
+            "path": "test/shared-sensors.test.mjs",
+            "anchor": "one pad aggregates two supporting bodies and completed contact cache resets each step"
+          },
+          {
+            "path": "test/sensor-workshop.test.mjs",
+            "anchor": "loaded pad experiment exposes a predictable material edit through ordinary weight"
+          },
+          {
+            "path": "test/power.test.mjs",
+            "anchor": "multiple sensors share a motor supply, brown out under its load and recover with conserved energy"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "bounded-controller-programs",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Rules and edited TypeScript share one bounded WASM execution path. Installation is atomic in Build, source authority is explicit, numeric state is checkpointed, and keys take over immediately.",
+      "owners": [
+        {
+          "path": "src/scripting/controller-program.mjs",
+          "anchor": "compileController"
+        },
+        {
+          "path": "src/core/workshop.mjs",
+          "anchor": "createWorkshop"
+        },
+        {
+          "path": "src/simulation/receiver-arbiter.mjs",
+          "anchor": "createReceiverArbiter"
+        },
+        {
+          "path": "src/model/controller-decision.mjs",
+          "anchor": "controllerDecision"
+        },
+        {
+          "path": "src/application/controller-history.mjs",
+          "anchor": "createControllerHistory"
+        }
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/controller-program.test.mjs",
+            "anchor": "rules execute their displayed TypeScript through WASM with explicit missing-data branch"
+          },
+          {
+            "path": "test/controller-workshop.test.mjs",
+            "anchor": "installed WASM program needs explicit ownership, yields to keys, and keeps its last good version"
+          },
+          {
+            "path": "test/controller-program.test.mjs",
+            "anchor": "numeric logical operators preserve operands and short circuit unavailable reads"
+          },
+          {
+            "path": "test/controller-program.test.mjs",
+            "anchor": "status rules distinguish healthy missing readings from a valid zero through generated WASM"
+          },
+          {
+            "path": "test/controller-program.test.mjs",
+            "anchor": "generated source mapping selects the exact threshold even when another field has the same number"
+          },
+          {
+            "path": "test/controller-workshop.test.mjs",
+            "anchor": "shared decision history retains a regular-controller fault across a repair and new run"
+          },
+          {
+            "path": "test/sensor-power.test.mjs",
+            "anchor": "controller count has a measured admission bound independent of sensor count"
+          },
+          {
+            "path": "test/controller-program.test.mjs",
+            "anchor": "numeric NaN is false in every conditional and logical form"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/controller-program.test.mjs",
+            "anchor": "bounded numeric state checkpoints and rejected programs cannot execute host code"
+          },
+          {
+            "path": "test/controller-workshop.test.mjs",
+            "anchor": "required sensing faults disable code even when a custom branch requests drive"
+          },
+          {
+            "path": "test/controller-program.test.mjs",
+            "anchor": "block variables cannot escape or leak into the opposite branch"
+          },
+          {
+            "path": "test/controller-program.test.mjs",
+            "anchor": "nested logical expressions compile with linear code size"
+          },
+          {
+            "path": "test/controller-program.test.mjs",
+            "anchor": "status rules distinguish healthy missing readings from a valid zero through generated WASM"
+          },
+          {
+            "path": "test/controller-program.test.mjs",
+            "anchor": "generated source mapping selects the exact threshold even when another field has the same number"
+          },
+          {
+            "path": "test/controller-workshop.test.mjs",
+            "anchor": "shared decision history retains a regular-controller fault across a repair and new run"
+          },
+          {
+            "path": "test/sensor-power.test.mjs",
+            "anchor": "controller count has a measured admission bound independent of sensor count"
+          },
+          {
+            "path": "test/controller-program.test.mjs",
+            "anchor": "numeric NaN is false in every conditional and logical form"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "learning-feature-identity",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Versioned learning features retain units, frames and explicit normal missing-data status; legacy weights are not reinterpreted.",
+      "owners": [
+        {
+          "path": "src/model/learning-model.mjs",
+          "anchor": "admitLearningModel"
+        },
+        {
+          "path": "src/model/learning-bindings.mjs",
+          "anchor": "admitLearningBindings"
+        }
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/learning-model.test.mjs",
+            "anchor": "bounded deterministic training fits observations; reserved values cannot alter fitted model"
+          },
+          {
+            "path": "test/learning-determinism.test.mjs",
+            "anchor": "learned policies match four fresh processes, both clocks and renamed authored identities"
+          },
+          {
+            "path": "test/learning-delivery.test.mjs",
+            "anchor": "ordinary delivery fixture, rule baseline and frozen learner retain cargo; independent evaluation rejects wrong traces"
+          },
+          {
+            "path": "test/learning-capture-status.test.mjs",
+            "anchor": "brief touch and release between periodic samples retain explicit feature and endpoint provenance"
+          },
+          {
+            "path": "test/learning-capture-status.test.mjs",
+            "anchor": "brief load peaks survive capture and the terminal power fault is retained outside training rows"
+          },
+          {
+            "path": "test/learning-capture-status.test.mjs",
+            "anchor": "an initial real power fault is exportable without becoming a training sample"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/learning-model.test.mjs",
+            "anchor": "version two keeps normal missing-return states explicit and never reinterprets legacy weights"
+          },
+          {
+            "path": "test/learning-capture-status.test.mjs",
+            "anchor": "legacy browser records remain byte-identical when new records are saved"
+          },
+          {
+            "path": "test/learning-capture-status.test.mjs",
+            "anchor": "brief load peaks survive capture and the terminal power fault is retained outside training rows"
+          },
+          {
+            "path": "test/learning-capture-status.test.mjs",
+            "anchor": "an initial real power fault is exportable without becoming a training sample"
+          }
+        ]
+      },
+      "qualificationBars": []
     }
   ],
   "browserLocalScopes": [
@@ -3601,7 +3903,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
       "externalImports": []
     },
     {
@@ -3624,7 +3926,7 @@
         "vite"
       ],
       "consumers": [],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670"
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -3641,7 +3943,7 @@
         "verify-mirror-browser"
       ],
       "consumers": [],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670"
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -3660,7 +3962,7 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670"
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -3684,7 +3986,7 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670"
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -3718,7 +4020,7 @@
         "test/receiver-input-owner.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670"
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd"
     }
   ],
   "experimentInputScopes": [
@@ -3992,7 +4294,7 @@
         }
       ],
       "consumers": [],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -4073,7 +4375,7 @@
           ]
         }
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "externalImports": [
         "node:crypto",
@@ -4122,7 +4424,7 @@
         }
       ],
       "consumers": [],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -4171,8 +4473,8 @@
           ]
         }
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
-      "consumerSourceHash": "dfd29c2ab614b380505b3df0d4a15cc28bc46731a5c4b1aeba284a86abcd3077",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
+      "consumerSourceHash": "ba128097c9fd3a208356ee0be776e88ba6be5914e0f4f3316530b24bd98e4a0e",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -4219,8 +4521,8 @@
           ]
         }
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
-      "consumerSourceHash": "c57c1884a68f3496e684e1c1222aaa2399a2c393b10bd4effa290146b48c2575",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
+      "consumerSourceHash": "2fdeef3051f83d677f1c16d52947ebdbfc77dec943371e64af5ef523d4c36115",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -4245,6 +4547,7 @@
         "scripts/verify-feedback-receipts.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-manipulation-browser.mjs",
         "scripts/verify-mirror-browser.mjs",
@@ -4256,6 +4559,7 @@
         "scripts/verify-recording-browser.mjs",
         "scripts/verify-remote-playtest.mjs",
         "scripts/verify-selection-browser.mjs",
+        "scripts/verify-shared-sensing.mjs",
         "scripts/verify-snap-intent.mjs",
         "scripts/verify-socket-preview.mjs",
         "scripts/verify-spring-browser.mjs",
@@ -4299,8 +4603,8 @@
           ]
         }
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
-      "consumerSourceHash": "c57c1884a68f3496e684e1c1222aaa2399a2c393b10bd4effa290146b48c2575",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
+      "consumerSourceHash": "2fdeef3051f83d677f1c16d52947ebdbfc77dec943371e64af5ef523d4c36115",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -4341,6 +4645,7 @@
         "scripts/verify-final.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m1.mjs",
@@ -4355,6 +4660,7 @@
         "scripts/verify-recording-browser.mjs",
         "scripts/verify-remote-playtest.mjs",
         "scripts/verify-selection-browser.mjs",
+        "scripts/verify-shared-sensing.mjs",
         "scripts/verify-snap-intent.mjs",
         "scripts/verify-socket-preview.mjs",
         "scripts/verify-spring-browser.mjs",
@@ -4372,6 +4678,7 @@
         "test/f2.test.mjs",
         "test/fixtures/browser-suite-cleanup.mjs",
         "test/free-build-continuity.test.mjs",
+        "test/learning-runtime.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/runtime-preflight.test.mjs",
         "test/starter-vehicle.test.mjs",
@@ -4414,8 +4721,8 @@
           ]
         }
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
-      "consumerSourceHash": "e0e1a151c118e2f50e0977607eb13bf55ea7c2165017daf52e9b0acd33d2c72b",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
+      "consumerSourceHash": "f0424d698c921a3d9e055f420920b5334b7fc89100f5fff69a12b69ccde3eb9a",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -4438,6 +4745,7 @@
         "scripts/gate.mjs",
         "scripts/inspect-change.mjs",
         "scripts/measure-gears.mjs",
+        "scripts/measure-shared-sensing.mjs",
         "scripts/measure-springs.mjs",
         "scripts/playtest/calibrate.mjs",
         "scripts/playtest/ci-release.mjs",
@@ -4467,6 +4775,7 @@
         "scripts/verify-final.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m3.mjs",
@@ -4480,6 +4789,7 @@
         "scripts/verify-recording-browser.mjs",
         "scripts/verify-remote-playtest.mjs",
         "scripts/verify-selection-browser.mjs",
+        "scripts/verify-shared-sensing.mjs",
         "scripts/verify-snap-intent.mjs",
         "scripts/verify-socket-preview.mjs",
         "scripts/verify-spring-browser.mjs",
@@ -4564,11 +4874,12 @@
         "scripts/verify-workshop.mjs",
         "test/determinism.test.mjs",
         "test/free-build-continuity.test.mjs",
+        "test/learning-runtime.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
-      "consumerSourceHash": "cbc5995f685cfb1437ae3abbe2223eff37df0f9d559c18ecb0f3597c7f6308e3"
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
+      "consumerSourceHash": "b16a053be6ebe25236c3557e282840dd554ec81b6116fb70b82361ef976a91be"
     },
     {
       "checks": [
@@ -4584,8 +4895,8 @@
           ]
         }
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
-      "consumerSourceHash": "dfd29c2ab614b380505b3df0d4a15cc28bc46731a5c4b1aeba284a86abcd3077",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
+      "consumerSourceHash": "ba128097c9fd3a208356ee0be776e88ba6be5914e0f4f3316530b24bd98e4a0e",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -4649,8 +4960,8 @@
           ]
         }
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
-      "consumerSourceHash": "dfd29c2ab614b380505b3df0d4a15cc28bc46731a5c4b1aeba284a86abcd3077",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
+      "consumerSourceHash": "ba128097c9fd3a208356ee0be776e88ba6be5914e0f4f3316530b24bd98e4a0e",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -4705,8 +5016,8 @@
           ]
         }
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
-      "consumerSourceHash": "dfd29c2ab614b380505b3df0d4a15cc28bc46731a5c4b1aeba284a86abcd3077",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
+      "consumerSourceHash": "ba128097c9fd3a208356ee0be776e88ba6be5914e0f4f3316530b24bd98e4a0e",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -4736,8 +5047,8 @@
           ]
         }
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
-      "consumerSourceHash": "dfd29c2ab614b380505b3df0d4a15cc28bc46731a5c4b1aeba284a86abcd3077",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
+      "consumerSourceHash": "ba128097c9fd3a208356ee0be776e88ba6be5914e0f4f3316530b24bd98e4a0e",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -4875,8 +5186,8 @@
           ]
         }
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
-      "consumerSourceHash": "56a21e599816a6cd616171771a2d7dc60c98606690eeb6b8c5d134bf3b7cdca5",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
+      "consumerSourceHash": "290332512b2ad777fd447a13f2ca4d71177b317ba53e7b9a1922b49314559710",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -4957,8 +5268,8 @@
           ]
         }
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
-      "consumerSourceHash": "c57c1884a68f3496e684e1c1222aaa2399a2c393b10bd4effa290146b48c2575",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
+      "consumerSourceHash": "2fdeef3051f83d677f1c16d52947ebdbfc77dec943371e64af5ef523d4c36115",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -5020,6 +5331,7 @@
         "scripts/verify-final.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m1.mjs",
@@ -5034,6 +5346,7 @@
         "scripts/verify-recording-browser.mjs",
         "scripts/verify-remote-playtest.mjs",
         "scripts/verify-selection-browser.mjs",
+        "scripts/verify-shared-sensing.mjs",
         "scripts/verify-snap-intent.mjs",
         "scripts/verify-socket-preview.mjs",
         "scripts/verify-spring-browser.mjs",
@@ -5061,6 +5374,7 @@
         "test/f2.test.mjs",
         "test/fixtures/browser-suite-cleanup.mjs",
         "test/free-build-continuity.test.mjs",
+        "test/learning-runtime.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/module-graph.test.mjs",
         "test/physics-boundary.test.mjs",
@@ -5072,7 +5386,7 @@
         "test/verification-run.test.mjs",
         "vite.config.mjs"
       ],
-      "sourceSha256": "6fd9c3efb0fc707d752be6af8d5eaf77654f231e1a6ef782b4a6534e6332051f",
+      "sourceSha256": "d4a1fa854eaf1470e9aa98d7436651f8a55527554e8b9172338f3bee16ad2ab1",
       "entrypoint": "scripts/module-graph.mjs",
       "dependencies": []
     },
@@ -5162,8 +5476,8 @@
           ]
         }
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
-      "consumerSourceHash": "dfd29c2ab614b380505b3df0d4a15cc28bc46731a5c4b1aeba284a86abcd3077",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
+      "consumerSourceHash": "ba128097c9fd3a208356ee0be776e88ba6be5914e0f4f3316530b24bd98e4a0e",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -5228,8 +5542,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
-      "consumerSourceHash": "80a85703e77e939a563b8afccf0d055fa2b13ac9dee5aac53d893ee140fe4fe7"
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
+      "consumerSourceHash": "9a9836633558a09f5f1957c65465a7097df9442abfe4b51e5bbf00e6cead60fd"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -5259,8 +5573,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
-      "consumerSourceHash": "80a85703e77e939a563b8afccf0d055fa2b13ac9dee5aac53d893ee140fe4fe7"
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
+      "consumerSourceHash": "9a9836633558a09f5f1957c65465a7097df9442abfe4b51e5bbf00e6cead60fd"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -5286,7 +5600,7 @@
         }
       ],
       "consumers": [],
-      "roots": "bae6a47f03c50eaa6c7c0e55621513cc65ab153c980891dbd0ebbe92c0b03670",
+      "roots": "8baa8c216783b33f46a2c0095b1dbd7715618707dec0ceffa7b77bcc6c8e45fd",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ]

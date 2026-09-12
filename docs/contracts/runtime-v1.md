@@ -36,7 +36,7 @@ A completed-tick checkpoint contains all state affecting future execution: libra
 snapshot, networks, controller state, previous sensor snapshot, input queue, clock
 accumulator, random generator, evaluator state and recorder anchor. Admission and
 restore validate before replacing state. Session checkpoint version 3 includes receiver
-arbitration state and the signed constraint-work ledger. Physics envelope version 4
+arbitration state, optional bounded numeric program state, typed prior sensor readings and range continuity history, and the signed constraint-work ledger. Physics envelope version 4
 binds the double-precision native backend before deserialization; older opaque
 checkpoints are rejected explicitly. Blueprint save version 3 is unchanged.
 
@@ -142,10 +142,10 @@ ordinary authored components. Connecting a cell to a motor defaults to full duty
 a wired receiver overrides that duty, including zero. Torque acts equally and
 oppositely on the motor housing and its shaft load. Charge and dissipated energy
 are checkpointed; cell heat and motor/driver heat are reported separately. The
-current electrical solver admits one cell and multiple motors per connected power
+current electrical solver admits one cell and multiple motors and sensors per connected power
 component; multiple connected cells are refused explicitly. Multiple circuits may
 share a joint-connected assembly. Shared-cell voltage satisfies Vbus = Voc − Rcell × Q,
-where Q is the sum of duty × winding current. Cell heat is Rcell × Q² × dt,
+where Q is the sum of duty × winding current plus the sensor load currents. Cell heat is Rcell × Q² × dt,
 including cross terms, and charge is debited once. A common winding-rating
 fraction enforces total cell current and available energy without first-motor
 priority. Bounded coordinate roots solve electrical droop against the ordered
@@ -197,7 +197,7 @@ remains 3.
 M3 controller tests inject trusted host doubles at phase 2. Each sees only frozen
 readings from sensors wired to its component and may command only wired receivers.
 These doubles are not a player program runtime or sandbox evidence. Production
-player programs remain gated on M4 isolation and fuel enforcement.
+Rules and editable TypeScript now use the scoped M3b bounded WASM runtime described below. The broader M4 S1 hostile-program qualification remains separate.
 
 ## Reversible construction
 
@@ -485,3 +485,106 @@ wheel, power and command endpoints. The launcher uses an actual powered hinge
 gate to retain an authored compressed spring and releases a separate rolling wheel
 through contact. It is a one-shot experiment reset through Build. No example name
 changes physics, creates a fixed support or supplies a release impulse.
+
+## Shared sensing and controller programs
+
+Sensors are ordinary independently mounted and powered components. The shared model
+channel descriptors define SI units, sign, frame and fixed learning scales. Rotation
+measures signed local-axis angular speed; travel measures total bound spring length
+and signed rate; linear motion measures sensor-point velocity in local axes relative
+to the stationary world, including angular motion. Tilt uses gravity-relative X/Z
+lean in −π…π and local angular velocity; a singular lean axis or zero gravity is
+unavailable. Joint encoding measures its explicitly bound revolute joint, subtracts
+the authored zero, applies its sign and wraps to −π…π. It adds no joint-target actuator.
+
+Range is one local +Z ray from the sensor front face. It excludes only the owning
+body and includes other ordinary collision shapes and the environment. The first
+surface wins; exact distance ties use compiled body order. An origin inside another
+shape returns distance zero; a hit at the maximum range is included. Closing speed
+is positive for decreasing range and requires two consecutive returns from the same
+physical collider. Reset, power loss, no return or a changed surface restarts that
+history. Collider identity stays inside sampling/checkpoint state, never policy inputs.
+
+Contact senses only the exposed local +Z pad rectangle with an outward matching
+normal. Contact uses transformed completed anchors (cached manifold distance can be stale). A positive current normal impulse establishes touch within the solver contact skin; otherwise a 1e-7 m separation tolerance admits resting roundoff;
+other casing faces do not count. Normal load is accumulated normal impulse divided
+by 1/120 s for that completed interval. The physics door indexes one completed contact read per step for all pads; stepping and restoring invalidate that cache. Touch is not a support or stability predicate.
+
+Each sensor has a declared 1000 ohm load and 1 V minimum operating voltage. Source
+droop, current/energy caps and all sensor/limiter terminal heat use the shared power
+solver. Signal connections supply no electricity. Tick zero is unpowered; the first
+power phase establishes supply for the next sampled reading. Old unpowered sensor
+saves retain their wiring and report no power. They are never silently connected.
+At most 64 sensors, 8192 ray/collider tests per tick and eight general controllers are admitted. Sampling and
+inference remain within their measured engine phases; these bounds do not certify
+real-time performance on every admissible assembly.
+
+Every channel is either a finite value with `ok`, or an explicit `no-power`,
+`no-return`, `initializing`, `unavailable` or `disconnected` status without a value.
+No return and initial derivative history are healthy missing measurements. Required
+hardware/binding faults disable automatic drive and require explicit rearm after
+repair. Controllers consume the same immutable t−1 snapshot and only their wired
+channels; sampled tick and internal range history are not implicit policy features.
+Linear-point checkpoint validation permits 1e-12 relative scalar reconstruction
+roundoff while retaining the original sample bytes for exact continuation.
+
+A Logic Controller's simple rules compare a measured value or explicitly test ready, no-return or initializing status. Hardware faults still disable the source before execution. Rules generate the displayed TypeScript. There is one
+execution path: restricted TypeScript AST → admitted numeric IR → WASM. The parser
+is the only scripting external dependency, loaded for authoring; simulation never
+imports scripting. Core injects executors. Supported programs use one `tick`,
+numeric state, arithmetic, if/else, declared input/status reads and bounded output
+writes. Logical operands are evaluated once; emitted code grows linearly with admitted syntax. Source is at most 16384 UTF-8 bytes, with 2048 admitted syntax nodes, 32 authored state/
+local slots plus one transient compiler scratch local, bounded nesting and 4096 execution fuel. No loops, recursive functions,
+imports, host evaluation or world access are available. Runtime errors roll back
+numeric state and disable that source. Numeric conditions and logical operators follow TypeScript truthiness: both zero and NaN are false, while infinities are true. Installation is atomic and Build-only; failed
+compilation preserves the installed program. A missing referenced input cannot arm
+control, even if custom code tries to branch around the hardware fault.
+
+Editing code switches the draft to Code mode and disables rule mutation. Viewing or
+copying code does not. The last 50 draft Undo entries persist with the draft. Restore rules offers cancellation and saves custom code before replacement. Storage failure retains current edits in memory with explicit export
+and closing guidance. Rule and threshold-value highlights are generated with the displayed source;
+custom or unapplied code cannot display a stale live rule mapping. WASM branch
+markers are diagnostic output, not a second rules interpreter.
+
+Oversized controller text remains an invalid browser draft, separate from admitted
+machine programs. It survives draft reload when storage succeeds and remains
+exportable when storage fails. Rules and Apply are disabled until the text is shortened
+or Undo restores the preceding draft; Apply never substitutes an older source.
+
+Learning Controllers are first-class command producers beside regular programs,
+using the same sensors and receiver arbiter. Training is an application-owned bounded
+operation; installed models are frozen. Keys take Manual ownership immediately;
+Automatic/legacy Learned selection is explicit, and pause/focus loss latches drive
+Off. Models never write forces, pose, power or receiver ownership directly.
+
+Legacy paired-target centre distance/radial speed and version-1 model weights remain
+distinct. Version-2 models bind up to 16 input channels and 8 outputs. Each input has
+four fixed features: measured value, ready, no-return and initializing. Missing value
+zero is only a tagged feature encoding, never a sensor reading. Kind/channel/unit/
+frame/scale/version and source wiring participate in compatibility. Mixed modern
+and paired-target inputs use one explicit version-2 definition; old weights cannot
+be relabelled. The browser's version-1 learning records remain byte-for-byte intact
+when the separate version-2 store is written, and the original is exportable.
+
+Teaching records only explicit manual intervals. Capture retains every sixth tick
+plus touch/load/status/command transitions, preserving brief events with elapsed-tick
+weights within equal-weight intervals. Capture headers retain build, blueprint,
+controller and endpoint/measurement identities; missing legacy provenance is not
+invented. The workspace retains bounded history and freezes an incomplete attempt
+on overflow or unavailable observations. Capture retains the first valid completed observation before periodic sampling so initial touch, load, status and command transitions have a baseline. A terminal sensor-fault record is retained separately from valid training samples, including attempts that fail before any valid sample; those empty attempts never enter training. Failed-attempt scrubbing does not mutate the
+live machine. Delivery evaluation is an explicitly selected, independent measurement
+module; generic learning does not infer a task from blueprint or part names. Saved
+outcomes are checked against their stored completed physical measurement; cumulative
+contact evidence remains recorded evidence, not a reconstructed or certified trace.
+
+
+Completed controller decisions are also available independently of teaching. The
+application drains the existing completed observation cursor into bounded recent
+history for both regular and learned controllers. It retains four runs with 600
+recent decisions per run and the first fault for up to 32 controllers. This is
+temporary diagnostic history, not an executable checkpoint or a training dataset.
+Requested inspection shows the sampled input, branch, requested program duty and
+applied receiver ownership. Historical selection never alters simulation; export
+preserves a selected record, and repair returns through ordinary Build admission.
+The selected source is retained with each regular-program record, so a later rule
+edit cannot relabel an old decision.

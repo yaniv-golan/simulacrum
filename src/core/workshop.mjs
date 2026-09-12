@@ -1,3 +1,4 @@
+import { createProgramExecutors } from '../scripting/controller-executors.mjs';
 import {
   groupAssembly,
   editAssembly,
@@ -58,13 +59,19 @@ export async function createWorkshop(
   const loaded = loadSave(input);
   if (!loaded.ok) reject(loaded.reasonCode, loaded.path);
   const compiled = compileAssembly(loaded.blueprint);
-  const session = await createSession(compiled.configuration, identity, {
-    blueprint: loaded.blueprint,
-    mapping: compiled.mapping,
-    connections: compiled.connections,
-    mode: 'build',
-    editing: { undoCount: 0, redoCount: 0 },
-  });
+  const session = await createSession(
+    compiled.configuration,
+    identity,
+    {
+      blueprint: loaded.blueprint,
+      mapping: compiled.mapping,
+      connections: compiled.connections,
+      mode: 'build',
+      editing: { undoCount: 0, redoCount: 0 },
+    },
+    [],
+    createProgramExecutors,
+  );
   let busy = false,
     disposed = false;
   const past = [],
@@ -141,7 +148,8 @@ export async function createWorkshop(
             : { type: 'regulator-target', node, target: command.target },
         );
       }
-      if (current.mode !== 'build') return result(false, 'EDIT_REQUIRES_BUILD', 'mode');
+      if (current.mode !== 'build' && command.type !== 'restore-build')
+        return result(false, 'EDIT_REQUIRES_BUILD', 'mode');
       if (['undo', 'redo'].includes(command.type)) {
         if (keys !== 'type') return result(false, 'INVALID_COMMAND', 'command');
         const from = command.type === 'undo' ? past : future,
@@ -271,6 +279,47 @@ export async function createWorkshop(
           part.name = command.name.trim();
           break;
         }
+        case 'install-controller-program': {
+          if (keys !== 'id,program,type') reject('INVALID_COMMAND');
+          const controller = next.parts.find(
+            (p) => p.id === command.id && p.type === 'logicController',
+          );
+          if (!controller) reject('UNKNOWN_PART');
+          controller.controllerProgram = command.program;
+          break;
+        }
+        case 'bind-joint-sensor': {
+          if (keys !== 'connection,id,type') reject('INVALID_COMMAND');
+          const sensor = next.parts.find(
+            (p) => p.id === command.id && p.type === 'jointAngleSensor',
+          );
+          if (!sensor) reject('UNKNOWN_PART');
+          if (command.connection === null) delete sensor.jointBinding;
+          else {
+            if (!next.connections.some((c) => c.id === command.connection && c.kind === 'shaft'))
+              reject('INVALID_COMMAND');
+            sensor.jointBinding = command.connection;
+          }
+          break;
+        }
+        case 'install-learning-model': {
+          if (keys !== 'id,model,type') reject('INVALID_COMMAND');
+          const controller = next.parts.find(
+            (p) => p.id === command.id && p.type === 'learningController',
+          );
+          if (!controller) reject('UNKNOWN_PART');
+          if (command.model === null) delete controller.learningModel;
+          else controller.learningModel = command.model;
+          break;
+        }
+        case 'bind-target-sensor': {
+          if (keys !== 'id,target,type') reject('INVALID_COMMAND');
+          const sensor = next.parts.find((p) => p.id === command.id && p.type === 'targetSensor');
+          if (!sensor) reject('UNKNOWN_PART');
+          if (command.target === null) delete sensor.targetBinding;
+          else sensor.targetBinding = command.target;
+          break;
+        }
         case 'bind-travel-sensor': {
           if (keys !== 'connection,id,type') return result(false, 'INVALID_COMMAND', 'command');
           const sensor = next.parts.find((p) => p.id === command.id && p.type === 'travelSensor');
@@ -289,6 +338,8 @@ export async function createWorkshop(
           if (!next.parts.some((part) => part.id === command.id))
             return result(false, 'UNKNOWN_PART', 'id');
           next.parts = next.parts.filter((part) => part.id !== command.id);
+          for (const part of next.parts)
+            if (part.targetBinding === command.id) delete part.targetBinding;
           if (next.assemblies) {
             for (const group of next.assemblies) {
               group.ids = group.ids.filter((id) => id !== command.id);
@@ -445,6 +496,7 @@ export async function createWorkshop(
           part.parameters[command.key] = command.value;
           break;
         }
+        case 'restore-build':
         case 'load': {
           if (keys !== 'save,type') return result(false, 'INVALID_COMMAND', 'command');
           const loaded = loadSave(command.save);
@@ -457,7 +509,8 @@ export async function createWorkshop(
       }
       // No-op commands preserve both editor history and the observation cursor.
       // Rename changes only authored metadata; the physical owners remain intact.
-      if (command.type !== 'load' && sameData(current.blueprint, next)) return result(true);
+      if (!['load', 'restore-build'].includes(command.type) && sameData(current.blueprint, next))
+        return result(true);
       if (command.type === 'rename') {
         const validated = loadSave(next);
         if (!validated.ok) return validated;
@@ -472,20 +525,19 @@ export async function createWorkshop(
       }
       const nextCompiled = compileAssembly(next);
       canonicalizeContactOverrides(next);
-      const editing =
-        command.type === 'load'
-          ? { undoCount: 0, redoCount: 0 }
-          : sameData(current.blueprint, next)
-            ? current.editing
-            : { undoCount: Math.min(historyLimit, past.length + 1), redoCount: 0 };
+      const editing = ['load', 'restore-build'].includes(command.type)
+        ? { undoCount: 0, redoCount: 0 }
+        : sameData(current.blueprint, next)
+          ? current.editing
+          : { undoCount: Math.min(historyLimit, past.length + 1), redoCount: 0 };
       await session.replaceConfiguration(nextCompiled.configuration, {
         blueprint: next,
         mapping: nextCompiled.mapping,
         connections: nextCompiled.connections,
-        mode: current.mode,
+        mode: command.type === 'restore-build' ? 'build' : current.mode,
         editing,
       });
-      if (command.type === 'load') {
+      if (['load', 'restore-build'].includes(command.type)) {
         past.length = 0;
         future.length = 0;
       } else if (!sameData(current.blueprint, next)) {

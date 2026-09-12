@@ -11,7 +11,7 @@ const exact = (value, keys) =>
   Object.keys(value).sort().join(',') === keys.split(',').sort().join(',');
 const node = (n) => Number.isSafeInteger(n) && n >= 0;
 const ratio = (n) => Number.isFinite(n) && Math.abs(n) <= 1;
-const modes = ['manual', 'automatic', 'off'];
+const modes = ['manual', 'automatic', 'learned', 'off'];
 const reasons = ['OK', 'OPERATOR_OFF', 'SUSPENDED', 'INVALID_SENSOR', 'NO_REGULATOR'];
 const clamp = (n, lower, upper) => Math.max(lower, Math.min(upper, n));
 
@@ -23,7 +23,15 @@ export function createReceiverArbiter(input) {
     regulators = new Set();
   for (const c of config) {
     if (
-      !exact(c, c.regulator ? 'node,duty,regulator' : 'node,duty') ||
+      !exact(
+        c,
+        'node,duty' +
+          (c.regulator ? ',regulator' : '') +
+          (Object.hasOwn(c, 'learning') ? ',learning' : '') +
+          (Object.hasOwn(c, 'program') ? ',program' : ''),
+      ) ||
+      (Object.hasOwn(c, 'learning') && c.learning !== true) ||
+      (Object.hasOwn(c, 'program') && c.program !== true) ||
       !node(c.node) ||
       nodes.has(c.node) ||
       !ratio(c.duty)
@@ -86,7 +94,8 @@ export function createReceiverArbiter(input) {
         !ratio(r.duty) ||
         !reasons.includes(r.reason) ||
         (r.mode === 'off' ? r.duty !== 0 || r.reason === 'OK' : r.reason !== 'OK') ||
-        (r.mode === 'automatic' && !c.regulator?.enabled) ||
+        (r.mode === 'automatic' && !c.regulator?.enabled && !c.program) ||
+        (r.mode === 'learned' && !c.learning) ||
         (c.regulator
           ? !Number.isFinite(r.target) ||
             r.target < c.regulator.minTarget ||
@@ -138,8 +147,19 @@ export function createReceiverArbiter(input) {
         if (e.type === 'mode' && exact(e, 'type,node,mode') && modes.includes(e.mode)) continue;
         if (
           ['manual', 'program', 'release'].includes(e.type) &&
-          exact(e, 'type,node,duty') &&
+          exact(
+            e,
+            'type,node,duty' + (e.type === 'program' && Object.hasOwn(e, 'valid') ? ',valid' : ''),
+          ) &&
+          (!Object.hasOwn(e, 'valid') || typeof e.valid === 'boolean') &&
           ratio(e.duty)
+        )
+          continue;
+        if (
+          e.type === 'learned' &&
+          exact(e, 'type,node,duty,valid') &&
+          ratio(e.duty) &&
+          typeof e.valid === 'boolean'
         )
           continue;
         const r = config.find((c) => c.node === e.node)?.regulator;
@@ -172,7 +192,7 @@ export function createReceiverArbiter(input) {
         }
         const suspendedAt = events.findLastIndex((e) => e.type === 'suspend');
         if (suspendedAt >= 0) {
-          if (r.mode === 'automatic') off('SUSPENDED');
+          if (r.mode === 'automatic' || r.mode === 'learned') off('SUSPENDED');
           else if (r.mode === 'manual') r.duty = 0;
           // Suspension cancels already queued held input. Fresh input after it
           // remains ordered and can explicitly take ownership or rearm.
@@ -193,9 +213,22 @@ export function createReceiverArbiter(input) {
           r.mode = requested.mode;
           r.reason = 'OK';
         }
+        if (r.mode === 'learned') {
+          const learned = own.findLast((e) => e.type === 'learned');
+          if (!c.learning || !learned?.valid) off('INVALID_SENSOR');
+          else r.duty = learned.duty;
+          continue;
+        }
+        if (r.mode === 'automatic' && c.program) {
+          const program = own.findLast((e) => e.type === 'program');
+          if (!program || program.valid === false) off('INVALID_SENSOR');
+          else r.duty = program.duty;
+          continue;
+        }
         if (r.mode !== 'automatic') {
           const program = own.findLast((e) => ['program', 'release'].includes(e.type));
-          if (r.mode === 'manual' && program) r.duty = program.duty;
+          if (r.mode === 'manual' && program && (!c.program || program.type === 'release'))
+            r.duty = program.duty;
           continue;
         }
         const controller = c.regulator;
@@ -244,6 +277,14 @@ export function receiverControlConfiguration(power) {
     const inputs = power.signalWires.filter((edge) => edge[1] === receiver.node);
     if (inputs.length > 1) fail();
     const regulator = regulators.find((r) => r.node === inputs[0]?.[0]);
-    return { ...receiver, ...(regulator ? { regulator } : {}) };
+    const learning = power.controllers?.some((c) => c.node === inputs[0]?.[0] && c.learning?.model);
+    return {
+      ...receiver,
+      ...(power.controllers?.some((c) => c.node === inputs[0]?.[0] && c.program)
+        ? { program: true }
+        : {}),
+      ...(regulator ? { regulator } : {}),
+      ...(learning ? { learning: true } : {}),
+    };
   });
 }

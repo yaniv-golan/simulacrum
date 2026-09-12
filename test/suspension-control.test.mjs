@@ -16,9 +16,16 @@ function authoredControl() {
     sensor,
     createPart('positionRegulator', 'regulator', [3, 2, 0]),
     createPart('commandReceiver', 'receiver', [4, 2, 0]),
+    createPart('powerCell', 'supply', [5, 2, 0]),
   );
-  bp.assemblies[0].ids.push('sensor', 'regulator', 'receiver');
+  bp.assemblies[0].ids.push('sensor', 'regulator', 'receiver', 'supply');
   bp.connections.push(
+    {
+      id: 'sensor-power',
+      kind: 'power',
+      a: { part: 'supply', port: 'power' },
+      b: { part: 'sensor', port: 'power' },
+    },
     {
       id: 'measurement',
       kind: 'signal',
@@ -40,6 +47,7 @@ test('ordinary bound sensing and automatic ownership survive replay while manual
     w = await createWorkshop(bp);
   try {
     await w.act({ type: 'run' });
+    w.step(2);
     assert.equal(
       (await w.act({ type: 'control-mode', id: 'receiver', mode: 'automatic' })).ok,
       true,
@@ -48,7 +56,7 @@ test('ordinary bound sensing and automatic ownership survive replay while manual
     const f = w.observe().frames[0];
     assert.equal(f.receiverControl.receivers[0].mode, 'automatic');
     assert.equal(f.sensors.tick, f.tick - 1);
-    assert.equal(f.sensors.readings[0].valid, true);
+    assert.equal(f.sensors.readings[0].channels.length.status, 'ok');
     const cp = w.checkpoint();
     w.step(3);
     const expected = w.observe().frames[0].receiverControl;
@@ -77,10 +85,11 @@ test('sensor binding follows a library copy and missing binding visibly disables
   const w = await createWorkshop(bp);
   try {
     await w.act({ type: 'run' });
+    w.step(2);
     await w.act({ type: 'control-mode', id: 'receiver', mode: 'automatic' });
     w.step();
     const f = w.observe().frames[0];
-    assert.equal(f.sensors.readings[0].valid, false);
+    assert.equal(f.sensors.readings[0].channels.length.status, 'unavailable');
     assert.equal(f.receiverControl.receivers[0].mode, 'off');
     assert.equal(f.power.sources[0].enabled, false);
   } finally {
@@ -219,6 +228,7 @@ test('Pause reserves one idempotent suspension at full input capacity and surviv
   const w = await createWorkshop(authoredControl());
   try {
     await w.act({ type: 'run' });
+    w.step(2);
     await w.act({ type: 'control-mode', id: 'receiver', mode: 'automatic' });
     w.step();
     const before = w.observe().frames[0];
@@ -242,6 +252,7 @@ test('Pause reserves one idempotent suspension at full input capacity and surviv
     assert.deepEqual(w.checkpoint().pending, cp.pending, 'repeat blur/pause is idempotent');
     w.restore(cp);
     await w.act({ type: 'run' });
+    w.step(2);
     w.step();
     assert.equal(w.observe().frames[0].receiverControl.receivers[0].mode, 'off');
     assert.equal(w.observe().frames[0].power.sources[0].enabled, false);
@@ -256,6 +267,7 @@ test('receiver checkpoint rejects power authority disagreement atomically', asyn
   const w = await createWorkshop(authoredControl());
   try {
     await w.act({ type: 'run' });
+    w.step(2);
     await w.act({ type: 'control-mode', id: 'receiver', mode: 'off' });
     w.step();
     const cp = w.checkpoint();
@@ -290,6 +302,7 @@ test('Pause clears queued held manual drive even when its release cannot enter a
   const w = await createWorkshop(bp);
   try {
     await w.act({ type: 'run' });
+    w.step(2);
     for (let i = 0; i < 64; i++)
       assert.equal((await w.act({ type: 'control', id: 'receiver', duty: 1 })).ok, true);
     assert.equal((await w.act({ type: 'pause' })).ok, true);
@@ -298,6 +311,7 @@ test('Pause clears queued held manual drive even when its release cannot enter a
       'INPUT_LIMIT',
     );
     await w.act({ type: 'run' });
+    w.step(2);
     w.step();
     assert.equal(w.observe().frames[0].receiverControl.receivers[0].duty, 0);
     w.step();

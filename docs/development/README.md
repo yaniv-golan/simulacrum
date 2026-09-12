@@ -91,7 +91,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"30e30b1d58d225a3d3ce8eb615678d8e918d7396503b6b2be520b34f5144e1af","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"bdafff1a009a6ad14d087a819737c93b8f921db1c23aee0b769f54e29c11ee1f","disposition":"still accurate","rationale":"Native spring.9 updates the dependency artifact; supported Node, preflight, required local/final tiers and same-source verification commands remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"3d5863bee87e525b1766316b28700f5ad291cbc6d290264873a7f341c8744c74","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"af7357f85439e9cc8c27ffed2ae4902fad117c4db82666d31db42926d565ba93","disposition":"still accurate","rationale":"The merged branch retains main's pinned native library and boundary-check reuse. Verification commands, failure propagation and source identity rules remain unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -131,7 +131,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"5ad37e082a413fe6ccb38bfd144b54a862e3f22d2e5176d026e276cad1e03d1c","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"d3024610632494653cd82fc8420c62e87bb9965d046fe00aa3390d3e96d26f75","disposition":"still accurate","rationale":"The generated reference now includes the gear capacity check; prepare, separate semantic dispositions and post-source-closure verification retain their stated ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"a335411e9846c7ab3fcaadda6973dc1cbd871290fcf3fb4b7c8c837b3a37c7b2","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"71e8f8cfb09959c8cd3f19b2b90f2fd7710bfa3b7b45e02eb842ef8e84ae85b7","disposition":"still accurate","rationale":"Combined generated references include gear and sensor/controller owners; documentation preparation and individual source-bound review still precede candidate capture."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -237,7 +237,7 @@ prove that prose is true or that an agent understood it; behavioral tests and so
 review remain necessary.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"ad2b7142b9f05fd23962accca47518e8a55d9834bf839c700ebb9b25ace0846d","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"6cc8d76d400a6b9dee426da5be37ff55a503bc870936e27d7b3a2753c6882c85","disposition":"still accurate","rationale":"The new gear measurement root and construction-message consumer were reviewed through the documented proposal workflow. All 88 registered unit files and 16 required browser witnesses passed in the isolated candidate before scope metadata was applied. Reader declarations and local behavioral boundaries are unchanged; completion remains a separate required tier."} -->
+<!-- doc-review {"version":1,"fingerprint":"3694763d368d4cce4a68530b8dba409a308e50357ec952fc19d3e1de13a05565","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"486163e05c4134c82950394a0f86049b4237d67b8c79d692a7dc7a5e4bca0fcb","disposition":"still accurate","rationale":"The applied registry update refreshes only eight consumer fingerprints after immutable sensor-body reuse. Read declarations, exclusions, roots and invariant witness requirements remain unchanged; the reviewed scope workflow still governs application."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -399,7 +399,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"661cb3580ec7a7b34453ae21619116da9390e53713bac6f68588acd260202816","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"c272fa9dc5d3f4a6bece65d319b0cc436b9c26e6fcfb4f8f1c47f2bc46fbdb0b","disposition":"still accurate","rationale":"Native dependency bytes now differ, so candidate capture installs the new package. Capture, source identity, retained failures and manual installation boundaries remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"421c6c8dc7951ee3c24ed59ab36d7ecc5b76b0866462f33a1472255cf4f6001d","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"280e6884bc81db602623bfe330685649a7012e7a2114b73c35604e0cd9203192","disposition":"still accurate","rationale":"Integration runs in a separate worktree and captures a frozen candidate before updating main. The candidate source-match and destination-drift requirements remain unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

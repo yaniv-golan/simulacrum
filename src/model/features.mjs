@@ -1,8 +1,16 @@
 export const UI_FEATURES = Object.freeze({
   spurGears: Object.freeze({ milestone: 'M3b', entrypoint: 'src/presentation/workshop-view.mjs' }),
+  controllerPrograms: Object.freeze({
+    milestone: 'M3b',
+    entrypoint: 'src/presentation/controller-editor.mjs',
+  }),
   ballWorkshop: Object.freeze({
     milestone: 'M3b',
     entrypoint: 'src/presentation/workshop-view.mjs',
+  }),
+  learningController: Object.freeze({
+    milestone: 'M3b',
+    entrypoint: 'src/presentation/learning-controls.mjs',
   }),
   springPlayground: Object.freeze({
     milestone: 'M3b',

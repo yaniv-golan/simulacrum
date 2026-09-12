@@ -1,3 +1,5 @@
+import { CONTROLLER_AUTHORING_SCHEMA } from '../src/model/controller-authoring.mjs';
+import { LEARNING_MODEL_SCHEMA } from '../src/model/learning-model.mjs';
 import { CATALOG, MATERIALS } from '../src/model/catalog.mjs';
 import { CONTROL_BINDING_SCHEMA } from '../src/model/control-bindings.mjs';
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -11,7 +13,11 @@ export function buildBlueprintSchema() {
   const part = schema.$defs.part;
   part.properties.type = { type: 'string', enum: Object.keys(CATALOG) };
   part.properties.controlBinding = structuredClone(CONTROL_BINDING_SCHEMA);
+  part.properties.controllerProgram = structuredClone(CONTROLLER_AUTHORING_SCHEMA);
+  part.properties.jointBinding = { $ref: '#/$defs/id' };
   part.properties.springBinding = { $ref: '#/$defs/id' };
+  part.properties.targetBinding = { $ref: '#/$defs/id' };
+  part.properties.learningModel = structuredClone(LEARNING_MODEL_SCHEMA);
   part.properties.authoredMaterial.properties.body = {
     type: 'string',
     enum: Object.keys(MATERIALS),
@@ -22,7 +28,13 @@ export function buildBlueprintSchema() {
       properties: {
         controlBinding:
           type === 'commandReceiver' ? structuredClone(CONTROL_BINDING_SCHEMA) : false,
+        controllerProgram:
+          type === 'logicController' ? structuredClone(CONTROLLER_AUTHORING_SCHEMA) : false,
+        jointBinding: type === 'jointAngleSensor' ? { $ref: '#/$defs/id' } : false,
         springBinding: type === 'travelSensor' ? { $ref: '#/$defs/id' } : false,
+        targetBinding: type === 'targetSensor' ? { $ref: '#/$defs/id' } : false,
+        learningModel:
+          type === 'learningController' ? structuredClone(LEARNING_MODEL_SCHEMA) : false,
         parameters: {
           type: 'object',
           additionalProperties: false,

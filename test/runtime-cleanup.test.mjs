@@ -16,7 +16,7 @@ const sensorBlueprint = () => {
 const corruptSensors = (cp, speed) => {
   cp.sensors.bodies[0].rotation = [1e308, 1e308, 1e308, 1e308];
   cp.sensors.bodies[0].angularVelocity = [1e308, 1e308, 1e308];
-  cp.sensors.readings[0].speed = speed;
+  cp.sensors.readings[0].channels.angularSpeed = { status: 'ok', value: speed };
 };
 
 test('accepted near-unit rotations preserve both clear and obstructed surface admission', async () => {
@@ -41,7 +41,9 @@ test('public checkpoint restore rejects overflow-derived null readings atomicall
     const good = w.checkpoint();
     w.step();
     w.restore(good);
-    assert.equal(w.observe().frames[0].sensors.readings[0].speed, 0);
+    assert.deepEqual(w.observe().frames[0].sensors.readings[0].channels.angularSpeed, {
+      status: 'no-power',
+    });
     w.step();
     const before = w.checkpoint(),
       cursor = w.observe().cursor,

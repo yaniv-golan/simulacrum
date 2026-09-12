@@ -1,6 +1,43 @@
+import { SENSOR_DEFINITIONS } from '../model/sensors.mjs';
+const measurementNames = {
+  angularSpeed: 'Angular speed',
+  length: 'Spring length',
+  speed: 'Approach speed',
+  distance: 'Distance',
+  closingSpeed: 'Closing speed',
+  velocityX: 'Local X speed',
+  velocityY: 'Local Y speed',
+  velocityZ: 'Local Z speed',
+  tiltX: 'Tilt X',
+  tiltZ: 'Tilt Z',
+  angularVelocityX: 'Local X angular speed',
+  angularVelocityY: 'Local Y angular speed',
+  angularVelocityZ: 'Local Z angular speed',
+  angle: 'Joint angle',
+  touching: 'Touch',
+  normalLoad: 'Normal load',
+};
+const sensorKind = (part) => (part.type.endsWith('Sensor') ? part.type.slice(0, -6) : null);
 export function portLabel(part, port) {
   if (port.kind === 'gear') return 'Gear mesh';
   if (port.kind === 'power') return 'Power';
+  const kind = sensorKind(part),
+    channels = SENSOR_DEFINITIONS[kind];
+  if (channels && port.kind === 'signal') {
+    const channel =
+      port.id === 'signal' ? (kind === 'rotation' ? 'angularSpeed' : 'length') : port.id;
+    const descriptor = channels[channel];
+    if (descriptor) {
+      const name =
+        kind === 'travel' && channel === 'speed' ? 'Spring speed' : measurementNames[channel];
+      return name + (descriptor.unit === 'boolean' ? '' : ` (${descriptor.unit})`);
+    }
+  }
+  if (['logicController', 'learningController'].includes(part.type) && port.kind === 'signal') {
+    if (port.id.startsWith('input')) return `Sensor input ${port.id.slice(5)}`;
+    if (/^out\d+$/.test(port.id)) return `Command output ${port.id.slice(3)}`;
+    return port.direction === 'input' ? 'Sensor input · signal' : 'Command output · out';
+  }
   if (port.kind === 'signal')
     return port.direction === 'input' ? 'Control input' : 'Control output';
   if (port.kind === 'spring') return 'Slide · spring';
@@ -15,6 +52,12 @@ export function portLabel(part, port) {
 export function portPurpose(part, port) {
   if (port.kind === 'gear')
     return 'Transfers rotation between aligned gears on independently supported shafts. Mount both shafts on the same rigid support first. Both gears stay in place when connected; this mesh does not support either shaft.';
+  if (
+    port.kind === 'signal' &&
+    (SENSOR_DEFINITIONS[sensorKind(part)] ||
+      (['logicController', 'learningController'].includes(part.type) && port.direction === 'input'))
+  )
+    return 'Carries a declared sensor channel, sampled at t and consumed at t+1. This wire does not hold parts together.';
   if (port.kind === 'spring')
     return 'Attaches the carriage to its guide. Slides along this axis; does not swivel. Disconnecting removes both the guide constraint and spring force.';
   if (port.kind === 'fixed')

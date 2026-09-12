@@ -18,7 +18,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"b1bde6a725f66c097a5b722e9433565c731d782918ed50e349b3694eef0fadf9","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"918911b9182af41da6a349071810d471dde866b1d9ed0b2cb4c5e6782702e0e7","disposition":"still accurate","rationale":"The gear lift adds an ordinary steel axle for visibility. Gear catalog geometry, explicit supported mesh admission and original authoring assertions remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"0b1783480030610c5c64641b85ad4d6dbe7252deaa3509454292fef093846691","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"f229c2379a6684a6a0af9eeed693bca633e55768a99257d46b78164975eb977f","disposition":"still accurate","rationale":"Part schema, catalog, geometry and material admission are unchanged; the repair only removes a redundant copy during session publication."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -58,7 +58,7 @@ when changing admission.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"cf8f2923b5ff74a80ddda506d9235ee7abf73b6e9b74d7217573757b37660351","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"59f1f3b367513cea5703809531fa11a0f76740972fcba132831d46290087b970","disposition":"still accurate","rationale":"Construction and recovery use existing connect, transform, Build and Run commands. Session failure wording adds no transaction owner or command shape."} -->
+<!-- doc-review {"version":1,"fingerprint":"458087a9cf5777c38a49c6996ba989dbc5b59b23cc4c54e1087b52061122291a","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"b7359d46bc3816284102ee73579befc834fc95759a2187b5a5f0dfe3e811ff3c","disposition":"still accurate","rationale":"Command validation and atomic Build transactions are unchanged. The repaired publication continues to admit immutable completed data."} -->
 
 
 
@@ -75,7 +75,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"e08906ad451b5f17a951946964fb81b334832e86f8e22c9b9443ac9acfd47c86","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"0475c5c4fa0b3ac87fe349f57d8a9a6721a58421b180c9d99b40e2ac198fc5a7","disposition":"still accurate","rationale":"GEAR_MOTION_LIMIT uses the existing message surface and Build recovery controls. The construction journey exercises ordinary surface controls without changing preview or input ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"9876a563c8899e6ba6727a9ece5b1b87028a8892bd7d094274fbc1c5bf7ff3fb","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"89e868614e4aea7a378670245ceb0617ac63575d752af4f728c8c9069a4a66b2","disposition":"still accurate","rationale":"No presentation, input, focus or gesture behavior changed; completed sensor data retains the same values and read ownership."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -124,11 +124,11 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"7f76d3e7904411fafe19562640f7b5b8a9734624aaea7ac97f0509b959e7545e","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"964151c2684ae0e712fd9c6bc906400d74b66d2b70604882ff5de2f8aec4694e","disposition":"still accurate","rationale":"The gear motion limit reports a physics-door reason through completed failure publication. It suggests player-authored recovery without inferring intent, automatically repairing state or changing measurement sampling."} -->
+<!-- doc-review {"version":1,"fingerprint":"b766ea165249ce2deb9ea0c03158315fb977e203f2cc41b1bfe8834713d25afb","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"19f7cade78563f4cf75895e0c7a658cfedea5a0108d00301212f2ab7d4bf2d43","disposition":"still accurate","rationale":"Diagnostics still consume immutable completed observations; retaining admitted body identity changes allocation cost, not diagnostic values or historical interpretation."} -->
 
 
 
-Start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
+For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
 owns navigation and wording layout. Do not repair authored state or infer intention
 from a machine name.
@@ -138,6 +138,11 @@ assembly and suggest checking direction. Read [opposed-drive tests](../../test/o
 and [motion diagnostics tests](../../test/motion-diagnostics.test.mjs). Include a real
 symptom, a similar valid configuration that must remain quiet, and missing-data cases.
 A symptom is not proof of the intended mechanism or cause.
+
+For controller decisions, use [completed decision projection](../../src/model/controller-decision.mjs)
+and [application history](../../src/application/controller-history.mjs). Keep diagnostic
+fault records separate from teaching rows and retain the historical source; returning
+to Build for repair must not reinterpret old observations with a new program.
 
 Selected-body Measurements uses the [numeric accumulator](../../src/model/motion-readout.mjs)
 and [presentation lifecycle](../../src/presentation/motion-readout.mjs). The application
@@ -149,7 +154,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"e48cf699f1654155f1d883aff214d1be3afed4e3a3baa31b3c8318cf796ec3d5","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"347f576bb084be641c5037cfc3a1ac16a92402b49c239a94882b557b9bc86441","disposition":"updated","rationale":"Explained native residual admission, fixed-component contacts and snapshot compatibility, immutable sensing reuse and bounded gear limits. The common launcher now stores 7.59375 J at the existing rest-length limit; actual isolated impacts retain prior cases and extend to 6.5 m/s with unchanged overlap and noncreation limits."} -->
+<!-- doc-review {"version":1,"fingerprint":"a54ce52804b13b9208e672575220748be0080b2027cd0adb118ac8f116f8fe36","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"9df4ba2589227dd34eb5c5fe7296446435362cbd00ce99582f3d099d6991657e","disposition":"still accurate","rationale":"The repair changes no force, integration, phase order or native solver setting. It removes a redundant copy after phase completion while preserving sensor continuation."} -->
 
 
 
@@ -293,7 +298,7 @@ settings and slop. Re-run existing contact/constraint cases when changing this p
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"8719e726b6c91f27461b58ddac95b67c23605d8402f84b42c51d16d3abe6f247","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"304716bc01047d81142e4ab4706945d2bd739126b027e3588ddbf36beb64c79d","disposition":"still accurate","rationale":"The axial extension is an ordinary fixed shaft assembly and construction uses existing model commands. Physics contact suppression changes no authoring transforms, group selection or reusable definition admission."} -->
+<!-- doc-review {"version":1,"fingerprint":"c10ccff3f67137f9f7bc011d0c19e906527a33ddfdd9acd78a351156b8cb95d8","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"52ecc9b1a459377a174e41da3efb22446b09c5a52b32451e34eb9aa46b5f2ce5","disposition":"still accurate","rationale":"Assembly admission and authoring are unchanged; immutable sensor body reuse occurs only during simulation publication."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -302,9 +307,7 @@ which edges an operation may copy. The classifier reports facts; the operation o
 whether a crossing edge is omitted, rejected or explicitly rebound. Mount admission
 must retain its stricter aligned-edge eligibility when testing alternate support paths.
 
-Authored references also include a travel sensor's `springBinding` connection ID.
-Copy and mirror operations remap bindings to copied internal spring connections and
-clear bindings when that connection is omitted. Regulator sensor association comes
+Authored references include travel `springBinding` and encoder `jointBinding` connection IDs, and a legacy paired sensor's `targetBinding` part ID. Copy and mirror operations remap bindings to copied internal connections/parts and clear bindings when the referenced object is omitted. Installed learning feature definitions remain tied to named channels, never array position. Regulator sensor association comes
 from ordinary wiring. Check these references alongside endpoint remapping so an
 otherwise valid copy cannot silently measure the source machine's spring.
 Environment belongs to the receiving blueprint, not a captured assembly. Preserve
@@ -388,7 +391,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"a373702d287459fc9bcc9e3b30a12fec6680da6a192f4cfe3b89021bc6558196","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"fb6c39eb979ca0d5a2fdba8690ec27fa8de42afc7b3c1d51677ae42e13ecce2c","disposition":"still accurate","rationale":"No presentation overlay implementation changed. Completed body reuse preserves immutable readings; fixed-component self-contact filtering changes physical contact admission without granting the renderer state ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"9bb8c3eed1bae005037eca5b5b185e59ad58abc4799915b9ec43122d933b2e09","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"6d5ddb382c22a8a76b767d83f6809afd58beb117f13fe2a0702924f81d9944d3","disposition":"still accurate","rationale":"Overlay ownership and lifecycle remain unchanged; all consumers still receive immutable completed observations through the same store."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

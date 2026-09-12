@@ -55,10 +55,55 @@ export const PART_HELP = {
       'Its material and solid size determine its mass. It is not a hollow clamp or an invisible hinge.',
     ],
   ),
+  rangeSensor: help(
+    'Measures first-hit distance and closing speed',
+    'Its local +Z ray stops at the first physical surface within range. No return and the first derivative sample are explicit states.',
+    'Mount the part, wire Power to a cell, then connect the desired channel to either controller.',
+    [
+      'Select the sensor to inspect its completed readings and direction.',
+      'Missing power makes the measurement invalid; it never becomes a false zero.',
+    ],
+  ),
+  linearMotionSensor: help(
+    'Measures local linear velocity',
+    'Measures the sensor origin’s velocity relative to the stationary world, including motion caused by rotation.',
+    'Mount the part, wire Power to a cell, then connect the desired channel to either controller.',
+    [
+      'Select the sensor to inspect its completed readings and direction.',
+      'Missing power makes the measurement invalid; it never becomes a false zero.',
+    ],
+  ),
+  tiltSensor: help(
+    'Measures tilt and angular velocity',
+    'Tilt is relative to gravity. Angular velocity is reported around local X, Y and Z, without absolute heading or position.',
+    'Mount the part, wire Power to a cell, then connect the desired channel to either controller.',
+    [
+      'Select the sensor to inspect its completed readings and direction.',
+      'Missing power makes the measurement invalid; it never becomes a false zero.',
+    ],
+  ),
+  jointAngleSensor: help(
+    'Measures one axle’s angle and rate',
+    'An explicit axle binding, zero and sign define this measurement. The sensor applies no control or force.',
+    'Mount the part, wire Power to a cell, then connect the desired channel to either controller.',
+    [
+      'Select the sensor to inspect its completed readings and direction.',
+      'Missing power makes the measurement invalid; it never becomes a false zero.',
+    ],
+  ),
+  contactSensor: help(
+    'Measures contact on its front pad',
+    'Only the exposed +Z face reports touch and interval-average normal load. Contacts on other casing faces do not count.',
+    'Mount the part, wire Power to a cell, then connect the desired channel to either controller.',
+    [
+      'Select the sensor to inspect its completed readings and direction.',
+      'Missing power makes the measurement invalid; it never becomes a false zero.',
+    ],
+  ),
   travelSensor: help(
     'Measures one spring’s length and speed',
     'Reports the distance along a selected spring guide and how quickly that distance changes. It does not measure chassis height or tilt.',
-    'Select a spring connection in Build, then wire Signal to a Position Regulator.',
+    'Connect Power to a cell, select a spring connection in Build, then wire Signal to a Position Regulator or controller.',
     [
       'An unbound or missing spring gives an invalid reading. Automatic control switches Off until you repair the binding and rearm it.',
       'Copy the sensor with its spring to remap the binding. A sensor copied alone starts unbound.',
@@ -206,22 +251,41 @@ export const PART_HELP = {
     [
       'Wire Control output to the actuator Control input.',
       'Choose a keyboard preset in the inspector, then Run and use the listed keys.',
-      'A wired Logic Controller at Control input owns the receiver; keyboard and manual overrides are then unavailable.',
+      'Automatic and learned commands require explicit enable. Your keys always take over immediately.',
+    ],
+  ),
+  learningController: help(
+    'Learns bounded receiver commands from your driving examples',
+    'A small frozen neural network reads only explicitly wired sensor channels. Teaching captures manual commands and the prior-tick observations they accompany. Training happens between runs.',
+    'Wire Target Distance Sensor distance and speed to separate inputs; wire outputs to Command Receiver inputs. Select this controller and choose Teach a controller.',
+    [
+      'Teach briefly using normal keys. Stop and return to Build to train a candidate.',
+      'Install explicitly, then Try it. Keys take over; Teach starts a correction interval.',
+      'Save the machine to keep the executable model. The learning workspace separately retains and exports examples and attempts.',
+    ],
+  ),
+  targetSensor: help(
+    'Measures distance and approach speed to a selected part',
+    'Measures centre-to-centre separation and relative speed along that line. Positive speed means approaching. This is a paired measurement: intervening objects do not occlude it, and it does not sense obstacles.',
+    'Connect Power to a cell and mount the sensor on your machine. In Build select its measured target, then wire its distance and speed outputs to controller inputs.',
+    [
+      'Range is measured in metres. A missing target or out-of-range measurement disables learned driving.',
+      'Measurements are sampled at t and used by commands at t+1. Copying a sensor alone leaves its target unbound.',
     ],
   ),
   rotationSensor: help(
     'Measures rotation about its own axis',
     'Reads angular speed of its own body along the selected local axis. Use it to supply rotation measurements to a controller.',
-    'Mount it to the body whose rotation you want to measure. It does not measure a nearby wheel through space.',
+    'Connect Power to a cell and mount it to the body whose rotation you want to measure. It does not measure a nearby wheel through space.',
     [
       'Mount the sensor to the rotating body and select X, Y or Z in its settings.',
-      'Connect Control output to a Logic Controller Control input for a supplied controller program. Programming is not available in the workshop palette.',
+      'Connect Control output to a Logic Controller Control input for a supplied controller program. Use the Rules and Code editor in the selected Logic Controller.',
     ],
   ),
   logicController: help(
-    'Runs a supplied control program',
-    'Receives connected sensor readings and can command connected receivers. Use it in a loaded machine with an externally supplied program.',
-    'The workshop has no controller programming editor. Wiring alone does not create a control program.',
+    'Runs rules or edited TypeScript',
+    'Receives connected sensor readings and commands connected receivers. Rules and edited TypeScript use the same bounded execution path.',
+    'Select this part to edit Rules or TypeScript, then Apply in Build. Wiring alone does not create a program.',
     [
       'Connect sensor Control output to controller Control input.',
       'Connect controller Control output to receiver Control input. A supplied program can command that receiver; it cannot command arbitrary parts.',

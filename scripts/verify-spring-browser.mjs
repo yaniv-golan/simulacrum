@@ -55,6 +55,7 @@ try {
     });
   });
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.waitForFunction(() => window.workshopProbe);
   const lifecycle = await context.newCDPSession(page);
   const read = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const environmentFixture = createEmptyBlueprint('environment-check', 'Environment check');
@@ -223,10 +224,17 @@ try {
   const controlled = createSpringStrut();
   controlled.parts.push(
     createPart('travelSensor', 'sensor', [1, 1, 0]),
+    createPart('powerCell', 'sensor-cell', [1, 1.2, 0]),
     createPart('positionRegulator', 'regulator', [1.2, 1, 0]),
     createPart('commandReceiver', 'receiver', [1.4, 1, 0]),
   );
   controlled.connections.push(
+    {
+      id: 'sensor-power',
+      kind: 'power',
+      a: { part: 'sensor-cell', port: 'power' },
+      b: { part: 'sensor', port: 'power' },
+    },
     {
       id: 'measurement',
       kind: 'signal',
@@ -539,7 +547,7 @@ try {
     const reading = frame.sensors.readings.find((r) => r.node === sensor);
     return {
       shown: document.querySelector('.suspension-reading')?.textContent,
-      expected: `Measured spring length ${reading.length.toFixed(3)} m · ${reading.speed.toFixed(3)} m/s`,
+      expected: `Measured spring length ${reading.channels.length.value.toFixed(3)} m · ${reading.channels.speed.value.toFixed(3)} m/s`,
     };
   });
   evidence.assert('equal', [measurement.shown, measurement.expected]);
