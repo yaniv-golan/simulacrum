@@ -1,4 +1,8 @@
 export const UI_FEATURES = Object.freeze({
+  ropeWorkshop: Object.freeze({
+    milestone: 'M3b',
+    entrypoint: 'src/presentation/rope-controls.mjs',
+  }),
   spurGears: Object.freeze({ milestone: 'M3b', entrypoint: 'src/presentation/workshop-view.mjs' }),
   controllerPrograms: Object.freeze({
     milestone: 'M3b',

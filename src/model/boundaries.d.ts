@@ -46,6 +46,7 @@ export interface CatalogDefinition {
   sensorSupply?: Readonly<{ resistance: number; minVoltage: number }>;
 }
 export interface BodyConfiguration {
+  collision?: false;
   shape: 'box' | 'cylinder' | 'sphere';
   position: Position;
   rotation: Rotation;
@@ -68,6 +69,18 @@ export type JointConfiguration = { a: number; b: number; anchorA: Vec3; anchorB:
       kind: 'fixed';
       rotationA: Quaternion;
       rotationB: Quaternion;
+      axisA?: never;
+      axisB?: never;
+      limits?: never;
+    }
+  | { kind: 'spherical'; axisA?: never; axisB?: never; limits?: never }
+  | {
+      kind: 'rope';
+      restLength: number;
+      stiffness: number;
+      damping: number;
+      strength: number;
+      maxStrain: number;
       axisA?: never;
       axisB?: never;
       limits?: never;
@@ -170,4 +183,28 @@ export interface GearEnergyLedger {
 export interface GearPhysicsBoundary {
   applyGears(): GearImpulseResult;
   gears(): readonly GearObservation[];
+}
+/** Completed segment geometry and mean tension from the last native integration. */
+export interface RopeObservation {
+  index: number;
+  pointA: Vec3;
+  pointB: Vec3;
+  length: number;
+  restLength: number;
+  strain: number;
+  elasticTension: number;
+  appliedTension: number;
+  potentialJ: number;
+}
+export interface RopeEnergyLedger {
+  ropeWorkJ: number;
+  ropeElasticDeltaJ: number;
+  ropeDampingWorkJ: number;
+  ropeNumericalLossJ: number;
+  ropeSplitWorkJ: number;
+}
+export interface RopePhysicsBoundary {
+  ropeEnergy(): RopeEnergyLedger;
+  applyRopes(): { iterations: number; residual: number };
+  ropes(): readonly RopeObservation[];
 }

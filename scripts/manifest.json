@@ -351,7 +351,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -922,6 +922,17 @@
       "tier": "browser",
       "smoke": false,
       "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-rope-browser",
+      "script": "scripts/verify-rope-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 90000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
@@ -4372,6 +4383,242 @@
           {
             "path": "test/part-placement-pending.test.mjs",
             "anchor": "pending catalog placement cannot be replaced, cancelled or submitted twice"
+          }
+        ]
+      },
+      "qualificationBars": ["F1"]
+    },
+    {
+      "id": "distributed-rope",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Authored massive tensile ropes preserve subdivision mass and compliance, completed node rendering, endpoint reactions, bounded slack and hanging behavior, applied-force readings, history and deterministic continuation within the declared collision-free rope domain. Completed-geometry work separates constitutive damping, implicit numerical loss and signed split work; session checkpoints and failure replay preserve rope telemetry and reject mismatched or internally inconsistent work receipts atomically.",
+      "owners": [
+        {
+          "path": "src/model/rope.mjs",
+          "anchor": "compileRopes"
+        },
+        {
+          "path": "src/simulation/physics/law/rope.mjs",
+          "anchor": "ropeVectorImpulses"
+        },
+        {
+          "path": "src/simulation/physics/world.mjs",
+          "anchor": "createPhysicsWorld"
+        },
+        {
+          "path": "src/simulation/session.mjs",
+          "anchor": "createSession"
+        },
+        {
+          "path": "src/presentation/rope-controls.mjs",
+          "anchor": "ropeInspector"
+        },
+        {
+          "path": "src/presentation/rope-view.mjs",
+          "anchor": "createRopeView"
+        }
+      ],
+      "checks": ["invariant-controls", "verify-rope-browser"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/rope-vector.test.mjs",
+            "anchor": "nonlinear slack and transverse extension match independent radial solution"
+          },
+          {
+            "path": "test/rope-workshop.test.mjs",
+            "anchor": "rope creation, length edit, rejected edit, undo/redo, save, deletion and Build recovery"
+          },
+          {
+            "path": "test/rope-short.test.mjs",
+            "anchor": "short slack rope on ordinary contact supports remains usable"
+          },
+          {
+            "path": "test/rope-accounting.test.mjs",
+            "anchor": "off-centre taut rope conserves independently computed momentum and does not create energy"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "massive rope free fall and absence of unadvertised collisions"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "supported hanging load has finite tensile extension and settled load"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "slack and taut native snapshots continue exactly and reject corrupt restore atomically"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "declared length and subdivision extremes retain independently predicted hanging extension"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "completed applied tension includes damping and survives snapshot restore"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "static gravity equilibrium does not claim predictor energy as actual loss"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "taut small oscillations follow the analytical damped oscillator"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "rechecksummed invalid applied-force state is rejected before native restore"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "segment reversal rejects before any force can push along its current axis"
+          },
+          {
+            "path": "test/rope-view.test.mjs",
+            "anchor": "rope mesh vertices follow completed node endpoints and resources are retained and disposed"
+          },
+          {
+            "path": "test/rope-determinism.test.mjs",
+            "anchor": "rope projections match separate processes and both production clocks"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "ordinary rope descriptor saves and compiles distributed constant mass and series compliance"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "capacity and invalid material reject while ordinary positive control admits"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "rope identity and copied reusable graphs preserve authored material and numeric plant"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "rope joins mechanical authoring and mirrored reference attachments remain explicit"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "slack chain has no compression; extended positive control pulls"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "simultaneous adjacent links match independent symmetric analytical solution"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "energy includes elastic release, gravity-free impulse work and damping"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "invalid and asymmetric mobility reject before returning impulses"
+          },
+          {
+            "path": "test/rope-towing.test.mjs",
+            "anchor": "ordinary powered wheels tow a separate load while the neutral apparatus stays still"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "rope collider exclusion suppresses actual floor and node pairs with unfiltered controls"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope session slack/taut checkpoints preserve pending input, fractional clock and full continuation"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope session rejected restores preserve cursor, physics, force readings, energy and future inputs"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope failure bundle replays recorded commands from a restored nonzero anchor and rejects wrong traces"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "completed rope ledger separates dashpot, implicit geometry loss and signed force mismatch"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "session rope ledger matches independent momentum-work and analytic native integration error"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "static hanging rope has no phantom work, damping or numerical loss and native receipt restores"
+          },
+          {
+            "path": "test/rope-linear.test.mjs",
+            "anchor": "powered linear actuator pulls a Rope load with causal controls and exact checkpoint continuation"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/rope-vector.test.mjs",
+            "anchor": "nonlinear slack and transverse extension match independent radial solution"
+          },
+          {
+            "path": "test/rope-workshop.test.mjs",
+            "anchor": "rope creation, length edit, rejected edit, undo/redo, save, deletion and Build recovery"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "slack and taut native snapshots continue exactly and reject corrupt restore atomically"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "rechecksummed invalid applied-force state is rejected before native restore"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "segment reversal rejects before any force can push along its current axis"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "capacity and invalid material reject while ordinary positive control admits"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "slack chain has no compression; extended positive control pulls"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "invalid and asymmetric mobility reject before returning impulses"
+          },
+          {
+            "path": "test/rope-towing.test.mjs",
+            "anchor": "ordinary powered wheels tow a separate load while the neutral apparatus stays still"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "rope collider exclusion suppresses actual floor and node pairs with unfiltered controls"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope session slack/taut checkpoints preserve pending input, fractional clock and full continuation"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope session rejected restores preserve cursor, physics, force readings, energy and future inputs"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope failure bundle replays recorded commands from a restored nonzero anchor and rejects wrong traces"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "completed rope ledger separates dashpot, implicit geometry loss and signed force mismatch"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "session rope ledger matches independent momentum-work and analytic native integration error"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "static hanging rope has no phantom work, damping or numerical loss and native receipt restores"
+          },
+          {
+            "path": "test/rope-linear.test.mjs",
+            "anchor": "powered linear actuator pulls a Rope load with causal controls and exact checkpoint continuation"
           }
         ]
       },

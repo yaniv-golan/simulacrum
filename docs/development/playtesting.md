@@ -10,7 +10,7 @@ For an interaction report, use **Record an issue** in the left sidebar, then Sta
 
 ## Remote setup
 
-<!-- doc-review {"version":1,"fingerprint":"c9eefcfc578d25c18d22bf965781058c9d845567825737121ae01e2349938503","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"50365b3f032bacab465cb87da85e8308d4461ac6671cb6f07cfeaa6439fb1edf","disposition":"still accurate","rationale":"Keyboard wrapping is restricted to the first and last visible stops and explicit heading/history focus, preserving native audio traversal. Draft retention, capture exclusion, attachment consent and immutable delivery semantics are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e033bf026e5d1551ef1a4d82ea8a2c357b6d7dcd9a3f3a9abd7c3115cfe94cf3","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"6cf0cfeb1bd9f9333d9d843fe3475a93bd2be907d02d79607f862ac2a97eb9cf","disposition":"still accurate","rationale":"The changed generated boundaries add rope observations and authored connection fields. Existing capture reconstruction remains observation-based and explicitly approximate; it does not promise exact pixels, materials or DOM. Independent feedback attachment opt-ins, immutable envelopes, private receipt/export ownership and capture suppression are unchanged, so recording a rope-bearing machine does not change this consent/transport contract."} -->
 
 
 

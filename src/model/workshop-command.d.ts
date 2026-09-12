@@ -24,6 +24,10 @@ export type ControlBinding = NonNullable<
 >;
 export type WorkshopCommand =
   | {
+      type: 'rope';
+      connection: Extract<import('./generated/blueprint-types.js').Connection, { kind: 'rope' }>;
+    }
+  | {
       type: 'install-controller-program';
       id: string;
       program: NonNullable<Extract<Part, { type: 'logicController' }>['controllerProgram']>;

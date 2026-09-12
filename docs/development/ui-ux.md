@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"2a28fffcca92743ec7e57148e1652b949af558a38b76fc37ff698cf3ad9dd114","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"c8bb7040694e6bbb3718ef5ac782a46bf5c5bd466e9a3bff1ce574d4dce16579","disposition":"still accurate","rationale":"No entry: static part identification extends existing rendered hardware. Existing part help and sensor examples supply explanations; the change creates no lesson, challenge, experiment or permanent teaching panel."} -->
+<!-- doc-review {"version":1,"fingerprint":"f63560c411b8e7d223abdd6f8e1590e57162b12ca077a57672c109296b406698","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"14f692ae94af52ee33d195cc43c03e779b6ecb33863421e9416eacf0d44d506b","disposition":"still accurate","rationale":"Rope extends requested connection help and offers no new lesson or example entry. Build edits preserve the remaining machine, physical failure exposes a repair, and no teaching identity grants forces or successful behavior."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"6115ab8ec219ef168170056ba107615c42a11051e8f3cf17bc7a7eb233bdb383","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"7a60d5dfb9b29f8c4a135af58762edb47c8831773012106cf2bfb7a9a287aac4","disposition":"still accurate","rationale":"The merged stylesheet retains fc4b321 catalog/placement layout and feedback dialog scroll, focus and visible-action rules. Shared family finishes are inside existing meshes and previews and add no permanent surface, learning entry or live sensor reading. The corrected Motion-category gear entry point and independent feedback draft/receipt/history lifecycle remain present; source review does not claim fresh rendered or human evidence."} -->
+<!-- doc-review {"version":1,"fingerprint":"79cc3a3f90979c64ec63870e76c431726d4c955879c95db3f739d5802e199085","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"83307c0d0d006d172e6b3e3eb64d1c0b6e17754fd562fd30fba9e294462a3fa4","disposition":"updated","rationale":"The integrated Rope paragraph matches Structure/All and rope/cable/towing discovery plus an inspector gated by explicit request or an attached rope. Build-only forms choose two surfaces and authored properties; Run exposes completed readings and the explicit collision/nominal-material/overload limitations. No lesson or permanent panel is introduced. Feedback scrolling/actions, corrected-draft/history lifecycle and Motion-category gear discovery remain preserved."} -->
 
 
 
@@ -163,6 +163,18 @@ Learning admission: extend existing part help; no new lesson or example-browser 
 
 Catalogue, part-help and assembly previews use the workshop’s part meshes and cosmetic finishes; preview lighting shares the same reflection field. These shared finishes improve recognition and connection authoring without adding a persistent panel or a learning-content entry.
 
+The catalog offers Rope in Structure, All parts and rope/cable/towing searches.
+This connection tool opens the selected part's requested
+[rope inspector](../../src/presentation/rope-controls.mjs), shown only after requesting
+Rope or selecting a part with a rope attachment. It does not displace controls on
+unrelated parts. Build owns two explicit
+surface attachments, length, diameter and material edits. Run shows completed length
+and applied tension; authoring forms leave until Build returns. The same requested
+help states the floor/body/self-collision exclusions, nominal material assumptions
+and non-breaking overload stop. No lesson or permanent canvas panel is added.
+Rope geometry follows physical nodes in Machine view and is hidden in exploded view.
+Its contextual engineering explanation identifies stretch, damping and load limits
+as uncalibrated assumptions of the simplified nylon model.
 
 The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic
 regulation shows measured and target total spring length, rather than extension from

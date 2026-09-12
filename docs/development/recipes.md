@@ -18,7 +18,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"fd442ab9e062c25aaa84ef631f1b2dae5d0d1d81444256951b2408e9cf50aad3","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"f8080c23053f35863f8b87a40f66235ad56a3c485ac36bf70b9d4229cbd15345","disposition":"still accurate","rationale":"Only the package feedback service declaration changed this section dependency relative to its reviewed main source. CATALOG, createPart, schema/geometry and compileAssembly retain their part-authoring responsibilities; feedback adds no physical part, material inference, mounting primitive or schema generation procedure."} -->
+<!-- doc-review {"version":1,"fingerprint":"4d240a0fa517ba4e55dd23cd003a2c6f43144dd9a81bb154e25447eed70dfc57","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"248f2cf3de50a3090241e8266cdf00f13459afc70e1bc93acf6cb41382d59d59","disposition":"still accurate","rationale":"Rope is admitted as an explicit connection with a dedicated strict schema and compiler, not an identity-dispatched physical part. The recipe for CATALOG parts, authored geometry/materials, feature milestones and generated validation remains accurate. Existing Ball/gear examples and ordinary core history requirements are retained."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -58,7 +58,7 @@ when changing admission.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"06ca350fc7b82a30bf7b45b74c026cdad403869322eb487fb2082dd82ca131b6","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"2737ef0969ad9fd2974b4d2aec2af22e6061081e8ab91f5ec66a5b4a40f5d5b5","disposition":"still accurate","rationale":"The package feedback service edge does not alter createWorkshop or surface-mount admission. Main cursor-guarded placement, whole-candidate compilation and atomic history are retained. Feedback draft corrections are application storage operations, not a new authored-machine command, so the existing malformed/rejected/Undo/save-load recipe remains appropriate."} -->
+<!-- doc-review {"version":1,"fingerprint":"e8faae7f9a3afcc298220a38955df69bb6585efc97262c9b125482b9db865f01","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"41a42c4a644d2c2de504e2488d0d5fbcd8ee206b298565e34ded3a36c2ed17c4","disposition":"still accurate","rationale":"The new rope command validates its exact shape, rejects replacement of non-rope connection identities and updates the prepared candidate; normal full blueprint compilation still precedes publication. This follows the existing recipe for input copying, malformed/rejected-state controls and atomic history rather than adding an alternative command owner."} -->
 
 
 
@@ -75,7 +75,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"d0cea8bc06d3020723cdc725aa5863e5211a8d56e6b0fc305829a51138d5ffb9","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"88736f65c51d723f40c1de824fb64c5a480d3cf5b50fd0932571e7feda48385a","disposition":"still accurate","rationale":"The dependency change is the package feedback service declaration. Main surface, editing, part-help containment and catalog placement owners remain unchanged; the remote browser fixture now invokes the existing catalog action helper. The recipe still requires transient previews, ordinary core commitment, cancellation and rendered/focus evidence rather than source-only approval."} -->
+<!-- doc-review {"version":1,"fingerprint":"d5ed99a8227a76091290c5ac13b219d97aa36dee146e19b4f10167c0f5376ffd","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"ae7c53d88eb36d28c64e883dc756c225ca1db9eaed661e525792df1bd89a34ba","disposition":"still accurate","rationale":"The requested rope inspector composes ordinary connection edits in the selected region and leaves forms during Run, consistent with the recipe task/home/lifecycle requirements. Catalog, surface and mirror previews retain their owners and cancellation behavior. Feedback flow visibility waits affect test synchronization only; they do not establish rendered acceptance or change public interaction semantics."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -125,7 +125,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"f60ac41ab3cba7a351a4cb51a2d67417153990cac943737111b38767b98d83f2","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"849b1af21e30cf7c9e28499afe273bb30f62f14926c2ae7771f9f47b31f9787c","disposition":"still accurate","rationale":"The package feedback service declaration adds no motion or controller diagnostic owner. diagnoseMotion and the completed decision and measurement projections remain main implementations, with separate observation cursors and historical identity. Feedback delivery status does not reinterpret physical observations or turn symptoms into cause."} -->
+<!-- doc-review {"version":1,"fingerprint":"a63eefbec0447fda52e8a5a64306f60c44652f0e52a216c41d1c22c3691d07d8","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"68f36e0148d987e35a13d4dfe3cd3c7d2882b1434a09413b7fc4d83ce298a1c5","disposition":"still accurate","rationale":"Rope completed observations add applied and elastic tension/length readings with model-domain limitations in the selected inspector. They do not alter diagnoseMotion, historical controller projection or independent selected-body measurement cursors. The existing rule to consume completed data without inferring intention or repairing authored state remains appropriate."} -->
 
 
 
@@ -155,7 +155,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"9c492f55b54a44cb5f4a8a65ff36569ee3dbc8d48b4ef4e7bad7c2a580def0b5","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"00b516ca9d300b8de0f59578fa37fa3cf20ff6c2e9bd9ddc4cd65e4f22124579","disposition":"still accurate","rationale":"The merged world, power, session, guided spring and powered linear implementations retain main behavior. Feedback transport, workload and teardown changes introduce no numerical law, phase ordering, geometry, constraint or energy-accounting change. The documented independent momentum/work controls, native settings and qualification limits remain binding."} -->
+<!-- doc-review {"version":1,"fingerprint":"aec8c25b60cc1511068555095c7be8c33fe2c3ae1cfcde4bfc22bb247eca7ab9","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"300892e5934580796650bd684abfaf825df0e98f99f60b01c78b19488bcac464","disposition":"updated","rationale":"The integrated Rope explanation matches N+1 mass-weighted nodes, N tensile elements, two spherical attachments, collision exclusion and the documented nominal E/viscosity values. The numeric solver uses 5/8 endpoint prediction, bounded convergence and unilateral tension. Session accounting retains completed rope work, elastic/damping/numerical/split terms and a mixed native remainder; restore checks intrinsic work identity and session agreement before swap. Finite controls remain separate from arbitrary-impact, hardware or human qualification."} -->
 
 
 
@@ -286,6 +286,46 @@ chain and reject a ninth independently supported mesh. The registered exclusive
 the existing 120 Hz tick and phase budgets. These simulation measurements do not
 qualify browser cadence or arbitrary larger machines.
 
+Distributed [rope compilation](../../src/model/rope.mjs) appends N+1 massive nodes,
+two ordinary spherical attachments and N tensile elements. It preserves total
+rho*A*L and series compliance L/(E*A) under subdivision. Material values are a
+nominal braided-nylon model: the inherited density/packing/strength assumptions
+are not a calibrated product rating. Effective E=100 MPa and viscosity=100 kPa s
+set a one-millisecond Kelvin–Voigt retardation time; native tick error is separate.
+Rope node colliders explicitly exclude floor, body and self collisions. Ordinary
+support bodies retain their normal contacts. No wrapping, knots or breakage follows
+from this collision-free cable domain.
+
+The [nonlinear rope law](../../src/simulation/physics/law/rope.mjs) minimizes a convex
+vector-impulse potential, solving direction and positive extension together. Its
+native-component mobility includes attachment reactions, without joining disconnected
+native graphs through numeric rope edges. Constant forces act during the one native
+step; its four subdivisions imply a 5/8 acceleration factor in the endpoint predictor.
+Convergence, strength, completed stretch and predicted direction reversal have
+explicit limits. A fault reports ROPE_MOTION_LIMIT and retains ordinary Build repair.
+Contacts and rotating native constraints remain split from this predictor, so finite
+angular-momentum and energy errors require independent apparatus measurements.
+
+Completed native positions own geometry and elastic potential. Applied mean tension
+includes damping and is stored in the rope snapshot envelope; elastic tension is a
+separate diagnostic. A completed-displacement ledger separates raw constant-force
+work, elastic change, nonnegative Kelvin-reference dissipation and implicit geometric
+loss, plus signed work correcting the reference to the submitted force. These are
+discrete mechanical model terms, not measured heat. The session removes those rope
+terms from its signed native integration remainder; projected attachment reactions,
+rotation and contacts remain combined in that remainder. Do not label the remainder
+pure integration error in a constrained apparatus. The rope snapshot stores the
+completed ledger, and restore checks its intrinsic work identity and matching session
+energy fields before swapping native state. Preserve [independent ledger oracles](../../test/rope-energy-ledger.test.mjs),
+[session restore and failure replay](../../test/rope-session.test.mjs),
+[powered actuator pulling controls](../../test/rope-linear.test.mjs),
+[independent accounting](../../test/rope-accounting.test.mjs),
+[force and restore controls](../../test/rope-receipts.test.mjs),
+[analytic and subdivision controls](../../test/rope-physics.test.mjs), and
+[both clock drivers](../../test/rope-determinism.test.mjs). Use the
+[bounded capacity measurement](../../scripts/measure-ropes.mjs) for sustained ordinary
+support contact; this does not qualify arbitrary impacts, duration or hardware.
+
 Run the actual gate; a workshop smoke pass does not qualify a Course bar.
 
 [Sphere physics controls](../../test/ball-physics.test.mjs#source) cover analytical
@@ -321,10 +361,10 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"6b6597fc128fe3318274ea11194cc48daaafe745ebd154876621974bd75e78a2","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"dfd558e0b08380d127257d6f1eb847a62d35f443566db037a0ea1d0740b6748c","disposition":"still accurate","rationale":"The package feedback service relation leaves connection membership, binding remapping, model proposals and assembly persistence unchanged. Main catalog helper still performs browse/preview/Place/Done through the real placement surface. The retained capture/copy/insert/history and named-port construction recipe remains accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"4f908b6cf38b75aa6245544f8ea3606dc94417ab78f5c1ae341c43db07d82f32","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"b3203b4bd63301be3b54dcc12c87008eb3cddb9cb4bb92693aa9baec94901468","disposition":"updated","rationale":"The section explicitly extends mechanical membership to rope edges, matching mechanicalGroup. Connection classification still reports internal/boundary/external facts while operation-specific copy/mirror admission owns handling. Rope endpoint transforms and authored settings use the same whole-candidate validation and history; editor groups and library membership remain distinct from physical connectivity."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
-means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
+means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
 library group. Classify a selection's internal and crossing connections before choosing
 which edges an operation may copy. The classifier reports facts; the operation owns
 whether a crossing edge is omitted, rejected or explicitly rebound. Mount admission
@@ -414,7 +454,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"2b63a561b6396f8aa09fd77000d82f9b3e54e824cd17b68e0c2b55630e3b0829","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"cc75c956a8897e57c91a57fbcb29481315ffaae73a47bba93179b4dcd58df019","disposition":"still accurate","rationale":"The retained section now describes the shared part-mesh owner and static sensor/electronics/mechanical families. Source passes only authored dimensions, axis and ports, marks family coatings non-pickable, and disposes their maps/materials/geometry through disposePart. Axis changes invalidate appearance keys while binding and power changes do not. Feedback DOM previews and verification scheduling neither change these resource/physics boundaries nor relax the documented performance ceilings."} -->
+<!-- doc-review {"version":1,"fingerprint":"60c3b2e93d76c40b3ec48edf06cfe59ce5218f0c07c627d56400b8e89965e162","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"9fe80a4eec5db044115ee913e315abb4e815077a50e1fb2ea9a329d8cc718d2f","disposition":"updated","rationale":"The new Rope paragraph matches retained cylinders between completed node centres in createRopeView, with rendered endpoint readback and disposal. Workshop composition hides ropes during exploded transitions and restores Machine-view geometry. The shared static part coatings, resource ownership and existing spring performance obligations remain intact; no decorative sag or endpoint rod replaces physical nodes."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -489,6 +529,13 @@ paused updates, cancellation and remount cleanup through the shared browser harn
 Use existing registered connection-test/exploded browser checks and the interaction
 probe for visible versus structured state. A view toggle is not an editing transaction;
 do not route it through authoring just to reuse Undo tests.
+
+The [rope renderer](../../src/presentation/rope-view.mjs) retains straight segment
+meshes between completed physical node centres; it does not synthesize a decorative
+sag curve or a rigid endpoint rod. Rope is hidden through exploded-view transitions
+and returns in Machine view. [Endpoint controls](../../test/rope-view.test.mjs) and
+[ordinary browser construction](../../scripts/verify-rope-browser.mjs#implementation)
+compare mesh readback to completed physics and exercise length edits and recovery.
 
 The [guided coil renderer](../../src/presentation/spring-view.mjs) retains its vertex
 buffers and fixed wire radius while following completed endpoint transforms. Selection
