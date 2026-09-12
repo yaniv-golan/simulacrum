@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"46a56cb408f0dd2cc8bdc1a5b46aeab04241dfd67e3a2944c50a1aca82aa9025","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"9e7a232b7d1d638ac85651062ceff81f1a12bb6e217575a18f7d5042b6b394c3","disposition":"still accurate","rationale":"The new Rope check changes the generated registry and reachable source inventory. Per-section source-bound reviews, isolated scope witnesses and merge candidate verification remain required; the documentation publication algorithm is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"bccd4941e8ec649c41e5f6161aebed330acb1aadf061e6425c8097952a78633e","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"eb51741cc9d88ebeaa279ff80e47c8f95109382eb4ff7a1a7b986bcdff9a094c","disposition":"still accurate","rationale":"The generated reference now includes the Rope verifier and Release Coupler integration. Documentation generation, source-bound section review and frozen candidate admission retain the same owners and ordering."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"5193a3c53ecaf5977092810104b4f1893f3f0a42d26c7f6348e0a154a0ef11a4","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7c1cfa7ec9ac7e0ce92298eac56812f5cff078faed756ad2848959eb6ae8c800","disposition":"still accurate","rationale":"The ledger and session witnesses add reverse consumers of identity helpers but no new runtime reader or browser admission rule. The documented explicit per-reader scope review and isolated witness application remain required; no coverage exemption was added."} -->
+<!-- doc-review {"version":1,"fingerprint":"119660a3592754e0f1bb78000fcd93a8977f08f31d180fa7166d07259e1be890","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"f9fd6d13ab32f6b7252fe0382e535cf71738dac493e43f69b7ec01a37ee00b23","disposition":"still accurate","rationale":"Inspected the combined scope proposal: reader shapes and read domains are retained, while Rope adds browser and identity consumers. Explicit scope review and mandatory witnesses remain required. The prerequisite retains optional atomic history, bounded admission and exclusive focus-sensitive checks."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -502,7 +502,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"348d52bb90e2fee2536defc08481b2618fe49910fe3cf95ed49f0f6610003c7a","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"859d22bc2c5d1b53cbaf376c1f5b21f645f8784172131f47a266d628c2619850","disposition":"still accurate","rationale":"Rope changes completed physics receipts and tests, not candidate capture, installation, origin drift checks or tier selection. This work still requires a fresh isolated local candidate after scope and documentation closure."} -->
+<!-- doc-review {"version":1,"fingerprint":"a5a00f937185ec6ff7d4785328dc76d6107fb2ef81633452df59bd48b06f5cd9","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8a3045611a836b51f1246a32a143dd6cc915755a07a3496600a90b0868034b7f","disposition":"still accurate","rationale":"Rope and Release Coupler expand compiled and completed state, not candidate capture or drift admission. The combined bytes still require isolated merge verification and a final unchanged destination; scheduling hints do not grant reusable coverage."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

@@ -10,7 +10,7 @@ For an interaction report, use **Record an issue** in the left sidebar, then Sta
 
 ## Remote setup
 
-<!-- doc-review {"version":1,"fingerprint":"9d918f81408dcf4a2d528fbe8884a94546edda783313585cd4635cf529702b1b","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"5793fbc3626f7405a27b5c7f14031d394ea981276c227128e414c10f865840ce","disposition":"still accurate","rationale":"New Rope snapshot receipts remain session data. Recording transport, consent, upload limits, exporter reconstruction and remote setup are unchanged; the section explicitly distinguishes implementation coverage from the identity of the served build."} -->
+<!-- doc-review {"version":1,"fingerprint":"73a7cfa7e3f776e4d57a9c14ec940fb86ab801717bbf91ecfbc4466e6df6f59a","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"d03b6285bd9ffd986eff803f909a47515ba295341a6f4b07e0c6297919bc90f5","disposition":"still accurate","rationale":"Catalog and boundary changes admit Rope and Release Coupler state without changing capture consent, durable outbox, transport or exporter reconstruction. Served-build identity and recorded payload provenance remain separate requirements."} -->
 
 
 

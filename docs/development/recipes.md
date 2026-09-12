@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"1285b873af6ecc60dd3c2efc18e45c4cf6941439fbf36515a40091293dff1ef4","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"81a7e47598b2697d26f48f241c9959f08ae308463193420594d52821becc2a25","disposition":"still accurate","rationale":"Rope property bounds and material admission are unchanged. The new completed work receipt and explicit uncalibrated-model copy preserve the existing schema/compiler/material ownership and independent mass and geometry checks."} -->
+<!-- doc-review {"version":1,"fingerprint":"53fc672b6f62f755fb7b95ad4b05d95f68dd039257509421cfabb1184a75287a","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"ab24a5b8e2ff0f93ea171a968de616e08e407e81b48a9da593467dfca8cc0185","disposition":"updated","rationale":"Clarified that releaseFace limits fixed attachments only: a Rope may share the face and retains its spherical anchor. Catalog/schema/compiler and authored material remain the admission owners; two latch faces still cannot own the same fixed attachment."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -66,7 +66,7 @@ material choices, conflict rejection and ordinary editing history.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"f732ee3436f220392df3c67c61f0d5da344e02fb81795c834a35ed76a39d3b4a","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"30babae61d4a864fc6d1042113548dfd46a3abab107b474c4bb5f15a98195270","disposition":"still accurate","rationale":"Rope attachment and edit commands use existing strict blueprint compilation, cursor checks and atomic history publication. The command recipe still requires model admission, core transactions and replay controls rather than view-owned changes."} -->
+<!-- doc-review {"version":1,"fingerprint":"196c256a01fcf9a9bc88869303d8d2be758d999381f5174fae61f313c8fce2be","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"18df573289d598013039e42ccda8461e93d1d36294f785c5094e2ca4db0d2630","disposition":"still accurate","rationale":"The integration changes native topology and checkpoint validation, not Build command transactions. Rope authoring and Release Coupler edits still use strict blueprint compilation and one atomic history operation through core."} -->
 
 
 
@@ -83,7 +83,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"ec0ddd3e07b561f42565f9f6fd4a6fa6579219713183a3c58e9cba11f94c83ff","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"3da48273af04dd85bbe0814fddb3a191885f04af191cb984ec1403f782ff5b71","disposition":"still accurate","rationale":"Rope is a requested catalog connection action opening the selected inspector. Its summary uses catalog focus and hover events, and ordinary card focus restores the favorite action. Placement locking, cancellation and command ownership remain with their existing owners."} -->
+<!-- doc-review {"version":1,"fingerprint":"37e577335693c58f16db6bf0bb7ebe7bca05992a6c2008655c2c37504e1480b5","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"6aae36807048e4005adb79fc5c6f321df0025ac5383d0119bdddc219d3faa8fd","disposition":"still accurate","rationale":"The fixed-only release classifier changes displayed attachment status, not pointer or receiver ownership. Requested Rope controls, ordinary core commands, help input containment and placement cancellation retain their existing lifecycles."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -132,7 +132,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"b6d79b943efe109d8cfe91de152981e40403c105c1590be626ec717ba52fbedb","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"ccaf7d42c04c1d43a4efaed18f6ccf8da583cebcfafb7250c56b9b6855708c6c","disposition":"still accurate","rationale":"The added energy fields are completed copied telemetry from the physics door. They do not change motion diagnosis or measurement-window ownership, and nominal material wording avoids claiming a measured product rating."} -->
+<!-- doc-review {"version":1,"fingerprint":"6f02fd9c197b0502e1c7d03749b87615e60fe0d26ede081aef185b440b0246f3","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"a1597f115e88a5dd9eeb8df483217d8783eeb7cfcf620f89b3a891eaf2345a93","disposition":"still accurate","rationale":"Released status and retained Rope tension use completed copied telemetry. No diagnostic writes physics, infers intent from names or changes the independent measurement cursor; the recipe continues to require positive and quiet controls."} -->
 
 
 
@@ -162,7 +162,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"ab5153376e9022bfe1338e482e3d1da00a75c30423a046fd16daad8bea7d3f52","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"7c0347050e3d54c082c043e40a9cf9cb6bb846fc2d7cdc8ffb903af36c6436b8","disposition":"updated","rationale":"Rewrote Rope accounting to distinguish constant-force work, completed-geometry Kelvin-reference dissipation, implicit loss, signed split work and combined native remainder. Added ledger/replay witness links and intrinsic receipt validation, and corrected the Kelvin-Voigt retardation time terminology."} -->
+<!-- doc-review {"version":1,"fingerprint":"df0c91dba1e851ee49cfdfd0abb3d873d20005d0142f1e7fe51976f6fd1fbfe9","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"15b0bbc6817cd9c43086e38efa060d2d5c16877296e82a7f8d1fb78db58b9c14","disposition":"updated","rationale":"Documented combined envelope 8 and pre-swap cross-validation of opened joints and Rope work. Preserved spherical anchors and excluded numeric Rope links from bilateral response groups. Added independent tether, checkpoint, wrong-label and invented-impulse controls, retaining bounded Rope motion admission."} -->
 
 
 
@@ -400,7 +400,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"09bee925e309a56d09ff39155cd499a105e2515d7b77feac684449a2c206b57a","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"435fd51f972298a3f3dd47359f9baef1fbafc01940b46bf970ba21242bd2cf54","disposition":"updated","rationale":"Mechanical membership now includes Rope links. Mirroring reflects authored surface endpoints and reusable capture preserves Rope connection fields; ordinary compilation remains the admission boundary."} -->
+<!-- doc-review {"version":1,"fingerprint":"1b43a2ada70f4256fb8c1ec7d2ec3b8190694748e285131a7054765cffbd7fd2","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"5f445a94f5260cbd9df3c00f102c37de77b509acb1b5a60bdd5a8ed3380d0069","disposition":"still accurate","rationale":"Build mechanical membership includes authored Rope links and fixed Coupler attachments. Runtime opening does not edit the blueprint or reusable assembly. Existing copy/mirror remapping, whole-candidate compilation and history ownership remain accurate."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -493,7 +493,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"f1ede4e715d93b745eba6dc5a7d1b6697afd86e1f26f5e9be8977abc66ab2b05","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"bc9157b225ddb718d759f91c5568a75ef21d6d13732ce9bb620fcd0943220ff8","disposition":"updated","rationale":"Added retained Rope segment rendering between completed physical nodes, exploded-view hiding and endpoint-agreement witnesses. The overlay does not author poses or apply support forces. Shared canonical part meshes, authored-axis appearance and static family finishes remain intact; Rope retains its separate completed-node renderer."} -->
+<!-- doc-review {"version":1,"fingerprint":"cdbeb055e550dac3423f7452bf0fddde01f1e9656f5c72831a6661ecaab5dfc3","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"46ce7bad013aed5275e6c22ad315886fe19e325128139c50075ae8b43859bd3c","disposition":"updated","rationale":"Documented the shared fixed-only release classifier and retained dedicated Rope rendering. A Rope sharing the latch face is not labeled open or rendered as a generic fixed link; completed geometry and resource disposal remain presentation-owned."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

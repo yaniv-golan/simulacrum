@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"a04b531965db48b83f9b08e8e2b6d80414fd489d2938d3a0b3953510b582cbc6","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"e84de9aa70932e686aafcdc7909d8a067037928355610bedf423967fdc294682","disposition":"still accurate","rationale":"The corrected runtime contract now states envelope 4/5/6 admission and released-joint ownership. The overview still correctly assigns clocks, cursors, replay and state ownership to that contract, layer edges to AGENTS and check metadata to the manifest; no implementation owner or architecture edge changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"e11461d04db3d1be7c7cde5dbd22caee28457be3c2ee5531301c608609e24d7c","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"50f9df7344cdd38a4153e17e67b42e0a70f880811ec88fc70eb79f3d96394daf","disposition":"still accurate","rationale":"The runtime contract now owns distinct envelopes 4 through 8, including independent opened-joint and Rope work validation. The overview correctly delegates checkpoint/state ownership to that contract without duplicating format details."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"6389bb6e37a8ca38267781fbfb948e32753578647b4b78578484c892216cd5d8","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"884c130de12e70405d1b449ac28fac01b000842b719a389629e815e5ce9365b6","disposition":"updated","rationale":"Added Rope controls and compilation to the existing application-to-core command flow. Catalog discovery opens requested attachment controls; physical state remains owned by simulation and completed telemetry. Shared canonical part meshes, authored-axis appearance and static family finishes remain intact; Rope retains its separate completed-node renderer."} -->
+<!-- doc-review {"version":1,"fingerprint":"3acaed5df6f76c08fbbe93e93e2646edb901f81f8f24071a13ee65bffd06e4b7","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"c56802110a7242a01b4d363fad6f05ec90020b483897a02686efc34b9062e8d9","disposition":"updated","rationale":"Added the release and Rope integration boundary: spherical anchors survive fixed release, numeric rope links remain outside native response groups, and Rope consumes the prepared post-release response before the one integration. Existing part-mesh composition and copied completed publication remain intact."} -->
 
 
 
@@ -85,7 +85,7 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"6cb83a87145776ee101ed5582a6ad4a05c7a784e8b257c5f24340d4a9ea5caa1","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"d2093e3987cd46efc2f99097b827f2d981a53d9e4571eb3d25a513fdccc1aa37","disposition":"updated","rationale":"Added the Rope model and numeric law as canonical property and constraint owners. Presentation reads their completed geometry; material and physical choices do not derive from catalog identity. Shared canonical part meshes, authored-axis appearance and static family finishes remain intact; Rope retains its separate completed-node renderer."} -->
+<!-- doc-review {"version":1,"fingerprint":"08b7b9014e084db3a788483c638ccddc565cd70a4587c92b2c4e0e317aeebb08","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"401fa36faacb493f1b389c9579e647de43e164da9d2c2d1c5e1bd62fc8060eea","disposition":"updated","rationale":"Added the fixed-only releasedAttachment classifier as the shared inspector and generic-overlay owner. Rope retains its independent completed-node renderer and numeric law; cosmetic part meshes do not acquire physical authority."} -->
 
 
 
@@ -139,7 +139,7 @@ Ground contact and workshop motion are not Course qualification.
 
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"f47f60a328785d2789cfb23b0a91a08603f8962c301fb279436bf9ab14053fbc","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"8e8e0a44dc5ace4245f6b3ca88b2d03d020c15dd341f12163cabc258bd60c384","disposition":"still accurate","rationale":"Completed Rope work fields do not alter channel descriptors, prior-tick sensor sampling, controller dispatch, power funding or learning history. Restore tests exercise the existing session boundary without moving these owners."} -->
+<!-- doc-review {"version":1,"fingerprint":"4ab2c5412e657bfd62b9721ef65a5d143bf56a0512bf7476087c5e6611458504","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"c23ac08fcb6c47f365b10db90f582daa631f2c0103c2e629f69a5863ac75a3ca","disposition":"still accurate","rationale":"The combined restore signature validates both opened joints and Rope work, while coil funding remains in shared power. Prior-tick sensing, receiver arbitration, controller dispatch and learning history boundaries are unchanged."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;
