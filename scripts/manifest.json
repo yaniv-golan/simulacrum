@@ -365,7 +365,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -3601,6 +3601,10 @@
         {
           "path": "scripts/verify-browser-suite.mjs",
           "anchor": "withBrowserReport"
+        },
+        {
+          "path": "scripts/verification-cleanup.mjs",
+          "anchor": "withCleanup"
         }
       ],
       "checks": [
@@ -3621,6 +3625,10 @@
           {
             "path": "test/browser-report.test.mjs",
             "anchor": "final alias publication failure cannot leave authoritative success"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "cleanup attempts every resource despite phase publication and close failures"
           }
         ]
       },
@@ -3639,6 +3647,10 @@
         {
           "path": "scripts/ci.mjs",
           "anchor": "runCI"
+        },
+        {
+          "path": "scripts/browser-history.mjs",
+          "anchor": "returnBrowserHistory"
         }
       ],
       "checks": [
@@ -3683,6 +3695,22 @@
           {
             "path": "test/browser-report.test.mjs",
             "anchor": "actual suite allows four-worker probes and rejects completion-context overrides"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "history rejects late stale outcomes and preserves newer observations"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "history publication cannot be permanently blocked by an interrupted writer"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "legacy candidate returns only newly executed report outcomes"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "history removes abandoned temporary files while preserving live writers"
           }
         ]
       },
@@ -5090,17 +5118,11 @@
           ]
         }
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
-      "consumerSourceHash": "e6c3839807c2fa8a54f9aac43d9005c35d1550185e26142ac39d3ecf66d690c0",
-      "externalImports": [
-        "node:fs",
-        "node:os",
-        "node:path"
-      ],
-      "consumers": [
-        "scripts/verify-cloud-playtest.mjs"
-      ],
-      "sourceSha256": "22778ee28083b71a4163d438538ef213b22e3a5654fc13519b3b8fc79b53738f",
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "externalImports": ["node:fs", "node:os", "node:path"],
+      "consumers": ["scripts/verify-cloud-playtest.mjs"],
+      "sourceSha256": "980b7c598b8a6a845a3a49526b6299bb54dd9f5c49ecd37f53fe9e74f3f23998",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -5113,6 +5135,7 @@
         "scripts/playtest/load.mjs",
         "scripts/playtest/local-cloud.mjs",
         "scripts/playtest/release-policy.mjs",
+        "scripts/verification-cleanup.mjs",
         "src/application/capture-stream.mjs",
         "src/model/blueprint.mjs"
       ]
@@ -5139,13 +5162,9 @@
           ]
         }
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
-      "consumerSourceHash": "7e18554153dc406f3907fdbbc2357e8f604d06538a04924a5e31ef7690fd29b0",
-      "externalImports": [
-        "node:assert/strict",
-        "node:crypto",
-        "node:fs"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
+      "externalImports": ["node:assert/strict", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/qualify-workshop.mjs",
         "scripts/verify-adaptive-graphics.mjs",
@@ -5225,13 +5244,9 @@
           ]
         }
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
-      "consumerSourceHash": "7e18554153dc406f3907fdbbc2357e8f604d06538a04924a5e31ef7690fd29b0",
-      "externalImports": [
-        "node:child_process",
-        "node:crypto",
-        "node:fs"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
+      "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/assess.mjs",
         "scripts/bars.mjs",
@@ -5357,13 +5372,9 @@
           ]
         }
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
-      "consumerSourceHash": "26fa116c24d9b020494ad2de8f9562aa46fd77c52a0cff571ba7927aea28a1ca",
-      "externalImports": [
-        "node:child_process",
-        "node:crypto",
-        "node:fs"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "7547100d6f8413c04edb22b7ede3a31ddfa4f22011772e1d51e91007d25c3c07",
+      "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
@@ -5555,8 +5566,8 @@
           ]
         }
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
-      "consumerSourceHash": "e6c3839807c2fa8a54f9aac43d9005c35d1550185e26142ac39d3ecf66d690c0",
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -5620,12 +5631,9 @@
           ]
         }
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
-      "consumerSourceHash": "e6c3839807c2fa8a54f9aac43d9005c35d1550185e26142ac39d3ecf66d690c0",
-      "externalImports": [
-        "node:crypto",
-        "node:fs/promises"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "externalImports": ["node:crypto", "node:fs/promises"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
         "scripts/playtest/calibration-bundle.mjs",
@@ -5676,19 +5684,10 @@
           ]
         }
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
-      "consumerSourceHash": "e6c3839807c2fa8a54f9aac43d9005c35d1550185e26142ac39d3ecf66d690c0",
-      "externalImports": [
-        "esbuild",
-        "miniflare",
-        "node:fs/promises",
-        "node:path",
-        "node:path"
-      ],
-      "consumers": [
-        "scripts/verify-cloud-playtest.mjs",
-        "scripts/verify-remote-playtest.mjs"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "externalImports": ["esbuild", "miniflare", "node:fs/promises", "node:path", "node:path"],
+      "consumers": ["scripts/verify-cloud-playtest.mjs", "scripts/verify-remote-playtest.mjs"],
       "sourceSha256": "66e915cda215738b8a0fcc5d913d7b7e739f7e7f0ba5417f52b37533151afb9e",
       "entrypoint": "scripts/playtest/local-cloud.mjs",
       "dependencies": []
@@ -5707,13 +5706,9 @@
           ]
         }
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
-      "consumerSourceHash": "e6c3839807c2fa8a54f9aac43d9005c35d1550185e26142ac39d3ecf66d690c0",
-      "externalImports": [
-        "node:fs/promises",
-        "node:path",
-        "node:url"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "externalImports": ["node:fs/promises", "node:path", "node:url"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
         "scripts/playtest/calibration-bundle.mjs",
@@ -5846,8 +5841,8 @@
           ]
         }
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
-      "consumerSourceHash": "0338af698a4418b501c4e4f3edc3d5f161cc1842e6997620e399325ca1c71f20",
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "57f1c36dbc105c0de95339d1aeed1005d64640f17a1e95e1bd8961f84804f36e",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -5928,16 +5923,9 @@
           ]
         }
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
-      "consumerSourceHash": "7e18554153dc406f3907fdbbc2357e8f604d06538a04924a5e31ef7690fd29b0",
-      "externalImports": [
-        "acorn",
-        "css-tree",
-        "node:fs",
-        "node:path",
-        "parse5",
-        "typescript"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
+      "externalImports": ["acorn", "css-tree", "node:fs", "node:path", "parse5", "typescript"],
       "consumers": [
         "scripts/analysis-snapshot.mjs",
         "scripts/app-fingerprint.mjs",
@@ -6160,13 +6148,9 @@
           ]
         }
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
-      "consumerSourceHash": "e6c3839807c2fa8a54f9aac43d9005c35d1550185e26142ac39d3ecf66d690c0",
-      "externalImports": [
-        "node:crypto",
-        "node:fs/promises",
-        "node:path"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "externalImports": ["node:crypto", "node:fs/promises", "node:path"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
         "scripts/playtest/calibration-bundle.mjs",

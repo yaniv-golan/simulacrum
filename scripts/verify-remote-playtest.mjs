@@ -1,3 +1,4 @@
+import { withCleanup, errorMessages } from './verification-cleanup.mjs';
 import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
@@ -125,6 +126,8 @@ page.on('response', (response) => {
   if (new URL(response.url()).pathname === '/api/playtest/v2/session' && response.ok())
     capturedSession = response.json().then((value) => value.sessionId);
 });
+let executionError,
+  executionFailed = false;
 try {
   await page.context().grantPermissions(['microphone']);
   phase('setup');
@@ -627,54 +630,70 @@ try {
     );
   console.log('remote capture browser passed', adapter);
 } catch (error) {
-  phase('failed');
-  let finalFailureOutbox, diagnosticTimeout;
+  executionFailed = true;
+  executionError = error;
   try {
-    finalFailureOutbox = await Promise.race([
-      sampleOutbox(),
-      new Promise((resolve) => {
-        diagnosticTimeout = setTimeout(() => resolve({ unavailable: true }), 5000);
+    phase('failed');
+    let finalFailureOutbox, diagnosticTimeout;
+    try {
+      finalFailureOutbox = await Promise.race([
+        sampleOutbox(),
+        new Promise((resolve) => {
+          diagnosticTimeout = setTimeout(() => resolve({ unavailable: true }), 5000);
+        }),
+      ]);
+    } catch {
+      finalFailureOutbox = { unavailable: true };
+    } finally {
+      clearTimeout(diagnosticTimeout);
+    }
+    // Preserve bounded numeric diagnostics even when receipt or drain fails.
+    // Do not export invitation URLs, payload bodies, comments or credentials.
+    mkdirSync(output, { recursive: true });
+    writeFileSync(
+      join(output, 'transport-failure.json'),
+      JSON.stringify({
+        outboxSamples,
+        resourceSamples,
+        uploadTimings,
+        finalFailureOutbox,
+        phaseTimings,
       }),
-    ]);
-  } catch {
-    finalFailureOutbox = { unavailable: true };
-  } finally {
-    clearTimeout(diagnosticTimeout);
-  }
-  // Preserve bounded numeric diagnostics even when receipt or drain fails.
-  // Do not export invitation URLs, payload bodies, comments or credentials.
-  mkdirSync(output, { recursive: true });
-  writeFileSync(
-    join(output, 'transport-failure.json'),
-    JSON.stringify({
-      outboxSamples,
-      resourceSamples,
-      uploadTimings,
-      finalFailureOutbox,
-      phaseTimings,
-    }),
-    { mode: 0o600 },
-  );
-  await browserEvidence.captureFailure(error);
+      { mode: 0o600 },
+    );
+    await browserEvidence.captureFailure(error);
 
-  await page.screenshot({ path: join(output, 'failure.png') });
-  writeFileSync(join(output, 'failure.txt'), await page.locator('body').innerText());
-  throw error;
-} finally {
-  try {
-    browserEvidence.assertUnchanged();
-  } finally {
-    phase('browser-close');
-    await browser.close();
-    if (server) {
-      phase('server-close');
-      server.closeAllConnections();
-      await new Promise((r) => server.close(r));
-    }
-    if (cloud) {
-      phase('cloud-close');
-      await cloud.close();
-    }
-    phase('closed');
+    await page.screenshot({ path: join(output, 'failure.png') });
+    writeFileSync(join(output, 'failure.txt'), await page.locator('body').innerText());
+  } catch (diagnosticError) {
+    executionError = new AggregateError(
+      [error, diagnosticError],
+      [error, diagnosticError].flatMap((e) => errorMessages(e)).join('; '),
+    );
   }
+} finally {
+  await withCleanup(
+    () => {
+      if (executionFailed) throw executionError;
+    },
+    () => browserEvidence.assertUnchanged(),
+    () => phase('browser-close'),
+    () => browser.close(),
+    () => {
+      if (server) phase('server-close');
+    },
+    () => {
+      if (server) server.closeAllConnections();
+    },
+    () =>
+      server &&
+      new Promise((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      ),
+    () => {
+      if (cloud) phase('cloud-close');
+    },
+    () => cloud?.close(),
+    () => phase('closed'),
+  );
 }

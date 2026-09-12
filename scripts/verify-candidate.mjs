@@ -1,4 +1,9 @@
-import { readBrowserHistory, writeBrowserHistory } from './browser-history.mjs';
+import {
+  readBrowserHistory,
+  writeBrowserHistory,
+  returnBrowserHistory,
+  browserHistoryRunId,
+} from './browser-history.mjs';
 import { mergeChanges } from './merge-selection.mjs';
 import { parseCompletionArgs } from './verification-tiers.mjs';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
@@ -137,10 +142,21 @@ try {
   const originHistory = join(origin, historyPath),
     candidateHistory = join(candidate.destination, historyPath);
   try {
-    writeBrowserHistory(candidateHistory, [...readBrowserHistory(originHistory).values()]);
+    writeBrowserHistory(
+      candidateHistory,
+      [...readBrowserHistory(originHistory).values()].map((row) => ({
+        ...row,
+        observedAt: row.observedAt ?? 1,
+      })),
+    );
   } catch (error) {
     report.historyWarning = error.message;
   }
+  const candidateBrowserReport = join(
+    candidate.destination,
+    'artifacts/browser-suite/last-run.json',
+  );
+  const previousBrowserRun = browserHistoryRunId(candidateBrowserReport);
   let result;
   try {
     result = await timing.measure('tier-including-window', () =>
@@ -173,7 +189,7 @@ try {
     result = error;
   }
   try {
-    writeBrowserHistory(originHistory, [...readBrowserHistory(candidateHistory).values()]);
+    returnBrowserHistory(originHistory, candidateBrowserReport, previousBrowserRun);
   } catch (error) {
     report.historyWarning = error.message;
   }

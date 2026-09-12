@@ -329,3 +329,128 @@ test('actual suite allows four-worker probes and rejects completion-context over
   assert.match(rows[1].failure, /explicit development probes/);
   assert.deepEqual(rows[1].runs, []);
 });
+
+test('cleanup attempts every resource despite phase publication and close failures', async () => {
+  const { withCleanup } = await import('../scripts/verification-cleanup.mjs');
+  const calls = [];
+  const primary = Error('execution failed');
+  const reporting = Error('phase publication failed');
+  const closing = Error('browser close failed');
+  await assert.rejects(
+    withCleanup(
+      async () => {
+        throw primary;
+      },
+      () => {
+        calls.push('phase');
+        throw reporting;
+      },
+      () => {
+        calls.push('browser');
+        throw closing;
+      },
+      () => {
+        calls.push('server');
+      },
+      () => {
+        calls.push('cloud');
+      },
+    ),
+    (error) => {
+      assert.deepEqual(calls, ['phase', 'browser', 'server', 'cloud']);
+      assert.deepEqual(error.errors, [primary, reporting, closing]);
+      return true;
+    },
+  );
+  assert.equal(
+    await withCleanup(
+      () => 42,
+      () => calls.push('success'),
+    ),
+    42,
+  );
+});
+
+test('history rejects late stale outcomes and preserves newer observations', async (t) => {
+  const { readBrowserHistory, writeBrowserHistory } = await import(
+    '../scripts/browser-history.mjs'
+  );
+  const root = mkdtempSync(join(tmpdir(), 'late-history-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = join(root, 'history.json');
+  writeBrowserHistory(path, [{ id: 'check', ok: false, observedAt: 200, observationId: 'new' }]);
+  writeBrowserHistory(path, [{ id: 'check', ok: true, observedAt: 100, observationId: 'old' }]);
+  assert.equal(readBrowserHistory(path).get('check').ok, false);
+  writeBrowserHistory(path, [
+    { id: 'check', ok: true, elapsedMs: 3, observedAt: 300, observationId: 'latest' },
+  ]);
+  assert.equal(readBrowserHistory(path).get('check').elapsedMs, 3);
+  // A competing snapshot publisher read before the newer failure completed.
+  writeBrowserHistory(path, [{ id: 'check', ok: false, observedAt: 400 }]);
+  writeFileSync(path, JSON.stringify({ runs: [{ id: 'check', ok: true, observedAt: 300 }] }));
+  assert.equal(readBrowserHistory(path).get('check').ok, false);
+  for (let observedAt = 500; observedAt < 510; observedAt++)
+    writeBrowserHistory(path, [{ id: 'check', ok: true, observedAt }]);
+  const { readdirSync } = await import('node:fs');
+  assert.equal(readdirSync(`${path}.observations`).length, 2);
+});
+
+test('history publication cannot be permanently blocked by an interrupted writer', async (t) => {
+  const { readBrowserHistory, writeBrowserHistory } = await import(
+    '../scripts/browser-history.mjs'
+  );
+  const root = mkdtempSync(join(tmpdir(), 'interrupted-history-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const path = join(root, 'history.json');
+  writeFileSync(`${path}.lock`, '');
+  writeBrowserHistory(path, [{ id: 'check', ok: false }]);
+  assert.equal(readBrowserHistory(path).get('check').ok, false);
+});
+
+test('legacy candidate returns only newly executed report outcomes', async (t) => {
+  const { readBrowserHistory, writeBrowserHistory, returnBrowserHistory } = await import(
+    '../scripts/browser-history.mjs'
+  );
+  const root = mkdtempSync(join(tmpdir(), 'legacy-history-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const origin = join(root, 'origin.json'),
+    report = join(root, 'last-run.json');
+  writeBrowserHistory(origin, [{ id: 'check', ok: true, observedAt: 1 }]);
+  writeFileSync(
+    report,
+    JSON.stringify({
+      runId: 'new',
+      startedAt: new Date(100).toISOString(),
+      runs: [
+        { id: 'check', ok: false },
+        { id: 'unstarted', status: 'queued' },
+        { id: 'reused', ok: true, reused: true },
+      ],
+    }),
+  );
+  returnBrowserHistory(origin, report, 'old');
+  assert.equal(readBrowserHistory(origin).get('check').ok, false);
+  assert.equal(readBrowserHistory(origin).has('unstarted'), false);
+  assert.equal(readBrowserHistory(origin).has('reused'), false);
+  writeBrowserHistory(origin, [{ id: 'check', ok: true, observedAt: 200 }]);
+  returnBrowserHistory(origin, report, 'new');
+  assert.equal(readBrowserHistory(origin).get('check').ok, true);
+});
+
+test('history removes abandoned temporary files while preserving live writers', async (t) => {
+  const { writeBrowserHistory } = await import('../scripts/browser-history.mjs');
+  const { existsSync } = await import('node:fs');
+  const root = mkdtempSync(join(tmpdir(), 'orphan-history-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const child = spawnSync(process.execPath, ['-e', 'console.log(process.pid)'], {
+    encoding: 'utf8',
+  });
+  assert.equal(child.status, 0);
+  const dead = join(root, `.browser-history-${child.stdout.trim()}-abc.tmp`);
+  const live = join(root, `.browser-history-${process.pid}-abc.tmp`);
+  writeFileSync(dead, 'partial');
+  writeFileSync(live, 'partial');
+  writeBrowserHistory(join(root, 'history.json'), [{ id: 'check', ok: true }]);
+  assert.equal(existsSync(dead), false);
+  assert.equal(existsSync(live), true);
+});
