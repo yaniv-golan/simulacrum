@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"a1e396a9c585d28b16cce63d289027c3aae4841e71fc7c3f84c292a23484bdd9","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"49722a063f54d4af459def874d2d55265b2912f0b5dea1eaf34c69794d066d94","disposition":"still accurate","rationale":"The manifest adds appearance guarantees to the existing connection invariant; no check scheduling, opaque scope contract or browser execution metadata changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"f993680e9a2f29a63692d4d29c561334160f32308103f9806866fab4d9bb02c2","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c592fa40dab53d56400e08f0716e768c341ac5f679c92ba03a1320412b940d4a","disposition":"still accurate","rationale":"The manifest adds one surface-mount preview regression control to the existing connection-display invariant; scope rules, readers, selection and mandatory witness application remain unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -444,7 +444,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"61d0fd04d5835592ff9dabd24164dc3b8b838830061c0cb836fd71020cec4ab2","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"f2e6aa616054e94d0596845d34dd20603cd13394d3a55d9856a4817a827e0a98","disposition":"still accurate","rationale":"Only connection invariant ownership and control pointers changed in the manifest; candidate capture, dependency installation and receipt admission are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"751b2f6e7c3ab829191f42a516777167837d1665e2b6e4250f2c1c4ad0bc1d4d","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"af75a6321ae3b633932ec724c55db56311895214e3eb349d2424ac70551fdb17","disposition":"still accurate","rationale":"Registering the surface-mount preview control does not alter candidate capture, dependency installation, identity admission or verification tiers."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
