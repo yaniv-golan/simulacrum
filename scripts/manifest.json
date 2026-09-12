@@ -365,7 +365,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -3362,12 +3362,20 @@
           {
             "path": "test/verification-window.test.mjs",
             "anchor": "verification windows serialize contenders, retain timing and release after failure"
+          },
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "contenders wait through partial owner publication and reject malformed published metadata"
           }
         ],
         "negative": [
           {
             "path": "test/verification-window.test.mjs",
             "anchor": "waiting is bounded; stale windows require explicit recovery and exact ownership"
+          },
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "contenders wait through partial owner publication and reject malformed published metadata"
           }
         ]
       },
@@ -4873,7 +4881,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
       "externalImports": []
     },
     {
@@ -4897,7 +4905,7 @@
         "vite"
       ],
       "consumers": [],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596"
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -4915,7 +4923,7 @@
         "verify-mirror-browser"
       ],
       "consumers": [],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596"
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -4934,7 +4942,7 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596"
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -4958,7 +4966,7 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596"
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -4992,7 +5000,7 @@
         "test/receiver-input-owner.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596"
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a"
     }
   ],
   "experimentInputScopes": [
@@ -5267,7 +5275,7 @@
         }
       ],
       "consumers": [],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -5348,7 +5356,7 @@
           ]
         }
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "externalImports": [
         "node:crypto",
@@ -5397,7 +5405,7 @@
         }
       ],
       "consumers": [],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -5446,8 +5454,8 @@
           ]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
+      "consumerSourceHash": "e3f544f61d6aa720de98e8a313a10682aa78cc5d63206fd8a13f73c24cf68f3d",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -5496,8 +5504,8 @@
           ]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "b8c3325fe3d6ca0439167fa2690c6d38b76a639ab5689f7c92d54939fc4f6bd4",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
+      "consumerSourceHash": "3cac3dc8652a87928e15e9b06f169286ba827532029a20d7ff3bee8bc9fbd3ec",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -5537,6 +5545,7 @@
         "scripts/verify-recording-browser.mjs",
         "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-rope-browser.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
         "scripts/verify-snap-intent.mjs",
@@ -5582,8 +5591,8 @@
           ]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "b8c3325fe3d6ca0439167fa2690c6d38b76a639ab5689f7c92d54939fc4f6bd4",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
+      "consumerSourceHash": "3cac3dc8652a87928e15e9b06f169286ba827532029a20d7ff3bee8bc9fbd3ec",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -5644,6 +5653,7 @@
         "scripts/verify-recording-browser.mjs",
         "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-rope-browser.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
         "scripts/verify-snap-intent.mjs",
@@ -5671,6 +5681,7 @@
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
         "test/release-determinism.test.mjs",
+        "test/rope-session.test.mjs",
         "test/runtime-preflight.test.mjs",
         "test/starter-vehicle.test.mjs",
         "test/verification-resume-controls.test.mjs",
@@ -5714,8 +5725,8 @@
           ]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "e99f5935e31a1b42a79b619ac939fdae88a284a41f4cf1ac39cec93cdf2ece6e",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
+      "consumerSourceHash": "a727fe95fc0282262194a95646e429ef4c985f9ce39d869e941aba430a17b643",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -5738,6 +5749,7 @@
         "scripts/gate.mjs",
         "scripts/inspect-change.mjs",
         "scripts/measure-gears.mjs",
+        "scripts/measure-ropes.mjs",
         "scripts/measure-shared-sensing.mjs",
         "scripts/measure-springs.mjs",
         "scripts/playtest/calibrate.mjs",
@@ -5791,6 +5803,7 @@
         "scripts/verify-recording-browser.mjs",
         "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-rope-browser.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
         "scripts/verify-snap-intent.mjs",
@@ -5893,10 +5906,11 @@
         "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/release-determinism.test.mjs",
+        "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
-      "consumerSourceHash": "c823e4f0a86e445cda6024b99c23ecc78b7d82b55d9d550ea3246f43ae7be669"
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
+      "consumerSourceHash": "234f3d353a90e1dca3f524137ff3e5c50081f12d3a9d8364308344cfa6bd4d1d"
     },
     {
       "checks": [
@@ -5912,8 +5926,8 @@
           ]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
+      "consumerSourceHash": "e3f544f61d6aa720de98e8a313a10682aa78cc5d63206fd8a13f73c24cf68f3d",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -5977,8 +5991,8 @@
           ]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
+      "consumerSourceHash": "e3f544f61d6aa720de98e8a313a10682aa78cc5d63206fd8a13f73c24cf68f3d",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -6033,8 +6047,8 @@
           ]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
+      "consumerSourceHash": "e3f544f61d6aa720de98e8a313a10682aa78cc5d63206fd8a13f73c24cf68f3d",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -6064,8 +6078,8 @@
           ]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
+      "consumerSourceHash": "e3f544f61d6aa720de98e8a313a10682aa78cc5d63206fd8a13f73c24cf68f3d",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -6203,8 +6217,8 @@
           ]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "b399d4db639ed72ce303198cf4770834c415cf960e8aef714d36a86726daa6db",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
+      "consumerSourceHash": "e85bdb51d69e646f215b060b232c706e9c595fd120b1c7e403cea30c30129f93",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -6285,8 +6299,8 @@
           ]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "b8c3325fe3d6ca0439167fa2690c6d38b76a639ab5689f7c92d54939fc4f6bd4",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
+      "consumerSourceHash": "3cac3dc8652a87928e15e9b06f169286ba827532029a20d7ff3bee8bc9fbd3ec",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -6372,6 +6386,7 @@
         "scripts/verify-recording-browser.mjs",
         "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-rope-browser.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
         "scripts/verify-snap-intent.mjs",
@@ -6417,6 +6432,7 @@
         "test/physics-boundary.test.mjs",
         "test/playtest-release.test.mjs",
         "test/release-determinism.test.mjs",
+        "test/rope-session.test.mjs",
         "test/runtime-preflight.test.mjs",
         "test/starter-vehicle.test.mjs",
         "test/structural.test.mjs",
@@ -6517,8 +6533,8 @@
           ]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
+      "consumerSourceHash": "e3f544f61d6aa720de98e8a313a10682aa78cc5d63206fd8a13f73c24cf68f3d",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -6583,8 +6599,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "24fa160c5e1c4d2040d0938e7be9268941cd44a6ce5a2d0d4e844a832349e392"
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
+      "consumerSourceHash": "9176db34ebcac319614df88962d77440e06b87b7996c73a49fe224514dbbd412"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -6614,8 +6630,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "24fa160c5e1c4d2040d0938e7be9268941cd44a6ce5a2d0d4e844a832349e392"
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
+      "consumerSourceHash": "9176db34ebcac319614df88962d77440e06b87b7996c73a49fe224514dbbd412"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -6641,7 +6657,7 @@
         }
       ],
       "consumers": [],
-      "roots": "11327025609f125ce57ec51cbd75fd8e9fad8baf86319651c8b133d6a3d0a596",
+      "roots": "252bfce183a7ef52504e1111f09efaec555a67ac002f3cd6c84827969221696a",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ],

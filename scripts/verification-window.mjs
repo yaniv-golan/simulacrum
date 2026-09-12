@@ -122,7 +122,9 @@ export async function withVerificationWindow(
     }
     await new Promise((r) => setTimeout(r, pollMs));
   }
-  writeFileSync(ownerFile(directory), JSON.stringify(owner), { mode: 0o600 });
+  const pendingOwner = join(directory, `owner-${owner.token}.tmp`);
+  writeFileSync(pendingOwner, JSON.stringify(owner), { mode: 0o600, flag: 'wx' });
+  renameSync(pendingOwner, ownerFile(directory));
   const queueMs = performance.now() - started,
     runStart = performance.now();
   const previous = process.env.SIMULACRUM_VERIFICATION_WINDOW;

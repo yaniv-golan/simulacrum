@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"119660a3592754e0f1bb78000fcd93a8977f08f31d180fa7166d07259e1be890","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"f9fd6d13ab32f6b7252fe0382e535cf71738dac493e43f69b7ec01a37ee00b23","disposition":"still accurate","rationale":"Inspected the combined scope proposal: reader shapes and read domains are retained, while Rope adds browser and identity consumers. Explicit scope review and mandatory witnesses remain required. The prerequisite retains optional atomic history, bounded admission and exclusive focus-sensitive checks."} -->
+<!-- doc-review {"version":1,"fingerprint":"28a04e0759659fc4f60949c8637521f13dccaf58e165d096a0c4a30a8ea12f04","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"2a74dda0886841d7f29ddbcc710ab0e5c0783ad3ba14ff3336820921fc410a99","disposition":"still accurate","rationale":"All17 required scope witnesses passed on the combined Rope/Coupler source. The registered partial-owner publication regression adds positive and negative controls under the existing resource-window invariant; it changes neither required browser coverage nor runtime-read exemptions."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -463,7 +463,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"2bcffb7c6ef2a033e94abe3bd4568eb5858deffa7da72b2fb54070f8f096e275","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"18df79f4f46ee08ec5841f84d6a77a3f39984a52a116234ff656d7ac8b8ade06","disposition":"updated","rationale":"The CLI now distinguishes five-minute probe/build/standalone-CI admission from thirty-minute local/merge/final and native qualification admission and reports owner/elapsed wait on contention and every thirty seconds. Host serialization, inherited ownership, separate execution budgets and inspected recovery are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"5ed50aab3db2b3fd853c275f67bfd2e1fc5e3cdfcdee831dbbb4ffef6a097df9","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"ccc8d322f2d8e9affbf824cf0eb8dc84ef5932583e14e05ccdc386920b9aa74f","disposition":"updated","rationale":"Documented temporary owner metadata and same-directory atomic rename. Contenders wait through unpublished ownership; malformed published authority still rejects. Queue deadlines, live-owner serialization, inherited ownership and inspected recovery remain unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -482,6 +482,10 @@ summary/explanation commands do not wait for the window. Raw direct script invoc
 and unrelated applications do not participate: this is cooperative scheduling, not
 CPU/GPU reservation or permission to relax performance thresholds. Preserve failed runs;
 there is no automatic retry-to-green policy.
+
+Owner metadata is written to a private temporary file and published by same-directory
+rename. Contenders wait while publication is incomplete; malformed published metadata
+remains an error rather than evidence of a free window.
 
 A crashed owner is never evicted by age. Inspect its process tree and establish that
 all descendants stopped, then use `node scripts/verification-window.mjs recover <owner-token>
@@ -502,7 +506,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"a5a00f937185ec6ff7d4785328dc76d6107fb2ef81633452df59bd48b06f5cd9","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8a3045611a836b51f1246a32a143dd6cc915755a07a3496600a90b0868034b7f","disposition":"still accurate","rationale":"Rope and Release Coupler expand compiled and completed state, not candidate capture or drift admission. The combined bytes still require isolated merge verification and a final unchanged destination; scheduling hints do not grant reusable coverage."} -->
+<!-- doc-review {"version":1,"fingerprint":"d6201ca026f3a8e705d59b989b88e3265e8ae5728b55b290d9c51073973a9985","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"a2454fc92bc5878f553f79348e9a123d1e855d59c643798b55bfbe41df90ad90","disposition":"still accurate","rationale":"Atomic ownership publication prevents a contender observing partial JSON but changes neither frozen candidate capture nor origin/destination drift checks. New control registrations do not grant receipt reuse; this final source still requires its full isolated merge tier."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

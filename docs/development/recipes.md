@@ -162,7 +162,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"df0c91dba1e851ee49cfdfd0abb3d873d20005d0142f1e7fe51976f6fd1fbfe9","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"15b0bbc6817cd9c43086e38efa060d2d5c16877296e82a7f8d1fb78db58b9c14","disposition":"updated","rationale":"Documented combined envelope 8 and pre-swap cross-validation of opened joints and Rope work. Preserved spherical anchors and excluded numeric Rope links from bilateral response groups. Added independent tether, checkpoint, wrong-label and invented-impulse controls, retaining bounded Rope motion admission."} -->
+<!-- doc-review {"version":1,"fingerprint":"db5ac1b40d3d4199116fd0e673f8c222f9987ede9bb009cb92076a6fb9979c0f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"5ac4ba0b94483fcacbec16a41bb3b9196c365167819d5ceb329a3ca51109ecef","disposition":"still accurate","rationale":"The shared verification-window implementation and its registered controls now prevent partial ownership publication. Physics phase order, independent Rope/release accounting, snapshot8 validation and the bounded apparatus claims in this section remain unchanged."} -->
 
 
 
