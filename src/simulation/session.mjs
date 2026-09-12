@@ -34,6 +34,7 @@ function admitConfiguration(input) {
     ...c.power.receivers,
     ...c.power.controllers,
     ...c.power.sensors,
+    ...(c.power.couplers ?? []),
     ...(c.power.regulators ?? []),
   ].map((x) => x.node);
   if (
@@ -44,6 +45,14 @@ function admitConfiguration(input) {
     )
   )
     throw Error('INVALID_CONFIGURATION');
+  for (const latch of c.power.couplers ?? [])
+    if (
+      latch.joint >= c.joints.length ||
+      (latch.joint >= 0 &&
+        (c.joints[latch.joint].kind !== 'fixed' ||
+          ![c.joints[latch.joint].a, c.joints[latch.joint].b].includes(latch.node)))
+    )
+      throw Error('INVALID_CONFIGURATION');
   for (const m of c.power.motors)
     if (
       m.body !== m.node ||
@@ -404,6 +413,14 @@ export async function createSession(
               break;
             }
             case 'power-signals': {
+              const releases = config.power.couplers?.length
+                ? world.planReleases(
+                    power
+                      .read()
+                      .couplers.filter((c) => c.ready)
+                      .map((c) => c.joint),
+                  )
+                : [];
               world.prepareConstraints();
               if (hasSprings()) world.prepareSprings();
               const coupling = [];
@@ -476,10 +493,12 @@ export async function createSession(
                       : Infinity,
                 })),
                 coupling,
+                releases,
               ).torques;
               break;
             }
             case 'actuators-constraints':
+              world.commitReleases();
               constraintDissipationJ = world.applyPreparedConstraints();
               if (hasSprings()) springReceipt = world.applySprings();
               receipts = torques.map((torque, i) => {
@@ -1037,6 +1056,10 @@ export async function createSession(
           ? [{ joint: index, length: priorSpringLength(j, cp.sensors.bodies) }]
           : [],
       ),
+      (cp.power.couplers ?? [])
+        .filter((c) => c.opened)
+        .map((c) => c.joint)
+        .sort((a, b) => a - b),
       hasRopes()
         ? Object.fromEntries(Object.keys(world.ropeEnergy()).map((k) => [k, cp.energy[k]]))
         : undefined,

@@ -24,14 +24,34 @@ export function createPowerNetwork(configuration) {
     !exact(
       config,
       'cells,motors,wires,signalWires,receivers,controllers,sensors' +
-        (Object.hasOwn(config, 'regulators') ? ',regulators' : ''),
+        (Object.hasOwn(config, 'regulators') ? ',regulators' : '') +
+        (Object.hasOwn(config, 'couplers') ? ',couplers' : ''),
     ) ||
     (Object.hasOwn(config, 'regulators') && !array('regulators')) ||
+    (Object.hasOwn(config, 'couplers') && !array('couplers')) ||
     !['cells', 'motors', 'wires', 'signalWires', 'receivers', 'controllers', 'sensors'].every(
       array,
     ) ||
     config.sensors.length > SENSOR_LIMITS.count ||
     config.controllers.length > CONTROLLER_LIMITS.count
+  )
+    fail('INVALID_POWER_CONFIGURATION');
+  const couplers = config.couplers ?? [];
+  for (const c of couplers)
+    if (
+      !exact(c, 'node,joint,resistance,minVoltage,energyJ') ||
+      !node(c.node) ||
+      !Number.isInteger(c.joint) ||
+      c.joint < -1 ||
+      !finite(c.resistance, c.minVoltage, c.energyJ) ||
+      c.resistance < 1 ||
+      c.minVoltage <= 0 ||
+      c.energyJ <= 0
+    )
+      fail('INVALID_POWER_CONFIGURATION');
+  if (
+    new Set(couplers.filter((c) => c.joint >= 0).map((c) => c.joint)).size !==
+    couplers.filter((c) => c.joint >= 0).length
   )
     fail('INVALID_POWER_CONFIGURATION');
   for (const cell of config.cells)
@@ -128,6 +148,7 @@ export function createPowerNetwork(configuration) {
     config.controllers,
     config.sensors,
     config.regulators ?? [],
+    couplers,
   ])
     if (new Set(entries.map((e) => e.node)).size !== entries.length)
       fail('INVALID_POWER_CONFIGURATION');
@@ -239,12 +260,27 @@ export function createPowerNetwork(configuration) {
     config.signalWires
       .filter((edge) => edge[1] === m.node)
       .map((edge) => sources.find((source) => source.node === edge[0]));
-  for (const motor of config.motors) {
+  for (const motor of [...config.motors, ...couplers]) {
     const signals = signalFor(motor);
     if (signals.length > 1 || signals.some((s) => !s)) fail('UNSUPPORTED_SIGNAL_TOPOLOGY');
   }
   const sensorSupply = (sensor) => sensor.supply ?? SENSOR_SUPPLY;
   let state = {
+    ...(couplers.length
+      ? {
+          couplers: couplers.map((c) => ({
+            node: c.node,
+            joint: c.joint,
+            progressJ: 0,
+            heatJ: 0,
+            current: 0,
+            voltage: 0,
+            ready: false,
+            opened: false,
+            reasonCode: c.joint < 0 ? 'NO_LATCH' : 'OFF',
+          })),
+        }
+      : {}),
     ...(config.sensors.length
       ? {
           sensors: config.sensors.map((s) => ({
@@ -290,7 +326,15 @@ export function createPowerNetwork(configuration) {
     if (
       !candidate ||
       Object.keys(candidate).sort().join(',') !==
-        (config.sensors.length ? 'cells,motors,sensors,sources' : 'cells,motors,sources') ||
+        [
+          'cells',
+          'motors',
+          'sources',
+          ...(config.sensors.length ? ['sensors'] : []),
+          ...(couplers.length ? ['couplers'] : []),
+        ]
+          .sort()
+          .join(',') ||
       !Array.isArray(candidate.cells) ||
       !Array.isArray(candidate.sources) ||
       !Array.isArray(candidate.motors) ||
@@ -299,6 +343,46 @@ export function createPowerNetwork(configuration) {
       candidate.motors.length !== config.motors.length
     )
       fail('INVALID_POWER_CHECKPOINT');
+    if (couplers.length) {
+      if (!Array.isArray(candidate.couplers) || candidate.couplers.length !== couplers.length)
+        fail('INVALID_POWER_CHECKPOINT');
+      for (const [i, c] of candidate.couplers.entries()) {
+        const d = couplers[i];
+        if (
+          (d.joint < 0 &&
+            (c.progressJ !== 0 || c.ready || c.opened || c.reasonCode !== 'NO_LATCH')) ||
+          c.progressJ > c.heatJ + ENERGY_ABSOLUTE_TOLERANCE + ENERGY_RELATIVE_TOLERANCE * c.heatJ ||
+          (c.reasonCode === 'OPEN') !== c.opened ||
+          ['READY', 'RELEASE_SUPPORT_BLOCKED'].includes(c.reasonCode) !== c.ready ||
+          (c.reasonCode === 'NO_LATCH') !== d.joint < 0 ||
+          (c.reasonCode === 'ACTUATING') !== (c.progressJ > 0 && c.progressJ < d.energyJ) ||
+          (c.opened &&
+            c.heatJ + ENERGY_ABSOLUTE_TOLERANCE + ENERGY_RELATIVE_TOLERANCE * c.heatJ <
+              d.energyJ) ||
+          !exact(c, 'node,joint,progressJ,heatJ,current,voltage,ready,opened,reasonCode') ||
+          c.node !== d.node ||
+          c.joint !== d.joint ||
+          !finite(c.progressJ, c.heatJ, c.current, c.voltage) ||
+          Math.min(c.progressJ, c.heatJ, c.current, c.voltage) < 0 ||
+          c.progressJ > d.energyJ ||
+          typeof c.ready !== 'boolean' ||
+          typeof c.opened !== 'boolean' ||
+          c.ready !== (c.progressJ === d.energyJ && !c.opened) ||
+          (c.opened && (c.progressJ !== 0 || c.reasonCode !== 'OPEN')) ||
+          ![
+            'NO_LATCH',
+            'OFF',
+            'NO_POWER',
+            'LOW_VOLTAGE',
+            'ACTUATING',
+            'READY',
+            'OPEN',
+            'RELEASE_SUPPORT_BLOCKED',
+          ].includes(c.reasonCode)
+        )
+          fail('INVALID_POWER_CHECKPOINT');
+      }
+    }
     if (config.sensors.length) {
       if (!Array.isArray(candidate.sensors) || candidate.sensors.length !== config.sensors.length)
         fail('INVALID_POWER_CHECKPOINT');
@@ -392,10 +476,30 @@ export function createPowerNetwork(configuration) {
   validateState(state);
   let pending = null;
   return Object.freeze({
-    step(dt, speeds, commands = [], inertias = [], coupling = []) {
+    step(dt, speeds, commands = [], inertias = [], coupling = [], releaseResults = []) {
       if (pending) fail('POWER_STEP_PENDING');
       if (dt !== 1 / 120) fail('INVALID_POWER_STEP');
       const next = clone(state);
+      if (
+        !Array.isArray(releaseResults) ||
+        new Set(releaseResults.map((r) => r.joint)).size !== releaseResults.length
+      )
+        fail('INVALID_RELEASE_RESULT');
+      for (const r of releaseResults) {
+        const c = next.couplers?.find((c) => c.joint === r.joint);
+        if (
+          !exact(r, 'joint,reasonCode') ||
+          !c?.ready ||
+          !['OK', 'RELEASE_SUPPORT_BLOCKED'].includes(r.reasonCode)
+        )
+          fail('INVALID_RELEASE_RESULT');
+        if (r.reasonCode === 'OK') {
+          c.opened = true;
+          c.ready = false;
+          c.progressJ = 0;
+          c.reasonCode = 'OPEN';
+        } else c.reasonCode = r.reasonCode;
+      }
       const predicted = new Map(speeds.map((s) => [s.node, s.speed]));
       const responses = new Map();
       if (!Array.isArray(coupling)) fail('INVALID_MOTOR_INERTIA');
@@ -524,7 +628,16 @@ export function createPowerNetwork(configuration) {
         };
         return { duty };
       });
+      const latchActive = couplers.map((c, i) => {
+        const r = next.couplers[i],
+          source = signalFor(c)[0],
+          command = source && next.sources.find((s) => s.node === source.node);
+        return (
+          !r.opened && !r.ready && c.joint >= 0 && command?.enabled !== false && command?.duty > 0
+        );
+      });
       const shared =
+        couplers.length > 0 ||
         config.sensors.length > 0 ||
         config.cells.some(
           (c) => config.motors.filter((m) => root(m.node) === root(c.node)).length > 1,
@@ -572,6 +685,22 @@ export function createPowerNetwork(configuration) {
             load: true,
           });
         }
+        for (const [i, c] of couplers.entries()) {
+          const cell = cellsFor(c)[0];
+          entries.push({
+            cell: config.cells.indexOf(cell),
+            duty: 1,
+            speed: 0,
+            inertia: Infinity,
+            active: Boolean(
+              latchActive[i] && cell && next.cells[config.cells.indexOf(cell)].energyJ > 0,
+            ),
+            k: 0,
+            resistance: c.resistance,
+            limit: cell ? cell.voltage / c.resistance : 0,
+            load: true,
+          });
+        }
         sharedResult = sharedPowerStep(
           config.cells.map((c, i) => ({
             voltage: c.voltage,
@@ -603,6 +732,32 @@ export function createPowerNetwork(configuration) {
         record.powered = current > 0 && voltage >= supply.minVoltage;
         // All terminal energy becomes sensor/limiter heat; source heat is counted once above.
         if (cell) record.heatJ += sharedResult.voltages[config.cells.indexOf(cell)] * current * dt;
+      }
+      for (const [i, c] of couplers.entries()) {
+        const r = next.couplers[i],
+          cell = cellsFor(c)[0],
+          current = sharedResult.currents[config.motors.length + config.sensors.length + i];
+        r.current = current;
+        r.voltage = current * c.resistance;
+        if (cell) r.heatJ += sharedResult.voltages[config.cells.indexOf(cell)] * current * dt;
+        if (r.opened || r.ready) continue;
+        const powered = latchActive[i] && r.voltage >= c.minVoltage && current > 0;
+        r.progressJ = powered
+          ? Math.min(c.energyJ, r.progressJ + current * current * c.resistance * dt)
+          : 0;
+        r.ready = r.progressJ === c.energyJ;
+        r.reasonCode =
+          c.joint < 0
+            ? 'NO_LATCH'
+            : !latchActive[i]
+              ? 'OFF'
+              : !cell
+                ? 'NO_POWER'
+                : !powered
+                  ? 'LOW_VOLTAGE'
+                  : r.ready
+                    ? 'READY'
+                    : 'ACTUATING';
       }
       const torques = [],
         allocations = [];

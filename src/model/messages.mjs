@@ -3,6 +3,8 @@ const messages = {
   MIRROR_UNREPRESENTABLE:
     'These parts cannot be mirrored with their current shapes or connections.',
   UNKNOWN_SURFACE: 'Choose a highlighted mounting surface.',
+  RELEASE_LATCH_CONFLICT:
+    'Two latch faces cannot own one attachment. Mount one coupler by a different face.',
   SURFACE_OUT_OF_BOUNDS:
     'The mounting base extends beyond this surface. Slide it inward or choose a larger surface.',
   SURFACE_OVERLAP: 'This placement overlaps another part. Slide or rotate it until clear.',

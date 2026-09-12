@@ -10,7 +10,7 @@ For an interaction report, use **Record an issue** in the left sidebar, then Sta
 
 ## Remote setup
 
-<!-- doc-review {"version":1,"fingerprint":"9e9f10ba358a1ec1907fe66ec1c6765c7406fa277ac10b5044933faed04fdd32","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"eba621b0567fe3ac2d6def42fbc07b71a997171592bc801dbb69b0af1d3f5588","disposition":"updated","rationale":"Replaced the fixed-overlay description with an in-flow utility row and clarified offline recovery, relevant recorder state, dismissible setup and explicit capture consent. The new context owner preserves authored project/programs and current UI while excluding replay checkpoint/native physics/configuration; existing context byte limits, opt-ins, receipts and privacy gates remain binding."} -->
+<!-- doc-review {"version":1,"fingerprint":"ec2657c156e598a591ec504804a836d410a4ad70ce6fd4132031ef8e506729b7","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"bfb68580f893c77b35428a558bd5d996204b060335c554f30d958e7be39c07b5","disposition":"still accurate","rationale":"Release catalog and session dependencies extend the recorded ordinary workshop but do not change feedback protocols, attachment limits, durable receipts or recording consent. The preserved text correctly places controls in the application utility row and limits optional feedback context to authored save/current UI rather than replay/native state."} -->
 
 
 

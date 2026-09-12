@@ -36,6 +36,7 @@ import { partPrimitives } from '../model/geometry.mjs';
 import * as THREE from 'three';
 import { createResourceCache, partAppearanceKey } from './resource-cache.mjs';
 import { connectionRenderSpecs, createWiringPreferences } from './connection-render.mjs';
+import { releasedAttachment as isReleasedAttachment } from './release-state.mjs';
 import { createConnectionView } from './connection-view.mjs';
 import { createSurfaceControls } from './surface-controls.mjs';
 import {
@@ -2314,7 +2315,10 @@ export function createWorkshopView(
           other = edge.a.part === part.id ? edge.b : edge.a,
           peer = parts.find((p) => p.id === other.part),
           row = element('div', 'mount-relationship');
-        row.append(element('span', '', `Bolted to ${peer.name} · ${endpointName(peer, other)}`));
+        const relationship = element('span');
+        relationship.dataset.attachmentState = edge.id;
+        relationship.dataset.peerLabel = `${peer.name} · ${endpointName(peer, other)}`;
+        row.append(relationship);
         if (editable && edge.b.part === part.id && own.surface && other.surface)
           row.append(
             button('Adjust mount', () => beginSurface(part.id, { replaceConnection: edge.id })),
@@ -3149,7 +3153,16 @@ export function createWorkshopView(
       health.hidden = false;
     }
   }
+  function releasedAttachment(connection) {
+    return isReleasedAttachment(connection, frame.metadata.blueprint.parts, frame.power?.couplers);
+  }
   function refreshLive() {
+    for (const label of right.querySelectorAll('[data-attachment-state]')) {
+      const edge = frame.metadata.blueprint.connections.find(
+        (c) => c.id === label.dataset.attachmentState,
+      );
+      label.textContent = `${edge && releasedAttachment(edge) ? 'Latch open ·' : 'Bolted to'} ${label.dataset.peerLabel}`;
+    }
     updateSensorInspector(frame, right);
     updateControllerEditor(frame, right);
     const part = frame.metadata.blueprint.parts.find((part) => part.id === selected),
@@ -3290,6 +3303,31 @@ export function createWorkshopView(
         );
       }
     }
+    if (part.type === 'releaseCoupler') {
+      const latch = frame.power?.couplers?.find((c) => c.node === index);
+      const wording = {
+        NO_LATCH: 'No latch attachment · snap cargo onto Latch · Right',
+        OFF: 'Latched · hold the receiver key to release',
+        NO_POWER: 'No cell connected · repair power wiring in Build',
+        LOW_VOLTAGE: 'Not enough voltage · check the cell and coil settings',
+        ACTUATING: 'Releasing · keep holding the key',
+        READY: 'Ready · opens on the next tick',
+        OPEN: 'Latch open · return to Build to reattach',
+        RELEASE_SUPPORT_BLOCKED:
+          'Stays latched · opening would invalidate gear or spring support. Repair the connections in Build.',
+      };
+      target.textContent =
+        frame.metadata.mode === 'build'
+          ? 'Attach cargo to Latch · Right; mount the coupler by another face. Wire a cell and Command Receiver; hold W or Up in Run.'
+          : (wording[latch?.reasonCode] ?? 'Latch state unavailable');
+      engineering?.append(
+        element(
+          'div',
+          '',
+          `${format(latch?.progressJ ?? 0, 3)} / ${format(part.parameters.energyJ, 3)} J actuation · ${format(latch?.voltage ?? 0, 2)} V · ${format(latch?.heatJ ?? 0, 3)} J heat`,
+        ),
+      );
+    }
     if (part.type === 'travelSensor') {
       const reading = frame.sensors?.readings.find((r) => r.node === index);
       target.textContent =
@@ -3299,7 +3337,11 @@ export function createWorkshopView(
     }
     if (part.type.endsWith('Sensor') && part.type !== 'travelSensor') {
       target.textContent = `Sensor sample tick ${frame.sensors.tick} · readings below`;
-    } else if (!cell && !motor && !['commandReceiver', 'travelSensor'].includes(part.type)) {
+    } else if (
+      !cell &&
+      !motor &&
+      !['commandReceiver', 'travelSensor', 'releaseCoupler'].includes(part.type)
+    ) {
       const speed = frame.physics[index]?.angularVelocity;
       target.textContent =
         frame.metadata.mode === 'build'
@@ -3429,6 +3471,8 @@ export function createWorkshopView(
     const kind =
       edge.kind ??
       (edge.a.surface ? 'fixed' : CATALOG[a.type].ports.find((p) => p.id === edge.a.port).kind);
+    if (completed && releasedAttachment(edge))
+      return `${a.name} ↔ ${b.name} · Latch open: this attachment no longer holds the parts together.`;
     if (!completed)
       return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Will bolt these parts together.' : kind === 'spring' ? 'Will attach the sliding carriage at the zero-force length.' : kind === 'shaft' ? 'Will join the axle, allowing rotation.' : kind === 'gear' ? 'Will mesh the supported gears without moving them.' : kind === 'power' ? 'Will add a power cable.' : 'Will connect the control signal.'}`;
     return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Bolted together: they move as one.' : kind === 'spring' ? 'Spring attached: slides along its axis; does not swivel.' : kind === 'shaft' ? 'Axle connected: the wheel can turn.' : kind === 'gear' ? 'Gear mesh connected: supported shafts exchange rotation.' : kind === 'power' ? 'Power wired: energy can reach the motor.' : 'Signal connected: commands can pass.'}`;
@@ -3480,7 +3524,9 @@ export function createWorkshopView(
       wiringVisible: wiring.checked,
       revealedConnectionIds,
       sourceEndpoint: sourcePort,
-      connections: frame.metadata.blueprint.connections.filter((c) => c.kind !== 'rope'),
+      connections: frame.metadata.blueprint.connections.filter(
+        (connection) => connection.kind !== 'rope' && !releasedAttachment(connection),
+      ),
       diagnostics: frame.metadata.connections,
       exploded: exploded || explodeAmount > 0,
       selectedPartId: selected ?? null,

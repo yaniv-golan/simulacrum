@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"9868e07f91139614ea4898d2ee4c082765f86314b99f559b7a5e53e3a8463a24","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"9dc35a81614df8c265523ee543aac4d56ad364dbeb6041289ccd1a3ec975dc83","disposition":"still accurate","rationale":"The utility-row repair and authored-context correction add no teaching entry, fixture, example or success observation. They fix an obstructed interaction directly while preserving existing lessons and requested help, consistent with the explicit no-entry disposition. Reduced-motion styling supplies no human comprehension or enjoyment evidence."} -->
+<!-- doc-review {"version":1,"fingerprint":"54b1613c1587635fd7b05442596100afe18a8093945d62a59b3d4b93c8ee6878","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"02e0363ef12faadbbe1d82cf3dd930198b165c2930c09ee75bf3f6d50fcc942e","disposition":"still accurate","rationale":"Release adds contextual catalog/help/inspector guidance with an explicit no-entry decision and retains the existing keyboard activity. Feedback remains a utility journey; neither adds a lesson owner or changes loading, replacement, dismissal or the separation of automation from player comprehension."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -56,11 +56,11 @@ reviewable judgments, not a numeric score that proves educational value.
 
 **Choose the teaching format**
 
-| Format | Required player experience |
-| --- | --- |
-| Guided build | Use ordinary authoring actions, explain consequential connections, then offer a concrete independent edit or repair. |
+| Format                         | Required player experience                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Guided build                   | Use ordinary authoring actions, explain consequential connections, then offer a concrete independent edit or repair.                  |
 | Editable example or experiment | Show an inspectable behavior and offer a meaningful change or prediction. For comparisons, name what changes and what stays constant. |
-| Challenge | State the goal, constraints and observable success; offer optional hints and allow alternative solutions that satisfy the goal. |
+| Challenge                      | State the goal, constraints and observable success; offer optional hints and allow alternative solutions that satisfy the goal.       |
 
 These are content contracts, not required tabs or exclusive categories. One fixture
 may support several formats. Reuse canonical explanations and fixtures where practical;
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"1f22922603716065027311b7bafa7239cca58f3a874b459815e3842663049503","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"3ce2a9264fb28f07063e54f2ec637f26e0bb81087a367ff5890a8a058a7b4df3","disposition":"updated","rationale":"The section now locates feedback in the application layout below the footer and removes obsolete per-control offsets for a floating recording strip. It records offline entry-point/state preservation, relevant recorder controls, authored/UI-only context and reduced-motion button behavior. Canvas/inspector targeting, focus, recovery and human evidence remain explicit verification obligations."} -->
+<!-- doc-review {"version":1,"fingerprint":"d77b77a1a4e2c6aecbd5f27b10ad35925ffc29a27ad335943036c373b38b5c77","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"475f1b86a4df2d5eab8e4263bdb9afce13781b84b22fefe62c12998e5508e9c3","disposition":"updated","rationale":"Preserved Release Coupler discovery, latch-face labeling, ordinary receiver operation, Rope retention and Build/Try again recovery in existing surfaces. Feedback keeps its application-owned in-flow row, relevant offline draft/upload state, separately opted-in authored/UI context and reduced-motion behavior; no floating-strip offset claim or human satisfaction claim remains."} -->
 
 
 
@@ -290,6 +290,23 @@ The lift uses an ordinary extension axle to separate its arm plane from the gear
 A gear motion-limit stop offers Build, shaft-support, motor-current and grounded
 restart guidance through the existing message surface. It does not imply broken teeth.
 Physical witnesses remain separate from player comprehension.
+
+Release Coupler uses the Motion catalog category and search, the existing surface-snap operation, selected inspector
+and requested part-help window. “Latch · Right” identifies its single opening attachment;
+other faces remain ordinary mounts. Wire a cell and Command Receiver, hold W/Up in Run,
+and inspect actuation or blocked-support status. Open attachments are identified as open
+in the inspector and removed from the connection overlay. Cargo moves under existing
+motion and forces. Build and Try again restore the authored start; saved machines retain
+their Build connections. Crossing wires do not support cargo or disconnect automatically.
+Ropes keep their authored attachments and tension after a fixed latch opens, including
+when a rope shares the latch face. Only the released fixed attachment receives the open label.
+
+Learning admission is **no entry**: the existing keyboard-driving activity covers cell
+and receiver wiring, while contextual coupler help explains latch versus mount, interrupted
+actuation and alternate paths. This adds no permanent lesson panel. The
+[release browser journey](../../scripts/verify-release-coupler.mjs#implementation) constructs
+from an empty workshop through visible controls, saves/reloads, releases cargo, exercises Try again after opening and interrupted actuation, and recovers
+at ordinary and narrow layouts. Browser automation supplies no target-player acceptance.
 
 The powered linear actuator uses the Motion catalog category and search, selected settings, existing receiver
 controls and requested part help. Connect the existing Spring carriage, a cell and a

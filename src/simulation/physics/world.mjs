@@ -75,12 +75,21 @@ function hash(bytes) {
   for (const byte of bytes) h = Math.imul(h ^ byte, 16777619);
   return h >>> 0;
 }
-function encode(payload, handles, configuration, gearState, ropeState, ropeWork) {
+function encode(payload, handles, configuration, gearState, opened, ropeState, ropeWork) {
   const metadata = new TextEncoder().encode(
     JSON.stringify({
-      version: ropeState.length ? 7 : gearState.length ? 5 : 4,
+      version: ropeState.length
+        ? opened.length
+          ? 8
+          : 7
+        : opened.length
+          ? 6
+          : gearState.length
+            ? 5
+            : 4,
       ...(ropeState.length ? { ropeState, ropeWork } : {}),
-      ...(gearState.length ? { gearState } : {}),
+      ...(opened.length ? { opened } : {}),
+      ...(gearState.length || opened.length ? { gearState } : {}),
       backend: PHYSICS_BACKEND,
       handles,
       configuration,
@@ -117,14 +126,22 @@ function decode(input) {
     'handles',
     'configuration',
     ...(metadata.version === 5 ||
+    metadata.version === 8 ||
+    (metadata.version === 6 && Object.hasOwn(metadata, 'opened')) ||
     ([6, 7].includes(metadata.version) && Object.hasOwn(metadata, 'gearState'))
       ? ['gearState']
       : []),
-    ...([6, 7].includes(metadata.version) ? ['ropeState'] : []),
-    ...(metadata.version === 7 ? ['ropeWork'] : []),
+    ...((metadata.version === 6 && Object.hasOwn(metadata, 'opened')) || metadata.version === 8
+      ? ['opened']
+      : []),
+    ...((metadata.version === 6 && !Object.hasOwn(metadata, 'opened')) ||
+    [7, 8].includes(metadata.version)
+      ? ['ropeState']
+      : []),
+    ...([7, 8].includes(metadata.version) ? ['ropeWork'] : []),
   ]);
   if (
-    ![4, 5, 6, 7].includes(metadata.version) ||
+    ![4, 5, 6, 7, 8].includes(metadata.version) ||
     metadata.backend !== PHYSICS_BACKEND ||
     !Array.isArray(metadata.handles) ||
     metadata.handles.length > MAX_BODIES ||
@@ -134,6 +151,7 @@ function decode(input) {
     throw new TypeError('invalid physics snapshot handles');
   return {
     handles: metadata.handles,
+    opened: metadata.opened ?? [],
     gearState: metadata.gearState ?? [],
     ropeState: metadata.ropeState ?? [],
     ropeWork: metadata.ropeWork,
@@ -362,8 +380,12 @@ export async function createPhysicsWorld(configuration) {
     splitStepM: 0,
     splitElasticDeltaJ: 0,
   }));
-  const topology = springTopologyDomain(descriptions, joints),
-    activeElastic = new Set(topology.activeElastic);
+  let opened = new Set(),
+    planned = new Set(),
+    releaseInFlight = false;
+  const liveJoints = () => joints.filter((_, i) => !opened.has(i) && !planned.has(i));
+  let topology = springTopologyDomain(descriptions, joints);
+  const activeElastic = new Set(topology.activeElastic);
   await (initialization ??= RAPIER.init().then(() => {
     if (RAPIER.version() !== PHYSICS_BACKEND) throw new Error('physics backend mismatch');
   }));
@@ -379,11 +401,16 @@ export async function createPhysicsWorld(configuration) {
   };
   for (const joint of joints)
     if (joint.kind === 'fixed') fixedParents[fixedRoot(joint.b)] = fixedRoot(joint.a);
-  const fixedRoots = descriptions.map((_, i) => fixedRoot(i));
+  let fixedRoots = descriptions.map((_, i) => fixedRoot(i));
   const fixedSizes = new Map();
   for (const root of fixedRoots) fixedSizes.set(root, (fixedSizes.get(root) ?? 0) + 1);
   let fixedByHandle = new Map();
   const rebuildFixedHandles = () => {
+    fixedParents.forEach((_, i) => (fixedParents[i] = i));
+    for (const [i, joint] of joints.entries())
+      if (joint.kind === 'fixed' && !opened.has(i))
+        fixedParents[fixedRoot(joint.b)] = fixedRoot(joint.a);
+    fixedRoots = descriptions.map((_, i) => fixedRoot(i));
     fixedByHandle = new Map(handles.map((handle, i) => [handle, fixedRoots[i]]));
   };
   // This Rapier binding only dispatches hooks through stepWithEvents. No collider
@@ -700,16 +727,22 @@ export async function createPhysicsWorld(configuration) {
     a[2] * b[0] - a[0] * b[2],
     a[0] * b[1] - a[1] * b[0],
   ];
+  let responseWorld = null;
   function makeTorqueIsland(indices) {
     const offsets = new Map(indices.map((body, i) => [body, i * 6]));
     const n = indices.length * 6;
     const centres = indices.map((i) => array(bodyAt(i).translation()));
-    const factor = world.impulseJoints.raw.prepareBilateralResponse(
-      world.bodies.raw,
+    const factor = (responseWorld ?? world).impulseJoints.raw.prepareBilateralResponse(
+      (responseWorld ?? world).bodies.raw,
       new Float64Array(indices.map((i) => handles[i])),
       new Float64Array(
         joints.flatMap((j, i) =>
-          j.kind !== 'gear' && j.kind !== 'rope' && offsets.has(j.a) && offsets.has(j.b)
+          j.kind !== 'gear' &&
+          j.kind !== 'rope' &&
+          !opened.has(i) &&
+          !planned.has(i) &&
+          offsets.has(j.a) &&
+          offsets.has(j.b)
             ? [jointHandles[i]]
             : [],
         ),
@@ -1266,13 +1299,86 @@ export async function createPhysicsWorld(configuration) {
     contactEvents?.free();
     throw error;
   }
+  function validateOpened(input) {
+    if (
+      !Array.isArray(input) ||
+      input.some(
+        (i, k) => !Number.isInteger(i) || joints[i]?.kind !== 'fixed' || (k && input[k - 1] >= i),
+      )
+    )
+      throw new TypeError('invalid opened joints');
+    const remaining = joints.filter((_, i) => !input.includes(i));
+    admitGearTopology(descriptions, remaining);
+    const elastic = springTopologyDomain(descriptions, remaining).activeElastic.map(
+      (i) => remaining[i],
+    );
+    if (
+      elastic.length !== activeElastic.size ||
+      [...activeElastic].some((i) => !elastic.includes(joints[i]))
+    )
+      throw new RangeError('release changes spring activation');
+    return new Set(input);
+  }
   return Object.freeze({
+    openedJoints: () => [...opened].sort((a, b) => a - b),
+    planReleases(indices) {
+      alive();
+      if (!constraintsApplied || planned.size)
+        throw new Error('release preparation already pending');
+      if (
+        !Array.isArray(indices) ||
+        new Set(indices).size !== indices.length ||
+        indices.some((i) => !Number.isInteger(i) || joints[i]?.kind !== 'fixed')
+      )
+        throw new TypeError('invalid release request');
+      const results = [];
+      for (const joint of [...indices].sort((a, b) => a - b)) {
+        if (opened.has(joint)) {
+          results.push({ joint, reasonCode: 'ALREADY_OPEN' });
+          continue;
+        }
+        try {
+          validateOpened([...opened, ...planned, joint].sort((a, b) => a - b));
+          planned.add(joint);
+          // Preview the actual post-release response without removing a native row.
+          this.prepareConstraints();
+          if (joints.some((j) => j.kind === 'spring')) prepareSpringAllocations();
+          results.push({ joint, reasonCode: 'OK' });
+        } catch (error) {
+          planned.delete(joint);
+          results.push({ joint, reasonCode: 'RELEASE_SUPPORT_BLOCKED' });
+        } finally {
+          clearPreparedTorqueIslands();
+          preparedSprings = null;
+          constraintsApplied = true;
+          topology = springTopologyDomain(
+            descriptions,
+            joints.filter((_, i) => !opened.has(i)),
+          );
+        }
+      }
+      return results;
+    },
+    commitReleases() {
+      alive();
+      if (!planned.size) return;
+      if (planned.size) releaseInFlight = true;
+      for (const i of planned) {
+        world.removeImpulseJoint(world.getImpulseJoint(jointHandles[i]), true);
+        opened.add(i);
+      }
+      planned.clear();
+      contactPadCache = null;
+      rebuildFixedHandles();
+      topology = springTopologyDomain(descriptions, liveJoints());
+    },
     applyRopes,
     ropeEnergy: () => ({ ...ropeWork }),
     ropes: ropeReadings,
     applyGears,
     gears: gearReadings,
     prepareConstraints() {
+      if (planned.size) topology = springTopologyDomain(descriptions, liveJoints());
       clearPreparedTorqueIslands();
       preparedSprings = null;
       springsApplied = false;
@@ -1284,15 +1390,24 @@ export async function createPhysicsWorld(configuration) {
           while (parent[i] !== i) i = parent[i];
           return i;
         };
-      for (const j of joints) if (j.kind !== 'rope') parent[root(j.b)] = root(j.a);
-      const active = new Set(
-        joints.flatMap((j) => (j.kind === 'rope' ? [] : [root(j.a), root(j.b)])),
-      );
+      const nativeJoints = liveJoints().filter((j) => j.kind !== 'rope');
+      for (const j of nativeJoints) parent[root(j.b)] = root(j.a);
+      const active = new Set(nativeJoints.flatMap((j) => [root(j.a), root(j.b)]));
       constraintsApplied = false;
-      for (const id of active) {
-        const indices = handles.map((_, i) => i).filter((i) => root(i) === id),
-          island = makeTorqueIsland(indices);
-        for (const i of indices) preparedTorqueIslands.set(i, island);
+      try {
+        if (planned.size) {
+          responseWorld = RAPIER.World.restoreSnapshot(world.takeSnapshot());
+          for (const i of planned)
+            responseWorld.removeImpulseJoint(responseWorld.getImpulseJoint(jointHandles[i]), true);
+        }
+        for (const id of active) {
+          const indices = handles.map((_, i) => i).filter((i) => root(i) === id),
+            island = makeTorqueIsland(indices);
+          for (const i of indices) preparedTorqueIslands.set(i, island);
+        }
+      } finally {
+        responseWorld?.free();
+        responseWorld = null;
       }
     },
     prepareSprings() {
@@ -1709,6 +1824,7 @@ export async function createPhysicsWorld(configuration) {
       constraintsApplied = true;
       const states = readWorld(world, handles);
       assertFinite(states);
+      releaseInFlight = false;
       // A copied, validated post-integration sample; no live native object escapes.
       return states;
     },
@@ -1720,11 +1836,14 @@ export async function createPhysicsWorld(configuration) {
       alive();
       if (ropesApplied || (gearIndices.length && gearsApplied))
         throw new Error('snapshot requires completed gear step');
+      if (planned.size || releaseInFlight)
+        throw new Error('snapshot requires completed release step');
       return encode(
         world.takeSnapshot(),
         handles,
         JSON.parse(configurationIdentity),
         gearMemory,
+        [...opened].sort((a, b) => a - b),
         ropeState,
         ropeWork,
       );
@@ -1734,6 +1853,7 @@ export async function createPhysicsWorld(configuration) {
       expectedEnergy,
       expectedJointAngles = [],
       previousSpringLengths,
+      expectedOpened,
       expectedRopeWork,
     ) {
       alive();
@@ -1741,6 +1861,9 @@ export async function createPhysicsWorld(configuration) {
       if (JSON.stringify(decoded.configuration) !== configurationIdentity)
         throw new Error('snapshot configuration mismatch');
       const memory = validateGearMemory(decoded.gearState);
+      const nextOpened = validateOpened(decoded.opened);
+      if (expectedOpened && JSON.stringify(decoded.opened) !== JSON.stringify(expectedOpened))
+        throw new Error('snapshot release state mismatch');
       if (
         !Array.isArray(decoded.ropeState) ||
         decoded.ropeState.length !== ropeIndices.length ||
@@ -1787,7 +1910,7 @@ export async function createPhysicsWorld(configuration) {
           candidate.bodies.len() !== decoded.handles.length ||
           candidate.colliders.len() !== decoded.handles.length ||
           candidate.impulseJoints.len() !==
-            joints.length - gearIndices.length - ropeIndices.length ||
+            joints.length - gearIndices.length - ropeIndices.length - nextOpened.size ||
           candidate.multibodyJoints.len() !== 0 ||
           candidate.timestep !== world.timestep
         )
@@ -1846,9 +1969,54 @@ export async function createPhysicsWorld(configuration) {
             seen.add(previous.joint);
           }
         }
+        if (nextOpened.size && joints.some((j) => j.kind === 'spring')) {
+          // Admit candidate mobility before swapping any persistent live state.
+          const saved = {
+            world,
+            handles,
+            opened,
+            planned,
+            topology,
+            preparedTorqueIslands,
+            preparedSprings,
+            constraintsApplied,
+            springsApplied,
+            gearsApplied,
+            gearBefore,
+          };
+          try {
+            world = candidate;
+            handles = decoded.handles;
+            opened = nextOpened;
+            planned = new Set();
+            topology = springTopologyDomain(descriptions, liveJoints());
+            preparedTorqueIslands = new Map();
+            this.prepareConstraints();
+            prepareSpringAllocations();
+          } finally {
+            clearPreparedTorqueIslands();
+            ({
+              world,
+              handles,
+              opened,
+              planned,
+              topology,
+              preparedTorqueIslands,
+              preparedSprings,
+              constraintsApplied,
+              springsApplied,
+              gearsApplied,
+              gearBefore,
+            } = saved);
+          }
+        }
         for (const index of gearIndices) gearGeometry(index, candidate, decoded.handles);
         readContacts(candidate, decoded.handles);
-        if (JSON.stringify(plant(candidate, decoded.handles)) !== originalPlant)
+        const expectedPlant = JSON.parse(originalPlant);
+        expectedPlant.joints = expectedPlant.joints.filter(
+          (j) => ![...nextOpened].some((i) => jointHandles[i] === j.handle),
+        );
+        if (JSON.stringify(plant(candidate, decoded.handles)) !== JSON.stringify(expectedPlant))
           throw new Error('snapshot physical plant mismatch');
       } catch (error) {
         candidate?.free();
@@ -1857,6 +2025,10 @@ export async function createPhysicsWorld(configuration) {
       const previous = world;
       contactPadCache = null;
       world = candidate;
+      opened = nextOpened;
+      releaseInFlight = false;
+      planned.clear();
+      topology = springTopologyDomain(descriptions, liveJoints());
       ropesApplied = false;
       pendingRopeState = null;
       ropeState = [...decoded.ropeState];

@@ -18,6 +18,7 @@ export const BLUEPRINT_REASON_CODES = Object.freeze([
   'UNKNOWN_PORT',
   'SELF_CONNECTION',
   'PORT_OCCUPIED',
+  'RELEASE_LATCH_CONFLICT',
   'UNKNOWN_MATERIAL',
   'INVALID_ROTATION',
   'INCOMPATIBLE_PORT_DIRECTION',
@@ -182,6 +183,13 @@ export function validateBlueprint(blueprint) {
       if (!connection.a.surface || !connection.b.surface) return result('INVALID_BLUEPRINT', path);
       const a = parts.get(connection.a.part),
         b = parts.get(connection.b.part);
+      if (
+        a &&
+        b &&
+        CATALOG[a.type].releaseFace === connection.a.surface.region &&
+        CATALOG[b.type].releaseFace === connection.b.surface.region
+      )
+        return result('RELEASE_LATCH_CONFLICT', path);
       if (a && b)
         try {
           validateSurfacePair(a, connection.a, b, connection.b);

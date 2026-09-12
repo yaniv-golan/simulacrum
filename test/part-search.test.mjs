@@ -18,6 +18,8 @@ test('everyday words and roles find the intended part before incidental referenc
     ['keyboard', 'commandReceiver'],
     ['engine', 'poweredMotor'],
     ['spin', 'poweredMotor'],
+    ['latch', 'releaseCoupler'],
+    ['release cargo', 'releaseCoupler'],
     ['detect rotation', 'rotationSensor'],
   ])
     assert.equal(searchParts(query)[0]?.type, type, query);

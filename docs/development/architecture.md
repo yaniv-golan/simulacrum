@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"9e01d89dbbd1f466567dc547e386741b94016d4e93fd37d8ac5ec7d6000d2878","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"19b32488fb7586f27a5692c9fde85ae5290ebd835a0bb9331a782fce68da3b3d","disposition":"still accurate","rationale":"The manifest remains the single check metadata owner, now validating mergeSmoke coverage. AGENTS changes verification tiers only; runtime contracts and architectural layer authority remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e11461d04db3d1be7c7cde5dbd22caee28457be3c2ee5531301c608609e24d7c","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"50f9df7344cdd38a4153e17e67b42e0a70f880811ec88fc70eb79f3d96394daf","disposition":"still accurate","rationale":"The runtime contract now owns distinct envelopes 4 through 8, including independent opened-joint and Rope work validation. The overview correctly delegates checkpoint/state ownership to that contract without duplicating format details."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"5483f6a274904076df3525c0ebbd97b243765501880e969a83150f25abe19f29","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"a6d5cf5871be7d48bbb4aca3a58dcd2daab507f777b43fca8076f40ffdad073a","disposition":"updated","rationale":"The section now names the application-owned utility row and captureFeedbackContext. The application injects the row host and combines workshop.save() with current build/cursor/mode/status/UI/viewport context; feedback receives no checkpoint function. The separate recording path retains replay capture, and core/model/session admission and physics authority are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"5205f93edb34f280d7c78c3ae500db55a0b9c77b4314524aa85fa205529d68ab","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"8924dc13201e0f6cf7daf09d42b06e481cc0a092146e96274b4cbfce8d876522","disposition":"updated","rationale":"The flow now includes Release Coupler fixed-joint compilation, shared resistive coil funding, next-tick topology preparation and live joint removal, preserving Rope anchors and independent checkpoint validation. Application-owned feedback layout and authored-save/UI-only context remain separate from replay checkpoint capture."} -->
 
 
 
@@ -74,9 +74,24 @@ Because the fixed heading is outside the scrolling content, part help forwards
 reading keys from the header into the active page. Content focus keeps native
 scrolling, while buttons and tab navigation retain their activation behavior.
 
+Release Coupler uses an ordinary fixed attachment on its catalog-designated right
+mounting face. The compiler records its numeric joint index. Power accounts the coil
+as a resistive load on the shared circuit; a held positive receiver command funds a
+finite actuation. Completed funding schedules opening on the next tick. Before motor
+allocation, the physics door previews the proposed topology using an exact native
+snapshot copy and copied response factors. The actuator phase removes only the planned
+native fixed joints, preserving the live bodies, then applies those funded responses.
+Completed power telemetry owns latch progress/status; physics snapshot metadata owns
+opened joint indices, cross-validated during session restore. Build restores the authored
+starting attachments. The preview copy never replaces the live plant or supplies motion.
+Rope anchors remain attached when a fixed latch opens. Numeric rope links stay outside
+native bilateral groups and use the prepared post-release response before integration.
+The runtime contract owns the combined checkpoint format and independent validation
+of opened joints and completed rope work.
+
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"5f6326a17278a2a94706c377dee1241daa38e47af1bfa3b67f60aea4997548c2","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"458e2ae76029a33335f0ffd4f30f20c0887139cadad26ef877bf9228c40dbb81","disposition":"updated","rationale":"The table now names the rope model, numeric tensile law and completed rope renderer. compileRopes derives area, mass, stiffness and damping from the authored nylon parameters and subdivision, and the law receives numeric vectors/mobility rather than blueprint identity. This extends the existing canonical-owner pattern without moving material, history, geometry or controller authority."} -->
+<!-- doc-review {"version":1,"fingerprint":"71315b247aa59d22b4fd8e43ad8ea0b5e49bce5aee4fcc28e2522037b73a16f6","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"b6034a634195ed75b5b05aa621c885d5c895a35eb751ba87af7f9c61db610a7d","disposition":"updated","rationale":"Added the shared releasedAttachment owner consumed by inspector and generic overlay. Its fixed-kind guard excludes Rope labels, while existing geometry, contact, material, spring, rope and command owners remain the canonical decisions."} -->
 
 
 
@@ -89,6 +104,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 | Surface frames and collision admission                | [resolveSurfaceEndpoint](../../src/model/surfaces.mjs#symbol=resolveSurfaceEndpoint) / [validatePlacementGeometry](../../src/model/surfaces.mjs#symbol=validatePlacementGeometry)                                                                            | compiler and surface proposal                                                           |
 | Candidate attachment                                  | [snapConnection](../../src/model/assembly.mjs#symbol=snapConnection) / [proposeSurfaceMount](../../src/model/assembly.mjs#symbol=proposeSurfaceMount)                                                                                                        | core and surface preview                                                                |
 | Mechanical membership and selection boundaries        | [connection graph](../../src/model/connection-graph.mjs)                                                                                                                                                                                                     | authoring, mount admission, manipulation scope and mirror selection                     |
+| Released fixed-attachment classification | [releasedAttachment](../../src/presentation/release-state.mjs) | selected inspector and generic connection overlay |
 | Rigid authoring transforms                            | [transformGroup](../../src/model/editing.mjs#symbol=transformGroup), [frame math](../../src/model/transforms.mjs)                                                                                                                                            | core transforms and connection snapping                                                 |
 | Connection overlay specification/resources            | [checked spec producer](../../src/presentation/connection-render.mjs), [renderer](../../src/presentation/connection-view.mjs)                                                                                                                                | workshop display; exact diagnostic edge IDs come from connectionTestPaths               |
 | Mirror reflection and omitted edges                   | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs#symbol=proposeMirroredAssembly)                                                                                                                                                                | mirror UI and core command                                                              |
@@ -129,7 +145,7 @@ Ground contact and workshop motion are not Course qualification.
 
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"6073a1d9671257f25c7e122fa4dad8fa6579c3589dc016aa4b3a29a109cde016","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"d4eb458f76d80036488a49097761edc6eaf92885bfb96730102a4c5fe86e667a","disposition":"still accurate","rationale":"Rope expands compiled bodies, connections and completed observation types, but does not add a sensor channel, policy observation, controller evaluator or learning admission path. Existing sensor sampling, receiver arbitration, completed decision history and explicit learned-model installation retain their owners. Rope applied-tension inspection is not a training signal or new controller authority."} -->
+<!-- doc-review {"version":1,"fingerprint":"64648249b03899cd75055081cd0bc9aeeafcb1511731d1f0de26ac50f4769e6d","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"00ceeaf660ce7e25b40c23547e8666212fd675c5ce438ba9f636a343ba3f6bc6","disposition":"still accurate","rationale":"The power solver adds a resistive coupler load on the existing shared circuit. Sensor descriptors, completed-snapshot sampling, controller injection, previous-tick receiver arbitration and separate teaching/diagnostic ownership remain unchanged."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

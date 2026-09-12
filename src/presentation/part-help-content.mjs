@@ -19,6 +19,16 @@ const gearHelp = (teeth, pitchRadius) =>
     ],
   );
 export const PART_HELP = {
+  releaseCoupler: help(
+    'Releases cargo or a tool using electrical power',
+    'The right face is the latch. Its one attachment can open during Run; attachments on the other faces stay bolted. Opening adds no push, so cargo moves only under its existing motion, gravity and other forces.',
+    'Mount the coupler by another face. Snap a tool onto Latch · Right, wire Power to a cell, and wire Control input to a Command Receiver. Hold W or Up with the receiver’s default keys.',
+    [
+      'Hold the key until the coil has enough energy. Releasing early or losing operating voltage resets progress; spent energy is not refunded. Once ready, opening occurs on the next tick and cannot be cancelled.',
+      'The latch stays open for this run. Return to Build or Try again to restore the starting attachments. Other bolts or hinges can still hold the load. Wires remain connected and do not act as ropes.',
+      'If opening would leave gears without their shared shaft support, or change a locked spring into an active one, it stays latched. Inspect the selected status, return to Build and repair those connections.',
+    ],
+  ),
   gear12: gearHelp(12, 60),
   gear24: gearHelp(24, 120),
   ball: help(

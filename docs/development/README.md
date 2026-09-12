@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"893ddae3f2da5422daf5664ecbe19f20307a8b8db4a9b53481262543961e3288","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"6330970091f0498a52ccfc25e79cc35cd9cc22904a60c2421fae5c241d6a98f4","disposition":"still accurate","rationale":"AGENTS adds an explicit nonqualifying merge tier; this entrypoint still directs owner discovery, runtime setup and the canonical contracts without changing layer ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"529c6637e813fa2def4d75d272efd444b07df41cf299ce7a522e177344bb0160","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"3a2dd0f827e6a9db678906d55907946e81d653abe3a0d3cb8bb23de73a4a4e59","disposition":"still accurate","rationale":"The entrypoint still requires canonical owner discovery and public commands. Expanded release tests introduce no new production owner, layer or reset policy; Node setup and recipe selection remain unchanged. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"294e70f9ea3c136874b915da106e710a9e03c50310eb9440d6cbae8b6b256288","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"de9ccb2b5171822fc3d3b72d3084a29e64e994c4f1e293575abc9c324a5c5566","disposition":"still accurate","rationale":"The generated reference adds the authored-feedback context owner and regression controls. The checker still regenerates facts before individual source-bound dispositions and rejects stale dependencies. New explanatory links identify the actual context owner without replacing semantic review or hiding source changes."} -->
+<!-- doc-review {"version":1,"fingerprint":"7f8d284bb57b67d01d9a25cdfdc40a4d4921bfc321035a3e27e34c26bec36fd4","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"cb71234217c88bcc1f260d9b09e42eda9b6fd2849d2786ef7a32223e898020c4","disposition":"still accurate","rationale":"The regenerated reference adds Release Coupler owners, controls and its browser check. The documentation algorithm, semantic review procedure and conservative merge-policy requirements are unchanged; generated facts remain distinct from explanation review."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"daef0d9e8f2631a0c350c3457e68deba59eea0bd2156d13918eae6a28f30c5f6","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"56091c0e369725a814e6c8d8f04befc4d51cc30775fda823f196c2e216149d72","disposition":"still accurate","rationale":"The manifest extends independent-feedback controls with host-placement and authored-context witnesses, and workshop composition adds that explicit context owner. These service/import changes remain subject to existing scope audit and witness application; browser coverage, exclusive execution and last-writer ordering hints are unchanged. Added hit-testing assertions do not constitute a completed browser run."} -->
+<!-- doc-review {"version":1,"fingerprint":"b718fe06864ec5bff7358f81859d41039248dea10946a4bfe9b0afc6b5ced9a1","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7dbefbeb2e96367cb902a356ba8fe4635252f4d2973bd47d839b6b9322c8a5a4","disposition":"still accurate","rationale":"The manifest retains the union of feedback and release browser checks and invariants. Release catalog/schema dependencies broaden affected source but do not change audited scope admission, exclusive scheduling, per-attempt receipts or the rule that ordering hints never omit required checks."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -463,10 +463,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"93906d61f20ebf502c18cbd4e51124992423bb52013c806a7fb765be56adeab7","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"1f51d57120e486c30d8dfcbcdadf1a8538f1dece47d10ae0c66f2ec8aad52dad","disposition":"updated","rationale":"Documents complete private owner-file publication via atomic rename. The regression preserves contender waiting, serialized execution and strict rejection of corrupt published authority; no age-based eviction or wait-budget change is introduced."} -->
-
-Owner metadata is published by an atomic rename after its complete private file is written;
-contenders wait while ownership is unpublished and still reject malformed published metadata.
+<!-- doc-review {"version":1,"fingerprint":"06d39cb49e36ce9c9a0265bd421b394ceccd72366b20a714f7e112e5073d4810","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"1f51d57120e486c30d8dfcbcdadf1a8538f1dece47d10ae0c66f2ec8aad52dad","disposition":"updated","rationale":"Retained one precise description of temporary owner metadata and same-directory atomic rename. The implementation waits for incomplete publication and rejects malformed published authority; queue limits, strict recovery and cooperative scheduling boundaries remain intact."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -485,6 +482,10 @@ summary/explanation commands do not wait for the window. Raw direct script invoc
 and unrelated applications do not participate: this is cooperative scheduling, not
 CPU/GPU reservation or permission to relax performance thresholds. Preserve failed runs;
 there is no automatic retry-to-green policy.
+
+Owner metadata is written to a private temporary file and published by same-directory
+rename. Contenders wait while publication is incomplete; malformed published metadata
+remains an error rather than evidence of a free window.
 
 A crashed owner is never evicted by age. Inspect its process tree and establish that
 all descendants stopped, then use `node scripts/verification-window.mjs recover <owner-token>
@@ -505,7 +506,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"ef0d765d953a8662a122e43354090aba066f6363e46213904637abd08172a625","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8ff9530e69540f46b48a7194806ff00c5c745ccd1687ef6d0c18b9e0df3a2581","disposition":"still accurate","rationale":"The manifest adds feedback ownership and regression pointers without changing candidate capture, receipt admission, resume eligibility, timeout selection or source installation. The in-flow toolbar and new context module require fresh candidate evidence. Existing source/index and distinct human-acceptance requirements remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"35c71657848286c15d341e43cd70e674a7b400b813a74f95ccbf242504fece5b","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"5c8e7050ac44f1542f517b24c2d8d2251b8abd7162eaeb3d3e5c660b3af0e461","disposition":"still accurate","rationale":"Release part/schema and manifest additions change captured bytes and required checks, not capture isolation or resume admission. The section retains the current ninety-second assembly watchdog and snapshot-based scheduling hints with possible concurrent hint loss; neither produces reusable browser receipts."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
