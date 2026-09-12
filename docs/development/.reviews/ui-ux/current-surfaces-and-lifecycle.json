@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "src/presentation/workshop-view.mjs": "c30eb1c64f7698c656637f479f5634db2d510b0df9be2d13286f2398cdb9b7ac",
+    "src/presentation/workshop-view.mjs": "efed78c1399ec30f9ec239c43ddb81718c566f577b4d364fd8f3286dcf291633",
     "src/presentation/workshop.css": "9ce8993bdd2815c02981a579d4110b1320596d98c296704e3263bec8d611d683",
     "src/presentation/parts-browser.mjs": "0c25070f378d367a2bd8a6aa680226f5a32d782552b9811bea72f92e3f6856bc",
     "src/presentation/workbench-content.mjs": "35e817a6787c38e52bc94437a4ee1606a5d956b4f1036966a84441200ee83474",

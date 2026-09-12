@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"5597be74b3651d83975c92723c9ff48760ef381a1d92f7164b2965dff2569c61","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"859a19f2577d80cc529662d4041a64af54c1d319f1d7f55cc168bbf2bd4d8d24","disposition":"still accurate","rationale":"Warmup meshes exist solely to prepare rendering resources, never in the authored mesh map or telemetry. Placement still passes through the same ordinary command and completed snapshot owners; no simulation state or authority is added."} -->
+<!-- doc-review {"version":1,"fingerprint":"373e54ceea128a3e8739527728980e78620e284a68e420351473b967992000fd","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"cdfc72d510ce819e6f1f39aca7ef8c550f4ce7a0c01445b57c011c4db3bfddc2","disposition":"updated","rationale":"The trace now identifies the shared canonical part mesh and narrow static family builders. Workshop/catalogue/help/placement/assembly callers own disposal; authored-axis changes refresh the appearance cache. New catalogue placement and warmup behavior stays intact."} -->
 
 
 
@@ -53,6 +53,10 @@ Part explanations, tooltip timers and the movable reference window live in
 are presentation state. Closing retains the current type, tab and scroll for reopening;
 choosing a different type resets the reading page. Catalog thumbnails are cached
 independently of palette eligibility, so supported loaded-only parts have images too.
+The [shared part mesh](../../src/presentation/part-mesh.mjs#symbol=createPartMesh) supplies
+these images and workshop/assembly previews from authored geometry and static family
+coatings, with disposal owned by the caller. Angular-rate face artwork follows the
+authored axis through the appearance cache; animation remains the completed body pose.
 [Example diagrams](../../src/presentation/part-help-diagram.mjs)
 render one node per example part and resize their connection paths with the window.
 They never enter authored state or
@@ -66,7 +70,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"ac82a317630afeebb779916cf679fe34835f7a010ce3232eb003d226d554b614","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"90c9c361c84eda20082c3a205e372d2fa35017047584a93c328aed2d92dab377","disposition":"still accurate","rationale":"Actuator power, anchor reactions and completed telemetry remain owned by existing model and simulation code. Catalog vocabulary now covers its canonical type without changing admission or physical behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"35900a0aad20b1d67ff6f4bcad91536cc410b188c502c6f96d1075acbe293ec4","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"ba4db4f71e738be79bbcb3f0e5ab2ae4ed4e70ebb5673a347de421cba9e13b9f","disposition":"still accurate","rationale":"The appearance key additionally binds the selected rotation-sensor axis. Model geometry, material, quaternion, surface, connection and snapshot ownership in the table remain unchanged."} -->
 
 
 

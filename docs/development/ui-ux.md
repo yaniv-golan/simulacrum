@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"99e587ea707c5af8948307de9e4e5cf8efb670013b3c821518139301983a53df","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"57587534efc197b52eb9ee274f921faa42c81b253c1eede16038c77ca39022d4","disposition":"still accurate","rationale":"Graphics preparation and fixture corrections add no learning content or permanent player-facing surface. Existing discovery, placement and teaching admission rules remain applicable; no new entry is required."} -->
+<!-- doc-review {"version":1,"fingerprint":"2a28fffcca92743ec7e57148e1652b949af558a38b76fc37ff698cf3ad9dd114","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"c8bb7040694e6bbb3718ef5ac782a46bf5c5bd466e9a3bff1ce574d4dce16579","disposition":"still accurate","rationale":"No entry: static part identification extends existing rendered hardware. Existing part help and sensor examples supply explanations; the change creates no lesson, challenge, experiment or permanent teaching panel."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"07eaffc0b24fa95becd1e4cdf4192fba4eddec4d406d185f609baca4e4590063","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"86f0e2661c0a40e8a9cf57d7aecebb70e4e057fe240f685782a34f1d132f5739","disposition":"still accurate","rationale":"Graphics warmup completes before authoring and adds no visible region or persistent authored object. Catalog preview and Place remain distinct actions, and recording-strip clearance remains as documented."} -->
+<!-- doc-review {"version":1,"fingerprint":"d905b8a5f05f2fd9e53c0ae640dada4e415a928119815d810d14db1e3b410812","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"3e455d30105f891b3a8f98cc9fc1a77cd764364ede371172c5cc826bc03643ff","disposition":"still accurate","rationale":"The player identifies hardware in the existing catalogue, workbench and requested previews. Only mesh resources changed; catalogue search/placement, narrow layouts, selection and all existing visibility lifecycles remain unchanged, with no displaced action or new panel."} -->
 
 
 

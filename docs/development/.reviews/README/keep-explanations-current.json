@@ -10,7 +10,7 @@
     "scripts/module-graph.mjs": "db47284e35c471196b3f7cffbb998660ad58b6beb79d19f92eff6b04e7508399",
     "scripts/navigation.mjs": "21299888a2f72faa2c0c24a19a8cd105cd27c822927858ecec0c504768e0d58b",
     "scripts/manifest.json#check=developer-documentation": "651e6477c97f9f758029a7aa0a6ff0cd9f4089c6f5a03f5963d3bba3e8393805",
-    "docs/development/reference.md": "2aaa60831a93da39bfc320a3d6cd537eda3c490708b99fe85d62ae39d6e202f2",
+    "docs/development/reference.md": "65886895acb7605bd72d6ef9c14a12c01c3cc0f7b1c31c3ca75e20e77b1c663d",
     "package.json#script=docs:prepare": "12217c6795d7e7b9dd072d5f7c5c5f86522a3e11ca9d186fc4b0075831ca39f4",
     "package.json#script=docs:review": "cfe62878e316eb98829acab28bb8d8c45d224e6f3e9caf26fc6f202d334489c6",
     "package.json#script=docs:check": "507aa495a8e3083a872156aa128bfc7dccd108984ebe830ca7712bc9cc1395dd",

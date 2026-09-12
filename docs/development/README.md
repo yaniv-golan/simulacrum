@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"87944351014bf51a05d1899b3dc45fa2893d0459585820b54dedec37353dd635","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"fae79141b6e53becef9f7d7eb8b277dbc2b881ffeb5af9f1a58a75690b917f9e","disposition":"still accurate","rationale":"Generated reference now includes the added verification cleanup and scheduling-history controls. The preparation, per-section source review and current-sidecar checks are unchanged; the workflow still requires semantic review after source closure."} -->
+<!-- doc-review {"version":1,"fingerprint":"9b47e0100da11e1d4451a883138477ac96f24253443de97cdd709f9aeb458492","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"fadd9014785f96af2f84c7b94cb4ac5ef4fe75261c9291004d72c611063dd26c","disposition":"still accurate","rationale":"The regenerated reference includes the shared part builder and additional invariant witnesses. Generation, individual section review and source-bound documentation checking retain the same owners and workflow."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"792f786096b08f0c924f752e2626e46bdbdc0eeffaa8a31860c0cb1e511b2fc5","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5c482789b5bd86614a76e557bfee946076000036c8369ab9a53185ada489093b","disposition":"still accurate","rationale":"Hint publication now reclaims only temporary files whose recorded writer PID is absent; live or uncertain owners are retained. Immutable records and two-record pruning preserve concurrent outcomes. The described attempt-specific transport, warning-only hint failures and exhaustive receipt-independent scheduling remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"3210d3d0a602c43447a1cbd42d6e55db8030501cb30684b09d1d7790c3f2ba91","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"cdb4a45cc4a26f35196de8c4585be72a2515de91d3f1cb9058c5fa41d2e04ce7","disposition":"still accurate","rationale":"The manifest extends an existing rendering invariant with static family owners and witnesses. It preserves browser selection, execution policy, runtime observation boundaries and the official scope application witness protocol. The reviewed scope application only refreshed consumer digest metadata after executing its mandatory witnesses."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -480,7 +480,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"a6ad192fc6908e024a28a736a718335e8b0d77c94d7fb8dd7cbc2d087e4fd4ac","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"1d9d4c7761676cd21764c8376522077fbeeb2a2f4def85bfe5747e5799562d6c","disposition":"still accurate","rationale":"Final history cleanup only reclaims abandoned temporary artifacts and adds a regression control. Current-report transport, unchanged-run exclusion, legacy suite-start freshness, candidate source capture and completion tier ownership remain as described."} -->
+<!-- doc-review {"version":1,"fingerprint":"051c11ac1361ee8e4d748063cdb5609ac36837ea7c38d7f246855264482bd1d0","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"d504d256b1ac961b0ce7edf0531f789642eb98989b084adb77093ea1d096ef59","disposition":"still accurate","rationale":"Rendering witnesses were registered without changing candidate capture, source identity, dependency admission, receipt reuse or verification tiers. The current baseline scheduling and graphics warmup are retained. The reviewed scope application only refreshed consumer digest metadata after executing its mandatory witnesses."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

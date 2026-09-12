@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "src/application/workshop-app.mjs": "f4445c59320b4691a7c63bb2273dbd9fb8993a11262518e6c63fc7107d0f29fb",
-    "src/presentation/workshop-view.mjs": "c30eb1c64f7698c656637f479f5634db2d510b0df9be2d13286f2398cdb9b7ac",
+    "src/presentation/workshop-view.mjs": "efed78c1399ec30f9ec239c43ddb81718c566f577b4d364fd8f3286dcf291633",
     "src/presentation/parts-browser.mjs": "0c25070f378d367a2bd8a6aa680226f5a32d782552b9811bea72f92e3f6856bc",
     "src/presentation/part-search.mjs": "93e503b88430fd761462b54791c7d9f0a0aa8ea37036a94fd5fcd35296217210",
     "src/presentation/part-placement.mjs": "87613e497aa664f702d05cedbef7b19297a115acf497f7b2e70b458be3dc8db5",
@@ -38,7 +38,7 @@
     "src/model/reusable-assemblies.mjs": "db73e9c36e39987d21826242467d91ba61e678f5acab698d8ddccea8fc69ba0e",
     "src/model/surfaces.mjs": "58249441a24e920cf369f1a51777c969e571a32e68a0cb8561c5e2eac8a82995",
     "src/model/tick.mjs": "9da2a4cb1bd1f0d6443a7fdf8bb0e75c22b4a6a86c0b8dd83230d0466379b187",
-    "src/model/transforms.mjs": "23691a444aef7709afc2257c4486a60683b0281f14b2aab64a760de653ba525f",
+    "src/model/transforms.mjs": "f3e9dddf60d32f40db14ebd0dd9b87efc25e6517758984c3bd74d2c123d68709",
     "src/model/workshop-command.d.ts": "c9afe2ef4f5ad698dd7f7cc98de95d39c4a3b8b3653b33c97b59988338257926",
     "src/model/workshop-command.mjs": "5d4a61ad6962270687985b987792cae786f8e229b5d2e0db29b824bd8271f1e9",
     "src/scripting/controller-executors.mjs": "104b254958acaf6c225042a207b98941c7c76b207fc77cbb2f93fcfe0932da84",
@@ -69,6 +69,11 @@
     "src/presentation/part-help-diagram.mjs": "8eabcf8798bb7d588d0119b77b3a980e2d5f1137b52b662ee31b87e2f9939667",
     "src/presentation/part-help.mjs": "1977cef135a77dbaf8f50ceda926dd90bc111e134f3cb843f4180330efc1e727",
     "src/presentation/port-wording.mjs": "c73d5ee3cd15b7432054a676f3d8493f020b446cf824375a3c419f3becf661da",
+    "src/presentation/part-finish.mjs": "905c387cce31bcfad81f9b3d9b93b83f4ad7822163ee6bf76868c154b0f0e44a",
+    "src/presentation/part-mesh.mjs": "2dbbfb379de76a08995abb793ba5150644579058bb94200a8e24bb756188a969",
+    "src/presentation/part-visuals/electronics.mjs": "3ea896ad2cf443790de098cff3f14ea5a4dad3a4c0033a6fbf692c9f75b17203",
+    "src/presentation/part-visuals/mechanical.mjs": "97d020f02ca5ad8dfef0bce00f635e9467c37b829c3871dbbc064b518b3599cd",
+    "src/presentation/part-visuals/sensors.mjs": "63d1be3c60078e05377b2f21dd46f436b90b742d14e736c84cbb0cdc56f2b817",
     "src/presentation/part-help-input.mjs": "6380d1c3b9772c3c7522ef5a833a42a81a9c0935253e09ce026cadc0eb0491ec"
   }
 }

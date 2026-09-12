@@ -351,7 +351,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -1263,7 +1263,7 @@
       "id": "connection-display-isolation",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build.",
+      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build. The shared part builder preserves canonical solids, material authorship and resource disposal across consumers; static family coatings do not intercept picking or invent readings. Sensor face graphics distinguish measurement identities and refresh the selected angular axis.",
       "owners": [
         {
           "path": "src/presentation/connection-render.mjs",
@@ -1276,6 +1276,22 @@
         {
           "path": "src/presentation/part-finish.mjs",
           "anchor": "createPortHardware"
+        },
+        {
+          "path": "src/presentation/part-mesh.mjs",
+          "anchor": "createPartMesh"
+        },
+        {
+          "path": "src/presentation/part-visuals/sensors.mjs",
+          "anchor": "createSensorDetails"
+        },
+        {
+          "path": "src/presentation/part-visuals/electronics.mjs",
+          "anchor": "createElectronicsDetails"
+        },
+        {
+          "path": "src/presentation/part-visuals/mechanical.mjs",
+          "anchor": "createMechanicalDetails"
         }
       ],
       "checks": ["invariant-controls", "verify-connection-test-browser", "verify-exploded-browser"],
@@ -1314,6 +1330,38 @@
           {
             "path": "test/presentation-resources.test.mjs",
             "anchor": "assembly previews retain offset surface fasteners under authored rotation without mutating saved parts"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "shared part mesh retains canonical solids, authored state and disposable resources for the full catalogue"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "angular-rate face refreshes for authored axis changes while power and binding edits retain resources"
+          },
+          {
+            "path": "test/part-visuals-mechanical.test.mjs",
+            "anchor": "mechanical surface finishes stay inside authored envelopes and never intercept picking"
+          },
+          {
+            "path": "test/part-visuals-electronics.test.mjs",
+            "anchor": "bank paint follows real endpoint directions and positions including altered authored ports"
+          },
+          {
+            "path": "test/part-visuals-sensors.test.mjs",
+            "anchor": "contact membrane covers the full active +Z face; other faces only identify it"
+          },
+          {
+            "path": "test/part-visuals-sensors.test.mjs",
+            "anchor": "tilt uses a distinct gravity graticule, not the linear-motion triad"
+          },
+          {
+            "path": "test/part-visuals-sensors.test.mjs",
+            "anchor": "range lens is centred at the sensing ray origin and remains visible after the socket band"
+          },
+          {
+            "path": "test/part-visuals-mechanical.test.mjs",
+            "anchor": "powered slide paint clears the shared central interface and differs from passive spring seats"
           }
         ]
       },
@@ -4725,7 +4773,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
+      "consumerSourceHash": "b8c3325fe3d6ca0439167fa2690c6d38b76a639ab5689f7c92d54939fc4f6bd4",
       "externalImports": ["node:assert/strict", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/qualify-workshop.mjs",
@@ -4798,7 +4846,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
+      "consumerSourceHash": "b8c3325fe3d6ca0439167fa2690c6d38b76a639ab5689f7c92d54939fc4f6bd4",
       "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/assess.mjs",
@@ -4910,7 +4958,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "7547100d6f8413c04edb22b7ede3a31ddfa4f22011772e1d51e91007d25c3c07",
+      "consumerSourceHash": "e99f5935e31a1b42a79b619ac939fdae88a284a41f4cf1ac39cec93cdf2ece6e",
       "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/bars.mjs",
@@ -5280,7 +5328,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "57f1c36dbc105c0de95339d1aeed1005d64640f17a1e95e1bd8961f84804f36e",
+      "consumerSourceHash": "b399d4db639ed72ce303198cf4770834c415cf960e8aef714d36a86726daa6db",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -5340,7 +5388,7 @@
         }
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
+      "consumerSourceHash": "b8c3325fe3d6ca0439167fa2690c6d38b76a639ab5689f7c92d54939fc4f6bd4",
       "externalImports": ["acorn", "css-tree", "node:fs", "node:path", "parse5", "typescript"],
       "consumers": [
         "scripts/analysis-snapshot.mjs",
@@ -5584,7 +5632,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "c0f8f5889ddb843df58b518517eafb9b4f0b8af157d9309c7da9f05979227902"
+      "consumerSourceHash": "24fa160c5e1c4d2040d0938e7be9268941cd44a6ce5a2d0d4e844a832349e392"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -5608,7 +5656,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "c0f8f5889ddb843df58b518517eafb9b4f0b8af157d9309c7da9f05979227902"
+      "consumerSourceHash": "24fa160c5e1c4d2040d0938e7be9268941cd44a6ce5a2d0d4e844a832349e392"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",

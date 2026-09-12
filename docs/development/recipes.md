@@ -414,7 +414,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"b1df331813bc713c3df3db4edd69899a2f26c1fce3ba1ac2ab110ba7daf35b1c","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"e0062f6ebcd8cb8148ac91f60bcf53a162055e4dfff91910688c22464727e83e","disposition":"updated","rationale":"The section now distinguishes palette batch cleanup from the main renderer lifetime warmup. Warmup resources leave the scene immediately, remain bounded by the catalog and outside authored readback, and are disposed with the renderer. Real F2 samples show first-placement latency below the unchanged threshold."} -->
+<!-- doc-review {"version":1,"fingerprint":"a3630751df27e7bb2ed3464ecb91a4aa61146bee7fb04b81896641783434688d","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"ee952d166735561d803c03023a15b06cdadae899bd448a0a97e6af70ca7f2b99","disposition":"updated","rationale":"The recipe names shared mesh and family owners, resource disposal, axis-dependent static graphics, the full +Z contact face and powered-slide emblem. It preserves completed transforms and explicitly retains the actuator rod as existing visualization without collision geometry."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -427,8 +427,23 @@ geometry and exploded dashed styling retain their existing behavior. Gear meshes
 use dashed relationships without a solid supporting rod; their root-cylinder
 marks follow completed body transforms. Preserve the [gear rendering controls](../../test/gear-view.test.mjs).
 
-Electrical port hardware is part of the production part mesh, shared with catalogue and
-assembly previews. [Surface finishes](../../src/presentation/part-finish.mjs#source)
+The shared [part builder](../../src/presentation/part-mesh.mjs#symbol=createPartMesh)
+creates canonical solids and owns their disposable finishes for the workbench, catalogue,
+help images, editing/placement and assembly previews. Family builders receive authored
+dimensions and relevant parameters or ports; they never receive a controller or session.
+[Sensor faces](../../src/presentation/part-visuals/sensors.mjs#symbol=createSensorDetails)
+distinguish measurement identities with static graphics and large top identification
+emblems around the real power socket; contact pad ink occurs only on +Z. [Electronics coatings](../../src/presentation/part-visuals/electronics.mjs#symbol=createElectronicsDetails)
+mark actual socket banks, while [mechanical finishes](../../src/presentation/part-visuals/mechanical.mjs#symbol=createMechanicalDetails)
+mark existing housing covers, spring seats, solid wheel sidewalls and the powered-slide base.
+The powered-slide emblem clears the shared central power/slide interface; its rod remains
+the existing completed-endpoint visualization, without added collision geometry. These coatings
+have no picking surface, new readings, physical material regions or collision meaning.
+The [appearance cache](../../src/presentation/resource-cache.mjs#symbol=partAppearanceKey)
+includes the angular-rate sensor's selected axis so edits replace stale face graphics;
+power commands and binding-only edits retain resources. Recordings retain their existing
+approximate reconstruction semantics. Electrical port hardware is part of this production
+part mesh, shared with catalogue and assembly previews. [Surface finishes](../../src/presentation/part-finish.mjs#source)
 provide cosmetic material response, subtle roughness grain and a disposable studio
 reflection field. Paint is nonmetallic surface treatment; exposed surfaces follow the
 authored material. These finishes do not change model material values. [Assembly
