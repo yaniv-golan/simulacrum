@@ -8,7 +8,7 @@
     "scripts/playtest/feedback-node.mjs": "a2613ef4f30c9b5d2b7b829c6bb30f9a2efcaddc6b0c8d2b4c8842965a1b65cc",
     "scripts/playtest/protocol.mjs": "30279b9083f6c0f27a85fea472a1ed6edaaa525f331f316916a8d78585296a10",
     "scripts/playtest/worker.mjs": "4ce837d8c49e678fb9a877154a2c419a8b959d9644d3b3b92e44972ecd4a67a5",
-    "src/application/feedback-client.mjs": "2bb85f8588d7476d73a48422d092416e20680960492976ec05c2e77d3f1da8a9",
+    "src/application/feedback-client.mjs": "ddb651af905a25107e6d656c4a65867ac69b4863c90c05649ade23584ada9fb9",
     "src/application/feedback-protocol.mjs": "66d655f34eed88c4461203b16eda0fd3da311e315f303c6100b61ec70173396e",
     "src/application/feedback-store.mjs": "98622c689bc3ff843c18080f232b02f8a4b4a98eab2771f3ca07647489a8ae2e",
     "src/application/feedback-capture-gate.mjs": "aa6fcded9f6eccd75255bba6531e9bb641c6f764364aca8bbed358ef261e7c87",

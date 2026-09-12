@@ -879,7 +879,9 @@ export async function mountFeedbackClient({
       q('#feedback-title').focus();
     } else if (
       event.shiftKey &&
-      (document.activeElement === first || !stops.includes(document.activeElement))
+      (document.activeElement === first ||
+        document.activeElement === q('#feedback-title') ||
+        document.activeElement === q('[data-history]'))
     ) {
       event.preventDefault();
       last.focus();

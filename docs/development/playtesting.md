@@ -10,7 +10,7 @@ For an interaction report, use **Record an issue** in the left sidebar, then Sta
 
 ## Remote setup
 
-<!-- doc-review {"version":1,"fingerprint":"75124b7d9911976b5aee5bf32ea9869bed62aa42363c398982bcbfc0fe86e295","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"4f8c601ed6fa108643027a303c63bef0944dfaa7a7dd1678584c7def8aa95c3b","disposition":"still accurate","rationale":"The merged client and store implement the already documented independent recoverable draft, immutable protocol-1 submissions, attachment opt-ins, exact-byte receipt acceptance and separate 32 MiB local budget. Node/cloud admission and private export remain separate from capture-v2. Catalog placement helper integration does not alter consent or capture-gate authority; unknown video duration still has no wall-time substitute."} -->
+<!-- doc-review {"version":1,"fingerprint":"c9eefcfc578d25c18d22bf965781058c9d845567825737121ae01e2349938503","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"50365b3f032bacab465cb87da85e8308d4461ac6671cb6f07cfeaa6439fb1edf","disposition":"still accurate","rationale":"Keyboard wrapping is restricted to the first and last visible stops and explicit heading/history focus, preserving native audio traversal. Draft retention, capture exclusion, attachment consent and immutable delivery semantics are unchanged."} -->
 
 
 
