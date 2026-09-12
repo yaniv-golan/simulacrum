@@ -918,6 +918,17 @@
       "timeoutMs": 120000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
+    },
+    {
+      "id": "verify-linear-actuator-browser",
+      "script": "scripts/verify-linear-actuator-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
     }
   ],
   "invariants": [
@@ -2067,7 +2078,7 @@
       "id": "guided-spring-passivity",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Guided and articulated springs preserve axial freedom, coupled elastic energy, loaded sag, signed reaction-work and angular-momentum accounting, cyclic topology and completed-tick stops. Ordinary powered upper-rocker sensing and regulation, physical contact release, authored construction, replay and independently allocated simulation/render/cadence budgets retain executable controls.",
+      "guarantee": "Guided and articulated springs preserve axial freedom, coupled elastic energy, loaded sag, signed reaction-work and angular-momentum accounting, cyclic topology and completed-tick stops. Ordinary powered upper-rocker sensing and regulation, physical contact release, authored construction, replay and independently allocated simulation/render/cadence budgets retain executable controls. Powered linear guides reuse zero-stiffness sliding constraints, funded equal-and-opposite axial kicks, mixed drive responses, completed stroke bounds and backdrive without a clutch.",
       "owners": [
         {
           "path": "src/simulation/physics/world.mjs",
@@ -2129,7 +2140,8 @@
       "checks": [
         "invariant-controls",
         "verify-spring-browser",
-        "verify-spring-performance"
+        "verify-spring-performance",
+        "verify-linear-actuator-browser"
       ],
       "controls": {
         "positive": [
@@ -2408,6 +2420,66 @@
           {
             "path": "test/physics-underflow.test.mjs",
             "anchor": "ordinary revolute tree and redundant loop survive gradual underflow without state clamps"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear catalog compiles an ordinary passive slide with funded axial drive; edits are atomic"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "loaded extension, reverse, powerless fall and overload are distinct physical outcomes"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "finite stroke stops motion under drive while consuming energy; off does not latch"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "free endpoints react equally and discrete actuator work funds kinetic energy"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "complete-tick stroke and energy bounds reject unpaid lifting and allow external overspeed"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "travel sensor samples the powered slide on the prior completed tick and binding edits stay atomic"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "mixed linear rotary kicks include anchor moments and prepared damping in either allocation order"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "release, reversal, cell-only, depleted and rigidly blocked controls cannot invent a holding clutch"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "reversed authored endpoints preserve the same powered slide and snap direction"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear reversal and release match four processes and both production clocks"
+          },
+          {
+            "path": "test/linear-actuator-view.test.mjs",
+            "anchor": "linear rod is distinct from passive coil and follows completed endpoints with retained geometry"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "authored driven speed bounds powered acceleration and queued reversal survives checkpoint"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "offset axial forces conserve independent linear and angular momentum with both anchor moments"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear module copy and library insertion preserve authored settings and independent wired graphs"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear failure bundle replays reversal and rejects a missing failure input"
           }
         ],
         "negative": [
@@ -2614,6 +2686,66 @@
           {
             "path": "test/suspension-clearance.test.mjs",
             "anchor": "finite active and manual bench travel retains moving hardware and decorative coil clearance"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear catalog compiles an ordinary passive slide with funded axial drive; edits are atomic"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "complete-tick stroke and energy bounds reject unpaid lifting and allow external overspeed"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "travel sensor samples the powered slide on the prior completed tick and binding edits stay atomic"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "mixed linear rotary kicks include anchor moments and prepared damping in either allocation order"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "release, reversal, cell-only, depleted and rigidly blocked controls cannot invent a holding clutch"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear reversal and release match four processes and both production clocks"
+          },
+          {
+            "path": "test/linear-actuator-view.test.mjs",
+            "anchor": "linear rod is distinct from passive coil and follows completed endpoints with retained geometry"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "loaded extension, reverse, powerless fall and overload are distinct physical outcomes"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "finite stroke stops motion under drive while consuming energy; off does not latch"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "free endpoints react equally and discrete actuator work funds kinetic energy"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "authored driven speed bounds powered acceleration and queued reversal survives checkpoint"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "reversed authored endpoints preserve the same powered slide and snap direction"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "offset axial forces conserve independent linear and angular momentum with both anchor moments"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear module copy and library insertion preserve authored settings and independent wired graphs"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear failure bundle replays reversal and rejects a missing failure input"
           }
         ]
       },
@@ -4167,7 +4299,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
       "externalImports": []
     },
     {
@@ -4191,7 +4323,7 @@
         "vite"
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -4208,7 +4340,7 @@
         "verify-mirror-browser"
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -4227,7 +4359,7 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -4251,7 +4383,7 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -4285,7 +4417,7 @@
         "test/receiver-input-owner.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5"
     }
   ],
   "experimentInputScopes": [
@@ -4559,7 +4691,7 @@
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -4640,7 +4772,7 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "externalImports": [
         "node:crypto",
@@ -4689,7 +4821,7 @@
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -4738,8 +4870,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
+      "consumerSourceHash": "a17db193e8dc73d079969eae199d5cf8e573a4710e500f8bef849999e409506d",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -4786,8 +4918,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
+      "consumerSourceHash": "444d0d1a1a6d7e53797536e1ae597a49b558c88302c2849e0feef71f5b477146",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -4814,6 +4946,7 @@
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-manipulation-browser.mjs",
         "scripts/verify-mirror-browser.mjs",
         "scripts/verify-motion-diagnostics.mjs",
@@ -4869,8 +5002,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
+      "consumerSourceHash": "444d0d1a1a6d7e53797536e1ae597a49b558c88302c2849e0feef71f5b477146",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -4914,6 +5047,7 @@
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m1.mjs",
         "scripts/verify-m3.mjs",
@@ -4949,6 +5083,7 @@
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
         "test/learning-runtime.test.mjs",
+        "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
@@ -4995,8 +5130,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "f52237ee08e673df093ae6b220948212e94e472bc1a8f483beec2e23a2dd679f",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
+      "consumerSourceHash": "10aebc5845e48184619949ddfae851b84b2b7a2cc6eedc96f9a0d6d5e1d1a0cf",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -5054,6 +5189,7 @@
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m3.mjs",
         "scripts/verify-manipulation-browser.mjs",
@@ -5167,11 +5303,12 @@
         "test/determinism.test.mjs",
         "test/free-build-continuity.test.mjs",
         "test/learning-runtime.test.mjs",
+        "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "2f5f06c3af5dcfd0b0d32258a10753614b1133f27846e8d33e82e0adbbc9253b"
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
+      "consumerSourceHash": "7e7401350f8d25ac3a90f34074839815a7fbc1626fd305e02df09e376534a7b5"
     },
     {
       "checks": [
@@ -5187,8 +5324,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
+      "consumerSourceHash": "a17db193e8dc73d079969eae199d5cf8e573a4710e500f8bef849999e409506d",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -5252,8 +5389,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
+      "consumerSourceHash": "a17db193e8dc73d079969eae199d5cf8e573a4710e500f8bef849999e409506d",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -5308,8 +5445,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
+      "consumerSourceHash": "a17db193e8dc73d079969eae199d5cf8e573a4710e500f8bef849999e409506d",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -5339,8 +5476,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
+      "consumerSourceHash": "a17db193e8dc73d079969eae199d5cf8e573a4710e500f8bef849999e409506d",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -5478,8 +5615,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1589441063e58f3ee61e1f3327d2f2dace34a102695b5c33de3056bb42e16f23",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
+      "consumerSourceHash": "f5e6de911bc0482d13d507ddccfd844e431db70cda0f7eae227dc2fbff94cb74",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -5560,8 +5697,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
+      "consumerSourceHash": "444d0d1a1a6d7e53797536e1ae597a49b558c88302c2849e0feef71f5b477146",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -5628,6 +5765,7 @@
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m1.mjs",
         "scripts/verify-m3.mjs",
@@ -5680,6 +5818,7 @@
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
         "test/learning-runtime.test.mjs",
+        "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
@@ -5786,8 +5925,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
+      "consumerSourceHash": "a17db193e8dc73d079969eae199d5cf8e573a4710e500f8bef849999e409506d",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -5852,8 +5991,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "90cf3eadef91203d7d72f4064cee9300beb14c647dfe98dd35e822a54815cb54"
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
+      "consumerSourceHash": "6b8c1e088209b256c07d93d12be6fd725374853152ddc50cd73ab45c76234d14"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -5883,8 +6022,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "90cf3eadef91203d7d72f4064cee9300beb14c647dfe98dd35e822a54815cb54"
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
+      "consumerSourceHash": "6b8c1e088209b256c07d93d12be6fd725374853152ddc50cd73ab45c76234d14"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -5910,7 +6049,7 @@
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "1dc518dd51852d76384906bcd235abe82ab01557712a76d380deb9507c8f98e5",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ],

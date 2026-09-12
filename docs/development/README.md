@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"f219212b6167ddd67f4c04af87df4e622d2b28de9e237e8bd20134364ee84fc7","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"bd6302f211f4237345716bc8b5808ec713b7f56fa40e56b95aedebe0990a03f1","disposition":"still accurate","rationale":"The checker now reuses successful dependency closures within one inspection. Each requested root retains its own transitive dependencies and opaque inventory; fresh invocations and before/after source drift checks remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"9b8d36de2687eb391d0f61caf0fdd90c0eab0e5b8c11385535606f8c10eb0f15","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"eecfb4bd3528c3002767d86f01c8e3f50509f4d02be5ea855eeef7216d3ae676","disposition":"still accurate","rationale":"Generated reference now includes the linear browser check and invariant controls. Discovery, source closure, individual review and stale-evidence rejection procedure remain unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"f9eedbe49e9ecac383fe93e3afb8e71b0bc41e41eb62a2b9f16fa756fed67ac8","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"166ebe4f007b5d1713c98efde2dfc06284bdb2875bb70a51d792ef138e53afdd","disposition":"updated","rationale":"Describe bounded processDiagnostics retained on success and failure receipts, distinguish callback observations from OS state, and preserve timeout and cleanup error semantics."} -->
+<!-- doc-review {"version":1,"fingerprint":"22f8e388b85bbc9647738d1c1da3787c2821c8b7c652de25cfb9820bc3f4e221","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"64ec249391454a8371955b91517ecd894ccde02076d3da5f835b68306c627080","disposition":"still accurate","rationale":"The manifest adds two existing-path actuator controls. Browser identity, scope classification and conservative execution procedures are unchanged; the expanded existing browser check follows that same registered path. The reviewed consumer-only scope refresh passed isolated invariant checks; it adds no exclusion or altered witness requirement."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -444,7 +444,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"3475c022fc2408267825c2d114432c05dfc6d6d84aa3577c043aed63d4820b51","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"b2cea7138e4a0290a4a52510b94c7eab5f1410e62b867cb23aaa2a405698356a","disposition":"still accurate","rationale":"The subprocess runner adds bounded diagnostics only; candidate capture, drift rejection and completion tier selection are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"8057a618b0603e79415ef29fd5585899f3e1e31514bdc5df4dcef092713ed1ad","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"b69001ddc752576c1c5370dd187617e8e3c985d6c422ec7c11d1c5559e8f446a","disposition":"still accurate","rationale":"Additional actuator preservation and replay controls do not change candidate capture, integrity, dependency admission or completion tiers. Fresh isolated local verification remains required after these edits. The reviewed consumer-only scope refresh passed isolated invariant checks; it adds no exclusion or altered witness requirement."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

@@ -18,7 +18,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"249edf152e297ec4c1169a854b12dae1aa648cd5137d7a876fa3cbbf164fd8ee","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"99348d03b3f30d77049ee34a2395fc8630cea4daf818c6518eb82384706d7c16","disposition":"still accurate","rationale":"Frame construction timing does not modify catalog geometry, schema, material admission, mounting surfaces, gear support eligibility or Ball controls. The recipe's ordinary authored-part and independent renderer/model checks still apply."} -->
+<!-- doc-review {"version":1,"fingerprint":"b4ddc2e4367a53c11c4a757a4fb59809344bcba16407a7e39be7549e4dcc5f80","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"8ddd54cf2fb01c9596533705a3d28cfc0822cb4a3f446280caec5d0dc278114d","disposition":"still accurate","rationale":"The new catalog entry follows existing M3b admission, canonical box material/mass, generated schema, ordinary surface mounts and compiler ownership. Existing Ball and gear policies are unchanged."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -58,7 +58,7 @@ when changing admission.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"c742457e58eded3890b2e70615181375ce572b6ae6c8d365d2e1354b811a41ef","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"0b2206365b7cb7ad062d7dfb94bf5761f8afdd20c59ce33874548185183c11aa","disposition":"still accurate","rationale":"Session and observation changes add diagnostic timings after completed simulation work; core shape validation, candidate compilation, atomic command history and rejected-edit effects are unchanged, preserving the surface-mount example and controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"d9d058f0759707d700a6570bda8828fa491c34dca8f825be125793a199c2571e","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"1b732227e72fd33b45be0f47528426406a155c4d04779907b0d8e9c01a0b2f5e","disposition":"still accurate","rationale":"No new command or history owner was added. Existing parameter, connection, load and receiver commands continue whole-candidate admission and atomic rejected-edit behavior for the actuator."} -->
 
 
 
@@ -75,7 +75,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"2db42b4ea010dc6f341a571ba31fde3c270359d772b3fa3d332aebe32ae1177c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"a6438503af3ded01072ffca72faba88eaddc716257f62752434f0438dda3632c","disposition":"updated","rationale":"The recipe now names both help interaction and catalog inspector checks. All seven scenario bodies and viewports were preserved, with separate artifacts and unchanged watchdogs; ordinary input ownership and user behavior assertions remain."} -->
+<!-- doc-review {"version":1,"fingerprint":"f9ea9e37fa006dd217198f054d8a2ad12f591aafc35ba3c505f70e3b75a1534a","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"04af4b36fb0e6cc4401ca94118b7f75c63f9df905af34f70a4d1d6772a06296a","disposition":"still accurate","rationale":"The actuator uses existing palette, selected inspector, part help and receiver key lifecycles. No preview, key-capture, replacement or help-focus ownership changed."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -125,7 +125,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"061d54b22a01c6e3246d8d5c8464abeab0edf3857f4290a38dc25fac9b369e44","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"e694a2241100261b7377c2e245c740cc51e6c3792f379bc78fc78a698d917370","disposition":"still accurate","rationale":"The new frame-construction attribution reads diagnostic timing and does not change motion or controller diagnosis. Completed observation ownership, causal uncertainty, separate history, and measurement sampling remain the prescribed diagnostic path."} -->
+<!-- doc-review {"version":1,"fingerprint":"9d830199f54427bf91a677da3d3d9e9c3fc4afdb59b4bd45e6fb42212a500212","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"f01d5e511d857fb017cc862fac3b95ec68a284ea3a4df1cf4a114e023426bc3b","disposition":"still accurate","rationale":"New selected actuator status uses completed travel, current and power reason codes with observational low-motion wording. Existing causal restraint, read-only diagnostics and measurement cursor contracts remain unchanged."} -->
 
 
 
@@ -155,7 +155,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"27d2a20ee8e8d91d45d7c577a430aa0c3a28401e7aee618f97402fc1058e1564","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"bb77467145a30afa4ae9a37dc84520ceeacec91b75aea8e5c8d7d01cd9053447","disposition":"still accurate","rationale":"Session still constructs and publishes the same completed state after one integration; frameMs only separates a measured cost. Gear measurement adds attribution while retaining loaded apparatus durations, physical assertions and absolute budgets, so all numerical and authority requirements here remain binding."} -->
+<!-- doc-review {"version":1,"fingerprint":"a070057e50d92a6aafc99b8d3d94cd248b1f6b645a9d8d00c3d230ede4ed2588","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"d596793298ca106dbb7ea1a686ecd45673f1ff361bdff8827a17a9e8da2dd08b","disposition":"still accurate","rationale":"The actuator preservation witness now snapshots source and definition before operations and independently asserts quarter-turn insertion and mirror-plane poses. This strengthens the existing recipe guarantees without changing physics, ownership, finite evidence limits or browser behavior."} -->
 
 
 
@@ -297,9 +297,31 @@ at one tenth of the smallest sphere radius, leaving sphere-free scenes at their
 native tolerance. Temporal subdivisions remain unchanged; snapshots bind sweep
 settings and slop. Re-run existing contact/constraint cases when changing this policy.
 
+The [powered linear controls](../../test/linear-actuator.test.mjs#implementation) and
+[mixed-coordinate controls](../../test/linear-actuator-coupling.test.mjs#implementation)
+exercise the same electrical allocation and impulse-receipt owners with a zero-stiffness
+slide. Keep prepared passive damping in axial speed samples and use generalized mixed
+linear/rotary mobility in actual allocation order. Include both anchor moments and
+independent linear/angular momentum and full-inertia work checks. Authored maximum speed
+caps active drive voltage; external loading can overspeed it, so never clamp velocity.
+Completed travel, rather than intermediate drive-kick speed, establishes end-stop or
+barely-moving observations. Positive kick work at a stop can be dissipated during native
+integration; retain the signed integration ledger and independent complete-tick bounds.
+Connection snap length affects the next attachment, not an existing carriage pose.
+The [linear browser construction](../../scripts/verify-linear-actuator-browser.mjs#source)
+uses ordinary mounting, power and receiver keys, an underpowered lift repair, and
+a horizontal slide blocked by an authored obstacle before its end stop. Require
+measured face-to-obstacle contact, sustained stall heat, obstacle-removal repair,
+reverse motion and rendered endpoint agreement. The [linear clock controls](../../test/linear-actuator-determinism.test.mjs#implementation)
+compare four processes and both production clocks, and replay an actual failure bundle
+with a missing-input counterexample. Preserve nondefault actuator settings, material
+and independent wiring through capture, rotated insertion, mirrored copying and
+history using the powered linear controls. These finite controls do not
+qualify arbitrary mechanism loads or human acceptance.
+
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"eab6cfa85d5242d7ebc5689d8d5f0ddd7d39086e451f1632bd9cf27a4e1ca621","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"14c04cbb58330a8cd2fb2d232edee5ac86623c8254c434dc74e58ce4a158e66d","disposition":"still accurate","rationale":"Observation timing and shared browser lifecycle instrumentation do not change copied graph membership, reference remapping, assembly persistence or atomic commands. The listed assembly journeys and rendered/completed comparisons remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"31f98f819d48c0ab50f0b3a1ca3428f24961e1c0f2e23f31d56703bbf4e98cb1","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"881a7d1dba0807cc041f905785e06ccb95cef281afb5efb3114e388ad0245917","disposition":"still accurate","rationale":"The actuator remains an ordinary catalog part linked by existing spring-kind edges. Existing copy, binding remap, mount and whole-candidate transaction contracts continue to apply without new library state."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -392,7 +414,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"6817b0de76a1a59ba9e4d7640751336fd603541ad559a28c3af35de2915f3e66","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"ee114a3c6cfc2b4ba471f7ff72381c779999e2b4341e4975413bf7563da8036f","disposition":"still accurate","rationale":"The changes affect diagnostic frame timing and verifier resource cleanup, not overlay geometry, wiring visibility, picking, coil buffers or completed transforms. All spring physical/render budgets and environment qualifications remain unchanged; timing attribution does not relax them."} -->
+<!-- doc-review {"version":1,"fingerprint":"d14c0d5fd557a543abe36f36d504ab6ad4de0496b40d52b2ef63239a062e857f","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"dbdc887b12c2f819132a243fcf0fa741b06897203ba73bc4cae1eafc3ac07c94","disposition":"still accurate","rationale":"The existing retained sliding renderer now supports a distinct straight rod using completed endpoint inputs and the same disposal/readback owner; no new physical geometry or wiring authority. Passive coil buffers and gauges retain their behavior."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

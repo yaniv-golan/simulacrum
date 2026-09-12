@@ -58,6 +58,11 @@ import {
 import './workshop.css';
 export const WORKSHOP_VIEW_MILESTONE = UI_FEATURES.construction.milestone;
 const parameterLabels = {
+  forceConstant: 'Force per amp (N/A)',
+  maxSpeed: 'Maximum driven speed (m/s)',
+  restLength: 'Zero-force length (m)',
+  minLength: 'Minimum length (m)',
+  maxLength: 'Maximum length (m)',
   torqueConstant: 'Torque per amp',
   currentLimit: 'Current limit',
   defaultDuty: 'Drive setting',
@@ -1569,9 +1574,10 @@ export function createWorkshopView(
       meshes.get(b.id).updateMatrixWorld(true);
       springRows.push({
         id: edge.id,
-        a: a.type === 'springGuide' ? end(a, edge.a) : end(b, edge.b),
-        b: a.type === 'springGuide' ? end(b, edge.b) : end(a, edge.a),
-        settings: (a.type === 'springGuide' ? a : b).parameters,
+        linear: a.type === 'linearActuator' || b.type === 'linearActuator',
+        a: ['springGuide', 'linearActuator'].includes(a.type) ? end(a, edge.a) : end(b, edge.b),
+        b: ['springGuide', 'linearActuator'].includes(a.type) ? end(b, edge.b) : end(a, edge.a),
+        settings: (['springGuide', 'linearActuator'].includes(a.type) ? a : b).parameters,
         selected: [a.id, b.id].includes(selected),
       });
     }
@@ -1584,15 +1590,19 @@ export function createWorkshopView(
       const guidePart =
         edge &&
         blueprint.parts.find(
-          (p) => [edge.a.part, edge.b.part].includes(p.id) && p.type === 'springGuide',
+          (p) =>
+            [edge.a.part, edge.b.part].includes(p.id) &&
+            ['springGuide', 'linearActuator'].includes(p.type),
         );
       const state =
         guidePart && frame.springs?.find((x) => x.bodyA === blueprint.parts.indexOf(guidePart));
       readout.textContent = !edge
         ? 'Unattached · no spring force'
-        : state
-          ? `${state.length <= state.minLength + 0.001 ? 'Fully compressed' : state.length >= state.maxLength - 0.001 ? 'Fully extended' : 'Attached · slides; does not swivel'} · ${format(state.length, 3)} m length · ${format(-state.extension, 3)} m compression · ${format(state.speed, 3)} m/s · ${format(state.length - state.minLength, 3)} m to compression stop · ${format(state.maxLength - state.length, 3)} m to extension stop · ${format(state.potentialJ, 3)} J spring energy`
-          : 'Attached · slides; does not swivel';
+        : state && guidePart?.type === 'linearActuator'
+          ? `${format(state.length, 3)} m length · ${format(state.speed, 3)} m/s · powered slide; no passive spring or holding clutch`
+          : state
+            ? `${state.length <= state.minLength + 0.001 ? 'Fully compressed' : state.length >= state.maxLength - 0.001 ? 'Fully extended' : 'Attached · slides; does not swivel'} · ${format(state.length, 3)} m length · ${format(-state.extension, 3)} m compression · ${format(state.speed, 3)} m/s · ${format(state.length - state.minLength, 3)} m to compression stop · ${format(state.maxLength - state.length, 3)} m to extension stop · ${format(state.potentialJ, 3)} J spring energy`
+            : 'Attached · slides; does not swivel';
     }
   }
   function select(id) {
@@ -2095,7 +2105,15 @@ export function createWorkshopView(
       const parameter = definition.parameterDefinitions[key],
         label = element('div', 'setting primary-setting'),
         input = element('input');
-      label.append(element('span', '', parameterLabels[key] ?? key));
+      label.append(
+        element(
+          'span',
+          '',
+          part.type === 'linearActuator' && key === 'restLength'
+            ? 'Connection snap length (m)'
+            : (parameterLabels[key] ?? key),
+        ),
+      );
       input.type = 'number';
       input.value = part.parameters[key];
       input.min = parameter.minimum;
@@ -2146,7 +2164,16 @@ export function createWorkshopView(
         }
         label.append(directions);
       }
-      if (parameterHelp[key]) label.append(element('span', 'parameter-help', parameterHelp[key]));
+      if (parameterHelp[key])
+        label.append(
+          element(
+            'span',
+            'parameter-help',
+            part.type === 'linearActuator' && key === 'currentLimit'
+              ? 'Caps current and therefore available pushing force.'
+              : parameterHelp[key],
+          ),
+        );
       return label;
     }
     if (surfaceRegions(part).length) {
@@ -2377,6 +2404,17 @@ export function createWorkshopView(
         );
         right.append(ownership);
       }
+    }
+    if (part.type === 'linearActuator') {
+      right.append(
+        element(
+          'p',
+          'parameter-help',
+          'Wire Power to a cell and Signal to a Command Receiver. Run: W/up extends, S/down retracts. Release is off; an unpowered load can fall.',
+        ),
+      );
+      for (const key of ['restLength', 'minLength', 'maxLength', 'maxSpeed', 'currentLimit'])
+        right.append(parameterControl(key));
     }
     springInspector({ part, right, editable, element, send });
     targetSensorInspector({ part, blueprint: frame.metadata.blueprint, right, editable, send });
@@ -2811,6 +2849,8 @@ export function createWorkshopView(
     settings.append(measurements);
     for (const [key, parameter] of Object.entries(definition.parameterDefinitions)) {
       if (
+        (part.type === 'linearActuator' &&
+          ['restLength', 'minLength', 'maxLength', 'maxSpeed', 'currentLimit'].includes(key)) ||
         key === 'diameter' ||
         key === 'inputPolarity' ||
         (part.type === 'logicController' && key === 'duty') ||
@@ -2833,7 +2873,16 @@ export function createWorkshopView(
       input.setAttribute('aria-label', key === 'defaultDuty' ? 'Drive setting' : key);
       bindParameterInput(input, key);
       label.append(input, element('span', 'unit', parameter.unit));
-      if (parameterHelp[key]) label.append(element('span', 'parameter-help', parameterHelp[key]));
+      if (parameterHelp[key])
+        label.append(
+          element(
+            'span',
+            'parameter-help',
+            part.type === 'linearActuator' && key === 'currentLimit'
+              ? 'Caps current and therefore available pushing force.'
+              : parameterHelp[key],
+          ),
+        );
       settings.append(label);
     }
     const materialLabel = element('label', 'setting material-setting');
@@ -3005,7 +3054,45 @@ export function createWorkshopView(
         element('div', '', `${format(cell.heatJ)} J cell heat`),
       );
     }
-    if (motor && !motor.position) {
+    if (motor && part.type === 'linearActuator') {
+      const slide = frame.springs?.find((s) => s.bodyA === index);
+      const state = !slide
+        ? 'Attach a Spring carriage to Slide.'
+        : motor.reasonCode === 'NO_POWER' || motor.reasonCode === 'DEPLETED'
+          ? 'No power · load can backdrive. Check the cell and wiring.'
+          : motor.reasonCode === 'OFF'
+            ? 'Off · load can backdrive. Use receiver keys to drive.'
+            : slide.length >= slide.maxLength - 0.001
+              ? 'At extension stop · retract to move away.'
+              : slide.length <= slide.minLength + 0.001
+                ? 'At retraction stop · extend to move away.'
+                : Math.abs(slide.speed) < 0.001 && Math.abs(motor.current) > 0.01
+                  ? 'Powered, barely moving · check clearance and load.'
+                  : 'Powered';
+      target.append(
+        element(
+          'div',
+          'diagnosis',
+          frame.metadata.mode === 'build' ? 'Run to use receiver keys.' : state,
+        ),
+      );
+      if (slide)
+        target.append(
+          element(
+            'strong',
+            'linear-travel',
+            `${format(slide.length, 3)} m length · ${format(slide.speed, 3)} m/s`,
+          ),
+        );
+      engineering?.append(
+        element(
+          'div',
+          '',
+          `${format(motor.torque, 3)} N force · ${format(motor.current, 2)} A · ${format(motor.heatJ, 3)} J winding heat`,
+        ),
+      );
+    }
+    if (motor && !motor.position && part.type !== 'linearActuator') {
       const speed = shaftSpeed(motor);
       let diagnosis = explainReason(motor.reasonCode);
       if (frame.metadata.mode === 'build') diagnosis = 'Build mode · choose Run to test';
