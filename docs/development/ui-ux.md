@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"72ff391b47b8bfce31be7b4a9f32af8b2cb2ea4a4fc92665b55567574c723620","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"9ee046caeee26b47bb67107899c7ecca0f2687908491e92aefd896049420013f","disposition":"still accurate","rationale":"Rope extends requested connection help and offers no new lesson or example entry. Build edits preserve the remaining machine, physical failure exposes a repair, and no teaching identity grants forces or successful behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"f63560c411b8e7d223abdd6f8e1590e57162b12ca077a57672c109296b406698","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"14f692ae94af52ee33d195cc43c03e779b6ecb33863421e9416eacf0d44d506b","disposition":"still accurate","rationale":"Rope extends requested connection help and offers no new lesson or example entry. Build edits preserve the remaining machine, physical failure exposes a repair, and no teaching identity grants forces or successful behavior."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"00d2b4612d68078e0b375fd8be242b51ab20c9878b14a9fa59f3a7923f6e65ba","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"71ccf05aa9feb3fd5fed15f3490b3d2608a1932d182f6d18672ce65ce36aca37","disposition":"updated","rationale":"Documented Rope discovery in the searchable catalog and requested selected inspector. Build owns attachment and material edits; Run exposes completed readings. Contextual help preserves explicit collision exclusions and nominal uncalibrated engineering assumptions."} -->
+<!-- doc-review {"version":1,"fingerprint":"7c998d8f0992ec01529df743cfa7dedbcf04925462bdbc7bf186dfa6c9b37302","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"e9c812c4d7dbae58badcfb69206e3edfe027d59fb523a9e5731e68668510c4c2","disposition":"updated","rationale":"Documented Rope discovery in the searchable catalog and requested selected inspector. Build owns attachment and material edits; Run exposes completed readings. Contextual help preserves explicit collision exclusions and nominal uncalibrated engineering assumptions. Shared canonical part meshes, authored-axis appearance and static family finishes remain intact; Rope retains its separate completed-node renderer."} -->
 
 
 

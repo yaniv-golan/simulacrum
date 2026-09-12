@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "src/application/workshop-app.mjs": "782064db7031075aa57ff837615b6182b4fb6a147fd2b394d0fab2b32815b825",
-    "src/presentation/workshop-view.mjs": "9c3660f418600fa8219621ad436ce56f63a63752e8aa4cde5fa89781a30e3ef4",
+    "src/presentation/workshop-view.mjs": "27abab74738c563956b8173937720eaa3cbc4e1ca7b21c5a60f779176364e5b3",
     "src/presentation/parts-browser.mjs": "153d01758b040a471eb43074e0be7b35277f7a4fcfed16ab14a17e9320753e42",
     "src/presentation/part-search.mjs": "93e503b88430fd761462b54791c7d9f0a0aa8ea37036a94fd5fcd35296217210",
     "src/presentation/part-placement.mjs": "87613e497aa664f702d05cedbef7b19297a115acf497f7b2e70b458be3dc8db5",
@@ -20,7 +20,7 @@
     "src/model/geometry.mjs": "6628f76885c40cd8788ac50cf4fdde44cee827472aaea673b16343512e6e2283",
     "src/model/rope.mjs": "1d67607e3649112959167a0559e32f302be2e8b043903f7eca78b98065dd7e84",
     "src/model/surfaces.mjs": "58249441a24e920cf369f1a51777c969e571a32e68a0cb8561c5e2eac8a82995",
-    "src/model/transforms.mjs": "f3e9dddf60d32f40db14ebd0dd9b87efc25e6517758984c3bd74d2c123d68709",
+    "src/model/transforms.mjs": "bd5f1d6a9caebd9bd8cf264dae70876ae4f5afec461ff3f2b40fe3e6107bce72",
     "src/presentation/rope-controls.mjs": "f7161dcd7390ab56fcd1217e5d3882e7c51b385e78f35a5ff3ad995c796ea5a9",
     "package-lock.json": "bcc829aa98315f5b3ca46abbd8ee3c660c15b5a258f209d9265741c9bc57513c",
     "package.json": "8d74ddc88af77087abe09d3e9ee4fff0f02d3191030d2177f88f8cfbdb0c612a",
@@ -72,6 +72,11 @@
     "src/presentation/part-help-diagram.mjs": "8eabcf8798bb7d588d0119b77b3a980e2d5f1137b52b662ee31b87e2f9939667",
     "src/presentation/part-help.mjs": "1977cef135a77dbaf8f50ceda926dd90bc111e134f3cb843f4180330efc1e727",
     "src/presentation/port-wording.mjs": "c73d5ee3cd15b7432054a676f3d8493f020b446cf824375a3c419f3becf661da",
+    "src/presentation/part-finish.mjs": "905c387cce31bcfad81f9b3d9b93b83f4ad7822163ee6bf76868c154b0f0e44a",
+    "src/presentation/part-mesh.mjs": "2dbbfb379de76a08995abb793ba5150644579058bb94200a8e24bb756188a969",
+    "src/presentation/part-visuals/electronics.mjs": "3ea896ad2cf443790de098cff3f14ea5a4dad3a4c0033a6fbf692c9f75b17203",
+    "src/presentation/part-visuals/mechanical.mjs": "97d020f02ca5ad8dfef0bce00f635e9467c37b829c3871dbbc064b518b3599cd",
+    "src/presentation/part-visuals/sensors.mjs": "63d1be3c60078e05377b2f21dd46f436b90b742d14e736c84cbb0cdc56f2b817",
     "src/presentation/part-help-input.mjs": "6380d1c3b9772c3c7522ef5a833a42a81a9c0935253e09ce026cadc0eb0491ec"
   }
 }

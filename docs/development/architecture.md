@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"d1af11783765e1f148b547cb729b7191b565f1793dd5335cb6337bf3235752f0","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"09370078629a06fcf65fdb20b0faa40fd29cecb32750265fb2885da5b93db462","disposition":"updated","rationale":"Added Rope controls and compilation to the existing application-to-core command flow. Catalog discovery opens requested attachment controls; physical state remains owned by simulation and completed telemetry."} -->
+<!-- doc-review {"version":1,"fingerprint":"6389bb6e37a8ca38267781fbfb948e32753578647b4b78578484c892216cd5d8","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"884c130de12e70405d1b449ac28fac01b000842b719a389629e815e5ce9365b6","disposition":"updated","rationale":"Added Rope controls and compilation to the existing application-to-core command flow. Catalog discovery opens requested attachment controls; physical state remains owned by simulation and completed telemetry. Shared canonical part meshes, authored-axis appearance and static family finishes remain intact; Rope retains its separate completed-node renderer."} -->
 
 
 
@@ -53,6 +53,10 @@ Part explanations, tooltip timers and the movable reference window live in
 are presentation state. Closing retains the current type, tab and scroll for reopening;
 choosing a different type resets the reading page. Catalog thumbnails are cached
 independently of palette eligibility, so supported loaded-only parts have images too.
+The [shared part mesh](../../src/presentation/part-mesh.mjs#symbol=createPartMesh) supplies
+these images and workshop/assembly previews from authored geometry and static family
+coatings, with disposal owned by the caller. Angular-rate face artwork follows the
+authored axis through the appearance cache; animation remains the completed body pose.
 [Example diagrams](../../src/presentation/part-help-diagram.mjs)
 render one node per example part and resize their connection paths with the window.
 They never enter authored state or
@@ -66,7 +70,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"76c0080466adf77eb672a2ed25a40025a4dfd622829a920939e05260ba83acd8","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"0377fe775c73df8dd089ce5e53bab5b4443631b1e1006f1559fc0ed79bf6a094","disposition":"updated","rationale":"Added the Rope model and numeric law as canonical property and constraint owners. Presentation reads their completed geometry; material and physical choices do not derive from catalog identity."} -->
+<!-- doc-review {"version":1,"fingerprint":"6cb83a87145776ee101ed5582a6ad4a05c7a784e8b257c5f24340d4a9ea5caa1","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"d2093e3987cd46efc2f99097b827f2d981a53d9e4571eb3d25a513fdccc1aa37","disposition":"updated","rationale":"Added the Rope model and numeric law as canonical property and constraint owners. Presentation reads their completed geometry; material and physical choices do not derive from catalog identity. Shared canonical part meshes, authored-axis appearance and static family finishes remain intact; Rope retains its separate completed-node renderer."} -->
 
 
 

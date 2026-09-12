@@ -155,7 +155,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"c9bb76057053f7dc89607ce5c4f77d105c22d0f30f876e4df14876b438f077f8","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"4a8ced198099bc20e975af383146a1cbc4e043c949558de80fcb76fcec311630","disposition":"updated","rationale":"Rewrote Rope accounting to distinguish constant-force work, completed-geometry Kelvin-reference dissipation, implicit loss, signed split work and combined native remainder. Added ledger/replay witness links and intrinsic receipt validation, and corrected the Kelvin-Voigt retardation time terminology."} -->
+<!-- doc-review {"version":1,"fingerprint":"ab5153376e9022bfe1338e482e3d1da00a75c30423a046fd16daad8bea7d3f52","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"7c0347050e3d54c082c043e40a9cf9cb6bb846fc2d7cdc8ffb903af36c6436b8","disposition":"updated","rationale":"Rewrote Rope accounting to distinguish constant-force work, completed-geometry Kelvin-reference dissipation, implicit loss, signed split work and combined native remainder. Added ledger/replay witness links and intrinsic receipt validation, and corrected the Kelvin-Voigt retardation time terminology."} -->
 
 
 
@@ -454,7 +454,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"5846d3877a94c0ee5bbb6c8f612334fb4bbae742ba850573de36a5eec05de230","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"ca4419411316d12eff2c9395e2b936e9516dab4d68ba73b86d45c1f5eabc597d","disposition":"updated","rationale":"Added retained Rope segment rendering between completed physical nodes, exploded-view hiding and endpoint-agreement witnesses. The overlay does not author poses or apply support forces."} -->
+<!-- doc-review {"version":1,"fingerprint":"f1ede4e715d93b745eba6dc5a7d1b6697afd86e1f26f5e9be8977abc66ab2b05","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"bc9157b225ddb718d759f91c5568a75ef21d6d13732ce9bb620fcd0943220ff8","disposition":"updated","rationale":"Added retained Rope segment rendering between completed physical nodes, exploded-view hiding and endpoint-agreement witnesses. The overlay does not author poses or apply support forces. Shared canonical part meshes, authored-axis appearance and static family finishes remain intact; Rope retains its separate completed-node renderer."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -467,8 +467,23 @@ geometry and exploded dashed styling retain their existing behavior. Gear meshes
 use dashed relationships without a solid supporting rod; their root-cylinder
 marks follow completed body transforms. Preserve the [gear rendering controls](../../test/gear-view.test.mjs).
 
-Electrical port hardware is part of the production part mesh, shared with catalogue and
-assembly previews. [Surface finishes](../../src/presentation/part-finish.mjs#source)
+The shared [part builder](../../src/presentation/part-mesh.mjs#symbol=createPartMesh)
+creates canonical solids and owns their disposable finishes for the workbench, catalogue,
+help images, editing/placement and assembly previews. Family builders receive authored
+dimensions and relevant parameters or ports; they never receive a controller or session.
+[Sensor faces](../../src/presentation/part-visuals/sensors.mjs#symbol=createSensorDetails)
+distinguish measurement identities with static graphics and large top identification
+emblems around the real power socket; contact pad ink occurs only on +Z. [Electronics coatings](../../src/presentation/part-visuals/electronics.mjs#symbol=createElectronicsDetails)
+mark actual socket banks, while [mechanical finishes](../../src/presentation/part-visuals/mechanical.mjs#symbol=createMechanicalDetails)
+mark existing housing covers, spring seats, solid wheel sidewalls and the powered-slide base.
+The powered-slide emblem clears the shared central power/slide interface; its rod remains
+the existing completed-endpoint visualization, without added collision geometry. These coatings
+have no picking surface, new readings, physical material regions or collision meaning.
+The [appearance cache](../../src/presentation/resource-cache.mjs#symbol=partAppearanceKey)
+includes the angular-rate sensor's selected axis so edits replace stale face graphics;
+power commands and binding-only edits retain resources. Recordings retain their existing
+approximate reconstruction semantics. Electrical port hardware is part of this production
+part mesh, shared with catalogue and assembly previews. [Surface finishes](../../src/presentation/part-finish.mjs#source)
 provide cosmetic material response, subtle roughness grain and a disposable studio
 reflection field. Paint is nonmetallic surface treatment; exposed surfaces follow the
 authored material. These finishes do not change model material values. [Assembly

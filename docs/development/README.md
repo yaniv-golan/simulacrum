@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"b7c7884aef2510c8337a2b87e938cd3b5b87f95fe28df3b72da9c509bf47b0ef","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"52046b397c9eaa2ea758b770b7c45fe0177ba06301940c3265b3a099dfbaba3a","disposition":"still accurate","rationale":"The new Rope check changes the generated registry and reachable source inventory. Per-section source-bound reviews, isolated scope witnesses and merge candidate verification remain required; the documentation publication algorithm is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"46a56cb408f0dd2cc8bdc1a5b46aeab04241dfd67e3a2944c50a1aca82aa9025","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"9e7a232b7d1d638ac85651062ceff81f1a12bb6e217575a18f7d5042b6b394c3","disposition":"still accurate","rationale":"The new Rope check changes the generated registry and reachable source inventory. Per-section source-bound reviews, isolated scope witnesses and merge candidate verification remain required; the documentation publication algorithm is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"ee928144be7b6dd5e9ec7ac87c5cbfd6f38a44b81f335eec80324b934ee0e9a5","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"421615b1aa76fff83102b8d7bfbf8d8f787abe652a1f33903abe199f614d023a","disposition":"still accurate","rationale":"The ledger and session witnesses add reverse consumers of identity helpers but no new runtime reader or browser admission rule. The documented explicit per-reader scope review and isolated witness application remain required; no coverage exemption was added."} -->
+<!-- doc-review {"version":1,"fingerprint":"5193a3c53ecaf5977092810104b4f1893f3f0a42d26c7f6348e0a154a0ef11a4","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7c1cfa7ec9ac7e0ce92298eac56812f5cff078faed756ad2848959eb6ae8c800","disposition":"still accurate","rationale":"The ledger and session witnesses add reverse consumers of identity helpers but no new runtime reader or browser admission rule. The documented explicit per-reader scope review and isolated witness application remain required; no coverage exemption was added."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -480,7 +480,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"223d4a54308bf591aad9aa11227d1466ae5033e08014f7a7a063294088246a3a","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"38ebe97de4891658f3dc430dcd34559d699c94f1ccf84463c17b31b0b6c8d5d1","disposition":"still accurate","rationale":"Rope changes completed physics receipts and tests, not candidate capture, installation, origin drift checks or tier selection. This work still requires a fresh isolated local candidate after scope and documentation closure."} -->
+<!-- doc-review {"version":1,"fingerprint":"348d52bb90e2fee2536defc08481b2618fe49910fe3cf95ed49f0f6610003c7a","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"859d22bc2c5d1b53cbaf376c1f5b21f645f8784172131f47a266d628c2619850","disposition":"still accurate","rationale":"Rope changes completed physics receipts and tests, not candidate capture, installation, origin drift checks or tier selection. This work still requires a fresh isolated local candidate after scope and documentation closure."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

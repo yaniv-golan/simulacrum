@@ -266,3 +266,85 @@ test('assembly previews retain offset surface fasteners under authored rotation 
     assert.equal(group.children.length, 0);
   }
 });
+
+test('shared part mesh retains canonical solids, authored state and disposable resources for the full catalogue', async () => {
+  const { createPartMesh, disposePart } = await import('../src/presentation/part-mesh.mjs');
+  const { partPrimitives } = await import('../src/model/geometry.mjs');
+  const originalDocument = globalThis.document;
+  globalThis.document = {
+    createElement: () => ({
+      getContext: () =>
+        new Proxy(
+          {},
+          {
+            get: (target, key) => target[key] ?? (() => {}),
+            set: (target, key, value) => {
+              target[key] = value;
+              return true;
+            },
+          },
+        ),
+    }),
+  };
+  try {
+    for (const type of Object.keys(CATALOG)) {
+      const part = createPart(type, 'part', [0, 0, 0]);
+      const before = structuredClone(part);
+      const mesh = createPartMesh(part);
+      const primitive = partPrimitives(part)[0];
+      mesh.geometry.computeBoundingBox();
+      const size = mesh.geometry.boundingBox.getSize(new THREE.Vector3()).toArray();
+      size.forEach((value, axis) =>
+        assert.ok(Math.abs(value - 2 * primitive.halfExtents[axis]) < 1e-7, type),
+      );
+      assert.deepEqual(part, before);
+      assert.equal(mesh.userData.selectionOutline.visible, false);
+      const disposed = new Map();
+      mesh.traverse((object) => {
+        assert.equal(object.userData.partId, part.id);
+        for (const resource of [
+          object.geometry,
+          object.material,
+          object.material?.map,
+          object.material?.roughnessMap,
+        ].filter(Boolean)) {
+          if (disposed.has(resource)) continue;
+          disposed.set(resource, 0);
+          resource.addEventListener('dispose', () =>
+            disposed.set(resource, disposed.get(resource) + 1),
+          );
+        }
+      });
+      disposePart(mesh);
+      for (const count of disposed.values()) assert.equal(count, 1, type + ' resource disposal');
+    }
+  } finally {
+    globalThis.document = originalDocument;
+  }
+});
+
+test('angular-rate face refreshes for authored axis changes while power and binding edits retain resources', () => {
+  const sensor = createPart('rotationSensor', 'rate', [0, 0, 0]);
+  const original = partAppearanceKey(sensor);
+  assert.notEqual(
+    partAppearanceKey({ ...sensor, parameters: { ...sensor.parameters, axis: 1 } }),
+    original,
+  );
+  assert.notEqual(
+    partAppearanceKey({ ...sensor, parameters: { ...sensor.parameters, axis: 2 } }),
+    original,
+  );
+  const motor = createPart('poweredMotor', 'motor', [0, 0, 0]);
+  assert.equal(
+    partAppearanceKey({ ...motor, parameters: { ...motor.parameters, defaultDuty: -1 } }),
+    partAppearanceKey(motor),
+  );
+  const travel = createPart('travelSensor', 'travel', [0, 0, 0]);
+  assert.equal(
+    partAppearanceKey({
+      ...travel,
+      springBinding: 'another',
+    }),
+    partAppearanceKey(travel),
+  );
+});

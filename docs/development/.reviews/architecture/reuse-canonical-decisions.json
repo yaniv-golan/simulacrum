@@ -26,7 +26,7 @@
     "src/presentation/connection-render.d.ts": "02001295a3479db418af35d00e4dd6f610c69b882b38f5dd6850a846fd5fcd5b",
     "src/presentation/connection-render.mjs": "399253d4609bc15c5711e1034e1c95b8b4076e30f2c412c10471522d3c7a1aef",
     "src/presentation/connection-view.mjs": "dd219ab744bd14412b4e3eefba8fde46be12680f7974073affa36dfb9254677f",
-    "src/presentation/resource-cache.mjs": "8120fece35cfd7a1dcf6e4dcbe35cbab77d6b098be127edb0f4e646b6baa0fa9",
+    "src/presentation/resource-cache.mjs": "30667abf2b633f30a12ccc00c8c9b96f15053cfcb8b36726415687246ff1b941",
     "src/model/mirror-assembly.mjs": "df87df677fbe4afe82e0e46774e9cfb9e4d56e935b5521888209d0534363ad43",
     "src/model/reusable-assemblies.mjs": "db73e9c36e39987d21826242467d91ba61e678f5acab698d8ddccea8fc69ba0e",
     "src/simulation/physics/spring-topology.mjs": "a303be32bab1ce9edb156baf74965651d59778e278ec569d92de0a4bb9d63437",
