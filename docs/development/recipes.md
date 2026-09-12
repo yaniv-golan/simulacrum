@@ -162,7 +162,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"0dd87fe89bd567afd8c805012cf681f593c27bc6bb64e90c5f348faae7b05c5f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"633868734b4712c96bf9426a0b4d21b7cff907b866d6a71e94b718cab1f92af8","disposition":"still accurate","rationale":"The only implementation change reserves feedback badge space in CSS. The layout fixture now submits 9,996 characters, below the unchanged 10,000-character limit, so its existing receipt layout assertions can execute. UI prose explains the reserved row space. Native physics, phase ordering, Coupler/Rope restore, energy accounting and all cited physical controls are unchanged; conservative opaque identity dependencies account for this review impact."} -->
+<!-- doc-review {"version":1,"fingerprint":"7a7e2387bfe4bbfede4581dee19a9799527d8cb8250601dc2dfcff8cff1b7134","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"5ce669bd55c0ed4976ff419e24cb865a4518640c3e85b858bbd2f7348aca4113","disposition":"still accurate","rationale":"Only browser scope declarations and their dependency/root fingerprints change; Coupler funding/release, Rope work and anchors, checkpoint version eight, native physics, numeric laws and cited physical controls are unchanged. The recipe still requires fresh applicable execution and does not treat scope maintenance as physical qualification."} -->
 
 
 

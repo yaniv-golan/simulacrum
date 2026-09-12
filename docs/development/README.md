@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"b718fe06864ec5bff7358f81859d41039248dea10946a4bfe9b0afc6b5ced9a1","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7dbefbeb2e96367cb902a356ba8fe4635252f4d2973bd47d839b6b9322c8a5a4","disposition":"still accurate","rationale":"The manifest retains the union of feedback and release browser checks and invariants. Release catalog/schema dependencies broaden affected source but do not change audited scope admission, exclusive scheduling, per-attempt receipts or the rule that ordering hints never omit required checks."} -->
+<!-- doc-review {"version":1,"fingerprint":"4c36884c05e35628aaea0226d26b969921fc05e933666187597d7bab75ec16e6","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"bcc597d2f2beab3a90541439050c4d95ea5d369f8b1b8df1ffab614da2ab7846","disposition":"still accurate","rationale":"The scope metadata expands remote-playtest dependencies and witnesses to include protected feedback capture, the composer, media duration and feedback flow/lifecycle/recovery. Other changes bind the current roots, consumers and classified runtime/fixture reads. The existing prose already describes durable feedback, both adapters, explicit audited boundaries, fail-closed unknown inputs and witness-gated application; scheduling, source identity and completion requirements remain unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -506,7 +506,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"35c71657848286c15d341e43cd70e674a7b400b813a74f95ccbf242504fece5b","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"5c8e7050ac44f1542f517b24c2d8d2251b8abd7162eaeb3d3e5c660b3af0e461","disposition":"still accurate","rationale":"Release part/schema and manifest additions change captured bytes and required checks, not capture isolation or resume admission. The section retains the current ninety-second assembly watchdog and snapshot-based scheduling hints with possible concurrent hint loss; neither produces reusable browser receipts."} -->
+<!-- doc-review {"version":1,"fingerprint":"3d37236d999afa9b16525f7f925801c798b70e38f2c3587c3bb36ebb34485f05","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"48bdbb11cf7bdbc69cc88af8205214c54b3f60ab1b9e0fc27f6d451e807a3f83","disposition":"still accurate","rationale":"The proposal changes only browserLocalScopes and browserReviewMetadataScopes. Candidate capture, source/index drift rejection, runtime/dependency admission, retained failures and same-candidate pure-unit resume rules are unchanged. Scope application still precedes fresh completion and cannot supply cross-candidate browser receipts."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
