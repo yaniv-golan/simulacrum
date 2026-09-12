@@ -4116,6 +4116,7 @@ export function createWorkshopView(
   }
   draw();
   return {
+    utilityHost: footer,
     refreshLearning: () => learningControls?.refresh(),
     render,
     clearControls: () => vehicleControls.clear(),

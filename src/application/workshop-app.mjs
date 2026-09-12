@@ -711,7 +711,7 @@ export async function mountWorkshopApp(root) {
   document.addEventListener('visibilitychange', visibilityChanged);
   render();
   remote = await mountRemotePlaytest({
-    toolbarHost: root,
+    toolbarHost: view.utilityHost,
     feedbackSnapshot: () =>
       captureFeedbackContext(workshop, () => ({ build: buildId, ...recordingContext() })),
     screenshot: () => view.captureScreenshot(),

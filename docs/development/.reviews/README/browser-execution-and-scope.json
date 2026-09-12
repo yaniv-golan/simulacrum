@@ -61,7 +61,7 @@
     "src/model/surfaces.mjs": "ada5ae5c0c61db2df3b28d0c7f44896a47466521e2aeb428ab91676759414663",
     "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
     "scripts/browser-evidence.mjs": "aba560116ae7029a14d9cbeaba46612417e7684a0c73b0996f73c1f0eb77b68f",
-    "src/application/workshop-app.mjs": "c211e8df4215238ecbd3cad41d4f8042965c1a477e2ce5f553b6940c717c8100",
+    "src/application/workshop-app.mjs": "2f1a4062beb888034cbcdbd2af1bf8be63224b515521b3935cf100c11bde3d35",
     "package.json#script=browser:scopes": "83a8c24f5eda5de8f45aedf8c85cae81860160b29677e9cd69e44d9dbbf5f91e",
     "package.json#script=verify:candidate": "0a3f48ca2413c756a50ee6bb10ac51d684393eeecc217bc67fedde53e25e4756"
   }

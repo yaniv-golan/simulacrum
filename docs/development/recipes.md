@@ -162,7 +162,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"7a7e2387bfe4bbfede4581dee19a9799527d8cb8250601dc2dfcff8cff1b7134","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"5ce669bd55c0ed4976ff419e24cb865a4518640c3e85b858bbd2f7348aca4113","disposition":"still accurate","rationale":"Only browser scope declarations and their dependency/root fingerprints change; Coupler funding/release, Rope work and anchors, checkpoint version eight, native physics, numeric laws and cited physical controls are unchanged. The recipe still requires fresh applicable execution and does not treat scope maintenance as physical qualification."} -->
+<!-- doc-review {"version":1,"fingerprint":"fb4046a3069a197dc5eb5b13de72b3b097afc310c36ff5e8e94b41569502ac90","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"1bbe461448abfe3aae1757b78ad13499ef166a2778d100c23bfc4e1262141d3e","disposition":"still accurate","rationale":"The verifier comments now accurately distinguish pausing the browser clock before arming from advancing a normal tick, and the retained twenty-second wall-time budget from the additional 2400-tick simulated-time cap. Executable verifier behavior and all physics, sampling, receiver and restore owners are unchanged; the recipe makes no claim that prior timing failures have a proven cause."} -->
 
 
 

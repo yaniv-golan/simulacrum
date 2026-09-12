@@ -1508,10 +1508,28 @@ h3 {
 }
 .playtest-panel [data-feedback] {
   order: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-inline-size: 8.5em;
 }
 .playtest-panel [hidden] {
   display: none;
+}
+/* Feedback shares the existing footer instead of taking a second workbench row. */
+.workshop-footer:has(.playtest-panel) {
+  height: auto;
+  min-height: 38px;
+  flex-wrap: wrap;
+  row-gap: 0;
+}
+.workshop-footer > .playtest-panel {
+  max-width: 100%;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
 }
 @media (max-width: 760px) {
   .playtest-panel {
@@ -2958,8 +2976,11 @@ h3 {
     min-height: 0;
   }
   .workshop:has(.assembly-placement:not([hidden])) > .workshop-header,
-  .workshop:has(.assembly-placement:not([hidden])) > .workshop-footer,
+  .workshop:has(.assembly-placement:not([hidden])) > .workshop-footer:not(:has(.playtest-panel)),
   .workshop:has(.assembly-placement:not([hidden])) .parts-panel {
+    display: none;
+  }
+  .workshop:has(.assembly-placement:not([hidden])) > .workshop-footer > :not(.playtest-panel) {
     display: none;
   }
   .workshop:has(.assembly-placement:not([hidden])) .workshop-body {
@@ -3437,6 +3458,7 @@ h3 {
 .playtest-panel [data-feedback-state] {
   display: block;
   min-block-size: 1.2em;
+  min-inline-size: 15ch;
   font-size: 10px;
   line-height: 1.2;
 }
@@ -3769,6 +3791,14 @@ h3 {
 
 /* Preserve usable tile space on the supported laptop layout. */
 @media (min-width: 901px) {
+  /* Requested recording shares the rail; scroll the whole catalog when space is scarce. */
+  .parts-panel:has(.recording-panel[open]) .parts-browser:not(.catalog-expanded) {
+    overflow-y: auto;
+  }
+  .parts-panel:has(.recording-panel[open]) .parts-browser:not(.catalog-expanded) .catalog-grid {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
   .parts-panel {
     position: relative;
   }

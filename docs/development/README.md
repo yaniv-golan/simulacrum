@@ -92,7 +92,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"85067b0cacd77db55c64c929ea917de145f71e2ed90e0059db8a0cffe7309634","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"06ab0258763db955cd0dc0a5b89a5e4f08c841b548c59c0c9287a696b886e1ca","disposition":"still accurate","rationale":"The linked playtesting section now specifies an in-flow feedback row and authored/UI-only context capture. Completion commands, runtime admission, the three merge smoke checks and automation-versus-human outcomes remain unchanged; fresh rendered evidence is still required on the repaired source."} -->
+<!-- doc-review {"version":1,"fingerprint":"32cf7a9e3bcc5b9e9f4dbbc1a0e459bcb8c8b09958557aa0727985a6231b5d3a","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"be06e1d56f35b6762ff121541d3f557c7789192b08013354188dac231c807021","disposition":"still accurate","rationale":"The linked remote setup now places feedback in the existing footer instead of a second row. Verification commands, same-source execution, runtime admission and the distinction between automation and human acceptance are unchanged; current rendered checks remain required."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"4c36884c05e35628aaea0226d26b969921fc05e933666187597d7bab75ec16e6","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"bcc597d2f2beab3a90541439050c4d95ea5d369f8b1b8df1ffab614da2ab7846","disposition":"still accurate","rationale":"The scope metadata expands remote-playtest dependencies and witnesses to include protected feedback capture, the composer, media duration and feedback flow/lifecycle/recovery. Other changes bind the current roots, consumers and classified runtime/fixture reads. The existing prose already describes durable feedback, both adapters, explicit audited boundaries, fail-closed unknown inputs and witness-gated application; scheduling, source identity and completion requirements remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"68830ddfc26264987be97d17798f8072503a6bd7523c25087a3c4bdfae017384","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"629d9990372ca885d9bb1dab1032efb2f7fac3a6eeedff4024acd91ba78ea7ea","disposition":"still accurate","rationale":"The application now supplies view.utilityHost to the existing remote client. This DOM placement change does not alter source-bound receipts, scope admission, scheduling or the application-owned completed-command sequence described here. Changed application bytes still require fresh affected browser evidence."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and

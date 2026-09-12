@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"5205f93edb34f280d7c78c3ae500db55a0b9c77b4314524aa85fa205529d68ab","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"8924dc13201e0f6cf7daf09d42b06e481cc0a092146e96274b4cbfce8d876522","disposition":"updated","rationale":"The flow now includes Release Coupler fixed-joint compilation, shared resistive coil funding, next-tick topology preparation and live joint removal, preserving Rope anchors and independent checkpoint validation. Application-owned feedback layout and authored-save/UI-only context remain separate from replay checkpoint capture."} -->
+<!-- doc-review {"version":1,"fingerprint":"5833ddd8d9eda61dafe2fc6e810937ec932943515bda07bf8887082b397405a7","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"200f1628be204f93c379f374f3be6706f670704a4a3aa9753b3e6d3d8026d8be","disposition":"updated","rationale":"The view exposes its existing footer as utilityHost and the application mounts feedback controls there. The explanation now names that ownership and removes the separate-row claim; protected dialogs remain outside the root, and optional feedback context still reads authored save/current UI without replay or native physics state."} -->
 
 
 
@@ -21,8 +21,9 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 5. [Session](../../src/simulation/session.mjs) owns stepping, checkpoint and completed publication. [Controllers](../../src/simulation/controllers.mjs) produce program commands; the [receiver arbiter](../../src/simulation/receiver-arbiter.mjs) owns Manual/Automatic/Learned/Off, explicit takeover and prior-tick travel regulation; [power](../../src/simulation/power.mjs) resolves circuits; the [physics door](../../src/simulation/physics/world.mjs) alone imports the physics library. Completed contact collection uses the numeric [contact reader](../../src/simulation/physics/read-contacts.mjs); session assigns the completed interval and includes collection in integration timing.
 6. [Observation store](../../src/model/observation.mjs) publishes immutable completed snapshots. Presentation consumes these observations, never a live physics object. The application drains a separate observation cursor into selected-body Measurements so its 120 Hz samples do not depend on rendering cadence.
 
-The application supplies the feedback/recording utility row as part of the workshop
-layout and keeps protected feedback dialogs outside that root. Optional
+The view exposes the existing workshop footer as `utilityHost`; the application mounts
+feedback and recording controls there and keeps protected feedback dialogs outside
+the workshop root. Ordinary offline feedback does not add a second workbench row. Optional
 [feedback context](../../src/application/feedback-context.mjs#symbol=captureFeedbackContext)
 combines the ordinary authored save with current UI state. It never requests a replay
 checkpoint or native physics bytes; recording keeps its separate capture path.

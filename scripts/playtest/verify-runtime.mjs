@@ -37,7 +37,10 @@ const options = convertV4MiniflareOptions({
 let mf = new Miniflare(options);
 try {
   const config = await mf.dispatchFetch('https://capture.invalid/api/playtest/config');
-  assert.deepEqual(await config.json(), { enabled: false });
+  assert.deepEqual(await config.json(), {
+    enabled: false,
+    feedback: { enabled: false, protocolVersion: 1 },
+  });
   const join = await mf.dispatchFetch('https://capture.invalid/join?token=' + 'i'.repeat(32), {
     redirect: 'manual',
   });
