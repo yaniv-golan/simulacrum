@@ -170,6 +170,14 @@ test('actual suite separates canonical selection from priority execution', () =>
     rows[1].report.runs.map((r) => r.id),
   );
   assert.equal(rows[1].report.status, 'failed');
+  for (const run of rows[1].report.runs) {
+    const conditions = run.measurementConditions;
+    assert.equal(conditions.scheduleIndex, rows[1].report.schedule.checks.indexOf(run.id));
+    assert.ok(Number.isFinite(Date.parse(conditions.startedAt)));
+    assert.equal(conditions.hostLoadAverage.length, 3);
+    assert.ok(Array.isArray(conditions.activeBrowserChecks));
+  }
+
   assert.equal(
     rows[1].liveRuns[1].find((r) => r.id === rows[1].report.runs[1].id).status,
     'failed',
@@ -385,14 +393,6 @@ test('history rejects late stale outcomes and preserves newer observations', asy
     { id: 'check', ok: true, elapsedMs: 3, observedAt: 300, observationId: 'latest' },
   ]);
   assert.equal(readBrowserHistory(path).get('check').elapsedMs, 3);
-  // A competing snapshot publisher read before the newer failure completed.
-  writeBrowserHistory(path, [{ id: 'check', ok: false, observedAt: 400 }]);
-  writeFileSync(path, JSON.stringify({ runs: [{ id: 'check', ok: true, observedAt: 300 }] }));
-  assert.equal(readBrowserHistory(path).get('check').ok, false);
-  for (let observedAt = 500; observedAt < 510; observedAt++)
-    writeBrowserHistory(path, [{ id: 'check', ok: true, observedAt }]);
-  const { readdirSync } = await import('node:fs');
-  assert.equal(readdirSync(`${path}.observations`).length, 2);
 });
 
 test('history publication cannot be permanently blocked by an interrupted writer', async (t) => {
@@ -437,20 +437,18 @@ test('legacy candidate returns only newly executed report outcomes', async (t) =
   assert.equal(readBrowserHistory(origin).get('check').ok, true);
 });
 
-test('history removes abandoned temporary files while preserving live writers', async (t) => {
-  const { writeBrowserHistory } = await import('../scripts/browser-history.mjs');
-  const { existsSync } = await import('node:fs');
-  const root = mkdtempSync(join(tmpdir(), 'orphan-history-'));
+test('history uses one snapshot and accepts last-writer-wins hint loss', async (t) => {
+  const { writeBrowserHistory, readBrowserHistory } = await import(
+    '../scripts/browser-history.mjs'
+  );
+  const { readdirSync } = await import('node:fs');
+  const root = mkdtempSync(join(tmpdir(), 'simple-history-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const child = spawnSync(process.execPath, ['-e', 'console.log(process.pid)'], {
-    encoding: 'utf8',
-  });
-  assert.equal(child.status, 0);
-  const dead = join(root, `.browser-history-${child.stdout.trim()}-abc.tmp`);
-  const live = join(root, `.browser-history-${process.pid}-abc.tmp`);
-  writeFileSync(dead, 'partial');
-  writeFileSync(live, 'partial');
-  writeBrowserHistory(join(root, 'history.json'), [{ id: 'check', ok: true }]);
-  assert.equal(existsSync(dead), false);
-  assert.equal(existsSync(live), true);
+  const path = join(root, 'history.json');
+  for (let observedAt = 1; observedAt <= 10; observedAt++)
+    writeBrowserHistory(path, [{ id: 'check', ok: false, observedAt }]);
+  assert.deepEqual(readdirSync(root), ['history.json']);
+  // A competing writer can lose a hint; hints cannot admit or skip a check.
+  writeFileSync(path, JSON.stringify({ runs: [{ id: 'check', ok: true, observedAt: 5 }] }));
+  assert.equal(readBrowserHistory(path).get('check').ok, true);
 });

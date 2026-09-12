@@ -1,3 +1,4 @@
+import { loadavg } from 'node:os';
 import { readBrowserHistory, writeBrowserHistory } from './browser-history.mjs';
 import { createTiming } from './verification-timing.mjs';
 import { affectedBrowserChecks, prioritizeBrowserChecks } from './browser-selection.mjs';
@@ -236,6 +237,13 @@ async function executeBrowserSuite(
         scheduled,
         async (check) => {
           const row = runs.find((row) => row.id === check.id);
+          row.measurementConditions = {
+            scheduleIndex: scheduled.findIndex((c) => c.id === check.id),
+            startedAt: new Date().toISOString(),
+            activeBrowserChecks: runs.filter((r) => r.status === 'running').map((r) => r.id),
+            hostLoadAverage: loadavg(),
+            note: 'Schedule and host-load context only; warmup and external contention are not controlled by these observations.',
+          };
           row.status = 'running';
           publish();
           let target = url,
@@ -345,8 +353,6 @@ async function executeBrowserSuite(
               errors: errorMessages(error),
               failureKind: error.failureKind ?? 'unknown',
               checkKind: check.tier,
-              measurementConditions:
-                'Not inferred from a failure; inspect retained benchmark controls and verification-window report.',
             });
             publish();
             console.log(
