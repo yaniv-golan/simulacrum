@@ -463,6 +463,16 @@ export async function createWorkshop(
           ).blueprint;
           break;
         }
+        case 'rope': {
+          if (keys !== 'connection,type' || command.connection?.kind !== 'rope')
+            return result(false, 'INVALID_COMMAND', 'connection');
+          const previous = next.connections.find((c) => c.id === command.connection.id);
+          if (previous && previous.kind !== 'rope')
+            return result(false, 'INVALID_COMMAND', 'connection.id');
+          if (previous) next.connections[next.connections.indexOf(previous)] = command.connection;
+          else next.connections.push(command.connection);
+          break;
+        }
         case 'connect': {
           if (keys !== 'a,b,id,type') return result(false, 'INVALID_COMMAND', 'command');
           const part = next.parts.find((p) => p.id === command.a?.part);

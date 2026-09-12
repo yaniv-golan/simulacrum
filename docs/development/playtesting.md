@@ -10,7 +10,7 @@ For an interaction report, use **Record an issue** in the left sidebar, then Sta
 
 ## Remote setup
 
-<!-- doc-review {"version":1,"fingerprint":"0d6f9be4fd4204a52272b4cfc1d84bacfd14b932ce31670c7ff83352679a20ed","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"698cb013355875af516fd39d1c7b4e6423308163e1349e4f76d346b21df73d78","disposition":"still accurate","rationale":"The catalog expands captured authored part types but recording admission, packet reconstruction, upload ownership, consent and export behavior remain unchanged; recorded geometry remains observation based."} -->
+<!-- doc-review {"version":1,"fingerprint":"9d918f81408dcf4a2d528fbe8884a94546edda783313585cd4635cf529702b1b","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"5793fbc3626f7405a27b5c7f14031d394ea981276c227128e414c10f865840ce","disposition":"still accurate","rationale":"New Rope snapshot receipts remain session data. Recording transport, consent, upload limits, exporter reconstruction and remote setup are unchanged; the section explicitly distinguishes implementation coverage from the identity of the served build."} -->
 
 
 

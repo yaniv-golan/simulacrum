@@ -1,3 +1,5 @@
+import { createRopeView } from './rope-view.mjs';
+import { ropeInspector } from './rope-controls.mjs';
 import { mountControllerHistory } from './controller-history.mjs';
 import { sensorInspector, updateSensorInspector } from './sensor-controls.mjs';
 import { createSensorView } from './sensor-view.mjs';
@@ -152,6 +154,7 @@ export function createWorkshopView(
     mirror,
     frame = null,
     selected = null,
+    ropeRequestedPart = null,
     sourcePort = null,
     blueprintKey = '',
     inspectorKey = '',
@@ -340,6 +343,25 @@ export function createWorkshopView(
     placementActive: () => partPlacement?.active() ?? false,
     drag: enablePaletteDrag,
     openAssemblies: () => savedLauncher.click(),
+    attachRope: () => {
+      if (frame.metadata.mode !== 'build') return;
+      const part =
+        frame.metadata.blueprint.parts.find((p) => p.id === selected) ??
+        frame.metadata.blueprint.parts[0];
+      if (!part) {
+        setMessage('Place two parts, then select Rope to attach their surfaces.');
+        return;
+      }
+      select(part.id);
+      ropeRequestedPart = part.id;
+      inspectorKey = '';
+      refreshInspector();
+      const panel = right.querySelector('.rope-controls');
+      if (panel) {
+        panel.open = true;
+        panel.scrollIntoView({ block: 'nearest' });
+      }
+    },
     storage: {
       getItem: (key) => window.localStorage.getItem(key),
       setItem: (key, value) => window.localStorage.setItem(key, value),
@@ -950,6 +972,7 @@ export function createWorkshopView(
   scene.environmentIntensity = 0.4;
   const sensorView = createSensorView(scene);
   const springView = createSpringView(scene);
+  const ropeView = createRopeView(scene);
   scene.fog = new THREE.Fog(0x18252d, 8, 30);
   const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 100);
   camera.position.set(1.45, 1.15, 1.65);
@@ -1601,6 +1624,26 @@ export function createWorkshopView(
       });
     }
     springView.update(springRows, selected);
+    ropeView.update(
+      (exploded || explodeAmount ? [] : blueprint.connections.filter((c) => c.kind === 'rope')).map(
+        (edge) => {
+          const data = frame.metadata.connections.find((c) => c.id === edge.id)?.rope;
+          return {
+            id: edge.id,
+            diameter: edge.rope.diameter,
+            selected: [edge.a.part, edge.b.part].includes(selected),
+            points: (data?.nodes ?? []).map((i) => frame.physics[i].position),
+          };
+        },
+      ),
+    );
+    for (const el of right.querySelectorAll('.rope-readout')) {
+      const data = frame.metadata.connections.find((c) => c.id === el.dataset.ropeId)?.rope;
+      const readings = (frame.ropes ?? []).filter((r) => data?.joints.includes(r.index));
+      el.textContent = readings.length
+        ? `Length ${readings.reduce((sum, r) => sum + r.length, 0).toFixed(3)} m · Peak applied tension ${Math.max(...readings.map((r) => r.appliedTension)).toFixed(2)} N`
+        : 'Rope readings unavailable';
+    }
     const readout = right.querySelector('.spring-readout');
     if (readout) {
       const edge = blueprint.connections.find(
@@ -1639,7 +1682,10 @@ export function createWorkshopView(
     showGuideConnection(null);
     onInteraction?.('selection', { from: selected, to: id });
     editing?.select(id);
-    if (id !== selected) rightPanel.scrollTop = 0;
+    if (id !== selected) {
+      rightPanel.scrollTop = 0;
+      ropeRequestedPart = null;
+    }
     selected = id;
     tracedConnection = null;
     sourcePort = null;
@@ -2600,6 +2646,15 @@ export function createWorkshopView(
       right.append(driving);
     }
     if (!editable) returnToBuild(right);
+    ropeInspector({
+      part,
+      blueprint: frame.metadata.blueprint,
+      right,
+      editable,
+      element,
+      send,
+      requested: ropeRequestedPart === part.id,
+    });
     right.append(element('h3', 'connections-heading', 'Connections'));
     if (tracedConnection)
       right.append(
@@ -3695,7 +3750,7 @@ export function createWorkshopView(
       wiringVisible: wiring.checked,
       revealedConnectionIds,
       sourceEndpoint: sourcePort,
-      connections: frame.metadata.blueprint.connections,
+      connections: frame.metadata.blueprint.connections.filter((c) => c.kind !== 'rope'),
       diagnostics: frame.metadata.connections,
       exploded: exploded || explodeAmount > 0,
       selectedPartId: selected ?? null,
@@ -3734,6 +3789,7 @@ export function createWorkshopView(
         .copy(explodeTarget.get(id) ?? new THREE.Vector3())
         .multiplyScalar(explodeAmount);
     scene.updateMatrixWorld(true);
+    refreshSprings();
     updateConnections();
   }
   function setExploded(on, immediate = false) {
@@ -4383,6 +4439,7 @@ export function createWorkshopView(
         };
       }),
     readRenderedSpringEndpoints: () => springView.readRenderedEndpoints(),
+    readRenderedRopeEndpoints: () => ropeView.readRenderedEndpoints(),
     readRenderedCenters,
     camera,
     dispose() {
@@ -4415,6 +4472,7 @@ export function createWorkshopView(
       controls.dispose();
       sensorView.dispose();
       springView.dispose();
+      ropeView.dispose();
       partResources.dispose();
       for (const mesh of warmMeshes) disposePart(mesh);
       connectionView.dispose();

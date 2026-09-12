@@ -1,3 +1,4 @@
+import { ROPE_SCHEMA } from '../src/model/rope.mjs';
 import { CONTROLLER_AUTHORING_SCHEMA } from '../src/model/controller-authoring.mjs';
 import { LEARNING_MODEL_SCHEMA } from '../src/model/learning-model.mjs';
 import { CATALOG, MATERIALS } from '../src/model/catalog.mjs';
@@ -11,6 +12,28 @@ const targetURL = new URL('../src/model/generated/blueprint-validator.mjs', impo
 export function buildBlueprintSchema() {
   const schema = JSON.parse(readFileSync(schemaURL, 'utf8'));
   const part = schema.$defs.part;
+  const edge = schema.$defs.connection;
+  schema.$defs.connection = {
+    oneOf: [
+      {
+        ...edge,
+        properties: {
+          ...edge.properties,
+          kind: { enum: edge.properties.kind.enum.filter((k) => k !== 'rope') },
+          rope: false,
+        },
+      },
+      {
+        ...edge,
+        required: [...edge.required, 'rope'],
+        properties: {
+          ...edge.properties,
+          kind: { const: 'rope' },
+          rope: structuredClone(ROPE_SCHEMA),
+        },
+      },
+    ],
+  };
   part.properties.type = { type: 'string', enum: Object.keys(CATALOG) };
   part.properties.controlBinding = structuredClone(CONTROL_BINDING_SCHEMA);
   part.properties.controllerProgram = structuredClone(CONTROLLER_AUTHORING_SCHEMA);
