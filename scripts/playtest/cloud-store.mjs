@@ -1,3 +1,6 @@
+import { CloudFeedbackStore } from './feedback-cloud.mjs';
+import { feedbackEndpoint, feedbackRate } from './feedback-common.mjs';
+import { feedbackLimits } from '../../src/application/feedback-protocol.mjs';
 // M3b: one stable store owns all capacity and receipt decisions. R2 is not transactional with SQL.
 import {
   LIMITS,
@@ -47,6 +50,8 @@ export class CaptureStore {
     );
     if (!this.run('PRAGMA table_info(synthetic)').some((column) => column.name === 'metadata'))
       this.run('ALTER TABLE synthetic ADD COLUMN metadata INTEGER NOT NULL DEFAULT 0');
+    this.feedback = new CloudFeedbackStore(this);
+    this.feedbackAdmission = feedbackRate();
   }
   run(query, ...args) {
     return this.sql.exec(query, ...args).toArray();
@@ -136,9 +141,12 @@ export class CaptureStore {
         path = url.pathname;
       if (path.startsWith('/admin/playtest/')) return await this.admin(request, url);
       if (request.method !== 'POST') throw fail(404, 'Not found');
+      const feedback = path === feedbackEndpoint;
+      if (feedback && this.env.FEEDBACK_ENABLED === 'false') throw fail(503, 'Feedback disabled');
+      if (feedback) this.feedbackAdmission();
       const start = path === '/api/playtest/v2/session';
       const match = /^\/api\/playtest\/v2\/([a-f0-9]{32})\/(event|media)$/.exec(path);
-      if (!start && !match) throw fail(404, 'Not found');
+      if (!feedback && !start && !match) throw fail(404, 'Not found');
       if (this.circuit) throw fail(503, 'Storage unavailable');
       const generation = request.headers.get('x-invitation-generation');
       if (generation !== String(this.env.INVITATION_GENERATION))
@@ -150,7 +158,13 @@ export class CaptureStore {
         throw fail(403, 'Screen media not admitted for data session');
       if (!media && request.headers.get('content-type')?.split(';')[0] !== 'application/json')
         throw fail(415, 'Expected JSON');
-      const limit = start ? LIMITS.startBytes : media ? LIMITS.mediaBytes : LIMITS.eventBytes;
+      const limit = feedback
+        ? feedbackLimits.submissionBytes
+        : start
+          ? LIMITS.startBytes
+          : media
+            ? LIMITS.mediaBytes
+            : LIMITS.eventBytes;
       const reservation = bodyReservation(request.headers, limit);
       release = this.readers.acquire(reservation);
       hold = {
@@ -167,6 +181,14 @@ export class CaptureStore {
       if (request.headers.has('content-length') && bytes.length !== reservation)
         throw fail(400, 'Content length mismatch');
       if (Date.now() >= deadline) throw fail(408, 'Operation deadline');
+      if (feedback)
+        return await this.feedback.submit(
+          bytes,
+          generation,
+          request.headers.get('x-synthetic-run'),
+          deadline,
+          hold,
+        );
       if (start)
         return await this.create(bytes, generation, request.headers.get('x-synthetic-run'));
       // Do not retain parsed payloads across storage awaits or interpret their contents here.
@@ -392,6 +414,7 @@ export class CaptureStore {
   }
   async admin(request, url) {
     const path = url.pathname;
+    if (path.startsWith('/admin/playtest/feedback')) return this.feedback.admin(request, url);
     if (path === '/admin/playtest/reconcile' && request.method === 'POST') {
       await this.reconcile();
       return reply({ scheduled: true });
@@ -399,6 +422,7 @@ export class CaptureStore {
     if (path === '/admin/playtest/status' && request.method === 'GET')
       return reply({
         ...this.usage(),
+        feedback: this.feedback.usage(),
         reservedMetadataBytes: this.one('SELECT COALESCE(SUM(metadata),0) AS n FROM synthetic').n,
         lifetimeMetadataBytes: this.one('SELECT lifetime FROM ledger').lifetime,
         metadataWarning:
@@ -409,6 +433,19 @@ export class CaptureStore {
           "SELECT id,state,nextAttempt,failures,lastError,lastCleanup FROM sessions WHERE state IN ('expired','deleting')",
         ),
       });
+    const syntheticStatus = /^\/admin\/playtest\/synthetic\/([a-f0-9-]{36})\/status$/.exec(path);
+    if (syntheticStatus && request.method === 'GET') {
+      const runId = syntheticStatus[1];
+      // Pending counts all run-owned objects not yet deleted, including failed fences.
+      return reply({
+        runId,
+        recordings: this.one(
+          "SELECT COUNT(*) AS pending, COALESCE(SUM(bytes),0) AS chargedBytes FROM sessions WHERE synthetic=? AND state!='deleted'",
+          runId,
+        ),
+        feedback: this.feedback.cleanupStatus(runId),
+      });
+    }
     if (path === '/admin/playtest/sessions' && request.method === 'GET')
       return reply(
         this.run(
@@ -471,6 +508,7 @@ export class CaptureStore {
     }
     const drain = /^\/admin\/playtest\/synthetic\/([a-f0-9-]{36})\/drain$/.exec(path);
     if (drain && request.method === 'POST') {
+      this.feedback.deleteScope('synthetic', drain[1]);
       this.run(
         "UPDATE sessions SET state='deleting',nextAttempt=0 WHERE synthetic=? AND state!='deleted'",
         drain[1],
@@ -480,6 +518,7 @@ export class CaptureStore {
     }
     const cleanup = /^\/admin\/playtest\/synthetic\/([a-f0-9-]{36})$/.exec(path);
     if (cleanup && request.method === 'DELETE') {
+      this.feedback.deleteScope('synthetic', cleanup[1]);
       this.run(
         "UPDATE sessions SET state='deleting' WHERE synthetic=? AND state!='deleted'",
         cleanup[1],
@@ -561,6 +600,7 @@ export class CaptureStore {
     let processed = 0;
     try {
       await this.state.storage.setAlarm(Date.now() + 60000);
+      await this.feedback.cleanup();
       this.run("UPDATE sessions SET state='expired' WHERE state='open' AND expires<=?", Date.now());
       this.run('DELETE FROM synthetic WHERE expires<=?', Date.now());
       const sessions = this.run(

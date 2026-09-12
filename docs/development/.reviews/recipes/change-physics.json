@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "package-lock.json": "bcc829aa98315f5b3ca46abbd8ee3c660c15b5a258f209d9265741c9bc57513c",
-    "package.json": "8d74ddc88af77087abe09d3e9ee4fff0f02d3191030d2177f88f8cfbdb0c612a",
+    "package.json": "6edb48593a61fb710edc6322958c53fc4bb2c8c2e8039daecb99e13117f7762a",
     "src/model/boundaries.d.ts": "6c2581fe4dd59ac826f07c1b3fca6cb77572ec8c255c55ce41248f4fc2fbf299",
     "src/model/catalog.mjs": "05a016e8a44bd40565978d183ef5b6d864b4ecf67caf4bdf26fea07303134500",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",

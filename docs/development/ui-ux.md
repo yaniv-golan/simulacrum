@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"35f915d9523ea863c9744129d3523628b3e40ee3a9417221d37dfb58830e5d0e","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"cfd39209098a75a5a0eab919401f20ca50e26669c7eb8dd69a684a414faae26b","disposition":"updated","rationale":"Documented the 52-pixel square catalogue slot in the existing column, shared production previews and unchanged help, focus and learning-content lifecycle."} -->
+<!-- doc-review {"version":1,"fingerprint":"4d261da641e12a908304bc02218ac5b1ff4122a5eeb6a6e5c0ee1d543153f415","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"9a0844a0f91df0b56756b148f54d65eb8885ca268b01a893188fa6fc59ad6f33","disposition":"updated","rationale":"Documented submitted attachment inspection, capture time labels, correction without overwriting unfinished work and keyboard focus transitions within the existing feedback dialog."} -->
 
 
 
@@ -282,6 +282,8 @@ exclude one another before asynchronous reading or reset; rejected actions retai
 recording receipts. Retry does not
 reload a preset or move an individual live body to recover it.
 
+Give feedback occupies the existing remote-playtest toolbar before, during and after recording. Its task is to let the player explain an experience and know whether that contribution arrived. The dialog contains one optional voice clip and separately chosen image/context attachments; no attachment is selected by default. The scrollable body and visible actions fit narrow viewports. Back to building, Escape and Keep draft preserve recoverable work; Finish stops capture before resolving the unsent draft. Delivery confirmation uses a durable receipt and says “Sent to Yaniv for review,” without promising a response or fix. Draft and upload problems remain visible in the toolbar, with detailed history behind an explicit disclosure. Submitted voice, image and context remain inspectable in the receipt and local history. Context and images identify their actual capture time. A rejected submission can become a corrected draft with a new identity; the original stays immutable, and another unfinished draft is preserved. View changes move keyboard focus to the new content without moving it during background delivery updates. The composer displaces the old recording-only feedback form and adds no permanent canvas panel. Learning-content disposition: **no entry**; the existing Help and examples remain sufficient because submitting feedback is a utility journey, not a new mechanical concept. Automated flow and layout checks do not establish delight, satisfaction or human acceptance.
+
 Help is an explicit, keyboard-accessible dialog. It contains control and wiring
 explanations instead of keeping paragraphs over the canvas. Build information is
 readable and copyable here; the served marker remains for assessment evidence. No automatic hint/tour
@@ -305,7 +307,7 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"3fd9f2b7d3b00d645b6dc4e119f0b4cf431047011f81c1ef180f9ffbac810dfe","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"e8a720001b326d0bd2e16194684674a60cf1a1771165d1c24cc0f97c6a2f9bbb","disposition":"updated","rationale":"Routine merge guidance now uses candidate merge with explicit base; release/milestone retain final. Recording remains real-player feedback rather than human qualification, and the cursor optimization does not change that distinction."} -->
+<!-- doc-review {"version":1,"fingerprint":"dc0a0405f22cb9c9673d8aae349609a34ab0ffd121e1ceb68aa92260bae5154e","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"5e505e35c8c7ee7fc36f43afbacb003d23d585a9378037b1e4e3652182c119a9","disposition":"still accurate","rationale":"Remote feedback now has independent receipts and draft recovery, while the linked playtesting instructions still separate automated/rendered evidence from eligible player acceptance. No satisfaction or delight claim is inferred from automation."} -->
 
 
 Use the manifest's `workbench-content-lifecycle` invariant and

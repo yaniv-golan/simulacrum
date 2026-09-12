@@ -92,7 +92,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"83e70567647aea12a5ed7d1373e8ed6a0882f988bc046d5d31b9e1ac2b6c60a0","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"7c51d01a3e8f3372c870d934ace9bd64c4970de29c7d4e7220c05e97aa76c9c3","disposition":"still accurate","rationale":"Recording seek reconstruction is faster but capture consent, release admission and qualification policies are unchanged. Local, merge and final commands described here retain the same distinct outcomes."} -->
+<!-- doc-review {"version":1,"fingerprint":"a89d904ea7e829f29354db8866a6be234010dc293c97ea8156a55a0efcc9900d","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"4351875e11020a88346c3bd13dcdf2e490e12954e1fb1987cc8b47be002e866d","disposition":"still accurate","rationale":"The feedback client adds an explicit runtime-network dependency and independent delivery receipts. Local, merge and final verification commands and the distinction from human playtest evidence are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"699cec8dddcf6da2d671fb5c4eba65d5c74f2a5f6d97d057e487aeba4a4823e0","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"101696f911689ee4beabd7cddeebc56513a2ac50eb7f98deea20ce3c3ff9cfcf","disposition":"still accurate","rationale":"The generated reference now includes the socket owner and controls; regeneration, per-section review and source-bound completion workflow are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"395b1e6e3785912c31870e8d70615ff8bd3acd07e9ab1a0c3d0bf8194ed8ffa7","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"cc236a75ef8b4301cb40712c524a3b4c53dc51656b11fced86965e22df8a2e54","disposition":"still accurate","rationale":"The generated reference includes new feedback invariant owners; package changes add network dependency discovery only. Regeneration, individual review and source-closure requirements remain accurate."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"f993680e9a2f29a63692d4d29c561334160f32308103f9806866fab4d9bb02c2","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c592fa40dab53d56400e08f0716e768c341ac5f679c92ba03a1320412b940d4a","disposition":"still accurate","rationale":"The manifest adds one surface-mount preview regression control to the existing connection-display invariant; scope rules, readers, selection and mandatory witness application remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4a03aff23880948afbc0ee2cd2c8a4c3c2a5a851ce87a7fb25449270a34aa121","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"44b0629b10c922929c49c2d0d236d19b58b847791f1ff684cb79d97a13a6348f","disposition":"still accurate","rationale":"Feedback invariant controls now cover corrected drafts and a separate workload transport. Browser admission, conservative selection and witnessed scope application remain governed by the same commands and unchanged rules."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -410,7 +410,7 @@ The [tier coordinator](../../scripts/verification-tiers.mjs#implementation) keep
 ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
-<!-- doc-review {"version":1,"fingerprint":"6fc504809ab145cfb07cfb219777b3f3ec5116339749964af39e9a5b84f2986a","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"fddfe273f1a5fcf26503304f337253308759ddc8628cd18e0c7caaffcc2a79b6","disposition":"still accurate","rationale":"Process event observation adds no workers, lock behavior or budget changes; shared window admission and source-bound evidence remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"879c8f7eb5ae63e03990ec196382d8db0f1422427bb79e38d7c82dfd94fdc3df","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"7191a18bca3784eab9b03eff94e07fbce490d5bdc2a1132396ac2e02e5d0c92e","disposition":"still accurate","rationale":"The package change declares feedback runtime network services without altering the verification-window commands or lease behavior; host-wide coordination requirements still apply."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -444,7 +444,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"751b2f6e7c3ab829191f42a516777167837d1665e2b6e4250f2c1c4ad0bc1d4d","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"af75a6321ae3b633932ec724c55db56311895214e3eb349d2424ac70551fdb17","disposition":"still accurate","rationale":"Registering the surface-mount preview control does not alter candidate capture, dependency installation, identity admission or verification tiers."} -->
+<!-- doc-review {"version":1,"fingerprint":"feb4ec8173c0265e66989577d25a476cf0d9405caaf731c80058f3dedb60f14a","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8b7cee625366b80449e90e837859d0b85a52d4f1724faf98dc5c235200f0723c","disposition":"still accurate","rationale":"The manifest adds focused feedback correction and workload witnesses without changing candidate capture, identity comparison, required completion tiers or evidence reuse rules."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

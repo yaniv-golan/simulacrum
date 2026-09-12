@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"dd4da758ca18edf587c6d91d4f6c8eab805b62192155a935ad2d968ecc9c3195","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"21ebc859ec2525be3bfaef517120894e03d1ea5d00c3b48a8ac2c50ad4f4b5cc","disposition":"still accurate","rationale":"The view now composes cosmetic surface textures and assembly connections; command routing, immutable observations and help input ownership remain unchanged. Preview resources still have bounded disposable lifetimes."} -->
+<!-- doc-review {"version":1,"fingerprint":"79edeef1eb1eaf207f532d7a3c6f325da2333c95bf97b262947f8d783e48eacb","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"aed5ffcbaf9b9f5cf38e101cd1df61ca01554e1157c6740b76b2a10bea024cd4","disposition":"still accurate","rationale":"Feedback modules add application and server dependencies without changing navigation, command admission or the architecture layer map. Package metadata only makes those network edges discoverable."} -->
 
 
 
@@ -66,7 +66,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"ccda4e552e7ad5b312013a73df7a272fd772a3ee6af2327abddd92f604307a6b","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"203c8144ca0c4838dd1489fb7991765c0dcd6e9774aad5e804944a29dd21fffc","disposition":"still accurate","rationale":"Normal electrical overlay beads are removed while connection specifications, resource ownership and canonical model geometry remain in the listed owners. Socket decoration does not alter geometry admission."} -->
+<!-- doc-review {"version":1,"fingerprint":"1357dedcc2746508223dd9a68e95f61507a4f2fbca153afa6ac6121bd5ea1cae","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"756fcca3988b279b981f19c0729d5d54635401e17f78305d810a45c5d3c1ad0b","disposition":"still accurate","rationale":"The new feedback storage/protocol owners do not alter part geometry, mounting, wiring, diagnosis or completed observation ownership. Canonical model decisions remain in the listed modules."} -->
 
 
 
@@ -107,7 +107,7 @@ Ground contact and workshop motion are not Course qualification.
 
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"254fcaeca60ae8917ca3161093f37fb6ca688b52d90594f653a120c3c1f3242c","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"529f9aaa466e80496e9e4f6ea6c6ec61cfa242902e4dedbfa88e321603ab6edf","disposition":"still accurate","rationale":"The observation store's new tickTiming.frameMs is wall-clock diagnostics only. Sensor descriptors, prior-completed sampling, funded sensor execution and decision/learning histories retain their existing owners and behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"6fac34fa66d45ed0301b90c48225640686a3afe69e62930d59138c47b5f1b98e","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"9b1e828d5f94d7f4aba17f5f25e3f2ba77d208f754bbc99ca95ad626320828ce","disposition":"still accurate","rationale":"Feedback context attachments read existing completed snapshots on explicit request. Sensor sampling, controller compilation, learning and actuator ownership are unchanged; the package change only declares network dependencies."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

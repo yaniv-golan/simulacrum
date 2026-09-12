@@ -1,6 +1,13 @@
+import { withCleanup, errorMessages } from './verification-cleanup.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 import { createCaptureReviewIndex } from '../src/application/capture-stream.mjs';
+import { reviewVideo, seekVideo } from '../src/presentation/capture-review-model.mjs';
+import {
+  validateFeedbackEnvelope,
+  validateFeedbackReceipt,
+  feedbackDigest,
+} from '../src/application/feedback-protocol.mjs';
 import { sampleCapture } from './playtest/capture-samples.mjs';
 import { feedbackReceiptMs, waitForCaptureDrain } from './playtest/release-policy.mjs';
 import { installCaptureFault } from './playtest/capture-fault.mjs';
@@ -10,7 +17,7 @@ import { downloadCapture } from './playtest/download.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
 import { createPlaytestServer } from './playtest-server.mjs';
-import { mkdtempSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -61,6 +68,7 @@ if (!origin && adapter === 'cloud') {
     publicDir: 'dist',
     dataDir: data,
     token,
+    adminToken,
     optionalVideo: recordingMode === 'video',
   });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
@@ -83,7 +91,8 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
   errors = browserEvidence.errors;
 
 page.setDefaultTimeout(15000);
-let capturedSession, retryEpochs;
+let capturedSession, retryEpochs, feedbackOpenedAt, feedbackClosedAt;
+const submittedFeedback = new Map();
 const outboxSamples = [],
   resourceSamples = [];
 const uploadTimings = [];
@@ -119,11 +128,21 @@ page.on('requestfailed', (request) => {
     uploadTimings.push({ at: Date.now(), ms: Date.now() - started, outcome: 'failed' });
 });
 page.on('response', (response) => {
+  if (
+    new URL(response.url()).pathname === '/api/playtest/feedback/v1/submission' &&
+    response.ok()
+  ) {
+    const bodyText = response.request().postData(),
+      envelope = JSON.parse(bodyText);
+    submittedFeedback.set(envelope.id, { bodyText, envelope, receipt: response.json() });
+  }
   if (uploadStarted.has(response.request()))
     uploadStatus.set(response.request(), response.status());
   if (new URL(response.url()).pathname === '/api/playtest/v2/session' && response.ok())
     capturedSession = response.json().then((value) => value.sessionId);
 });
+let executionError,
+  executionFailed = false;
 try {
   await page.context().grantPermissions(['microphone']);
   phase('setup');
@@ -137,7 +156,7 @@ try {
         throw Error('Data capture requested screen access');
       };
     });
-  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.locator('[data-start]').click();
   console.log('share clicked');
   await page
     .waitForFunction(
@@ -391,20 +410,51 @@ try {
   await page.locator('[data-part-type=poweredMotor]').click();
   await page.keyboard.press('ArrowRight');
   await page.getByRole('button', { name: 'Give feedback', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Your feedback' }).waitFor({ state: 'visible' });
+  feedbackOpenedAt = await page.evaluate(() => Date.now());
   await page
     .getByRole('textbox', { name: 'Your feedback' })
     .fill('I expected this motor to move separately.');
-  await page.getByRole('button', { name: 'Send written feedback' }).click();
+  await page.locator('[data-attachments] summary').first().click();
+  await page.locator('[data-image]').check();
+  await page.locator('[data-context]').check();
+  await page.locator('[data-image-preview]').waitFor({ state: 'visible' });
+  await page.locator('[data-context-preview]').waitFor({ state: 'visible' });
+  await page.getByRole('button', { name: 'Send feedback', exact: true }).click();
   await page.waitForFunction(
-    () => document.querySelector('.playtest-comment')?.textContent.includes('Received by'),
+    () =>
+      document.querySelector('[data-receipt-state]')?.textContent === 'Sent to Yaniv for review.',
     undefined,
     { timeout: feedbackReceiptMs },
   );
   mkdirSync(output, { recursive: true });
   await page.screenshot({ path: join(output, 'feedback-receipt.png') });
+  await page.getByRole('button', { name: 'Add another', exact: true }).click();
   await page.getByRole('button', { name: 'Record voice comment', exact: true }).click();
   await page.waitForTimeout(1200);
-  await page.getByRole('button', { name: '● Stop voice recording', exact: true }).click();
+  await page.getByRole('button', { name: 'Stop voice recording', exact: true }).click();
+  await page.locator('[data-playback]').waitFor({ state: 'visible' });
+  await page.waitForFunction(() => document.querySelector('[data-playback]').readyState >= 1);
+  await page.locator('[data-playback]').evaluate(async (audio) => {
+    await audio.play();
+    audio.pause();
+  });
+  browserEvidence.assert('equal', [
+    submittedFeedback.size,
+    1,
+    'finalized voice remains local before Send',
+  ]);
+  await page.getByRole('button', { name: 'Send feedback', exact: true }).click();
+  await page.waitForFunction(
+    () => document.querySelector('[data-submitted-text]')?.textContent === 'Voice comment',
+  );
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-receipt-state]')?.textContent === 'Sent to Yaniv for review.',
+    undefined,
+    { timeout: feedbackReceiptMs },
+  );
+  feedbackClosedAt = await page.evaluate(() => Date.now());
   await page.getByRole('button', { name: 'Back to building' }).click();
   await page.waitForTimeout(3200);
   if (faultName === 'reload-recovery')
@@ -442,7 +492,7 @@ try {
               .textContent.includes('All received') &&
             document
               .querySelector('[data-completion-status]')
-              .textContent.includes('You can close this tab'),
+              .textContent.includes('Recording received'),
         ),
       }),
     });
@@ -467,13 +517,139 @@ try {
   }
   const exportMs = Date.now() - exportStarted;
   phase('index');
-  const id = readdirSync(data)[0],
+  const id = await capturedSession,
     dir = join(data, id),
     records = readFileSync(join(dir, 'events.ndjson'), 'utf8').trim().split('\n').map(JSON.parse),
     wireEvents = records.filter((x) => x.event).map((x) => x.event),
     decoded = createCaptureReviewIndex(wireEvents),
     events = decoded.events;
   browserEvidence.assert('equal', [decoded.status, 'complete']);
+  let segmentEvidence;
+  if (recordingMode === 'video') {
+    const sealed = events
+      .filter((event) => event.kind === 'screen-segment')
+      .map((event) => event.data)
+      .sort((a, b) => a.startTimeMs - b.startTimeMs);
+    browserEvidence.assert('ok', [
+      sealed.length >= 2,
+      'actual video resumes in a new segment after feedback closes',
+    ]);
+    const reviewMedia = [],
+      decodes = [];
+    for (const segment of sealed) {
+      browserEvidence.assert('ok', [
+        [segment.startTimeMs, segment.endTimeMs, segment.durationMs].every(Number.isFinite) &&
+          segment.durationMs > 0 &&
+          segment.endTimeMs > segment.startTimeMs,
+        'sealed video has measured finite duration',
+      ]);
+      const chunks = records
+        .filter((row) => row.media?.kind === 'screen' && row.media.clip === segment.clip)
+        .map((row) => row.media)
+        .sort((a, b) => a.seq - b.seq);
+      browserEvidence.assert('ok', [
+        chunks.length > 0,
+        'every sealed video segment exports its actual encoder bytes',
+      ]);
+      chunks.forEach((chunk, index) =>
+        browserEvidence.assert('equal', [
+          chunk.seq,
+          index,
+          'segment media is contiguous from its header',
+        ]),
+      );
+      const bytes = Buffer.concat(chunks.map((chunk) => readFileSync(join(dir, chunk.file))));
+      const mime = chunks[0].mime,
+        file = `segment-${segment.clip}.${mime.includes('mp4') ? 'mp4' : 'webm'}`;
+      writeFileSync(join(dir, file), bytes, { mode: 0o600 });
+      reviewMedia.push({ kind: 'screen', clip: segment.clip, file });
+      const decodedFrame = await page.evaluate(
+        async ({ base64, mime }) => {
+          const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0)),
+            video = document.createElement('video');
+          const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+          video.muted = true;
+          video.playsInline = true;
+          video.width = 160;
+          video.height = 90;
+          video.style.position = 'fixed';
+          video.style.right = '0';
+          video.style.bottom = '0';
+          video.style.pointerEvents = 'none';
+          document.body.append(video);
+          try {
+            return await new Promise((resolve, reject) => {
+              const timer = setTimeout(
+                () => reject(Error('Exported segment did not decode a frame')),
+                15000,
+              );
+              video.onerror = () => {
+                clearTimeout(timer);
+                reject(Error('Exported segment media decode failed'));
+              };
+              video.requestVideoFrameCallback((_, metadata) => {
+                clearTimeout(timer);
+                resolve({
+                  width: video.videoWidth,
+                  height: video.videoHeight,
+                  mediaTime: metadata.mediaTime,
+                });
+              });
+              video.src = url;
+              void video.play().catch((error) => {
+                clearTimeout(timer);
+                reject(error);
+              });
+            });
+          } finally {
+            video.pause();
+            video.remove();
+            URL.revokeObjectURL(url);
+          }
+        },
+        { base64: bytes.toString('base64'), mime },
+      );
+      browserEvidence.assert('ok', [
+        decodedFrame.width > 0 &&
+          decodedFrame.height > 0 &&
+          Number.isFinite(decodedFrame.mediaTime),
+        'real exported segment decodes a browser video frame',
+      ]);
+      decodes.push({ clip: segment.clip, bytes: bytes.length, ...decodedFrame });
+    }
+    const reviewed = reviewVideo(events, reviewMedia);
+    browserEvidence.assert('equal', [reviewed.error, undefined]);
+    browserEvidence.assert('equal', [reviewed.segments.length, sealed.length]);
+    const start = events.find((event) => event.kind === 'session-start'),
+      originEpoch = Date.parse(start.at) - start.timeMs;
+    const protectedStart = feedbackOpenedAt - originEpoch,
+      protectedEnd = feedbackClosedAt - originEpoch;
+    browserEvidence.assert('ok', [
+      protectedEnd - protectedStart >= 1000,
+      'protected feedback interval includes the recorded voice preview journey',
+    ]);
+    const gap = sealed
+      .slice(1)
+      .map((next, index) => ({ start: sealed[index].endTimeMs, end: next.startTimeMs }))
+      .find((gap) => gap.start <= protectedStart + 2 && gap.end >= protectedEnd - 2);
+    browserEvidence.assert('ok', [
+      gap,
+      'actual encoder segments leave the visible feedback interval unavailable',
+    ]);
+    browserEvidence.assert('equal', [
+      seekVideo(reviewed, (protectedStart + protectedEnd) / 2),
+      null,
+      'reviewer cannot seek into a feedback suppression gap',
+    ]);
+    for (const segment of sealed) {
+      const seek = seekVideo(reviewed, (segment.startTimeMs + segment.endTimeMs) / 2);
+      browserEvidence.assert('ok', [
+        seek && Math.abs(seek.timeSeconds - segment.durationMs / 2000) < 1e-8,
+        'reviewer maps session time to measured media time',
+      ]);
+    }
+    segmentEvidence = { sealed, decodes, protectedStart, protectedEnd, gap };
+  }
   if (retryEpochs) {
     const contexts = events.map((_, i) => decoded.readEvent(i));
     browserEvidence.assert('ok', [
@@ -510,30 +686,75 @@ try {
       'overlapping load never replaced captured machine',
     ]);
   }
-  for (const kind of [
-    'session-start',
-    'input',
-    'command-result',
-    'feedback-anchor',
-    'feedback-text',
-    'voice-start',
-    'voice-end',
-    'session-end',
-  ])
-    browserEvidence.assert('ok', [events.some((x) => x.kind === kind), kind]);
+  for (const kind of ['session-start', 'input', 'command-result', 'session-end'])
+    browserEvidence.assert('ok', [events.some((event) => event.kind === kind), kind]);
+  browserEvidence.assert('equal', [
+    events.some((event) =>
+      ['feedback-anchor', 'feedback-text', 'voice-start', 'voice-end'].includes(event.kind),
+    ),
+    false,
+    'standalone feedback does not extend recorded timeline',
+  ]);
   browserEvidence.assert('ok', [
-    records.some((x) => x.media?.kind === 'screen' && x.media.bytes > 0) ===
+    records.some((row) => row.media?.kind === 'screen' && row.media.bytes > 0) ===
       (recordingMode === 'video'),
   ]);
-  browserEvidence.assert('ok', [
-    records.some((x) => x.media?.kind === 'voice' && x.media.bytes > 0),
+  browserEvidence.assert('equal', [
+    submittedFeedback.size,
+    2,
+    'text plus attachments and voice are two explicit submissions',
   ]);
-  const anchor = decoded.readEvent(events.findIndex((x) => x.kind === 'feedback-anchor'));
-  browserEvidence.assert('ok', [anchor.data.image.startsWith('data:image/jpeg')]);
-  browserEvidence.assert('ok', [anchor.data.context.ui.selected]);
-  browserEvidence.assert('ok', [
-    events.find((x) => x.kind === 'feedback-text').data.anchorId === anchor.data.id,
+  const feedbackExports = [],
+    feedbackExportStarted = Date.now();
+  for (const [submissionId, submitted] of submittedFeedback) {
+    const response = await fetch(
+      new URL(`/admin/playtest/feedback/${submissionId}/export`, origin),
+      { headers: { authorization: `Bearer ${adminToken}` }, signal: AbortSignal.timeout(15000) },
+    );
+    if (!response.ok) throw Error(`Owned feedback export failed: ${response.status}`);
+    const exported = await response.json(),
+      envelope = validateFeedbackEnvelope(exported.envelope);
+    browserEvidence.assert('equal', [exported.protocolVersion, 1]);
+    browserEvidence.assert('equal', [
+      exported.bodyText,
+      submitted.bodyText,
+      'admin export preserves exact submitted bytes',
+    ]);
+    browserEvidence.assert('deepEqual', [JSON.parse(exported.bodyText), envelope]);
+    browserEvidence.assert('ok', [
+      validateFeedbackReceipt(exported.receipt, {
+        id: submissionId,
+        uploadHash: await feedbackDigest(exported.bodyText),
+      }),
+    ]);
+    browserEvidence.assert('deepEqual', [
+      exported.receipt,
+      await submitted.receipt,
+      'admin export retains the acknowledged receipt',
+    ]);
+    feedbackExports.push(exported);
+  }
+  const feedbackExportMs = Date.now() - feedbackExportStarted;
+  writeFileSync(join(dir, 'feedback.json'), JSON.stringify(feedbackExports), { mode: 0o600 });
+  const written = feedbackExports.find((row) => row.envelope.text),
+    spoken = feedbackExports.find((row) => row.envelope.voice);
+  browserEvidence.assert('equal', [
+    written.envelope.text,
+    'I expected this motor to move separately.',
   ]);
+  browserEvidence.assert('ok', [written.envelope.image.dataUrl.startsWith('data:image/')]);
+  browserEvidence.assert('equal', [written.envelope.image.scope, 'canvas']);
+  browserEvidence.assert('ok', [written.envelope.context.value.workshop.ui.selected]);
+  browserEvidence.assert('equal', [written.envelope.image.reference.sessionId, id]);
+  browserEvidence.assert('equal', [written.envelope.context.reference.sessionId, id]);
+  browserEvidence.assert('ok', [
+    spoken.envelope.voice.durationMs > 0 && spoken.envelope.voice.durationMs <= 60000,
+  ]);
+  const feedbackFiles = feedbackExports.map((row) => {
+    const file = join(dir, `feedback-envelope-${row.envelope.id}.json`);
+    writeFileSync(file, row.bodyText, { mode: 0o600 });
+    return file;
+  });
   browserEvidence.assert('deepEqual', [errors, []]);
   mkdirSync(output, { recursive: true });
   phase('screenshot');
@@ -551,6 +772,13 @@ try {
         errors,
         recordingMode,
         captureSchema: 1,
+        segmentEvidence,
+        feedbackSubmissions: feedbackExports.map((row) => ({
+          id: row.envelope.id,
+          voiceBytes: row.envelope.voice
+            ? Buffer.from(row.envelope.voice.base64, 'base64').length
+            : 0,
+        })),
         screenSource:
           recordingMode === 'video'
             ? 'Chromium automated current-tab capture; fake microphone device'
@@ -570,34 +798,34 @@ try {
           build: browserEvidence.identity.build,
           syntheticRun:
             JSON.parse(readFileSync(join(dir, 'session.json'), 'utf8')).syntheticRun ?? null,
-          mediaFiles: records
-            .filter((row) => row.media?.kind === (recordingMode === 'data' ? 'voice' : 'screen'))
-            .map((row) => join(dir, row.media.file)),
+          feedbackFiles,
+          mediaFiles:
+            recordingMode === 'data'
+              ? []
+              : records
+                  .filter((row) => row.media?.kind === 'screen')
+                  .map((row) => join(dir, row.media.file)),
           recordingMode,
           captureSchema: 1,
           eventSamples: wireEvents,
           maximumEventBytes: Math.max(
             ...wireEvents.map((event) => Buffer.byteLength(JSON.stringify(event))),
           ),
-          voiceBytes: records
-            .filter((row) => row.media?.kind === 'voice')
-            .reduce((sum, row) => sum + row.media.bytes, 0),
-          maximumVoiceChunkBytes: Math.max(
-            0,
-            ...records.filter((row) => row.media?.kind === 'voice').map((row) => row.media.bytes),
-          ),
-          voiceChunks: records.filter((row) => row.media?.kind === 'voice').length,
+          voiceBytes: 0,
+          maximumVoiceChunkBytes: 0,
+          voiceChunks: 0,
           screenChunks: records.filter((row) => row.media?.kind === 'screen').length,
           exportMs,
+          feedbackExportMs,
+          segmentEvidence,
           phaseTimings,
           outboxSamples,
           resourceSamples,
           uploadTimings,
           finalOutbox,
-          storageBytes: records.reduce(
-            (n, row) => n + (row.media?.bytes || row.rawEvent?.bytes || 0),
-            0,
-          ),
+          storageBytes:
+            records.reduce((n, row) => n + (row.media?.bytes || row.rawEvent?.bytes || 0), 0) +
+            feedbackExports.reduce((n, row) => n + Buffer.byteLength(row.bodyText), 0),
           captureSeconds,
           finalDrain,
           captureStarted,
@@ -626,48 +854,70 @@ try {
     );
   console.log('remote capture browser passed', adapter);
 } catch (error) {
-  phase('failed');
-  let finalFailureOutbox, diagnosticTimeout;
+  executionFailed = true;
+  executionError = error;
   try {
-    finalFailureOutbox = await Promise.race([
-      sampleOutbox(),
-      new Promise((resolve) => {
-        diagnosticTimeout = setTimeout(() => resolve({ unavailable: true }), 5000);
-      }),
-    ]);
-  } catch {
-    finalFailureOutbox = { unavailable: true };
-  } finally {
-    clearTimeout(diagnosticTimeout);
-  }
-  // Preserve bounded numeric diagnostics even when receipt or drain fails.
-  // Do not export invitation URLs, payload bodies, comments or credentials.
-  mkdirSync(output, { recursive: true });
-  writeFileSync(
-    join(output, 'transport-failure.json'),
-    JSON.stringify({
-      outboxSamples,
-      resourceSamples,
-      uploadTimings,
-      finalFailureOutbox,
-      phaseTimings,
-    }),
-    { mode: 0o600 },
-  );
-  await browserEvidence.captureFailure(error);
-
-  await page.screenshot({ path: join(output, 'failure.png') });
-  writeFileSync(join(output, 'failure.txt'), await page.locator('body').innerText());
-  throw error;
-} finally {
-  try {
-    browserEvidence.assertUnchanged();
-  } finally {
-    await browser.close();
-    if (server) {
-      server.closeAllConnections();
-      await new Promise((r) => server.close(r));
+    phase('failed');
+    let finalFailureOutbox, diagnosticTimeout;
+    try {
+      finalFailureOutbox = await Promise.race([
+        sampleOutbox(),
+        new Promise((resolve) => {
+          diagnosticTimeout = setTimeout(() => resolve({ unavailable: true }), 5000);
+        }),
+      ]);
+    } catch {
+      finalFailureOutbox = { unavailable: true };
+    } finally {
+      clearTimeout(diagnosticTimeout);
     }
-    if (cloud) await cloud.close();
+    // Preserve bounded numeric diagnostics even when receipt or drain fails.
+    // Do not export invitation URLs, payload bodies, comments or credentials.
+    mkdirSync(output, { recursive: true });
+    writeFileSync(
+      join(output, 'transport-failure.json'),
+      JSON.stringify({
+        outboxSamples,
+        resourceSamples,
+        uploadTimings,
+        finalFailureOutbox,
+        phaseTimings,
+      }),
+      { mode: 0o600 },
+    );
+    await browserEvidence.captureFailure(error);
+
+    await page.screenshot({ path: join(output, 'failure.png') });
+    writeFileSync(join(output, 'failure.txt'), await page.locator('body').innerText());
+  } catch (diagnosticError) {
+    executionError = new AggregateError(
+      [error, diagnosticError],
+      [error, diagnosticError].flatMap((e) => errorMessages(e)).join('; '),
+    );
   }
+} finally {
+  await withCleanup(
+    () => {
+      if (executionFailed) throw executionError;
+    },
+    () => browserEvidence.assertUnchanged(),
+    () => phase('browser-close'),
+    () => browser.close(),
+    () => {
+      if (server) phase('server-close');
+    },
+    () => {
+      if (server) server.closeAllConnections();
+    },
+    () =>
+      server &&
+      new Promise((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      ),
+    () => {
+      if (cloud) phase('cloud-close');
+    },
+    () => cloud?.close(),
+    () => phase('closed'),
+  );
 }

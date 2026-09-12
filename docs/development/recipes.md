@@ -18,7 +18,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"249edf152e297ec4c1169a854b12dae1aa648cd5137d7a876fa3cbbf164fd8ee","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"99348d03b3f30d77049ee34a2395fc8630cea4daf818c6518eb82384706d7c16","disposition":"still accurate","rationale":"Frame construction timing does not modify catalog geometry, schema, material admission, mounting surfaces, gear support eligibility or Ball controls. The recipe's ordinary authored-part and independent renderer/model checks still apply."} -->
+<!-- doc-review {"version":1,"fingerprint":"c9deaf115b29d62409080812a6c3aa241adac32794844b59953b139f76e179ae","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"052f37439b2c6ecdd43c02274230fcfab7078d8d03d43d3551aeaa278f1c946a","disposition":"still accurate","rationale":"Feedback UI and server modules add no parts, materials, geometry or mounting rules. Package metadata only adds network discovery, so ordinary authored-part and physical validation requirements remain accurate."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -58,7 +58,7 @@ when changing admission.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"c742457e58eded3890b2e70615181375ce572b6ae6c8d365d2e1354b811a41ef","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"0b2206365b7cb7ad062d7dfb94bf5761f8afdd20c59ce33874548185183c11aa","disposition":"still accurate","rationale":"Session and observation changes add diagnostic timings after completed simulation work; core shape validation, candidate compilation, atomic command history and rejected-edit effects are unchanged, preserving the surface-mount example and controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"5a11c1c1035f2b99b3748af9328f529643c8e0e213360109b05312c45338c6bc","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"75988a103a54481dbed5819c38ebc38f581f462ae7ad5d603e608b1628b9e6cd","disposition":"still accurate","rationale":"Feedback submissions use an independent network protocol and do not add workshop commands or history transactions. Shape validation, compilation and core edit atomicity in this recipe remain unchanged."} -->
 
 
 
@@ -75,7 +75,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"2db42b4ea010dc6f341a571ba31fde3c270359d772b3fa3d332aebe32ae1177c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"a6438503af3ded01072ffca72faba88eaddc716257f62752434f0438dda3632c","disposition":"updated","rationale":"The recipe now names both help interaction and catalog inspector checks. All seven scenario bodies and viewports were preserved, with separate artifacts and unchanged watchdogs; ordinary input ownership and user behavior assertions remain."} -->
+<!-- doc-review {"version":1,"fingerprint":"9b49c0d39c35a1d2c74e234734dc77905d5d9b327a62a9714f954c6ed3d50765","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"5949eed11f85bfe92335884dc7b5d884beadbbff9662eb161ad6d788966e5b3c","disposition":"still accurate","rationale":"The feedback dialog follows the existing task/region/lifecycle policy and uses no second workshop command owner. Package metadata adds network edges without changing the interaction recipe or existing help checks."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -125,7 +125,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"061d54b22a01c6e3246d8d5c8464abeab0edf3857f4290a38dc25fac9b369e44","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"e694a2241100261b7377c2e245c740cc51e6c3792f379bc78fc78a698d917370","disposition":"still accurate","rationale":"The new frame-construction attribution reads diagnostic timing and does not change motion or controller diagnosis. Completed observation ownership, causal uncertainty, separate history, and measurement sampling remain the prescribed diagnostic path."} -->
+<!-- doc-review {"version":1,"fingerprint":"00e9a52577f620e8058f591105db52e65a2a0b4365f2819877ba99112b761e3e","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"0a539279cbb0a7f1ae719dce4229169a7d1fcd378e201231cbce0a95ac3ff019","disposition":"still accurate","rationale":"Optional feedback context is an explicitly captured snapshot, not a new simulation diagnostic or repair. Completed-data ownership and causal limits in this recipe remain unchanged."} -->
 
 
 
@@ -155,7 +155,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"27d2a20ee8e8d91d45d7c577a430aa0c3a28401e7aee618f97402fc1058e1564","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"bb77467145a30afa4ae9a37dc84520ceeacec91b75aea8e5c8d7d01cd9053447","disposition":"still accurate","rationale":"Session still constructs and publishes the same completed state after one integration; frameMs only separates a measured cost. Gear measurement adds attribution while retaining loaded apparatus durations, physical assertions and absolute budgets, so all numerical and authority requirements here remain binding."} -->
+<!-- doc-review {"version":1,"fingerprint":"01eea5075f41cf4ceadc61df2591f29ff69ec7a06e7d1863478ddd6c05b9e1ee","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"951aa65a10abe76d8dbd17ecfcca6cab503ff33e2d14374418fed78db18fb71c","disposition":"still accurate","rationale":"Feedback capture and receipt changes do not alter physical laws, integration timing or authority. Package metadata only adds network discovery; independent numerical and physical controls remain required."} -->
 
 
 
@@ -299,7 +299,7 @@ settings and slop. Re-run existing contact/constraint cases when changing this p
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"eab6cfa85d5242d7ebc5689d8d5f0ddd7d39086e451f1632bd9cf27a4e1ca621","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"14c04cbb58330a8cd2fb2d232edee5ac86623c8254c434dc74e58ce4a158e66d","disposition":"still accurate","rationale":"Observation timing and shared browser lifecycle instrumentation do not change copied graph membership, reference remapping, assembly persistence or atomic commands. The listed assembly journeys and rendered/completed comparisons remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"74a998bfd5ceab468b206d2f3ebd76e3cbe68f92481bbc6c3cea842ec78b4183","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"1448aa2b8c46e360bb0b2e63583738271d3108738ed6051f3f545399e56fef00","disposition":"still accurate","rationale":"No assembly or multi-part authoring operation changes. Feedback snapshots copy existing project state, preserving canonical atomic authoring and reusable-assembly requirements."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -392,7 +392,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"3ca425b05015638a9ad5b620385a6cb4768110559e8c897696090c55127b77a2","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"11518e76292e149100a74a1fe95bbe224a693aac876995219af335edab3f5f50","disposition":"updated","rationale":"Assembly previews now resolve surface-bound fixed mounts with the shared model helper, preserving face offsets and authored rotations alongside catalogue ports; the added regression covers both poses and resource disposal."} -->
+<!-- doc-review {"version":1,"fingerprint":"feb001085cc5f9eba62e455f13a85669922223b8d4f0f1c2d5085ed633b820a5","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"ce201ab925abed18757b8e0f4fcfb7b6842fb2b83281b58f7a92b191b75969ae","disposition":"still accurate","rationale":"The feedback dialog uses explicit lifecycle, bounded scrolling and retained consequential state. It does not change observation data, overlay ownership or the existing measurement surface guarantees."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -493,7 +493,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"a5eb8d66c231e6cd1c0280c00bdb54472bc064c9b860d639984c7aba7da69c23","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"70dab5f60156fb50dcd2c931dbfa28f3d93e9d76e81d943f65c9d300847c0882","disposition":"still accurate","rationale":"Only the native dependency changed; graphics quality levels, thresholds, resource lifecycle and independence from simulation remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"24dda9884d284c0b53fe5b8b5b3e9ee9ffcd9a11bf375eb680e18331f8ac8d02","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"d76ae352a92712f18843f955ec81e589bd45ea295708d7edf4b589ece92627b9","disposition":"still accurate","rationale":"Feedback layout and paused video segments do not change graphics quality selection, renderer timing or simulation stepping. The existing graphics policy and evidence boundaries remain accurate."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

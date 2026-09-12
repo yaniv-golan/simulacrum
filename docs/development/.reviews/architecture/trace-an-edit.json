@@ -14,7 +14,7 @@
     "src/model/sensors.mjs": "e1cc067189f8f6c5e7b0bec99373647f5bbae8500fc9eabb6ca92518e56a0ce2",
     "src/presentation/spring-controls.mjs": "305cc025d102e64cf1438a02e333df00b4866c553ec29fa95ccee28bbaaf205d",
     "package-lock.json": "bcc829aa98315f5b3ca46abbd8ee3c660c15b5a258f209d9265741c9bc57513c",
-    "package.json": "8d74ddc88af77087abe09d3e9ee4fff0f02d3191030d2177f88f8cfbdb0c612a",
+    "package.json": "6edb48593a61fb710edc6322958c53fc4bb2c8c2e8039daecb99e13117f7762a",
     "src/core/workshop.mjs": "56a54781c33477c699bc2f67140b4884e07144a193f9110a2eddfc908db02c45",
     "src/model/assembly.mjs": "23e8eb3175c17d5bcc93b731f3bf66d13ed59bf0c8e28a2fd4c32f4ab27fbd3e",
     "src/model/blueprint.mjs": "3a6f5b81f4120d3a2bf7d0cbd2453490a11282a7f66f0ab7dc1297d8573954eb",

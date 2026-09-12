@@ -3,7 +3,7 @@
   "dependencies": {
     "scripts/candidate.mjs": "a708554e53d8bc216219ee2cc5a818bc1855dc8cc9e64d144ae59bac2ad796eb",
     "package-lock.json": "bcc829aa98315f5b3ca46abbd8ee3c660c15b5a258f209d9265741c9bc57513c",
-    "package.json": "b55b38291fcb6c9161ce960e427bf2acb9bb3b2ee6419262d05abc4cfee55164",
+    "package.json": "884f554a6c33a1b64b64dec0459d59a32eef30d517609e15586d8feb4fdd5778",
     "scripts/analysis-snapshot.mjs": "ef4628c9a026cd935f9c42caeffdf4644935671250eee2170a358b88d18d243d",
     "scripts/browser-registry.mjs": "4d9a6642584a88ebf9b0ca80b259fe4d190392d01c00e5456aa05c482a813795",
     "scripts/browser-scope-apply.mjs": "739d6c3a915bfe37d481327a69c07d439ebfab54f7b9836b762f9df3b2cf1bd1",
@@ -16,7 +16,7 @@
     "scripts/development-reference.mjs": "cd38e55e0fb5dd1f738bd061f605b42a8d2f75f6ea83c2a9288ea21e4042d4cf",
     "scripts/documentation.mjs": "5c3b3c3e9adb6ee472ac3e23c45ca64bdd5f787a40ef6fb0c1f0996edd30204a",
     "scripts/invariant-coverage.mjs": "59f81d8cbc60269fe15917d702080cf1545bc33073ec5492ae14476e33957e8a",
-    "scripts/manifest.json": "dc68cd09311228a007056ebfb4036ca601f59f6c0e0d9490b311393f5a322e56",
+    "scripts/manifest.json": "1b04eb92521ecdb48b81ff4aeb12150603aab0cc8e31bb1ad3c2342385a1c408",
     "scripts/merge-selection.mjs": "e217a43ce62ea403939a6ae8998bbaf69d8058d5b6fef2f6280f8fc7624bd3e8",
     "scripts/merge-shadow.mjs": "0a0cc14b0a9b3456923b6abab94abf9c8d0a1901b167147a5cc60641162f96a5",
     "scripts/module-graph.mjs": "7feb25de7c3c5dbe100ec128f394d727bed0def6511e22c479a48f87a1848e54",

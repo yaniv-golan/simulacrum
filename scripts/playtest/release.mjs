@@ -15,7 +15,11 @@ import {
   validateProfile,
 } from './experiments.mjs';
 import { measureCaptureLoad, assertCaptureBacklog, assertCaptureWorkload } from './load.mjs';
-import { assertReservationLifetime, captureBrowserTimeoutMs } from './release-policy.mjs';
+import {
+  assertReservationLifetime,
+  captureBrowserTimeoutMs,
+  assertFeedbackQualification,
+} from './release-policy.mjs';
 import { validateReleaseConfig } from './release-config.mjs';
 import {
   inspectDeployment,
@@ -230,6 +234,7 @@ export async function deployRelease(
   if (stagingEvidence) assertCaptureIdentity(stagingEvidence, captureMode);
   if (!['auto', 'full', 'bypass-expensive'].includes(verification.mode || 'auto'))
     throw Error('Unknown experiment mode');
+  const feedback = assertFeedbackQualification(desired, verification);
   let calibration;
   if (verification.mode !== 'bypass-expensive') {
     validateProfile(profile);
@@ -268,6 +273,7 @@ export async function deployRelease(
     ? {
         capacityRuntime: {
           ...captureMode,
+          feedback,
           calibrationEvidence: profile.calibration?.evidence,
           workload: profile.calibration?.workload,
           browserVersion: profile.calibration?.browserVersion,
@@ -577,6 +583,7 @@ export async function deployRelease(
         status: 'passed',
         schema: 2,
         ...captureMode,
+        feedback,
         behaviorConfiguration: behaviorConfiguration(desired),
         qualification: experimentPlan.exception ? 'EXCEPTION' : 'PASS',
         experiments: experimentPlan.results,

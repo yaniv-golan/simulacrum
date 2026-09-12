@@ -103,6 +103,14 @@
           "../../scripts/playtest-server.mjs",
           "../../scripts/playtest/worker.mjs"
         ]
+      },
+      "src/application/feedback-client.mjs": {
+        "namespace": "/api/playtest/",
+        "dynamicFetchArguments": [],
+        "services": [
+          "../../scripts/playtest-server.mjs",
+          "../../scripts/playtest/worker.mjs"
+        ]
       }
     },
     "runtimeURLArguments": {

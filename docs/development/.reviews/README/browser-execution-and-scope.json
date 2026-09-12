@@ -2,11 +2,11 @@
   "version": 1,
   "dependencies": {
     "package-lock.json": "bcc829aa98315f5b3ca46abbd8ee3c660c15b5a258f209d9265741c9bc57513c",
-    "package.json": "a389b451aed421a92d0db1e6b901c70de3ac2bab215b44aca3858976cdb7e96f",
+    "package.json": "6de63f205414a27b4780e8563cb1013155c486f0ef32f0b0a0579d1f1eb20d49",
     "scripts/browser-registry.mjs": "4d9a6642584a88ebf9b0ca80b259fe4d190392d01c00e5456aa05c482a813795",
     "scripts/browser-selection.mjs": "77c8d5f44714ab7a4801d61084e85d0b943578ef9e6aa82443f7596462c8174c",
     "scripts/invariant-coverage.mjs": "59f81d8cbc60269fe15917d702080cf1545bc33073ec5492ae14476e33957e8a",
-    "scripts/manifest.json": "dc68cd09311228a007056ebfb4036ca601f59f6c0e0d9490b311393f5a322e56",
+    "scripts/manifest.json": "1b04eb92521ecdb48b81ff4aeb12150603aab0cc8e31bb1ad3c2342385a1c408",
     "scripts/module-graph.mjs": "7feb25de7c3c5dbe100ec128f394d727bed0def6511e22c479a48f87a1848e54",
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
     "scripts/test-selection.mjs": "73dac80216ee28b5644f04acd503f8776d1854090417fcc6ec9df4446686000e",

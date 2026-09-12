@@ -46,6 +46,15 @@ async function fixture(t, options = {}) {
     constructor(tag) {
       this.tag = tag;
       this.children = new Map();
+      const classes = new Set();
+      this.classList = {
+        toggle(name, force) {
+          const present = force ?? !classes.has(name);
+          if (present) classes.add(name);
+          else classes.delete(name);
+          return present;
+        },
+      };
       this.open = false;
       this.removed = false;
       nodes.push(this);
@@ -67,6 +76,16 @@ async function fixture(t, options = {}) {
     }
     remove() {
       this.removed = true;
+    }
+    setAttribute(key, value) {
+      this[key] = value;
+    }
+    removeAttribute(key) {
+      delete this[key];
+    }
+    focus() {}
+    click() {
+      return this.onclick?.();
     }
     addEventListener() {}
     removeEventListener() {}
@@ -100,7 +119,7 @@ async function fixture(t, options = {}) {
         close = db.close.bind(db),
         transaction = db.transaction.bind(db);
       db.close = () => {
-        dbClosed = true;
+        if (args[0] === 'simulacrum-playtest-outbox-v2') dbClosed = true;
         close();
       };
       db.transaction = (...args) => {
@@ -148,6 +167,11 @@ async function fixture(t, options = {}) {
     location: { origin: 'http://localhost' },
     navigator: {
       userAgent: 'fixture-browser',
+      locks: {
+        async request(name, options, callback) {
+          return callback({ name });
+        },
+      },
       mediaDevices: {
         async getDisplayMedia() {
           const result = stream();
@@ -244,6 +268,7 @@ async function fixture(t, options = {}) {
       return {};
     },
     checkpoint: () => ({}),
+    measureVideoDuration: async () => null,
   });
   await settle();
   return {
@@ -291,14 +316,18 @@ test('outbox limit stops once even when the final event cannot fit', async (t) =
   await f.start();
   await settle();
   assert.equal(f.mount.active(), true);
-  assert.equal(f.calls(), 1);
+  assert.equal(f.calls(), 2, 'session and initial screen segment sample context');
+  const initialCalls = f.calls();
   f.huge(true);
   f.mount.emit('over-limit', {});
   // IndexedDB and the packet timer may need more than a fixed number of turns.
   await waitUntil(() => !f.mount.active(), 'recording stop after outbox limit');
   f.huge(false);
   assert.equal(f.mount.active(), false);
-  assert.ok(f.calls() <= 3, 'one rejected event and at most one terminal event');
+  assert.ok(
+    f.calls() <= initialCalls + 2,
+    'one rejected event and at most one segment-finalization sample',
+  );
   assert.equal(
     f.tracks.every((track) => track.readyState === 'ended'),
     true,
@@ -359,7 +388,7 @@ test('finish keeps durable uploads available for retry while disposal releases t
     'finish and final media persistence',
   );
   assert.equal(f.mount.active(), false);
-  assert.equal(f.intervals.size, 1, 'upload retry remains after Finish');
+  assert.equal(f.intervals.size, 2, 'recording and feedback retries remain after Finish');
   assert.equal(f.closed(), false);
   assert.ok(f.rows.some((row) => row.url.includes('/media?')));
   assert.ok(

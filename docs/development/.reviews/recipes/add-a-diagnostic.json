@@ -24,7 +24,7 @@
     "src/model/surfaces.mjs": "58249441a24e920cf369f1a51777c969e571a32e68a0cb8561c5e2eac8a82995",
     "test/opposed-drive-diagnostic.test.mjs": "0f8761244270dad4ff9fe020e8e507c80a624774e4d7b11b03f63f77b62a49a0",
     "package-lock.json": "bcc829aa98315f5b3ca46abbd8ee3c660c15b5a258f209d9265741c9bc57513c",
-    "package.json": "8d74ddc88af77087abe09d3e9ee4fff0f02d3191030d2177f88f8cfbdb0c612a",
+    "package.json": "6edb48593a61fb710edc6322958c53fc4bb2c8c2e8039daecb99e13117f7762a",
     "src/core/workshop.mjs": "daa3ad66997a03b6abf037b723d80cbce6aa2bc29b799cf4192c05c8df4bcbaa",
     "src/model/controller-authoring.mjs": "0c6b8c4d852dd59345f38ef1a31ff91ce27e90e783fcc6548951abcc0920276c",
     "src/model/editing.mjs": "11e29e8e17b767e73955370a3293b05bbc6741c3693c9498e2294fde5d904b83",

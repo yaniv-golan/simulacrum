@@ -3298,3 +3298,168 @@ body:has(.playtest-panel) .guide-feedback {
 .controller-history select {
   max-width: 100%;
 }
+
+/* Feedback is requested content; its actions remain reachable while drafts scroll. */
+.feedback-dialog {
+  box-sizing: border-box;
+  width: min(580px, calc(100vw - 24px));
+  max-width: 580px;
+  max-height: calc(100dvh - 24px);
+  padding: 24px;
+  overflow: hidden;
+}
+.feedback-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.feedback-dialog h2 {
+  margin: 0 42px 12px 0;
+  font-size: 22px;
+  line-height: 1.3;
+}
+.feedback-scroll {
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
+}
+.feedback-intro {
+  margin-top: 4px;
+}
+.feedback-disclosure,
+.feedback-muted {
+  color: #b9cdd5;
+  font-size: 13px;
+}
+.feedback-dialog textarea {
+  margin: 8px 0 4px;
+  background: #0e2029;
+  color: #eef4f5;
+  border: 1px solid #68838c;
+  border-radius: 8px;
+  resize: vertical;
+  min-height: 112px;
+  max-height: 220px;
+}
+.feedback-dialog textarea::placeholder {
+  color: #a9bbc1;
+}
+.feedback-dialog label {
+  display: block;
+  margin-top: 12px;
+}
+.feedback-dialog input[type='checkbox'] {
+  margin-right: 8px;
+}
+.feedback-dialog details {
+  margin: 12px 0;
+}
+.feedback-dialog summary {
+  cursor: pointer;
+  padding: 4px 0;
+}
+.feedback-dialog pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.feedback-dialog img {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+.feedback-dialog audio {
+  max-width: 100%;
+  width: 100%;
+  margin: 8px 0;
+}
+.feedback-dialog [data-error],
+.feedback-dialog [data-voice-status] {
+  color: #f5c692;
+}
+.feedback-dialog [data-error]:empty,
+.feedback-dialog [data-voice-status]:empty,
+.feedback-dialog [data-count]:empty,
+.feedback-dialog [data-mode-note]:empty {
+  display: none;
+}
+.feedback-actions {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #3c555e;
+  margin-top: 12px;
+}
+.feedback-dialog button {
+  margin: 0;
+  min-height: 42px;
+}
+.feedback-dialog button.feedback-secondary {
+  background: transparent;
+  color: #dae8ed;
+  border-color: #68838c;
+}
+.feedback-dialog button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.feedback-dialog :is(button, textarea, summary, input):focus-visible {
+  outline: 3px solid #8cf5cf;
+  outline-offset: 3px;
+}
+.feedback-voice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+.feedback-check {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #20483d;
+  color: #b0f3d9;
+}
+.feedback-dialog [data-submitted-text],
+.feedback-dialog .playtest-comment {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.feedback-dialog .playtest-comments {
+  max-height: none;
+}
+.feedback-dialog [data-history] button {
+  margin: 4px 6px 0 0;
+}
+.feedback-dialog [hidden] {
+  display: none;
+}
+@media (max-width: 660px), (max-height: 560px) {
+  .feedback-dialog {
+    padding: 16px;
+  }
+  .feedback-dialog h2 {
+    font-size: 19px;
+  }
+  .feedback-actions {
+    gap: 6px;
+    padding-top: 10px;
+  }
+  .feedback-actions button {
+    padding: 8px 10px;
+  }
+}
+
+.playtest-panel [data-feedback-state] {
+  display: block;
+  font-size: 10px;
+  line-height: 1.2;
+}
+.playtest-panel [data-feedback-state]:empty {
+  display: none;
+}

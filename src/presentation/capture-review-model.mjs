@@ -3,6 +3,64 @@ import { CATALOG } from '../model/catalog.mjs';
 import { environmentObstacles } from '../model/environment.mjs';
 export const safeMedia = (value) =>
   typeof value === 'string' && /^[a-zA-Z0-9_-]+\.(webm|mp4|png)$/.test(value);
+// Sealed segments have their own media clocks. Never bridge a suppression gap.
+export function reviewVideo(events, media) {
+  const markers = events.filter((event) =>
+    ['screen-segment', 'screen-segment-start'].includes(event.kind),
+  );
+  const screens = media.filter(
+    (entry) => entry.kind === 'screen' && safeMedia(entry.file) && !entry.gaps,
+  );
+  if (!markers.length)
+    return { legacy: screens.length === 1 ? screens[0].file : null, segments: [] };
+  const segments = [];
+  let unavailable = false;
+  for (const event of markers.filter((entry) => entry.kind === 'screen-segment')) {
+    const value = event.data ?? {};
+    const matches = screens.filter((entry) => entry.clip === value.clip);
+    if (
+      matches.length !== 1 ||
+      ![value.startTimeMs, value.endTimeMs, value.durationMs].every(Number.isFinite) ||
+      value.startTimeMs < 0 ||
+      value.endTimeMs <= value.startTimeMs ||
+      value.durationMs <= 0
+    ) {
+      unavailable = true;
+      continue;
+    }
+    segments.push({ ...value, file: matches[0].file });
+  }
+  segments.sort((a, b) => a.startTimeMs - b.startTimeMs);
+  if (
+    segments.some(
+      (entry, index) =>
+        index > 0 &&
+        (entry.startTimeMs < segments[index - 1].endTimeMs ||
+          segments.slice(0, index).some((previous) => previous.clip === entry.clip)),
+    )
+  )
+    return { segments: [], error: 'Video segment intervals overlap or repeat.' };
+  return {
+    segments,
+    ...(unavailable ? { error: 'Some video segments have unavailable timing or media.' } : {}),
+  };
+}
+export function seekVideo(video, timeMs) {
+  if (!Number.isFinite(timeMs) || timeMs < 0) return null;
+  if (video.legacy) return { file: video.legacy, timeSeconds: timeMs / 1000 };
+  const segment = video.segments.find(
+    (entry) => timeMs >= entry.startTimeMs && timeMs < entry.endTimeMs,
+  );
+  return segment
+    ? {
+        file: segment.file,
+        timeSeconds:
+          (((timeMs - segment.startTimeMs) / (segment.endTimeMs - segment.startTimeMs)) *
+            segment.durationMs) /
+          1000,
+      }
+    : null;
+}
 export function reviewTimeline(decoded) {
   const events = decoded.events ?? [];
   if (events.length > 100000) throw Error('Review event limit exceeded');

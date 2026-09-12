@@ -13,7 +13,7 @@
     "src/simulation/receiver-arbiter.mjs": "5e0b173f7f938987cf41ce7cb63488536caa4b4fa704d868e8cc60757db000e7",
     "src/presentation/sensor-controls.mjs": "d8767112d377dbb83337547576fe0b6b3f2e891dddcae94dc95326e640598c6b",
     "package-lock.json": "bcc829aa98315f5b3ca46abbd8ee3c660c15b5a258f209d9265741c9bc57513c",
-    "package.json": "8d74ddc88af77087abe09d3e9ee4fff0f02d3191030d2177f88f8cfbdb0c612a",
+    "package.json": "6edb48593a61fb710edc6322958c53fc4bb2c8c2e8039daecb99e13117f7762a",
     "src/presentation/sensor-view.mjs": "8e25e1cc0ecbd8aae04a751ef1730fc7d8d25eb68d570ce24652dd080224b0ee",
     "src/scripting/controller-program.mjs": "82db0a979977655cbe339b2c7d7f8500fefc47b8a70fbfdec45eb93d77559529",
     "src/scripting/controller-executors.mjs": "973fed1b295ec635ee55036ab3458209d670e7ac26be0f85626017550719c6cd",

@@ -51,3 +51,21 @@ export async function waitForCaptureDrain({
     await wait(Math.min(1000, finalDrainMs - elapsedMs));
   }
 }
+
+// Feedback v1 has a separate envelope transport and storage budget from capture v2.
+export function assertFeedbackQualification(worker, verification = {}) {
+  const enabled = worker.vars?.FEEDBACK_ENABLED !== 'false';
+  if (enabled && verification.mode !== 'bypass-expensive')
+    throw Error(
+      'Feedback protocol v1 capacity is unqualified: recording-only capacity evidence cannot qualify ' +
+        'the standalone feedback envelope transport. Disable feedback or use the explicitly authorized ' +
+        'experimental exception; its source-bound verification and live smoke checks still apply.',
+    );
+  // This only defers to the existing exception policy; it does not authorize an exception.
+  return {
+    enabled,
+    protocolVersion: 1,
+    transport: 'standalone-envelope-v1',
+    capacityQualification: enabled ? 'UNQUALIFIED' : 'NOT_OFFERED',
+  };
+}

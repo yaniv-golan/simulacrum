@@ -19,6 +19,11 @@ const browserEvidence = createFixtureEvidence({
     process.env.FEEDBACK_SOURCE || 'src/application/remote-playtest.mjs',
     'src/presentation/workshop.css',
     'src/application/capture-outbox.mjs',
+    'src/application/feedback-client.mjs',
+    'src/application/feedback-store.mjs',
+    'src/application/feedback-protocol.mjs',
+    'src/application/feedback-capture-gate.mjs',
+    'src/application/capture-media-duration.mjs',
     'src/application/capture-stream.mjs',
     'src/application/capture-packet.mjs',
     'package-lock.json',
@@ -28,16 +33,22 @@ const browserEvidence = createFixtureEvidence({
 
 const source = readFileSync(process.env.FEEDBACK_SOURCE || 'src/application/remote-playtest.mjs'),
   css = readFileSync('src/presentation/workshop.css');
+const moduleFiles = new Map(
+  [
+    'capture-outbox',
+    'capture-stream',
+    'capture-packet',
+    'feedback-client',
+    'feedback-store',
+    'feedback-protocol',
+    'feedback-capture-gate',
+    'capture-media-duration',
+  ].map((name) => [`/${name}.mjs`, `src/application/${name}.mjs`]),
+);
 const server = createServer((req, res) => {
   res.setHeader(
     'Content-Type',
-    [
-      '/remote.mjs',
-      '/capture-outbox.mjs',
-      '/capture-stream.mjs',
-      '/capture-packet.mjs',
-      '/fflate.mjs',
-    ].includes(req.url)
+    req.url.endsWith('.mjs')
       ? 'text/javascript'
       : req.url === '/style.css'
         ? 'text/css'
@@ -46,17 +57,13 @@ const server = createServer((req, res) => {
   res.end(
     req.url === '/fflate.mjs'
       ? readFileSync('node_modules/fflate/esm/browser.js')
-      : req.url === '/capture-packet.mjs'
-        ? readFileSync('src/application/capture-packet.mjs')
-        : req.url === '/capture-stream.mjs'
-          ? readFileSync('src/application/capture-stream.mjs')
-          : req.url === '/capture-outbox.mjs'
-            ? readFileSync('src/application/capture-outbox.mjs')
-            : req.url === '/remote.mjs'
-              ? source
-              : req.url === '/style.css'
-                ? css
-                : '<link rel="stylesheet" href="/style.css"><meta name="build-id" content="receipt-test"><script type="importmap">{"imports":{"fflate":"/fflate.mjs"}}</script><script type="module">import {unpackCapturePacket} from "/capture-packet.mjs";window.unpackCapturePacket=unpackCapturePacket;import {captureStreamLimits} from "/capture-stream.mjs";window.captureStreamLimits=captureStreamLimits;import {mountRemotePlaytest} from "/remote.mjs";window.mountCapture=()=>mountRemotePlaytest({context:()=>({}),checkpoint:()=>({}),screenshot:()=>{throw Error("screenshot unavailable")}});window.remoteCapture=await window.mountCapture();</script>',
+      : moduleFiles.has(req.url)
+        ? readFileSync(moduleFiles.get(req.url))
+        : req.url === '/remote.mjs'
+          ? source
+          : req.url === '/style.css'
+            ? css
+            : '<link rel="stylesheet" href="/style.css"><meta name="build-id" content="receipt-test"><script type="importmap">{"imports":{"fflate":"/fflate.mjs"}}</script><script type="module">import {unpackCapturePacket} from "/capture-packet.mjs";window.unpackCapturePacket=unpackCapturePacket;import {captureStreamLimits} from "/capture-stream.mjs";window.captureStreamLimits=captureStreamLimits;import {validateFeedbackEnvelope} from "/feedback-protocol.mjs";window.validateFeedbackEnvelope=validateFeedbackEnvelope;import {openFeedbackStore} from "/feedback-store.mjs";window.readFeedbackItems=async()=>{const store=await openFeedbackStore();try{return await store.items()}finally{store.close()}};import {mountRemotePlaytest} from "/remote.mjs";window.mountCapture=()=>mountRemotePlaytest({measureVideoDuration:async()=>1000,context:()=>({}),checkpoint:()=>({}),screenshot:()=>{throw Error("screenshot unavailable")}});window.remoteCapture=await window.mountCapture();</script>',
   );
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
@@ -77,15 +84,15 @@ try {
       );
     const originalTimeout = window.setTimeout;
     window.setTimeout = (callback, delay, ...args) =>
-      originalTimeout(callback, delay === 45000 && window.hangNext ? 100 : delay, ...args);
+      originalTimeout(
+        callback,
+        [15000, 45000].includes(delay) && window.hangNext ? 100 : delay,
+        ...args,
+      );
     const originalFetch = window.fetch;
     window.hungUploads = 0;
     window.fetch = async (url, options) => {
-      if (
-        window.hangNext &&
-        String(url).endsWith('/event') &&
-        window.packetHas(JSON.parse(await options.body.text()), 'feedback-text')
-      ) {
+      if (window.hangNext && String(url).endsWith('/feedback/v1/submission')) {
         window.hangNext = false;
         window.hungUploads++;
         return new Promise((resolve, reject) =>
@@ -115,7 +122,8 @@ try {
       static isTypeSupported() {
         return true;
       }
-      constructor(stream) {
+      constructor(stream, options = {}) {
+        this.mimeType = options.mimeType || 'video/webm';
         this.stream = stream;
         this.state = 'inactive';
       }
@@ -129,8 +137,8 @@ try {
     };
     window.flushRecorders = () => {
       for (const r of window.pendingRecorders.splice(0)) {
-        r.ondataavailable({ data: new Blob(['final media'], { type: 'video/webm' }) });
-        r.onstop();
+        r.ondataavailable?.({ data: new Blob(['final media'], { type: r.mimeType }) });
+        r.onstop?.();
       }
     };
   });
@@ -141,11 +149,14 @@ try {
     disposalUpload = null,
     disposalArrival = Promise.withResolvers(),
     holdComment = true,
+    holdFeedbackRecovery = false,
     badReceipt = false,
     statusCode = 200,
+    feedbackStatus = 200,
     sessionPosts = 0,
     failNextSession = false;
-  const uploads = [];
+  const uploads = [],
+    feedbackUploads = [];
   const hasEvent = (packet, kind) =>
     (packet.kind === 'capture-batch' ? unpackCapturePacket(packet).data.events : [packet]).some(
       (e) => e.kind === kind,
@@ -154,6 +165,14 @@ try {
     const request = route.request(),
       url = new URL(request.url()),
       raw = request.postDataBuffer();
+    if (url.pathname.endsWith('/feedback/v1/submission'))
+      return {
+        protocolVersion: 1,
+        submissionId: JSON.parse(raw).id,
+        uploadHash: createHash('sha256').update(raw).digest('hex'),
+        receivedAt: new Date().toISOString(),
+        status: 'received',
+      };
     const media = url.pathname.endsWith('/media');
     return {
       protocolVersion: 2,
@@ -172,7 +191,14 @@ try {
   await page.route('**/api/playtest/**', async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/config'))
-      return route.fulfill({ json: { enabled: true, protocolVersion: 2, optionalVideo: true } });
+      return route.fulfill({
+        json: {
+          enabled: true,
+          protocolVersion: 2,
+          optionalVideo: true,
+          feedback: { enabled: true, protocolVersion: 1 },
+        },
+      });
     if (path.endsWith('/session')) {
       sessionPosts++;
       if (failNextSession) {
@@ -189,6 +215,7 @@ try {
       });
     }
     uploads.push({ url: route.request().url(), body: route.request().postData() });
+    if (path.endsWith('/feedback/v1/submission')) feedbackUploads.push(uploads.at(-1));
     if (
       holdFinalReceipt &&
       path.endsWith('/event') &&
@@ -202,23 +229,41 @@ try {
       disposalArrival.resolve();
       return;
     }
-    if (
-      path.endsWith('/event') &&
-      hasEvent(route.request().postDataJSON(), 'feedback-text') &&
-      holdComment
-    ) {
+    if (path.endsWith('/feedback/v1/submission') && holdComment) {
       held = route;
       return;
     }
-    if (statusCode !== 200)
-      return route.fulfill({ status: statusCode, json: { error: 'test failure' } });
+    if (holdFeedbackRecovery && path.endsWith('/feedback/v1/submission'))
+      return route.fulfill({ status: 503, json: { error: 'held feedback recovery' } });
+    const injectedStatus = path.endsWith('/feedback/v1/submission') ? feedbackStatus : statusCode;
+    if (injectedStatus !== 200)
+      return route.fulfill({ status: injectedStatus, json: { error: 'test failure' } });
     return route.fulfill({
       json: badReceipt ? {} : receipt(route),
     });
   });
   await browserEvidence.goto(page, `http://127.0.0.1:${server.address().port}`);
+  browserEvidence.assert('equal', [
+    await page.evaluate(async () => {
+      const { validateFeedbackEnvelope } = window;
+      const bytes = new Uint8Array(2 * 1024 ** 2);
+      let binary = '';
+      for (let at = 0; at < bytes.length; at += 8192)
+        binary += String.fromCharCode(...bytes.subarray(at, at + 8192));
+      const value = {
+        protocolVersion: 1,
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+        text: '',
+        voice: { mime: 'audio/webm', base64: btoa(binary), durationMs: 60000 },
+      };
+      return validateFeedbackEnvelope(value).voice.durationMs;
+    }),
+    60000,
+    'browser admits a complete maximum-size voice envelope',
+  ]);
   await page.locator('[data-video]').check();
-  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.locator('[data-start]').click();
   await page.waitForFunction(
     () => document.querySelector('[data-status-main]')?.textContent === '● Recording tab',
   );
@@ -241,160 +286,258 @@ try {
     initial,
     'automatic state uploads cannot move feedback controls',
   ]);
-  await page.getByRole('button', { name: 'Give feedback', exact: true }).click();
-  await page
-    .getByRole('button', { name: 'Close feedback', exact: true })
-    .waitFor({ timeout: 3000 });
-  await page
-    .getByRole('textbox', { name: 'Your feedback' })
-    .fill('Keep this exact comment visible.');
-  await page.getByRole('button', { name: 'Send written feedback' }).click();
+  const openFeedback = async () => {
+    await page.getByRole('button', { name: 'Give feedback', exact: true }).click();
+    // The actual privacy gate waits for final screen bytes before exposing the dialog.
+    await page.waitForFunction(() => {
+      if (window.pendingRecorders.length) window.flushRecorders();
+      return document.querySelector('.feedback-dialog')?.open;
+    });
+  };
+  const receiptState = page.locator('[data-receipt-state]');
+  const received = () =>
+    page.waitForFunction(
+      () =>
+        document.querySelector('[data-receipt-state]')?.textContent === 'Sent to Yaniv for review.',
+    );
+  const sendText = async (text) => {
+    if (await page.getByRole('button', { name: 'Add another', exact: true }).isVisible())
+      await page.getByRole('button', { name: 'Add another', exact: true }).click();
+    await page.getByRole('textbox', { name: 'Your feedback' }).fill(text);
+    await page.getByRole('button', { name: 'Send feedback', exact: true }).click();
+    await page.waitForFunction(
+      (value) => document.querySelector('[data-submitted-text]')?.textContent === value,
+      text,
+    );
+  };
+  const retryFeedback = async () => {
+    await page.getByRole('button', { name: 'Your feedback history', exact: true }).click();
+    await page
+      .getByRole('button', { name: 'Retry', exact: true })
+      .last()
+      .waitFor({ state: 'visible' });
+    feedbackStatus = 200;
+    await page.getByRole('button', { name: 'Retry', exact: true }).last().click();
+    await page.waitForFunction(() =>
+      [...document.querySelectorAll('.playtest-comment')].every((row) =>
+        row.textContent.includes('Sent to Yaniv for review.'),
+      ),
+    );
+    await page.getByRole('button', { name: 'Add another', exact: true }).click();
+    await page.getByRole('textbox', { name: 'Your feedback' }).waitFor({ state: 'visible' });
+  };
+  await openFeedback();
+  await sendText('Keep this exact comment visible.');
   await page.waitForFunction(() =>
-    document.querySelector('.playtest-comment')?.textContent.includes('Sending to Yaniv'),
+    document.querySelector('[data-receipt-state]')?.textContent.includes('waiting to send'),
   );
   browserEvidence.assert('match', [
-    await page.locator('.playtest-comment').innerText(),
+    await page.locator('[data-submitted-text]').innerText(),
     /Keep this exact comment visible/,
   ]);
-  browserEvidence.assert('doesNotMatch', [
-    await page.locator('.playtest-comment').innerText(),
-    /Received by/,
-  ]);
+  browserEvidence.assert('doesNotMatch', [await receiptState.innerText(), /Sent to Yaniv/]);
   browserEvidence.assert('deepEqual', [
     await geometry(),
     initial,
-    'pending comment cannot resize the bar',
+    'pending feedback cannot resize the bar',
   ]);
-  browserEvidence.assert('doesNotMatch', [
-    await page.locator('[data-status]').textContent(),
-    /uploads pending/,
-  ]);
-  while (!held) await new Promise((r) => setTimeout(r, 10));
+  while (!held) await new Promise((resolve) => setTimeout(resolve, 10));
   await held.fulfill({ json: {} });
   holdComment = false;
   badReceipt = true;
-  await page.waitForFunction(() =>
-    document.querySelector('.playtest-comment')?.textContent.includes('Not received yet'),
-  );
-  browserEvidence.assert('doesNotMatch', [
-    await page.locator('.playtest-comment').innerText(),
-    /Received by/,
-  ]);
+  await page.waitForTimeout(100);
+  browserEvidence.assert('doesNotMatch', [await receiptState.innerText(), /Sent to Yaniv/]);
   browserEvidence.assert('deepEqual', [
     await geometry(),
     initial,
-    'retry message cannot move controls',
+    'feedback retry cannot move controls',
   ]);
   badReceipt = false;
-  await page.waitForFunction(() =>
-    document.querySelector('.playtest-comment')?.textContent.includes('Received by Yaniv'),
-  );
+  await received();
+  console.log('feedback fixture: receipt identity passed');
   for (const [code, message] of [
     [401, 'Open your invitation again'],
     [403, 'Open your invitation again'],
-    [404, 'session is unavailable'],
-    [413, 'upload is too large'],
-    [503, 'retrying automatically'],
+    [404, 'unavailable'],
+    [413, 'too large'],
+    [503, 'retry automatically'],
   ]) {
-    statusCode = code;
-    await page.getByRole('textbox', { name: 'Your feedback' }).fill(`Failure ${code}`);
-    await page.getByRole('button', { name: 'Send written feedback' }).click();
+    feedbackStatus = code;
+    await sendText(`Failure ${code}`);
     await page.waitForFunction(
-      (text) => document.querySelector('[data-status-detail]').textContent.includes(text),
+      (text) => document.querySelector('[data-receipt-state]')?.textContent.includes(text),
       message,
     );
-    browserEvidence.assert('doesNotMatch', [
-      await page.locator('.playtest-comment').last().innerText(),
-      /Received by/,
-    ]);
-    statusCode = 200;
-    if (code !== 503) await page.evaluate(() => document.querySelector('[data-retry]').click());
-    await page.waitForFunction(() =>
-      [...document.querySelectorAll('.playtest-comment')]
-        .at(-1)
-        .textContent.includes('Received by Yaniv'),
-    );
+    browserEvidence.assert('doesNotMatch', [await receiptState.innerText(), /Sent to Yaniv/]);
+    if (code !== 503) {
+      browserEvidence.assert('equal', [
+        (await page.evaluate(async () => await window.readFeedbackItems())).at(-1).outcome,
+        'blocked',
+        'permanent failures require explicit retry',
+      ]);
+      await retryFeedback();
+    } else {
+      feedbackStatus = 200;
+      await received();
+    }
   }
   await page.evaluate(() => {
     window.hangNext = true;
   });
-  await page.getByRole('textbox', { name: 'Your feedback' }).fill('Recover the timed-out upload.');
-  await page.getByRole('button', { name: 'Send written feedback' }).click();
+  await sendText('Recover the timed-out upload.');
   await page.waitForFunction(() => window.hungUploads === 1);
-  await page.waitForFunction(() =>
-    document.querySelector('[data-status-detail]').textContent.includes('retrying automatically'),
+  browserEvidence.assert('doesNotMatch', [await receiptState.innerText(), /Sent to Yaniv/]);
+  await received();
+  console.log('feedback fixture: failure and timeout recovery passed');
+  // A frozen standalone envelope survives reload and retries identical bytes without capture.
+  feedbackStatus = 503;
+  holdFeedbackRecovery = true;
+  await sendText('Standalone feedback survives reload.');
+  await page.waitForFunction(async () =>
+    (await window.readFeedbackItems()).some(
+      (row) => row.envelope?.text === 'Standalone feedback survives reload.' && row.error === 503,
+    ),
   );
-  browserEvidence.assert('doesNotMatch', [
-    await page.locator('.playtest-comment').last().innerText(),
-    /Received by/,
+  const frozen = await page.evaluate(async () =>
+    (await window.readFeedbackItems()).find(
+      (row) => row.envelope?.text === 'Standalone feedback survives reload.',
+    ),
+  );
+  await page.getByRole('button', { name: 'Back to building', exact: true }).click();
+  await page.getByRole('button', { name: 'Finish session', exact: true }).click();
+  await page.evaluate(() => window.flushRecorders());
+  feedbackStatus = 200;
+  await page.waitForFunction(() =>
+    document.querySelector('[data-completion-status]')?.textContent.includes('Recording received'),
+  );
+  badReceipt = true;
+  const startsBeforeFeedbackReload = sessionPosts;
+  await browserEvidence.reload(page);
+  await page.waitForFunction(async () => (await window.readFeedbackItems()).some((row) => row.id));
+  browserEvidence.assert('equal', [sessionPosts, startsBeforeFeedbackReload]);
+  browserEvidence.assert('equal', [await page.evaluate(() => window.captureRequests), 0]);
+  holdFeedbackRecovery = false;
+  await page.waitForFunction(
+    async (id) => (await window.readFeedbackItems()).find((row) => row.id === id)?.error === 0,
+    frozen.id,
+  );
+  const malformedRecovery = (
+    await page.evaluate(async () => await window.readFeedbackItems())
+  ).find((row) => row.id === frozen.id);
+  browserEvidence.assert('equal', [
+    malformedRecovery.bodyText,
+    frozen.bodyText,
+    'malformed ACK after reload retains exact feedback',
   ]);
-  await page.waitForFunction(() =>
-    [...document.querySelectorAll('.playtest-comment')]
-      .at(-1)
-      .textContent.includes('Received by Yaniv'),
+  browserEvidence.assert('equal', [
+    malformedRecovery.outcome,
+    'pending',
+    'malformed ACK is not receipt',
+  ]);
+  badReceipt = false;
+  await page.waitForFunction(
+    async (id) =>
+      (await window.readFeedbackItems()).find((row) => row.id === id)?.outcome === 'received',
+    frozen.id,
   );
+  browserEvidence.assert('ok', [
+    feedbackUploads
+      .filter((row) => JSON.parse(row.body).id === frozen.id)
+      .every((row) => row.body === frozen.bodyText),
+    'all feedback retries preserve exact frozen bytes',
+  ]);
+  console.log('feedback fixture: standalone reload passed');
+  // Resume a fresh recording for local-only voice and final capture-flush witnesses.
+  await page.locator('[data-video]').check();
+  await page.locator('[data-start]').click();
+  await page.waitForFunction(() => window.remoteCapture.active());
+  await openFeedback();
   for (const close of ['x', 'escape']) {
+    const before = feedbackUploads.length;
     await page.getByRole('button', { name: 'Record voice comment', exact: true }).click();
-    await page.getByRole('button', { name: '● Stop voice recording', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Stop voice recording', exact: true }).waitFor();
     if (close === 'x')
       await page.getByRole('button', { name: 'Close feedback', exact: true }).click();
     else await page.keyboard.press('Escape');
-    browserEvidence.assert('equal', [await page.evaluate(() => window.pendingRecorders.length), 1]);
+    await page.waitForFunction(() => window.pendingRecorders.length === 1);
     browserEvidence.assert('equal', [
       await page.evaluate(() =>
-        window.pendingRecorders[0].stream.getTracks().every((t) => t.readyState === 'ended'),
+        window.pendingRecorders[0].stream
+          .getTracks()
+          .every((track) => track.readyState === 'ended'),
       ),
       true,
     ]);
+    browserEvidence.assert('equal', [
+      feedbackUploads.length,
+      before,
+      'closing voice has not submitted it',
+    ]);
     await page.evaluate(() => window.flushRecorders());
-    await page.getByRole('button', { name: 'Give feedback', exact: true }).click();
+    await page.waitForFunction(() => !document.querySelector('.feedback-dialog').open);
+    await openFeedback();
+    await page.getByRole('button', { name: 'Remove voice comment', exact: true }).click();
   }
-  await page.getByRole('button', { name: 'Back to building' }).click();
-  await page.getByRole('button', { name: 'Finish session', exact: true }).click();
-  browserEvidence.assert('match', [
-    await page.locator('[data-completion-status]').innerText(),
-    /Keep this tab open/,
+  await page.getByRole('button', { name: 'Record voice comment', exact: true }).click();
+  await page.getByRole('button', { name: 'Stop voice recording', exact: true }).click();
+  await page.evaluate(() => window.flushRecorders());
+  await page.locator('[data-playback]').waitFor({ state: 'visible' });
+  const beforeVoiceSend = feedbackUploads.length;
+  await page.waitForTimeout(50);
+  browserEvidence.assert('equal', [
+    feedbackUploads.length,
+    beforeVoiceSend,
+    'voice preview is local until Send',
   ]);
+  await page.getByRole('button', { name: 'Send feedback', exact: true }).click();
+  await page.waitForFunction(
+    () => document.querySelector('[data-submitted-text]')?.textContent === 'Voice comment',
+  );
+  await received();
+  browserEvidence.assert('ok', [
+    JSON.parse(feedbackUploads.at(-1).body).voice?.base64,
+    'voice belongs to complete standalone envelope',
+  ]);
+  await page.getByRole('button', { name: 'Back to building', exact: true }).click();
+  await page.getByRole('button', { name: 'Finish session', exact: true }).click();
   browserEvidence.assert('doesNotMatch', [
     await page.locator('[data-completion-status]').innerText(),
-    /You can close this tab/,
+    /Recording received/,
   ]);
   await page.waitForTimeout(150);
   browserEvidence.assert('doesNotMatch', [
     await page.locator('[data-completion-status]').innerText(),
-    /You can close this tab/,
+    /Recording received/,
   ]);
   await page.evaluate(() => window.flushRecorders());
-  await page.waitForFunction(
-    () =>
-      document.querySelector('[data-completion-status]').textContent ===
-      'Feedback received — session saved. You can close this tab.',
+  await page.waitForFunction(() =>
+    document.querySelector('[data-completion-status]')?.textContent.includes('Recording received'),
   );
   await page.evaluate(() => {
     window.originalTransaction = IDBDatabase.prototype.transaction;
     IDBDatabase.prototype.transaction = function (...args) {
-      if (args[1] === 'readonly') throw Error('outbox unavailable');
+      if (this.name === 'simulacrum-playtest-outbox-v2' && args[1] === 'readonly')
+        throw Error('outbox unavailable');
       return window.originalTransaction.apply(this, args);
     };
   });
   await page.waitForFunction(() =>
     document
       .querySelector('[data-completion-status]')
-      .textContent.includes('Session not fully saved'),
+      ?.textContent.includes('Session not fully saved'),
   );
   browserEvidence.assert('doesNotMatch', [
     await page.locator('[data-completion-status]').innerText(),
-    /You can close this tab/,
+    /Recording received/,
   ]);
   await page.evaluate(() => {
     IDBDatabase.prototype.transaction = window.originalTransaction;
   });
-  await page.getByRole('button', { name: 'Retry uploads' }).click();
+  await page.getByRole('button', { name: 'Retry uploads', exact: true }).click();
   await page.waitForFunction(() =>
-    document
-      .querySelector('[data-completion-status]')
-      .textContent.includes('You can close this tab'),
+    document.querySelector('[data-completion-status]')?.textContent.includes('Recording received'),
   );
+  console.log('feedback fixture: local voice and final flush passed');
   // Real IndexedDB persists across a same-origin document reload; media capture remains mocked.
   const outbox = () =>
     page.evaluate(async () => {
@@ -420,17 +563,18 @@ try {
     });
   await browserEvidence.reload(page);
   await page.locator('[data-video]').check();
-  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.locator('[data-start]').click();
   await page.waitForFunction(
     () => document.querySelector('[data-status-main]')?.textContent === '● Recording tab',
   );
-  await page.getByRole('button', { name: 'Give feedback', exact: true }).click();
   statusCode = 503;
   const recoveryComment = 'Saved through reload while the server is unavailable.';
-  await page.getByRole('textbox', { name: 'Your feedback' }).fill(recoveryComment);
-  await page.getByRole('button', { name: 'Send written feedback' }).click();
+  await page.evaluate(
+    (text) => window.remoteCapture.emit('capture-recovery-witness', { text }),
+    recoveryComment,
+  );
   await page.waitForFunction(() =>
-    document.querySelector('.playtest-comment')?.textContent.includes('Not received yet'),
+    document.querySelector('[data-status-detail]')?.textContent.includes('retrying automatically'),
   );
   // Assert body durability too, not merely that some unrelated periodic upload survived.
   const readSavedBody = () =>
@@ -456,7 +600,7 @@ try {
     await page.waitForTimeout(25);
   browserEvidence.assert('ok', [
     savedBody,
-    'written feedback body committed to real IndexedDB before reload',
+    'capture witness body committed to real IndexedDB before reload',
   ]);
   const sessionsBeforeReload = sessionPosts,
     uploadsBeforeReload = uploads.length;
@@ -466,7 +610,7 @@ try {
   );
   browserEvidence.assert('ok', [
     (await outbox()).some((row) => row.id === savedBody.id),
-    'outage cannot delete the persisted comment',
+    'outage cannot delete the persisted capture witness',
   ]);
   browserEvidence.assert('equal', [
     await page.evaluate(() => window.captureRequests),
@@ -480,7 +624,8 @@ try {
   ]);
   browserEvidence.assert('equal', [
     await page.getByRole('button', { name: 'Give feedback', exact: true }).isDisabled(),
-    true,
+    false,
+    'feedback remains reachable while capture is stopped',
   ]);
   browserEvidence.assert('match', [
     await page.locator('[data-recovery]').innerText(),
@@ -507,7 +652,7 @@ try {
   await page.waitForTimeout(100);
   browserEvidence.assert('ok', [
     (await outbox()).some((row) => row.id === savedBody.id),
-    'malformed ACK after reload cannot delete saved feedback',
+    'malformed capture ACK after reload cannot delete saved capture',
   ]);
   browserEvidence.assert('doesNotMatch', [
     await page.locator('[data-recovery]').innerText(),
@@ -526,7 +671,7 @@ try {
     uploads
       .slice(uploadsBeforeReload)
       .some((upload) => upload.url.endsWith(savedBody.url) && upload.body === savedBody.body),
-    'exact persisted feedback body retried to its original session',
+    'exact persisted capture body retried to its original session',
   ]);
   browserEvidence.assert('equal', [await page.evaluate(() => window.captureRequests), 0]);
   browserEvidence.assert('equal', [sessionPosts, sessionsBeforeReload]);
@@ -554,10 +699,11 @@ try {
       2,
     ),
   );
+  console.log('feedback fixture: legacy outbox reload passed');
   // Dispose must release the mount while preserving delayed final MediaRecorder
   // bytes in real IndexedDB; a remount drains them without resuming capture.
   await page.locator('[data-video]').check();
-  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.locator('[data-start]').click();
   await page.waitForFunction(() => window.remoteCapture.active());
   // Hold a real request across disposal; it must settle under its owned deadline,
   // not be aborted by unmount or dispatched again by the disposed pump.
@@ -612,6 +758,9 @@ try {
     'disposed pump starts no queued request',
   ]);
   statusCode = 503;
+  await page.waitForFunction(
+    () => document.querySelectorAll('.playtest-panel, .playtest-dialog').length === 0,
+  );
   browserEvidence.assert('equal', [
     await page.locator('.playtest-panel, .playtest-dialog').count(),
     0,
@@ -658,7 +807,7 @@ try {
   // and recover on remount. Hold transport and deadline explicitly, without sleeps.
   for (const outcome of ['http', 'timeout']) {
     await page.locator('[data-video]').check();
-    await page.getByRole('button', { name: 'Start recording' }).click();
+    await page.locator('[data-start]').click();
     await page.waitForFunction(() => window.remoteCapture.active());
     await page.evaluate((outcome) => {
       const fetch = window.fetch,
@@ -678,7 +827,7 @@ try {
         return id;
       };
       IDBDatabase.prototype.close = function () {
-        window.disposalDbCloses++;
+        if (this.name === 'simulacrum-playtest-outbox-v2') window.disposalDbCloses++;
         return close.call(this);
       };
       window.fetch = async (url, options) => {
@@ -739,8 +888,9 @@ try {
     await page.evaluate(() => {
       window.disposalDbCloses = 0;
       window.remoteCapture.dispose();
-      window.flushRecorders();
     });
+    await page.waitForFunction(() => window.pendingRecorders.length > 0);
+    await page.evaluate(() => window.flushRecorders());
     browserEvidence.assert('equal', [
       await page.evaluate(() => window.disposalAborted),
       false,
@@ -778,6 +928,9 @@ try {
     ]);
   }
   await page.evaluate(() => window.remoteCapture.dispose());
+  await page.waitForFunction(
+    () => document.querySelectorAll('.playtest-panel, .playtest-dialog').length === 0,
+  );
   browserEvidence.assert('equal', [
     await page.locator('.playtest-panel, .playtest-dialog').count(),
     0,
@@ -793,19 +946,19 @@ try {
   });
   await page.locator('[data-video]').check();
   failNextSession = true;
-  await page.getByRole('button', { name: 'Start recording' }).click();
-  await page.waitForFunction(() => !!document.querySelector('[data-error]')?.textContent);
+  await page.locator('[data-start]').click();
+  await page.waitForFunction(
+    () => !!document.querySelector('[aria-label="Recording setup"] [data-error]')?.textContent,
+  );
   browserEvidence.assert('equal', [await page.locator('[data-video]').isDisabled(), true]);
-  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.locator('[data-start]').click();
   await page.waitForFunction(
     () => document.querySelector('[data-status-main]')?.textContent === '● Recording tab',
   );
   await page.getByRole('button', { name: 'Finish session', exact: true }).click();
   await page.evaluate(() => window.flushRecorders());
   await page.waitForFunction(() =>
-    document
-      .querySelector('[data-completion-status]')
-      ?.textContent.includes('You can close this tab'),
+    document.querySelector('[data-completion-status]')?.textContent.includes('Recording received'),
   );
   await page.evaluate(() => window.remoteCapture.dispose());
   // Data capture remains usable without either browser media API. A failed
@@ -817,24 +970,56 @@ try {
     navigator.mediaDevices.getDisplayMedia = undefined;
     window.remoteCapture = await window.mountCapture();
   });
-  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.locator('[data-start]').click();
   await page.waitForFunction(
     () => document.querySelector('[data-status-main]')?.textContent === '● Recording actions',
   );
-  await page.getByRole('button', { name: 'Give feedback', exact: true }).click();
-  await page
-    .getByRole('textbox', { name: 'Your feedback' })
-    .fill('Data feedback despite unavailable screenshot.');
-  await page.getByRole('button', { name: 'Send written feedback' }).click();
+  await openFeedback();
+  await page.locator('[data-attachments] summary').first().click();
+  await page.locator('[data-image]').check();
   await page.waitForFunction(() =>
-    document.querySelector('.playtest-comment')?.textContent.includes('Received by Yaniv'),
+    document.querySelector('[data-attachment-status]')?.textContent.includes('unavailable'),
   );
+  await sendText('Data feedback despite unavailable screenshot.');
+  await received();
+  for (const [code, message] of [
+    [401, 'Open your invitation again'],
+    [403, 'Open your invitation again'],
+    [404, 'session is unavailable'],
+    [413, 'upload is too large'],
+    [503, 'retrying automatically'],
+  ]) {
+    statusCode = code;
+    await page.evaluate(
+      (code) => window.remoteCapture.emit('capture-http-witness', { code }),
+      code,
+    );
+    await page.waitForFunction(
+      (text) => document.querySelector('[data-status-detail]')?.textContent.includes(text),
+      message,
+    );
+    browserEvidence.assert('ok', [
+      (await outbox()).length > 0,
+      'capture error retains unacknowledged bytes',
+    ]);
+    statusCode = 200;
+    await page.evaluate(
+      (id) => {
+        document.querySelector('[data-session]').value = id;
+        document.querySelector('[data-retry]').click();
+      },
+      sessionPosts.toString(16).padStart(32, '0'),
+    );
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-status-detail]')?.textContent ===
+        'Actions and sampled workshop state are sent automatically.',
+    );
+  }
   await page.getByRole('button', { name: 'Back to building' }).click();
   await page.getByRole('button', { name: 'Finish session', exact: true }).click();
   await page.waitForFunction(() =>
-    document
-      .querySelector('[data-completion-status]')
-      ?.textContent.includes('You can close this tab'),
+    document.querySelector('[data-completion-status]')?.textContent.includes('Recording received'),
   );
   const dataUploads = uploads.slice(dataUploadsStart);
   browserEvidence.assert('equal', [
@@ -845,28 +1030,43 @@ try {
     dataUploads.some((upload) => upload.url.includes('/media?')),
     false,
   ]);
-  const decoded = decodeCaptureEvents(
-    dataUploads
-      .filter((upload) => upload.url.endsWith('/event'))
-      .map((upload) => JSON.parse(upload.body)),
-  );
+  const uniqueDataPackets = new Map();
+  for (const upload of dataUploads.filter((row) => row.url.endsWith('/event'))) {
+    const packet = JSON.parse(upload.body),
+      prior = uniqueDataPackets.get(packet.id);
+    if (prior)
+      browserEvidence.assert('equal', [
+        prior,
+        upload.body,
+        'capture retry preserves exact packet bytes',
+      ]);
+    else uniqueDataPackets.set(packet.id, upload.body);
+  }
+  const decoded = decodeCaptureEvents([...uniqueDataPackets.values()].map(JSON.parse));
   browserEvidence.assert('equal', [decoded.status, 'complete']);
   browserEvidence.assert('equal', [decoded.events[0].data.recordingMode, 'data']);
+  const dataFeedback = JSON.parse(
+    dataUploads.find((upload) => upload.url.endsWith('/feedback/v1/submission')).body,
+  );
   browserEvidence.assert('equal', [
-    decoded.events.find((event) => event.kind === 'feedback-anchor').data.imageScope,
-    'unavailable',
+    dataFeedback.image,
+    undefined,
+    'failed optional screenshot is omitted',
   ]);
-  browserEvidence.assert('ok', [
-    decoded.events.some(
-      (event) => event.kind === 'feedback-text' && event.data.text.includes('despite unavailable'),
+  browserEvidence.assert('match', [dataFeedback.text, /despite unavailable/]);
+  browserEvidence.assert('equal', [
+    decoded.events.some((event) =>
+      ['feedback-anchor', 'feedback-text', 'voice-start', 'voice-end'].includes(event.kind),
     ),
+    false,
+    'standalone feedback never extends capture events',
   ]);
   await page.evaluate(() => window.remoteCapture.dispose());
   // A stale reconciliation must never report success before the final receipt.
   await page.evaluate(async () => {
     window.remoteCapture = await window.mountCapture();
   });
-  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.locator('[data-start]').click();
   await page.waitForFunction(() => window.remoteCapture.active());
   await page.waitForFunction(async () => {
     const db = await new Promise((resolve) => {
@@ -913,7 +1113,7 @@ try {
       if (
         document
           .querySelector('[data-completion-status]')
-          ?.textContent.includes('You can close this tab')
+          ?.textContent.includes('Recording received')
       )
         window.prematureCompletion = true;
     });
@@ -937,9 +1137,7 @@ try {
   holdFinalReceipt = false;
   await heldFinalReceipt.fulfill({ json: receipt(heldFinalReceipt) });
   await page.waitForFunction(() =>
-    document
-      .querySelector('[data-completion-status]')
-      ?.textContent.includes('You can close this tab'),
+    document.querySelector('[data-completion-status]')?.textContent.includes('Recording received'),
   );
   await page.evaluate(() => window.remoteCapture.dispose());
   // Producer bounds finish an intact stream instead of creating an unreviewable session.
@@ -948,7 +1146,7 @@ try {
     await page.evaluate(async () => {
       window.remoteCapture = await window.mountCapture();
     });
-    await page.getByRole('button', { name: 'Start recording' }).click();
+    await page.locator('[data-start]').click();
     await page.waitForFunction(() => window.remoteCapture.active());
     await page.evaluate(async () => {
       const { captureStreamLimits } = window;
@@ -965,7 +1163,7 @@ try {
       () =>
         document
           .querySelector('[data-completion-status]')
-          ?.textContent.includes('You can close this tab'),
+          ?.textContent.includes('Recording received'),
       undefined,
       { timeout: 120000 },
     );

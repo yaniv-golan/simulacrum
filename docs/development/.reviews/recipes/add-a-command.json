@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "package-lock.json": "bcc829aa98315f5b3ca46abbd8ee3c660c15b5a258f209d9265741c9bc57513c",
-    "package.json": "8d74ddc88af77087abe09d3e9ee4fff0f02d3191030d2177f88f8cfbdb0c612a",
+    "package.json": "6edb48593a61fb710edc6322958c53fc4bb2c8c2e8039daecb99e13117f7762a",
     "src/core/workshop.mjs": "e74bbeefcf1cd22058686128de07c7ae97542ed582315ee8f00b09daa1bbb853",
     "src/model/assembly.mjs": "23e8eb3175c17d5bcc93b731f3bf66d13ed59bf0c8e28a2fd4c32f4ab27fbd3e",
     "src/model/blueprint.mjs": "3a6f5b81f4120d3a2bf7d0cbd2453490a11282a7f66f0ab7dc1297d8573954eb",

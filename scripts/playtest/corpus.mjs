@@ -2,6 +2,7 @@
 import { readFile, writeFile, mkdir, lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
+import { readFeedbackSamples, feedbackWorkloadIdentity } from './feedback-load.mjs';
 import { sampleCapture } from './capture-samples.mjs';
 import { assertCaptureWorkload, captureIdentity, captureMedia } from './load.mjs';
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -34,6 +35,16 @@ export async function writeCorpus(directory, input) {
     )
       throw Error('Synthetic corpus case identity mismatch');
   }
+  const feedbackFiles = captures.flatMap((c) => c.feedbackFiles ?? []);
+  const feedbackSamples = feedbackFiles.length ? await readFeedbackSamples(feedbackFiles) : [];
+  if (
+    captures.some(
+      (c) =>
+        c.feedbackFiles !== undefined &&
+        (!Array.isArray(c.feedbackFiles) || !c.feedbackFiles.length),
+    )
+  )
+    throw Error('Explicit feedback corpus requires observed samples');
   const maxChunkBytes = Math.max(...captures.map((c) => captureMedia(c).maximum));
   const envelope = {
     maxChunkBytes,
@@ -91,7 +102,23 @@ export async function writeCorpus(directory, input) {
   const events = Buffer.from(JSON.stringify(capture.eventSamples));
   if (events.length > 32 * 1024 ** 2) throw Error('Corpus event bounds');
   const body = {
-    schema: 3,
+    schema: feedbackSamples.length ? 4 : 3,
+    ...(feedbackSamples.length
+      ? {
+          feedback: {
+            ...feedbackWorkloadIdentity,
+            samples: feedbackSamples.map((sample, i) => ({
+              file: `feedback-${i}.json`,
+              bytes: sample.bytes.length,
+              sha256: sample.sha256,
+            })),
+            cases: captures.map((c) => ({
+              run: c.syntheticRun,
+              samples: c.feedbackFiles?.length ?? 0,
+            })),
+          },
+        }
+      : {}),
     ...captureIdentity(capture),
     eventCount: capture.eventCount,
     screenBytes: capture.screenBytes,
@@ -127,6 +154,11 @@ export async function writeCorpus(directory, input) {
   await mkdir(directory, { mode: 0o700 });
   for (let i = 0; i < samples.length; i++)
     await writeFile(join(directory, body.media[i].file), samples[i], { flag: 'wx', mode: 0o600 });
+  for (const [i, sample] of feedbackSamples.entries())
+    await writeFile(join(directory, body.feedback.samples[i].file), sample.bytes, {
+      flag: 'wx',
+      mode: 0o600,
+    });
   await writeFile(join(directory, 'events.json'), events, { flag: 'wx', mode: 0o600 });
   await writeFile(join(directory, 'corpus.json'), JSON.stringify(manifest), {
     flag: 'wx',
@@ -142,7 +174,8 @@ export async function readCorpus(directory, expectedId) {
   if (!hash(expectedId) || id !== expectedId || digest(body) !== id)
     throw Error('Corpus identity mismatch');
   if (
-    body.schema !== 3 ||
+    ![3, 4].includes(body.schema) ||
+    (body.schema === 4) !== (body.feedback !== undefined) ||
     body.purpose !== 'synthetic-capacity-v1' ||
     !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(
       body.syntheticRun ?? '',
@@ -256,8 +289,36 @@ export async function readCorpus(directory, expectedId) {
         : 0)
   )
     throw Error('Corpus measured envelope mismatch');
+  let feedbackFiles;
+  if (body.feedback !== undefined) {
+    const feedback = body.feedback;
+    if (
+      feedback.protocolVersion !== 1 ||
+      feedback.transport !== feedbackWorkloadIdentity.transport ||
+      !Array.isArray(feedback.samples) ||
+      !Array.isArray(feedback.cases) ||
+      feedback.cases.length !== body.cases.length ||
+      feedback.cases.some(
+        (c, i) => c.run !== body.cases[i].run || !Number.isSafeInteger(c.samples) || c.samples < 0,
+      ) ||
+      feedback.cases.reduce((n, c) => n + c.samples, 0) !== feedback.samples.length ||
+      feedback.samples.some((row, i) => row.file !== `feedback-${i}.json`)
+    )
+      throw Error('Feedback corpus identity or case coverage');
+    feedbackFiles = feedback.samples.map((row) => join(directory, row.file));
+    const samples = await readFeedbackSamples(feedbackFiles);
+    if (
+      samples.some(
+        (sample, i) =>
+          sample.bytes.length !== feedback.samples[i].bytes ||
+          sample.sha256 !== feedback.samples[i].sha256,
+      )
+    )
+      throw Error('Feedback corpus integrity');
+  }
   const capture = {
     ...body,
+    ...(feedbackFiles ? { feedbackFiles } : {}),
     corpusId: id,
     maximumEvent: eventSamples.reduce((a, b) =>
       Buffer.byteLength(JSON.stringify(a)) >= Buffer.byteLength(JSON.stringify(b)) ? a : b,

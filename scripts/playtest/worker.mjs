@@ -111,10 +111,11 @@ export default {
                 protocolVersion: 2,
                 supportedProtocols: [2],
                 optionalVideo: env.CAPTURE_OPTIONAL_VIDEO === 'true',
+                feedback: { enabled: env.FEEDBACK_ENABLED !== 'false', protocolVersion: 1 },
                 accountingVersion: 'cloud-v2',
                 limits: LIMITS,
               }
-            : { enabled: false },
+            : { enabled: false, feedback: { enabled: false, protocolVersion: 1 } },
         );
       if (url.pathname.startsWith('/api/') || admin) {
         if (!auth) return response({ error: 'Invitation required' }, 401);

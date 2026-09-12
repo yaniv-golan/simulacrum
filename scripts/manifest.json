@@ -365,7 +365,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -916,6 +916,39 @@
       "tier": "browser",
       "smoke": false,
       "timeoutMs": 120000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-feedback-flow",
+      "script": "scripts/verify-feedback-flow.mjs",
+      "execution": "exclusive",
+      "environment": "self",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-feedback-lifecycle",
+      "script": "scripts/verify-feedback-lifecycle.mjs",
+      "execution": "exclusive",
+      "environment": "self",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-feedback-recovery",
+      "script": "scripts/verify-feedback-recovery.mjs",
+      "execution": "exclusive",
+      "environment": "self",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 60000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     }
@@ -1512,7 +1545,7 @@
       "id": "capture-receipt-ownership",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Only a matching durable v2 receipt removes a persisted upload payload. Eligible uploads use durable insertion order rather than lexical packet IDs, including after database reopen. Completion and feedback UI remain pending until post-enqueue durable reconciliation and matching acknowledgement; older reads cannot erase pending uploads.",
+      "guarantee": "Only a matching durable v2 receipt removes a persisted upload payload. Eligible uploads use durable insertion order rather than lexical packet IDs, including after database reopen. Recording completion remains pending until post-enqueue durable reconciliation and matching acknowledgement; independent feedback owns separate protocol-1 receipts, and older reads cannot erase pending uploads.",
       "owners": [
         {
           "path": "src/application/capture-outbox.mjs",
@@ -1609,11 +1642,15 @@
       "id": "capture-synthetic-cleanup",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Synthetic run cleanup releases payload capacity without deleting human recordings.",
+      "guarantee": "Synthetic run cleanup releases recording and feedback payload capacity only after their pending counts and charged bytes reach zero, without deleting human evidence or unrelated runs.",
       "owners": [
         {
           "path": "scripts/playtest/cloud-store.mjs",
           "anchor": "CaptureStore"
+        },
+        {
+          "path": "scripts/playtest/feedback-cloud.mjs",
+          "anchor": "CloudFeedbackStore"
         }
       ],
       "checks": [
@@ -1656,6 +1693,10 @@
           {
             "path": "test/cloud-playtest.test.mjs",
             "anchor": "verification holds full capacity across preliminary drain and load admission"
+          },
+          {
+            "path": "test/feedback-backend.test.mjs",
+            "anchor": "synthetic cleanup waits for failed feedback fences after recordings disappear and preserves other runs"
           }
         ],
         "negative": [
@@ -1694,6 +1735,10 @@
           {
             "path": "test/cloud-playtest.test.mjs",
             "anchor": "verification holds full capacity across preliminary drain and load admission"
+          },
+          {
+            "path": "test/feedback-backend.test.mjs",
+            "anchor": "synthetic cleanup waits for failed feedback fences after recordings disappear and preserves other runs"
           }
         ]
       },
@@ -1821,7 +1866,7 @@
       "id": "release-experiment-exceptions",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Expensive experiment exceptions remain explicit missing qualification and cannot hide known failure or authorize production implicitly.",
+      "guarantee": "Expensive experiment exceptions remain explicit missing qualification and cannot hide known failure or authorize production implicitly. Recording-only capacity cannot qualify standalone feedback; admission uses the effective Worker setting actually deployed.",
       "owners": [
         {
           "path": "scripts/playtest/experiments.mjs",
@@ -1834,6 +1879,10 @@
         {
           "path": "scripts/playtest/experiment-transport.mjs",
           "anchor": "retrieveEvidence"
+        },
+        {
+          "path": "scripts/playtest/release-policy.mjs",
+          "anchor": "assertFeedbackQualification"
         }
       ],
       "checks": [
@@ -1868,6 +1917,10 @@
           {
             "path": "test/experiment-transport.test.mjs",
             "anchor": "replacement of a named artifact during download fails closed"
+          },
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "recording-only capacity cannot qualify feedback-enabled releases"
           }
         ],
         "negative": [
@@ -1898,6 +1951,10 @@
           {
             "path": "test/experiment-transport.test.mjs",
             "anchor": "replacement of a named artifact during download fails closed"
+          },
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "recording-only capacity cannot qualify feedback-enabled releases"
           }
         ]
       },
@@ -4168,6 +4225,158 @@
           {
             "path": "test/merge-ci.test.mjs",
             "anchor": "push invalid ancestry"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "independent-feedback-receipts",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Feedback is an immutable independent submission. Only a complete digest-bound durable acknowledgement confirms receipt; revisions, retry, discard and storage failure preserve truthful draft and delivery state. Submitted attachments remain reviewable. Correcting a blocked submission creates a separate draft without replacing unfinished work. Feedback workload samples remain separate from recording media and cannot claim capacity qualification.",
+      "owners": [
+        {
+          "path": "src/application/feedback-protocol.mjs",
+          "anchor": "validateFeedbackEnvelope"
+        },
+        {
+          "path": "src/application/feedback-store.mjs",
+          "anchor": "openFeedbackStore"
+        },
+        {
+          "path": "src/application/feedback-client.mjs",
+          "anchor": "mountFeedbackClient"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-feedback-flow",
+        "verify-feedback-receipts",
+        "verify-feedback-lifecycle",
+        "verify-feedback-recovery"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/feedback-protocol.test.mjs",
+            "anchor": "feedback protocol binds exact UTF8 payload and strict complete receipt"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "draft revisions fence stale tabs, discard and freeze retain exact durable submission"
+          },
+          {
+            "path": "test/feedback-load.test.mjs",
+            "anchor": "synthetic corpus preserves feedback envelopes separately from capture media and detects corruption"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/feedback-protocol.test.mjs",
+            "anchor": "feedback admission rejects unknown fields malformed media and bounds while permitting optional voice"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "storage exhaustion leaves draft editable and oversized audio remains bounded and unsendable"
+          },
+          {
+            "path": "test/feedback-client-state.test.mjs",
+            "anchor": "validation rejection does not promise automatic retry"
+          },
+          {
+            "path": "test/feedback-client-state.test.mjs",
+            "anchor": "voice admission uses stop-request elapsed time without clamping a long clip"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "corrected draft preserves blocked bytes and never replaces another contribution"
+          },
+          {
+            "path": "test/feedback-load.test.mjs",
+            "anchor": "feedback load retries the exact v1 envelope, rebinds references, and rejects malformed receipts"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "feedback-capture-privacy",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Participating tab-video producers yield their shared authority before feedback content is shown. Suppression gaps map to unavailable footage, never fabricated video time; unsupported coordination cannot start capture.",
+      "owners": [
+        {
+          "path": "src/application/feedback-capture-gate.mjs",
+          "anchor": "createFeedbackCaptureGate"
+        },
+        {
+          "path": "src/application/capture-media-duration.mjs",
+          "anchor": "measureRecordedDuration"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-feedback-receipts",
+        "verify-feedback-lifecycle"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/feedback-capture-gate.test.mjs",
+            "anchor": "protected content waits for all capture suppression and blocks new capture"
+          },
+          {
+            "path": "test/feedback-review.test.mjs",
+            "anchor": "segmented video maps each clip time and leaves suppressed intervals unavailable"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/feedback-capture-gate.test.mjs",
+            "anchor": "failed suppression never grants protected access"
+          },
+          {
+            "path": "test/feedback-review.test.mjs",
+            "anchor": "unknown duration leaves only its segment unavailable"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "feedback-server-publication",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Independent feedback admission preserves origin, invitation and reference scope, exact bytes and bounded private storage. Partial publication and deletion races cannot produce a false durable receipt or resurrect deleted feedback.",
+      "owners": [
+        {
+          "path": "scripts/playtest/feedback-node.mjs",
+          "anchor": "NodeFeedbackStore"
+        },
+        {
+          "path": "scripts/playtest/feedback-cloud.mjs",
+          "anchor": "CloudFeedbackStore"
+        }
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/feedback-backend.test.mjs",
+            "anchor": "node: capability and admin separation preserve invitation/origin boundaries"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/feedback-backend.test.mjs",
+            "anchor": "cloud: partial object publication retries, generation and synthetic scopes are enforced"
+          },
+          {
+            "path": "test/feedback-backend.test.mjs",
+            "anchor": "node: root sync failure withholds receipt and retry recovers the same publication"
           }
         ]
       },
