@@ -1,3 +1,4 @@
+import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
@@ -67,8 +68,8 @@ try {
     .getByRole('combobox', { name: 'Assembly collection', exact: true })
     .selectOption('all');
   await browserDialog.getByRole('button', { name: 'Close', exact: true }).click();
-  await page.getByRole('button', { name: 'Powered Motor', exact: true }).click();
-  await page.getByRole('button', { name: 'Grip Wheel', exact: true }).click();
+  await placeCatalogPart(page, 'poweredMotor');
+  await placeCatalogPart(page, 'gripWheel');
   await page.getByRole('button', { name: '⊙ Wheel axle Available', exact: true }).click();
   await page
     .getByRole('button', {
@@ -114,7 +115,7 @@ try {
   evidence.assert('equal', [copies.connections.length, 2]);
   evidence.assert('equal', [copies.assemblies.length, 2]);
   evidence.assert('deepEqual', [copies.assemblies[0], original.assemblies[0]]);
-  await page.getByRole('button', { name: 'Power Cell', exact: true }).click();
+  await placeCatalogPart(page, 'powerCell');
   if (!(await page.locator('.machine-picker').evaluate((node) => node.open)))
     await page.locator('.machine-picker > summary').click();
   await page.getByRole('button', { name: 'Select assembly Drive module-2', exact: true }).click();

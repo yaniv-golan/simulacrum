@@ -57,6 +57,8 @@ try {
   browser = await evidence.launch({ profile: 'ui' });
   const p = await browser.newPage();
   p.setDefaultTimeout(3500);
+  // Cold Vite fixture loading is setup, separate from interaction responsiveness.
+  p.setDefaultNavigationTimeout(15000);
   await evidence.goto(
     p,
     `http://127.0.0.1:${server.httpServer.address().port}/test/browser/part-help-fixture.html`,

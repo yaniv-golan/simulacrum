@@ -1,3 +1,4 @@
+import { placeCatalogPart, browseAllParts } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { deterministicProjection } from '../src/model/tick.mjs';
 import { CATALOG } from '../src/model/catalog.mjs';
@@ -46,14 +47,14 @@ async function duty(value) {
 }
 try {
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
-  await page.getByRole('button', { name: 'Powered Motor', exact: true }).click();
+  await placeCatalogPart(page, 'poweredMotor');
   await section.waitFor({ state: 'visible' });
   await section.locator('summary').click();
   evidence.assert('match', [await section.innerText(), /Connect power/]);
-  await page.getByRole('button', { name: 'Power Cell', exact: true }).click();
-  await page.getByText('More parts', { exact: true }).click();
-  await page.getByRole('button', { name: 'Command Receiver', exact: true }).click();
-  await page.getByRole('button', { name: 'Grip Wheel', exact: true }).click();
+  await placeCatalogPart(page, 'powerCell');
+  await browseAllParts(page);
+  await placeCatalogPart(page, 'commandReceiver');
+  await placeCatalogPart(page, 'gripWheel');
   await page.getByRole('button', { name: /Wheel axle/ }).click();
   await page.getByRole('button', { name: /Attach to Powered Motor · shaft/ }).click();
   await select('Powered Motor');

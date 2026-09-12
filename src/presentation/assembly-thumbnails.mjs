@@ -46,8 +46,17 @@ export function createAssemblyConnections(group, definition) {
         const a = resolveEndpoint(edge.a),
           b = resolveEndpoint(edge.b);
         if (!a || !b) return [];
-        const forward = parts.get(edge.a.part).type === 'springGuide';
-        return [{ id: edge.id, a: forward ? a : b, b: forward ? b : a }];
+        const aType = parts.get(edge.a.part).type,
+          bType = parts.get(edge.b.part).type;
+        const forward = ['springGuide', 'linearActuator'].includes(aType);
+        return [
+          {
+            id: edge.id,
+            linear: aType === 'linearActuator' || bType === 'linearActuator',
+            a: forward ? a : b,
+            b: forward ? b : a,
+          },
+        ];
       }),
   );
   return {

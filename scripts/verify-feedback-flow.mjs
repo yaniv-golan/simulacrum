@@ -212,6 +212,7 @@ try {
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Give feedback', exact: true }).click();
   await page.getByRole('button', { name: 'Your feedback history', exact: true }).click();
+  await page.locator('[data-history]').waitFor({ state: 'visible' });
   evidence.assert('equal', [
     await page.evaluate(() => {
       const active = document.activeElement;
@@ -303,6 +304,7 @@ try {
   );
   await checkLayout('receipt');
   await page.getByRole('button', { name: 'Your feedback history', exact: true }).click();
+  await page.locator('[data-history]').waitFor({ state: 'visible' });
   await checkLayout('long-history');
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !document.querySelector('.feedback-dialog').open);

@@ -49,7 +49,7 @@ export function recoverVerificationWindow({
 /** Cooperative host-wide window; never treats elapsed time as proof an owner stopped. */
 export async function withVerificationWindow(
   execute,
-  { directory = defaultDirectory(), waitMs = 300000, pollMs = 100, inherit = true } = {},
+  { directory = defaultDirectory(), waitMs = 1800000, pollMs = 100, inherit = true } = {},
 ) {
   if (!Number.isFinite(waitMs) || waitMs <= 0 || !Number.isFinite(pollMs) || pollMs <= 0)
     throw Error('positive window deadlines required');

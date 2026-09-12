@@ -4,6 +4,38 @@ import { parse } from 'acorn';
 import { parse as parseHTML } from 'parse5';
 import ts from 'typescript';
 import * as cssTree from 'css-tree';
+// Retain syntax only, never filesystem results. Every graph walk still reads bytes,
+// resolves paths and checks package contracts. Cached ASTs stay private/read-only.
+const parsedScripts = new Map();
+let parsedCharacters = 0;
+function parseScript(script, onComment, useCache) {
+  const key = script;
+  const cached = useCache && parsedScripts.get(key);
+  if (cached) {
+    for (const text of cached.comments) onComment(false, text);
+    return cached.ast;
+  }
+  const comments = [];
+  const ast = parse(script, {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+    allowHashBang: true,
+    onComment: (block, text) => {
+      comments.push(text);
+      onComment(block, text);
+    },
+  });
+  if (useCache && script.length <= 4 * 1024 * 1024) {
+    while (parsedScripts.size >= 1024 || parsedCharacters + script.length > 4 * 1024 * 1024) {
+      const oldest = parsedScripts.keys().next().value;
+      parsedCharacters -= parsedScripts.get(oldest).characters;
+      parsedScripts.delete(oldest);
+    }
+    parsedScripts.set(key, { ast, comments, characters: script.length });
+    parsedCharacters += script.length;
+  }
+  return ast;
+}
 const sourceExtensions = new Set(['.js', '.mjs', '.cjs']);
 const excluded = new Set([
   '.git',
@@ -42,7 +74,7 @@ function walk(node, visit) {
 }
 export function buildModuleGraph(
   root = process.cwd(),
-  { dataDependencies = {}, entrypoints, purpose = 'resources' } = {},
+  { dataDependencies = {}, entrypoints, purpose = 'resources', cacheParsedSources = true } = {},
 ) {
   root = realpathSync(resolve(root));
   const files = listProjectFiles(root);
@@ -269,15 +301,14 @@ export function buildModuleGraph(
     for (const script of scripts) {
       let ast;
       try {
-        ast = parse(script, {
-          ecmaVersion: 'latest',
-          sourceType: 'module',
-          allowHashBang: true,
-          onComment: (_block, text) => {
+        ast = parseScript(
+          script,
+          (_block, text) => {
             for (const match of text.matchAll(/\bimport\(\s*['"]([^'"]+)['"]\s*\)/g))
               add(match[1], 'type');
           },
-        });
+          cacheParsedSources,
+        );
       } catch (error) {
         errors.push(`${path}: parse error: ${error.message}`);
         continue;

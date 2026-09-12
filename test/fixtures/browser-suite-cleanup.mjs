@@ -1,5 +1,5 @@
 import { registerHooks } from 'node:module';
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 const repo = fileURLToPath(new URL('../../', import.meta.url)).replace(/\/$/, '');
 const fixture = mkdtempSync('/tmp/adversarial-cleanup-');
@@ -93,7 +93,20 @@ globalThis.childMustFail = false;
 globalThis.cleanupMustFail = false;
 const selected = globalThis.fixtureManifest.browserChecks.slice(0, 2);
 // Graph discovery normally reads this checkout; fixture retains script identity as a direct association.
-for (const priorityFiles of [[], [selected[1].script]]) {
+for (const [priorityFiles, selection] of [
+  [[], null],
+  [[selected[1].script], null],
+  [
+    [],
+    {
+      files: [selected[1].script],
+      checks: selected,
+      source: { head: 'fixture', workingTreeDigest: 'fixture' },
+    },
+  ],
+]) {
+  writeFileSync('artifacts/browser-suite/last-run.json', JSON.stringify({ runs: [] }));
+  writeFileSync('artifacts/browser-suite/scheduling-history.json', JSON.stringify({ runs: [] }));
   globalThis.executionOrder = [];
   globalThis.liveRuns = [];
   globalThis.failScript = selected[1].script;
@@ -107,7 +120,7 @@ for (const priorityFiles of [[], [selected[1].script]]) {
   try {
     await verifyBrowserSuite(
       selected.map((c) => c.id),
-      { context, priorityFiles, workers: 1 },
+      { context, priorityFiles, selection, workers: 1 },
     );
   } catch {}
   console.log(
@@ -200,6 +213,21 @@ for (const timingFailure of [false, true]) {
         report: globalThis.fixtureRead(),
       }),
   );
+}
+globalThis.timingMustFail = false;
+globalThis.serverCleanupMustFail = false;
+globalThis.failScript = undefined;
+delete process.env.SIMULACRUM_LEAF_LEDGER;
+mkdirSync('dist', { recursive: true });
+writeFileSync(
+  'dist/.verification-source.json',
+  JSON.stringify({ source: { head: 'fixture', workingTreeDigest: 'fixture' }, app: 'fixture' }),
+);
+for (const options of [{ workers: 4 }, { workers: 4, context: {} }]) {
+  try {
+    await verifyBrowserSuite(['verify-browser'], { ...options, reuseBuild: true });
+  } catch {}
+  console.log('WORKERS ' + JSON.stringify(globalThis.fixtureRead()));
 }
 process.chdir(repo);
 rmSync(fixture, { recursive: true, force: true });

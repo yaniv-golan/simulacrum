@@ -51,7 +51,7 @@ function admitConfiguration(input) {
       m.rotor >= c.bodies.length ||
       m.joint >= c.joints.length ||
       (m.joint >= 0 &&
-        (c.joints[m.joint].kind !== 'revolute' ||
+        (c.joints[m.joint].kind !== (m.coordinate === 'linear' ? 'spring' : 'revolute') ||
           c.joints[m.joint].a !== m.body ||
           c.joints[m.joint].b !== m.rotor ||
           m.axis.some((v, i) => Math.abs(v - c.joints[m.joint].axisA[i]) > 1e-12)))
@@ -402,21 +402,16 @@ export async function createSession(
                 for (let j = 0; j < i; j++) {
                   const other = config.power.motors[j];
                   if (other.joint < 0) continue;
-                  const response = world.torquePairResponse(
-                    m.body,
-                    m.rotor,
-                    rotate(sensors.bodies[m.body].rotation, m.axis),
-                    other.body,
-                    other.rotor,
-                    rotate(sensors.bodies[other.body].rotation, other.axis),
-                  );
+                  const response = world.driveResponse(m.joint, other.joint);
                   if (response !== 0) coupling.push({ source: j, target: i, response });
                 }
               }
               const states = config.power.motors.map((m) =>
                 m.joint < 0
                   ? { speed: 0, angle: 0, effectiveInverseInertia: 0 }
-                  : world.jointState(m.joint),
+                  : m.coordinate === 'linear'
+                    ? world.linearDriveState(m.joint)
+                    : world.jointState(m.joint),
               );
               const commands = receiverControl.step(
                 next,
@@ -489,12 +484,14 @@ export async function createSession(
                         kineticBeforeJ: 0,
                         kineticAfterJ: 0,
                       }
-                    : world.applyTorquePair(
-                        torque.body,
-                        torque.rotor,
-                        rotate(sensors.bodies[torque.body].rotation, torque.axis),
-                        torque.value,
-                      );
+                    : config.power.motors[i].coordinate === 'linear'
+                      ? world.applyLinearDrive(torque.joint, torque.value)
+                      : world.applyTorquePair(
+                          torque.body,
+                          torque.rotor,
+                          rotate(sensors.bodies[torque.body].rotation, torque.axis),
+                          torque.value,
+                        );
                 actuatorWorkJ += r.workJ;
                 constraintWorkJ += r.constraintWorkJ;
                 return { node: config.power.motors[i].node, ...r };

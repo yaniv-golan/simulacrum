@@ -369,6 +369,7 @@ try {
     true,
   ]);
   await mediaPage.getByRole('button', { name: 'Your feedback history', exact: true }).click();
+  await mediaPage.locator('[data-history]').waitFor({ state: 'visible' });
   evidence.assert('equal', [
     await mediaPage.evaluate(() => document.activeElement.hasAttribute('data-history')),
     true,
@@ -447,7 +448,11 @@ try {
     .getByRole('textbox', { name: 'Your feedback', exact: true })
     .fill('Keep this existing correction');
   await mediaPage.getByRole('button', { name: 'Your feedback history', exact: true }).click();
+  await mediaPage.locator('[data-history]').waitFor({ state: 'visible' });
   await mediaPage.getByRole('button', { name: 'Create corrected draft', exact: true }).click();
+  await mediaPage.waitForFunction(() =>
+    /already have an unsent draft/i.test(document.querySelector('[data-error]').textContent),
+  );
   evidence.assert('match', [
     await mediaPage.locator('[data-error]').textContent(),
     /already have an unsent draft/i,
@@ -467,6 +472,7 @@ try {
       !document.querySelector('[data-image]').checked,
   );
   await mediaPage.getByRole('button', { name: 'Your feedback history', exact: true }).click();
+  await mediaPage.locator('[data-history]').waitFor({ state: 'visible' });
   await mediaPage.evaluate(async () => {
     window.finishAudio = document.querySelector('[data-history] audio');
     window.finishAudio.loop = true;

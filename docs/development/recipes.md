@@ -18,7 +18,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"c9deaf115b29d62409080812a6c3aa241adac32794844b59953b139f76e179ae","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"052f37439b2c6ecdd43c02274230fcfab7078d8d03d43d3551aeaa278f1c946a","disposition":"still accurate","rationale":"Feedback UI and server modules add no parts, materials, geometry or mounting rules. Package metadata only adds network discovery, so ordinary authored-part and physical validation requirements remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"fd442ab9e062c25aaa84ef631f1b2dae5d0d1d81444256951b2408e9cf50aad3","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"f8080c23053f35863f8b87a40f66235ad56a3c485ac36bf70b9d4229cbd15345","disposition":"still accurate","rationale":"Only the package feedback service declaration changed this section dependency relative to its reviewed main source. CATALOG, createPart, schema/geometry and compileAssembly retain their part-authoring responsibilities; feedback adds no physical part, material inference, mounting primitive or schema generation procedure."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -58,7 +58,7 @@ when changing admission.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"5a11c1c1035f2b99b3748af9328f529643c8e0e213360109b05312c45338c6bc","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"75988a103a54481dbed5819c38ebc38f581f462ae7ad5d603e608b1628b9e6cd","disposition":"still accurate","rationale":"Feedback submissions use an independent network protocol and do not add workshop commands or history transactions. Shape validation, compilation and core edit atomicity in this recipe remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"06ca350fc7b82a30bf7b45b74c026cdad403869322eb487fb2082dd82ca131b6","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"2737ef0969ad9fd2974b4d2aec2af22e6061081e8ab91f5ec66a5b4a40f5d5b5","disposition":"still accurate","rationale":"The package feedback service edge does not alter createWorkshop or surface-mount admission. Main cursor-guarded placement, whole-candidate compilation and atomic history are retained. Feedback draft corrections are application storage operations, not a new authored-machine command, so the existing malformed/rejected/Undo/save-load recipe remains appropriate."} -->
 
 
 
@@ -75,7 +75,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"9b49c0d39c35a1d2c74e234734dc77905d5d9b327a62a9714f954c6ed3d50765","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"5949eed11f85bfe92335884dc7b5d884beadbbff9662eb161ad6d788966e5b3c","disposition":"still accurate","rationale":"The feedback dialog follows the existing task/region/lifecycle policy and uses no second workshop command owner. Package metadata adds network edges without changing the interaction recipe or existing help checks."} -->
+<!-- doc-review {"version":1,"fingerprint":"d0cea8bc06d3020723cdc725aa5863e5211a8d56e6b0fc305829a51138d5ffb9","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"88736f65c51d723f40c1de824fb64c5a480d3cf5b50fd0932571e7feda48385a","disposition":"still accurate","rationale":"The dependency change is the package feedback service declaration. Main surface, editing, part-help containment and catalog placement owners remain unchanged; the remote browser fixture now invokes the existing catalog action helper. The recipe still requires transient previews, ordinary core commitment, cancellation and rendered/focus evidence rather than source-only approval."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -106,8 +106,8 @@ text instructions in the How to connect tab of the nonmodal reference window.
 Keep the title bar and tabs available while content scrolls; clamp dragging and
 resizing to the viewport. Keep the small info control visually inside the placement
 card while retaining sibling buttons in the DOM. Restore a hidden opener by opening
-its containing disclosure before focusing it. Preserve palette eligibility through
-[part palette](../../src/presentation/part-palette.mjs); supported loaded types still
+its containing disclosure before focusing it. Preserve catalog eligibility through CATALOG and discovery vocabulary through
+[part search](../../src/presentation/part-search.mjs); supported loaded types still
 need [help content](../../src/presentation/part-help-content.mjs). Use the
 [part help browser check](../../scripts/verify-part-help-browser.mjs#implementation)
 for dragging, expand/restore, tabs, capture, authoring Escape, mode availability
@@ -125,7 +125,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"00e9a52577f620e8058f591105db52e65a2a0b4365f2819877ba99112b761e3e","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"0a539279cbb0a7f1ae719dce4229169a7d1fcd378e201231cbce0a95ac3ff019","disposition":"still accurate","rationale":"Optional feedback context is an explicitly captured snapshot, not a new simulation diagnostic or repair. Completed-data ownership and causal limits in this recipe remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f60ac41ab3cba7a351a4cb51a2d67417153990cac943737111b38767b98d83f2","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"849b1af21e30cf7c9e28499afe273bb30f62f14926c2ae7771f9f47b31f9787c","disposition":"still accurate","rationale":"The package feedback service declaration adds no motion or controller diagnostic owner. diagnoseMotion and the completed decision and measurement projections remain main implementations, with separate observation cursors and historical identity. Feedback delivery status does not reinterpret physical observations or turn symptoms into cause."} -->
 
 
 
@@ -155,7 +155,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"01eea5075f41cf4ceadc61df2591f29ff69ec7a06e7d1863478ddd6c05b9e1ee","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"951aa65a10abe76d8dbd17ecfcca6cab503ff33e2d14374418fed78db18fb71c","disposition":"still accurate","rationale":"Feedback capture and receipt changes do not alter physical laws, integration timing or authority. Package metadata only adds network discovery; independent numerical and physical controls remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"9c492f55b54a44cb5f4a8a65ff36569ee3dbc8d48b4ef4e7bad7c2a580def0b5","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"00b516ca9d300b8de0f59578fa37fa3cf20ff6c2e9bd9ddc4cd65e4f22124579","disposition":"still accurate","rationale":"The merged world, power, session, guided spring and powered linear implementations retain main behavior. Feedback transport, workload and teardown changes introduce no numerical law, phase ordering, geometry, constraint or energy-accounting change. The documented independent momentum/work controls, native settings and qualification limits remain binding."} -->
 
 
 
@@ -297,9 +297,31 @@ at one tenth of the smallest sphere radius, leaving sphere-free scenes at their
 native tolerance. Temporal subdivisions remain unchanged; snapshots bind sweep
 settings and slop. Re-run existing contact/constraint cases when changing this policy.
 
+The [powered linear controls](../../test/linear-actuator.test.mjs#implementation) and
+[mixed-coordinate controls](../../test/linear-actuator-coupling.test.mjs#implementation)
+exercise the same electrical allocation and impulse-receipt owners with a zero-stiffness
+slide. Keep prepared passive damping in axial speed samples and use generalized mixed
+linear/rotary mobility in actual allocation order. Include both anchor moments and
+independent linear/angular momentum and full-inertia work checks. Authored maximum speed
+caps active drive voltage; external loading can overspeed it, so never clamp velocity.
+Completed travel, rather than intermediate drive-kick speed, establishes end-stop or
+barely-moving observations. Positive kick work at a stop can be dissipated during native
+integration; retain the signed integration ledger and independent complete-tick bounds.
+Connection snap length affects the next attachment, not an existing carriage pose.
+The [linear browser construction](../../scripts/verify-linear-actuator-browser.mjs#source)
+uses ordinary mounting, power and receiver keys, an underpowered lift repair, and
+a horizontal slide blocked by an authored obstacle before its end stop. Require
+measured face-to-obstacle contact, sustained stall heat, obstacle-removal repair,
+reverse motion and rendered endpoint agreement. The [linear clock controls](../../test/linear-actuator-determinism.test.mjs#implementation)
+compare four processes and both production clocks, and replay an actual failure bundle
+with a missing-input counterexample. Preserve nondefault actuator settings, material
+and independent wiring through capture, rotated insertion, mirrored copying and
+history using the powered linear controls. These finite controls do not
+qualify arbitrary mechanism loads or human acceptance.
+
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"74a998bfd5ceab468b206d2f3ebd76e3cbe68f92481bbc6c3cea842ec78b4183","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"1448aa2b8c46e360bb0b2e63583738271d3108738ed6051f3f545399e56fef00","disposition":"still accurate","rationale":"No assembly or multi-part authoring operation changes. Feedback snapshots copy existing project state, preserving canonical atomic authoring and reusable-assembly requirements."} -->
+<!-- doc-review {"version":1,"fingerprint":"6b6597fc128fe3318274ea11194cc48daaafe745ebd154876621974bd75e78a2","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"dfd558e0b08380d127257d6f1eb847a62d35f443566db037a0ea1d0740b6748c","disposition":"still accurate","rationale":"The package feedback service relation leaves connection membership, binding remapping, model proposals and assembly persistence unchanged. Main catalog helper still performs browse/preview/Place/Done through the real placement surface. The retained capture/copy/insert/history and named-port construction recipe remains accurate."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -392,7 +414,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"feb001085cc5f9eba62e455f13a85669922223b8d4f0f1c2d5085ed633b820a5","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"ce201ab925abed18757b8e0f4fcfb7b6842fb2b83281b58f7a92b191b75969ae","disposition":"still accurate","rationale":"The feedback dialog uses explicit lifecycle, bounded scrolling and retained consequential state. It does not change observation data, overlay ownership or the existing measurement surface guarantees."} -->
+<!-- doc-review {"version":1,"fingerprint":"60948fa4ded4829446e28c30d1d09cbe76c4cce3ff7aaaf32587593b68b7d7de","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"718eceb35071e96784a083ddb111d94761e332d02e8e15c81fe06ea0b506229f","disposition":"still accurate","rationale":"Main connection rendering, production mesh finishes, thumbnail resource lifetime and powered-guide rod rendering are retained. Feedback dialog CSS and submitted media previews are separate DOM surfaces with their own cleanup, and do not alter authored readback, overlay visibility, shared GPU ownership or spring performance ceilings described here."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -411,9 +433,11 @@ provide cosmetic material response, subtle roughness grain and a disposable stud
 reflection field. Paint is nonmetallic surface treatment; exposed surfaces follow the
 authored material. These finishes do not change model material values. [Assembly
 thumbnails](../../src/presentation/assembly-thumbnails.mjs#implementation) compose the production connection and spring views at saved authored
-endpoints, including their geometry in framing and disposing temporary resources. Surface mounts
+endpoints, including their geometry in framing and disposing temporary resources. Palette thumbnails retain their temporary meshes through one synchronous batch so shared shader programs stay available; a `finally` block releases all meshes, the preview environment and the renderer. The main renderer also warms the catalog material and shadow variants once before authoring starts. Those bounded resources remain outside the authored mesh map and completed readback, leave the scene immediately, and are released with the renderer. Surface mounts
 use the same model surface resolver as the workshop, retaining saved face offsets and
-part rotations; named ports retain their catalogue positions. Socket collars keep authored endpoint positions;
+part rotations; named ports retain their catalogue positions. Powered linear connections use
+the retained straight-rod view with guide-to-carriage endpoint ordering in either saved
+edge direction; passive springs keep their coil view. Socket collars keep authored endpoint positions;
 the housing surface supplies their outward visual normal. Nearest-port spacing bounds
 their size. One aperture represents one endpoint regardless of permitted wire count.
 Invisible original picking volumes preserve targeting; normal wires add no duplicate

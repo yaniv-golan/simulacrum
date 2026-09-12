@@ -865,6 +865,29 @@ export async function mountFeedbackClient({
     q('[data-keep]').onclick =
       () => void close();
   q('[data-discard]').onclick = () => void discardDraft();
+  dialog.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return;
+    const stops = [
+      ...dialog.querySelectorAll(
+        'button, input, textarea, select, summary, audio[controls], a[href], [tabindex]',
+      ),
+    ].filter((node) => node.tabIndex >= 0 && !node.disabled && node.checkVisibility());
+    const first = stops[0],
+      last = stops.at(-1);
+    if (!first) {
+      event.preventDefault();
+      q('#feedback-title').focus();
+    } else if (
+      event.shiftKey &&
+      (document.activeElement === first || !stops.includes(document.activeElement))
+    ) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
   dialog.addEventListener('cancel', (event) => {
     event.preventDefault();
     void close();

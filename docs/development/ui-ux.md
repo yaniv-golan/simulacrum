@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"0b68166e876733204e8f7918d619711328a427d46ea150b4a7a7ca06e09b0a35","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"046cbc401335228297f6428d2a276e306db30ca8c40f9c745f60f3b1bf7cef5a","disposition":"still accurate","rationale":"The appearance change introduces no lesson or new connection concept; existing contextual port help suffices under the no-entry admission rule."} -->
+<!-- doc-review {"version":1,"fingerprint":"99e587ea707c5af8948307de9e4e5cf8efb670013b3c821518139301983a53df","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"57587534efc197b52eb9ee274f921faa42c81b253c1eede16038c77ca39022d4","disposition":"still accurate","rationale":"Graphics preparation and fixture corrections add no learning content or permanent player-facing surface. Existing discovery, placement and teaching admission rules remain applicable; no new entry is required."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"4d261da641e12a908304bc02218ac5b1ff4122a5eeb6a6e5c0ee1d543153f415","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"9a0844a0f91df0b56756b148f54d65eb8885ca268b01a893188fa6fc59ad6f33","disposition":"updated","rationale":"Documented submitted attachment inspection, capture time labels, correction without overwriting unfinished work and keyboard focus transitions within the existing feedback dialog."} -->
+<!-- doc-review {"version":1,"fingerprint":"40149257a552d6e61fb17e5b31db91d5531dba2e0e52cd10cfbbe4201f9039d4","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"916f1a5a020c6479a47061b5dbda972b87406a935bec59d9dcc7259a0b44bfe3","disposition":"updated","rationale":"Replace the obsolete More parts gear entry point with the Motion catalog category and search, matching part-search.mjs gear12/gear24 and parts-browser.mjs. The merged stylesheet retains both catalog recording-strip clearance and feedback scrolling/actions. Existing feedback receipt/history inspection, corrected drafts and focus lifecycle text matches the implementation; browser checks remain evidence obligations, not proof of satisfaction."} -->
 
 
 
@@ -135,14 +135,34 @@ and view groups at the workbench edge; selected properties and operations in the
 inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
 
-Catalogue images occupy a 52-pixel square within the existing parts column. Square
-production renders improve silhouette size without widening the region or reducing
-label text. The column retains scrolling, help buttons and keyboard focus. Catalogue,
-part-help and assembly previews use the workshop's part meshes and cosmetic finishes;
-preview lighting shares the same reflection field. These changes serve recognition
-and connection authoring, add no persistent panel, and displace no unique action.
-Learning-content disposition is **no entry**: existing connection rows and part help
-explain the same endpoints; a surface treatment introduces no new construction concept.
+The [part catalog](../../src/presentation/parts-browser.mjs#source) uses real mesh thumbnails, Essentials and functional categories,
+Recent and locally saved Favorites. Search covers the whole available catalog and
+ranks names, aliases, actions and related roles in that order, preferring complete
+query coverage across identity and function fields. Complete conservative typo corrections
+precede partial direct matches; numeric identities are exact.
+Clearing search restores browsing position. Searching and filtering retain the placement lock during an active assembly operation. Related assembly results open the existing
+Assemblies browser. Vocabulary lives in presentation, never in physical admission.
+Clicking or dragging a part opens the same nonmutating placement controller. Pointer
+release assesses its final location, including touch taps. The existing surface owner
+provides mounting faces, precision and attachment; empty-space placement uses the grid
+with optional coordinates under Precise position. Confirmation sends one ordinary
+cursor-guarded `place` or `surface-mount` command. Invalid and stale previews cannot
+commit, and pending placement disables duplicate submission and cancellation.
+Escape first cancels an active pickup, including when search has focus, and restores
+the originating query, category, focus and scroll even after browsing changes. Only results scroll inside the tray; scaled text reduces the column count. The compact
+header and summary preserve complete visible tiles at the supported 1280 by 720 viewport.
+At narrow widths a requested Parts browser replaces the sidebar, leaving the canvas
+full width while Assemblies and recording remain retrievable.
+Recent records accepted catalog placements. Expanded and compact catalogs are requested
+surfaces; picking closes them and cancellation restores the origin. The existing About
+window retains Overview and How to connect, with diagram links that reveal catalog
+parts without placing them. During recording, placement and expanded catalog controls
+reserve space above the feedback strip; taller placement details scroll within the
+available stage height, keeping placement and recording actions separately reachable. The cell-to-motor example precedes optional power branching.
+Learning admission: extend existing part help; no new lesson or example-browser entry.
+
+Catalogue, part-help and assembly previews use the workshop’s part meshes and cosmetic finishes; preview lighting shares the same reflection field. These shared finishes improve recognition and connection authoring without adding a persistent panel or a learning-content entry.
+
 
 The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic
 regulation shows measured and target total spring length, rather than extension from
@@ -242,7 +262,7 @@ These examples extend construction possibilities, not evidence of player compreh
 or qualification outside their tested finite operating envelopes.
 
 
-Spur gears use More parts, selected Connections and the existing part-help window.
+Spur gears use the Motion catalog category and search, selected Connections and the existing part-help window.
 Gear mesh explicitly leaves parts in place and requires independently supported
 aligned shafts. The requested Learn & examples browser adds one editable gear-lift
 experiment: predict the slower rotor, run the loaded arm, then disconnect the mesh
@@ -258,6 +278,20 @@ The lift uses an ordinary extension axle to separate its arm plane from the gear
 A gear motion-limit stop offers Build, shaft-support, motor-current and grounded
 restart guidance through the existing message surface. It does not imply broken teeth.
 Physical witnesses remain separate from player comprehension.
+
+The powered linear actuator uses the Motion catalog category and search, selected settings, existing receiver
+controls and requested part help. Connect the existing Spring carriage, a cell and a
+Command Receiver; W/up extends and S/down retracts. Releasing the keys opens active drive,
+so an unpowered suspended load can fall. The inspector distinguishes completed travel,
+stop proximity, low motion under power and electrical faults. Connection snap length
+sets the next attachment; it does not reposition a connected carriage. The decorative
+rod follows completed endpoints and adds no collider or physical support. Current
+limit, maximum driven speed and travel settings stay in the selected inspector, while
+material and winding details remain expandable. No permanent panel is added.
+Learning admission is **no entry**: contextual power/receiver and part help cover the
+bounded construction task; the passive spring lessons remain unchanged. This is a
+teaching hypothesis, not observed comprehension. The ordinary browser construction
+check includes a low-current failure, repair, key reversal, history and save/load.
 
 The Ball uses the existing part catalogue and selected inspector: diameter is a
 primary size edit; material and expandable Contact settings live in Engineering

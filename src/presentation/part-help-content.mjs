@@ -119,6 +119,17 @@ export const PART_HELP = {
       'Off disconnects active drive; it is not a brake or a centered hinge target. Springs and gravity can still move the mechanism.',
     ],
   ),
+  linearActuator: help(
+    'Extends and retracts a sliding load with keys',
+    'Electrical force pushes the carriage and reacts against the mounted base. It backdrives when off or unpowered: a suspended load can fall. It has no holding clutch. Physical stops bound travel; a stalled drive still consumes power and heats.',
+    'A Spring carriage, a supported base, a Power Cell and a Command Receiver. Up to eight sliding connections share the spring limit.',
+    [
+      'Mount the actuator base to a support. Connect Slide to a Spring carriage, then mount your platform, press or gate to the carriage.',
+      'Wire Cell Power to actuator Power, then Receiver Signal to actuator Signal. Run: W/up extends; S/down retracts. Release stops electrical drive; it does not brake the load.',
+      'If it barely moves, check travel stops, clearance and load. Return to Build, reduce the load or increase the current limit within its rating, then try again.',
+      'Connection snap length sets the next Slide attachment; it does not reposition an attached carriage. Travel stops are Build settings. Maximum driven speed limits active drive; external loads can move it faster. The rod is a visual guide, not additional collision geometry.',
+    ],
+  ),
   springGuide: help(
     'A captured spring that guides a sliding carriage',
     'Slides along this axis; does not swivel. This open-rail mechanism resists both compression and extension. The coil is decorative: collision and mass use the solid pads and ordinary rail, not individual turns.',
@@ -132,9 +143,9 @@ export const PART_HELP = {
     ['spring'],
   ),
   springCarriage: help(
-    'The moving end of a guided spring',
+    'The moving end of a spring or powered slide',
     'This pad moves along the guide axis. Fixed mounts on it follow the moving end; it cannot swivel.',
-    'Connect its Slide port to a Spring guide, then mount a platform to its top.',
+    'Connect its Slide port to a Spring guide or Powered linear actuator, then mount a platform to its top.',
     [
       'Choose the guide to change the spring settings. Disconnect Slide to remove the spring force.',
       'The carriage has its own weight even after you remove the extra load.',
@@ -172,7 +183,7 @@ export const PART_HELP = {
       'Connect one cell’s Power port to a motor, hinge or bus Power port.',
       'Several wires can share the cell port. Multiple cells on one circuit are unsupported.',
     ],
-    ['power'],
+    ['powerOne', 'power'],
   ),
   distributionBus: help(
     'A shared power connection',
@@ -296,6 +307,14 @@ const end = (node, port) => ({ node, port });
 const edge = (kind, a, b) => ({ kind, a, b });
 // Schematic coordinates are deliberately separate from physical fixture transforms.
 export const PART_EXAMPLES = {
+  powerOne: {
+    title: 'Power a motor',
+    nodes: { cell: 'powerCell', motor: 'poweredMotor' },
+    edges: [edge('power', end('cell', 'power'), end('motor', 'power'))],
+    notes: [
+      'Mount both parts separately. Power wires carry energy; they do not hold parts together.',
+    ],
+  },
   spring: {
     title: 'Guided spring',
     nodes: { guide: 'springGuide', carriage: 'springCarriage' },

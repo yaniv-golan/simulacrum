@@ -10,7 +10,7 @@ const manifest = JSON.parse(readFileSync(new URL('./manifest.json', import.meta.
 export async function runStructuralChecks(
   target = manifest.milestone,
   context = createVerificationContext(),
-  { stopOnFailure = false } = {},
+  { stopOnFailure = false, includeUnitControls = true } = {},
 ) {
   const cutoff = manifest.milestones.indexOf(target);
   if (cutoff < 0) throw new Error(`unknown milestone: ${target}`);
@@ -50,7 +50,7 @@ export async function runStructuralChecks(
     }
   }
   // Finish cheap metadata/documentation prerequisites before invoking unit work.
-  if (invariantControlsReady && (!failed || !stopOnFailure)) {
+  if (includeUnitControls && invariantControlsReady && (!failed || !stopOnFailure)) {
     try {
       await context.unit(invariantTestFiles(root));
     } catch (error) {

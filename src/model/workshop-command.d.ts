@@ -66,7 +66,7 @@ export type WorkshopCommand =
   | { type: 'bind-target-sensor'; id: string; target: string | null }
   | { type: 'bind-travel-sensor'; id: string; connection: string | null }
   | { type: 'insert'; part: Part }
-  | { type: 'place'; id: string; partType: PartType; position: Position }
+  | { type: 'place'; id: string; partType: PartType; position: Position; expectedCursor?: Cursor }
   | { type: 'rename'; id: string; name: string }
   | { type: 'delete' | 'disconnect'; id: string }
   | { type: 'transform'; id: string; position: Position; rotation: Rotation }

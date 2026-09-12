@@ -1,3 +1,4 @@
+import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -14,7 +15,7 @@ const directory = browserArtifactPath('artifacts/motion-diagnostics');
 mkdirSync(directory, { recursive: true });
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
-  await page.locator('[data-part-type=poweredMotor]').click();
+  await placeCatalogPart(page, 'poweredMotor');
   await page.locator('[data-command=check-machine]').click();
   const dialog = page.getByRole('dialog', { name: 'Check machine' });
   browserEvidence.assert('deepEqual', [
