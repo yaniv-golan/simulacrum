@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"c3e5c8229e776a8c5bc2577973439ca9fb0012135b8e52d8859f4cc1351b6ac1","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"2cfff3601d20cbf81c52fd3c9f4c2d6512993c7f060c1d01b05c07194b29e70c","disposition":"still accurate","rationale":"The package adds only feedback service discovery. The merged workshop view, core, session and power files match main: parts discovery and transient cursor-guarded placement still enter ordinary core admission, while completed observations and presentation resource lifetimes retain their documented owners. Feedback persistence introduces no authoring or physics write path."} -->
+<!-- doc-review {"version":1,"fingerprint":"d868e4a6b57a5d2e82bc19aadbd2f54b55a2afac484ddad5b16a2c9aebe322ef","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"00c4059867b3366875f50891c1ac3bac066b0e8e9bbdf169d4708a81d82ec9e9","disposition":"still accurate","rationale":"The retained fc4b321 shared createPartMesh builds authored primitives and static family coatings for workshop and previews; callers dispose geometry/material/texture resources. partAppearanceKey includes rotation-sensor axis, while body animation still receives completed transforms. Feedback service composition and 33d1c3c verification changes do not move model/core/physics admission, observation ownership or help input boundaries described in this section."} -->
 
 
 
@@ -53,6 +53,10 @@ Part explanations, tooltip timers and the movable reference window live in
 are presentation state. Closing retains the current type, tab and scroll for reopening;
 choosing a different type resets the reading page. Catalog thumbnails are cached
 independently of palette eligibility, so supported loaded-only parts have images too.
+The [shared part mesh](../../src/presentation/part-mesh.mjs#symbol=createPartMesh) supplies
+these images and workshop/assembly previews from authored geometry and static family
+coatings, with disposal owned by the caller. Angular-rate face artwork follows the
+authored axis through the appearance cache; animation remains the completed body pose.
 [Example diagrams](../../src/presentation/part-help-diagram.mjs)
 render one node per example part and resize their connection paths with the window.
 They never enter authored state or
@@ -66,7 +70,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"71d5e9f98d9ee331ba8246080da3fc0c43fd3b4afe55a58a602f4c5b6fd9a17c","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"6a5f900d41f890980eee285b78c21132df80af072df1383bd33cc6fd8f9297ab","disposition":"still accurate","rationale":"Integration retains main catalog/geometry, linear drive, spring view, power and completed-observation implementations. Feedback services introduce a separate application transport without moving the tabled geometry, connection, command/history or physical-law decisions. The linear-coordinate units and passive stop/Off behavior remain as described."} -->
+<!-- doc-review {"version":1,"fingerprint":"504cdf12a76bf6b34fae545038651b23997f5e67ec2134880dffc975d23da376","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"71f7ba365382f8f9016a9ed038671f50d3d24447c71afba2d34d3727fe5e77c7","disposition":"still accurate","rationale":"The integrated visuals use canonical partPrimitives, CATALOG dimensions/ports and authored material, while the appearance cache additionally binds rotation-sensor axis. No new physical region, connection, reading or simulation authority is introduced. The existing table of geometry, material, transforms, history, overlay, sensing and linear-drive decisions remains accurate after composition with feedback and verification changes."} -->
 
 
 

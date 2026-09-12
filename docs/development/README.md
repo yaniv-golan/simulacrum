@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"b4fed4186a8139f1c2ae5aca0d7290a430dcfcd5a914c1087036c988f09689ae","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"0560d457fce817e87767e1d2bf6b39b693f29ead26106fef696780b6c3fad698","disposition":"still accurate","rationale":"The generated reference now includes the feedback protocol, store, workload and verification owners. The checker still regenerates facts before reviewing each section, binds package/service inputs and source dependencies, and rejects stale receipts; the documented separate semantic review and batch publication procedure remains applicable."} -->
+<!-- doc-review {"version":1,"fingerprint":"02cdc30cbd72fac5574843a8419801024e4c89bf073b94c6c4a4abcfe5e8eba1","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"4f7716ca7245b46885dcd777ec0d786134606d066078312363cedf52e596c974","disposition":"still accurate","rationale":"The regenerated reference combines feedback owners with the shared part builder, static family finish modules and verification scheduling helpers. Package feedback service declarations remain discovery inputs. The documentation checker still regenerates facts, requires individual semantic dispositions and binds source and sidecar identity; no blanket acknowledgement or alternate workflow was introduced."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,8 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-
-<!-- doc-review {"version":1,"fingerprint":"35f9160c774bdbb81a56d21653257ce5c77c0fd7daac7275e6f786afbf591ab5","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"451674f75aa6ab6f62dc3980515d4a8140b9e39491e8c3d6644cd7baf75a8257","disposition":"still accurate","rationale":"Feedback adds three browser checks and service dependencies; conservative selection and witnessed scope requirements remain unchanged. The merged main runner retains its accepted single last-writer history snapshot, current-attempt exclusion and per-check schedule/load evidence."} -->
+<!-- doc-review {"version":1,"fingerprint":"070263daf9e0f6c820702c90a81a659c642f6ae5fe7244917c3fd062a2516e5e","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"8d1bd02f85e7efc96f2e9e049e0ea12be1bdb3c354f008ae9aa3717f951ec93c","disposition":"still accurate","rationale":"The merged source retains 33d1c3c single-snapshot last-writer-wins scheduling hints and per-check schedule/host-load context, together with fc4b321 static-rendering invariants and feedback checks. The section explicitly distinguishes hint loss from receipt authority and describes exclusive transient-physics scenarios and watchdog headroom. Scope application still requires its union of real witnesses and does not infer qualification from metadata."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -503,8 +502,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-
-<!-- doc-review {"version":1,"fingerprint":"1d48298e43cfcbc03ffa6271eab9e31067be9c6dfb50f261a2de3e13bd1bd95a","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"d0cc4489127941e9e4cd4f52f401e65bec27d81f4f67eb5e35d5e8c5db256a68","disposition":"still accurate","rationale":"Feedback source and test obligations use the existing frozen candidate and attempt-specific reports. The simplified optional history snapshot retains current-attempt and source identity guards; no cross-candidate browser receipt reuse or qualification claim is introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"b02ee17886fe1cc3f969a5f06c16ebed844d763c867236081c0531f2d07cc015","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"9c1b2192fc810712e42a1a3ae77aedf4d538afbb03b079622814e2b3017d74da","disposition":"updated","rationale":"Update the assembly entrypoint process-watchdog statement from 60 to 90 seconds to match both current manifest registrations. Qualify preservation of newer originating-checkout hints as observations present when the snapshot is read; simultaneous publishers may lose hints under the deliberately retained last-writer-wins design. Candidate source capture, pure-leaf-only resumption and non-reusable browser outcomes remain unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
@@ -518,7 +516,7 @@ replace local base selection or final required coverage. Candidate browser runs 
 and update scheduling hints in the originating checkout’s ignored artifacts directory.
 Those hints carry failed IDs and durations across fresh captures, never reusable receipts.
 Returning hints compares the browser report identity with its pre-attempt pointer, including
-on resume, and preserves newer originating-checkout observations. Older frozen runners
+on resume, and preserves newer observations present when its snapshot is read; concurrent publishers may lose hints. Older frozen runners
 without per-check times use their suite start as a conservative freshness bound.
 The [candidate capture](../../scripts/candidate.mjs#implementation) retains the exact
 index, existing tracked/nonignored untracked bytes, modes and deletion state in a
@@ -570,7 +568,7 @@ unvalidated until regression replay and held-out review support explicit policy 
 An optional `--historical <browser-report.json>` estimates check work, not wall time.
 
 The two assembly UX entrypoints share [one scenario owner](../../scripts/assembly-ux-cases.mjs#implementation).
-Each retains the 60-second process watchdog and existing action deadlines; independent
+Each uses its manifest-owned 90-second process watchdog and existing action deadlines; independent
 artifact directories report setup, actions and cleanup separately. Watchdog exhaustion
 is a harness deadline failure, not a product frame-time measurement. Browser reports
 retain check kind and failure kind without inferring that host load caused a failure.

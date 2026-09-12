@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"99e587ea707c5af8948307de9e4e5cf8efb670013b3c821518139301983a53df","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"57587534efc197b52eb9ee274f921faa42c81b253c1eede16038c77ca39022d4","disposition":"still accurate","rationale":"Graphics preparation and fixture corrections add no learning content or permanent player-facing surface. Existing discovery, placement and teaching admission rules remain applicable; no new entry is required."} -->
+<!-- doc-review {"version":1,"fingerprint":"2a28fffcca92743ec7e57148e1652b949af558a38b76fc37ff698cf3ad9dd114","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"c8bb7040694e6bbb3718ef5ac782a46bf5c5bd466e9a3bff1ce574d4dce16579","disposition":"still accurate","rationale":"No entry: static part identification extends existing rendered hardware. Existing part help and sensor examples supply explanations; the change creates no lesson, challenge, experiment or permanent teaching panel."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"40149257a552d6e61fb17e5b31db91d5531dba2e0e52cd10cfbbe4201f9039d4","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"916f1a5a020c6479a47061b5dbda972b87406a935bec59d9dcc7259a0b44bfe3","disposition":"updated","rationale":"Replace the obsolete More parts gear entry point with the Motion catalog category and search, matching part-search.mjs gear12/gear24 and parts-browser.mjs. The merged stylesheet retains both catalog recording-strip clearance and feedback scrolling/actions. Existing feedback receipt/history inspection, corrected drafts and focus lifecycle text matches the implementation; browser checks remain evidence obligations, not proof of satisfaction."} -->
+<!-- doc-review {"version":1,"fingerprint":"6115ab8ec219ef168170056ba107615c42a11051e8f3cf17bc7a7eb233bdb383","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"7a60d5dfb9b29f8c4a135af58762edb47c8831773012106cf2bfb7a9a287aac4","disposition":"still accurate","rationale":"The merged stylesheet retains fc4b321 catalog/placement layout and feedback dialog scroll, focus and visible-action rules. Shared family finishes are inside existing meshes and previews and add no permanent surface, learning entry or live sensor reading. The corrected Motion-category gear entry point and independent feedback draft/receipt/history lifecycle remain present; source review does not claim fresh rendered or human evidence."} -->
 
 
 
