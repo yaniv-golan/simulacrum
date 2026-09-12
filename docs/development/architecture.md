@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"1b7585974feb35bb10fad47e0a7585ea6392f72b029f4e0abfc07e7f1f6a61c4","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"cee6bccd86268dcae796f23b51b05de5239eb0ca7dc70c63ac5015be43e88456","disposition":"still accurate","rationale":"The catalog receives only a placement-active predicate to defer Escape to the existing workshop cancellation owner. No authored-state authority, model import, or placement lifecycle ownership changes."} -->
+<!-- doc-review {"version":1,"fingerprint":"602b050abceeba34cb208bb8393ef288db2b10442d1c18bb4c79fcaca984c4fe","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"b2ffa1a9db1eb92e917f1ea60b169a4a647db9dbed91c4aa8807508e1f46621f","disposition":"still accurate","rationale":"Shared cosmetic materials and assembly previews remain presentation resources; catalog previews still route mutations through the existing command and placement owners."} -->
 
 
 
@@ -66,7 +66,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"78143f6a358677af21f10fb690e14c4efdcb0ba2842498b2a87edfac44ea714f","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"4f4405e5fae9639a151ea3bb40f52e107a9ff88ba4d329053b8262966ee6188f","disposition":"still accurate","rationale":"Search still owns only vocabulary and grouping. Multiword coverage and conservative typo fallback change ranking inside that owner; availability, help, geometry and history remain with the listed canonical owners."} -->
+<!-- doc-review {"version":1,"fingerprint":"d8450082efabffef367632ebc5c91e75f09e7c8a77bb31a5fafa04a4a6b20e62","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"b5c0f37ca15e7005277a13bc60621870f41623168d193f1447232893296dbd37","disposition":"still accurate","rationale":"Connection overlay beads were replaced by cosmetic socket hardware without changing canonical geometry, connection specifications or resource ownership. Search retains vocabulary-only authority."} -->
 
 
 

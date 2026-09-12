@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"0317bfc00de774593b8498e6c34ef85e6e813f8b2bee8d222d3576ed9bdc9fb8","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"a11dfc258823161ccc6ca2391d1f37ef3ddd153aaa1934022ad3b8fdebff35ea","disposition":"still accurate","rationale":"These fixes remove a duplicated permanent placement hint and correct catalog input and layout. Existing preview instructions and requested help retain teaching; no lesson, challenge or example entry is added."} -->
+<!-- doc-review {"version":1,"fingerprint":"235e84ed97ad7e199ab45381157edbec4e82073fe0c026cbf600a02c3efe1a7d","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"373df14ae46d66f50c6ed71d5351e4476279b3eae68ba235496e010f1f4f43fa","disposition":"still accurate","rationale":"The merge adds cosmetic finishes to the existing catalog and contextual help. It adds no teaching entry and preserves the existing extend-help disposition."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"1f8e7bb07ba086ba9df02871a49cf6a6cdd4489a5ddd1046f2ecc3428b279c85","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"391a64705426a827b55f3568efa208a73061726be05edc53fa04b7dac035d2f0","disposition":"updated","rationale":"Clarified active-placement Escape priority even with search focus and complete visible tiles at1280 by720. Compact header positioning and summary spacing reclaim room without hiding search, categories, favorite actions or recording."} -->
+<!-- doc-review {"version":1,"fingerprint":"6640875c6932647b44d0b2ffb4455a9ae3d1f5aa6acfbe337fee936fd424c18f","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8d46b962185ad282405380ff1ab80036cd96c266fc69d283ea9f3aafefb4601b","disposition":"updated","rationale":"Preserved catalog search, cancellation and narrow-layout lifecycle while documenting shared cosmetic finishes; the obsolete fixed 52-pixel catalog layout from main does not describe the new tile grid."} -->
 
 
 
@@ -158,6 +158,8 @@ surfaces; picking closes them and cancellation restores the origin. The existing
 window retains Overview and How to connect, with diagram links that reveal catalog
 parts without placing them. The cell-to-motor example precedes optional power branching.
 Learning admission: extend existing part help; no new lesson or example-browser entry.
+
+Catalogue, part-help and assembly previews use the workshop’s part meshes and cosmetic finishes; preview lighting shares the same reflection field. These shared finishes improve recognition and connection authoring without adding a persistent panel or a learning-content entry.
 
 
 The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic

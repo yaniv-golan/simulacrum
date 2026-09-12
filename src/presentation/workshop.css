@@ -2320,7 +2320,7 @@ body:has(.playtest-panel) .guide-feedback {
 .part-entry .part-card,
 .part-entry .more-part {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
+  grid-template-columns: 52px minmax(0, 1fr);
   width: 100%;
   min-width: 0;
   gap: 4px 8px;
@@ -2328,8 +2328,8 @@ body:has(.playtest-panel) .guide-feedback {
 }
 .part-entry .part-icon {
   grid-row: span 2;
-  width: 36px;
-  height: 36px;
+  width: 52px;
+  height: 52px;
 }
 .part-purpose {
   grid-column: 2;

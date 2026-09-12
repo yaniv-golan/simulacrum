@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"2b0f099ffdd0e471aa4095fe4661d803be768b49544acc73cf62df104ba14d95","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"5d534fd4a7e31de65ed9f14e5feb652eb7f85e92acdc995003e79b45c35e9acc","disposition":"still accurate","rationale":"Generated references now include catalog discovery owners and its registered check. Regeneration, per-section semantic review and mandatory verification remain the stated workflow."} -->
+<!-- doc-review {"version":1,"fingerprint":"f5f8db44610624b208bd4cd67dceba7d07ad02963c9266e297d58325cf01c8c9","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"66bf382abb61bff7928bb9e216da03031bef76df6ec3e6b38d57dd7c0a03c74f","disposition":"still accurate","rationale":"Generated discovery now includes the shared finish owner and catalog check; regeneration and individual stale-section review remain unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"423e8f6a7f6b0628bfabc5bf0e67043749225d2eca737d5ba1ef23dfdaaf0e61","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"3ea789d7547e23d34e38c885d84433f24a5712efd3a97e974493f33da3fc441b","disposition":"still accurate","rationale":"The catalog guarantee extends touch and shared mounting checks. Browser roots and imported scope dependencies still require explicit proposals and witnesses; no selection or evidence rule changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"3ac5102cd9ff8a7e723afae70be0607d2ced957a113002aac4218e676d76972a","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"b3b3f6d2f9f40405625cd121643ed75380f0eb7a0e4e4c4a4a96ad85ed9403c1","disposition":"still accurate","rationale":"The combined manifest retains catalog coverage and the surface-preview control; proposal review and witnessed scope application remain mandatory."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -444,7 +444,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"71fafb25e87b3a4ddc2cf4702d14ec0e7d06f26d8df6a1ca54265d39c07c8405","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"1339f015f22032db28d9bb6fba1885d4d15a0f7113dea8f86a278792bd6a5d50","disposition":"still accurate","rationale":"Catalog fixes change candidate source bytes but not capture, identity, scope readiness, or verification-tier admission. Completion still requires a fresh isolated local run."} -->
+<!-- doc-review {"version":1,"fingerprint":"53e3a9a660bff5f72a1346a8fca61e831424124c449084d188747e2c48f0e9c1","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"221332de6650a61f0813d89c397fd85cb1fb2b86013b1cc76d46423f383fc033","disposition":"still accurate","rationale":"Neither appearance nor catalog changes alter capture identity or verification tiers; combined source requires a fresh isolated merge candidate."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

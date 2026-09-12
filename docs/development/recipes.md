@@ -392,7 +392,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"6817b0de76a1a59ba9e4d7640751336fd603541ad559a28c3af35de2915f3e66","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"ee114a3c6cfc2b4ba471f7ff72381c779999e2b4341e4975413bf7563da8036f","disposition":"still accurate","rationale":"The changes affect diagnostic frame timing and verifier resource cleanup, not overlay geometry, wiring visibility, picking, coil buffers or completed transforms. All spring physical/render budgets and environment qualifications remain unchanged; timing attribution does not relax them."} -->
+<!-- doc-review {"version":1,"fingerprint":"3ca425b05015638a9ad5b620385a6cb4768110559e8c897696090c55127b77a2","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"11518e76292e149100a74a1fe95bbe224a693aac876995219af335edab3f5f50","disposition":"updated","rationale":"Assembly previews now resolve surface-bound fixed mounts with the shared model helper, preserving face offsets and authored rotations alongside catalogue ports; the added regression covers both poses and resource disposal."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -404,6 +404,21 @@ explicit required field. Normal electrical links use straight schematic lines; f
 geometry and exploded dashed styling retain their existing behavior. Gear meshes
 use dashed relationships without a solid supporting rod; their root-cylinder
 marks follow completed body transforms. Preserve the [gear rendering controls](../../test/gear-view.test.mjs).
+
+Electrical port hardware is part of the production part mesh, shared with catalogue and
+assembly previews. [Surface finishes](../../src/presentation/part-finish.mjs#source)
+provide cosmetic material response, subtle roughness grain and a disposable studio
+reflection field. Paint is nonmetallic surface treatment; exposed surfaces follow the
+authored material. These finishes do not change model material values. [Assembly
+thumbnails](../../src/presentation/assembly-thumbnails.mjs#implementation) compose the production connection and spring views at saved authored
+endpoints, including their geometry in framing and disposing temporary resources. Surface mounts
+use the same model surface resolver as the workshop, retaining saved face offsets and
+part rotations; named ports retain their catalogue positions. Socket collars keep authored endpoint positions;
+the housing surface supplies their outward visual normal. Nearest-port spacing bounds
+their size. One aperture represents one endpoint regardless of permitted wire count.
+Invisible original picking volumes preserve targeting; normal wires add no duplicate
+beads. Bright authoring cues also shrink to fit neighbouring electrical endpoints;
+exploded markers remain schematic interaction overlays.
 
 Use exact IDs from [connectionTestPaths](../../src/model/connection-test-paths.mjs#symbol=connectionTestPaths) for
 path highlights. The [Connect & test panel](../../src/presentation/connection-test.mjs#source)
