@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"3056eb1eed56600c7f48344c278b107980d42d9d06c999e989be6ef8fe334e6f","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"8d109567c31048706ee568289fbffe6c93f80a4630a83682a9f372574cc6fac5","disposition":"still accurate","rationale":"Existing optional gear and sensor content are both retained. Merge adds no lesson or permanent canvas surface; rendered automation remains separate from player understanding."} -->
+<!-- doc-review {"version":1,"fingerprint":"0b68166e876733204e8f7918d619711328a427d46ea150b4a7a7ca06e09b0a35","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"046cbc401335228297f6428d2a276e306db30ca8c40f9c745f60f3b1bf7cef5a","disposition":"still accurate","rationale":"The appearance change introduces no lesson or new connection concept; existing contextual port help suffices under the no-entry admission rule."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"cd4d17b4e7d4f8c45b22f09678440462906379ecdfe4b66d0152995b61a90b42","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"668d59f273cb585b687e3a36582256eaafbc19d23208faf82632994d85593816","disposition":"still accurate","rationale":"Combined workshop composition retains gear examples and controller/sensor inspectors in their existing regions. Historical versus live labels and Build repair routing remain intact."} -->
+<!-- doc-review {"version":1,"fingerprint":"35f915d9523ea863c9744129d3523628b3e40ee3a9417221d37dfb58830e5d0e","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"cfd39209098a75a5a0eab919401f20ca50e26669c7eb8dd69a684a414faae26b","disposition":"updated","rationale":"Documented the 52-pixel square catalogue slot in the existing column, shared production previews and unchanged help, focus and learning-content lifecycle."} -->
 
 
 
@@ -134,6 +134,15 @@ document and run actions in the header; parts in the left catalogue; separate ed
 and view groups at the workbench edge; selected properties and operations in the
 inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
+
+Catalogue images occupy a 52-pixel square within the existing parts column. Square
+production renders improve silhouette size without widening the region or reducing
+label text. The column retains scrolling, help buttons and keyboard focus. Catalogue,
+part-help and assembly previews use the workshop's part meshes and cosmetic finishes;
+preview lighting shares the same reflection field. These changes serve recognition
+and connection authoring, add no persistent panel, and displace no unique action.
+Learning-content disposition is **no entry**: existing connection rows and part help
+explain the same endpoints; a surface treatment introduces no new construction concept.
 
 The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic
 regulation shows measured and target total spring length, rather than extension from

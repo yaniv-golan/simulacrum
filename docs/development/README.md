@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"f219212b6167ddd67f4c04af87df4e622d2b28de9e237e8bd20134364ee84fc7","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"bd6302f211f4237345716bc8b5808ec713b7f56fa40e56b95aedebe0990a03f1","disposition":"still accurate","rationale":"The checker now reuses successful dependency closures within one inspection. Each requested root retains its own transitive dependencies and opaque inventory; fresh invocations and before/after source drift checks remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"699cec8dddcf6da2d671fb5c4eba65d5c74f2a5f6d97d057e487aeba4a4823e0","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"101696f911689ee4beabd7cddeebc56513a2ac50eb7f98deea20ce3c3ff9cfcf","disposition":"still accurate","rationale":"The generated reference now includes the socket owner and controls; regeneration, per-section review and source-bound completion workflow are unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"f9eedbe49e9ecac383fe93e3afb8e71b0bc41e41eb62a2b9f16fa756fed67ac8","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"166ebe4f007b5d1713c98efde2dfc06284bdb2875bb70a51d792ef138e53afdd","disposition":"updated","rationale":"Describe bounded processDiagnostics retained on success and failure receipts, distinguish callback observations from OS state, and preserve timeout and cleanup error semantics."} -->
+<!-- doc-review {"version":1,"fingerprint":"a1e396a9c585d28b16cce63d289027c3aae4841e71fc7c3f84c292a23484bdd9","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"49722a063f54d4af459def874d2d55265b2912f0b5dea1eaf34c69794d066d94","disposition":"still accurate","rationale":"The manifest adds appearance guarantees to the existing connection invariant; no check scheduling, opaque scope contract or browser execution metadata changed."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -444,7 +444,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"3475c022fc2408267825c2d114432c05dfc6d6d84aa3577c043aed63d4820b51","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"b2cea7138e4a0290a4a52510b94c7eab5f1410e62b867cb23aaa2a405698356a","disposition":"still accurate","rationale":"The subprocess runner adds bounded diagnostics only; candidate capture, drift rejection and completion tier selection are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"61d0fd04d5835592ff9dabd24164dc3b8b838830061c0cb836fd71020cec4ab2","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"f2e6aa616054e94d0596845d34dd20603cd13394d3a55d9856a4817a827e0a98","disposition":"still accurate","rationale":"Only connection invariant ownership and control pointers changed in the manifest; candidate capture, dependency installation and receipt admission are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

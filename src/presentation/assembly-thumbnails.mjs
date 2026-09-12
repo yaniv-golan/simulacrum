@@ -1,13 +1,65 @@
 import * as THREE from 'three';
+import { CATALOG } from '../model/catalog.mjs';
+import { createConnectionView } from './connection-view.mjs';
+import { connectionRenderSpecs } from './connection-render.mjs';
+import { createSpringView } from './spring-view.mjs';
+import { createFinishEnvironment } from './part-finish.mjs';
 
 const WIDTH = 320;
 const HEIGHT = 200;
 const CACHE_LIMIT = 24;
 
+/** Compose the same connection visuals as Build, from saved authored transforms. */
+export function createAssemblyConnections(group, definition) {
+  const parts = new Map(definition.parts.map((part) => [part.id, part]));
+  const resolveEndpoint = (endpoint) => {
+    const part = parts.get(endpoint.part);
+    const port = CATALOG[part?.type]?.ports.find((port) => port.id === endpoint.port);
+    return port
+      ? new THREE.Vector3(...port.position)
+          .applyQuaternion(new THREE.Quaternion(...part.rotation))
+          .add(new THREE.Vector3(...part.position))
+      : null;
+  };
+  const connections = definition.connections ?? [];
+  const wires = createConnectionView(group);
+  const springs = createSpringView(group);
+  wires.update(
+    connectionRenderSpecs({
+      connections,
+      resolveEndpoint,
+      wiringVisible: true,
+      exploded: false,
+      diagnostics: connections.map((edge) => ({ id: edge.id, reasonCode: 'OK' })),
+      revealedConnectionIds: new Set(),
+      testConnectionIds: new Set(),
+    }),
+  );
+  springs.update(
+    connections
+      .filter((edge) => edge.kind === 'spring')
+      .flatMap((edge) => {
+        const a = resolveEndpoint(edge.a),
+          b = resolveEndpoint(edge.b);
+        if (!a || !b) return [];
+        const forward = parts.get(edge.a.part).type === 'springGuide';
+        return [{ id: edge.id, a: forward ? a : b, b: forward ? b : a }];
+      }),
+  );
+  return {
+    readRenderedSpringEndpoints: springs.readRenderedEndpoints,
+    dispose() {
+      wires.dispose();
+      springs.dispose();
+    },
+  };
+}
+
 /** Render saved authored geometry without retaining a second live machine. */
 export function createAssemblyThumbnails({ createMesh, disposeMesh }) {
   const cache = new Map();
   let renderer;
+  let finishEnvironment;
   let disposed = false;
 
   function render(definition) {
@@ -17,14 +69,18 @@ export function createAssemblyThumbnails({ createMesh, disposeMesh }) {
       renderer.setSize(WIDTH, HEIGHT, false);
       renderer.setClearColor(0x000000, 0);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
+      finishEnvironment = createFinishEnvironment(renderer);
     }
     const scene = new THREE.Scene();
+    scene.environment = finishEnvironment.texture;
+    scene.environmentIntensity = 0.4;
     const group = new THREE.Group();
     scene.add(group);
     scene.add(new THREE.HemisphereLight(0xe5f5ff, 0x475565, 2));
     const light = new THREE.DirectionalLight(0xffffff, 3);
     light.position.set(2, 4, 3);
     scene.add(light);
+    let connections;
     try {
       for (const part of definition.parts) {
         const mesh = createMesh(part);
@@ -32,6 +88,7 @@ export function createAssemblyThumbnails({ createMesh, disposeMesh }) {
         mesh.position.fromArray(part.position);
         mesh.quaternion.fromArray(part.rotation);
       }
+      connections = createAssemblyConnections(group, definition);
       group.updateMatrixWorld(true);
       const bounds = new THREE.Box3().setFromObject(group);
       if (bounds.isEmpty()) throw new Error('This assembly has no preview geometry.');
@@ -53,6 +110,7 @@ export function createAssemblyThumbnails({ createMesh, disposeMesh }) {
       renderer.render(scene, camera);
       return renderer.domElement.toDataURL('image/png');
     } finally {
+      connections?.dispose();
       for (const mesh of [...group.children]) {
         group.remove(mesh);
         disposeMesh(mesh);
@@ -81,6 +139,7 @@ export function createAssemblyThumbnails({ createMesh, disposeMesh }) {
     dispose() {
       disposed = true;
       cache.clear();
+      finishEnvironment?.dispose();
       renderer?.dispose();
       renderer?.forceContextLoss();
       renderer = undefined;

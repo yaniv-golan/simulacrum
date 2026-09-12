@@ -15,6 +15,12 @@ import { ownsPartHelpInput } from './part-help-input.mjs';
 import { createAssemblyLibraryPanel } from './assembly-library.mjs';
 import { createAssemblyBrowser } from './assembly-browser.mjs';
 import { createAssemblyPlacementView } from './assembly-placement-view.mjs';
+import {
+  createSurfaceMaterial,
+  createPortHardware,
+  createFinishEnvironment,
+  portCueRadius,
+} from './part-finish.mjs';
 import { createAssemblyThumbnails } from './assembly-thumbnails.mjs';
 import { createDirectDrag } from './direct-drag.mjs';
 import { createConnectionTest } from './connection-test.mjs';
@@ -84,7 +90,6 @@ const labels = {
   signal: 'Signal',
 };
 
-const materialColor = { aluminium: 0x9aadb2, steel: 0x657d8b, rubber: 0x323d46 };
 const format = (value, digits = 1) => (Number.isFinite(value) ? value.toFixed(digits) : '—');
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -931,6 +936,9 @@ export function createWorkshopView(
   renderer.domElement.setAttribute('aria-label', 'Machine view');
   stage.append(renderer.domElement);
   const scene = new THREE.Scene();
+  const finishEnvironment = createFinishEnvironment(renderer);
+  scene.environment = finishEnvironment.texture;
+  scene.environmentIntensity = 0.4;
   const sensorView = createSensorView(scene);
   const springView = createSpringView(scene);
   scene.fog = new THREE.Fog(0x18252d, 8, 30);
@@ -3115,10 +3123,10 @@ export function createWorkshopView(
   }
   function finishPart(mesh, part, definition) {
     const [hx, hy, hz] = definition.halfExtents;
-    function detail(geometry, color, position) {
+    function detail(geometry, color, position, exposedMaterial) {
       const item = new THREE.Mesh(
         geometry,
-        new THREE.MeshStandardMaterial({ color, roughness: 0.45, metalness: 0.45 }),
+        createSurfaceMaterial(exposedMaterial, exposedMaterial ? {} : { paint: color }),
       );
       item.position.fromArray(position);
       mesh.add(item);
@@ -3146,7 +3154,6 @@ export function createWorkshopView(
       return label;
     }
     if (part.type === 'powerCell') {
-      mesh.material.color.setHex(0x294c60);
       // Paint the lid with one offset face; a second box shares the housing's
       // top and side planes and flickers as depth precision changes with the view.
       const lid = detail(new THREE.PlaneGeometry(2 * hx, 2 * hz).rotateX(-Math.PI / 2), 0xd3a450, [
@@ -3184,7 +3191,6 @@ export function createWorkshopView(
       faceLabel('−  CELL  +', hx * 1.6, hy * 1.2, [0, 0, hz + 0.0005]);
     }
     if (part.type === 'poweredMotor') {
-      mesh.material.color.setHex(0x80959f);
       for (let i = 0; i < 5; i++)
         detail(new THREE.BoxGeometry(0.007, hy * 1.2, 0.001), 0x24333c, [
           -hx * 0.7 + i * 0.013,
@@ -3209,7 +3215,6 @@ export function createWorkshopView(
       label.rotation.x = -Math.PI / 2;
     }
     if (part.type === 'poweredHinge') {
-      mesh.material.color.setHex(0x617d92);
       const label = faceLabel('SERVO', hx * 1.7, hy * 0.65, [0, 0, hz + 0.0006]);
       for (const sign of [-1, 1])
         detail(new THREE.BoxGeometry(0.006, hy * 1.5, 0.001), 0xe9b565, [
@@ -3225,7 +3230,6 @@ export function createWorkshopView(
       dial.material.side = THREE.DoubleSide;
     }
     if (part.type === 'wheelHub') {
-      mesh.material.color.setHex(0x83969c);
       detail(new THREE.BoxGeometry(hx * 1.5, 0.001, 0.006), 0xf3bc68, [0, hy + 0.0006, 0]);
       faceLabel('HUB', hx * 1.7, hy * 0.65, [0, 0, hz + 0.0006]);
     }
@@ -3284,16 +3288,15 @@ export function createWorkshopView(
         new THREE.CylinderGeometry(0.012, 0.012, shaft.length, 20).rotateZ(-Math.PI / 2),
         0xc5d3d8,
         shaft.position,
+        'steel',
       );
       shaftMesh.quaternion.fromArray(shaft.rotation);
     }
-    for (const port of CATALOG[part.type].ports)
-      if (['power', 'signal'].includes(port.kind))
-        detail(
-          new THREE.SphereGeometry(0.007, 12, 8),
-          port.kind === 'power' ? 0xf8bd68 : 0x6edbd2,
-          port.position,
-        );
+    const electricalPorts = CATALOG[part.type].ports.filter((port) =>
+      ['power', 'signal'].includes(port.kind),
+    );
+    for (const port of electricalPorts)
+      mesh.add(createPortHardware(port, electricalPorts, definition.halfExtents));
     const outline =
       partPrimitives(part)[0].kind === 'sphere'
         ? new THREE.Mesh(
@@ -3333,11 +3336,7 @@ export function createWorkshopView(
           : new THREE.BoxGeometry(...definition.halfExtents.map((value) => value * 2));
     const mesh = new THREE.Mesh(
       geometry,
-      new THREE.MeshStandardMaterial({
-        color: materialColor[material],
-        metalness: material === 'rubber' ? 0.05 : 0.45,
-        roughness: material === 'rubber' ? 0.95 : 0.45,
-      }),
+      createSurfaceMaterial(material, part.type === 'powerCell' ? { paint: 0x294c60 } : {}),
     );
     mesh.userData.partId = part.id;
     mesh.castShadow = true;
@@ -3387,27 +3386,24 @@ export function createWorkshopView(
   }
   function renderPaletteIcons() {
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setSize(128, 104);
+    renderer.setSize(160, 160);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const previewEnvironment = createFinishEnvironment(renderer);
     renderer.setClearColor(0, 0);
     for (const type of Object.keys(CATALOG)) {
       const part = createPart(type, 'thumbnail', [0, 0, 0]),
         mesh = createPartMesh(part),
         scene = new THREE.Scene();
-      scene.add(mesh, new THREE.HemisphereLight(0xffffff, 0x4f6470, 3));
-      const light = new THREE.DirectionalLight(0xffecd0, 3);
-      light.position.set(2, 3, 4);
+      scene.environment = previewEnvironment.texture;
+      scene.environmentIntensity = 0.4;
+      scene.add(mesh, new THREE.HemisphereLight(0xe5f5ff, 0x475565, 2));
+      const light = new THREE.DirectionalLight(0xffffff, 3);
+      light.position.set(2, 4, 3);
       scene.add(light);
       const bounds = new THREE.Box3().setFromObject(mesh),
-        size = bounds.getSize(new THREE.Vector3()).length() * 0.6,
+        size = bounds.getSize(new THREE.Vector3()).length() * 0.49,
         center = bounds.getCenter(new THREE.Vector3()),
-        camera = new THREE.OrthographicCamera(
-          (-size * 128) / 104,
-          (size * 128) / 104,
-          size,
-          -size,
-          0.01,
-          10,
-        );
+        camera = new THREE.OrthographicCamera(-size, size, size, -size, 0.01, 10);
       camera.position.copy(center).add(new THREE.Vector3(1.4, 0.9, 1.8));
       camera.lookAt(center);
       renderer.render(scene, camera);
@@ -3416,6 +3412,7 @@ export function createWorkshopView(
     }
     for (const img of left.querySelectorAll('[data-icon-type]'))
       img.src = partThumbnails.get(img.dataset.iconType);
+    previewEnvironment.dispose();
     renderer.dispose();
     renderer.forceContextLoss();
   }
@@ -3453,7 +3450,16 @@ export function createWorkshopView(
         )
           continue;
         const dot = new THREE.Mesh(
-          new THREE.SphereGeometry(0.012, 12, 8),
+          new THREE.SphereGeometry(
+            ['power', 'signal'].includes(port.kind)
+              ? portCueRadius(
+                  port,
+                  CATALOG[part.type].ports.filter((p) => ['power', 'signal'].includes(p.kind)),
+                )
+              : 0.012,
+            12,
+            8,
+          ),
           new THREE.MeshBasicMaterial({
             color: isSource ? 0xffc778 : 0x8cf5cf,
             depthTest: false,
@@ -4235,6 +4241,7 @@ export function createWorkshopView(
       for (const object of [portCues, ground, environmentGroup]) disposePart(object);
       keyLight.shadow.dispose();
       graphicsRenderer.dispose();
+      finishEnvironment.dispose();
       renderer.dispose();
       root.replaceChildren();
     },

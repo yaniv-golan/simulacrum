@@ -1290,7 +1290,7 @@
       "id": "connection-display-isolation",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking.",
+      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build.",
       "owners": [
         {
           "path": "src/presentation/connection-render.mjs",
@@ -1299,6 +1299,10 @@
         {
           "path": "src/presentation/connection-view.mjs",
           "anchor": "pickableObjects"
+        },
+        {
+          "path": "src/presentation/part-finish.mjs",
+          "anchor": "createPortHardware"
         }
       ],
       "checks": [
@@ -1317,6 +1321,26 @@
           {
             "path": "test/connection-render.test.mjs",
             "anchor": "hidden render resources neither intercept rays nor churn geometry and restore current endpoints"
+          },
+          {
+            "path": "test/connection-render.test.mjs",
+            "anchor": "ordinary electrical links do not cover authored sockets with duplicate endpoint beads"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "every electrical socket stays on its authored endpoint and fits its nearest connector clearance"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "dense authoring highlights remain separate without enlarging sparse markers"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "selectable finishes separate satin aluminium, steel and nonmetal rubber without material mutation"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "assembly previews include authored wires and spring coils and release their resources"
           }
         ]
       },
@@ -5479,7 +5503,7 @@
         }
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1589441063e58f3ee61e1f3327d2f2dace34a102695b5c33de3056bb42e16f23",
+      "consumerSourceHash": "a5a543023ec918de426bc94bd5238b99090a97add13f718e774843ad2e4a16c6",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -5853,7 +5877,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "90cf3eadef91203d7d72f4064cee9300beb14c647dfe98dd35e822a54815cb54"
+      "consumerSourceHash": "fdf5fc8d9042dd7aec203b8ab3e68bdbf83dd5128f386242ccc90d9dbe00e4cb"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -5884,7 +5908,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "90cf3eadef91203d7d72f4064cee9300beb14c647dfe98dd35e822a54815cb54"
+      "consumerSourceHash": "fdf5fc8d9042dd7aec203b8ab3e68bdbf83dd5128f386242ccc90d9dbe00e4cb"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",

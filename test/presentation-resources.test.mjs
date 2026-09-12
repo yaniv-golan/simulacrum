@@ -83,8 +83,8 @@ test('unchanged and moved connection endpoints retain GPU resources and match sc
   assert.equal(cable.material, material);
   assert.equal(disposals, 0);
   assert.deepEqual(
-    resource.group.children.slice(1).map((m) => m.position.toArray()),
-    spec.ends.map((p) => p.toArray()),
+    Array.from(cable.geometry.attributes.position.array),
+    spec.ends.flatMap((p) => p.toArray()),
   );
   view.update([{ ...spec, exploded: true }]);
   assert.equal(disposals, 1);
@@ -106,4 +106,125 @@ test('reordering authored items preserves output order without replacing resourc
   const original = [...cache.values.values()];
   cache.reconcile([b, a]);
   assert.deepEqual([...cache.values.values()], [original[1], original[0]]);
+});
+
+import {
+  materialFinish,
+  createPortHardware,
+  portCueRadius,
+} from '../src/presentation/part-finish.mjs';
+import { CATALOG, MATERIALS } from '../src/model/catalog.mjs';
+test('selectable finishes separate satin aluminium, steel and nonmetal rubber without material mutation', () => {
+  const before = JSON.stringify(MATERIALS);
+  const finishes = Object.fromEntries(
+    Object.keys(MATERIALS).map((key) => [key, materialFinish(key)]),
+  );
+  assert.ok(finishes.steel.roughness < finishes.aluminium.roughness);
+  assert.ok(finishes.steel.metalness > finishes.aluminium.metalness);
+  assert.equal(finishes.rubber.metalness, 0);
+  assert.ok(finishes.rubber.roughness > finishes.aluminium.roughness);
+  assert.equal(JSON.stringify(MATERIALS), before);
+});
+test('every electrical socket stays on its authored endpoint and fits its nearest connector clearance', () => {
+  for (const definition of Object.values(CATALOG)) {
+    const ports = definition.ports.filter((p) => ['power', 'signal'].includes(p.kind));
+    const before = JSON.stringify(ports);
+    for (const port of ports) {
+      const hardware = createPortHardware(port, ports, definition.primitives[0].halfExtents);
+      assert.deepEqual(hardware.position.toArray(), port.position);
+      assert.ok(hardware.children.some((child) => child.geometry?.type === 'RingGeometry'));
+      hardware.updateMatrixWorld(true);
+      const hit = hardware.children.find((child) => child.material?.visible === false);
+      assert.ok(hit, 'retain the previous invisible picking sphere');
+      assert.ok(
+        Math.abs(hit.getWorldQuaternion(new THREE.Quaternion()).w) > 1 - 1e-12,
+        'socket orientation must not rotate the original tessellated picking sphere',
+      );
+      const bounds = new THREE.Box3();
+      hardware.traverse((o) => {
+        if (o.isMesh && o.material.visible) bounds.union(new THREE.Box3().setFromObject(o));
+      });
+      const radius = bounds.getBoundingSphere(new THREE.Sphere()).radius;
+      for (const other of ports.filter((p) => p !== port)) {
+        const distance = new THREE.Vector3(...port.position).distanceTo(
+          new THREE.Vector3(...other.position),
+        );
+        assert.ok(2 * radius < distance, `${definition.type}/${port.id}: overlapping hardware`);
+      }
+      hardware.traverse((o) => {
+        o.geometry?.dispose();
+        o.material?.dispose();
+      });
+    }
+    assert.equal(JSON.stringify(ports), before);
+  }
+});
+
+test('dense authoring highlights remain separate without enlarging sparse markers', () => {
+  for (const definition of Object.values(CATALOG)) {
+    const ports = definition.ports.filter((p) => ['power', 'signal'].includes(p.kind));
+    for (const port of ports) {
+      const radius = portCueRadius(port, ports);
+      assert.ok(radius > 0 && radius <= 0.012);
+      for (const other of ports.filter((p) => p !== port)) {
+        const distance = new THREE.Vector3(...port.position).distanceTo(
+          new THREE.Vector3(...other.position),
+        );
+        assert.ok(
+          radius + portCueRadius(other, ports) < distance,
+          `${definition.type}/${port.id}: overlapping authoring cues`,
+        );
+      }
+    }
+  }
+  assert.equal(portCueRadius({ position: [0, 0, 0] }, []), 0.012);
+});
+
+test('assembly previews include authored wires and spring coils and release their resources', async () => {
+  const { createAssemblyConnections } = await import('../src/presentation/assembly-thumbnails.mjs');
+  const group = new THREE.Group();
+  const parts = [
+    { id: 'cell', type: 'powerCell', position: [1, 2, 3], rotation: [0, 0, 0, 1] },
+    { id: 'motor', type: 'poweredMotor', position: [-1, 2, 3], rotation: [0, 0, 0, 1] },
+    { id: 'guide', type: 'springGuide', position: [0, 0, 0], rotation: [0, 0, 0, 1] },
+    { id: 'rod', type: 'springCarriage', position: [0.3, 0, 0], rotation: [0, 0, 0, 1] },
+  ];
+  const endpoint = (part, kind) => ({
+    part: part.id,
+    port: CATALOG[part.type].ports.find((p) => p.kind === kind).id,
+  });
+  const definition = {
+    parts,
+    connections: [
+      { id: 'wire', kind: 'power', a: endpoint(parts[0], 'power'), b: endpoint(parts[1], 'power') },
+      {
+        id: 'coil',
+        kind: 'spring',
+        a: endpoint(parts[2], 'spring'),
+        b: endpoint(parts[3], 'spring'),
+      },
+    ],
+  };
+  const before = structuredClone(definition);
+  const view = createAssemblyConnections(group, definition);
+  const lines = [];
+  group.traverse((o) => {
+    if (o.isLine && !o.isLineSegments) lines.push(o);
+  });
+  assert.equal(lines.length, 1);
+  const expected = CATALOG.powerCell.ports
+    .find((p) => p.kind === 'power')
+    .position.map((v, i) => v + parts[0].position[i]);
+  assert.ok(
+    new THREE.Vector3()
+      .fromBufferAttribute(lines[0].geometry.attributes.position, 0)
+      .distanceTo(new THREE.Vector3(...expected)) < 1e-6,
+  );
+  assert.equal(view.readRenderedSpringEndpoints().length, 1);
+  assert.deepEqual(definition, before);
+  let released = 0;
+  group.traverse((o) => o.geometry?.addEventListener('dispose', () => released++));
+  view.dispose();
+  assert.ok(released > 0);
+  assert.equal(group.children.length, 0);
 });

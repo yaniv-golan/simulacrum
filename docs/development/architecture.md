@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"994d76c5df93f9aaa947fe5bbaf76c466f2307f77ba3cddcdd6d8e4b00b150e7","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"e0978abef2058b3affc6f5ced707501f1805ef553094c2dd32f73f28708f1176","disposition":"still accurate","rationale":"Session measures construction of the same completed frame and observation adds a diagnostic frameMs field. Command admission, phase ordering, immutable publication, camera/input owners and the separate measurement cursor remain as described."} -->
+<!-- doc-review {"version":1,"fingerprint":"dd4da758ca18edf587c6d91d4f6c8eab805b62192155a935ad2d968ecc9c3195","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"21ebc859ec2525be3bfaef517120894e03d1ea5d00c3b48a8ac2c50ad4f4b5cc","disposition":"still accurate","rationale":"The view now composes cosmetic surface textures and assembly connections; command routing, immutable observations and help input ownership remain unchanged. Preview resources still have bounded disposable lifetimes."} -->
 
 
 
@@ -66,7 +66,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"1ff977d850e368bfd5781db620e2236e1ec6d29e23f6990ab22f65b7226cc034","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"126844a8be4f418c264e6544e1f2b88d03eb06252f334b1bca4ad18a4e93994a","disposition":"still accurate","rationale":"The session/observation delta separates measured frame construction from publication without moving any geometry, graph, spring, contact, input or diagnostic policy owner in this table; no second policy implementation was introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"ccda4e552e7ad5b312013a73df7a272fd772a3ee6af2327abddd92f604307a6b","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"203c8144ca0c4838dd1489fb7991765c0dcd6e9774aad5e804944a29dd21fffc","disposition":"still accurate","rationale":"Normal electrical overlay beads are removed while connection specifications, resource ownership and canonical model geometry remain in the listed owners. Socket decoration does not alter geometry admission."} -->
 
 
 
