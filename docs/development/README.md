@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"381393b2c0a7d9a69f172092fdbd96876f854660f996f11816166c75d739220f","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"a20fefaf4a1516cc3f96b7a6d7929f457d7805e6b1aef8c0afbf05b83ad92044","disposition":"still accurate","rationale":"The combined manifest retains both actuator and surface-preview controls. Scope readers, exclusions, scheduling and mandatory witnesses are unchanged. Pending consumer-hash refresh still requires its isolated witness; no successful application is claimed."} -->
+<!-- doc-review {"version":1,"fingerprint":"c681e8a42a4d86e7e51bb582f74d32196f5f55fcf7f6b0f2cb3f5cc33ad7cd99","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"a33317e55ad15e980c1307f86ebcf45b4e0e6b2126f70cd16dcc2f16c2328a7f","disposition":"still accurate","rationale":"The combined manifest retains both actuator and surface-preview controls. Scope readers, exclusions, scheduling and mandatory witnesses are unchanged. Pending consumer-hash refresh still requires its isolated witness; no successful application is claimed. Main 132661a adds formatting and associated review metadata only; parsed integrated manifest equals the prior integration, so no policy or check selection is changed."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -444,7 +444,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"ee00af66f345d4a2bb10ca2560c37d7a7d8e13d8103670854d7ff7cc4d307987","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"4529577a3654980976cfc56bc4c5b52c37c32cabcad86254c7e6d272cbc1a5fd","disposition":"still accurate","rationale":"Actuator and surface-preview control registration changes no capture, dependency admission, resume or completion-tier policy. This integrated source still requires a fresh merge candidate with both branch deltas."} -->
+<!-- doc-review {"version":1,"fingerprint":"800e2e78f75cd8008b23198c7e75488270e5cc4cd9c65572950a525a21ffb05f","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"36c8b26ccd8f5b7bfefd21e6546b4ace8ffe88ce687ba53429003a5d131e6feb","disposition":"still accurate","rationale":"Actuator and surface-preview control registration changes no capture, dependency admission, resume or completion-tier policy. This integrated source still requires a fresh merge candidate with both branch deltas. Main 132661a adds formatting and associated review metadata only; parsed integrated manifest equals the prior integration, so no policy or check selection is changed."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
