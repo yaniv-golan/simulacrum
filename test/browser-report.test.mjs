@@ -138,6 +138,7 @@ test('progress is visible before completion and later attempts preserve earlier 
     {},
     async (report) => {
       assert.notEqual(report.runId, first.runId);
+      assert.deepEqual(report.previousFailures, ['fast']);
       writeFileSync(join(report.directory, 'failure.log'), 'later success');
     },
     dir,
@@ -159,7 +160,9 @@ test('actual suite separates canonical selection from priority execution', () =>
     .split('\n')
     .filter((s) => s.startsWith('PRIORITY '))
     .map((s) => JSON.parse(s.slice(9)));
-  assert.equal(rows.length, 2);
+  assert.equal(rows.length, 3);
+  assert.deepEqual(rows[2].order, [...rows[2].selected].reverse());
+  assert.equal(rows[2].report.priority.provenance, 'captured changed files');
   assert.deepEqual(rows[0].order, rows[0].selected);
   assert.deepEqual(rows[1].order, [...rows[1].selected].reverse());
   assert.deepEqual(
@@ -270,4 +273,59 @@ test('server cleanup survives timing publication failure and retains both causes
   assert.equal(rows[1].report.ok, false);
   assert.match(JSON.stringify(rows[1].report), /injected timing publication failure/);
   assert.match(JSON.stringify(rows[1].report), /injected server cleanup failure/);
+});
+
+test('scheduling history survives fresh report directories without reusing results', async (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'suite-history-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const historyPath = join(root, 'history.json');
+  await withBrowserReport(
+    'all',
+    { historyPath },
+    async (report) => {
+      report.runs.push(
+        { id: 'bad', ok: false, elapsedMs: 20 },
+        { id: 'good', ok: true, elapsedMs: 10 },
+      );
+    },
+    join(root, 'first'),
+  );
+  await withBrowserReport(
+    'all',
+    { historyPath },
+    async (report) => {
+      assert.deepEqual(report.previousFailures, ['bad']);
+      assert.equal(report.durations.good, 10);
+      assert.deepEqual(report.runs, []);
+      report.runs.push({ id: 'bad', ok: true, elapsedMs: 15 });
+    },
+    join(root, 'fresh-candidate'),
+  );
+  await withBrowserReport(
+    'all',
+    { historyPath },
+    async (report) => {
+      assert.deepEqual(report.previousFailures, []);
+      assert.equal(report.durations.good, 10);
+    },
+    join(root, 'third'),
+  );
+});
+
+test('actual suite allows four-worker probes and rejects completion-context overrides', () => {
+  const child = spawnSync(
+    process.execPath,
+    [join(repo, 'test/fixtures/browser-suite-cleanup.mjs')],
+    { encoding: 'utf8' },
+  );
+  assert.equal(child.status, 0, child.stderr);
+  const rows = child.stdout
+    .split('\n')
+    .filter((s) => s.startsWith('WORKERS '))
+    .map((s) => JSON.parse(s.slice(8)));
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].ok, true, JSON.stringify(rows[0]));
+  assert.equal(rows[1].ok, false);
+  assert.match(rows[1].failure, /explicit development probes/);
+  assert.deepEqual(rows[1].runs, []);
 });

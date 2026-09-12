@@ -2,7 +2,7 @@
 
 ## Choose a recipe
 
-<!-- doc-review {"version":1,"fingerprint":"652044e26de8559440eec34aedee0e64e8fbdcb95c35d81c62d1ee3f2c783958","dependencies":"docs/development/.reviews/recipes/choose-a-recipe.json","dependencyDigest":"e2bcbaa159fb30e0cf1c47abd066ce216e27ef975e6e3ea317f548163f7b3238","disposition":"still accurate","rationale":"The entrypoint still requires canonical owner discovery and public commands. Expanded release tests introduce no new production owner, layer or reset policy; Node setup and recipe selection remain unchanged. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
+<!-- doc-review {"version":1,"fingerprint":"50a3c278776d149f030eac847b606b484d5adbf6efa78f0544ad88ea19e259a1","dependencies":"docs/development/.reviews/recipes/choose-a-recipe.json","dependencyDigest":"177599667fab239062a46e1223298365ede99269c0b96b349f418d3393eb11be","disposition":"still accurate","rationale":"Coupler integration follows the same owner discovery, focused-test selection and public command admission. Rendering warmup and catalog placement retain their existing owners; the recipe does not grant new attachment, naming, reset or physics authority."} -->
 
 Use the [map](architecture.md#overview) to locate the owner, inspect its reverse consumers with
 `node scripts/navigate.mjs <symbol-or-path>`, then use focused tests. Admit changes
@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"c1e8db171455d26367bfebc8774ad418edbb6b5c0763ffe683c1f14f700630dc","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"519c89b7e3485352496e4ff4025f3ba108a56f53a409af1d32d10ea2c411304c","disposition":"updated","rationale":"Documented the designated release face, single attachment multiplicity and early rejection of two latch owners. Linked authoring tests and retained generated schema, material and compiler ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"1690eab91824e86990712073b06c5a92dd91cff8ad66ac39ce6a7d1be9a95c13","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"f51a42fed31da308ee9b8bdebfc4edec308ecda99ca83de8f5a93824640fe8fb","disposition":"still accurate","rationale":"The merged catalog and regenerated validator/type union retain both parts. Coupler single-latch ownership and ordinary actuator spring-carriage admission follow the existing compiler/material rules; no new schema owner or identity-derived physical property is introduced."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -64,7 +64,7 @@ material choices, conflict rejection and ordinary editing history.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"f5e4cb5013e81f60188b9e31f562a19188a87fc32fcac749b3bfc5ce287bc9f8","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"c4782aabb20417e30389ea197ca7a0c296057d27376303dabb3223185ce2caa0","disposition":"still accurate","rationale":"No new command is introduced. Coupler mounting, wiring, history and load pass through existing commands and model validation, including atomic rejection of conflicting latch faces. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
+<!-- doc-review {"version":1,"fingerprint":"8c2cd6bd48db300a4a287d940cbf5fe5ce027f111d4267ecd4c70b8a8ca611b2","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"cc539cf44216b3777578c66c3025d1bc121c921e27e06881004a77e8abbf3e93","disposition":"updated","rationale":"Catalog placement extends the existing place command with optional expectedCursor admission. Both parts still use the same whole-candidate parameter, connection and load transactions; stale placement rejects before mutation and no second command/history owner is added."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -79,7 +79,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"2c2253d00dc0a87171a5697e198cd9a3ae658b3a80bcc28bc80d6067c2655492","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"70440b3a43ffa7274110ef858c3a03e171e9971678f00aacc91d4408d04408b8","disposition":"still accurate","rationale":"Coupler uses existing palette, surface snap, connection controls and selection lifecycle. Its status and open attachment text update from completed telemetry without a new interaction owner or permanent panel. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
+<!-- doc-review {"version":1,"fingerprint":"3f64cc769462b06aa4cd2b92d9b5ec1cca6e093afe73624654a18ad9b166f46c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"991b83035e9397035153a24ae7bd72bcfb46c80cabb595a13744b43436a82cff","disposition":"updated","rationale":"Merged recipe now distinguishes canonical catalog eligibility from presentation search vocabulary. Coupler uses shared nonmutating catalog preview and Place part/Done admission; part-help focus, cancellation, surface placement and receiver controls retain their owners."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -128,7 +128,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"f96fc5b17e99b37390b16f3c35350dad1e945634a8bcc97088c3314bddbb5394","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"ec28a3b9e0ac509a5d109d682d60c1869208044d08f5b1107b6a7a01bccec7b3","disposition":"still accurate","rationale":"The selected latch status reads completed power rows and preserves reason codes for missing latch, blocked support and open state. It does not derive a physical conclusion from input intent or add diagnostic state ownership. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
+<!-- doc-review {"version":1,"fingerprint":"0ef35d74f3c059327ec171d26d36b1063545371fc107b0e3717300da27d2660b","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"bd4b50a0b51b418f4bfb37f944c152760236d50d2fd8e657bde398fd5ac7a9dc","disposition":"still accurate","rationale":"Coupler progress/blocking and linear travel/low-motion indications consume completed telemetry. Neither diagnostic rewrites authored state or infers intention from identity; motion measurements and controller history keep their existing owners."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -156,7 +156,9 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"806f0fde38cd1477a4365fd5ef1e3d02d1a70997ccc03a84268a030663beae68","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"b5a49a6169f9ab0bea9c06e5d3138e4f3a156e7a45fc153663751676077770d1","disposition":"updated","rationale":"Added explicit powered release phase order, topology response preview, native joint removal and checkpoint validation. Documented gear/spring support rejection, retained ideal wires and physical accounting/replay witnesses. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
+<!-- doc-review {"version":1,"fingerprint":"41a25922f7c2b0d912bdf4cd44200ae4ccbfcb395ec4c4c69f5272fcdbfef94a","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ccba0ac53d6f0a14055592ef2981c24743b6bc82ae16088c7c228ec8270caf12","disposition":"updated","rationale":"Retained both the release topology/restore guidance and linear generalized-mobility, power, stop-work and clock controls. Combined runtime probes verified releasing ballast and a rigid lock before linear allocation, shared coil/motor energy accounting, exact cross-clock restore and atomic inconsistent-open rejection."} -->
+
+
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -346,7 +348,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"16db68712431ead7e3b5c515ef5340d239a515a574d81bfaf3fb0126ec64df45","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"cf4e878e7f3d08fb721d0027f59cabccfc82687a936572e91a17430bdb68703d","disposition":"still accurate","rationale":"The coupler remains an ordinary part and surface connection. Copy, subassembly remapping, Save/Load and history retain existing authored graph semantics; released runtime state is not a new authored connection field."} -->
+<!-- doc-review {"version":1,"fingerprint":"1174f023f9a2961041c98abe78b5b969789b351cbbf6bc721a7828a762876caa","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"8e245cfc1ec20fd98ccf0baa1ed7e537a7c2bb2cfbd701a034986efb40e40df8","disposition":"still accurate","rationale":"Both features remain ordinary authored graph entries. Copy, capture, rotation, mirror, binding remapping and independent power wires retain the existing model owners; released runtime metadata is not copied into authored connectivity."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -439,7 +441,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"ed1f19d1ead9bb1f6824e1ad52db1ee94457b515df6ad372ca696f736d058665","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"2e034b497cca7edaacc22777e03979094fbcc4b0625a160f646005bf0e6cf45e","disposition":"updated","rationale":"The merged section retains appearance guidance for paint, previews, connection resources and disposal. Completed coupler state filters only the opened attachment before the same connection renderer; wires and retained mounts remain present."} -->
+<!-- doc-review {"version":1,"fingerprint":"38cfee0006d841ca0b459a32916c06cc8ef281fd668908c0fc37dd83181ce980","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"2f7a417b118a41b7a7a03f2f062c17cad027270472c4ef629a300fe220007ed7","disposition":"updated","rationale":"Retained current main batched thumbnail cleanup and renderer shader/shadow warmup, alongside linear rod endpoint ordering and opened-coupler filtering. Warmup meshes stay outside authored/readback maps; decoration supplies no physical support."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -458,7 +460,7 @@ provide cosmetic material response, subtle roughness grain and a disposable stud
 reflection field. Paint is nonmetallic surface treatment; exposed surfaces follow the
 authored material. These finishes do not change model material values. [Assembly
 thumbnails](../../src/presentation/assembly-thumbnails.mjs#implementation) compose the production connection and spring views at saved authored
-endpoints, including their geometry in framing and disposing temporary resources. Surface mounts
+endpoints, including their geometry in framing and disposing temporary resources. Palette thumbnails retain their temporary meshes through one synchronous batch so shared shader programs stay available; a `finally` block releases all meshes, the preview environment and the renderer. The main renderer also warms the catalog material and shadow variants once before authoring starts. Those bounded resources remain outside the authored mesh map and completed readback, leave the scene immediately, and are released with the renderer. Surface mounts
 use the same model surface resolver as the workshop, retaining saved face offsets and
 part rotations; named ports retain their catalogue positions. Powered linear connections use
 the retained straight-rod view with guide-to-carriage endpoint ordering in either saved

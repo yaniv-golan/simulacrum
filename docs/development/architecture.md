@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"82307225cf118a114ba961cae626015c240d21f9a7b981451ee1222f7ee97a99","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"ef86dcd69172ebabb810bddffb278b1f5ecf360b6628973f9b1f147c4f977e48","disposition":"still accurate","rationale":"Merged workshop view composes cosmetic appearance and filters only completed opened latch attachments. Catalog/compiler, power/session/native release and immutable observation ownership described here remain accurate; neither feature adds a new authority path."} -->
+<!-- doc-review {"version":1,"fingerprint":"f36e88ac51de4e434ed1b795f0094c755285670e2028bcbd0189bba201bcde00","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"6a5e5424093ccc64431aeb1526cf4def5c3d570ef3ed11995e667d8ec3630305","disposition":"updated","rationale":"Merged explanation retains numeric coupler topology and generalized linear drive ownership. Catalog search and placement now use presentation owners with ordinary cursor-guarded core admission; neither display nor search acquires physical authority."} -->
 
 
 
@@ -77,7 +77,7 @@ starting attachments. The preview copy never replaces the live plant or supplies
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"fbbe7c8810fced8afd576a462e75493138552eb13191ce241ca0c30a293cc63b","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"56f446dbb58cee7c659b83d47af5082242322106b807d166c25c7da0ac766819","disposition":"still accurate","rationale":"Retained model geometry and material admission remain canonical. Appearance finishes and socket decoration stay cosmetic; release topology is owned by the physics door with compiled numeric joints, not names or render geometry."} -->
+<!-- doc-review {"version":1,"fingerprint":"325e594b8060f3cceb5432eb062bc2853e59a2219bd1eb91c301b5b4e26bf27b","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"0b4c9b59d2be7784b6aeb614bea269e596b9615f8b0e79a989cf8643af02f849","disposition":"still accurate","rationale":"Both catalog additions retain canonical geometry, selected materials, compiler admission and completed observation ownership. Linear rod and coupler connection display remain cosmetic; authored connections and numeric physics topology supply mechanics."} -->
 
 
 
@@ -129,7 +129,7 @@ Ground contact and workshop motion are not Course qualification.
 
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"19d165d978ea49bc21f0e433f3d474359e9e3667005ccbf53f0bb3d458507e31","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"0fb03c288f55241d3fce612b9adfc02507b52f2da34ed4abfbc03ef8e954279b","disposition":"still accurate","rationale":"The coil is another shared electrical load driven by the existing receiver signal. Sensor snapshots and next-tick controller consumption are unchanged; no learning model or receiver arbitration path changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"4db271eb4f30c97428284a61af37857e1233401f0f169babb16edf57c2319d4d","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"60ca1b40c663cd54007e007a72ff35eb712cfa8068739678ea2d1bacec31fe9c","disposition":"still accurate","rationale":"The power solver now includes the linear motor alongside the release coil, while sensors retain previous-completed sampling, existing shared funding and receiver/controller arbitration. Learning and scripting ownership are unchanged."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

@@ -101,6 +101,9 @@ export async function runPartHelpCases(partition, evidence, browser) {
         await p.getByRole('button', { name: 'Expand help window', exact: true }).click();
         equal((await p.locator('.part-help').boundingBox()).width > moved.width, true);
         await p.getByRole('button', { name: 'Restore help window', exact: true }).click();
+        // The dragged floating window may cover the expanded catalog. Dismiss it
+        // through its ordinary control before choosing the next part.
+        await p.getByRole('button', { name: 'Close part help', exact: true }).click();
         await browseAllParts(p);
         await p.getByRole('button', { name: 'About Wheel Hub', exact: true }).click();
         await browseAllParts(p);

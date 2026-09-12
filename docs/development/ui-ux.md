@@ -24,7 +24,8 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"4feab388aed807cefc9926f35c78bc3cac0442c48f150488676a32b44e8a9392","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"8d7a754ce2743352aad36e7ea995a5ca33106218ddfd83c0e82ad19f847342ff","disposition":"still accurate","rationale":"Both branches admit no new learning entry: cosmetic appearance adds no concept and coupler controls are explained through existing receiver content and contextual part help. Merge adds no permanent teaching surface."} -->
+<!-- doc-review {"version":1,"fingerprint":"02ae0c4cb228393e069b0f458bed48161836f8bbf6d740a169d3273f56bcdb03","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"892e00e980b7504838df7feaa1322891df63443ec2e5dd5295aaabe7092c20b6","disposition":"still accurate","rationale":"The coupler and actuator add no lesson entry. Catalog integration extends requested help with links that reveal parts without placement; the existing admission policy and distinction between automation and human comprehension remain accurate."} -->
+
 
 Learn & examples is a curated collection of things players can learn to do.
 Adding a feature requires a teaching decision, not automatically a catalogue entry.
@@ -124,7 +125,9 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"8aabb6307963500f4a6645b262adbfa4bcc0cf0465df4d2934315fdfe0a4fe88","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"ebe0fb7052d008b793d89c37b524447b80a206035e0bcf375b80fd580b3bd4a2","disposition":"updated","rationale":"Merged prose preserves the 52-pixel catalogue slot, shared appearance previews and existing focus lifecycle alongside coupler selected status, help, Build recovery and actual Try again/interruption browser evidence. No additional panel is introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"6e1106fb5edbe2a7ae3b7bff6337cbfa8643b2614b4c235ee875db891b36cf20","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c9a32bb32cda4c17a496a0e77e4277f5f6f9973d161f0f59914cf942d9f6bcc4","disposition":"updated","rationale":"Retained the searchable catalog, cursor-guarded preview/placement, contextual coupler and actuator controls, and recording-aware spacing/scrolling. Both recording and placement remain reachable. The previously failed recording journeys are rerun on combined source; human acceptance remains separate."} -->
+
+
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
 document and run actions in the header; parts in the left catalogue; separate edit
@@ -155,8 +158,7 @@ surfaces; picking closes them and cancellation restores the origin. The existing
 window retains Overview and How to connect, with diagram links that reveal catalog
 parts without placing them. During recording, placement and expanded catalog controls
 reserve space above the feedback strip; taller placement details scroll within the
-available stage height, keeping placement and recording actions separately reachable.
-The cell-to-motor example precedes optional power branching.
+available stage height, keeping placement and recording actions separately reachable. The cell-to-motor example precedes optional power branching.
 Learning admission: extend existing part help; no new lesson or example-browser entry.
 
 Catalogue, part-help and assembly previews use the workshop’s part meshes and cosmetic finishes; preview lighting shares the same reflection field. These shared finishes improve recognition and connection authoring without adding a persistent panel or a learning-content entry.

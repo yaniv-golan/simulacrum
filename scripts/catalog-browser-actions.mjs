@@ -5,10 +5,11 @@ export async function browseAllParts(page) {
     await page.getByRole('button', { name: 'Expand parts', exact: true }).click();
   await page.getByRole('button', { name: 'All parts', exact: true }).click();
 }
-export async function placeCatalogPart(page, type, click = (target) => target.click()) {
+export async function placeCatalogPart(page, type, place = (target) => target.click()) {
   await browseAllParts(page);
-  await click(page.locator(`[data-part-type="${type}"]`));
-  await click(page.getByRole('button', { name: 'Place part', exact: true }));
+  // Previewing does not author a command or produce a placement metric.
+  await page.locator(`[data-part-type="${type}"]`).click();
+  await place(page.getByRole('button', { name: 'Place part', exact: true }));
   await page.getByRole('button', { name: 'Done', exact: true }).click();
 }
 

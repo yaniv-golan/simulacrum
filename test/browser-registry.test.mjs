@@ -23,6 +23,12 @@ test('multiple explicit checks are deduplicated; unknown IDs and malformed optio
   assert.equal(selectChecks([id, id]).length, 1);
   assert.throws(() => selectChecks([id, 'wrong']), /unknown/);
   assert.deepEqual(parseBrowserArgs(['--checks', id, '--workers', '2']).mode, [id]);
+  assert.equal(parseBrowserArgs(['--checks', id, '--fail-fast']).failFast, true);
+  assert.equal(parseBrowserArgs(['--checks', id, '--workers', '4']).workers, 4);
+  assert.throws(() => parseBrowserArgs(['all', '--workers', '4']), /explicit/);
+  assert.throws(() => parseBrowserArgs(['--checks', id, '--workers', '5']), /workers/);
+  assert.throws(() => parseBrowserArgs(['all', '--fail-fast']), /explicit/);
+  assert.throws(() => parseBrowserArgs(['--files', 'src/main.mjs', '--fail-fast']), /explicit/);
   assert.throws(() => parseBrowserArgs(['all', '--wat']), /unknown/);
   assert.throws(() => parseBrowserArgs(['--checks', id, '--files', 'src/main.mjs']), /conflict/);
 });

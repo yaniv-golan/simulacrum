@@ -35,7 +35,9 @@ export async function runAssemblyCases(partition, evidence, browser) {
     persist();
     const context = await browser.newContext({ viewport: { width: 1280, height: 720 } }),
       page = await context.newPage();
-    page.setDefaultTimeout(1800);
+    // Operation watchdog with headroom for cold rendered previews; scenario
+    // assertions and the partition process deadline remain independent.
+    page.setDefaultTimeout(5000);
     await context.tracing.start({ screenshots: true, snapshots: true });
     const observed = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
     const load = async (bp) => {

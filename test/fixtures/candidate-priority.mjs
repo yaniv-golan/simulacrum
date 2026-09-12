@@ -25,6 +25,15 @@ globalThis.candidateTransport = {
   async run(binary, args, options) {
     calls.push({ kind: 'process', binary, args, cwd: options.cwd });
     if (binary === 'npm') return { code: 0 };
+    const hint = JSON.parse(
+      readFileSync(join(options.cwd, 'artifacts/browser-suite/scheduling-history.json')),
+    ).runs;
+    if (hint[0]?.id !== 'verify-recording-browser' || hint[0]?.ok !== false)
+      throw Error('fresh candidate lost origin scheduling history');
+    writeFileSync(
+      join(options.cwd, 'artifacts/browser-suite/scheduling-history.json'),
+      JSON.stringify({ runs: [{ id: 'verify-recording-browser', ok: true, elapsedMs: 1 }] }),
+    );
     const forwarded = parseCompletionArgs(tier, args.slice(2));
     writeFileSync(
       join(options.cwd, `artifacts/verification-${tier}.json`),
@@ -64,6 +73,11 @@ registerHooks({
   },
 });
 process.chdir(root);
+mkdirSync('artifacts/browser-suite', { recursive: true });
+writeFileSync(
+  'artifacts/browser-suite/scheduling-history.json',
+  JSON.stringify({ runs: [{ id: 'verify-recording-browser', ok: false }] }),
+);
 process.argv = [
   process.execPath,
   `${repo}/scripts/verify-candidate.mjs`,
@@ -76,6 +90,10 @@ process.argv = [
 try {
   await import('../../scripts/verify-candidate.mjs');
   const report = JSON.parse(readFileSync('artifacts/verification-candidate.json', 'utf8'));
+  if (
+    JSON.parse(readFileSync('artifacts/browser-suite/scheduling-history.json')).runs[0]?.ok !== true
+  )
+    throw Error('candidate did not return scheduling hints');
   console.log('TRANSPORT ' + JSON.stringify({ calls, captured, report }));
 } finally {
   process.chdir(repo);

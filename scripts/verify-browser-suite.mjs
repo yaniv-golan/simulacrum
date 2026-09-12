@@ -1,3 +1,4 @@
+import { readBrowserHistory, writeBrowserHistory } from './browser-history.mjs';
 import { createTiming } from './verification-timing.mjs';
 import { affectedBrowserChecks, prioritizeBrowserChecks } from './browser-selection.mjs';
 import { assertLocalServerAccess } from './runtime-preflight.mjs';
@@ -15,7 +16,7 @@ import {
   createVerificationContext,
   initializeVerificationEnvironment,
 } from './verification-run.mjs';
-import { runCheckSequence, packParallelChecks } from './check-sequence.mjs';
+import { runCheckSequence, packParallelChecks, balanceParallelChecks } from './check-sequence.mjs';
 // Retain execution and cleanup causes without letting one hide the other.
 function errorMessages(error, seen = new Set()) {
   if (seen.has(error)) return [];
@@ -72,7 +73,21 @@ export async function withBrowserReport(
   const runId = randomUUID();
   const attempt = resolve(directory, 'runs', runId);
   mkdirSync(attempt, { recursive: true });
+  const historyPath = options.historyPath ?? `${directory}/scheduling-history.json`;
+  const history = readBrowserHistory(historyPath);
+  for (const [id, row] of readBrowserHistory(`${directory}/last-run.json`))
+    if (!history.has(id)) history.set(id, row);
+  const previousFailures = [...history.values()]
+    .filter((row) => row.ok === false)
+    .map((row) => row.id);
+  const durations = Object.fromEntries(
+    [...history.values()]
+      .filter((row) => row.ok && row.elapsedMs > 0)
+      .map((row) => [row.id, row.elapsedMs]),
+  );
   const report = {
+    previousFailures,
+    durations,
     runId,
     directory: attempt,
     reportPath: join(attempt, 'report.json'),
@@ -115,6 +130,11 @@ export async function withBrowserReport(
       }
     report.finishedAt = new Date().toISOString();
     try {
+      writeBrowserHistory(historyPath, report.runs);
+    } catch (error) {
+      report.historyWarning = `Scheduling hints could not be saved: ${error.message}`;
+    }
+    try {
       write();
     } catch (error) {
       report.ok = false;
@@ -150,6 +170,7 @@ async function executeBrowserSuite(
   mode,
   {
     reuseBuild = false,
+    failFast = false,
     context,
     workers = 2,
     selection = null,
@@ -159,19 +180,46 @@ async function executeBrowserSuite(
   report,
   publish,
 ) {
-  context ??= createVerificationContext();
+  if (failFast && (context || !Array.isArray(mode)))
+    throw Error('fail-fast is restricted to explicit development probes');
+  report.failFast = failFast;
   report.phase = 'selection';
-  if (![1, 2].includes(workers)) throw Error('browser workers must be 1 or 2');
+  if (![1, 2, 3, 4].includes(workers)) throw Error('browser workers must be 1 to 4');
+  if (workers > 2 && (context || !Array.isArray(mode)))
+    throw Error('more than two workers requires explicit development probes');
+  context ??= createVerificationContext();
   if (selection && JSON.stringify(selection.source) !== JSON.stringify(sourceIdentity()))
     throw Error('browser selection does not match current source');
   const checks = selectChecks(mode),
     source = sourceIdentity();
-  const priority = prioritizeBrowserChecks(checks, priorityFiles, priorityProvenance);
+  const priority = prioritizeBrowserChecks(
+    checks,
+    priorityFiles.length ? priorityFiles : (selection?.files ?? []),
+    priorityFiles.length ? priorityProvenance : 'captured changed files',
+  );
+  const failed = new Set(report.previousFailures ?? []);
+  priority.checks = [
+    ...priority.checks.filter((check) => failed.has(check.id)),
+    ...priority.checks.filter((check) => !failed.has(check.id)),
+  ];
+  priority.reasons.push(
+    ...checks
+      .filter((check) => failed.has(check.id))
+      .map((check) => ({
+        id: check.id,
+        reason: 'previous failed browser check; ordering hint only',
+      })),
+  );
   report.priority = { ...priority, checks: priority.checks.map((c) => c.id) };
   const priorityCount = new Set(priority.reasons.map((row) => row.id)).size;
-  const scheduled = packParallelChecks(priority.checks, { workers, priorityCount });
+  const packed = packParallelChecks(priority.checks, { workers, priorityCount });
+  const scheduled =
+    workers === 1 ? packed : balanceParallelChecks(packed, report.durations, priorityCount);
   report.schedule = {
-    policy: workers === 1 ? 'original order' : 'undersized admitted parallel packing',
+    policy:
+      workers === 1
+        ? 'original order'
+        : 'bounded parallel packing, longest historical checks first within runs',
     priorityCount,
     maxNewCombinedGroupSize: workers === 1 ? 0 : 4,
     checks: scheduled.map((check) => check.id),
@@ -329,9 +377,9 @@ async function executeBrowserSuite(
           if (sourceIdentity().workingTreeDigest !== source.workingTreeDigest)
             throw Error('source changed during browser verification');
         },
-        { workers },
+        { workers, failFast },
       );
-      const failures = outcomes.filter((outcome) => !outcome.ok);
+      const failures = outcomes.filter((outcome) => outcome.ok === false);
       if (failures.length)
         throw new AggregateError(
           failures.map((outcome) => outcome.error),

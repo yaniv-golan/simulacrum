@@ -92,7 +92,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"83e70567647aea12a5ed7d1373e8ed6a0882f988bc046d5d31b9e1ac2b6c60a0","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"7c51d01a3e8f3372c870d934ace9bd64c4970de29c7d4e7220c05e97aa76c9c3","disposition":"still accurate","rationale":"Recording seek reconstruction is faster but capture consent, release admission and qualification policies are unchanged. Local, merge and final commands described here retain the same distinct outcomes."} -->
+<!-- doc-review {"version":1,"fingerprint":"4416a042452d58d69a041af038938488dc5ab246cad36b46e019e85ac907b7b9","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"e92bfc68f5886be0c5cb64fd75e4c054bb2e9a085c2ae67aa98ce49f1a246320","disposition":"still accurate","rationale":"Exact-text AST reuse changes parsing cost only. Build/source identities still read inputs and resolve dependencies on each check; tier outcomes and runtime preflight remain unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"1571ddd02a7569e8fb2753e26d1191a06863dc325dc7777412961d8c185b82f7","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"a3762e50120062c6db50fe11945c55ca4600e7bcdfb6c58e3a56e52a89aaeb9c","disposition":"still accurate","rationale":"Merged generated discovery includes both appearance and release owners. Regeneration and individual source-bound review requirements remain unchanged; neither branch changes documentation tooling."} -->
+<!-- doc-review {"version":1,"fingerprint":"6c3878f3f60c9444c3bd83f8a582a3f990b30c93ac7a2702c8a55e067af7e82f","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"9946566ae1e488bcd50b47e9c433fc8066e2d6738d07a3ad03d6ffa5eeb6887e","disposition":"still accurate","rationale":"Generated discovery now includes both part families. Regeneration before individual source-bound documentation review remains the same; neither feature changes documentation tooling or stale-review admission."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"3585525cfcab892b943182db28f480bb07b19e9abd1e6dda77788e83022a8840","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"dd4bf464b5e05ff514a36e23a66d49e9614dfb30c81024e5ffea604760fef918","disposition":"still accurate","rationale":"Integrated main132661a applies formatting only to verification files and manifest. Parsed merged manifest is identical to3881006: all appearance and release controls, browser scopes and mandatory witness rules are retained unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"95c798c7a1aa774b42fbc2f5a8aa5f84510166163326131103d2907674c6cf92","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d7587fe09345b3085e2fe40010bea65098a8ba763398d6b0dbb82bc6f1b79617","disposition":"still accurate","rationale":"Retained current main scheduling history, bounded probes, syntax caching and exhaustive completion policy. Coupler adds its registered journey; audited scope updates change only fingerprints, without removing coverage or changing execution classifications."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -340,7 +340,9 @@ There is no cross-candidate receipt cache. Only explicitly audited pure unit lea
 may resume within the same frozen candidate; see isolated candidate completion.
 
 The [browser runner](../../scripts/verify-browser-suite.mjs#implementation) supports
-`--workers 1` and `--workers 2`. The default is two; use one for serial comparisons. Bounded serial/parallel probes
+`--workers 1` and `--workers 2` for completion. Explicit `--checks` development probes
+also accept three or four workers for measured comparisons; they cannot override completion
+concurrency. The default remains two; use one for serial comparisons. Bounded serial/parallel probes
 and the full required suite validate changes to this scheduling policy.
 Only checks declared `execution: parallel` in the manifest may overlap. Missing metadata,
 performance checks, recording, focus-sensitive checks and self-hosted environments run
@@ -356,17 +358,44 @@ With two workers, undersized parallel runs may be grouped across exclusive check
 Existing runs are never split, runs of four or more remain in place, and new combined
 groups contain at most four checks. The explicit priority prefix and relative exclusive
 order are preserved. The report records the resulting schedule separately; this does
-not admit additional checks to parallel execution.
+not admit additional checks to parallel execution. Successful historical durations order
+longer checks first within each admitted parallel run, after the priority prefix. This
+never moves work across an exclusive barrier; serial runs keep their original order.
 `--priority-files <repository-paths...>` on local/final/candidate completion uses
 positive static dependencies to order likely integration checks earlier. Required
 coverage stays unchanged; unknown associations retain ordinary ordering. Candidate
 reports retain the supplied paths and provenance; browser reports record execution
 order separately from canonical result order. For example:
 `npm run verify:candidate -- final --priority-files scripts/verify-recording-browser.mjs`.
-Exclusive checks still drain other work before starting.
+Without explicit priority paths, local/merge browser execution uses its captured changed
+files as ordering hints. Exclusive checks still drain other work before starting.
+
+Explicit development probes accept `--checks <ids...> --fail-fast`. The first failure
+stops new dispatches, drains started peers and marks remaining checks not evaluated.
+Completion contexts and broad suite selectors reject this option; their checks remain
+exhaustive. Failed IDs are ordering hints only and join touched checks at the front of
+the schedule. The [history helper](../../scripts/browser-history.mjs#implementation)
+retains outcomes and successful durations in `artifacts/browser-suite/scheduling-history.json`.
+The candidate wrapper copies hints from the originating checkout into the fresh clone
+and returns updated hints after execution; source capture and receipt admission remain independent. Unstarted checks retain
+their prior hints, and fresh successful execution clears a failure hint. Missing or
+malformed history never changes coverage; failure to save hints is reported as a warning.
+History supplies no passing receipt and never authorizes omission or resumption.
+
+The module graph retains a bounded, private JavaScript syntax cache keyed by exact
+source text. It still reads each input and resolves filesystem dependencies on every
+walk. Parsed comments are replayed for type imports; dependency graphs, file metadata
+and identity receipts are not cached. `cacheParsedSources: false` supports fresh-parser
+comparisons. This reduces repeated parsing without removing byte-based drift checks.
+
+CI completes structural prerequisites, then admits invariant-control and remaining unit
+files through one four-worker pool. The standalone structural gate still runs its invariant
+unit controls. The 180-second CI obligation is unchanged.
 
 The unit runner stops admitting queued tests when the iteration budget expires and
-reports their paths as `unexecuted`; they are not failed test executions. Receipt
+reports their paths as `unexecuted`; they are not failed test executions. A started child
+whose watchdog was shortened by the shared deadline is reported as `iteration-budget`,
+with its process diagnostics retained. An ordinary per-check watchdog remains a timeout. Receipt
 elapsed time includes admission identity validation. Process failures retain their
 code, signal, failure kind and subprocess elapsed time separately from receipt time.
 `processDiagnostics` retains relative monotonic event times for spawn, exit, close,
@@ -410,14 +439,16 @@ The [tier coordinator](../../scripts/verification-tiers.mjs#implementation) keep
 ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
-<!-- doc-review {"version":1,"fingerprint":"6fc504809ab145cfb07cfb219777b3f3ec5116339749964af39e9a5b84f2986a","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"fddfe273f1a5fcf26503304f337253308759ddc8628cd18e0c7caaffcc2a79b6","disposition":"still accurate","rationale":"Process event observation adds no workers, lock behavior or budget changes; shared window admission and source-bound evidence remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b94ed11d7a3c4fa1f0a2fa5176f202d5cbe6b06ca93382d3fcb2dcf548c2303b","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"3bf0c6916a33740b36c86045bbf4402a3cf94bcc062f64a5ac4794cbad8a2c64","disposition":"updated","rationale":"Documents the thirty-minute bounded wait, separate execution budgets, lack of FIFO guarantee and unchanged liveness/recovery rules."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
 on this host. Nested commands inherit the owning window. Completion/browser admission marks its
 canonical report non-green before runtime checks or lock waiting; failed admission
-replaces an older pass even when no child starts. Waiting is bounded to five
-minutes, separately from each check's unchanged execution budget. Queued work records
+replaces an older pass even when no child starts. Waiting is bounded to thirty
+minutes, separately from each check's execution budget. This bounded wait covers the
+measured completion duration; it is not a FIFO queue and does not guarantee admission
+under an unbounded stream of contenders. Queued work records
 competing owner identity and queue/run durations in `artifacts/verification-windows/`;
 host load averages provide context, not proof of a timing failure's cause. Read-only
 summary/explanation commands do not wait for the window. Raw direct script invocations
@@ -444,7 +475,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"67a12b925985d7b6fe825deb39a924e9cfd04a697afd55541dffc936f2283003","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"c7ce803ce9386630f210af1fd150be13c70a65704e5be23cc0894926994a0c9b","disposition":"still accurate","rationale":"The latest main integration changes whitespace and review metadata only. Candidate source capture, dependency validation, explicit two-branch scope and receipt identity admission remain unchanged; merge evidence will be refreshed against destination132661a."} -->
+<!-- doc-review {"version":1,"fingerprint":"f0d8eafbe805e00cf5cc8f5022a57de9d4e29dd3694ba77e1df3d6b5ce06476d","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"e735fdc93e9534ed01db6b819d890a3d495111f41954e44ec33813ce8f346f30","disposition":"still accurate","rationale":"Retained verified-main source capture, installed dependency admission and scheduling-hint copying. Hints provide no reusable receipts. The combined coupler source still requires its own isolated merge candidate with explicit incoming and destination branches."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
@@ -454,7 +485,9 @@ After `docs:prepare` and semantic review, run `npm run verify:candidate -- local
 (or `-- local --base <commit>`). For routine merge readiness use `-- merge --base <commit>`; for release/milestone qualification use `-- final`. All accept optional
 `--priority-files <repository-paths...>`; the wrapper validates and records these
 scheduling hints before capture and forwards them into the frozen tier. They never
-replace local base selection or final required coverage.
+replace local base selection or final required coverage. Candidate browser runs also read
+and update scheduling hints in the originating checkout’s ignored artifacts directory.
+Those hints carry failed IDs and durations across fresh captures, never reusable receipts.
 The [candidate capture](../../scripts/candidate.mjs#implementation) retains the exact
 index, existing tracked/nonignored untracked bytes, modes and deletion state in a
 fresh clone with its own dependencies. Unmerged indexes, symlinks, secret-like names

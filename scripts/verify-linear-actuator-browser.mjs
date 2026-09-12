@@ -22,6 +22,16 @@ try {
       await page.locator('.machine-picker > summary').click();
     await page.locator(`.part-list-item[data-part-id="${p.id}"]`).click();
   };
+  const position = async (part, values) => {
+    await select(part);
+    if (!(await page.locator('.placement-settings').evaluate((el) => el.open)))
+      await page.locator('.placement-settings > summary').click();
+    for (const [axis, value] of Object.entries(values)) {
+      const input = page.getByRole('spinbutton', { name: `Position ${axis}`, exact: true });
+      await input.fill(String(value));
+      await input.press('Tab');
+    }
+  };
   const place = async (name) => {
     await placeCatalogPartByName(page, name);
     return (await read()).metadata.blueprint.parts.at(-1);
@@ -58,6 +68,9 @@ try {
   await mount(platform, 'bottom', carriage, 'top');
   const cell = await place('Power Cell'),
     keys = await place('Command Receiver');
+  // Loose supplies must not sit in the platform travel path.
+  await position(cell, { Z: 1 });
+  await position(keys, { Z: 1.3 });
   await connect(cell, 'power', drive, 'power', 'Wire');
   await connect(keys, 'signal', drive, 'signal', 'Wire');
   await select(drive);
@@ -134,16 +147,7 @@ try {
   await page.getByRole('button', { name: 'New', exact: true }).click();
   if (await replace.isVisible()) await replace.click();
   assert.equal((await read()).metadata.blueprint.parts.length, 0);
-  const position = async (part, values) => {
-    await select(part);
-    if (!(await page.locator('.placement-settings').evaluate((el) => el.open)))
-      await page.locator('.placement-settings > summary').click();
-    for (const [axis, value] of Object.entries(values)) {
-      const input = page.getByRole('spinbutton', { name: `Position ${axis}`, exact: true });
-      await input.fill(String(value));
-      await input.press('Tab');
-    }
-  };
+
   const gateBase = await place('Chassis');
   await position(gateBase, { Y: 0.02 });
   if (!(await page.locator('.part-settings').evaluate((el) => el.open)))
@@ -159,6 +163,8 @@ try {
   await mount(gatePlate, 'bottom', gateCarriage, 'top');
   const gateCell = await place('Power Cell'),
     gateKeys = await place('Command Receiver');
+  await position(gateCell, { Z: 1 });
+  await position(gateKeys, { Z: 1.3 });
   await connect(gateCell, 'power', gateDrive, 'power', 'Wire');
   await connect(gateKeys, 'signal', gateDrive, 'signal', 'Wire');
   const initialGate = await read();

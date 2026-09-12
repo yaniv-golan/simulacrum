@@ -3582,31 +3582,38 @@ export function createWorkshopView(
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     const previewEnvironment = createFinishEnvironment(renderer);
     renderer.setClearColor(0, 0);
-    for (const type of Object.keys(CATALOG)) {
-      const part = createPart(type, 'thumbnail', [0, 0, 0]),
-        mesh = createPartMesh(part),
-        scene = new THREE.Scene();
-      scene.environment = previewEnvironment.texture;
-      scene.environmentIntensity = 0.4;
-      scene.add(mesh, new THREE.HemisphereLight(0xe5f5ff, 0x475565, 2));
-      const light = new THREE.DirectionalLight(0xffffff, 3);
-      light.position.set(2, 4, 3);
-      scene.add(light);
-      const bounds = new THREE.Box3().setFromObject(mesh),
-        size = bounds.getSize(new THREE.Vector3()).length() * 0.49,
-        center = bounds.getCenter(new THREE.Vector3()),
-        camera = new THREE.OrthographicCamera(-size, size, size, -size, 0.01, 10);
-      camera.position.copy(center).add(new THREE.Vector3(1.4, 0.9, 1.8));
-      camera.lookAt(center);
-      renderer.render(scene, camera);
-      partThumbnails.set(type, renderer.domElement.toDataURL());
-      disposePart(mesh);
+    const meshes = [];
+    try {
+      for (const type of Object.keys(CATALOG)) {
+        const part = createPart(type, 'thumbnail', [0, 0, 0]),
+          mesh = createPartMesh(part),
+          scene = new THREE.Scene();
+        meshes.push(mesh);
+        scene.environment = previewEnvironment.texture;
+        scene.environmentIntensity = 0.4;
+        scene.add(mesh, new THREE.HemisphereLight(0xe5f5ff, 0x475565, 2));
+        const light = new THREE.DirectionalLight(0xffffff, 3);
+        light.position.set(2, 4, 3);
+        scene.add(light);
+        const bounds = new THREE.Box3().setFromObject(mesh),
+          size = bounds.getSize(new THREE.Vector3()).length() * 0.49,
+          center = bounds.getCenter(new THREE.Vector3()),
+          camera = new THREE.OrthographicCamera(-size, size, size, -size, 0.01, 10);
+        camera.position.copy(center).add(new THREE.Vector3(1.4, 0.9, 1.8));
+        camera.lookAt(center);
+        renderer.render(scene, camera);
+        partThumbnails.set(type, renderer.domElement.toDataURL());
+      }
+      for (const img of left.querySelectorAll('[data-icon-type]'))
+        img.src = partThumbnails.get(img.dataset.iconType);
+    } finally {
+      // Keep shared shader programs alive across the batch instead of recompiling
+      // them after every thumbnail. All temporary resources leave with this batch.
+      for (const mesh of meshes) disposePart(mesh);
+      previewEnvironment.dispose();
+      renderer.dispose();
+      renderer.forceContextLoss();
     }
-    for (const img of left.querySelectorAll('[data-icon-type]'))
-      img.src = partThumbnails.get(img.dataset.iconType);
-    previewEnvironment.dispose();
-    renderer.dispose();
-    renderer.forceContextLoss();
   }
 
   function updatePortCues() {
@@ -4208,6 +4215,18 @@ export function createWorkshopView(
   window.addEventListener('blur', blur);
 
   renderPaletteIcons();
+  // Keep a bounded set of graphics resources for this renderer lifetime. Warm
+  // real material/shadow variants before the first authored placement; these
+  // meshes never enter the authored mesh map or completed snapshot readback.
+  const warmMeshes = Object.keys(CATALOG).map((type) =>
+    createPartMesh(createPart(type, 'graphics-warmup', [0, 0, 0])),
+  );
+  try {
+    scene.add(...warmMeshes);
+    renderer.render(scene, camera);
+  } finally {
+    scene.remove(...warmMeshes);
+  }
   let animation,
     previousFrameTime,
     previousFrameRendered = false;
@@ -4449,6 +4468,7 @@ export function createWorkshopView(
       sensorView.dispose();
       springView.dispose();
       partResources.dispose();
+      for (const mesh of warmMeshes) disposePart(mesh);
       connectionView.dispose();
       for (const object of [portCues, ground, environmentGroup]) disposePart(object);
       keyLight.shadow.dispose();
