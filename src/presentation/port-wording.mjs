@@ -40,7 +40,8 @@ export function portLabel(part, port) {
   }
   if (port.kind === 'signal')
     return port.direction === 'input' ? 'Control input' : 'Control output';
-  if (port.kind === 'spring') return 'Slide · spring';
+  if (port.kind === 'spring')
+    return part.type === 'linearActuator' ? 'Slide · powered' : 'Slide · spring';
   if (port.kind === 'fixed')
     return port.id === 'mount' ? 'Mount' : `Mount · ${port.id.replace(/([A-Z])/g, ' $1')}`;
   if (part.type === 'gripWheel') return 'Wheel axle';

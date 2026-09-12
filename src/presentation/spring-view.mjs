@@ -70,7 +70,8 @@ export function createSpringView(scene) {
       else axis.set(direction.z / transverse, 0, -direction.x / transverse);
       mesh.quaternion.setFromAxisAngle(axis, Math.atan2(transverse, direction.y));
       mesh.material.color.setHex(row.selected ? 0xffcf80 : 0xa6b7bf);
-      if (entry.length !== length) {
+      if (entry.length !== length || entry.linear !== !!row.linear) {
+        entry.linear = !!row.linear;
         const p = mesh.geometry.attributes.position.array;
         for (let i = 0; i <= samples; i++) {
           const t = i / samples,
@@ -84,6 +85,12 @@ export function createSpringView(scene) {
               a = wire * Math.cos(angle),
               b = wire * Math.sin(angle),
               o = (i * (sides + 1) + j) * 3;
+            if (entry.linear) {
+              p[o] = 0.012 * Math.cos(angle);
+              p[o + 1] = t * length;
+              p[o + 2] = 0.012 * Math.sin(angle);
+              continue;
+            }
             p[o] = radius * cos + a * cos - (b * sin * pitch) / norm;
             p[o + 1] = wire + t * (length - 2 * wire) + (b * radius) / norm;
             p[o + 2] = radius * sin + a * sin + (b * cos * pitch) / norm;
@@ -111,7 +118,7 @@ export function createSpringView(scene) {
   return {
     update,
     readRenderedEndpoints() {
-      return [...entries].map(([id, { mesh }]) => {
+      return [...entries].map(([id, { mesh, linear }]) => {
         const vertices = mesh.geometry.attributes.position;
         const ringCenter = (ring) => {
           const center = new THREE.Vector3();
@@ -124,8 +131,10 @@ export function createSpringView(scene) {
         };
         // Coil centreline ends sit one wire radius inside each attachment.
         // Recover attachment axes from actual rendered tube vertices, not cached inputs.
-        const a = ringCenter(0).sub(new THREE.Vector3(radius, wire, 0));
-        const b = ringCenter(samples).sub(new THREE.Vector3(radius, -wire, 0));
+        const a = ringCenter(0).sub(new THREE.Vector3(linear ? 0 : radius, linear ? 0 : wire, 0));
+        const b = ringCenter(samples).sub(
+          new THREE.Vector3(linear ? 0 : radius, linear ? 0 : -wire, 0),
+        );
         mesh.updateWorldMatrix(true, false);
         return {
           id,
