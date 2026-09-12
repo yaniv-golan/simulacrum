@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"9b8d36de2687eb391d0f61caf0fdd90c0eab0e5b8c11385535606f8c10eb0f15","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"eecfb4bd3528c3002767d86f01c8e3f50509f4d02be5ea855eeef7216d3ae676","disposition":"still accurate","rationale":"Generated reference now includes the linear browser check and invariant controls. Discovery, source closure, individual review and stale-evidence rejection procedure remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"89a21451330398ab99b3b70da796d113b2f22cd900e0a6b7afd32ee9ada815ea","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"b706461fa2098f8abecb69311e00107cd11e6509a94942bd3cefba684488da4c","disposition":"still accurate","rationale":"Regenerated references describe the combined appearance and actuator owners. The section still requires generation before individual source-bound review; no documentation workflow changed."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"22f8e388b85bbc9647738d1c1da3787c2821c8b7c652de25cfb9820bc3f4e221","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"64ec249391454a8371955b91517ecd894ccde02076d3da5f835b68306c627080","disposition":"still accurate","rationale":"The manifest adds two existing-path actuator controls. Browser identity, scope classification and conservative execution procedures are unchanged; the expanded existing browser check follows that same registered path. The reviewed consumer-only scope refresh passed isolated invariant checks; it adds no exclusion or altered witness requirement."} -->
+<!-- doc-review {"version":1,"fingerprint":"381393b2c0a7d9a69f172092fdbd96876f854660f996f11816166c75d739220f","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"a20fefaf4a1516cc3f96b7a6d7929f457d7805e6b1aef8c0afbf05b83ad92044","disposition":"still accurate","rationale":"The combined manifest retains both actuator and surface-preview controls. Scope readers, exclusions, scheduling and mandatory witnesses are unchanged. Pending consumer-hash refresh still requires its isolated witness; no successful application is claimed."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -444,7 +444,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"8057a618b0603e79415ef29fd5585899f3e1e31514bdc5df4dcef092713ed1ad","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"b69001ddc752576c1c5370dd187617e8e3c985d6c422ec7c11d1c5559e8f446a","disposition":"still accurate","rationale":"Additional actuator preservation and replay controls do not change candidate capture, integrity, dependency admission or completion tiers. Fresh isolated local verification remains required after these edits. The reviewed consumer-only scope refresh passed isolated invariant checks; it adds no exclusion or altered witness requirement."} -->
+<!-- doc-review {"version":1,"fingerprint":"ee00af66f345d4a2bb10ca2560c37d7a7d8e13d8103670854d7ff7cc4d307987","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"4529577a3654980976cfc56bc4c5b52c37c32cabcad86254c7e6d272cbc1a5fd","disposition":"still accurate","rationale":"Actuator and surface-preview control registration changes no capture, dependency admission, resume or completion-tier policy. This integrated source still requires a fresh merge candidate with both branch deltas."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

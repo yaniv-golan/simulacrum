@@ -414,7 +414,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"d14c0d5fd557a543abe36f36d504ab6ad4de0496b40d52b2ef63239a062e857f","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"dbdc887b12c2f819132a243fcf0fa741b06897203ba73bc4cae1eafc3ac07c94","disposition":"still accurate","rationale":"The existing retained sliding renderer now supports a distinct straight rod using completed endpoint inputs and the same disposal/readback owner; no new physical geometry or wiring authority. Passive coil buffers and gauges retain their behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"a0a24df5ad0c132169677f0b1b8488cf098daee7d5a83716efd3638c8d0e9f3e","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"861b9c2f59d95435a94bd030c1726a2fec4ba6da38e6507f7bdef05825e7d115","disposition":"updated","rationale":"Documented straight actuator rods and guide ordering in saved previews alongside the new surface resolver. The composer preserves authored offsets and rotations and disposes both retained renderers; passive coils and physical geometry are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -435,7 +435,9 @@ authored material. These finishes do not change model material values. [Assembly
 thumbnails](../../src/presentation/assembly-thumbnails.mjs#implementation) compose the production connection and spring views at saved authored
 endpoints, including their geometry in framing and disposing temporary resources. Surface mounts
 use the same model surface resolver as the workshop, retaining saved face offsets and
-part rotations; named ports retain their catalogue positions. Socket collars keep authored endpoint positions;
+part rotations; named ports retain their catalogue positions. Powered linear connections use
+the retained straight-rod view with guide-to-carriage endpoint ordering in either saved
+edge direction; passive springs keep their coil view. Socket collars keep authored endpoint positions;
 the housing surface supplies their outward visual normal. Nearest-port spacing bounds
 their size. One aperture represents one endpoint regardless of permitted wire count.
 Invisible original picking volumes preserve targeting; normal wires add no duplicate

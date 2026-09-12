@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"8c221ffc7541d581cb7759e5ad63a3352f5fdb2600d53c250d312940398a866e","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"f8cd998241fb94214a08495886f58d8a9ed54b72b4b532b6b8c29b2b706518b4","disposition":"still accurate","rationale":"No learning entry is admitted. Contextual actuator help and existing receiver instructions suffice for the bounded construction hypothesis; requested content and human-evidence rules remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"54375198c8f42c790e4029d57080ecba1419ead649bb77b3616a823f7767dcec","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"5462dc174f8bf4884d28d4af4605446bfea7b5ae946b892235d4d4edff7ef63d","disposition":"still accurate","rationale":"The merged view adds no learning activity. Actuator contextual help and existing control/wiring interactions remain the recorded no-entry decision; shared appearance changes recognition without introducing a teaching lifecycle."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"3c5da856f0b8d5e243216fa0f295d9e2581b81ad69cb3ad3e35cd58d88ce409a","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"a025dc5407da3d082c8aa54bae22031194fc6e133cf87e66d3536104a5082e35","disposition":"updated","rationale":"Documented selected actuator controls, next-attachment snap length, unpowered load fall, decorative rod and no-entry teaching decision; no persistent panel or new input lifecycle added."} -->
+<!-- doc-review {"version":1,"fingerprint":"c0c0e9e5c1bee5e4819f54a62eb40c1c45fab554fd6f0b52848183b8b89f4407","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"cb1290117ea35c0d32f98d97374ae1b69a51d10a3a4bebb7860ed15c3ded3f18","disposition":"still accurate","rationale":"The combined prose covers existing-column square images, shared preview finishes and selected actuator controls. Source preserves selection-scoped inspectors, requested help and assembly-preview lifetimes with no extra persistent panel or displaced unique action."} -->
 
 
 

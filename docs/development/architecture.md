@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"d9da8e6755f1978657aaec24df511e5902b31a12e089666df16cff770d04b26c","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"a61c1667ef50075906e66182bd3895fc2258d21bfbca8e86f42e22c0c692c612","disposition":"still accurate","rationale":"Linear settings and wiring use existing core commands and compiler admission. Generalized force methods remain inside the physics door and all display values come from completed snapshots; input and history owners are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"ea5177e07ebafe2ba001a3e09febff89e863c05a2e0a109cc3cc6de8239b936f","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"fdaff80191d79d525d139cab52a9a917be86fab5a7762b81ac97e74d84614031","disposition":"still accurate","rationale":"Integrated workshop composition adds shared appearance and retained previews. Input still submits ordinary core commands; authored admission, history and completed telemetry retain the listed owners."} -->
 
 
 
@@ -66,7 +66,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"2049b413c99e95c9b1c13ec181a8b99ba23c3620c3c937fa8e7ec39c93b677e6","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"064ceed90ff539a52b14b5019201333bfeaa74eee5795aae7db7121642697320","disposition":"updated","rationale":"Added powered sliding ownership, generalized force rows, linear units in legacy power ledger fields and explicit unpowered backdrive semantics alongside existing passive spring owners."} -->
+<!-- doc-review {"version":1,"fingerprint":"3f65cab51c9117b7b964bfb34c6b3ad76dc71708ce39b2b443ce802276b18d47","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"099188b93e9b72b2d983488163d71b7277af824b5db0fd29c35a4bc7bb19e479","disposition":"still accurate","rationale":"The integrated text retains linear force/current ownership, anchor reactions, zero passive stiffness and damping, legacy ledger units and power-loss backdrive. Shared connection decoration and finishes retain presentation ownership; no physical or command owner was moved by the appearance merge. Repairing the conflicting sidecar binds these existing explanations to the combined source."} -->
 
 
 
