@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"ab50fd514e28dad5394ba1eb3ac12c6cb0f0540f7c1b794715cf0471a1d2864f","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"367d3bb1fc5af7208a866591d65f61d18f3f5767b2e786762ccbc4818efd818e","disposition":"still accurate","rationale":"Faster thumbnails and recording-strip clearance improve existing discovery and placement. They add no lesson, example or persistent teaching surface; the existing learning admission rules still apply."} -->
+<!-- doc-review {"version":1,"fingerprint":"99e587ea707c5af8948307de9e4e5cf8efb670013b3c821518139301983a53df","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"57587534efc197b52eb9ee274f921faa42c81b253c1eede16038c77ca39022d4","disposition":"still accurate","rationale":"Graphics preparation and fixture corrections add no learning content or permanent player-facing surface. Existing discovery, placement and teaching admission rules remain applicable; no new entry is required."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"31967fbba66e0da39dabc32c6a104b8360044f45382b81408be693758d16948b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8e40b50ed459a1e9412484427b208e81125225c19eb2ea8037d946058e1179d0","disposition":"updated","rationale":"The section now records placement and expanded catalog clearance above recording controls, including scrolling within the available stage height. Current placement, cancellation, favorites and recording actions remain in their existing regions and lifecycle."} -->
+<!-- doc-review {"version":1,"fingerprint":"07eaffc0b24fa95becd1e4cdf4192fba4eddec4d406d185f609baca4e4590063","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"86f0e2661c0a40e8a9cf57d7aecebb70e4e057fe240f685782a34f1d132f5739","disposition":"still accurate","rationale":"Graphics warmup completes before authoring and adds no visible region or persistent authored object. Catalog preview and Place remain distinct actions, and recording-strip clearance remains as documented."} -->
 
 
 

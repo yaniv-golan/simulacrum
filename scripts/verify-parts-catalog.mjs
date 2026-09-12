@@ -190,9 +190,30 @@ try {
   // Right-click must never confirm a proposal.
   await page.mouse.click(tapX, tapY, { button: 'right' });
   equal((await read()).blueprint, placed.blueprint);
-  const touchCameraState = await page.evaluate(
-    () => window.workshopProbe.readInteractionState().camera,
-  );
+  // Measure the delivered touch and camera at admission: framing may still be
+  // easing, and browsers may quantize the requested touch coordinates.
+  await page.evaluate(() => {
+    const capture = (event) => {
+      if (event.pointerType !== 'touch') return;
+      window.removeEventListener('pointerup', capture, true);
+      const rect = document.querySelector('.stage canvas').getBoundingClientRect();
+      window.catalogTouch = {
+        x: event.clientX,
+        y: event.clientY,
+        bounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+        camera: window.workshopProbe.readInteractionState().camera,
+      };
+    };
+    window.addEventListener('pointerup', capture, true);
+  });
+  await page.touchscreen.tap(tapX, tapY);
+  const touch = await page.evaluate(() => {
+    const value = window.catalogTouch;
+    delete window.catalogTouch;
+    return value;
+  });
+  equal(Math.abs(touch.x - tapX) <= 1 && Math.abs(touch.y - tapY) <= 1, true);
+  const touchCameraState = touch.camera;
   camera.aspect = touchCameraState.aspect;
   camera.updateProjectionMatrix();
   camera.position.fromArray(touchCameraState.position);
@@ -201,8 +222,8 @@ try {
   const ray = new THREE.Raycaster();
   ray.setFromCamera(
     new THREE.Vector2(
-      ((tapX - bounds.x) / bounds.width) * 2 - 1,
-      1 - ((tapY - bounds.y) / bounds.height) * 2,
+      ((touch.x - touch.bounds.x) / touch.bounds.width) * 2 - 1,
+      1 - ((touch.y - touch.bounds.y) / touch.bounds.height) * 2,
     ),
     camera,
   );
@@ -211,7 +232,6 @@ try {
     new THREE.Plane(new THREE.Vector3(0, 1, 0), -height),
     new THREE.Vector3(),
   );
-  await page.touchscreen.tap(tapX, tapY);
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   const tapped = await read();
   equal(tapped.blueprint.parts.length, placed.blueprint.parts.length + 1);

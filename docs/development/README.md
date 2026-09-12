@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"3cdecf368527a055a2877f2cae5ae5b9c754ca17c14aad08ca43bf7e2715e60a","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"cd41ac2a6e57cc9980e34fb27ffe919aa1649942015a8d008b82066c81b8f6f6","disposition":"still accurate","rationale":"The text documents fresh-candidate scheduling hints, changed-file priority, duration balancing, exhaustive completion and explicit three/four-worker probes. The integrated registry retains all browser checks and original assembly parallel policy; operation watchdog calibration does not change scenario assertions. The final manifest change only applies repository formatting to the successfully witnessed scope data; parsed registry values are identical."} -->
+<!-- doc-review {"version":1,"fingerprint":"9f6c07f08d4fec47cbff57fae658f9cd4113a5db1671bc554d48f4798f806d5b","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"7057b5d1a4248833162d34fb3c6b5922baffed874004f7a52ff3ec57c8807ecd","disposition":"still accurate","rationale":"Manifest remains the execution authority. Starter and shared sensing are exclusive after observed sampling/contact failures; explicit worker probes do not override that admission. Required checks and exhaustive completion are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -475,7 +475,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"57f4e14db5087479f7009de9fae80be7afd5797148846d0ca87ea4d45ae4558c","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"5f1671adf0aa53fb99750b06b85e13107e8f4d1df48210bc4a98a82df6f7a32f","disposition":"still accurate","rationale":"The wrapper copies only ignored scheduling hints and returns updated hints after execution. Combined actuator/catalog source is captured with the same index, dependency digest, immutable receipts and origin-matching checks; no coverage or source-drift exemption is introduced. The final manifest change only applies repository formatting to the successfully witnessed scope data; parsed registry values are identical."} -->
+<!-- doc-review {"version":1,"fingerprint":"1860845273fd287700b5d24ad098cb1ba111d7ef26cc1bc49478f65fc0d38059","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"3477eb5e917d08f332e9b384362c355ffb0720cb7e02b8ea84b978ab2ede81ff","disposition":"still accurate","rationale":"The catalog helper now measures only authored Place and the refreshed manifest retains conservative scopes. Candidate capture, frozen identity, dependency installation and receipts are unchanged; previous failed source cannot supply completion."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

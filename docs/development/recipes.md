@@ -75,7 +75,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"b42d93cedcbddd90b1aee1e468e412b2fde2345faca47bce6461f9191b630098","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"cabc0a7762a41d5f29f717a3ad2b6f4e8fa62baa788d298b4e8790f80d4202ba","disposition":"still accurate","rationale":"Recording placement now reserves strip space and the help fixture dismisses its dragged overlay using Close. Existing placement commands, cancellation, input ownership, generated previews and rendered assertions remain the recipe owners and obligations."} -->
+<!-- doc-review {"version":1,"fingerprint":"f68b559ae600d028d8f0ae065ceb6cb06cbc0f7a7171a4b7eb28478b943eae94","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"a572abeb18ac5953f75a55dd8b57995d51c3d46c95fde15941ef082698016475","disposition":"still accurate","rationale":"The helper uses an ordinary preview click and measures the later Place click. The touch verifier records the actual delivered event and camera before analytically checking placement. Public actions, proposal lifecycle and mutation admission remain unchanged."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -155,7 +155,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"75b9a4b40eea7fed1f14df0b1111fcd7ec1439fe863c6505ec04b81780f84749","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"3e46b14d02da203a06e5367ebce13dbd356b4760655dc813b814a9b54eecbf2c","disposition":"still accurate","rationale":"No simulation or numerical owner is changed by the integration repairs. Main actuator impulse, passive-stop and energy-accounting behavior remains documented; rendering batch lifetimes and verification scheduling do not alter those physics contracts."} -->
+<!-- doc-review {"version":1,"fingerprint":"344fcae67a81b6666d529b6f5f2f2c91f421079d7c0c8b8cb61b2e3034b41845","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"78e5d1ca4d57e53003f19b1cccd95d32bdec79f2420125930a8e7f2d9e89b3a6","disposition":"still accurate","rationale":"Actuator numerical behavior is unchanged. Its browser fixture now uses ordinary position controls to move loose supplies away from the platform and gate travel paths, preserving underpower, extension, reverse, obstruction and transform assertions."} -->
 
 
 
@@ -321,7 +321,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"ce61b087f028adb0fd8f5dbd5d8df1b338471f05aeed6e90b619419265593448","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"db3ca19d9d7f27ac749664c8955eb8b2468a440823937fc60e4fabc6df3c90e6","disposition":"still accurate","rationale":"Saved definitions, endpoint mapping, independent instances, replacement protection and all library assertions remain unchanged. The harness operation watchdog and UX process deadline have calibrated headroom for rendered previews and final artifact cleanup; the library deadline and all scenario assertions remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"9372f80998264155bd6767579aa26fb970cc2f3e57d0762ce63de35b580a5e33","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"dea8d319261373c7d59d27b895eaaaacfbf7496b4ee19a638bc534cc55ce7c28","disposition":"still accurate","rationale":"The shared catalog helper still follows browse, preview, Place and Done in order. Only its optional measurement callback moves to the authored Place action; library definitions, independent instances, replacements and command validation are unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -414,7 +414,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"173611b9f340711b816d7c9958c7fe8ad08c27560fb5b48c44c8aba894e8e496","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"e0062f6ebcd8cb8148ac91f60bcf53a162055e4dfff91910688c22464727e83e","disposition":"updated","rationale":"Explains palette batch disposal in finally. The renderer retains the same meshes, framing and lighting; exact image comparisons preserve output while avoiding repeated shader compilation. Assembly preview ownership remains unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b1df331813bc713c3df3db4edd69899a2f26c1fce3ba1ac2ab110ba7daf35b1c","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"e0062f6ebcd8cb8148ac91f60bcf53a162055e4dfff91910688c22464727e83e","disposition":"updated","rationale":"The section now distinguishes palette batch cleanup from the main renderer lifetime warmup. Warmup resources leave the scene immediately, remain bounded by the catalog and outside authored readback, and are disposed with the renderer. Real F2 samples show first-placement latency below the unchanged threshold."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -433,7 +433,7 @@ provide cosmetic material response, subtle roughness grain and a disposable stud
 reflection field. Paint is nonmetallic surface treatment; exposed surfaces follow the
 authored material. These finishes do not change model material values. [Assembly
 thumbnails](../../src/presentation/assembly-thumbnails.mjs#implementation) compose the production connection and spring views at saved authored
-endpoints, including their geometry in framing and disposing temporary resources. Palette thumbnails retain their temporary meshes through one synchronous batch so shared shader programs stay available; a `finally` block releases all meshes, the preview environment and the renderer. Surface mounts
+endpoints, including their geometry in framing and disposing temporary resources. Palette thumbnails retain their temporary meshes through one synchronous batch so shared shader programs stay available; a `finally` block releases all meshes, the preview environment and the renderer. The main renderer also warms the catalog material and shadow variants once before authoring starts. Those bounded resources remain outside the authored mesh map and completed readback, leave the scene immediately, and are released with the renderer. Surface mounts
 use the same model surface resolver as the workshop, retaining saved face offsets and
 part rotations; named ports retain their catalogue positions. Powered linear connections use
 the retained straight-rod view with guide-to-carriage endpoint ordering in either saved

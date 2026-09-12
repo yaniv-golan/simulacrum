@@ -4163,6 +4163,18 @@ export function createWorkshopView(
   window.addEventListener('blur', blur);
 
   renderPaletteIcons();
+  // Keep a bounded set of graphics resources for this renderer lifetime. Warm
+  // real material/shadow variants before the first authored placement; these
+  // meshes never enter the authored mesh map or completed snapshot readback.
+  const warmMeshes = Object.keys(CATALOG).map((type) =>
+    createPartMesh(createPart(type, 'graphics-warmup', [0, 0, 0])),
+  );
+  try {
+    scene.add(...warmMeshes);
+    renderer.render(scene, camera);
+  } finally {
+    scene.remove(...warmMeshes);
+  }
   let animation,
     previousFrameTime,
     previousFrameRendered = false;
@@ -4404,6 +4416,7 @@ export function createWorkshopView(
       sensorView.dispose();
       springView.dispose();
       partResources.dispose();
+      for (const mesh of warmMeshes) disposePart(mesh);
       connectionView.dispose();
       for (const object of [portCues, ground, environmentGroup]) disposePart(object);
       keyLight.shadow.dispose();

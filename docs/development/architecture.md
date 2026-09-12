@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"d77587cea7b88afaa904e21970e1bd72497fb3ab909ec539c961286481b98a0c","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"2d72a10a1791b9776c2cbe1fb8ea4951ce663464dac65b6c92fcc76036e10ef3","disposition":"still accurate","rationale":"Rendering meshes live only through a thumbnail batch; recording offsets and the help Close action change presentation cost and reachability. Edits still pass through ordinary core admission, immutable observations and existing history; actuator physics ownership from main is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"5597be74b3651d83975c92723c9ff48760ef381a1d92f7164b2965dff2569c61","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"859a19f2577d80cc529662d4041a64af54c1d319f1d7f55cc168bbf2bd4d8d24","disposition":"still accurate","rationale":"Warmup meshes exist solely to prepare rendering resources, never in the authored mesh map or telemetry. Placement still passes through the same ordinary command and completed snapshot owners; no simulation state or authority is added."} -->
 
 
 
