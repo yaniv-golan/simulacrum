@@ -1,3 +1,8 @@
+import {
+  placeCatalogPart,
+  placeCatalogPartByName,
+  browseAllParts,
+} from './catalog-browser-actions.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
 /** Gear extension of the registered learning-example browser journey. */
@@ -16,8 +21,8 @@ export async function verifyGearJourney({ page, evidence, out }) {
   const built = (await read()).metadata.blueprint;
   evidence.assert('equal', [built.parts.filter((p) => p.type.startsWith('gear')).length, 2]);
   evidence.assert('equal', [built.connections.filter((c) => c.kind === 'gear').length, 1]);
-  await page.getByText('More parts', { exact: true }).click();
-  await page.getByRole('button', { name: '12T spur gear', exact: true }).click();
+  await browseAllParts(page);
+  await placeCatalogPart(page, 'gear12');
   evidence.assert('equal', [
     (await read()).metadata.blueprint.parts.length,
     built.parts.length + 1,
@@ -89,9 +94,9 @@ async function verifyGearConstruction({ page, evidence, out }) {
   };
   const place = async (name) => {
     const button = page.getByRole('button', { name, exact: true });
-    if (!(await button.isVisible())) await page.getByText('More parts', { exact: true }).click();
+    if (!(await button.isVisible())) await browseAllParts(page);
     const before = (await read()).metadata.blueprint.parts.length;
-    await button.click();
+    await placeCatalogPartByName(page, name);
     const parts = (await read()).metadata.blueprint.parts;
     evidence.assert('equal', [parts.length, before + 1]);
     return parts.at(-1);

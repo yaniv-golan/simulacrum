@@ -329,7 +329,16 @@ export function createSurfaceControls({
   }
   function start(
     part,
-    { replaceConnection, insertPart, drag = false, assemblyId, sourceRegion, targetEndpoint } = {},
+    {
+      replaceConnection,
+      insertPart,
+      drag = false,
+      assemblyId,
+      sourceRegion,
+      targetEndpoint,
+      onCommit,
+      onCancel,
+    } = {},
   ) {
     if (disposed || placement.read().kind === 'committing') return false;
     cancel(false);
@@ -337,6 +346,8 @@ export function createSurfaceControls({
     if (!value || !surfaceRegions(value).length) return false;
     state = {
       part,
+      onCommit,
+      onCancel,
       replaceConnection,
       insertPart,
       assemblyId,
@@ -655,7 +666,8 @@ export function createSurfaceControls({
     angle.value = String(Number(angle.value) + degrees);
     update();
   }
-  async function commit() {
+  async function commit(owned = false) {
+    if (!owned && state?.onCommit) return state.onCommit();
     const token = placement.commit();
     if (token === null || !state) return false;
     const committedState = state;
@@ -691,6 +703,7 @@ export function createSurfaceControls({
   }
   function cancel(notify = true) {
     if (!state) return;
+    if (notify && state.onCancel) return state.onCancel();
     if (placement.read().kind === 'committing') {
       if (notify) onMessage('Placement is being applied. Undo can reverse it once complete.');
       return;
@@ -978,6 +991,7 @@ export function createSurfaceControls({
     beginPointer,
     endPointer,
     commit,
+    commitProposal: () => commit(true),
     cancel,
     key,
     read,

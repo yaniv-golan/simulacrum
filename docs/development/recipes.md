@@ -109,8 +109,8 @@ text instructions in the How to connect tab of the nonmodal reference window.
 Keep the title bar and tabs available while content scrolls; clamp dragging and
 resizing to the viewport. Keep the small info control visually inside the placement
 card while retaining sibling buttons in the DOM. Restore a hidden opener by opening
-its containing disclosure before focusing it. Preserve palette eligibility through
-[part palette](../../src/presentation/part-palette.mjs); supported loaded types still
+its containing disclosure before focusing it. Preserve catalog eligibility through CATALOG and discovery vocabulary through
+[part search](../../src/presentation/part-search.mjs); supported loaded types still
 need [help content](../../src/presentation/part-help-content.mjs). Use the
 [part help browser check](../../scripts/verify-part-help-browser.mjs#implementation)
 for dragging, expand/restore, tabs, capture, authoring Escape, mode availability

@@ -9,7 +9,8 @@ import {
 } from './graphics-quality.mjs';
 import { movementScope } from './workbench-content.mjs';
 import { portLabel, portPurpose } from './port-wording.mjs';
-import { PRIMARY_PARTS, MORE_PARTS } from './part-palette.mjs';
+import { createPartsBrowser } from './parts-browser.mjs';
+import { createPartPlacement } from './part-placement.mjs';
 import { createPartHelp } from './part-help.mjs';
 import { ownsPartHelpInput } from './part-help-input.mjs';
 import { createAssemblyLibraryPanel } from './assembly-library.mjs';
@@ -198,6 +199,8 @@ export function createWorkshopView(
       directDrag.end(false);
       if (exploded || explodeAmount) setExploded(false, true);
       const result = await onCommand(command, { inputTime });
+      if (result?.ok && command.type === 'surface-mount' && command.insertPart)
+        partsBrowser.placed(command.insertPart.type);
       if (result?.ok === false) setMessage(explainFailure(result, frame?.metadata.blueprint));
       return result;
     } catch (error) {
@@ -221,15 +224,16 @@ export function createWorkshopView(
     card.draggable = true;
     card.dataset.placement = '';
     card.addEventListener('dragstart', (event) => {
-      if (frame?.metadata.mode !== 'build') {
+      if (frame?.metadata.mode !== 'build' || assemblies?.busy() || assemblyPlacement?.active()) {
         event.preventDefault();
         return;
       }
       partHelp.dismissTooltip();
-      cancelInteraction();
+      partPlacement.start(type, { focus: false });
       draggingType = type;
       event.dataTransfer.setData('text/plain', type);
       event.dataTransfer.effectAllowed = 'copy';
+      partsBrowser.dragStarted(type);
     });
     card.addEventListener('dragend', () => {
       if (draggingType !== null) cancelInteraction();
@@ -314,7 +318,9 @@ export function createWorkshopView(
   const partsHeading = element('h2', '', 'Parts');
   partsHeading.tabIndex = -1;
   left.append(partsHeading);
+  let partPlacement = null;
   const partHelp = createPartHelp({
+    reveal: (type) => partsBrowser.reveal(type),
     container: left,
     fallback: partsHeading,
     icon: partIcon,
@@ -327,14 +333,19 @@ export function createWorkshopView(
           editing?.isDragging(),
       ),
   });
-  const palette = element('div', 'palette');
-  for (const type of PRIMARY_PARTS) {
-    const card = button('', () => send({ type: 'place', partType: type }), 'part-card');
-    card.dataset.partType = type;
-    card.append(partIcon(type), element('span', '', CATALOG[type].name));
-    enablePaletteDrag(card, type);
-    palette.append(partHelp.entry(card, type));
-  }
+  const partsBrowser = createPartsBrowser({
+    icon: partIcon,
+    help: partHelp,
+    pick: (type) => partPlacement.start(type),
+    placementActive: () => partPlacement?.active() ?? false,
+    drag: enablePaletteDrag,
+    openAssemblies: () => savedLauncher.click(),
+    storage: {
+      getItem: (key) => window.localStorage.getItem(key),
+      setItem: (key, value) => window.localStorage.setItem(key, value),
+    },
+  });
+  const palette = partsBrowser.panel;
   let guideReceipt = null,
     guideVisual = null,
     guidePulseStarted = 0;
@@ -714,18 +725,12 @@ export function createWorkshopView(
   }
   left.append(palette);
   refreshGuide();
-  const more = element('details', 'more-parts');
-  more.append(element('summary', '', 'More parts'));
-  for (const type of MORE_PARTS) {
-    const item = button('', () => send({ type: 'place', partType: type }), 'more-part');
-    item.dataset.partType = type;
-    item.append(partIcon(type), element('span', '', CATALOG[type].name));
-    enablePaletteDrag(item, type);
-    more.append(partHelp.entry(item, type));
-  }
   left.append(
-    more,
-    element('p', 'palette-hint', 'Drag a part into the workbench, or click to add it.'),
+    element(
+      'p',
+      'palette-hint',
+      'Choose a part, then click a location to place it. Escape cancels.',
+    ),
   );
   const recordingPanel = element('details', 'recording-panel');
   recordingPanel.append(
@@ -771,7 +776,7 @@ export function createWorkshopView(
   empty.append(
     element('div', 'empty-glyph', '+'),
     element('h2', '', 'Your first machine starts here'),
-    element('p', '', 'Choose a part from the left.'),
+    element('p', '', 'Open Parts and choose a part.'),
   );
   const stage = element('div', 'stage'),
     buildId = element(
@@ -893,8 +898,7 @@ export function createWorkshopView(
     redo.disabled = busy || frame.metadata.mode !== 'build' || !frame.metadata.editing?.redoCount;
     for (const b of tools.querySelectorAll('[data-edit-tool]'))
       b.disabled = busy || !!assemblies.selected();
-    for (const b of left.querySelectorAll('[data-placement]'))
-      b.disabled = busy || frame.metadata.mode !== 'build';
+    partsBrowser.update(frame.metadata.mode, busy);
     refreshPartList();
     refreshSelectionVisuals();
     editing?.select(busy || assemblies.selected() ? null : selected);
@@ -1074,7 +1078,7 @@ export function createWorkshopView(
     orbit: controls,
     getPart: (id) => frame?.metadata.blueprint.parts.find((p) => p.id === id),
     getBlueprint: () => frame.metadata.blueprint,
-    getMode: () => (exploded ? 'inspection' : frame?.metadata.mode),
+    getMode: () => (exploded || partPlacement?.active() ? 'inspection' : frame?.metadata.mode),
     getMeshes: () => meshes,
     getViewportInsets: () => {
       const rect = stage.getBoundingClientRect();
@@ -1131,7 +1135,13 @@ export function createWorkshopView(
   renderer.domElement.addEventListener(
     'pointerdown',
     (event) => {
-      if (!surface.active() || surfacePointer !== null || event.button !== 0) return;
+      if (
+        partPlacement?.active() ||
+        !surface.active() ||
+        surfacePointer !== null ||
+        event.button !== 0
+      )
+        return;
       if (!surface.beginPointer(event)) return;
       surfacePointer = event.pointerId;
       controls.enabled = false;
@@ -1521,7 +1531,8 @@ export function createWorkshopView(
   const raycaster = new THREE.Raycaster(),
     pointer = new THREE.Vector2();
   raycaster.params.Line.threshold = 0.012;
-  let pointerStart = null;
+  let pointerStart = null,
+    catalogPointer = null;
   function refreshSelectionVisuals() {
     motionReadout.selectBody(selected, getAssemblyFrame?.() ?? frame);
     const edge = frame?.metadata.blueprint.connections.find((c) => c.id === tracedConnection);
@@ -1648,9 +1659,36 @@ export function createWorkshopView(
     refreshAssemblyState();
   }
   const down = (event) => {
-    pointerStart = [event.clientX, event.clientY];
+    pointerStart = event.button === 0 ? [event.clientX, event.clientY] : null;
+    if (partPlacement?.active() && event.button === 0) {
+      catalogPointer = event.pointerId;
+      controls.enabled = false;
+      renderer.domElement.setPointerCapture(event.pointerId);
+      event.stopImmediatePropagation();
+    }
   };
   const up = (event) => {
+    if (partPlacement?.active()) {
+      if (event.button !== 0) return;
+      event.stopImmediatePropagation();
+      catalogPointer = null;
+      controls.enabled = true;
+      if (renderer.domElement.hasPointerCapture(event.pointerId))
+        renderer.domElement.releasePointerCapture(event.pointerId);
+      if (!droppedPosition(event, partPlacement.type())) {
+        partPlacement.cancel();
+        return;
+      }
+      if (
+        event.button === 0 &&
+        pointerStart &&
+        Math.hypot(event.clientX - pointerStart[0], event.clientY - pointerStart[1]) <= 5
+      ) {
+        pointCatalogPart(event);
+        partPlacement.commit();
+      }
+      return;
+    }
     if (assemblyPlacement?.active()) {
       if (
         pointerStart &&
@@ -1700,8 +1738,8 @@ export function createWorkshopView(
     const hit = raycaster.intersectObjects([...meshes.values()]).find((hit) => hit.object.isMesh);
     select(hit?.object.userData.partId ?? null);
   };
-  renderer.domElement.addEventListener('pointerdown', down);
-  renderer.domElement.addEventListener('pointerup', up);
+  renderer.domElement.addEventListener('pointerdown', down, true);
+  renderer.domElement.addEventListener('pointerup', up, true);
   const directDrag = createDirectDrag({
     renderer,
     camera,
@@ -1711,6 +1749,7 @@ export function createWorkshopView(
     getFrame: () => frame,
     getMeshes: () => meshes,
     canStart: (event) =>
+      !partPlacement?.active() &&
       !assemblies?.busy() &&
       !assemblies?.selected() &&
       !assemblyPlacement?.active() &&
@@ -1740,7 +1779,13 @@ export function createWorkshopView(
       renderer.domElement.releasePointerCapture(id);
     controls.enabled = true;
   }
-  function cancelInteraction() {
+  function cancelInteraction({ restoreBrowser = true } = {}) {
+    const pointerId = catalogPointer;
+    catalogPointer = null;
+    if (pointerId !== null && renderer.domElement.hasPointerCapture(pointerId))
+      renderer.domElement.releasePointerCapture(pointerId);
+    partPlacement?.cancel({ restoreBrowser });
+    if (draggingType && restoreBrowser) partsBrowser.cancelled(draggingType);
     invalidateScene();
     directDrag.end(false);
     releaseSurfacePointer();
@@ -1760,10 +1805,11 @@ export function createWorkshopView(
   }
   renderer.domElement.addEventListener('pointercancel', cancelInteraction);
   renderer.domElement.addEventListener('lostpointercapture', () => {
-    if (surfacePointer !== null || directDrag.active()) cancelInteraction();
+    if (surfacePointer !== null || directDrag.active() || catalogPointer !== null)
+      cancelInteraction();
   });
 
-  function droppedPosition(event) {
+  function droppedPosition(event, type = draggingType) {
     const rect = renderer.domElement.getBoundingClientRect();
     if (
       event.clientX < rect.left ||
@@ -1772,7 +1818,7 @@ export function createWorkshopView(
       event.clientY > rect.bottom
     )
       return null;
-    const h = CATALOG[draggingType]?.primitives[0].halfExtents;
+    const h = CATALOG[type]?.primitives[0].halfExtents;
     if (!h) return null;
     pointer.set(
       ((event.clientX - rect.left) / rect.width) * 2 - 1,
@@ -1786,63 +1832,74 @@ export function createWorkshopView(
     if (!point) return null;
     return [Math.round(point.x / 0.025) * 0.025, h[1], Math.round(point.z / 0.025) * 0.025];
   }
+  partPlacement = createPartPlacement({
+    getFrame: () => frame,
+    getCursor,
+    preview: (part, valid) => {
+      editing.showPreview([part], { color: valid ? 0x8cf5cf : 0xff836f });
+      invalidateScene();
+    },
+    clear: () => {
+      editing.clearPreview();
+      surface.cancel(false);
+      invalidateScene();
+    },
+    surface: { read: () => surface.read(), commit: () => surface.commitProposal() },
+    send,
+    before: () => cancelInteraction({ restoreBrowser: false }),
+    cancelled: (type) => partsBrowser.cancelled(type),
+    finished: () => renderer.domElement.focus(),
+    placed: (type) => partsBrowser.placed(type),
+  });
+  renderer.domElement.tabIndex = 0;
+  stage.append(partPlacement.panel);
   let surfaceDropSequence = 0;
-  renderer.domElement.addEventListener('dragover', (event) => {
-    if (!draggingType || frame?.metadata.mode !== 'build') return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
+  function pointCatalogPart(event) {
+    if (!partPlacement.active() || partPlacement.pending()) return;
     if (surface.enabled()) {
       if (!surface.active()) {
         let id;
         do {
           id = `dropped-${++surfaceDropSequence}`;
         } while (frame.metadata.blueprint.parts.some((p) => p.id === id));
-        surface.start(id, { insertPart: createPart(draggingType, id, [0, 0, 0]), drag: true });
+        surface.start(id, {
+          insertPart: createPart(partPlacement.type(), id, [0, 0, 0]),
+          onCommit: () => partPlacement.commit(),
+          onCancel: () => partPlacement.cancel(),
+        });
         right.append(surface.panel);
       }
       if (surface.point(event, { lock: false })) {
-        showPlacementCue(
-          event,
-          surface.read().valid
-            ? surface.read().attach
-              ? 'Release to attach to surface'
-              : 'Release to position · no attachment'
-            : 'Placement blocked · check the mounting panel',
-        );
+        editing.clearPreview();
+        partPlacement.mounting();
         return;
       }
     }
-    showPlacementCue(event, 'Release to place · 2.5 cm grid');
-    const position = droppedPosition(event);
-    if (position) {
-      const part = createPart(draggingType, 'placement-preview', position);
-      const overlap = findPlacementOverlap([...frame.metadata.blueprint.parts, part]);
-      editing.showPreview([part], { color: overlap ? 0xff836f : 0x8cf5cf });
-      if (overlap) showPlacementCue(event, 'Placement overlaps a part · Move clear');
-    }
+    surface.cancel(false);
+    const position = droppedPosition(event, partPlacement.type());
+    if (position) partPlacement.move(position);
+  }
+  renderer.domElement.addEventListener('pointermove', pointCatalogPart);
+  renderer.domElement.addEventListener('dragover', (event) => {
+    if (!draggingType || frame?.metadata.mode !== 'build') return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    pointCatalogPart(event);
+    showPlacementCue(
+      event,
+      surface.read()?.target ? 'Release to place on surface' : 'Release to place · 2.5 cm grid',
+    );
   });
   renderer.domElement.addEventListener('dragleave', () => {
     placementCue.hidden = true;
-    editing.clearPreview();
   });
   renderer.domElement.addEventListener('drop', async (event) => {
     if (!draggingType || frame?.metadata.mode !== 'build') return;
     event.preventDefault();
-    const position = droppedPosition(event),
-      partType = draggingType;
     draggingType = null;
     placementCue.hidden = true;
-    editing.clearPreview();
-    if (surface.active()) surface.point(event, { lock: false });
-    if (surface.read()?.target) {
-      await surface.commit();
-      return;
-    }
-    surface.cancel(false);
-    if (position) {
-      await send({ type: 'place', partType, position });
-      setMessage('Part placed. Use Snap to surface to mount it, or connect its sockets.');
-    }
+    pointCatalogPart(event);
+    await partPlacement.commit();
   });
   function setMessage(text) {
     message.textContent = String(text);
@@ -3897,10 +3954,8 @@ export function createWorkshopView(
     else if (previousMode !== 'build')
       hint.textContent =
         'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear';
-    for (const b of palette.querySelectorAll('[data-placement]'))
-      b.disabled = frame.metadata.mode !== 'build';
-    for (const b of more.querySelectorAll('[data-placement]'))
-      b.disabled = frame.metadata.mode !== 'build';
+    partsBrowser.update(frame.metadata.mode, assemblies?.busy() || assemblyPlacement?.active());
+    partPlacement?.refresh();
     refreshAssemblyState();
   }
   function readRenderedCenters() {
@@ -3965,6 +4020,22 @@ export function createWorkshopView(
     }
   }
   const keydown = (event) => {
+    if (partPlacement?.active() && event.key === 'Escape') {
+      event.preventDefault();
+      partPlacement.cancel();
+      return;
+    }
+    if (partPlacement?.active() && !ownsPartHelpInput(event.target)) {
+      if (surface.active() && surface.key(event)) {
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        partPlacement.commit();
+      }
+      return;
+    }
     if (ownsPartHelpInput(event.target)) return;
     if (event.key === 'Escape' && partHelp.dismissTooltip()) {
       event.preventDefault();
@@ -4366,6 +4437,8 @@ export function createWorkshopView(
       connectionTest.dispose();
       directDrag.dispose();
       vehicleControls.dispose();
+      partPlacement.dispose();
+      partsBrowser.dispose();
       partHelp.dispose();
       motionReadout.dispose();
       window.removeEventListener('blur', blur);

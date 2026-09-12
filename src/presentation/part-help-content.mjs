@@ -193,7 +193,7 @@ export const PART_HELP = {
       'Connect one cell’s Power port to a motor, hinge or bus Power port.',
       'Several wires can share the cell port. Multiple cells on one circuit are unsupported.',
     ],
-    ['power'],
+    ['powerOne', 'power'],
   ),
   distributionBus: help(
     'A shared power connection',
@@ -317,6 +317,14 @@ const end = (node, port) => ({ node, port });
 const edge = (kind, a, b) => ({ kind, a, b });
 // Schematic coordinates are deliberately separate from physical fixture transforms.
 export const PART_EXAMPLES = {
+  powerOne: {
+    title: 'Power a motor',
+    nodes: { cell: 'powerCell', motor: 'poweredMotor' },
+    edges: [edge('power', end('cell', 'power'), end('motor', 'power'))],
+    notes: [
+      'Mount both parts separately. Power wires carry energy; they do not hold parts together.',
+    ],
+  },
   spring: {
     title: 'Guided spring',
     nodes: { guide: 'springGuide', carriage: 'springCarriage' },

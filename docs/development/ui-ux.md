@@ -132,14 +132,35 @@ and view groups at the workbench edge; selected properties and operations in the
 inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
 
-Catalogue images occupy a 52-pixel square within the existing parts column. Square
-production renders improve silhouette size without widening the region or reducing
-label text. The column retains scrolling, help buttons and keyboard focus. Catalogue,
-part-help and assembly previews use the workshop's part meshes and cosmetic finishes;
-preview lighting shares the same reflection field. These changes serve recognition
-and connection authoring, add no persistent panel, and displace no unique action.
-Learning-content disposition is **no entry**: existing connection rows and part help
-explain the same endpoints; a surface treatment introduces no new construction concept.
+The [part catalog](../../src/presentation/parts-browser.mjs#source) uses real mesh thumbnails, Essentials and functional categories,
+Recent and locally saved Favorites. Search covers the whole available catalog and
+ranks names, aliases, actions and related roles in that order, preferring complete
+query coverage across identity and function fields. Complete conservative typo corrections
+precede partial direct matches; numeric identities are exact.
+Clearing search restores browsing position. Searching and filtering retain the placement lock during an active assembly operation. Related assembly results open the existing
+Assemblies browser. Vocabulary lives in presentation, never in physical admission.
+Clicking or dragging a part opens the same nonmutating placement controller. Pointer
+release assesses its final location, including touch taps. The existing surface owner
+provides mounting faces, precision and attachment; empty-space placement uses the grid
+with optional coordinates under Precise position. Confirmation sends one ordinary
+cursor-guarded `place` or `surface-mount` command. Invalid and stale previews cannot
+commit, and pending placement disables duplicate submission and cancellation.
+Escape first cancels an active pickup, including when search has focus, and restores
+the originating query, category, focus and scroll even after browsing changes. Only results scroll inside the tray; scaled text reduces the column count. The compact
+header and summary preserve complete visible tiles at the supported 1280 by 720 viewport.
+At narrow widths a requested Parts browser replaces the sidebar, leaving the canvas
+full width while Assemblies and recording remain retrievable.
+Recent records accepted catalog placements. Expanded and compact catalogs are requested
+surfaces; picking closes them and cancellation restores the origin. The existing About
+window retains Overview and How to connect, with diagram links that reveal catalog
+parts without placing them. During recording, placement and expanded catalog controls
+reserve space above the feedback strip; taller placement details scroll within the
+available stage height, keeping placement and recording actions separately reachable.
+The cell-to-motor example precedes optional power branching.
+Learning admission: extend existing part help; no new lesson or example-browser entry.
+
+Catalogue, part-help and assembly previews use the workshop’s part meshes and cosmetic finishes; preview lighting shares the same reflection field. These shared finishes improve recognition and connection authoring without adding a persistent panel or a learning-content entry.
+
 
 The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic
 regulation shows measured and target total spring length, rather than extension from
@@ -238,7 +259,7 @@ and all parts remain editable; check clearance after changing mounting geometry.
 These examples extend construction possibilities, not evidence of player comprehension
 or qualification outside their tested finite operating envelopes.
 
-Spur gears use More parts, selected Connections and the existing part-help window.
+Spur gears use the Motion catalog category and search, selected Connections and the existing part-help window.
 Gear mesh explicitly leaves parts in place and requires independently supported
 aligned shafts. The requested Learn & examples browser adds one editable gear-lift
 experiment: predict the slower rotor, run the loaded arm, then disconnect the mesh
@@ -255,7 +276,7 @@ A gear motion-limit stop offers Build, shaft-support, motor-current and grounded
 restart guidance through the existing message surface. It does not imply broken teeth.
 Physical witnesses remain separate from player comprehension.
 
-Release Coupler uses More parts, the existing surface-snap operation, selected inspector
+Release Coupler uses the Motion catalog category and search, the existing surface-snap operation, selected inspector
 and requested part-help window. “Latch · Right” identifies its single opening attachment;
 other faces remain ordinary mounts. Wire a cell and Command Receiver, hold W/Up in Run,
 and inspect actuation or blocked-support status. Open attachments are identified as open
@@ -270,7 +291,7 @@ actuation and alternate paths. This adds no permanent lesson panel. The
 from an empty workshop through visible controls, saves/reloads, releases cargo, exercises Try again after opening and interrupted actuation, and recovers
 at ordinary and narrow layouts. Browser automation supplies no target-player acceptance.
 
-The powered linear actuator uses More parts, selected settings, existing receiver
+The powered linear actuator uses the Motion catalog category and search, selected settings, existing receiver
 controls and requested part help. Connect the existing Spring carriage, a cell and a
 Command Receiver; W/up extends and S/down retracts. Releasing the keys opens active drive,
 so an unpowered suspended load can fall. The inspector distinguishes completed travel,

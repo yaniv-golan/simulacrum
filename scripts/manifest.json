@@ -924,6 +924,17 @@
       "timeoutMs": 60000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
+    },
+    {
+      "id": "verify-parts-catalog",
+      "script": "scripts/verify-parts-catalog.mjs",
+      "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
     }
   ],
   "invariants": [
@@ -4231,6 +4242,50 @@
         ]
       },
       "qualificationBars": []
+    },
+    {
+      "id": "parts-catalog-discovery",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. Cancellation restores the originating browse snapshot and narrow layouts release sidebar space.",
+      "owners": [
+        {
+          "path": "src/presentation/part-search.mjs",
+          "anchor": "searchParts"
+        },
+        {
+          "path": "src/presentation/parts-browser.mjs",
+          "anchor": "createPartsBrowser"
+        },
+        {
+          "path": "src/presentation/part-placement.mjs",
+          "anchor": "createPartPlacement"
+        }
+      ],
+      "checks": ["verify-parts-catalog", "verify-part-help-browser"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/part-search.test.mjs",
+            "anchor": "everyday words and roles find the intended part before incidental references"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/part-search.test.mjs",
+            "anchor": "numeric identity, coverage, deduplication and empty queries fail closed"
+          },
+          {
+            "path": "test/workshop.test.mjs",
+            "anchor": "catalog placement accepts its current cursor and rejects stale proposals unchanged"
+          },
+          {
+            "path": "test/part-placement-pending.test.mjs",
+            "anchor": "pending catalog placement cannot be replaced, cancelled or submitted twice"
+          }
+        ]
+      },
+      "qualificationBars": ["F1"]
     }
   ],
   "browserLocalScopes": [

@@ -136,3 +136,4 @@ These are registered commands and checks, not evidence that they passed.
 | tick-cost-attribution | [summarizeTickAttribution](../../scripts/tick-attribution.mjs) | verification-scope-configuration |
 | merge-tier-coverage | [mergeSelection](../../scripts/merge-selection.mjs), [compareMergeCoverage](../../scripts/merge-comparison.mjs) | verification-scope-configuration |
 | powered-release-topology | [compileAssembly](../../src/model/assembly.mjs), [createPowerNetwork](../../src/simulation/power.mjs), [createPhysicsWorld](../../src/simulation/physics/world.mjs) | invariant-controls, verify-release-coupler |
+| parts-catalog-discovery | [searchParts](../../src/presentation/part-search.mjs), [createPartsBrowser](../../src/presentation/parts-browser.mjs), [createPartPlacement](../../src/presentation/part-placement.mjs) | verify-parts-catalog, verify-part-help-browser |
