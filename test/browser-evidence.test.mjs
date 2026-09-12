@@ -103,7 +103,7 @@ test('shared browser lifecycle captures request/page failures and closes owned c
   });
   await assert.rejects(browser.close(), /browser errors/);
   assert.ok(f.context.closed && f.browser.closed);
-  const report = records.find((r) => r.name.endsWith('.json')).value;
+  const report = records.find((r) => r.name === 'failure.json').value;
   assert.equal(report.errors.length, 2);
   assert.equal(report.profile, 'ui');
   assert.ok(report.pages[0].state.cursor);
@@ -145,7 +145,7 @@ test('assertion evidence retains exact actual/expected values and matching build
   );
   await e.captureFailure(Error('wrong tick'));
   await b.close();
-  const r = records.find((r) => r.name.endsWith('.json')).value;
+  const r = records.find((r) => r.name === 'failure.json').value;
   assert.deepEqual(r.assertions[0].actual, { tick: 2 });
   assert.deepEqual(r.assertions[0].expected, { tick: 3 });
 });
@@ -166,7 +166,7 @@ test('driver action and exact observed frame accompany an assertion; new-page fa
   e.assert('equal', [2, 2], { expectation: 'completed cursor' });
   await e.captureFailure(Error('negative control'));
   await b.close();
-  const report = records.find((r) => r.name.endsWith('.json')).value;
+  const report = records.find((r) => r.name === 'failure.json').value;
   assert.equal(report.assertions[0].action.method, 'mouse.click');
   assert.deepEqual(report.assertions[0].action.args, [4, 5]);
   assert.equal(report.assertions[0].lastObservedFrame.tick, 2);
@@ -202,16 +202,18 @@ test('context close failure is reported while browser still closes', async () =>
 });
 test('failure artifact writer cannot prevent owned context and browser cleanup', async () => {
   const f = fakeBrowser();
+  let failWrites = false;
   const e = createBrowserEvidence({
     readBuild: () => 'app-current',
     readSource: () => ({ digest: 'source' }),
     launchBrowser: async () => f.browser,
     writeArtifact: () => {
-      throw Error('artifact writer failure');
+      if (failWrites) throw Error('artifact writer failure');
     },
   });
   const b = await e.launch();
   await b.newPage();
+  failWrites = true;
   f.page.emit('pageerror', Error('page failed'));
   await assert.rejects(b.close());
   assert.ok(

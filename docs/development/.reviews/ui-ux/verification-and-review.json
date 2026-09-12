@@ -1,15 +1,14 @@
 {
   "version": 1,
   "dependencies": {
-    "scripts/manifest.json#check=verify-workbench-content": "cba781cdf5dabd6a598ac323fdd2e9b7fab40e4b4cb7fe237e7510a55da3a9de",
+    "scripts/manifest.json#check=verify-workbench-content": "f63985647ed87015f112c48b300f856a2d1738702e9bb91702ef4be8909ea46c",
     "src/presentation/workbench-content.mjs": "85a2d6b3e5fcc67d028f4823f256059cd673e2a3a41c19d6b660b48f58510659",
     "test/workbench-content.test.mjs": "0ff4bd532d0b4756ba675db7e85dde4cc4d9bdb56ff36bbca224f4ac0534ff29",
     "scripts/verify-workbench-content.mjs": "4c963a7f8472a4816b8bcd553fe4736f38ee2df5c84e8c3434871ee59a28c293",
     "scripts/verify-learning-examples.mjs": "8fd3dfefb63f86d7d1334593f79bd2b3797e03c785d11c0d1b18176b0e17d1c0",
-    "docs/development/playtesting.md#remote-setup": "df7eddc99e8d68c54242ac556fb739cbd8c474e4c1cb4a83ab45b94d4a2e93ab",
+    "docs/development/playtesting.md#remote-setup": "843579787bf95da4d00be70fd5a9cc1603cea9309ca058f6e26ff5326c60916d",
     "package.json#script=inspect:change": "3dce2ce48429d4242732dc4e49c06d644a407c094520685458a92cc0c4c09bc3",
     "package.json#script=docs:prepare": "12217c6795d7e7b9dd072d5f7c5c5f86522a3e11ca9d186fc4b0075831ca39f4",
-    "package.json#script=verify:local": "fcfc9caf4ab9785495e9a84ae3c91645c38477299cbf42dc8df326ee1708ddfd",
-    "package.json#script=verify:final": "62fe67eeeb3a97126218055b27f719afbfc625fba43098f8c9732cd8e6602916"
+    "package.json#script=verify:candidate": "0a3f48ca2413c756a50ee6bb10ac51d684393eeecc217bc67fedde53e25e4756"
   }
 }

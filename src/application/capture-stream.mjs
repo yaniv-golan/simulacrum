@@ -174,6 +174,11 @@ export function decodeCaptureEvents(input, { indexed = false } = {}) {
     packets = [];
   let cachedPacket = -1,
     cachedEvents;
+  // One private reconstructed context bounds retained state while forward reads
+  // avoid repeatedly replaying the same validated keyframe-to-event prefix.
+  let seekIndex = -1,
+    seekBase = -1,
+    seekContext = null;
   function readEncoded(reference) {
     if (cachedPacket !== reference.packet) {
       const packet = unpackCapturePacket(packets[reference.packet]);
@@ -192,15 +197,21 @@ export function decodeCaptureEvents(input, { indexed = false } = {}) {
           readEvent(index) {
             if (!Number.isSafeInteger(index) || index < 0 || index >= events.length) return null;
             if (!events[index].available) return { ...events[index], context: null };
-            let context = null;
-            for (let i = bases[index]; i <= index; i++) {
+            const base = bases[index];
+            const resume = seekBase === base && seekIndex >= base && seekIndex <= index;
+            let context = resume ? seekContext : null;
+            for (let i = resume ? seekIndex + 1 : base; i <= index; i++) {
               const event = readEncoded(flat[i]);
               context =
                 event.contextFrame?.kind === 'delta'
                   ? apply(context, event.contextFrame.ops)
                   : copy(event.contextFrame?.value ?? event.context ?? null);
             }
-            return { ...events[index], context };
+            seekIndex = index;
+            seekBase = base;
+            seekContext = context;
+            // Callers own returned snapshots; they must never mutate the cursor.
+            return { ...events[index], context: copy(context) };
           },
         }
       : {}),

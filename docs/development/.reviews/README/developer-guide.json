@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "AGENTS.md": "608d37538daa990b5e9963689d6e9f29d395616c0fea9690e7a2aa3dc0421269",
+    "AGENTS.md": "b8454b1ce217d187fa9b71c99d2419738a7b82f2cf3dd0fc06b46d96f919b065",
     "docs/development/architecture.md#overview": "b8d3ea7673ca3a8fa7ace24823befb713f774ba6e20d7c57730de85b82392ee6",
     "docs/development/recipes.md#choose-a-recipe": "9d827be3c104e6564438313d26dd375b6d670c7696206f283115b1f50482766d",
     "package.json#script=dev": "db1288b08c007548a58bed6fc2cb27f6962a578ebac206a5a389aec0f78bf84b",

@@ -599,9 +599,13 @@ export async function createSession(
           nextAnchor = checkpoint();
           checkpointMs = performance.now() - start;
         }
-        observations.publish(frame(completedBodies, timings), {
+        const frameStart = performance.now(),
+          completedFrame = frame(completedBodies, timings),
+          frameMs = performance.now() - frameStart;
+        observations.publish(completedFrame, {
           timing: {
             startedAt,
+            frameMs,
             phaseMs: Object.values(timings).reduce((sum, value) => sum + value, 0),
             checkpointMs,
           },

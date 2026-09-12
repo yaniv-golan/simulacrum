@@ -1,16 +1,27 @@
 import { normalizeSelectedFiles } from './test-selection.mjs';
 /** A failed prerequisite prevents expensive downstream work. Qualification uses a separate gate. */
-export async function runVerificationPhases(phases) {
+export async function runVerificationPhases(
+  phases,
+  { now = () => performance.now(), onProgress = () => {} } = {},
+) {
   const rows = [];
   for (const [id, execute] of phases) {
+    const started = now();
+    const row = { id, status: 'running', startedAt: new Date().toISOString() };
+    rows.push(row);
+    onProgress(rows);
     try {
-      const result = await execute();
-      rows.push({ id, ok: result?.ok !== false, result });
+      row.result = await execute();
+      row.ok = row.result?.ok !== false;
     } catch (error) {
-      rows.push({ id, ok: false, error: error.message });
+      row.ok = false;
+      row.error = error.message;
       console.error(`${id}: ${error.stack}`);
     }
-    if (!rows.at(-1).ok) break;
+    row.status = row.ok ? 'passed' : 'failed';
+    row.elapsedMs = now() - started;
+    onProgress(rows);
+    if (!row.ok) break;
   }
   return rows;
 }
@@ -64,21 +75,38 @@ export function parseCompletionArgs(tier, args) {
   };
   const usage = () =>
     Error(
-      'Usage: local [--base <commit>] [--priority-files <paths...>] | final [--priority-files <paths...>]',
+      'Usage: local [--base <commit>] | merge --base <commit> [--incoming <commit> --destination <commit>] | final; all support --priority-files <paths...>',
     );
-  if (!['local', 'final'].includes(tier)) throw usage();
+  if (!['local', 'merge', 'final'].includes(tier)) throw usage();
   const seen = new Set();
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (seen.has(arg)) throw usage();
     seen.add(arg);
-    if (arg === '--base' && tier === 'local' && args[i + 1] && !args[i + 1].startsWith('--'))
+    if (
+      arg === '--base' &&
+      ['local', 'merge'].includes(tier) &&
+      args[i + 1] &&
+      !args[i + 1].startsWith('--')
+    )
       result.base = args[++i];
+    else if (
+      ['--incoming', '--destination'].includes(arg) &&
+      tier === 'merge' &&
+      args[i + 1] &&
+      !args[i + 1].startsWith('-')
+    )
+      result[arg.slice(2)] = args[++i];
     else if (arg === '--priority-files') {
       while (args[i + 1] && !args[i + 1].startsWith('-')) result.priorityFiles.push(args[++i]);
       if (!result.priorityFiles.length) throw usage();
     } else throw usage();
   }
+  if (
+    tier === 'merge' &&
+    (!seen.has('--base') || Boolean(result.incoming) !== Boolean(result.destination))
+  )
+    throw usage();
   result.priorityFiles = [...new Set(normalizeSelectedFiles(result.priorityFiles))];
   return result;
 }

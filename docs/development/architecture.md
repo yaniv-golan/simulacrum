@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"6438369e1bb149eabe8a2100d7e97dcf5653369593057d772d4ddb7ed676ec4b","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"8760f572df4847ce1d79bb6f74cf5d0394fce495548b8f041d8b8a288ecdc12f","disposition":"still accurate","rationale":"Both features use the existing runtime contract and manifest. Gear constraints and powered sensors remain ordinary authored components with no milestone advancement."} -->
+<!-- doc-review {"version":1,"fingerprint":"9e01d89dbbd1f466567dc547e386741b94016d4e93fd37d8ac5ec7d6000d2878","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"19b32488fb7586f27a5692c9fde85ae5290ebd835a0bb9331a782fce68da3b3d","disposition":"still accurate","rationale":"The manifest remains the single check metadata owner, now validating mergeSmoke coverage. AGENTS changes verification tiers only; runtime contracts and architectural layer authority remain unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"3ae1036de5b60ec76333fc10284ba29d79d8bfc987e61aac2c5cfe9fcb165cf3","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"95a6a7e1bcef51e5aeb84d47b2e2646aa80942977a6b67e4083d608bab9ec38f","disposition":"still accurate","rationale":"Session publication still follows the same single tick and observation owner; reusing previously admitted bodies removes copying without changing completed values or command order."} -->
+<!-- doc-review {"version":1,"fingerprint":"994d76c5df93f9aaa947fe5bbaf76c466f2307f77ba3cddcdd6d8e4b00b150e7","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"e0978abef2058b3affc6f5ced707501f1805ef553094c2dd32f73f28708f1176","disposition":"still accurate","rationale":"Session measures construction of the same completed frame and observation adds a diagnostic frameMs field. Command admission, phase ordering, immutable publication, camera/input owners and the separate measurement cursor remain as described."} -->
 
 
 
@@ -66,7 +66,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"0950cfd1caf87656f3b80d0ddfbddee04b949702549b81fc56e9979745e78a59","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"c1fdc101acecff99bf8f7912633ebd87ebf64521c9cb8293a4d1435d4f12688d","disposition":"still accurate","rationale":"The existing immutable observation admission remains authoritative. Sensor publication now retains that admitted body identity rather than cloning it before the same admission."} -->
+<!-- doc-review {"version":1,"fingerprint":"1ff977d850e368bfd5781db620e2236e1ec6d29e23f6990ab22f65b7226cc034","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"126844a8be4f418c264e6544e1f2b88d03eb06252f334b1bca4ad18a4e93994a","disposition":"still accurate","rationale":"The session/observation delta separates measured frame construction from publication without moving any geometry, graph, spring, contact, input or diagnostic policy owner in this table; no second policy implementation was introduced."} -->
 
 
 
@@ -107,7 +107,7 @@ Ground contact and workshop motion are not Course qualification.
 
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"c230ac4786a350f1021fd26fe26c7aa41aedb90c14e2bbc83ee2b4d470bbe665","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"a821dc84a4c0c66319dc3b821e16b2632ac49274bc51634b7968e1f90bed57bf","disposition":"still accurate","rationale":"Controller draft, compiler, capture and historical-decision owners are unchanged by gear integration. Previous-frame reuse changes the physics read source without changing its sampling time or policy visibility."} -->
+<!-- doc-review {"version":1,"fingerprint":"254fcaeca60ae8917ca3161093f37fb6ca688b52d90594f653a120c3c1f3242c","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"529f9aaa466e80496e9e4f6ea6c6ec61cfa242902e4dedbfa88e321603ab6edf","disposition":"still accurate","rationale":"The observation store's new tickTiming.frameMs is wall-clock diagnostics only. Sensor descriptors, prior-completed sampling, funded sensor execution and decision/learning histories retain their existing owners and behavior."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

@@ -8,7 +8,7 @@
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",
     "src/model/generated/blueprint-types.d.ts": "4ab1af630c52fc3bfd60ae0d9fbd64906a9936754b29943b70415feaf8028182",
     "src/model/geometry.mjs": "6628f76885c40cd8788ac50cf4fdde44cee827472aaea673b16343512e6e2283",
-    "src/model/observation.mjs": "f2a62892ae0e9dc95734fb107d1588b007265604ad5aca49ade62b2004d61ec1",
+    "src/model/observation.mjs": "a7f5f8d48b331921bbef3ec1b321bf078ba800cf4b4020a76f9b0a235899239c",
     "src/model/sensors.mjs": "e1cc067189f8f6c5e7b0bec99373647f5bbae8500fc9eabb6ca92518e56a0ce2",
     "src/model/tick.mjs": "9da2a4cb1bd1f0d6443a7fdf8bb0e75c22b4a6a86c0b8dd83230d0466379b187",
     "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
@@ -31,7 +31,7 @@
     "src/simulation/power.mjs": "ab8e5f328385911de7df6c169a36a05954e884935ecaa767065eebae01587cfa",
     "src/simulation/receiver-arbiter.mjs": "5e0b173f7f938987cf41ce7cb63488536caa4b4fa704d868e8cc60757db000e7",
     "src/simulation/sensors.mjs": "ab29242a68d0e9274e352b3c96a3de8d169c59c0adbcc332ad38554329114d75",
-    "src/simulation/session.mjs": "2a99e6541db327f924152206c40044e5b0cf11543666ae8794251cdb5b714791",
+    "src/simulation/session.mjs": "e60663c28f0501aa73c6e45258badd72d0f79244179f32f6d83e0edd6c43eac8",
     "test/shared-power.test.mjs": "9b4c9ce6cec9b17038e95240564aaacaffc640f34fca87695ff5b52c2b497a54",
     "test/session.test.mjs": "960ffb5a21595e9cc341c3627c402f4844a6e0b16c070468267d7e2145f64138",
     "vendor/rapier-contact/README.md": "2460fce82ec6d4d7546cc483d531adaf73141b8ef83117372c100dc6820313f2",
@@ -73,7 +73,7 @@
     "test/gear-physics.test.mjs": "8763a5f19e77600249a9efd5830c11b8cd0a28307f668f7079cc723847037804",
     "test/fixtures/gear-capacity.mjs": "169d5358e235516688ed9a2884ef60207d02958ce92ec91e94561a57419fdbd8",
     "test/gear-capacity.test.mjs": "4f1e5148ca78cb09408c330dcd2dd9ab37c851a32ebe6395956b15e79e964681",
-    "scripts/measure-gears.mjs": "d3575ab5c26dfa7c7a8f85e654923451390d32aca1e87bf70c73c4c705f1dba5",
+    "scripts/measure-gears.mjs": "78d6fc1a543161bf754c71b86642453679be31759fa49702d7a5486f2ead14ac",
     "test/ball-physics.test.mjs": "fb368c3cf2dea2d7d9cbc14d0ac952a8e651039b1529e077b3afeca7305bdc36"
   }
 }

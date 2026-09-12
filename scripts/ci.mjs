@@ -15,13 +15,19 @@ export async function runCI(context = createVerificationContext()) {
       await context.unit(graph.files.filter((path) => /\.test\.(m?js|cjs)$/.test(path)));
       const elapsedMs = performance.now() - start;
       if (elapsedMs >= 180000) throw Error(`iteration-budget: ${elapsedMs}ms`);
+      const resumed = context.receipts().filter((r) => r.resumed).length;
+      const timingClaim = resumed
+        ? 'resumed work only; not a fresh CI duration qualification'
+        : 'fresh CI duration';
       mkdirSync('artifacts', { recursive: true });
       writeFileSync(
         'artifacts/ci.json',
-        JSON.stringify({ ...context.identity, elapsedMs }, null, 2) + '\n',
+        JSON.stringify({ ...context.identity, elapsedMs, resumed, timingClaim }, null, 2) + '\n',
       );
-      console.log(`every-commit checks passed in ${elapsedMs.toFixed(1)}ms`);
-      return { elapsedMs };
+      console.log(
+        `every-commit checks passed in ${elapsedMs.toFixed(1)}ms; ${timingClaim}; ${resumed} resumed leaves`,
+      );
+      return { elapsedMs, resumed, timingClaim };
     }),
   );
 }

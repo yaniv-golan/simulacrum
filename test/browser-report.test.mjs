@@ -252,3 +252,22 @@ test('same-context suite reuse references retained original evidence for success
     assert.deepEqual(row.retainedReport, original);
   }
 });
+
+test('server cleanup survives timing publication failure and retains both causes', () => {
+  const child = spawnSync(
+    process.execPath,
+    [join(repo, 'test/fixtures/browser-suite-cleanup.mjs')],
+    { encoding: 'utf8' },
+  );
+  assert.equal(child.status, 0, child.stderr);
+  const rows = child.stdout
+    .split('\n')
+    .filter((s) => s.startsWith('TIMING_CLEANUP '))
+    .map((s) => JSON.parse(s.slice(15)));
+  assert.equal(rows.length, 2);
+  for (const row of rows) assert.equal(row.closes, 1);
+  assert.equal(rows[0].report.ok, true);
+  assert.equal(rows[1].report.ok, false);
+  assert.match(JSON.stringify(rows[1].report), /injected timing publication failure/);
+  assert.match(JSON.stringify(rows[1].report), /injected server cleanup failure/);
+});

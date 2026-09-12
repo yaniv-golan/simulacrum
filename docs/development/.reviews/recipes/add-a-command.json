@@ -22,7 +22,7 @@
     "src/model/learning-bindings.mjs": "db8b7afbebba63652060cd2df3df7d84075e62911f0744e80e43846fb3d7aa3c",
     "src/model/learning-model.mjs": "8a236b12e7e2afc838be6e8bd28613c642cafd05a73dcc4c52d491292d2ef084",
     "src/model/mirror-assembly.mjs": "1474bbbeb33968a6cfa47511d26793ee7e20ee913e6550a8535281921712bddf",
-    "src/model/observation.mjs": "f2a62892ae0e9dc95734fb107d1588b007265604ad5aca49ade62b2004d61ec1",
+    "src/model/observation.mjs": "a7f5f8d48b331921bbef3ec1b321bf078ba800cf4b4020a76f9b0a235899239c",
     "src/model/power.mjs": "89978f57a012fcecf6006cfdb1e7d7e2f97e0f13bc49ecab3cd5255b85537887",
     "src/model/reasons.mjs": "9d24a09fbfaeff5445429f2f43c99fc07e690dc79cb355e5ccc1b6a1b86cabcc",
     "src/model/reusable-assemblies.mjs": "1e7ccb4a6ec747827669f76587524cef65d529196dd50a67b7cf9a7efeed8987",
@@ -48,7 +48,7 @@
     "src/simulation/power.mjs": "a7698880a461c9a90951144c2ebd2b973c708d974c4786c979b339926468e97b",
     "src/simulation/receiver-arbiter.mjs": "9406c6e6fa28f2c2166264655723a1ef49e8f1393bd1718be90af9dcc80faf50",
     "src/simulation/sensors.mjs": "3ee312228a4bd03374ad454093d70567699206dc6ac0df11288d9b2e0f35c26f",
-    "src/simulation/session.mjs": "6b3426ac3f3953728d4443c1e1e50553fea2780851a5808a66ec06a327936687",
+    "src/simulation/session.mjs": "2091d17d19db4a1134e5bae9a8b0f769f9ed737b4416c11d67d6327242452b6f",
     "test/surface-mount.test.mjs": "70238e4261eda31f2eb9e407422e3b1410cbf635bff3f8a8ae98f23a1a5e3fcc",
     "test/contracts/editing.mjs": "7a0ceb94b3009b0a3144e30fd5d6ba4d1418d7d706a3b8fc3a8c89ce0b8b2122",
     "test/editing-contracts.test.mjs": "ad3fa6e2a24564c8a928bbabe6135312f16e57be081eb4d3b0eef3570add5604"

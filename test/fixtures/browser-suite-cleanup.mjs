@@ -23,8 +23,13 @@ registerHooks({
     let source;
     if (url === `file://${repo}/scripts/validate-manifest.mjs`)
       source = `export function readManifest(){return globalThis.fixtureManifest};export function validateManifest(m){return m}`;
+    if (url === `file://${repo}/scripts/verification-timing.mjs`)
+      source = readFileSync(new URL(url), 'utf8').replace(
+        'publish();',
+        `if (globalThis.timingMustFail && rows.some(r => r.name === 'server-start' && r.status === 'passed')) throw Error('injected timing publication failure'); publish();`,
+      );
     if (url === 'mock:vite')
-      source = `export async function build(){};export async function preview(){return {httpServer:{address:()=>({port:1234}),close:cb=>cb()}}};export async function createServer(){return{httpServer:{listening:true,address:()=>({port:1235})},async close(){if(globalThis.cleanupMustFail)throw Error('injected probe cleanup failure')}}}`;
+      source = `export async function build(){};export async function preview(){return {httpServer:{address:()=>({port:1234}),close:cb=>{globalThis.serverCloses=(globalThis.serverCloses??0)+1;cb(globalThis.serverCleanupMustFail?Error('injected server cleanup failure'):undefined)}}}};export async function createServer(){return{httpServer:{listening:true,address:()=>({port:1235})},async close(){if(globalThis.cleanupMustFail)throw Error('injected probe cleanup failure')}}}`;
     if (url === `file://${repo}/scripts/source-identity.mjs`)
       source = `export function sourceIdentity(){return{head:'fixture',workingTreeDigest:'fixture'}}`;
     if (url === `file://${repo}/scripts/module-graph.mjs`)
@@ -171,5 +176,30 @@ for (const [childFailed, cleanupFailed] of [
   );
 }
 
+for (const timingFailure of [false, true]) {
+  globalThis.childMustFail = false;
+  globalThis.cleanupMustFail = false;
+  globalThis.serverCloses = 0;
+  globalThis.timingMustFail = timingFailure;
+  globalThis.serverCleanupMustFail = timingFailure;
+  const context = {
+    async check(id, config, fn) {
+      return id === 'build:browser'
+        ? { source: { head: 'fixture', workingTreeDigest: 'fixture' }, app: 'fixture' }
+        : fn();
+    },
+  };
+  try {
+    await verifyBrowserSuite(['verify-browser'], { context });
+  } catch {}
+  console.log(
+    'TIMING_CLEANUP ' +
+      JSON.stringify({
+        timingFailure,
+        closes: globalThis.serverCloses,
+        report: globalThis.fixtureRead(),
+      }),
+  );
+}
 process.chdir(repo);
 rmSync(fixture, { recursive: true, force: true });

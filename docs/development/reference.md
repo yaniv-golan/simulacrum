@@ -61,6 +61,9 @@ These are registered commands and checks, not evidence that they passed.
 | npm run verify:candidate | node scripts/verify-candidate.mjs |
 | npm run verify:final | node scripts/verification-window.mjs scripts/verify-final.mjs |
 | npm run verify:local | node scripts/verification-window.mjs scripts/verify-local.mjs |
+| npm run verify:merge | node scripts/verify-merge.mjs |
+| npm run verify:merge:shadow | node scripts/verify-merge-shadow.mjs |
+| npm run verify:prepare | node scripts/verify-prepare.mjs |
 
 ## Structural checks
 
@@ -82,7 +85,7 @@ These are registered commands and checks, not evidence that they passed.
 | --- | --- | --- |
 | rejected-edit-atomicity | [createWorkshop](../../src/core/workshop.mjs) | invariant-controls |
 | preview-isolation | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [createAssemblyMirror](../../src/presentation/assembly-mirror.mjs), [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs) | invariant-controls, verify-mirror-browser |
-| input-cancellation | [createVehicleControls](../../src/presentation/vehicle-controls.mjs), [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs), [createReceiverArbiter](../../src/simulation/receiver-arbiter.mjs), [createPowerNetwork](../../src/simulation/power.mjs), [createSession](../../src/simulation/session.mjs) | invariant-controls, verify-ui-lifecycle-browser, verify-part-help-browser, verify-part-help-window, verify-spring-browser |
+| input-cancellation | [createVehicleControls](../../src/presentation/vehicle-controls.mjs), [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs), [createReceiverArbiter](../../src/simulation/receiver-arbiter.mjs), [createPowerNetwork](../../src/simulation/power.mjs), [createSession](../../src/simulation/session.mjs) | invariant-controls, verify-ui-lifecycle-browser, verify-part-help-browser, verify-part-help-inspectors, verify-part-help-window, verify-spring-browser |
 | geometry-agreement | [partPrimitives](../../src/model/geometry.mjs), [compileAssembly](../../src/model/assembly.mjs) | invariant-controls, verify-property-focus, verify-surface-browser, verify-ball-browser |
 | identity-material-admission | [compileAssembly](../../src/model/assembly.mjs), [MATERIALS](../../src/model/catalog.mjs) | identity |
 | checkpoint-next-step | [createSession](../../src/simulation/session.mjs) | invariant-controls |
@@ -126,3 +129,9 @@ These are registered commands and checks, not evidence that they passed.
 | powered-shared-sensing | [SENSOR_DEFINITIONS](../../src/model/sensors.mjs), [sampleSensor](../../src/simulation/sensors.mjs), [createPowerNetwork](../../src/simulation/power.mjs) | invariant-controls |
 | bounded-controller-programs | [compileController](../../src/scripting/controller-program.mjs), [createWorkshop](../../src/core/workshop.mjs), [createReceiverArbiter](../../src/simulation/receiver-arbiter.mjs), [controllerDecision](../../src/model/controller-decision.mjs), [createControllerHistory](../../src/application/controller-history.mjs) | invariant-controls |
 | learning-feature-identity | [admitLearningModel](../../src/model/learning-model.mjs), [admitLearningBindings](../../src/model/learning-bindings.mjs) | invariant-controls |
+| candidate-resume-integrity | [createLeafLedger](../../scripts/verification-resume.mjs), [dependencyDigest](../../scripts/candidate-resume.mjs), [requireAttemptReport](../../scripts/candidate-attempt.mjs) | verification-scope-configuration |
+| ordered-verification-preparation | [prepareVerification](../../scripts/verification-preparation.mjs) | verification-scope-configuration |
+| verification-timing-evidence | [createTiming](../../scripts/verification-timing.mjs) | verification-scope-configuration |
+| merge-shadow-no-qualification | [mergeShadowReport](../../scripts/merge-shadow.mjs) | verification-scope-configuration |
+| tick-cost-attribution | [summarizeTickAttribution](../../scripts/tick-attribution.mjs) | verification-scope-configuration |
+| merge-tier-coverage | [mergeSelection](../../scripts/merge-selection.mjs), [compareMergeCoverage](../../scripts/merge-comparison.mjs) | verification-scope-configuration |

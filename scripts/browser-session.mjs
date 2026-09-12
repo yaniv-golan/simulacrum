@@ -1,3 +1,4 @@
+import { createTiming } from './verification-timing.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -51,6 +52,13 @@ export function attachBrowserSession(
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, file.endsWith('.json') ? JSON.stringify(value, null, 2) + '\n' : value);
     });
+  const timing = createTiming({
+    publish: () =>
+      write('timing.json', {
+        intervals: timing.snapshot(),
+        scope: 'browser session; intervals may overlap',
+      }),
+  });
   let browser,
     profile,
     configuration,
@@ -137,6 +145,8 @@ export function attachBrowserSession(
         )
           return (...args) =>
             wrapDriver(target[key](...args), `${String(key)}(${args.map(String).join(',')})`);
+        if (key === 'goto')
+          return (...args) => timing.measure('navigation', () => target.goto(...args));
         if (key === 'evaluate')
           return async (...args) => {
             const result = await target.evaluate(...args);
@@ -215,6 +225,19 @@ export function attachBrowserSession(
       evidence.errors.push(`failure artifact: ${captureError.message}`);
     }
   }
+  async function cleanupAfterFailure(error) {
+    await capture(error);
+    try {
+      await close();
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        `${error?.message ?? String(error)} (cleanup also failed)`,
+        { cause: error },
+      );
+    }
+    throw error;
+  }
   async function close() {
     if (closed) return;
     closed = true;
@@ -228,13 +251,13 @@ export function attachBrowserSession(
     }
     for (const context of contexts)
       try {
-        await context.close();
+        await timing.measure('context-cleanup', () => context.close());
       } catch (error) {
         failures.push(error);
         await capture(error);
       }
     try {
-      await browser?.close();
+      await timing.measure('browser-cleanup', () => browser?.close());
     } catch (error) {
       failures.push(error);
       await capture(error);
@@ -245,6 +268,7 @@ export function attachBrowserSession(
 
   Object.assign(evidence, {
     errors: [],
+    measure: (name, execute) => timing.measure(name, execute),
     assert(method, args, description = {}) {
       const { frame, ...details } = description;
       const completed = (value) => value && Array.isArray(value.physics) && value.metadata;
@@ -299,14 +323,20 @@ export function attachBrowserSession(
         throw Error('this browser configuration requires exclusive execution');
       const launch =
         launchBrowser ?? (async (options) => (await import('playwright')).chromium.launch(options));
-      browser = await launch(configuration);
+      try {
+        await timing.measure('browser-launch', async () => {
+          browser = await launch(configuration);
+        });
+      } catch (error) {
+        await cleanupAfterFailure(error);
+      }
       const newContext = async (options = {}) => {
         try {
-          return wrapContext(await browser.newContext(options));
+          return await timing.measure('context-setup', async () =>
+            wrapContext(await browser.newContext(options)),
+          );
         } catch (error) {
-          await capture(error);
-          await close();
-          throw error;
+          await cleanupAfterFailure(error);
         }
       };
       return new Proxy(browser, {

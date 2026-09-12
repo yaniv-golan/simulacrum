@@ -7,6 +7,7 @@ import { verifyBrowserSuite } from './verify-browser-suite.mjs';
 import { runGate } from './gate.mjs';
 const started = performance.now();
 const report = {
+  attempt: process.env.SIMULACRUM_VERIFICATION_ATTEMPT ?? null,
   status: 'running',
   results: [],
   checks: [],
@@ -22,11 +23,20 @@ try {
   report.priority = options;
   const context = createVerificationContext();
   Object.assign(report, context.identity);
-  const results = await runVerificationPhases([
-    ['ci', () => runCI(context)],
-    ['browser', () => verifyBrowserSuite('all', { context, ...options })],
-    ['gate', () => runGate(undefined, context)],
-  ]);
+  const results = await runVerificationPhases(
+    [
+      ['ci', () => runCI(context)],
+      ['browser', () => verifyBrowserSuite('all', { context, ...options })],
+      ['gate', () => runGate(undefined, context)],
+    ],
+    {
+      onProgress: (rows) => {
+        report.results = rows;
+        report.checks = context.receipts();
+        write();
+      },
+    },
+  );
   Object.assign(report, { results, checks: context.receipts() });
   report.outcome = verificationOutcome(results, report.checks);
 } catch (error) {

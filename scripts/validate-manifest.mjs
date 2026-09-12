@@ -21,6 +21,16 @@ export function validateManifest(m) {
     m.checks.map((x) => x.id),
     'check',
   );
+  if (m.verificationResumeLeaves !== undefined) {
+    if (
+      !Array.isArray(m.verificationResumeLeaves) ||
+      m.verificationResumeLeaves.some(
+        (id) => typeof id !== 'string' || !/^unit:test\/[a-z0-9-]+\.test\.mjs$/.test(id),
+      )
+    )
+      throw Error('resume eligibility requires explicit unit test leaves');
+    unique(m.verificationResumeLeaves, 'resume leaf');
+  }
   const rules = new Set(m.rules.map((x) => x.id));
   const bars = new Set(Object.keys(m.bars));
   for (const [id, b] of Object.entries(m.bars)) {
@@ -72,6 +82,18 @@ export function validateManifest(m) {
     )
       throw Error(`invalid browser check: ${x.id}`);
   }
+  if (browser.some((x) => x.mergeSmoke !== undefined && typeof x.mergeSmoke !== 'boolean'))
+    throw Error('invalid merge smoke metadata');
+  const mergeSmoke = browser
+    .filter((x) => x.mergeSmoke)
+    .map((x) => x.id)
+    .sort();
+  if (
+    browser.some((x) => x.mergeSmoke !== undefined) &&
+    JSON.stringify(mergeSmoke) !==
+      JSON.stringify(['verify-selection-browser', 'verify-ui-lifecycle-browser', 'verify-workshop'])
+  )
+    throw Error('merge smoke coverage must retain selection, lifecycle and workshop journeys');
   unique(obligations, 'obligation');
   for (const key of Object.keys(m.exitObligations)) milestone(key);
   validateInvariantCoverage(m);

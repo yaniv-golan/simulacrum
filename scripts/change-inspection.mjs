@@ -175,7 +175,7 @@ export function summarizeChangeInspection({ analysis, value: report }) {
   const paths = report.files.map((path) => "'" + path.replaceAll("'", "'\\''") + "'").join(' ');
   lines.push(`Run selected tests: npm run test:unit -- --files ${paths}`);
   lines.push(
-    'Before local closure: npm run docs:prepare; review pending explanations, then npm run verify:local. Merge/release/milestone qualification requires npm run verify:final.',
+    'Before closure: npm run docs:prepare and review pending explanations. Use verify:candidate -- local, merge --base <commit> for routine merge readiness, or final for release/milestone qualification.',
   );
   lines.push(
     'No checks executed. No inferred association does not prove independence. Add --json for every dependency and conservative selection reason.',

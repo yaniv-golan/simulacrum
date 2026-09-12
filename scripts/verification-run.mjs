@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { createLeafLedger } from './verification-resume.mjs';
 import { assertRuntime } from './runtime-preflight.mjs';
 import { sourceIdentity } from './source-identity.mjs';
 import { appFingerprint } from './app-fingerprint.mjs';
@@ -17,11 +19,30 @@ export function verificationIdentity() {
     runtime: process.version,
     platform: process.platform,
     arch: process.arch,
-    environmentDigest: createHash('sha256').update(stable(process.env)).digest('hex'),
+    environmentDigest: createHash('sha256')
+      .update(
+        stable(
+          Object.fromEntries(
+            Object.entries(process.env).filter(
+              ([k]) =>
+                ![
+                  'SIMULACRUM_VERIFICATION_WINDOW',
+                  'SIMULACRUM_LEAF_LEDGER',
+                  'SIMULACRUM_VERIFICATION_ATTEMPT',
+                ].includes(k),
+            ),
+          ),
+        ),
+      )
+      .digest('hex'),
   };
 }
-/** Receipts exist only in this invocation. Every reuse revalidates all identity fields. */
-export function createVerificationRun({ readIdentity = verificationIdentity } = {}) {
+/** Invocation receipts may reconstruct audited same-candidate leaves. Every reuse revalidates identity. */
+export function createVerificationRun({
+  readIdentity = verificationIdentity,
+  resumeLedger,
+  writeLedger,
+} = {}) {
   const identity = structuredClone(readIdentity()),
     key = stable(identity),
     checks = new Map();
@@ -44,10 +65,24 @@ export function createVerificationRun({ readIdentity = verificationIdentity } = 
         started = performance.now();
       checks.set(id, receipt);
       receipt.promise = Promise.resolve()
-        .then(execute)
+        .then(async () => {
+          const previous = resumeLedger?.load(id, configuration);
+          if (previous) {
+            receipt.resumed = true;
+            receipt.originalElapsedMs = previous.elapsedMs;
+            return previous.value;
+          }
+          return execute();
+        })
         .then((value) => {
           unchanged();
           receipt.ok = true;
+          writeLedger?.save(
+            id,
+            configuration,
+            value,
+            receipt.originalElapsedMs ?? performance.now() - started,
+          );
           return value;
         })
         .catch((error) => {
@@ -74,7 +109,24 @@ export function initializeVerificationEnvironment() {
 }
 export function createVerificationContext(options) {
   initializeVerificationEnvironment();
-  const run = createVerificationRun(options);
+  let ledgerOptions = {};
+  if (process.env.SIMULACRUM_LEAF_LEDGER && !options?.readIdentity) {
+    const config = JSON.parse(readFileSync(process.env.SIMULACRUM_LEAF_LEDGER, 'utf8'));
+    const manifest = JSON.parse(readFileSync('scripts/manifest.json', 'utf8'));
+    const identity = verificationIdentity();
+    const shared = {
+      key: Buffer.from(config.key, 'hex'),
+      identity,
+      eligible: manifest.verificationResumeLeaves ?? [],
+    };
+    ledgerOptions = {
+      writeLedger: createLeafLedger({ ...shared, directory: config.output }),
+      ...(config.previous
+        ? { resumeLedger: createLeafLedger({ ...shared, directory: config.previous }) }
+        : {}),
+    };
+  }
+  const run = createVerificationRun({ ...ledgerOptions, ...options });
   let deadline = Infinity;
   const remaining = (limit) => {
     const value = Math.min(limit, deadline - performance.now());

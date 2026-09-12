@@ -296,7 +296,7 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"ea88328e5b6c036ea17267c95bc6b246ab2dfe4576e4eef871b9811fb1ccda44","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"00eed0e5467c828758c00c639be0ddc58bbb5280f8c33e4b8831f8392dbfa11e","disposition":"updated","rationale":"The existing learning verifier now checks full empty construction, save reload, default power and visible recovery. The explanation preserves rendered review and explicitly separates automation from human comprehension."} -->
+<!-- doc-review {"version":1,"fingerprint":"3fd9f2b7d3b00d645b6dc4e119f0b4cf431047011f81c1ef180f9ffbac810dfe","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"e8a720001b326d0bd2e16194684674a60cf1a1771165d1c24cc0f97c6a2f9bbb","disposition":"updated","rationale":"Routine merge guidance now uses candidate merge with explicit base; release/milestone retain final. Recording remains real-player feedback rather than human qualification, and the cursor optimization does not change that distinction."} -->
 
 
 Use the manifest's `workbench-content-lifecycle` invariant and
@@ -327,10 +327,10 @@ hover/focus help must remain readable and dismissible; no essential action is av
 only through hover, color or a shortcut. Overlays must not intercept placement.
 
 `npm run docs:prepare` identifies source-stale explanations in this document as well
-as other development docs. Review each affected section, then use `npm run verify:local`.
-The existing CI documentation check rejects stale review evidence. Merge/release and
-milestone work still require `npm run verify:final`; no extra UX completion command
-or independent inventory is introduced.
+as other development docs. Review each affected section, then use `npm run verify:candidate -- local`.
+The existing CI documentation check rejects stale review evidence. Routine merges use
+`npm run verify:candidate -- merge --base <commit>`; release and milestone work require
+`npm run verify:candidate -- final`. No extra UX completion command or independent inventory is introduced.
 
 Automation checks the named behaviors, not comprehension, enjoyment or completeness.
 For a material new journey or layout, obtain an unassisted review that includes a

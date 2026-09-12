@@ -106,7 +106,7 @@ substitute for embedded inputs or preserved executable builds.
 Determinism initially means the same runtime and library binary across two processes
 and both clock drivers. A declared model projection includes authoritative state and
 excludes wall-clock timing and diagnostic labels. Per-phase timings remain in the
-same telemetry frame outside that projection. `tickTiming` also measures completed-tick
+same telemetry frame outside that projection. `tickTiming` also measures completed-tick frame construction (`frameMs`),
 publication and periodic checkpoint work, with their total and remaining overhead.
 Immutable static model metadata is shared only after admission by the immutable-copy
 owner; a caller-frozen object is still copied and validated. Performance and cross-runtime portability

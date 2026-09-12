@@ -943,45 +943,47 @@ try {
   );
   await page.evaluate(() => window.remoteCapture.dispose());
   // Producer bounds finish an intact stream instead of creating an unreviewable session.
-  const boundedUploadsStart = uploads.length;
-  await page.evaluate(async () => {
-    window.remoteCapture = await window.mountCapture();
+  await browserEvidence.measure('producer-byte-limit-and-drain', async () => {
+    const boundedUploadsStart = uploads.length;
+    await page.evaluate(async () => {
+      window.remoteCapture = await window.mountCapture();
+    });
+    await page.getByRole('button', { name: 'Start recording' }).click();
+    await page.waitForFunction(() => window.remoteCapture.active());
+    await page.evaluate(async () => {
+      const { captureStreamLimits } = window;
+      const payload = 'b'.repeat(1024 * 1024);
+      const count = Math.ceil(captureStreamLimits.encodedBytes / payload.length) + 1;
+      for (let i = 0; i < count && window.remoteCapture.active(); i++)
+        window.remoteCapture.emit('bounded-recording-witness', { payload });
+    });
+    browserEvidence.assert('equal', [
+      await page.evaluate(() => window.remoteCapture.active()),
+      false,
+    ]);
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('[data-completion-status]')
+          ?.textContent.includes('You can close this tab'),
+      undefined,
+      { timeout: 120000 },
+    );
+    browserEvidence.assert('match', [
+      await page.locator('[data-completion-status]').innerText(),
+      /size limit/,
+    ]);
+    const boundedDecoded = decodeCaptureEvents(
+      uploads
+        .slice(boundedUploadsStart)
+        .filter((upload) => upload.url.endsWith('/event'))
+        .map((upload) => JSON.parse(upload.body)),
+      { indexed: true },
+    );
+    browserEvidence.assert('equal', [boundedDecoded.status, 'complete']);
+    browserEvidence.assert('equal', [boundedDecoded.events.at(-1).kind, 'session-end']);
+    await page.evaluate(() => window.remoteCapture.dispose());
   });
-  await page.getByRole('button', { name: 'Start recording' }).click();
-  await page.waitForFunction(() => window.remoteCapture.active());
-  await page.evaluate(async () => {
-    const { captureStreamLimits } = window;
-    const payload = 'b'.repeat(1024 * 1024);
-    const count = Math.ceil(captureStreamLimits.encodedBytes / payload.length) + 1;
-    for (let i = 0; i < count && window.remoteCapture.active(); i++)
-      window.remoteCapture.emit('bounded-recording-witness', { payload });
-  });
-  browserEvidence.assert('equal', [
-    await page.evaluate(() => window.remoteCapture.active()),
-    false,
-  ]);
-  await page.waitForFunction(
-    () =>
-      document
-        .querySelector('[data-completion-status]')
-        ?.textContent.includes('You can close this tab'),
-    undefined,
-    { timeout: 120000 },
-  );
-  browserEvidence.assert('match', [
-    await page.locator('[data-completion-status]').innerText(),
-    /size limit/,
-  ]);
-  const boundedDecoded = decodeCaptureEvents(
-    uploads
-      .slice(boundedUploadsStart)
-      .filter((upload) => upload.url.endsWith('/event'))
-      .map((upload) => JSON.parse(upload.body)),
-    { indexed: true },
-  );
-  browserEvidence.assert('equal', [boundedDecoded.status, 'complete']);
-  browserEvidence.assert('equal', [boundedDecoded.events.at(-1).kind, 'session-end']);
-  await page.evaluate(() => window.remoteCapture.dispose());
   console.log(
     'feedback receipt checks passed: delayed/malformed acknowledgement, 401/403/404/413/503 recovery, hung upload timeout/recovery, retained comments, X/Escape microphone stop, final media flush, outbox read failure, real IndexedDB reload/outage recovery, disposal/final-flush/remount recovery',
   );

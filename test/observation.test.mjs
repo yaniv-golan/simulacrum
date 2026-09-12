@@ -121,3 +121,33 @@ test('immutable copies preserve data keys and reject non-data descriptors', () =
     assert.throws(() => immutableCopy(bad), TypeError);
   assert.equal(getterCalls, 0);
 });
+
+test('tick attribution separates frame construction from immutable publication without double counting', () => {
+  const times = [18, 23];
+  const store = createObservationStore(frame(0), {
+    sessionId: 'timing',
+    clock: () => times.shift(),
+  });
+  store.publish(frame(1), { timing: { startedAt: 0, phaseMs: 10, checkpointMs: 2, frameMs: 4 } });
+  assert.deepEqual(store.observe().frames[0].tickTiming, {
+    totalMs: 23,
+    phaseMs: 10,
+    checkpointMs: 2,
+    frameMs: 4,
+    publicationMs: 5,
+    overheadMs: 2,
+  });
+});
+
+test('publication reuses admitted body trees and keeps retained observations immutable', () => {
+  const bodies = immutableCopy([{ position: [1, 2, 3] }]);
+  const store = createObservationStore({ tick: 0, physics: bodies }, { sessionId: 'reuse' });
+  const retained = store.observe().frames[0];
+  store.publish({ tick: 1, physics: bodies });
+  assert.equal(store.observe().frames[0].physics, bodies);
+  assert.equal(retained.physics, bodies);
+  assert.throws(() => {
+    retained.physics[0].position[0] = 99;
+  }, TypeError);
+  assert.deepEqual(retained.physics[0].position, [1, 2, 3]);
+});

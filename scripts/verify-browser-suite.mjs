@@ -1,3 +1,4 @@
+import { createTiming } from './verification-timing.mjs';
 import { affectedBrowserChecks, prioritizeBrowserChecks } from './browser-selection.mjs';
 import { assertLocalServerAccess } from './runtime-preflight.mjs';
 import { build, preview, createServer } from 'vite';
@@ -14,7 +15,7 @@ import {
   createVerificationContext,
   initializeVerificationEnvironment,
 } from './verification-run.mjs';
-import { runCheckSequence } from './check-sequence.mjs';
+import { runCheckSequence, packParallelChecks } from './check-sequence.mjs';
 // Retain execution and cleanup causes without letting one hide the other.
 function errorMessages(error, seen = new Set()) {
   if (seen.has(error)) return [];
@@ -167,14 +168,28 @@ async function executeBrowserSuite(
     source = sourceIdentity();
   const priority = prioritizeBrowserChecks(checks, priorityFiles, priorityProvenance);
   report.priority = { ...priority, checks: priority.checks.map((c) => c.id) };
+  const priorityCount = new Set(priority.reasons.map((row) => row.id)).size;
+  const scheduled = packParallelChecks(priority.checks, { workers, priorityCount });
+  report.schedule = {
+    policy: workers === 1 ? 'original order' : 'undersized admitted parallel packing',
+    priorityCount,
+    maxNewCombinedGroupSize: workers === 1 ? 0 : 4,
+    checks: scheduled.map((check) => check.id),
+  };
   report.source = source;
   report.runs = checks.map((check) => ({ id: check.id, status: 'queued' }));
+  const timing = createTiming({
+    publish: () => {
+      report.timings = timing.snapshot();
+      publish();
+    },
+  });
   report.phase = 'build';
   publish();
   const identity =
     reuseBuild && existsSync(stamp)
       ? JSON.parse(readFileSync(stamp))
-      : await prepareBrowserBuild(context);
+      : await timing.measure('build', () => prepareBrowserBuild(context));
   if (
     identity.source.workingTreeDigest !== source.workingTreeDigest ||
     identity.app !== appFingerprint()
@@ -183,15 +198,18 @@ async function executeBrowserSuite(
   report.build = identity.app;
   report.phase = 'server';
   publish();
-  const server = await preview({ preview: { host: '127.0.0.1', port: 0 }, logLevel: 'error' });
-  const url = `http://127.0.0.1:${server.httpServer.address().port}/`,
-    runs = report.runs;
-  mkdirSync('artifacts/browser-suite', { recursive: true });
+  let server;
+  const runs = report.runs;
   await withCleanup(
     async () => {
+      await timing.measure('server-start', async () => {
+        server = await preview({ preview: { host: '127.0.0.1', port: 0 }, logLevel: 'error' });
+      });
+      const url = `http://127.0.0.1:${server.httpServer.address().port}/`;
+      mkdirSync('artifacts/browser-suite', { recursive: true });
       report.phase = 'checks';
       const outcomes = await runCheckSequence(
-        priority.checks,
+        scheduled,
         async (check) => {
           const row = runs.find((row) => row.id === check.id);
           row.status = 'running';
@@ -325,6 +343,7 @@ async function executeBrowserSuite(
       report.notRun = checks
         .filter((c) => !runs.some((r) => r.id === c.id && typeof r.ok === 'boolean'))
         .map((c) => c.id);
+      if (!server) return;
       await new Promise((resolve, reject) =>
         server.httpServer.close((error) => (error ? reject(error) : resolve())),
       );

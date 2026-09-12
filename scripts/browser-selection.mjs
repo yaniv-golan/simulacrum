@@ -142,7 +142,8 @@ export function selectAffectedBrowserChecks({
   const documentation = (files ?? []).filter(
     (p) =>
       (!unresolved || readKindsAudited) &&
-      !graph.nodes.has(p) &&
+      // Unit-only readers belong to CI; only browser reachability makes this runtime data.
+      !seen.has(p) &&
       !p.startsWith('docs/internal/') &&
       (['AGENTS.md', 'README.md'].includes(p) ||
         /^docs\/[\w./-]+\.md$/.test(p) ||

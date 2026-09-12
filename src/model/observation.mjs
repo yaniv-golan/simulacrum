@@ -82,7 +82,7 @@ export function createObservationStore(initial, { sessionId, maxDeltas = 600, cl
         if (
           !clock ||
           !timing ||
-          Object.keys(timing).sort().join(',') !== 'checkpointMs,phaseMs,startedAt' ||
+          Object.keys(timing).sort().join(',') !== 'checkpointMs,frameMs,phaseMs,startedAt' ||
           !Object.values(timing).every((value) => Number.isFinite(value) && value >= 0)
         )
           throw new TypeError('invalid tick timing');
@@ -99,7 +99,8 @@ export function createObservationStore(initial, { sessionId, maxDeltas = 600, cl
         const finishedAt = clock(),
           publicationMs = finishedAt - publicationStart;
         const totalMs = finishedAt - timing.startedAt;
-        const overheadMs = totalMs - timing.phaseMs - timing.checkpointMs - publicationMs;
+        const overheadMs =
+          totalMs - timing.phaseMs - timing.checkpointMs - timing.frameMs - publicationMs;
         if (
           ![publicationMs, totalMs, overheadMs].every(
             (value) => Number.isFinite(value) && value >= 0,
@@ -113,6 +114,7 @@ export function createObservationStore(initial, { sessionId, maxDeltas = 600, cl
           tickTiming: immutableCopy({
             totalMs,
             publicationMs,
+            frameMs: timing.frameMs,
             checkpointMs: timing.checkpointMs,
             phaseMs: timing.phaseMs,
             overheadMs,

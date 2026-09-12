@@ -144,9 +144,8 @@ try {
   // Count actual main-scene GPU submissions, not RAF callbacks or simulation ticks.
   const frames = () =>
     page.evaluate(() => window.workshopProbe.readInteractionState().rendering.frames);
-  async function idle(settleMs = 0) {
+  async function idle() {
     // OrbitControls damping still changes the camera after pointerup.
-    if (settleMs) await page.waitForTimeout(settleMs);
     await page.evaluate(() => {
       window.__idleRenderProbe = null;
     });
@@ -193,7 +192,7 @@ try {
       before,
     );
   }
-  await idle(2000);
+  await idle();
   const idlePixels = await canvas.screenshot({ path: `${out}/idle-before.png` });
   await page.waitForTimeout(350);
   browserEvidence.assert('deepEqual', [
@@ -214,7 +213,7 @@ try {
     );
     await page.mouse.up();
   });
-  await idle(2000);
+  await idle();
   const parts = (await read()).blueprint.parts;
   const motor = parts.find((part) => part.type === 'poweredMotor');
   await draws(async () => {

@@ -102,7 +102,7 @@ Record dispositions after source closure; `--batch <decisions.json>` submits sep
 section decisions together, never accepts all stale explanations automatically.
 Update the explanation when behavior or ownership changed; otherwise record a specific
 reason it remains accurate. `npm run docs:check` is a required structural gate in CI
-and both verification tiers. It automatically regenerates source-bound discovery and rejects
+and all completion tiers. It automatically regenerates source-bound discovery and rejects
 stale review evidence; a previous report cannot narrow required checks. See the
 [documentation workflow](docs/development/README.md#keep-explanations-current).
 
@@ -112,7 +112,8 @@ stale review evidence; a previous report cannot narrow required checks. See the
 | --- | --- |
 | Development probe | Focused unit/browser command; no completion claim |
 | Local completion | `npm run verify:candidate -- local` |
-| Integration or milestone qualification | `npm run verify:candidate -- final` |
+| Routine merge readiness | `npm run verify:candidate -- merge --base <commit>` |
+| Release or milestone qualification | `npm run verify:candidate -- final` |
 | Authorized experimental publication | Existing release preparation and exception policy |
 
 Direct tiers remain for already frozen CI/release copies. Complete source-writing
@@ -130,11 +131,16 @@ before interpreting a controlled mirror failure. D1 fixes the renaming seed; L2 
 Run focused tests during development, derived from import and data dependency graphs;
 unknown changes select all tests. Structural checks target <5 s, unit/property <30 s,
 short physics <60 s. The every-commit command must stay below 180 s and report wall time.
-Long contact tests run at merge/nightly until measured. Scenarios run merge/nightly,
-all browser checks at merge/release, critical-module mutation weekly.
+Long contact tests run at merge/nightly until measured. Merge runs CI plus audited affected browser journeys and mandatory integration smoke;
+unknown, shared-runtime and verification-policy changes select all browser checks.
+All browser checks run nightly and for release/qualification; critical-module mutation runs weekly.
 Use `npm run verify:local` for local completion (CI plus conservatively affected browser checks;
 `--base <commit>` includes committed changes). Clean source defaults to all checks.
-Use `npm run verify:final` for merge/release or milestone qualification; local success never
+Use `npm run verify:merge -- --base <commit>` for routine merge readiness. Use the
+common ancestor and `--incoming <commit> --destination <commit>` for a two-branch
+integration scope, including both branch deltas and final edits. A plain base comparison
+is explicitly reported as such; it is not proof that both branches were integrated.
+Use `npm run verify:final` for release or milestone qualification; merge/local success never
 advances a milestone or supplies human evidence. Explicit browser check IDs are development
 probes, not a substitute for either completion tier. Do not delete an assertion
 or skip a required tier to recover speed. Experimental publication follows the distinct
@@ -179,7 +185,7 @@ authorization, artifact integrity, publisher ownership and recovery rules still 
 ## Collaboration
 
 Concurrent implementation tasks must use separate worktrees. Run completion on an isolated
-candidate with `npm run verify:candidate -- local` (or `final` for qualification).
+candidate with `npm run verify:candidate -- local` (`merge --base <commit>` for merge readiness, or `final` for qualification).
 Prepare and review documentation before capture. Candidate evidence applies only to its
 recorded bytes; a changed integration destination needs new verification. Direct tiers
 remain available for already frozen release/CI copies and development probes.

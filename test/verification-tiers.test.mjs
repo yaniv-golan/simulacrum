@@ -70,3 +70,54 @@ test('completion priority arguments preserve tier and normalized provenance', as
   );
   assert.throws(() => parseCompletionArgs('final', ['--priority-files']), /Usage/);
 });
+
+test('phase reporting publishes start and finish with elapsed time even on failure', async () => {
+  let now = 0;
+  const snapshots = [];
+  const rows = await runVerificationPhases(
+    [
+      [
+        'ci',
+        async () => {
+          now = 12;
+          return { ok: true };
+        },
+      ],
+      [
+        'browser',
+        async () => {
+          now = 32;
+          throw Error('deliberate failure');
+        },
+      ],
+      ['gate', async () => assert.fail('must not run')],
+    ],
+    { now: () => now, onProgress: (r) => snapshots.push(structuredClone(r)) },
+  );
+  assert.equal(snapshots.length, 4);
+  assert.equal(snapshots[0][0].status, 'running');
+  assert.equal(snapshots[1][0].elapsedMs, 12);
+  assert.equal(rows[1].elapsedMs, 20);
+  assert.equal(rows[1].status, 'failed');
+  assert.equal(rows.length, 2);
+});
+
+test('merge tier requires explicit base and paired integration provenance', async () => {
+  const { parseCompletionArgs } = await import('../scripts/verification-tiers.mjs');
+  assert.equal(parseCompletionArgs('merge', ['--base', 'HEAD~1']).base, 'HEAD~1');
+  assert.throws(() => parseCompletionArgs('merge', []), /Usage/);
+  assert.throws(
+    () => parseCompletionArgs('merge', ['--base', 'HEAD', '--incoming', 'HEAD']),
+    /Usage/,
+  );
+  const args = parseCompletionArgs('merge', [
+    '--base',
+    'abc',
+    '--incoming',
+    'def',
+    '--destination',
+    'ghi',
+  ]);
+  assert.equal(args.incoming, 'def');
+  assert.equal(args.destination, 'ghi');
+});

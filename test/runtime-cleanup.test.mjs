@@ -124,6 +124,7 @@ test('completed tick timing includes publication and checkpoint cost but not det
           timing.phaseMs -
           timing.checkpointMs -
           timing.publicationMs -
+          timing.frameMs -
           timing.overheadMs,
       ) < 1e-6,
     );

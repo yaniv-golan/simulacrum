@@ -1,3 +1,4 @@
+import { summarizeTickAttribution } from './tick-attribution.mjs';
 import assert from 'node:assert/strict';
 import { createSession } from '../src/simulation/session.mjs';
 import { deterministicProjection } from '../src/model/tick.mjs';
@@ -117,6 +118,7 @@ export async function measureGearPerformance() {
             timesMs: ticks,
             phases: phaseSamples,
             tickTimings: tickTimingSamples,
+            attribution: summarizeTickAttribution(tickTimingSamples),
             phaseP95Ms: Object.fromEntries(
               Object.entries(phaseSamples).map(([key, values]) => [key, p95(values)]),
             ),

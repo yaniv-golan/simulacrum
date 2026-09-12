@@ -14,7 +14,8 @@ globalThis.candidateTransport = {
   async capture(origin, destination, options) {
     captured = { origin, destination, base: `resolved-${options.base}` };
     calls.push({ kind: 'capture', origin, options });
-    mkdirSync(join(destination, 'artifacts'), { recursive: true });
+    mkdirSync(join(destination, 'artifacts/verification-windows'), { recursive: true });
+    mkdirSync(join(destination, 'node_modules'), { recursive: true });
     return captured;
   },
   async matches(path) {
@@ -28,10 +29,16 @@ globalThis.candidateTransport = {
     writeFileSync(
       join(options.cwd, `artifacts/verification-${tier}.json`),
       JSON.stringify({
-        status: code === 1 ? 'failed' : code === 2 ? 'blocked' : 'passed',
+        status: code === 1 ? 'failed' : 'passed',
+        attempt: options.env.SIMULACRUM_VERIFICATION_ATTEMPT,
+        elapsedMs: 1,
+        results: [],
+        checks: [],
         priority: forwarded,
         outcome: {
-          qualification: { status: tier === 'local' ? 'NOT_EVALUATED' : code ? 'BLOCKED' : 'PASS' },
+          automation: { status: code === 1 ? 'FAIL' : 'PASS' },
+          exitCode: code,
+          qualification: { status: tier !== 'final' ? 'NOT_EVALUATED' : code ? 'BLOCKED' : 'PASS' },
         },
       }),
     );
@@ -45,6 +52,10 @@ registerHooks({
     if (url === `file://${repo}/scripts/candidate.mjs`)
       source =
         'export const captureCandidate=(...args)=>globalThis.candidateTransport.capture(...args); export const candidateMatchesOrigin=(...args)=>globalThis.candidateTransport.matches(...args);';
+    if (url === `file://${repo}/scripts/verification-preparation.mjs`)
+      source = 'export async function assertVerificationReady() {return {status: "READY"}}';
+    if (url === `file://${repo}/scripts/merge-selection.mjs`)
+      source = 'export function mergeChanges(options) { return { refs: { base: options.base } }; }';
     if (url === `file://${repo}/scripts/runtime-preflight.mjs`)
       source = 'export function assertRuntime() {}';
     if (url === `file://${repo}/scripts/run-check.mjs`)
@@ -57,7 +68,7 @@ process.argv = [
   process.execPath,
   `${repo}/scripts/verify-candidate.mjs`,
   tier,
-  ...(tier === 'local' ? ['--base', 'HEAD~1'] : []),
+  ...(tier !== 'final' ? ['--base', 'HEAD~1'] : []),
   '--priority-files',
   './scripts/verify-recording-browser.mjs',
   'src/application/workshop-app.mjs',

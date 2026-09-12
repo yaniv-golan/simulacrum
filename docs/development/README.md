@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"f4dada44a8f5895a522250b1aa75926edacf69f079bb729a2af7262d68b980f8","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"2b22722a5e8a1ceb598e830765166c4ae56ef3ff5003da4eb539b4c055a0dd4e","disposition":"still accurate","rationale":"The combined AGENTS retains owner discovery and pinned Node setup; recording exception policy does not change this entrypoint or recipe routing."} -->
+<!-- doc-review {"version":1,"fingerprint":"893ddae3f2da5422daf5664ecbe19f20307a8b8db4a9b53481262543961e3288","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"6330970091f0498a52ccfc25e79cc35cd9cc22904a60c2421fae5c241d6a98f4","disposition":"still accurate","rationale":"AGENTS adds an explicit nonqualifying merge tier; this entrypoint still directs owner discovery, runtime setup and the canonical contracts without changing layer ownership."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -9,7 +9,7 @@ serve a stable build. The page displays its build identity.
 
 ## Working loop
 
-<!-- doc-review {"version":1,"fingerprint":"13688894026ca8a5c01106b31e692302441722a0de019ca903c1d0a219c8603b","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"ada749125e632d8ece4fdd979daab565086e6bd09d7c36081a86094b2ad69da3","disposition":"still accurate","rationale":"The combined guide retains one captured completion tier after documentation review; release preparation remains a separate frozen path. Recording packet compression does not alter the developer entrypoints or authorize bypassing automated checks."} -->
+<!-- doc-review {"version":1,"fingerprint":"c493cfb94556d95eacbac7f275368fc79605942c7b078eefc4640e9eb385c470","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"ada749125e632d8ece4fdd979daab565086e6bd09d7c36081a86094b2ad69da3","disposition":"updated","rationale":"The command choice now distinguishes local completion, routine merge readiness and full release or milestone qualification; each completion command owns CI so development probes need not be repeated."} -->
 
 
 Player-facing changes also follow the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
@@ -30,7 +30,8 @@ executable guarantees. Use the existing discovery and completion commands below.
 5. Inspect browser behavior when presentation or input changes. Focused tests,
    `typecheck` and `ci` are optional development probes, not prerequisites to repeat.
    Choose one completion command: `verify:candidate -- local` for local closure,
-   or `verify:candidate -- final` for merge/milestone qualification. Both capture an isolated source and run the existing tier, which already runs CI.
+   `verify:candidate -- merge --base <commit>` for routine merge readiness,
+   or `verify:candidate -- final` for release/milestone qualification. All capture an isolated source and run the existing tier, which already runs CI.
    For a release candidate, `release:prepare` owns complete verification in its frozen copy;
    do not run a completion tier first solely as preparation. Read the gate result:
    automated success cannot supply a missing human assessment.
@@ -91,12 +92,13 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"3d5863bee87e525b1766316b28700f5ad291cbc6d290264873a7f341c8744c74","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"af7357f85439e9cc8c27ffed2ae4902fad117c4db82666d31db42926d565ba93","disposition":"still accurate","rationale":"The merged branch retains main's pinned native library and boundary-check reuse. Verification commands, failure propagation and source identity rules remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"83e70567647aea12a5ed7d1373e8ed6a0882f988bc046d5d31b9e1ac2b6c60a0","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"7c51d01a3e8f3372c870d934ace9bd64c4970de29c7d4e7220c05e97aa76c9c3","disposition":"still accurate","rationale":"Recording seek reconstruction is faster but capture consent, release admission and qualification policies are unchanged. Local, merge and final commands described here retain the same distinct outcomes."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
 - `npm run verify:local` runs CI and conservatively affected browser checks, with `artifacts/verification-local.json` recording the base, exact paths, selection reasons and source. Default base is HEAD; `--base <commit>` includes committed changes since that commit. Untracked files are included and clean source selects all checks. Exit 0 means local automation passed; qualification and human acceptance are explicitly NOT_EVALUATED.
-- `npm run verify:final` runs CI, all browser checks and the current gate with invocation-local shared check receipts; human acceptance remains a separate requirement. Both tiers stop after a failed prerequisite, including stale documentation, before starting browser work. The [verification outcome](../../scripts/verification-outcome.mjs#implementation) separates automation, human acceptance and overall qualification: exit 0 means qualified, exit 1 means automation failed or was incomplete, and exit 2 means automation passed but human acceptance blocks qualification. Failed or invalid human evidence is distinguished from missing evidence; none authorizes qualification.
+- `npm run verify:merge -- --base <commit>` runs CI, audited affected browser checks and the three registered merge smoke checks. It never runs the milestone gate or evaluates human acceptance.
+- `npm run verify:final` runs CI, all browser checks and the current gate with invocation-local shared check receipts; human acceptance remains a separate requirement. All completion tiers stop after a failed prerequisite, including stale documentation, before starting browser work. The [verification outcome](../../scripts/verification-outcome.mjs#implementation) separates automation, human acceptance and overall qualification: exit 0 means qualified, exit 1 means automation failed or was incomplete, and exit 2 means automation passed but human acceptance blocks qualification. Failed or invalid human evidence is distinguished from missing evidence; none authorizes qualification.
 - `npm run ci` runs structural and unit checks within the development budget.
 - `npm run gate` evaluates the current cumulative milestone, including human requirements.
 - `npm run test:browser:affected -- --files <paths>` selects, explains in its report, builds once and executes conservative browser coverage. Add `--summary` for source-bound discovery without building or opening sockets.
@@ -131,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"a335411e9846c7ab3fcaadda6973dc1cbd871290fcf3fb4b7c8c837b3a37c7b2","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"71e8f8cfb09959c8cd3f19b2b90f2fd7710bfa3b7b45e02eb842ef8e84ae85b7","disposition":"still accurate","rationale":"Combined generated references include gear and sensor/controller owners; documentation preparation and individual source-bound review still precede candidate capture."} -->
+<!-- doc-review {"version":1,"fingerprint":"6fde4daf77925f315b24e2218e3857e7016e76861f75cf0d921522a869fffa9b","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"061d80f3cf2f4afc564371640f89d1d38eb04682d47f6c69a0d54d30cf3c6f74","disposition":"still accurate","rationale":"Generated navigation now includes the help catalog partition. Preparation still regenerates before separate semantic review; exact source-bound metadata exceptions and conservative policy changes are unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -236,8 +238,35 @@ These gates establish current references and an explicit review record. They can
 prove that prose is true or that an agent understood it; behavioral tests and source
 review remain necessary.
 
+Routine merge readiness uses `npm run verify:candidate -- merge --base <commit>`.
+It runs CI and the conservatively affected browser journeys plus the manifest's
+three merge smoke checks. Only existing audited local contracts or non-runtime
+classifications may narrow selection. Shared runtime, unknown inputs, build/configuration,
+verification infrastructure and verification-policy changes retain the full browser suite.
+A source-compared review-marker-only update may remain narrow for an explicit-base
+comparison; changed policy prose and malformed markers still require full coverage.
+Fingerprint-only manifest updates are also distinguished by comparing every byte except
+the two validated audit-hash fields; all other manifest edits retain full coverage.
+Branch-pair comparisons conservatively retain full coverage for touched policy Markdown
+and manifest metadata.
+This tier does not run the milestone gate or evaluate human acceptance.
+
+For two-branch work add `--incoming <commit> --destination <commit>` and use their
+common ancestor as `--base`. The report pins both tips and includes destination-only
+changes and final candidate edits. Plain `--base` is explicitly a base-to-candidate
+comparison, not evidence that two branches were integrated. Neither command installs
+changes. For already frozen CI copies, `npm run verify:merge -- --base <commit>` is
+the direct equivalent. Selected and omitted browser checks include reasons.
+
+Full browser coverage remains scheduled and required for releases and qualification.
+CI preserves separate unit and browser jobs: pull requests use the pinned event tips
+and actual merge checkout, while missing push history selects full coverage. Scheduled
+full runs compare last-commit merge selection only when matching complete evidence is
+available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does not
+establish safety for every omitted check or replace the full run.
+
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"3694763d368d4cce4a68530b8dba409a308e50357ec952fc19d3e1de13a05565","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"486163e05c4134c82950394a0f86049b4237d67b8c79d692a7dc7a5e4bca0fcb","disposition":"still accurate","rationale":"The applied registry update refreshes only eight consumer fingerprints after immutable sensor-body reuse. Read declarations, exclusions, roots and invariant witness requirements remain unchanged; the reviewed scope workflow still governs application."} -->
+<!-- doc-review {"version":1,"fingerprint":"a74811b20257328fda547abfcf2c567dd0dcc98bc7c303918c413360e4b99499","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"58ee45e8d96dd3b9039c5f54ccc77511a30ff9af37606479ec5a173d6b3df55b","disposition":"still accurate","rationale":"The new help inspector row preserves the complete catalog scenario and is included in existing help scopes. Root and consumer fingerprints were explicitly reviewed; both partitions retain60-second watchdogs and unchanged UI-profile parallel admission."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -247,7 +276,7 @@ shared runtime and identity dependencies often select the full browser suite.
 entrypoint, its frozen direct dependency shape, and required feature/integration checks.
 All local scopes also bind the transitive reverse-consumer set and browser-root inventory.
 New consumers and roots restore broad coverage; outgoing imports alone are insufficient.
-Part-help presentation edits select four checks; its standalone verifier selects two.
+Part-help presentation edits select the registered help and lifecycle checks; its standalone verifier retains its audited scope.
 Mirror presentation edits select mirror, assembly UX and manipulation checks; its standalone verifier selects the mirror check. The remote recording client selects both backend adapters, durable feedback receipts, workshop lifecycle and construction checks; new service/import edges or opaque inputs restore conservative coverage.
 Known documentation and unit-test files can be excluded from browser execution only
 when absent from reachable runtime data/module edges and every reachable opaque reader
@@ -307,7 +336,8 @@ contracts do not apply to full qualification and do not claim that imports prove
 When extending a boundary, review its integration checks as well as dependency changes.
 A shorter
 explicit probe remains useful during development, but is not evidence of complete coverage.
-There is no persistent cross-run receipt cache.
+There is no cross-candidate receipt cache. Only explicitly audited pure unit leaves
+may resume within the same frozen candidate; see isolated candidate completion.
 
 The [browser runner](../../scripts/verify-browser-suite.mjs#implementation) supports
 `--workers 1` and `--workers 2`. The default is two; use one for serial comparisons. Bounded serial/parallel probes
@@ -322,6 +352,11 @@ The [shared browser launch boundary](../../scripts/browser-session.mjs#implement
 the child process execution policy, so passing a profile through a variable cannot bypass
 exclusive execution. This is an engineering guard, not a sandbox for hostile verifier code.
 Reports preserve manifest order, all failures, worker configuration and source identity.
+With two workers, undersized parallel runs may be grouped across exclusive checks.
+Existing runs are never split, runs of four or more remain in place, and new combined
+groups contain at most four checks. The explicit priority prefix and relative exclusive
+order are preserved. The report records the resulting schedule separately; this does
+not admit additional checks to parallel execution.
 `--priority-files <repository-paths...>` on local/final/candidate completion uses
 positive static dependencies to order likely integration checks earlier. Required
 coverage stays unchanged; unknown associations retain ordinary ordering. Candidate
@@ -365,7 +400,7 @@ The [tier coordinator](../../scripts/verification-tiers.mjs#implementation) keep
 ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
-<!-- doc-review {"version":1,"fingerprint":"26affe3e81b3d95b2c794c7e33bcad6002116f95a3911cb5b43b5b3b6c736649","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"e12fb4be5dae2f7d29c848994d227da36fbe3c7e01f6585f36d120bc7df5291f","disposition":"still accurate","rationale":"The package changes only the native dependency. Shared queue ownership, five-minute default wait and unchanged per-check deadlines remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"f1363d1c19dbd43890b0df22f3ef4d12ed99e23d90487b625e488b09b7f2eaa2","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"3f47d9124cb567343217c9acd609461674ca4442c16532742a80c554cc6d1442","disposition":"still accurate","rationale":"New merge candidate execution uses the same verification-window wrapper; no additional workers or competing measurement permission was introduced."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -399,14 +434,14 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"421c6c8dc7951ee3c24ed59ab36d7ecc5b76b0866462f33a1472255cf4f6001d","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"280e6884bc81db602623bfe330685649a7012e7a2114b73c35604e0cd9203192","disposition":"still accurate","rationale":"Integration runs in a separate worktree and captures a frozen candidate before updating main. The candidate source-match and destination-drift requirements remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f0c488115cdd302d9d775feef734c8ace1c9601d995759d6a794354e647fcaa2","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"7ccc4330d7c807b5f14aa8ba28caf6097b91ea6039272c8e5eeaba7955f4ad55","disposition":"updated","rationale":"Direct-tier wording now covers local, merge and final. The added browser partition does not alter capture, origin matching, resume leaf policy or qualification; full-required sources still select all checks."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
 pinned dependencies, and edit there. Do not include another task's dirty work.
 
 After `docs:prepare` and semantic review, run `npm run verify:candidate -- local`
-(or `-- local --base <commit>`). For merge/release qualification use `-- final`. Both accept optional
+(or `-- local --base <commit>`). For routine merge readiness use `-- merge --base <commit>`; for release/milestone qualification use `-- final`. All accept optional
 `--priority-files <repository-paths...>`; the wrapper validates and records these
 scheduling hints before capture and forwards them into the frozen tier. They never
 replace local base selection or final required coverage.
@@ -422,7 +457,42 @@ the retained candidate; after tier completion and candidate stability validation
 whether the origin still matches. Work may continue in the origin
 after capture; that does not invalidate candidate evidence or qualify changed origin
 bytes. Inspect candidate results before manually integrating. No commit or merge is
-automatic. Direct local/final tiers remain for already frozen CI/release sources.
+automatic. Direct tiers remain for already frozen CI/release sources.
+
+Use `scripts/with-node.sh npm run verify:prepare` to select the already installed
+`.nvmrc` runtime and prepare closure. It never installs a runtime or changes shell
+configuration. Preparation writes generated references and explicitly reviewed scope
+metadata. It stops at unresolved scope decisions, then returns the stale explanation
+list after generation. Supply `--scope-review <file>` using the browser-scope review
+format, and `--documentation-review <file>` with `{source, decisions}` from that
+preparation report and separate semantic decisions. `--check` is read-only.
+Candidate admission repeats readiness before installation; edits require new review.
+
+For an interrupted retained candidate, use `npm run verify:candidate -- resume
+<prior-attempt-report.json>`. This uses the same frozen source, installed dependency
+bytes, runtime, environment and check configuration. Only the manifest's explicitly
+audited pure unit leaves can resume. Their bounded signed result values include the
+process output; aggregate, browser, performance, hosted and human checks execute fresh.
+The local key detects altered receipts, not a hostile process with access to that key.
+Missing or invalidated leaves execute again; corrupt evidence rejects resume. Each
+attempt retains its own report and parent link. Reused checks retain original execution
+duration and report lookup duration separately; resumed CI does not qualify a fresh
+full-CI duration. A candidate ownership lock refuses concurrent attempts and is never
+expired automatically: establish the prior process tree has stopped before recovery.
+
+Candidate timing reports separate capture, installation, dependency validation and the
+tier's execution/window interval; linked window reports identify queue delay. Nested
+intervals overlap and must not be summed as wall time. Tier results are published as
+phases finish, and candidate reports link the actual browser suite attempts. Tick
+cost attribution separates frame construction from publication and native physics;
+unexplained measurement variation stays unresolved and absolute limits remain binding.
+
+`npm run verify:merge:shadow -- --base <common-commit> --incoming <commit>
+--destination <commit>` reports a proposal using both branch deltas and candidate
+changes. It never changes required merge checks or executes qualification. Shared
+runtime and unknown inputs retain full coverage; any proposed omissions remain
+unvalidated until regression replay and held-out review support explicit policy approval.
+An optional `--historical <browser-report.json>` estimates check work, not wall time.
 
 The two assembly UX entrypoints share [one scenario owner](../../scripts/assembly-ux-cases.mjs#implementation).
 Each retains the 60-second process watchdog and existing action deadlines; independent

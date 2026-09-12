@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "src/model/observation.mjs": "f2a62892ae0e9dc95734fb107d1588b007265604ad5aca49ade62b2004d61ec1",
+    "src/model/observation.mjs": "a7f5f8d48b331921bbef3ec1b321bf078ba800cf4b4020a76f9b0a235899239c",
     "src/model/sensors.mjs": "e1cc067189f8f6c5e7b0bec99373647f5bbae8500fc9eabb6ca92518e56a0ce2",
     "src/simulation/sensors.mjs": "ab29242a68d0e9274e352b3c96a3de8d169c59c0adbcc332ad38554329114d75",
     "src/model/controller-authoring.mjs": "0c6b8c4d852dd59345f38ef1a31ff91ce27e90e783fcc6548951abcc0920276c",
