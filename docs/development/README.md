@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"f99986ece0e94b5ec51260c4b3d1a5b68a33eb808ee881021b3712938b9f2963","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"b0325fd07eadfc9457bacd7427c6d0d02e94084641d8b5bf6cea67387bff7e35","disposition":"still accurate","rationale":"Combined manifest retains appearance controls and the release browser registration. Reviewed metadata updates only consumer hashes; required checks, read purposes and execution classifications are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"3585525cfcab892b943182db28f480bb07b19e9abd1e6dda77788e83022a8840","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"dd4bf464b5e05ff514a36e23a66d49e9614dfb30c81024e5ffea604760fef918","disposition":"still accurate","rationale":"Integrated main132661a applies formatting only to verification files and manifest. Parsed merged manifest is identical to3881006: all appearance and release controls, browser scopes and mandatory witness rules are retained unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -444,7 +444,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"fb00f200ba7ee1e0183ee64f1f8c309decd456ee2b681de97fec84078905ac61","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"6d3e65c2721188637f141a064c417d51089ca6056cd9d988177084e2827e715f","disposition":"still accurate","rationale":"The merge combines two source branches using explicit incoming and destination references. Candidate capture, source drift admission and merge-tier requirements are unchanged by either feature."} -->
+<!-- doc-review {"version":1,"fingerprint":"67a12b925985d7b6fe825deb39a924e9cfd04a697afd55541dffc936f2283003","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"c7ce803ce9386630f210af1fd150be13c70a65704e5be23cc0894926994a0c9b","disposition":"still accurate","rationale":"The latest main integration changes whitespace and review metadata only. Candidate source capture, dependency validation, explicit two-branch scope and receipt identity admission remain unchanged; merge evidence will be refreshed against destination132661a."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
