@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"8cc3652e287d3de6880ba2f0b5c2a4759513a4524c9c869230584d5929b5c954","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"033e032c2efa3892c22b357510dc3255b872169f1812cda5becad8a8b3b09c9e","disposition":"updated","rationale":"The integrated section adds the actual ropeInspector and compileRopes owners. The inspector submits the ordinary rope command; core edits a candidate connection and validates/compiles before history publication. Compilation appends massive nodes and spherical attachments, while session/world alone advance them and publish completed observations. Existing part-visual and feedback lifetimes remain outside physics authority."} -->
+<!-- doc-review {"version":1,"fingerprint":"5483f6a274904076df3525c0ebbd97b243765501880e969a83150f25abe19f29","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"a6d5cf5871be7d48bbb4aca3a58dcd2daab507f777b43fca8076f40ffdad073a","disposition":"updated","rationale":"The section now names the application-owned utility row and captureFeedbackContext. The application injects the row host and combines workshop.save() with current build/cursor/mode/status/UI/viewport context; feedback receives no checkpoint function. The separate recording path retains replay capture, and core/model/session admission and physics authority are unchanged."} -->
 
 
 
@@ -20,6 +20,12 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 4. [validateBlueprint](../../src/model/blueprint.mjs#symbol=validateBlueprint), [placement admission](../../src/model/surfaces.mjs) and [compileAssembly](../../src/model/assembly.mjs#symbol=compileAssembly) validate stored values, physical intersections and connection geometry before simulation receives configuration.
 5. [Session](../../src/simulation/session.mjs) owns stepping, checkpoint and completed publication. [Controllers](../../src/simulation/controllers.mjs) produce program commands; the [receiver arbiter](../../src/simulation/receiver-arbiter.mjs) owns Manual/Automatic/Learned/Off, explicit takeover and prior-tick travel regulation; [power](../../src/simulation/power.mjs) resolves circuits; the [physics door](../../src/simulation/physics/world.mjs) alone imports the physics library. Completed contact collection uses the numeric [contact reader](../../src/simulation/physics/read-contacts.mjs); session assigns the completed interval and includes collection in integration timing.
 6. [Observation store](../../src/model/observation.mjs) publishes immutable completed snapshots. Presentation consumes these observations, never a live physics object. The application drains a separate observation cursor into selected-body Measurements so its 120 Hz samples do not depend on rendering cadence.
+
+The application supplies the feedback/recording utility row as part of the workshop
+layout and keeps protected feedback dialogs outside that root. Optional
+[feedback context](../../src/application/feedback-context.mjs#symbol=captureFeedbackContext)
+combines the ordinary authored save with current UI state. It never requests a replay
+checkpoint or native physics bytes; recording keeps its separate capture path.
 
 The [assembly library](../../src/application/assembly-library.mjs#implementation) owns
 browser persistence and validates definitions with the model. The

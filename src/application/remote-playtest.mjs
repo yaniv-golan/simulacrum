@@ -20,15 +20,18 @@ import { measureRecordedDuration } from './capture-media-duration.mjs';
 export async function mountRemotePlaytest({
   context,
   checkpoint,
+  feedbackSnapshot,
   screenshot,
+  toolbarHost = document.body,
   measureVideoDuration = measureRecordedDuration,
 }) {
   const uploadTimeoutMs = 45000;
   const panel = document.createElement('section');
   panel.className = 'playtest-panel';
   panel.innerHTML =
-    '<strong>Remote playtest</strong><button data-project>Project status</button><span data-status><span data-status-main>Ready</span><span data-status-detail></span></span><button data-setup>Start recording</button><button data-feedback aria-label="Give feedback">Give feedback<small data-feedback-state></small></button><button data-end hidden>Finish session</button>';
-  document.body.append(panel);
+    '<button data-project hidden>Project status</button><span data-status hidden><span data-status-main></span><span data-status-detail></span></span><button data-setup hidden>Start recording</button><button data-feedback aria-label="Give feedback">Give feedback<small data-feedback-state></small></button><button data-end hidden>Finish session</button>';
+  panel.setAttribute('aria-label', 'Feedback and recording');
+  toolbarHost.append(panel);
   let captureHooks = {},
     recordingReference = () => undefined;
   const captureGate = createFeedbackCaptureGate({
@@ -43,15 +46,15 @@ export async function mountRemotePlaytest({
   client = await mountFeedbackClient({
     trigger: panel.querySelector('[data-feedback]'),
     gate: feedbackGate,
-    context,
-    checkpoint,
+    snapshot: feedbackSnapshot,
     screenshot,
     reference: () => recordingReference(),
     stopTabRecording: () => captureHooks.stop?.(),
     onChange: (message) => {
-      if (typeof message === 'string')
+      if (typeof message === 'string') {
         panel.querySelector('[data-status-detail]').textContent = message;
-      else if (message)
+        panel.querySelector('[data-status]').hidden = !message;
+      } else if (message)
         panel.querySelector('[data-feedback-state]').textContent = message.dirty
           ? 'Draft not saved'
           : message.blocked
@@ -68,10 +71,9 @@ export async function mountRemotePlaytest({
     .catch(() => null);
   client.configure(config);
   if (!config?.enabled) {
-    panel.querySelector('[data-setup]').disabled = true;
+    panel.querySelector('[data-setup]').hidden = true;
     panel.querySelector('[data-project]').hidden = true;
-    panel.querySelector('[data-status-detail]').textContent =
-      'Recording unavailable. Feedback drafts remain accessible.';
+    panel.querySelector('[data-status]').hidden = true;
     return {
       active: () => false,
       emit: () => {},
@@ -83,16 +85,13 @@ export async function mountRemotePlaytest({
     };
   }
   if (config.protocolVersion !== 2) {
-    const notice = document.createElement('p');
-    notice.textContent =
+    panel.querySelector('[data-status]').hidden = false;
+    panel.querySelector('[data-status-detail]').textContent =
       'Recording needs a compatible server. Saved recordings have not been changed.';
-    document.body.append(notice);
-    panel.querySelector('[data-setup]').disabled = true;
     return {
       active: () => false,
       emit: () => {},
       dispose: () => {
-        notice.remove();
         client.dispose();
         void captureGate.close();
         panel.remove();
@@ -212,6 +211,7 @@ export async function mountRemotePlaytest({
   document.body.append(dialog);
   dialog.setAttribute('aria-label', 'Recording setup');
   panel.querySelector('[data-setup]').onclick = () => dialog.showModal();
+  panel.querySelector('[data-setup]').hidden = false;
   dialog.querySelector('[data-dismiss-setup]').onclick = () => dialog.close();
   dialog.showModal();
   const projectDialog = document.createElement('dialog');
@@ -220,6 +220,7 @@ export async function mountRemotePlaytest({
     projectStatus + '<button data-close-project>Back to the workshop</button>';
   document.body.append(projectDialog);
   panel.querySelector('[data-project]').onclick = () => projectDialog.showModal();
+  panel.querySelector('[data-project]').hidden = false;
   projectDialog.querySelector('[data-close-project]').onclick = () => projectDialog.close();
   const completion = document.createElement('dialog');
   completion.className = 'playtest-dialog playtest-completion';
@@ -260,6 +261,14 @@ export async function mountRemotePlaytest({
           : ' Recording has not resumed. Choose Start recording to begin a new session.');
     const saved =
       !!session && !active && !pending && !flushing && !busy && !captureError && !failed;
+    panel.querySelector('[data-status]').hidden = !(
+      active ||
+      saved ||
+      pending ||
+      flushing ||
+      captureError ||
+      failed
+    );
     panel.querySelector('[data-status-main]').textContent = captureError
       ? 'Recording stopped'
       : failed

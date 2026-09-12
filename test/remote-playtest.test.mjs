@@ -63,7 +63,9 @@ async function fixture(t, options = {}) {
       if (!this.children.has(key)) this.children.set(key, new Element(key));
       return this.children.get(key);
     }
-    append() {}
+    append(...items) {
+      (this.appended ??= []).push(...items);
+    }
     replaceChildren(...children) {
       this.options = children;
       this.value = children[0]?.value || '';
@@ -224,12 +226,14 @@ async function fixture(t, options = {}) {
   for (const [key, value] of Object.entries(values))
     Object.defineProperty(globalThis, key, { value, configurable: true, writable: true });
   t.mock.method(globalThis, 'fetch', async (url, init) => {
-    if (url.endsWith('/config'))
+    if (url.endsWith('/config')) {
+      if (mode.configUnavailable) throw TypeError('offline');
       return {
         ok: true,
         headers: { get: () => 'application/json' },
         json: async () => ({ enabled: true, protocolVersion: 2, optionalVideo: true }),
       };
+    }
     if (url.endsWith('/session')) {
       if (mode.failure === 'network') throw new TypeError('Failed to fetch');
       if (mode.waitForSession) await mode.waitForSession;
@@ -262,7 +266,10 @@ async function fixture(t, options = {}) {
       else delete globalThis[key];
     }
   });
+  const toolbarHost = options.toolbarHost ? new Element('workshop') : undefined;
   mount = await (options.mount || mountRemotePlaytest)({
+    ...(toolbarHost ? { toolbarHost } : {}),
+    feedbackSnapshot: () => ({ project: {}, workshop: {} }),
     context: () => {
       if (++contextCalls > 30) throw Error('recursive finalization guard');
       return {};
@@ -273,6 +280,7 @@ async function fixture(t, options = {}) {
   await settle();
   return {
     mount,
+    toolbarHost,
     mode,
     rows,
     tracks,
@@ -433,4 +441,26 @@ test('frozen legacy client cannot upload or acknowledge the live v2 outbox', asy
   f.mount.dispose();
   await settle();
   assert.equal((await v2.items()).length, 1);
+});
+
+test('feedback recovery occupies the supplied toolbar region without unavailable recording chrome', async (t) => {
+  const f = await fixture(t, { toolbarHost: true, configUnavailable: true });
+  const panel = f.nodes.find((n) => n.className === 'playtest-panel');
+  assert.ok(
+    f.toolbarHost.appended?.includes(panel),
+    'feedback belongs to the application toolbar host',
+  );
+  assert.ok(!document.body.appended?.includes(panel), 'toolbar must not overlay the document body');
+  assert.equal(panel.querySelector('[data-setup]').hidden, true);
+  assert.equal(panel.querySelector('[data-project]').hidden, true);
+  assert.equal(panel.querySelector('[data-status]').hidden, true);
+  assert.equal(panel.querySelector('[data-feedback]').hidden, undefined);
+  await panel.querySelector('[data-feedback]').click();
+  await settle();
+  assert.equal(
+    f.nodes.find((n) => n.className === 'playtest-dialog feedback-dialog').open,
+    true,
+    'offline feedback draft remains reachable',
+  );
+  assert.equal(f.mount.active(), false);
 });

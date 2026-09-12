@@ -4639,6 +4639,10 @@
       "guarantee": "Feedback is an immutable independent submission. Only a complete digest-bound durable acknowledgement confirms receipt; revisions, retry, discard and storage failure preserve truthful draft and delivery state. Submitted attachments remain reviewable. Correcting a blocked submission creates a separate draft without replacing unfinished work. Feedback workload samples remain separate from recording media and cannot claim capacity qualification.",
       "owners": [
         {
+          "path": "src/application/feedback-context.mjs",
+          "anchor": "captureFeedbackContext"
+        },
+        {
           "path": "src/application/feedback-protocol.mjs",
           "anchor": "validateFeedbackEnvelope"
         },
@@ -4661,6 +4665,14 @@
       "controls": {
         "positive": [
           {
+            "path": "test/remote-playtest.test.mjs",
+            "anchor": "feedback recovery occupies the supplied toolbar region without unavailable recording chrome"
+          },
+          {
+            "path": "test/feedback-context.test.mjs",
+            "anchor": "feedback context preserves authored programs and current UI without replay checkpoint bytes"
+          },
+          {
             "path": "test/feedback-protocol.test.mjs",
             "anchor": "feedback protocol binds exact UTF8 payload and strict complete receipt"
           },
@@ -4674,6 +4686,10 @@
           }
         ],
         "negative": [
+          {
+            "path": "test/feedback-context.test.mjs",
+            "anchor": "feedback context preserves authored programs and current UI without replay checkpoint bytes"
+          },
           {
             "path": "test/feedback-protocol.test.mjs",
             "anchor": "feedback admission rejects unknown fields malformed media and bounds while permitting optional voice"

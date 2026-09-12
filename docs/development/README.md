@@ -92,7 +92,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"95ec189d43e6d38a18db7892cb8ba8e6aaed115a3043697d4dbf803e56d9905f","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"03759f6d262df8d12d1095ac3c037ec4a6200a2fb8bff2efada82fce43bae8a5","disposition":"still accurate","rationale":"The package change declares the feedback client service edges for conservative discovery; it does not change npm command bodies or tier outcomes. The merged manifest still has three merge smoke checks. Local, merge and final retain the documented distinction between automation and human qualification."} -->
+<!-- doc-review {"version":1,"fingerprint":"85067b0cacd77db55c64c929ea917de145f71e2ed90e0059db8a0cffe7309634","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"06ab0258763db955cd0dc0a5b89a5e4f08c841b548c59c0c9287a696b886e1ca","disposition":"still accurate","rationale":"The linked playtesting section now specifies an in-flow feedback row and authored/UI-only context capture. Completion commands, runtime admission, the three merge smoke checks and automation-versus-human outcomes remain unchanged; fresh rendered evidence is still required on the repaired source."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"664c0e6287bdec3ac5697565c40c63d304270d836dbcb2b3043859678a35f509","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"8242077859393e0770c094541ff5b76e0f8e49779e602e5a45b224f414498c0b","disposition":"still accurate","rationale":"The generated reference now includes Rope compilation, law, inspector, rendering and registered witnesses alongside feedback. Preparation still regenerates derived facts before individual semantic review; source changes invalidate dependent sidecars rather than inheriting an older pass. No documentation-check ownership or batch publication semantics changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"294e70f9ea3c136874b915da106e710a9e03c50310eb9440d6cbae8b6b256288","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"de9ccb2b5171822fc3d3b72d3084a29e64e994c4f1e293575abc9c324a5c5566","disposition":"still accurate","rationale":"The generated reference adds the authored-feedback context owner and regression controls. The checker still regenerates facts before individual source-bound dispositions and rejects stale dependencies. New explanatory links identify the actual context owner without replacing semantic review or hiding source changes."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"c8b66b0ed70180d2b7fb8ea5ca0ba237d5531d89160e29722c46b3e33da874be","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"814f6375e5743b40ca6533b2036ca4f0ace1d2776de6648aef612cab7f9cc7d4","disposition":"still accurate","rationale":"Atomic owner publication removes a partial JSON visibility race without changing registered checks, scheduling hints, scope union witnesses, execution budgets or full-candidate requirements. The existing verification-resource-window invariant now registers the partial-publication and malformed-authority regression as positive and negative controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"daef0d9e8f2631a0c350c3457e68deba59eea0bd2156d13918eae6a28f30c5f6","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"56091c0e369725a814e6c8d8f04befc4d51cc30775fda823f196c2e216149d72","disposition":"still accurate","rationale":"The manifest extends independent-feedback controls with host-placement and authored-context witnesses, and workshop composition adds that explicit context owner. These service/import changes remain subject to existing scope audit and witness application; browser coverage, exclusive execution and last-writer ordering hints are unchanged. Added hit-testing assertions do not constitute a completed browser run."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -505,7 +505,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"4576927c04adbd637287e79b2e746a255dc1caeff1dcb1bf0ddad3458ecdd371","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"e40e8cb3f7e69032f9329bb53c4e51071cce8f197a341eb9638f11c59a25701f","disposition":"still accurate","rationale":"The shared lease now publishes owner metadata atomically. Frozen source capture, candidate dependency identity, pure-leaf resume limits and exact integration-destination checks are unchanged. The existing verification-resource-window invariant now registers the partial-publication and malformed-authority regression as positive and negative controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"ef0d765d953a8662a122e43354090aba066f6363e46213904637abd08172a625","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"8ff9530e69540f46b48a7194806ff00c5c745ccd1687ef6d0c18b9e0df3a2581","disposition":"still accurate","rationale":"The manifest adds feedback ownership and regression pointers without changing candidate capture, receipt admission, resume eligibility, timeout selection or source installation. The in-flow toolbar and new context module require fresh candidate evidence. Existing source/index and distinct human-acceptance requirements remain accurate."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

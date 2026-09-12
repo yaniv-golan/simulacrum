@@ -30,8 +30,7 @@ const hasContent = (draft) =>
 export async function mountFeedbackClient({
   trigger,
   gate,
-  context,
-  checkpoint,
+  snapshot,
   screenshot,
   reference = () => undefined,
   onChange = () => {},
@@ -713,8 +712,7 @@ export async function mountFeedbackClient({
           ...(attachmentReference ? { reference: attachmentReference } : {}),
         };
       } else if (checked) {
-        const snapshot = { project: checkpoint(), workshop: context() };
-        const json = JSON.stringify(snapshot);
+        const json = JSON.stringify(snapshot());
         if (new TextEncoder().encode(json).length > feedbackLimits.contextBytes)
           throw Error('Workshop context is too large. You can send without it.');
         value = {

@@ -141,7 +141,7 @@ const server = createServer(async (req, res) => {
       for(const text of ['queued A','queued B']){const draft=await store.createDraft({text});await store.freeze({id:draft.id,revision:draft.revision});}
       store.close();
     }
-    window.capture=await mountRemotePlaytest({context:()=>({ui:{mode:'build'}}),checkpoint:()=>({blueprint:{id:'fixture'}}),screenshot:()=>null});
+    window.capture=await mountRemotePlaytest({feedbackSnapshot:()=>({project:{id:"fixture"},workshop:{ui:{mode:"build"}}}),context:()=>({ui:{mode:'build'}}),checkpoint:()=>({blueprint:{id:'fixture'}}),screenshot:()=>null});
     </script>`);
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));

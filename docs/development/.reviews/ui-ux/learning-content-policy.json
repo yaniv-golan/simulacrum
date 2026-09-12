@@ -3,7 +3,7 @@
   "dependencies": {
     "src/presentation/workshop-view.mjs": "27abab74738c563956b8173937720eaa3cbc4e1ca7b21c5a60f779176364e5b3",
     "src/application/starter-guide.mjs": "419ced867a8ae10c623b35fe8c0f2ee5ec2dba6495e2c4026d24909353e46e60",
-    "src/application/workshop-app.mjs": "782064db7031075aa57ff837615b6182b4fb6a147fd2b394d0fab2b32815b825",
+    "src/application/workshop-app.mjs": "c211e8df4215238ecbd3cad41d4f8042965c1a477e2ce5f553b6940c717c8100",
     "src/presentation/spring-controls.mjs": "6f94120667df07fed20ef4d928ac4d7d66aa9d3f1e89fb739ca50d812e1e8bbd"
   }
 }

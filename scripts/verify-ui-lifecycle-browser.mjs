@@ -31,6 +31,25 @@ try {
     expectedBuild,
     'served build must equal the current app fingerprint',
   ]);
+  browserEvidence.assert('deepEqual', [
+    await page.evaluate(() => {
+      const toolbar = document.querySelector('.playtest-panel').getBoundingClientRect();
+      const intersects = (element) => {
+        const rect = element.getBoundingClientRect();
+        return (
+          rect.width > 0 &&
+          rect.height > 0 &&
+          Math.min(rect.right, toolbar.right) > Math.max(rect.left, toolbar.left) &&
+          Math.min(rect.bottom, toolbar.bottom) > Math.max(rect.top, toolbar.top)
+        );
+      };
+      return [...document.querySelectorAll('.viewport canvas, .inspector-panel')]
+        .filter(intersects)
+        .map((element) => element.className || element.tagName);
+    }),
+    [],
+    'feedback toolbar leaves canvas and inspector pointer regions unobstructed',
+  ]);
   await browseAllParts(page);
   await placeCatalogPart(page, 'chassis');
   const canvas = page.locator('canvas').first(),

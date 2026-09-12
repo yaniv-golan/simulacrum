@@ -78,8 +78,7 @@ try {
         window.client = await mountFeedbackClient({
           trigger: document.querySelector('#trigger'),
           gate: { enter: async () => {}, leave: () => {} },
-          context: () => ({}),
-          checkpoint: () => ({}),
+          snapshot: () => ({ project: {}, workshop: {} }),
           screenshot: () => null,
         });
       },
@@ -209,8 +208,7 @@ try {
       window.client = await mountFeedbackClient({
         trigger: document.querySelector('#trigger'),
         gate: window.gate,
-        context: () => ({}),
-        checkpoint: () => ({}),
+        snapshot: () => ({ project: {}, workshop: {} }),
         screenshot: () => null,
       });
     });
@@ -325,8 +323,7 @@ try {
     window.client = await mountFeedbackClient({
       trigger: document.querySelector('#trigger'),
       gate: window.gate,
-      context: () => ({}),
-      checkpoint: () => ({}),
+      snapshot: () => ({ project: {}, workshop: {} }),
       screenshot: () => null,
     });
     window.client.configure({ feedback: { enabled: true, protocolVersion: 1 } });

@@ -155,7 +155,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"f2c347713c331c99e9433ecf95ef55e9c4b21ec0c458e6656a9d4df06abc7d6c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"fc4c225d37b17bb9bf1319ea1fddc7d3e08f731b36e4dcd55b8a070225aaf07c","disposition":"still accurate","rationale":"The native qualification dependency receives atomic host-window publication only. Physics controls, law paths, native baseline/candidate separation, stale-build negatives and qualification evidence requirements are unchanged. The existing verification-resource-window invariant now registers the partial-publication and malformed-authority regression as positive and negative controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"e26dabd35fbcfa7217e41ae47ca6af897267deae80e000e2e3f1ee1a810051d2","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"f4b1c52c383ca9ded9c8a233f329835f431ad0447fddb2e86f4bd517d342d9c2","disposition":"still accurate","rationale":"The transitive source changes are feedback toolbar composition, authored-save context capture and associated regression/manifest/documentation updates. The native world, Rope law/ledger, phase order, constraint settings and physical acceptance budgets are untouched. An optional feedback snapshot has no native-state read or write authority and does not qualify any physical claim."} -->
 
 
 

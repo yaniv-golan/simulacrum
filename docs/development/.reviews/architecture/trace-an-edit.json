@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "src/application/workshop-app.mjs": "782064db7031075aa57ff837615b6182b4fb6a147fd2b394d0fab2b32815b825",
+    "src/application/workshop-app.mjs": "c211e8df4215238ecbd3cad41d4f8042965c1a477e2ce5f553b6940c717c8100",
     "src/presentation/workshop-view.mjs": "27abab74738c563956b8173937720eaa3cbc4e1ca7b21c5a60f779176364e5b3",
     "src/presentation/parts-browser.mjs": "153d01758b040a471eb43074e0be7b35277f7a4fcfed16ab14a17e9320753e42",
     "src/presentation/part-search.mjs": "93e503b88430fd761462b54791c7d9f0a0aa8ea37036a94fd5fcd35296217210",
@@ -61,6 +61,7 @@
     "src/simulation/receiver-arbiter.mjs": "716d8f354d1205c644e40098f20e4f5384dbc818a36f2b5bc4160cb445f3d917",
     "src/simulation/sensors.mjs": "78f2053bc3a0400a5bce80d88e8cac9820419c83402c77b3c7a66d28f3f85725",
     "src/simulation/session.mjs": "93e1833f740964e3ab29761d0f7b0917cea05b987174e55bdc07fba4ab8688a3",
+    "src/application/feedback-context.mjs": "3597c60d3624670858128ec45bb385282e5ccbf96c3c2a8d43b49ed2ba2344db",
     "src/application/assembly-library.mjs": "d43ad2fb2382faa78119ff9e66676d9ea2e8b59106314e6576891460c54ab24f",
     "src/presentation/assembly-library.mjs": "7e575049f79fb8f73c5629f8d8d7f863504e8dff87556a34cca3da2fc458e60e",
     "src/application/retry.mjs": "1f865d841e196725fd7d0768dd838c06947d4c661620275ffa97b32d62af3bfa",

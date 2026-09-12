@@ -38,7 +38,7 @@ const server = createServer((req, res) => {
   } else {
     res.setHeader('Content-Type', 'text/html');
     res.end(
-      '<meta name="build-id" content="feedback-flow-fixture"><link rel="stylesheet" href="/style.css"><script type="importmap">{"imports":{"fflate":"/fflate.mjs"}}</script><script type="module">import {mountRemotePlaytest} from "/src/application/remote-playtest.mjs"; window.capture=await mountRemotePlaytest({context:()=>({ui:{mode:"build"}}),checkpoint:()=>({blueprint:{id:"test"}}),screenshot:()=>null});</script>',
+      '<meta name="build-id" content="feedback-flow-fixture"><link rel="stylesheet" href="/style.css"><script type="importmap">{"imports":{"fflate":"/fflate.mjs"}}</script><script type="module">import {mountRemotePlaytest} from "/src/application/remote-playtest.mjs"; window.capture=await mountRemotePlaytest({feedbackSnapshot:()=>({project:{id:"fixture"},workshop:{ui:{mode:"build"}}}),context:()=>({ui:{mode:"build"}}),checkpoint:()=>({blueprint:{id:"test"}}),screenshot:()=>null});</script>',
     );
   }
 });
@@ -268,8 +268,14 @@ try {
                 ),
               };
             }),
-          moving: dialog.getAnimations({ subtree: true }).filter((a) => a.playState === 'running')
-            .length,
+          moving: dialog
+            .getAnimations({ subtree: true })
+            .filter((a) => a.playState === 'running')
+            .map((animation) => ({
+              type: animation.constructor.name,
+              property: animation.transitionProperty ?? animation.animationName ?? '',
+              target: animation.effect?.target?.outerHTML?.slice(0, 250) ?? '',
+            })),
         };
       });
       evidence.assert('ok', [
@@ -281,7 +287,7 @@ try {
       ]);
       evidence.assert('equal', [layout.overflow, false, `${state}: no horizontal overflow`]);
       evidence.assert('ok', [layout.scrollHeight > 0, `${state}: content remains scrollable`]);
-      evidence.assert('equal', [layout.moving, 0, 'reduced motion has no running animation']);
+      evidence.assert('deepEqual', [layout.moving, [], 'reduced motion has no running animation']);
       for (const action of layout.actions)
         evidence.assert('ok', [
           action.x >= layout.x &&

@@ -746,6 +746,18 @@ try {
   browserEvidence.assert('ok', [written.envelope.image.dataUrl.startsWith('data:image/')]);
   browserEvidence.assert('equal', [written.envelope.image.scope, 'canvas']);
   browserEvidence.assert('ok', [written.envelope.context.value.workshop.ui.selected]);
+  browserEvidence.assert('ok', [
+    written.envelope.context.value.project.parts.some(
+      (part) => part.id === written.envelope.context.value.workshop.ui.selected,
+    ),
+    'feedback includes the selected authored part',
+  ]);
+  browserEvidence.assert('equal', [
+    'physics' in written.envelope.context.value.project ||
+      'configuration' in written.envelope.context.value.project,
+    false,
+    'feedback project excludes replay checkpoint storage',
+  ]);
   browserEvidence.assert('equal', [written.envelope.image.reference.sessionId, id]);
   browserEvidence.assert('equal', [written.envelope.context.reference.sessionId, id]);
   browserEvidence.assert('ok', [
