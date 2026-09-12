@@ -18,7 +18,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"249edf152e297ec4c1169a854b12dae1aa648cd5137d7a876fa3cbbf164fd8ee","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"99348d03b3f30d77049ee34a2395fc8630cea4daf818c6518eb82384706d7c16","disposition":"still accurate","rationale":"Frame construction timing does not modify catalog geometry, schema, material admission, mounting surfaces, gear support eligibility or Ball controls. The recipe's ordinary authored-part and independent renderer/model checks still apply."} -->
+<!-- doc-review {"version":1,"fingerprint":"6bbbcc37fc923c55be7bae007c7307c799390573de440b984d4a5c33f452d177","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"f1fca8f600500a91181305bbf6f5fe4e86e568209825bb062a1fc637f4d12335","disposition":"still accurate","rationale":"Main’s actuator remains an ordinary canonical part; integration adds Motion search vocabulary only. Existing schema, geometry, material and physical-test requirements are unchanged."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -58,7 +58,7 @@ when changing admission.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"c742457e58eded3890b2e70615181375ce572b6ae6c8d365d2e1354b811a41ef","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"0b2206365b7cb7ad062d7dfb94bf5761f8afdd20c59ce33874548185183c11aa","disposition":"still accurate","rationale":"Session and observation changes add diagnostic timings after completed simulation work; core shape validation, candidate compilation, atomic command history and rejected-edit effects are unchanged, preserving the surface-mount example and controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"3ae6d137931b84d683eebddc06ecb4a7c96d66b5c0a243b1ce9f50baf84683c6","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"6cbcaa1ae253913c4a9610f2d76d4c214575e9aad0bfce2a8c02f7d1e6c4f76b","disposition":"still accurate","rationale":"Catalog placement adds optional expected-cursor admission to place; the actuator retains existing commands. Whole-candidate compilation, atomic rejection and history ownership remain unchanged."} -->
 
 
 
@@ -75,7 +75,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"fd42afbf65aedeab5a66a90c0bce2821ef98b768016eedca49f5258ee3f40536","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"039252ffb1e790e872653e65f78b3f63f8530ecc78e143f32edf7364b9eabb41","disposition":"still accurate","rationale":"Cached ASTs match fresh parsing and preserve verifier dependency resolution. No player interaction, help scenario body, input ownership, artifact isolation or rendered assertion changed; timeout headroom does not alter those assertions."} -->
+<!-- doc-review {"version":1,"fingerprint":"b42d93cedcbddd90b1aee1e468e412b2fde2345faca47bce6461f9191b630098","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"cabc0a7762a41d5f29f717a3ad2b6f4e8fa62baa788d298b4e8790f80d4202ba","disposition":"still accurate","rationale":"Recording placement now reserves strip space and the help fixture dismisses its dragged overlay using Close. Existing placement commands, cancellation, input ownership, generated previews and rendered assertions remain the recipe owners and obligations."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -106,8 +106,8 @@ text instructions in the How to connect tab of the nonmodal reference window.
 Keep the title bar and tabs available while content scrolls; clamp dragging and
 resizing to the viewport. Keep the small info control visually inside the placement
 card while retaining sibling buttons in the DOM. Restore a hidden opener by opening
-its containing disclosure before focusing it. Preserve palette eligibility through
-[part palette](../../src/presentation/part-palette.mjs); supported loaded types still
+its containing disclosure before focusing it. Preserve catalog eligibility through CATALOG and discovery vocabulary through
+[part search](../../src/presentation/part-search.mjs); supported loaded types still
 need [help content](../../src/presentation/part-help-content.mjs). Use the
 [part help browser check](../../scripts/verify-part-help-browser.mjs#implementation)
 for dragging, expand/restore, tabs, capture, authoring Escape, mode availability
@@ -125,7 +125,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"061d54b22a01c6e3246d8d5c8464abeab0edf3857f4290a38dc25fac9b369e44","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"e694a2241100261b7377c2e245c740cc51e6c3792f379bc78fc78a698d917370","disposition":"still accurate","rationale":"The new frame-construction attribution reads diagnostic timing and does not change motion or controller diagnosis. Completed observation ownership, causal uncertainty, separate history, and measurement sampling remain the prescribed diagnostic path."} -->
+<!-- doc-review {"version":1,"fingerprint":"f6b0da9297225a1fb146ca514d7830a4310a4d83940302b267706dd9cdfe56ae","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"3a0aa74d71a6b796ba1659da31d08104cca5fb2f6cb975c0196ed12e8242b6a9","disposition":"still accurate","rationale":"Actuator completed travel/current diagnostics are preserved. Discovery and cursor admission add no diagnostic writer, measurement cursor or causal inference."} -->
 
 
 
@@ -155,7 +155,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"27d2a20ee8e8d91d45d7c577a430aa0c3a28401e7aee618f97402fc1058e1564","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"bb77467145a30afa4ae9a37dc84520ceeacec91b75aea8e5c8d7d01cd9053447","disposition":"still accurate","rationale":"Session still constructs and publishes the same completed state after one integration; frameMs only separates a measured cost. Gear measurement adds attribution while retaining loaded apparatus durations, physical assertions and absolute budgets, so all numerical and authority requirements here remain binding."} -->
+<!-- doc-review {"version":1,"fingerprint":"75b9a4b40eea7fed1f14df0b1111fcd7ec1439fe863c6505ec04b81780f84749","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"3e46b14d02da203a06e5367ebce13dbd356b4760655dc813b814a9b54eecbf2c","disposition":"still accurate","rationale":"No simulation or numerical owner is changed by the integration repairs. Main actuator impulse, passive-stop and energy-accounting behavior remains documented; rendering batch lifetimes and verification scheduling do not alter those physics contracts."} -->
 
 
 
@@ -297,9 +297,31 @@ at one tenth of the smallest sphere radius, leaving sphere-free scenes at their
 native tolerance. Temporal subdivisions remain unchanged; snapshots bind sweep
 settings and slop. Re-run existing contact/constraint cases when changing this policy.
 
+The [powered linear controls](../../test/linear-actuator.test.mjs#implementation) and
+[mixed-coordinate controls](../../test/linear-actuator-coupling.test.mjs#implementation)
+exercise the same electrical allocation and impulse-receipt owners with a zero-stiffness
+slide. Keep prepared passive damping in axial speed samples and use generalized mixed
+linear/rotary mobility in actual allocation order. Include both anchor moments and
+independent linear/angular momentum and full-inertia work checks. Authored maximum speed
+caps active drive voltage; external loading can overspeed it, so never clamp velocity.
+Completed travel, rather than intermediate drive-kick speed, establishes end-stop or
+barely-moving observations. Positive kick work at a stop can be dissipated during native
+integration; retain the signed integration ledger and independent complete-tick bounds.
+Connection snap length affects the next attachment, not an existing carriage pose.
+The [linear browser construction](../../scripts/verify-linear-actuator-browser.mjs#source)
+uses ordinary mounting, power and receiver keys, an underpowered lift repair, and
+a horizontal slide blocked by an authored obstacle before its end stop. Require
+measured face-to-obstacle contact, sustained stall heat, obstacle-removal repair,
+reverse motion and rendered endpoint agreement. The [linear clock controls](../../test/linear-actuator-determinism.test.mjs#implementation)
+compare four processes and both production clocks, and replay an actual failure bundle
+with a missing-input counterexample. Preserve nondefault actuator settings, material
+and independent wiring through capture, rotated insertion, mirrored copying and
+history using the powered linear controls. These finite controls do not
+qualify arbitrary mechanism loads or human acceptance.
+
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"08e8629b70c394c3eba3c37bb388752f6ea65031e3264ec29c3bf5d88558e1a2","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"c41bc7aa459c073a002ca0462198e135e6d0ed841f73c1f4f6812f95e5b152a5","disposition":"still accurate","rationale":"Parsing reuse only changes verifier setup cost. Assembly commands, transaction ownership, storage semantics, insertion journeys and existing rendered/state assertions are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"ce61b087f028adb0fd8f5dbd5d8df1b338471f05aeed6e90b619419265593448","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"db3ca19d9d7f27ac749664c8955eb8b2468a440823937fc60e4fabc6df3c90e6","disposition":"still accurate","rationale":"Saved definitions, endpoint mapping, independent instances, replacement protection and all library assertions remain unchanged. The harness operation watchdog and UX process deadline have calibrated headroom for rendered previews and final artifact cleanup; the library deadline and all scenario assertions remain unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -392,7 +414,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"2266f3c65a4e14d422d27d03d7af3e08a5c3dcc58b2e11ac1ee7fc0340b9343e","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"cafe88ad510f25d6f0d5a747a14ac456504d375532cbc5939226eed14412169b","disposition":"still accurate","rationale":"Transitive graph parsing is reused by exact bytes; overlay producers, GPU resource ownership, transform comparisons and all spring/adaptive performance thresholds remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"173611b9f340711b816d7c9958c7fe8ad08c27560fb5b48c44c8aba894e8e496","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"e0062f6ebcd8cb8148ac91f60bcf53a162055e4dfff91910688c22464727e83e","disposition":"updated","rationale":"Explains palette batch disposal in finally. The renderer retains the same meshes, framing and lighting; exact image comparisons preserve output while avoiding repeated shader compilation. Assembly preview ownership remains unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -404,6 +426,23 @@ explicit required field. Normal electrical links use straight schematic lines; f
 geometry and exploded dashed styling retain their existing behavior. Gear meshes
 use dashed relationships without a solid supporting rod; their root-cylinder
 marks follow completed body transforms. Preserve the [gear rendering controls](../../test/gear-view.test.mjs).
+
+Electrical port hardware is part of the production part mesh, shared with catalogue and
+assembly previews. [Surface finishes](../../src/presentation/part-finish.mjs#source)
+provide cosmetic material response, subtle roughness grain and a disposable studio
+reflection field. Paint is nonmetallic surface treatment; exposed surfaces follow the
+authored material. These finishes do not change model material values. [Assembly
+thumbnails](../../src/presentation/assembly-thumbnails.mjs#implementation) compose the production connection and spring views at saved authored
+endpoints, including their geometry in framing and disposing temporary resources. Palette thumbnails retain their temporary meshes through one synchronous batch so shared shader programs stay available; a `finally` block releases all meshes, the preview environment and the renderer. Surface mounts
+use the same model surface resolver as the workshop, retaining saved face offsets and
+part rotations; named ports retain their catalogue positions. Powered linear connections use
+the retained straight-rod view with guide-to-carriage endpoint ordering in either saved
+edge direction; passive springs keep their coil view. Socket collars keep authored endpoint positions;
+the housing surface supplies their outward visual normal. Nearest-port spacing bounds
+their size. One aperture represents one endpoint regardless of permitted wire count.
+Invisible original picking volumes preserve targeting; normal wires add no duplicate
+beads. Bright authoring cues also shrink to fit neighbouring electrical endpoints;
+exploded markers remain schematic interaction overlays.
 
 Use exact IDs from [connectionTestPaths](../../src/model/connection-test-paths.mjs#symbol=connectionTestPaths) for
 path highlights. The [Connect & test panel](../../src/presentation/connection-test.mjs#source)

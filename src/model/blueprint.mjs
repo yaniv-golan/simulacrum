@@ -152,7 +152,7 @@ export function validateBlueprint(blueprint) {
       const p = part.parameters;
       if (p.minTarget >= p.maxTarget || p.target < p.minTarget || p.target > p.maxTarget)
         return result('INVALID_BLUEPRINT', `/parts/${index}/parameters`);
-    } else if (part.type === 'springGuide') {
+    } else if (['springGuide', 'linearActuator'].includes(part.type)) {
       const p = part.parameters;
       if (p.minLength >= p.maxLength || p.restLength < p.minLength || p.restLength > p.maxLength)
         return result('INVALID_BLUEPRINT', `/parts/${index}/parameters`);
@@ -178,8 +178,9 @@ export function validateBlueprint(blueprint) {
     }
     if (
       connection.kind === 'spring' &&
-      [parts.get(connection.a.part)?.type, parts.get(connection.b.part)?.type].sort().join(',') !==
-        'springCarriage,springGuide'
+      !['springCarriage,springGuide', 'linearActuator,springCarriage'].includes(
+        [parts.get(connection.a.part)?.type, parts.get(connection.b.part)?.type].sort().join(','),
+      )
     )
       return result('INVALID_BLUEPRINT', path);
     for (const side of ['a', 'b']) {

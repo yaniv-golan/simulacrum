@@ -1,3 +1,4 @@
+import { placeCatalogPart, browseAllParts } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -210,8 +211,8 @@ try {
     /holds the wheel too; no separate fixed mount/,
   ]);
   await page.screenshot({ path: `${out}/wheel-axle.png` });
-  await page.locator('.more-parts > summary').click();
-  await page.locator('[data-part-type=commandReceiver]').click();
+  await browseAllParts(page);
+  await placeCatalogPart(page, 'commandReceiver');
   const receiver = (await read()).parts.find((part) => part.type === 'commandReceiver');
   browserEvidence.assert('ok', [receiver]);
   await selectPart('Motor');

@@ -53,8 +53,15 @@ export function createPowerNetwork(configuration) {
         motor,
         'node,body,rotor,joint,axis,torqueConstant,resistance,currentLimit,defaultDuty' +
           (Object.hasOwn(motor, 'positionControl') ? ',positionControl' : '') +
+          (Object.hasOwn(motor, 'coordinate') ? ',coordinate,maxSpeed' : '') +
           (Object.hasOwn(motor, 'inputPolarity') ? ',inputPolarity' : ''),
       ) ||
+      (Object.hasOwn(motor, 'coordinate') &&
+        (motor.coordinate !== 'linear' ||
+          motor.positionControl ||
+          !finite(motor.maxSpeed) ||
+          motor.maxSpeed <= 0 ||
+          motor.maxSpeed > 0.5)) ||
       (Object.hasOwn(motor, 'inputPolarity') && ![-1, 1].includes(motor.inputPolarity)) ||
       !node(motor.node) ||
       !node(motor.body) ||
@@ -446,6 +453,14 @@ export function createPowerNetwork(configuration) {
         const command =
           (source ? next.sources.find((s) => s.node === source.node).duty : motor.defaultDuty) *
           (motor.inputPolarity ?? 1);
+        if (motor.coordinate === 'linear') {
+          const voltage = cellsFor(motor)[0]?.voltage ?? 1;
+          return {
+            duty:
+              Math.sign(command) *
+              Math.min(Math.abs(command), (motor.torqueConstant * motor.maxSpeed) / voltage),
+          };
+        }
         if (!motor.positionControl) return { duty: command };
         const p = motor.positionControl,
           sample = speeds.find((s) => s.node === motor.node);

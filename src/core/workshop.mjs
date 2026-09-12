@@ -258,8 +258,16 @@ export async function createWorkshop(
           });
           break;
         case 'place':
-          if (keys !== 'id,partType,position,type')
+          if (
+            keys !== 'id,partType,position,type' &&
+            keys !== 'expectedCursor,id,partType,position,type'
+          )
             return result(false, 'INVALID_COMMAND', 'command');
+          if (
+            command.expectedCursor !== undefined &&
+            !sameData(command.expectedCursor, session.observe().cursor)
+          )
+            return result(false, 'STALE_PROPOSAL', 'expectedCursor');
           {
             const part = createPart(command.partType, command.id, command.position);
             part.name = availablePartName(next.parts, part.name);

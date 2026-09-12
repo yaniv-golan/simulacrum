@@ -1,3 +1,4 @@
+import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -182,7 +183,7 @@ export async function qualifyWorkshop(
       }, previousMachine);
       const start = await metricCount();
       for (const type of ['powerCell', 'poweredMotor', 'gripWheel'])
-        await measuredClick(page.locator(`[data-part-type="${type}"]`));
+        await placeCatalogPart(page, type, measuredClick);
       let blueprint = await page.evaluate(
         () => window.workshopProbe.observe().frames[0].metadata.blueprint,
       );

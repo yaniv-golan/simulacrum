@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"866f14732cc38d10829a8ecbee09bf86685af9c8b859ef3bdcfc78b4ce6f4bb7","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"f302e1b4eca19b0dbf913258eb4dcdee00fb4e6a7fb5593b2477a07e34d39826","disposition":"still accurate","rationale":"Documentation now has a 15-second process watchdog and graph parsing reuse. Regeneration, per-section review fingerprints, transitive dependency resolution and stale-evidence rejection are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"26e885c7dc880dfb8b8c4fd371b38be94cf4d32ecf9587ff29b095e419bbcb7f","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"872dba6133a8bada74d2075d4e88b0ba1a5aedc76ee5e0b0f38411d1524b5ca7","disposition":"still accurate","rationale":"Merged references retain actuator and catalog owners. Exact-text parsing reuse and watchdog headroom do not alter regeneration, per-section fingerprints, source-byte discovery or stale-review rejection."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"13df373fc302d0f5be0b382e84fee32e49f67fb458a316005e9fd789f74390ac","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c9d212b654e9602b1ef5f3e50da0d9d0d3c0facd85b561a9c863699b5ab755b0","disposition":"updated","rationale":"Documents bounded three/four-worker explicit probes, two-worker completion, failure history retained across fresh candidates, automatic changed-file priority and duration ordering within existing parallel barriers; coverage and byte-based identity admission remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"3cdecf368527a055a2877f2cae5ae5b9c754ca17c14aad08ca43bf7e2715e60a","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"cd41ac2a6e57cc9980e34fb27ffe919aa1649942015a8d008b82066c81b8f6f6","disposition":"still accurate","rationale":"The text documents fresh-candidate scheduling hints, changed-file priority, duration balancing, exhaustive completion and explicit three/four-worker probes. The integrated registry retains all browser checks and original assembly parallel policy; operation watchdog calibration does not change scenario assertions. The final manifest change only applies repository formatting to the successfully witnessed scope data; parsed registry values are identical."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -475,7 +475,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"97c015050c667498ab2f7225a785faffa1b89054e5901cf34d1665ee55044c8e","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"afb58aa3c73e548ed64aebdc5dc2d7048bf5f12c05276f160101dcfb5b5fcf12","disposition":"updated","rationale":"Candidate wrapper copies only failed-ID and duration hints into ignored candidate artifacts and returns updated hints after execution. Source capture, installed dependency validation and receipt reuse remain bound to the frozen candidate."} -->
+<!-- doc-review {"version":1,"fingerprint":"57f4e14db5087479f7009de9fae80be7afd5797148846d0ca87ea4d45ae4558c","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"5f1671adf0aa53fb99750b06b85e13107e8f4d1df48210bc4a98a82df6f7a32f","disposition":"still accurate","rationale":"The wrapper copies only ignored scheduling hints and returns updated hints after execution. Combined actuator/catalog source is captured with the same index, dependency digest, immutable receipts and origin-matching checks; no coverage or source-drift exemption is introduced. The final manifest change only applies repository formatting to the successfully witnessed scope data; parsed registry values are identical."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

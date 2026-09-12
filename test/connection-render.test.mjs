@@ -135,3 +135,22 @@ test('mounted wiring preferences separate build from run and paused and reset on
   assert.equal(createWiringPreferences().read('run'), false);
   assert.equal(createWiringPreferences().read('build'), true);
 });
+
+test('ordinary electrical links do not cover authored sockets with duplicate endpoint beads', () => {
+  const view = createConnectionView(new THREE.Group());
+  for (const kind of ['power', 'signal']) {
+    view.update([
+      {
+        id: 'wire',
+        kind,
+        ends: [new THREE.Vector3(), new THREE.Vector3(1, 0, 0)],
+        visible: true,
+        exploded: false,
+        highlighted: false,
+        failed: false,
+      },
+    ]);
+    assert.equal(view.resources.get('wire').group.children.filter((o) => o.isMesh).length, 0);
+  }
+  view.dispose();
+});

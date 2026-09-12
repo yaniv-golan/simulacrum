@@ -1,3 +1,8 @@
+import {
+  placeCatalogPart,
+  placeCatalogPartByName,
+  browseAllParts,
+} from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
@@ -53,9 +58,9 @@ try {
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.waitForFunction(() => window.render_game_to_text);
   // Build the source side through ordinary palette, surface and socket controls.
-  await page.locator('.more-parts > summary').click();
-  await page.getByRole('button', { name: 'Chassis', exact: true }).click();
-  await page.getByRole('button', { name: 'Powered Motor', exact: true }).click();
+  await browseAllParts(page);
+  await placeCatalogPart(page, 'chassis');
+  await placeCatalogPart(page, 'poweredMotor');
   await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
   await page
     .getByRole('combobox', { name: 'Mounting face', exact: true })
@@ -64,7 +69,7 @@ try {
     .getByRole('combobox', { name: 'Target surface', exact: true })
     .selectOption({ label: 'Chassis · Right' });
   await page.getByRole('button', { name: 'Attach', exact: true }).click();
-  await page.getByRole('button', { name: 'Grip Wheel', exact: true }).click();
+  await placeCatalogPart(page, 'gripWheel');
   await page.getByRole('button', { name: '⊙ Wheel axle Available', exact: true }).click();
   await page
     .getByRole('button', { name: 'Attach to Powered Motor · shaft Moves Grip Wheel', exact: true })
@@ -173,9 +178,9 @@ try {
   ]) {
     await page.reload();
     await page.waitForFunction(() => window.render_game_to_text);
-    await page.getByRole('button', { name: support, exact: true }).click();
-    await page.locator('.more-parts > summary').click();
-    await page.getByRole('button', { name: source, exact: true }).click();
+    await placeCatalogPartByName(page, support);
+    await browseAllParts(page);
+    await placeCatalogPartByName(page, source);
     await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
     await page
       .getByRole('combobox', { name: 'Mounting face', exact: true })

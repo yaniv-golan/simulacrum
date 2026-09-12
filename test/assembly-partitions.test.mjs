@@ -13,6 +13,9 @@ test('assembly partitions cover each retained scenario exactly once', () => {
   assert.deepEqual(new Set(groups.flat()), new Set(names));
   assert.throws(() => assemblyPartition(-1));
   const m = JSON.parse(readFileSync(new URL('../scripts/manifest.json', import.meta.url)));
-  for (const id of ['verify-assembly-ux-browser', 'verify-assembly-library-browser'])
-    assert.ok(m.browserChecks.some((c) => c.id === id && c.timeoutMs === 60000));
+  for (const [id, timeoutMs] of [
+    ['verify-assembly-ux-browser', 90000],
+    ['verify-assembly-library-browser', 60000],
+  ])
+    assert.ok(m.browserChecks.some((c) => c.id === id && c.timeoutMs === timeoutMs));
 });

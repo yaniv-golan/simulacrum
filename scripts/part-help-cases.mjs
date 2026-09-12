@@ -1,7 +1,9 @@
+import { placeCatalogPart, browseAllParts } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { CATALOG } from '../src/model/catalog.mjs';
-import { PRIMARY_PARTS, MORE_PARTS } from '../src/presentation/part-palette.mjs';
+import { PRIMARY_PARTS } from '../src/presentation/part-palette.mjs';
+import { ESSENTIAL_PARTS } from '../src/presentation/part-search.mjs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 export function partHelpPartition(name) {
   if (typeof name !== 'string' || !name) throw Error('Invalid part help scenario');
@@ -59,7 +61,7 @@ export async function runPartHelpCases(partition, evidence, browser) {
           const tip = await p.locator('[role="tooltip"]').boundingBox(),
             card = await target.boundingBox();
           equal(tip.y + tip.height <= card.y || tip.y >= card.y + card.height, true);
-          await target.click();
+          await placeCatalogPart(p, type);
           equal((await observed()).metadata.blueprint.parts.length, index + 1);
         }
         equal(
@@ -99,9 +101,12 @@ export async function runPartHelpCases(partition, evidence, browser) {
         await p.getByRole('button', { name: 'Expand help window', exact: true }).click();
         equal((await p.locator('.part-help').boundingBox()).width > moved.width, true);
         await p.getByRole('button', { name: 'Restore help window', exact: true }).click();
-        await p.locator('.more-parts > summary').click();
+        // The dragged floating window may cover the expanded catalog. Dismiss it
+        // through its ordinary control before choosing the next part.
+        await p.getByRole('button', { name: 'Close part help', exact: true }).click();
+        await browseAllParts(p);
         await p.getByRole('button', { name: 'About Wheel Hub', exact: true }).click();
-        await p.locator('.more-parts > summary').click();
+        await browseAllParts(p);
         await p.getByRole('button', { name: 'Close part help', exact: true }).click();
         equal(
           await p
@@ -115,15 +120,15 @@ export async function runPartHelpCases(partition, evidence, browser) {
     await attempt('palette-and-pinning', async (p, observed) => {
       equal(
         await p
-          .locator('.palette [data-part-type]')
+          .locator('.catalog-entry:not([hidden]) [data-part-type]')
           .evaluateAll((ns) => ns.map((n) => n.dataset.partType)),
-        PRIMARY_PARTS,
+        ESSENTIAL_PARTS,
       );
       equal(
         await p
-          .locator('.more-parts [data-part-type]')
+          .locator('.catalog-entry[hidden] [data-part-type]')
           .evaluateAll((ns) => ns.map((n) => n.dataset.partType)),
-        MORE_PARTS,
+        Object.keys(CATALOG).filter((type) => !ESSENTIAL_PARTS.includes(type)),
       );
       const before = (await observed()).metadata.blueprint;
       const wheelInfo = p.getByRole('button', { name: 'About Grip Wheel', exact: true });
@@ -183,18 +188,19 @@ export async function runPartHelpCases(partition, evidence, browser) {
       equal(await info.evaluate((n) => n === document.activeElement), true);
       await info.dragTo(p.locator('canvas').first());
       equal((await observed()).metadata.blueprint, before);
-      await p.locator('[data-part-type="poweredMotor"]').click();
+      await placeCatalogPart(p, 'poweredMotor');
       equal((await observed()).metadata.blueprint.parts.length, before.parts.length + 1);
       await info.click();
       await p.getByRole('tab', { name: 'How to connect', exact: true }).click();
-      await p.locator('[data-part-type="powerCell"]').click();
+      await placeCatalogPart(p, 'powerCell');
+      await info.click();
       equal(
         await p
           .getByRole('tab', { name: 'How to connect', exact: true })
           .evaluate((n) => n.getAttribute('aria-selected') === 'true'),
         true,
       );
-      await p.locator('.more-parts > summary').click();
+      await browseAllParts(p);
       await p.getByRole('button', { name: 'About Distribution Bus', exact: true }).tap();
       equal(
         await p
@@ -318,22 +324,23 @@ export async function runPartHelpCases(partition, evidence, browser) {
           .evaluate((n) => n === document.activeElement),
         true,
       );
-      await p.locator('[data-part-type="poweredMotor"]').click();
+      await placeCatalogPart(p, 'poweredMotor');
       for (const mode of ['run', 'pause']) {
         await p.locator(`[data-command="${mode}"]`).click();
-        equal(await p.locator('.palette [data-placement]:enabled').count(), 0);
+        equal(await p.locator('.parts-browser [data-placement]:enabled').count(), 0);
         await p.getByRole('button', { name: 'About Powered Motor', exact: true }).click();
         await p.getByRole('tab', { name: 'How to connect', exact: true }).click();
-        await p.locator('.more-parts > summary').click();
+        await browseAllParts(p);
         await p.getByRole('button', { name: 'About Wheel Hub', exact: true }).click();
         equal(await p.locator('.part-help').isVisible(), true);
         await p.getByRole('button', { name: 'Close part help', exact: true }).click();
-        await p.locator('.more-parts > summary').click();
+        await browseAllParts(p);
       }
     });
     await attempt(
       'tooltip-and-reflow',
       async (p) => {
+        await browseAllParts(p);
         const motor = p.locator('[data-part-type="poweredMotor"]');
         await motor.hover();
         await p.locator('[role="tooltip"]').waitFor({ state: 'visible' });
@@ -342,7 +349,10 @@ export async function runPartHelpCases(partition, evidence, browser) {
         await p.keyboard.press('Escape');
         equal(await p.locator('[role="tooltip"]').isVisible(), false);
         await motor.focus();
-        equal(await motor.getAttribute('aria-describedby'), 'part-description-poweredMotor');
+        equal(
+          await motor.getAttribute('aria-describedby'),
+          'part-description-poweredMotor catalog-reason-poweredMotor',
+        );
         await p.getByRole('button', { name: 'About Grip Wheel', exact: true }).tap();
         await p.getByRole('tab', { name: 'How to connect', exact: true }).tap();
         equal(await p.locator('.part-help figure').count(), 3);

@@ -1,3 +1,4 @@
+import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -177,7 +178,7 @@ try {
     before.frame.metadata.blueprint,
   ]);
   // An ordinary unconnected part exposes the empty connection instruction.
-  await page.getByRole('button', { name: 'Power Cell', exact: true }).click();
+  await placeCatalogPart(page, 'powerCell');
   const disconnected = (await read()).frame.metadata.blueprint;
   await page.getByRole('button', { name: 'Exploded view', exact: true }).click();
   await page.waitForTimeout(700);

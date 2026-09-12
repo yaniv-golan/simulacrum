@@ -1,3 +1,4 @@
+import { placeCatalogPart, browseAllParts } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
@@ -87,12 +88,12 @@ try {
   await page.waitForFunction(() => window.render_game_to_text);
   const lifecycle = await context.newCDPSession(page);
   await lifecycle.send('Emulation.setFocusEmulationEnabled', { enabled: false });
-  await page.locator('.more-parts > summary').click();
+  await browseAllParts(page);
   for (const [name, preset] of [
     ['Drive action', 'drive'],
     ['Steer action', 'steer'],
   ]) {
-    await page.locator('[data-part-type="commandReceiver"]').click();
+    await placeCatalogPart(page, 'commandReceiver');
     await page.getByRole('button', { name: 'Rename part', exact: true }).click();
     await page.getByRole('textbox', { name: 'Part name', exact: true }).fill(name);
     await page.getByRole('button', { name: 'Save name', exact: true }).click();

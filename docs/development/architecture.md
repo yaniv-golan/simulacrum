@@ -10,12 +10,12 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"994d76c5df93f9aaa947fe5bbaf76c466f2307f77ba3cddcdd6d8e4b00b150e7","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"e0978abef2058b3affc6f5ced707501f1805ef553094c2dd32f73f28708f1176","disposition":"still accurate","rationale":"Session measures construction of the same completed frame and observation adds a diagnostic frameMs field. Command admission, phase ordering, immutable publication, camera/input owners and the separate measurement cursor remain as described."} -->
+<!-- doc-review {"version":1,"fingerprint":"d77587cea7b88afaa904e21970e1bd72497fb3ab909ec539c961286481b98a0c","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"2d72a10a1791b9776c2cbe1fb8ea4951ce663464dac65b6c92fcc76036e10ef3","disposition":"still accurate","rationale":"Rendering meshes live only through a thumbnail batch; recording offsets and the help Close action change presentation cost and reachability. Edits still pass through ordinary core admission, immutable observations and existing history; actuator physics ownership from main is unchanged."} -->
 
 
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
-2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
+2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. The [parts browser](../../src/presentation/parts-browser.mjs#source) owns discovery, [search vocabulary](../../src/presentation/part-search.mjs#source) ranks available parts, and [part placement](../../src/presentation/part-placement.mjs#source) confirms click, touch and drag proposals through cursor-guarded placement, delegating mounting geometry and controls to the existing surface owner. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
 3. [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop) admits commands, prepares a candidate and commits accepted edits as one history operation. Rejected/no-op edits preserve their specified cursor/history effects; Undo/Redo restores authored candidates.
 4. [validateBlueprint](../../src/model/blueprint.mjs#symbol=validateBlueprint), [placement admission](../../src/model/surfaces.mjs) and [compileAssembly](../../src/model/assembly.mjs#symbol=compileAssembly) validate stored values, physical intersections and connection geometry before simulation receives configuration.
 5. [Session](../../src/simulation/session.mjs) owns stepping, checkpoint and completed publication. [Controllers](../../src/simulation/controllers.mjs) produce program commands; the [receiver arbiter](../../src/simulation/receiver-arbiter.mjs) owns Manual/Automatic/Learned/Off, explicit takeover and prior-tick travel regulation; [power](../../src/simulation/power.mjs) resolves circuits; the [physics door](../../src/simulation/physics/world.mjs) alone imports the physics library. Completed contact collection uses the numeric [contact reader](../../src/simulation/physics/read-contacts.mjs); session assigns the completed interval and includes collection in integration timing.
@@ -66,7 +66,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"1ff977d850e368bfd5781db620e2236e1ec6d29e23f6990ab22f65b7226cc034","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"126844a8be4f418c264e6544e1f2b88d03eb06252f334b1bca4ad18a4e93994a","disposition":"still accurate","rationale":"The session/observation delta separates measured frame construction from publication without moving any geometry, graph, spring, contact, input or diagnostic policy owner in this table; no second policy implementation was introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"ac82a317630afeebb779916cf679fe34835f7a010ce3232eb003d226d554b614","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"90c9c361c84eda20082c3a205e372d2fa35017047584a93c328aed2d92dab377","disposition":"still accurate","rationale":"Actuator power, anchor reactions and completed telemetry remain owned by existing model and simulation code. Catalog vocabulary now covers its canonical type without changing admission or physical behavior."} -->
 
 
 
@@ -88,7 +88,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 | Placement commitment and cancellation                 | [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs#symbol=createPlacementLifecycle)                                                                                                                                                   | surface controls                                                                        |
 | Canvas direct drag lifetime                           | [createDirectDrag](../../src/presentation/direct-drag.mjs#symbol=createDirectDrag)                                                                                                                                                                           | workshop view                                                                           |
 | Receiver keyboard/override ownership                  | [createVehicleControls](../../src/presentation/vehicle-controls.mjs#symbol=createVehicleControls)                                                                                                                                                            | [Connect & test](../../src/presentation/connection-test.mjs#source)                     |
-| Palette eligibility and grouping                      | [part palette](../../src/presentation/part-palette.mjs)                                                                                                                                                                                                      | workshop palette; help coverage instead follows the catalog                             |
+| Catalog vocabulary and grouping                      | [search vocabulary](../../src/presentation/part-search.mjs)                                                                                                                                                                                                      | catalog grouping; eligibility and help coverage follow CATALOG                             |
 | Part teaching copy and port labels                    | [help content](../../src/presentation/part-help-content.mjs), [port wording](../../src/presentation/port-wording.mjs)                                                                                                                                        | palette, inspector and static example diagrams                                          |
 | Completed contact impulses                            | [contact reader](../../src/simulation/physics/read-contacts.mjs), [session](../../src/simulation/session.mjs)                                                                                                                                                | immutable completed observations; qualification supplies independent support predicates |
 | Saved environment preset | [environment descriptors](../../src/model/environment.mjs), [assembly compiler](../../src/model/assembly.mjs) | workshop geometry, placement admission and recording review |
@@ -101,13 +101,24 @@ Render-only decoration may illustrate a hub; it must not imply an authorable hol
 replace the collision geometry. Preserve independent physical test calculations when
 sharing production policy: an oracle that calls the implementation proves little.
 
-A cell can supply multiple motors; multiple cells on one circuit remain unsupported.
+Powered linear guides compile to the same five constrained sliding degrees of freedom
+as springs, with zero stiffness and damping. The catalog owns force per amp, winding
+resistance, current limit and maximum driven speed. The physics door prepares generalized
+axial rows with both anchor moments, samples projected velocity including passive damping,
+and applies measured equal-and-opposite drive impulses. The shared electrical network
+uses an explicit linear coordinate descriptor; its legacy `torqueConstant`, `torque`
+and `shaftWorkJ` fields represent N/A, N and axial work for that descriptor. The inspector
+labels these quantities in linear units. Completed spring-kind readings supply travel;
+they do not imply stored spring energy for a powered guide. Off or power loss releases
+active drive without a clutch. Native stops remain passive constraints.
+
+A cell can supply multiple rotary and linear drives; multiple cells on one circuit remain unsupported.
 Shared motor torque and powered sensor-load accounting and the completed energy ledger belong to simulation.
 Ground contact and workshop motion are not Course qualification.
 
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"254fcaeca60ae8917ca3161093f37fb6ca688b52d90594f653a120c3c1f3242c","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"529f9aaa466e80496e9e4f6ea6c6ec61cfa242902e4dedbfa88e321603ab6edf","disposition":"still accurate","rationale":"The observation store's new tickTiming.frameMs is wall-clock diagnostics only. Sensor descriptors, prior-completed sampling, funded sensor execution and decision/learning histories retain their existing owners and behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"0491c977db4688d8a1a32793f5fe6e45c6135a956022cb7b7fc69f6363ee836c","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"4c87ab2fb9f5be93b344d714d6ce2b5c09709262a2ced186d0b7030e44b2a638","disposition":"still accurate","rationale":"Travel sensors bind the same spring-kind connection and retain prior-completed sampling. No new sensor observation, controller authority, training path or arbitration policy is introduced."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

@@ -113,21 +113,7 @@
       "rule": "Players and their agents share one command surface and physical constraints."
     }
   ],
-  "milestones": [
-    "M0",
-    "M1",
-    "M2",
-    "M3",
-    "M3b",
-    "M4",
-    "M4b",
-    "M5",
-    "M6",
-    "M7",
-    "M8",
-    "M8b",
-    "M9"
-  ],
+  "milestones": ["M0", "M1", "M2", "M3", "M3b", "M4", "M4b", "M5", "M6", "M7", "M8", "M8b", "M9"],
   "checks": [
     {
       "id": "layers",
@@ -431,9 +417,7 @@
     "runtime": "docs/contracts/runtime-v1.md",
     "course": "docs/contracts/course-v1.md"
   },
-  "physicsPackages": [
-    "@dimforge/rapier3d-deterministic-compat"
-  ],
+  "physicsPackages": ["@dimforge/rapier3d-deterministic-compat"],
   "browserChecks": [
     {
       "id": "qualify-workshop",
@@ -739,7 +723,7 @@
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
-      "timeoutMs": 60000,
+      "timeoutMs": 90000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
@@ -918,6 +902,28 @@
       "timeoutMs": 120000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
+    },
+    {
+      "id": "verify-parts-catalog",
+      "script": "scripts/verify-parts-catalog.mjs",
+      "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-linear-actuator-browser",
+      "script": "scripts/verify-linear-actuator-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
     }
   ],
   "invariants": [
@@ -932,9 +938,7 @@
           "anchor": "createWorkshop"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -957,10 +961,7 @@
           }
         ]
       },
-      "qualificationBars": [
-        "F1",
-        "L0"
-      ]
+      "qualificationBars": ["F1", "L0"]
     },
     {
       "id": "preview-isolation",
@@ -981,10 +982,7 @@
           "anchor": "createPlacementLifecycle"
         }
       ],
-      "checks": [
-        "invariant-controls",
-        "verify-mirror-browser"
-      ],
+      "checks": ["invariant-controls", "verify-mirror-browser"],
       "controls": {
         "positive": [
           {
@@ -1007,10 +1005,7 @@
           }
         ]
       },
-      "qualificationBars": [
-        "F1",
-        "L0"
-      ]
+      "qualificationBars": ["F1", "L0"]
     },
     {
       "id": "input-cancellation",
@@ -1101,10 +1096,7 @@
           }
         ]
       },
-      "qualificationBars": [
-        "F1",
-        "L0"
-      ]
+      "qualificationBars": ["F1", "L0"]
     },
     {
       "id": "geometry-agreement",
@@ -1149,10 +1141,7 @@
           }
         ]
       },
-      "qualificationBars": [
-        "F1",
-        "L0"
-      ]
+      "qualificationBars": ["F1", "L0"]
     },
     {
       "id": "identity-material-admission",
@@ -1169,9 +1158,7 @@
           "anchor": "MATERIALS"
         }
       ],
-      "checks": [
-        "identity"
-      ],
+      "checks": ["identity"],
       "controls": {
         "positive": [
           {
@@ -1186,10 +1173,7 @@
           }
         ]
       },
-      "qualificationBars": [
-        "F1",
-        "L0"
-      ]
+      "qualificationBars": ["F1", "L0"]
     },
     {
       "id": "checkpoint-next-step",
@@ -1202,9 +1186,7 @@
           "anchor": "createSession"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -1219,10 +1201,7 @@
           }
         ]
       },
-      "qualificationBars": [
-        "F1",
-        "L0"
-      ]
+      "qualificationBars": ["F1", "L0"]
     },
     {
       "id": "copied-graph-integrity",
@@ -1243,11 +1222,7 @@
           "anchor": "createAssemblyPlacement"
         }
       ],
-      "checks": [
-        "invariant-controls",
-        "verify-assemblies-browser",
-        "verify-assembly-ux-browser"
-      ],
+      "checks": ["invariant-controls", "verify-assemblies-browser", "verify-assembly-ux-browser"],
       "controls": {
         "positive": [
           {
@@ -1282,15 +1257,13 @@
           }
         ]
       },
-      "qualificationBars": [
-        "F1"
-      ]
+      "qualificationBars": ["F1"]
     },
     {
       "id": "connection-display-isolation",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking.",
+      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build.",
       "owners": [
         {
           "path": "src/presentation/connection-render.mjs",
@@ -1299,13 +1272,13 @@
         {
           "path": "src/presentation/connection-view.mjs",
           "anchor": "pickableObjects"
+        },
+        {
+          "path": "src/presentation/part-finish.mjs",
+          "anchor": "createPortHardware"
         }
       ],
-      "checks": [
-        "invariant-controls",
-        "verify-connection-test-browser",
-        "verify-exploded-browser"
-      ],
+      "checks": ["invariant-controls", "verify-connection-test-browser", "verify-exploded-browser"],
       "controls": {
         "positive": [
           {
@@ -1317,12 +1290,34 @@
           {
             "path": "test/connection-render.test.mjs",
             "anchor": "hidden render resources neither intercept rays nor churn geometry and restore current endpoints"
+          },
+          {
+            "path": "test/connection-render.test.mjs",
+            "anchor": "ordinary electrical links do not cover authored sockets with duplicate endpoint beads"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "every electrical socket stays on its authored endpoint and fits its nearest connector clearance"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "dense authoring highlights remain separate without enlarging sparse markers"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "selectable finishes separate satin aluminium, steel and nonmetal rubber without material mutation"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "assembly previews include authored wires and spring coils and release their resources"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "assembly previews retain offset surface fasteners under authored rotation without mutating saved parts"
           }
         ]
       },
-      "qualificationBars": [
-        "F1"
-      ]
+      "qualificationBars": ["F1"]
     },
     {
       "id": "capture-write-admission",
@@ -1343,9 +1338,7 @@
           "anchor": "bodyReservation"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -1437,9 +1430,7 @@
           "anchor": "CaptureStore"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -1495,10 +1486,7 @@
           "anchor": "mountRemotePlaytest"
         }
       ],
-      "checks": [
-        "invariant-controls",
-        "verify-feedback-receipts"
-      ],
+      "checks": ["invariant-controls", "verify-feedback-receipts"],
       "controls": {
         "positive": [
           {
@@ -1542,9 +1530,7 @@
           "anchor": "ReleaseCoordinator"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -1588,9 +1574,7 @@
           "anchor": "CaptureStore"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -1682,9 +1666,7 @@
           "anchor": "verifyCredentialIsolation"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -1712,9 +1694,7 @@
           "anchor": "retryUpload"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -1754,9 +1734,7 @@
           "anchor": "assertPackageVerification"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -1808,9 +1786,7 @@
           "anchor": "retrieveEvidence"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -1886,9 +1862,7 @@
           "anchor": "deriveExperimentInputs"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -1956,9 +1930,7 @@
           "anchor": "writeCorpus"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -2067,7 +2039,7 @@
       "id": "guided-spring-passivity",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Guided and articulated springs preserve axial freedom, coupled elastic energy, loaded sag, signed reaction-work and angular-momentum accounting, cyclic topology and completed-tick stops. Ordinary powered upper-rocker sensing and regulation, physical contact release, authored construction, replay and independently allocated simulation/render/cadence budgets retain executable controls.",
+      "guarantee": "Guided and articulated springs preserve axial freedom, coupled elastic energy, loaded sag, signed reaction-work and angular-momentum accounting, cyclic topology and completed-tick stops. Ordinary powered upper-rocker sensing and regulation, physical contact release, authored construction, replay and independently allocated simulation/render/cadence budgets retain executable controls. Powered linear guides reuse zero-stiffness sliding constraints, funded equal-and-opposite axial kicks, mixed drive responses, completed stroke bounds and backdrive without a clutch.",
       "owners": [
         {
           "path": "src/simulation/physics/world.mjs",
@@ -2129,7 +2101,8 @@
       "checks": [
         "invariant-controls",
         "verify-spring-browser",
-        "verify-spring-performance"
+        "verify-spring-performance",
+        "verify-linear-actuator-browser"
       ],
       "controls": {
         "positive": [
@@ -2408,6 +2381,70 @@
           {
             "path": "test/physics-underflow.test.mjs",
             "anchor": "ordinary revolute tree and redundant loop survive gradual underflow without state clamps"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear catalog compiles an ordinary passive slide with funded axial drive; edits are atomic"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "loaded extension, reverse, powerless fall and overload are distinct physical outcomes"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "finite stroke stops motion under drive while consuming energy; off does not latch"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "free endpoints react equally and discrete actuator work funds kinetic energy"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "complete-tick stroke and energy bounds reject unpaid lifting and allow external overspeed"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "travel sensor samples the powered slide on the prior completed tick and binding edits stay atomic"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "mixed linear rotary kicks include anchor moments and prepared damping in either allocation order"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "release, reversal, cell-only, depleted and rigidly blocked controls cannot invent a holding clutch"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "reversed authored endpoints preserve the same powered slide and snap direction"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear reversal and release match four processes and both production clocks"
+          },
+          {
+            "path": "test/linear-actuator-view.test.mjs",
+            "anchor": "linear rod is distinct from passive coil and follows completed endpoints with retained geometry"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "authored driven speed bounds powered acceleration and queued reversal survives checkpoint"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "offset axial forces conserve independent linear and angular momentum with both anchor moments"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear module copy and library insertion preserve authored settings and independent wired graphs"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear failure bundle replays reversal and rejects a missing failure input"
+          },
+          {
+            "path": "test/linear-actuator-view.test.mjs",
+            "anchor": "saved actuator thumbnails retain straight rods and guide endpoint order in either edge direction"
           }
         ],
         "negative": [
@@ -2614,12 +2651,74 @@
           {
             "path": "test/suspension-clearance.test.mjs",
             "anchor": "finite active and manual bench travel retains moving hardware and decorative coil clearance"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear catalog compiles an ordinary passive slide with funded axial drive; edits are atomic"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "complete-tick stroke and energy bounds reject unpaid lifting and allow external overspeed"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "travel sensor samples the powered slide on the prior completed tick and binding edits stay atomic"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "mixed linear rotary kicks include anchor moments and prepared damping in either allocation order"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "release, reversal, cell-only, depleted and rigidly blocked controls cannot invent a holding clutch"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear reversal and release match four processes and both production clocks"
+          },
+          {
+            "path": "test/linear-actuator-view.test.mjs",
+            "anchor": "linear rod is distinct from passive coil and follows completed endpoints with retained geometry"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "loaded extension, reverse, powerless fall and overload are distinct physical outcomes"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "finite stroke stops motion under drive while consuming energy; off does not latch"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "free endpoints react equally and discrete actuator work funds kinetic energy"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "authored driven speed bounds powered acceleration and queued reversal survives checkpoint"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "reversed authored endpoints preserve the same powered slide and snap direction"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "offset axial forces conserve independent linear and angular momentum with both anchor moments"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear module copy and library insertion preserve authored settings and independent wired graphs"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear failure bundle replays reversal and rejects a missing failure input"
+          },
+          {
+            "path": "test/linear-actuator-view.test.mjs",
+            "anchor": "saved actuator thumbnails retain straight rods and guide endpoint order in either edge direction"
           }
         ]
       },
-      "qualificationBars": [
-        "F1"
-      ]
+      "qualificationBars": ["F1"]
     },
     {
       "id": "workbench-content-lifecycle",
@@ -2656,10 +2755,7 @@
           "anchor": "mountWorkshopApp"
         }
       ],
-      "checks": [
-        "verify-workbench-content",
-        "verify-learning-examples"
-      ],
+      "checks": ["verify-workbench-content", "verify-learning-examples"],
       "controls": {
         "positive": [
           {
@@ -2690,9 +2786,7 @@
           }
         ]
       },
-      "qualificationBars": [
-        "F1"
-      ]
+      "qualificationBars": ["F1"]
     },
     {
       "id": "adaptive-graphics",
@@ -2713,10 +2807,7 @@
           "anchor": "applyGraphicsQuality"
         }
       ],
-      "checks": [
-        "invariant-controls",
-        "verify-adaptive-graphics"
-      ],
+      "checks": ["invariant-controls", "verify-adaptive-graphics"],
       "controls": {
         "positive": [
           {
@@ -2764,10 +2855,7 @@
           "anchor": "readContacts"
         }
       ],
-      "checks": [
-        "invariant-controls",
-        "verify-spring-performance"
-      ],
+      "checks": ["invariant-controls", "verify-spring-performance"],
       "controls": {
         "positive": [
           {
@@ -2875,11 +2963,7 @@
           "anchor": "captureBrowserTimeoutMs"
         }
       ],
-      "checks": [
-        "invariant-controls",
-        "verify-remote-playtest",
-        "verify-cloud-playtest"
-      ],
+      "checks": ["invariant-controls", "verify-remote-playtest", "verify-cloud-playtest"],
       "controls": {
         "positive": [
           {
@@ -2907,11 +2991,7 @@
           "anchor": "downloadCapture"
         }
       ],
-      "checks": [
-        "invariant-controls",
-        "verify-remote-playtest",
-        "verify-cloud-playtest"
-      ],
+      "checks": ["invariant-controls", "verify-remote-playtest", "verify-cloud-playtest"],
       "controls": {
         "positive": [
           {
@@ -2955,11 +3035,7 @@
           "anchor": "readCorpus"
         }
       ],
-      "checks": [
-        "invariant-controls",
-        "verify-cloud-playtest",
-        "verify-remote-playtest"
-      ],
+      "checks": ["invariant-controls", "verify-cloud-playtest", "verify-remote-playtest"],
       "controls": {
         "positive": [
           {
@@ -3007,9 +3083,7 @@
           "anchor": "decodeCaptureEvents"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -3045,9 +3119,7 @@
           "anchor": "sceneParts"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -3075,9 +3147,7 @@
           "anchor": "selectAffectedBrowserChecks"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -3105,9 +3175,7 @@
           "anchor": "withVerificationWindow"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -3135,9 +3203,7 @@
           "anchor": "waitUntil"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -3165,9 +3231,7 @@
           "anchor": "captureCandidate"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -3195,9 +3259,7 @@
           "anchor": "private dependency forbidden"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -3229,9 +3291,7 @@
           "anchor": "assemblyPartition"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -3259,9 +3319,7 @@
           "anchor": "qualifyNative"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -3289,9 +3347,7 @@
           "anchor": "command.type === 'build'"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -3327,11 +3383,7 @@
           "anchor": "createImpactEvents"
         }
       ],
-      "checks": [
-        "invariant-controls",
-        "verify-ball-browser",
-        "verify-remote-playtest"
-      ],
+      "checks": ["invariant-controls", "verify-ball-browser", "verify-remote-playtest"],
       "controls": {
         "positive": [
           {
@@ -3398,9 +3450,7 @@
           }
         ]
       },
-      "qualificationBars": [
-        "F1"
-      ]
+      "qualificationBars": ["F1"]
     },
     {
       "id": "verification-live-evidence",
@@ -3413,9 +3463,7 @@
           "anchor": "withBrowserReport"
         }
       ],
-      "checks": [
-        "verification-workflow"
-      ],
+      "checks": ["verification-workflow"],
       "controls": {
         "positive": [
           {
@@ -3451,9 +3499,7 @@
           "anchor": "runCI"
         }
       ],
-      "checks": [
-        "verification-workflow"
-      ],
+      "checks": ["verification-workflow"],
       "controls": {
         "positive": [
           {
@@ -3509,9 +3555,7 @@
           "anchor": "reviewSections"
         }
       ],
-      "checks": [
-        "developer-documentation"
-      ],
+      "checks": ["developer-documentation"],
       "controls": {
         "positive": [
           {
@@ -3547,9 +3591,7 @@
           "anchor": "validateScopeWitnessResult"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -3585,11 +3627,7 @@
           "anchor": "unpackCapturePacket"
         }
       ],
-      "checks": [
-        "invariant-controls",
-        "verify-remote-playtest",
-        "verify-cloud-playtest"
-      ],
+      "checks": ["invariant-controls", "verify-remote-playtest", "verify-cloud-playtest"],
       "controls": {
         "positive": [
           {
@@ -3645,10 +3683,7 @@
           "anchor": "createWorkshopView"
         }
       ],
-      "checks": [
-        "invariant-controls",
-        "measure-gears"
-      ],
+      "checks": ["invariant-controls", "measure-gears"],
       "controls": {
         "positive": [
           {
@@ -3683,9 +3718,7 @@
           }
         ]
       },
-      "qualificationBars": [
-        "F1"
-      ]
+      "qualificationBars": ["F1"]
     },
     {
       "id": "powered-shared-sensing",
@@ -3706,9 +3739,7 @@
           "anchor": "createPowerNetwork"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -3824,9 +3855,7 @@
           "anchor": "createControllerHistory"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -3918,9 +3947,7 @@
           "anchor": "admitLearningBindings"
         }
       ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "controls": {
         "positive": [
           {
@@ -3988,9 +4015,7 @@
           "anchor": "requireAttemptReport"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -4030,9 +4055,7 @@
           "anchor": "prepareVerification"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -4060,9 +4083,7 @@
           "anchor": "createTiming"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -4090,9 +4111,7 @@
           "anchor": "mergeShadowReport"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -4120,9 +4139,7 @@
           "anchor": "summarizeTickAttribution"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -4154,9 +4171,7 @@
           "anchor": "compareMergeCoverage"
         }
       ],
-      "checks": [
-        "verification-scope-configuration"
-      ],
+      "checks": ["verification-scope-configuration"],
       "controls": {
         "positive": [
           {
@@ -4180,6 +4195,50 @@
         ]
       },
       "qualificationBars": []
+    },
+    {
+      "id": "parts-catalog-discovery",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. Cancellation restores the originating browse snapshot and narrow layouts release sidebar space.",
+      "owners": [
+        {
+          "path": "src/presentation/part-search.mjs",
+          "anchor": "searchParts"
+        },
+        {
+          "path": "src/presentation/parts-browser.mjs",
+          "anchor": "createPartsBrowser"
+        },
+        {
+          "path": "src/presentation/part-placement.mjs",
+          "anchor": "createPartPlacement"
+        }
+      ],
+      "checks": ["verify-parts-catalog", "verify-part-help-browser"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/part-search.test.mjs",
+            "anchor": "everyday words and roles find the intended part before incidental references"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/part-search.test.mjs",
+            "anchor": "numeric identity, coverage, deduplication and empty queries fail closed"
+          },
+          {
+            "path": "test/workshop.test.mjs",
+            "anchor": "catalog placement accepts its current cursor and rejects stale proposals unchanged"
+          },
+          {
+            "path": "test/part-placement-pending.test.mjs",
+            "anchor": "pending catalog placement cannot be replaced, cancelled or submitted twice"
+          }
+        ]
+      },
+      "qualificationBars": ["F1"]
     }
   ],
   "browserLocalScopes": [
@@ -4203,7 +4262,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
       "externalImports": []
     },
     {
@@ -4219,15 +4278,9 @@
         "verify-part-help-browser",
         "verify-part-help-inspectors"
       ],
-      "externalImports": [
-        "node:fs",
-        "node:os",
-        "node:path",
-        "playwright",
-        "vite"
-      ],
+      "externalImports": ["node:fs", "node:os", "node:path", "playwright", "vite"],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -4235,22 +4288,17 @@
         "scripts/app-fingerprint.mjs",
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
+        "scripts/catalog-browser-actions.mjs",
         "scripts/source-identity.mjs"
       ],
-      "externalImports": [
-        "node:fs"
-      ],
-      "checks": [
-        "verify-mirror-browser"
-      ],
+      "externalImports": ["node:fs"],
+      "checks": ["verify-mirror-browser"],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
-      "dependencies": [
-        "src/model/messages.mjs"
-      ],
+      "dependencies": ["src/model/messages.mjs"],
       "externalImports": [],
       "checks": [
         "verify-mirror-browser",
@@ -4263,7 +4311,7 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -4287,13 +4335,11 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776"
     },
     {
       "entrypoint": "src/model/messages.mjs",
-      "dependencies": [
-        "src/model/reasons.mjs"
-      ],
+      "dependencies": ["src/model/reasons.mjs"],
       "externalImports": [],
       "checks": [
         "verify-mirror-browser",
@@ -4321,7 +4367,7 @@
         "test/receiver-input-owner.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776"
     }
   ],
   "experimentInputScopes": [
@@ -4329,34 +4375,19 @@
       "family": "capacity",
       "entrypoint": "scripts/playtest/load.mjs",
       "sourceSha256": "e9b07a0deb6b39f30beeb55546a4d955ebe426c4923c8716ebdc4b4b1e6bed3e",
-      "dependencies": [
-        "scripts/playtest/verify-deployment.mjs"
-      ],
-      "externalImports": [
-        "node:crypto",
-        "node:fs/promises"
-      ],
+      "dependencies": ["scripts/playtest/verify-deployment.mjs"],
+      "externalImports": ["node:crypto", "node:fs/promises"],
       "runtimeBoundary": "synthetic-capacity-envelope-v1",
-      "checks": [
-        "invariant-controls"
-      ]
+      "checks": ["invariant-controls"]
     },
     {
       "family": "capacity",
       "entrypoint": "scripts/playtest/download.mjs",
       "sourceSha256": "bc9db82d5c5fd6f6efaf697f9c608816693baa81d26d65b68e1a03130271d46c",
-      "dependencies": [
-        "scripts/playtest/protocol.mjs"
-      ],
-      "externalImports": [
-        "node:fs/promises",
-        "node:path",
-        "node:url"
-      ],
+      "dependencies": ["scripts/playtest/protocol.mjs"],
+      "externalImports": ["node:fs/promises", "node:path", "node:url"],
       "runtimeBoundary": "synthetic-capacity-envelope-v1",
-      "checks": [
-        "invariant-controls"
-      ]
+      "checks": ["invariant-controls"]
     },
     {
       "family": "capacity",
@@ -4367,15 +4398,9 @@
         "scripts/playtest/download.mjs",
         "scripts/playtest/release-config.mjs"
       ],
-      "externalImports": [
-        "node:crypto",
-        "node:fs/promises",
-        "node:path"
-      ],
+      "externalImports": ["node:crypto", "node:fs/promises", "node:path"],
       "runtimeBoundary": "synthetic-capacity-envelope-v1",
-      "checks": [
-        "invariant-controls"
-      ]
+      "checks": ["invariant-controls"]
     },
     {
       "family": "endurance",
@@ -4389,65 +4414,36 @@
         "scripts/playtest/load.mjs",
         "scripts/playtest/local-cloud.mjs"
       ],
-      "externalImports": [
-        "node:fs",
-        "node:os",
-        "node:path"
-      ],
+      "externalImports": ["node:fs", "node:os", "node:path"],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": [
-        "invariant-controls"
-      ]
+      "checks": ["invariant-controls"]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/playtest/load.mjs",
       "sourceSha256": "e9b07a0deb6b39f30beeb55546a4d955ebe426c4923c8716ebdc4b4b1e6bed3e",
-      "dependencies": [
-        "scripts/playtest/verify-deployment.mjs"
-      ],
-      "externalImports": [
-        "node:crypto",
-        "node:fs/promises"
-      ],
+      "dependencies": ["scripts/playtest/verify-deployment.mjs"],
+      "externalImports": ["node:crypto", "node:fs/promises"],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": [
-        "invariant-controls"
-      ]
+      "checks": ["invariant-controls"]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/playtest/local-cloud.mjs",
       "sourceSha256": "c381ec585af9674e757cd2cd40fbfad4e76ae0dcbe963e02259f5bbe8debb831",
       "dependencies": [],
-      "externalImports": [
-        "esbuild",
-        "miniflare",
-        "node:fs/promises",
-        "node:path",
-        "node:path"
-      ],
+      "externalImports": ["esbuild", "miniflare", "node:fs/promises", "node:path", "node:path"],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": [
-        "invariant-controls"
-      ]
+      "checks": ["invariant-controls"]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/playtest/download.mjs",
       "sourceSha256": "bc9db82d5c5fd6f6efaf697f9c608816693baa81d26d65b68e1a03130271d46c",
-      "dependencies": [
-        "scripts/playtest/protocol.mjs"
-      ],
-      "externalImports": [
-        "node:fs/promises",
-        "node:path",
-        "node:url"
-      ],
+      "dependencies": ["scripts/playtest/protocol.mjs"],
+      "externalImports": ["node:fs/promises", "node:path", "node:url"],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": [
-        "invariant-controls"
-      ]
+      "checks": ["invariant-controls"]
     },
     {
       "family": "endurance",
@@ -4458,23 +4454,15 @@
         "scripts/browser-session.mjs",
         "scripts/source-identity.mjs"
       ],
-      "externalImports": [
-        "node:assert/strict",
-        "node:crypto",
-        "node:fs"
-      ],
+      "externalImports": ["node:assert/strict", "node:crypto", "node:fs"],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": [
-        "invariant-controls"
-      ]
+      "checks": ["invariant-controls"]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/playtest-server.mjs",
       "sourceSha256": "87014b07b00aaa9eddde52d37bb047e27a35cb3e19fde58a1b6df5809c1f1ca9",
-      "dependencies": [
-        "scripts/playtest/protocol.mjs"
-      ],
+      "dependencies": ["scripts/playtest/protocol.mjs"],
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -4485,9 +4473,7 @@
         "node:url"
       ],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": [
-        "invariant-controls"
-      ]
+      "checks": ["invariant-controls"]
     },
     {
       "family": "endurance",
@@ -4498,73 +4484,42 @@
         "scripts/playtest/download.mjs",
         "scripts/playtest/release-config.mjs"
       ],
-      "externalImports": [
-        "node:crypto",
-        "node:fs/promises",
-        "node:path"
-      ],
+      "externalImports": ["node:crypto", "node:fs/promises", "node:path"],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": [
-        "invariant-controls"
-      ]
+      "checks": ["invariant-controls"]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/app-fingerprint.mjs",
       "sourceSha256": "1da859aea6e084565ed4458b932e9975c1db1627dc16ea5a457068dc374effea",
-      "dependencies": [
-        "scripts/module-graph.mjs"
-      ],
-      "externalImports": [
-        "node:child_process",
-        "node:crypto",
-        "node:fs"
-      ],
+      "dependencies": ["scripts/module-graph.mjs"],
+      "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": [
-        "invariant-controls"
-      ]
+      "checks": ["invariant-controls"]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/source-identity.mjs",
       "sourceSha256": "e6d17d47613f5a704e08cf7a0324ee12d52a4852bc3168b50ae75579a59458f2",
       "dependencies": [],
-      "externalImports": [
-        "node:child_process",
-        "node:crypto",
-        "node:fs"
-      ],
+      "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": [
-        "invariant-controls"
-      ]
+      "checks": ["invariant-controls"]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/module-graph.mjs",
       "sourceSha256": "f80a86eba9377b0ee95b30c31a3db8a55b2a149e0fb4618d900b7b4820db0883",
       "dependencies": [],
-      "externalImports": [
-        "acorn",
-        "css-tree",
-        "node:fs",
-        "node:path",
-        "parse5",
-        "typescript"
-      ],
+      "externalImports": ["acorn", "css-tree", "node:fs", "node:path", "parse5", "typescript"],
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": [
-        "invariant-controls"
-      ]
+      "checks": ["invariant-controls"]
     },
     {
       "family": "endurance",
       "entrypoint": "scripts/playtest/capture-fault.mjs",
       "runtimeBoundary": "packaged-capture-runtime-v1",
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "sourceSha256": "9bf6de50ea7cd6041a718c926daa8b678eec2afcfb4d3cf8aca1641233a73a3b",
       "dependencies": [],
       "externalImports": []
@@ -4573,116 +4528,77 @@
   "browserReviewMetadataScopes": [
     {
       "entrypoint": "scripts/verify-exploded-browser.mjs",
-      "sourceSha256": "eaeeb38df6133bb524f1abe73dac0c38c5ae581bb7bd876c49e779d86c9fa878",
+      "sourceSha256": "ed5a14cda2af23899421efdb88bcb6f5da1eaed9b0a86953c20739fb99359eb7",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
-        "scripts/browser-evidence.mjs"
+        "scripts/browser-evidence.mjs",
+        "scripts/catalog-browser-actions.mjs"
       ],
-      "externalImports": [
-        "node:fs"
-      ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "externalImports": ["node:fs"],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "readFileSync(await (await download).path(), 'utf8')",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "readFileSync(process.env.FEEDBACK_SOURCE || 'src/application/remote-playtest.mjs')",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync('src/presentation/workshop.css')",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync('node_modules/fflate/esm/browser.js')",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync('src/application/capture-packet.mjs')",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync('src/application/capture-stream.mjs')",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync('src/application/capture-outbox.mjs')",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "new URL(request.url())",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "new URL(route.request().url())",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "fetch(url, options)",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "externalImports": [
-        "node:crypto",
-        "node:fs",
-        "node:http"
-      ],
+      "externalImports": ["node:crypto", "node:fs", "node:http"],
       "consumers": [],
       "sourceSha256": "284668a4b55225b6b65c6745a6160615d9209e0c6bb648586ca755d8121397f3",
       "entrypoint": "scripts/verify-feedback-receipts.mjs",
@@ -4696,99 +4612,64 @@
     {
       "entrypoint": "scripts/verify-recording-browser.mjs",
       "sourceSha256": "1efaf7afdec7a773ca8e9a2d8c09baa5df2d9b813f887a152df467cce4a48ad3",
-      "dependencies": [
-        "scripts/browser-artifacts.mjs",
-        "scripts/browser-evidence.mjs"
-      ],
-      "externalImports": [
-        "node:fs"
-      ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "dependencies": ["scripts/browser-artifacts.mjs", "scripts/browser-evidence.mjs"],
+      "externalImports": ["node:fs"],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "readFileSync(await file.path(), 'utf8')",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync(await (await second).path(), 'utf8')",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "new URL(request.url())",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "new URL(response.url())",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readdirSync(data)",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync(join(dir, 'events.ndjson'), 'utf8')",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync(join(dir, 'session.json'), 'utf8')",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "51e5c01c1040e5419b4103de53352552942dbc47d331248339283952a60fc8b1",
-      "externalImports": [
-        "node:fs",
-        "node:os",
-        "node:path"
-      ],
-      "consumers": [
-        "scripts/verify-cloud-playtest.mjs"
-      ],
-      "sourceSha256": "d0d6b3f7b50886b9b0c34d502bd0929ed9a04b5a6b1647a74b332649b9764e16",
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "7c5a3e8d57863078b6c3a5029da358bf2299fd67d60507d396921b45e6400370",
+      "externalImports": ["node:fs", "node:os", "node:path"],
+      "consumers": ["scripts/verify-cloud-playtest.mjs"],
+      "sourceSha256": "22778ee28083b71a4163d438538ef213b22e3a5654fc13519b3b8fc79b53738f",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
+        "scripts/catalog-browser-actions.mjs",
         "scripts/playtest-server.mjs",
         "scripts/playtest/capture-fault.mjs",
         "scripts/playtest/capture-samples.mjs",
@@ -4801,34 +4682,22 @@
       ]
     },
     {
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "readFileSync(file, 'utf8')",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync(path)",
           "purpose": "identity",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "989836a8bc32205af599cdc43aa3e3a59f0eb98734749b838b804ea1290d590e",
-      "externalImports": [
-        "node:assert/strict",
-        "node:crypto",
-        "node:fs"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "df46b3f17d1dea2969134e6b0155ae9db557142608f9ae4aa805181400ab07b3",
+      "externalImports": ["node:assert/strict", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/qualify-workshop.mjs",
         "scripts/verify-adaptive-graphics.mjs",
@@ -4850,12 +4719,14 @@
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-manipulation-browser.mjs",
         "scripts/verify-mirror-browser.mjs",
         "scripts/verify-motion-diagnostics.mjs",
         "scripts/verify-part-help-browser.mjs",
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
+        "scripts/verify-parts-catalog.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-property-focus.mjs",
         "scripts/verify-recording-browser.mjs",
@@ -4884,34 +4755,22 @@
       ]
     },
     {
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], {\n    encoding: 'utf8',\n    maxBuffer: 64 * 1024 * 1024,\n  })",
           "purpose": "identity",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync(path)",
           "purpose": "identity",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "989836a8bc32205af599cdc43aa3e3a59f0eb98734749b838b804ea1290d590e",
-      "externalImports": [
-        "node:child_process",
-        "node:crypto",
-        "node:fs"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "df46b3f17d1dea2969134e6b0155ae9db557142608f9ae4aa805181400ab07b3",
+      "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/assess.mjs",
         "scripts/bars.mjs",
@@ -4950,6 +4809,7 @@
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m1.mjs",
         "scripts/verify-m3.mjs",
@@ -4960,6 +4820,7 @@
         "scripts/verify-part-help-browser.mjs",
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
+        "scripts/verify-parts-catalog.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-property-focus.mjs",
         "scripts/verify-recording-browser.mjs",
@@ -4985,6 +4846,7 @@
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
         "test/learning-runtime.test.mjs",
+        "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
@@ -4997,47 +4859,30 @@
       ],
       "sourceSha256": "1da859aea6e084565ed4458b932e9975c1db1627dc16ea5a457068dc374effea",
       "entrypoint": "scripts/app-fingerprint.mjs",
-      "dependencies": [
-        "scripts/module-graph.mjs"
-      ]
+      "dependencies": ["scripts/module-graph.mjs"]
     },
     {
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "execFileSync(\n    'git',\n    ['ls-files', '-z', '--cached', '--others', '--exclude-standard'],\n    { encoding: 'utf8' },\n  )",
           "purpose": "identity",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync(path)",
           "purpose": "identity",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' })",
           "purpose": "identity",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "eb1a08b6a2d3c9088a8aaaebf3430bcd301e92a42309492ad49cc4f01522421b",
-      "externalImports": [
-        "node:child_process",
-        "node:crypto",
-        "node:fs"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "dcc59514c3f4514f6aff71a4b24b5f2c0446ce454e5ecc744ce07392d110ba5d",
+      "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
@@ -5090,6 +4935,7 @@
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m3.mjs",
         "scripts/verify-manipulation-browser.mjs",
@@ -5100,6 +4946,7 @@
         "scripts/verify-part-help-browser.mjs",
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
+        "scripts/verify-parts-catalog.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-prepare.mjs",
         "scripts/verify-property-focus.mjs",
@@ -5157,32 +5004,19 @@
     {
       "entrypoint": "scripts/build-fingerprint.mjs",
       "sourceSha256": "75989ba1d17dd1062c9a18cb32df38da7ba60ff16f88c86ab1562ba92ed1ce92",
-      "dependencies": [
-        "scripts/app-fingerprint.mjs"
-      ],
-      "externalImports": [
-        "node:crypto",
-        "node:fs"
-      ],
-      "checks": [
-        "invariant-controls"
-      ],
+      "dependencies": ["scripts/app-fingerprint.mjs"],
+      "externalImports": ["node:crypto", "node:fs"],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "readFileSync(new URL(`../assessments/protocol/${barId}.md`, import.meta.url))",
           "purpose": "identity",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "new URL(`../assessments/protocol/${barId}.md`, import.meta.url)",
           "purpose": "identity",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
       "consumers": [
@@ -5203,97 +5037,67 @@
         "test/determinism.test.mjs",
         "test/free-build-continuity.test.mjs",
         "test/learning-runtime.test.mjs",
+        "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "f11cf536d7bc66c0ddc5bdc609e2d0585ca5f5f22ea523f9dc03b1b446385bf4"
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "e11e142d3fcca8a49eaf2d89fa99616cf3a46de021f251e497accc1a8a4dd344"
     },
     {
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "new URL(request.url())",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "51e5c01c1040e5419b4103de53352552942dbc47d331248339283952a60fc8b1",
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "7c5a3e8d57863078b6c3a5029da358bf2299fd67d60507d396921b45e6400370",
       "externalImports": [],
-      "consumers": [
-        "scripts/verify-cloud-playtest.mjs",
-        "scripts/verify-remote-playtest.mjs"
-      ],
+      "consumers": ["scripts/verify-cloud-playtest.mjs", "scripts/verify-remote-playtest.mjs"],
       "sourceSha256": "9bf6de50ea7cd6041a718c926daa8b678eec2afcfb4d3cf8aca1641233a73a3b",
       "entrypoint": "scripts/playtest/capture-fault.mjs",
       "dependencies": []
     },
     {
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "fetch(new URL(`/join?token=${encodeURIComponent(invite.token)}`, origin), {\n      redirect: 'manual',\n      signal: AbortSignal.timeout(15000),\n    })",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "new URL(`/join?token=${encodeURIComponent(invite.token)}`, origin)",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "fetch(new URL(path, origin), {\n        method: 'POST',\n        headers: { cookie, origin, 'content-type': mime, 'content-length': String(bytes.length) },\n        body,\n        redirect: 'error',\n        signal: AbortSignal.timeout(45000),\n        ...(shaped ? { duplex: 'half' } : {}),\n      })",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "new URL(path, origin)",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFile(\n                m === 0\n                  ? capture.mediaFiles[(seq * clients + index) % capture.mediaFiles.length]\n                  : capture.maximumMediaFile,\n              )",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFile(capture.mediaFiles[0])",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "51e5c01c1040e5419b4103de53352552942dbc47d331248339283952a60fc8b1",
-      "externalImports": [
-        "node:crypto",
-        "node:fs/promises"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "7c5a3e8d57863078b6c3a5029da358bf2299fd67d60507d396921b45e6400370",
+      "externalImports": ["node:crypto", "node:fs/promises"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
         "scripts/playtest/calibration-bundle.mjs",
@@ -5318,70 +5122,42 @@
       ],
       "sourceSha256": "c4f08f4e8dd84483ef9e4da308a3e2d18869e197edc1561e0ebe72811876d775",
       "entrypoint": "scripts/playtest/load.mjs",
-      "dependencies": [
-        "scripts/playtest/verify-deployment.mjs"
-      ]
+      "dependencies": ["scripts/playtest/verify-deployment.mjs"]
     },
     {
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "new URL(request.url)",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFile(actual)",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "51e5c01c1040e5419b4103de53352552942dbc47d331248339283952a60fc8b1",
-      "externalImports": [
-        "esbuild",
-        "miniflare",
-        "node:fs/promises",
-        "node:path",
-        "node:path"
-      ],
-      "consumers": [
-        "scripts/verify-cloud-playtest.mjs",
-        "scripts/verify-remote-playtest.mjs"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "7c5a3e8d57863078b6c3a5029da358bf2299fd67d60507d396921b45e6400370",
+      "externalImports": ["esbuild", "miniflare", "node:fs/promises", "node:path", "node:path"],
+      "consumers": ["scripts/verify-cloud-playtest.mjs", "scripts/verify-remote-playtest.mjs"],
       "sourceSha256": "66e915cda215738b8a0fcc5d913d7b7e739f7e7f0ba5417f52b37533151afb9e",
       "entrypoint": "scripts/playtest/local-cloud.mjs",
       "dependencies": []
     },
     {
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "new URL(path, origin)",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "51e5c01c1040e5419b4103de53352552942dbc47d331248339283952a60fc8b1",
-      "externalImports": [
-        "node:fs/promises",
-        "node:path",
-        "node:url"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "7c5a3e8d57863078b6c3a5029da358bf2299fd67d60507d396921b45e6400370",
+      "externalImports": ["node:fs/promises", "node:path", "node:url"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
         "scripts/playtest/calibration-bundle.mjs",
@@ -5408,114 +5184,74 @@
       ],
       "sourceSha256": "b66822c6a83117974c74f022133bb0a3f2da6aef4041d0d67e9c6b831e45e07b",
       "entrypoint": "scripts/playtest/download.mjs",
-      "dependencies": [
-        "scripts/playtest/protocol.mjs"
-      ]
+      "dependencies": ["scripts/playtest/protocol.mjs"]
     },
     {
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "readdirSync(privateRoot)",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readdirSync(privateRoot, { withFileTypes: true })",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readdirSync(privateRoot, { withFileTypes: true })",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync(join(dir, 'session.json'), 'utf8')",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readdirSync(dir)",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync(log)",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync(join(dir, record.media.file))",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readdirSync(dir)",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "new URL(req.url, 'http://localhost')",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "new URL(req.headers.origin)",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFile(mediaPath)",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFile(actual)",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "4506b42365c2c5f5c3d160fb2fc1dc7df5139033b79ae37bf075c72b3d1246bf",
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "52f3817ae6df41d834b04809d86528de0e08183c5eb8d4160039b93d41d275d7",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -5538,74 +5274,45 @@
       ],
       "sourceSha256": "4a3cfe14b21db82e24a36b0842154b6af317e8e68d799259e9cff86b476d8074",
       "entrypoint": "scripts/playtest-server.mjs",
-      "dependencies": [
-        "scripts/playtest/protocol.mjs"
-      ]
+      "dependencies": ["scripts/playtest/protocol.mjs"]
     },
     {
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "readdirSync(resolve(root, directory), { withFileTypes: true })",
           "purpose": "source-analysis",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync(resolve(root, 'package.json'), 'utf8')",
           "purpose": "source-analysis",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync(resolve(root, path), 'utf8')",
           "purpose": "source-analysis",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync(resolve(root, path), 'utf8')",
           "purpose": "source-analysis",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync(resolve(root, path), 'utf8')",
           "purpose": "source-analysis",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "readFileSync(resolve(root, path), 'utf8')",
           "purpose": "source-analysis",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "989836a8bc32205af599cdc43aa3e3a59f0eb98734749b838b804ea1290d590e",
-      "externalImports": [
-        "acorn",
-        "css-tree",
-        "node:fs",
-        "node:path",
-        "parse5",
-        "typescript"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "df46b3f17d1dea2969134e6b0155ae9db557142608f9ae4aa805181400ab07b3",
+      "externalImports": ["acorn", "css-tree", "node:fs", "node:path", "parse5", "typescript"],
       "consumers": [
         "scripts/analysis-snapshot.mjs",
         "scripts/app-fingerprint.mjs",
@@ -5664,6 +5371,7 @@
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m1.mjs",
         "scripts/verify-m3.mjs",
@@ -5675,6 +5383,7 @@
         "scripts/verify-part-help-browser.mjs",
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
+        "scripts/verify-parts-catalog.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-prepare.mjs",
         "scripts/verify-property-focus.mjs",
@@ -5716,6 +5425,7 @@
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
         "test/learning-runtime.test.mjs",
+        "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
@@ -5737,98 +5447,62 @@
       "dependencies": []
     },
     {
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "fetch(`https://api.cloudflare.com/client/v4/${path}`, {\n      ...options,\n      headers: { ...options.headers, authorization: `Bearer ${token}` },\n      redirect: 'error',\n      signal: AbortSignal.timeout(15000),\n    })",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "fetch(new URL('/admin/playtest/' + path, origin), {\n    method,\n    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },\n    ...(body === undefined ? {} : { body: JSON.stringify(body) }),\n    redirect: 'error',\n    signal: AbortSignal.timeout(45000),\n  })",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "new URL('/admin/playtest/' + path, origin)",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "fetch(\n    new URL(`/join?token=${encodeURIComponent(invitation.token)}`, config.origin),\n    { redirect: 'manual', signal: AbortSignal.timeout(15000) },\n  )",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "new URL(`/join?token=${encodeURIComponent(invitation.token)}`, config.origin)",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "fetch(new URL(path, config.origin), {\n      ...options,\n      redirect: 'manual',\n      signal: AbortSignal.timeout(15000),\n    })",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "new URL(path, config.origin)",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "fetch(new URL(path, config.origin), {\n      method: 'POST',\n      headers: { cookie, origin: config.origin, 'content-type': 'application/json' },\n      body: JSON.stringify(body),\n      redirect: 'error',\n      signal: AbortSignal.timeout(45000),\n    })",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "new URL(path, config.origin)",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         },
         {
           "expression": "new URL(route, origin)",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "51e5c01c1040e5419b4103de53352552942dbc47d331248339283952a60fc8b1",
-      "externalImports": [
-        "node:crypto",
-        "node:fs/promises",
-        "node:path"
-      ],
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "7c5a3e8d57863078b6c3a5029da358bf2299fd67d60507d396921b45e6400370",
+      "externalImports": ["node:crypto", "node:fs/promises", "node:path"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
         "scripts/playtest/calibration-bundle.mjs",
@@ -5863,22 +5537,14 @@
     {
       "entrypoint": "scripts/playtest/worker.mjs",
       "sourceSha256": "ec9477af64060ff35066a001a31b8cc18a8ffa13f9fbc1ba8050fa6385c5e314",
-      "dependencies": [
-        "scripts/playtest/cloud-store.mjs",
-        "scripts/playtest/protocol.mjs"
-      ],
+      "dependencies": ["scripts/playtest/cloud-store.mjs", "scripts/playtest/protocol.mjs"],
       "externalImports": [],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "new URL(request.url)",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
       "consumers": [
@@ -5888,27 +5554,20 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "90cf3eadef91203d7d72f4064cee9300beb14c647dfe98dd35e822a54815cb54"
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "bfd02decc24e40af8264b02e9c2bd4610994e12489f9fbab7ee8f0f0182f4269"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
       "sourceSha256": "41ef9c56160464468913c446d739e02686fb18f88f3635f598d4e4553c4c5730",
-      "dependencies": [
-        "scripts/playtest/protocol.mjs"
-      ],
+      "dependencies": ["scripts/playtest/protocol.mjs"],
       "externalImports": [],
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "reads": [
         {
           "expression": "new URL(request.url)",
           "purpose": "runtime",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
       "consumers": [
@@ -5919,34 +5578,24 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "90cf3eadef91203d7d72f4064cee9300beb14c647dfe98dd35e822a54815cb54"
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "consumerSourceHash": "bfd02decc24e40af8264b02e9c2bd4610994e12489f9fbab7ee8f0f0182f4269"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
-      "checks": [
-        "invariant-controls"
-      ],
+      "checks": ["invariant-controls"],
       "sourceSha256": "c364f386baed4d697fc8ec11877a8f1428aa823bc32e27c9a4a343331fb762ee",
-      "dependencies": [
-        "scripts/browser-artifacts.mjs",
-        "scripts/browser-evidence.mjs"
-      ],
-      "externalImports": [
-        "node:fs"
-      ],
+      "dependencies": ["scripts/browser-artifacts.mjs", "scripts/browser-evidence.mjs"],
+      "externalImports": ["node:fs"],
       "reads": [
         {
           "expression": "readFileSync(await download.path(), 'utf8')",
           "purpose": "fixture",
-          "excludedInputs": [
-            "documentation",
-            "unit-test"
-          ]
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ],

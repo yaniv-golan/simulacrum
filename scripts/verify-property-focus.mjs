@@ -1,3 +1,4 @@
+import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -32,7 +33,7 @@ try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
   await page.waitForFunction(() => window.workshopProbe);
   build = await page.locator('meta[name=build-id]').getAttribute('content');
-  await page.locator('[data-part-type=poweredMotor]').click();
+  await placeCatalogPart(page, 'poweredMotor');
   const duty = page.getByRole('spinbutton', { name: 'Drive setting', exact: true });
   await duty.fill('.3');
   await duty.press('Escape');

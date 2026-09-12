@@ -335,3 +335,23 @@ test('Build reset retains f64 transforms; JSON text canonicalizes signed zero on
     w.dispose();
   }
 });
+test('catalog placement accepts its current cursor and rejects stale proposals unchanged', async () => {
+  const workshop = await createWorkshop();
+  try {
+    const cursor = workshop.observe().cursor;
+    const command = {
+      type: 'place',
+      partType: 'beam',
+      id: 'catalog-a',
+      position: [0, 2, 0],
+      expectedCursor: cursor,
+    };
+    assert.equal((await workshop.act(command)).ok, true);
+    const before = workshop.observe();
+    const rejected = await workshop.act({ ...command, id: 'catalog-b', position: [2, 2, 0] });
+    assert.equal(rejected.reasonCode, 'STALE_PROPOSAL');
+    assert.deepEqual(workshop.observe(), before);
+  } finally {
+    workshop.dispose();
+  }
+});
