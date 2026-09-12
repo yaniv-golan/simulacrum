@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"2063dcaa1a35781fe6f18890cc49d6f1551a6e076d3e532ea3023a9765f9570c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"92cb9e1d03217ead3fc5637e5e4f2d5de291b8e82af3b4a989c89d59e4590222","disposition":"updated","rationale":"Document deadline admission stopping, explicit unexecuted unit paths, inclusive identity timing and retained subprocess failure fields; source validation and browser selection coverage remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f9eedbe49e9ecac383fe93e3afb8e71b0bc41e41eb62a2b9f16fa756fed67ac8","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"166ebe4f007b5d1713c98efde2dfc06284bdb2875bb70a51d792ef138e53afdd","disposition":"updated","rationale":"Describe bounded processDiagnostics retained on success and failure receipts, distinguish callback observations from OS state, and preserve timeout and cleanup error semantics."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -369,6 +369,11 @@ The unit runner stops admitting queued tests when the iteration budget expires a
 reports their paths as `unexecuted`; they are not failed test executions. Receipt
 elapsed time includes admission identity validation. Process failures retain their
 code, signal, failure kind and subprocess elapsed time separately from receipt time.
+`processDiagnostics` retains relative monotonic event times for spawn, exit, close,
+watchdog, signal outcomes and settlement, with a wall-clock origin for correlation.
+Timeout enumeration includes at most 64 owned process states; event lists are capped
+at 256 with a dropped-event count. Callback timestamps do not prove OS exit time.
+`EPERM` remains an error; diagnostics do not change cleanup or timeout outcomes.
 
 Browser results publish after each transition and completed check, before the suite
 finishes. Each attempt owns a retained report, per-check logs and artifact directories;
@@ -405,7 +410,7 @@ The [tier coordinator](../../scripts/verification-tiers.mjs#implementation) keep
 ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
-<!-- doc-review {"version":1,"fingerprint":"f1363d1c19dbd43890b0df22f3ef4d12ed99e23d90487b625e488b09b7f2eaa2","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"3f47d9124cb567343217c9acd609461674ca4442c16532742a80c554cc6d1442","disposition":"still accurate","rationale":"New merge candidate execution uses the same verification-window wrapper; no additional workers or competing measurement permission was introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"6fc504809ab145cfb07cfb219777b3f3ec5116339749964af39e9a5b84f2986a","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"fddfe273f1a5fcf26503304f337253308759ddc8628cd18e0c7caaffcc2a79b6","disposition":"still accurate","rationale":"Process event observation adds no workers, lock behavior or budget changes; shared window admission and source-bound evidence remain unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -439,7 +444,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"07a4a4c6a69b9eaa607afceb017a198bd7085bd62ab53d29ce7269c7b2286088","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"57178040471e6cb54a8554b519a452a60219986e0e6d9c4cb29d9286f9deacd1","disposition":"still accurate","rationale":"Invocation-local documentation graph reuse changes analysis cost only. Candidate preparation still rejects stale source-bound review records and captures exact source bytes before running the selected completion tier."} -->
+<!-- doc-review {"version":1,"fingerprint":"3475c022fc2408267825c2d114432c05dfc6d6d84aa3577c043aed63d4820b51","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"b2cea7138e4a0290a4a52510b94c7eab5f1410e62b867cb23aaa2a405698356a","disposition":"still accurate","rationale":"The subprocess runner adds bounded diagnostics only; candidate capture, drift rejection and completion tier selection are unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

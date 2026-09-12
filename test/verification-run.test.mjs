@@ -48,6 +48,13 @@ test('aggregate deadline bounds a blocking child while independent later work re
     /timed out/,
   );
   assert.equal((await run.node('positive', ['-e', 'console.log(42)'], 3000)).stdout.trim(), '42');
+  assert.equal(
+    run
+      .receipts()
+      .find((r) => r.id === 'positive')
+      .processDiagnostics.events.at(-1).type,
+    'settlement',
+  );
 });
 test('inherited verifier environment is identity-bound without recording secret values', async () => {
   const { verificationIdentity } = await import('../scripts/verification-run.mjs');
@@ -116,6 +123,7 @@ test('receipt elapsed includes admission identity work and preserves process fai
         signal: 'SIGTERM',
         failureKind: 'watchdog',
         elapsedMs: 12,
+        processDiagnostics: { events: [{ type: 'signal', errno: 'EPERM' }] },
       });
     }),
     /cleanup failed/,
@@ -126,4 +134,5 @@ test('receipt elapsed includes admission identity work and preserves process fai
   assert.equal(receipt.signal, 'SIGTERM');
   assert.equal(receipt.failureKind, 'watchdog');
   assert.equal(receipt.processElapsedMs, 12);
+  assert.equal(receipt.processDiagnostics.events[0].errno, 'EPERM');
 });

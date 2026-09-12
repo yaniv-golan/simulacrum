@@ -82,6 +82,7 @@ export function createVerificationRun({
         .then((value) => {
           unchanged();
           receipt.ok = true;
+          if (value?.processDiagnostics) receipt.processDiagnostics = value.processDiagnostics;
           writeLedger?.save(
             id,
             configuration,
@@ -93,7 +94,7 @@ export function createVerificationRun({
         .catch((error) => {
           receipt.ok = false;
           receipt.error = error.message;
-          for (const field of ['code', 'signal', 'failureKind', 'unexecuted'])
+          for (const field of ['code', 'signal', 'failureKind', 'unexecuted', 'processDiagnostics'])
             if (error[field] !== undefined) receipt[field] = error[field];
           if (error.elapsedMs !== undefined) receipt.processElapsedMs = error.elapsedMs;
           throw error;

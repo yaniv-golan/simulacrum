@@ -132,3 +132,44 @@ test('watchdog and nonzero exit retain different failure kinds', async () => {
     (e) => e.failureKind === 'check-failure',
   );
 });
+
+test('process diagnostics distinguish exit, close and watchdog signal outcomes', async () => {
+  const ok = await runProcess(process.execPath, ['-e', 'process.exit(0)'], { timeoutMs: 1000 });
+  const names = ok.processDiagnostics.events.map((event) => event.type);
+  assert.ok(names.indexOf('spawn-return') < names.indexOf('exit'));
+  assert.ok(names.indexOf('exit') < names.indexOf('close'));
+  assert.equal(names.at(-1), 'settlement');
+  assert.equal(names.includes('watchdog-fired'), false);
+  await assert.rejects(
+    runProcess(process.execPath, ['-e', 'while(true){}'], { timeoutMs: 100 }),
+    (error) => {
+      const events = error.processDiagnostics.events;
+      const fired = events.find((event) => event.type === 'watchdog-fired');
+      assert.ok(fired.elapsedMs >= fired.dueMs);
+      assert.equal(error.failureKind, 'watchdog');
+      if (process.platform !== 'win32') {
+        assert.ok(
+          events.some(
+            (event) =>
+              event.type === 'signal' &&
+              event.signal === 'SIGTERM' &&
+              event.target === -error.processDiagnostics.pid,
+          ),
+        );
+        assert.ok(events.some((event) => event.type === 'escalation-fired'));
+        assert.ok(
+          events.some(
+            (event) => event.type === 'enumeration-finished' || event.type === 'enumeration-error',
+          ),
+        );
+      }
+      assert.equal(events.at(-1).type, 'settlement');
+      assert.ok(
+        events.every(
+          (event, index) => index === 0 || event.elapsedMs >= events[index - 1].elapsedMs,
+        ),
+      );
+      return true;
+    },
+  );
+});
