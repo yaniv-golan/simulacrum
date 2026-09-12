@@ -247,7 +247,10 @@ test('recording client scope retains both adapters, durable receipt and workshop
       .sort(),
     [
       'verify-cloud-playtest',
+      'verify-feedback-flow',
+      'verify-feedback-lifecycle',
       'verify-feedback-receipts',
+      'verify-feedback-recovery',
       'verify-remote-playtest',
       'verify-ui-lifecycle-browser',
       'verify-workshop',

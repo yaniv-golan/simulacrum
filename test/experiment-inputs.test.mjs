@@ -65,15 +65,56 @@ test('opaque, missing and unknown payload boundaries bind complete source rather
   assert.throws(() => deriveExperimentInputs(options), /payload inventory/);
 });
 
-test('audited capacity runtime admits only exact owner sources and complete declared payload identities', async () => {
+test('audited capacity runtime admits only exact owner sources and complete declared payload identities', () => {
+  const options = fixture();
+  options.graph.nodes.get('load.mjs').opaqueInputs = true;
+  options.capacityRuntime = {
+    calibrationEvidence: 'a'.repeat(64),
+    recordingMode: 'video',
+    captureSchema: 1,
+    workload: {
+      maxEventBytes: 1000,
+      maxMediaBytesPerSecond: 1000,
+      maxEventsPerSecond: 10,
+      maxChunkBytes: 10000,
+    },
+    browserVersion: 'Chrome1',
+    effectiveProvider: 'c'.repeat(64),
+  };
+  options.scopes = [
+    {
+      family: 'capacity',
+      runtimeBoundary: 'synthetic-capacity-envelope-v1',
+      entrypoint: 'load.mjs',
+      sourceSha256: createHash('sha256').update(options.read('load.mjs')).digest('hex'),
+      dependencies: ['shared.mjs'],
+      externalImports: [],
+    },
+  ];
+  const baseline = deriveExperimentInputs(options);
+  assert.equal(baseline.boundaries.capacity.scope, 'packaged-runtime-and-verifier-closure');
+  options.source = 'documentation-change';
+  assert.equal(baseline.inputs.capacity, deriveExperimentInputs(options).inputs.capacity);
+  options.capacityRuntime.calibrationEvidence = 'd'.repeat(64);
+  assert.notEqual(baseline.inputs.capacity, deriveExperimentInputs(options).inputs.capacity);
+  const read = options.read;
+  options.read = (path) =>
+    Buffer.concat([
+      read(path),
+      path === 'load.mjs' ? Buffer.from('changed reader') : Buffer.alloc(0),
+    ]);
+  assert.equal(deriveExperimentInputs(options).boundaries.capacity.scope, 'all-source');
+  options.read = read;
+  delete options.capacityRuntime.effectiveProvider;
+  assert.equal(deriveExperimentInputs(options).boundaries.capacity.scope, 'all-source');
+});
+
+test('feedback reader keeps real capacity inputs bound to complete source until audited', async () => {
   const { readFileSync } = await import('node:fs');
-  const { createHash } = await import('node:crypto');
   const { buildModuleGraph } = await import('../scripts/module-graph.mjs');
   const options = fixture();
-  options.roots = {
-    endurance: ['scripts/playtest/load.mjs'],
-    capacity: ['scripts/playtest/load.mjs'],
-  };
+  options.roots.capacity = ['scripts/playtest/load.mjs'];
+  options.roots.endurance = ['scripts/playtest/load.mjs'];
   options.graph = buildModuleGraph(process.cwd(), { purpose: 'test-selection' });
   options.read = (path) => readFileSync(path);
   options.capacityRuntime = {
@@ -89,29 +130,16 @@ test('audited capacity runtime admits only exact owner sources and complete decl
     browserVersion: 'Chrome1',
     effectiveProvider: 'c'.repeat(64),
   };
-  options.scopes = JSON.parse(
-    readFileSync('scripts/manifest.json', 'utf8'),
-  ).experimentInputScopes.map((scope) => ({
-    ...scope,
-    sourceSha256: createHash('sha256').update(options.read(scope.entrypoint)).digest('hex'),
-  }));
+  options.scopes = JSON.parse(readFileSync('scripts/manifest.json', 'utf8')).experimentInputScopes;
   const baseline = deriveExperimentInputs(options);
-  assert.equal(baseline.boundaries.capacity.scope, 'packaged-runtime-and-verifier-closure');
-  options.source = 'documentation-change';
-  assert.equal(baseline.inputs.capacity, deriveExperimentInputs(options).inputs.capacity);
-  options.capacityRuntime.calibrationEvidence = 'd'.repeat(64);
+  assert.equal(baseline.boundaries.capacity.scope, 'all-source');
+  assert.ok(
+    baseline.boundaries.capacity.reasons.includes(
+      'opaque verifier input: scripts/playtest/feedback-load.mjs',
+    ),
+  );
+  options.source = 'different complete source';
   assert.notEqual(baseline.inputs.capacity, deriveExperimentInputs(options).inputs.capacity);
-  options.read = (path) =>
-    Buffer.concat([
-      readFileSync(path),
-      path === 'scripts/playtest/load.mjs'
-        ? Buffer.from('\n// changed dynamic reader')
-        : Buffer.alloc(0),
-    ]);
-  assert.equal(deriveExperimentInputs(options).boundaries.capacity.scope, 'all-source');
-  options.read = (path) => readFileSync(path);
-  delete options.capacityRuntime.effectiveProvider;
-  assert.equal(deriveExperimentInputs(options).boundaries.capacity.scope, 'all-source');
 });
 
 test('bounded endurance still includes every packaged byte and rejects unaudited reader edits', () => {
