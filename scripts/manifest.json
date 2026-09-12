@@ -1352,6 +1352,10 @@
           {
             "path": "test/presentation-resources.test.mjs",
             "anchor": "assembly previews include authored wires and spring coils and release their resources"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "assembly previews retain offset surface fasteners under authored rotation without mutating saved parts"
           }
         ]
       },

@@ -114,6 +114,8 @@ import {
   portCueRadius,
 } from '../src/presentation/part-finish.mjs';
 import { CATALOG, MATERIALS } from '../src/model/catalog.mjs';
+import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
+import { snapConnection, compileAssembly } from '../src/model/assembly.mjs';
 test('selectable finishes separate satin aluminium, steel and nonmetal rubber without material mutation', () => {
   const before = JSON.stringify(MATERIALS);
   const finishes = Object.fromEntries(
@@ -227,4 +229,40 @@ test('assembly previews include authored wires and spring coils and release thei
   view.dispose();
   assert.ok(released > 0);
   assert.equal(group.children.length, 0);
+});
+
+test('assembly previews retain offset surface fasteners under authored rotation without mutating saved parts', async () => {
+  const { createAssemblyConnections } = await import('../src/presentation/assembly-thumbnails.mjs');
+  for (const rotated of [false, true]) {
+    let definition = createEmptyBlueprint('mounted-preview', 'Mounted preview');
+    definition.parts = [
+      createPart('plate', 'base', [1, 2, 3]),
+      createPart('spacerBlock', 'block', [0, 4, 0]),
+    ];
+    if (rotated) definition.parts[0].rotation = [0, Math.SQRT1_2, 0, Math.SQRT1_2];
+    const a = { part: 'base', surface: { region: 'top', u: 0.03, v: 0.04, twist: 0.4 } };
+    const b = { part: 'block', surface: { region: 'bottom', u: 0, v: 0, twist: 0 } };
+    definition = snapConnection(definition, a, b);
+    definition.connections = [{ id: 'mount', kind: 'fixed', a, b }];
+    assert.equal(compileAssembly(definition).connections[0].reasonCode, 'OK');
+    const before = structuredClone(definition);
+    const group = new THREE.Group();
+    const empty = createAssemblyConnections(group, { ...definition, connections: [] });
+    assert.equal(group.children.length, 0, 'unconnected parts must not invent fasteners');
+    empty.dispose();
+    const preview = createAssemblyConnections(group, definition);
+    const fasteners = [];
+    group.traverse((object) => {
+      if (object.isMesh) fasteners.push(object);
+    });
+    assert.equal(fasteners.length, 1, 'a valid surface mount must retain its Build fastener');
+    const expected = new THREE.Vector3(...(rotated ? [1.04, 2.01, 3.03] : [0.97, 2.01, 3.04]));
+    assert.ok(fasteners[0].getWorldPosition(new THREE.Vector3()).distanceTo(expected) < 1e-9);
+    assert.deepEqual(definition, before);
+    let disposals = 0;
+    fasteners[0].geometry.addEventListener('dispose', () => disposals++);
+    preview.dispose();
+    assert.equal(disposals, 1);
+    assert.equal(group.children.length, 0);
+  }
 });
