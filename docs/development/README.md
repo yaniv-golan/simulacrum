@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"a74811b20257328fda547abfcf2c567dd0dcc98bc7c303918c413360e4b99499","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"58ee45e8d96dd3b9039c5f54ccc77511a30ff9af37606479ec5a173d6b3df55b","disposition":"still accurate","rationale":"The new help inspector row preserves the complete catalog scenario and is included in existing help scopes. Root and consumer fingerprints were explicitly reviewed; both partitions retain60-second watchdogs and unchanged UI-profile parallel admission."} -->
+<!-- doc-review {"version":1,"fingerprint":"2063dcaa1a35781fe6f18890cc49d6f1551a6e076d3e532ea3023a9765f9570c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"92cb9e1d03217ead3fc5637e5e4f2d5de291b8e82af3b4a989c89d59e4590222","disposition":"updated","rationale":"Document deadline admission stopping, explicit unexecuted unit paths, inclusive identity timing and retained subprocess failure fields; source validation and browser selection coverage remain unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -364,6 +364,11 @@ reports retain the supplied paths and provenance; browser reports record executi
 order separately from canonical result order. For example:
 `npm run verify:candidate -- final --priority-files scripts/verify-recording-browser.mjs`.
 Exclusive checks still drain other work before starting.
+
+The unit runner stops admitting queued tests when the iteration budget expires and
+reports their paths as `unexecuted`; they are not failed test executions. Receipt
+elapsed time includes admission identity validation. Process failures retain their
+code, signal, failure kind and subprocess elapsed time separately from receipt time.
 
 Browser results publish after each transition and completed check, before the suite
 finishes. Each attempt owns a retained report, per-check logs and artifact directories;

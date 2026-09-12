@@ -82,3 +82,48 @@ test('Vite receives an initialized environment before final verification identit
     else process.env.NODE_ENV = prior;
   }
 });
+
+test('expired unit admission stops before identity work and reports every unexecuted file', async () => {
+  const { createVerificationContext } = await import('../scripts/verification-run.mjs');
+  let reads = 0;
+  const run = createVerificationContext({ readIdentity: () => ({ source: ++reads && 'a' }) });
+  const before = reads;
+  const files = ['missing-c.test.mjs', 'missing-a.test.mjs', 'missing-b.test.mjs'];
+  await assert.rejects(
+    run.withDeadline(-1, () => run.unit(files)),
+    (error) => {
+      assert.deepEqual(error.unexecuted, [...files].sort());
+      return true;
+    },
+  );
+  assert.equal(reads, before, 'expired queue must not repeatedly hash identity');
+  assert.equal(run.receipts().length, 0, 'unexecuted tests are not failed executions');
+  assert.equal((await run.node('after-budget', ['-e', 'console.log(7)'], 3000)).stdout.trim(), '7');
+});
+
+test('receipt elapsed includes admission identity work and preserves process failure details', async () => {
+  let reads = 0;
+  const run = createVerificationRun({
+    readIdentity: () => {
+      if (++reads === 2) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 30);
+      return { source: 'a' };
+    },
+  });
+  await assert.rejects(
+    run.check('failure', {}, () => {
+      throw Object.assign(Error('cleanup failed'), {
+        code: 'EPERM',
+        signal: 'SIGTERM',
+        failureKind: 'watchdog',
+        elapsedMs: 12,
+      });
+    }),
+    /cleanup failed/,
+  );
+  const receipt = run.receipts()[0];
+  assert.ok(receipt.elapsedMs >= 30, `identity time omitted: ${receipt.elapsedMs}`);
+  assert.equal(receipt.code, 'EPERM');
+  assert.equal(receipt.signal, 'SIGTERM');
+  assert.equal(receipt.failureKind, 'watchdog');
+  assert.equal(receipt.processElapsedMs, 12);
+});

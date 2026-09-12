@@ -6,6 +6,7 @@ import { appFingerprint } from './app-fingerprint.mjs';
 import { runProcess, runModuleCheck } from './run-check.mjs';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
+import { setImmediate as yieldToProcesses } from 'node:timers/promises';
 const stable = (value) =>
   JSON.stringify(value, (_, v) =>
     v && typeof v === 'object' && !Array.isArray(v)
@@ -42,6 +43,7 @@ export function createVerificationRun({
   readIdentity = verificationIdentity,
   resumeLedger,
   writeLedger,
+  assertAdmission = () => {},
 } = {}) {
   const identity = structuredClone(readIdentity()),
     key = stable(identity),
@@ -53,7 +55,10 @@ export function createVerificationRun({
   return {
     identity,
     async check(id, configuration, execute) {
+      const started = performance.now();
+      assertAdmission();
       unchanged();
+      assertAdmission();
       const config = stable(configuration),
         existing = checks.get(id);
       if (existing) {
@@ -61,11 +66,11 @@ export function createVerificationRun({
         existing.reused++;
         return existing.promise;
       }
-      const receipt = { id, configuration: config, reused: 0 },
-        started = performance.now();
+      const receipt = { id, configuration: config, reused: 0 };
       checks.set(id, receipt);
       receipt.promise = Promise.resolve()
         .then(async () => {
+          assertAdmission();
           const previous = resumeLedger?.load(id, configuration);
           if (previous) {
             receipt.resumed = true;
@@ -88,6 +93,9 @@ export function createVerificationRun({
         .catch((error) => {
           receipt.ok = false;
           receipt.error = error.message;
+          for (const field of ['code', 'signal', 'failureKind', 'unexecuted'])
+            if (error[field] !== undefined) receipt[field] = error[field];
+          if (error.elapsedMs !== undefined) receipt.processElapsedMs = error.elapsedMs;
           throw error;
         })
         .finally(() => {
@@ -126,13 +134,20 @@ export function createVerificationContext(options) {
         : {}),
     };
   }
-  const run = createVerificationRun({ ...ledgerOptions, ...options });
   let deadline = Infinity;
   const remaining = (limit) => {
     const value = Math.min(limit, deadline - performance.now());
-    if (value <= 0) throw Error('iteration-budget: exhausted before next check');
+    if (value <= 0)
+      throw Object.assign(Error('iteration-budget: exhausted before next check'), {
+        code: 'ITERATION_BUDGET_EXHAUSTED',
+      });
     return value;
   };
+  const run = createVerificationRun({
+    ...ledgerOptions,
+    ...options,
+    assertAdmission: () => remaining(Infinity),
+  });
   return Object.assign(run, {
     async withDeadline(limit, execute) {
       const previous = deadline;
@@ -155,23 +170,35 @@ export function createVerificationContext(options) {
     },
     async unit(files) {
       const queue = [...new Set(files)].sort(),
-        failures = [];
+        failures = [],
+        unexecuted = [];
       await Promise.all(
         Array.from({ length: Math.min(4, queue.length) }, async () => {
           while (queue.length) {
+            // Let process close/watchdog callbacks run before another admission.
+            await yieldToProcesses();
+            if (!queue.length) break;
+            if (deadline <= performance.now()) {
+              unexecuted.push(...queue.splice(0));
+              break;
+            }
             const file = queue.shift();
             try {
               await this.node(`unit:${file}`, ['--test', file], 30000);
             } catch (error) {
-              failures.push({ file, error });
+              if (error.code === 'ITERATION_BUDGET_EXHAUSTED') unexecuted.push(file);
+              else failures.push({ file, error });
             }
           }
         }),
       );
-      if (failures.length)
-        throw new AggregateError(
-          failures.map((x) => x.error),
-          `unit tests failed: ${failures.map((x) => x.file).join(', ')}\n${failures.map((x) => x.error.output ?? x.error.message).join('\n')}`,
+      if (failures.length || unexecuted.length)
+        throw Object.assign(
+          new AggregateError(
+            failures.map((x) => x.error),
+            `unit tests failed: ${failures.map((x) => x.file).join(', ')}\n${failures.map((x) => x.error.output ?? x.error.message).join('\n')}\n${unexecuted.length ? `iteration-budget: ${unexecuted.length} unit tests not executed` : ''}`,
+          ),
+          { unexecuted: unexecuted.sort() },
         );
     },
   });
