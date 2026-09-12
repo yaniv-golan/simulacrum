@@ -18,7 +18,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"249edf152e297ec4c1169a854b12dae1aa648cd5137d7a876fa3cbbf164fd8ee","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"99348d03b3f30d77049ee34a2395fc8630cea4daf818c6518eb82384706d7c16","disposition":"still accurate","rationale":"Frame construction timing does not modify catalog geometry, schema, material admission, mounting surfaces, gear support eligibility or Ball controls. The recipe's ordinary authored-part and independent renderer/model checks still apply."} -->
+<!-- doc-review {"version":1,"fingerprint":"87663417f01e01e5fc5937971d29da2fe2174c9847a7aebadd5b3f4d3949e310","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"beeeb844be48c859486223e484eb0746ad90db6bb5c223ed08391f68a278f0af","disposition":"still accurate","rationale":"No catalog schema, geometry, material, mass, compiler or part type changed. The optional place cursor is authoring admission only; all described part construction and physical tests remain applicable."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -58,7 +58,7 @@ when changing admission.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"c742457e58eded3890b2e70615181375ce572b6ae6c8d365d2e1354b811a41ef","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"0b2206365b7cb7ad062d7dfb94bf5761f8afdd20c59ce33874548185183c11aa","disposition":"still accurate","rationale":"Session and observation changes add diagnostic timings after completed simulation work; core shape validation, candidate compilation, atomic command history and rejected-edit effects are unchanged, preserving the surface-mount example and controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"2dbdecca5e702e5a312c8e26638cc61ea35f51ec69422cf9708cd3fa6817c9f2","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"543be9f27a3602efbcb9dcdd3b887eb2b78de5532fac5eaf7b50773cd38122fd","disposition":"still accurate","rationale":"The existing place command adds exact optional cursor shape admission and stale rejection before candidate construction. Input copying, compilation, one history transaction and rejected-state identity remain as described and are directly tested."} -->
 
 
 
@@ -75,7 +75,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"2db42b4ea010dc6f341a571ba31fde3c270359d772b3fa3d332aebe32ae1177c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"a6438503af3ded01072ffca72faba88eaddc716257f62752434f0438dda3632c","disposition":"updated","rationale":"The recipe now names both help interaction and catalog inspector checks. All seven scenario bodies and viewports were preserved, with separate artifacts and unchanged watchdogs; ordinary input ownership and user behavior assertions remain."} -->
+<!-- doc-review {"version":1,"fingerprint":"d743874771ca7c57615fd48b5893e77bbc3cb49c53185493ca602f6c05a62352","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"7eae0f45be49097956568d8305325cce1a8f7915a3d192cdc7ff0fa9c5807f6f","disposition":"still accurate","rationale":"Catalog confirmation now delegates to existing surface controls, following this recipe. Preview remains transient and ordinary cursor-guarded commands own admission; cancellation and stale-result checks remain required."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -106,8 +106,8 @@ text instructions in the How to connect tab of the nonmodal reference window.
 Keep the title bar and tabs available while content scrolls; clamp dragging and
 resizing to the viewport. Keep the small info control visually inside the placement
 card while retaining sibling buttons in the DOM. Restore a hidden opener by opening
-its containing disclosure before focusing it. Preserve palette eligibility through
-[part palette](../../src/presentation/part-palette.mjs); supported loaded types still
+its containing disclosure before focusing it. Preserve catalog eligibility through CATALOG and discovery vocabulary through
+[part search](../../src/presentation/part-search.mjs); supported loaded types still
 need [help content](../../src/presentation/part-help-content.mjs). Use the
 [part help browser check](../../scripts/verify-part-help-browser.mjs#implementation)
 for dragging, expand/restore, tabs, capture, authoring Escape, mode availability
@@ -125,7 +125,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"061d54b22a01c6e3246d8d5c8464abeab0edf3857f4290a38dc25fac9b369e44","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"e694a2241100261b7377c2e245c740cc51e6c3792f379bc78fc78a698d917370","disposition":"still accurate","rationale":"The new frame-construction attribution reads diagnostic timing and does not change motion or controller diagnosis. Completed observation ownership, causal uncertainty, separate history, and measurement sampling remain the prescribed diagnostic path."} -->
+<!-- doc-review {"version":1,"fingerprint":"cc0f3c1e83f92b2921e3ceda01b8af20f9b04270d2575e5c1744a0d0b5563ceb","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"9cea4e7a9060cc06bca4bf72e94225b9dda663609779dc481e8eaa82d94f2b2d","disposition":"still accurate","rationale":"Place cursor rejection and catalog input changes do not alter completed diagnostics, measurement cursors, controller history or causal explanations."} -->
 
 
 
@@ -155,7 +155,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"27d2a20ee8e8d91d45d7c577a430aa0c3a28401e7aee618f97402fc1058e1564","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"bb77467145a30afa4ae9a37dc84520ceeacec91b75aea8e5c8d7d01cd9053447","disposition":"still accurate","rationale":"Session still constructs and publishes the same completed state after one integration; frameMs only separates a measured cost. Gear measurement adds attribution while retaining loaded apparatus durations, physical assertions and absolute budgets, so all numerical and authority requirements here remain binding."} -->
+<!-- doc-review {"version":1,"fingerprint":"344ed5f19002210764edc81314e3693b03a57c8a793b35fe1063ebd48e8a2e6e","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"f292019dc85886a83eae4f97543ef2224f4d2df96c34b69b5aef5b19d5642ccb","disposition":"still accurate","rationale":"The sole core delta admits an optional expected cursor for place. No simulation, numerical law, native dependency, integration, contact reader or physical test changed."} -->
 
 
 
@@ -299,7 +299,7 @@ settings and slop. Re-run existing contact/constraint cases when changing this p
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"eab6cfa85d5242d7ebc5689d8d5f0ddd7d39086e451f1632bd9cf27a4e1ca621","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"14c04cbb58330a8cd2fb2d232edee5ac86623c8254c434dc74e58ce4a158e66d","disposition":"still accurate","rationale":"Observation timing and shared browser lifecycle instrumentation do not change copied graph membership, reference remapping, assembly persistence or atomic commands. The listed assembly journeys and rendered/completed comparisons remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"d08b872400628ec7e2de4fd710751a4690349ea62c23a069ba8ae2d2c426719c","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"a868f8d921b2d23a562e443800fe621241eff6491bf210b4a5e661a256d08135","disposition":"still accurate","rationale":"Single-part catalog confirmation does not change mechanical traversal, assembly transforms, alias remapping, library persistence or insertion reconciliation. Updated browser call sites still construct parts through ordinary UI before these operations."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored

@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"3056eb1eed56600c7f48344c278b107980d42d9d06c999e989be6ef8fe334e6f","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"8d109567c31048706ee568289fbffe6c93f80a4630a83682a9f372574cc6fac5","disposition":"still accurate","rationale":"Existing optional gear and sensor content are both retained. Merge adds no lesson or permanent canvas surface; rendered automation remains separate from player understanding."} -->
+<!-- doc-review {"version":1,"fingerprint":"0317bfc00de774593b8498e6c34ef85e6e813f8b2bee8d222d3576ed9bdc9fb8","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"a11dfc258823161ccc6ca2391d1f37ef3ddd153aaa1934022ad3b8fdebff35ea","disposition":"still accurate","rationale":"These fixes remove a duplicated permanent placement hint and correct catalog input and layout. Existing preview instructions and requested help retain teaching; no lesson, challenge or example entry is added."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"cd4d17b4e7d4f8c45b22f09678440462906379ecdfe4b66d0152995b61a90b42","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"668d59f273cb585b687e3a36582256eaafbc19d23208faf82632994d85593816","disposition":"still accurate","rationale":"Combined workshop composition retains gear examples and controller/sensor inspectors in their existing regions. Historical versus live labels and Build repair routing remain intact."} -->
+<!-- doc-review {"version":1,"fingerprint":"1f8e7bb07ba086ba9df02871a49cf6a6cdd4489a5ddd1046f2ecc3428b279c85","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"391a64705426a827b55f3568efa208a73061726be05edc53fa04b7dac035d2f0","disposition":"updated","rationale":"Clarified active-placement Escape priority even with search focus and complete visible tiles at1280 by720. Compact header positioning and summary spacing reclaim room without hiding search, categories, favorite actions or recording."} -->
 
 
 
@@ -134,6 +134,31 @@ document and run actions in the header; parts in the left catalogue; separate ed
 and view groups at the workbench edge; selected properties and operations in the
 inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
+
+The [part catalog](../../src/presentation/parts-browser.mjs#source) uses real mesh thumbnails, Essentials and functional categories,
+Recent and locally saved Favorites. Search covers the whole available catalog and
+ranks names, aliases, actions and related roles in that order, preferring complete
+query coverage across identity and function fields. Complete conservative typo corrections
+precede partial direct matches; numeric identities are exact.
+Clearing search restores browsing position. Searching and filtering retain the placement lock during an active assembly operation. Related assembly results open the existing
+Assemblies browser. Vocabulary lives in presentation, never in physical admission.
+Clicking or dragging a part opens the same nonmutating placement controller. Pointer
+release assesses its final location, including touch taps. The existing surface owner
+provides mounting faces, precision and attachment; empty-space placement uses the grid
+with optional coordinates under Precise position. Confirmation sends one ordinary
+cursor-guarded `place` or `surface-mount` command. Invalid and stale previews cannot
+commit, and pending placement disables duplicate submission and cancellation.
+Escape first cancels an active pickup, including when search has focus, and restores
+the originating query, category, focus and scroll even after browsing changes. Only results scroll inside the tray; scaled text reduces the column count. The compact
+header and summary preserve complete visible tiles at the supported 1280 by 720 viewport.
+At narrow widths a requested Parts browser replaces the sidebar, leaving the canvas
+full width while Assemblies and recording remain retrievable.
+Recent records accepted catalog placements. Expanded and compact catalogs are requested
+surfaces; picking closes them and cancellation restores the origin. The existing About
+window retains Overview and How to connect, with diagram links that reveal catalog
+parts without placing them. The cell-to-motor example precedes optional power branching.
+Learning admission: extend existing part help; no new lesson or example-browser entry.
+
 
 The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic
 regulation shows measured and target total spring length, rather than extension from

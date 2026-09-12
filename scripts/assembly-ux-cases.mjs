@@ -1,3 +1,4 @@
+import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { assemblyPartition } from './assembly-scenarios.mjs';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -468,7 +469,7 @@ export async function runAssemblyCases(partition, evidence, browser) {
       evidence.assert('match', [text, /hinge/i]);
     });
     await attempt('failure-layout', async (p) => {
-      await p.getByRole('button', { name: 'Powered Motor', exact: true }).click();
+      await placeCatalogPart(p, 'poweredMotor');
       await p.locator('[data-command=run]').click();
       await p.locator('.machine-health').waitFor({ state: 'visible', timeout: 6000 });
       const health = await p.locator('.machine-health').boundingBox(),

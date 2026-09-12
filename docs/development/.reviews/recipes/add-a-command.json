@@ -3,7 +3,7 @@
   "dependencies": {
     "package-lock.json": "bcc829aa98315f5b3ca46abbd8ee3c660c15b5a258f209d9265741c9bc57513c",
     "package.json": "8d74ddc88af77087abe09d3e9ee4fff0f02d3191030d2177f88f8cfbdb0c612a",
-    "src/core/workshop.mjs": "e74bbeefcf1cd22058686128de07c7ae97542ed582315ee8f00b09daa1bbb853",
+    "src/core/workshop.mjs": "2f23cd5485fbe5fd2b1bd2b5650138385778a12e2975a6e95c015b1c9845ca58",
     "src/model/assembly.mjs": "23e8eb3175c17d5bcc93b731f3bf66d13ed59bf0c8e28a2fd4c32f4ab27fbd3e",
     "src/model/blueprint.mjs": "3a6f5b81f4120d3a2bf7d0cbd2453490a11282a7f66f0ab7dc1297d8573954eb",
     "src/model/boundaries.d.ts": "6c2581fe4dd59ac826f07c1b3fca6cb77572ec8c255c55ce41248f4fc2fbf299",
@@ -30,7 +30,7 @@
     "src/model/surfaces.mjs": "58249441a24e920cf369f1a51777c969e571a32e68a0cb8561c5e2eac8a82995",
     "src/model/tick.mjs": "9da2a4cb1bd1f0d6443a7fdf8bb0e75c22b4a6a86c0b8dd83230d0466379b187",
     "src/model/transforms.mjs": "ae1eabc904c930e4b22564007223ac9e071096be276ce106e32b32d42d1cab4b",
-    "src/model/workshop-command.d.ts": "705ff03373dd06c61ac78865f769584bd3be6ae7cd4f2ae32bee25facd6c21e5",
+    "src/model/workshop-command.d.ts": "c9afe2ef4f5ad698dd7f7cc98de95d39c4a3b8b3653b33c97b59988338257926",
     "src/model/workshop-command.mjs": "a0bcaf1c19b17d8a656f9ecb42c7305b3e58c3fc50bdfa5a236b456a87fa0914",
     "src/scripting/controller-executors.mjs": "782dd6c494930c4c355edbcebb97897be263e7dd48f11d4263d10b0ca40137e2",
     "src/scripting/controller-program.mjs": "82db0a979977655cbe339b2c7d7f8500fefc47b8a70fbfdec45eb93d77559529",

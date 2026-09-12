@@ -1,3 +1,4 @@
+import { placeCatalogPart, browseAllParts } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 const browserEvidence = createBrowserEvidence();
@@ -30,8 +31,8 @@ try {
     expectedBuild,
     'served build must equal the current app fingerprint',
   ]);
-  await page.locator('.more-parts > summary').click();
-  await page.locator('[data-part-type=chassis]').click();
+  await browseAllParts(page);
+  await placeCatalogPart(page, 'chassis');
   const canvas = page.locator('canvas').first(),
     box = await canvas.boundingBox();
   const center = await page.evaluate(() => window.workshopProbe.readRenderedCenters()[0]);
@@ -71,7 +72,7 @@ try {
   browserEvidence.assert('equal', [(await read()).ui.surfacePlacement, null]);
   browserEvidence.assert('equal', [(await read()).blueprint.parts.length, 2]);
   // Explicit surface placement uses a different pointer path than direct body dragging.
-  await page.locator('[data-part-type=poweredMotor]').click();
+  await placeCatalogPart(page, 'poweredMotor');
   await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
   const frameBefore = await read();
   const base = frameBefore.blueprint.parts.find((p) => p.type === 'chassis');

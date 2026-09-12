@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"f219212b6167ddd67f4c04af87df4e622d2b28de9e237e8bd20134364ee84fc7","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"bd6302f211f4237345716bc8b5808ec713b7f56fa40e56b95aedebe0990a03f1","disposition":"still accurate","rationale":"The checker now reuses successful dependency closures within one inspection. Each requested root retains its own transitive dependencies and opaque inventory; fresh invocations and before/after source drift checks remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"2b0f099ffdd0e471aa4095fe4661d803be768b49544acc73cf62df104ba14d95","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"5d534fd4a7e31de65ed9f14e5feb652eb7f85e92acdc995003e79b45c35e9acc","disposition":"still accurate","rationale":"Generated references now include catalog discovery owners and its registered check. Regeneration, per-section semantic review and mandatory verification remain the stated workflow."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"f9eedbe49e9ecac383fe93e3afb8e71b0bc41e41eb62a2b9f16fa756fed67ac8","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"166ebe4f007b5d1713c98efde2dfc06284bdb2875bb70a51d792ef138e53afdd","disposition":"updated","rationale":"Describe bounded processDiagnostics retained on success and failure receipts, distinguish callback observations from OS state, and preserve timeout and cleanup error semantics."} -->
+<!-- doc-review {"version":1,"fingerprint":"423e8f6a7f6b0628bfabc5bf0e67043749225d2eca737d5ba1ef23dfdaaf0e61","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"3ea789d7547e23d34e38c885d84433f24a5712efd3a97e974493f33da3fc441b","disposition":"still accurate","rationale":"The catalog guarantee extends touch and shared mounting checks. Browser roots and imported scope dependencies still require explicit proposals and witnesses; no selection or evidence rule changed."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -444,7 +444,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"3475c022fc2408267825c2d114432c05dfc6d6d84aa3577c043aed63d4820b51","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"b2cea7138e4a0290a4a52510b94c7eab5f1410e62b867cb23aaa2a405698356a","disposition":"still accurate","rationale":"The subprocess runner adds bounded diagnostics only; candidate capture, drift rejection and completion tier selection are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"71fafb25e87b3a4ddc2cf4702d14ec0e7d06f26d8df6a1ca54265d39c07c8405","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"1339f015f22032db28d9bb6fba1885d4d15a0f7113dea8f86a278792bd6a5d50","disposition":"still accurate","rationale":"Catalog fixes change candidate source bytes but not capture, identity, scope readiness, or verification-tier admission. Completion still requires a fresh isolated local run."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

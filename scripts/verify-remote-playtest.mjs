@@ -1,3 +1,4 @@
+import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 import { createCaptureReviewIndex } from '../src/application/capture-stream.mjs';
@@ -324,7 +325,7 @@ try {
   let driveStart, driveEnd;
   const readFrame = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
   if (activeWorkload) {
-    await page.locator('[data-part-type=poweredMotor]').click();
+    await placeCatalogPart(page, 'poweredMotor');
     await page.keyboard.press('ArrowRight');
     workloadActions.push('build-edit');
     await page.keyboard.press('Delete');
@@ -388,7 +389,7 @@ try {
   mkdirSync(output, { recursive: true });
   phase('feedback');
   await page.screenshot({ path: join(output, 'recording-bar.png') });
-  await page.locator('[data-part-type=poweredMotor]').click();
+  await placeCatalogPart(page, 'poweredMotor');
   await page.keyboard.press('ArrowRight');
   await page.getByRole('button', { name: 'Give feedback', exact: true }).click();
   await page
