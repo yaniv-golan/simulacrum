@@ -4,7 +4,7 @@
     "package.json": "8aff67525d6b8d40a5bc502b0f857ad7d1fd29e446d472d5c18939f395cd617a",
     "scripts/run-check.mjs": "478f6dbd7e1a6258d316f127b169067aaa6613711683ded67eb45b9602a1e3e2",
     "scripts/runtime-preflight.mjs": "243c17a7df72eb827c51b4ac7d48356714e8d74b9396d5b384a671bb22521b61",
-    "scripts/verification-window.mjs": "f79e3653d3cd808f2d78cc94a9d94692fa8bfee1f57bacfae7738147656805b9",
+    "scripts/verification-window.mjs": "e640be5027bf5c5959c4185e9a85a4e5072a550ddb9c9df533b3f315ada4f665",
     "scripts/wait-until.mjs": "715889a7891796d63dd59340571af52000e8f0c696c5965fc2aab682ffe24e0c"
   }
 }

@@ -155,7 +155,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"aec8c25b60cc1511068555095c7be8c33fe2c3ae1cfcde4bfc22bb247eca7ab9","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"300892e5934580796650bd684abfaf825df0e98f99f60b01c78b19488bcac464","disposition":"updated","rationale":"The integrated Rope explanation matches N+1 mass-weighted nodes, N tensile elements, two spherical attachments, collision exclusion and the documented nominal E/viscosity values. The numeric solver uses 5/8 endpoint prediction, bounded convergence and unilateral tension. Session accounting retains completed rope work, elastic/damping/numerical/split terms and a mixed native remainder; restore checks intrinsic work identity and session agreement before swap. Finite controls remain separate from arbitrary-impact, hardware or human qualification."} -->
+<!-- doc-review {"version":1,"fingerprint":"f2c347713c331c99e9433ecf95ef55e9c4b21ec0c458e6656a9d4df06abc7d6c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"fc4c225d37b17bb9bf1319ea1fddc7d3e08f731b36e4dcd55b8a070225aaf07c","disposition":"still accurate","rationale":"The native qualification dependency receives atomic host-window publication only. Physics controls, law paths, native baseline/candidate separation, stale-build negatives and qualification evidence requirements are unchanged. The existing verification-resource-window invariant now registers the partial-publication and malformed-authority regression as positive and negative controls."} -->
 
 
 

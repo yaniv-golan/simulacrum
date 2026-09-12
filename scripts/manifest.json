@@ -3297,12 +3297,20 @@
           {
             "path": "test/verification-window.test.mjs",
             "anchor": "verification windows serialize contenders, retain timing and release after failure"
+          },
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "contenders wait through partial owner publication and reject malformed published metadata"
           }
         ],
         "negative": [
           {
             "path": "test/verification-window.test.mjs",
             "anchor": "waiting is bounded; stale windows require explicit recovery and exact ownership"
+          },
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "contenders wait through partial owner publication and reject malformed published metadata"
           }
         ]
       },

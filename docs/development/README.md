@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"89b285cc748baaf5e0ef3ba8a249179480c40413cf37e8033777b537f802b7d8","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"e9e8e8e6e0ccb3860d4cbdaf98c86370471104e3e13c7f750249ef2f746d2d7a","disposition":"still accurate","rationale":"The merged manifest preserves Rope and feedback checks and current verification concurrency/timeouts. Rope adds model/schema and workshop service dependencies, so the documented conservative graph expansion and explicitly witnessed scope maintenance remain required. Last-writer scheduling hints and per-check measurement context retain 33d1c3c behavior and do not authorize omissions or receipt reuse."} -->
+<!-- doc-review {"version":1,"fingerprint":"c8b66b0ed70180d2b7fb8ea5ca0ba237d5531d89160e29722c46b3e33da874be","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"814f6375e5743b40ca6533b2036ca4f0ace1d2776de6648aef612cab7f9cc7d4","disposition":"still accurate","rationale":"Atomic owner publication removes a partial JSON visibility race without changing registered checks, scheduling hints, scope union witnesses, execution budgets or full-candidate requirements. The existing verification-resource-window invariant now registers the partial-publication and malformed-authority regression as positive and negative controls."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -463,7 +463,10 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"2386c890242eb8c37506b088bfd6dd9b8320bc258bab8c366f69f299e0703c53","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"baddb20533e55664d1458381cb9197b68007e005f640e785515a31562f66c23b","disposition":"still accurate","rationale":"The merged window preserves five-minute probe and thirty-minute completion admission, owner liveness and inherited leases. Feedback service discovery changes no command wait category or cleanup authority. Source/index installation still requires explicit unchanged-destination checks."} -->
+<!-- doc-review {"version":1,"fingerprint":"93906d61f20ebf502c18cbd4e51124992423bb52013c806a7fb765be56adeab7","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"1f51d57120e486c30d8dfcbcdadf1a8538f1dece47d10ae0c66f2ec8aad52dad","disposition":"updated","rationale":"Documents complete private owner-file publication via atomic rename. The regression preserves contender waiting, serialized execution and strict rejection of corrupt published authority; no age-based eviction or wait-budget change is introduced."} -->
+
+Owner metadata is published by an atomic rename after its complete private file is written;
+contenders wait while ownership is unpublished and still reject malformed published metadata.
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -502,7 +505,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"eabb1a61029e9ec1da37884042119cd32a7902f75eab09ff1a33ebcdcc5b4ebb","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"f462cdf61dc6d8806a62a3abae36eb1d35f58fb089ce0eafca362a8a6680826a","disposition":"still accurate","rationale":"Rope sources, strict generated schema and new checks enter the existing candidate inventory and conservative tier selection. The corrected 90-second assembly watchdog text matches merged manifest values, and the section now admits concurrent hint loss. Source/index drift checks, pure-leaf-only resume and independent human acceptance remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4576927c04adbd637287e79b2e746a255dc1caeff1dcb1bf0ddad3458ecdd371","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"e40e8cb3f7e69032f9329bb53c4e51071cce8f197a341eb9638f11c59a25701f","disposition":"still accurate","rationale":"The shared lease now publishes owner metadata atomically. Frozen source capture, candidate dependency identity, pure-leaf resume limits and exact integration-destination checks are unchanged. The existing verification-resource-window invariant now registers the partial-publication and malformed-authority regression as positive and negative controls."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
