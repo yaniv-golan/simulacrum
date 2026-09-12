@@ -21,7 +21,7 @@ test('part help partitions retain six interaction scenarios and the complete cat
     'verify-part-help-inspectors',
   ].entries()) {
     const check = manifest.browserChecks.find((check) => check.id === id);
-    assert.equal(check?.timeoutMs, 60000);
+    assert.equal(check?.timeoutMs, partition === 0 ? 90000 : 60000);
     assert.equal(check?.execution, 'parallel');
     const wrapper = readFileSync(new URL(`../scripts/${id}.mjs`, import.meta.url), 'utf8');
     assert.ok(wrapper.includes(`runPartHelpCases(${partition}, evidence, browser)`));

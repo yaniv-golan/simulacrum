@@ -75,7 +75,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"2db42b4ea010dc6f341a571ba31fde3c270359d772b3fa3d332aebe32ae1177c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"a6438503af3ded01072ffca72faba88eaddc716257f62752434f0438dda3632c","disposition":"updated","rationale":"The recipe now names both help interaction and catalog inspector checks. All seven scenario bodies and viewports were preserved, with separate artifacts and unchanged watchdogs; ordinary input ownership and user behavior assertions remain."} -->
+<!-- doc-review {"version":1,"fingerprint":"fd42afbf65aedeab5a66a90c0bce2821ef98b768016eedca49f5258ee3f40536","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"039252ffb1e790e872653e65f78b3f63f8530ecc78e143f32edf7364b9eabb41","disposition":"still accurate","rationale":"Cached ASTs match fresh parsing and preserve verifier dependency resolution. No player interaction, help scenario body, input ownership, artifact isolation or rendered assertion changed; timeout headroom does not alter those assertions."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -299,7 +299,7 @@ settings and slop. Re-run existing contact/constraint cases when changing this p
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"eab6cfa85d5242d7ebc5689d8d5f0ddd7d39086e451f1632bd9cf27a4e1ca621","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"14c04cbb58330a8cd2fb2d232edee5ac86623c8254c434dc74e58ce4a158e66d","disposition":"still accurate","rationale":"Observation timing and shared browser lifecycle instrumentation do not change copied graph membership, reference remapping, assembly persistence or atomic commands. The listed assembly journeys and rendered/completed comparisons remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"08e8629b70c394c3eba3c37bb388752f6ea65031e3264ec29c3bf5d88558e1a2","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"c41bc7aa459c073a002ca0462198e135e6d0ed841f73c1f4f6812f95e5b152a5","disposition":"still accurate","rationale":"Parsing reuse only changes verifier setup cost. Assembly commands, transaction ownership, storage semantics, insertion journeys and existing rendered/state assertions are unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -392,7 +392,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"6817b0de76a1a59ba9e4d7640751336fd603541ad559a28c3af35de2915f3e66","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"ee114a3c6cfc2b4ba471f7ff72381c779999e2b4341e4975413bf7563da8036f","disposition":"still accurate","rationale":"The changes affect diagnostic frame timing and verifier resource cleanup, not overlay geometry, wiring visibility, picking, coil buffers or completed transforms. All spring physical/render budgets and environment qualifications remain unchanged; timing attribution does not relax them."} -->
+<!-- doc-review {"version":1,"fingerprint":"2266f3c65a4e14d422d27d03d7af3e08a5c3dcc58b2e11ac1ee7fc0340b9343e","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"cafe88ad510f25d6f0d5a747a14ac456504d375532cbc5939226eed14412169b","disposition":"still accurate","rationale":"Transitive graph parsing is reused by exact bytes; overlay producers, GPU resource ownership, transform comparisons and all spring/adaptive performance thresholds remain unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

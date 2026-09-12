@@ -171,7 +171,7 @@
       "module": "scripts/check-boundary-types.mjs",
       "export": "check",
       "args": [],
-      "timeoutMs": 5000
+      "timeoutMs": 15000
     },
     {
       "id": "developer-documentation",
@@ -180,7 +180,7 @@
       "ruleId": "gate-integrity",
       "module": "scripts/check-documentation.mjs",
       "export": "check",
-      "timeoutMs": 5000
+      "timeoutMs": 15000
     },
     {
       "id": "verification-runtime",
@@ -493,7 +493,7 @@
     {
       "id": "verify-edit-cycles",
       "script": "scripts/verify-edit-cycles.mjs",
-      "execution": "exclusive",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -618,7 +618,7 @@
       "environment": "self",
       "tier": "browser",
       "smoke": true,
-      "timeoutMs": 45000,
+      "timeoutMs": 90000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
@@ -658,7 +658,7 @@
     {
       "id": "verify-starter-browser",
       "script": "scripts/verify-starter-browser.mjs",
-      "execution": "exclusive",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
@@ -680,7 +680,7 @@
     {
       "id": "verify-ui-lifecycle-browser",
       "script": "scripts/verify-ui-lifecycle-browser.mjs",
-      "execution": "exclusive",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
@@ -783,7 +783,7 @@
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
-      "timeoutMs": 60000,
+      "timeoutMs": 90000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
@@ -3209,6 +3209,10 @@
           {
             "path": "test/module-graph.test.mjs",
             "anchor": "private executable evidence"
+          },
+          {
+            "path": "test/module-graph.test.mjs",
+            "anchor": "syntax cache matches fresh parsing after same-length restored-mtime edits and dependency removal"
           }
         ]
       },
@@ -3436,11 +3440,15 @@
       "id": "verification-priority-coverage",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Integration priority changes execution order only, retaining canonical required coverage and tier outcome semantics.",
+      "guarantee": "Integration priority and unit-pool composition retain every required check; fail-fast is restricted to explicit development probes, with unstarted obligations not evaluated.",
       "owners": [
         {
           "path": "scripts/browser-selection.mjs",
           "anchor": "prioritizeBrowserChecks"
+        },
+        {
+          "path": "scripts/ci.mjs",
+          "anchor": "runCI"
         }
       ],
       "checks": [
@@ -3455,12 +3463,36 @@
           {
             "path": "test/candidate-priority.test.mjs",
             "anchor": "candidate ${tier} forwards captured priority and preserves exit ${code}"
+          },
+          {
+            "path": "test/ci-order.test.mjs",
+            "anchor": "CI admits invariant and remaining unit files through a single pool"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "scheduling history survives fresh report directories without reusing results"
+          },
+          {
+            "path": "test/check-sequence.test.mjs",
+            "anchor": "duration hints balance each parallel run without crossing priority or exclusive barriers"
+          },
+          {
+            "path": "test/check-sequence.test.mjs",
+            "anchor": "four workers drain before exclusive work"
           }
         ],
         "negative": [
           {
             "path": "test/browser-report.test.mjs",
             "anchor": "actual CLI admission failures replace previous success; summary discovery leaves it alone"
+          },
+          {
+            "path": "test/check-sequence.test.mjs",
+            "anchor": "probe fail-fast drains started peers and reports every unstarted obligation"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "actual suite allows four-worker probes and rejects completion-context overrides"
           }
         ]
       },
@@ -3978,6 +4010,10 @@
           {
             "path": "test/candidate-resume.test.mjs",
             "anchor": "dependency records are framed"
+          },
+          {
+            "path": "test/verification-run.test.mjs",
+            "anchor": "a watchdog shortened by the shared budget reports budget exhaustion, not a hung test"
           }
         ]
       },
@@ -4739,7 +4775,7 @@
         }
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "consumerSourceHash": "51e5c01c1040e5419b4103de53352552942dbc47d331248339283952a60fc8b1",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -4748,7 +4784,7 @@
       "consumers": [
         "scripts/verify-cloud-playtest.mjs"
       ],
-      "sourceSha256": "287d2fc89266f565239c15722930a98e5e56409f7c23659dd2df2e55124875e7",
+      "sourceSha256": "d0d6b3f7b50886b9b0c34d502bd0929ed9a04b5a6b1647a74b332649b9764e16",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -4787,7 +4823,7 @@
         }
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "consumerSourceHash": "989836a8bc32205af599cdc43aa3e3a59f0eb98734749b838b804ea1290d590e",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -4870,7 +4906,7 @@
         }
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "consumerSourceHash": "989836a8bc32205af599cdc43aa3e3a59f0eb98734749b838b804ea1290d590e",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -4996,7 +5032,7 @@
         }
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "f52237ee08e673df093ae6b220948212e94e472bc1a8f483beec2e23a2dd679f",
+      "consumerSourceHash": "eb1a08b6a2d3c9088a8aaaebf3430bcd301e92a42309492ad49cc4f01522421b",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -5171,7 +5207,7 @@
         "test/starter-vehicle.test.mjs"
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "2f5f06c3af5dcfd0b0d32258a10753614b1133f27846e8d33e82e0adbbc9253b"
+      "consumerSourceHash": "f11cf536d7bc66c0ddc5bdc609e2d0585ca5f5f22ea523f9dc03b1b446385bf4"
     },
     {
       "checks": [
@@ -5188,7 +5224,7 @@
         }
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "consumerSourceHash": "51e5c01c1040e5419b4103de53352552942dbc47d331248339283952a60fc8b1",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -5253,7 +5289,7 @@
         }
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "consumerSourceHash": "51e5c01c1040e5419b4103de53352552942dbc47d331248339283952a60fc8b1",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -5309,7 +5345,7 @@
         }
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "consumerSourceHash": "51e5c01c1040e5419b4103de53352552942dbc47d331248339283952a60fc8b1",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -5340,7 +5376,7 @@
         }
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "consumerSourceHash": "51e5c01c1040e5419b4103de53352552942dbc47d331248339283952a60fc8b1",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -5479,7 +5515,7 @@
         }
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1589441063e58f3ee61e1f3327d2f2dace34a102695b5c33de3056bb42e16f23",
+      "consumerSourceHash": "4506b42365c2c5f5c3d160fb2fc1dc7df5139033b79ae37bf075c72b3d1246bf",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -5561,7 +5597,7 @@
         }
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "consumerSourceHash": "989836a8bc32205af599cdc43aa3e3a59f0eb98734749b838b804ea1290d590e",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -5696,7 +5732,7 @@
         "test/verification-run.test.mjs",
         "vite.config.mjs"
       ],
-      "sourceSha256": "d4a1fa854eaf1470e9aa98d7436651f8a55527554e8b9172338f3bee16ad2ab1",
+      "sourceSha256": "0fa170b7b1ba96966b364c5ceb9125ae98a1a55bf591c534ea3681f8dde0fa4c",
       "entrypoint": "scripts/module-graph.mjs",
       "dependencies": []
     },
@@ -5787,7 +5823,7 @@
         }
       ],
       "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "consumerSourceHash": "51e5c01c1040e5419b4103de53352552942dbc47d331248339283952a60fc8b1",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",

@@ -63,7 +63,7 @@
     "scripts/browser-artifacts.mjs": "05ef6fc079ee5c185860889ec11ec6425a74968f56f24480c408a55239508399",
     "scripts/browser-evidence.mjs": "06b993645dd77f665e08bb381da5d9cb740cc8a717f79ed054ed1260ac786196",
     "scripts/browser-session.mjs": "a890135f24f4e2be920a4f39b7bedfa9464154d55508c29cee717048adc36f05",
-    "scripts/module-graph.mjs": "7feb25de7c3c5dbe100ec128f394d727bed0def6511e22c479a48f87a1848e54",
+    "scripts/module-graph.mjs": "db47284e35c471196b3f7cffbb998660ad58b6beb79d19f92eff6b04e7508399",
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
     "scripts/verify-assemblies-browser.mjs": "5c47bd12e35de1778f936e4a98cf637da4956692c34a1804b057b8ca29f9b025",

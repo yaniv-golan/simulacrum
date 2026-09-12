@@ -663,11 +663,17 @@ try {
   try {
     browserEvidence.assertUnchanged();
   } finally {
+    phase('browser-close');
     await browser.close();
     if (server) {
+      phase('server-close');
       server.closeAllConnections();
       await new Promise((r) => server.close(r));
     }
-    if (cloud) await cloud.close();
+    if (cloud) {
+      phase('cloud-close');
+      await cloud.close();
+    }
+    phase('closed');
   }
 }

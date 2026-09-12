@@ -35,3 +35,19 @@ test('a late documentation failure still precedes invariant unit execution', asy
   await assert.rejects(runCI(context), /structural checks failed/);
   assert.equal(units, 0);
 });
+
+test('CI admits invariant and remaining unit files through a single pool', async () => {
+  const pools = [];
+  const context = {
+    identity: {},
+    receipts: () => [],
+    check: async (id, config, fn) => (id === 'environment:localhost' ? undefined : fn()),
+    withDeadline: async (ms, fn) => fn(),
+    module: async () => {},
+    unit: async (files) => pools.push(files),
+  };
+  await runCI(context);
+  assert.equal(pools.length, 1);
+  assert.ok(pools[0].includes('test/verification-run.test.mjs'));
+  assert.equal(new Set(pools[0]).size, pools[0].length);
+});
