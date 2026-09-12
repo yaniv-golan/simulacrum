@@ -675,3 +675,41 @@ for (const change of ['source', 'prose', 'configuration', 'referenced file', 'in
     assert.match(failure?.message ?? '', /changed during review/);
     assert.equal(fs.existsSync(join(f.root, 'docs/development/.reviews')), false);
   });
+test('overlapping source roots reuse traversal within one inspection and remain independently scoped', (t) => {
+  const f = fixture(t);
+  f.put(
+    'src/model/parent.mjs',
+    "import { run } from './tool.mjs';\nexport const parent = () => run(1);\n",
+  );
+  f.put(
+    'docs/development/guide.md',
+    '# Parent\n[parent](../../src/model/parent.mjs#implementation)\n\n# Child\n[child](../../src/model/tool.mjs#implementation)\n',
+  );
+  const originalRead = fs.readFileSync;
+  let reads = 0;
+  fs.readFileSync = function (path, ...args) {
+    if (String(path).endsWith('/src/model/tool.mjs')) reads++;
+    return originalRead.call(this, path, ...args);
+  };
+  syncBuiltinESMExports();
+  let result;
+  try {
+    result = f.inspect();
+  } finally {
+    fs.readFileSync = originalRead;
+    syncBuiltinESMExports();
+  }
+  assert.equal(reads, 2, 'one graph source read and one semantic fingerprint read');
+  const child = result.sections.find((section) => section.id === 'child');
+  assert.equal(Object.hasOwn(child.dependencies, 'src/model/parent.mjs'), false);
+  const prior = child.dependencies['src/model/tool.mjs'];
+  f.put('src/model/tool.mjs', 'export const run = () => 42;\n');
+  assert.notEqual(
+    f.inspect().sections.find((section) => section.id === 'child').dependencies[
+      'src/model/tool.mjs'
+    ],
+    prior,
+  );
+  f.put('src/model/tool.mjs', 'export const run = ;\n');
+  assert.match(f.inspect().errors.join('\n'), /parse error/);
+});

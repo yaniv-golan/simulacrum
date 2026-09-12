@@ -224,6 +224,22 @@ export function inspectDocumentation(root = process.cwd(), { files, observedRead
   }
   function graph(path) {
     if (!graphs.has(path)) {
+      // A successful traversal already contains complete dependency nodes. Reuse
+      // only this root's reachable closure, for this inspection invocation alone.
+      const containing = [...graphs.values()].find((value) => value.nodes.has(path));
+      if (containing) {
+        const nodes = new Map(),
+          pending = [path];
+        for (const dependency of pending) {
+          if (nodes.has(dependency)) continue;
+          const node = containing.nodes.get(dependency);
+          nodes.set(dependency, node);
+          pending.push(...node.dependencies);
+        }
+        const result = { ...containing, nodes };
+        graphs.set(path, result);
+        return result;
+      }
       const result = buildModuleGraph(root, { entrypoints: [path], purpose: 'test-selection' });
       if (result.errors.length)
         throw Error(

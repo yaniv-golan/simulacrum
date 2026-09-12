@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"6fde4daf77925f315b24e2218e3857e7016e76861f75cf0d921522a869fffa9b","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"061d80f3cf2f4afc564371640f89d1d38eb04682d47f6c69a0d54d30cf3c6f74","disposition":"still accurate","rationale":"Generated navigation now includes the help catalog partition. Preparation still regenerates before separate semantic review; exact source-bound metadata exceptions and conservative policy changes are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f219212b6167ddd67f4c04af87df4e622d2b28de9e237e8bd20134364ee84fc7","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"bd6302f211f4237345716bc8b5808ec713b7f56fa40e56b95aedebe0990a03f1","disposition":"still accurate","rationale":"The checker now reuses successful dependency closures within one inspection. Each requested root retains its own transitive dependencies and opaque inventory; fresh invocations and before/after source drift checks remain unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -434,7 +434,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"f0c488115cdd302d9d775feef734c8ace1c9601d995759d6a794354e647fcaa2","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"7ccc4330d7c807b5f14aa8ba28caf6097b91ea6039272c8e5eeaba7955f4ad55","disposition":"updated","rationale":"Direct-tier wording now covers local, merge and final. The added browser partition does not alter capture, origin matching, resume leaf policy or qualification; full-required sources still select all checks."} -->
+<!-- doc-review {"version":1,"fingerprint":"07a4a4c6a69b9eaa607afceb017a198bd7085bd62ab53d29ce7269c7b2286088","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"57178040471e6cb54a8554b519a452a60219986e0e6d9c4cb29d9286f9deacd1","disposition":"still accurate","rationale":"Invocation-local documentation graph reuse changes analysis cost only. Candidate preparation still rejects stale source-bound review records and captures exact source bytes before running the selected completion tier."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
