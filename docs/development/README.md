@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"893ddae3f2da5422daf5664ecbe19f20307a8b8db4a9b53481262543961e3288","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"6330970091f0498a52ccfc25e79cc35cd9cc22904a60c2421fae5c241d6a98f4","disposition":"still accurate","rationale":"AGENTS adds an explicit nonqualifying merge tier; this entrypoint still directs owner discovery, runtime setup and the canonical contracts without changing layer ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"529c6637e813fa2def4d75d272efd444b07df41cf299ce7a522e177344bb0160","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"3a2dd0f827e6a9db678906d55907946e81d653abe3a0d3cb8bb23de73a4a4e59","disposition":"still accurate","rationale":"The entrypoint still requires canonical owner discovery and public commands. Expanded release tests introduce no new production owner, layer or reset policy; Node setup and recipe selection remain unchanged. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"f219212b6167ddd67f4c04af87df4e622d2b28de9e237e8bd20134364ee84fc7","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"bd6302f211f4237345716bc8b5808ec713b7f56fa40e56b95aedebe0990a03f1","disposition":"still accurate","rationale":"The checker now reuses successful dependency closures within one inspection. Each requested root retains its own transitive dependencies and opaque inventory; fresh invocations and before/after source drift checks remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"1739dc1ab68010142994f741f13a5c117e4a882b9618e38c26f7b5cdb36c2fba","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"c85b1890f0f14c2f61911e58f6b8794070be909e398dbd65b1671dccbbf14f9f","disposition":"still accurate","rationale":"The new generated coupler owners and invariant use the existing generated reference and per-section review workflow. No documentation discovery, sidecar admission or review command behavior changed."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"f9eedbe49e9ecac383fe93e3afb8e71b0bc41e41eb62a2b9f16fa756fed67ac8","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"166ebe4f007b5d1713c98efde2dfc06284bdb2875bb70a51d792ef138e53afdd","disposition":"updated","rationale":"Describe bounded processDiagnostics retained on success and failure receipts, distinguish callback observations from OS state, and preserve timeout and cleanup error semantics."} -->
+<!-- doc-review {"version":1,"fingerprint":"0db72e5e7a19d231bd128573068a89e87c5b97982d5fd84e8fdac8edeed3f18c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"2eb71baeecae51c095d1eb1fc90a880451c1847b7c7cfc4cc310056a94bf1faa","disposition":"still accurate","rationale":"The new release journey is registered as a parallel workshop browser check. Reviewed scope refresh preserves every existing classification and check; only root and consumer inventories change. Existing unknown-read fallback and witness requirements still apply. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -444,7 +444,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"3475c022fc2408267825c2d114432c05dfc6d6d84aa3577c043aed63d4820b51","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"b2cea7138e4a0290a4a52510b94c7eab5f1410e62b867cb23aaa2a405698356a","disposition":"still accurate","rationale":"The subprocess runner adds bounded diagnostics only; candidate capture, drift rejection and completion tier selection are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"cb287f8c458c44e950051dc99062cadbff927ea0c197dcf289154a6f2b546b4e","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"2c9fc25a5bad2f79923ca06fd87fd4c7c1e44e38719f28122faa4d241394c513","disposition":"still accurate","rationale":"The coupler changes application source and registered tests, not capture, installation or candidate verification. The documented source-bound isolated candidate and origin preflight remain required for these bytes. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

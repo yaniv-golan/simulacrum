@@ -10,7 +10,7 @@ For an interaction report, use **Record an issue** in the left sidebar, then Sta
 
 ## Remote setup
 
-<!-- doc-review {"version":1,"fingerprint":"fe38f745d61a132ec28bfef7f5f1387a400d4ecf9aaf93e991fc59b170a7d6ef","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"2021f2d143a1c40a4592540fb2ada125c487f57bd036a04c85249b924b2333de","disposition":"updated","rationale":"Documents the single private decoded-context cursor in addition to one expanded packet. Forward reads resume only within one validated chain, backward/base changes reconstruct, and returned snapshots are copied. Existing event bounds, gaps, consent and export guarantees remain; duplicated wording removed."} -->
+<!-- doc-review {"version":1,"fingerprint":"faf8d81711c35718eede8e57135d7eeeecca282094ddb753b56c18d5f80ad999","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"1d518dd12bbd3df48000fc196c59d4f5788ae3654bec2a973638844e5460e9bf","disposition":"still accurate","rationale":"Generated catalog types now admit the coupler through normal strict blueprint parsing. Remote consent, capture, outbox drain, origin/authentication and deployment setup are unchanged; no remote recording implementation changed."} -->
 
 
 

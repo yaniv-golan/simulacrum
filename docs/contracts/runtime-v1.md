@@ -36,9 +36,13 @@ A completed-tick checkpoint contains all state affecting future execution: libra
 snapshot, networks, controller state, previous sensor snapshot, input queue, clock
 accumulator, random generator, evaluator state and recorder anchor. Admission and
 restore validate before replacing state. Session checkpoint version 3 includes receiver
-arbitration state, optional bounded numeric program state, typed prior sensor readings and range continuity history, and the signed constraint-work ledger. Physics envelope version 4
-binds the double-precision native backend before deserialization; older opaque
-checkpoints are rejected explicitly. Blueprint save version 3 is unchanged.
+arbitration state, optional bounded numeric program state, typed prior sensor readings
+and range continuity history, and the signed constraint-work ledger. Physics envelopes
+admit versions 4, 5 and 6, each binding the pinned double-precision native backend
+before deserialization. Writers select version 4 without gear memory or opened joints,
+version 5 with gear memory and no opened joints, and version 6 with opened joints.
+Unsupported versions are rejected explicitly. Session checkpoint and blueprint save
+versions remain 3; these physics-envelope variants do not migrate blueprint saves.
 
 Version 3 also admits an optional `environment` preset: `flat` or `rounded-bump`.
 Omission means the flat floor. `choose-environment` is an atomic Build edit with
@@ -449,8 +453,28 @@ solver velocity stabilization; they do not measure continuous contact time or co
 heat. Support classification and qualification require independent apparatus and
 error bounds beyond this numeric observation contract.
 
-Opaque physics envelopes use version 4 and bind the pinned f64 backend identity. Native motor configuration is included in physical-plant restoration validation. Older envelopes reject before native
-snapshot deserialization. Native contact observations serialize with the solver;
+Opaque physics envelopes admit versions 4, 5 and 6 and bind the pinned f64 backend
+identity. Version 4 has no gear-memory or opened-joint fields. Version 5 adds
+`gearState`; version 6 includes `gearState` (possibly empty) and `opened`, a strictly
+increasing list of indices of authored fixed joints. Indices remain relative to the
+original admitted joint configuration after removal. Unsupported versions and backend
+identities reject before native snapshot deserialization. Native motor configuration
+is included in physical-plant restoration validation.
+
+The power network owns each coupler's completed funding and opened state; the physics
+door owns the corresponding native joint removals. Session restore requires the
+physics `opened` list to equal the sorted joints of opened couplers in the separately
+validated power checkpoint. Physics restore admits the remaining gear support and
+unchanged spring-activation classification, checks the resulting spring frequency
+bound where applicable, and requires the native plant to match the original admitted
+plant with only the declared fixed joints removed. Body/collider identity and retained
+joint properties remain validated. Rejected admission leaves the live completed state
+unchanged. Restoring an admitted released snapshot refreshes contact-filter membership
+and response topology; it does not recreate a closed latch or reset body motion.
+Snapshots are available only at completed boundaries, after a planned release has
+committed and the tick's single integration has finished.
+
+Native contact observations serialize with the solver;
 restore validates their structure, interval semantics and canonical references before
 swapping owners. Solver iteration and CCD settings and exposed joint limits must
 match the admitted plant. Immediate and subsequent

@@ -173,6 +173,15 @@ export function compileAssembly(
   for (const [node, part] of blueprint.parts.entries()) {
     const p = part.parameters;
     switch (part.type) {
+      case 'releaseCoupler':
+        (power.couplers ??= []).push({
+          node,
+          joint: -1,
+          resistance: p.resistance,
+          minVoltage: p.minVoltage,
+          energyJ: p.energyJ,
+        });
+        break;
       case 'powerCell':
         power.cells.push({
           node,
@@ -373,6 +382,11 @@ export function compileAssembly(
         axisB: rotate(B.port.rotation, [1, 0, 0]),
       });
     } else {
+      for (const endpoint of [A, B])
+        if (CATALOG[endpoint.part.type].releaseFace === endpoint.port.id) {
+          const latch = power.couplers.find((c) => c.node === endpoint.index);
+          latch.joint = joints.length;
+        }
       joints.push({
         kind: 'fixed',
         a: A.index,

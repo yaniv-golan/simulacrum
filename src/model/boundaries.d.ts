@@ -42,6 +42,7 @@ export interface CatalogDefinition {
   mountingPads?: Readonly<Record<string, readonly [number, number]>>;
   controlBindingDefault?: import('./generated/blueprint-types.js').Part['controlBinding'];
   controlBindingMilestone?: string;
+  releaseFace?: string;
   gear?: { teeth: number; module: number; pitchRadius: number; stiffness: number; damping: number };
   sensorSupply?: Readonly<{ resistance: number; minVoltage: number }>;
 }

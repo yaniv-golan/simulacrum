@@ -108,6 +108,23 @@ const hubTilt = Math.atan2(0.07, 0.1),
 const aboutZ = (angle) => [0, 0, Math.sin(angle / 2), Math.cos(angle / 2)];
 /** @type {Readonly<Record<import('./generated/blueprint-types.js').PartType, CatalogDefinition>>} */
 export const CATALOG = freeze({
+  releaseCoupler: {
+    ...component(
+      'releaseCoupler',
+      'Release Coupler',
+      [0.03, 0.03, 0.03],
+      'steel',
+      [power(), signal('signal', 'input')],
+      {
+        resistance: rating(24, 1, 1000, 'ohm'),
+        minVoltage: rating(12, 1, 100, 'V'),
+        energyJ: rating(1, 0.01, 100, 'J'),
+      },
+    ),
+    milestone: 'M3b',
+    mountingFaces: ['right', 'left', 'bottom', 'top', 'front', 'back'],
+    releaseFace: 'right',
+  },
   gear12: {
     ...component(
       'gear12',

@@ -135,3 +135,4 @@ These are registered commands and checks, not evidence that they passed.
 | merge-shadow-no-qualification | [mergeShadowReport](../../scripts/merge-shadow.mjs) | verification-scope-configuration |
 | tick-cost-attribution | [summarizeTickAttribution](../../scripts/tick-attribution.mjs) | verification-scope-configuration |
 | merge-tier-coverage | [mergeSelection](../../scripts/merge-selection.mjs), [compareMergeCoverage](../../scripts/merge-comparison.mjs) | verification-scope-configuration |
+| powered-release-topology | [compileAssembly](../../src/model/assembly.mjs), [createPowerNetwork](../../src/simulation/power.mjs), [createPhysicsWorld](../../src/simulation/physics/world.mjs) | invariant-controls, verify-release-coupler |

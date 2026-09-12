@@ -918,6 +918,17 @@
       "timeoutMs": 120000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
+    },
+    {
+      "id": "verify-release-coupler",
+      "script": "scripts/verify-release-coupler.mjs",
+      "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
     }
   ],
   "invariants": [
@@ -4144,6 +4155,81 @@
         ]
       },
       "qualificationBars": []
+    },
+    {
+      "id": "powered-release-topology",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "A powered held command opens only the designated latch attachment without resetting motion. Retained physical paths, post-release collisions, shared power, support admission and completed checkpoint continuation stay consistent.",
+      "owners": [
+        {
+          "path": "src/model/assembly.mjs",
+          "anchor": "compileAssembly"
+        },
+        {
+          "path": "src/simulation/power.mjs",
+          "anchor": "createPowerNetwork"
+        },
+        {
+          "path": "src/simulation/physics/world.mjs",
+          "anchor": "createPhysicsWorld"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-release-coupler"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/release-power.test.mjs",
+            "anchor": "funded held release accumulates coil work, schedules once and accounts every joule"
+          },
+          {
+            "path": "test/release-topology.test.mjs",
+            "anchor": "previously filtered contacts reactivate immediately and released snapshots continue exactly"
+          },
+          {
+            "path": "test/release-session.test.mjs",
+            "anchor": "checkpoints before during ready and after release continue exactly with both production clocks"
+          },
+          {
+            "path": "test/release-authoring.test.mjs",
+            "anchor": "catalog coupler designates exactly one ordinary latch and preserves physical material selection"
+          },
+          {
+            "path": "test/release-determinism.test.mjs",
+            "anchor": "release projection matches in independent processes, both clocks and renamed authored identities"
+          },
+          {
+            "path": "test/release-topology.test.mjs",
+            "anchor": "loaded rotating pair opens without linear angular momentum or energy injection"
+          },
+          {
+            "path": "test/release-session.test.mjs",
+            "anchor": "every authored material releases with its own mass and post-release ground contacts"
+          },
+          {
+            "path": "test/release-session.test.mjs",
+            "anchor": "Try again clears partial and opened latch state and permits a new powered release"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/release-power.test.mjs",
+            "anchor": "unattached latch rejects invented ready progress atomically"
+          },
+          {
+            "path": "test/release-topology.test.mjs",
+            "anchor": "released restore rejects frequency-unsafe ballast removal before swapping plant"
+          },
+          {
+            "path": "test/release-topology.test.mjs",
+            "anchor": "gear carrier split is blocked but release of complete supported carrier is allowed"
+          }
+        ]
+      },
+      "qualificationBars": []
     }
   ],
   "browserLocalScopes": [
@@ -4167,7 +4253,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
       "externalImports": []
     },
     {
@@ -4191,7 +4277,7 @@
         "vite"
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -4208,7 +4294,7 @@
         "verify-mirror-browser"
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -4227,7 +4313,7 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -4251,7 +4337,7 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -4285,7 +4371,7 @@
         "test/receiver-input-owner.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29"
     }
   ],
   "experimentInputScopes": [
@@ -4559,7 +4645,7 @@
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -4640,7 +4726,7 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "externalImports": [
         "node:crypto",
@@ -4689,7 +4775,7 @@
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -4738,8 +4824,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
+      "consumerSourceHash": "cbaa3b4d653e22516c10957a69bc584b82c39731daeb459aafc360b1fd9a3b0f",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -4786,8 +4872,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
+      "consumerSourceHash": "26bed86264a36b8919f5531559b8e27613e3e0d376991e1645a7afc741088356",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -4823,6 +4909,7 @@
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-property-focus.mjs",
         "scripts/verify-recording-browser.mjs",
+        "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
@@ -4869,8 +4956,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
+      "consumerSourceHash": "26bed86264a36b8919f5531559b8e27613e3e0d376991e1645a7afc741088356",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -4927,6 +5014,7 @@
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-property-focus.mjs",
         "scripts/verify-recording-browser.mjs",
+        "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
@@ -4943,6 +5031,7 @@
         "test/browser-evidence.test.mjs",
         "test/browser-report.test.mjs",
         "test/ci-order.test.mjs",
+        "test/contracts/release-process.mjs",
         "test/determinism.test.mjs",
         "test/f2.test.mjs",
         "test/fixtures/browser-suite-cleanup.mjs",
@@ -4952,6 +5041,7 @@
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
+        "test/release-determinism.test.mjs",
         "test/runtime-preflight.test.mjs",
         "test/starter-vehicle.test.mjs",
         "test/verification-resume-controls.test.mjs",
@@ -4995,8 +5085,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "f52237ee08e673df093ae6b220948212e94e472bc1a8f483beec2e23a2dd679f",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
+      "consumerSourceHash": "763c72ffd26958289c486d00d7ebec633d299d886e4e125a40da6fd08511e55a",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -5068,6 +5158,7 @@
         "scripts/verify-prepare.mjs",
         "scripts/verify-property-focus.mjs",
         "scripts/verify-recording-browser.mjs",
+        "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
@@ -5164,14 +5255,16 @@
         "scripts/verify-motion-diagnostics.mjs",
         "scripts/verify-starter-browser.mjs",
         "scripts/verify-workshop.mjs",
+        "test/contracts/release-process.mjs",
         "test/determinism.test.mjs",
         "test/free-build-continuity.test.mjs",
         "test/learning-runtime.test.mjs",
         "test/m3-determinism.test.mjs",
+        "test/release-determinism.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "2f5f06c3af5dcfd0b0d32258a10753614b1133f27846e8d33e82e0adbbc9253b"
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
+      "consumerSourceHash": "e3180267eb3614643ba014ba8a4f622c685a87a1ae56bfe55f67f2b606174111"
     },
     {
       "checks": [
@@ -5187,8 +5280,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
+      "consumerSourceHash": "cbaa3b4d653e22516c10957a69bc584b82c39731daeb459aafc360b1fd9a3b0f",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -5252,8 +5345,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
+      "consumerSourceHash": "cbaa3b4d653e22516c10957a69bc584b82c39731daeb459aafc360b1fd9a3b0f",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -5308,8 +5401,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
+      "consumerSourceHash": "cbaa3b4d653e22516c10957a69bc584b82c39731daeb459aafc360b1fd9a3b0f",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -5339,8 +5432,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
+      "consumerSourceHash": "cbaa3b4d653e22516c10957a69bc584b82c39731daeb459aafc360b1fd9a3b0f",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -5478,8 +5571,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1589441063e58f3ee61e1f3327d2f2dace34a102695b5c33de3056bb42e16f23",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
+      "consumerSourceHash": "bb307b64d0585d405dc052023ec6c74fd9c0c98e0e1f8a830b328d985f26c5fa",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -5560,8 +5653,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
+      "consumerSourceHash": "26bed86264a36b8919f5531559b8e27613e3e0d376991e1645a7afc741088356",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -5643,6 +5736,7 @@
         "scripts/verify-prepare.mjs",
         "scripts/verify-property-focus.mjs",
         "scripts/verify-recording-browser.mjs",
+        "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
@@ -5670,6 +5764,7 @@
         "test/change-inspection.test.mjs",
         "test/ci-order.test.mjs",
         "test/ci-release-admission.test.mjs",
+        "test/contracts/release-process.mjs",
         "test/determinism.test.mjs",
         "test/documentation-scope.test.mjs",
         "test/documentation.test.mjs",
@@ -5686,6 +5781,7 @@
         "test/module-graph.test.mjs",
         "test/physics-boundary.test.mjs",
         "test/playtest-release.test.mjs",
+        "test/release-determinism.test.mjs",
         "test/runtime-preflight.test.mjs",
         "test/starter-vehicle.test.mjs",
         "test/structural.test.mjs",
@@ -5786,8 +5882,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
+      "consumerSourceHash": "cbaa3b4d653e22516c10957a69bc584b82c39731daeb459aafc360b1fd9a3b0f",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -5852,8 +5948,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "90cf3eadef91203d7d72f4064cee9300beb14c647dfe98dd35e822a54815cb54"
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
+      "consumerSourceHash": "4db587f3524b25ab8c92ec5d859f70a1136286a6574efe2ec17e30e697474505"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -5883,8 +5979,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "90cf3eadef91203d7d72f4064cee9300beb14c647dfe98dd35e822a54815cb54"
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
+      "consumerSourceHash": "4db587f3524b25ab8c92ec5d859f70a1136286a6574efe2ec17e30e697474505"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -5910,7 +6006,7 @@
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "791316f81d1c9d11841e2cdfaf7b44211f311958bff8b56cb4568e879c973b29",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ],

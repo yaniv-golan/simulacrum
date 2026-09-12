@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"9e01d89dbbd1f466567dc547e386741b94016d4e93fd37d8ac5ec7d6000d2878","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"19b32488fb7586f27a5692c9fde85ae5290ebd835a0bb9331a782fce68da3b3d","disposition":"still accurate","rationale":"The manifest remains the single check metadata owner, now validating mergeSmoke coverage. AGENTS changes verification tiers only; runtime contracts and architectural layer authority remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a04b531965db48b83f9b08e8e2b6d80414fd489d2938d3a0b3953510b582cbc6","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"e84de9aa70932e686aafcdc7909d8a067037928355610bedf423967fdc294682","disposition":"still accurate","rationale":"The corrected runtime contract now states envelope 4/5/6 admission and released-joint ownership. The overview still correctly assigns clocks, cursors, replay and state ownership to that contract, layer edges to AGENTS and check metadata to the manifest; no implementation owner or architecture edge changed."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"994d76c5df93f9aaa947fe5bbaf76c466f2307f77ba3cddcdd6d8e4b00b150e7","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"e0978abef2058b3affc6f5ced707501f1805ef553094c2dd32f73f28708f1176","disposition":"still accurate","rationale":"Session measures construction of the same completed frame and observation adds a diagnostic frameMs field. Command admission, phase ordering, immutable publication, camera/input owners and the separate measurement cursor remain as described."} -->
+<!-- doc-review {"version":1,"fingerprint":"251aed485e7110fab158dd45eedc5078eb246d6970c8fd5d60d173b3e9b0df2c","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"397d308413912eeb3db07fd9df24769fea997645068045d26ec1b0caee0dc431","disposition":"updated","rationale":"Added coupler catalog/compiler, coil funding, next-tick session planning and native joint removal ownership. Explained snapshot-copy numeric response admission and completed power/physics checkpoint cross-validation."} -->
 
 
 
@@ -64,9 +64,20 @@ Because the fixed heading is outside the scrolling content, part help forwards
 reading keys from the header into the active page. Content focus keeps native
 scrolling, while buttons and tab navigation retain their activation behavior.
 
+Release Coupler uses an ordinary fixed attachment on its catalog-designated right
+mounting face. The compiler records its numeric joint index. Power accounts the coil
+as a resistive load on the shared circuit; a held positive receiver command funds a
+finite actuation. Completed funding schedules opening on the next tick. Before motor
+allocation, the physics door previews the proposed topology using an exact native
+snapshot copy and copied response factors. The actuator phase removes only the planned
+native fixed joints, preserving the live bodies, then applies those funded responses.
+Completed power telemetry owns latch progress/status; physics snapshot metadata owns
+opened joint indices, cross-validated during session restore. Build restores the authored
+starting attachments. The preview copy never replaces the live plant or supplies motion.
+
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"1ff977d850e368bfd5781db620e2236e1ec6d29e23f6990ab22f65b7226cc034","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"126844a8be4f418c264e6544e1f2b88d03eb06252f334b1bca4ad18a4e93994a","disposition":"still accurate","rationale":"The session/observation delta separates measured frame construction from publication without moving any geometry, graph, spring, contact, input or diagnostic policy owner in this table; no second policy implementation was introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"4a3b7fed80a80f00e4aae8c267b3b9dceed9501b7ad41df01e9df82012159449","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"2ae2d2934a9bfa3bb4361007abd21d15f2ed5c48410f4f7ddbb61ec07dbf8a68","disposition":"still accurate","rationale":"Release uses ordinary catalog material and surface geometry, compiled numeric node/joint ownership and existing power laws. It adds no role-based physical decisions or new presentation-to-simulation authority."} -->
 
 
 
@@ -107,7 +118,7 @@ Ground contact and workshop motion are not Course qualification.
 
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"254fcaeca60ae8917ca3161093f37fb6ca688b52d90594f653a120c3c1f3242c","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"529f9aaa466e80496e9e4f6ea6c6ec61cfa242902e4dedbfa88e321603ab6edf","disposition":"still accurate","rationale":"The observation store's new tickTiming.frameMs is wall-clock diagnostics only. Sensor descriptors, prior-completed sampling, funded sensor execution and decision/learning histories retain their existing owners and behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"19d165d978ea49bc21f0e433f3d474359e9e3667005ccbf53f0bb3d458507e31","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"0fb03c288f55241d3fce612b9adfc02507b52f2da34ed4abfbc03ef8e954279b","disposition":"still accurate","rationale":"The coil is another shared electrical load driven by the existing receiver signal. Sensor snapshots and next-tick controller consumption are unchanged; no learning model or receiver arbitration path changed."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

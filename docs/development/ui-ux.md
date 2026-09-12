@@ -24,8 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"3056eb1eed56600c7f48344c278b107980d42d9d06c999e989be6ef8fe334e6f","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"8d109567c31048706ee568289fbffe6c93f80a4630a83682a9f372574cc6fac5","disposition":"still accurate","rationale":"Existing optional gear and sensor content are both retained. Merge adds no lesson or permanent canvas surface; rendered automation remains separate from player understanding."} -->
-
+<!-- doc-review {"version":1,"fingerprint":"ece18124b5233c9da56d8c23a3250f29baa764ea305fca7df093db0d9badb637","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"5caeacf8224afcf540901974f2a7f0071a473501c8ef5ba09c7ed14e1ce0578f","disposition":"still accurate","rationale":"Applied no entry: existing keyboard driving content covers receiver and power wiring, while selected part help explains the latch and recovery. No lesson, experiment, challenge or permanent learning surface was added. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
 
 Learn & examples is a curated collection of things players can learn to do.
 Adding a feature requires a teaching decision, not automatically a catalogue entry.
@@ -56,11 +55,11 @@ reviewable judgments, not a numeric score that proves educational value.
 
 **Choose the teaching format**
 
-| Format | Required player experience |
-| --- | --- |
-| Guided build | Use ordinary authoring actions, explain consequential connections, then offer a concrete independent edit or repair. |
+| Format                         | Required player experience                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Guided build                   | Use ordinary authoring actions, explain consequential connections, then offer a concrete independent edit or repair.                  |
 | Editable example or experiment | Show an inspectable behavior and offer a meaningful change or prediction. For comparisons, name what changes and what stays constant. |
-| Challenge | State the goal, constraints and observable success; offer optional hints and allow alternative solutions that satisfy the goal. |
+| Challenge                      | State the goal, constraints and observable success; offer optional hints and allow alternative solutions that satisfy the goal.       |
 
 These are content contracts, not required tabs or exclusive categories. One fixture
 may support several formats. Reuse canonical explanations and fixtures where practical;
@@ -125,9 +124,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"cd4d17b4e7d4f8c45b22f09678440462906379ecdfe4b66d0152995b61a90b42","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"668d59f273cb585b687e3a36582256eaafbc19d23208faf82632994d85593816","disposition":"still accurate","rationale":"Combined workshop composition retains gear examples and controller/sensor inspectors in their existing regions. Historical versus live labels and Build repair routing remain intact."} -->
-
-
+<!-- doc-review {"version":1,"fingerprint":"1a0aedf3e5bff6f988e77185cce441e9d3940f2630f79b3d9ba40e15f302698c","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"a93c76c6d98afa9256574a468591c7263d816ab69f333298da3a3f884d608ff1","disposition":"updated","rationale":"Recorded coupler task ownership in the existing palette, snap controls, selected inspector and part help; explained Build recovery and no separate lesson. Registered empty-workshop browser journey includes narrow layout and does not claim human acceptance. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
 document and run actions in the header; parts in the left catalogue; separate edit
@@ -232,7 +229,6 @@ and all parts remain editable; check clearance after changing mounting geometry.
 These examples extend construction possibilities, not evidence of player comprehension
 or qualification outside their tested finite operating envelopes.
 
-
 Spur gears use More parts, selected Connections and the existing part-help window.
 Gear mesh explicitly leaves parts in place and requires independently supported
 aligned shafts. The requested Learn & examples browser adds one editable gear-lift
@@ -249,6 +245,21 @@ The lift uses an ordinary extension axle to separate its arm plane from the gear
 A gear motion-limit stop offers Build, shaft-support, motor-current and grounded
 restart guidance through the existing message surface. It does not imply broken teeth.
 Physical witnesses remain separate from player comprehension.
+
+Release Coupler uses More parts, the existing surface-snap operation, selected inspector
+and requested part-help window. “Latch · Right” identifies its single opening attachment;
+other faces remain ordinary mounts. Wire a cell and Command Receiver, hold W/Up in Run,
+and inspect actuation or blocked-support status. Open attachments are identified as open
+in the inspector and removed from the connection overlay. Cargo moves under existing
+motion and forces. Build and Try again restore the authored start; saved machines retain
+their Build connections. Crossing wires do not support cargo or disconnect automatically.
+
+Learning admission is **no entry**: the existing keyboard-driving activity covers cell
+and receiver wiring, while contextual coupler help explains latch versus mount, interrupted
+actuation and alternate paths. This adds no permanent lesson panel. The
+[release browser journey](../../scripts/verify-release-coupler.mjs#implementation) constructs
+from an empty workshop through visible controls, saves/reloads, releases cargo, exercises Try again after opening and interrupted actuation, and recovers
+at ordinary and narrow layouts. Browser automation supplies no target-player acceptance.
 
 The Ball uses the existing part catalogue and selected inspector: diameter is a
 primary size edit; material and expandable Contact settings live in Engineering
@@ -296,8 +307,8 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"3fd9f2b7d3b00d645b6dc4e119f0b4cf431047011f81c1ef180f9ffbac810dfe","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"e8a720001b326d0bd2e16194684674a60cf1a1771165d1c24cc0f97c6a2f9bbb","disposition":"updated","rationale":"Routine merge guidance now uses candidate merge with explicit base; release/milestone retain final. Recording remains real-player feedback rather than human qualification, and the cursor optimization does not change that distinction."} -->
 
+<!-- doc-review {"version":1,"fingerprint":"3fd9f2b7d3b00d645b6dc4e119f0b4cf431047011f81c1ef180f9ffbac810dfe","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"e8a720001b326d0bd2e16194684674a60cf1a1771165d1c24cc0f97c6a2f9bbb","disposition":"updated","rationale":"Routine merge guidance now uses candidate merge with explicit base; release/milestone retain final. Recording remains real-player feedback rather than human qualification, and the cursor optimization does not change that distinction."} -->
 
 Use the manifest's `workbench-content-lifecycle` invariant and
 [registered browser check](../../scripts/manifest.json#check=verify-workbench-content)
