@@ -351,7 +351,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -907,6 +907,17 @@
       "id": "verify-release-coupler",
       "script": "scripts/verify-release-coupler.mjs",
       "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-linear-actuator-browser",
+      "script": "scripts/verify-linear-actuator-browser.mjs",
+      "execution": "exclusive",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -2028,7 +2039,7 @@
       "id": "guided-spring-passivity",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Guided and articulated springs preserve axial freedom, coupled elastic energy, loaded sag, signed reaction-work and angular-momentum accounting, cyclic topology and completed-tick stops. Ordinary powered upper-rocker sensing and regulation, physical contact release, authored construction, replay and independently allocated simulation/render/cadence budgets retain executable controls.",
+      "guarantee": "Guided and articulated springs preserve axial freedom, coupled elastic energy, loaded sag, signed reaction-work and angular-momentum accounting, cyclic topology and completed-tick stops. Ordinary powered upper-rocker sensing and regulation, physical contact release, authored construction, replay and independently allocated simulation/render/cadence budgets retain executable controls. Powered linear guides reuse zero-stiffness sliding constraints, funded equal-and-opposite axial kicks, mixed drive responses, completed stroke bounds and backdrive without a clutch.",
       "owners": [
         {
           "path": "src/simulation/physics/world.mjs",
@@ -2087,7 +2098,12 @@
           "anchor": "createPinEndedStrut"
         }
       ],
-      "checks": ["invariant-controls", "verify-spring-browser", "verify-spring-performance"],
+      "checks": [
+        "invariant-controls",
+        "verify-spring-browser",
+        "verify-spring-performance",
+        "verify-linear-actuator-browser"
+      ],
       "controls": {
         "positive": [
           {
@@ -2365,6 +2381,70 @@
           {
             "path": "test/physics-underflow.test.mjs",
             "anchor": "ordinary revolute tree and redundant loop survive gradual underflow without state clamps"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear catalog compiles an ordinary passive slide with funded axial drive; edits are atomic"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "loaded extension, reverse, powerless fall and overload are distinct physical outcomes"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "finite stroke stops motion under drive while consuming energy; off does not latch"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "free endpoints react equally and discrete actuator work funds kinetic energy"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "complete-tick stroke and energy bounds reject unpaid lifting and allow external overspeed"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "travel sensor samples the powered slide on the prior completed tick and binding edits stay atomic"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "mixed linear rotary kicks include anchor moments and prepared damping in either allocation order"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "release, reversal, cell-only, depleted and rigidly blocked controls cannot invent a holding clutch"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "reversed authored endpoints preserve the same powered slide and snap direction"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear reversal and release match four processes and both production clocks"
+          },
+          {
+            "path": "test/linear-actuator-view.test.mjs",
+            "anchor": "linear rod is distinct from passive coil and follows completed endpoints with retained geometry"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "authored driven speed bounds powered acceleration and queued reversal survives checkpoint"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "offset axial forces conserve independent linear and angular momentum with both anchor moments"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear module copy and library insertion preserve authored settings and independent wired graphs"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear failure bundle replays reversal and rejects a missing failure input"
+          },
+          {
+            "path": "test/linear-actuator-view.test.mjs",
+            "anchor": "saved actuator thumbnails retain straight rods and guide endpoint order in either edge direction"
           }
         ],
         "negative": [
@@ -2571,6 +2651,70 @@
           {
             "path": "test/suspension-clearance.test.mjs",
             "anchor": "finite active and manual bench travel retains moving hardware and decorative coil clearance"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear catalog compiles an ordinary passive slide with funded axial drive; edits are atomic"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "complete-tick stroke and energy bounds reject unpaid lifting and allow external overspeed"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "travel sensor samples the powered slide on the prior completed tick and binding edits stay atomic"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "mixed linear rotary kicks include anchor moments and prepared damping in either allocation order"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "release, reversal, cell-only, depleted and rigidly blocked controls cannot invent a holding clutch"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear reversal and release match four processes and both production clocks"
+          },
+          {
+            "path": "test/linear-actuator-view.test.mjs",
+            "anchor": "linear rod is distinct from passive coil and follows completed endpoints with retained geometry"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "loaded extension, reverse, powerless fall and overload are distinct physical outcomes"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "finite stroke stops motion under drive while consuming energy; off does not latch"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "free endpoints react equally and discrete actuator work funds kinetic energy"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "authored driven speed bounds powered acceleration and queued reversal survives checkpoint"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "reversed authored endpoints preserve the same powered slide and snap direction"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "offset axial forces conserve independent linear and angular momentum with both anchor moments"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear module copy and library insertion preserve authored settings and independent wired graphs"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear failure bundle replays reversal and rejects a missing failure input"
+          },
+          {
+            "path": "test/linear-actuator-view.test.mjs",
+            "anchor": "saved actuator thumbnails retain straight rods and guide endpoint order in either edge direction"
           }
         ]
       },
@@ -4561,6 +4705,7 @@
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-manipulation-browser.mjs",
         "scripts/verify-mirror-browser.mjs",
         "scripts/verify-motion-diagnostics.mjs",
@@ -4650,6 +4795,7 @@
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m1.mjs",
         "scripts/verify-m3.mjs",
@@ -4687,6 +4833,7 @@
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
         "test/learning-runtime.test.mjs",
+        "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
@@ -4776,6 +4923,7 @@
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m3.mjs",
         "scripts/verify-manipulation-browser.mjs",
@@ -4878,6 +5026,7 @@
         "test/determinism.test.mjs",
         "test/free-build-continuity.test.mjs",
         "test/learning-runtime.test.mjs",
+        "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/release-determinism.test.mjs",
         "test/starter-vehicle.test.mjs"
@@ -5212,6 +5361,7 @@
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m1.mjs",
         "scripts/verify-m3.mjs",
@@ -5266,6 +5416,7 @@
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
         "test/learning-runtime.test.mjs",
+        "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",

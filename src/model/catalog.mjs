@@ -244,6 +244,30 @@ export const CATALOG = freeze({
     milestone: 'M3b',
     mountingFaces: ['bottom', 'left', 'right', 'front', 'back'],
   },
+  linearActuator: {
+    ...component(
+      'linearActuator',
+      'Powered linear actuator',
+      [0.08, 0.01, 0.08],
+      'steel',
+      [
+        { ...port('slide', 'spring', [0, 0.01, 0]), rotation: aboutZ(Math.PI / 2) },
+        power(),
+        signal('signal', 'input'),
+      ],
+      {
+        restLength: rating(0.2, 0.08, 0.4, 'm'),
+        minLength: rating(0.08, 0.08, 0.39, 'm'),
+        maxLength: rating(0.4, 0.09, 0.4, 'm'),
+        forceConstant: rating(40, 10, 100, 'N/A'),
+        resistance: rating(4, 1, 20, 'ohm'),
+        currentLimit: rating(2, 0.1, 5, 'A'),
+        maxSpeed: rating(0.3, 0.01, 0.5, 'm/s'),
+      },
+    ),
+    milestone: 'M3b',
+    mountingFaces: ['bottom', 'left', 'right', 'front', 'back'],
+  },
   springCarriage: {
     ...component(
       'springCarriage',

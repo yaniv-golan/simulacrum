@@ -112,7 +112,18 @@ Render-only decoration may illustrate a hub; it must not imply an authorable hol
 replace the collision geometry. Preserve independent physical test calculations when
 sharing production policy: an oracle that calls the implementation proves little.
 
-A cell can supply multiple motors; multiple cells on one circuit remain unsupported.
+Powered linear guides compile to the same five constrained sliding degrees of freedom
+as springs, with zero stiffness and damping. The catalog owns force per amp, winding
+resistance, current limit and maximum driven speed. The physics door prepares generalized
+axial rows with both anchor moments, samples projected velocity including passive damping,
+and applies measured equal-and-opposite drive impulses. The shared electrical network
+uses an explicit linear coordinate descriptor; its legacy `torqueConstant`, `torque`
+and `shaftWorkJ` fields represent N/A, N and axial work for that descriptor. The inspector
+labels these quantities in linear units. Completed spring-kind readings supply travel;
+they do not imply stored spring energy for a powered guide. Off or power loss releases
+active drive without a clutch. Native stops remain passive constraints.
+
+A cell can supply multiple rotary and linear drives; multiple cells on one circuit remain unsupported.
 Shared motor torque and powered sensor-load accounting and the completed energy ledger belong to simulation.
 Ground contact and workshop motion are not Course qualification.
 

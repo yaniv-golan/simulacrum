@@ -322,6 +322,28 @@ cover funding versus changed rotor response, completed checkpoints, and Build re
 [independent processes](../../test/release-determinism.test.mjs#source) compare restored per-tick traces under both clocks and exercise recorded-input failure replay with a wrong-projection negative control
 and renamed identities. These probes do not qualify arbitrary docking or breakage.
 
+The [powered linear controls](../../test/linear-actuator.test.mjs#implementation) and
+[mixed-coordinate controls](../../test/linear-actuator-coupling.test.mjs#implementation)
+exercise the same electrical allocation and impulse-receipt owners with a zero-stiffness
+slide. Keep prepared passive damping in axial speed samples and use generalized mixed
+linear/rotary mobility in actual allocation order. Include both anchor moments and
+independent linear/angular momentum and full-inertia work checks. Authored maximum speed
+caps active drive voltage; external loading can overspeed it, so never clamp velocity.
+Completed travel, rather than intermediate drive-kick speed, establishes end-stop or
+barely-moving observations. Positive kick work at a stop can be dissipated during native
+integration; retain the signed integration ledger and independent complete-tick bounds.
+Connection snap length affects the next attachment, not an existing carriage pose.
+The [linear browser construction](../../scripts/verify-linear-actuator-browser.mjs#source)
+uses ordinary mounting, power and receiver keys, an underpowered lift repair, and
+a horizontal slide blocked by an authored obstacle before its end stop. Require
+measured face-to-obstacle contact, sustained stall heat, obstacle-removal repair,
+reverse motion and rendered endpoint agreement. The [linear clock controls](../../test/linear-actuator-determinism.test.mjs#implementation)
+compare four processes and both production clocks, and replay an actual failure bundle
+with a missing-input counterexample. Preserve nondefault actuator settings, material
+and independent wiring through capture, rotated insertion, mirrored copying and
+history using the powered linear controls. These finite controls do not
+qualify arbitrary mechanism loads or human acceptance.
+
 ## Change multi-part authoring
 
 <!-- doc-review {"version":1,"fingerprint":"16db68712431ead7e3b5c515ef5340d239a515a574d81bfaf3fb0126ec64df45","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"cf4e878e7f3d08fb721d0027f59cabccfc82687a936572e91a17430bdb68703d","disposition":"still accurate","rationale":"The coupler remains an ordinary part and surface connection. Copy, subassembly remapping, Save/Load and history retain existing authored graph semantics; released runtime state is not a new authored connection field."} -->
@@ -438,7 +460,9 @@ authored material. These finishes do not change model material values. [Assembly
 thumbnails](../../src/presentation/assembly-thumbnails.mjs#implementation) compose the production connection and spring views at saved authored
 endpoints, including their geometry in framing and disposing temporary resources. Surface mounts
 use the same model surface resolver as the workshop, retaining saved face offsets and
-part rotations; named ports retain their catalogue positions. Socket collars keep authored endpoint positions;
+part rotations; named ports retain their catalogue positions. Powered linear connections use
+the retained straight-rod view with guide-to-carriage endpoint ordering in either saved
+edge direction; passive springs keep their coil view. Socket collars keep authored endpoint positions;
 the housing surface supplies their outward visual normal. Nearest-port spacing bounds
 their size. One aperture represents one endpoint regardless of permitted wire count.
 Invisible original picking volumes preserve targeting; normal wires add no duplicate

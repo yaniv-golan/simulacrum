@@ -270,6 +270,20 @@ actuation and alternate paths. This adds no permanent lesson panel. The
 from an empty workshop through visible controls, saves/reloads, releases cargo, exercises Try again after opening and interrupted actuation, and recovers
 at ordinary and narrow layouts. Browser automation supplies no target-player acceptance.
 
+The powered linear actuator uses More parts, selected settings, existing receiver
+controls and requested part help. Connect the existing Spring carriage, a cell and a
+Command Receiver; W/up extends and S/down retracts. Releasing the keys opens active drive,
+so an unpowered suspended load can fall. The inspector distinguishes completed travel,
+stop proximity, low motion under power and electrical faults. Connection snap length
+sets the next attachment; it does not reposition a connected carriage. The decorative
+rod follows completed endpoints and adds no collider or physical support. Current
+limit, maximum driven speed and travel settings stay in the selected inspector, while
+material and winding details remain expandable. No permanent panel is added.
+Learning admission is **no entry**: contextual power/receiver and part help cover the
+bounded construction task; the passive spring lessons remain unchanged. This is a
+teaching hypothesis, not observed comprehension. The ordinary browser construction
+check includes a low-current failure, repair, key reversal, history and save/load.
+
 The Ball uses the existing part catalogue and selected inspector: diameter is a
 primary size edit; material and expandable Contact settings live in Engineering
 details. Bounciness and Grip may inherit Material default or use Custom values;
