@@ -15,7 +15,7 @@ test('assembly partitions cover each retained scenario exactly once', () => {
   const m = JSON.parse(readFileSync(new URL('../scripts/manifest.json', import.meta.url)));
   for (const [id, timeoutMs] of [
     ['verify-assembly-ux-browser', 90000],
-    ['verify-assembly-library-browser', 60000],
+    ['verify-assembly-library-browser', 90000],
   ])
     assert.ok(m.browserChecks.some((c) => c.id === id && c.timeoutMs === timeoutMs));
 });

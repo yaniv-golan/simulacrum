@@ -266,7 +266,8 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"792f786096b08f0c924f752e2626e46bdbdc0eeffaa8a31860c0cb1e511b2fc5","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5c482789b5bd86614a76e557bfee946076000036c8369ab9a53185ada489093b","disposition":"still accurate","rationale":"Hint publication now reclaims only temporary files whose recorded writer PID is absent; live or uncertain owners are retained. Immutable records and two-record pruning preserve concurrent outcomes. The described attempt-specific transport, warning-only hint failures and exhaustive receipt-independent scheduling remain accurate."} -->
+
+<!-- doc-review {"version":1,"fingerprint":"b7e09f61fc6e96f20f8df27af469f5572fa84fac6d8bb81bc9f5b95338071afd","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5955ffe4ac1bab4d66212c67804928bf92cc3431c7f737194aa0e91830a0a2f5","disposition":"updated","rationale":"Documents accepted last-writer-wins loss for the single optional history snapshot, retained current-attempt guards, per-check schedule/load observations, measured process-watchdog headroom, and specific reasons for exclusive shared sensing/starter/actuator. Two failed headless parallel actuator probes justify retaining its original profile and execution; physical assertions are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -354,6 +355,22 @@ The [shared browser launch boundary](../../scripts/browser-session.mjs#implement
 the child process execution policy, so passing a profile through a variable cannot bypass
 exclusive execution. This is an engineering guard, not a sandbox for hostile verifier code.
 Reports preserve manifest order, all failures, worker configuration and source identity.
+Every check records its planned schedule index, dispatch time, active browser peers and
+host load averages. These describe admission conditions; they do not establish stable
+warmup, causal contention or comparable performance distributions across reordered runs.
+Shared sensing remains exclusive because its contact-driven reversal is transient and
+was missed under parallel contention. Starter also remains exclusive because it checks
+bounded tick gaps in live observations. The actuator journey retains its exclusive focus
+profile after two headless parallel trials failed its repaired-extension assertion.
+It releases drive before pausing a backdrivable load, making the observed state sensitive
+to delays between those actions. Native focus assertions are not the only reason to
+retain exclusive execution.
+Headless UI classification alone does not prove
+that a time-sensitive scenario is safe to overlap.
+The UI-lifecycle, assembly-library and surface process watchdogs allow headroom over
+observed two-worker execution. Their idle-frame, physical and interaction assertions
+remain unchanged; process deadlines are not performance acceptance thresholds.
+
 With two workers, undersized parallel runs may be grouped across exclusive checks.
 Existing runs are never split, runs of four or more remain in place, and new combined
 groups contain at most four checks. The explicit priority prefix and relative exclusive
@@ -380,9 +397,11 @@ The candidate wrapper copies hints from the originating checkout into the fresh 
 and returns only observations produced during that attempt; inherited and reused outcomes
 are not republished. Attempt report identities and completion times keep delayed older results
 from replacing newer hints. Unstarted checks retain their prior hints, and a newer
-successful execution clears a failure hint. Hint updates publish immutable observations and a compatibility snapshot; readers merge
-them by observation time, retaining only two recent records per check after successful pruning.
-Interrupted publication cannot leave a blocking writer lock.
+successful execution clears a failure hint. Hints live in one atomically replaced snapshot.
+Updates reject older observations already present when read; simultaneous publishers use
+last-write-wins and may lose hints. This accepted loss changes ordering only. No journal,
+writer lock, PID inspection or background cleanup is required. An interrupted write can
+leave an ignored temporary file, which does not block reading or publishing the snapshot.
 Source capture and receipt admission remain independent. Missing or
 malformed history never changes coverage; failure to save hints is reported as a warning.
 History supplies no passing receipt and never authorizes omission or resumption.
@@ -444,14 +463,18 @@ The [tier coordinator](../../scripts/verification-tiers.mjs#implementation) keep
 ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
-<!-- doc-review {"version":1,"fingerprint":"b94ed11d7a3c4fa1f0a2fa5176f202d5cbe6b06ca93382d3fcb2dcf548c2303b","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"3bf0c6916a33740b36c86045bbf4402a3cf94bcc062f64a5ac4794cbad8a2c64","disposition":"updated","rationale":"Documents the thirty-minute bounded wait, separate execution budgets, lack of FIFO guarantee and unchanged liveness/recovery rules."} -->
+
+<!-- doc-review {"version":1,"fingerprint":"2bcffb7c6ef2a033e94abe3bd4568eb5858deffa7da72b2fb54070f8f096e275","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"18df79f4f46ee08ec5841f84d6a77a3f39984a52a116234ff656d7ac8b8ade06","disposition":"updated","rationale":"The CLI now distinguishes five-minute probe/build/standalone-CI admission from thirty-minute local/merge/final and native qualification admission and reports owner/elapsed wait on contention and every thirty seconds. Host serialization, inherited ownership, separate execution budgets and inspected recovery are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
 on this host. Nested commands inherit the owning window. Completion/browser admission marks its
 canonical report non-green before runtime checks or lock waiting; failed admission
-replaces an older pass even when no child starts. Waiting is bounded to thirty
-minutes, separately from each check's execution budget. This bounded wait covers the
+replaces an older pass even when no child starts. Local, merge, final and native-qualification completion
+CLI runs wait up to thirty minutes. Focused unit/browser probes, builds and standalone
+CI wait up to five minutes; they retain the same serialization. The CLI prints the
+owner PID and elapsed/maximum wait on contention and every thirty seconds thereafter.
+Queue time is separate from each check's execution budget. The completion wait covers the
 measured completion duration; it is not a FIFO queue and does not guarantee admission
 under an unbounded stream of contenders. Queued work records
 competing owner identity and queue/run durations in `artifacts/verification-windows/`;
@@ -480,7 +503,8 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"a6ad192fc6908e024a28a736a718335e8b0d77c94d7fb8dd7cbc2d087e4fd4ac","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"1d9d4c7761676cd21764c8376522077fbeeb2a2f4def85bfe5747e5799562d6c","disposition":"still accurate","rationale":"Final history cleanup only reclaims abandoned temporary artifacts and adds a regression control. Current-report transport, unchanged-run exclusion, legacy suite-start freshness, candidate source capture and completion tier ownership remain as described."} -->
+
+<!-- doc-review {"version":1,"fingerprint":"a1d9ec8acc17fe6fce46ec011d3c1f13f7eafbe895323be24045cdd81ba92004","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"57dd5715bbf363399e4ffcb9140f9f8cdf4395b6d98b0c9bd3ac0f6ae98b004e","disposition":"still accurate","rationale":"History persistence is now one optional snapshot with accepted concurrent hint loss, while candidate copy-in and current-report return guards, conservative legacy timestamps and frozen source/attempt identity remain as described. Completion keeps the thirty-minute admission window."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

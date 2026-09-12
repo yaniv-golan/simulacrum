@@ -21,14 +21,23 @@ test('verification windows serialize contenders, retain timing and release after
     inherit: false,
   });
   while (!release) await new Promise((r) => setTimeout(r, 1));
+  const notices = [];
   const second = withVerificationWindow(
     async () => {
       entered = true;
     },
-    { directory, waitMs: 1000, pollMs: 5, inherit: false },
+    {
+      directory,
+      waitMs: 1000,
+      pollMs: 5,
+      inherit: false,
+      onWait: (notice) => notices.push(notice),
+    },
   );
   await new Promise((r) => setTimeout(r, 20));
   assert.equal(entered, false);
+  assert.equal(notices.length, 1);
+  assert.equal(notices[0].waitMs, 1000);
   release();
   await first;
   const result = await second;
@@ -151,4 +160,17 @@ test('unsupported runtime invalidates canonical completion evidence before child
     assert.notEqual(result.outcome?.automation?.status, 'PASS');
     assert.match(result.failure, /Unsupported Node/);
   }
+});
+
+test('completion waits longer than focused probes without bypassing serialization', async () => {
+  const { verificationWaitOptions } = await import('../scripts/verification-window.mjs');
+  for (const script of [
+    'verify-local.mjs',
+    'verify-merge.mjs',
+    'verify-final.mjs',
+    'native-qualification.mjs',
+  ])
+    assert.equal(verificationWaitOptions('scripts/' + script).waitMs, 1800000);
+  for (const script of ['test-affected.mjs', 'build-app.mjs', 'verify-browser-suite.mjs', 'ci.mjs'])
+    assert.equal(verificationWaitOptions('scripts/' + script).waitMs, 300000);
 });
