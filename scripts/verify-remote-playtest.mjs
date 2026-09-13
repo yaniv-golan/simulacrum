@@ -1,5 +1,5 @@
 import { withCleanup, errorMessages } from './verification-cleanup.mjs';
-import { placeCatalogPart } from './catalog-browser-actions.mjs';
+import { browseAllParts, placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createEmptyBlueprint, createPart } from '../src/model/blueprint.mjs';
 import { createCaptureReviewIndex } from '../src/application/capture-stream.mjs';
@@ -352,6 +352,44 @@ try {
   const workloadActions = [];
   let driveStart, driveEnd;
   const readFrame = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  /**
+   * Author the feedback-phase motor at an explicit free workbench point. Surface snap off and
+   * precise coordinates keep the recorded edit independent of the camera/pointer state that
+   * real-time driving with Follow motion leaves behind; a stale surface preview once snapped
+   * the motor onto a wheel face and Place part stayed disabled. The fields are filled after the
+   * last layout change (opening Precise position); a later canvas pointer move would re-project
+   * the preview, and the part-count assertion below would then fail instead of timing out.
+   */
+  async function placeMotorAtFreePoint() {
+    const snap = page.getByRole('checkbox', { name: 'Surface snap', exact: true });
+    await snap.uncheck();
+    const before = (await readFrame()).metadata.blueprint.parts.length;
+    await browseAllParts(page);
+    await page.locator('[data-part-type="poweredMotor"]').click();
+    await page.locator('.part-placement summary').click();
+    for (const [axis, value] of [
+      ['X', '1.5'],
+      ['Y', '0.4'],
+      ['Z', '1.5'],
+    ]) {
+      const input = page.getByRole('spinbutton', { name: `${axis} position`, exact: true });
+      await input.fill(value);
+    }
+    await page.getByRole('button', { name: 'Place part', exact: true }).click();
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
+    const parts = (await readFrame()).metadata.blueprint.parts;
+    browserEvidence.assert('equal', [
+      parts.length,
+      before + 1,
+      'feedback phase authored one motor',
+    ]);
+    browserEvidence.assert('equal', [
+      parts.at(-1).type,
+      'poweredMotor',
+      'the authored part is a motor',
+    ]);
+    await snap.check();
+  }
   if (activeWorkload) {
     await placeCatalogPart(page, 'poweredMotor');
     await page.keyboard.press('ArrowRight');
@@ -417,7 +455,7 @@ try {
   mkdirSync(output, { recursive: true });
   phase('feedback');
   await page.screenshot({ path: join(output, 'recording-bar.png') });
-  await placeCatalogPart(page, 'poweredMotor');
+  await placeMotorAtFreePoint();
   await page.keyboard.press('ArrowRight');
   await page.getByRole('button', { name: 'Give feedback', exact: true }).click();
   await page.getByRole('textbox', { name: 'Your feedback' }).waitFor({ state: 'visible' });
