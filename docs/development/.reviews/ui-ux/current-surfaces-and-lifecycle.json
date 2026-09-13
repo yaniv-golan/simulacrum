@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "src/presentation/workshop-view.mjs": "6224d3b5d867efb590e3cbba2a88f326bf36352a8b790e737553e8783d0d1aa7",
+    "src/presentation/workshop-view.mjs": "4eb4872f5126c50fc0e678e364656ab50a31a3d5a5344995dd6684d417f5cb87",
     "src/presentation/workshop.css": "ce9b5564a683cf1e9ade9b590862b317a776728a488cc507678a256b6e9dceb8",
     "src/presentation/parts-browser.mjs": "153d01758b040a471eb43074e0be7b35277f7a4fcfed16ab14a17e9320753e42",
     "src/model/boundaries.d.ts": "e0cc414dd6368bcb6eab166496d0c0ac06d5ef1cb9ac681fbf5e38c3602eb007",
@@ -17,7 +17,7 @@
     "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
     "src/presentation/rope-controls.mjs": "f7161dcd7390ab56fcd1217e5d3882e7c51b385e78f35a5ff3ad995c796ea5a9",
     "src/presentation/workbench-content.mjs": "35e817a6787c38e52bc94437a4ee1606a5d956b4f1036966a84441200ee83474",
-    "src/application/workshop-app.mjs": "c4d78d8b328db0339787bc04703f005b8f80f317a6d109a53804a776126374c9",
+    "src/application/workshop-app.mjs": "97c672db14b3d527b90a41b8b55a71a1239b8a654b06ae137aeb792a07483300",
     "scripts/catalog-browser-actions.mjs": "b7307b5a3f43464b16b2e4f75829ceb1bfd45d146ef09472bb773fe0691a4ce3",
     "scripts/gear-browser-cases.mjs": "a58cbb3dc02a69669ee13e881532924fc9ceada2447f78b7ef2314e3dc043549",
     "package-lock.json": "bcc829aa98315f5b3ca46abbd8ee3c660c15b5a258f209d9265741c9bc57513c",

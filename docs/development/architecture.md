@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"f394a09e419594d7f02833a5cb201460c5c5aca0f3cbf35d0ccf12447d49aab6","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"3997f546c2db45db7f9b9e4885e5fb04bfb77fbf967f5574c9663c1f1944df4a","disposition":"still accurate","rationale":"Body observation construction remains in the model and is called by session publication; detached mutable physics reads remain unchanged. no library object crosses the door. Completed observations, clock scheduling, command routing and renderer submission ownership are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"053197ff44637a808f86ad09f4856f6ef5ef2e76e6a65c151a31d8af5c309348","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"896b02096eb86f57ca89d49770dbc2add07476db4096d01184617837eebcf929","disposition":"updated","rationale":"Added submission tracker ownership, labelled CPU endpoint and timeout/disposal lifecycle. Documented preserved draw scheduling with application pause/report on callback errors, withholding submission and cursor publication after failed preparation until successful recovery, and content comparison only when blueprint references change."} -->
 
 
 
@@ -29,6 +29,17 @@ external scheduling does not add an integration or discard simulation debt.
 View-update CPU time is measured separately from renderer submission time.
 Interaction reflection waits for a matching cursor-keyed submission (or continuation
 of the accepted run). This timestamp is not GPU completion or display presentation.
+The [submission tracker](../../src/application/render-submission.mjs#source) labels
+this endpoint separately from historical two-frame timing and records incomplete
+samples when its five-second timer fires or the application is disposed. The view
+schedules its next frame before invoking the application callback, so a callback
+error remains observable without ending the draw loop; the application pauses the
+clock and exposes its existing recovery message.
+Failed view preparation withholds graphics submission and its cursor until a
+successful update rebuilds the authored caches and completes preparation.
+Unchanged blueprint references skip content comparison. When a publication replaces
+the reference, the view compares content before rebuilding authored resources, so
+Run/Pause/Build transitions retain them and same-ID authored edits still refresh them.
 
 The view exposes the existing workshop footer as `utilityHost`; the application mounts
 feedback and recording controls there and keeps protected feedback dialogs outside

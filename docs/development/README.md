@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"f1f032b1f1d7bad2d9b2cace2fad0ab5daff9145d4cf4d170af8e034b33f864e","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"a17fde33bfb4950b6466f215a2df14a5155e78476bbe0d32136b236d7114c1de","disposition":"still accurate","rationale":"Generated discovery adds the finite numeric body constructor and its finite-field negative controls. Generation, semantic section review and candidate capture procedures are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"5fe002ee1ea739f5fd89dfcd8b5dd9d1be48db48875a68ec3d288b32bcb53e0e","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"14b12f9c30ba086b286673ebbc8e2a808c6fc6dbd2b162f10b377588ca27c7e8","disposition":"still accurate","rationale":"Generated reference now includes the render lifecycle probe and submission tracker controls. The regenerate, section-specific review and exact-source closure workflow is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"63598019d31d8da5599f5747b7016dd576681d5305490493ea4c00a09063bcc6","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"638f40175c3b435e12224a5ff7bf7b2a877679b215ee0080ea8929a8a335d013","disposition":"still accurate","rationale":"Session publication uses its existing model observation import for numeric admission; reviewed metadata scope consumer digests are refreshed through the existing isolated witness workflow. Declared opaque reads and their payload domains remain unchanged and shared runtime still selects all browser checks."} -->
+<!-- doc-review {"version":1,"fingerprint":"f5389fb3862717963b8c36b97df12f42a230343ed5d4ca7208e762d82de3ca2f","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"2a75e6ad59106a97872736b090b6c02eb9696c37124ae9f78630a5adf10b2a09","disposition":"still accurate","rationale":"The new render lifecycle check is explicitly exclusive and uses the existing probe server environment. Runtime reflection changes do not alter selection, scheduling, concurrency or historical hint policy; the registered check expands required coverage."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -506,7 +506,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"73cc4151df521bc1d9cf6dde7c458f797a57eb14f7df9b4ca2ccf264eaceb70f","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"03edf91d249bcc468766a997ee51a5685b1d2b900c6bc5bbecdb27809842633e","disposition":"still accurate","rationale":"Finite body admission and indexed checkpoint FNV change runtime bytes and therefore require a fresh captured candidate. They do not change isolation, source-drift checks, result ownership or completion-tier selection."} -->
+<!-- doc-review {"version":1,"fingerprint":"5595ec91de15985bed9f358fefd5fc06a365de8bb36c83f23ad73d59063c7bf6","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"43e404b880b62fefb53e2dbfb0d892cac4392c690b2c681dd0625b046c624c46","disposition":"still accurate","rationale":"New renderer lifecycle and metric tests change candidate bytes and require fresh completion. Capture ownership, frozen source receipts and merge-base selection remain unchanged; no receipt is reused for the follow-up."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

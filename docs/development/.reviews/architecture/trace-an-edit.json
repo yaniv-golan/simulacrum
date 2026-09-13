@@ -1,8 +1,8 @@
 {
   "version": 1,
   "dependencies": {
-    "src/application/workshop-app.mjs": "c4d78d8b328db0339787bc04703f005b8f80f317a6d109a53804a776126374c9",
-    "src/presentation/workshop-view.mjs": "6224d3b5d867efb590e3cbba2a88f326bf36352a8b790e737553e8783d0d1aa7",
+    "src/application/workshop-app.mjs": "97c672db14b3d527b90a41b8b55a71a1239b8a654b06ae137aeb792a07483300",
+    "src/presentation/workshop-view.mjs": "4eb4872f5126c50fc0e678e364656ab50a31a3d5a5344995dd6684d417f5cb87",
     "src/presentation/parts-browser.mjs": "153d01758b040a471eb43074e0be7b35277f7a4fcfed16ab14a17e9320753e42",
     "src/presentation/part-search.mjs": "1ee1e0c7c9506cf41a5b2e136a7c72ab01be09c663b221ff43ad523483cbf169",
     "src/presentation/part-placement.mjs": "87613e497aa664f702d05cedbef7b19297a115acf497f7b2e70b458be3dc8db5",
@@ -62,6 +62,7 @@
     "src/simulation/sensors.mjs": "ab29242a68d0e9274e352b3c96a3de8d169c59c0adbcc332ad38554329114d75",
     "src/simulation/session.mjs": "73bbbc7099f14f8ea801696a7a4a6a5ba5da8674d31a424fdd6b0749d2365f11",
     "src/application/clock.mjs": "4d572664bf6b489945343148da6c54d328335d318c51a210bf3bbf6a8b89498f",
+    "src/application/render-submission.mjs": "fb2e0bc496f4999f0fc1bc55c436606290aec4b5ea9b0e71b4a7bf1982e69a27",
     "src/application/feedback-context.mjs": "3597c60d3624670858128ec45bb385282e5ccbf96c3c2a8d43b49ed2ba2344db",
     "src/application/assembly-library.mjs": "d43ad2fb2382faa78119ff9e66676d9ea2e8b59106314e6576891460c54ab24f",
     "src/presentation/assembly-library.mjs": "7e575049f79fb8f73c5629f8d8d7f863504e8dff87556a34cca3da2fc458e60e",

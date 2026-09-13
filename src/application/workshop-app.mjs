@@ -1,3 +1,4 @@
+import { createRenderSubmissionTracker, FIRST_TICK_METRIC } from './render-submission.mjs';
 import { createControllerHistory } from './controller-history.mjs';
 import { createSensorWorkshop } from '../model/fixtures/sensor-workshop.mjs';
 import { createDeliveryEvaluator } from '../model/learning-evaluators.mjs';
@@ -179,9 +180,14 @@ export async function mountWorkshopApp(root) {
   window.addEventListener('keyup', captureInput, true);
   const frame = () => workshop.observe().frames[0];
   function record(entry) {
+    if (entry.kind === 'run-first-tick') entry = { ...entry, metric: FIRST_TICK_METRIC };
     metrics.push(entry);
     if (metrics.length > 1000) metrics.shift();
   }
+  const submissionTracker = createRenderSubmissionTracker({
+    readDraw: () => view.readCompletedDraw(),
+    record,
+  });
   function cancelRun(cause) {
     if (runMeasurement) {
       record({
@@ -292,38 +298,18 @@ export async function mountWorkshopApp(root) {
       acceptedAt = performance.now(),
       blueprint = frame().metadata.blueprint,
       blueprintJSON = JSON.stringify(blueprint);
-    const waitForDraw = () => {
-      if (disposed) return;
-      const draw = view.readCompletedDraw();
-      if ((!draw || draw.completedAt < acceptedAt) && !disposed) {
-        requestAnimationFrame(waitForDraw);
-        return;
-      }
-      const reflected =
-        draw?.cursor.session === target.session &&
-        draw.cursor.epoch === target.epoch &&
+    submissionTracker.measure(
+      { kind, ...timing, acceptedAt, buildId, machine: blueprint.id, targetCursor: target },
+      (cursor) =>
+        cursor.session === target.session &&
+        cursor.epoch === target.epoch &&
         (kind === 'run'
           ? frame().metadata.mode === 'run' &&
             JSON.stringify(frame().metadata.blueprint) === blueprintJSON
-          : draw.cursor.revision === target.revision);
-      record({
-        kind,
-        ...timing,
-        acceptedAt,
-        completedAt: draw.completedAt,
-        durationMs:
-          reflected && timing.timestampSource === 'input-event'
-            ? draw.completedAt - timing.inputTime
-            : null,
-        superseded: !reflected,
-        buildId,
-        machine: blueprint.id,
-        targetCursor: target,
-        reflectingCursor: draw.cursor,
-      });
-    };
-    requestAnimationFrame(waitForDraw);
+          : cursor.revision === target.revision),
+    );
   }
+
   function availableId(prefix, sequence, existing) {
     let id;
     do {
@@ -688,7 +674,15 @@ export async function mountWorkshopApp(root) {
   view = createWorkshopView(root, {
     learning,
     controllerHistory,
-    beforeDraw: (now) => clock?.frame(now),
+    beforeDraw: (now) => {
+      try {
+        clock?.frame(now);
+      } catch (error) {
+        // Stop the failing clock, preserve recovery controls and report the error.
+        stopped(error);
+        throw error;
+      }
+    },
     onCommand,
     onSound: (enabled) => impactSound.enable(enabled),
     onSave,
@@ -766,6 +760,7 @@ export async function mountWorkshopApp(root) {
       window.removeEventListener('keydown', captureInput, true);
       window.removeEventListener('keyup', captureInput, true);
       clock.pause();
+      submissionTracker.dispose();
       workshop.dispose();
       view.dispose?.();
       delete window.render_game_to_text;

@@ -28,7 +28,7 @@
     "src/presentation/spring-view.mjs": "ee05743b6efc9755e0d055c422811e3bd7dc5022255e56fa38aeb76d168e3c88",
     "src/model/connection-test-paths.mjs": "97047f22e52f4ba5cf5dd71095c6824f4ade4750f3e33ed29533b9f5c7ff84c3",
     "src/presentation/connection-test.mjs": "e7fd59d6e161650a014681589c2116e778dfe1bd4185e1c14e5d4547eff41574",
-    "docs/development/architecture.md#trace-an-edit": "1e16406c3c1c47a1547a29396eae2f8ef4f8538334ff621931f154869847798a",
+    "docs/development/architecture.md#trace-an-edit": "2acd56b7dea41518e9f2d27f33b34f7b4e91ebb127a40824905b76a764e0a640",
     "test/connection-render.test.mjs": "34e6f970732a53be157e05558b21aa21d22447c0611b96b974ea9754d712679d",
     "src/model/assembly.mjs": "e05bf69fcbc07c9f4b18017cd945e40519237660edae7c4a300c2c44723073b7",
     "src/model/blueprint.mjs": "2408dc623b3e340b8727ab7c43556318ae2ca67879502af4074c4ff60ef8a96d",

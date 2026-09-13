@@ -2,8 +2,8 @@
   "version": 1,
   "dependencies": {
     "assessments/protocol/F1.md": "1639ce944c2b24ef6d6715394c9aa306c09e610d87e41b22f3226a3d61ee990c",
-    "src/application/workshop-app.mjs": "c4d78d8b328db0339787bc04703f005b8f80f317a6d109a53804a776126374c9",
-    "src/presentation/workshop-view.mjs": "6224d3b5d867efb590e3cbba2a88f326bf36352a8b790e737553e8783d0d1aa7",
+    "src/application/workshop-app.mjs": "97c672db14b3d527b90a41b8b55a71a1239b8a654b06ae137aeb792a07483300",
+    "src/presentation/workshop-view.mjs": "4eb4872f5126c50fc0e678e364656ab50a31a3d5a5344995dd6684d417f5cb87",
     "package.json#script=build": "952bdd0ae6b61c346c4fd9450107496b32dd57090752cad260808d6331fd0485",
     "package.json#script=preview": "734491675c009f724e200a102cac97cd540c2e284972825fa04649d9ca611b23"
   }

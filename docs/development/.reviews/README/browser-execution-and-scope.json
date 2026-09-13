@@ -6,7 +6,7 @@
     "scripts/browser-registry.mjs": "1c1d359197e67d37328e38159f597f1f0fd881537ab990430a4362bcf2408998",
     "scripts/browser-selection.mjs": "77c8d5f44714ab7a4801d61084e85d0b943578ef9e6aa82443f7596462c8174c",
     "scripts/invariant-coverage.mjs": "59f81d8cbc60269fe15917d702080cf1545bc33073ec5492ae14476e33957e8a",
-    "scripts/manifest.json": "af1f15084e82ba4f2e746be952290eb7da5103f9d2465d91035857000ad75bba",
+    "scripts/manifest.json": "e4363d526a81d29d319e287db3162220bdc3384829bed47c5b7560ddb87c1f09",
     "scripts/module-graph.mjs": "db47284e35c471196b3f7cffbb998660ad58b6beb79d19f92eff6b04e7508399",
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
     "scripts/test-selection.mjs": "73dac80216ee28b5644f04acd503f8776d1854090417fcc6ec9df4446686000e",
@@ -61,7 +61,7 @@
     "src/model/surfaces.mjs": "ada5ae5c0c61db2df3b28d0c7f44896a47466521e2aeb428ab91676759414663",
     "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
     "scripts/browser-evidence.mjs": "aba560116ae7029a14d9cbeaba46612417e7684a0c73b0996f73c1f0eb77b68f",
-    "src/application/workshop-app.mjs": "c4d78d8b328db0339787bc04703f005b8f80f317a6d109a53804a776126374c9",
+    "src/application/workshop-app.mjs": "97c672db14b3d527b90a41b8b55a71a1239b8a654b06ae137aeb792a07483300",
     "package.json#script=browser:scopes": "83a8c24f5eda5de8f45aedf8c85cae81860160b29677e9cd69e44d9dbbf5f91e",
     "package.json#script=verify:candidate": "0a3f48ca2413c756a50ee6bb10ac51d684393eeecc217bc67fedde53e25e4756"
   }

@@ -1,6 +1,6 @@
 # Playtests and recordings
 
-<!-- doc-review {"version":1,"fingerprint":"f37adde7c02761142b1025e43e43f4e4c652288c30f46838c8961ed2a40d119f","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"a70d115135172d90a75f351f303107efc4337c672f50e180860f099b8a9d7b7c","disposition":"updated","rationale":"The application now times view preparation and waits for cursor-keyed renderer-call completion in reflection receipts. The text distinguishes CPU observations from GPU/display completion, measured improvement and human acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"826d0d2d4a0859d8bce3cd4f07ddeb95554d2473b2019771c7e30b4a5d4b7558","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"4e8fa8175ff12d55107d735f4634375f3d629f39ac4efaae3655be3bf3f60dd3","disposition":"updated","rationale":"Documented explicit current submission and first-tick metric identifiers, F2 protocol version2 admission, rejection of historical incomparable samples, and null-latency timeout/disposal outcomes."} -->
 
 
 
@@ -16,6 +16,12 @@ The diagnostic field `completedDraw` marks return from the renderer call, not GP
 completion, compositor presentation or physical display latency. `run-first-tick`
 remains a separate simulation-reflection measurement. Compare identical before/after
 workloads before claiming a latency improvement.
+Current reflection samples identify `cursor-keyed-render-submission-v1`; first-tick
+samples identify `completed-first-tick-v1`. F2 protocol version 2 requires these
+endpoints and completed outcomes. Historical unlabeled or two-animation-frame
+samples are not interchangeable with this protocol. A five-second timer records
+`timeout` when no eligible draw arrives; disposal records `cancelled`. These
+incomplete samples retain null latency and cannot qualify as successful measurements.
 
 ## Remote setup
 

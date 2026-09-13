@@ -167,7 +167,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"b5fc1b0dce0f213647047e3652d77da18cbcadc9f0f64c4e0b0fe455dba76b2c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"f4156196e4268bb325688f9b96c98c0f34d388ac89f93437a4ecb7700e2b2883","disposition":"updated","rationale":"The explanation now records the finite-primitive constructor owning and freezing session output while preserving mutable physics reads, generic admission for external trees, and indexed FNV preserving byte order, arithmetic and corruption rejection. Existing synchronous checkpoint and state-cache rules remain in force."} -->
+<!-- doc-review {"version":1,"fingerprint":"6a8858f9fce46e32c466359be99bc5c74e4e0683370cbe4d5654cfd96100855d","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ca44bee27e31f64fb93f6936ded6042f42f4bbbc7f0701d0133cebd51c39d291","disposition":"still accurate","rationale":"This follow-up changes presentation cache admission, application measurement lifecycle and F2 verification only. Power test names distinguish pending retry from session failure publication without changing assertions. Physics solver, step order, checkpoint bytes and state admission remain unchanged."} -->
 
 
 
@@ -536,7 +536,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"dbdfea0c8d778a8583d3ccda980490b7018ebcac6b8e7ee13ff81aa901a4c714","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"3b38d6d4da0ac325c9a7579726018b11e50f460010aa5e0a55f4a2badf94487f","disposition":"still accurate","rationale":"Specialized body admission preserves the exact completed telemetry shape. View geometry, formatted-value gating, blueprint identity caching and CPU-submission timing retain the same presentation behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"20e206a604b3ad29cc95fe4420f67e3ad7f3a2d4158b3506c391d22025abd13b","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"e54e3f2bbdd353af0c0dd6892e352e0b6abda1829f20e89850e59db97e54d1f1","disposition":"updated","rationale":"Corrected authored-change detection guidance: equal-content replacement references retain the revision; content comparison occurs only on reference replacement. Real same-ID authored edits still invalidate dependent views."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -601,9 +601,11 @@ while paused must use existing scene invalidation. Hidden resources must be excl
 from picking through `pickableObjects`, retain their geometry, and update their endpoints
 before reappearing. Do not put visibility in the geometry cache key.
 
-The workshop view uses the admitted immutable blueprint reference to detect authored
-changes and supplies a revision token to dependent view caches. Do not mutate that
-blueprint in place. Selected live readouts replace DOM children only when formatted
+The workshop view uses the admitted immutable blueprint reference as a fast path,
+compares content when that reference changes, and supplies a revision token to
+dependent view caches only for authored content changes. Mode-only publications
+can replace the reference with equal content. Do not mutate that blueprint in place.
+Selected live readouts replace DOM children only when formatted
 content changes; rebuilding the inspector retires its spring-readout node.
 Scene preparation performed by render can be reused by the following draw, while
 input, camera and overlay invalidation must still refresh affected visuals.

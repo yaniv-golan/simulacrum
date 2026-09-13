@@ -156,8 +156,10 @@ export function createWorkshopView(
     sourcePort = null,
     blueprintKey = 0,
     blueprintReference = null,
+    blueprintContent = '',
     completedDraw = null,
     renderedCursor = null,
+    framePreparationFailed = false,
     springReadout = null,
     healthSample = null,
     editToolNodes = null,
@@ -3708,7 +3710,11 @@ export function createWorkshopView(
     onInteraction?.('exploded-view', { active: on, amount: explodeAmount });
   }
   function render(next, cursor = getCursor?.()) {
-    renderedCursor = cursor;
+    if (framePreparationFailed) {
+      blueprintReference = null;
+      blueprintContent = '';
+    }
+    framePreparationFailed = true;
     invalidateScene();
     const previousCount = frame?.metadata.blueprint.parts.length ?? 0;
     const previousMode = frame?.metadata.mode;
@@ -3732,14 +3738,23 @@ export function createWorkshopView(
     connectionTest.update(next);
     motionReadout.update(next);
     surface.refresh();
-    const blueprint = frame.metadata.blueprint,
-      key = blueprint === blueprintReference ? blueprintKey : blueprintKey + 1;
+    const blueprint = frame.metadata.blueprint;
+    let key = blueprintKey;
+    if (blueprint !== blueprintReference) {
+      // Mode transitions can publish equal frozen trees with new identities.
+      // Compare only those replacements; ordinary ticks keep the reference fast path.
+      const content = JSON.stringify(blueprint);
+      blueprintReference = blueprint;
+      if (content !== blueprintContent) {
+        blueprintContent = content;
+        key++;
+      }
+    }
     if ((exploded || explodeAmount) && (key !== blueprintKey || frame.metadata.mode === 'run'))
       setExploded(false, true);
     if (key !== blueprintKey) {
       if (guideVisual) showGuideConnection(null);
       blueprintKey = key;
-      blueprintReference = blueprint;
       const added = blueprint.parts.filter((part) => !meshes.has(part.id)).at(-1);
       if (added) selected = added.id;
       else if (!blueprint.parts.some((part) => part.id === selected)) selected = null;
@@ -3807,6 +3822,8 @@ export function createWorkshopView(
     partPlacement?.refresh();
     refreshAssemblyState();
     scenePrepared = true;
+    renderedCursor = cursor;
+    framePreparationFailed = false;
   }
   function readRenderedCenters() {
     return [...meshes].map(([id, mesh]) => {
@@ -4075,7 +4092,14 @@ export function createWorkshopView(
     previousFrameRendered = false;
   function draw(now = performance.now()) {
     if (disposed) return;
+    // Keep the display owner alive when its injected clock or render update throws.
+    // The application pauses that clock and reports the error; do not swallow it.
+    animation = requestAnimationFrame(draw);
     beforeDraw?.(now);
+    if (framePreparationFailed) {
+      previousFrameRendered = false;
+      return;
+    }
     const beforeQuality = graphicsQuality.read().level;
     const quality = graphicsQuality.observe({
       now,
@@ -4180,7 +4204,6 @@ export function createWorkshopView(
       renderedFrames++;
       previousFrameRendered = true;
     }
-    animation = requestAnimationFrame(draw);
   }
   draw();
   return {

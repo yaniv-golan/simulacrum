@@ -223,7 +223,7 @@ test('completed power reads are admitted immutable snapshots detached from later
   assert.ok(network.read().cells[0].energyJ > 0);
 });
 
-test('late receipt failure preserves completed and pending state for an unrestored retry', () => {
+test('power-network late receipt rejection preserves completed and pending state for retry without restore', () => {
   for (const reason of ['INVALID_MOTOR_SAMPLE', 'ENERGY_INVARIANT']) {
     const cfg = config();
     cfg.motors.push({ ...cfg.motors[0], node: 4, body: 4, rotor: 5, joint: 1 });
@@ -252,6 +252,8 @@ test('late receipt failure preserves completed and pending state for an unrestor
     assert.throws(() => retry.completeStep(dt, bad), new RegExp(reason));
     assert.equal(JSON.stringify(retry.read()), before);
     assert.throws(() => retry.snapshot(), /POWER_STEP_PENDING/);
+    // No session or restore participates: the rejected completion must leave the
+    // pending allocation intact so the same network can accept corrected receipts.
     assert.equal(
       JSON.stringify(retry.completeStep(dt, good)),
       JSON.stringify(control.completeStep(dt, good)),
@@ -260,7 +262,7 @@ test('late receipt failure preserves completed and pending state for an unrestor
   }
 });
 
-test('session late power failure preserves the completed projection and failure bundle', () => {
+test('session late power failure publishes the previous completed power and a failure bundle', () => {
   const run = (mode) =>
     JSON.parse(
       execFileSync(
@@ -271,6 +273,8 @@ test('session late power failure preserves the completed projection and failure 
     );
   const positive = run('success');
   assert.equal(positive.failureBundle, null);
+  // This separate session-level witness checks completed-frame/failure publication.
+  // It does not inspect or retry the power network's private pending allocation.
   const failed = run('failure');
   assert.equal(failed.failureBundle.failedTick, 1);
   assert.equal(failed.failureBundle.reasonCode, 'ENERGY_INVARIANT');

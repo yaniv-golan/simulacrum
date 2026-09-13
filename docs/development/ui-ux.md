@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"666c4630a63e8771aafc664ec718d43784024289009df61178140a979c01de5b","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"b1ad8b2c9986e8c551e2ec3c038643e97e6a5dc493467e95d6a8e2cd953f148c","disposition":"still accurate","rationale":"No entry: performance changes add no lesson, example, challenge or invitation. Existing controls and contextual explanations serve the unchanged player tasks; formatting and draw ordering require no new teaching content."} -->
+<!-- doc-review {"version":1,"fingerprint":"e111ad301465bdd9cebe050a6a31505ed07e12205a55d8eae8e19687d20cbaa8","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"22977996712522a944e697f50c11e48c4a71798106af817a4c3dfafb0e0e63fc","disposition":"still accurate","rationale":"No entry: lifecycle fixes and measurement endpoint labels add no lesson or new mechanical capability. Existing controls and requested explanations remain sufficient."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"ce73a708c734cd0abd3e217ef58c941316a64442bc4100b856a34ff9c3ebb89b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"087a7baddfbcf47d47caa42f22edddfbda979809e35e32797313960ce2d3b32b","disposition":"still accurate","rationale":"These runtime changes add no UI surface or action and preserve completed values. Inspector, requested Measurements, recovery warnings, content admission and visibility lifecycles remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"3a134a607809ccef8af8aa706c7a0ef1a03a13be6041d2654bc97af96b9b3790","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"0c1347896199af0fbcf4bf8c3e87e405fd7ceb3b793f5acb3817799d7edaabf2","disposition":"still accurate","rationale":"No surface is added or displaced. Unexpected before-draw errors use the existing status message and pause the clock, while draw scheduling survives for existing recovery controls. Ordinary command exits from exploded inspection remain unchanged; view cache handling alone distinguishes equivalent content."} -->
 
 
 
