@@ -5124,6 +5124,10 @@
           {
             "path": "test/load-cell-coupled.test.mjs",
             "anchor": "released ${which} updates load-cell connectivity and preserves both checkpoint topology ages"
+          },
+          {
+            "path": "test/load-cell-coupled.test.mjs",
+            "anchor": "physics envelope rejects null mandatory ${field} without normalizing absent feature state"
           }
         ],
         "negative": [
@@ -5218,6 +5222,10 @@
           {
             "path": "test/load-cell-coupled.test.mjs",
             "anchor": "released ${which} updates load-cell connectivity and preserves both checkpoint topology ages"
+          },
+          {
+            "path": "test/load-cell-coupled.test.mjs",
+            "anchor": "physics envelope rejects null mandatory ${field} without normalizing absent feature state"
           }
         ]
       },
