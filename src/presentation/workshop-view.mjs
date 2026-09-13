@@ -4187,10 +4187,20 @@ export function createWorkshopView(
   const warmMeshes = Object.keys(CATALOG).map((type) =>
     createPartMesh(createPart(type, 'graphics-warmup', [0, 0, 0])),
   );
+  const warmLights = [];
+  for (const mesh of warmMeshes)
+    mesh.traverse((object) => {
+      if (object.isLight) warmLights.push({ light: object, visible: object.visible });
+    });
   try {
     scene.add(...warmMeshes);
     renderer.render(scene, camera);
+    // Light count is part of the shader key, even for unpowered lamps. Retain
+    // the ordinary no-part-light variants too, including across New/Load.
+    for (const { light } of warmLights) light.visible = false;
+    renderer.render(scene, camera);
   } finally {
+    for (const { light, visible } of warmLights) light.visible = visible;
     scene.remove(...warmMeshes);
   }
   let animation,

@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"0fbef9b545b591c92cb50fc6bd22e5a4f658bad64c91829a8f9c75408f0844ea","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"cda42e7e178a5a909c27f5d9772be609ad0218bf9b12164cd0e045f15d01026a","disposition":"still accurate","rationale":"The parts browser and part-search module remain the catalogue discovery owners. Added the missing Powered Lamp vocabulary after coverage failed; scene and camera command ownership is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"6748ac10809d36c9d4db90f6a0daefba26d42ba71a27669ecb3d3a372f0c6484","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"ffcbebee00fbbcf028ab72a17ed549354e7469d8e37561f35697bbc153d6aad4","disposition":"still accurate","rationale":"The view retains additional shader variants in its existing renderer lifetime. Temporary warmup meshes remain outside authored state, completed telemetry and command admission; the documented input and snapshot owners are unchanged."} -->
 
 
 

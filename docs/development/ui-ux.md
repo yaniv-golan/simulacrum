@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"62e3958ec2b30bca83e1815be367dae5de27144e4652aadecc1fca8278389ae0","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"289027e59f7a6ad01599c482a4e31e0ae6b8e026bfb8f995be65ca35d0da5f9c","disposition":"still accurate","rationale":"Scene authoring adds no lesson entry; the Environment context and requested scene library support construction while existing examples remain the learning surface."} -->
+<!-- doc-review {"version":1,"fingerprint":"a33f5dfd3e99b926b9fbee8a3d9b64ef4e90bf924e6ee3afd04d072c850fa73d","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"f0df6551eb531bd4b8e7ac068ceb916a26787f261ad0babf1d00b1fdcda2c3a7","disposition":"still accurate","rationale":"No entry: shader warmup changes no player task, lesson, example or contextual explanation. Existing authoring controls suffice, and the temporary meshes are never player-authored content."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"d7c5ebd65898ed42c35e824100d1b25d8ad4ccfd7ceea0211088d0771d64b78d","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8b89319054b0932b9d2f3f514090604d6b21c49f929f64bdf8f6111d606b7b30","disposition":"still accurate","rationale":"The release-coupler browser journey now establishes application readiness before its six-second action deadline. Its visible construction, save/reload, release, retry and narrow-layout assertions remain unchanged, as do player-facing surfaces and the no-entry learning admission."} -->
+<!-- doc-review {"version":1,"fingerprint":"422b8f564680d60c4cf44d00f2e0e312e2aba29d5e2a28ef7c2725e5254a778b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"abbcfce1e13cd23206829b6b39b329c9c39351d022105c62468430245457314b","disposition":"still accurate","rationale":"The additional startup render retains graphics resources without adding a surface or changing input, selection, confirmation, placement or dismissal. The ordinary view renders the authored scene after temporary warmup meshes are removed."} -->
 
 
 

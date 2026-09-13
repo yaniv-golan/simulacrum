@@ -181,7 +181,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"cb275934bf3671cd6eb6ecc37a8c0c2e64f5261a26be7d665ac246486493d082","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"3a41bdf72c1e989014fcb7108d0b94c1ae551cbf255509d561d71567fd499aa2","disposition":"still accurate","rationale":"Browser fixtures now wait for startup and completed load receipts and explicitly confirm New on populated rigs. F2 still measures ten ordinary construction cycles; energy, rope, shared sensing, transform and physical assertions are retained. No numerical law, fixture geometry, admission or physics owner changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"ed2eb2f6d57d779f649b4871536e89471e396978e6bf5c4e4321d390a07ec9ab","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"725a17181636aea19f38a2b6a592d79faef15ec8c30e4de20c2323cbb344278b","disposition":"still accurate","rationale":"The reviewed consumer metadata accounts for renderer shader warmup without changing runtime read boundaries or physical state. Physics ownership and required analytical, deterministic and browser checks remain unchanged."} -->
 
 
 
@@ -525,7 +525,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"76efdf75a511b6ccab444276cbb8bc77ad4c362ebcfe3e4dc93171e64cf6cab6","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"aa94a908117be6cb5b943ed0074fd38903b0481a8031f00d9fc1942aa8f8e8ec","disposition":"still accurate","rationale":"The rope verifier now confirms replacement before constructing its second authored rig. Rope attachment, displayed geometry, tension and rendered-transform assertions remain intact; no overlay producer or renderer changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"fc0eb4340fb8504c4af36b29446a0cb3b9da3c666c8ee9b4555f2aa124fa6f5d","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"aa94a908117be6cb5b943ed0074fd38903b0481a8031f00d9fc1942aa8f8e8ec","disposition":"updated","rationale":"The resource lifecycle explanation now records that warmup retains both catalog lighting and no-part-light shader variants, including the unpowered-lamp light-count distinction. Bounded warm resources still leave the scene and are disposed with the view."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -559,7 +559,7 @@ provide cosmetic material response, subtle roughness grain and a disposable stud
 reflection field. Paint is nonmetallic surface treatment; exposed surfaces follow the
 authored material. These finishes do not change model material values. [Assembly
 thumbnails](../../src/presentation/assembly-thumbnails.mjs#implementation) compose the production connection and spring views at saved authored
-endpoints, including their geometry in framing and disposing temporary resources. Palette thumbnails retain their temporary meshes through one synchronous batch so shared shader programs stay available; a `finally` block releases all meshes, the preview environment and the renderer. The main renderer also warms the catalog material and shadow variants once before authoring starts. Those bounded resources remain outside the authored mesh map and completed readback, leave the scene immediately, and are released with the renderer. Surface mounts
+endpoints, including their geometry in framing and disposing temporary resources. Palette thumbnails retain their temporary meshes through one synchronous batch so shared shader programs stay available; a `finally` block releases all meshes, the preview environment and the renderer. The main renderer also warms the catalog material and shadow variants once before authoring starts. It retains both the catalog lighting configuration and the no-part-light shader variants, since even an unpowered lamp changes the shader light count. Those bounded resources remain outside the authored mesh map and completed readback, leave the scene immediately, and are released with the renderer. Surface mounts
 use the same model surface resolver as the workshop, retaining saved face offsets and
 part rotations; named ports retain their catalogue positions. Powered linear connections use
 the retained straight-rod view with guide-to-carriage endpoint ordering in either saved

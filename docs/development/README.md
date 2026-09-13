@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"7f30cfee70cf699e5470dd946120833eeda08bb9b6fcfaa0828e58bfd9dedaa2","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"6c5c6df2347ba4bc3a6ae57d3e6ec5fc9b579ce1a3ab1d357464743e1a31cda8","disposition":"still accurate","rationale":"The seven metadata updates retain the same read expressions, purposes, exclusions and browser roots. Changed fixture callers now wait for startup or a load receipt and explicitly confirm replacement; neither execution admission nor required coverage changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"f2722e28c11aa2f3054e5330200bda577f42e851ce26b974ca73f87dee127b17","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"85325af8ebee11813f2789d920ef6dd036e487a865d8feccd555d7dc4ce6527a","disposition":"still accurate","rationale":"The four consumer hash updates reflect renderer shader warmup only. Their runtime read expressions, classifications, exclusions, browser roots and witness requirements are unchanged; the documented admission and coverage rules remain accurate."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -507,7 +507,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"e3095f6aef9573c70db821228b3dffe9b531356c57aa16a56cc9d69a3b494085","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"a58af11957707a2a528d2765e94213e0647c161c803162d6632bb303d4f59232","disposition":"still accurate","rationale":"Assembly scenario startup completes before its existing five-second operation deadline. The 90-second process watchdog and separate setup/action/cleanup evidence remain intact; isolated capture, two-branch scope and source drift requirements are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"8866439571596cbe537ea3cc5b51ea2c977d21f8a4dbe233542269a3400e2320","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"bdde853b6fec1aa13e2c72490621dfd6bf81cd34821848348853b701bbd37453","disposition":"still accurate","rationale":"Only four reviewed consumer hashes changed in the manifest. Isolated capture, process deadlines, artifact ownership and full candidate verification remain unchanged; the F2 development probe is not completion evidence."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
