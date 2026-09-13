@@ -125,6 +125,20 @@ export const CATALOG = freeze({
     mountingFaces: ['right', 'left', 'bottom', 'top', 'front', 'back'],
     releaseFace: 'right',
   },
+  camera: {
+    ...component(
+      'camera',
+      'Camera',
+      [0.03, 0.02, 0.02],
+      'aluminium',
+      [power(), signal('trigger', 'input')],
+      {},
+    ),
+    milestone: 'M3b',
+    sensorSupply: { resistance: 100, minVoltage: 1 },
+    mirrorAxis: 'x',
+    mountingFaces: ['bottom', 'left', 'right', 'top', 'front', 'back'],
+  },
   gear12: {
     ...component(
       'gear12',
@@ -280,6 +294,18 @@ export const CATALOG = freeze({
     milestone: 'M3b',
     mountingFaces: ['top', 'left', 'right', 'front', 'back'],
   },
+  poweredLamp: component(
+    'poweredLamp',
+    'Powered Lamp',
+    [0.06, 0.05, 0.04],
+    'aluminium',
+    [power(), signal('signal', 'input')],
+    {
+      brightness: rating(1, 0, 1, 'ratio'),
+      color: { ...rating(16777215, 0, 16777215, 'RGB'), type: 'integer' },
+      beamSpread: rating(0.52, 0.1, 1.2, 'rad'),
+    },
+  ),
   powerCell: component('powerCell', 'Power Cell', [0.1, 0.05, 0.06], 'steel', [power()], {
     voltage: rating(24, 0.1, 240, 'V'),
     capacityJ: rating(36000, 1, 1e9, 'J'),

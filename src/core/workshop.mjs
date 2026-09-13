@@ -77,10 +77,14 @@ export async function createWorkshop(
   const past = [],
     future = [],
     historyLimit = 50;
-  const retain = (stack, state) => {
-    stack.push(immutableCopy(state));
+  const retain = (stack, state, label = null) => {
+    stack.push(immutableCopy({ blueprint: state, label }));
     if (stack.length > historyLimit) stack.shift();
   };
+  const historyLabels = (undo, redo) => ({
+    ...(undo?.label ? { undoLabel: undo.label } : {}),
+    ...(redo?.label ? { redoLabel: redo.label } : {}),
+  });
   // Published metadata is the sole authored read model. Local variables hold
   // candidates only; no private blueprint or mode can diverge from observation.
   const metadata = () => session.observe().frames[0].metadata;
@@ -132,6 +136,18 @@ export async function createWorkshop(
           duty: command.duty,
         });
       }
+      if (command.type === 'camera-photo') {
+        if (
+          keys !== 'epoch,id,requestId,type' ||
+          current.mode !== 'run' ||
+          command.epoch !== session.observe().cursor.epoch
+        )
+          return result(false, 'INVALID_COMMAND', 'command');
+        const node = current.blueprint.parts.findIndex(
+          (p) => p.id === command.id && p.type === 'camera',
+        );
+        return session.act({ type: 'camera-photo', node, id: command.requestId });
+      }
       if (command.type === 'suspend-controls') {
         if (keys !== 'type') return result(false, 'INVALID_COMMAND', 'command');
         return session.act(command);
@@ -156,7 +172,8 @@ export async function createWorkshop(
           to = command.type === 'undo' ? future : past;
         if (!from.length)
           return result(false, command.type === 'undo' ? 'NOTHING_TO_UNDO' : 'NOTHING_TO_REDO');
-        const blueprint = from.at(-1),
+        const entry = from.at(-1),
+          blueprint = entry.blueprint,
           candidate = compileAssembly(blueprint);
         await session.replaceConfiguration(candidate.configuration, {
           blueprint,
@@ -164,6 +181,10 @@ export async function createWorkshop(
           connections: candidate.connections,
           mode: 'build',
           editing: {
+            ...historyLabels(
+              command.type === 'undo' ? past.at(-2) : entry,
+              command.type === 'redo' ? future.at(-2) : entry,
+            ),
             undoCount:
               command.type === 'undo' ? past.length - 1 : Math.min(historyLimit, past.length + 1),
             redoCount:
@@ -173,11 +194,19 @@ export async function createWorkshop(
           },
         });
         from.pop();
-        retain(to, current.blueprint);
+        retain(to, current.blueprint, entry.label);
         return result(true);
       }
       let next = structuredClone(current.blueprint);
       switch (command.type) {
+        case 'replace-scene':
+          if (keys !== 'environment,expectedCursor,type')
+            return result(false, 'INVALID_COMMAND', 'command');
+          if (!sameData(command.expectedCursor, session.observe().cursor))
+            return result(false, 'STALE_PROPOSAL', 'expectedCursor');
+          if (sameData(next.environment, command.environment)) return result(true);
+          next.environment = command.environment;
+          break;
         case 'choose-environment':
           if (
             keys !== 'environment,type' ||
@@ -547,7 +576,11 @@ export async function createWorkshop(
         ? { undoCount: 0, redoCount: 0 }
         : sameData(current.blueprint, next)
           ? current.editing
-          : { undoCount: Math.min(historyLimit, past.length + 1), redoCount: 0 };
+          : {
+              undoCount: Math.min(historyLimit, past.length + 1),
+              redoCount: 0,
+              ...(command.type === 'replace-scene' ? { undoLabel: 'Scene edit' } : {}),
+            };
       await session.replaceConfiguration(nextCompiled.configuration, {
         blueprint: next,
         mapping: nextCompiled.mapping,
@@ -559,7 +592,7 @@ export async function createWorkshop(
         past.length = 0;
         future.length = 0;
       } else if (!sameData(current.blueprint, next)) {
-        retain(past, current.blueprint);
+        retain(past, current.blueprint, command.type === 'replace-scene' ? 'Scene edit' : null);
         future.length = 0;
       }
       return result(true);
@@ -587,8 +620,16 @@ export async function createWorkshop(
         reject('INVALID_CHECKPOINT', 'metadata');
       if (
         !data.editing ||
-        Object.keys(data.editing).sort().join(',') !== 'redoCount,undoCount' ||
-        !Object.values(data.editing).every(
+        ![
+          'redoCount,undoCount',
+          'redoCount,undoCount,undoLabel',
+          'redoCount,redoLabel,undoCount',
+          'redoCount,redoLabel,undoCount,undoLabel',
+        ].includes(Object.keys(data.editing).sort().join(',')) ||
+        ['undoLabel', 'redoLabel'].some(
+          (key) => data.editing[key] !== undefined && data.editing[key] !== 'Scene edit',
+        ) ||
+        ![data.editing.undoCount, data.editing.redoCount].every(
           (value) => Number.isSafeInteger(value) && value >= 0 && value <= historyLimit,
         )
       )

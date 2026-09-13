@@ -93,6 +93,7 @@ try {
   await page.screenshot({ path: `${out}/compact.png` });
   // A second ordinary authored rig starts with near-limit tensile preload.
   await page.getByRole('button', { name: 'New', exact: true }).click();
+  await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
   await place('Beam', [0, 1, 0]);
   await place('Spacer block', [0.4725, 0.985, 0]);
   await requestRope();

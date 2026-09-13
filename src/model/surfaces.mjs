@@ -1,6 +1,6 @@
 import { partPrimitives, CYLINDER_SEGMENTS, shaftSegments } from './geometry.mjs';
 import { CATALOG } from './catalog.mjs';
-import { environmentObstacles } from './environment.mjs';
+import { sceneObjectDescriptors } from './environment.mjs';
 import { normalizeQuaternion, multiplyQuaternion, rotateVector } from './transforms.mjs';
 export { multiplyQuaternion, rotateVector } from './transforms.mjs';
 // M3b planar mounting. Frames use X outward, Y along u, Z along v; SI metres/radians.
@@ -268,7 +268,7 @@ export function surfaceConnectionAligned(blueprint, edge) {
 }
 /** Admit solid placement. Aligned closed mechanisms are ordinary authored graphs. */
 export function validatePlacementGeometry(blueprint) {
-  for (const [index, obstacle] of environmentObstacles(blueprint.environment).entries()) {
+  for (const [index, obstacle] of sceneObjectDescriptors(blueprint.environment).entries()) {
     const bounds = {
       position: obstacle.position,
       rotation: obstacle.rotation,
@@ -282,6 +282,19 @@ export function validatePlacementGeometry(blueprint) {
           path: `/parts/${partIndex}/environment/${index}`,
         });
   }
+  const obstacles = sceneObjectDescriptors(blueprint.environment).map((o) => ({
+    position: o.position,
+    rotation: o.rotation,
+    envelopeHalf: o.halfExtents,
+    envelopeKind: o.shape,
+  }));
+  for (let i = 0; i < obstacles.length; i++)
+    for (let j = i + 1; j < obstacles.length; j++)
+      if (solidsOverlap(obstacles[i], obstacles[j]))
+        throw Object.assign(Error('SURFACE_OVERLAP'), {
+          reasonCode: 'SURFACE_OVERLAP',
+          path: `/environment/objects/${j}`,
+        });
   const overlap = findPlacementOverlap(blueprint.parts);
   if (overlap)
     throw Object.assign(Error('SURFACE_OVERLAP'), {

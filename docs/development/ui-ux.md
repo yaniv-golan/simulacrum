@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"e111ad301465bdd9cebe050a6a31505ed07e12205a55d8eae8e19687d20cbaa8","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"22977996712522a944e697f50c11e48c4a71798106af817a4c3dfafb0e0e63fc","disposition":"still accurate","rationale":"No entry: lifecycle fixes and measurement endpoint labels add no lesson or new mechanical capability. Existing controls and requested explanations remain sufficient."} -->
+<!-- doc-review {"version":1,"fingerprint":"ef842f5c3f976f266fda787080aa4585e1ad8f014cb90346cde757ff50e98354","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"f60c9a0855167d4170909eb344b3619c682741abdccbfa110faa4bf7786fe860","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): no entry: lifecycle fixes, measurement endpoint labels and shader warmup add no player task, lesson, example or mechanical capability; existing controls and explanations suffice."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"3a134a607809ccef8af8aa706c7a0ef1a03a13be6041d2654bc97af96b9b3790","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"0c1347896199af0fbcf4bf8c3e87e405fd7ceb3b793f5acb3817799d7edaabf2","disposition":"still accurate","rationale":"No surface is added or displaced. Unexpected before-draw errors use the existing status message and pause the clock, while draw scheduling survives for existing recovery controls. Ordinary command exits from exploded inspection remain unchanged; view cache handling alone distinguishes equivalent content."} -->
+<!-- doc-review {"version":1,"fingerprint":"2ffcff6281433fe4cba18553a109ebc40232d8d61ac7c1ddcd7c3a04fb74be21","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"b90978a9f4c8cb93b3cddf85a5d574057b88a8c04753b183dae5e1037dab398f","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): no surface is added or displaced: before-draw errors use the existing status message and pause the clock while draw scheduling survives for recovery controls, the machine-camera overlay keeps its existing lifecycle, and startup warmup meshes are removed before the authored scene renders."} -->
 
 
 
@@ -176,6 +176,24 @@ Rope geometry follows physical nodes in Machine view and is hidden in exploded v
 Its contextual engineering explanation identifies stretch, damping and load limits
 as uncalibrated assumptions of the simplified nylon model.
 
+Paused camera images retain an explicit paused label even when view entry lands on
+an exposure boundary. Feedback screenshots follow the visible canvas without changing
+the optical sample.
+
+Cameras are discoverable through catalog search and the Sensors category. Beginning
+catalog placement returns to workshop view so the placement preview remains visible.
+The selected camera inspector owns entry into the requested machine view and its
+photo shortcut. The optional one-metre viewing cone is a temporary workshop-only
+inspection guide, removed on selection change and hidden in machine view; it is not
+a depth sensor or part of photographs. [Camera controls](../../src/presentation/camera-controls.mjs#source)
+replace orbit/edit tools while viewing, keep vehicle controls and recovery reachable,
+and restore the orbit on exit. Build is an explicitly unpowered placement preview;
+Run shows power/live/stale/failure status; Paused may retain the identified old image.
+The requested Photos dialog owns inspection, PNG/details export and explicit clearing.
+Opening it releases held drive keys. Retained photos remain retrievable after camera
+deletion and retries until this page closes. Camera help teaches mounting repair in
+context; no additional learning entry is admitted for this delivery.
+
 The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic
 regulation shows measured and target total spring length, rather than extension from
 rest length. Invalid targets preserve the accepted setting and explain the allowed
@@ -198,11 +216,34 @@ teaching or an active attempt. None of these surfaces grants broader observation
 or inserts a permanent sensor dashboard. Optional contact/range/tilt/joint/motion
 variants stay within the learning example collection. The passive loaded-pad variant invites an aluminium-to-steel material edit; tilt and encoder variants invite mount, zero and sign changes.
 
-The document controls expose a Build-only Flat / Rounded bump environment choice;
-Run and Paused retain its value without admitting an edit. The saved preset supplies
-the same geometry to simulation, workshop rendering and recording review. The header
-wraps its existing control groups on narrower workbenches so Environment, Help and
-other document/run actions remain visible.
+The document controls expose Choose scene and Edit scene in place of the old
+Environment selector. The [scene editor](../../src/presentation/scene-editor.mjs#source)
+replaces catalogue and inspector content while Editing scene is active; Done restores
+the preceding machine context. Scene objects are selected in this scope only, and
+machine parts remain protected. Move/Rotate handles and canvas positioning change
+a draft; Apply scene publishes one ordinary command. V/W/E select the same tools
+as their buttons; arrows and Page Up/Down move the proposal, and Alt plus these
+keys rotates it. Space retains Run/Pause and period retains single-step through
+the existing workshop handler, including while scene editing remains open in Run or Paused.
+Unapplied scene drafts still block Run. Text fields retain native keyboard editing. A preview hides committed
+scene meshes, including objects proposed for removal, and Cancel restores them.
+Pointer capture loss or blur ends a gizmo gesture without publishing authored state. Frame scene explicitly frames
+the physical setup without changing authored poses. Run/Paused retain the scene;
+editing requires Build and Run requires finishing or cancelling a preview.
+
+The bounded scene browser offers built-in and independently saved snapshots, an
+actual-geometry footprint preview, scene-only import/export and explicit replacement
+preview. Cancelling replacement retains the previous draft. Storage failure preserves
+saved data and offers export recovery. Shared [document proposals](../../src/presentation/document-proposal.mjs#source)
+bind scene and assembly previews to source document/cursor, require stale revalidation,
+exclude duplicate/pending actions and reconcile uncertain replies against the exact
+result in the source session. Context switches preserve camera and workshop history.
+Detailed scene controls leave with selection and the browser leaves on dismissal.
+
+Learning admission is **extend** for the existing suspension comparison: Edit scene
+permits an independent bump edit, and comparisons still require matching scene,
+approach speed and measurement window. The scene editor itself adds **no entry**;
+Flat floor, Bump test, Hill climb and Steps are physical presets, not new lessons.
 
 Measurements retains whole-machine motion and boundary warnings, and shows vertical
 motion for the selected body when requested. Its acceleration value is the RMS of
@@ -254,11 +295,11 @@ ordinary toolbar. The introductory activities identify their format and outcome:
 rolling build with an independent motor-setting attempt, a keyboard driving task, and
 a spring-settling experiment. The spring inspector offers a requested damping comparison
 through the ordinary Damping edit and Undo, preserving other tuning instead of loading
-a second preset. Existing machines
-require explicit replacement confirmation, with Download, Cancel and an explicit
+a second preset. Existing machine or nondefault scene work, including changed floor
+settings with zero parts and obstacles, requires explicit replacement confirmation, with Download, Cancel and an explicit
 replace action. A browser download request is not proof of a saved file: after download,
 the player confirms they saved it before opening. Cancel and download failure preserve
-the machine. [Example loading](../../src/application/workshop-app.mjs#source) uses ordinary load admission without an intermediate empty
+the complete workshop. New, file opening and [example loading](../../src/application/workshop-app.mjs#source) uses ordinary load admission without an intermediate empty
 machine; a rejected replacement keeps the dialog open. The catalogue retains focus,
 expanded groups and scroll while simulation updates. Starting examples requires Build.
 
@@ -376,8 +417,19 @@ with independently scrollable contents and a reachable controls disclosure. The 
 area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
+Powered Lamp uses the searchable parts catalog, ordinary surface mounting and power/signal wiring.
+Its selected inspector owns Light color, Brightness and Beam spread in Build, with
+actual input, requested/delivered watts and modeled light output in Run/Paused.
+Black tint warns that output is visually dark while consuming power. The existing
+requested part help explains receiver replacement of default-on behavior, weak supply,
+restart and the eight-lamp/no-shadow rendering limit. These controls leave with selection,
+displace no unique action and add no permanent panel. Learning admission is **no entry**:
+existing power and receiver explanations teach the same connection concept; contextual
+lamp help suffices. A powered status lamp does not establish another actuator's success.
+
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"c869ac0bf7ed40a22114c1264690970210bc37e58ff6bb8fdf2dcbf475e5866b","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"faf88dd744bc27d842f751ec11a289448ecfd3ab13b4d4fc9bbfce16dc51ee5a","disposition":"still accurate","rationale":"Remote setup now describes footer ownership; the required targeting, scroll, focus, cancellation and overlap checks are unchanged. Inspector, catalog, local recording and feedback layout must still be exercised on the repaired build, and neither documentation review nor automation supplies satisfaction or target-player acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"e48aab39b75868772cfc400a51cf535afc99e2cc80cd28986428b95308738bd7","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"90132dfce169763d0ea4449ae369a8efe43762aa8700b0c90993e996736410c8","disposition":"still accurate","rationale":"Workbench content startup now completes before the six-second interaction deadline. The same content lifecycle, preservation, independent attempts and nonmutating help assertions remain required; automation still does not supply human acceptance."} -->
+
 
 
 Use the manifest's `workbench-content-lifecycle` invariant and
@@ -395,7 +447,12 @@ preserves other spring tuning. It also checks cancellation of example replacemen
 and the gear extension: construction from an empty workshop, palette insertion,
 mesh disconnect/reconnect without
 movement, Undo, downloaded save/reload and physical stepping.
-Existing manipulation, inspector, mirror, connection and input
+The [scene journey](../../scripts/verify-authorable-scenes.mjs#source) covers authored
+scene editing, pointer and keyboard tools, chronological history, a driven ramp
+attempt and edited retry, library reuse, scene-only import/export and replacement/download
+protection. It also exercises invalid loading, long saved lists and zoomed layouts.
+[Editor controls](../../test/scene-editor.test.mjs#source) check real transform controls,
+preview visibility and shared reconstruction geometry without a GPU. Existing manipulation, inspector, mirror, connection and input
 checks retain their guarantees when locators move. Extend the appropriate check for
 new behavior; demonstrate new tests failing before the repair. Do not bless arbitrary
 word counts, screenshots or button counts as proof of good design.

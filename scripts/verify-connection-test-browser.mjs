@@ -272,6 +272,7 @@ try {
   await page.locator('[data-command=build]').click();
   evidence.assert('equal', [await wiring.isChecked(), false, 'restores build preference']);
   await page.getByRole('button', { name: 'New', exact: true }).click();
+  await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
   evidence.assert('equal', [
     await wiring.isChecked(),
     false,

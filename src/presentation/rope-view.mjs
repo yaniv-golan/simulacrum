@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 /** Retained piecewise-linear rope geometry from completed physical node centres.
  * Cylinders have no simulated collision surface; the inspector states that domain. */
-export function createRopeView(scene) {
+export function createRopeView(scene, { doubleSided = false } = {}) {
   const entries = new Map(),
     axis = new THREE.Vector3(0, 1, 0);
   function remove(entry) {
@@ -23,7 +23,11 @@ export function createRopeView(scene) {
         if (!entry) {
           const group = new THREE.Group(),
             geometry = new THREE.CylinderGeometry(1, 1, 1, 8, 1),
-            material = new THREE.MeshStandardMaterial({ color: 0xc79a62, roughness: 0.9 });
+            material = new THREE.MeshStandardMaterial({
+              color: 0xc79a62,
+              roughness: 0.9,
+              side: doubleSided ? THREE.DoubleSide : THREE.FrontSide,
+            });
           const meshes = row.points.slice(1).map(() => {
             const mesh = new THREE.Mesh(geometry, material);
             group.add(mesh);

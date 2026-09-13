@@ -5,7 +5,17 @@ then run the machine to understand its motion and failure.
 
 The current construction loop includes motors, cells, keyboard receivers, surface
 mounts, wheel hubs, powered steering hinges, mirroring, Undo/Redo and machine saves.
-Human acceptance, sandboxed programs and locomotion qualification remain incomplete.
+Player-authored rules and a restricted TypeScript subset execute through bounded WASM
+programs. Shared sensing, gears, springs, rope, reusable assemblies, powered cameras
+and lamps extend the construction loop.
+
+Implementation is distinct from qualification. Focused automated checks cover these
+capabilities, but only source-bound completion evidence establishes verification for
+a particular build. The manifest currently declares M3b; designated-player F1 acceptance
+remains pending. The broader hostile-program S1 qualification, physical feasibility
+probe, rover Course and legged Course qualification remain incomplete. The
+[manifest](scripts/manifest.json) owns current allocation and registered checks;
+`npm run gate` evaluates it rather than inferring progress from available features.
 The `main` branch contains the v2 workshop. The previous implementation is retained
 at the [`v1-final-2026-09-11` tag](https://github.com/yaniv-golan/simulacrum/tree/v1-final-2026-09-11)
 and `archive/v1` branch for reference. Legacy v1 machine files are not a supported

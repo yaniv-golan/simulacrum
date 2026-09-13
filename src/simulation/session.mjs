@@ -1,3 +1,4 @@
+import { createCameraState } from './camera-state.mjs';
 import { sampleSensor } from './sensors.mjs';
 import { admitSensorReading, SENSOR_LIMITS } from '../model/sensors.mjs';
 import { DT, PHASES } from '../model/tick.mjs';
@@ -34,6 +35,7 @@ function admitConfiguration(input) {
   )
     throw Error('INVALID_CONFIGURATION');
   const nodes = [
+    ...(c.power.lamps ?? []),
     ...c.power.cells,
     ...c.power.motors,
     ...c.power.receivers,
@@ -153,6 +155,9 @@ export async function createSession(
     ...hostPrograms,
     ...installedPrograms,
   ]);
+  const cameraNodes = (c) => c.power.sensors.filter((s) => s.kind === 'camera').map((s) => s.node);
+  let cameraIds = cameraNodes(config);
+  let cameras = createCameraState(cameraIds);
   let receiverControl = createReceiverArbiter(receiverControlConfiguration(config.power));
   let tick = 0,
     accumulator = 0,
@@ -252,6 +257,7 @@ export async function createSession(
     // Publication admits new readings while reusing the already immutable prior bodies.
     sensors,
     ...(installedPrograms.length ? { programs: dispatcher.inspect() } : {}),
+    ...(cameraIds.length ? { cameras: cameras.read() } : {}),
     receiverControl: receiverControl.snapshot(),
     phaseTimings: timings,
     phaseStatus: PHASE_STATUS,
@@ -272,6 +278,7 @@ export async function createSession(
       ...(installedPrograms.length ? { programs: dispatcher.snapshot() } : {}),
       energy,
       power: power.snapshot(),
+      ...(cameraIds.length ? { cameras: cameras.read() } : {}),
       receiverControl: receiverControl.snapshot(),
       physics: world.snapshot(),
       configuration: config,
@@ -292,6 +299,13 @@ export async function createSession(
   function validCommand(command) {
     if (!command || typeof command !== 'object') return false;
     const keys = Object.keys(command).sort().join(',');
+    if (command.type === 'camera-photo')
+      return (
+        keys === 'id,node,type' &&
+        cameraIds.includes(command.node) &&
+        Number.isSafeInteger(command.id) &&
+        command.id > 0
+      );
     if (command.type === 'impulse')
       return (
         keys === 'body,type,value' &&
@@ -355,6 +369,11 @@ export async function createSession(
       sequence >= Number.MAX_SAFE_INTEGER - (suspension ? 0 : 1)
     )
       return no('INPUT_LIMIT');
+    if (command.type === 'camera-photo') {
+      const admission = cameras.request(command.node, command.id);
+      if (admission === 'duplicate') return { ok: true, reasonCode: 'OK', path: '' };
+      if (admission !== 'accepted') return no('BUSY');
+    }
     const event = { tick: tick + 1, sequence: sequence++, command: copy(command) };
     pending.push(event);
     history.push(event);
@@ -628,6 +647,23 @@ export async function createSession(
                       world.ropeEnergy().ropeSplitWorkJ
                     : 0),
               };
+              if (cameraIds.length) {
+                const cameraPower = power.read().sensors;
+                const cameraReceivers = receiverControl.snapshot().receivers;
+                cameras.step(
+                  next,
+                  cameraIds.map((node) => {
+                    const source = config.power.signalWires.find((w) => w[1] === node)?.[0];
+                    const receiver = cameraReceivers.find((r) => r.node === source);
+                    return {
+                      node,
+                      powered: cameraPower?.find((s) => s.node === node)?.powered === true,
+                      level: receiver?.duty ?? 0,
+                      owner: receiver ? `${source}:${receiver.mode}` : '',
+                    };
+                  }),
+                );
+              }
               tick = next;
               pending = [];
               break;
@@ -764,7 +800,8 @@ export async function createSession(
         ...hostPrograms,
         ...admittedPrograms,
       ]),
-      nextReceiverControl = createReceiverArbiter(receiverControlConfiguration(nextConfig.power));
+      nextReceiverControl = createReceiverArbiter(receiverControlConfiguration(nextConfig.power)),
+      nextCameras = createCameraState(cameraNodes(nextConfig));
     replacing = true;
     let candidate;
     try {
@@ -794,10 +831,12 @@ export async function createSession(
         sensors: nextSensors,
         energy: emptyEnergy(candidate.mechanicalEnergy()),
         power: nextPower.read(),
+        ...(cameraNodes(nextConfig).length ? { cameras: nextCameras.read() } : {}),
         receiverControl: nextReceiverControl.snapshot(),
       };
       if (nextConfig.joints.some((j) => j.kind === 'rope')) nextFrame.ropes = candidate.ropes();
       else delete nextFrame.ropes;
+      if (!cameraNodes(nextConfig).length) delete nextFrame.cameras;
       const nextAnchor = copy({
         version: 3,
         tick: 0,
@@ -807,6 +846,7 @@ export async function createSession(
         sensors: nextSensors,
         energy: emptyEnergy(candidate.mechanicalEnergy()),
         power: nextPower.snapshot(),
+        ...(cameraNodes(nextConfig).length ? { cameras: nextCameras.read() } : {}),
         receiverControl: nextReceiverControl.snapshot(),
         physics: candidate.snapshot(),
         configuration: nextConfig,
@@ -825,6 +865,8 @@ export async function createSession(
       dispatcher = nextDispatcher;
       installedPrograms = nextPrograms;
       receiverControl = nextReceiverControl;
+      cameras = nextCameras;
+      cameraIds = cameraNodes(nextConfig);
       torques = [];
       receipts = [];
       energy = emptyEnergy();
@@ -881,6 +923,7 @@ export async function createSession(
         'energy',
         'power',
         'receiverControl',
+        ...(cameraIds.length ? ['cameras'] : []),
         'physics',
         'configuration',
         'identity',
@@ -1024,8 +1067,23 @@ export async function createSession(
         dispatcher.restore(before);
       }
     }
+    const candidateCameras = createCameraState(cameraNodes(config));
+    candidateCameras.restore(cp.cameras ?? [], cp.tick);
+    for (const camera of cp.cameras ?? []) {
+      const source = config.power.signalWires.find((w) => w[1] === camera.node)?.[0];
+      const receiver = cp.receiverControl.receivers.find((r) => r.node === source);
+      const owner = receiver ? `${source}:${receiver.mode}` : '';
+      if (
+        camera.powered !==
+          (cp.power.sensors.find((s) => s.node === camera.node)?.powered === true) ||
+        (cp.tick > 0 && camera.owner !== owner) ||
+        (!camera.powered && camera.armed)
+      )
+        invalid();
+    }
     const candidatePower = createPowerNetwork(config.power);
     candidatePower.restore(cp.power);
+    if (cp.power.lamps?.some((l) => l.steps !== cp.tick)) throw Error('INVALID_POWER_CHECKPOINT');
     const candidateControl = createReceiverArbiter(receiverControlConfiguration(config.power));
     candidateControl.restore(cp.receiverControl);
     if (cp.receiverControl.tick !== cp.tick) invalid();
@@ -1071,6 +1129,7 @@ export async function createSession(
     contactSample = world.contacts();
     power = candidatePower;
     receiverControl = candidateControl;
+    cameras = candidateCameras;
     torques = [];
     receipts = [];
     energy = copy(cp.energy);

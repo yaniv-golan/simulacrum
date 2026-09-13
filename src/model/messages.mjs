@@ -1,5 +1,8 @@
 import { REASON_CODES } from './reasons.mjs';
 const messages = {
+  SCENE_OBJECT_LIMIT: 'A scene supports up to 32 objects. Delete an object before adding another.',
+  SCENE_BODY_LIMIT:
+    'The machine, scene and floor exceed the 4,097-body limit. Remove a part or scene object before retrying.',
   MIRROR_UNREPRESENTABLE:
     'These parts cannot be mirrored with their current shapes or connections.',
   UNKNOWN_SURFACE: 'Choose a highlighted mounting surface.',
@@ -73,6 +76,7 @@ const messages = {
   NOTHING_TO_REDO: 'There are no undone edits to redo.',
   BUSY: 'The previous action is still finishing. Try again in a moment.',
   EDIT_REQUIRES_BUILD: 'Return to Build before changing parts.',
+  CAMERA_LIMIT: 'This machine already has eight cameras. Remove one before adding another.',
   INVALID_POWER_CONFIGURATION:
     'The electrical configuration is invalid. Check the power connections.',
   UNSUPPORTED_POWER_TOPOLOGY:

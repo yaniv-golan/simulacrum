@@ -9,12 +9,13 @@ const browserEvidence = createBrowserEvidence();
 const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
   errors = browserEvidence.errors;
-page.setDefaultTimeout(6000);
 
 const directory = browserArtifactPath('artifacts/motion-diagnostics');
 mkdirSync(directory, { recursive: true });
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.waitForFunction(() => window.workshopProbe);
+  page.setDefaultTimeout(6000);
   await placeCatalogPart(page, 'poweredMotor');
   await page.locator('[data-command=check-machine]').click();
   const dialog = page.getByRole('dialog', { name: 'Check machine' });
@@ -33,6 +34,7 @@ try {
   ]);
   await page.keyboard.press('Escape');
   await page.locator('[data-command=new]').click();
+  await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 16; i++) await page.locator('[data-command=guide-step]').click();

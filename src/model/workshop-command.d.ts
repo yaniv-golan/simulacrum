@@ -9,7 +9,7 @@ import type {
   Rotation,
 } from './generated/blueprint-types.js';
 export interface Cursor {
-  sessionId: string;
+  session: string;
   epoch: number;
   revision: number;
   tick: number;
@@ -40,6 +40,11 @@ export type WorkshopCommand =
       property: 'friction' | 'restitution';
       value: number | null;
     }
+  | {
+      type: 'replace-scene';
+      environment: NonNullable<Blueprint['environment']>;
+      expectedCursor: Cursor;
+    }
   | { type: 'choose-environment'; environment: 'flat' | 'rounded-bump' }
   | { type: 'create-assembly'; name: string; ids: string[]; ports: AssemblyPort[] }
   | { type: 'edit-assembly'; id: string; name: string; ids: string[]; ports: AssemblyPort[] }
@@ -63,6 +68,7 @@ export type WorkshopCommand =
   | { type: 'undo' | 'redo' }
   | { type: 'control'; id: string; duty: number }
   | { type: 'control-release'; id: string; duty: number }
+  | { type: 'camera-photo'; id: string; requestId: number; epoch: number }
   | { type: 'suspend-controls' }
   | { type: 'control-mode'; id: string; mode: 'manual' | 'automatic' | 'learned' | 'off' }
   | { type: 'regulator-target'; id: string; target: number }

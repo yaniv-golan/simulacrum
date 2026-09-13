@@ -92,7 +92,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"32cf7a9e3bcc5b9e9f4dbbc1a0e459bcb8c8b09958557aa0727985a6231b5d3a","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"be06e1d56f35b6762ff121541d3f557c7789192b08013354188dac231c807021","disposition":"still accurate","rationale":"The linked remote setup now places feedback in the existing footer instead of a second row. Verification commands, same-source execution, runtime admission and the distinction between automation and human acceptance are unchanged; current rendered checks remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"a8667fb6f7e19401553fb9ddffcbb31276cee07a54a6286a541ec802d3724236","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"616f212aa5daaaf83a1dc74d19855989fef6e27dfc60eda954e5b0358dff24e5","disposition":"updated","rationale":"The retained progress guidance distinguishes implemented capability, source-bound automation, human acceptance and qualification. The release operations policy still limits experimental deferrals and does not convert merge readiness into milestone qualification."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -108,6 +108,17 @@ because the changed feature appears unrelated.
 - `npm run format` applies the pinned formatter; generated validators are excluded.
 - `node scripts/generate-schema.mjs` refreshes generated validation after schema edits.
 - `npm run replay -- <bundle.json>` checks a failure bundle against the current implementation and runtime.
+
+When reporting progress, separate four outcomes: implemented capability, automation
+on identified source bytes, human acceptance under the versioned protocol, and milestone
+qualification. Local and merge readiness do not evaluate the latter two. An explicitly
+authorized experimental publication may defer only the checks allowed by the
+[release exception policy](playtesting.md#release-operations); it never advances a milestone.
+Inspect the report's detailed automation, humanAcceptance and qualification outcomes,
+not a top-level status alone. A historical report or an originStillMatches value describes
+the source checked at that invocation, not later edits or today's checkout. Compare its
+source/build identity with the candidate being claimed. Registration of a check is not
+an executed pass, and a feature assigned to the current milestone is not qualification.
 
 Install browser dependencies once with `npx playwright install chromium chrome`.
 Linux tab capture needs Xvfb. Follow [playtesting](playtesting.md#remote-setup) for recordings and
@@ -133,7 +144,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"5fe002ee1ea739f5fd89dfcd8b5dd9d1be48db48875a68ec3d288b32bcb53e0e","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"14b12f9c30ba086b286673ebbc8e2a808c6fc6dbd2b162f10b377588ca27c7e8","disposition":"still accurate","rationale":"Generated reference now includes the render lifecycle probe and submission tracker controls. The regenerate, section-specific review and exact-source closure workflow is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b07edc2823c2b9c8c777503710116dd81ce9be0dcee895e21e62e8181c0b3579","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"feaf9cc2bee36fddbcb2d46e1cc8009383feddb00f1ccbcd80d2ed5f8a755b4e","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): the regenerated reference now lists the render lifecycle probe and submission tracker controls alongside the scene owners; the regenerate, section-specific review and exact-source closure workflow is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +277,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"f5389fb3862717963b8c36b97df12f42a230343ed5d4ca7208e762d82de3ca2f","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"2a75e6ad59106a97872736b090b6c02eb9696c37124ae9f78630a5adf10b2a09","disposition":"still accurate","rationale":"The new render lifecycle check is explicitly exclusive and uses the existing probe server environment. Runtime reflection changes do not alter selection, scheduling, concurrency or historical hint policy; the registered check expands required coverage."} -->
+<!-- doc-review {"version":1,"fingerprint":"3a709cc2734a564eefaefb755800c58ca6918ae4710d8dab7aa49dc1e65280c7","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"3f6bcff97ed6ecba8303e6698d21c592d23b80f081e8595429aa7938f6d69161","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): the new verify-render-lifecycle check is exclusive on the probe environment and its addition to the root set is the only cause of the regenerated roots and consumer hashes (reviewed and applied through browser:scopes with passing witnesses); immutable body admission and the submission tracker do not alter selection, scheduling or concurrency policy."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -446,7 +457,8 @@ Summary-only discovery does not replace execution evidence. [Local completion](.
 [final verification](../../scripts/verify-final.mjs#implementation) also record
 a fresh failed outcome when runtime, arguments or base-revision admission fails.
 Use the [browser evidence helpers](../../scripts/browser-evidence.mjs#source) for repeated interactions:
-`loadAndWait(page, file, { ok })` uploads through the file input and returns a fresh matching
+`loadAndWait(page, file, { ok })` uploads through the file input, explicitly accepts
+the full-workshop replacement prompt when needed, and returns a fresh matching
 command receipt, including rejected loads. The [application-owned receipt sequence](../../src/application/workshop-app.mjs#source) advances
 on completed attempts even when the simulation cursor does not change.
 `assertRejectedEdit({ snapshot, action })` compares the caller's consequential state projection
@@ -506,7 +518,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"5595ec91de15985bed9f358fefd5fc06a365de8bb36c83f23ad73d59063c7bf6","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"43e404b880b62fefb53e2dbfb0d892cac4392c690b2c681dd0625b046c624c46","disposition":"still accurate","rationale":"New renderer lifecycle and metric tests change candidate bytes and require fresh completion. Capture ownership, frozen source receipts and merge-base selection remain unchanged; no receipt is reused for the follow-up."} -->
+<!-- doc-review {"version":1,"fingerprint":"c4f27aa9379a53717dc6c934b14dc492d06a13f7b4614918a7d372efc9a6ea6c","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"db9f7774734e81dcf4cfcd89ac8023ade86b1015ed16dc2c6a588010695f4b38","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): the merged manifest, observation admission and application measurement lifecycle change candidate bytes and require fresh completion on the integrated source; capture ownership, frozen receipts and merge-base selection are unchanged, and the F2 probe remains a development probe."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

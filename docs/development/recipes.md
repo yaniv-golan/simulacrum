@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"3d68df5dc85a63e5ee4519e6526197a3135757857f0bb671f23eec892e649575","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"438db8d466d9067c66d60d0f547e802fd4067711b2128f8a2dc2ded201379a4b","disposition":"still accurate","rationale":"The finite body constructor changes copying after physical construction; it does not change catalog selection, schema admission, authored material, geometry, compiler properties or part registration."} -->
+<!-- doc-review {"version":1,"fingerprint":"db5c6cdfb4260b1bbcdfd695852935b43f3f18e58926fb4de7099167d53c792b","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"4daba1ee27f37ca5a60e32349c1b4d1d227a7acedbc2162eef5e4392dbc5abf6","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): the finite body constructor copies after physical construction and door reads are cached per physical state; catalog selection, schema admission, authored material, lamp limits, geometry and part registration are unchanged."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -64,9 +64,14 @@ latch opens; it does not become a second releasable joint.
 [Release authoring controls](../../test/release-authoring.test.mjs#source) exercise
 material choices, conflict rejection and ordinary editing history.
 
+Camera additions must preserve the [optical profile](../../src/model/camera.mjs#source),
+[completed exposure owner](../../src/simulation/camera-state.mjs#source), ordinary
+power admission and [copy/mirror controls](../../test/camera-integration.test.mjs#source).
+The catalog declares local reflection symmetry; it must not be inferred from a part ID.
+
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"542df49f8a2920f04d164354ab7327dc600994d550d5350ed8fbac4b498d6870","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"3ddba9570828264ea1865a7de55c1bf18fbe27403b2ad7c778082233f2e8ec44","disposition":"still accurate","rationale":"Indexed FNV preserves checkpoint bytes and numeric body admission preserves completed samples. Command validation, atomic candidate publication, no-op/rejection behavior and authored history remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"819a60f3938d9db7a7bb9fb7beed336eed9f5c32316b303ebbda3f45809c0c8e","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"9ee89319c2104658242600406aea63b880ec8512d83a24e18094c2cbf011de6c","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): indexed FNV preserves checkpoint bytes and numeric body admission preserves completed samples; replace-scene remains an atomic expectedCursor edit and camera-photo a Run-only input, and command validation, atomic publication and authored history are unchanged."} -->
 
 
 
@@ -81,9 +86,23 @@ mounting, adjustment and Undo. Add malformed input, accepted effect, rejected-st
 identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing contract assertions](../../test/contracts/editing.mjs) as shown by [mixed editing examples](../../test/editing-contracts.test.mjs); inspect
 `node scripts/explain-invariant.mjs rejected-edit-atomicity`.
 
+Scene edits use `replace-scene` with `expectedCursor`, whole-workshop admission,
+and the existing chronological history. The environment controls in
+[test/environment.test.mjs](../../test/environment.test.mjs#source) cover legacy
+geometry, authored scene identity, aggregate capacity, rejection and continuation.
+[Capacity transactions](../../test/scene-capacity.test.mjs#source) use a physically clear
+nearly-full workshop and retain Undo through replacement, duplication, import and load rejection.
+Combined capacity includes machine bodies, every distributed rope node, compiled scene solids and ground.
+[Scene preservation](../../test/scene-preservation.test.mjs#source) covers capture round trips,
+legacy visual events, current checkpoint continuation, machine measurements and sensor scope.
+
+The Run-only `camera-photo` request is an input event, not an authoring transaction.
+Validate epoch and request ID; accepted IDs deduplicate and a reserved exposure rejects
+busy without changing the completed cursor. Bytes and downloads belong to application.
+
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"42d0eb6c5cd4002a46ddbc4832259746c45a153991d7118f3f3985a249483886","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"78cbfd76c9153fe876229213070f4439f0ab43cf750ff21c19be9d90eda63fe6","disposition":"still accurate","rationale":"The added physics-to-model observation import has no input handler or UI action. Cursor guards, interaction cancellation, receiver keys and preview ownership retain the documented boundaries."} -->
+<!-- doc-review {"version":1,"fingerprint":"06c07885af4881fc0364bbbacf03b832888eb18bb555382aab17bdca42c49013","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"c596e870ac941837dce89071844b72be1354623f9ce8aa65e5488bf46f7ade3c","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): the physics-to-model observation import and typed native response vectors add no input handler or UI action; mirror startup waiting, cursor guards, cancellation, receiver keys and preview ownership keep their boundaries."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -132,7 +151,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"52eac0e72c017bb4172e94500ef972945f79f8bb176e6e7f713683418a8c2afe","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"d96bda70ee8c6d317d7b752bc30a27efc2922bf145fa5bc0d1e521104c9f256f","disposition":"still accurate","rationale":"Body fields and finite rejection remain unchanged while admission becomes specialized. Existing diagnostic quantities, consecutive-tick accumulation, missing-history behavior and health cadence remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"b3bea03a5c9704dea514cc6f47cadb853a3f335e42585b4c029030e4be3ac668","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"c0ed21a92afe3f950eca4e7f8ac305d476f5fd04e4d4a353e2e66a6794da7e6a","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): body fields and finite rejection are unchanged while admission is specialized; health explanations are refreshed on a bounded tick cadence in Run and immediately on failure, and scene/command additions grant diagnostics no simulation authority."} -->
 
 
 
@@ -167,7 +186,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"6a8858f9fce46e32c466359be99bc5c74e4e0683370cbe4d5654cfd96100855d","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ca44bee27e31f64fb93f6936ded6042f42f4bbbc7f0701d0133cebd51c39d291","disposition":"still accurate","rationale":"This follow-up changes presentation cache admission, application measurement lifecycle and F2 verification only. Power test names distinguish pending retry from session failure publication without changing assertions. Physics solver, step order, checkpoint bytes and state admission remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"2e91488a4d64c6c8a2a9109ab624ed42a6d93b483d436e6f5534fdadc11b796d","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"53279a1e0d0e035850163a92f3499667b0f54721a0078ddb9b73b9667dec2947","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): solver settings, step order, checkpoint bytes and state admission are unchanged; cached door reads retire on every physical mutation, completed contacts feed the following sensor sample, and power validates pending shape at step and the settled ledger at completion; the recipe still requires analytical controls, independent accounting and actual Course qualification."} -->
 
 
 
@@ -177,6 +196,15 @@ under [motor law](../../src/simulation/physics/law/motor.mjs) or
 [spring law](../../src/simulation/physics/law/spring.mjs). Configuration comes
 from the compiler; laws receive numerical inputs, not identities. The session owns
 phase ordering and one integration; do not introduce a second clock or hidden support.
+
+Fixed scene geometry comes from [environment descriptors](../../src/model/environment.mjs#source).
+The scene compiler unions matching adjacent boxes instead of exposing internal
+coplanar faces to contacts. Retain the frozen [contact controls](../../test/scene-contact.test.mjs#source):
+continuous/split trajectories and energy, admitted quaternion rounding and sign equivalents,
+raised-seam counterexample, analytical
+inclines and separately measured intentional edge drops. These are bounded development
+fixtures, not general contact or Course qualification. Render and pick individual
+authored descriptors while compiling the same occupied volume; no identity selects physics.
 
 Worked example: a motor-work change needs independent energy accounting in
 [impulse energy tests](../../test/impulse-energy.test.mjs#implementation), shared-body controls in
@@ -443,7 +471,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"bf4bac8a97dbcd730bed3ad87d2d055f97181e46ce5bce3f61ff833dc80b3dad","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"ce8e9f41d2f70e8d067a00e3f9e928626a4871dcc50d34a11d6b25a0d5f9bcda","disposition":"still accurate","rationale":"The new constructor runs on completed physical body values after compilation. Assembly insertion, material copy, reference remapping, complete-candidate validation and atomic authoring remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"5e8f2afd14e53fcabe970f016f5799b59f1b4f5409d0fee0c28e13ec952fdb91","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"78c3977a6b9f58599697e4e0874ff8d654a948b98fcaf4acd01d5264bd1add48","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): the finite constructor runs on completed physical values after compilation; assembly insertion, material copy, reference remapping, browser startup separation, complete-candidate validation and atomic authoring are unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -456,7 +484,7 @@ Authored references include travel `springBinding` and encoder `jointBinding` co
 from ordinary wiring. Check these references alongside endpoint remapping so an
 otherwise valid copy cannot silently measure the source machine's spring.
 Environment belongs to the receiving blueprint, not a captured assembly. Preserve
-that preset during insertion and validate placement against its canonical obstacles.
+that authored scene or legacy preset during insertion and validate placement against its canonical obstacles.
 The guided-wheel and [pin-ended strut](../../src/model/fixtures/articulated-suspension.mjs#symbol=createPinEndedStrut)
 modules are ordinary assembly captures. Their named external mounts must work through
 normal connection commands after insertion, save/load and proper rotation; retaining
@@ -534,9 +562,13 @@ together cover insertion selection and member shortcuts, Build-only repeat place
 rename focus, narrow-screen sorting, offset mounting with an intact shaft, in-place interface edits, decimal
 receiver tuning, saved settings, named targets, bounded navigation and diagnostic layout.
 
+Camera mirror admission uses the catalog local reflection axis to preserve the +Z
+lens frame. The generic copied-graph contract still owns authored material and wiring
+preservation; test optical orientation independently of the production frame helper.
+
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"20e206a604b3ad29cc95fe4420f67e3ad7f3a2d4158b3506c391d22025abd13b","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"e54e3f2bbdd353af0c0dd6892e352e0b6abda1829f20e89850e59db97e54d1f1","disposition":"updated","rationale":"Corrected authored-change detection guidance: equal-content replacement references retain the revision; content comparison occurs only on reference replacement. Real same-ID authored edits still invalidate dependent views."} -->
+<!-- doc-review {"version":1,"fingerprint":"0eb48057e817b47476d6eed9dcba67f51bf082227c0ad6d0507eed53bf6b8615","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"25ce9fbd087fe07b75846c2abedffcabbe62ae45b16a19fe278b737371f0d626","disposition":"updated","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): the merged guidance records both that warmup retains catalog and no-part-light shader variants disposed with the view, and that equal-content blueprint replacements retain the revision with content comparison only on reference replacement while same-ID authored edits still invalidate dependent views."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -570,7 +602,7 @@ provide cosmetic material response, subtle roughness grain and a disposable stud
 reflection field. Paint is nonmetallic surface treatment; exposed surfaces follow the
 authored material. These finishes do not change model material values. [Assembly
 thumbnails](../../src/presentation/assembly-thumbnails.mjs#implementation) compose the production connection and spring views at saved authored
-endpoints, including their geometry in framing and disposing temporary resources. Palette thumbnails retain their temporary meshes through one synchronous batch so shared shader programs stay available; a `finally` block releases all meshes, the preview environment and the renderer. The main renderer also warms the catalog material and shadow variants once before authoring starts. Those bounded resources remain outside the authored mesh map and completed readback, leave the scene immediately, and are released with the renderer. Surface mounts
+endpoints, including their geometry in framing and disposing temporary resources. Palette thumbnails retain their temporary meshes through one synchronous batch so shared shader programs stay available; a `finally` block releases all meshes, the preview environment and the renderer. The main renderer also warms the catalog material and shadow variants once before authoring starts. It retains both the catalog lighting configuration and the no-part-light shader variants, since even an unpowered lamp changes the shader light count. Those bounded resources remain outside the authored mesh map and completed readback, leave the scene immediately, and are released with the renderer. Surface mounts
 use the same model surface resolver as the workshop, retaining saved face offsets and
 part rotations; named ports retain their catalogue positions. Powered linear connections use
 the retained straight-rod view with guide-to-carriage endpoint ordering in either saved
@@ -679,7 +711,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"24dda9884d284c0b53fe5b8b5b3e9ee9ffcd9a11bf375eb680e18331f8ac8d02","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"d76ae352a92712f18843f955ec81e589bd45ea295708d7edf4b589ece92627b9","disposition":"still accurate","rationale":"Feedback layout and paused video segments do not change graphics quality selection, renderer timing or simulation stepping. The existing graphics policy and evidence boundaries remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"4f919eb695d21a8550c273bb2f3d0abd42161b9e6d336bc03dbd798e958ba30a","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"ef190d3e93f5c51d5f7472d868651fd6ddd825d1365b816c4a4ad106bed3948d","disposition":"updated","rationale":"Added bounded lamp-rendering semantics and registered optical/performance probes. Every admitted lamp remains present at all quality levels; measured automation remains distinct from hardware or player qualification. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses
@@ -709,3 +741,14 @@ blueprints, real-time stepping, visible scene pixels, resized canvas dimensions,
 and the existing 40 ms cadence budget after warmup. Quality reduction cannot promise
 that every machine or competing workload meets that budget; failure remains failure
 at the minimum level. Agent screenshots are not target-player acceptance.
+
+
+The [lamp renderer](../../src/presentation/lamp-view.mjs#symbol=createLampView) receives
+completed optical telemetry. Each admitted lamp retains one unshadowed spotlight and
+lens. A hard cone uses intensity = 0.01 × flux / (2π(1−cos half-angle)), so beam spread changes
+concentration without adding modeled flux. Display exposure and tint are illustrative;
+black tint is dark while electrical demand remains. No lamp shadows are offered, so
+light can pass through occluders. Quality reduction retains every lamp. The
+[lamp browser journey](../../scripts/verify-lamp-browser.mjs#source) and
+[eight-lamp measurement](../../scripts/verify-lamp-performance.mjs#source) are automated
+checks, not target-player or calibrated photometry evidence.

@@ -1,3 +1,4 @@
+import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -8,7 +9,6 @@ mkdirSync(out, { recursive: true });
 const browser = await evidence.launch({ profile: 'ui' });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } }),
   page = await context.newPage();
-page.setDefaultTimeout(6000);
 const observed = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
 async function snapshot(label) {
   const frame = await observed(),
@@ -28,6 +28,8 @@ async function snapshot(label) {
 try {
   await context.tracing.start({ screenshots: true, snapshots: true });
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.waitForFunction(() => window.workshopProbe);
+  page.setDefaultTimeout(6000);
   await page.waitForFunction(() => window.render_game_to_text);
   const emptyMachine = (await observed()).metadata.blueprint;
   await page.getByRole('button', { name: 'Assemblies', exact: true }).click();
@@ -164,7 +166,7 @@ try {
   ]);
   await libraryDialog.getByRole('button', { name: 'Close', exact: true }).click();
   // Load the UI-authored save through its actual file input; the library is not needed to resolve it.
-  await page.locator('input[type=file]').first().setInputFiles(`${out}/machine.json`);
+  await uploadWorkshopFile(page, `${out}/machine.json`);
   await page.waitForFunction(
     (expected) =>
       JSON.stringify(window.workshopProbe.observe().frames[0].metadata.blueprint) ===

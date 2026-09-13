@@ -1,3 +1,4 @@
+import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
@@ -7,10 +8,11 @@ const evidence = createBrowserEvidence(),
 mkdirSync(out, { recursive: true });
 const browser = await evidence.launch({ profile: 'ui' });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-page.setDefaultTimeout(6000);
 const read = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
 try {
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.waitForFunction(() => window.workshopProbe);
+  page.setDefaultTimeout(6000);
   evidence.assert('equal', [
     await page.locator('.starter-guide').isVisible(),
     false,
@@ -75,7 +77,7 @@ try {
   await page.getByRole('button', { name: 'Try driving example', exact: true }).click();
   evidence.assert('match', [
     await page.locator('.example-message').innerText(),
-    /Replace your current machine/,
+    /Replace your current workshop/,
   ]);
   await page.getByRole('button', { name: 'Cancel replacement', exact: true }).click();
   await page.getByRole('button', { name: 'Close examples', exact: true }).click();
@@ -121,14 +123,14 @@ try {
       throw Error('download unavailable');
     };
   });
-  await page.getByRole('button', { name: 'Download current machine', exact: true }).click();
+  await page.getByRole('button', { name: 'Download current workshop', exact: true }).click();
   evidence.assert('match', [await page.locator('.example-message').innerText(), /could not start/]);
   evidence.assert('deepEqual', [(await read()).metadata.blueprint, preserved]);
   await page.evaluate(() => {
     URL.createObjectURL = window.savedCreateObjectURL;
   });
   const downloadEvent = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download current machine', exact: true }).click();
+  await page.getByRole('button', { name: 'Download current workshop', exact: true }).click();
   const download = await downloadEvent;
   evidence.assert('deepEqual', [
     JSON.parse(readFileSync(await download.path(), 'utf8')),
@@ -233,14 +235,14 @@ try {
   const stable = (await read()).metadata.blueprint;
   await page.getByRole('button', { name: 'Measurements', exact: true }).click();
   evidence.assert('match', [await page.locator('.motion-values').innerText(), /Last run:/]);
-  await page.locator('input[type=file]').setInputFiles({
+  await uploadWorkshopFile(page, {
     name: 'invalid.json',
     mimeType: 'application/json',
     buffer: Buffer.from('{'),
   });
   await page.waitForFunction(() => document.querySelector('input[type=file]').value === '');
   evidence.assert('match', [await page.locator('.motion-values').innerText(), /Last run:/]);
-  await page.locator('input[type=file]').setInputFiles({
+  await uploadWorkshopFile(page, {
     name: 'same-machine.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(stable)),

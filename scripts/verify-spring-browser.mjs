@@ -1,3 +1,4 @@
+import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import assert from 'node:assert/strict';
 import { createBrowserEvidence } from './browser-evidence.mjs';
@@ -62,11 +63,21 @@ try {
   environmentFixture.parts.push(createPart('beam', 'environment-beam', [0, 2, 0]));
   writeFileSync(`${out}/environment.json`, JSON.stringify(environmentFixture));
   await evidence.loadAndWait(page, `${out}/environment.json`);
-  const environment = page.getByRole('combobox', { name: 'Environment', exact: true });
-  await environment.selectOption('rounded-bump');
+  const environment = page.getByRole('button', { name: 'Choose scene', exact: true });
+  const chooseEnvironment = async (name) => {
+    await environment.click();
+    await page
+      .getByRole('button', { name: name === 'flat' ? 'Flat floor' : 'Bump test', exact: true })
+      .click();
+    await page.getByRole('button', { name: 'Preview replacement', exact: true }).click();
+    await page.getByRole('button', { name: 'Apply scene', exact: true }).click();
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
+  };
+  await chooseEnvironment('rounded-bump');
   await page.waitForFunction(
     () =>
-      JSON.parse(window.render_game_to_text()).metadata.blueprint.environment === 'rounded-bump',
+      JSON.parse(window.render_game_to_text()).metadata.blueprint.environment?.objects?.length ===
+      1,
   );
   const terrain = await page.evaluate(
     () => window.workshopProbe.readInteractionState().environment,
@@ -81,7 +92,7 @@ try {
     terrain.obstacles[0].position,
   ]);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
-  evidence.assert('equal', [await environment.inputValue(), 'flat']);
+  evidence.assert('equal', [(await read()).metadata.blueprint.environment ?? 'flat', 'flat']);
   evidence.assert('equal', [
     await page.evaluate(
       () => window.workshopProbe.readInteractionState().environment.obstacles.length,
@@ -89,13 +100,13 @@ try {
     0,
   ]);
   await page.getByRole('button', { name: 'Redo', exact: true }).click();
-  evidence.assert('equal', [await environment.inputValue(), 'rounded-bump']);
+  evidence.assert('equal', [(await read()).metadata.blueprint.environment.objects.length, 1]);
   const savedEnvironment = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await (await savedEnvironment).saveAs(`${out}/environment-saved.json`);
-  await environment.selectOption('flat');
+  await chooseEnvironment('flat');
   await evidence.loadAndWait(page, `${out}/environment-saved.json`);
-  evidence.assert('equal', [await environment.inputValue(), 'rounded-bump']);
+  evidence.assert('equal', [(await read()).metadata.blueprint.environment.objects.length, 1]);
   await page.locator('[data-command=run]').click();
   evidence.assert('equal', [await environment.isDisabled(), true]);
   await page.locator('[data-command=pause]').click();
@@ -114,7 +125,7 @@ try {
       receipt: window.workshopProbe.readLastCommandResult(),
     };
   });
-  await page.locator('input[type=file]').setInputFiles(`${out}/environment-overlap.json`);
+  await uploadWorkshopFile(page, `${out}/environment-overlap.json`);
   await page.waitForFunction(() =>
     document.querySelector('.status-message')?.textContent.includes('overlaps'),
   );
@@ -625,11 +636,43 @@ try {
     window.springSlowFrames = true;
   });
   await page.locator('[data-command=run]').click();
-  await page.waitForFunction(
-    () => window.workshopProbe.readInteractionState().rendering.quality.level === 5,
-    null,
-    { timeout: 45000 },
-  );
+  // Keep real viewport demand active while the two delayed animation loops run.
+  // An idle draw between clock callbacks resets adaptive sampling; elapsed time
+  // alone is not evidence of sustained slow rendering.
+  const slowViewport = await page.locator('canvas[aria-label="Machine view"]').boundingBox();
+  assert.ok(slowViewport);
+  const orbitX = slowViewport.x + slowViewport.width * 0.85;
+  const orbitY = slowViewport.y + slowViewport.height * 0.6;
+  await page.mouse.move(orbitX, orbitY);
+  await page.mouse.down();
+  let keepOrbiting = true,
+    orbitError;
+  const orbit = (async () => {
+    let direction = 1;
+    while (keepOrbiting) {
+      await page.mouse.move(orbitX + 24 * direction, orbitY);
+      direction *= -1;
+      await new Promise((resolve) => setTimeout(resolve, 16));
+    }
+  })().catch((error) => {
+    orbitError = error;
+    keepOrbiting = false;
+  });
+  try {
+    await page.waitForFunction(
+      () => window.workshopProbe.readInteractionState().rendering.quality.level === 5,
+      null,
+      { timeout: 45000 },
+    );
+  } finally {
+    keepOrbiting = false;
+    await orbit;
+    try {
+      await page.mouse.up();
+    } finally {
+      if (orbitError) throw orbitError;
+    }
+  }
   await page.evaluate(() => {
     window.springSlowFrames = false;
   });

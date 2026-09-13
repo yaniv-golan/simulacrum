@@ -1,4 +1,8 @@
 import { createRenderSubmissionTracker, FIRST_TICK_METRIC } from './render-submission.mjs';
+import { assertRecordableObservation } from './recording-admission.mjs';
+import { createSceneLibrary } from './scene-library.mjs';
+import { hasWorkshopContent } from '../model/environment.mjs';
+import { createCameraSession } from './camera-session.mjs';
 import { createControllerHistory } from './controller-history.mjs';
 import { createSensorWorkshop } from '../model/fixtures/sensor-workshop.mjs';
 import { createDeliveryEvaluator } from '../model/learning-evaluators.mjs';
@@ -69,6 +73,16 @@ export async function mountWorkshopApp(root) {
     lastInput = null,
     pausedForVisibility = false,
     runSequence = 0;
+  const cameraSession = createCameraSession({
+    send: (c) => onCommand(c),
+    observe: () => workshop.observe(),
+    buildId,
+    sourceIdentity: {
+      head: document.querySelector('meta[name="source-head"]')?.content ?? null,
+      workingTreeDigest: document.querySelector('meta[name="source-digest"]')?.content ?? null,
+    },
+    changed: () => view?.refreshCameras?.(),
+  });
   const recorder = createInteractionRecorder({
     build: buildId,
     now: () => performance.now(),
@@ -226,6 +240,7 @@ export async function mountWorkshopApp(root) {
   function render() {
     if (disposed) return;
     const measurements = workshop.observe('scene', 'full', measurementCursor);
+    cameraSession.ingest(measurements);
     controllerHistory.ingest(measurements);
     view.ingestMeasurements(measurements);
     const sounds = [];
@@ -418,38 +433,38 @@ export async function mountWorkshopApp(root) {
         'active-suspension-example': createActiveSuspensionBench,
       }[command.type];
       if (suspensionExample) {
-        if (frame().metadata.blueprint.parts.length && command.replace !== true)
+        if (hasWorkshopContent(frame().metadata.blueprint) && command.replace !== true)
           return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
         command = { type: 'load', save: suspensionExample() };
       }
       if (command.type === 'spring-example') {
-        if (frame().metadata.blueprint.parts.length && command.replace !== true)
+        if (hasWorkshopContent(frame().metadata.blueprint) && command.replace !== true)
           return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
         command = { type: 'load', save: createSpringPlayground({ damping: command.damping ?? 8 }) };
       }
       if (command.type === 'gear-lift-example') {
-        if (frame().metadata.blueprint.parts.length && command.replace !== true)
+        if (hasWorkshopContent(frame().metadata.blueprint) && command.replace !== true)
           return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
         command = { type: 'load', save: createGearLift() };
       }
       if (command.type === 'ball-drop-example') {
-        if (frame().metadata.blueprint.parts.length && command.replace !== true)
+        if (hasWorkshopContent(frame().metadata.blueprint) && command.replace !== true)
           return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
         command = { type: 'load', save: createBallDrop() };
       }
       if (command.type === 'spring-launcher-example') {
-        if (frame().metadata.blueprint.parts.length && command.replace !== true)
+        if (hasWorkshopContent(frame().metadata.blueprint) && command.replace !== true)
           return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
         command = { type: 'load', save: createSpringLauncher() };
       }
       if (command.type === 'sensor-rule-example') {
-        if (frame().metadata.blueprint.parts.length && command.replace !== true)
+        if (hasWorkshopContent(frame().metadata.blueprint) && command.replace !== true)
           return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
         nextLearningEvaluator = null;
         command = { type: 'load', save: createSensorWorkshop(command.sensor) };
       }
       if (command.type === 'learning-delivery-example') {
-        if (frame().metadata.blueprint.parts.length && command.replace !== true)
+        if (hasWorkshopContent(frame().metadata.blueprint) && command.replace !== true)
           return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
         nextLearningEvaluator = createDeliveryEvaluator(DELIVERY_EVALUATION);
         command = {
@@ -458,7 +473,7 @@ export async function mountWorkshopApp(root) {
         };
       }
       if (command.type === 'driving-example') {
-        if (frame().metadata.blueprint.parts.length && command.replace !== true)
+        if (hasWorkshopContent(frame().metadata.blueprint) && command.replace !== true)
           return { ok: false, reasonCode: 'INVALID_COMMAND', path: 'machine' };
         command = { type: 'load', save: createDrivingMachine() };
       }
@@ -649,6 +664,14 @@ export async function mountWorkshopApp(root) {
   }
   function onRecording(action) {
     if (action === 'toggle') {
+      if (!recorder.state().recording) {
+        try {
+          assertRecordableObservation(frame());
+        } catch (error) {
+          view.setMessage(error.message);
+          return;
+        }
+      }
       if (recorder.state().recording)
         recorder.stop({ context: recordingContext(), observation: frame() });
       else
@@ -683,6 +706,7 @@ export async function mountWorkshopApp(root) {
         throw error;
       }
     },
+    cameraSession,
     onCommand,
     onSound: (enabled) => impactSound.enable(enabled),
     onSave,
@@ -694,6 +718,11 @@ export async function mountWorkshopApp(root) {
     onInteraction: logInteraction,
     guideSteps: starterSteps(),
     builtInAssemblies: [{ id: 'builtin-spring-strut', definition: createSpringStrut() }],
+    sceneLibrary: createSceneLibrary({
+      getItem: (key) => localStorage.getItem(key),
+      setItem: (key, value) => localStorage.setItem(key, value),
+    }),
+    onExportScene: (value) => downloadJSON(value, 'workshop-scene.json'),
     assemblyLibrary: createAssemblyLibrary({
       getItem: (key) => localStorage.getItem(key),
       setItem: (key, value) => localStorage.setItem(key, value),
@@ -751,6 +780,7 @@ export async function mountWorkshopApp(root) {
   });
   return Object.freeze({
     dispose() {
+      cameraSession.dispose();
       impactSound.dispose();
       learning.dispose();
       remote?.dispose();

@@ -1,3 +1,4 @@
+import { createLampView } from './lamp-view.mjs';
 import { createSensorDetails } from './part-visuals/sensors.mjs';
 import { createElectronicsDetails } from './part-visuals/electronics.mjs';
 import { createMechanicalDetails } from './part-visuals/mechanical.mjs';
@@ -11,6 +12,7 @@ import { createSurfaceMaterial, createPortHardware } from './part-finish.mjs';
 // Owns only presentation resources; all poses remain supplied by the caller.
 export function disposePart(mesh) {
   mesh.traverse((object) => {
+    if (object.isLight) object.dispose();
     object.geometry?.dispose();
     object.material?.map?.dispose();
     object.material?.dispose();
@@ -170,6 +172,15 @@ export function createPartMesh(part) {
   mesh.userData.partId = part.id;
   mesh.castShadow = true;
   mesh.receiveShadow = true;
+  if (part.type === 'camera') {
+    const lens = new THREE.Mesh(
+      new THREE.CircleGeometry(0.011, 24),
+      new THREE.MeshBasicMaterial({ color: 0x142b40 }),
+    );
+    lens.position.z = 0.0201;
+    mesh.add(lens);
+  }
+
   if (definition.kind === 'sphere') {
     const mark = new THREE.Mesh(
       new THREE.SphereGeometry(radius * 1.01, 32, 16, 0, Math.PI / 5, 0.2, Math.PI - 0.4),
@@ -205,6 +216,11 @@ export function createPartMesh(part) {
         line.userData.partId = part.id;
         mesh.add(line);
       }
+  }
+  if (part.type === 'poweredLamp') {
+    const lamp = createLampView();
+    mesh.add(lamp.group);
+    mesh.userData.lamp = lamp;
   }
   finishPart(mesh, part, definition);
   return mesh;

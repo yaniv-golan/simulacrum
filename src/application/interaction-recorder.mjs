@@ -1,3 +1,4 @@
+import { assertRecordableObservation } from './recording-admission.mjs';
 /** Local, explicitly started usability capture. No input listeners or browser ownership. */
 export const INTERACTION_STORAGE_KEY = 'simulacrum.interaction-recording.v1';
 const reasons = new Set([
@@ -129,6 +130,7 @@ export function createInteractionRecorder({
       persisted = false;
       let candidate;
       try {
+        assertRecordableObservation(initialContext?.observation);
         const id = idFactory();
         if (typeof id !== 'string' || !id) throw new Error('Session id must be a nonempty string');
         candidate = {
@@ -167,6 +169,7 @@ export function createInteractionRecorder({
       if (!recording()) return false;
       let event;
       try {
+        assertRecordableObservation(context?.observation);
         if (typeof kind !== 'string' || !kind)
           throw new Error('Event kind must be a nonempty string');
         event = {

@@ -9,6 +9,7 @@
     "src/application/feedback-protocol.mjs": "66d655f34eed88c4461203b16eda0fd3da311e315f303c6100b61ec70173396e",
     "src/application/capture-outbox.mjs": "195ea8b98f0f58b4fdeaab72e22d5377a120d71ec1025a865240fa05c1df7c7b",
     "scripts/playtest/download.mjs": "ebf82ce31eabad632042a45588aff4d376a96e53cc851ea64fb9709135f85506",
+    "src/application/recording-admission.mjs": "b86bc2ac52149866e55bf68d0430b8a593dad9efd8d9f67d73811903bf53e2e6",
     "package.json#script=build": "952bdd0ae6b61c346c4fd9450107496b32dd57090752cad260808d6331fd0485",
     "package.json#script=playtest:local": "eb354fb3f029c126a66fe445b1b53e6a435555f30027c3e3718d83bbeae61c77",
     "package.json#script=playtest:download": "3d07abdbda3164ed5ff2f54426a361f5be6b9a26d1c57100f46d25216e5cfd18"

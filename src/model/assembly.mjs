@@ -122,7 +122,13 @@ function snapFrames(blueprint, A, B) {
 /** Numeric configuration crosses the physics door; identifiers stay in mapping. */
 export function compileAssembly(
   blueprint,
-  { gravity = BUILD_ENVIRONMENT.gravity, ground = BUILD_ENVIRONMENT.ground } = {},
+  {
+    gravity = BUILD_ENVIRONMENT.gravity,
+    ground = {
+      ...BUILD_ENVIRONMENT.ground,
+      ...(typeof blueprint.environment === 'object' ? blueprint.environment.ground : {}),
+    },
+  } = {},
 ) {
   validate(blueprint);
   validatePlacementGeometry(blueprint);
@@ -184,6 +190,9 @@ export function compileAssembly(
           energyJ: p.energyJ,
         });
         break;
+      case 'poweredLamp':
+        (power.lamps ??= []).push({ node, ...p });
+        break;
       case 'powerCell':
         power.cells.push({
           node,
@@ -226,6 +235,9 @@ export function compileAssembly(
               }
             : {}),
         });
+        break;
+      case 'camera':
+        power.sensors.push({ node, body: node, kind: 'camera' });
         break;
       case 'commandReceiver':
         power.receivers.push({ node, duty: p.duty });

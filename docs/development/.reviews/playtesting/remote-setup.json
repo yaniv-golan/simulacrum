@@ -1,6 +1,7 @@
 {
   "version": 1,
   "dependencies": {
+    "src/presentation/workshop-screenshot.mjs": "574788560d3ab7cf1e825e0441f4b03a72799f3ac7d79a23f48bced6d0f1c29a",
     "scripts/playtest-server.mjs": "5398ff8a0f44a21b2b1eb8ab38338b9345e4e464847aad28bbb993666a0ed50b",
     "scripts/playtest/cloud-store.mjs": "5c09f88ef046960aea7a466fc9b147cde49880615eba2ed2461231c3f9b4075e",
     "scripts/playtest/feedback-cloud.mjs": "0995f8f7b23433645528e961b275645095ed993965d280072c86028dfcafabfc",
@@ -20,20 +21,23 @@
     "package.json": "6edb48593a61fb710edc6322958c53fc4bb2c8c2e8039daecb99e13117f7762a",
     "src/application/capture-outbox.mjs": "195ea8b98f0f58b4fdeaab72e22d5377a120d71ec1025a865240fa05c1df7c7b",
     "src/application/capture-packet.mjs": "0d51704f9bc85d531d6e3e546c3e48910ccce250646f9024bc0e17bf2be41de0",
-    "src/application/capture-stream.mjs": "db4c9322b9b8264b97f7680a0ca4f4aaad907beae3bcb2c9d3ebea01b7dc5d84",
-    "src/application/remote-playtest.mjs": "1d282a8f95b560e691b5a71533ffc3e83ee30084730285dec6abcc11d33537d0",
+    "src/application/capture-stream.mjs": "6c3c2df0c5a483f44600ce9168a35b22c86574f8750fedd106bcbcc4f4312d28",
+    "src/application/recording-admission.mjs": "598fe397746dda726246b7b4f213178b4d557e1261ecc4f6eb5880a1e91cacb8",
+    "src/application/remote-playtest.mjs": "9dd3bf6bab66702c9ea1320b9458b218ee24489e1de3c1eddb008cae023fe9e2",
     "scripts/export-playtest.mjs": "58bbf06419040037f825369d68000f6df0f48dee59e688cd0293307ff06594ee",
-    "src/model/boundaries.d.ts": "e0cc414dd6368bcb6eab166496d0c0ac06d5ef1cb9ac681fbf5e38c3602eb007",
-    "src/model/catalog.mjs": "3ed106f7330e0083c7fe40b9e9155bc1e0a37a174d5d30c5751fbfbf730ae5a4",
+    "src/model/boundaries.d.ts": "901105eee561938d3f477c6ce3857b18b0a894ad19e3761960bd7b97b60a662b",
+    "src/model/catalog.mjs": "c6646b0d01f327e652af74e460fd3e2dc4829250ee8e86b82d3812d8e4e688fd",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",
-    "src/model/environment.mjs": "2409601431d8919540401bba53335b26f14d058327a4ec16cdfc8edfd3732dbf",
-    "src/model/generated/blueprint-types.d.ts": "843d867949b79e3fbc73e80d9b9db9ced292f9b7023cddbad7a0274c07b0aae8",
+    "src/model/environment.mjs": "974c3e02806475c7c634d798fa3f99ca82925ec9ab0051fd5f05f7dcb3d08d00",
+    "src/model/generated/blueprint-types.d.ts": "d71239ebfbb9c7784b18a4031bed3f1b1a343b060c4cf04581248e217ad88267",
+    "src/model/generated/blueprint-validator.mjs": "1be23667d4ccc61d7049afe9d94ac94270a1e4af214693abe765e7ebfe0324ae",
     "src/model/geometry.mjs": "6628f76885c40cd8788ac50cf4fdde44cee827472aaea673b16343512e6e2283",
     "src/model/observation.mjs": "cc4f0cb5d0cb9078809a2b78d9d57cd83fdf16c9ad92045a7a86ac815f1e06ba",
-    "src/model/sensors.mjs": "e1cc067189f8f6c5e7b0bec99373647f5bbae8500fc9eabb6ca92518e56a0ce2",
+    "src/model/sensors.mjs": "58bbd6a8b5c82ca2232abf4cf75fe45be5f9ccda8afa15e7193c466bef4ccf27",
     "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
-    "src/presentation/capture-review-model.mjs": "5f4c111730e298cd7030db872983486773683628b9f8237de45bfbeb49602267",
-    "src/presentation/capture-review.mjs": "4e4fdce8ae66b72909128125a839b7dca0f43216fc789292e37cedac31c9d078",
-    "src/presentation/feedback-review.mjs": "4012a32f494d0b55c424a63d95042145a954ec927d6dd443af2dec7c942dbbd7"
+    "src/presentation/capture-review-model.mjs": "c1e9a394bfb8b6ceca52d411c249c93ab750185406e540092b911298b50f621a",
+    "src/presentation/capture-review.mjs": "980784d68708b5713569e8c149ec7e5ae7e26b5dd5c155b1304e6613c1e82781",
+    "src/presentation/feedback-review.mjs": "4012a32f494d0b55c424a63d95042145a954ec927d6dd443af2dec7c942dbbd7",
+    "src/presentation/primitive-geometry.mjs": "2dfe4e2f74784b7080e1f867cb7e15bb1956e665d9b1be7cdaf9ccfcbafc847c"
   }
 }

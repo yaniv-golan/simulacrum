@@ -7,6 +7,16 @@ actuators/constraints, environment/forces, integration/contacts, structure/failu
 thermal/ablation, telemetry. Controllers at tick t consume the completed sensor
 snapshot from t-1. Tick zero has a declared initial snapshot.
 
+## Structural failure scope
+
+The current session's structure/failure phase checks finite body state and conserved
+body count and mass. It does not yet implement general joint rated-capacity evaluation,
+transmitted-load failure decisions or automatic overload breakage. Commanded release
+couplers are an authored release capability, not evidence of overload failure modeling.
+An active phase or successful numeric invariant check cannot establish the Course's
+no-damage requirement. That requires a modeled failure mechanism and independent
+positive and negative controls before qualification.
+
 ## Observation and edits
 
 `observe(scope, detail, cursor)` returns immutable values and a cursor
@@ -48,14 +58,35 @@ the required completed work ledger.
 Unsupported versions are rejected explicitly. Session checkpoint and blueprint save
 versions remain 3; these physics-envelope variants do not migrate blueprint saves.
 
-Version 3 also admits an optional `environment` preset: `flat` or `rounded-bump`.
-Omission means the flat floor. `choose-environment` is an atomic Build edit with
-ordinary history and save/checkpoint identity. One model descriptor supplies the
-rounded bump's fixed collision and rendered geometry; example identity has no
-authority. Selecting or loading terrain rejects overlap with canonical part
-envelopes, including protruding shafts. Assembly insertion preserves the receiving
-environment. The compiler's explicit `ground: null` option removes the floor only;
-an explicitly selected obstacle remains part of that configuration.
+Version 3 admits an optional `environment`: the unchanged legacy `flat` or
+`rounded-bump` string, or authored `{objects,ground}` scene data. Omission means
+flat. This is compatible admission within the current schema, not a historical
+reader or migration chain. Old preset descriptors remain unchanged for visual
+recordings and ordinary saves. Opaque checkpoints still require the exact admitted
+configuration and runtime identity; no historical checkpoint conversion is added.
+
+Authored scenes contain at most 32 explicitly fixed boxes or X-axis cylinders,
+with stable IDs, names, dimensions, positions, quaternions, material, grip and
+restitution. Inclined boxes provide straight ramps. Dimensions and transforms are
+bounded by the schema; cylinders require equal radii and rotations must be unit.
+Scene solids follow the material density and explicit contact selections. They are
+outside machine membership, metrics and assembly capture. Matching face-adjacent
+boxes with identical cross-section, orientation, density and contact properties
+compile as their exact rectangular union, removing internal collision faces.
+Individual objects remain independently editable and visible in recording review.
+The combined machine bodies, distributed rope nodes, scene solids and floor cannot exceed 4097 physics bodies.
+Recording remains a separate subset of at most 512 machine parts, subject to its
+unchanged event and session byte limits.
+
+`replace-scene` is a Build-only atomic edit requiring the source cursor. It preserves
+the machine and enters chronological workshop history; a rejected edit preserves
+both. `choose-environment` retains legacy command behavior. Full-workshop saves
+carry both machine and scene, while scene-only library/import envelopes contain
+version 1 and scene data only. Assembly insertion preserves the receiving scene.
+Admission rejects machine/scene and scene/scene volume overlaps, including shaft
+extensions; touching support surfaces and floor embedding remain permitted. The
+compiler's explicit `ground: null` removes the floor only. These admission bounds
+are not qualification of arbitrary machines, speeds or contact layouts.
 
 No live library object escapes the physics
 door. A failed tick poisons the session; it publishes failure evidence, cannot continue
@@ -216,7 +247,8 @@ commands one step at a time; no runtime dispatch reads the guide or blueprint na
 Editor history retains at most 50 prior authored blueprints. Failed/no-op edits
 leave history unchanged; new edits clear redo. Run/pause/reset do not add edits.
 Load and checkpoint restoration explicitly clear editor history. Availability is
-published as `metadata.editing`, part of the same read model. Gizmo previews are
+published as `metadata.editing`, part of the same read model. Optional `undoLabel`
+and `redoLabel` identify a scene edit; restoration clears these with history. Gizmo previews are
 separate render objects; accepted poses appear only after the authoring command.
 
 The starter vehicle is a thirty-second construction feasibility fixture, not L0
@@ -549,7 +581,7 @@ normal. Contact uses transformed completed anchors (cached manifold distance can
 other casing faces do not count. Normal load is accumulated normal impulse divided
 by 1/120 s for that completed interval. The physics door indexes one completed contact read per step for all pads; stepping and restoring invalidate that cache. Touch is not a support or stability predicate.
 
-Each sensor has a declared 1000 ohm load and 1 V minimum operating voltage. Source
+Each numeric sensor has a declared 1000 ohm load and 1 V minimum operating voltage. Source
 droop, current/energy caps and all sensor/limiter terminal heat use the shared power
 solver. Signal connections supply no electricity. Tick zero is unpowered; the first
 power phase establishes supply for the next sampled reading. Old unpowered sensor
@@ -616,7 +648,6 @@ module; generic learning does not infer a task from blueprint or part names. Sav
 outcomes are checked against their stored completed physical measurement; cumulative
 contact evidence remains recorded evidence, not a reconstructed or certified trace.
 
-
 Completed controller decisions are also available independently of teaching. The
 application drains the existing completed observation cursor into bounded recent
 history for both regular and learned controllers. It retains four runs with 600
@@ -627,3 +658,58 @@ applied receiver ownership. Historical selection never alters simulation; export
 preserves a selected record, and repair returns through ordinary Build admission.
 The selected source is retained with each regular-program record, so a later rule
 edit cannot relabel an old decision.
+
+## Powered camera photographs
+
+A camera is an M3b ordinary solid 60 × 40 × 40 mm aluminium part (0.2592 kg
+at the default material density), with the canonical material-derived inertia.
+Its 100 ohm supply consumes terminal heat through the existing shared circuit and
+requires 1 V. This idealized load is 0.36 W at 6 V before droop; it is not a
+manufacturer model. Trigger wiring supplies no power. At most eight cameras are
+admitted, within the existing sensor limit; the ninth rejects atomically.
+
+The version-1 pinhole profile is fixed: 320 × 240, 60 degrees horizontal field of
+view, near 10 micrometres, far 100 m, lens origin (0, 0, 0.020001) m in the body
+frame, forward +Z, up +Y, screen right −X. Canonical solids, exposed shafts, floor
+and environment obstacles are opaque, two-sided optical geometry. Rope spans use the
+same completed physical node centres and authored diameter as workshop rendering,
+without selection highlighting; their visual surface adds no collision authority. Only the owning
+camera housing is excluded. Wires, labels, editor decorations and exploded poses
+are not optical geometry. These are visibility choices, not additional colliders.
+The catalog's local X reflection symmetry preserves the lens direction when mirrored.
+
+The simulation camera owner records power, owner/low-before-high latch, accepted
+manual request ID, pending request, busy count and completed result. Every twelfth
+completed tick is an exposure boundary. Manual requests are Run-only and epoch-bound;
+monotonic IDs deduplicate before changing history. One pending request per camera
+is admitted. Positive receiver duty following a powered low sample requests one
+photo; held-high duty does not repeat. Power or receiver ownership changes require
+low rearm. A competing rising edge increments an explicit busy count without replacing
+the reserved request. Power at exposure determines ok/no-power. Checkpoints retain
+this versioned state, including pending continuation, and reject malformed history.
+A pending manual request must equal the newest accepted manual ID and must be newer
+than the last completed manual result; rejected restoration leaves live state intact.
+No RGB channel is offered to numeric sensors, programs or learning models. Existing
+prior-completed numeric sensor semantics and the one-integration fixed step are unchanged.
+
+Application capture consumes the identified completed frame and rasterizes/copies its
+pixels synchronously before asynchronous PNG encoding. Later display poses cannot
+change those bytes. A lost WebGL context rejects rendering and encoding instead of
+advancing the displayed sample timestamp; recovery requires a fresh render. Photo
+metadata carries the served build ID plus source HEAD and working-tree digest.
+One live selected view and one encoder reservation are shared
+across all cameras; overlapping encodes report busy. At 5 seconds, a late encode is
+invalidated but retains its reservation until settlement, preventing replacement work
+from accumulating. Epoch changes, clear and disposal invalidate pending publication.
+Restored history and missing observation windows never recapture historical requests.
+Paused capture explicitly keeps the original displayed sample and its original tick.
+Entering camera view on a paused exposure boundary labels that completed image paused,
+not live.
+
+The session gallery retains at most 100 PNGs and 32 MiB of encoded bytes; full or
+failed captures preserve existing photos. One decoded preview is displayed. Object
+URLs are released on clear/disposal. Photos survive machine edits/retries in this
+page, but are absent from blueprint saves and executable checkpoints. Only an explicit
+player action downloads a PNG or its JSON metadata. Replay never downloads, uploads,
+or reconstructs photos. Endpoint transport, streaming and image inference are separate
+future contracts, not capabilities of this camera profile.

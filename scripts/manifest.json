@@ -1006,163 +1006,64 @@
       "timeoutMs": 45000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
+    },
+    {
+      "id": "verify-camera-browser",
+      "script": "scripts/verify-camera-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 120000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "measure-cameras",
+      "script": "scripts/measure-cameras.mjs",
+      "execution": "exclusive",
+      "environment": "self",
+      "tier": "performance",
+      "smoke": false,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-lamp-browser",
+      "script": "scripts/verify-lamp-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-lamp-performance",
+      "script": "scripts/verify-lamp-performance.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "performance",
+      "smoke": false,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-authorable-scenes",
+      "script": "scripts/verify-authorable-scenes.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
     }
   ],
   "invariants": [
-    {
-      "id": "completed-state-reuse",
-      "ruleId": "runtime-contract",
-      "dueAt": "M3b",
-      "guarantee": "Cached physical reads retire when their physical state changes and cannot be mutated through public reads. Completed contacts feed the following sensor sample. Typed native response vectors preserve validated finite values and disjoint result views. Power publication is immutable; power-network receipt rejection preserves completed state and the pending allocation for retry without restore, including position validation. Session failure publication retains the previous completed power projection and records the failure bundle. Numeric body admission constructs and freezes owned arrays from finite primitives without trusting caller-owned trees.",
-      "owners": [
-        {
-          "path": "src/simulation/physics/world.mjs",
-          "anchor": "createPhysicsWorld"
-        },
-        {
-          "path": "src/simulation/physics/native-response.mjs",
-          "anchor": "readNativeResponse"
-        },
-        {
-          "path": "src/simulation/power.mjs",
-          "anchor": "createPowerNetwork"
-        },
-        {
-          "path": "src/model/observation.mjs",
-          "anchor": "immutableCopy"
-        },
-        {
-          "path": "src/model/observation.mjs",
-          "anchor": "immutableBodySample"
-        }
-      ],
-      "checks": [
-        "invariant-controls"
-      ],
-      "controls": {
-        "positive": [
-          {
-            "path": "test/physics.test.mjs",
-            "anchor": "unchanged door reads reuse native samples while impulse, step and restore invalidate them"
-          },
-          {
-            "path": "test/physics.test.mjs",
-            "anchor": "completed contact reads feed the next sensor sample without a second native scan"
-          },
-          {
-            "path": "test/native-response.test.mjs",
-            "anchor": "response adapter preserves typed vectors and owns disjoint result views"
-          },
-          {
-            "path": "test/power.test.mjs",
-            "anchor": "completed power reads are admitted immutable snapshots detached from later work"
-          },
-          {
-            "path": "test/power.test.mjs",
-            "anchor": "measured kick work determines driver loss and conserves the electrical allocation"
-          },
-          {
-            "path": "test/observation.test.mjs",
-            "anchor": "publication reuses admitted body trees and keeps retained observations immutable"
-          }
-        ],
-        "negative": [
-          {
-            "path": "test/physics.test.mjs",
-            "anchor": "unchanged door reads reuse native samples while impulse, step and restore invalidate them"
-          },
-          {
-            "path": "test/native-response.test.mjs",
-            "anchor": "response adapter preserves typed vectors and owns disjoint result views"
-          },
-          {
-            "path": "test/power.test.mjs",
-            "anchor": "power-network late receipt rejection preserves completed and pending state for retry without restore"
-          },
-          {
-            "path": "test/power.test.mjs",
-            "anchor": "session late power failure publishes the previous completed power and a failure bundle"
-          },
-          {
-            "path": "test/power.test.mjs",
-            "anchor": "completion rechecks an untrusted position receipt before committing its angle"
-          },
-          {
-            "path": "test/observation.test.mjs",
-            "anchor": "numeric body admission owns its arrays and rejects every non-finite or nonnumeric field"
-          },
-          {
-            "path": "test/observation.test.mjs",
-            "anchor": "immutable copies preserve data keys and reject non-data descriptors"
-          }
-        ]
-      },
-      "qualificationBars": []
-    },
-    {
-      "id": "completed-draw-order",
-      "qualificationBars": [],
-      "ruleId": "runtime-contract",
-      "dueAt": "M3b",
-      "guarantee": "The workshop draw loop advances the existing clock before GPU submission. Paused display callbacks do not advance simulation; restarting resets the wall-clock origin. Display reflection receipts identify completed draw cursors, and view preparation is measured separately from GPU submission. Equivalent blueprint replacements retain authored resources; content edits refresh them. Submission metrics identify their endpoint, reject historical F2 samples, and record timeout or disposal without a successful latency. A before-draw callback error does not terminate the view frame scheduler. Failed view preparation cannot submit a partial scene or publish a new completed draw cursor; a successful update restores submission.",
-      "owners": [
-        {
-          "path": "src/application/clock.mjs",
-          "anchor": "createClock"
-        },
-        {
-          "path": "src/application/workshop-app.mjs",
-          "anchor": "mountWorkshopApp"
-        },
-        {
-          "path": "src/presentation/workshop-view.mjs",
-          "anchor": "createWorkshopView"
-        },
-        {
-          "path": "src/application/render-submission.mjs",
-          "anchor": "createRenderSubmissionTracker"
-        }
-      ],
-      "checks": [
-        "verify-attachment-status",
-        "verify-spring-performance",
-        "verify-render-lifecycle"
-      ],
-      "controls": {
-        "positive": [
-          {
-            "path": "test/clock.test.mjs",
-            "anchor": "external display clock advances and reflects before drawing without owning another RAF"
-          },
-          {
-            "path": "test/render-submission.test.mjs",
-            "anchor": "submission metrics identify their endpoint and ignore an older completed draw"
-          }
-        ],
-        "negative": [
-          {
-            "path": "test/clock.test.mjs",
-            "anchor": "external display clock advances and reflects before drawing without owning another RAF"
-          },
-          {
-            "path": "test/render-submission.test.mjs",
-            "anchor": "a never-drawing or hidden window records one bounded incomplete sample and cancels its RAF"
-          },
-          {
-            "path": "test/render-submission.test.mjs",
-            "anchor": "dispose records cancellation of every pending measurement and clears timers and frames"
-          },
-          {
-            "path": "test/render-submission.test.mjs",
-            "anchor": "a wrong cursor remains an explicit superseded sample, never successful latency"
-          },
-          {
-            "path": "test/f2.test.mjs",
-            "anchor": "F2 v2 rejects historical, mixed endpoint and incomplete render-submission samples"
-          }
-        ]
-      }
-    },
     {
       "id": "rejected-edit-atomicity",
       "ruleId": "runtime-contract",
@@ -1175,7 +1076,8 @@
         }
       ],
       "checks": [
-        "invariant-controls"
+        "invariant-controls",
+        "verify-authorable-scenes"
       ],
       "controls": {
         "positive": [
@@ -1186,6 +1088,18 @@
           {
             "path": "test/editing-contracts.test.mjs",
             "anchor": "mixed resize, axle attachment, rotation, undo and reload preserve connections"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "authored scene retains machine order, material, stable identities and chronological history"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "combined body budget and scene-only settings cannot bypass admission or replacement protection"
+          },
+          {
+            "path": "test/scene-capacity.test.mjs",
+            "anchor": "valid nearly full workshop rejects scene replacement, duplication, import and full load atomically"
           }
         ],
         "negative": [
@@ -1196,6 +1110,18 @@
           {
             "path": "test/editing-contracts.test.mjs",
             "anchor": "registered edit examples share rejection and round-trip behavioral contracts"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "authored scene retains machine order, material, stable identities and chronological history"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "combined body budget and scene-only settings cannot bypass admission or replacement protection"
+          },
+          {
+            "path": "test/scene-capacity.test.mjs",
+            "anchor": "valid nearly full workshop rejects scene replacement, duplication, import and full load atomically"
           }
         ]
       },
@@ -1208,7 +1134,7 @@
       "id": "preview-isolation",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Mirror proposals and placement lifecycle state stay outside authored state until accepted commands commit them; stale completion cannot reopen a canceled proposal.",
+      "guarantee": "Mirror proposals and placement lifecycle state stay outside authored state until accepted commands commit them; stale completion cannot reopen a canceled proposal. Scene and assembly previews share document/cursor binding, one pending submission and exact-result reconciliation.",
       "owners": [
         {
           "path": "src/model/mirror-assembly.mjs",
@@ -1221,11 +1147,16 @@
         {
           "path": "src/presentation/placement-lifecycle.mjs",
           "anchor": "createPlacementLifecycle"
+        },
+        {
+          "path": "src/presentation/document-proposal.mjs",
+          "anchor": "createDocumentProposal"
         }
       ],
       "checks": [
         "invariant-controls",
-        "verify-mirror-browser"
+        "verify-mirror-browser",
+        "verify-authorable-scenes"
       ],
       "controls": {
         "positive": [
@@ -1236,6 +1167,26 @@
           {
             "path": "test/placement-lifecycle.test.mjs",
             "anchor": "placement commits valid previews once, rejects stale completions and cancels pointer ownership"
+          },
+          {
+            "path": "test/scene-proposal.test.mjs",
+            "anchor": "scene proposal rejects stale approval, blocks repeated submission and reconciles only exact source results"
+          },
+          {
+            "path": "test/scene-proposal.test.mjs",
+            "anchor": "scene preview preserves draft on rejection and disallows editing after leaving Build"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "scene Move uses translation and manipulates only an unapplied proposal"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "scene tool shortcuts switch tools and leave text editing native"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "scene preview hides replaced committed geometry and cancellation restores it"
           }
         ],
         "negative": [
@@ -1246,6 +1197,26 @@
           {
             "path": "test/placement-lifecycle.test.mjs",
             "anchor": "placement commits valid previews once, rejects stale completions and cancels pointer ownership"
+          },
+          {
+            "path": "test/scene-proposal.test.mjs",
+            "anchor": "scene proposal rejects stale approval, blocks repeated submission and reconciles only exact source results"
+          },
+          {
+            "path": "test/scene-proposal.test.mjs",
+            "anchor": "scene preview preserves draft on rejection and disallows editing after leaving Build"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "scene Move uses translation and manipulates only an unapplied proposal"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "scene tool shortcuts switch tools and leave text editing native"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "scene preview hides replaced committed geometry and cancellation restores it"
           }
         ]
       },
@@ -1352,7 +1323,7 @@
       "id": "geometry-agreement",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Authored wheel and sphere geometry drives physical dimensions, mass and inertia; placement rejects solid intersections while allowing empty hull corners.",
+      "guarantee": "Authored wheel and sphere geometry drives physical dimensions, mass and inertia; placement rejects solid intersections while allowing empty hull corners. Fixed scene solids derive from authored dimensions, transforms and material; matching face-adjacent boxes compile as their exact union to remove internal contact seams.",
       "owners": [
         {
           "path": "src/model/geometry.mjs",
@@ -1361,13 +1332,22 @@
         {
           "path": "src/model/assembly.mjs",
           "anchor": "compileAssembly"
+        },
+        {
+          "path": "src/model/environment.mjs",
+          "anchor": "environmentObstacles"
+        },
+        {
+          "path": "src/presentation/primitive-geometry.mjs",
+          "anchor": "createPrimitiveGeometry"
         }
       ],
       "checks": [
         "invariant-controls",
         "verify-property-focus",
         "verify-surface-browser",
-        "verify-ball-browser"
+        "verify-ball-browser",
+        "verify-authorable-scenes"
       ],
       "controls": {
         "positive": [
@@ -1378,6 +1358,30 @@
           {
             "path": "test/ball.test.mjs",
             "anchor": "solid ball radius, volume and native inertia follow authored size/material"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "coplanar split platform matches continuous contact and detects a raised seam"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "authored incline has correct endpoints and analytical low-grip acceleration in rotated frames"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "an intentional platform edge permits a ballistic drop without energy creation"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "recording and workshop reconstruct identical canonical cylinder surfaces"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "admitted size extrema and materials support ordinary loads in rotated box and cylinder frames"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "floor to authored ramp and bump traversals bound excess energy without forbidding a failed climb"
           }
         ],
         "negative": [
@@ -1388,6 +1392,30 @@
           {
             "path": "test/ball.test.mjs",
             "anchor": "sphere placement uses curved surface, including rotated boxes and cylinder hulls"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "coplanar split platform matches continuous contact and detects a raised seam"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "authored incline has correct endpoints and analytical low-grip acceleration in rotated frames"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "an intentional platform edge permits a ballistic drop without energy creation"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "recording and workshop reconstruct identical canonical cylinder surfaces"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "admitted size extrema and materials support ordinary loads in rotated box and cylinder frames"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "floor to authored ramp and bump traversals bound excess energy without forbidding a failed climb"
           }
         ]
       },
@@ -1445,13 +1473,22 @@
         }
       ],
       "checks": [
-        "invariant-controls"
+        "invariant-controls",
+        "verify-authorable-scenes"
       ],
       "controls": {
         "positive": [
           {
             "path": "test/session.test.mjs",
             "anchor": "checkpoint restores tick and future physics but advances observation epoch"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "authored scene retains machine order, material, stable identities and chronological history"
+          },
+          {
+            "path": "test/scene-preservation.test.mjs",
+            "anchor": "authored scene capture, continuation, machine metrics and shared sensing retain their boundaries"
           },
           {
             "path": "test/session.test.mjs",
@@ -1462,6 +1499,14 @@
           {
             "path": "test/session.test.mjs",
             "anchor": "checkpoint rejection is atomic for malformed clocks inputs sensors and identity"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "authored scene retains machine order, material, stable identities and chronological history"
+          },
+          {
+            "path": "test/scene-preservation.test.mjs",
+            "anchor": "authored scene capture, continuation, machine metrics and shared sensing retain their boundaries"
           }
         ]
       },
@@ -1666,7 +1711,8 @@
         }
       ],
       "checks": [
-        "invariant-controls"
+        "invariant-controls",
+        "verify-authorable-scenes"
       ],
       "controls": {
         "positive": [
@@ -1705,6 +1751,14 @@
           {
             "path": "test/cloud-playtest.test.mjs",
             "anchor": "busy uploads preserve a bounded independent control storage lane"
+          },
+          {
+            "path": "test/scene-library.test.mjs",
+            "anchor": "recording subset rejects oversized machine observations before encoding"
+          },
+          {
+            "path": "test/scene-preservation.test.mjs",
+            "anchor": "legacy visual events preserve frozen bump descriptors without executable checkpoint conversion"
           }
         ],
         "negative": [
@@ -1743,6 +1797,14 @@
           {
             "path": "test/cloud-playtest.test.mjs",
             "anchor": "busy uploads preserve a bounded independent control storage lane"
+          },
+          {
+            "path": "test/scene-library.test.mjs",
+            "anchor": "recording subset rejects oversized machine observations before encoding"
+          },
+          {
+            "path": "test/scene-preservation.test.mjs",
+            "anchor": "legacy visual events preserve frozen bump descriptors without executable checkpoint conversion"
           }
         ]
       },
@@ -3148,6 +3210,10 @@
           {
             "path": "test/motion-readout.test.mjs",
             "anchor": "selected measurement lifecycle preserves every tick, isolates selection and exposes history loss"
+          },
+          {
+            "path": "test/scene-library.test.mjs",
+            "anchor": "scene library keeps independent snapshots and preserves bytes on quota or corrupt-storage failure"
           }
         ],
         "negative": [
@@ -3162,6 +3228,10 @@
           {
             "path": "test/motion-readout.test.mjs",
             "anchor": "selected-body displacement overflow invalidates immediately during warmup"
+          },
+          {
+            "path": "test/scene-library.test.mjs",
+            "anchor": "scene library keeps independent snapshots and preserves bytes on quota or corrupt-storage failure"
           }
         ]
       },
@@ -5252,6 +5322,452 @@
         ]
       },
       "qualificationBars": []
+    },
+    {
+      "id": "camera-completed-exposure",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Powered ordinary cameras expose only completed scheduled ticks, preserve trigger continuation and reject duplicate or busy requests without hidden sensing. Checkpoint pending manual IDs must be the newest accepted request and cannot repeat the completed manual result.",
+      "owners": [
+        {
+          "path": "src/simulation/camera-state.mjs",
+          "anchor": "createCameraState"
+        },
+        {
+          "path": "src/core/workshop.mjs",
+          "anchor": "createWorkshop"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-camera-browser",
+        "measure-cameras"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/camera-integration.test.mjs",
+            "anchor": "manual camera requests are atomic, deduplicated, powered, scheduled and checkpoint-continuable"
+          },
+          {
+            "path": "test/camera-state.test.mjs",
+            "anchor": "checkpoint rejects completed or superseded manual requests as pending without changing live state"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/camera-state.test.mjs",
+            "anchor": "controller edges during a reserved exposure report busy without replacing the manual request"
+          },
+          {
+            "path": "test/camera-integration.test.mjs",
+            "anchor": "unpowered camera cannot make a valid photo; authored controller rising edge takes exactly one"
+          },
+          {
+            "path": "test/camera-integration.test.mjs",
+            "anchor": "camera brownout and exhausted cells stop powered exposures with accounted energy"
+          },
+          {
+            "path": "test/camera-state.test.mjs",
+            "anchor": "checkpoint rejects completed or superseded manual requests as pending without changing live state"
+          }
+        ]
+      },
+      "qualificationBars": [
+        "F1"
+      ]
+    },
+    {
+      "id": "camera-photo-ownership",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Photo bytes remain bounded application-owned session data with immutable source provenance and visible gallery selection; late or replayed captures cannot publish photos or downloads. Paused camera entry stays explicitly paused, and canvas-only feedback captures the visible camera view without rerendering the hidden orbit view. Beginning catalog placement exits camera view so its preview is visible in the workshop.",
+      "owners": [
+        {
+          "path": "src/application/camera-gallery.mjs",
+          "anchor": "createCameraGallery"
+        },
+        {
+          "path": "src/application/camera-session.mjs",
+          "anchor": "createCameraSession"
+        },
+        {
+          "path": "src/presentation/camera-controls.mjs",
+          "anchor": "createCameraControls"
+        },
+        {
+          "path": "src/presentation/workshop-screenshot.mjs",
+          "anchor": "captureWorkshopScreenshot"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-camera-browser"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/camera-gallery.test.mjs",
+            "anchor": "gallery retains existing photographs at both bounds, owns URLs, and clears explicitly"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "camera destination pins completed frames, suppresses replay and retains paused frame identity"
+          },
+          {
+            "path": "test/camera-renderer.test.mjs",
+            "anchor": "camera reports bounded resources and separate raster copy and PNG completion cost"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "photo metadata retains immutable source provenance alongside the build"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "entering paused camera view labels a completed exposure paused and resumes live only in Run"
+          },
+          {
+            "path": "test/workshop-screenshot.test.mjs",
+            "anchor": "feedback copies the visible camera canvas and returns to orbit only after camera view closes"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/camera-gallery.test.mjs",
+            "anchor": "epoch and deadline cancellation retain the one encoder reservation until it settles"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "deleting the last camera releases its renderer and notifies view recovery without any photographs"
+          },
+          {
+            "path": "test/camera-controls.test.mjs",
+            "anchor": "camera refresh releases orbit only on view transitions and preserves a subsequent drag owner"
+          },
+          {
+            "path": "test/camera-gallery.test.mjs",
+            "anchor": "a successful encoder does not erase concurrent busy rejections"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "successful exposure retains visible competing trigger rejection until explicit clear"
+          },
+          {
+            "path": "test/camera-renderer.test.mjs",
+            "anchor": "camera context loss rejects stale rasterization and recovers only with a fresh render"
+          },
+          {
+            "path": "test/camera-controls.test.mjs",
+            "anchor": "first photo selection is visible and later refresh preserves the chosen photo"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "power loss and missing samples retain the old image with explicit non-live status"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "entering paused camera view labels a completed exposure paused and resumes live only in Run"
+          },
+          {
+            "path": "test/workshop-screenshot.test.mjs",
+            "anchor": "feedback copies the visible camera canvas and returns to orbit only after camera view closes"
+          },
+          {
+            "path": "test/workshop-screenshot.test.mjs",
+            "anchor": "feedback copies the visible view only when its camera image is available"
+          }
+        ]
+      },
+      "qualificationBars": [
+        "F1"
+      ]
+    },
+    {
+      "id": "camera-authored-optics",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Ordinary camera optics follow completed physical transforms and authored materials. Lost rendering contexts cannot publish fresh images; requested viewing cones belong only to workshop inspection and leave with selection. Camera inspection diagnostics remain finite plain JSON before first use so recording stays available. Optical rope spans use completed physical node positions and authored diameter without selection or connection identity; removing spans releases their retained geometry.",
+      "owners": [
+        {
+          "path": "src/model/camera.mjs",
+          "anchor": "opticalFrame"
+        },
+        {
+          "path": "src/model/mirror-assembly.mjs",
+          "anchor": "proposeMirroredAssembly"
+        },
+        {
+          "path": "src/presentation/camera-renderer.mjs",
+          "anchor": "createCameraRenderer"
+        },
+        {
+          "path": "src/presentation/camera-frustum.mjs",
+          "anchor": "createCameraFrustum"
+        },
+        {
+          "path": "src/presentation/rope-view.mjs",
+          "anchor": "createRopeView"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-camera-browser"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/camera-integration.test.mjs",
+            "anchor": "camera copy and mirror preserve authored choices and reflect the optical frame"
+          },
+          {
+            "path": "test/camera-integration.test.mjs",
+            "anchor": "camera authored optical pose and material survive Undo Redo and reload"
+          },
+          {
+            "path": "test/camera-frustum.test.mjs",
+            "anchor": "unshown camera cone diagnostics remain recordable JSON"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "optical input copies completed rope geometry without connection identity or editor selection"
+          },
+          {
+            "path": "test/camera-renderer.test.mjs",
+            "anchor": "camera rope surfaces occlude rays at completed nodes and release retained geometry"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/camera-integration.test.mjs",
+            "anchor": "ordinary camera has authored mass, valid optics, independent supply and no image controller channels"
+          },
+          {
+            "path": "test/camera-frustum.test.mjs",
+            "anchor": "requested camera cone follows completed lens pose and leaves with selection or view"
+          },
+          {
+            "path": "test/camera-frustum.test.mjs",
+            "anchor": "unshown camera cone diagnostics remain recordable JSON"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "optical input copies completed rope geometry without connection identity or editor selection"
+          },
+          {
+            "path": "test/camera-renderer.test.mjs",
+            "anchor": "camera rope surfaces occlude rays at completed nodes and release retained geometry"
+          }
+        ]
+      },
+      "qualificationBars": [
+        "F1"
+      ]
+    },
+    {
+      "id": "powered-lamp-output",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "A configurable lamp uses shared funded electrical output, receiver ownership and ordinary history; completed optical telemetry alone drives all admitted lamp rendering.",
+      "owners": [
+        {
+          "path": "src/simulation/power.mjs",
+          "anchor": "createPowerNetwork"
+        },
+        {
+          "path": "src/model/lamps.mjs",
+          "anchor": "LAMP_LIMIT"
+        },
+        {
+          "path": "src/presentation/lamp-view.mjs",
+          "anchor": "createLampView"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-lamp-browser",
+        "verify-lamp-performance"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/lamp-power.test.mjs",
+            "anchor": "lamp default output is funded and its energy is counted once"
+          },
+          {
+            "path": "test/lamp-authoring.test.mjs",
+            "anchor": "lamp trace matches four fresh processes and both production clocks"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/lamp-authoring.test.mjs",
+            "anchor": "forged lamp checkpoint cannot invent powered output behind an off receiver"
+          },
+          {
+            "path": "test/lamp-power.test.mjs",
+            "anchor": "receiver explicitly replaces default including zero negative disabled and fresh commands"
+          },
+          {
+            "path": "test/lamp-view.test.mjs",
+            "anchor": "lamp emission and fixed-flux cone read completed telemetry including off and weak output"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "completed-state-reuse",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Cached physical reads retire when their physical state changes and cannot be mutated through public reads. Completed contacts feed the following sensor sample. Typed native response vectors preserve validated finite values and disjoint result views. Power publication is immutable; power-network receipt rejection preserves completed state and the pending allocation for retry without restore, including position validation. Session failure publication retains the previous completed power projection and records the failure bundle. Numeric body admission constructs and freezes owned arrays from finite primitives without trusting caller-owned trees.",
+      "owners": [
+        {
+          "path": "src/simulation/physics/world.mjs",
+          "anchor": "createPhysicsWorld"
+        },
+        {
+          "path": "src/simulation/physics/native-response.mjs",
+          "anchor": "readNativeResponse"
+        },
+        {
+          "path": "src/simulation/power.mjs",
+          "anchor": "createPowerNetwork"
+        },
+        {
+          "path": "src/model/observation.mjs",
+          "anchor": "immutableCopy"
+        },
+        {
+          "path": "src/model/observation.mjs",
+          "anchor": "immutableBodySample"
+        }
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "unchanged door reads reuse native samples while impulse, step and restore invalidate them"
+          },
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "completed contact reads feed the next sensor sample without a second native scan"
+          },
+          {
+            "path": "test/native-response.test.mjs",
+            "anchor": "response adapter preserves typed vectors and owns disjoint result views"
+          },
+          {
+            "path": "test/power.test.mjs",
+            "anchor": "completed power reads are admitted immutable snapshots detached from later work"
+          },
+          {
+            "path": "test/power.test.mjs",
+            "anchor": "measured kick work determines driver loss and conserves the electrical allocation"
+          },
+          {
+            "path": "test/observation.test.mjs",
+            "anchor": "publication reuses admitted body trees and keeps retained observations immutable"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "unchanged door reads reuse native samples while impulse, step and restore invalidate them"
+          },
+          {
+            "path": "test/native-response.test.mjs",
+            "anchor": "response adapter preserves typed vectors and owns disjoint result views"
+          },
+          {
+            "path": "test/power.test.mjs",
+            "anchor": "power-network late receipt rejection preserves completed and pending state for retry without restore"
+          },
+          {
+            "path": "test/power.test.mjs",
+            "anchor": "session late power failure publishes the previous completed power and a failure bundle"
+          },
+          {
+            "path": "test/power.test.mjs",
+            "anchor": "completion rechecks an untrusted position receipt before committing its angle"
+          },
+          {
+            "path": "test/observation.test.mjs",
+            "anchor": "numeric body admission owns its arrays and rejects every non-finite or nonnumeric field"
+          },
+          {
+            "path": "test/observation.test.mjs",
+            "anchor": "immutable copies preserve data keys and reject non-data descriptors"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "completed-draw-order",
+      "qualificationBars": [],
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "The workshop draw loop advances the existing clock before GPU submission. Paused display callbacks do not advance simulation; restarting resets the wall-clock origin. Display reflection receipts identify completed draw cursors, and view preparation is measured separately from GPU submission. Equivalent blueprint replacements retain authored resources; content edits refresh them. Submission metrics identify their endpoint, reject historical F2 samples, and record timeout or disposal without a successful latency. A before-draw callback error does not terminate the view frame scheduler. Failed view preparation cannot submit a partial scene or publish a new completed draw cursor; a successful update restores submission.",
+      "owners": [
+        {
+          "path": "src/application/clock.mjs",
+          "anchor": "createClock"
+        },
+        {
+          "path": "src/application/workshop-app.mjs",
+          "anchor": "mountWorkshopApp"
+        },
+        {
+          "path": "src/presentation/workshop-view.mjs",
+          "anchor": "createWorkshopView"
+        },
+        {
+          "path": "src/application/render-submission.mjs",
+          "anchor": "createRenderSubmissionTracker"
+        }
+      ],
+      "checks": [
+        "verify-attachment-status",
+        "verify-spring-performance",
+        "verify-render-lifecycle"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/clock.test.mjs",
+            "anchor": "external display clock advances and reflects before drawing without owning another RAF"
+          },
+          {
+            "path": "test/render-submission.test.mjs",
+            "anchor": "submission metrics identify their endpoint and ignore an older completed draw"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/clock.test.mjs",
+            "anchor": "external display clock advances and reflects before drawing without owning another RAF"
+          },
+          {
+            "path": "test/render-submission.test.mjs",
+            "anchor": "a never-drawing or hidden window records one bounded incomplete sample and cancels its RAF"
+          },
+          {
+            "path": "test/render-submission.test.mjs",
+            "anchor": "dispose records cancellation of every pending measurement and clears timers and frames"
+          },
+          {
+            "path": "test/render-submission.test.mjs",
+            "anchor": "a wrong cursor remains an explicit superseded sample, never successful latency"
+          },
+          {
+            "path": "test/f2.test.mjs",
+            "anchor": "F2 v2 rejects historical, mixed endpoint and incomplete render-submission samples"
+          }
+        ]
+      }
     }
   ],
   "browserLocalScopes": [
@@ -5276,7 +5792,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
       "externalImports": []
     },
     {
@@ -5300,7 +5816,7 @@
         "vite"
       ],
       "consumers": [],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a"
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -5318,7 +5834,7 @@
         "verify-mirror-browser"
       ],
       "consumers": [],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a"
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -5338,7 +5854,7 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a"
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -5350,7 +5866,8 @@
         "src/application/capture-packet.mjs",
         "src/application/capture-stream.mjs",
         "src/application/feedback-capture-gate.mjs",
-        "src/application/feedback-client.mjs"
+        "src/application/feedback-client.mjs",
+        "src/application/recording-admission.mjs"
       ],
       "externalImports": [],
       "checks": [
@@ -5368,7 +5885,7 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a"
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -5385,7 +5902,8 @@
         "verify-workshop",
         "verify-spring-browser",
         "verify-learning-examples",
-        "verify-assembly-library-browser"
+        "verify-assembly-library-browser",
+        "verify-authorable-scenes"
       ],
       "consumers": [
         "index.html",
@@ -5395,15 +5913,17 @@
         "src/presentation/assembly-mirror.mjs",
         "src/presentation/assembly-placement-view.mjs",
         "src/presentation/connection-test.mjs",
+        "src/presentation/scene-editor.mjs",
         "src/presentation/surface-controls.mjs",
         "src/presentation/workshop-view.mjs",
         "test/connection-test.test.mjs",
         "test/failure-messages.test.mjs",
         "test/gear-construction.test.mjs",
         "test/receiver-input-owner.test.mjs",
+        "test/scene-editor.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a"
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065"
     }
   ],
   "experimentInputScopes": [
@@ -5655,7 +6175,7 @@
   "browserReviewMetadataScopes": [
     {
       "entrypoint": "scripts/verify-exploded-browser.mjs",
-      "sourceSha256": "ed5a14cda2af23899421efdb88bcb6f5da1eaed9b0a86953c20739fb99359eb7",
+      "sourceSha256": "0b56888cc029700b3b349a4114870653fea2546c2c19e79b739e7ddd505cd410",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
@@ -5678,7 +6198,7 @@
         }
       ],
       "consumers": [],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -5743,7 +6263,7 @@
           ]
         }
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "externalImports": [
         "node:crypto",
@@ -5751,7 +6271,7 @@
         "node:http"
       ],
       "consumers": [],
-      "sourceSha256": "52345784d0bd97a39f08eb1a9bca11f9e830251a80451aca6dc8a2787625e860",
+      "sourceSha256": "0c17fcba765e4f27c65be6e76cde1da0173162a1d43270a472845288b9c5b870",
       "entrypoint": "scripts/verify-feedback-receipts.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -5792,7 +6312,7 @@
         }
       ],
       "consumers": [],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -5865,8 +6385,8 @@
           ]
         }
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
-      "consumerSourceHash": "6581a5485e182d1bd6b8bc873367bfeeda8d49e1f1b3c47cd784dbd42f2aa7ea",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
+      "consumerSourceHash": "cb3560aea5fab6afd26abd3d39110f99e9f5aeab3a68af9e751974c5b7af532e",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -5875,7 +6395,7 @@
       "consumers": [
         "scripts/verify-cloud-playtest.mjs"
       ],
-      "sourceSha256": "36c86e28e377b3bc0a5e325b9c4c66c65307f85749e65a710a614b397c294ed8",
+      "sourceSha256": "a638bb5902804e31610ad59db3602cf43f7bbc3323e5c9116218c96e263bc9d8",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -5917,22 +6437,26 @@
           ]
         }
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
-      "consumerSourceHash": "8c4c1e250f2a42ba73e197d88524bf82eaf573f17de265aadb3706d40ed40e00",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
+      "consumerSourceHash": "e2e9b0100237f398acf3aaa04f94763a13937f67dcb7f6a138a36399f97e630c",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
         "node:fs"
       ],
       "consumers": [
+        "scripts/assembly-ux-cases.mjs",
+        "scripts/part-help-cases.mjs",
         "scripts/qualify-workshop.mjs",
         "scripts/verify-adaptive-graphics.mjs",
         "scripts/verify-assemblies-browser.mjs",
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser.mjs",
+        "scripts/verify-camera-browser.mjs",
         "scripts/verify-camera-recovery.mjs",
         "scripts/verify-cloud-playtest.mjs",
         "scripts/verify-connection-test-browser.mjs",
@@ -5946,6 +6470,8 @@
         "scripts/verify-feedback-recovery.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-lamp-browser.mjs",
+        "scripts/verify-lamp-performance.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-linear-actuator-browser.mjs",
@@ -5975,10 +6501,12 @@
         "scripts/verify-vehicle-controls.mjs",
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
+        "test/assembly-partitions.test.mjs",
         "test/browser-evidence.test.mjs",
-        "test/f2.test.mjs"
+        "test/f2.test.mjs",
+        "test/part-help-partitions.test.mjs"
       ],
-      "sourceSha256": "7ef87c76a73050eaa045804bcfe34f7d677b3c8247b5216251225091d845f23f",
+      "sourceSha256": "a1b822370e7a65c272ebdd5b08d9b57a1025cf5e334de373299c1be5b55007a0",
       "entrypoint": "scripts/browser-evidence.mjs",
       "dependencies": [
         "scripts/app-fingerprint.mjs",
@@ -6008,14 +6536,15 @@
           ]
         }
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
-      "consumerSourceHash": "8c4c1e250f2a42ba73e197d88524bf82eaf573f17de265aadb3706d40ed40e00",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
+      "consumerSourceHash": "e2e9b0100237f398acf3aaa04f94763a13937f67dcb7f6a138a36399f97e630c",
       "externalImports": [
         "node:child_process",
         "node:crypto",
         "node:fs"
       ],
       "consumers": [
+        "scripts/assembly-ux-cases.mjs",
         "scripts/assess.mjs",
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
@@ -6026,6 +6555,7 @@
         "scripts/ci.mjs",
         "scripts/gate-structural.mjs",
         "scripts/gate.mjs",
+        "scripts/part-help-cases.mjs",
         "scripts/qualify-m1.mjs",
         "scripts/qualify-workshop.mjs",
         "scripts/replay.mjs",
@@ -6035,9 +6565,11 @@
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
+        "scripts/verify-camera-browser.mjs",
         "scripts/verify-camera-recovery.mjs",
         "scripts/verify-ci-browser.mjs",
         "scripts/verify-cloud-playtest.mjs",
@@ -6054,6 +6586,8 @@
         "scripts/verify-final.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-lamp-browser.mjs",
+        "scripts/verify-lamp-performance.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-linear-actuator-browser.mjs",
@@ -6087,6 +6621,7 @@
         "scripts/verify-vehicle-controls.mjs",
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
+        "test/assembly-partitions.test.mjs",
         "test/browser-evidence.test.mjs",
         "test/browser-report.test.mjs",
         "test/ci-order.test.mjs",
@@ -6096,11 +6631,13 @@
         "test/fixtures/browser-suite-cleanup.mjs",
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
+        "test/lamp-authoring.test.mjs",
         "test/learning-runtime.test.mjs",
         "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
+        "test/part-help-partitions.test.mjs",
         "test/release-determinism.test.mjs",
         "test/rope-session.test.mjs",
         "test/runtime-preflight.test.mjs",
@@ -6146,14 +6683,15 @@
           ]
         }
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
-      "consumerSourceHash": "deabbba75583ca644585246bdf25c9a9831efba1281d8476fc560580b118f16d",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
+      "consumerSourceHash": "dc05689496264d1e990c534637106d1263e7f9319727be187e31f393ba30d679",
       "externalImports": [
         "node:child_process",
         "node:crypto",
         "node:fs"
       ],
       "consumers": [
+        "scripts/assembly-ux-cases.mjs",
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
         "scripts/browser-scope-apply.mjs",
@@ -6169,10 +6707,12 @@
         "scripts/gate-structural.mjs",
         "scripts/gate.mjs",
         "scripts/inspect-change.mjs",
+        "scripts/measure-cameras.mjs",
         "scripts/measure-gears.mjs",
         "scripts/measure-ropes.mjs",
         "scripts/measure-shared-sensing.mjs",
         "scripts/measure-springs.mjs",
+        "scripts/part-help-cases.mjs",
         "scripts/playtest/calibrate.mjs",
         "scripts/playtest/ci-release.mjs",
         "scripts/playtest/experiment-inputs.mjs",
@@ -6187,9 +6727,11 @@
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
+        "scripts/verify-camera-browser.mjs",
         "scripts/verify-camera-recovery.mjs",
         "scripts/verify-candidate.mjs",
         "scripts/verify-ci-browser.mjs",
@@ -6207,6 +6749,8 @@
         "scripts/verify-final.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-lamp-browser.mjs",
+        "scripts/verify-lamp-performance.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-linear-actuator-browser.mjs",
@@ -6241,6 +6785,7 @@
         "scripts/verify-vehicle-controls.mjs",
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
+        "test/assembly-partitions.test.mjs",
         "test/browser-documentation-selection.test.mjs",
         "test/browser-evidence.test.mjs",
         "test/browser-registry-live.test.mjs",
@@ -6262,6 +6807,7 @@
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
+        "test/part-help-partitions.test.mjs",
         "test/playtest-calibration.test.mjs",
         "test/playtest-release.test.mjs",
         "test/release-pipeline.test.mjs",
@@ -6272,7 +6818,8 @@
         "test/verification-preparation.test.mjs",
         "test/verification-resume-controls.test.mjs",
         "test/verification-resume.test.mjs",
-        "test/verification-run.test.mjs"
+        "test/verification-run.test.mjs",
+        "vite.config.mjs"
       ],
       "sourceSha256": "e6d17d47613f5a704e08cf7a0324ee12d52a4852bc3168b50ae75579a59458f2",
       "entrypoint": "scripts/source-identity.mjs",
@@ -6327,6 +6874,7 @@
         "test/contracts/release-process.mjs",
         "test/determinism.test.mjs",
         "test/free-build-continuity.test.mjs",
+        "test/lamp-authoring.test.mjs",
         "test/learning-runtime.test.mjs",
         "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
@@ -6334,8 +6882,8 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
-      "consumerSourceHash": "5f0feb85ae88b61225dc4757d842c6e874ac02a706fce157e3809dbcb8617fcf"
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
+      "consumerSourceHash": "bc665e6007dda6c46cd96a6889351ba62f177d7bdeb81206fe2b87d5dc2d241b"
     },
     {
       "checks": [
@@ -6351,8 +6899,8 @@
           ]
         }
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
-      "consumerSourceHash": "6581a5485e182d1bd6b8bc873367bfeeda8d49e1f1b3c47cd784dbd42f2aa7ea",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
+      "consumerSourceHash": "cb3560aea5fab6afd26abd3d39110f99e9f5aeab3a68af9e751974c5b7af532e",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -6416,8 +6964,8 @@
           ]
         }
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
-      "consumerSourceHash": "6581a5485e182d1bd6b8bc873367bfeeda8d49e1f1b3c47cd784dbd42f2aa7ea",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
+      "consumerSourceHash": "cb3560aea5fab6afd26abd3d39110f99e9f5aeab3a68af9e751974c5b7af532e",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -6475,8 +7023,8 @@
           ]
         }
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
-      "consumerSourceHash": "6581a5485e182d1bd6b8bc873367bfeeda8d49e1f1b3c47cd784dbd42f2aa7ea",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
+      "consumerSourceHash": "cb3560aea5fab6afd26abd3d39110f99e9f5aeab3a68af9e751974c5b7af532e",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -6506,8 +7054,8 @@
           ]
         }
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
-      "consumerSourceHash": "6581a5485e182d1bd6b8bc873367bfeeda8d49e1f1b3c47cd784dbd42f2aa7ea",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
+      "consumerSourceHash": "cb3560aea5fab6afd26abd3d39110f99e9f5aeab3a68af9e751974c5b7af532e",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -6647,8 +7195,8 @@
           ]
         }
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
-      "consumerSourceHash": "71b54b39b5f2cd9f9dfb9277285d1dabc88c3607607b2494dc5c52719793eac0",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
+      "consumerSourceHash": "8cbaf5b2aa0b4d6a61f1a7d2c2b3847db425e1905228d1633f5303cd191422dc",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -6736,8 +7284,8 @@
           ]
         }
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
-      "consumerSourceHash": "8c4c1e250f2a42ba73e197d88524bf82eaf573f17de265aadb3706d40ed40e00",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
+      "consumerSourceHash": "e2e9b0100237f398acf3aaa04f94763a13937f67dcb7f6a138a36399f97e630c",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -6749,6 +7297,7 @@
       "consumers": [
         "scripts/analysis-snapshot.mjs",
         "scripts/app-fingerprint.mjs",
+        "scripts/assembly-ux-cases.mjs",
         "scripts/assess.mjs",
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
@@ -6771,6 +7320,7 @@
         "scripts/gate.mjs",
         "scripts/inspect-change.mjs",
         "scripts/navigate.mjs",
+        "scripts/part-help-cases.mjs",
         "scripts/playtest/ci-release.mjs",
         "scripts/playtest/experiment-inputs.mjs",
         "scripts/playtest/release.mjs",
@@ -6785,9 +7335,11 @@
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
+        "scripts/verify-camera-browser.mjs",
         "scripts/verify-camera-recovery.mjs",
         "scripts/verify-candidate.mjs",
         "scripts/verify-ci-browser.mjs",
@@ -6805,6 +7357,8 @@
         "scripts/verify-final.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-lamp-browser.mjs",
+        "scripts/verify-lamp-performance.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-linear-actuator-browser.mjs",
@@ -6841,6 +7395,7 @@
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
         "test/analysis-snapshot.test.mjs",
+        "test/assembly-partitions.test.mjs",
         "test/browser-documentation-selection.test.mjs",
         "test/browser-evidence.test.mjs",
         "test/browser-registry-live.test.mjs",
@@ -6864,12 +7419,14 @@
         "test/fixtures/candidate-priority.mjs",
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
+        "test/lamp-authoring.test.mjs",
         "test/learning-runtime.test.mjs",
         "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
         "test/module-graph.test.mjs",
+        "test/part-help-partitions.test.mjs",
         "test/physics-boundary.test.mjs",
         "test/playtest-release.test.mjs",
         "test/release-determinism.test.mjs",
@@ -6974,8 +7531,8 @@
           ]
         }
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
-      "consumerSourceHash": "6581a5485e182d1bd6b8bc873367bfeeda8d49e1f1b3c47cd784dbd42f2aa7ea",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
+      "consumerSourceHash": "cb3560aea5fab6afd26abd3d39110f99e9f5aeab3a68af9e751974c5b7af532e",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -7046,8 +7603,8 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
-      "consumerSourceHash": "49ff0dbc17cb1fa8c1b1eacc1dc1251d5c9567a0e7ba21936a69b3bd44f318c0"
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
+      "consumerSourceHash": "0987d7255df875938806082621e90c65af6a02badc2de7e45c46566cc0b902f6"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -7084,15 +7641,15 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
-      "consumerSourceHash": "49ff0dbc17cb1fa8c1b1eacc1dc1251d5c9567a0e7ba21936a69b3bd44f318c0"
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
+      "consumerSourceHash": "0987d7255df875938806082621e90c65af6a02badc2de7e45c46566cc0b902f6"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
       "checks": [
         "invariant-controls"
       ],
-      "sourceSha256": "c364f386baed4d697fc8ec11877a8f1428aa823bc32e27c9a4a343331fb762ee",
+      "sourceSha256": "13d0f5313236158bdafd216ce3e18f9a91515176d1151395c61fb2dc593c97b3",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs"
@@ -7111,7 +7668,7 @@
         }
       ],
       "consumers": [],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -7150,7 +7707,7 @@
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
       "reads": [
         {
           "expression": "readFile(file)",
@@ -7162,7 +7719,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "6581a5485e182d1bd6b8bc873367bfeeda8d49e1f1b3c47cd784dbd42f2aa7ea"
+      "consumerSourceHash": "cb3560aea5fab6afd26abd3d39110f99e9f5aeab3a68af9e751974c5b7af532e"
     },
     {
       "entrypoint": "scripts/playtest/feedback-node.mjs",
@@ -7196,7 +7753,7 @@
         "test/playtest-server.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
       "reads": [
         {
           "expression": "readFileSync(join(this.root, id, 'envelope.json'), 'utf8')",
@@ -7232,7 +7789,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "71b54b39b5f2cd9f9dfb9277285d1dabc88c3607607b2494dc5c52719793eac0"
+      "consumerSourceHash": "8cbaf5b2aa0b4d6a61f1a7d2c2b3847db425e1905228d1633f5303cd191422dc"
     },
     {
       "entrypoint": "scripts/verify-feedback-flow.mjs",
@@ -7249,7 +7806,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
       "reads": [
         {
           "expression": "new URL(req.url, 'http://localhost')",
@@ -7310,7 +7867,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
       "reads": [
         {
           "expression": "new URL(req.url, 'http://localhost')",
@@ -7364,7 +7921,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "f224f8a8d32c2542d688c01d12cc8989c818c1e774fe06cd8827f19b3deae38a",
+      "roots": "2980b80c7be49a364c27537b1379b0d4eba8e7cb24379468d72cc181b2d7a065",
       "reads": [
         {
           "expression": "readFileSync(file)",
