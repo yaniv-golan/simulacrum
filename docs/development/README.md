@@ -453,8 +453,10 @@ Summary-only discovery does not replace execution evidence. [Local completion](.
 [final verification](../../scripts/verify-final.mjs#implementation) also record
 a fresh failed outcome when runtime, arguments or base-revision admission fails.
 Use the [browser evidence helpers](../../scripts/browser-evidence.mjs#source) for repeated interactions:
-`loadAndWait(page, file, { ok })` uploads through the file input and returns a fresh matching
-command receipt, including rejected loads. The [application-owned receipt sequence](../../src/application/workshop-app.mjs#source) advances
+`loadAndWait(page, file, { ok })` waits for a callable workshop command probe within
+the page’s existing wait bound before reading state or uploading through the file input.
+It then returns a fresh matching command receipt, including rejected loads. Served build
+metadata alone does not establish workshop initialization or image readiness. The [application-owned receipt sequence](../../src/application/workshop-app.mjs#source) advances
 on completed attempts even when the simulation cursor does not change.
 `assertRejectedEdit({ snapshot, action })` compares the caller's consequential state projection
 before and after a rejected receipt; include history and cursor where those are part of the claim.

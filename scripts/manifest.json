@@ -3854,7 +3854,7 @@
       "id": "verification-live-evidence",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Live reports remain non-green until cleanup, retain attempt-owned evidence and distinguish skipped gates from executed failures.",
+      "guarantee": "Live reports remain non-green until cleanup, retain attempt-owned evidence and distinguish skipped gates from executed failures. Browser load evidence waits for an initialized command probe before reads or upload and still requires a fresh matching completed receipt.",
       "owners": [
         {
           "path": "scripts/verify-browser-suite.mjs",
@@ -3863,6 +3863,10 @@
         {
           "path": "scripts/verification-cleanup.mjs",
           "anchor": "withCleanup"
+        },
+        {
+          "path": "scripts/browser-evidence.mjs",
+          "anchor": "createBrowserEvidence"
         }
       ],
       "checks": [
@@ -3877,6 +3881,10 @@
           {
             "path": "test/browser-report.test.mjs",
             "anchor": "same-context suite reuse references retained original evidence for success and failures"
+          },
+          {
+            "path": "test/browser-evidence.test.mjs",
+            "anchor": "load helper waits for the command probe before reading or submitting a save"
           }
         ],
         "negative": [
@@ -3887,6 +3895,10 @@
           {
             "path": "test/browser-report.test.mjs",
             "anchor": "cleanup attempts every resource despite phase publication and close failures"
+          },
+          {
+            "path": "test/browser-evidence.test.mjs",
+            "anchor": "load helper propagates startup timeout without reading or submitting a save"
           }
         ]
       },

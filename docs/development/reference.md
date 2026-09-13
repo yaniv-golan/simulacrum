@@ -120,7 +120,7 @@ These are registered commands and checks, not evidence that they passed.
 | native-qualification-controls | [qualifyNative](../../scripts/native-qualification.mjs) | verification-scope-configuration |
 | build-reset-precision | [command.type === 'build'](../../src/core/workshop.mjs) | verification-scope-configuration |
 | ball-workshop-experience | [createRetry](../../src/application/retry.mjs), [contactProperties](../../src/model/contact-properties.mjs), [createImpactEvents](../../src/presentation/impact-sound.mjs) | invariant-controls, verify-ball-browser, verify-remote-playtest |
-| verification-live-evidence | [withBrowserReport](../../scripts/verify-browser-suite.mjs), [withCleanup](../../scripts/verification-cleanup.mjs) | verification-workflow |
+| verification-live-evidence | [withBrowserReport](../../scripts/verify-browser-suite.mjs), [withCleanup](../../scripts/verification-cleanup.mjs), [createBrowserEvidence](../../scripts/browser-evidence.mjs) | verification-workflow |
 | verification-priority-coverage | [prioritizeBrowserChecks](../../scripts/browser-selection.mjs), [runCI](../../scripts/ci.mjs), [returnBrowserHistory](../../scripts/browser-history.mjs) | verification-workflow |
 | documentation-batch-review | [reviewSections](../../scripts/documentation.mjs) | developer-documentation |
 | browser-scope-reviewed-application | [deriveScopeProposal](../../scripts/browser-scope-proposal.mjs), [applyScopeProposal](../../scripts/browser-scope-apply.mjs), [validateScopeWitnessResult](../../scripts/browser-scope-witness-contract.mjs) | verification-scope-configuration |
