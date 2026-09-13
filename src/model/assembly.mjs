@@ -120,7 +120,13 @@ function snapFrames(blueprint, A, B) {
 /** Numeric configuration crosses the physics door; identifiers stay in mapping. */
 export function compileAssembly(
   blueprint,
-  { gravity = BUILD_ENVIRONMENT.gravity, ground = BUILD_ENVIRONMENT.ground } = {},
+  {
+    gravity = BUILD_ENVIRONMENT.gravity,
+    ground = {
+      ...BUILD_ENVIRONMENT.ground,
+      ...(typeof blueprint.environment === 'object' ? blueprint.environment.ground : {}),
+    },
+  } = {},
 ) {
   validate(blueprint);
   validatePlacementGeometry(blueprint);

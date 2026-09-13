@@ -83,15 +83,15 @@ These are registered commands and checks, not evidence that they passed.
 
 | Invariant | Production owners | Registered checks |
 | --- | --- | --- |
-| rejected-edit-atomicity | [createWorkshop](../../src/core/workshop.mjs) | invariant-controls |
-| preview-isolation | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [createAssemblyMirror](../../src/presentation/assembly-mirror.mjs), [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs) | invariant-controls, verify-mirror-browser |
+| rejected-edit-atomicity | [createWorkshop](../../src/core/workshop.mjs) | invariant-controls, verify-authorable-scenes |
+| preview-isolation | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [createAssemblyMirror](../../src/presentation/assembly-mirror.mjs), [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs), [createDocumentProposal](../../src/presentation/document-proposal.mjs) | invariant-controls, verify-mirror-browser, verify-authorable-scenes |
 | input-cancellation | [createVehicleControls](../../src/presentation/vehicle-controls.mjs), [createPlacementLifecycle](../../src/presentation/placement-lifecycle.mjs), [createReceiverArbiter](../../src/simulation/receiver-arbiter.mjs), [createPowerNetwork](../../src/simulation/power.mjs), [createSession](../../src/simulation/session.mjs) | invariant-controls, verify-ui-lifecycle-browser, verify-part-help-browser, verify-part-help-inspectors, verify-part-help-window, verify-spring-browser |
-| geometry-agreement | [partPrimitives](../../src/model/geometry.mjs), [compileAssembly](../../src/model/assembly.mjs) | invariant-controls, verify-property-focus, verify-surface-browser, verify-ball-browser |
+| geometry-agreement | [partPrimitives](../../src/model/geometry.mjs), [compileAssembly](../../src/model/assembly.mjs), [environmentObstacles](../../src/model/environment.mjs), [createPrimitiveGeometry](../../src/presentation/primitive-geometry.mjs) | invariant-controls, verify-property-focus, verify-surface-browser, verify-ball-browser, verify-authorable-scenes |
 | identity-material-admission | [compileAssembly](../../src/model/assembly.mjs), [MATERIALS](../../src/model/catalog.mjs) | identity |
-| checkpoint-next-step | [createSession](../../src/simulation/session.mjs) | invariant-controls |
+| checkpoint-next-step | [createSession](../../src/simulation/session.mjs) | invariant-controls, verify-authorable-scenes |
 | copied-graph-integrity | [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [insertAssembly](../../src/model/reusable-assemblies.mjs), [createAssemblyPlacement](../../src/presentation/assembly-placement.mjs) | invariant-controls, verify-assemblies-browser, verify-assembly-ux-browser |
 | connection-display-isolation | [connectionRenderSpecs](../../src/presentation/connection-render.mjs), [pickableObjects](../../src/presentation/connection-view.mjs), [createPortHardware](../../src/presentation/part-finish.mjs) | invariant-controls, verify-connection-test-browser, verify-exploded-browser |
-| capture-write-admission | [createPlaytestServer](../../scripts/playtest-server.mjs), [CaptureStore](../../scripts/playtest/cloud-store.mjs), [bodyReservation](../../scripts/playtest/protocol.mjs) | invariant-controls |
+| capture-write-admission | [createPlaytestServer](../../scripts/playtest-server.mjs), [CaptureStore](../../scripts/playtest/cloud-store.mjs), [bodyReservation](../../scripts/playtest/protocol.mjs) | invariant-controls, verify-authorable-scenes |
 | capture-cloud-integrity | [CaptureStore](../../scripts/playtest/cloud-store.mjs) | invariant-controls |
 | capture-receipt-ownership | [openCaptureOutbox](../../src/application/capture-outbox.mjs), [mountRemotePlaytest](../../src/application/remote-playtest.mjs) | invariant-controls, verify-feedback-receipts |
 | release-publisher-ownership | [ReleaseCoordinator](../../scripts/playtest/release-control.mjs) | invariant-controls |

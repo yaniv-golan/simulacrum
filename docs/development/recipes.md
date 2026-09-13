@@ -18,7 +18,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"249edf152e297ec4c1169a854b12dae1aa648cd5137d7a876fa3cbbf164fd8ee","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"99348d03b3f30d77049ee34a2395fc8630cea4daf818c6518eb82384706d7c16","disposition":"still accurate","rationale":"Frame construction timing does not modify catalog geometry, schema, material admission, mounting surfaces, gear support eligibility or Ball controls. The recipe's ordinary authored-part and independent renderer/model checks still apply."} -->
+<!-- doc-review {"version":1,"fingerprint":"590df6b70b021ff657fb288be8701c66a686eba7ce2699b77d6847531ae603a2","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"9a44f09c567de087602008db853238b0388edc8363e16a448786a2b650755eb9","disposition":"still accurate","rationale":"No part, primitive, material row, rating or milestone changed. Derived scene orientation normalization reuses the documented model transform owner and keeps existing part-admission instructions valid."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -58,7 +58,7 @@ when changing admission.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"c742457e58eded3890b2e70615181375ce572b6ae6c8d365d2e1354b811a41ef","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"0b2206365b7cb7ad062d7dfb94bf5761f8afdd20c59ce33874548185183c11aa","disposition":"still accurate","rationale":"Session and observation changes add diagnostic timings after completed simulation work; core shape validation, candidate compilation, atomic command history and rejected-edit effects are unchanged, preserving the surface-mount example and controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"9068b42d6f1e9ff730a4372cf52bc272ba3b42f1922ddcf46bad1acb6c7f0c5b","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"37bbe720481a0698645a68d7b09535ad081db04f113b537d635a95d5aad9745b","disposition":"still accurate","rationale":"No command is added. Space and period now reach existing run/pause/step handlers in scene context, including existing draft admission guards. Scene replacement and history remain ordinary core commands."} -->
 
 
 
@@ -73,9 +73,18 @@ mounting, adjustment and Undo. Add malformed input, accepted effect, rejected-st
 identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing contract assertions](../../test/contracts/editing.mjs) as shown by [mixed editing examples](../../test/editing-contracts.test.mjs); inspect
 `node scripts/explain-invariant.mjs rejected-edit-atomicity`.
 
+Scene edits use `replace-scene` with `expectedCursor`, whole-workshop admission,
+and the existing chronological history. The environment controls in
+[test/environment.test.mjs](../../test/environment.test.mjs#source) cover legacy
+geometry, authored scene identity, aggregate capacity, rejection and continuation.
+[Capacity transactions](../../test/scene-capacity.test.mjs#source) use a physically clear
+nearly-full workshop and retain Undo through replacement, duplication, import and load rejection.
+[Scene preservation](../../test/scene-preservation.test.mjs#source) covers capture round trips,
+legacy visual events, current checkpoint continuation, machine measurements and sensor scope.
+
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"2db42b4ea010dc6f341a571ba31fde3c270359d772b3fa3d332aebe32ae1177c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"a6438503af3ded01072ffca72faba88eaddc716257f62752434f0438dda3632c","disposition":"updated","rationale":"The recipe now names both help interaction and catalog inspector checks. All seven scenario bodies and viewports were preserved, with separate artifacts and unchanged watchdogs; ordinary input ownership and user behavior assertions remain."} -->
+<!-- doc-review {"version":1,"fingerprint":"2af1b2c14a358f80749806c6edecf41421cf5a0f0aa065fd893a55aa03ea7a0c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"9da99ddb05a066ff5333a8bf8567f3ddcdbc640604a408f628f0359b8aa3fa8f","disposition":"still accurate","rationale":"Mirror loading explicitly confirms replacement before asserting that the old preview clears. This aligns the browser witness with the documented accepted-load lifecycle; production input and cancellation ownership are unchanged."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -125,7 +134,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"061d54b22a01c6e3246d8d5c8464abeab0edf3857f4290a38dc25fac9b369e44","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"e694a2241100261b7377c2e245c740cc51e6c3792f379bc78fc78a698d917370","disposition":"still accurate","rationale":"The new frame-construction attribution reads diagnostic timing and does not change motion or controller diagnosis. Completed observation ownership, causal uncertainty, separate history, and measurement sampling remain the prescribed diagnostic path."} -->
+<!-- doc-review {"version":1,"fingerprint":"622c9d484e3a867eb3e2639446eb09ef32ef1a135e90a49913576ef4be0aee25","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"ca30e482b45bbb5f8fc13f1ab6aa75d18a943bfbbba46a776717ccdcac7e0119","disposition":"still accurate","rationale":"No diagnostic, telemetry field or metric denominator changed. The normalized descriptor fix removes an artificial contact seam; machine metric and sensor preservation controls pass unchanged in meaning."} -->
 
 
 
@@ -155,7 +164,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"27d2a20ee8e8d91d45d7c577a430aa0c3a28401e7aee618f97402fc1058e1564","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"bb77467145a30afa4ae9a37dc84520ceeacec91b75aea8e5c8d7d01cd9053447","disposition":"still accurate","rationale":"Session still constructs and publishes the same completed state after one integration; frameMs only separates a measured cost. Gear measurement adds attribution while retaining loaded apparatus durations, physical assertions and absolute budgets, so all numerical and authority requirements here remain binding."} -->
+<!-- doc-review {"version":1,"fingerprint":"ed53ea315ea46352662bcafca54aeecd5b02489c93332b84a7d19f0b21b14d5b","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"b7661e2276d10d8bbbea5d25cdbfa53bf357b4f3218078e9c7f5ad749c54a7c4","disposition":"updated","rationale":"Extended the frozen seam protocol to admitted quaternion rounding and sign equivalents. Existing 2mm and 0.01m/s bounds and raised-seam negative control remain intact; normalization changes geometry interpretation without physics identity dispatch."} -->
 
 
 
@@ -165,6 +174,15 @@ under [motor law](../../src/simulation/physics/law/motor.mjs) or
 [spring law](../../src/simulation/physics/law/spring.mjs). Configuration comes
 from the compiler; laws receive numerical inputs, not identities. The session owns
 phase ordering and one integration; do not introduce a second clock or hidden support.
+
+Fixed scene geometry comes from [environment descriptors](../../src/model/environment.mjs#source).
+The scene compiler unions matching adjacent boxes instead of exposing internal
+coplanar faces to contacts. Retain the frozen [contact controls](../../test/scene-contact.test.mjs#source):
+continuous/split trajectories and energy, admitted quaternion rounding and sign equivalents,
+raised-seam counterexample, analytical
+inclines and separately measured intentional edge drops. These are bounded development
+fixtures, not general contact or Course qualification. Render and pick individual
+authored descriptors while compiling the same occupied volume; no identity selects physics.
 
 Worked example: a motor-work change needs independent energy accounting in
 [impulse energy tests](../../test/impulse-energy.test.mjs#implementation), shared-body controls in
@@ -299,7 +317,7 @@ settings and slop. Re-run existing contact/constraint cases when changing this p
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"eab6cfa85d5242d7ebc5689d8d5f0ddd7d39086e451f1632bd9cf27a4e1ca621","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"14c04cbb58330a8cd2fb2d232edee5ac86623c8254c434dc74e58ce4a158e66d","disposition":"still accurate","rationale":"Observation timing and shared browser lifecycle instrumentation do not change copied graph membership, reference remapping, assembly persistence or atomic commands. The listed assembly journeys and rendered/completed comparisons remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"11d62ef29128104e48ca56aaabca678163ab7c656fafa52bf7dd2f58fe77e7bb","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"f04993f1b044a107f4d3460d6df9ca84554f73eeaf8d1e7ba63378c6a3f39675","disposition":"still accurate","rationale":"Assembly and part-help fixtures use the shared replacement-confirmation helper for repeated loads. Pending-file retry validation now waits until confirmation actually starts reading. These repair test setup without changing the described assembly authoring, source-bound proposals or rejected-operation guarantees."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -312,7 +330,7 @@ Authored references include travel `springBinding` and encoder `jointBinding` co
 from ordinary wiring. Check these references alongside endpoint remapping so an
 otherwise valid copy cannot silently measure the source machine's spring.
 Environment belongs to the receiving blueprint, not a captured assembly. Preserve
-that preset during insertion and validate placement against its canonical obstacles.
+that authored scene or legacy preset during insertion and validate placement against its canonical obstacles.
 The guided-wheel and [pin-ended strut](../../src/model/fixtures/articulated-suspension.mjs#symbol=createPinEndedStrut)
 modules are ordinary assembly captures. Their named external mounts must work through
 normal connection commands after insertion, save/load and proper rotation; retaining
@@ -392,7 +410,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"3ca425b05015638a9ad5b620385a6cb4768110559e8c897696090c55127b77a2","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"11518e76292e149100a74a1fe95bbe224a693aac876995219af335edab3f5f50","disposition":"updated","rationale":"Assembly previews now resolve surface-bound fixed mounts with the shared model helper, preserving face offsets and authored rotations alongside catalogue ports; the added regression covers both poses and resource disposal."} -->
+<!-- doc-review {"version":1,"fingerprint":"38a758a826d7634314562ec8daebc9421f418144deae06766fd2e1d158cfe041","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"814e06aec37cb91f17d02595a531b45a621f3438cc5468852d3b4bd9a89eb241","disposition":"still accurate","rationale":"No overlay placement, visibility lifecycle or graphics budget changed. Scene previews and capture review continue to reconstruct model geometry, now normalized consistently before rendering."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

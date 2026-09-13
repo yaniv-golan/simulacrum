@@ -1,3 +1,4 @@
+import { environmentObstacles } from './environment.mjs';
 import {
   resolveSurfaceEndpoint,
   validateSurfacePair,
@@ -9,6 +10,8 @@ import { CATALOG, MATERIALS } from './catalog.mjs';
 export const BLUEPRINT_REASON_CODES = Object.freeze([
   'OK',
   'INVALID_BLUEPRINT',
+  'SCENE_OBJECT_LIMIT',
+  'SCENE_BODY_LIMIT',
   'INVALID_JSON',
   'SAVE_VERSION_UNSUPPORTED_OLD',
   'SAVE_VERSION_FUTURE',
@@ -59,6 +62,8 @@ function invalidData(value, path = '', ancestors = new Set(), depth = 0) {
 export function validateBlueprint(blueprint) {
   const bad = invalidData(blueprint);
   if (bad !== null) return result('INVALID_BLUEPRINT', bad);
+  if (Array.isArray(blueprint?.environment?.objects) && blueprint.environment.objects.length > 32)
+    return result('SCENE_OBJECT_LIMIT', '/environment/objects');
   if (!validateSchema(blueprint)) {
     const error = validateSchema.errors[0];
     let path = error.instancePath;
@@ -72,6 +77,13 @@ export function validateBlueprint(blueprint) {
     if (path.endsWith('/rotation') || /^\/parts\/\d+\/rotation\//.test(path))
       return result('INVALID_ROTATION', path.replace(/(\/rotation)\/\d+$/, '$1'));
     return result('INVALID_BLUEPRINT', path);
+  }
+  try {
+    const obstacles = environmentObstacles(blueprint.environment);
+    if (blueprint.parts.length + obstacles.length + 1 > 4097)
+      return result('SCENE_BODY_LIMIT', '/environment/objects');
+  } catch {
+    return result('INVALID_BLUEPRINT', '/environment');
   }
   const parts = new Map();
   for (let index = 0; index < blueprint.parts.length; index++) {

@@ -1,3 +1,4 @@
+import { createPrimitiveGeometry } from './primitive-geometry.mjs';
 import * as THREE from 'three';
 import { reviewTimeline, seekReview, sceneParts, safeMedia } from './capture-review-model.mjs';
 export function mountCaptureReview(data, index) {
@@ -56,13 +57,7 @@ export function mountCaptureReview(data, index) {
       const parts = sceneParts(event.context.observation);
       for (const part of parts)
         for (const primitive of part.primitives) {
-          const [x, y, z] = primitive.halfExtents;
-          const geometry =
-            primitive.kind === 'sphere'
-              ? new THREE.SphereGeometry(x, 32, 24)
-              : primitive.kind === 'cylinder'
-                ? new THREE.CylinderGeometry(y, y, x * 2, 24).rotateZ(-Math.PI / 2)
-                : new THREE.BoxGeometry(x * 2, y * 2, z * 2);
+          const geometry = createPrimitiveGeometry(primitive);
           const mesh = new THREE.Mesh(
             geometry,
             new THREE.MeshStandardMaterial({ color: 0xb1cad7, wireframe: false }),

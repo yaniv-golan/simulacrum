@@ -21,6 +21,7 @@ const browserEvidence = createFixtureEvidence({
     'src/application/capture-outbox.mjs',
     'src/application/capture-stream.mjs',
     'src/application/capture-packet.mjs',
+    'src/application/recording-admission.mjs',
     'package-lock.json',
     'scripts/verify-feedback-receipts.mjs',
   ],
@@ -36,6 +37,7 @@ const server = createServer((req, res) => {
       '/capture-outbox.mjs',
       '/capture-stream.mjs',
       '/capture-packet.mjs',
+      '/recording-admission.mjs',
       '/fflate.mjs',
     ].includes(req.url)
       ? 'text/javascript'
@@ -44,19 +46,21 @@ const server = createServer((req, res) => {
         : 'text/html',
   );
   res.end(
-    req.url === '/fflate.mjs'
-      ? readFileSync('node_modules/fflate/esm/browser.js')
-      : req.url === '/capture-packet.mjs'
-        ? readFileSync('src/application/capture-packet.mjs')
-        : req.url === '/capture-stream.mjs'
-          ? readFileSync('src/application/capture-stream.mjs')
-          : req.url === '/capture-outbox.mjs'
-            ? readFileSync('src/application/capture-outbox.mjs')
-            : req.url === '/remote.mjs'
-              ? source
-              : req.url === '/style.css'
-                ? css
-                : '<link rel="stylesheet" href="/style.css"><meta name="build-id" content="receipt-test"><script type="importmap">{"imports":{"fflate":"/fflate.mjs"}}</script><script type="module">import {unpackCapturePacket} from "/capture-packet.mjs";window.unpackCapturePacket=unpackCapturePacket;import {captureStreamLimits} from "/capture-stream.mjs";window.captureStreamLimits=captureStreamLimits;import {mountRemotePlaytest} from "/remote.mjs";window.mountCapture=()=>mountRemotePlaytest({context:()=>({}),checkpoint:()=>({}),screenshot:()=>{throw Error("screenshot unavailable")}});window.remoteCapture=await window.mountCapture();</script>',
+    req.url === '/recording-admission.mjs'
+      ? readFileSync('src/application/recording-admission.mjs')
+      : req.url === '/fflate.mjs'
+        ? readFileSync('node_modules/fflate/esm/browser.js')
+        : req.url === '/capture-packet.mjs'
+          ? readFileSync('src/application/capture-packet.mjs')
+          : req.url === '/capture-stream.mjs'
+            ? readFileSync('src/application/capture-stream.mjs')
+            : req.url === '/capture-outbox.mjs'
+              ? readFileSync('src/application/capture-outbox.mjs')
+              : req.url === '/remote.mjs'
+                ? source
+                : req.url === '/style.css'
+                  ? css
+                  : '<link rel="stylesheet" href="/style.css"><meta name="build-id" content="receipt-test"><script type="importmap">{"imports":{"fflate":"/fflate.mjs"}}</script><script type="module">import {unpackCapturePacket} from "/capture-packet.mjs";window.unpackCapturePacket=unpackCapturePacket;import {captureStreamLimits} from "/capture-stream.mjs";window.captureStreamLimits=captureStreamLimits;import {mountRemotePlaytest} from "/remote.mjs";window.mountCapture=()=>mountRemotePlaytest({context:()=>({}),checkpoint:()=>({}),screenshot:()=>{throw Error("screenshot unavailable")}});window.remoteCapture=await window.mountCapture();</script>',
   );
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));

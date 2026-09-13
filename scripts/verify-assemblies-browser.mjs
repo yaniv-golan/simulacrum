@@ -1,3 +1,4 @@
+import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
@@ -163,7 +164,7 @@ try {
   ]);
   await libraryDialog.getByRole('button', { name: 'Close', exact: true }).click();
   // Load the UI-authored save through its actual file input; the library is not needed to resolve it.
-  await page.locator('input[type=file]').first().setInputFiles(`${out}/machine.json`);
+  await uploadWorkshopFile(page, `${out}/machine.json`);
   await page.waitForFunction(
     (expected) =>
       JSON.stringify(window.workshopProbe.observe().frames[0].metadata.blueprint) ===

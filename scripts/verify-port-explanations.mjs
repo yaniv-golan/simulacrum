@@ -1,3 +1,4 @@
+import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -166,9 +167,7 @@ try {
     browserArtifactPath('artifacts/feedback-fixes/two-motors.json'),
     JSON.stringify(twoMotors),
   );
-  await page
-    .locator('input[type=file]')
-    .setInputFiles(browserArtifactPath('artifacts/feedback-fixes/two-motors.json'));
+  await uploadWorkshopFile(page, browserArtifactPath('artifacts/feedback-fixes/two-motors.json'));
   await select('Second wheel');
   await page.locator('.port-button[data-port-id=axle]').click();
   await page

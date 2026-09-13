@@ -28,6 +28,7 @@ test('live registry freshness and mirror coverage contract', async () => {
     'verify-workshop',
     'verify-spring-browser',
     'verify-learning-examples',
+    'verify-authorable-scenes',
   ].sort();
   assert.deepEqual(
     affectedBrowserChecks([...docs, ...code])

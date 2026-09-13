@@ -1,3 +1,4 @@
+import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createSensorWorkshop } from '../src/model/fixtures/sensor-workshop.mjs';
@@ -16,14 +17,11 @@ const openCode = async () => {
 };
 try {
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
-  await page
-    .locator('input[type=file]')
-    .first()
-    .setInputFiles({
-      name: 'sensor-rules.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify(createSensorWorkshop('range'))),
-    });
+  await uploadWorkshopFile(page, {
+    name: 'sensor-rules.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(createSensorWorkshop('range'))),
+  });
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).metadata.blueprint.id === 'sensor-range',
   );
@@ -52,14 +50,11 @@ try {
   const oversized = original + '\n//' + 'x'.repeat(16384);
   await code.fill(oversized);
   await page.reload();
-  await page
-    .locator('input[type=file]')
-    .first()
-    .setInputFiles({
-      name: 'sensor-rules.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify(createSensorWorkshop('range'))),
-    });
+  await uploadWorkshopFile(page, {
+    name: 'sensor-rules.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(createSensorWorkshop('range'))),
+  });
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).metadata.blueprint.id === 'sensor-range',
   );
@@ -150,14 +145,11 @@ try {
   }
   for (const kind of ['contact', 'tilt', 'jointAngle', 'linearMotion', 'contactLoad']) {
     await page.locator('[data-command=build]').click();
-    await page
-      .locator('input[type=file]')
-      .first()
-      .setInputFiles({
-        name: kind + '.json',
-        mimeType: 'application/json',
-        buffer: Buffer.from(JSON.stringify(createSensorWorkshop(kind))),
-      });
+    await uploadWorkshopFile(page, {
+      name: kind + '.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(createSensorWorkshop(kind))),
+    });
     await page.waitForFunction(
       (kind) => JSON.parse(window.render_game_to_text()).metadata.blueprint.id === 'sensor-' + kind,
       kind,
@@ -235,14 +227,11 @@ try {
   await page.locator('[data-command=build]').click();
   const broken = createSensorWorkshop('range');
   broken.connections = broken.connections.filter((c) => c.id !== 'sensor-power');
-  await page
-    .locator('input[type=file]')
-    .first()
-    .setInputFiles({
-      name: 'broken.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify(broken)),
-    });
+  await uploadWorkshopFile(page, {
+    name: 'broken.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(broken)),
+  });
   await page.locator('[data-command=run]').click();
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tick > 5);
   if (!(await page.locator('.machine-picker').evaluate((el) => el.open)))
@@ -285,14 +274,11 @@ try {
   await page.locator('[data-command=build]').click();
   const missed = createSensorWorkshop('range');
   missed.parts.filter((p) => p.id.startsWith('barrier')).forEach((p) => (p.position[0] += 2));
-  await page
-    .locator('input[type=file]')
-    .first()
-    .setInputFiles({
-      name: 'missed.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify(missed)),
-    });
+  await uploadWorkshopFile(page, {
+    name: 'missed.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(missed)),
+  });
   await page.locator('[data-command=run]').click();
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tick > 5);
   if (!(await page.locator('.machine-picker').evaluate((el) => el.open)))
@@ -335,14 +321,11 @@ try {
     .getByRole('textbox', { name: 'Controller TypeScript' })
     .fill(sourceBefore + '\n// retained after reload');
   await page.reload();
-  await page
-    .locator('input[type=file]')
-    .first()
-    .setInputFiles({
-      name: 'saved.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify(savedBuild)),
-    });
+  await uploadWorkshopFile(page, {
+    name: 'saved.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(savedBuild)),
+  });
   if (!(await page.locator('.machine-picker').evaluate((el) => el.open)))
     await page.locator('.machine-picker > summary').click();
   await page.locator('.part-list-item[data-part-id=rules]').click();

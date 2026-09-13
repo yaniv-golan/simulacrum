@@ -1,5 +1,8 @@
 import { REASON_CODES } from './reasons.mjs';
 const messages = {
+  SCENE_OBJECT_LIMIT: 'A scene supports up to 32 objects. Delete an object before adding another.',
+  SCENE_BODY_LIMIT:
+    'The machine, scene and floor exceed the 4,097-body limit. Remove a part or scene object before retrying.',
   MIRROR_UNREPRESENTABLE:
     'These parts cannot be mirrored with their current shapes or connections.',
   UNKNOWN_SURFACE: 'Choose a highlighted mounting surface.',

@@ -1,3 +1,4 @@
+import { assertRecordableObservation } from './recording-admission.mjs';
 function uploadFailureMessage(code) {
   return code === 401 || code === 403
     ? 'Open your invitation again in another tab, then return here. Keep this tab open.'
@@ -498,6 +499,7 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
     startController = new AbortController();
     let timeout;
     try {
+      assertRecordableObservation(context()?.observation);
       recordingMode = startAttempt
         ? JSON.parse(startAttempt.bodyText).metadata.recordingMode
         : canRecord && config.optionalVideo === true && dialog.querySelector('[data-video]').checked

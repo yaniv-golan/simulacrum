@@ -1,3 +1,4 @@
+import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { CATALOG } from '../src/model/catalog.mjs';
@@ -21,14 +22,11 @@ export async function runPartHelpCases(partition, evidence, browser) {
     await context.tracing.start({ screenshots: true, snapshots: true });
     const observed = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
     const load = async (bp) => {
-      await page
-        .locator('input[type=file]')
-        .first()
-        .setInputFiles({
-          name: 'help.json',
-          mimeType: 'application/json',
-          buffer: Buffer.from(JSON.stringify(bp)),
-        });
+      await uploadWorkshopFile(page, {
+        name: 'help.json',
+        mimeType: 'application/json',
+        buffer: Buffer.from(JSON.stringify(bp)),
+      });
       await page.waitForFunction(
         (id) => JSON.parse(window.render_game_to_text()).metadata.blueprint.id === id,
         bp.id,

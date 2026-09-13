@@ -9,19 +9,22 @@
     "scripts/playtest/worker.mjs": "fb47b7557423ab5169d83c319b217e4266ac629f7629b542c8838bc41d4113af",
     "src/application/capture-outbox.mjs": "195ea8b98f0f58b4fdeaab72e22d5377a120d71ec1025a865240fa05c1df7c7b",
     "src/application/capture-packet.mjs": "0d51704f9bc85d531d6e3e546c3e48910ccce250646f9024bc0e17bf2be41de0",
-    "src/application/capture-stream.mjs": "db4c9322b9b8264b97f7680a0ca4f4aaad907beae3bcb2c9d3ebea01b7dc5d84",
-    "src/application/remote-playtest.mjs": "0880cb576991aacfea1dbe95e3d67b4f9134de039eb89bfa1fea47d5fe2f3023",
+    "src/application/capture-stream.mjs": "6c3c2df0c5a483f44600ce9168a35b22c86574f8750fedd106bcbcc4f4312d28",
+    "src/application/recording-admission.mjs": "598fe397746dda726246b7b4f213178b4d557e1261ecc4f6eb5880a1e91cacb8",
+    "src/application/remote-playtest.mjs": "6ecf6446a2717a43fcb665e17ee5f92d7f74af40a571825ea1c17f992bbcce18",
     "scripts/export-playtest.mjs": "f74b33d6d8bb831cd4730b98457214576c23fe72123437a37474c5747eb69977",
     "src/model/boundaries.d.ts": "6c2581fe4dd59ac826f07c1b3fca6cb77572ec8c255c55ce41248f4fc2fbf299",
     "src/model/catalog.mjs": "05a016e8a44bd40565978d183ef5b6d864b4ecf67caf4bdf26fea07303134500",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",
-    "src/model/environment.mjs": "2409601431d8919540401bba53335b26f14d058327a4ec16cdfc8edfd3732dbf",
-    "src/model/generated/blueprint-types.d.ts": "4ab1af630c52fc3bfd60ae0d9fbd64906a9936754b29943b70415feaf8028182",
+    "src/model/environment.mjs": "974c3e02806475c7c634d798fa3f99ca82925ec9ab0051fd5f05f7dcb3d08d00",
+    "src/model/generated/blueprint-types.d.ts": "71b841985442631ab6dd54c73faa954582152fddbc653ca8d4c31007186adc73",
+    "src/model/generated/blueprint-validator.mjs": "980a79c42c57bb6fdcfe160023152f1bd67621eed9942444d8ee682e10be0b58",
     "src/model/geometry.mjs": "6628f76885c40cd8788ac50cf4fdde44cee827472aaea673b16343512e6e2283",
     "src/model/observation.mjs": "a7f5f8d48b331921bbef3ec1b321bf078ba800cf4b4020a76f9b0a235899239c",
     "src/model/sensors.mjs": "e1cc067189f8f6c5e7b0bec99373647f5bbae8500fc9eabb6ca92518e56a0ce2",
     "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
-    "src/presentation/capture-review-model.mjs": "b60de6be75b5358b237dfa9e89ad13de67b2a72b8315ee8131a3f4a1c6c41d4c",
-    "src/presentation/capture-review.mjs": "44cbcca6712dfc2af91f8d174750c7d462cb0dd6700b6529b39a0feed90ef3b7"
+    "src/presentation/capture-review-model.mjs": "2ce9e276e130546db57b08c993abddcf4c59f9057111c3ba1de4c541d2822f33",
+    "src/presentation/capture-review.mjs": "d536067837b442d689e3684b8069e46ab5a0e07666400cc1563cfa1e4e69c0b6",
+    "src/presentation/primitive-geometry.mjs": "2dfe4e2f74784b7080e1f867cb7e15bb1956e665d9b1be7cdaf9ccfcbafc847c"
   }
 }

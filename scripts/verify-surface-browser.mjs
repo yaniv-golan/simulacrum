@@ -1,3 +1,4 @@
+import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -29,7 +30,7 @@ try {
     1,
     'selected motor must expose surface placement',
   ]);
-  await page.locator('input[type=file]').setInputFiles(`${out}/fixture.json`);
+  await uploadWorkshopFile(page, `${out}/fixture.json`);
   const read = () =>
     page.evaluate(() => window.workshopProbe.observe().frames[0].metadata.blueprint);
   async function select(id) {
@@ -256,7 +257,7 @@ try {
     await page.evaluate(() => window.workshopProbe.readInteractionState().surfacePlacement),
     null,
   ]);
-  await page.locator('input[type=file]').setInputFiles(`${out}/fixture.json`);
+  await uploadWorkshopFile(page, `${out}/fixture.json`);
   await page.waitForFunction(
     (expected) =>
       JSON.stringify(window.workshopProbe.observe().frames[0].metadata.blueprint) === expected,
@@ -308,7 +309,7 @@ try {
     ],
   };
   writeFileSync(`${out}/full-turn.json`, JSON.stringify(fullTurnFixture));
-  await page.locator('input[type=file]').setInputFiles(`${out}/full-turn.json`);
+  await uploadWorkshopFile(page, `${out}/full-turn.json`);
   await select('moving');
   await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
   await page.getByLabel('Mounting face').selectOption('left');
@@ -334,7 +335,7 @@ try {
     'full-turn preview does not author a joint',
   ]);
   await page.screenshot({ path: `${out}/full-turn.png` });
-  await page.locator('input[type=file]').setInputFiles(`${out}/fixture.json`);
+  await uploadWorkshopFile(page, `${out}/fixture.json`);
   await page.waitForFunction(
     () => window.workshopProbe.observe().frames[0].metadata.blueprint.id === 'surface-test',
   );

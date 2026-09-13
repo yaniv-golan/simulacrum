@@ -92,7 +92,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"83e70567647aea12a5ed7d1373e8ed6a0882f988bc046d5d31b9e1ac2b6c60a0","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"7c51d01a3e8f3372c870d934ace9bd64c4970de29c7d4e7220c05e97aa76c9c3","disposition":"still accurate","rationale":"Recording seek reconstruction is faster but capture consent, release admission and qualification policies are unchanged. Local, merge and final commands described here retain the same distinct outcomes."} -->
+<!-- doc-review {"version":1,"fingerprint":"a0dff0558e6259f4179335e0aea3c99680516266f916b56f95d73d4d70d47ed2","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"8fbb1abb6be92638531a1041090b8635a6993bf54afde40b5eedf93cebd96d9a","disposition":"still accurate","rationale":"Browser upload helpers now explicitly accept workshop replacement, while local/merge/final tier definitions, receipt sequence checks and human-evidence separation remain unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"699cec8dddcf6da2d671fb5c4eba65d5c74f2a5f6d97d057e487aeba4a4823e0","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"101696f911689ee4beabd7cddeebc56513a2ac50eb7f98deea20ce3c3ff9cfcf","disposition":"still accurate","rationale":"The generated reference now includes the socket owner and controls; regeneration, per-section review and source-bound completion workflow are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e53eee3b36896c25a70d3bc915f5f8dcf5cbc7d6b689244806d3a9e0f5d10962","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"595795fe81cd62ffebff3dc72df00f155e821d3f4f0db52e0581b20fb32b6616","disposition":"still accurate","rationale":"Regenerated reference now includes shared primitive reconstruction and new scene controls, capacity, and preservation witnesses. The source-bound discovery and individual review workflow is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"f993680e9a2f29a63692d4d29c561334160f32308103f9806866fab4d9bb02c2","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c592fa40dab53d56400e08f0716e768c341ac5f679c92ba03a1320412b940d4a","disposition":"still accurate","rationale":"The manifest adds one surface-mount preview regression control to the existing connection-display invariant; scope rules, readers, selection and mandatory witness application remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b061fde6040a924f8d9187b1c169433de6ce4a2d017551a573f6aab5a439bc0f","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"e1f439d3fc2e65adf74aa9e81b42cd5e3fa028c39a0d56f107cc6f4c6b693ae6","disposition":"still accurate","rationale":"Existing invariant rows gain specific scene witnesses without changing the exclusive browser execution policy or narrowing any scope. Scope freshness still requires isolated witness execution."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -394,7 +394,8 @@ Summary-only discovery does not replace execution evidence. [Local completion](.
 [final verification](../../scripts/verify-final.mjs#implementation) also record
 a fresh failed outcome when runtime, arguments or base-revision admission fails.
 Use the [browser evidence helpers](../../scripts/browser-evidence.mjs#source) for repeated interactions:
-`loadAndWait(page, file, { ok })` uploads through the file input and returns a fresh matching
+`loadAndWait(page, file, { ok })` uploads through the file input, explicitly accepts
+the full-workshop replacement prompt when needed, and returns a fresh matching
 command receipt, including rejected loads. The [application-owned receipt sequence](../../src/application/workshop-app.mjs#source) advances
 on completed attempts even when the simulation cursor does not change.
 `assertRejectedEdit({ snapshot, action })` compares the caller's consequential state projection
@@ -444,7 +445,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"751b2f6e7c3ab829191f42a516777167837d1665e2b6e4250f2c1c4ad0bc1d4d","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"af75a6321ae3b633932ec724c55db56311895214e3eb349d2424ac70551fdb17","disposition":"still accurate","rationale":"Registering the surface-mount preview control does not alter candidate capture, dependency installation, identity admission or verification tiers."} -->
+<!-- doc-review {"version":1,"fingerprint":"7eb4f30cfaaf52dc3f7eebdaf944143bd338d9f64a3fdebfaf66ed8549992e9f","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"d35170ee34a48868bad8381a081381d238ce22798803e8c02097437b09d7276a","disposition":"still accurate","rationale":"Browser fixtures now explicitly accept workshop replacement before waiting for loads. This does not change candidate capture, source identity, completion admission or test runner policy. The failed broad run remains preserved; the new fixture changes are not passing completion evidence."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

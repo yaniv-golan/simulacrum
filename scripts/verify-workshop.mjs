@@ -1,3 +1,4 @@
+import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -159,12 +160,14 @@ try {
   const download = await downloadPromise;
   await download.saveAs(browserArtifactPath('artifacts/browser-workshop/saved-machine.json'));
   await page.locator('[data-command=new]').click();
+  await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
   await page.waitForFunction(
     () => window.workshopProbe.observe().frames[0].metadata.blueprint.parts.length === 0,
   );
-  await page
-    .locator('input[type=file]')
-    .setInputFiles(browserArtifactPath('artifacts/browser-workshop/saved-machine.json'));
+  await uploadWorkshopFile(
+    page,
+    browserArtifactPath('artifacts/browser-workshop/saved-machine.json'),
+  );
   await page.waitForFunction(
     () => window.workshopProbe.observe().frames[0].metadata.blueprint.parts.length === 4,
   );
@@ -176,9 +179,10 @@ try {
     browserArtifactPath('artifacts/browser-workshop/future-save.json'),
     JSON.stringify({ version: 999 }),
   );
-  await page
-    .locator('input[type=file]')
-    .setInputFiles(browserArtifactPath('artifacts/browser-workshop/future-save.json'));
+  await uploadWorkshopFile(
+    page,
+    browserArtifactPath('artifacts/browser-workshop/future-save.json'),
+  );
   await page.waitForFunction(() =>
     document.querySelector('.status-message').textContent.includes('newer'),
   );
@@ -196,9 +200,10 @@ try {
     browserArtifactPath('artifacts/browser-workshop/invalid-field.json'),
     JSON.stringify(invalidSave),
   );
-  await page
-    .locator('input[type=file]')
-    .setInputFiles(browserArtifactPath('artifacts/browser-workshop/invalid-field.json'));
+  await uploadWorkshopFile(
+    page,
+    browserArtifactPath('artifacts/browser-workshop/invalid-field.json'),
+  );
   const invalidPath = `/parts/${invalidMotorIndex}/parameters/defaultDuty`;
   await page.waitForFunction(
     (path) => document.querySelector('.status-message').textContent.includes(path),

@@ -48,7 +48,8 @@ export function packParallelChecks(checks, { workers = 1, priorityCount = 0 } = 
     throw Error('invalid priority prefix');
   if (workers === 1) return [...checks];
   const ordered = checks.slice(0, priorityCount);
-  let smallRuns = [], exclusive = [];
+  let smallRuns = [],
+    exclusive = [];
   function flush() {
     let next = 0;
     for (const check of exclusive) {
@@ -64,7 +65,7 @@ export function packParallelChecks(checks, { workers = 1, priorityCount = 0 } = 
     smallRuns = [];
     exclusive = [];
   }
-  for (let i = priorityCount; i < checks.length;) {
+  for (let i = priorityCount; i < checks.length; ) {
     if (checks[i].execution !== 'parallel') {
       exclusive.push(checks[i++]);
       continue;

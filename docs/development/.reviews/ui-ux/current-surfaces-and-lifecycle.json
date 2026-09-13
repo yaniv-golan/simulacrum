@@ -1,10 +1,12 @@
 {
   "version": 1,
   "dependencies": {
-    "src/presentation/workshop-view.mjs": "193cbd1a42fc45d9bff1e17166b2fddd1c5a255e7b73b0d2bc1fbaa97350e843",
-    "src/presentation/workshop.css": "f8f044160e58203c297b4fb165a351ccb3e973799d03b7a8d45bd6dd13df1779",
+    "src/presentation/workshop-view.mjs": "0e7d1466aa249297da63af63df2dc4f5e7f3e00e3754a51f0b4b29292b172134",
+    "src/presentation/workshop.css": "aa6bb26ff681c92d2197ad150976fb7f1600a722bcef39ee5ae6d4a1435945f5",
+    "src/presentation/scene-editor.mjs": "e063e264007da18facbf553eb1190aa5437044bd1d4732cd99f79db0828d680c",
+    "src/presentation/document-proposal.mjs": "f182f9129dad9bc8c875ed524dbd88a8eaf1a3c2a2bd2e8dccfbeebae98cbf2f",
     "src/presentation/workbench-content.mjs": "35e817a6787c38e52bc94437a4ee1606a5d956b4f1036966a84441200ee83474",
-    "src/application/workshop-app.mjs": "f4445c59320b4691a7c63bb2273dbd9fb8993a11262518e6c63fc7107d0f29fb",
+    "src/application/workshop-app.mjs": "cdfba74d316c775875130e7833e930625ad4468daf17da08461f2e9ff56dc568",
     "scripts/gear-browser-cases.mjs": "3542eac5fa8c657c1e08172241f495ba585cb608478b675f0de9b02b6738662b",
     "src/presentation/motion-readout.mjs": "c4fdb627ff4f34940f0e98f2c7c84a76e3620e3c9c9e745c66b4410f53b43bc1"
   }

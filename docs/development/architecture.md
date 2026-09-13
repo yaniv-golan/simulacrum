@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"9e01d89dbbd1f466567dc547e386741b94016d4e93fd37d8ac5ec7d6000d2878","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"19b32488fb7586f27a5692c9fde85ae5290ebd835a0bb9331a782fce68da3b3d","disposition":"still accurate","rationale":"The manifest remains the single check metadata owner, now validating mergeSmoke coverage. AGENTS changes verification tiers only; runtime contracts and architectural layer authority remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"abd64eca0a23ee238874754315732d77a2fbec7eb0cafbcbc677192fb973682b","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"e969a525717306f838330a429b7faebda7ab0926179cdcc64fef0671c5c47327","disposition":"still accurate","rationale":"Runtime v1 now describes compatible authored-environment admission within save version 3. Runtime and manifest remain the same contract and milestone owners; no layer ownership or qualification authority moved."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"dd4da758ca18edf587c6d91d4f6c8eab805b62192155a935ad2d968ecc9c3195","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"21ebc859ec2525be3bfaef517120894e03d1ea5d00c3b48a8ac2c50ad4f4b5cc","disposition":"still accurate","rationale":"The view now composes cosmetic surface textures and assembly connections; command routing, immutable observations and help input ownership remain unchanged. Preview resources still have bounded disposable lifetimes."} -->
+<!-- doc-review {"version":1,"fingerprint":"b369c0f950dc03937999b71fc50c4f60d1fcf1152644c407fa55bfa4e8b278f9","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"e8c1d890daa94ba9e48fe5c57fcd6117e06aca41568213b634e8da4ddd84faa7","disposition":"updated","rationale":"Described normalization of admitted authored quaternion magnitude at the scene geometry boundary while keeping stored values untouched. Core transaction and shared shortcut command ownership remain as documented."} -->
 
 
 
@@ -39,6 +39,16 @@ it has no simulation write path and resets its baseline on missing observations.
 
 The application/view links cover their own composition and input routing code. The core, model and simulation links separately bind the admitted behavior; remote payload contents are outside these claims.
 
+The [scene model](../../src/model/environment.mjs#source) owns bounded fixed solids,
+legacy descriptors and geometric union. Authored quaternion values remain in saves;
+geometry normalizes their admitted magnitude before rendering and collider union. [Scene persistence](../../src/application/scene-library.mjs#source)
+contains no machine data. The [scene editor](../../src/presentation/scene-editor.mjs#source)
+uses the same [document proposal policy](../../src/presentation/document-proposal.mjs#source)
+as assembly insertion; core owns replacement and chronological history. Compiled scene
+solids follow machine bodies and ground, preserving machine index/mapping authority.
+[Primitive reconstruction](../../src/presentation/primitive-geometry.mjs#source) supplies
+both scene previews and capture review with the canonical cylinder tessellation and dimensions.
+
 Build edits may replace the admitted configuration; Run uses the fixed simulation
 path and forbids authoring edits. Returning to Build restores the editable starting
 machine. The view preserves the camera when that starting machine remains visible;
@@ -66,7 +76,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"ccda4e552e7ad5b312013a73df7a272fd772a3ee6af2327abddd92f604307a6b","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"203c8144ca0c4838dd1489fb7991765c0dcd6e9774aad5e804944a29dd21fffc","disposition":"still accurate","rationale":"Normal electrical overlay beads are removed while connection specifications, resource ownership and canonical model geometry remain in the listed owners. Socket decoration does not alter geometry admission."} -->
+<!-- doc-review {"version":1,"fingerprint":"8a553740f30d08efcdffb8a9af4d8ba68bdbf505de0da1b4d553f861aaf3cdbe","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"5749a9fc893f6a9146b337c0e0adca8a4628d6e212c739e51adf162b970422f7","disposition":"still accurate","rationale":"Scene geometry now calls the existing transforms.normalizeQuaternion owner named in the decision table. This consolidates canonical geometry and introduces no duplicate math or new layer edge."} -->
 
 
 
@@ -91,7 +101,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 | Palette eligibility and grouping                      | [part palette](../../src/presentation/part-palette.mjs)                                                                                                                                                                                                      | workshop palette; help coverage instead follows the catalog                             |
 | Part teaching copy and port labels                    | [help content](../../src/presentation/part-help-content.mjs), [port wording](../../src/presentation/port-wording.mjs)                                                                                                                                        | palette, inspector and static example diagrams                                          |
 | Completed contact impulses                            | [contact reader](../../src/simulation/physics/read-contacts.mjs), [session](../../src/simulation/session.mjs)                                                                                                                                                | immutable completed observations; qualification supplies independent support predicates |
-| Saved environment preset | [environment descriptors](../../src/model/environment.mjs), [assembly compiler](../../src/model/assembly.mjs) | workshop geometry, placement admission and recording review |
+| Authored environment and legacy presets | [environment descriptors](../../src/model/environment.mjs), [assembly compiler](../../src/model/assembly.mjs) | workshop geometry, placement admission and recording review; matching boxes compile as their geometric union |
 | Selected-body measurement windows | [numeric accumulator](../../src/model/motion-readout.mjs), [measurement presentation](../../src/presentation/motion-readout.mjs) | completed observation deltas supplied by the application |
 | Diagnostics from completed data                       | [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion), [connection paths](../../src/model/connection-test-paths.mjs)                                                                                                                | inspector and Check machine                                                             |
 
@@ -107,7 +117,7 @@ Ground contact and workshop motion are not Course qualification.
 
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"254fcaeca60ae8917ca3161093f37fb6ca688b52d90594f653a120c3c1f3242c","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"529f9aaa466e80496e9e4f6ea6c6ec61cfa242902e4dedbfa88e321603ab6edf","disposition":"still accurate","rationale":"The observation store's new tickTiming.frameMs is wall-clock diagnostics only. Sensor descriptors, prior-completed sampling, funded sensor execution and decision/learning histories retain their existing owners and behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"f6729eea89ad282446956d6e347f266caf88fcc89d8e5f1ee6423b8afd3e13ea","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"751f23e61199fdfc413c1546cb9e375b0aa725745d6e7e8e09f5c0e325f5837a","disposition":"still accurate","rationale":"Only derived scene orientation and presentation shortcut fallthrough changed. Sensor phases, immutable prior-tick readings, receiver arbitration and learned-controller authority remain unchanged; preservation tests pass."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

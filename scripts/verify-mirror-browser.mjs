@@ -159,6 +159,7 @@ try {
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Load', exact: true }).click();
   await (await chooser).setFiles(`${out}/ui-built-source.json`);
+  await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
   await page.waitForFunction(() => !document.querySelector('.assembly-mirror'));
   evidence.assert('deepEqual', [
     await snapshot('identical-load-cleared'),

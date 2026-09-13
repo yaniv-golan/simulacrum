@@ -4,9 +4,11 @@
     "scripts/manifest.json#check=verify-workbench-content": "f63985647ed87015f112c48b300f856a2d1738702e9bb91702ef4be8909ea46c",
     "src/presentation/workbench-content.mjs": "85a2d6b3e5fcc67d028f4823f256059cd673e2a3a41c19d6b660b48f58510659",
     "test/workbench-content.test.mjs": "0ff4bd532d0b4756ba675db7e85dde4cc4d9bdb56ff36bbca224f4ac0534ff29",
-    "scripts/verify-workbench-content.mjs": "4c963a7f8472a4816b8bcd553fe4736f38ee2df5c84e8c3434871ee59a28c293",
+    "scripts/verify-workbench-content.mjs": "50d2521cb65c5367fa4d09867d447fe82373f45acd8cca13548124040eb9099f",
     "scripts/verify-learning-examples.mjs": "8fd3dfefb63f86d7d1334593f79bd2b3797e03c785d11c0d1b18176b0e17d1c0",
-    "docs/development/playtesting.md#remote-setup": "843579787bf95da4d00be70fd5a9cc1603cea9309ca058f6e26ff5326c60916d",
+    "scripts/verify-authorable-scenes.mjs": "5eaa096d18392ff80024b6c44f66eca8765e660164e66e76efa77657dfa47ac0",
+    "test/scene-editor.test.mjs": "7d90d18178f2f36b83e0e1134af6a98b22af37be21a5d760e7b9da20f8d8f5be",
+    "docs/development/playtesting.md#remote-setup": "85bdb178011d067ed777774367b0e70e628dcdcb007c56d8f560b91dbdec39e3",
     "package.json#script=inspect:change": "3dce2ce48429d4242732dc4e49c06d644a407c094520685458a92cc0c4c09bc3",
     "package.json#script=docs:prepare": "12217c6795d7e7b9dd072d5f7c5c5f86522a3e11ca9d186fc4b0075831ca39f4",
     "package.json#script=verify:candidate": "0a3f48ca2413c756a50ee6bb10ac51d684393eeecc217bc67fedde53e25e4756"

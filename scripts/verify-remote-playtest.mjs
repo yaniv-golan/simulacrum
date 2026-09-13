@@ -279,6 +279,10 @@ try {
             }),
         });
         input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
+      await page.waitForFunction(() => typeof window.finishBallFileRead === 'function');
+      await page.evaluate(() => {
         document.querySelector('[data-command=retry]').click();
       });
       browserEvidence.assert('equal', [

@@ -291,14 +291,15 @@ test('outbox limit stops once even when the final event cannot fit', async (t) =
   await f.start();
   await settle();
   assert.equal(f.mount.active(), true);
-  assert.equal(f.calls(), 1);
+  assert.equal(f.calls(), 2, 'admission preflight and initial event each read context');
+  const initialCalls = f.calls();
   f.huge(true);
   f.mount.emit('over-limit', {});
   // IndexedDB and the packet timer may need more than a fixed number of turns.
   await waitUntil(() => !f.mount.active(), 'recording stop after outbox limit');
   f.huge(false);
   assert.equal(f.mount.active(), false);
-  assert.ok(f.calls() <= 3, 'one rejected event and at most one terminal event');
+  assert.ok(f.calls() - initialCalls <= 2, 'one rejected event and at most one terminal event');
   assert.equal(
     f.tracks.every((track) => track.readyState === 'ended'),
     true,

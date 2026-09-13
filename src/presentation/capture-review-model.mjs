@@ -1,6 +1,6 @@
 import { partPrimitives } from '../model/geometry.mjs';
 import { CATALOG } from '../model/catalog.mjs';
-import { environmentObstacles } from '../model/environment.mjs';
+import { sceneObjectDescriptors } from '../model/environment.mjs';
 export const safeMedia = (value) =>
   typeof value === 'string' && /^[a-zA-Z0-9_-]+\.(webm|mp4|png)$/.test(value);
 export function reviewTimeline(decoded) {
@@ -70,8 +70,11 @@ export function sceneParts(observation) {
     };
   });
   return authored.concat(
-    environmentObstacles(observation.metadata.blueprint.environment).map((obstacle, index) => ({
-      id: `environment-${index}`,
+    sceneObjectDescriptors(observation.metadata.blueprint.environment).map((obstacle, index) => ({
+      id:
+        typeof observation.metadata.blueprint.environment === 'object'
+          ? `scene-${observation.metadata.blueprint.environment.objects[index].id}`
+          : `environment-${index}`,
       position: [...obstacle.position],
       rotation: [...obstacle.rotation],
       primitives: [{ kind: obstacle.shape, halfExtents: [...obstacle.halfExtents] }],

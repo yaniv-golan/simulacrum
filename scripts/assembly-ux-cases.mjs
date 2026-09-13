@@ -1,3 +1,4 @@
+import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { assemblyPartition } from './assembly-scenarios.mjs';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -38,14 +39,11 @@ export async function runAssemblyCases(partition, evidence, browser) {
     await context.tracing.start({ screenshots: true, snapshots: true });
     const observed = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
     const load = async (bp) => {
-      await page
-        .locator('input[type=file]')
-        .first()
-        .setInputFiles({
-          name: 'machine.json',
-          mimeType: 'application/json',
-          buffer: Buffer.from(JSON.stringify(bp)),
-        });
+      await uploadWorkshopFile(page, {
+        name: 'machine.json',
+        mimeType: 'application/json',
+        buffer: Buffer.from(JSON.stringify(bp)),
+      });
       await page.waitForFunction(
         (id) => JSON.parse(window.render_game_to_text()).metadata.blueprint.id === id,
         bp.id,

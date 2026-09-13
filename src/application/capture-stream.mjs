@@ -1,3 +1,4 @@
+import { assertRecordableObservation } from './recording-admission.mjs';
 import { unpackCapturePacket } from './capture-packet.mjs';
 /** Versioned, bounded observations. This codec never executes recorded commands or programs. */
 export const captureStreamLimits = Object.freeze({
@@ -95,6 +96,7 @@ export function createCaptureEncoder() {
     lastKeyframeSeq = 0;
   return {
     encode(event, { keyframe = false } = {}) {
+      assertRecordableObservation(event?.context?.observation);
       const snapshot = copy(event);
       envelope(snapshot);
       if (!own(snapshot, 'context') || own(snapshot, 'contextFrame')) fail('context required');

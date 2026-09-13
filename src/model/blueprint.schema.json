@@ -6,8 +6,15 @@
   "required": ["version", "id", "name", "parts", "connections"],
   "properties": {
     "environment": {
-      "type": "string",
-      "enum": ["flat", "rounded-bump"]
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["flat", "rounded-bump"]
+        },
+        {
+          "$ref": "#/$defs/scene"
+        }
+      ]
     },
     "version": {
       "const": 3
@@ -230,6 +237,103 @@
           "items": {
             "$ref": "#/$defs/assemblyPort"
           }
+        }
+      }
+    },
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objects", "ground"],
+      "properties": {
+        "objects": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/sceneObject"
+          }
+        },
+        "ground": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["friction", "restitution"],
+          "properties": {
+            "friction": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "restitution": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+    "sceneObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "shape",
+        "halfExtents",
+        "position",
+        "rotation",
+        "material",
+        "friction",
+        "restitution",
+        "fixed"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/name"
+        },
+        "shape": {
+          "enum": ["box", "cylinder"]
+        },
+        "halfExtents": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "number",
+            "minimum": 0.005,
+            "maximum": 2
+          }
+        },
+        "position": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "number",
+            "minimum": -10,
+            "maximum": 10
+          }
+        },
+        "rotation": {
+          "$ref": "#/$defs/rotation"
+        },
+        "material": {
+          "enum": ["aluminium", "steel", "rubber"]
+        },
+        "friction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "restitution": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "fixed": {
+          "const": true
         }
       }
     }
