@@ -33,7 +33,7 @@
     "scripts/module-graph.mjs": "db47284e35c471196b3f7cffbb998660ad58b6beb79d19f92eff6b04e7508399",
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
-    "scripts/verify-release-coupler.mjs": "d000f156b1fd5dd106b77cb3bd868151695eba7c3f09b17f42253878e6cc6685",
+    "scripts/verify-release-coupler.mjs": "21541dcfac3ce1d61bd37196f86ff8b87e7a9ab8e347e2453edf68468f7a6481",
     "src/presentation/motion-readout.mjs": "c4fdb627ff4f34940f0e98f2c7c84a76e3620e3c9c9e745c66b4410f53b43bc1"
   }
 }

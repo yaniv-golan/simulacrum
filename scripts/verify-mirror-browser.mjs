@@ -18,7 +18,6 @@ const context = await browser.newContext({ viewport: { width: 1280, height: 800 
 const page = await context.newPage(),
   errors = evidence.errors,
   samples = [];
-page.setDefaultTimeout(6000);
 
 const frame = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
 async function snapshot(label) {
@@ -56,6 +55,8 @@ async function startMirror() {
 try {
   await context.tracing.start({ screenshots: true, snapshots: true });
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.waitForFunction(() => window.workshopProbe);
+  page.setDefaultTimeout(6000);
   await page.waitForFunction(() => window.render_game_to_text);
   // Build the source side through ordinary palette, surface and socket controls.
   await browseAllParts(page);

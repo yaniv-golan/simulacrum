@@ -17,6 +17,7 @@ const openCode = async () => {
 };
 try {
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.waitForFunction(() => window.workshopProbe);
   await uploadWorkshopFile(page, {
     name: 'sensor-rules.json',
     mimeType: 'application/json',
@@ -50,6 +51,7 @@ try {
   const oversized = original + '\n//' + 'x'.repeat(16384);
   await code.fill(oversized);
   await page.reload();
+  await page.waitForFunction(() => window.workshopProbe);
   await uploadWorkshopFile(page, {
     name: 'sensor-rules.json',
     mimeType: 'application/json',
@@ -377,6 +379,7 @@ try {
     .getByRole('textbox', { name: 'Controller TypeScript' })
     .fill(sourceBefore + '\n// retained after reload');
   await page.reload();
+  await page.waitForFunction(() => window.workshopProbe);
   await uploadWorkshopFile(page, {
     name: 'saved.json',
     mimeType: 'application/json',

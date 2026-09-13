@@ -10,7 +10,6 @@ mkdirSync(out, { recursive: true });
 const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
   errors = browserEvidence.errors;
-page.setDefaultTimeout(6000);
 
 const read = () => page.evaluate(() => window.workshopProbe.observe().frames[0].metadata.blueprint);
 async function select(id) {
@@ -20,6 +19,8 @@ async function select(id) {
 }
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.waitForFunction(() => window.workshopProbe);
+  page.setDefaultTimeout(6000);
   await browseAllParts(page);
   await placeCatalogPart(page, 'chassis');
   await placeCatalogPart(page, 'commandReceiver');

@@ -1,4 +1,3 @@
-import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -15,7 +14,8 @@ const source = sourceIdentity(),
 
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
-  await uploadWorkshopFile(page, 'test/fixtures/free-build-energy.json');
+  await page.waitForFunction(() => window.workshopProbe);
+  await browserEvidence.loadAndWait(page, 'test/fixtures/free-build-energy.json');
   const read = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const authored = (await read()).metadata.blueprint;
   await page.locator('[data-command=run]').click();

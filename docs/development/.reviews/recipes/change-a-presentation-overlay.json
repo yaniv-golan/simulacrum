@@ -52,7 +52,7 @@
     "scripts/module-graph.mjs": "db47284e35c471196b3f7cffbb998660ad58b6beb79d19f92eff6b04e7508399",
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
-    "scripts/verify-rope-browser.mjs": "eeb995c41545146c2bbcb4378a1d9ec8aac70c5d2c13351d70f0b6a330cacdb5",
+    "scripts/verify-rope-browser.mjs": "cba89c75238f31129d5699b0629c140e33065b4b2aee5e7c05ee75fbc61b9e20",
     "src/presentation/release-state.mjs": "4363ab1d2803e20924e4a45511df743c490e87753f51b80fa2aa4e6e8e348001",
     "test/spring-view.test.mjs": "a231d9f43da219312b36edd2415811fd3c5c272ff14974a57361ebf4e49e1e79",
     "scripts/verify-spring-browser.mjs": "582dede06c7266e1b43a86937a825adfb02fe27cb314cac3baf5083acec4122c",

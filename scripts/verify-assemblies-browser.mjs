@@ -9,7 +9,6 @@ mkdirSync(out, { recursive: true });
 const browser = await evidence.launch({ profile: 'ui' });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } }),
   page = await context.newPage();
-page.setDefaultTimeout(6000);
 const observed = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
 async function snapshot(label) {
   const frame = await observed(),
@@ -29,6 +28,8 @@ async function snapshot(label) {
 try {
   await context.tracing.start({ screenshots: true, snapshots: true });
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.waitForFunction(() => window.workshopProbe);
+  page.setDefaultTimeout(6000);
   await page.waitForFunction(() => window.render_game_to_text);
   const emptyMachine = (await observed()).metadata.blueprint;
   await page.getByRole('button', { name: 'Assemblies', exact: true }).click();

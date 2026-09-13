@@ -21,7 +21,6 @@ const context = await browser.newContext({ viewport: { width: 1280, height: 800 
 const page = await context.newPage(),
   errors = evidence.errors,
   samples = [];
-page.setDefaultTimeout(6000);
 
 const frame = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
 const blueprint = async () => (await frame()).metadata.blueprint;
@@ -85,6 +84,8 @@ try {
     document.addEventListener('visibilitychange', record);
   });
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.waitForFunction(() => window.workshopProbe);
+  page.setDefaultTimeout(6000);
   await page.waitForFunction(() => window.render_game_to_text);
   const lifecycle = await context.newCDPSession(page);
   await lifecycle.send('Emulation.setFocusEmulationEnabled', { enabled: false });
@@ -118,6 +119,7 @@ try {
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await (await download).saveAs(`${out}/bindings.json`);
   await command('new');
+  await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Load', exact: true }).click();
   await (await chooser).setFiles(`${out}/bindings.json`);

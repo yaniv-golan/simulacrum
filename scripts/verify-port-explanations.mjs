@@ -12,7 +12,6 @@ const browserEvidence = createBrowserEvidence();
 const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } }),
   errors = browserEvidence.errors;
-page.setDefaultTimeout(6000);
 
 mkdirSync(browserArtifactPath('artifacts/feedback-fixes'), { recursive: true });
 const read = () => page.evaluate(() => window.workshopProbe.observe().frames[0].metadata.blueprint);
@@ -26,6 +25,8 @@ async function select(name) {
 }
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.waitForFunction(() => window.workshopProbe);
+  page.setDefaultTimeout(6000);
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();
   await page.locator('[data-command=start-guide]').click();
   for (let i = 0; i < 16; i++) await page.locator('[data-command=guide-step]').click();

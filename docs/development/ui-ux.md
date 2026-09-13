@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"32c7a0382e11db98292e8187d784825d321e506a9f77a2acfa06d604a5a2396f","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"a12069cd3bdbd85f2a376ca4dad70a118b0573ba4832e0f63145c2300b2d8b50","disposition":"still accurate","rationale":"Scene context displaces the catalogue and owns its scrollable object list. Entering it exits mounted camera view through its existing session; requested camera and photo surfaces remain available after leaving scene editing. Replacement protection and paused New retain their documented lifetime."} -->
+<!-- doc-review {"version":1,"fingerprint":"d7c5ebd65898ed42c35e824100d1b25d8ad4ccfd7ceea0211088d0771d64b78d","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"8b89319054b0932b9d2f3f514090604d6b21c49f929f64bdf8f6111d606b7b30","disposition":"still accurate","rationale":"The release-coupler browser journey now establishes application readiness before its six-second action deadline. Its visible construction, save/reload, release, retry and narrow-layout assertions remain unchanged, as do player-facing surfaces and the no-entry learning admission."} -->
 
 
 
@@ -421,7 +421,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"4071d2ac8b1ae767dd5d67087c34c1a63aa915afc68494bd01bd77fc534ee29a","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"efb57c94a0a28b84a54e8b69482fea00106b0c14d58a31351ac83adee1d6df3c","disposition":"still accurate","rationale":"The learning example verifier now waits for application readiness before applying its six-second interaction deadline. Independent edits, Run, Undo, preserved spring tuning, replacement cancellation and the gear journey retain all existing assertions; automation still does not establish human acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"e48aab39b75868772cfc400a51cf535afc99e2cc80cd28986428b95308738bd7","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"90132dfce169763d0ea4449ae369a8efe43762aa8700b0c90993e996736410c8","disposition":"still accurate","rationale":"Workbench content startup now completes before the six-second interaction deadline. The same content lifecycle, preservation, independent attempts and nonmutating help assertions remain required; automation still does not supply human acceptance."} -->
 
 
 

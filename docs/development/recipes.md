@@ -102,7 +102,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"a7ead31834bc48748f0d141f40ec4408ad0cf0a9c5353c550d2d1fe010ea6dc8","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"99d707b7195e25179c74010b4df26e27fb8f7dadad00ed7bec3ac98f9bbe4923","disposition":"still accurate","rationale":"Powered Lamp now follows the documented rule requiring search coverage for every catalogue type. Headlamp and illuminate query controls pass without changing placement, help containment or confirmation lifetimes."} -->
+<!-- doc-review {"version":1,"fingerprint":"41a4a10dd71029bce1321e3c356ce32c8ccba15a70b62de8aeb88fdc13cd1818","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"44f717efd228f1ce4a51f166f11f84834a6fdf847c382833e1cb37246716a663","disposition":"still accurate","rationale":"The mirror verifier now waits for workshop startup before applying its six-second operation deadline. Mirror previews, input containment, cancellation, cursor guards and all existing browser outcome assertions remain unchanged."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -181,7 +181,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"64b7c2f0a703be39735383136fced00cac03a0c61bc132f68404925db3306d6e","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"747e6945c6bc6d322fbb0a00d2e2e6a7eb67ede03920e9dfa7a49626092d77e6","disposition":"still accurate","rationale":"The browser upload unit fixture now executes the helper callbacks and checks scene-only confirmation versus an empty flat document. This repairs the test double without changing physics, scene admission, analytical controls or browser interaction assertions."} -->
+<!-- doc-review {"version":1,"fingerprint":"cb275934bf3671cd6eb6ecc37a8c0c2e64f5261a26be7d665ac246486493d082","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"3a41bdf72c1e989014fcb7108d0b94c1ae551cbf255509d561d71567fd499aa2","disposition":"still accurate","rationale":"Browser fixtures now wait for startup and completed load receipts and explicitly confirm New on populated rigs. F2 still measures ten ordinary construction cycles; energy, rope, shared sensing, transform and physical assertions are retained. No numerical law, fixture geometry, admission or physics owner changed."} -->
 
 
 
@@ -428,7 +428,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"610ed34d79fd807cf41005ca333525a830f08c7a9205a90de2fb6ba14fa9592e","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"cceae89a7762f6785dd9519f94fdccc2047a78d98366bde1c4754ef7c3ed7d78","disposition":"still accurate","rationale":"Assembly insertion now shares document-proposal lifecycle with scenes; independent snapshots, exact result reconciliation and atomic core commands described here remain implemented."} -->
+<!-- doc-review {"version":1,"fingerprint":"e97a0fb6424aaf1ec70a9f3bdc685af3605aac1bebcae7552b1c697afbc3f816","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"ad27e174dd94fca43606d63ba3ec5ebb49f46755973fb212fdf22be8b5d2b015","disposition":"still accurate","rationale":"Assembly browser startup is separated from its existing action deadline. Graph ownership, capture and insertion semantics, mounting, instance independence and every assembly interaction assertion remain unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -525,7 +525,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"46c18cb23407c72bf67e9d682f03f7612483e281640ae67c66443882f216712a","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"8e488c0b18da2768c9e34deea639d91718055d7d4dcb6cd0e91b530e5fcaae88","disposition":"still accurate","rationale":"The spring pressure verifier now sustains ordinary orbit input and releases the pointer on failure. Overlay ownership, immutable physical geometry, retained rendering resources and minimum-quality pixel and geometry assertions remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"76efdf75a511b6ccab444276cbb8bc77ad4c362ebcfe3e4dc93171e64cf6cab6","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"aa94a908117be6cb5b943ed0074fd38903b0481a8031f00d9fc1942aa8f8e8ec","disposition":"still accurate","rationale":"The rope verifier now confirms replacement before constructing its second authored rig. Rope attachment, displayed geometry, tension and rendered-transform assertions remain intact; no overlay producer or renderer changed."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

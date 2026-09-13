@@ -25,6 +25,7 @@ const b = await browserEvidence.launch({ profile: 'ui', ...{} }),
 
 try {
   await browserEvidence.goto(p, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await p.waitForFunction(() => window.workshopProbe);
   await uploadWorkshopFile(p, `${out}/machine.json`);
   await p.locator('[data-port-id=axle]').click();
   const button = p.locator('[data-target-part-id=motor]');

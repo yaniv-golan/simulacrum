@@ -8,10 +8,11 @@ const evidence = createBrowserEvidence(),
 mkdirSync(out, { recursive: true });
 const browser = await evidence.launch({ profile: 'ui' });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-page.setDefaultTimeout(6000);
 const read = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
 try {
   await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.waitForFunction(() => window.workshopProbe);
+  page.setDefaultTimeout(6000);
   evidence.assert('equal', [
     await page.locator('.starter-guide').isVisible(),
     false,

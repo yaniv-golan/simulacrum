@@ -5691,7 +5691,7 @@
   "browserReviewMetadataScopes": [
     {
       "entrypoint": "scripts/verify-exploded-browser.mjs",
-      "sourceSha256": "ed5a14cda2af23899421efdb88bcb6f5da1eaed9b0a86953c20739fb99359eb7",
+      "sourceSha256": "0b56888cc029700b3b349a4114870653fea2546c2c19e79b739e7ddd505cd410",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
@@ -5867,7 +5867,7 @@
         }
       ],
       "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
-      "consumerSourceHash": "8e533c8d66c433bac43c1fa5a1996f19923df8525bd002041962a552ee1e88da",
+      "consumerSourceHash": "affc79bf0e3785592c69ebb39b5f86188ef383ceb451ca827e7df89b677705d1",
       "externalImports": ["node:assert/strict", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/assembly-ux-cases.mjs",
@@ -5953,7 +5953,7 @@
         }
       ],
       "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
-      "consumerSourceHash": "8e533c8d66c433bac43c1fa5a1996f19923df8525bd002041962a552ee1e88da",
+      "consumerSourceHash": "affc79bf0e3785592c69ebb39b5f86188ef383ceb451ca827e7df89b677705d1",
       "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/assembly-ux-cases.mjs",
@@ -6082,7 +6082,7 @@
         }
       ],
       "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
-      "consumerSourceHash": "8c2a99415a765a191040c50c28ee854f3f9b3fc0dd08846cc9472aaaa8c26fa1",
+      "consumerSourceHash": "799a15dd563735ae4db8b07e171409cc4476788bfb725e990b596830206ed500",
       "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/assembly-ux-cases.mjs",
@@ -6263,7 +6263,7 @@
         "test/starter-vehicle.test.mjs"
       ],
       "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
-      "consumerSourceHash": "cc8b2b2143e729977ec4fd3502cb0b800856d6317a2831486380472533da8306"
+      "consumerSourceHash": "5abbe76aa4ed2abcb3ae0b60d139c5095e12296d94dd92eb822c112963d58ca8"
     },
     {
       "checks": ["invariant-controls"],
@@ -6548,7 +6548,7 @@
         }
       ],
       "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
-      "consumerSourceHash": "8e533c8d66c433bac43c1fa5a1996f19923df8525bd002041962a552ee1e88da",
+      "consumerSourceHash": "affc79bf0e3785592c69ebb39b5f86188ef383ceb451ca827e7df89b677705d1",
       "externalImports": ["acorn", "css-tree", "node:fs", "node:path", "parse5", "typescript"],
       "consumers": [
         "scripts/analysis-snapshot.mjs",
@@ -6853,7 +6853,7 @@
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
       "checks": ["invariant-controls"],
-      "sourceSha256": "ce598ccd1803b779a9637764f327a09dd58785fc532c4a3efc97014857447913",
+      "sourceSha256": "13d0f5313236158bdafd216ce3e18f9a91515176d1151395c61fb2dc593c97b3",
       "dependencies": ["scripts/browser-artifacts.mjs", "scripts/browser-evidence.mjs"],
       "externalImports": ["node:fs"],
       "reads": [
