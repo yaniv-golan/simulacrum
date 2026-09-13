@@ -11,6 +11,7 @@ const identities = {
   jointAngleSensor: ['BOUND JOINT', 'ZERO / SIGN', '#d4b775'],
   rotationSensor: ['LOCAL X RATE', 'rad/s', '#8bb8b5'],
   travelSensor: ['BOUND SPRING', 'LENGTH / SPEED', '#cf9875'],
+  loadCellSensor: ['ATTACHMENT FORCE', 'A → B / +X', '#87b8cb'],
 };
 
 function drawFace(context, type, parameters, side) {
@@ -137,6 +138,23 @@ function drawFace(context, type, parameters, side) {
       context.textAlign = 'center';
       context.fillText(axis, 256, 80);
     }
+  } else if (type === 'loadCellSensor') {
+    // On +Z, screen-right is local +X (A to B). On the +X end face,
+    // +X points out of the printed plane, so identify B without a tangent arrow.
+    if (side) {
+      context.strokeRect(225, 32, 62, 62);
+      context.font = 'bold 38px sans-serif';
+      context.textAlign = 'center';
+      context.fillText('B', 256, 77);
+    } else {
+      line(158, 36, 158, 90);
+      line(354, 36, 354, 90);
+      arrow(180, 63, 332, 63);
+      context.font = 'bold 25px sans-serif';
+      context.textAlign = 'center';
+      context.fillText('A', 119, 72);
+      context.fillText('B', 393, 72);
+    }
   } else if (type === 'travelSensor') {
     line(133, 49, 379, 49);
     line(133, 83, 379, 83);
@@ -169,12 +187,12 @@ function drawFace(context, type, parameters, side) {
   context.fillText(title, 256, 177);
   context.fillStyle = accent;
   context.font = '20px sans-serif';
-  context.fillText(subtitle, 256, 213);
+  context.fillText(type === 'loadCellSensor' && side ? 'B / +X OUTWARD' : subtitle, 256, 213);
 }
 
 // Broad top identification paint stays legible from front or rear. The symbols
 // are flat printed type emblems, not another sensing face or functional hardware.
-function drawTop(context, type) {
+function drawTop(context, type, halfExtents) {
   const accent = identities[type][2];
   context.fillStyle = '#26363d';
   context.fillRect(0, 0, 512, 512);
@@ -198,6 +216,13 @@ function drawTop(context, type) {
         line(x + offset - 16, 188, x + offset + 12, 256);
         line(x + offset + 12, 256, x + offset - 16, 324);
       }
+    } else if (type === 'loadCellSensor') {
+      // Top screen-right is also +X; paired bearing marks frame a force arrow.
+      line(x - 48, 210, x - 48, 302);
+      line(x + 48, 210, x + 48, 302);
+      line(x - 36, 256, x + 36, 256);
+      line(x + 36, 256, x + 16, 236);
+      line(x + 36, 256, x + 16, 276);
     } else if (type === 'contactSensor') {
       context.strokeRect(x - 48, 208, 96, 96);
       line(x - 35, 288, x + 35, 224);
@@ -250,7 +275,12 @@ function drawTop(context, type) {
     }
   }
   // Transparent centre preserves the one actual top electrical socket and body.
-  context.clearRect(170, 170, 172, 172);
+  // The hardware radius is at most 7 mm. Preserve the existing minimum ink
+  // clearance, but size each texture axis independently for narrow housings.
+  const clearSize = [halfExtents[0], halfExtents[2]].map((halfExtent) =>
+    Math.max(172, Math.ceil((0.014 / (2 * halfExtent * 0.96)) * 512)),
+  );
+  context.clearRect(256 - clearSize[0] / 2, 256 - clearSize[1] / 2, ...clearSize);
 }
 
 /** Owned static resources. Callers must include parameters.axis in appearance
@@ -265,7 +295,7 @@ export function createSensorDetails({ type, halfExtents, parameters = {} }) {
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = top ? 512 : 256;
-    if (top) drawTop(canvas.getContext('2d'), type);
+    if (top) drawTop(canvas.getContext('2d'), type, halfExtents);
     else drawFace(canvas.getContext('2d'), type, parameters, side);
     const map = new THREE.CanvasTexture(canvas);
     map.colorSpace = THREE.SRGBColorSpace;
