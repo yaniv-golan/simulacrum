@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"9e01d89dbbd1f466567dc547e386741b94016d4e93fd37d8ac5ec7d6000d2878","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"19b32488fb7586f27a5692c9fde85ae5290ebd835a0bb9331a782fce68da3b3d","disposition":"still accurate","rationale":"The manifest remains the single check metadata owner, now validating mergeSmoke coverage. AGENTS changes verification tiers only; runtime contracts and architectural layer authority remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"679080947ceec0dacf9d0987043125e7112ff888a193a64f0e2f45ff8d2ffd67","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"69abd303515456c2c5b22a7fbbc1ca6c7839c13bb4e8ac0e77436d1d4e5292d3","disposition":"still accurate","rationale":"The runtime contract now records physics envelopes 6/7 and both reaction ages, with explicit tick-zero validity precedence. Clocks and state ownership remain in the runtime contract, and the manifest remains the canonical check owner."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"5597be74b3651d83975c92723c9ff48760ef381a1d92f7164b2965dff2569c61","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"859a19f2577d80cc529662d4041a64af54c1d319f1d7f55cc168bbf2bd4d8d24","disposition":"still accurate","rationale":"Warmup meshes exist solely to prepare rendering resources, never in the authored mesh map or telemetry. Placement still passes through the same ordinary command and completed snapshot owners; no simulation state or authority is added."} -->
+<!-- doc-review {"version":1,"fingerprint":"3bc3014b810fb90539db8767e1582583dc4774bfa940885f8b89af484e2047fe","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"4f387bfb6459dac47fe0b65f25519c2b60140c980529d7ebb75fe54598f46545","disposition":"still accurate","rationale":"The force sensor and new Sensors search entry use the current catalog preview, Place part, core admission and compiler path. Vocabulary has no physical authority; completed sensing remains session-owned and native diagnostics remain inside the physics door."} -->
 
 
 
@@ -66,7 +66,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"ac82a317630afeebb779916cf679fe34835f7a010ce3232eb003d226d554b614","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"90c9c361c84eda20082c3a205e372d2fa35017047584a93c328aed2d92dab377","disposition":"still accurate","rationale":"Actuator power, anchor reactions and completed telemetry remain owned by existing model and simulation code. Catalog vocabulary now covers its canonical type without changing admission or physical behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"e194b05b07f0f79c5dd3b4fd4b52193c499865b193dd35dc812a850477ad183d","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"95ee7877bd560eb8267ef8cd34a5899b4e7a1f99691cdb8eb1799b3b508ea709","disposition":"still accurate","rationale":"Load Cell reuses catalog geometry, selectable material, ordinary surface compiler and completed sensor owners. Its discovery vocabulary stays presentation-only; recent catalog warmup and placement ownership remain unchanged."} -->
 
 
 
@@ -118,13 +118,38 @@ Ground contact and workshop motion are not Course qualification.
 
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"0491c977db4688d8a1a32793f5fe6e45c6135a956022cb7b7fc69f6363ee836c","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"4c87ab2fb9f5be93b344d714d6ce2b5c09709262a2ced186d0b7030e44b2a638","disposition":"still accurate","rationale":"Travel sensors bind the same spring-kind connection and retain prior-completed sampling. No new sensor observation, controller authority, training path or arbitration policy is introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"8928c1b6785ede1b9f03c29a117d8f10ab8c0165c76204ff00103b03510945de","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"979dea7dac14f30a6d362f0692b97a0db50f355bef4b2775a44d3516bb945187","disposition":"updated","rationale":"Added A/B compiler binding, native plus applied prepared reaction ownership, world-vector averaging and local axial projection, bridge-domain invalidity, power precedence, prior-tick receipts and explicit receiver rearming. These match the implemented sampling and checkpoint boundaries."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;
 [power](../../src/simulation/power.mjs) funds each sensor. The selected
 [sensor inspector](../../src/presentation/sensor-controls.mjs) and
 [measurement overlay](../../src/presentation/sensor-view.mjs) consume completed data.
+
+The Load Cell uses ordinary A/B surface mounts. The compiler binds A as support and
+B as the measured fixed joint. The [joint reaction owner](../../src/simulation/physics/joint-reactions.mjs)
+adds full-tick native impulses and only the prepared corrections actually applied
+by the physics door. Its copied impulse acts on the configured joint's second body;
+sampling converts it to force on the cell. `load` is the magnitude of the tick-average
+world-space force vector, including shear; opposing impulses within a tick can
+cancel. `axialForce` projects that vector onto the completed local +X axis from A
+to B. Both use newtons; neither reports torque, peak force or capacity ratio. The
+channel scale is a normalizer, not a part rating.
+
+In a settled hanging fixture with no other support or applied force, A supports the
+cell while B measures the payload side, excluding the cell's own weight. If B instead
+supports the cell and a payload attached to A, its reaction includes both weights. This changes which attachment carries the
+load; rotating the same support arrangement alone does not move weight across B.
+These are measurement checks, not runtime mass-based estimates.
+
+Power loss takes precedence over mechanical status. When powered, a missing mount
+is disconnected; with both mounts present, a measured joint with another authored
+mechanical path between its endpoints is unavailable, including paths through gears.
+With power and both mounts present in the supported domain, the reading is
+initializing before the first completed integration.
+Invalid readings contain no numeric value. Reaction k is sampled and consumed during
+tick k+1. Checkpoints preserve both the world's latest reaction and the previous
+sensor evidence. Existing receiver faults leave Automatic Off until explicitly rearmed.
 
 [Rules and draft admission](../../src/model/controller-authoring.mjs) own source
 identity. The [bounded compiler](../../src/scripting/controller-program.mjs) admits

@@ -448,6 +448,18 @@ export const CATALOG = freeze({
     mountingFaces: ['bottom', 'left', 'back'],
     milestone: 'M3b',
   },
+  loadCellSensor: {
+    ...component(
+      'loadCellSensor',
+      'Load Cell',
+      [0.06, 0.02, 0.02],
+      'aluminium',
+      [power(), ...Object.keys(SENSOR_DEFINITIONS.loadCell).map((c) => signal(c, 'output'))],
+      {},
+    ),
+    mountingFaces: ['left', 'right'],
+    milestone: 'M3b',
+  },
   contactSensor: {
     ...component(
       'contactSensor',

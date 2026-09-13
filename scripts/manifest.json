@@ -351,7 +351,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -917,6 +917,39 @@
     {
       "id": "verify-linear-actuator-browser",
       "script": "scripts/verify-linear-actuator-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-load-cell-browser",
+      "script": "scripts/verify-load-cell-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-load-cell-force-browser",
+      "script": "scripts/verify-load-cell-force-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-load-cell-copy-browser",
+      "script": "scripts/verify-load-cell-copy-browser.mjs",
       "execution": "exclusive",
       "environment": "workshop",
       "tier": "browser",
@@ -3181,12 +3214,20 @@
           {
             "path": "test/verification-window.test.mjs",
             "anchor": "verification windows serialize contenders, retain timing and release after failure"
+          },
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "contenders wait through partial owner publication and reject malformed published metadata"
           }
         ],
         "negative": [
           {
             "path": "test/verification-window.test.mjs",
             "anchor": "waiting is bounded; stale windows require explicit recovery and exact ownership"
+          },
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "contenders wait through partial owner publication and reject malformed published metadata"
           }
         ]
       },
@@ -4271,6 +4312,279 @@
         ]
       },
       "qualificationBars": ["F1"]
+    },
+    {
+      "id": "attachment-force-sensing",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "A physically mounted load cell samples signed axial and resultant full-tick solved reaction at its B attachment, with explicit invalid states, bridge-domain admission, powered prior-tick Rules inputs and exact checkpoint continuation. Reaction diagnostics do not change physical motion.",
+      "owners": [
+        {
+          "path": "src/simulation/physics/joint-reactions.mjs",
+          "anchor": "createJointReactions"
+        },
+        {
+          "path": "src/simulation/physics/native-response.mjs",
+          "anchor": "readNativeResponse"
+        },
+        {
+          "path": "src/simulation/sensors.mjs",
+          "anchor": "sampleSensor"
+        },
+        {
+          "path": "src/simulation/session.mjs",
+          "anchor": "createSession"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-load-cell-browser",
+        "verify-load-cell-force-browser",
+        "verify-load-cell-copy-browser"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/load-cell-physics.test.mjs",
+            "anchor": "joint reactions start unavailable, copy completed values and restore without another solve"
+          },
+          {
+            "path": "test/load-cell-physics.test.mjs",
+            "anchor": "hanging force uses the measured boundary including own weight only when B supports"
+          },
+          {
+            "path": "test/load-cell-physics.test.mjs",
+            "anchor": "push, transverse load and rotated serialization retain physical side and vector sign"
+          },
+          {
+            "path": "test/load-cell-physics.test.mjs",
+            "anchor": "free fall has zero attachment force despite nonzero weight"
+          },
+          {
+            "path": "test/load-cell-physics.test.mjs",
+            "anchor": "contact support changes B force and closes an independent per-tick momentum account"
+          },
+          {
+            "path": "test/load-cell-physics.test.mjs",
+            "anchor": "a bypass invalidates only its joint while a separate bridge remains measurable"
+          },
+          {
+            "path": "test/load-cell-physics.test.mjs",
+            "anchor": "prepared spring damping and powered linear motion close the bridge cut momentum account"
+          },
+          {
+            "path": "test/load-cell-physics.test.mjs",
+            "anchor": "eccentric rotary and gear drives retain prepared bridge reaction contributions"
+          },
+          {
+            "path": "test/load-cell-physics.test.mjs",
+            "anchor": "pure applied torque does not masquerade as translational attachment force"
+          },
+          {
+            "path": "test/load-cell-physics.test.mjs",
+            "anchor": "a free offset driven spring assembly conserves independently calculated total angular momentum"
+          },
+          {
+            "path": "test/load-cell-physics.test.mjs",
+            "anchor": "zeroing only prepared joint diagnostics preserves motion but falsifies the force oracle"
+          },
+          {
+            "path": "test/load-cell-runtime.test.mjs",
+            "anchor": "load cell stores the right two receipt ages and restores exact next-tick sensing"
+          },
+          {
+            "path": "test/load-cell-runtime.test.mjs",
+            "anchor": "load cell rejects wrong joint side and stays disconnected without either mount"
+          },
+          {
+            "path": "test/load-cell-sampling.test.mjs",
+            "anchor": "load cell samples its completed B reaction in local axis with unsigned resultant"
+          },
+          {
+            "path": "test/load-cell-sampling.test.mjs",
+            "anchor": "load cell invalid readings never become numeric zero or stale force"
+          },
+          {
+            "path": "test/load-cell-authoring.test.mjs",
+            "anchor": "load cell has exactly two full mounting faces and ordinary supplied force output ports"
+          },
+          {
+            "path": "test/load-cell-authoring.test.mjs",
+            "anchor": "ordinary two-face mounting binds B and its physical side independently of serialization"
+          },
+          {
+            "path": "test/load-cell-authoring.test.mjs",
+            "anchor": "one-per-face admission counts both endpoint roles and receiving-face offsets"
+          },
+          {
+            "path": "test/load-cell-authoring.test.mjs",
+            "anchor": "save admission rejects invented sensor bindings and preserves selected material and identity-independent mass"
+          },
+          {
+            "path": "test/load-cell-authoring.test.mjs",
+            "anchor": "independent assembly copies and mirrors bind their own B while partial copies stay disconnected"
+          },
+          {
+            "path": "test/load-cell-authoring.test.mjs",
+            "anchor": "existing Rules controller receives force channels with SI units"
+          },
+          {
+            "path": "test/load-cell-ui.test.mjs",
+            "anchor": "load cell inspector names signed force, keeps invalid values absent and explains deliberate rearm"
+          },
+          {
+            "path": "test/load-cell-ui.test.mjs",
+            "anchor": "selected load cell axis follows completed pose and stays A to B under compression"
+          },
+          {
+            "path": "test/load-cell-ui.test.mjs",
+            "anchor": "load cell channels and help distinguish magnitude from signed force without capacity promises"
+          },
+          {
+            "path": "test/load-cell-response.test.mjs",
+            "anchor": "prepared reaction reader preserves joint attribution separately from body totals"
+          },
+          {
+            "path": "test/load-cell-receipts.test.mjs",
+            "anchor": "reaction receipts sum applied sources, preserve ticks, and reject bypasses"
+          },
+          {
+            "path": "test/load-cell-receipts.test.mjs",
+            "anchor": "reaction snapshot rejects pending contributions instead of losing them on restore"
+          },
+          {
+            "path": "test/load-cell-runtime.test.mjs",
+            "anchor": "restoring historical valid force on a bypass is rejected even with matching channel values"
+          },
+          {
+            "path": "test/load-cell-rules.test.mjs",
+            "anchor": "cold-start Automatic latches Off until the completed sensor is valid and the player rearms"
+          },
+          {
+            "path": "test/load-cell-rules.test.mjs",
+            "anchor": "load magnitude blocks both strong compression and shear at the actual motor receiver"
+          },
+          {
+            "path": "test/load-cell-rules.test.mjs",
+            "anchor": "sensor supply depletion switches actual Automatic output Off and renewed sensing does not rearm it"
+          },
+          {
+            "path": "test/load-cell-rules.test.mjs",
+            "anchor": "ordinary disconnection invalidates Automatic and repaired mounting requires explicit rearm"
+          },
+          {
+            "path": "test/load-cell-rules.test.mjs",
+            "anchor": "an ordinary ground-supported actuator press stops drive on measured attachment force"
+          },
+          {
+            "path": "test/load-cell-determinism.test.mjs",
+            "anchor": "dynamic load-cell force and supply loss restore exactly across four processes and both production clocks"
+          },
+          {
+            "path": "test/load-cell-lifecycle.test.mjs",
+            "anchor": "repeated physical threshold crossings immediately stop and resume Automatic without smoothing"
+          },
+          {
+            "path": "test/load-cell-lifecycle.test.mjs",
+            "anchor": "Retry starts a new Load Cell epoch without retaining the previous loaded reaction"
+          },
+          {
+            "path": "test/load-cell-native-lifecycle.test.mjs",
+            "anchor": "reused native joint slots cannot leak the prior generation load-cell reaction"
+          },
+          {
+            "path": "test/load-cell-physical-matrix.test.mjs",
+            "anchor": "physical matrix closes independent moving and stalled accounts"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/load-cell-physics.test.mjs",
+            "anchor": "joint reactions start unavailable, copy completed values and restore without another solve"
+          },
+          {
+            "path": "test/load-cell-physics.test.mjs",
+            "anchor": "a bypass invalidates only its joint while a separate bridge remains measurable"
+          },
+          {
+            "path": "test/load-cell-physics.test.mjs",
+            "anchor": "zeroing only prepared joint diagnostics preserves motion but falsifies the force oracle"
+          },
+          {
+            "path": "test/load-cell-runtime.test.mjs",
+            "anchor": "load cell stores the right two receipt ages and restores exact next-tick sensing"
+          },
+          {
+            "path": "test/load-cell-runtime.test.mjs",
+            "anchor": "load cell rejects wrong joint side and stays disconnected without either mount"
+          },
+          {
+            "path": "test/load-cell-sampling.test.mjs",
+            "anchor": "load cell invalid readings never become numeric zero or stale force"
+          },
+          {
+            "path": "test/load-cell-authoring.test.mjs",
+            "anchor": "save admission rejects invented sensor bindings and preserves selected material and identity-independent mass"
+          },
+          {
+            "path": "test/load-cell-ui.test.mjs",
+            "anchor": "load cell inspector names signed force, keeps invalid values absent and explains deliberate rearm"
+          },
+          {
+            "path": "test/load-cell-receipts.test.mjs",
+            "anchor": "reaction receipts sum applied sources, preserve ticks, and reject bypasses"
+          },
+          {
+            "path": "test/load-cell-receipts.test.mjs",
+            "anchor": "reaction snapshot rejects pending contributions instead of losing them on restore"
+          },
+          {
+            "path": "test/load-cell-runtime.test.mjs",
+            "anchor": "restoring historical valid force on a bypass is rejected even with matching channel values"
+          },
+          {
+            "path": "test/load-cell-rules.test.mjs",
+            "anchor": "cold-start Automatic latches Off until the completed sensor is valid and the player rearms"
+          },
+          {
+            "path": "test/load-cell-rules.test.mjs",
+            "anchor": "load magnitude blocks both strong compression and shear at the actual motor receiver"
+          },
+          {
+            "path": "test/load-cell-rules.test.mjs",
+            "anchor": "sensor supply depletion switches actual Automatic output Off and renewed sensing does not rearm it"
+          },
+          {
+            "path": "test/load-cell-rules.test.mjs",
+            "anchor": "ordinary disconnection invalidates Automatic and repaired mounting requires explicit rearm"
+          },
+          {
+            "path": "test/load-cell-lifecycle.test.mjs",
+            "anchor": "repeated physical threshold crossings immediately stop and resume Automatic without smoothing"
+          },
+          {
+            "path": "test/load-cell-lifecycle.test.mjs",
+            "anchor": "Retry starts a new Load Cell epoch without retaining the previous loaded reaction"
+          },
+          {
+            "path": "test/load-cell-native-lifecycle.test.mjs",
+            "anchor": "reused native joint slots cannot leak the prior generation load-cell reaction"
+          },
+          {
+            "path": "test/load-cell-physical-matrix.test.mjs",
+            "anchor": "receipt with the independent force oracle"
+          },
+          {
+            "path": "test/load-cell-physical-matrix.test.mjs",
+            "anchor": "load-cell linear ${mode} drive witness rejects no-op"
+          },
+          {
+            "path": "test/load-cell-physical-matrix.test.mjs",
+            "anchor": "load-cell ${path} ${mode} drive witness rejects no-op"
+          }
+        ]
+      },
+      "qualificationBars": []
     }
   ],
   "browserLocalScopes": [
@@ -4294,7 +4608,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
       "externalImports": []
     },
     {
@@ -4312,7 +4626,7 @@
       ],
       "externalImports": ["node:fs", "node:os", "node:path", "playwright", "vite"],
       "consumers": [],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776"
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -4326,7 +4640,7 @@
       "externalImports": ["node:fs"],
       "checks": ["verify-mirror-browser"],
       "consumers": [],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776"
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -4343,7 +4657,7 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776"
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -4367,7 +4681,7 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776"
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -4399,7 +4713,7 @@
         "test/receiver-input-owner.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776"
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071"
     }
   ],
   "experimentInputScopes": [
@@ -4576,7 +4890,7 @@
         }
       ],
       "consumers": [],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -4628,7 +4942,7 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "externalImports": ["node:crypto", "node:fs", "node:http"],
       "consumers": [],
@@ -4660,7 +4974,7 @@
         }
       ],
       "consumers": [],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -4692,8 +5006,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
+      "consumerSourceHash": "313dca81d84bfec62257baff610a1e418ec1e5e69795df6193634cbee897b3bd",
       "externalImports": ["node:fs", "node:os", "node:path"],
       "consumers": ["scripts/verify-cloud-playtest.mjs"],
       "sourceSha256": "980b7c598b8a6a845a3a49526b6299bb54dd9f5c49ecd37f53fe9e74f3f23998",
@@ -4728,8 +5042,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
+      "consumerSourceHash": "920e5e3b6b73166972de3ade8409d410e58d2833a76862c4f97a5ed20e2123ad",
       "externalImports": ["node:assert/strict", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/qualify-workshop.mjs",
@@ -4753,6 +5067,9 @@
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-linear-actuator-browser.mjs",
+        "scripts/verify-load-cell-browser.mjs",
+        "scripts/verify-load-cell-copy-browser.mjs",
+        "scripts/verify-load-cell-force-browser.mjs",
         "scripts/verify-manipulation-browser.mjs",
         "scripts/verify-mirror-browser.mjs",
         "scripts/verify-motion-diagnostics.mjs",
@@ -4801,8 +5118,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
+      "consumerSourceHash": "920e5e3b6b73166972de3ade8409d410e58d2833a76862c4f97a5ed20e2123ad",
       "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/assess.mjs",
@@ -4843,6 +5160,9 @@
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-linear-actuator-browser.mjs",
+        "scripts/verify-load-cell-browser.mjs",
+        "scripts/verify-load-cell-copy-browser.mjs",
+        "scripts/verify-load-cell-force-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m1.mjs",
         "scripts/verify-m3.mjs",
@@ -4913,8 +5233,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "7547100d6f8413c04edb22b7ede3a31ddfa4f22011772e1d51e91007d25c3c07",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
+      "consumerSourceHash": "a59bfbe1f05c64e0c5e4c6b3b94bfa08026308f132e1fe44b798bf0ad653fa0a",
       "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/bars.mjs",
@@ -4969,6 +5289,9 @@
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-linear-actuator-browser.mjs",
+        "scripts/verify-load-cell-browser.mjs",
+        "scripts/verify-load-cell-copy-browser.mjs",
+        "scripts/verify-load-cell-force-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m3.mjs",
         "scripts/verify-manipulation-browser.mjs",
@@ -5074,8 +5397,8 @@
         "test/m3-determinism.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "3923b794099ec1b0dcc48b9c0fb51e97632e6c6563ebb1a11bc4ec4f36295999"
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
+      "consumerSourceHash": "72832e3fdf55b4cefa3162710e886860ea481d9467c4d24c5f558bb1a40f856c"
     },
     {
       "checks": ["invariant-controls"],
@@ -5086,8 +5409,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
+      "consumerSourceHash": "313dca81d84bfec62257baff610a1e418ec1e5e69795df6193634cbee897b3bd",
       "externalImports": [],
       "consumers": ["scripts/verify-cloud-playtest.mjs", "scripts/verify-remote-playtest.mjs"],
       "sourceSha256": "9bf6de50ea7cd6041a718c926daa8b678eec2afcfb4d3cf8aca1641233a73a3b",
@@ -5128,8 +5451,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
+      "consumerSourceHash": "313dca81d84bfec62257baff610a1e418ec1e5e69795df6193634cbee897b3bd",
       "externalImports": ["node:crypto", "node:fs/promises"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
@@ -5171,8 +5494,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
+      "consumerSourceHash": "313dca81d84bfec62257baff610a1e418ec1e5e69795df6193634cbee897b3bd",
       "externalImports": ["esbuild", "miniflare", "node:fs/promises", "node:path", "node:path"],
       "consumers": ["scripts/verify-cloud-playtest.mjs", "scripts/verify-remote-playtest.mjs"],
       "sourceSha256": "66e915cda215738b8a0fcc5d913d7b7e739f7e7f0ba5417f52b37533151afb9e",
@@ -5188,8 +5511,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
+      "consumerSourceHash": "313dca81d84bfec62257baff610a1e418ec1e5e69795df6193634cbee897b3bd",
       "externalImports": ["node:fs/promises", "node:path", "node:url"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
@@ -5283,8 +5606,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "57f1c36dbc105c0de95339d1aeed1005d64640f17a1e95e1bd8961f84804f36e",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
+      "consumerSourceHash": "6ea46ae46e619c13cc814cbf60a21f683882bb63ed936c3008563a417daf5084",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -5343,8 +5666,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "4db5234c40b854b4643140d5c15aeb9610c62eb80c456d7630d9db5fe26cd43e",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
+      "consumerSourceHash": "920e5e3b6b73166972de3ade8409d410e58d2833a76862c4f97a5ed20e2123ad",
       "externalImports": ["acorn", "css-tree", "node:fs", "node:path", "parse5", "typescript"],
       "consumers": [
         "scripts/analysis-snapshot.mjs",
@@ -5405,6 +5728,9 @@
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-linear-actuator-browser.mjs",
+        "scripts/verify-load-cell-browser.mjs",
+        "scripts/verify-load-cell-copy-browser.mjs",
+        "scripts/verify-load-cell-force-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m1.mjs",
         "scripts/verify-m3.mjs",
@@ -5533,8 +5859,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "93b1f667aea3f48fe82e47a79f625393d2ff1a6a560cac853b0762cd06f703dd",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
+      "consumerSourceHash": "313dca81d84bfec62257baff610a1e418ec1e5e69795df6193634cbee897b3bd",
       "externalImports": ["node:crypto", "node:fs/promises", "node:path"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
@@ -5587,8 +5913,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "c0f8f5889ddb843df58b518517eafb9b4f0b8af157d9309c7da9f05979227902"
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
+      "consumerSourceHash": "f23685afa0ead8a6901f3bd45fe8709a67ba344ed79430e0199bb2e6f1ca1e48"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -5611,8 +5937,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
-      "consumerSourceHash": "c0f8f5889ddb843df58b518517eafb9b4f0b8af157d9309c7da9f05979227902"
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
+      "consumerSourceHash": "f23685afa0ead8a6901f3bd45fe8709a67ba344ed79430e0199bb2e6f1ca1e48"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -5628,7 +5954,7 @@
         }
       ],
       "consumers": [],
-      "roots": "ef6eb307046ecfd8e6abdcdd2d774bd93757e1baa9d3314eae1357b0a2809776",
+      "roots": "b71b840cd60aed4cea01c9dda7c4ca5e0ff3cbbbc0899f4fe7734eb386e1c071",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ],

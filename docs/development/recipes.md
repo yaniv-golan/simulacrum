@@ -18,7 +18,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"6bbbcc37fc923c55be7bae007c7307c799390573de440b984d4a5c33f452d177","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"f1fca8f600500a91181305bbf6f5fe4e86e568209825bb062a1fc637f4d12335","disposition":"still accurate","rationale":"Main’s actuator remains an ordinary canonical part; integration adds Motion search vocabulary only. Existing schema, geometry, material and physical-test requirements are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"021583b8540bb143cdd0e861a4a4e587ef486ace2a57a6dbb2e077ae342a5f86","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"9d22c0c23d4a38d8312ec9f4c4ffd1656a091c039fe1027bcc73facc5b5af9d1","disposition":"updated","rationale":"The recipe includes ordinary two-face occupancy, compiler-derived sensor bindings, supply invalidity and explicit presentation vocabulary coverage. Construction, Rules force-stop and copy/Retry journeys remain registered browser checks using existing authoring commands."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -56,9 +56,21 @@ neither snaps nor provides shaft support; ordinary Connect/Disconnect and histor
 remain the editing owners. Preserve the [authoring controls](../../test/gear-authoring.test.mjs)
 when changing admission.
 
+The Load Cell has one ordinary rigid body and full-face A/B mounting regions.
+Its [search vocabulary](../../src/presentation/part-search.mjs) places it in Sensors
+and supports force/tension queries. Preserve the existing all-catalog coverage
+check when adding a part so discovery cannot omit a newly admitted type.
+[Blueprint admission](../../src/model/blueprint.mjs) counts each face across both
+connection endpoint positions; a second mount on the same face rejects. Partial
+assemblies remain legal and report disconnected when powered. The compiler derives
+sensor bindings from the actual copied or restored edges rather than storing a second
+attachment map. Preserve [authoring controls](../../test/load-cell-authoring.test.mjs)
+for endpoint order, alternate offsets, copy/mirror and save/load; exercise history
+through the [ordinary construction journey](../../scripts/verify-load-cell-browser.mjs#source).
+
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"3ae6d137931b84d683eebddc06ecb4a7c96d66b5c0a243b1ce9f50baf84683c6","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"6cbcaa1ae253913c4a9610f2d76d4c214575e9aad0bfce2a8c02f7d1e6c4f76b","disposition":"still accurate","rationale":"Catalog placement adds optional expected-cursor admission to place; the actuator retains existing commands. Whole-candidate compilation, atomic rejection and history ownership remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"af34dfe9af1a153c4d118435f0a3e3652baf1d8df41a243a8415851f7b6b9af4","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"407bf5fefa9dafc2dc2de333f29fc60f500b27dda79af68b6c3dce3ad0fce9bd","disposition":"still accurate","rationale":"Load Cell uses existing surface/wire commands and compiler admission; core transactions, rejection, history and candidate publication retain their documented owners."} -->
 
 
 
@@ -75,7 +87,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"f68b559ae600d028d8f0ae065ceb6cb06cbc0f7a7171a4b7eb28478b943eae94","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"a572abeb18ac5953f75a55dd8b57995d51c3d46c95fde15941ef082698016475","disposition":"still accurate","rationale":"The helper uses an ordinary preview click and measures the later Place click. The touch verifier records the actual delivered event and camera before analytically checking placement. Public actions, proposal lifecycle and mutation admission remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4ec167a28bf1e0ebef47cf3b5499caf272894965f3b2257beaab10a6b99d0d6f","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"2a37fee97e684acfe6b71aac4439aaccf0db63a598bc914fa054d4c7431350f5","disposition":"still accurate","rationale":"Load Cell uses the current all-parts preview and ordinary Place part/Done actions, selected inspector and requested help. Search words add discoverability without changing preview, focus, command or cancellation owners."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -125,7 +137,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"f6b0da9297225a1fb146ca514d7830a4310a4d83940302b267706dd9cdfe56ae","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"3a0aa74d71a6b796ba1659da31d08104cca5fb2f6cb975c0196ed12e8242b6a9","disposition":"still accurate","rationale":"Actuator completed travel/current diagnostics are preserved. Discovery and cursor admission add no diagnostic writer, measurement cursor or causal inference."} -->
+<!-- doc-review {"version":1,"fingerprint":"3fced469682729b8cebf80ff8842c09aa2d69b12e42a0f5b3db3a077ad48a7fa","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"627a24c3cad4235923a9368d94c8ff295fd2273a43ad215a2e118edd4b575055","disposition":"still accurate","rationale":"Force displays consume completed observations; motion diagnostics, controller history and measurement accumulation owners remain unchanged and cannot repair physical state."} -->
 
 
 
@@ -155,7 +167,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"344fcae67a81b6666d529b6f5f2f2c91f421079d7c0c8b8cb61b2e3034b41845","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"78e5d1ca4d57e53003f19b1cccd95d32bdec79f2420125930a8e7f2d9e89b3a6","disposition":"still accurate","rationale":"Actuator numerical behavior is unchanged. Its browser fixture now uses ordinary position controls to move loose supplies away from the platform and gate travel paths, preserving underpower, extension, reverse, obstruction and transform assertions."} -->
+<!-- doc-review {"version":1,"fingerprint":"4ff2a4675de470e056aca22f0c9e77a571badbdf6d282405041b5dbdb6f33af7","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"cd01b9154b7467e0edcfd5cd621d7978992563a16bed1be60391fbd0010cbcb7","disposition":"still accurate","rationale":"Scope application changes metadata consumer hashes only. The contact verifier now observes ordinary completed ticks and has passed actual-contact reversal plus an impossible-threshold negative control. Geometry, solver, native package, physical authority and existing time budgets are unchanged, so the physics recipe and completed native evidence remain applicable."} -->
 
 
 
@@ -197,6 +209,22 @@ minimum-subnormal rounding allowance in addition to the existing relative bound.
 Preserve ordinary-scale inaccurate-residual and nonfinite rejection, plus actual
 native stepping and restore controls at gradual underflow. This numerical error
 bound does not clamp velocities or replace the original equations.
+For attachment force, preserve [independent force and momentum controls](../../test/load-cell-physics.test.mjs)
+and [receipt continuation](../../test/load-cell-runtime.test.mjs). The
+[dynamic matrix](../../test/load-cell-physical-matrix.test.mjs) repeats moving,
+supported-rest and free-assembly cases at production and diagnostic subdivisions;
+its angular account includes spin and orbital momentum for the entire free assembly,
+not a torque output from the sensor. [Lifecycle controls](../../test/load-cell-lifecycle.test.mjs)
+check the first ticks after Retry and repeated unsmoothed threshold crossings with
+actual drive stopping and resuming. Native receipts
+sum actual applications across the full tick, including warmstarts and temporal
+subdivisions. Prepared response queries count only when their result is applied;
+probing a response must not contribute force. Test deliberate omission of prepared
+joint contributions while retaining identical body motion. Native transient diagnostics
+are excluded from native serialization; validated numeric receipts belong to the
+physics envelope. Native qualification compares unchanged physical state separately
+from diagnostic correctness; its historical adapter cannot qualify force accuracy.
+
 The session reuses copied post-integration body and energy samples only while
 subsequent phases leave native physical state unchanged. If structure or thermal
 work starts mutating bodies, resample after that mutation before publishing or
@@ -321,7 +349,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"9372f80998264155bd6767579aa26fb970cc2f3e57d0762ce63de35b580a5e33","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"dea8d319261373c7d59d27b895eaaaacfbf7496b4ee19a638bc534cc55ce7c28","disposition":"still accurate","rationale":"The shared catalog helper still follows browse, preview, Place and Done in order. Only its optional measurement callback moves to the authored Place action; library definitions, independent instances, replacements and command validation are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"88c2eb919bf01d93b8f85b1c6907439fed007f4ef694b026260515e75be94cb9","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"0419d51ec560db6be9d7055a99e1e9313a83aa1b5fcc5e5f31f4a6fe7fa508d0","disposition":"still accurate","rationale":"A/B sensor bindings derive from ordinary copied edges, with no new stored reference fields. Endpoint remapping, partial-copy behavior, candidate compilation and history retain their owners."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -414,7 +442,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"b1df331813bc713c3df3db4edd69899a2f26c1fce3ba1ac2ab110ba7daf35b1c","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"e0062f6ebcd8cb8148ac91f60bcf53a162055e4dfff91910688c22464727e83e","disposition":"updated","rationale":"The section now distinguishes palette batch cleanup from the main renderer lifetime warmup. Warmup resources leave the scene immediately, remain bounded by the catalog and outside authored readback, and are disposed with the renderer. Real F2 samples show first-placement latency below the unchanged threshold."} -->
+<!-- doc-review {"version":1,"fingerprint":"9f08bb0ba97d08fce96a7135b7fde4880c6562e14af83e3c737e111a856136b6","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"1c4c728c78dd464dba97c7830912a07f8d7ce2edf9647d54d7cd4a158cf9b62e","disposition":"still accurate","rationale":"The selected sensor arrow uses completed body pose through the existing sensor view; connection overlay ownership, resources, preferences and independent simulation timing requirements remain unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -517,7 +545,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"a5eb8d66c231e6cd1c0280c00bdb54472bc064c9b860d639984c7aba7da69c23","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"70dab5f60156fb50dcd2c931dbfa28f3d93e9d76e81d943f65c9d300847c0882","disposition":"still accurate","rationale":"Only the native dependency changed; graphics quality levels, thresholds, resource lifecycle and independence from simulation remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"5c020cb41bc65900ec5758522204ec9700deaf475862b04a8bdfa82bce18f23f","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"5bbf196d6e12f8d8954c91337bd989f215a255407945c8b7671b37ad43369851","disposition":"still accurate","rationale":"Graphics thresholds, timing admission, transitions and minimum-quality failure behavior are unchanged; native diagnostics do not relax simulation or cadence budgets."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

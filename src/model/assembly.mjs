@@ -245,6 +245,9 @@ export function compileAssembly(
         });
         break;
       }
+      case 'loadCellSensor':
+        power.sensors.push({ node, body: node, kind: 'loadCell', joint: -1, support: -1, sign: 1 });
+        break;
       case 'targetSensor':
         power.sensors.push({
           node,
@@ -387,6 +390,18 @@ export function compileAssembly(
         axisB: rotate(B.port.rotation, [1, 0, 0]),
       });
     } else {
+      for (const [endpoint, own] of [
+        [connection.a, A],
+        [connection.b, B],
+      ]) {
+        if (own.part.type !== 'loadCellSensor' || !endpoint.surface) continue;
+        const sensor = power.sensors.find((s) => s.node === own.index);
+        if (endpoint.surface.region === 'left') sensor.support = joints.length;
+        else if (endpoint.surface.region === 'right') {
+          sensor.joint = joints.length;
+          sensor.sign = own === B ? 1 : -1;
+        }
+      }
       joints.push({
         kind: 'fixed',
         a: A.index,
@@ -423,6 +438,7 @@ export function compileAssembly(
           'tiltSensor',
           'jointAngleSensor',
           'contactSensor',
+          'loadCellSensor',
         ].includes(source.type)
           ? other.port
           : source.type === 'rotationSensor' && other.port === 'signal'

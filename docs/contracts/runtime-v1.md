@@ -36,9 +36,16 @@ A completed-tick checkpoint contains all state affecting future execution: libra
 snapshot, networks, controller state, previous sensor snapshot, input queue, clock
 accumulator, random generator, evaluator state and recorder anchor. Admission and
 restore validate before replacing state. Session checkpoint version 3 includes receiver
-arbitration state, optional bounded numeric program state, typed prior sensor readings and range continuity history, and the signed constraint-work ledger. Physics envelope version 4
-binds the double-precision native backend before deserialization; older opaque
-checkpoints are rejected explicitly. Blueprint save version 3 is unchanged.
+arbitration state, optional bounded numeric program state, typed prior sensor readings,
+range continuity history, prior Load Cell reaction evidence when configured, and the
+signed constraint-work ledger. Physics envelope version 6 (7 with gears) binds the
+double-precision native backend and latest completed joint reactions before
+deserialization; older opaque checkpoints are rejected explicitly. For configured
+Load Cells at completed tick k ≥ 1, physics holds reaction k and the consumed sensor
+snapshot holds evidence for reaction k−1. At tick zero there is no completed force
+interval: supported joint receipts are initializing, while sensor readings retain
+power, mounting and domain validity precedence. Restore validates both receipt ages
+and their topology without advancing physics. Blueprint save version 3 is unchanged.
 
 Version 3 also admits an optional `environment` preset: `flat` or `rounded-bump`.
 Omission means the flat floor. `choose-environment` is an atomic Build edit with

@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"07eaffc0b24fa95becd1e4cdf4192fba4eddec4d406d185f609baca4e4590063","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"86f0e2661c0a40e8a9cf57d7aecebb70e4e057fe240f685782a34f1d132f5739","disposition":"still accurate","rationale":"Graphics warmup completes before authoring and adds no visible region or persistent authored object. Catalog preview and Place remain distinct actions, and recording-strip clearance remains as documented."} -->
+<!-- doc-review {"version":1,"fingerprint":"3f27a6faeec7fba003077e1205d8ca67285c79d3729ce99934be9eaaac1a9b4f","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"86f0e2661c0a40e8a9cf57d7aecebb70e4e057fe240f685782a34f1d132f5739","disposition":"updated","rationale":"Added selection-scoped Load Cell force/status readouts and completed-pose direction arrow, requested A/B and rearming help, existing-region ownership and no new lesson or persistent panel."} -->
 
 
 
@@ -173,7 +173,16 @@ operation in the selected sensor inspector. These controls leave with their sele
 
 The selected sensor inspector owns power/status readouts and explicit spring/joint
 bindings. Requested range/contact/axis overlays leave with selection; the joint
-angle diagram distinguishes an unavailable reading from zero. The selected Logic
+angle diagram distinguishes an unavailable reading from zero. The Load Cell uses
+this same selected inspector for signed axial force, the magnitude of the tick-average
+force vector and unavailable-state explanations. Its selected +X arrow shows A-to-B
+orientation from the completed pose; part help explains mounting, shear and explicit Automatic
+rearming. These leave with selection or requested help, occupy existing regions and
+displace no unique action. Learning-content disposition is **no entry**: extend the
+existing part reference and sensor/Rules explanations for force units and invalid
+readings; no new lesson or experiment entry is admitted.
+
+The selected Logic
 Controller inspector owns rules, generated code, draft preservation and Build-only
 Apply. Rules may compare values or healthy missing-reading statuses. Editing code
 disables rules; persisted Undo and cancelable Restore preserve the prior source.

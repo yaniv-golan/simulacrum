@@ -143,7 +143,17 @@ export function createPowerNetwork(configuration) {
         supply.minVoltage > 100)
     )
       fail('INVALID_POWER_CONFIGURATION');
-    if (sensor.kind === 'travel') {
+    if (sensor.kind === 'loadCell') {
+      if (
+        !exact(sensor, 'node,kind,body,joint,support,sign') ||
+        !node(sensor.node) ||
+        sensor.body !== sensor.node ||
+        ![sensor.joint, sensor.support].every((x) => Number.isSafeInteger(x) && x >= -1) ||
+        ![-1, 1].includes(sensor.sign) ||
+        (sensor.joint >= 0 && sensor.joint === sensor.support)
+      )
+        fail('INVALID_POWER_CONFIGURATION');
+    } else if (sensor.kind === 'travel') {
       if (
         !exact(sensor, 'node,kind,joint') ||
         !node(sensor.node) ||

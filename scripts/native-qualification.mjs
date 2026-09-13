@@ -6,13 +6,102 @@ import { pathToFileURL } from 'node:url';
 import { captureCandidate, candidateMatchesOrigin, candidateIdentity } from './candidate.mjs';
 import { runProcess } from './run-check.mjs';
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
+/** Test-only adapter applied identically to every frozen qualification role.
+ * Historical packages cannot collect the added diagnostics. Keep their physical
+ * APIs and every physical application unchanged; completed diagnostics are
+ * explicitly unavailable in this comparison. Product reaction tests remain required.
+ */
+export function adaptNativePhysicalProbe(source, currentVersion, version) {
+  const replaceOnce = (from, to) => {
+    if (source.split(from).length !== 2) throw Error('Native physical probe adapter needs review');
+    source = source.replace(from, to);
+  };
+  replaceOnce(
+    "import { createJointReactions } from './joint-reactions.mjs';",
+    `import { createJointReactions as createPhysicalProbeReactions } from './joint-reactions.mjs';
+// QUALIFICATION ONLY: identical diagnostic suppression in all four native roles.
+const createJointReactions = (joints) => {
+  const receipt = createPhysicalProbeReactions(joints);
+  return Object.freeze({ ...receipt, add() {}, complete() { receipt.complete(() => null); } });
+};`,
+  );
+  replaceOnce(
+    'readNativeResponse(factor, indices.length, reactionIndices.length)',
+    'readNativeResponse(factor, indices.length)',
+  );
+  replaceOnce(
+    `const PHYSICS_BACKEND = '${currentVersion}';`,
+    `const PHYSICS_BACKEND = '${version}';`,
+  );
+  return source;
+}
+/** Adapt only checked historical recipe commands after source-difference review.
+ * The caller verifies reviewedDifferenceSha256 before invoking this function.
+ * Candidate commands always remain intact. No compiled bytes are rewritten.
+ */
+export function adaptHistoricalNativeRecipe(source, role, patch, row) {
+  if (sha(patch) !== row.patchSha256)
+    throw Error('Historical recipe requires reviewed patch bytes');
+  const text = patch.toString(),
+    hasResidual = text.includes('+++ b/src/dynamics/solver/staged_island_solver/residual_bound.rs'),
+    diagnosticMarkers = [
+      'pub fn jointAppliedLinearImpulse(',
+      'pub fn projectWithJointImpulses(',
+      'pub fn responseWithJointImpulses(',
+    ],
+    diagnosticCount = diagnosticMarkers.filter((marker) => text.includes(marker)).length,
+    omissions = [],
+    diagnosticCommand = 'node "$contact_build_dir/native-check/test-joint-reactions.mjs"',
+    residualCompile =
+      'rustc --edition=2021 --test "$contact_source_root/src/dynamics/solver/staged_island_solver/residual_bound.rs" -o "$contact_build_dir/residual-tests"',
+    residualRun = '"$contact_build_dir/residual-tests"';
+  for (const command of [diagnosticCommand, residualCompile, residualRun])
+    if (source.split('\n').filter((line) => line === command).length !== 1)
+      throw Error('Historical native recipe needs review');
+  if (role === 'candidate') {
+    if (!hasResidual || diagnosticCount !== diagnosticMarkers.length)
+      throw Error('Incomplete candidate source; required checks cannot be omitted');
+    return { source, omissions };
+  }
+  if (
+    !['baseline', 'staleFactor', 'staleRhs'].includes(role) ||
+    !/^0\.20\.0-simulacrum\.spring\.[6789]\.f64$/.test(row.version) ||
+    diagnosticCount !== 0
+  )
+    throw Error('Unrecognized historical source; recipe needs review');
+  const omitOnce = (command) => {
+    source = source
+      .split('\n')
+      .filter((line) => line !== command)
+      .join('\n');
+  };
+  omitOnce(diagnosticCommand);
+  omissions.push({
+    check: 'joint-reaction-api',
+    reason:
+      'Reviewed historical source lacks the new diagnostic APIs; candidate retains this probe.',
+    patchSha256: row.patchSha256,
+  });
+  if (!hasResidual) {
+    omitOnce(residualCompile);
+    omitOnce(residualRun);
+    omissions.push({
+      check: 'residual-bound-module',
+      reason:
+        'Reviewed historical source predates this module; its original residual equations remain in the rebuilt package.',
+      patchSha256: row.patchSha256,
+    });
+  }
+  return { source, omissions };
+}
+
 export function admitNativeInputs(config) {
   const result = {};
   for (const role of ['baseline', 'candidate', 'staleFactor', 'staleRhs']) {
     const row = config[role];
     if (
       !row ||
-      !/^0\.20\.0-simulacrum\.spring\.[6789]\.f64$/.test(row.version) ||
+      !/^0\.20\.0-simulacrum\.spring\.(?:[6789]|10)\.f64$/.test(row.version) ||
       !row.package ||
       !row.patch
     )
@@ -126,10 +215,15 @@ export async function qualifyNative(config) {
       const meta = { ...provenance, patchSha256: row.patchSha256, version: row.version };
       writeFileSync(join(recipe, 'provenance.json'), JSON.stringify(meta));
       const script = join(recipe, 'build.sh');
-      writeFileSync(
-        script,
+      const historicalRecipe = adaptHistoricalNativeRecipe(
         readFileSync(script, 'utf8').replaceAll(provenance.version, row.version),
+        role,
+        readFileSync(row.patch),
+        row,
       );
+      writeFileSync(script, historicalRecipe.source);
+      report[`${role}RecipeOmissions`] = historicalRecipe.omissions;
+      write();
       await runProcess('npm', ['ci', '--prefer-offline'], {
         cwd: copy.destination,
         timeoutMs: 300000,
@@ -167,9 +261,13 @@ export async function qualifyNative(config) {
       );
       const world = join(copy.destination, 'src/simulation/physics/world.mjs'),
         original = readFileSync(world, 'utf8'),
-        from = `const PHYSICS_BACKEND = '${provenance.version}';`;
-      if (!original.includes(from)) throw Error('Native probe backend adapter needs review');
-      writeFileSync(world, original.replace(from, `const PHYSICS_BACKEND = '${row.version}';`));
+        adapted = adaptNativePhysicalProbe(original, provenance.version, row.version);
+      writeFileSync(world, adapted);
+      report[`${role}Adapter`] = {
+        kind: 'physical-equivalence-with-diagnostics-unavailable',
+        originalSha256: sha(original),
+        adaptedSha256: sha(adapted),
+      };
       const executedSource = candidateIdentity(copy.destination);
       report[`${role}Source`] = executedSource;
       write();

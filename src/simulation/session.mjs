@@ -91,12 +91,35 @@ function admitConfiguration(input) {
       (sensor.kind === 'target' && sensor.target >= c.bodies.length)
     )
       throw Error('INVALID_CONFIGURATION');
+  for (const sensor of c.power.sensors.filter((s) => s.kind === 'loadCell')) {
+    for (const i of [sensor.joint, sensor.support])
+      if (
+        i >= 0 &&
+        (i >= c.joints.length ||
+          c.joints[i].kind !== 'fixed' ||
+          ![c.joints[i].a, c.joints[i].b].includes(sensor.body))
+      )
+        throw Error('INVALID_CONFIGURATION');
+    if (sensor.joint >= 0 && sensor.sign !== (c.joints[sensor.joint].b === sensor.body ? 1 : -1))
+      throw Error('INVALID_CONFIGURATION');
+  }
   return { config: c, power };
 }
+const reactionIndices = (powerConfig) =>
+  [
+    ...new Set(
+      powerConfig.sensors.filter((s) => s.kind === 'loadCell' && s.joint >= 0).map((s) => s.joint),
+    ),
+  ].sort((a, b) => a - b);
 function sampleSensors(tick, bodies, powerConfig, joints, world, supply, gravity, previous) {
+  const hasReactions = powerConfig.sensors.some((s) => s.kind === 'loadCell');
+  const reactions = hasReactions
+    ? reactionIndices(powerConfig).map((joint) => ({ joint, ...world.jointReaction(joint) }))
+    : [];
   return {
     tick,
     bodies,
+    ...(hasReactions ? { reactions } : {}),
     readings: powerConfig.sensors.map((sensor) =>
       sampleSensor(sensor, {
         tick,
@@ -106,6 +129,7 @@ function sampleSensors(tick, bodies, powerConfig, joints, world, supply, gravity
         gravity,
         powered: supply.sensors?.find((s) => s.node === sensor.node)?.powered === true,
         previous: previous?.readings.find((r) => r.node === sensor.node),
+        reaction: (i) => reactions.find((r) => r.joint === i),
         pointVelocity: (spec) => world.sensorPointVelocity(spec),
         ray: (spec) => world.rangeSample(spec),
         contact: (spec) => world.contactPadSample(spec),
@@ -888,7 +912,12 @@ export async function createSession(
     )
       invalid();
     if (
-      !exact(cp.sensors, ['tick', 'bodies', 'readings']) ||
+      !exact(cp.sensors, [
+        'tick',
+        'bodies',
+        'readings',
+        ...(config.power.sensors.some((s) => s.kind === 'loadCell') ? ['reactions'] : []),
+      ]) ||
       cp.sensors.tick !== Math.max(0, cp.tick - 1) ||
       !Array.isArray(cp.sensors.bodies) ||
       cp.sensors.bodies.length !== initial.length
@@ -912,6 +941,23 @@ export async function createSession(
       cp.sensors.readings.length !== config.power.sensors.length
     )
       invalid();
+    if (config.power.sensors.some((s) => s.kind === 'loadCell')) {
+      const indices = reactionIndices(config.power);
+      if (!Array.isArray(cp.sensors.reactions) || cp.sensors.reactions.length !== indices.length)
+        invalid();
+      for (const [index, r] of cp.sensors.reactions.entries()) {
+        if (
+          !exact(r, ['joint', 'tick', 'status', ...(r.status === 'ok' ? ['impulse'] : [])]) ||
+          r.joint !== indices[index] ||
+          r.tick !== cp.sensors.tick ||
+          !['ok', 'initializing', 'unavailable'].includes(r.status) ||
+          (r.status === 'ok' && (r.tick === 0 || !vector(r.impulse, 3))) ||
+          (r.status === 'initializing' && r.tick !== 0) ||
+          (r.status !== 'unavailable' && !world.jointReactionSupported(r.joint))
+        )
+          invalid();
+      }
+    }
     for (const [index, reading] of cp.sensors.readings.entries()) {
       if (reading.node !== config.power.sensors[index].node || reading.tick !== cp.sensors.tick)
         invalid();
@@ -930,6 +976,7 @@ export async function createSession(
             dt: DT,
             bodies: cp.sensors.bodies,
             joints: config.joints,
+            reaction: (i) => cp.sensors.reactions?.find((r) => r.joint === i),
             gravity: config.gravity,
             powered: !Object.values(reading.channels).some((c) => c.status === 'no-power'),
           });
@@ -1006,6 +1053,7 @@ export async function createSession(
           ? [{ joint: index, length: priorSpringLength(j, cp.sensors.bodies) }]
           : [],
       ),
+      cp.tick,
     );
     contactSample = world.contacts();
     power = candidatePower;

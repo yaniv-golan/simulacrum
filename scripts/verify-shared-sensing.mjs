@@ -212,24 +212,78 @@ try {
     await page.screenshot({ path: out + '/' + kind + '.png' });
     if (kind === 'contact') {
       await page.locator('[data-command=run]').click();
+      await page.waitForFunction(
+        () => JSON.parse(window.render_game_to_text()).metadata.mode === 'run',
+      );
+      // Stop wall-clock progression while the player arms both receivers. Otherwise
+      // the first wheel drives alone during the second selection and can turn the
+      // narrow contact pad away from the obstacle. Flush the queued pause first.
+      await page.evaluate(() => window.advanceTime(1000 / 120));
+      const beforeArming = await read();
+      evidence.assert('ok', [
+        beforeArming.receiverControl.receivers.every((r) => r.duty === 0),
+        'pause must leave both drives off before arming',
+      ]);
+      const armTick = beforeArming.tick;
       for (const id of ['left-control', 'right-control']) {
         if (!(await page.locator('.machine-picker').evaluate((el) => el.open)))
           await page.locator('.machine-picker > summary').click();
         await page.locator('.part-list-item[data-part-id=' + id + ']').click();
         await page.getByRole('button', { name: 'Automatic', exact: true }).click();
-      }
-      await page.waitForFunction(
-        () => {
-          const f = JSON.parse(window.render_game_to_text());
+        await page.waitForFunction((id) => {
+          const result = window.workshopProbe.readLastCommandResult();
           return (
-            f.receiverControl.receivers.every((r) => r.mode === 'automatic') &&
-            f.receiverControl.receivers[0].duty === 0.25 &&
-            f.receiverControl.receivers[1].duty === -0.25
+            result?.input?.type === 'control-mode' && result.input.id === id && result.result.ok
           );
-        },
-        null,
-        { timeout: 20000, polling: 10 },
-      );
+        }, id);
+      }
+      evidence.assert('equal', [
+        (await read()).tick,
+        armTick,
+        'arming must not drive one wheel alone',
+      ]);
+      // Observe every normal 1/120 s step: contact reversal can last less than one
+      // rendered frame. Keep the original 20-second physical horizon.
+      const contactTrace = await page.evaluate(() => {
+        const rows = [];
+        const started = performance.now();
+        for (let i = 0; i < 2400 && performance.now() - started < 20000; i++) {
+          window.advanceTime(1000 / 120);
+          const f = JSON.parse(window.render_game_to_text());
+          const node = f.metadata.blueprint.parts.findIndex((p) => p.id === 'sensor');
+          const row = {
+            tick: f.tick,
+            channels: f.sensors.readings.find((r) => r.node === node).channels,
+            receivers: f.receiverControl.receivers,
+            chassis: f.physics[0],
+            contacts: f.contacts,
+          };
+          rows.push(row);
+          if (
+            row.channels.touching.status === 'ok' &&
+            row.channels.touching.value === 1 &&
+            row.receivers.every((r) => r.mode === 'automatic') &&
+            row.receivers[0].duty === 0.25 &&
+            row.receivers[1].duty === -0.25
+          )
+            break;
+        }
+        return rows;
+      });
+      writeFileSync(out + '/contact-trace.json', JSON.stringify(contactTrace, null, 2));
+      evidence.assert('ok', [
+        contactTrace.some((r) => r.receivers[0].duty === -0.25 && r.receivers[1].duty === 0.25),
+        'both wheels must first drive toward the obstacle',
+      ]);
+      const reversed = contactTrace.at(-1);
+      evidence.assert('ok', [
+        reversed.channels.touching.status === 'ok' &&
+          reversed.channels.touching.value === 1 &&
+          reversed.receivers.every((r) => r.mode === 'automatic') &&
+          reversed.receivers[0].duty === 0.25 &&
+          reversed.receivers[1].duty === -0.25,
+        'actual contact must reverse both automatic drives within 20 simulated seconds',
+      ]);
     }
   }
   await page.locator('[data-command=build]').click();
@@ -376,6 +430,7 @@ try {
   evidence.assertUnchanged();
   writeFileSync(out + '/result.json', JSON.stringify(evidence.identity, null, 2));
 } catch (error) {
+  writeFileSync(out + '/failure-frame.json', JSON.stringify(await read(), null, 2));
   await page.screenshot({ path: out + '/failure.png' });
   await evidence.captureFailure(error);
   throw error;

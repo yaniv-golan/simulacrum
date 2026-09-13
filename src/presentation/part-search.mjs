@@ -55,6 +55,11 @@ export const PART_SEARCH = Object.freeze({
   tiltSensor: entry('Sensors', 'tilt', 'measure tilt|detect tilt|lean|balance'),
   jointAngleSensor: entry('Sensors', 'joint angle', 'measure angle|detect joint angle'),
   contactSensor: entry('Sensors', 'touch sensor', 'touch|hit|ground contact|detect contact'),
+  loadCellSensor: entry(
+    'Sensors',
+    'load cell|force sensor',
+    'measure force|measure tension|measure compression|attachment load',
+  ),
   rotationSensor: entry(
     'Sensors',
     'rotation sensor',

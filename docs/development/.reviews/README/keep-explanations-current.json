@@ -1,8 +1,8 @@
 {
   "version": 1,
   "dependencies": {
-    "package-lock.json": "bcc829aa98315f5b3ca46abbd8ee3c660c15b5a258f209d9265741c9bc57513c",
-    "package.json": "8d74ddc88af77087abe09d3e9ee4fff0f02d3191030d2177f88f8cfbdb0c612a",
+    "package-lock.json": "a50a95826c7fa932c9f9c8803270415fd88de207265bd3305257ad45893fb1d6",
+    "package.json": "23f388e4b0947d859f1fbb427d317ece9c373b5d25a473c40fbd1f9ff51d9555",
     "scripts/analysis-snapshot.mjs": "ef4628c9a026cd935f9c42caeffdf4644935671250eee2170a358b88d18d243d",
     "scripts/check-documentation.mjs": "adf1496351f13a8c3ab04810c2ad7a4a566fdd5deb15874aa17790382e138525",
     "scripts/development-reference.mjs": "cd38e55e0fb5dd1f738bd061f605b42a8d2f75f6ea83c2a9288ea21e4042d4cf",
@@ -10,7 +10,7 @@
     "scripts/module-graph.mjs": "db47284e35c471196b3f7cffbb998660ad58b6beb79d19f92eff6b04e7508399",
     "scripts/navigation.mjs": "21299888a2f72faa2c0c24a19a8cd105cd27c822927858ecec0c504768e0d58b",
     "scripts/manifest.json#check=developer-documentation": "651e6477c97f9f758029a7aa0a6ff0cd9f4089c6f5a03f5963d3bba3e8393805",
-    "docs/development/reference.md": "2aaa60831a93da39bfc320a3d6cd537eda3c490708b99fe85d62ae39d6e202f2",
+    "docs/development/reference.md": "dcaccf038cc60a09c6bde067307f917248d2668accc841b7eed481e5d97528ed",
     "package.json#script=docs:prepare": "12217c6795d7e7b9dd072d5f7c5c5f86522a3e11ca9d186fc4b0075831ca39f4",
     "package.json#script=docs:review": "cfe62878e316eb98829acab28bb8d8c45d224e6f3e9caf26fc6f202d334489c6",
     "package.json#script=docs:check": "507aa495a8e3083a872156aa128bfc7dccd108984ebe830ca7712bc9cc1395dd",

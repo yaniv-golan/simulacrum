@@ -121,7 +121,7 @@ mv "$contact_build_dir/wasm/optimized.wasm" "$contact_build_dir/wasm/rapier_wasm
 python3 - "$contact_build_dir/wasm/package.json" <<'PY'
 import json,sys
 from pathlib import Path
-Path(sys.argv[1]).write_text(json.dumps({'name':'@dimforge/rapier3d-deterministic-compat','version':'0.20.0-simulacrum.spring.9.f64','description':'Pinned uniform-f64 spring and contact runtime.'}))
+Path(sys.argv[1]).write_text(json.dumps({'name':'@dimforge/rapier3d-deterministic-compat','version':'0.20.0-simulacrum.spring.10.f64','description':'Pinned uniform-f64 spring and contact runtime.'}))
 PY
 cd ../../rapier-compat
 mkdir -p builds/3d-deterministic/wasm-build
@@ -137,4 +137,8 @@ for source in (base/'gen3d-js').rglob('*.d.ts'):
     target.parent.mkdir(parents=True,exist_ok=True)
     target.write_text(source.read_text().replace('../pkg/dist/rapier_wasm3d','./rapier_wasm3d'))
 PY
+mkdir -p "$contact_build_dir/native-check/node_modules/@dimforge"
+ln -s "$contact_build_dir/source/typescript/rapier-compat/builds/3d-deterministic/pkg" "$contact_build_dir/native-check/node_modules/@dimforge/rapier3d-deterministic-compat"
+cp "$recipe_dir/test-joint-reactions.mjs" "$contact_build_dir/native-check/test-joint-reactions.mjs"
+node "$contact_build_dir/native-check/test-joint-reactions.mjs"
 npm --cache "$contact_build_dir/npm-pack-cache" pack ./builds/3d-deterministic/pkg --pack-destination "$contact_build_dir"

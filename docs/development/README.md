@@ -92,7 +92,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"4416a042452d58d69a041af038938488dc5ab246cad36b46e019e85ac907b7b9","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"e92bfc68f5886be0c5cb64fd75e4c054bb2e9a085c2ae67aa98ce49f1a246320","disposition":"still accurate","rationale":"Exact-text AST reuse changes parsing cost only. Build/source identities still read inputs and resolve dependencies on each check; tier outcomes and runtime preflight remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4f4d2fa29e0817a7aed1625f10c455f3829a8b168d81e972a14cbd1811994786","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"d361cb3f7f6bba3ca893077528170cb7b98e3baa9e7309242166bae3999c3df8","disposition":"still accurate","rationale":"The pinned native artifact changes to spring.10; verification commands, Node admission, prerequisite order, completion outcomes and human-evidence requirements are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"87944351014bf51a05d1899b3dc45fa2893d0459585820b54dedec37353dd635","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"fae79141b6e53becef9f7d7eb8b277dbc2b881ffeb5af9f1a58a75690b917f9e","disposition":"still accurate","rationale":"Generated reference now includes the added verification cleanup and scheduling-history controls. The preparation, per-section source review and current-sidecar checks are unchanged; the workflow still requires semantic review after source closure."} -->
+<!-- doc-review {"version":1,"fingerprint":"4446417d14271b20f5d591ef0838094de2fcd7644837ddaccd91494632925a4e","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"7afab76fa1eddb62f393f8c8ac2ac3059f079f7d0a96965541fd0018d60792d7","disposition":"still accurate","rationale":"New sensing owners and the browser root add generated dependencies; generation, individual review admission and conservative selection retain their documented behavior."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -267,7 +267,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"b7e09f61fc6e96f20f8df27af469f5572fa84fac6d8bb81bc9f5b95338071afd","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5955ffe4ac1bab4d66212c67804928bf92cc3431c7f737194aa0e91830a0a2f5","disposition":"updated","rationale":"Documents accepted last-writer-wins loss for the single optional history snapshot, retained current-attempt guards, per-check schedule/load observations, measured process-watchdog headroom, and specific reasons for exclusive shared sensing/starter/actuator. Two failed headless parallel actuator probes justify retaining its original profile and execution; physical assertions are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f256b17d3bfe165e41fc9c8328ac9289b4608a0bfe3b2f5953531ed320947a20","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"cbd0586ca0a73b4ffdc11a2fa93d91a4bec45ac95b870568d668bc8b1eafbe32","disposition":"still accurate","rationale":"Four reviewed metadata consumer hashes were refreshed after the shared-sensing verifier changed. Scope witnesses passed on the captured candidate; registered check selection, execution profiles, read boundaries and conservative exclusions remain identical. The documented review and witness-before-application procedure was followed without adding a bypass."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -464,7 +464,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"2bcffb7c6ef2a033e94abe3bd4568eb5858deffa7da72b2fb54070f8f096e275","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"18df79f4f46ee08ec5841f84d6a77a3f39984a52a116234ff656d7ac8b8ade06","disposition":"updated","rationale":"The CLI now distinguishes five-minute probe/build/standalone-CI admission from thirty-minute local/merge/final and native qualification admission and reports owner/elapsed wait on contention and every thirty seconds. Host serialization, inherited ownership, separate execution budgets and inspected recovery are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"3f8f45aab71b9545757d3fdf0c3eecc2acf52fa2794ac1fb0f29d47f17de7a69","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"5f4126a398664a03c56f926758dcf5aa968166987388619ee73d472d971dfc39","disposition":"updated","rationale":"Explains complete private metadata followed by atomic publication within the acquired directory. Real contenders wait during publication; malformed published metadata still rejects. Existing manual inspection, live-PID protection, token checks and recovery requirements remain unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -483,6 +483,10 @@ summary/explanation commands do not wait for the window. Raw direct script invoc
 and unrelated applications do not participate: this is cooperative scheduling, not
 CPU/GPU reservation or permission to relax performance thresholds. Preserve failed runs;
 there is no automatic retry-to-green policy.
+
+After acquiring the directory, the owner writes its complete metadata privately and
+publishes it with an atomic rename. Contenders wait while ownership is unpublished;
+malformed published metadata remains an error.
 
 A crashed owner is never evicted by age. Inspect its process tree and establish that
 all descendants stopped, then use `node scripts/verification-window.mjs recover <owner-token>
@@ -504,7 +508,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"a1d9ec8acc17fe6fce46ec011d3c1f13f7eafbe895323be24045cdd81ba92004","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"57dd5715bbf363399e4ffcb9140f9f8cdf4395b6d98b0c9bd3ac0f6ae98b004e","disposition":"still accurate","rationale":"History persistence is now one optional snapshot with accepted concurrent hint loss, while candidate copy-in and current-report return guards, conservative legacy timestamps and frozen source/attempt identity remain as described. Completion keeps the thirty-minute admission window."} -->
+<!-- doc-review {"version":1,"fingerprint":"e89c48bc95c108201f1ac5f0d72d92bff47f546c76bacd9045c9dd4fe9c496a7","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"008e4a48e661239c286b1cf7ce8aaa859d10ef6ec6f54bb72f29727f769bf017","disposition":"still accurate","rationale":"The manifest change only records four metadata scope hashes after successful source-bound invariant witnesses. Capture, origin comparison, dependency admission and completion-tier execution are unchanged; the revised browser witness still requires a fresh isolated local candidate before completion."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
