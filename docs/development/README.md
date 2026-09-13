@@ -107,6 +107,17 @@ because the changed feature appears unrelated.
 - `node scripts/generate-schema.mjs` refreshes generated validation after schema edits.
 - `npm run replay -- <bundle.json>` checks a failure bundle against the current implementation and runtime.
 
+When reporting progress, separate four outcomes: implemented capability, automation
+on identified source bytes, human acceptance under the versioned protocol, and milestone
+qualification. Local and merge readiness do not evaluate the latter two. An explicitly
+authorized experimental publication may defer only the checks allowed by the
+[release exception policy](playtesting.md#release-operations); it never advances a milestone.
+Inspect the report's detailed automation, humanAcceptance and qualification outcomes,
+not a top-level status alone. A historical report or an originStillMatches value describes
+the source checked at that invocation, not later edits or today's checkout. Compare its
+source/build identity with the candidate being claimed. Registration of a check is not
+an executed pass, and a feature assigned to the current milestone is not qualification.
+
 Install browser dependencies once with `npx playwright install chromium chrome`.
 Linux tab capture needs Xvfb. Follow [playtesting](playtesting.md#remote-setup) for recordings and
 human evidence. Run the required tier on the same final source; do not reuse an old green

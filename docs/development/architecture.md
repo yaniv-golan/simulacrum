@@ -19,6 +19,12 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 5. [Session](../../src/simulation/session.mjs) owns stepping, checkpoint and completed publication. [Controllers](../../src/simulation/controllers.mjs) produce program commands; the [receiver arbiter](../../src/simulation/receiver-arbiter.mjs) owns Manual/Automatic/Learned/Off, explicit takeover and prior-tick travel regulation; [power](../../src/simulation/power.mjs) resolves circuits; the [physics door](../../src/simulation/physics/world.mjs) alone imports the physics library. Completed contact collection uses the numeric [contact reader](../../src/simulation/physics/read-contacts.mjs); session assigns the completed interval and includes collection in integration timing.
 6. [Observation store](../../src/model/observation.mjs) publishes immutable completed snapshots. Presentation consumes these observations, never a live physics object. The application drains a separate observation cursor into selected-body Measurements so its 120 Hz samples do not depend on rendering cadence.
 
+The session's structure/failure phase currently checks finite state and conserved
+body count/mass; general rated-capacity overload breakage remains outstanding.
+Commanded coupler release does not supply that qualification. See the
+[runtime limitation](../contracts/runtime-v1.md#structural-failure-scope) before
+interpreting an active phase or a no-damage result as physical failure coverage.
+
 The view exposes the existing workshop footer as `utilityHost`; the application mounts
 feedback and recording controls there and keeps protected feedback dialogs outside
 the workshop root. Ordinary offline feedback does not add a second workbench row. Optional

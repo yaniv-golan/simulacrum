@@ -7,6 +7,16 @@ actuators/constraints, environment/forces, integration/contacts, structure/failu
 thermal/ablation, telemetry. Controllers at tick t consume the completed sensor
 snapshot from t-1. Tick zero has a declared initial snapshot.
 
+## Structural failure scope
+
+The current session's structure/failure phase checks finite body state and conserved
+body count and mass. It does not yet implement general joint rated-capacity evaluation,
+transmitted-load failure decisions or automatic overload breakage. Commanded release
+couplers are an authored release capability, not evidence of overload failure modeling.
+An active phase or successful numeric invariant check cannot establish the Course's
+no-damage requirement. That requires a modeled failure mechanism and independent
+positive and negative controls before qualification.
+
 ## Observation and edits
 
 `observe(scope, detail, cursor)` returns immutable values and a cursor
