@@ -26,6 +26,7 @@ const browserEvidence = createFixtureEvidence({
     'src/application/capture-media-duration.mjs',
     'src/application/capture-stream.mjs',
     'src/application/capture-packet.mjs',
+    'src/application/recording-admission.mjs',
     'package-lock.json',
     'scripts/verify-feedback-receipts.mjs',
   ],
@@ -35,6 +36,7 @@ const source = readFileSync(process.env.FEEDBACK_SOURCE || 'src/application/remo
   css = readFileSync('src/presentation/workshop.css');
 const moduleFiles = new Map(
   [
+    'recording-admission',
     'capture-outbox',
     'capture-stream',
     'capture-packet',

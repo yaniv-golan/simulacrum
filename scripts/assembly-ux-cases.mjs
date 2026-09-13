@@ -1,3 +1,4 @@
+import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { assemblyPartition } from './assembly-scenarios.mjs';
@@ -35,20 +36,14 @@ export async function runAssemblyCases(partition, evidence, browser) {
     persist();
     const context = await browser.newContext({ viewport: { width: 1280, height: 720 } }),
       page = await context.newPage();
-    // Operation watchdog with headroom for cold rendered previews; scenario
-    // assertions and the partition process deadline remain independent.
-    page.setDefaultTimeout(5000);
     await context.tracing.start({ screenshots: true, snapshots: true });
     const observed = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
     const load = async (bp) => {
-      await page
-        .locator('input[type=file]')
-        .first()
-        .setInputFiles({
-          name: 'machine.json',
-          mimeType: 'application/json',
-          buffer: Buffer.from(JSON.stringify(bp)),
-        });
+      await uploadWorkshopFile(page, {
+        name: 'machine.json',
+        mimeType: 'application/json',
+        buffer: Buffer.from(JSON.stringify(bp)),
+      });
       await page.waitForFunction(
         (id) => JSON.parse(window.render_game_to_text()).metadata.blueprint.id === id,
         bp.id,
@@ -57,6 +52,8 @@ export async function runAssemblyCases(partition, evidence, browser) {
     try {
       await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
       await page.waitForFunction(() => window.render_game_to_text);
+      // Apply the operation deadline after startup; the process deadline is unchanged.
+      page.setDefaultTimeout(5000);
       timings.setupMs = performance.now() - started;
       phase = 'actions';
       phaseStarted = performance.now();

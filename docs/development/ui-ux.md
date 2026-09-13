@@ -225,11 +225,34 @@ teaching or an active attempt. None of these surfaces grants broader observation
 or inserts a permanent sensor dashboard. Optional contact/range/tilt/joint/motion
 variants stay within the learning example collection. The passive loaded-pad variant invites an aluminium-to-steel material edit; tilt and encoder variants invite mount, zero and sign changes.
 
-The document controls expose a Build-only Flat / Rounded bump environment choice;
-Run and Paused retain its value without admitting an edit. The saved preset supplies
-the same geometry to simulation, workshop rendering and recording review. The header
-wraps its existing control groups on narrower workbenches so Environment, Help and
-other document/run actions remain visible.
+The document controls expose Choose scene and Edit scene in place of the old
+Environment selector. The [scene editor](../../src/presentation/scene-editor.mjs#source)
+replaces catalogue and inspector content while Editing scene is active; Done restores
+the preceding machine context. Scene objects are selected in this scope only, and
+machine parts remain protected. Move/Rotate handles and canvas positioning change
+a draft; Apply scene publishes one ordinary command. V/W/E select the same tools
+as their buttons; arrows and Page Up/Down move the proposal, and Alt plus these
+keys rotates it. Space retains Run/Pause and period retains single-step through
+the existing workshop handler, including while scene editing remains open in Run or Paused.
+Unapplied scene drafts still block Run. Text fields retain native keyboard editing. A preview hides committed
+scene meshes, including objects proposed for removal, and Cancel restores them.
+Pointer capture loss or blur ends a gizmo gesture without publishing authored state. Frame scene explicitly frames
+the physical setup without changing authored poses. Run/Paused retain the scene;
+editing requires Build and Run requires finishing or cancelling a preview.
+
+The bounded scene browser offers built-in and independently saved snapshots, an
+actual-geometry footprint preview, scene-only import/export and explicit replacement
+preview. Cancelling replacement retains the previous draft. Storage failure preserves
+saved data and offers export recovery. Shared [document proposals](../../src/presentation/document-proposal.mjs#source)
+bind scene and assembly previews to source document/cursor, require stale revalidation,
+exclude duplicate/pending actions and reconcile uncertain replies against the exact
+result in the source session. Context switches preserve camera and workshop history.
+Detailed scene controls leave with selection and the browser leaves on dismissal.
+
+Learning admission is **extend** for the existing suspension comparison: Edit scene
+permits an independent bump edit, and comparisons still require matching scene,
+approach speed and measurement window. The scene editor itself adds **no entry**;
+Flat floor, Bump test, Hill climb and Steps are physical presets, not new lessons.
 
 Measurements retains whole-machine motion and boundary warnings, and shows vertical
 motion for the selected body when requested. Its acceleration value is the RMS of
@@ -281,11 +304,11 @@ ordinary toolbar. The introductory activities identify their format and outcome:
 rolling build with an independent motor-setting attempt, a keyboard driving task, and
 a spring-settling experiment. The spring inspector offers a requested damping comparison
 through the ordinary Damping edit and Undo, preserving other tuning instead of loading
-a second preset. Existing machines
-require explicit replacement confirmation, with Download, Cancel and an explicit
+a second preset. Existing machine or nondefault scene work, including changed floor
+settings with zero parts and obstacles, requires explicit replacement confirmation, with Download, Cancel and an explicit
 replace action. A browser download request is not proof of a saved file: after download,
 the player confirms they saved it before opening. Cancel and download failure preserve
-the machine. [Example loading](../../src/application/workshop-app.mjs#source) uses ordinary load admission without an intermediate empty
+the complete workshop. New, file opening and [example loading](../../src/application/workshop-app.mjs#source) uses ordinary load admission without an intermediate empty
 machine; a rejected replacement keeps the dialog open. The catalogue retains focus,
 expanded groups and scroll while simulation updates. Starting examples requires Build.
 
@@ -426,7 +449,12 @@ preserves other spring tuning. It also checks cancellation of example replacemen
 and the gear extension: construction from an empty workshop, palette insertion,
 mesh disconnect/reconnect without
 movement, Undo, downloaded save/reload and physical stepping.
-Existing manipulation, inspector, mirror, connection and input
+The [scene journey](../../scripts/verify-authorable-scenes.mjs#source) covers authored
+scene editing, pointer and keyboard tools, chronological history, a driven ramp
+attempt and edited retry, library reuse, scene-only import/export and replacement/download
+protection. It also exercises invalid loading, long saved lists and zoomed layouts.
+[Editor controls](../../test/scene-editor.test.mjs#source) check real transform controls,
+preview visibility and shared reconstruction geometry without a GPU. Existing manipulation, inspector, mirror, connection and input
 checks retain their guarantees when locators move. Extend the appropriate check for
 new behavior; demonstrate new tests failing before the repair. Do not bless arbitrary
 word counts, screenshots or button counts as proof of good design.

@@ -334,9 +334,36 @@ test('load helper waits for a fresh matching receipt, including repeated rejecte
   writeFileSync(file, JSON.stringify(save));
   const evidence = createBrowserEvidence({ readBuild: () => 'x', readSource: () => ({}) });
   let receipt = { sequence: 4, input: { type: 'load', save }, result: { ok: false } };
+  const calls = [];
+  let blueprint = { parts: [], environment: 'rounded-bump' };
   const fake = {
-    evaluate: async () => structuredClone(receipt),
-    locator: () => ({ setInputFiles: async (path) => assert.equal(path, file) }),
+    evaluate: async (callback) => {
+      globalThis.window = {
+        workshopProbe: { readLastCommandResult: () => receipt },
+        render_game_to_text: () => JSON.stringify({ metadata: { blueprint } }),
+      };
+      try {
+        return structuredClone(callback());
+      } finally {
+        delete globalThis.window;
+      }
+    },
+    locator: (selector) => {
+      assert.equal(selector, 'input[type=file]');
+      return {
+        first: () => ({
+          setInputFiles: async (path) => {
+            assert.equal(path, file);
+            calls.push('upload');
+          },
+        }),
+      };
+    },
+    getByRole: (role, options) => {
+      assert.equal(role, 'button');
+      assert.deepEqual(options, { name: 'Replace without saving', exact: true });
+      return { click: async () => calls.push('confirm') };
+    },
     waitForFunction: async (predicate, args) => {
       globalThis.window = { workshopProbe: { readLastCommandResult: () => receipt } };
       try {
@@ -356,6 +383,11 @@ test('load helper waits for a fresh matching receipt, including repeated rejecte
     },
   };
   assert.equal((await evidence.loadAndWait(fake, file, { ok: false })).sequence, 5);
+  assert.deepEqual(calls, ['upload', 'confirm'], 'scene-only authored work needs confirmation');
+  blueprint = { parts: [], environment: 'flat' };
+  receipt = { ...receipt, sequence: 4 };
+  assert.equal((await evidence.loadAndWait(fake, file, { ok: false })).sequence, 5);
+  assert.deepEqual(calls, ['upload', 'confirm', 'upload'], 'empty flat work needs no confirmation');
 });
 
 test('rejected edit helper catches mutation; real pointer drag scrolls and releases even on failure', async () => {
@@ -461,11 +493,13 @@ test('load helper waits for the command probe before reading or submitting a sav
   const fake = {
     evaluate: async (read) => read(),
     locator: () => ({
-      setInputFiles: async (path) => {
-        assert.equal(path, file);
-        assert.equal(disposed, 1, 'readiness handle is released before submitting the save');
-        submitted = true;
-      },
+      first: () => ({
+        setInputFiles: async (path) => {
+          assert.equal(path, file);
+          assert.equal(disposed, 1, 'readiness handle is released before submitting the save');
+          submitted = true;
+        },
+      }),
     }),
     waitForFunction: async (predicate, args, options) => {
       assert.equal(options, undefined, 'inherit the existing page deadline');
@@ -476,6 +510,8 @@ test('load helper waits for the command probe before reading or submitting a sav
         globalThis.window.workshopProbe.readLastCommandResult = true;
         assert.equal(predicate(), false, 'only a callable command probe is ready');
         globalThis.window.workshopProbe.readLastCommandResult = () => receipt;
+        globalThis.window.render_game_to_text = () =>
+          JSON.stringify({ metadata: { blueprint: { parts: [], environment: 'flat' } } });
         assert.equal(predicate(), true);
         assert.equal(submitted, false);
         return {

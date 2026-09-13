@@ -1,3 +1,4 @@
+import { uploadWorkshopFile } from './browser-evidence.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -131,10 +132,11 @@ try {
       await page.getByRole('button', { name: 'Save', exact: true }).click();
       await (await pending).saveAs(`${out}/saved-machine.json`);
       await page.locator('[data-command=new]').click();
+      await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
       await page.waitForFunction(
         () => window.workshopProbe.observe().frames[0].metadata.blueprint.parts.length === 0,
       );
-      await page.locator('input[type=file]').setInputFiles(`${out}/saved-machine.json`);
+      await uploadWorkshopFile(page, `${out}/saved-machine.json`);
       await page.waitForFunction(
         () => window.workshopProbe.observe().frames[0].metadata.blueprint.parts.length === 8,
       );

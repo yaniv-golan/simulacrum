@@ -59,6 +59,18 @@ It never requests an exposure or substitutes orbit pixels for an unavailable act
 
 The application/view links cover their own composition and input routing code. The core, model and simulation links separately bind the admitted behavior; remote payload contents are outside these claims.
 
+The [scene model](../../src/model/environment.mjs#source) owns bounded fixed solids,
+legacy descriptors and geometric union. Authored quaternion values remain in saves;
+geometry normalizes their admitted magnitude before rendering and collider union. [Scene persistence](../../src/application/scene-library.mjs#source)
+contains no machine data. The [scene editor](../../src/presentation/scene-editor.mjs#source)
+uses the same [document proposal policy](../../src/presentation/document-proposal.mjs#source)
+as assembly insertion; core owns replacement and chronological history. Entering scene
+authoring exits mounted-camera viewing through the camera session, restoring workshop
+orbit and input ownership before scene tools activate. Compiled scene
+solids follow machine bodies and ground, preserving machine index/mapping authority.
+[Primitive reconstruction](../../src/presentation/primitive-geometry.mjs#source) supplies
+both scene previews and capture review with the canonical cylinder tessellation and dimensions.
+
 Build edits may replace the admitted configuration; Run uses the fixed simulation
 path and forbids authoring edits. Returning to Build restores the editable starting
 machine. The view preserves the camera when that starting machine remains visible;
@@ -134,8 +146,8 @@ of opened joints and completed rope work.
 | Catalog vocabulary and grouping                       | [search vocabulary](../../src/presentation/part-search.mjs)                                                                                                                                                                                                  | catalog grouping; eligibility and help coverage follow CATALOG                          |
 | Part teaching copy and port labels                    | [help content](../../src/presentation/part-help-content.mjs), [port wording](../../src/presentation/port-wording.mjs)                                                                                                                                        | palette, inspector and static example diagrams                                          |
 | Completed contact impulses                            | [contact reader](../../src/simulation/physics/read-contacts.mjs), [session](../../src/simulation/session.mjs)                                                                                                                                                | immutable completed observations; qualification supplies independent support predicates |
-| Saved environment preset                              | [environment descriptors](../../src/model/environment.mjs), [assembly compiler](../../src/model/assembly.mjs)                                                                                                                                                | workshop geometry, placement admission and recording review                             |
-| Selected-body measurement windows                     | [numeric accumulator](../../src/model/motion-readout.mjs), [measurement presentation](../../src/presentation/motion-readout.mjs)                                                                                                                             | completed observation deltas supplied by the application                                |
+| Authored environment and legacy presets | [environment descriptors](../../src/model/environment.mjs), [assembly compiler](../../src/model/assembly.mjs) | workshop geometry, placement admission and recording review; matching boxes compile as their geometric union |
+| Selected-body measurement windows | [numeric accumulator](../../src/model/motion-readout.mjs), [measurement presentation](../../src/presentation/motion-readout.mjs) | completed observation deltas supplied by the application |
 | Diagnostics from completed data                       | [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion), [connection paths](../../src/model/connection-test-paths.mjs)                                                                                                                | inspector and Check machine                                                             |
 
 Use `node scripts/navigate.mjs <owner-symbol>` to discover current consumers and tests.

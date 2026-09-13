@@ -98,6 +98,16 @@ mounting, adjustment and Undo. Add malformed input, accepted effect, rejected-st
 identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing contract assertions](../../test/contracts/editing.mjs) as shown by [mixed editing examples](../../test/editing-contracts.test.mjs); inspect
 `node scripts/explain-invariant.mjs rejected-edit-atomicity`.
 
+Scene edits use `replace-scene` with `expectedCursor`, whole-workshop admission,
+and the existing chronological history. The environment controls in
+[test/environment.test.mjs](../../test/environment.test.mjs#source) cover legacy
+geometry, authored scene identity, aggregate capacity, rejection and continuation.
+[Capacity transactions](../../test/scene-capacity.test.mjs#source) use a physically clear
+nearly-full workshop and retain Undo through replacement, duplication, import and load rejection.
+Combined capacity includes machine bodies, every distributed rope node, compiled scene solids and ground.
+[Scene preservation](../../test/scene-preservation.test.mjs#source) covers capture round trips,
+legacy visual events, current checkpoint continuation, machine measurements and sensor scope.
+
 The Run-only `camera-photo` request is an input event, not an authoring transaction.
 Validate epoch and request ID; accepted IDs deduplicate and a reserved exposure rejects
 busy without changing the completed cursor. Bytes and downloads belong to application.
@@ -189,6 +199,15 @@ under [motor law](../../src/simulation/physics/law/motor.mjs) or
 [spring law](../../src/simulation/physics/law/spring.mjs). Configuration comes
 from the compiler; laws receive numerical inputs, not identities. The session owns
 phase ordering and one integration; do not introduce a second clock or hidden support.
+
+Fixed scene geometry comes from [environment descriptors](../../src/model/environment.mjs#source).
+The scene compiler unions matching adjacent boxes instead of exposing internal
+coplanar faces to contacts. Retain the frozen [contact controls](../../test/scene-contact.test.mjs#source):
+continuous/split trajectories and energy, admitted quaternion rounding and sign equivalents,
+raised-seam counterexample, analytical
+inclines and separately measured intentional edge drops. These are bounded development
+fixtures, not general contact or Course qualification. Render and pick individual
+authored descriptors while compiling the same occupied volume; no identity selects physics.
 
 Worked example: a motor-work change needs independent energy accounting in
 [impulse energy tests](../../test/impulse-energy.test.mjs#implementation), shared-body controls in
@@ -449,7 +468,7 @@ Authored references include travel `springBinding` and encoder `jointBinding` co
 from ordinary wiring. Check these references alongside endpoint remapping so an
 otherwise valid copy cannot silently measure the source machine's spring.
 Environment belongs to the receiving blueprint, not a captured assembly. Preserve
-that preset during insertion and validate placement against its canonical obstacles.
+that authored scene or legacy preset during insertion and validate placement against its canonical obstacles.
 The guided-wheel and [pin-ended strut](../../src/model/fixtures/articulated-suspension.mjs#symbol=createPinEndedStrut)
 modules are ordinary assembly captures. Their named external mounts must work through
 normal connection commands after insertion, save/load and proper rotation; retaining

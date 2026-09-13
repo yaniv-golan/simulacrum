@@ -1,130 +1,86 @@
 import { insertAssembly } from '../model/reusable-assemblies.mjs';
 import { transformPoseBetweenFrames } from '../model/transforms.mjs';
+import { createDocumentProposal } from './document-proposal.mjs';
 
-/** Presentation-only proposal lifetime. Only send can publish an authored edit. */
+/** Assembly geometry uses the same document/cursor and pending policy as scene placement. */
 export function createAssemblyPlacement({ getFrame, send }) {
-  let state = null;
-  const identity = () =>
-    JSON.stringify([getFrame().metadata.blueprint, getFrame().metadata.mode, getFrame().cursor]);
-  function evaluate() {
-    const source = state.definition.parts.find(
-      (p) => p.id === state.definition.assemblies[0].ids[0],
-    );
-    state.parts = state.definition.parts.map((part) => ({
-      ...part,
-      ...transformPoseBetweenFrames(part, source, state),
-    }));
-    state.valid = false;
-    state.error = null;
-    try {
-      const proposal = insertAssembly(
-        getFrame().metadata.blueprint,
-        state.definition,
-        state.position,
-        state.rotation,
+  let view = null;
+  const proposal = createDocumentProposal({
+    getFrame,
+    evaluate(value, blueprint) {
+      const source = value.definition.parts.find(
+        (p) => p.id === value.definition.assemblies[0].ids[0],
       );
-      state.instanceId = proposal.instanceId;
-      state.resultBlueprint = JSON.stringify(proposal.blueprint);
-      state.valid = true;
-    } catch (error) {
-      state.error = error;
-    }
-  }
+      Object.assign(view, value, {
+        parts: value.definition.parts.map((part) => ({
+          ...part,
+          ...transformPoseBetweenFrames(part, source, value),
+        })),
+      });
+      const result = insertAssembly(blueprint, value.definition, value.position, value.rotation);
+      view.instanceId = result.instanceId;
+      view.resultBlueprint = JSON.stringify(result.blueprint);
+      return result.blueprint;
+    },
+    send: (value, expectedCursor) => send({ type: 'insert-assembly', ...value, expectedCursor }),
+  });
+  const sync = () => {
+    if (!proposal.read()) return null;
+    Object.assign(view, proposal.read());
+    return view;
+  };
   return {
-    read: () => state,
+    read: sync,
     start(definition, previous) {
-      if (state?.phase === 'committing' || getFrame().metadata.mode !== 'build') return false;
+      if (proposal.read()?.phase === 'committing' || getFrame().metadata.mode !== 'build')
+        return false;
       const origin = definition.parts.find((p) => p.id === definition.assemblies[0].ids[0]);
-      state = {
+      view = {};
+      const value = {
         definition: structuredClone(definition),
         position: [...origin.position],
         rotation: [...(previous?.rotation ?? origin.rotation)],
-        phase: 'preview',
-        source: identity(),
-        cursor: structuredClone(getFrame().cursor),
-        stale: false,
       };
       const right = Math.max(0, ...getFrame().metadata.blueprint.parts.map((p) => p.position[0]));
       for (let n = 1; n <= 30; n++) {
-        state.position[0] = right + n;
-        evaluate();
-        if (state.valid) break;
+        value.position[0] = right + n;
+        proposal.start(value);
+        if (proposal.read().valid) break;
       }
+      sync();
       return true;
     },
-    pose(position, rotation = state.rotation) {
-      if (!state || state.phase !== 'preview' || state.stale) return;
+    pose(position, rotation = view.rotation) {
       if (![...position, ...rotation].every(Number.isFinite)) return;
-      state.position = [...position];
-      state.rotation = [...rotation];
-      evaluate();
+      proposal.change({
+        ...proposal.read()?.value,
+        position: [...position],
+        rotation: [...rotation],
+      });
+      sync();
     },
     refresh() {
-      if (state?.phase === 'preview' && state.source !== identity()) state.stale = true;
-      return this.reconcile();
+      const result = proposal.refresh();
+      sync();
+      return result;
     },
     reconcile() {
-      if (state?.phase !== 'committing' || !state.replySettled) return null;
-      // A changed cursor alone cannot establish which edit was published. Accept
-      // only the complete ordinary insertion result, including fresh identities.
-      if (JSON.stringify(getFrame().metadata.blueprint) !== state.resultBlueprint) return null;
-      state.phase = 'accepted';
-      state.error = null;
-      return { ok: true, reconciled: true };
+      return this.refresh();
     },
     revalidate() {
-      if (!state || state.phase !== 'preview' || getFrame().metadata.mode !== 'build') return;
-      state.source = identity();
-      state.cursor = structuredClone(getFrame().cursor);
-      state.stale = false;
-      evaluate();
+      proposal.revalidate();
+      sync();
     },
     async commit() {
-      if (!state || state.phase !== 'preview') return null;
-      this.refresh();
-      if (state.stale || !state.valid || getFrame().metadata.mode !== 'build') return null;
-      state.phase = 'committing';
-      state.replySettled = false;
-      try {
-        const reply = await send({
-          type: 'insert-assembly',
-          definition: state.definition,
-          position: state.position,
-          rotation: state.rotation,
-          expectedCursor: state.cursor,
-        });
-        state.replySettled = true;
-        if (
-          !reply ||
-          reply.reasonCode === 'SESSION_FAILED' ||
-          reply.reasonCode === 'SESSION_DISPOSED'
-        ) {
-          state.error = {
-            message:
-              'Placement outcome is unresolved. Waiting for the session to confirm the result.',
-          };
-          return this.reconcile();
-        }
-        state.phase = reply.ok ? 'accepted' : 'preview';
-        if (!reply.ok) {
-          state.error = reply;
-          this.refresh();
-        }
-        return reply;
-      } catch (error) {
-        // A thrown transport error cannot prove that the edit was rejected.
-        state.replySettled = true;
-        state.error = {
-          message:
-            'Placement outcome is unresolved. Waiting for the session to confirm the result.',
-        };
-        return this.reconcile();
-      }
+      const result = await proposal.commit();
+      sync();
+      return result;
     },
     cancel() {
-      if (state?.phase === 'committing' || getFrame().metadata.mode !== 'build') return false;
-      state = null;
-      return true;
+      if (getFrame().metadata.mode !== 'build') return false;
+      const result = proposal.cancel();
+      if (result) view = null;
+      return result;
     },
   };
 }

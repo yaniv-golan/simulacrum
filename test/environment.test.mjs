@@ -145,3 +145,120 @@ test('environment overlap admission retains canonical protruding shaft envelopes
   blueprint.parts.push(motor);
   assert.throws(() => compileAssembly(blueprint), /SURFACE_OVERLAP/);
 });
+
+test('authored scene retains machine order, material, stable identities and chronological history', async () => {
+  const scene = {
+    objects: [
+      {
+        id: 'platform',
+        name: 'Platform',
+        shape: 'box',
+        halfExtents: [0.2, 0.05, 0.2],
+        position: [1, 0.05, 0],
+        rotation: [0, 0, 0, 1],
+        material: 'steel',
+        friction: 0.7,
+        restitution: 0,
+        fixed: true,
+      },
+    ],
+    ground: { friction: 0.6, restitution: 0 },
+  };
+  const w = await createWorkshop(machine());
+  try {
+    const original = w.save();
+    const cursor = w.observe().cursor;
+    assert.equal(
+      (await w.act({ type: 'replace-scene', environment: scene, expectedCursor: cursor })).ok,
+      true,
+    );
+    assert.deepEqual(w.save().parts, original.parts);
+    assert.deepEqual(w.save().environment, scene);
+    const compiled = compileAssembly(w.save());
+    const renamed = structuredClone(w.save());
+    renamed.environment.objects[0].id = 'renamed';
+    renamed.environment.objects[0].name = 'No physical authority';
+    assert.deepEqual(compileAssembly(renamed).configuration, compiled.configuration);
+    assert.deepEqual(compiled.mapping, compileAssembly(original).mapping);
+    assert.equal(compiled.configuration.bodies.at(-1).mass, 0.4 * 0.1 * 0.4 * 7850);
+    assert.equal(compiled.configuration.bodies.at(-1).fixed, true);
+    assert.equal(sceneParts({ metadata: { blueprint: w.save() } }).at(-1).id, 'scene-platform');
+    await assertRejectedEditUnchanged(w, {
+      type: 'replace-scene',
+      environment: scene,
+      expectedCursor: cursor,
+    });
+    const saved = w.save();
+    assert.equal((await w.act({ type: 'undo' })).ok, true);
+    assert.deepEqual(w.save(), original);
+    assert.equal((await w.act({ type: 'redo' })).ok, true);
+    assert.deepEqual(w.save(), saved);
+    const bad = structuredClone(scene);
+    bad.objects.push(structuredClone(bad.objects[0]));
+    await assertRejectedEditUnchanged(w, {
+      type: 'replace-scene',
+      environment: bad,
+      expectedCursor: w.observe().cursor,
+    });
+    bad.objects[1].id = 'other';
+    await assertRejectedEditUnchanged(w, {
+      type: 'replace-scene',
+      environment: bad,
+      expectedCursor: w.observe().cursor,
+    });
+    assert.equal(loadSave(saved).ok, true);
+    await w.act({ type: 'run' });
+    w.step(12);
+    const checkpoint = w.checkpoint();
+    w.step(6);
+    const expected = w.observe().frames[0].physics;
+    w.restore(checkpoint);
+    w.step(6);
+    assert.deepEqual(w.observe().frames[0].physics, expected);
+    await assertRejectedEditUnchanged(w, {
+      type: 'replace-scene',
+      environment: scene,
+      expectedCursor: w.observe().cursor,
+    });
+  } finally {
+    w.dispose();
+  }
+});
+
+test('combined body budget and scene-only settings cannot bypass admission or replacement protection', async () => {
+  const { sceneLayout, hasWorkshopContent, createSceneObject } = await import(
+    '../src/model/environment.mjs'
+  );
+  const { validateBlueprint } = await import('../src/model/blueprint.mjs');
+  const b = createEmptyBlueprint('capacity', 'Capacity');
+  assert.equal(hasWorkshopContent(b), false);
+  b.environment = sceneLayout('flat');
+  b.environment.ground.friction = 0.3;
+  assert.equal(hasWorkshopContent(b), true);
+  b.environment = sceneLayout('hill');
+  for (let i = 0; i < 4095; i++) b.parts.push(createPart('beam', `beam-${i}`, [0, 2, 0]));
+  assert.equal(validateBlueprint(b).ok, true);
+  b.environment.objects.push({ ...createSceneObject('block', 'another'), position: [3, 0.025, 0] });
+  assert.equal(validateBlueprint(b).ok, false);
+  b.parts = [];
+  for (const bad of [null, {}, { objects: [], ground: { friction: NaN, restitution: 0 } }])
+    assert.equal(loadSave({ ...b, environment: bad }).ok, false);
+  const base = sceneLayout('hill');
+  for (const mutate of [
+    (s) => (s.objects[0].rotation = [0, 0, 0, 0]),
+    (s) => (s.objects[0].halfExtents[0] = 0),
+    (s) => (s.objects[0].position[0] = Infinity),
+    (s) => (s.objects[0].fixed = false),
+    (s) => (s.objects[0].material = 'fiction'),
+    (s) => (s.objects[0].friction = 3),
+    (s) => (s.objects[0].shape = 'wedge'),
+    (s) => (s.objects = Array.from({ length: 33 }, (_, i) => ({ ...s.objects[0], id: `a-${i}` }))),
+  ]) {
+    const s = structuredClone(base);
+    mutate(s);
+    assert.equal(loadSave({ ...b, environment: s }).ok, false);
+  }
+  const rotated = structuredClone(base);
+  rotated.objects[0].rotation = [0, Math.SQRT1_2, 0, Math.SQRT1_2];
+  assert.equal(loadSave({ ...b, environment: rotated }).ok, true);
+});

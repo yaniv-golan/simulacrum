@@ -324,7 +324,7 @@ test('outbox limit stops once even when the final event cannot fit', async (t) =
   await f.start();
   await settle();
   assert.equal(f.mount.active(), true);
-  assert.equal(f.calls(), 2, 'session and initial screen segment sample context');
+  assert.equal(f.calls(), 3, 'admission, session and initial screen segment sample context');
   const initialCalls = f.calls();
   f.huge(true);
   f.mount.emit('over-limit', {});

@@ -56,7 +56,7 @@ export function createBrowserEvidence({
         );
         await ready.dispose();
         const before = await page.evaluate(() => window.workshopProbe.readLastCommandResult());
-        await page.locator('input[type=file]').setInputFiles(file);
+        await uploadWorkshopFile(page, file);
         const handle = await page.waitForFunction(
           ({ sequence, save }) => {
             const receipt = window.workshopProbe.readLastCommandResult();
@@ -125,4 +125,23 @@ export function createFixtureEvidence({ name, build, files, ...sessionOptions })
     })),
   });
   return createBrowserEvidence({ readBuild: () => build, readSource, name, ...sessionOptions });
+}
+
+/** Upload through the document control and explicitly accept its replacement prompt. */
+export async function uploadWorkshopFile(page, file) {
+  const protectedDocument = await page.evaluate(() => {
+    const b = JSON.parse(window.render_game_to_text()).metadata.blueprint;
+    return (
+      !!b.parts.length ||
+      (b.environment &&
+        b.environment !== 'flat' &&
+        (typeof b.environment === 'string' ||
+          b.environment.objects.length ||
+          b.environment.ground.friction !== 0.6 ||
+          b.environment.ground.restitution !== 0))
+    );
+  });
+  await page.locator('input[type=file]').first().setInputFiles(file);
+  if (protectedDocument)
+    await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
 }

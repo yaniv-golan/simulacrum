@@ -11,7 +11,6 @@ const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1280, height: 720 } }),
   errors = browserEvidence.errors;
 
-page.setDefaultTimeout(6000);
 const active = () =>
   page.evaluate(() => ({
     tag: document.activeElement.tagName,
@@ -31,6 +30,8 @@ const parameter = (key) =>
 let build;
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.waitForFunction(() => window.workshopProbe);
+  page.setDefaultTimeout(6000);
   await page.waitForFunction(() => window.workshopProbe);
   build = await page.locator('meta[name=build-id]').getAttribute('content');
   await placeCatalogPart(page, 'poweredMotor');

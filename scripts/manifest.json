@@ -1072,6 +1072,17 @@
       "timeoutMs": 60000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
+    },
+    {
+      "id": "verify-authorable-scenes",
+      "script": "scripts/verify-authorable-scenes.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
     }
   ],
   "invariants": [
@@ -1087,7 +1098,8 @@
         }
       ],
       "checks": [
-        "invariant-controls"
+        "invariant-controls",
+        "verify-authorable-scenes"
       ],
       "controls": {
         "positive": [
@@ -1098,6 +1110,18 @@
           {
             "path": "test/editing-contracts.test.mjs",
             "anchor": "mixed resize, axle attachment, rotation, undo and reload preserve connections"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "authored scene retains machine order, material, stable identities and chronological history"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "combined body budget and scene-only settings cannot bypass admission or replacement protection"
+          },
+          {
+            "path": "test/scene-capacity.test.mjs",
+            "anchor": "valid nearly full workshop rejects scene replacement, duplication, import and full load atomically"
           }
         ],
         "negative": [
@@ -1108,6 +1132,18 @@
           {
             "path": "test/editing-contracts.test.mjs",
             "anchor": "registered edit examples share rejection and round-trip behavioral contracts"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "authored scene retains machine order, material, stable identities and chronological history"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "combined body budget and scene-only settings cannot bypass admission or replacement protection"
+          },
+          {
+            "path": "test/scene-capacity.test.mjs",
+            "anchor": "valid nearly full workshop rejects scene replacement, duplication, import and full load atomically"
           }
         ]
       },
@@ -1120,7 +1156,7 @@
       "id": "preview-isolation",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Mirror proposals and placement lifecycle state stay outside authored state until accepted commands commit them; stale completion cannot reopen a canceled proposal.",
+      "guarantee": "Mirror proposals and placement lifecycle state stay outside authored state until accepted commands commit them; stale completion cannot reopen a canceled proposal. Scene and assembly previews share document/cursor binding, one pending submission and exact-result reconciliation.",
       "owners": [
         {
           "path": "src/model/mirror-assembly.mjs",
@@ -1133,11 +1169,16 @@
         {
           "path": "src/presentation/placement-lifecycle.mjs",
           "anchor": "createPlacementLifecycle"
+        },
+        {
+          "path": "src/presentation/document-proposal.mjs",
+          "anchor": "createDocumentProposal"
         }
       ],
       "checks": [
         "invariant-controls",
-        "verify-mirror-browser"
+        "verify-mirror-browser",
+        "verify-authorable-scenes"
       ],
       "controls": {
         "positive": [
@@ -1148,6 +1189,26 @@
           {
             "path": "test/placement-lifecycle.test.mjs",
             "anchor": "placement commits valid previews once, rejects stale completions and cancels pointer ownership"
+          },
+          {
+            "path": "test/scene-proposal.test.mjs",
+            "anchor": "scene proposal rejects stale approval, blocks repeated submission and reconciles only exact source results"
+          },
+          {
+            "path": "test/scene-proposal.test.mjs",
+            "anchor": "scene preview preserves draft on rejection and disallows editing after leaving Build"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "scene Move uses translation and manipulates only an unapplied proposal"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "scene tool shortcuts switch tools and leave text editing native"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "scene preview hides replaced committed geometry and cancellation restores it"
           }
         ],
         "negative": [
@@ -1158,6 +1219,26 @@
           {
             "path": "test/placement-lifecycle.test.mjs",
             "anchor": "placement commits valid previews once, rejects stale completions and cancels pointer ownership"
+          },
+          {
+            "path": "test/scene-proposal.test.mjs",
+            "anchor": "scene proposal rejects stale approval, blocks repeated submission and reconciles only exact source results"
+          },
+          {
+            "path": "test/scene-proposal.test.mjs",
+            "anchor": "scene preview preserves draft on rejection and disallows editing after leaving Build"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "scene Move uses translation and manipulates only an unapplied proposal"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "scene tool shortcuts switch tools and leave text editing native"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "scene preview hides replaced committed geometry and cancellation restores it"
           }
         ]
       },
@@ -1264,7 +1345,7 @@
       "id": "geometry-agreement",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Authored wheel and sphere geometry drives physical dimensions, mass and inertia; placement rejects solid intersections while allowing empty hull corners.",
+      "guarantee": "Authored wheel and sphere geometry drives physical dimensions, mass and inertia; placement rejects solid intersections while allowing empty hull corners. Fixed scene solids derive from authored dimensions, transforms and material; matching face-adjacent boxes compile as their exact union to remove internal contact seams.",
       "owners": [
         {
           "path": "src/model/geometry.mjs",
@@ -1273,13 +1354,22 @@
         {
           "path": "src/model/assembly.mjs",
           "anchor": "compileAssembly"
+        },
+        {
+          "path": "src/model/environment.mjs",
+          "anchor": "environmentObstacles"
+        },
+        {
+          "path": "src/presentation/primitive-geometry.mjs",
+          "anchor": "createPrimitiveGeometry"
         }
       ],
       "checks": [
         "invariant-controls",
         "verify-property-focus",
         "verify-surface-browser",
-        "verify-ball-browser"
+        "verify-ball-browser",
+        "verify-authorable-scenes"
       ],
       "controls": {
         "positive": [
@@ -1290,6 +1380,30 @@
           {
             "path": "test/ball.test.mjs",
             "anchor": "solid ball radius, volume and native inertia follow authored size/material"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "coplanar split platform matches continuous contact and detects a raised seam"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "authored incline has correct endpoints and analytical low-grip acceleration in rotated frames"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "an intentional platform edge permits a ballistic drop without energy creation"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "recording and workshop reconstruct identical canonical cylinder surfaces"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "admitted size extrema and materials support ordinary loads in rotated box and cylinder frames"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "floor to authored ramp and bump traversals bound excess energy without forbidding a failed climb"
           }
         ],
         "negative": [
@@ -1300,6 +1414,30 @@
           {
             "path": "test/ball.test.mjs",
             "anchor": "sphere placement uses curved surface, including rotated boxes and cylinder hulls"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "coplanar split platform matches continuous contact and detects a raised seam"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "authored incline has correct endpoints and analytical low-grip acceleration in rotated frames"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "an intentional platform edge permits a ballistic drop without energy creation"
+          },
+          {
+            "path": "test/scene-editor.test.mjs",
+            "anchor": "recording and workshop reconstruct identical canonical cylinder surfaces"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "admitted size extrema and materials support ordinary loads in rotated box and cylinder frames"
+          },
+          {
+            "path": "test/scene-contact.test.mjs",
+            "anchor": "floor to authored ramp and bump traversals bound excess energy without forbidding a failed climb"
           }
         ]
       },
@@ -1357,19 +1495,36 @@
         }
       ],
       "checks": [
-        "invariant-controls"
+        "invariant-controls",
+        "verify-authorable-scenes"
       ],
       "controls": {
         "positive": [
           {
             "path": "test/session.test.mjs",
             "anchor": "checkpoint restores tick and future physics but advances observation epoch"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "authored scene retains machine order, material, stable identities and chronological history"
+          },
+          {
+            "path": "test/scene-preservation.test.mjs",
+            "anchor": "authored scene capture, continuation, machine metrics and shared sensing retain their boundaries"
           }
         ],
         "negative": [
           {
             "path": "test/session.test.mjs",
             "anchor": "checkpoint rejection is atomic for malformed clocks inputs sensors and identity"
+          },
+          {
+            "path": "test/environment.test.mjs",
+            "anchor": "authored scene retains machine order, material, stable identities and chronological history"
+          },
+          {
+            "path": "test/scene-preservation.test.mjs",
+            "anchor": "authored scene capture, continuation, machine metrics and shared sensing retain their boundaries"
           }
         ]
       },
@@ -1626,7 +1781,8 @@
         }
       ],
       "checks": [
-        "invariant-controls"
+        "invariant-controls",
+        "verify-authorable-scenes"
       ],
       "controls": {
         "positive": [
@@ -1665,6 +1821,14 @@
           {
             "path": "test/cloud-playtest.test.mjs",
             "anchor": "busy uploads preserve a bounded independent control storage lane"
+          },
+          {
+            "path": "test/scene-library.test.mjs",
+            "anchor": "recording subset rejects oversized machine observations before encoding"
+          },
+          {
+            "path": "test/scene-preservation.test.mjs",
+            "anchor": "legacy visual events preserve frozen bump descriptors without executable checkpoint conversion"
           }
         ],
         "negative": [
@@ -1703,6 +1867,14 @@
           {
             "path": "test/cloud-playtest.test.mjs",
             "anchor": "busy uploads preserve a bounded independent control storage lane"
+          },
+          {
+            "path": "test/scene-library.test.mjs",
+            "anchor": "recording subset rejects oversized machine observations before encoding"
+          },
+          {
+            "path": "test/scene-preservation.test.mjs",
+            "anchor": "legacy visual events preserve frozen bump descriptors without executable checkpoint conversion"
           }
         ]
       },
@@ -3108,6 +3280,10 @@
           {
             "path": "test/motion-readout.test.mjs",
             "anchor": "selected measurement lifecycle preserves every tick, isolates selection and exposes history loss"
+          },
+          {
+            "path": "test/scene-library.test.mjs",
+            "anchor": "scene library keeps independent snapshots and preserves bytes on quota or corrupt-storage failure"
           }
         ],
         "negative": [
@@ -3122,6 +3298,10 @@
           {
             "path": "test/motion-readout.test.mjs",
             "anchor": "selected-body displacement overflow invalidates immediately during warmup"
+          },
+          {
+            "path": "test/scene-library.test.mjs",
+            "anchor": "scene library keeps independent snapshots and preserves bytes on quota or corrupt-storage failure"
           }
         ]
       },
@@ -5914,7 +6094,8 @@
         "src/application/capture-packet.mjs",
         "src/application/capture-stream.mjs",
         "src/application/feedback-capture-gate.mjs",
-        "src/application/feedback-client.mjs"
+        "src/application/feedback-client.mjs",
+        "src/application/recording-admission.mjs"
       ],
       "externalImports": [],
       "checks": [
@@ -5949,7 +6130,8 @@
         "verify-workshop",
         "verify-spring-browser",
         "verify-learning-examples",
-        "verify-assembly-library-browser"
+        "verify-assembly-library-browser",
+        "verify-authorable-scenes"
       ],
       "consumers": [
         "index.html",
@@ -5958,12 +6140,14 @@
         "src/presentation/assembly-mirror.mjs",
         "src/presentation/assembly-placement-view.mjs",
         "src/presentation/connection-test.mjs",
+        "src/presentation/scene-editor.mjs",
         "src/presentation/surface-controls.mjs",
         "src/presentation/workshop-view.mjs",
         "test/connection-test.test.mjs",
         "test/failure-messages.test.mjs",
         "test/gear-construction.test.mjs",
         "test/receiver-input-owner.test.mjs",
+        "test/scene-editor.test.mjs",
         "test/surface-pending.test.mjs"
       ],
       "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36"
@@ -6218,7 +6402,7 @@
   "browserReviewMetadataScopes": [
     {
       "entrypoint": "scripts/verify-exploded-browser.mjs",
-      "sourceSha256": "ed5a14cda2af23899421efdb88bcb6f5da1eaed9b0a86953c20739fb99359eb7",
+      "sourceSha256": "0b56888cc029700b3b349a4114870653fea2546c2c19e79b739e7ddd505cd410",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
@@ -6314,7 +6498,7 @@
         "node:http"
       ],
       "consumers": [],
-      "sourceSha256": "52345784d0bd97a39f08eb1a9bca11f9e830251a80451aca6dc8a2787625e860",
+      "sourceSha256": "0c17fcba765e4f27c65be6e76cde1da0173162a1d43270a472845288b9c5b870",
       "entrypoint": "scripts/verify-feedback-receipts.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -6438,7 +6622,7 @@
       "consumers": [
         "scripts/verify-cloud-playtest.mjs"
       ],
-      "sourceSha256": "36c86e28e377b3bc0a5e325b9c4c66c65307f85749e65a710a614b397c294ed8",
+      "sourceSha256": "a638bb5902804e31610ad59db3602cf43f7bbc3323e5c9116218c96e263bc9d8",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -6544,9 +6728,14 @@
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
         "test/browser-evidence.test.mjs",
-        "test/f2.test.mjs"
+        "test/f2.test.mjs",
+        "scripts/assembly-ux-cases.mjs",
+        "scripts/part-help-cases.mjs",
+        "scripts/verify-authorable-scenes.mjs",
+        "test/assembly-partitions.test.mjs",
+        "test/part-help-partitions.test.mjs"
       ],
-      "sourceSha256": "7ef87c76a73050eaa045804bcfe34f7d677b3c8247b5216251225091d845f23f",
+      "sourceSha256": "a1b822370e7a65c272ebdd5b08d9b57a1025cf5e334de373299c1be5b55007a0",
       "entrypoint": "scripts/browser-evidence.mjs",
       "dependencies": [
         "scripts/app-fingerprint.mjs",
@@ -6682,7 +6871,12 @@
         "test/verification-resume-controls.test.mjs",
         "test/verification-resume.test.mjs",
         "test/verification-run.test.mjs",
-        "vite.config.mjs"
+        "vite.config.mjs",
+        "scripts/assembly-ux-cases.mjs",
+        "scripts/part-help-cases.mjs",
+        "scripts/verify-authorable-scenes.mjs",
+        "test/assembly-partitions.test.mjs",
+        "test/part-help-partitions.test.mjs"
       ],
       "sourceSha256": "1da859aea6e084565ed4458b932e9975c1db1627dc16ea5a457068dc374effea",
       "entrypoint": "scripts/app-fingerprint.mjs",
@@ -6853,7 +7047,12 @@
         "test/verification-resume-controls.test.mjs",
         "test/verification-resume.test.mjs",
         "test/verification-run.test.mjs",
-        "vite.config.mjs"
+        "vite.config.mjs",
+        "scripts/assembly-ux-cases.mjs",
+        "scripts/part-help-cases.mjs",
+        "scripts/verify-authorable-scenes.mjs",
+        "test/assembly-partitions.test.mjs",
+        "test/part-help-partitions.test.mjs"
       ],
       "sourceSha256": "e6d17d47613f5a704e08cf7a0324ee12d52a4852bc3168b50ae75579a59458f2",
       "entrypoint": "scripts/source-identity.mjs",
@@ -7470,7 +7669,12 @@
         "test/verification-resume-controls.test.mjs",
         "test/verification-resume.test.mjs",
         "test/verification-run.test.mjs",
-        "vite.config.mjs"
+        "vite.config.mjs",
+        "scripts/assembly-ux-cases.mjs",
+        "scripts/part-help-cases.mjs",
+        "scripts/verify-authorable-scenes.mjs",
+        "test/assembly-partitions.test.mjs",
+        "test/part-help-partitions.test.mjs"
       ],
       "sourceSha256": "0fa170b7b1ba96966b364c5ceb9125ae98a1a55bf591c534ea3681f8dde0fa4c",
       "entrypoint": "scripts/module-graph.mjs",
@@ -7680,7 +7884,7 @@
       "checks": [
         "invariant-controls"
       ],
-      "sourceSha256": "c364f386baed4d697fc8ec11877a8f1428aa823bc32e27c9a4a343331fb762ee",
+      "sourceSha256": "13d0f5313236158bdafd216ce3e18f9a91515176d1151395c61fb2dc593c97b3",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs"

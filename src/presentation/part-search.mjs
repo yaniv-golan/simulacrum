@@ -10,7 +10,7 @@ const entry = (category, aliases, actions, related = '') => ({
 // Discovery vocabulary only. Names, availability and physical meaning retain their owners.
 export const PART_SEARCH = Object.freeze({
   powerCell: entry('Power', 'battery|batteries', 'energy|electricity|supply power'),
-  poweredLamp: entry('Power', 'lamp|light|headlight', 'illuminate|light up'),
+  poweredLamp: entry('Power', 'lamp|headlamp|headlight|light', 'illuminate|lighting|shine|light up'),
   poweredMotor: entry('Motion', 'engine', 'spin|drive|rotate|rotation|create rotation'),
   gripWheel: entry('Motion', 'tyre|tire', 'traction|roll|rolling|ground'),
   beam: entry('Structure', 'bar', 'frame|support|arm'),

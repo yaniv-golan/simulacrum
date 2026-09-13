@@ -8,7 +8,6 @@ const browserEvidence = createBrowserEvidence();
 const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
   page = await browser.newPage({ viewport: { width: 1280, height: 720 } }),
   errors = browserEvidence.errors;
-page.setDefaultTimeout(6000);
 
 const out = browserArtifactPath('artifacts/inspector-browser', process.argv[3]);
 mkdirSync(out, { recursive: true });
@@ -43,6 +42,8 @@ const withinInspector = async (locator) =>
 let build;
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
+  await page.waitForFunction(() => window.workshopProbe);
+  page.setDefaultTimeout(6000);
   await page.waitForFunction(() => window.workshopProbe);
   build = await page.locator('meta[name=build-id]').getAttribute('content');
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();

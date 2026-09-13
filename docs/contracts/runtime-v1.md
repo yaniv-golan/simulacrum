@@ -50,14 +50,35 @@ initializing, while sensor readings retain power, mounting and domain validity
 precedence. Restore validates receipt ages and topology without advancing physics.
 Session checkpoint and blueprint save versions remain 3.
 
-Version 3 also admits an optional `environment` preset: `flat` or `rounded-bump`.
-Omission means the flat floor. `choose-environment` is an atomic Build edit with
-ordinary history and save/checkpoint identity. One model descriptor supplies the
-rounded bump's fixed collision and rendered geometry; example identity has no
-authority. Selecting or loading terrain rejects overlap with canonical part
-envelopes, including protruding shafts. Assembly insertion preserves the receiving
-environment. The compiler's explicit `ground: null` option removes the floor only;
-an explicitly selected obstacle remains part of that configuration.
+Version 3 admits an optional `environment`: the unchanged legacy `flat` or
+`rounded-bump` string, or authored `{objects,ground}` scene data. Omission means
+flat. This is compatible admission within the current schema, not a historical
+reader or migration chain. Old preset descriptors remain unchanged for visual
+recordings and ordinary saves. Opaque checkpoints still require the exact admitted
+configuration and runtime identity; no historical checkpoint conversion is added.
+
+Authored scenes contain at most 32 explicitly fixed boxes or X-axis cylinders,
+with stable IDs, names, dimensions, positions, quaternions, material, grip and
+restitution. Inclined boxes provide straight ramps. Dimensions and transforms are
+bounded by the schema; cylinders require equal radii and rotations must be unit.
+Scene solids follow the material density and explicit contact selections. They are
+outside machine membership, metrics and assembly capture. Matching face-adjacent
+boxes with identical cross-section, orientation, density and contact properties
+compile as their exact rectangular union, removing internal collision faces.
+Individual objects remain independently editable and visible in recording review.
+The combined machine bodies, distributed rope nodes, scene solids and floor cannot exceed 4097 physics bodies.
+Recording remains a separate subset of at most 512 machine parts, subject to its
+unchanged event and session byte limits.
+
+`replace-scene` is a Build-only atomic edit requiring the source cursor. It preserves
+the machine and enters chronological workshop history; a rejected edit preserves
+both. `choose-environment` retains legacy command behavior. Full-workshop saves
+carry both machine and scene, while scene-only library/import envelopes contain
+version 1 and scene data only. Assembly insertion preserves the receiving scene.
+Admission rejects machine/scene and scene/scene volume overlaps, including shaft
+extensions; touching support surfaces and floor embedding remain permitted. The
+compiler's explicit `ground: null` removes the floor only. These admission bounds
+are not qualification of arbitrary machines, speeds or contact layouts.
 
 No live library object escapes the physics
 door. A failed tick poisons the session; it publishes failure evidence, cannot continue
@@ -218,7 +239,8 @@ commands one step at a time; no runtime dispatch reads the guide or blueprint na
 Editor history retains at most 50 prior authored blueprints. Failed/no-op edits
 leave history unchanged; new edits clear redo. Run/pause/reset do not add edits.
 Load and checkpoint restoration explicitly clear editor history. Availability is
-published as `metadata.editing`, part of the same read model. Gizmo previews are
+published as `metadata.editing`, part of the same read model. Optional `undoLabel`
+and `redoLabel` identify a scene edit; restoration clears these with history. Gizmo previews are
 separate render objects; accepted poses appear only after the authoring command.
 
 The starter vehicle is a thirty-second construction feasibility fixture, not L0

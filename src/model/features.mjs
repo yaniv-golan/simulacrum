@@ -1,4 +1,8 @@
 export const UI_FEATURES = Object.freeze({
+  authorableScenes: Object.freeze({
+    milestone: 'M3b',
+    entrypoint: 'src/presentation/scene-editor.mjs',
+  }),
   releaseCoupler: Object.freeze({
     milestone: 'M3b',
     entrypoint: 'src/presentation/workshop-view.mjs',

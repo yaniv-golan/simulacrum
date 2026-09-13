@@ -1,4 +1,6 @@
 import { createThumbnailQueue } from './thumbnail-queue.mjs';
+import { createSceneEditor, sceneMesh } from './scene-editor.mjs';
+import { hasWorkshopContent } from '../model/environment.mjs';
 import { createRopeView } from './rope-view.mjs';
 import { ropeInspector } from './rope-controls.mjs';
 import { createPartMesh, disposePart } from './part-mesh.mjs';
@@ -63,7 +65,7 @@ import { CYLINDER_SEGMENTS } from '../model/geometry.mjs';
 import {
   BUILD_ENVIRONMENT,
   ENVIRONMENT_PRESETS,
-  environmentObstacles,
+  sceneObjectDescriptors,
 } from '../model/environment.mjs';
 import './workshop.css';
 export const WORKSHOP_VIEW_MILESTONE = UI_FEATURES.construction.milestone;
@@ -127,6 +129,8 @@ export function createWorkshopView(
     getCursor,
     getAssemblyFrame,
     assemblyLibrary,
+    sceneLibrary,
+    onExportScene,
     learning,
     controllerHistory,
     cameraSession,
@@ -166,7 +170,8 @@ export function createWorkshopView(
     inputTime = performance.now(),
     surface,
     assemblies = null,
-    assemblyPlacement = null;
+    assemblyPlacement = null,
+    sceneEditor = null;
   // RAF still owns control damping and animation; GPU work follows scene invalidation.
   const renderCosts = [];
   let renderedFrames = 0,
@@ -198,6 +203,12 @@ export function createWorkshopView(
   };
   for (const type of ['click', 'change']) root.addEventListener(type, captureInput, true);
   const send = async (command, assemblyAction = false) => {
+    if (sceneEditor?.pending() && command.type !== 'replace-scene')
+      return { ok: false, reasonCode: 'BUSY' };
+    if (sceneEditor?.draft() && command.type === 'run') {
+      setMessage('Finish or cancel the scene preview first.');
+      return { ok: false, reasonCode: 'BUSY' };
+    }
     if (!assemblyAction && (assemblies?.busy() || assemblyPlacement?.active())) {
       setMessage('Finish or cancel the assembly operation first.');
       return { ok: false, message: 'Finish or cancel the assembly operation first.' };
@@ -211,7 +222,11 @@ export function createWorkshopView(
       if (result?.ok === false) setMessage(explainFailure(result, frame?.metadata.blueprint));
       return result;
     } catch (error) {
-      if (assemblyAction && command.type === 'insert-assembly') throw error;
+      if (
+        command.type === 'replace-scene' ||
+        (assemblyAction && command.type === 'insert-assembly')
+      )
+        throw error;
       const result = normalizeFailure(error);
       setMessage(explainFailure(result, frame?.metadata.blueprint));
       return result;
@@ -272,19 +287,21 @@ export function createWorkshopView(
   loadInput.addEventListener('change', async () => {
     const file = loadInput.files?.[0];
     if (!file) return;
-    if (assemblies?.busy() || assemblyPlacement?.active()) {
+    if (sceneEditor?.pending() || assemblies?.busy() || assemblyPlacement?.active()) {
       setMessage('Finish or cancel the assembly operation before loading a machine.');
       loadInput.value = '';
       return;
     }
     try {
-      await onLoad(file);
+      chooseExample({ name: file.name, action: () => onLoad(file) }, loadInput);
     } catch {
       setMessage('This file could not be loaded. Choose a saved workshop JSON file.');
     }
     loadInput.value = '';
   });
-  const newButton = button('New', () => send({ type: 'new' }));
+  const newButton = button('New', () =>
+    chooseExample({ name: 'an empty workshop', command: { type: 'new' } }, newButton),
+  );
   newButton.dataset.command = 'new';
   filebar.append(
     newButton,
@@ -304,21 +321,9 @@ export function createWorkshopView(
   undo.dataset.command = 'undo';
   redo.dataset.command = 'redo';
   filebar.prepend(undo, redo);
-  const environmentLabel = element('label', 'environment-choice', 'Environment '),
-    environmentSelect = element('select');
-  environmentSelect.setAttribute('aria-label', 'Environment');
-  for (const [value, preset] of Object.entries(ENVIRONMENT_PRESETS)) {
-    const option = element('option', '', preset.label);
-    option.value = value;
-    environmentSelect.append(option);
-  }
-  environmentSelect.addEventListener('change', async () => {
-    const chosen = environmentSelect.value;
-    await send({ type: 'choose-environment', environment: chosen });
-    environmentSelect.value = frame?.metadata.blueprint.environment ?? 'flat';
-  });
-  environmentLabel.append(environmentSelect);
-  filebar.append(environmentLabel);
+  const chooseScene = button('Choose scene', () => sceneEditor.openBrowser()),
+    editScene = button('Edit scene', () => sceneEditor.enter());
+  filebar.append(chooseScene, editScene);
   header.append(brand, modebar, filebar);
   const body = element('main', 'workshop-body'),
     left = element('aside', 'parts-panel');
@@ -419,7 +424,7 @@ export function createWorkshopView(
       cancelReplacement.disabled = false;
     }
   });
-  const downloadCopy = button('Download current machine', async () => {
+  const downloadCopy = button('Download current workshop', async () => {
     try {
       await onSave();
       exampleMessage.textContent =
@@ -433,20 +438,23 @@ export function createWorkshopView(
   replacement.append(downloadCopy, confirmReplacement, cancelReplacement);
   examples.insertBefore(replacement, exampleMessage.nextSibling);
   examples.addEventListener('close', () => {
+    if (examples.open) return;
     replacement.hidden = true;
     pendingExample = null;
   });
   async function openExample(entry) {
-    if (frame.metadata.mode !== 'build') {
+    if (frame.metadata.mode !== 'build' && !entry.action && entry.command?.type !== 'new') {
       exampleMessage.textContent =
         'Return to Build before opening an example. Your current machine is unchanged.';
       return;
     }
-    const result = await send(entry.command);
+    const result = entry.action ? await entry.action() : await send(entry.command);
     if (!result?.ok) {
-      exampleMessage.textContent = 'The example could not open. Your current machine is unchanged.';
+      exampleMessage.textContent =
+        'The workshop could not open. Your current machine and scene are unchanged.';
       return;
     }
+    sceneEditor?.documentReplaced();
     if (entry.guide) {
       guideActive = true;
       empty.hidden = true;
@@ -456,16 +464,17 @@ export function createWorkshopView(
     partsHeading.focus();
   }
   function chooseExample(entry, trigger) {
-    if (frame.metadata.mode !== 'build') {
+    if (frame.metadata.mode !== 'build' && !entry.action && entry.command?.type !== 'new') {
       exampleMessage.textContent =
         'Return to Build before opening an example. Your current machine is unchanged.';
       return;
     }
-    if (!frame.metadata.blueprint.parts.length) return openExample(entry);
+    if (!hasWorkshopContent(frame.metadata.blueprint)) return openExample(entry);
     pendingExample = { ...entry, trigger };
-    exampleMessage.textContent = `Replace your current machine with ${entry.name}? This replaces the machine and its Undo history. Download a copy first if you want to keep it.`;
+    exampleMessage.textContent = `Replace your current workshop with ${entry.name}? This replaces the machine, scene and Undo history. Download a copy first if you want to keep it.`;
     confirmReplacement.textContent = 'Replace without saving';
     replacement.hidden = false;
+    if (!examples.open) examples.showModal();
     cancelReplacement.focus();
   }
   function refreshGuide() {
@@ -595,7 +604,7 @@ export function createWorkshopView(
         springExperiments,
         'Guided wheel suspension',
         'Editable example · Suspension travel',
-        'Four sliding springs carry a powered cart over a rounded bump. Run and hold W/S to drive. Select the same chassis in each cart and open Measurements; compare matching windows and speed just before the bump. The same key press may give different speeds: in Build, select the receiver and adjust Keyboard settings → Output strength. Then change stiffness, damping or load. Smoother motion does not necessarily use less energy.',
+        'Four sliding springs carry a powered cart over a rounded bump. Run and hold W/S to drive. Select the same chassis in each cart and open Measurements; compare matching windows and speed just before the bump. The same key press may give different speeds: in Build, select the receiver and adjust Keyboard settings → Output strength. Then change stiffness, damping or load. In Build, Edit scene lets you change the bump; repeat both carts with the same scene, approach speed and measurement window. Smoother motion does not necessarily use less energy.',
         'Try suspension cart',
         { type: 'guided-suspension-example', replace: true },
       );
@@ -764,7 +773,7 @@ export function createWorkshopView(
     element(
       'p',
       'muted small',
-      'Records this workshop’s controls and machine state locally. Nothing is uploaded. Save the recording to share a problem. Capture stops visibly at its size limit.',
+      'Records this workshop’s controls and machine state locally. Nothing is uploaded. Save the recording to share a problem. Recording supports up to 512 machine parts; events above 2 MiB stop capture visibly.',
     ),
   );
   const recordingToggle = button('Start recording', () => onRecording?.('toggle')),
@@ -1060,14 +1069,13 @@ export function createWorkshopView(
       disposePart(mesh);
       environmentGroup.remove(mesh);
     }
-    for (const descriptor of environmentObstacles(blueprint.environment)) {
-      const [halfLength, radius] = descriptor.halfExtents;
-      const mesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(radius, radius, halfLength * 2, CYLINDER_SEGMENTS).rotateZ(
-          -Math.PI / 2,
-        ),
-        new THREE.MeshStandardMaterial({ color: 0xd3a352, roughness: 0.8 }),
-      );
+    for (const descriptor of sceneObjectDescriptors(blueprint.environment)) {
+      const mesh = sceneMesh(descriptor);
+      const index = environmentGroup.children.length;
+      mesh.userData.sceneId =
+        typeof blueprint.environment === 'object'
+          ? blueprint.environment.objects[index].id
+          : `obstacle-${index + 1}`;
       mesh.position.fromArray(descriptor.position);
       mesh.quaternion.fromArray(descriptor.rotation);
       mesh.castShadow = mesh.receiveShadow = true;
@@ -1280,13 +1288,12 @@ export function createWorkshopView(
   const explodeButton = button('Exploded view', () => setExploded(!exploded));
   explodeButton.dataset.command = 'explode-view';
   explodeButton.setAttribute('aria-pressed', 'false');
-  viewGroup.append(
-    button('Frame machine · F', () => {
-      explodeCameraTween = null;
-      editing.focus();
-    }),
-    explodeButton,
-  );
+  const frameButton = button('Frame machine · F', () => {
+    explodeCameraTween = null;
+    if (sceneEditor?.active()) sceneEditor.frame();
+    else editing.focus();
+  });
+  viewGroup.append(frameButton, explodeButton);
   const wiringLabel = element('label', 'follow-control'),
     wiring = element('input'),
     wiringNotice = element('span', 'wiring-notice', 'Inspection connections shown.');
@@ -1497,6 +1504,14 @@ export function createWorkshopView(
   });
 
   function setTool(value) {
+    if (sceneEditor?.active()) {
+      sceneEditor.setTool(value);
+      for (const b of tools.querySelectorAll('[data-edit-tool]')) {
+        b.classList.toggle('active', b.dataset.editTool === value);
+        b.setAttribute('aria-pressed', String(b.dataset.editTool === value));
+      }
+      return;
+    }
     invalidateScene();
     surface?.cancel();
     if (mirror?.active()) mirror.cancel();
@@ -1556,6 +1571,46 @@ export function createWorkshopView(
     rightPanel.insertBefore(assemblyPlacement.panel, right);
     root.append(savedAssemblies.dialog);
   }
+  sceneEditor = createSceneEditor({
+    getFrame: () => ({ ...frame, cursor: getCursor() }),
+    send,
+    left,
+    rightPanel,
+    scene,
+    camera,
+    canvas: renderer.domElement,
+    orbit: controls,
+    meshes: () => environmentGroup,
+    library: sceneLibrary,
+    exportScene: onExportScene,
+    onTool: setTool,
+    invalidate: invalidateScene,
+    onBusy: (busy) => {
+      filebar.inert = modebar.inert = busy;
+      undo.title = frame.metadata.editing.undoLabel
+        ? 'Undo scene edit'
+        : 'Undo previous workshop edit';
+      redo.title = frame.metadata.editing.redoLabel
+        ? 'Redo scene edit'
+        : 'Redo previous workshop edit';
+      chooseScene.disabled = editScene.disabled = busy || frame?.metadata.mode !== 'build';
+    },
+    onContext: (active) => {
+      if (active) cameraSession?.watch(null);
+      frameButton.textContent = active ? 'Frame scene · F' : 'Frame machine · F';
+      cancelInteraction();
+      editing.select(active ? null : selected);
+      if (active) renderer.domElement.focus();
+      else editScene.focus();
+      if (!active) {
+        setTool(activeTool);
+        inspectorKey = '';
+        refreshInspector();
+      }
+      empty.hidden = active || !!frame?.metadata.blueprint.parts.length;
+    },
+  });
+  root.append(sceneEditor.dialog);
   const raycaster = new THREE.Raycaster(),
     pointer = new THREE.Vector2();
   raycaster.params.Line.threshold = 0.012;
@@ -1673,7 +1728,7 @@ export function createWorkshopView(
     }
   }
   function select(id) {
-    if (assemblyPlacement?.active()) return;
+    if (sceneEditor?.active() || assemblyPlacement?.active()) return;
     if (assemblies?.drafting()) {
       assemblies.toggle(id);
       return;
@@ -1719,6 +1774,14 @@ export function createWorkshopView(
     }
   };
   const up = (event) => {
+    if (sceneEditor?.active()) {
+      if (
+        pointerStart &&
+        Math.hypot(event.clientX - pointerStart[0], event.clientY - pointerStart[1]) <= 5
+      )
+        sceneEditor.point(event);
+      return;
+    }
     if (partPlacement?.active()) {
       if (event.button !== 0) return;
       event.stopImmediatePropagation();
@@ -1800,6 +1863,7 @@ export function createWorkshopView(
     getFrame: () => frame,
     getMeshes: () => meshes,
     canStart: (event) =>
+      !sceneEditor?.active() &&
       !partPlacement?.active() &&
       !assemblies?.busy() &&
       !assemblies?.selected() &&
@@ -2039,7 +2103,7 @@ export function createWorkshopView(
       })
     : null;
   function refreshInspector() {
-    if (!frame) return;
+    if (!frame || sceneEditor?.active()) return;
     right.hidden = !!assemblies?.contextual() || !!assemblyPlacement?.active();
     sensorView.update(frame, right.hidden ? null : selected);
     cameraControls?.selection(right.hidden ? null : selected);
@@ -3820,8 +3884,15 @@ export function createWorkshopView(
     explodeButton.disabled = frame.metadata.mode === 'run' || blueprint.parts.length < 2;
     refreshSelectionVisuals();
     editing.select(selected);
-    environmentSelect.value = blueprint.environment ?? 'flat';
-    environmentSelect.disabled = frame.metadata.mode !== 'build';
+    undo.title = frame.metadata.editing.undoLabel
+      ? 'Undo scene edit'
+      : 'Undo previous workshop edit';
+    redo.title = frame.metadata.editing.redoLabel
+      ? 'Redo scene edit'
+      : 'Redo previous workshop edit';
+    chooseScene.disabled = editScene.disabled =
+      frame.metadata.mode !== 'build' || !!sceneEditor?.pending();
+    sceneEditor?.refresh();
     undo.disabled = frame.metadata.mode !== 'build' || !frame.metadata.editing?.undoCount;
     redo.disabled = frame.metadata.mode !== 'build' || !frame.metadata.editing?.redoCount;
     refreshGuide();
@@ -3831,7 +3902,7 @@ export function createWorkshopView(
     refreshSprings();
     refreshHealth();
     failureButton.hidden = frame.status !== 'failed';
-    empty.hidden = blueprint.parts.length > 0 || guideActive;
+    empty.hidden = sceneEditor?.active() || blueprint.parts.length > 0 || guideActive;
     tickLabel.textContent = `Tick ${frame.tick}`;
     modeLabel.textContent =
       frame.status === 'failed' ? 'STOPPED' : frame.metadata.mode.toUpperCase();
@@ -3949,6 +4020,16 @@ export function createWorkshopView(
     }
     invalidateScene();
     if (document.querySelector('dialog[open]')) return;
+    if (sceneEditor?.active()) {
+      sceneEditor.key(event);
+      const historyShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z';
+      const runtimeShortcut =
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        (event.code === 'Space' || event.key === '.');
+      if (!historyShortcut && !runtimeShortcut) return;
+    }
     if (assemblyPlacement?.active()) {
       assemblyPlacement.key(event);
       return;
@@ -4302,6 +4383,7 @@ export function createWorkshopView(
           }
         : null,
       bodyMeasurement: motionReadout.readBody(),
+      sceneEditing: sceneEditor.read(),
       environment: {
         selected: frame?.metadata.blueprint.environment ?? 'flat',
         obstacles: environmentGroup.children.map((mesh) => ({
@@ -4382,6 +4464,7 @@ export function createWorkshopView(
       controls.removeEventListener('change', invalidateScene);
       renderer.domElement.removeEventListener('webglcontextrestored', invalidateScene);
       resize.disconnect();
+      sceneEditor?.dispose();
       window.removeEventListener('keydown', keydown);
       mirrorPlane.geometry.dispose();
       mirrorPlane.material.dispose();

@@ -22,6 +22,8 @@ test('everyday words and roles find the intended part before incidental referenc
     ['headlight', 'poweredLamp'],
     ['camera', 'camera'],
     ['photograph', 'camera'],
+    ['headlamp', 'poweredLamp'],
+    ['illuminate', 'poweredLamp'],
     ['release cargo', 'releaseCoupler'],
     ['detect rotation', 'rotationSensor'],
     ['load cell', 'loadCellSensor'],

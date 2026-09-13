@@ -172,6 +172,8 @@ export async function qualifyWorkshop(
         () => window.workshopProbe.observe().frames[0].metadata.blueprint.id,
       );
       await page.locator('[data-command=new]').click();
+      if (cycle > 1)
+        await page.getByRole('button', { name: 'Replace without saving', exact: true }).click();
       await page.waitForFunction((previous) => {
         const f = window.workshopProbe.observe().frames[0];
         return (
