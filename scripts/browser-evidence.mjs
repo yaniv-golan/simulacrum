@@ -49,6 +49,12 @@ export function createBrowserEvidence({
       // Returns the complete receipt. Matching input alone is insufficient for repeated failures.
       async loadAndWait(page, file, { ok = true } = {}) {
         const save = JSON.parse(readFileSync(file, 'utf8'));
+        // Served build identity can precede asynchronous workshop startup.
+        // Use the existing page deadline and require the actual command reader.
+        const ready = await page.waitForFunction(
+          () => typeof window.workshopProbe?.readLastCommandResult === 'function',
+        );
+        await ready.dispose();
         const before = await page.evaluate(() => window.workshopProbe.readLastCommandResult());
         await page.locator('input[type=file]').setInputFiles(file);
         const handle = await page.waitForFunction(

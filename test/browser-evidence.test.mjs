@@ -340,6 +340,10 @@ test('load helper waits for a fresh matching receipt, including repeated rejecte
     waitForFunction: async (predicate, args) => {
       globalThis.window = { workshopProbe: { readLastCommandResult: () => receipt } };
       try {
+        if (args === undefined) {
+          assert.equal(predicate(), true);
+          return { dispose: async () => {} };
+        }
         assert.equal(predicate(args), false, 'stale identical rejection cannot complete a load');
         receipt = { ...receipt, sequence: 5, input: { type: 'load', save: { parts: [1] } } };
         assert.equal(predicate(args), false, 'another input cannot complete this load');
@@ -436,4 +440,86 @@ test('browser artifacts preserve standalone paths and isolate repeated checks un
   assert.throws(() => browserArtifactPath('artifacts/escape/result.json'), /symlink/);
   process.env.SIMULACRUM_BROWSER_ARTIFACT_ROOT = 'relative/root';
   assert.throws(() => browserArtifactPath('artifacts/check'), /absolute/);
+});
+
+test('load helper waits for the command probe before reading or submitting a save', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'load-readiness-'));
+  const previousWindow = globalThis.window;
+  t.after(() => {
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
+    rmSync(dir, { recursive: true, force: true });
+  });
+  const file = join(dir, 'save.json'),
+    save = { parts: [] };
+  writeFileSync(file, JSON.stringify(save));
+  const evidence = createBrowserEvidence({ readBuild: () => 'x', readSource: () => ({}) });
+  let receipt = { sequence: 7, input: { type: 'load', save }, result: { ok: false } };
+  let disposed = 0,
+    submitted = false;
+  globalThis.window = {};
+  const fake = {
+    evaluate: async (read) => read(),
+    locator: () => ({
+      setInputFiles: async (path) => {
+        assert.equal(path, file);
+        assert.equal(disposed, 1, 'readiness handle is released before submitting the save');
+        submitted = true;
+      },
+    }),
+    waitForFunction: async (predicate, args, options) => {
+      assert.equal(options, undefined, 'inherit the existing page deadline');
+      if (args === undefined) {
+        assert.equal(predicate(), false, 'missing probe is not ready');
+        globalThis.window = { workshopProbe: {} };
+        assert.equal(predicate(), false, 'partial probe is not ready');
+        globalThis.window.workshopProbe.readLastCommandResult = true;
+        assert.equal(predicate(), false, 'only a callable command probe is ready');
+        globalThis.window.workshopProbe.readLastCommandResult = () => receipt;
+        assert.equal(predicate(), true);
+        assert.equal(submitted, false);
+        return {
+          dispose: async () => {
+            disposed++;
+          },
+        };
+      }
+      assert.equal(submitted, true);
+      assert.equal(args.sequence, 7);
+      assert.equal(predicate(args), false, 'an old rejected load cannot complete the new load');
+      receipt = {
+        sequence: 8,
+        input: { type: 'load', save: { parts: [1] } },
+        result: { ok: true },
+      };
+      assert.equal(predicate(args), false, 'another save cannot complete the new load');
+      receipt.input.save = save;
+      assert.deepEqual(predicate(args), receipt);
+      return {
+        jsonValue: async () => structuredClone(receipt),
+        dispose: async () => {
+          disposed++;
+        },
+      };
+    },
+  };
+  assert.equal((await evidence.loadAndWait(fake, file)).sequence, 8);
+  assert.equal(disposed, 2);
+});
+
+test('load helper propagates startup timeout without reading or submitting a save', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'load-readiness-timeout-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const file = join(dir, 'save.json');
+  writeFileSync(file, JSON.stringify({ parts: [] }));
+  const evidence = createBrowserEvidence({ readBuild: () => 'x', readSource: () => ({}) });
+  const timeout = Error('command probe readiness deadline exceeded');
+  const fake = {
+    waitForFunction: async () => {
+      throw timeout;
+    },
+    evaluate: async () => assert.fail('cannot read before startup readiness'),
+    locator: () => assert.fail('cannot submit before startup readiness'),
+  };
+  await assert.rejects(evidence.loadAndWait(fake, file), (error) => error === timeout);
 });
