@@ -59,7 +59,7 @@ export async function prepareVerification(root = process.cwd(), options = {}, ov
   const d = { ...defaults, ...overrides };
   d.runtime();
   await d.environment();
-  const proposal = d.proposal(root, options.declarations ?? []);
+  const proposal = d.proposal(root, options.declarations ?? [], { base: options.base ?? null });
   if (proposal.blocked.length) return { status: 'BLOCKED_SCOPE', proposal };
   if (proposal.changes.length) {
     if (!options.scopeReview) return { status: 'NEEDS_SCOPE_REVIEW', proposal };

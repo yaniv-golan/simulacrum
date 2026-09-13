@@ -59,6 +59,9 @@ export function listProjectFiles(root, directory = '') {
       )
         return [];
       if (entry.isSymbolicLink()) return [path];
+      // A directory with its own `.git` entry is another checkout (a nested worktree, wherever
+      // it lives), never this project's sources.
+      if (entry.isDirectory() && existsSync(resolve(root, path, '.git'))) return [];
       return entry.isDirectory() ? listProjectFiles(root, path) : [path];
     })
     .sort();

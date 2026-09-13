@@ -105,9 +105,24 @@ export async function applyScopeProposal(
   // declaration is always executed before it is trusted. `proposal` stays the reviewed identity.
   const resolved = resolveScopeReview(proposal, review, inspectScopeInputs(root));
   const current = candidateIdentity(root);
-  if (same(current, resolved.expected))
-    return { status: 'already-current', witnesses: 'NOT_EVALUATED', changed: false };
-  const rebuilt = prepareScopeProposal(root, proposal.declarations);
+  const skipped = resolved.affectedNotWitnessed ?? { basis: null, checks: null };
+  const skippedLine = `Affected but not witnessed (NOT_EXECUTED; enumeration only): ${
+    skipped.checks
+      ? skipped.checks.join(', ') || 'none'
+      : `not computed${skipped.error ? ` (${skipped.error})` : ''}`
+  }`;
+  if (same(current, resolved.expected)) {
+    console.log(skippedLine);
+    return {
+      status: 'already-current',
+      witnesses: 'NOT_EVALUATED',
+      changed: false,
+      affectedNotWitnessed: skipped,
+    };
+  }
+  const rebuilt = prepareScopeProposal(root, proposal.declarations, {
+    base: proposal.affectedNotWitnessed?.basis?.base ?? null,
+  });
   if (!same(rebuilt, proposal))
     throw Error(
       'Stale proposal: source, graph, declarations or manifest changed; prepare and review again',
@@ -125,11 +140,14 @@ export async function applyScopeProposal(
       resolved.changes.filter((c) => c.declared).map((c) => [c.key, c.declared]),
     ),
     source: proposal.source,
+    // Enumeration only: what the candidate delta selects that this application does not run.
+    affectedNotWitnessed: skipped,
     proposedManifestSha256: digest(resolved.proposedManifest),
     reportPath,
   };
   const publish = () => writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n');
   publish();
+  console.log(skippedLine);
   try {
     await withWindow(async () => {
       const destination = join(mkdtempSync(join(tmpdir(), 'simulacrum-scope-')), 'source');

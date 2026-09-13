@@ -483,3 +483,69 @@ test('read audit rejects stale callers and sibling argument providers for every 
     source.set(provider, 'fixture.json');
   }
 });
+
+test('audio probe readers are selected for every audio entrypoint; an audio local row must declare every reader', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { buildModuleGraph } = await import('../scripts/module-graph.mjs');
+  const { selectAffectedBrowserChecks, browserGraphEntrypoints } = await import(
+    '../scripts/browser-selection.mjs'
+  );
+  // Checks drive the served page and import no audio module, so the reader set is a text
+  // probe over check scripts — a declared heuristic, not graph evidence. A comment that
+  // names the probe surface counts (conservative on purpose).
+  const probe = /impactVoiceStarts|readAudio\(|['"]Sound (?:on|off)['"]/;
+  const readersOf = (checks, read) =>
+    checks.filter((c) => probe.test(read(c.script))).map((c) => c.id);
+  assert.deepEqual(
+    readersOf([{ id: 'commented', script: 'x' }], () => '// probe: readAudio() in a comment'),
+    ['commented'],
+  );
+  const m = readManifest(),
+    checks = browserChecks(),
+    graph = buildModuleGraph(process.cwd(), {
+      purpose: 'test-selection',
+      entrypoints: browserGraphEntrypoints(process.cwd()),
+    }),
+    readers = readersOf(checks, (script) => readFileSync(script, 'utf8')).sort();
+  assert.ok(readers.includes('verify-ball-browser') && readers.includes('verify-mechanical-audio'));
+  const entrypoints = [
+    'src/presentation/mechanical-audio.mjs',
+    'src/presentation/mechanical-audio-model.mjs',
+    'src/presentation/sound-controls.mjs',
+    'src/application/mechanical-audio-adapter.mjs',
+  ];
+  const missing = (scopes, file) => {
+    const selected = new Set(
+      selectAffectedBrowserChecks({ checks, graph, files: [file], scopes }).checks.map((c) => c.id),
+    );
+    return readers.filter((id) => !selected.has(id));
+  };
+  for (const file of entrypoints) {
+    assert.ok(graph.nodes.has(file), `${file} is in the served graph`);
+    assert.deepEqual(missing(m.browserLocalScopes, file), [], `${file} selects every audio reader`);
+  }
+  // Negative control: a local row for an audio entrypoint that declares only one reader
+  // narrows selection to that reader; the guarantee must report the omitted reader.
+  const file = entrypoints[0],
+    node = graph.nodes.get(file),
+    narrowed = [
+      ...m.browserLocalScopes,
+      {
+        entrypoint: file,
+        checks: ['verify-mechanical-audio'],
+        dependencies: [...node.dependencies].sort(),
+        externalImports: (node.imports ?? [])
+          .filter((i) => i.target === null)
+          .map((i) => i.specifier)
+          .sort(),
+        consumers: browserScopeConsumers(graph, file),
+        reachingChecks: browserScopeRoots(checks, graph, file),
+      },
+    ];
+  assert.equal(
+    selectAffectedBrowserChecks({ checks, graph, files: [file], scopes: narrowed }).scope,
+    'local-contract',
+    'the fabricated row must actually match, or the control proves nothing',
+  );
+  assert.deepEqual(missing(narrowed, file), ['verify-ball-browser']);
+});

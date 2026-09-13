@@ -229,3 +229,83 @@ test('new occurrences of identical read text require explicit classification', (
   assert.equal(approved.blocked.length, 0);
   assert.equal(approved.changes.find((c) => c.kind === 'metadata').proposed.reads.length, 2);
 });
+
+test('a proposal records which checks the candidate delta selects but no witness executes', async () => {
+  const { summarizeScopeProposal } = await import('../scripts/browser-scope-proposal.mjs');
+  // The affected selection for the candidate's own delta is what a waived or partial run
+  // skips; witnesses cover only the rows whose scope metadata changed. The proposal must
+  // name the difference (enumeration only) and carry an always-present field, so a report
+  // can never be read as "nothing affected" by omission.
+  const { input } = fixture();
+  const delta = { base: 'main', files: ['scripts/b.mjs'] };
+  const p = deriveScopeProposal({ ...input, delta });
+  assert.deepEqual(p.affectedNotWitnessed, {
+    basis: delta,
+    checks: ['b'],
+  });
+  assert.match(
+    summarizeScopeProposal(p),
+    /Affected but not witnessed \(NOT_EXECUTED; enumeration only\): b$/m,
+  );
+  assert.deepEqual(p, deriveScopeProposal({ ...input, delta }), 'pure in its inputs');
+  // Witnesses cover the delta → empty list, field still present.
+  const covered = deriveScopeProposal({
+    ...input,
+    delta: { base: 'main', files: ['scripts/a.mjs'] },
+  });
+  assert.deepEqual(covered.affectedNotWitnessed.checks, []);
+  assert.match(
+    summarizeScopeProposal(covered),
+    /Affected but not witnessed \(NOT_EXECUTED; enumeration only\): none$/m,
+  );
+  // No delta supplied → unknown, never silently empty.
+  const unknown = deriveScopeProposal(input);
+  assert.deepEqual(unknown.affectedNotWitnessed, { basis: null, checks: null });
+  assert.match(summarizeScopeProposal(unknown), /Affected but not witnessed .*: not computed/);
+  // A selection failure is recorded, never swallowed into "none", and never blocks the proposal.
+  const failed = deriveScopeProposal({
+    ...input,
+    delta,
+    selectAffected: () => {
+      throw Error('graph unavailable');
+    },
+  });
+  assert.equal(failed.blocked.length, 0);
+  assert.deepEqual(failed.affectedNotWitnessed, {
+    basis: delta,
+    checks: null,
+    error: 'graph unavailable',
+  });
+  assert.match(
+    summarizeScopeProposal(failed),
+    /Affected but not witnessed .*: not computed \(graph unavailable\)/,
+  );
+  // The review binds the proposal including this field: editing it invalidates the digest.
+  const tampered = { ...p, affectedNotWitnessed: { basis: delta, checks: [] } };
+  assert.throws(() => validateScopeReview(tampered, review(p)), /Invalid or modified proposal/);
+});
+
+test('the default affected selector under a live candidate agrees with execution discovery', async () => {
+  // The unit fixtures stub the selector; this proves the production default reads the same
+  // graph and manifest the tier would use, minus the proposal's own witnesses.
+  const { prepareScopeProposal } = await import('../scripts/browser-scope-proposal.mjs');
+  const { affectedBrowserChecks } = await import('../scripts/browser-selection.mjs');
+  const proposal = prepareScopeProposal(process.cwd(), [], { base: 'HEAD' });
+  const { basis, checks } = proposal.affectedNotWitnessed;
+  assert.match(basis.base, /^[0-9a-f]{40}$/);
+  assert.ok(Array.isArray(checks), proposal.affectedNotWitnessed.error);
+  const witnessed = new Set(proposal.changes.flatMap((c) => c.witnesses));
+  const expected = basis.files.length
+    ? affectedBrowserChecks(basis.files)
+        .checks.map((c) => c.id)
+        .filter((id) => !witnessed.has(id))
+        .sort()
+    : [];
+  assert.deepEqual(checks, expected);
+});
+
+test('an empty candidate delta enumerates no skipped checks', () => {
+  const { input } = fixture();
+  const p = deriveScopeProposal({ ...input, delta: { base: 'main', files: [] } });
+  assert.deepEqual(p.affectedNotWitnessed, { basis: { base: 'main', files: [] }, checks: [] });
+});

@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { candidateIdentity } from './candidate.mjs';
+import { candidateIdentity, candidateSelection } from './candidate.mjs';
 import { buildModuleGraph } from './module-graph.mjs';
 import {
   browserGraphEntrypoints,
@@ -10,6 +11,7 @@ import {
   browserCheckClosures,
   legacyBrowserScopeRoots,
   browserConsumerSourceHash,
+  selectAffectedBrowserChecks,
 } from './browser-selection.mjs';
 
 export const scopeFields = { local: 'browserLocalScopes', metadata: 'browserReviewMetadataScopes' };
@@ -60,16 +62,54 @@ function validateDeclaration(d) {
   if (d.reads && new Set(d.reads.map((r) => r.expression)).size !== d.reads.length)
     throw Error('Duplicate read classification');
 }
-export function inspectScopeInputs(root) {
+/** The candidate delta a waiver or partial run would skip: tracked changes against `base` plus
+ * untracked files, enumerated the way source identity does. Absent when no base is named. */
+export function scopeDelta(root, base) {
+  if (!base) return null;
+  const commit = execFileSync(
+    'git',
+    ['rev-parse', '--verify', '--end-of-options', `${base}^{commit}`],
+    { cwd: root, encoding: 'utf8' },
+  ).trim();
+  return { base: commit, files: candidateSelection(root, commit) };
+}
+export function inspectScopeInputs(root, { base = null } = {}) {
   const source = candidateIdentity(root);
   const manifestText = readFileSync(resolve(root, 'scripts/manifest.json'), 'utf8');
   const graph = buildModuleGraph(root, {
     purpose: 'test-selection',
     entrypoints: browserGraphEntrypoints(root),
   });
+  const delta = scopeDelta(root, base);
   if (!same(source, candidateIdentity(root)))
     throw Error('Source changed during scope preparation');
-  return { source, manifestText, graph, read: (p) => readFileSync(resolve(root, p)) };
+  return { source, manifestText, graph, read: (p) => readFileSync(resolve(root, p)), delta };
+}
+/** Enumeration only: checks the candidate delta would select that no witness of this proposal
+ * executes. Never blocks a proposal and never changes what apply runs; the field is always
+ * present so a report cannot be read as "nothing affected" by omission. */
+export function affectedNotWitnessed({ delta, selectAffected, manifest, graph, read, changes }) {
+  if (!delta) return { basis: null, checks: null };
+  // An empty delta selects nothing; the tier's clean-source default of "all checks" is a
+  // completion policy, not a statement about what a change affected.
+  if (!delta.files.length) return { basis: delta, checks: [] };
+  const witnessed = new Set(changes.flatMap((c) => c.witnesses ?? []));
+  try {
+    // Root-bound reads and an environment-independent audit keep the result a pure function
+    // of the inputs, so the review digest binds it and apply's rebuild reproduces it.
+    const selected = selectAffected({
+      checks: manifest.browserChecks,
+      graph,
+      files: delta.files,
+      scopes: manifest.browserLocalScopes ?? [],
+      metadataScopes: manifest.browserReviewMetadataScopes ?? [],
+      readSource: read,
+      metadataEnvironmentSafe: true,
+    }).checks.map((c) => c.id);
+    return { basis: delta, checks: selected.filter((id) => !witnessed.has(id)).sort() };
+  } catch (error) {
+    return { basis: delta, checks: null, error: error.message };
+  }
 }
 const witnessUnion = (before, proposed) =>
   [...new Set([...(before?.checks ?? []), ...proposed.checks])].sort();
@@ -108,7 +148,10 @@ function classifyScopeChange(row, legacyInventory) {
   };
 }
 /** Pure proposal derivation; audit declarations are authored, graph facts and hashes are computed. */
-export function deriveScopeProposal({ source, manifestText, graph, read }, declarations = []) {
+export function deriveScopeProposal(
+  { source, manifestText, graph, read, delta = null, selectAffected = selectAffectedBrowserChecks },
+  declarations = [],
+) {
   if (!Array.isArray(declarations)) throw Error('Declarations must be an array');
   const declared = new Map();
   for (const d of declarations) {
@@ -229,6 +272,14 @@ export function deriveScopeProposal({ source, manifestText, graph, read }, decla
     .filter((r) => !same(r.before, r.proposed))
     .map((r) => classifyScopeChange(r, legacyInventory));
   const proposedManifest = changes.length ? JSON.stringify(after, null, 2) + '\n' : manifestText;
+  const skipped = affectedNotWitnessed({
+    delta,
+    selectAffected,
+    manifest: after,
+    graph,
+    read,
+    changes,
+  });
   const expected = structuredClone(source);
   expected.files['scripts/manifest.json'] = {
     ...expected.files['scripts/manifest.json'],
@@ -242,13 +293,14 @@ export function deriveScopeProposal({ source, manifestText, graph, read }, decla
     roots: { current: roots, note: 'Recorded root digests do not preserve historical membership.' },
     blocked: [...new Set(blocked)].sort(),
     changes,
+    affectedNotWitnessed: skipped,
     proposedManifest,
     expected,
   };
   return { ...proposal, digest: digest(canonical(proposal)) };
 }
-export function prepareScopeProposal(root, declarations = []) {
-  return deriveScopeProposal(inspectScopeInputs(root), declarations);
+export function prepareScopeProposal(root, declarations = [], { base = null } = {}) {
+  return deriveScopeProposal(inspectScopeInputs(root, { base }), declarations);
 }
 export function validateScopeReview(proposal, review) {
   const { digest: id, ...contents } = proposal;
@@ -361,7 +413,22 @@ export function resolveScopeReview(proposal, review, inputs = null) {
     ...expected.files['scripts/manifest.json'],
     sha256: digest(proposedManifest),
   };
-  return { ...proposal, changes, proposedManifest, expected };
+  const witnessed = new Set(changes.flatMap((c) => c.witnesses ?? []));
+  const skipped = proposal.affectedNotWitnessed;
+  return {
+    ...proposal,
+    changes,
+    ...(skipped?.checks
+      ? {
+          affectedNotWitnessed: {
+            ...skipped,
+            checks: skipped.checks.filter((id) => !witnessed.has(id)),
+          },
+        }
+      : {}),
+    proposedManifest,
+    expected,
+  };
 }
 export function summarizeScopeProposal(p) {
   return [
@@ -374,6 +441,11 @@ export function summarizeScopeProposal(p) {
           : ''),
     ),
     ...p.blocked.map((b) => `BLOCKED ${b}`),
+    `Affected but not witnessed (NOT_EXECUTED; enumeration only): ${
+      p.affectedNotWitnessed?.checks
+        ? p.affectedNotWitnessed.checks.join(', ') || 'none'
+        : `not computed${p.affectedNotWitnessed?.error ? ` (${p.affectedNotWitnessed.error})` : ''}`
+    }`,
     'Full old/proposed rows are in the proposal. Hash drift requires semantic review; old source cannot be reconstructed from a digest.',
   ].join('\n');
 }

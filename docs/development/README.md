@@ -100,6 +100,7 @@ because the changed feature appears unrelated.
 - `npm run ci` runs structural and unit checks within the development budget.
 - `npm run gate` evaluates the current cumulative milestone, including human requirements.
 - `npm run test:browser:affected -- --files <paths>` selects, explains in its report, builds once and executes conservative browser coverage. Add `--summary` for source-bound discovery without building or opening sockets.
+- A waived tier must still record its affected browser selection by check id: `npm run test:browser:affected -- --files <paths> --summary` prints the selection JSON and `npm run inspect:change -- --files <paths>` lists the ids grouped by selection reason; both run without executing checks or entering the verification window. Waiver applies to execution, never to enumeration.
 - `npm run test:browser -- --checks verify-part-help-window verify-part-help-browser` runs explicit development probes with one build and combined `artifacts/browser-suite/selected.json` evidence. This does not claim local completion or qualification. Unknown IDs/options fail rather than silently narrowing scope.
 - `npm run test:browser` builds and runs all registered browser checks; `npm run test:browser:smoke` runs construction smoke checks.
 - `npm run test:performance` runs the isolated performance checks.
@@ -345,6 +346,13 @@ New opaque reads remain blocked until explicitly classified. Optional
 `{kind: "metadata", entrypoint, reads, checks}` (or `kind: "local"` without reads).
 Each read supplies `expression`, `purpose` and `excludedInputs`; computed hashes are
 not accepted as declarations. Existing classifications carry forward visibly.
+Optional `--base <commit>` (also on `verify:prepare`) names the candidate delta; the
+proposal, its summary and the apply report then carry `affectedNotWitnessed` — the
+checks that delta would select which no witness of this proposal executes. It is
+enumeration only (NOT_EXECUTED), never blocks or changes application, and reads
+"not computed" without a base; a waived or partial run is accountable to that list. The
+review digest binds the basis, so `verify:prepare -- --scope-review` must repeat the same
+`--base`.
 
 Write a review JSON with `proposalDigest` and separate `decisions` containing each
 changed `key`, `accept: true` and a specific `rationale`. Then run

@@ -214,3 +214,31 @@ test('syntax cache matches fresh parsing after same-length restored-mtime edits 
   assert.deepEqual(graph(true), graph(false));
   assert.ok(graph(true).errors.length);
 });
+
+test('a directory with its own .git entry is another checkout, not project files, wherever it lives', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'nested-worktree-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const put = (p, s) => {
+    mkdirSync(join(root, p, '..'), { recursive: true });
+    writeFileSync(join(root, p), s);
+  };
+  put('src/model/a.mjs', 'export const value = 1;');
+  // A worktree checkout nested anywhere in the main checkout carries a `.git` file (or dir)
+  // and a whole second copy of the repository; walking it would double every module.
+  put('.claude/worktrees/x/.git', 'gitdir: /elsewhere/.git/worktrees/x\n');
+  put('.claude/worktrees/x/scripts/foo.mjs', 'export const twin = 1;');
+  put('.claude/worktrees/x/src/model/a.mjs', 'export const value = 2;');
+  put('tmp/checkouts/y/.git', 'gitdir: /elsewhere/.git/worktrees/y\n');
+  put('tmp/checkouts/y/src/model/a.mjs', 'export const value = 3;');
+  // A plain directory without a `.git` entry is still walked, even under .claude.
+  put('.claude/notes/keep.mjs', 'export const kept = 1;');
+  const g = buildModuleGraph(root, { purpose: 'test-selection' });
+  assert.deepEqual(g.errors, []);
+  assert.deepEqual(
+    g.files.filter((f) => f.includes('worktrees') || f.includes('checkouts')),
+    [],
+    'no file inside another checkout is a project file',
+  );
+  assert.ok(g.files.includes('src/model/a.mjs'));
+  assert.ok(g.files.includes('.claude/notes/keep.mjs'), 'exclusion is by .git entry, not by name');
+});

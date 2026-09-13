@@ -197,6 +197,77 @@ test('concise discovery preserves errors, fallback, identity and required checks
   assert.match(failed, /unknown changed inputs/);
 });
 
+test('concise discovery enumerates the affected browser selection by id, collapsed by reason', async () => {
+  const { summarizeChangeInspection } = await import('../scripts/change-inspection.mjs');
+  const report = {
+    analysis: { contentIdentity: 'source123' },
+    value: composeChangeInspection({ ...inputs(), files: ['src/policy.mjs'] }),
+  };
+  // A waived tier must still be able to say which checks it skipped: every selected id
+  // is printed, with its selection reason; identical reasons collapse into one line.
+  report.value.browserSelection = {
+    checks: [{ id: 'browser' }, { id: 'other' }, { id: 'third' }],
+    reasons: [
+      {
+        id: 'browser',
+        reason: 'changed dependency',
+        path: ['scripts/browser.mjs', 'src/view.mjs', 'src/policy.mjs'],
+      },
+      { id: 'other', reason: 'opaque runtime input', path: ['scripts/unrelated.mjs', 'x.mjs'] },
+      { id: 'third', reason: 'opaque runtime input', path: ['scripts/third.mjs', 'x.mjs'] },
+    ],
+    fallback: null,
+    unknownInputs: [],
+  };
+  const text = summarizeChangeInspection(report);
+  assert.match(text, /Executable conservative browser selection: 3\/2\./);
+  assert.match(
+    text,
+    /affected \(changed dependency, 1\): browser via scripts\/browser.mjs → src\/view.mjs → src\/policy.mjs/,
+  );
+  assert.match(text, /affected \(opaque runtime input, 2\): other, third/);
+  // A local contract's `path` is the changed-file list, not a chain; a long chain is elided.
+  report.value.browserSelection = {
+    checks: [{ id: 'browser' }, { id: 'other' }],
+    reasons: [
+      {
+        id: 'browser',
+        reason: 'manifest local behavioral contract',
+        path: ['src/a.mjs', 'src/b.mjs'],
+      },
+      { id: 'other', reason: 'changed dependency', path: ['w', 'x', 'y', 'z'] },
+    ],
+    fallback: null,
+    unknownInputs: [],
+  };
+  const mixed = summarizeChangeInspection(report);
+  assert.match(
+    mixed,
+    /affected \(manifest local behavioral contract, 1\): browser for src\/a.mjs, src\/b.mjs$/m,
+  );
+  assert.match(mixed, /affected \(changed dependency, 1\): other via … → x → y → z$/m);
+  assert.equal((text.match(/^ {2}affected/gm) ?? []).length, 2, 'one line per distinct reason');
+  assert.doesNotMatch(text, /affected: none/);
+  // Fallback selection still lists every id: a fallback names why, never a substitute for what.
+  report.value.browserSelection = {
+    checks: [{ id: 'browser' }, { id: 'other' }],
+    reasons: [
+      { id: 'browser', reason: 'unknown changed inputs', path: null, inputs: ['mystery.bin'] },
+      { id: 'other', reason: 'unknown changed inputs', path: null, inputs: ['mystery.bin'] },
+    ],
+    fallback: 'unknown changed inputs',
+    unknownInputs: ['mystery.bin'],
+  };
+  const fallback = summarizeChangeInspection(report);
+  assert.match(fallback, /affected \(unknown changed inputs, 2\): browser, other/);
+  assert.match(fallback, /Unknown browser inputs: mystery.bin/);
+  // An empty selection says so once and prints no ids.
+  report.value.browserSelection = { checks: [], reasons: [], fallback: null, unknownInputs: [] };
+  const empty = summarizeChangeInspection(report);
+  assert.equal((empty.match(/^ {2}affected/gm) ?? []).length, 1);
+  assert.match(empty, /^ {2}affected: none$/m);
+});
+
 test('live inspection and execution discovery use the same local browser contracts', async () => {
   const { inspectChange } = await import('../scripts/change-inspection.mjs');
   const { affectedBrowserChecks } = await import('../scripts/browser-selection.mjs');

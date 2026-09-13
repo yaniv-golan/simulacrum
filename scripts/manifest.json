@@ -3741,6 +3741,48 @@
       "qualificationBars": []
     },
     {
+      "id": "audio-witness-coverage",
+      "ruleId": "gate-integrity",
+      "dueAt": "M3b",
+      "guarantee": "Every browser check whose script reads the audio probe surface is in the affected browser selection for a change to any audio entrypoint, and any local scope row for an audio entrypoint declares every such reader. The reader set is a text probe over check scripts (checks drive the served page and import no audio module) -- a declared heuristic, not graph evidence.",
+      "owners": [
+        {
+          "path": "src/presentation/mechanical-audio.mjs",
+          "anchor": "createMechanicalAudio"
+        },
+        {
+          "path": "src/presentation/mechanical-audio-model.mjs",
+          "anchor": "AUDIO_POLICY"
+        },
+        {
+          "path": "src/presentation/sound-controls.mjs",
+          "anchor": "createSoundControls"
+        },
+        {
+          "path": "src/application/mechanical-audio-adapter.mjs",
+          "anchor": "createMechanicalAudioAdapter"
+        }
+      ],
+      "checks": [
+        "verification-scope-configuration"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/browser-registry.test.mjs",
+            "anchor": "audio probe readers are selected for every audio entrypoint; an audio local row must declare every reader"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/browser-registry.test.mjs",
+            "anchor": "audio probe readers are selected for every audio entrypoint; an audio local row must declare every reader"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
       "id": "verification-resource-window",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
