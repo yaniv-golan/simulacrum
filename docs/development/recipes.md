@@ -162,7 +162,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"ca2835b92bde356ca639bb7820694a13cde194769eac743e9923b73e025574d2","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"718e8fe7c9942c93f5075eacaeaeca317b00b0819c09c2e2400eaf4c4e2fcbaf","disposition":"still accurate","rationale":"The diff changes only eight browser metadata consumer hashes; no numerical law, native physics, Coupler/Rope state, phase ordering, checkpoint or physical control changed. Existing identity-reader dependencies make this section stale, while its physical ownership and independent-oracle guidance remain accurate. Scope witness success does not qualify additional physical behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"3f3b9c32efce8f3940c7ebdb1880a99917920170f8863af0a03e7c1a07d169bf","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"95b1d59eb6fa132dee797871b0e8327617f2018a8bef04c9bd347a664ef8d79e","disposition":"still accurate","rationale":"The cloud-runtime verifier now emits synchronous stage timings, burst settlement counts and separate workload/cleanup outcomes, retaining an original workload error before cleanup. Its assertions, concurrent payloads, dispatches and deadlines are unchanged, as are all production physics, phase, energy and checkpoint owners in this recipe. These are diagnostic observations, not a timeout fix; the cause of the prior thirty-second failure remains unproven."} -->
 
 
 
