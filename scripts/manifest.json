@@ -6514,7 +6514,8 @@
         "src/application/capture-stream.mjs",
         "src/application/feedback-capture-gate.mjs",
         "src/application/feedback-client.mjs",
-        "src/application/recording-admission.mjs"
+        "src/application/recording-admission.mjs",
+        "src/presentation/dialog-close.mjs"
       ],
       "externalImports": [],
       "checks": [
@@ -6918,7 +6919,7 @@
         "node:http"
       ],
       "consumers": [],
-      "sourceSha256": "0c17fcba765e4f27c65be6e76cde1da0173162a1d43270a472845288b9c5b870",
+      "sourceSha256": "bb44c3c09ce257ebc77565a54cdf5362bd09c791fc63bfa1e3bfd129e0d04dc2",
       "entrypoint": "scripts/verify-feedback-receipts.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -7085,7 +7086,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "196c4bb19b75bf1a0a5b7df34d5b6441a3420c167eeea2d8dda8e98dd9652fbe",
+      "consumerSourceHash": "d62d1312a847ea5638ca956cc5a013dcc5c8ccddc45db49b63a245392fad4fa9",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -7188,7 +7189,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "196c4bb19b75bf1a0a5b7df34d5b6441a3420c167eeea2d8dda8e98dd9652fbe",
+      "consumerSourceHash": "d62d1312a847ea5638ca956cc5a013dcc5c8ccddc45db49b63a245392fad4fa9",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7339,7 +7340,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "3e9fbea99f3d7eab017bef248e76d0a84e2cb8edec2467f7fe0abe657a93ef03",
+      "consumerSourceHash": "19e75bd79c7488d0d9f695f1dc6673c1faaa289a1c5477086478a933960356ce",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7542,7 +7543,7 @@
         "test/starter-vehicle.test.mjs"
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "92122e54717fdea18931da2c871567662054a41cb7e8b6d4566819ed2c501614"
+      "consumerSourceHash": "93a7ededab1522f8b9c413c3339512813a38729fb233a3d6cf602576a801516e"
     },
     {
       "checks": [
@@ -7855,7 +7856,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "926771a7016cd74ef6d5523f940d8859a67b5a4a7a5c518343f9bd32c6eeb15a",
+      "consumerSourceHash": "4df0bdec19cdc5297b7bc09e83990501fabd588cbfe158a4f701cb2e8a013a82",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -7944,7 +7945,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "196c4bb19b75bf1a0a5b7df34d5b6441a3420c167eeea2d8dda8e98dd9652fbe",
+      "consumerSourceHash": "d62d1312a847ea5638ca956cc5a013dcc5c8ccddc45db49b63a245392fad4fa9",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -8267,7 +8268,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "d0e99f6f34c4a393c107ef1dd687c90076720cc7c230999fd3d0b067896a1190"
+      "consumerSourceHash": "7ab07d33f15db2aef767f36576fbdfd7b1cfc576fad3b8026b2a29a7f1c6671b"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -8305,14 +8306,14 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "d0e99f6f34c4a393c107ef1dd687c90076720cc7c230999fd3d0b067896a1190"
+      "consumerSourceHash": "7ab07d33f15db2aef767f36576fbdfd7b1cfc576fad3b8026b2a29a7f1c6671b"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
       "checks": [
         "invariant-controls"
       ],
-      "sourceSha256": "13d0f5313236158bdafd216ce3e18f9a91515176d1151395c61fb2dc593c97b3",
+      "sourceSha256": "206c7b9605bcc6108545d35d04dc3b51ceb381069dda7bff6ad9fba7e411d518",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs"
@@ -8452,7 +8453,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "926771a7016cd74ef6d5523f940d8859a67b5a4a7a5c518343f9bd32c6eeb15a"
+      "consumerSourceHash": "4df0bdec19cdc5297b7bc09e83990501fabd588cbfe158a4f701cb2e8a013a82"
     },
     {
       "entrypoint": "scripts/verify-feedback-flow.mjs",
@@ -8512,7 +8513,7 @@
           ]
         }
       ],
-      "sourceSha256": "f01666a45b6c82c0862558fdf20a50eb7177ca45af1929ade6b97b2412d8d24b",
+      "sourceSha256": "79069fc9a2dca8b981a87313eb7dbf37d1cdf3c0e059e2cc6150696e8561af47",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -8565,7 +8566,7 @@
           ]
         }
       ],
-      "sourceSha256": "e26a11c47fcc57075f2749147b7f10db23b4e1e0f1cdbf2a9600660d3e049e70",
+      "sourceSha256": "ab9baa8c627d89c5c588a2914795a1ebadefff451e8177b33a47dd3214ce5c42",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -8603,7 +8604,7 @@
           ]
         }
       ],
-      "sourceSha256": "b40374765676cfe8025beb49124f00355d374e02ba0e6d16e1bb08a90cbcd326",
+      "sourceSha256": "7f0d1c0126b12b6095bad6da7a48acd450e052840b0d75f0296ea4c499f796f7",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ],

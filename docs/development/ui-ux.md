@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"d47ffe30d4a9e74c8581ac4ae4c986bc7a076821503e3cfb70b945bd9bc4ca15","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"8b9e3fb2d2cb86ee36936664a90ebd8c5066e674570152394eedc5e0d03d9710","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch (e964001) with main at ab3d799: no entry. Lifecycle fixes, measurement endpoint labels and shader warmup add no player task, lesson, example or mechanical capability, and main's sound controls are optional comfort feedback covered by existing activities. Existing controls and explanations suffice; no comprehension or listening acceptance is established."} -->
+<!-- doc-review {"version":1,"fingerprint":"d70173be3b868c8f6f527c9730347f0bd48ebf34f8154fddd9b2d0489a981000","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"5cb95a013503c31a8afdfa53736d09b188f7e2e67916b608f5242433366c912d","disposition":"still accurate","rationale":"workshop-view.mjs changed only by replacing the Help, Learn & examples and Check machine dismissal controls with the shared × (plus main's already reviewed sound/performance edits). No lesson, example, experiment, challenge or invitation was added, extended or replaced; the no-entry decision and admission criteria stand."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"2eb7bd9c8206682b377bbab0316c6496103bd7204b0817a824ca78d5d3973ba6","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"73bbb7367e037451e7fafacf46fa6b4b147b4bda6bbb38477a6047614c501c50","disposition":"updated","rationale":"The merged section keeps main's compact Sound toggle, Volume popup, dismissal, preference and denied-audio retry text and adds the performance branch lifecycle notes: hidden Measurements suppress formatting while accumulation continues, inspector readouts replace DOM only when formatted values change, and the running health hint refreshes in 30-tick bands after tick 120 and drops its cached diagnosis on blueprint, session, epoch or mode change (verified in refreshHealth/refreshLive). No surface is added or displaced; before-draw errors reuse the existing status message and pause the clock while draw scheduling survives for the recovery controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"97cc0657f1c660f26bc1909557eae8a5edbb788f997fe1d878ef556e8d4c7444","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"f5c5f55bc3c04143abd0252e5a8249afb72abf054265a102d6634ab28ae5aa6f","disposition":"updated","rationale":"Integrated onto main 315456f. Prose differs from main's reviewed text by the shared dialog-close paragraph, the Part help titlebar sentence and the corrected feedback dismissal sentence; re-read the whole section against the merged owners. Every custom dialog (Help, Learn & examples, Check machine, Assemblies, Photos, Choose scene, recording setup, project status, session completion, feedback, privacy notice) and the Teach panel dismiss through src/presentation/dialog-close.mjs with a sticky header row; embedded Close/Back buttons are gone; Feedback keeps Back to building only after sending or in history; the privacy notice × only dismisses. Main's mechanical-sound footer/volume additions and the camera/scene/Load Cell surfaces described here are unchanged by this integration."} -->
 
 
 
@@ -458,7 +458,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"ba960f0de8f0f5f124d6578a6e4ffe76607de2c66eee57474c988c2a4eb27531","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"b4fd89346c44ca0fc1a06d2df7f60b93b33663b8c639f22f9c879312325dea88","disposition":"updated","rationale":"The workbench content journey now also asserts that the examples header × stays inside the dialog and keeps a 36px target after scrolling at a 640×360 viewport; the authorable scenes journey only renamed the chooser close control to 'Close scene chooser'. Registration, scope discovery and remote-setup references are unchanged. Updated the journey description; automation remains separate from player evidence."} -->
+<!-- doc-review {"version":1,"fingerprint":"562bd0148b11842e1caef5a750b6f9a1330130f58fa29b2b292b9b124c0c9e53","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"8ae6df8746e033d9007641796985f0e508a24273d767f99f159cdd2e9242fefe","disposition":"updated","rationale":"The workbench content journey now asserts the examples header × stays inside the dialog, keeps a 36px target and keeps its unscrolled inset after scrolling at 640×360; the sentence describing that journey was extended accordingly. Main's other verification guidance in this section is unchanged."} -->
 
 
 

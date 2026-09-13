@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"f4ca9b868b9608bd69119c98428d0c92c94d5a83a84fc9e374e08a7770f26df4","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"0590bb543ad110b2e1cea6f30e34e197d276908c49d43e9682d512860e3e56e3","disposition":"still accurate","rationale":"The remote-playtest verifier now authors its feedback-phase motor at an explicit free point instead of a snap-dependent catalog placement, and the manifest carries the resulting hash refresh; no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"176c2a6db2e359409651567c31cfbc8ccd07219121c35d033040eee0b619dcc1","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"9cb8adf7cc4f6cd6e4bdf3b2d85abaa891b8828114ffbd7cbce3e6cc7bb13527","disposition":"still accurate","rationale":"The manifest delta is scope metadata regenerated for dialog-close-related scripts; no physics owner, law, integration step, invariant or evidence rule changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -503,7 +503,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"d432c2f7c90d71fb7d272c630378271099938db2eb630eb7883d82f0040d4e52","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"1ea42be4d0e7ef9c09f66ce8bfd56e28845a9a46f85d8da9d761f5250fbd0a7c","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): the finite constructor runs on completed physical values after compilation; assembly insertion, material copy, reference remapping, browser startup separation, complete-candidate validation and atomic authoring are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f595dfd9cf5974deedc06d316465f48df83df4ac7b342b79628050da6d084018","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"07ec581345a730acdaee9956e20ef02291ae55737cf6e52f266b9f7715a4942c","disposition":"still accurate","rationale":"The model/boundary dependencies listed changed on main and were reviewed there; my delta is the assembly browser adopting the shared × (accessible name 'Close assemblies') and the check clicking that name. Proposal, placement, mirror, library and transaction guidance is unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored

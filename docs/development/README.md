@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"6371835a3688f76cc7182aaffa271d881a837a1f910537bddadf0f075afe8967","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"0c33b7c3f85b808fc1621b760325c8f67b2148d32c6233ad65627880e0f7455d","disposition":"updated","rationale":"destinationStillMatches now distinguishes UNRESOLVED (the name no longer resolves, normal after a stacked branch is deleted once it fast-forwarded; confirm main against priority.destination instead) from false (the destination moved); the retained owner intent also carries the integrating branch. Completion tiers and evidence rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b7c6296bfe7ae17efcef8ef3e1766337f025d0abd52c2539957e598058046d33","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"57c2563bf33a1318e6bb8782d59a6033d4518c05ef29966487dca85be5a014d4","disposition":"still accurate","rationale":"The changed dependencies are main's own landings (verification-outcome, package.json, release-operations) already reviewed on main, plus my remote-setup sentence about dialog dismissal. Tiers, commands, window policy and evidence requirements described here are untouched by a presentation-only dialog header change."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -155,7 +155,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"7d99099ddbcf6b5b094106144c976a761491f953e84a8085bdc101935da1fe08","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"82b9f75cb6cfa4e55d8b71a2dd313465c87e1b39e90c527dbc3041d124a1c194","disposition":"still accurate","rationale":"Integration of the window-intent/destination-drift branch with main: the regenerated reference now lists both the performance work's render-lifecycle and completed-state owners and this branch's validateIntent and destinationStillMatches owners; the regenerate, section-specific review and exact-source closure workflow is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"6cfcb27eea1eb67bba4d47ff8ad45365715dbeb5f959a8b21173d1b67393c24f","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"eb1f6b5fa31892c2a6af1946448bebaa1c6e25c9663c6d4352b57c8dc841e6c2","disposition":"still accurate","rationale":"Only the generated reference.md changed, gaining the new src/presentation/dialog-close.mjs module and test/dialog-close.test.mjs in its discovery tables; the documentation workflow (prepare, review, batch, check) described here is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -296,7 +296,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"bed5b7a07ce306e7b58f7c302737f7326b0dc70b38bfd9cc08e6888bf53a648c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"4ea05d5de6efdcc03c97986c67fb50dde5e320e5a845a7d13f5df1ba7a10be3e","disposition":"still accurate","rationale":"Thirteen metadata scope rows refreshed hashes after verify-remote-playtest changed its feedback-phase motor placement (snap off, explicit coordinates, part-count assertion); the verifier's own reads, dependencies, external imports, consumers, roots and checks were verified unchanged in the proposal and the review was applied with passing invariant-control witnesses. Selection, scheduling, exclusivity and coverage rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"060a0d85a97b09fd1673e870d4d598bced422dd7928b995bb21ebb1b1a1f9182","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"beef06df6ca28af841b0eb5b63c5415b318a6872a07cf2bf2e482926a862bfd0","disposition":"still accurate","rationale":"browser:scopes apply regenerated the manifest rows for the remote-playtest local scope (dependency shape now includes src/presentation/dialog-close.mjs) and the reviewed metadata hashes of the four feedback fixture servers, the workbench journey and their consumer closures, after the witnesses passed. The proposal/review/apply flow, exclusion rules and local-contract semantics described here are exactly what was exercised; no text change needed."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -545,7 +545,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"a353301317683638f824cfcd3d26502aae820e1c098c2a59ca8b321827780fa6","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"fcde52deeafb3685545e50b006f0ead969f8d6ce853faf6f7adeebb687f241b5","disposition":"still accurate","rationale":"The manifest change is a source/consumer hash refresh applied through browser:scopes with witnesses; capture, isolation, attempt ownership, origin matching and the registry preflight that gates capture behave as documented."} -->
+<!-- doc-review {"version":1,"fingerprint":"a5dada95c0a04594bafa6ff2a77a38f983dbda7f1026df4997e513d253896603","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"766c82da12af8d92353c56621463b530ac0eb3c42093ab095cbcb200220f1f8a","disposition":"still accurate","rationale":"Only scope digest rows in scripts/manifest.json changed through the reviewed apply; candidate capture, resume, priority destination and stacking rules are unaffected."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

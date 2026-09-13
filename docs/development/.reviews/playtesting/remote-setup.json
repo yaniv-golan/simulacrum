@@ -24,7 +24,7 @@
     "src/application/capture-packet.mjs": "0d51704f9bc85d531d6e3e546c3e48910ccce250646f9024bc0e17bf2be41de0",
     "src/application/capture-stream.mjs": "6c3c2df0c5a483f44600ce9168a35b22c86574f8750fedd106bcbcc4f4312d28",
     "src/application/recording-admission.mjs": "598fe397746dda726246b7b4f213178b4d557e1261ecc4f6eb5880a1e91cacb8",
-    "src/application/remote-playtest.mjs": "b70e944c1a29104e52eba3c38d3f56094d33c23250950422b661fb9f9e88855a",
+    "src/application/remote-playtest.mjs": "0a5525f7a331c5fc1631019915a4f86b4267209877d6353d486419b86f3dd57f",
     "scripts/export-playtest.mjs": "58bbf06419040037f825369d68000f6df0f48dee59e688cd0293307ff06594ee",
     "src/model/boundaries.d.ts": "901105eee561938d3f477c6ce3857b18b0a894ad19e3761960bd7b97b60a662b",
     "src/model/catalog.mjs": "d3c8a92c8e4489706862e4069b7cc8429c27b4bd5cad2b402eff721628a6dd7b",
