@@ -173,3 +173,78 @@ test('process diagnostics distinguish exit, close and watchdog signal outcomes',
     },
   );
 });
+
+const SNAPSHOT_ROW_KEYS = ['comm', 'etime', 'pcpu', 'pid', 'ppid', 'rssKb', 'stat', 'time'];
+test('watchdog records a bounded process snapshot with the child in its tree', async (t) => {
+  const error = await runProcess(process.execPath, ['-e', 'setInterval(() => {}, 10)'], {
+    timeoutMs: 300,
+  }).catch((e) => e);
+  assert.equal(error.failureKind, 'watchdog');
+  const { snapshot, pid, events } = error.processDiagnostics;
+  if (process.platform === 'win32') {
+    assert.deepEqual(snapshot, { at: 'watchdog', unsupported: 'win32' });
+    return;
+  }
+  assert.equal(snapshot.at, 'watchdog');
+  assert.equal(snapshot.loadAverage.length, 3);
+  assert.ok(
+    snapshot.snapshotMs >= 0 && snapshot.snapshotMs < 1000,
+    `snapshotMs ${snapshot.snapshotMs}`,
+  );
+  assert.ok(snapshot.topCpu.length <= 8 && snapshot.topRss.length <= 8);
+  assert.ok(
+    snapshot.tree.some((row) => row.pid === pid),
+    'child appears in its own tree',
+  );
+  for (const row of [...snapshot.topCpu, ...snapshot.topRss, ...snapshot.tree, ...snapshot.watch])
+    assert.deepEqual(Object.keys(row).sort(), SNAPSHOT_ROW_KEYS);
+  assert.ok(Array.isArray(snapshot.watch));
+  assert.ok(
+    events.findIndex((e) => e.type === 'snapshot') <
+      events.findIndex((e) => e.type === 'settlement'),
+    'snapshot is observed before settlement',
+  );
+  assert.equal(events.at(-1).type, 'settlement');
+  t.diagnostic(`snapshotMs ${snapshot.snapshotMs.toFixed(1)} rows ${snapshot.tree.length} tree`);
+});
+
+test('a non-zero exit records a post-hoc snapshot without a tree; success records none', async () => {
+  const exit = await runProcess(process.execPath, ['-e', 'process.exit(3)'], {
+    timeoutMs: 5000,
+  }).catch((e) => e);
+  assert.equal(exit.failureKind, 'check-failure');
+  if (process.platform !== 'win32') {
+    assert.equal(exit.processDiagnostics.snapshot.at, 'exit');
+    assert.deepEqual(exit.processDiagnostics.snapshot.tree, []);
+    assert.equal(exit.processDiagnostics.events.at(-1).type, 'settlement');
+  }
+  const ok = await runProcess(process.execPath, ['-e', '0'], { timeoutMs: 5000 });
+  assert.equal(ok.processDiagnostics.snapshot, undefined);
+});
+
+test('an unavailable ps records snapshotError and leaves the failure outcome unchanged', async () => {
+  if (process.platform === 'win32') return;
+  const savedPath = process.env.PATH;
+  const empty = mkdtempSync(join(tmpdir(), 'no-ps-'));
+  process.env.PATH = empty;
+  try {
+    const error = await runProcess(process.execPath, ['-e', 'setInterval(() => {}, 10)'], {
+      timeoutMs: 300,
+    }).catch((e) => e);
+    assert.equal(error.failureKind, 'watchdog');
+    assert.match(error.summary, /timed out after 300 ms/);
+    assert.equal(error.processDiagnostics.snapshot.at, 'watchdog');
+    assert.ok(
+      error.processDiagnostics.snapshot.snapshotError,
+      'ps failure is recorded, not thrown',
+    );
+    const exit = await runProcess(process.execPath, ['-e', 'process.exit(2)'], {
+      timeoutMs: 5000,
+    }).catch((e) => e);
+    assert.equal(exit.failureKind, 'check-failure');
+    assert.ok(exit.processDiagnostics.snapshot.snapshotError);
+  } finally {
+    process.env.PATH = savedPath;
+    rmSync(empty, { recursive: true, force: true });
+  }
+});

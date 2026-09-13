@@ -1,8 +1,75 @@
 import { spawn, execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { loadavg } from 'node:os';
+import { basename } from 'node:path';
 
 const activeChildren = new Set();
 const TERMINATION_GRACE_MS = 250;
+const SNAPSHOT_ROWS = 8;
+// Host daemons whose activity is worth seeing at a stall regardless of ranking
+// (Gatekeeper/XProtect assessment of freshly installed binaries, Spotlight indexing).
+const WATCHED_DAEMONS =
+  /^(?:syspolicyd|XProtect\w*|XprotectService|mds|mds_stores|mdworker\w*|trustd)$/;
+/** Bounded host inventory at a failure. `comm` is the executable name only; no
+ * arguments or environment values are read. Diagnostics, never attribution. */
+function listProcesses() {
+  return execFileSync(
+    'ps',
+    ['-A', '-o', 'pid=,ppid=,pgid=,uid=,stat=,pcpu=,rss=,time=,etime=,comm='],
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 1000 },
+  )
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      // comm is last because macOS prints the executable path, which may contain spaces.
+      const [pid, ppid, pgid, uid, stat, pcpu, rss, time, etime, ...comm] = line
+        .trim()
+        .split(/\s+/);
+      return {
+        pid: Number(pid),
+        ppid: Number(ppid),
+        pgid: Number(pgid),
+        uid: Number(uid),
+        stat,
+        pcpu: Number(pcpu),
+        rssKb: Number(rss),
+        time,
+        etime,
+        comm: basename(comm.join(' ')),
+      };
+    });
+}
+function processSnapshot(rows, rootPid, at) {
+  const brief = ({ pid, ppid, stat, pcpu, rssKb, time, etime, comm }) => ({
+    pid,
+    ppid,
+    stat,
+    pcpu,
+    rssKb,
+    time,
+    etime,
+    comm,
+  });
+  const tree = [];
+  const root = rows.find((row) => row.pid === rootPid);
+  if (root) tree.push(root);
+  for (let i = 0; i < tree.length; i++)
+    for (const row of rows) if (row.ppid === tree[i].pid && !tree.includes(row)) tree.push(row);
+  const top = (key) =>
+    [...rows]
+      .sort((a, b) => b[key] - a[key])
+      .slice(0, SNAPSHOT_ROWS)
+      .map(brief);
+  return {
+    at,
+    loadAverage: loadavg(),
+    topCpu: top('pcpu'),
+    topRss: top('rssKb'),
+    watch: rows.filter((row) => WATCHED_DAEMONS.test(row.comm)).map(brief),
+    tree: tree.map(brief),
+  };
+}
 function signalGroup(child, signal, observe = () => {}) {
   try {
     if (process.platform === 'win32') child.kill(signal);
@@ -72,6 +139,26 @@ export function runProcess(
         });
       else processDiagnostics.droppedEvents++;
     };
+    const takeSnapshot = (at, rootPid, rows = null) => {
+      if (process.platform === 'win32') {
+        processDiagnostics.snapshot = { at, unsupported: 'win32' };
+        return;
+      }
+      const snapshotStarted = performance.now();
+      try {
+        processDiagnostics.snapshot = {
+          ...processSnapshot(rows ?? listProcesses(), rootPid, at),
+          snapshotMs: performance.now() - snapshotStarted,
+        };
+      } catch (error) {
+        processDiagnostics.snapshot = {
+          at,
+          snapshotError: error.code ?? error.message,
+          snapshotMs: performance.now() - snapshotStarted,
+        };
+      }
+      observe('snapshot', { at, error: processDiagnostics.snapshot.snapshotError ?? null });
+    };
     // Install before native spawn: termination can arrive after the OS child
     // exists but before spawn returns. Signal callbacks run after this stack,
     // by which time the returned child has been retained below.
@@ -110,6 +197,9 @@ export function runProcess(
     });
     function finish() {
       if (!closed || (timedOut && !forced)) return;
+      // Post-hoc host context for a check failure; the child is already gone, so the
+      // tree is empty. Bounded by the same 1 s enumeration limit as the watchdog path.
+      if (!timedOut && closeCode !== 0 && !processDiagnostics.snapshot) takeSnapshot('exit', null);
       observe('settlement', { code: closeCode, signal: closeSignal, timedOut });
       const result = {
         processDiagnostics,
@@ -144,27 +234,19 @@ export function runProcess(
       // from leaves upward. This path also handles synchronously blocked runners.
       try {
         observe('enumeration-started');
-        const rows = execFileSync('ps', ['-A', '-o', 'pid=,ppid=,pgid=,uid=,stat='], {
-          encoding: 'utf8',
-          stdio: ['ignore', 'pipe', 'ignore'],
-          timeout: 1000,
-        })
-          .trim()
-          .split('\n')
-          .map((line) => {
-            const [pid, ppid, pgid, uid, state] = line.trim().split(/\s+/);
-            return [Number(pid), Number(ppid), Number(pgid), Number(uid), state];
-          });
+        const rows = listProcesses();
+        // The same inventory names who else was busy at the stall.
+        takeSnapshot('watchdog', child.pid, rows);
         const descendants = [child.pid];
         for (let i = 0; i < descendants.length; i++)
-          for (const [pid, ppid] of rows)
+          for (const { pid, ppid } of rows)
             if (ppid === descendants[i] && !descendants.includes(pid)) descendants.push(pid);
         observe('enumeration-finished', {
           ownedCount: descendants.length,
           processes: rows
-            .filter(([pid]) => descendants.includes(pid))
+            .filter(({ pid }) => descendants.includes(pid))
             .slice(0, 64)
-            .map(([pid, ppid, pgid, uid, state]) => ({ pid, ppid, pgid, uid, state })),
+            .map(({ pid, ppid, pgid, uid, stat }) => ({ pid, ppid, pgid, uid, state: stat })),
         });
         for (const pid of descendants.slice(1).reverse())
           try {
@@ -181,6 +263,14 @@ export function runProcess(
           }
       } catch (error) {
         observe('enumeration-error', { errno: error.code });
+        if (!processDiagnostics.snapshot) {
+          processDiagnostics.snapshot = {
+            at: 'watchdog',
+            snapshotError: error.code ?? error.message,
+            snapshotMs: 0,
+          };
+          observe('snapshot', { at: 'watchdog', error: processDiagnostics.snapshot.snapshotError });
+        }
         stderr += `\nProcess tree enumeration unavailable: ${error.message}`;
       }
       try {
