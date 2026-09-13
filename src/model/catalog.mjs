@@ -125,6 +125,20 @@ export const CATALOG = freeze({
     mountingFaces: ['right', 'left', 'bottom', 'top', 'front', 'back'],
     releaseFace: 'right',
   },
+  camera: {
+    ...component(
+      'camera',
+      'Camera',
+      [0.03, 0.02, 0.02],
+      'aluminium',
+      [power(), signal('trigger', 'input')],
+      {},
+    ),
+    milestone: 'M3b',
+    sensorSupply: { resistance: 100, minVoltage: 1 },
+    mirrorAxis: 'x',
+    mountingFaces: ['bottom', 'left', 'right', 'top', 'front', 'back'],
+  },
   gear12: {
     ...component(
       'gear12',

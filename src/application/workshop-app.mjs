@@ -1,3 +1,4 @@
+import { createCameraSession } from './camera-session.mjs';
 import { createControllerHistory } from './controller-history.mjs';
 import { createSensorWorkshop } from '../model/fixtures/sensor-workshop.mjs';
 import { createDeliveryEvaluator } from '../model/learning-evaluators.mjs';
@@ -67,6 +68,16 @@ export async function mountWorkshopApp(root) {
     lastInput = null,
     pausedForVisibility = false,
     runSequence = 0;
+  const cameraSession = createCameraSession({
+    send: (c) => onCommand(c),
+    observe: () => workshop.observe(),
+    buildId,
+    sourceIdentity: {
+      head: document.querySelector('meta[name="source-head"]')?.content ?? null,
+      workingTreeDigest: document.querySelector('meta[name="source-digest"]')?.content ?? null,
+    },
+    changed: () => view?.refreshCameras?.(),
+  });
   const recorder = createInteractionRecorder({
     build: buildId,
     now: () => performance.now(),
@@ -219,6 +230,7 @@ export async function mountWorkshopApp(root) {
   function render() {
     if (disposed) return;
     const measurements = workshop.observe('scene', 'full', measurementCursor);
+    cameraSession.ingest(measurements);
     controllerHistory.ingest(measurements);
     view.ingestMeasurements(measurements);
     const sounds = [];
@@ -679,6 +691,7 @@ export async function mountWorkshopApp(root) {
   view = createWorkshopView(root, {
     learning,
     controllerHistory,
+    cameraSession,
     onCommand,
     onSound: (enabled) => impactSound.enable(enabled),
     onSave,
@@ -738,6 +751,7 @@ export async function mountWorkshopApp(root) {
   });
   return Object.freeze({
     dispose() {
+      cameraSession.dispose();
       impactSound.dispose();
       learning.dispose();
       remote?.dispose();
