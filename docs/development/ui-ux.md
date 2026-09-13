@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"1abecf7622e5b220bae0f3922c11c481cbb777ea6bdd319602c9f6c40cd3e5de","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"507e4c912a038df62a588abdf32d560576cbb07a71b1a70754cb025210bef7a8","disposition":"still accurate","rationale":"The New-mode repair and explicit file replacement confirmation introduce no learning entry and preserve the requested examples surface."} -->
+<!-- doc-review {"version":1,"fingerprint":"3ef1bbbf8b862513689a8935e9dc8fa2692fd9ef059c963c2ddf3a7a418e9279","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"dfdc60d12f5d74d4b6438c7615c6bbbcd735efc20f86982d40e21b9632a8c5b2","disposition":"still accurate","rationale":"Scene authoring adds no lesson entry; the Environment context and requested scene library support construction while existing examples remain the learning surface."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"71471f67387473f07491acbdcd59f6161689473f76f15e87086adc6666573e28","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"2537e07a116bf3647df12ad9478dc4815bf86e5c959998d51ed4197a024b4e21","disposition":"still accurate","rationale":"The scene context now owns complete object-list scrolling independently of the catalogue rail. The narrow and zoomed browser journey confirms real object targeting, retained inspector actions and return visits without viewport interception."} -->
+<!-- doc-review {"version":1,"fingerprint":"c8dac7e3cc86ac9f6fd251a6b5b3db3469fb4a032bde6713b773c65300747f62","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c013dc42c48e26cb7af698feccb844e9e4bb03ed0c3315d0af5e03c3bd95fca2","disposition":"still accurate","rationale":"Scene context displaces the catalogue and owns its scrollable object list. Entering it exits mounted camera view through its existing session; requested camera and photo surfaces remain available after leaving scene editing. Replacement protection and paused New retain their documented lifetime."} -->
 
 
 
@@ -175,6 +175,24 @@ and non-breaking overload stop. No lesson or permanent canvas panel is added.
 Rope geometry follows physical nodes in Machine view and is hidden in exploded view.
 Its contextual engineering explanation identifies stretch, damping and load limits
 as uncalibrated assumptions of the simplified nylon model.
+
+Paused camera images retain an explicit paused label even when view entry lands on
+an exposure boundary. Feedback screenshots follow the visible canvas without changing
+the optical sample.
+
+Cameras are discoverable through catalog search and the Sensors category. Beginning
+catalog placement returns to workshop view so the placement preview remains visible.
+The selected camera inspector owns entry into the requested machine view and its
+photo shortcut. The optional one-metre viewing cone is a temporary workshop-only
+inspection guide, removed on selection change and hidden in machine view; it is not
+a depth sensor or part of photographs. [Camera controls](../../src/presentation/camera-controls.mjs#source)
+replace orbit/edit tools while viewing, keep vehicle controls and recovery reachable,
+and restore the orbit on exit. Build is an explicitly unpowered placement preview;
+Run shows power/live/stale/failure status; Paused may retain the identified old image.
+The requested Photos dialog owns inspection, PNG/details export and explicit clearing.
+Opening it releases held drive keys. Retained photos remain retrievable after camera
+deletion and retries until this page closes. Camera help teaches mounting repair in
+context; no additional learning entry is admitted for this delivery.
 
 The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic
 regulation shows measured and target total spring length, rather than extension from
@@ -393,7 +411,8 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"1438fb9efe0aa11827b7abaf66481c7a4cbe24f394b415e6483c726c9cadfb45","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"90227813a895ad2c440e80f2b628d6c19ba7dead0b9a0d4fe8ffb77410fb314f","disposition":"still accurate","rationale":"The section now names the scene browser journey and editor controls, including driven repair, history, protection and zoomed layout; automation remains separate from target-player evidence."} -->
+<!-- doc-review {"version":1,"fingerprint":"f4d21e65b66904c4fecd3800f8a39ac461ced4d05b916c2456043e91fcd9d483","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"3b9b2a8fe8c6d71b0ab5b0de35ee94c042243d82d4a0c3b6497482316c36c4e6","disposition":"still accurate","rationale":"The scene journey now additionally checks mounted-camera exit and scene tool recovery. Existing camera and scene automation remain behavior evidence, separate from player comprehension and human acceptance."} -->
+
 
 
 Use the manifest's `workbench-content-lifecycle` invariant and

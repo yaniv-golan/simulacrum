@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"5cf4683729547b1ca1442ec3a0303529095f36d16a6a6ebaddbd55b93daae7c4","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"f9df1a37da5629eb3e20ec29806f4b6f0642058f6b8a8d3076b74b98f05ce61f","disposition":"still accurate","rationale":"Scene solids are environment data, not catalogue parts; existing part schema, materials, geometry and compiler recipe remains valid with the merged rope and latch additions. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
+<!-- doc-review {"version":1,"fingerprint":"9a9cbe4dacf1eb7a2ab37d1bd864c6322791b37524731ac86f3c7ab730ec6d53","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"78dcbad7ceccfc83008d58f09b07cae0004a01490d9b467319e70b239e36cbc0","disposition":"still accurate","rationale":"Scene solids are environment data, not catalogue parts; existing part schema, materials, geometry and compiler recipe remains valid with the merged rope and latch additions."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -64,9 +64,14 @@ latch opens; it does not become a second releasable joint.
 [Release authoring controls](../../test/release-authoring.test.mjs#source) exercise
 material choices, conflict rejection and ordinary editing history.
 
+Camera additions must preserve the [optical profile](../../src/model/camera.mjs#source),
+[completed exposure owner](../../src/simulation/camera-state.mjs#source), ordinary
+power admission and [copy/mirror controls](../../test/camera-integration.test.mjs#source).
+The catalog declares local reflection symmetry; it must not be inferred from a part ID.
+
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"070eb27255f3deb69129862908f48841d64c7cf3d00e1822c627091bfd9f8db4","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"5e1a4f4a28f0e60fc61992db4b0b26f17622c8410fa58cac2063c2c2db0d5168","disposition":"updated","rationale":"Added the combined capacity definition covering distributed rope nodes as well as machine, scene and ground bodies. The new red-to-green boundary witness verifies exact 4097 admission and overflow rejection."} -->
+<!-- doc-review {"version":1,"fingerprint":"7add6a7e96261d4244b82659a8499c7a5391c318be0ef5013746616a9070358a","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"8c1e1d679d69e505456a4ba6ec9d93df556e2310b3ea83648273814b5dd2f10c","disposition":"still accurate","rationale":"The merged section retains replace-scene as an atomic expectedCursor edit and camera-photo as a Run-only input with separate image bytes. Shared capacity now includes distributed rope nodes; photo requests do not consume authoring history."} -->
 
 
 
@@ -91,9 +96,13 @@ Combined capacity includes machine bodies, every distributed rope node, compiled
 [Scene preservation](../../test/scene-preservation.test.mjs#source) covers capture round trips,
 legacy visual events, current checkpoint continuation, machine measurements and sensor scope.
 
+The Run-only `camera-photo` request is an input event, not an authoring transaction.
+Validate epoch and request ID; accepted IDs deduplicate and a reserved exposure rejects
+busy without changing the completed cursor. Bytes and downloads belong to application.
+
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"be7a0d74b51a209901c0271db4172fc8e41916044f2b81eee9083f5da1e3f596","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"ea7083040fabba621040fa2611f1bcf907dc421257170e00bfe1a3e77a4ecc32","disposition":"still accurate","rationale":"Scene tools retain presentation-only proposals and ordinary core commitment. Fixture uploads now confirm replacement, preserving the existing cancellation and native input requirements. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
+<!-- doc-review {"version":1,"fingerprint":"81df344f6caf17aa7d1425fc66e14a8f28b1a3bbea6b86ad717920e792ab5053","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"1c4eb16064236bc2d9cb3022b64e289b9b88353d4f4d9ef617cc52945f18ce80","disposition":"still accurate","rationale":"Scene tools retain presentation-only proposals and ordinary core commitment. Fixture uploads now confirm replacement, preserving the existing cancellation and native input requirements."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -142,7 +151,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"be7782950a6e319834eda7e39594d73b5e4d2b2e94003a2fda8bb8bf831c5ad9","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"5aec18709517f9db9a925850b88850239e9fbe4617733c5cd445adab886b83f4","disposition":"still accurate","rationale":"Scene environment and command additions do not grant diagnostics simulation authority; completed observations and model-owned explanations remain the correct boundary. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
+<!-- doc-review {"version":1,"fingerprint":"cea69e9f4d46e71e3fdeb7e5892dcb8a8cd54377513de5931e876603f1f92d46","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"d99dfb5b7deb3eb2924fe544c869c9d558c6e96a326540bc3ad32091ddacc5c6","disposition":"still accurate","rationale":"Scene environment and command additions do not grant diagnostics simulation authority; completed observations and model-owned explanations remain the correct boundary."} -->
 
 
 
@@ -172,7 +181,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"7adef437e7591b83db73875387c2815fe35b4379eeb3d74c6cb8d99cd2bbad98","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"69a0e7651b8c586eac8a93d716355ea517135105d9719d3e7b4596195eeb9980","disposition":"still accurate","rationale":"Scene catalogue scrolling is a presentation-only layout override; compiled shapes, capacity, physics laws and measurement budgets are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"e441a1f8dc3c5571cde63798bf848bbc0e79d6f3d3a8faccf6ca6850226ff06f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"4b29e7d32188ba66a97ab8cb06ee6a7844eca9fb8881789091b9b1371913f6f7","disposition":"still accurate","rationale":"Scene colliders retain compiler/physics-door ownership and include rope nodes in shared capacity. Camera integration retains optical rendering outside physics; the view handoff and layout fixes do not alter laws, stepping or qualification budgets."} -->
 
 
 
@@ -419,7 +428,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"e6530949baa0d9264c5926af6c231b38890fa08c479773c247f6864b2b77677b","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"7079db904fcf3b1b820205c2c11458895e4dbbdfbf98784286b8565cbd047da6","disposition":"still accurate","rationale":"Assembly insertion now shares document-proposal lifecycle with scenes; independent snapshots, exact result reconciliation and atomic core commands described here remain implemented. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
+<!-- doc-review {"version":1,"fingerprint":"374e527e8d8bca740565cded305a184a722511ab6eabe8fb8c4ed18e21347d2f","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"629125c97c233a03027d798640e7040958f384490897db9be83bb85c9d8eac3a","disposition":"still accurate","rationale":"Assembly insertion now shares document-proposal lifecycle with scenes; independent snapshots, exact result reconciliation and atomic core commands described here remain implemented."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -510,9 +519,13 @@ together cover insertion selection and member shortcuts, Build-only repeat place
 rename focus, narrow-screen sorting, offset mounting with an intact shaft, in-place interface edits, decimal
 receiver tuning, saved settings, named targets, bounded navigation and diagnostic layout.
 
+Camera mirror admission uses the catalog local reflection axis to preserve the +Z
+lens frame. The generic copied-graph contract still owns authored material and wiring
+preservation; test optical orientation independently of the production frame helper.
+
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"a247e0116f00bf20f07ebc67850e378f695cd98f056306ca060867f917867172","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"67eea2ffff5cbe213e5271ea8f86550c6ed567e0f5d7dd3a7c192e3e683ca28b","disposition":"still accurate","rationale":"Shared primitive reconstruction adds canonical scene and recording geometry while main part finishes and rope overlays retain their existing rendering-only ownership. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
+<!-- doc-review {"version":1,"fingerprint":"a1d6b615a85f69447249500ab8c97cf8b7a86316874282ea980560919485d416","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"3648a05db22d8c63fcaeba20c906629c4e0abbe6a608d8420c58e48ea8e6ee7d","disposition":"still accurate","rationale":"Shared primitive reconstruction adds canonical scene and recording geometry while main part finishes and rope overlays retain their existing rendering-only ownership."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

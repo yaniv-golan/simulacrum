@@ -44,6 +44,7 @@ export interface CatalogDefinition {
   controlBindingMilestone?: string;
   releaseFace?: string;
   gear?: { teeth: number; module: number; pitchRadius: number; stiffness: number; damping: number };
+  mirrorAxis?: 'x' | 'y' | 'z';
   sensorSupply?: Readonly<{ resistance: number; minVoltage: number }>;
 }
 export interface BodyConfiguration {

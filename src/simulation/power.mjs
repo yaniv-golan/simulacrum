@@ -1,3 +1,4 @@
+import { CAMERA } from '../model/camera.mjs';
 import { CONTROLLER_LIMITS } from '../model/controller-authoring.mjs';
 import { SENSOR_SUPPLY, SENSOR_LIMITS } from '../model/sensors.mjs';
 import { admitLearningBindings } from '../model/learning-bindings.mjs';
@@ -164,7 +165,10 @@ export function createPowerNetwork(configuration) {
         supply.minVoltage > 100)
     )
       fail('INVALID_POWER_CONFIGURATION');
-    if (sensor.kind === 'travel') {
+    if (sensor.kind === 'camera') {
+      if (!exact(sensor, 'node,body,kind') || !node(sensor.node) || sensor.body !== sensor.node)
+        fail('INVALID_POWER_CONFIGURATION');
+    } else if (sensor.kind === 'travel') {
       if (
         !exact(sensor, 'node,kind,joint') ||
         !node(sensor.node) ||
@@ -262,6 +266,12 @@ export function createPowerNetwork(configuration) {
       .map((edge) => sources.find((source) => source.node === edge[0]));
   for (const motor of [...config.motors, ...couplers]) {
     const signals = signalFor(motor);
+    if (signals.length > 1 || signals.some((s) => !s)) fail('UNSUPPORTED_SIGNAL_TOPOLOGY');
+  }
+  if (config.sensors.filter((s) => s.kind === 'camera').length > CAMERA.maxParts)
+    fail('CAMERA_LIMIT');
+  for (const camera of config.sensors.filter((s) => s.kind === 'camera')) {
+    const signals = signalFor(camera);
     if (signals.length > 1 || signals.some((s) => !s)) fail('UNSUPPORTED_SIGNAL_TOPOLOGY');
   }
   const sensorSupply = (sensor) => sensor.supply ?? SENSOR_SUPPLY;

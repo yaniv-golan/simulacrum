@@ -19,6 +19,7 @@ const measurementNames = {
 };
 const sensorKind = (part) => (part.type.endsWith('Sensor') ? part.type.slice(0, -6) : null);
 export function portLabel(part, port) {
+  if (part.type === 'camera' && port.id === 'trigger') return 'Photo trigger';
   if (port.kind === 'gear') return 'Gear mesh';
   if (port.kind === 'power') return 'Power';
   const kind = sensorKind(part),
@@ -51,6 +52,8 @@ export function portLabel(part, port) {
   return port.id === 'shaft' ? 'Axle' : `Axle · ${port.id}`;
 }
 export function portPurpose(part, port) {
+  if (part.type === 'camera' && port.id === 'trigger')
+    return 'Wire an ordinary receiver here. Powered low then high requests one photo; held high does not repeat. This wire supplies no power.';
   if (port.kind === 'gear')
     return 'Transfers rotation between aligned gears on independently supported shafts. Mount both shafts on the same rigid support first. Both gears stay in place when connected; this mesh does not support either shaft.';
   if (

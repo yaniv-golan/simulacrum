@@ -136,6 +136,18 @@ export async function createWorkshop(
           duty: command.duty,
         });
       }
+      if (command.type === 'camera-photo') {
+        if (
+          keys !== 'epoch,id,requestId,type' ||
+          current.mode !== 'run' ||
+          command.epoch !== session.observe().cursor.epoch
+        )
+          return result(false, 'INVALID_COMMAND', 'command');
+        const node = current.blueprint.parts.findIndex(
+          (p) => p.id === command.id && p.type === 'camera',
+        );
+        return session.act({ type: 'camera-photo', node, id: command.requestId });
+      }
       if (command.type === 'suspend-controls') {
         if (keys !== 'type') return result(false, 'INVALID_COMMAND', 'command');
         return session.act(command);

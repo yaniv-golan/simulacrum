@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"0ed588f9b9fbc2ddeda79f7eb58076c2132452e5f7e532a60ca1200d89ff0492","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"6bcfbef2098af47c76d1eb1f90ce4b5a076f62d4cf2b33056431dce3f1f951d3","disposition":"still accurate","rationale":"Runtime v1 now explicitly counts distributed rope nodes in the shared body limit. Contract, layer and manifest ownership remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"31603595b3f867cfb80d5b3a4e7430ae7bceb6a857f8ab83e7092e13b1546e7c","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"a343c4882bd31a24c8122e583ab9e72d4c78511deabd4f21cd3fd46463e92009","disposition":"still accurate","rationale":"Runtime v1 still owns clocks, state and replay after scene environment schema additions; the manifest remains milestone and check authority."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"dc4712e6931d27cda0fce93a62ebccbffd5061050997481a0f737309fa90d4a6","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"91d8769deb3a4854f823e27628a8610efd47118f56c8fca6cf2e0337c54dfd54","disposition":"still accurate","rationale":"New retains document-replacement admission while paused; confirming it still uses the core and clears scene proposals only after success. Scene geometry, catalogue placement and feedback retain their stated owners."} -->
+<!-- doc-review {"version":1,"fingerprint":"3aeca33e706f65aa6dcb525196ed5eb548b7cacad8d33fc2b78a471895f56485","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"88fc2e6f896d40df073ad049afa7918fecb4482f20bc28d45334d8e37e62ad1f","disposition":"updated","rationale":"Preserved camera-session ingestion and photo ownership alongside scene persistence/proposals. Added the explicit scene-entry exit from mounted camera viewing, which restores ordinary orbit and keyboard ownership without changing authored parts or physical state."} -->
 
 
 
@@ -44,6 +44,21 @@ and Run admission, releasing held controls and preserving the authored machine a
 view. Completed contacts feed [impact presentation](../../src/presentation/impact-sound.mjs#source);
 it has no simulation write path and resets its baseline on missing observations.
 
+[Camera exposure state](../../src/simulation/camera-state.mjs#symbol=createCameraState)
+belongs to simulation; it publishes completed exposure results without image bytes.
+[Camera destinations](../../src/application/camera-session.mjs#source) drain completed
+observations into a [bounded gallery](../../src/application/camera-gallery.mjs#source).
+The temporary [camera viewing cone](../../src/presentation/camera-frustum.mjs#source)
+is owned by workshop inspection and never enters the optical scene.
+The dedicated [optical renderer](../../src/presentation/camera-renderer.mjs#source)
+receives only authored geometry settings and completed poses, without part identities,
+controller programs or editor scene input. Completed rope node positions and authored
+diameter pass as plain geometry to the shared rope renderer, with selection disabled.
+It pins pixels before asynchronous encoding; no image result feeds back into the plant.
+[Feedback screenshot capture](../../src/presentation/workshop-screenshot.mjs#symbol=captureWorkshopScreenshot)
+copies the active camera canvas or renders the orbit canvas when camera view is closed.
+It never requests an exposure or substitutes orbit pixels for an unavailable active camera.
+
 The application/view links cover their own composition and input routing code. The core, model and simulation links separately bind the admitted behavior; remote payload contents are outside these claims.
 
 The [scene model](../../src/model/environment.mjs#source) owns bounded fixed solids,
@@ -51,7 +66,9 @@ legacy descriptors and geometric union. Authored quaternion values remain in sav
 geometry normalizes their admitted magnitude before rendering and collider union. [Scene persistence](../../src/application/scene-library.mjs#source)
 contains no machine data. The [scene editor](../../src/presentation/scene-editor.mjs#source)
 uses the same [document proposal policy](../../src/presentation/document-proposal.mjs#source)
-as assembly insertion; core owns replacement and chronological history. Compiled scene
+as assembly insertion; core owns replacement and chronological history. Entering scene
+authoring exits mounted-camera viewing through the camera session, restoring workshop
+orbit and input ownership before scene tools activate. Compiled scene
 solids follow machine bodies and ground, preserving machine index/mapping authority.
 [Primitive reconstruction](../../src/presentation/primitive-geometry.mjs#source) supplies
 both scene previews and capture review with the canonical cylinder tessellation and dimensions.
@@ -102,14 +119,14 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"c9dc36ca8edd3b804f9083ec764d72ce47cc1cbd33946630910bbb6fc7751b6a","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"951b7d945ea3714313e9d8bc523b525834e8f1909c18cc9ab76896aa1cbf2cb6","disposition":"still accurate","rationale":"Scene descriptors reuse canonical transforms and contact properties; replacement uses existing core cursor and history ownership. The table continues to identify the actual reusable owners. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
+<!-- doc-review {"version":1,"fingerprint":"b14ef8da3573d5c62a0103ced92dda1f443a92561c0988814cfae0499226645e","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"26f3a06fe2adc33813199657b5b6a12096cb090113178a157d62267a60e42f57","disposition":"still accurate","rationale":"Scene descriptors reuse canonical transforms and contact properties; replacement uses existing core cursor and history ownership. The table continues to identify the actual reusable owners."} -->
 
 
 
 | Decision                                              | Production owner                                                                                                                                                                                                                                             | Example consumer                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
 | Authored geometry and decoration boundary             | [partPrimitives](../../src/model/geometry.mjs#symbol=partPrimitives) / [shaftSegments](../../src/model/geometry.mjs#symbol=shaftSegments), [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG) / [MATERIALS](../../src/model/catalog.mjs#symbol=MATERIALS) | assembly compiler and workshop renderer                                                 |
-| Material defaults and explicit contact overrides | [contactProperties](../../src/model/contact-properties.mjs#symbol=contactProperties) | compiler and selected inspector |
+| Material defaults and explicit contact overrides      | [contactProperties](../../src/model/contact-properties.mjs#symbol=contactProperties)                                                                                                                                                                         | compiler and selected inspector                                                         |
 | Quaternion math and world directions                  | [transforms](../../src/model/transforms.mjs)                                                                                                                                                                                                                 | surfaces, assembly, mirror                                                              |
 | Unique player-visible names                           | [availablePartName](../../src/model/blueprint.mjs#symbol=availablePartName)                                                                                                                                                                                  | core insertion/copy/rename                                                              |
 | Surface frames and collision admission                | [resolveSurfaceEndpoint](../../src/model/surfaces.mjs#symbol=resolveSurfaceEndpoint) / [validatePlacementGeometry](../../src/model/surfaces.mjs#symbol=validatePlacementGeometry)                                                                            | compiler and surface proposal                                                           |
@@ -154,15 +171,19 @@ A cell can supply multiple rotary and linear drives; multiple cells on one circu
 Shared motor torque and powered sensor-load accounting and the completed energy ledger belong to simulation.
 Ground contact and workshop motion are not Course qualification.
 
-
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"64f105b388fb37ad6c9769913b87de6d594ad8a338007dbd3ef06d8300054689","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"4a8715d0352ef2487d5c43a0262c77671e4f6871fcc2fdc425079ec75fd41b4c","disposition":"still accurate","rationale":"Scene colliders append outside machine mappings; scene preservation tests confirm machine sensor scope and metrics remain machine-owned. No controller or observation sampling owner changed. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
+<!-- doc-review {"version":1,"fingerprint":"711a6b84c6fb1afb36ec4a18471b4dcb2d9c6cca00978f307b67569a5f00435a","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"7482e2e3d8d4e56ae3fe4a5bb1b51dea5b8d116f030be5efaa5ebec9517cd81e","disposition":"still accurate","rationale":"Scene colliders append outside machine mappings; scene preservation tests confirm machine sensor scope and metrics remain machine-owned. No controller or observation sampling owner changed."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;
 [power](../../src/simulation/power.mjs) funds each sensor. The selected
 [sensor inspector](../../src/presentation/sensor-controls.mjs) and
 [measurement overlay](../../src/presentation/sensor-view.mjs) consume completed data.
+
+Cameras use the same funded sensor supply path but expose no numeric channels.
+Their [optical profile](../../src/model/camera.mjs#source) and checkpointed exposure
+latch are distinct from prior-completed numeric sensor readings. Receiver trigger
+wiring requests photographs through ordinary commands; it grants no scene access.
 
 [Rules and draft admission](../../src/model/controller-authoring.mjs) own source
 identity. The [bounded compiler](../../src/scripting/controller-program.mjs) admits

@@ -170,6 +170,15 @@ export function createPartMesh(part) {
   mesh.userData.partId = part.id;
   mesh.castShadow = true;
   mesh.receiveShadow = true;
+  if (part.type === 'camera') {
+    const lens = new THREE.Mesh(
+      new THREE.CircleGeometry(0.011, 24),
+      new THREE.MeshBasicMaterial({ color: 0x142b40 }),
+    );
+    lens.position.z = 0.0201;
+    mesh.add(lens);
+  }
+
   if (definition.kind === 'sphere') {
     const mark = new THREE.Mesh(
       new THREE.SphereGeometry(radius * 1.01, 32, 16, 0, Math.PI / 5, 0.2, Math.PI - 0.4),

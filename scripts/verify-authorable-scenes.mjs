@@ -1,3 +1,4 @@
+import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
@@ -18,6 +19,21 @@ try {
   await page.waitForFunction(() => window.workshopProbe);
   const fixture = createDrivingMachine();
   writeFileSync(`${out}/machine.json`, JSON.stringify(fixture));
+  await evidence.loadAndWait(page, `${out}/machine.json`);
+  await placeCatalogPart(page, 'camera');
+  await click('View through camera');
+  assert.ok(
+    (await page.evaluate(() => window.workshopProbe.readInteractionState())).cameraPhoto.active,
+  );
+  await click('Edit scene');
+  assert.equal(
+    (await page.evaluate(() => window.workshopProbe.readInteractionState())).cameraPhoto.active,
+    null,
+    'scene authoring restores workshop camera and input ownership',
+  );
+  await click('Add Platform');
+  await click('Cancel preview');
+  await click('Done');
   await evidence.loadAndWait(page, `${out}/machine.json`);
   const original = (await read()).metadata.blueprint;
   await click('Edit scene');

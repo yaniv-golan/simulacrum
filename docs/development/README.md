@@ -92,7 +92,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"cdc5d2da61354c8aae8528d1a259b869ef4de55032b42c24d537600ee8104e09","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"50d942e4214b924f6a492cd97cf06ec2579fc65a2ddbea5d1f6546f2f29ec3c8","disposition":"still accurate","rationale":"The remote capture budget and added scene browser dependencies do not change discovery commands, completion tiers or the requirement to distinguish automation from human qualification."} -->
+<!-- doc-review {"version":1,"fingerprint":"8ebaab107125e7ee28ae25c20cda61a37c91835e86f2f54b9cd19f8ef21882fd","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"a6fcb391d7070d17ec5e3e47747da0eb00a4ff5fab357a3c0c78ca944995460e","disposition":"still accurate","rationale":"The remote capture budget and added scene browser dependencies do not change discovery commands, completion tiers or the requirement to distinguish automation from human qualification."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"b77122905de69494ebb16efa4f42ddc32c45ff33d64a4b81af30f430d63bb1b9","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"6da9985b12bceeb9be11743e8e7f9ed8f24591584f79b8e76d70086d3a955614","disposition":"still accurate","rationale":"Regenerated reference includes scene owners; section dependency review and source closure commands remain the same."} -->
+<!-- doc-review {"version":1,"fingerprint":"2e9120462f6a042fe8dd13558ee407241cba52b8f4820dbac465dd25a5cac752","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"a13d5e102f24632508b53d1ce0bfbac455d8fa4c35d3dfe2162802438ac85f1c","disposition":"still accurate","rationale":"Regenerated reference includes scene owners; section dependency review and source closure commands remain the same."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"023deb3270594377bd2b6e5c27da4abf98d783eb9abbc2f4abeed0ecb86f4c65","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"515caa855795c0dac96e366ee46c94ee72d55f4f23ac7969b686ec8e7b880dd5","disposition":"still accurate","rationale":"The merged manifest retains conservative roots and opaque-source witness review. Added scene and recording dependencies extend selection without changing admission policy."} -->
+<!-- doc-review {"version":1,"fingerprint":"66821390df16ec6b116dacce5625c5d68cd04d049712166c9a477ca1594146fb","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"76a656bb2b1ebc5f8f3fe7e0eb1ba1d1fa5b8a8755ab1382416f7ba78761e002","disposition":"still accurate","rationale":"The merged manifest retains conservative roots and opaque-source witness review. Added scene and recording dependencies extend selection without changing admission policy."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -507,7 +507,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"399b734ec270e63be3ea6d9a24f30a71aea9dce1eae5d6e31278b8e06c3a5878","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"35608bec9e59598f6cac2216b0c9339d54fac6aea791fa811105572761052684","disposition":"still accurate","rationale":"Scene and catalogue fixture changes are captured as ordinary candidate source bytes. The isolated capture, source drift and two-branch integration requirements remain accurate. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
+<!-- doc-review {"version":1,"fingerprint":"ec6ad2ebbacc573a95297a9888a813f2163ce7b87fe137638a7a8508c1cb66cd","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"31a83b09c0ab098cef037ffa2d9d019a71a328eb035724513a0caaaf46a9b8fd","disposition":"still accurate","rationale":"Scene and catalogue fixture changes are captured as ordinary candidate source bytes. The isolated capture, source drift and two-branch integration requirements remain accurate."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
