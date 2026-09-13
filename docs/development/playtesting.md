@@ -1,6 +1,6 @@
 # Playtests and recordings
 
-<!-- doc-review {"version":1,"fingerprint":"6d0b3d9ae0e1862e1b657713ed6da149d27bc413300b47c8e3fe82d35a4c6ed3","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"94ebf3e86e7a10d85561fc9f2729a97248c04dee2cf4750aa0460e0b07024a5c","disposition":"still accurate","rationale":"The overview continues to separate local instrumented playtest preparation from real participant evidence and hosted acceptance; packet compression and native backend replacement require fresh served identity, not a claim of human acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"f37adde7c02761142b1025e43e43f4e4c652288c30f46838c8961ed2a40d119f","dependencies":"docs/development/.reviews/playtesting/playtests-and-recordings.json","dependencyDigest":"a70d115135172d90a75f351f303107efc4337c672f50e180860f099b8a9d7b7c","disposition":"updated","rationale":"The application now times view preparation and waits for cursor-keyed renderer-call completion in reflection receipts. The text distinguishes CPU observations from GPU/display completion, measured improvement and human acceptance."} -->
 
 
 
@@ -8,9 +8,18 @@ Use `npm run build` followed by `npm run preview` for a frozen local playtest. R
 
 For an interaction report, use **Record an issue** in the left sidebar, then Start recording, reproduce, Stop recording and Save recording. The local JSON records build, checkpoint, timed actions and command results. It is a diagnostic timeline, not qualification replay. Nothing is uploaded by this local recorder.
 
+The [workshop application](../../src/application/workshop-app.mjs#source)
+reports JavaScript view preparation separately as `viewRenderMs`. Place/connect/run
+reflection receipts wait for a cursor-keyed render-submission completion recorded
+by the [workshop view](../../src/presentation/workshop-view.mjs#source).
+The diagnostic field `completedDraw` marks return from the renderer call, not GPU
+completion, compositor presentation or physical display latency. `run-first-tick`
+remains a separate simulation-reflection measurement. Compare identical before/after
+workloads before claiming a latency improvement.
+
 ## Remote setup
 
-<!-- doc-review {"version":1,"fingerprint":"a5b553411d9d2f4f7f88afff40edac7d1be5194eedf0d77921400dd3f0f8f861","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"bfb68580f893c77b35428a558bd5d996204b060335c554f30d958e7be39c07b5","disposition":"updated","rationale":"The setup explanation now locates feedback and recording controls in the existing footer supplied by the view. Explicit capture consent, offline recovery, attachment opt-ins, durable delivery receipts and authentication remain unchanged. The cloud runtime test now expects the already-existing unauthenticated disabled feedback capability object; server permissions were not changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"0e40b91e9d3e347b5777b6e846642867c5f04c00c89b13f4a2142ae7bfa4c5cd","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"be7827acc48c78fc2db43e5375d3a1a7acc2f2f653bf6d6ca98af3d7bc3e7aad","disposition":"still accurate","rationale":"Internal body admission and equivalent checksum iteration change build identity but preserve exported checkpoint arrays, recording payload schemas, origin configuration and upload/review behavior."} -->
 
 
 

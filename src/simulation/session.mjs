@@ -1,12 +1,17 @@
 import { sampleSensor } from './sensors.mjs';
 import { admitSensorReading, SENSOR_LIMITS } from '../model/sensors.mjs';
 import { DT, PHASES } from '../model/tick.mjs';
-import { createObservationStore, immutableCopy } from '../model/observation.mjs';
+import {
+  createObservationStore,
+  immutableCopy,
+  immutableBodySample,
+} from '../model/observation.mjs';
 import { createControllerDispatcher } from './controllers.mjs';
 import { createPowerNetwork } from './power.mjs';
 import { createReceiverArbiter, receiverControlConfiguration } from './receiver-arbiter.mjs';
 import { createPhysicsWorld } from './physics/world.mjs';
 let sessionSequence = 0;
+const PHASE_STATUS = immutableCopy(Object.fromEntries(PHASES.map((phase) => [phase, 'active'])));
 const physicalConfig = ({ gravity, bodies, joints }) => ({ gravity, bodies, joints });
 const rotate = (q, v) => {
   const [x, y, z, w] = q,
@@ -226,43 +231,36 @@ export async function createSession(
   const frame = (physics, timings = {}, gears = hasGears() ? world.gears() : null) => ({
     tick,
     status,
-    physics: immutableCopy(physics),
+    physics: immutableCopy(
+      physics.map((body) =>
+        immutableBodySample(
+          ...body.position,
+          ...body.rotation,
+          ...body.velocity,
+          ...body.angularVelocity,
+          body.mass,
+        ),
+      ),
+    ),
     springs: springReadings(),
     ...(hasRopes() ? { ropes: world.ropes() } : {}),
     ...(gears ? { gears } : {}),
     contacts: { ...contactSample, sampleTick: tick, intervalSeconds: tick === 0 ? 0 : DT },
     metadata,
-    energy: copy(energy),
+    energy: immutableCopy(energy),
     power: power.read(),
     // Publication admits new readings while reusing the already immutable prior bodies.
     sensors,
     ...(installedPrograms.length ? { programs: dispatcher.inspect() } : {}),
     receiverControl: receiverControl.snapshot(),
     phaseTimings: timings,
-    phaseStatus: Object.fromEntries(
-      PHASES.map((p) => [
-        p,
-        [
-          'sensor-snapshot',
-          'controller-commands',
-          'power-signals',
-          'actuators-constraints',
-          'environment-forces',
-          'integration-contacts',
-          'structure-failure',
-          'thermal-ablation',
-          'telemetry',
-        ].includes(p)
-          ? 'active'
-          : 'inactive-no-components',
-      ]),
-    ),
+    phaseStatus: PHASE_STATUS,
   });
   const observations = createObservationStore(frame(initial), {
     sessionId: `session-${++sessionSequence}`,
     clock: () => performance.now(),
   });
-  function checkpoint() {
+  function captureAnchor() {
     if (status === 'failed') throw Error('SESSION_FAILED');
     return copy({
       version: 3,
@@ -275,13 +273,18 @@ export async function createSession(
       energy,
       power: power.snapshot(),
       receiverControl: receiverControl.snapshot(),
-      physics: Array.from(world.snapshot()),
+      physics: world.snapshot(),
       configuration: config,
       identity,
       metadata,
     });
   }
-  let anchor = checkpoint(),
+  // Internal anchors retain native bytes compactly; exports preserve checkpoint v3.
+  const exportAnchor = (value) => ({ ...copy(value), physics: Array.from(value.physics) });
+  function checkpoint() {
+    return exportAnchor(captureAnchor());
+  }
+  let anchor = captureAnchor(),
     previousInterval = null;
   function publish() {
     observations.publish(frame(world.read()));
@@ -532,8 +535,9 @@ export async function createSession(
               for (const event of pending)
                 if (event.command.type === 'impulse')
                   world.applyImpulse(event.command.body, event.command.value);
-              afterEnvironmentEnergy = world.mechanicalEnergy();
-              externalWorkJ = total(afterEnvironmentEnergy) - total(before);
+              const hasImpulse = pending.some((event) => event.command.type === 'impulse');
+              afterEnvironmentEnergy = hasImpulse ? world.mechanicalEnergy() : before;
+              externalWorkJ = hasImpulse ? total(afterEnvironmentEnergy) - total(before) : 0;
               break;
             }
             case 'integration-contacts': {
@@ -636,7 +640,7 @@ export async function createSession(
           checkpointMs = 0;
         if (tick % 1200 === 0) {
           const start = performance.now();
-          nextAnchor = checkpoint();
+          nextAnchor = captureAnchor();
           checkpointMs = performance.now() - start;
         }
         const frameStart = performance.now(),
@@ -660,7 +664,7 @@ export async function createSession(
         failure = copy({
           version: 1,
           identity,
-          anchor: previousInterval?.anchor ?? anchor,
+          anchor: exportAnchor(previousInterval?.anchor ?? anchor),
           inputs: [...(previousInterval?.inputs ?? []), ...history],
           failedTick: next,
           reasonCode: ['GEAR_MOTION_LIMIT', 'ROPE_MOTION_LIMIT'].includes(error.reasonCode)
@@ -804,7 +808,7 @@ export async function createSession(
         energy: emptyEnergy(candidate.mechanicalEnergy()),
         power: nextPower.snapshot(),
         receiverControl: nextReceiverControl.snapshot(),
-        physics: Array.from(candidate.snapshot()),
+        physics: candidate.snapshot(),
         configuration: nextConfig,
         identity,
         metadata: nextMetadata,
@@ -1081,7 +1085,7 @@ export async function createSession(
     failure = null;
     history = [];
     previousInterval = null;
-    anchor = checkpoint();
+    anchor = captureAnchor();
     observations.publish(frame(world.read()), { restored: true });
   }
   return Object.freeze({

@@ -52,6 +52,7 @@ export async function mountWorkshopApp(root) {
     changed: () => view?.refreshLearning?.(),
   });
   const metrics = [];
+  const viewRenderMs = [];
   let remote = null;
   let partSequence = 0,
     connectionSequence = 0,
@@ -252,7 +253,10 @@ export async function mountWorkshopApp(root) {
     learning.ingest(measurements);
     measurementCursor = measurements.cursor;
     const observation = workshop.observe();
-    view.render(observation.frames[0]);
+    const viewStart = performance.now();
+    view.render(observation.frames[0], observation.cursor);
+    viewRenderMs.push(performance.now() - viewStart);
+    if (viewRenderMs.length > 240) viewRenderMs.shift();
     lastRenderedCursor = observation.cursor;
     if (runMeasurement && observation.cursor.tick > runMeasurement.startTick) {
       record({
@@ -288,32 +292,37 @@ export async function mountWorkshopApp(root) {
       acceptedAt = performance.now(),
       blueprint = frame().metadata.blueprint,
       blueprintJSON = JSON.stringify(blueprint);
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        if (disposed) return;
-        const reflected =
-          lastRenderedCursor?.epoch === target.epoch &&
-          (kind === 'run'
-            ? frame().metadata.mode === 'run' &&
-              JSON.stringify(frame().metadata.blueprint) === blueprintJSON
-            : lastRenderedCursor.revision === target.revision);
-        record({
-          kind,
-          ...timing,
-          acceptedAt,
-          completedAt: performance.now(),
-          durationMs:
-            reflected && timing.timestampSource === 'input-event'
-              ? performance.now() - timing.inputTime
-              : null,
-          superseded: !reflected,
-          buildId,
-          machine: blueprint.id,
-          targetCursor: target,
-          reflectingCursor: lastRenderedCursor,
-        });
-      }),
-    );
+    const waitForDraw = () => {
+      if (disposed) return;
+      const draw = view.readCompletedDraw();
+      if ((!draw || draw.completedAt < acceptedAt) && !disposed) {
+        requestAnimationFrame(waitForDraw);
+        return;
+      }
+      const reflected =
+        draw?.cursor.session === target.session &&
+        draw.cursor.epoch === target.epoch &&
+        (kind === 'run'
+          ? frame().metadata.mode === 'run' &&
+            JSON.stringify(frame().metadata.blueprint) === blueprintJSON
+          : draw.cursor.revision === target.revision);
+      record({
+        kind,
+        ...timing,
+        acceptedAt,
+        completedAt: draw.completedAt,
+        durationMs:
+          reflected && timing.timestampSource === 'input-event'
+            ? draw.completedAt - timing.inputTime
+            : null,
+        superseded: !reflected,
+        buildId,
+        machine: blueprint.id,
+        targetCursor: target,
+        reflectingCursor: draw.cursor,
+      });
+    };
+    requestAnimationFrame(waitForDraw);
   }
   function availableId(prefix, sequence, existing) {
     let id;
@@ -679,6 +688,7 @@ export async function mountWorkshopApp(root) {
   view = createWorkshopView(root, {
     learning,
     controllerHistory,
+    beforeDraw: (now) => clock?.frame(now),
     onCommand,
     onSound: (enabled) => impactSound.enable(enabled),
     onSave,
@@ -706,7 +716,12 @@ export async function mountWorkshopApp(root) {
         }
       },
     },
-    { requestFrame: requestAnimationFrame, cancelFrame: cancelAnimationFrame, render },
+    {
+      requestFrame: requestAnimationFrame,
+      cancelFrame: cancelAnimationFrame,
+      render,
+      externalFrames: true,
+    },
   );
   document.addEventListener('visibilitychange', visibilityChanged);
   render();
@@ -733,7 +748,11 @@ export async function mountWorkshopApp(root) {
     readRenderedSpringEndpoints: () => view.readRenderedSpringEndpoints(),
     readRenderedRopeEndpoints: () => view.readRenderedRopeEndpoints(),
     readRenderedCenters: () => view.readRenderedCenters(),
-    readInteractionState: () => view.readInteractionState(),
+    readInteractionState: () => {
+      const state = view.readInteractionState();
+      state.rendering.viewRenderMs = [...viewRenderMs];
+      return state;
+    },
     metrics: () => structuredClone(metrics),
   });
   return Object.freeze({

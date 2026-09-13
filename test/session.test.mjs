@@ -323,3 +323,30 @@ test('completed contact samples publish their interval and resume through both c
     b.dispose();
   }
 });
+
+test('periodic replay anchors export independent plain checkpoint bytes after two intervals', async () => {
+  const session = await createSession({ ...config, gravity: [0, 0, 0] });
+  try {
+    session.step(1200);
+    const expected = session.checkpoint();
+    assert.ok(Array.isArray(expected.physics));
+    const exported = session.checkpoint();
+    exported.physics.fill(0);
+    assert.deepEqual(session.checkpoint(), expected);
+    session.step(1200);
+    session.act({ type: 'impulse', body: 0, value: [overflowEnergyImpulse, 0, 0] });
+    assert.throws(() => session.step());
+    const bundle = session.failureBundle();
+    assert.equal(bundle.anchor.tick, 1200);
+    assert.ok(Array.isArray(bundle.anchor.physics));
+    assert.deepEqual(bundle.anchor, expected);
+    bundle.anchor.physics.fill(0);
+    assert.deepEqual(session.failureBundle().anchor, expected);
+    session.restore(expected);
+    assert.deepEqual(session.checkpoint(), expected);
+    session.step();
+    assert.equal(session.observe().frames[0].tick, 1201);
+  } finally {
+    session.dispose();
+  }
+});

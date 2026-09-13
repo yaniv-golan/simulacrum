@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"7e5d4040bfd83ab4458bd82dca6d8b83fd542d4a7665c6f8de90578f0761cc4c","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"803aa3c4ff280b7e658551318d7fa346b53981ab1d2fa4eccfc88b579a1f8831","disposition":"still accurate","rationale":"Feedback remains a utility in the existing footer and open local recording changes only the compact catalog scrolling region. No lesson, fixture, guide steps, replacement behavior or teaching owner is added or removed. Existing no-entry admission and the separation of automation from comprehension remain applicable."} -->
+<!-- doc-review {"version":1,"fingerprint":"666c4630a63e8771aafc664ec718d43784024289009df61178140a979c01de5b","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"b1ad8b2c9986e8c551e2ec3c038643e97e6a5dc493467e95d6a8e2cd953f148c","disposition":"still accurate","rationale":"No entry: performance changes add no lesson, example, challenge or invitation. Existing controls and contextual explanations serve the unchanged player tasks; formatting and draw ordering require no new teaching content."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"2eb9552217dc9683bdfa9104458fae9156b476d63a53a355813fc5f8027650a1","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"6c5e061d4e64705fb294a2152036b701f8065f75083a90ff4bfc04777b1deb21","disposition":"updated","rationale":"The surface explanation now names the existing footer utility host, inline reserved badge width, compact minimum footer height and preserved feedback/recording access during narrow assembly placement. It also specifies whole-catalog scrolling while local recording is open so search/results/summary cannot cover Stop recording. Fonts and unique controls are retained; fresh rendered evidence remains required."} -->
+<!-- doc-review {"version":1,"fingerprint":"ce73a708c734cd0abd3e217ef58c941316a64442bc4100b856a34ff9c3ebb89b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"087a7baddfbcf47d47caa42f22edddfbda979809e35e32797313960ce2d3b32b","disposition":"still accurate","rationale":"These runtime changes add no UI surface or action and preserve completed values. Inspector, requested Measurements, recovery warnings, content admission and visibility lifecycles remain unchanged."} -->
 
 
 
@@ -363,6 +363,13 @@ not a general success criterion for a spring. The requested panel labels whole-m
 motion and provides a keyboard-accessible measurement explanation. Successful machine loading, including same-ID saved revisions, clears prior results;
 failed loads preserve them. Recovery warnings remain visible with
 measurements closed. No measurement is permission to invent physical causality.
+Closing Measurements suppresses formatting of hidden readings while completed-tick
+measurement accumulation continues. Reopening displays the retained window and
+current readings. Boundary warnings remain independent of this preference.
+Inspector readouts update their DOM only when formatted values change. The running
+health hint refreshes in 30-tick bands after tick 120 and invalidates its cached
+diagnosis when blueprint, session, epoch or operating mode changes.
+
 Machine controls and measurements share a bounded layout at the lower workbench edge.
 They sit beside one another where space allows and stack on narrower workbenches,
 with independently scrollable contents and a reachable controls disclosure. The shared

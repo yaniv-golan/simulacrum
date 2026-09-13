@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"7f8d284bb57b67d01d9a25cdfdc40a4d4921bfc321035a3e27e34c26bec36fd4","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"cb71234217c88bcc1f260d9b09e42eda9b6fd2849d2786ef7a32223e898020c4","disposition":"still accurate","rationale":"The regenerated reference adds Release Coupler owners, controls and its browser check. The documentation algorithm, semantic review procedure and conservative merge-policy requirements are unchanged; generated facts remain distinct from explanation review."} -->
+<!-- doc-review {"version":1,"fingerprint":"f1f032b1f1d7bad2d9b2cace2fad0ab5daff9145d4cf4d170af8e034b33f864e","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"a17fde33bfb4950b6466f215a2df14a5155e78476bbe0d32136b236d7114c1de","disposition":"still accurate","rationale":"Generated discovery adds the finite numeric body constructor and its finite-field negative controls. Generation, semantic section review and candidate capture procedures are unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"eba2c7e75185d00c9b2c279a157e4097ebb9832d35e64ffd581fbf868d97a993","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"2c3e1183228288429d92c1b6153bb5c9c48ec097c30806bc718e1a61ea503ef3","disposition":"still accurate","rationale":"Eight consumerSourceHash values now bind the reviewed footer composition, catalog scrolling and verifier corrections. Reader purposes, exclusions, roots, declarations and required checks are unchanged. The explanation still accurately requires audited dependency closure and successful witness-bound application; metadata refresh supplies no completion or human receipt."} -->
+<!-- doc-review {"version":1,"fingerprint":"63598019d31d8da5599f5747b7016dd576681d5305490493ea4c00a09063bcc6","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"638f40175c3b435e12224a5ff7bf7b2a877679b215ee0080ea8929a8a335d013","disposition":"still accurate","rationale":"Session publication uses its existing model observation import for numeric admission; reviewed metadata scope consumer digests are refreshed through the existing isolated witness workflow. Declared opaque reads and their payload domains remain unchanged and shared runtime still selects all browser checks."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -506,7 +506,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"cc6185d46aebe6fd154949bc3f177011f39e3a689b45df669fc3a8fa4b892bce","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"cbf8c3209e0b0ba85d0298aa4156953e64af208e7d9677f28c4691e0ac127072","disposition":"still accurate","rationale":"Only eight existing metadata consumer hashes changed after scope witnesses. Candidate source capture, dependency/runtime admission, same-candidate unit resume, source/index drift rejection and fresh browser execution requirements remain unchanged. The existing footer repairs are already documented; this metadata update does not create cross-candidate evidence reuse."} -->
+<!-- doc-review {"version":1,"fingerprint":"73cc4151df521bc1d9cf6dde7c458f797a57eb14f7df9b4ca2ccf264eaceb70f","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"03edf91d249bcc468766a997ee51a5685b1d2b900c6bc5bbecdb27809842633e","disposition":"still accurate","rationale":"Finite body admission and indexed checkpoint FNV change runtime bytes and therefore require a fresh captured candidate. They do not change isolation, source-drift checks, result ownership or completion-tier selection."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

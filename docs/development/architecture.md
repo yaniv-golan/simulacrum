@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"5833ddd8d9eda61dafe2fc6e810937ec932943515bda07bf8887082b397405a7","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"200f1628be204f93c379f374f3be6706f670704a4a3aa9753b3e6d3d8026d8be","disposition":"updated","rationale":"The view exposes its existing footer as utilityHost and the application mounts feedback controls there. The explanation now names that ownership and removes the separate-row claim; protected dialogs remain outside the root, and optional feedback context still reads authored save/current UI without replay or native physics state."} -->
+<!-- doc-review {"version":1,"fingerprint":"f394a09e419594d7f02833a5cb201460c5c5aca0f3cbf35d0ccf12447d49aab6","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"3997f546c2db45db7f9b9e4885e5fb04bfb77fbf967f5574c9663c1f1944df4a","disposition":"still accurate","rationale":"Body observation construction remains in the model and is called by session publication; detached mutable physics reads remain unchanged. no library object crosses the door. Completed observations, clock scheduling, command routing and renderer submission ownership are unchanged."} -->
 
 
 
@@ -20,6 +20,15 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 4. [validateBlueprint](../../src/model/blueprint.mjs#symbol=validateBlueprint), [placement admission](../../src/model/surfaces.mjs) and [compileAssembly](../../src/model/assembly.mjs#symbol=compileAssembly) validate stored values, physical intersections and connection geometry before simulation receives configuration.
 5. [Session](../../src/simulation/session.mjs) owns stepping, checkpoint and completed publication. [Controllers](../../src/simulation/controllers.mjs) produce program commands; the [receiver arbiter](../../src/simulation/receiver-arbiter.mjs) owns Manual/Automatic/Learned/Off, explicit takeover and prior-tick travel regulation; [power](../../src/simulation/power.mjs) resolves circuits; the [physics door](../../src/simulation/physics/world.mjs) alone imports the physics library. Completed contact collection uses the numeric [contact reader](../../src/simulation/physics/read-contacts.mjs); session assigns the completed interval and includes collection in integration timing.
 6. [Observation store](../../src/model/observation.mjs) publishes immutable completed snapshots. Presentation consumes these observations, never a live physics object. The application drains a separate observation cursor into selected-body Measurements so its 120 Hz samples do not depend on rendering cadence.
+
+The workshop view owns the browser animation-frame request. The application supplies
+a before-draw callback that advances the [clock](../../src/application/clock.mjs#source),
+publishes completed observations and updates the view before graphics submission.
+The clock retains elapsed-time accumulation, pause and deterministic advancement;
+external scheduling does not add an integration or discard simulation debt.
+View-update CPU time is measured separately from renderer submission time.
+Interaction reflection waits for a matching cursor-keyed submission (or continuation
+of the accepted run). This timestamp is not GPU completion or display presentation.
 
 The view exposes the existing workshop footer as `utilityHost`; the application mounts
 feedback and recording controls there and keeps protected feedback dialogs outside
@@ -92,7 +101,7 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"71315b247aa59d22b4fd8e43ad8ea0b5e49bce5aee4fcc28e2522037b73a16f6","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"b6034a634195ed75b5b05aa621c885d5c895a35eb751ba87af7f9c61db610a7d","disposition":"updated","rationale":"Added the shared releasedAttachment owner consumed by inspector and generic overlay. Its fixed-kind guard excludes Rope labels, while existing geometry, contact, material, spring, rope and command owners remain the canonical decisions."} -->
+<!-- doc-review {"version":1,"fingerprint":"f464beb6aab26493625ddbdfcd77ae432b2dafb3a588ab607a01d47542f18600","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"4af6e7310f0a518fea9940900c517f2d270d5095aeb04903e8934f75453f363a","disposition":"still accurate","rationale":"The model-owned finite body constructor centralizes admission without adding a caller-trust API. Geometry, compiler, measurement and rendering decisions retain the table owners; indexed FNV retains the checkpoint owner."} -->
 
 
 
@@ -146,7 +155,7 @@ Ground contact and workshop motion are not Course qualification.
 
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"64648249b03899cd75055081cd0bc9aeeafcb1511731d1f0de26ac50f4769e6d","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"00ceeaf660ce7e25b40c23547e8666212fd675c5ce438ba9f636a343ba3f6bc6","disposition":"still accurate","rationale":"The power solver adds a resistive coupler load on the existing shared circuit. Sensor descriptors, completed-snapshot sampling, controller injection, previous-tick receiver arbitration and separate teaching/diagnostic ownership remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"a8efc84e7433a67ada28abd5514304146b48e8793e280054472c055e5e88e2ca","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"0029242802817450cdf1c56cc116ec4a8307feb92de9a08dbebe40f182fac9a0","disposition":"still accurate","rationale":"Completed body observations have identical finite values and frozen owned arrays. Sensor sampling, power funding, controller input timing and independent learning/history cursors retain their existing behavior."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

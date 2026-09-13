@@ -1248,3 +1248,62 @@ test('loaded wheel axles settle with bounded constrained velocity residuals', as
     }
   });
 });
+
+test('unchanged door reads reuse native samples while impulse, step and restore invalidate them', async () => {
+  const { default: R } = await import('@dimforge/rapier3d-deterministic-compat');
+  const w = await createPhysicsWorld(config);
+  const original = R.RigidBody.prototype.linvel;
+  let samples = 0;
+  R.RigidBody.prototype.linvel = function () {
+    samples++;
+    return original.call(this);
+  };
+  try {
+    const checkpoint = w.snapshot();
+    const first = w.mechanicalEnergy(),
+      count = samples;
+    assert.ok(count > 0);
+    const alias = w.mechanicalEnergy();
+    alias.kineticJ = 999;
+    assert.deepEqual(w.mechanicalEnergy(), first);
+    assert.equal(samples, count, 'unchanged energy must reuse its native sample');
+    w.applyImpulse(0, [2, 0, 0]);
+    const kicked = w.mechanicalEnergy();
+    assert.ok(samples > count);
+    assert.ok(kicked.kineticJ > first.kineticJ);
+    w.step();
+    assert.notDeepEqual(w.mechanicalEnergy(), kicked);
+    w.restore(checkpoint);
+    assert.deepEqual(w.mechanicalEnergy(), first);
+  } finally {
+    R.RigidBody.prototype.linvel = original;
+    w.dispose();
+  }
+});
+
+test('completed contact reads feed the next sensor sample without a second native scan', async () => {
+  const { default: R } = await import('@dimforge/rapier3d-deterministic-compat');
+  const w = await createPhysicsWorld(config);
+  const original = R.World.prototype.contactPairsWith;
+  let scans = 0;
+  R.World.prototype.contactPairsWith = function (...args) {
+    scans++;
+    return original.apply(this, args);
+  };
+  const pad = { body: 0, origin: [0, 0, 0.1], axis: [0, 0, 1], halfWidth: 0.1, halfHeight: 0.1 };
+  try {
+    w.step();
+    const first = w.contacts(),
+      count = scans;
+    assert.ok(count > 0);
+    w.contactPadSample(pad);
+    assert.deepEqual(w.contacts(), first);
+    assert.equal(scans, count, 'completed contacts are shared with the following sensor phase');
+    w.step();
+    w.contactPadSample(pad);
+    assert.ok(scans > count, 'integration must retire pre-integration contacts');
+  } finally {
+    R.World.prototype.contactPairsWith = original;
+    w.dispose();
+  }
+});

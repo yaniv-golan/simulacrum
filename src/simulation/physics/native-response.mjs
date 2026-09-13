@@ -6,23 +6,29 @@
 export function readNativeResponse(factor, bodyCount) {
   const n = bodyCount * 6;
   let disposed = false;
-  /** @param {'project'|'response'} method @param {number[]} value */
+  /** @param {'project'|'response'} method @param {number[]|Float64Array} value */
   function evaluate(method, value) {
     if (disposed) throw new Error('disposed native response');
-    if (!Array.isArray(value) || value.length !== n || !value.every(Number.isFinite))
+    if (
+      (!Array.isArray(value) && !(value instanceof Float64Array)) ||
+      value.length !== n ||
+      !value.every(Number.isFinite)
+    )
       throw new TypeError('invalid response vector');
-    const data = factor[method](new Float64Array(value));
-    if (!(data instanceof Float64Array) || data.length !== n * 2 || !data.every(Number.isFinite))
+    const data = factor[method](value instanceof Float64Array ? value : new Float64Array(value));
+    if (!(data instanceof Float64Array) || data.length !== n * 2)
       throw new Error('invalid native response result');
+    for (let i = 0; i < data.length; i++)
+      if (!Number.isFinite(data[i])) throw new Error('invalid native response result');
     return {
-      impulse: Array.from(data.subarray(0, n)),
-      velocity: Array.from(data.subarray(n)),
+      impulse: data.subarray(0, n),
+      velocity: data.subarray(n),
     };
   }
   return Object.freeze({
-    /** @param {number[]} value */
+    /** @param {number[]|Float64Array} value */
     project: (value) => evaluate('project', value),
-    /** @param {number[]} value */
+    /** @param {number[]|Float64Array} value */
     response: (value) => evaluate('response', value),
     dispose() {
       if (!disposed) {

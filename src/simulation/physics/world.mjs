@@ -72,7 +72,7 @@ function array(value) {
 }
 function hash(bytes) {
   let h = 2166136261;
-  for (const byte of bytes) h = Math.imul(h ^ byte, 16777619);
+  for (let index = 0; index < bytes.length; index++) h = Math.imul(h ^ bytes[index], 16777619);
   return h >>> 0;
 }
 function encode(payload, handles, configuration, gearState, opened, ropeState, ropeWork) {
@@ -390,6 +390,45 @@ export async function createPhysicsWorld(configuration) {
     if (RAPIER.version() !== PHYSICS_BACKEND) throw new Error('physics backend mismatch');
   }));
   let contactPadCache = null;
+  // Private samples belong to one physical state. Public readers copy them so a
+  // caller cannot poison a later read or the next tick's sensor snapshot.
+  let stateVersion = 0,
+    readVersion = -1;
+  let energyCache = null,
+    gearsCache = null,
+    contactsCache = null;
+  const springCache = new Map();
+  function changedState() {
+    stateVersion++;
+    contactPadCache = null;
+  }
+  function prepareReads() {
+    if (readVersion === stateVersion) return;
+    readVersion = stateVersion;
+    energyCache = gearsCache = contactsCache = null;
+    springCache.clear();
+  }
+  function completedContacts() {
+    prepareReads();
+    return (contactsCache ??= readContacts(world, handles));
+  }
+  // Native factors depend on pose each tick; only authored connectivity is reusable.
+  // Release previews and restore must retire it even when their candidate rejects.
+  let islandIndices = null;
+  function constraintIndices() {
+    if (islandIndices) return islandIndices;
+    const parent = handles.map((_, i) => i),
+      root = (i) => {
+        while (parent[i] !== i) i = parent[i];
+        return i;
+      };
+    const nativeJoints = liveJoints().filter((j) => j.kind !== 'rope');
+    for (const j of nativeJoints) parent[root(j.b)] = root(j.a);
+    const active = new Set(nativeJoints.flatMap((j) => [root(j.a), root(j.b)]));
+    const groups = new Map([...active].map((id) => [id, []]));
+    for (let i = 0; i < handles.length; i++) groups.get(root(i))?.push(i);
+    return (islandIndices = [...groups.values()]);
+  }
   let world = new RAPIER.World(xyz(gravity)),
     handles = [];
   // Only authored fixed paths constitute one rigid assembly. Distinct grounded
@@ -751,14 +790,18 @@ export async function createPhysicsWorld(configuration) {
     );
     const projection = readNativeResponse(factor, indices.length);
     try {
-      const vector = () =>
-        indices.flatMap((i) => {
-          const body = bodyAt(i);
-          return body.isFixed()
-            ? [0, 0, 0, 0, 0, 0]
-            : [...array(body.linvel()), ...array(body.angvel())];
-        });
+      const vector = () => {
+        const out = new Float64Array(n);
+        for (let slot = 0; slot < indices.length; slot++) {
+          const body = bodyAt(indices[slot]);
+          if (body.isFixed()) continue;
+          out.set(array(body.linvel()), slot * 6);
+          out.set(array(body.angvel()), slot * 6 + 3);
+        }
+        return out;
+      };
       const apply = (impulse) => {
+        changedState();
         for (const [slot, index] of indices.entries()) {
           const body = bodyAt(index);
           if (body.isFixed()) continue;
@@ -770,7 +813,7 @@ export async function createPhysicsWorld(configuration) {
         passive = projection.project(initial);
       const projectedVector = initial.map((value, i) => value + passive.velocity[i]);
       const force = (a, b, axis) => {
-        const out = Array(n).fill(0);
+        const out = new Float64Array(n);
         for (let k = 0; k < 3; k++) {
           out[offsets.get(a) + 3 + k] -= axis[k];
           out[offsets.get(b) + 3 + k] += axis[k];
@@ -789,7 +832,7 @@ export async function createPhysicsWorld(configuration) {
         applyPassive: () => apply(passive.impulse),
         kinetic: () => indices.reduce((sum, i) => sum + kinetic(bodyAt(i)), 0),
         axialForce(a, b, axis, pointA, pointB) {
-          const out = Array(n).fill(0);
+          const out = new Float64Array(n);
           for (const [body, sign, point] of [
             [a, -1, pointA],
             [b, 1, pointB],
@@ -837,6 +880,7 @@ export async function createPhysicsWorld(configuration) {
     });
   }
   function applyRopes() {
+    changedState();
     alive();
     if (ropesApplied || !constraintsApplied) throw Error('invalid rope solve phase');
     const readings = ropeReadings();
@@ -992,6 +1036,11 @@ export async function createPhysicsWorld(configuration) {
     preparedTorqueIslands = new Map();
   }
   function springState(index, physics = world, mapping = handles) {
+    const current = physics === world && mapping === handles;
+    if (current) {
+      prepareReads();
+      if (springCache.has(index)) return springCache.get(index);
+    }
     const j = joints[index];
     if (j?.kind !== 'spring') throw new TypeError('joint has no spring');
     const a = physics.getRigidBody(mapping[j.a]),
@@ -1007,7 +1056,7 @@ export async function createPhysicsWorld(configuration) {
     const va = array(a.velocityAtPoint(xyz(pointA))),
       vb = array(b.velocityAtPoint(xyz(pointB)));
     const speed = axis.reduce((sum, x, i) => sum + x * (vb[i] - va[i]), 0);
-    return {
+    const reading = {
       index,
       bodyA: j.a,
       bodyB: j.b,
@@ -1023,6 +1072,8 @@ export async function createPhysicsWorld(configuration) {
       maxLength: j.limits[1],
       restLength: j.restLength,
     };
+    if (current) springCache.set(index, reading);
+    return reading;
   }
   function measuredJointAngle(physics, index, bodyHandles) {
     const config = joints[index],
@@ -1168,11 +1219,13 @@ export async function createPhysicsWorld(configuration) {
   }
   /** @returns {import('../../model/boundaries.js').GearObservation[]} */
   function gearReadings() {
-    return gearMemory.map((r) => ({
+    prepareReads();
+    gearsCache ??= gearMemory.map((r) => ({
       ...r,
       potentialJ: 0.5 * joints[r.index].stiffness * r.strain * r.strain,
       speed: gearGeometry(r.index).speed,
     }));
+    return gearsCache.map((r) => ({ ...r }));
   }
   // Native gravity/contact integration follows the predictor. Reconcile elastic
   // travel to measured phase; expose its signed energy change as numerical split
@@ -1208,6 +1261,7 @@ export async function createPhysicsWorld(configuration) {
   }
   /** @returns {import('../../model/boundaries.js').GearImpulseResult} */
   function applyGears() {
+    changedState();
     alive();
     if (!constraintsApplied) throw new Error('passive constraints not applied');
     if (gearsApplied) throw new Error('gears already applied');
@@ -1322,6 +1376,7 @@ export async function createPhysicsWorld(configuration) {
   return Object.freeze({
     openedJoints: () => [...opened].sort((a, b) => a - b),
     planReleases(indices) {
+      changedState();
       alive();
       if (!constraintsApplied || planned.size)
         throw new Error('release preparation already pending');
@@ -1340,12 +1395,14 @@ export async function createPhysicsWorld(configuration) {
         try {
           validateOpened([...opened, ...planned, joint].sort((a, b) => a - b));
           planned.add(joint);
+          islandIndices = null;
           // Preview the actual post-release response without removing a native row.
           this.prepareConstraints();
           if (joints.some((j) => j.kind === 'spring')) prepareSpringAllocations();
           results.push({ joint, reasonCode: 'OK' });
         } catch (error) {
           planned.delete(joint);
+          islandIndices = null;
           results.push({ joint, reasonCode: 'RELEASE_SUPPORT_BLOCKED' });
         } finally {
           clearPreparedTorqueIslands();
@@ -1360,6 +1417,7 @@ export async function createPhysicsWorld(configuration) {
       return results;
     },
     commitReleases() {
+      changedState();
       alive();
       if (!planned.size) return;
       if (planned.size) releaseInFlight = true;
@@ -1368,7 +1426,7 @@ export async function createPhysicsWorld(configuration) {
         opened.add(i);
       }
       planned.clear();
-      contactPadCache = null;
+      islandIndices = null;
       rebuildFixedHandles();
       topology = springTopologyDomain(descriptions, liveJoints());
     },
@@ -1378,6 +1436,7 @@ export async function createPhysicsWorld(configuration) {
     applyGears,
     gears: gearReadings,
     prepareConstraints() {
+      changedState();
       if (planned.size) topology = springTopologyDomain(descriptions, liveJoints());
       clearPreparedTorqueIslands();
       preparedSprings = null;
@@ -1385,14 +1444,6 @@ export async function createPhysicsWorld(configuration) {
       gearsApplied = false;
       gearBefore = null;
       constraintsApplied = true;
-      const parent = handles.map((_, i) => i),
-        root = (i) => {
-          while (parent[i] !== i) i = parent[i];
-          return i;
-        };
-      const nativeJoints = liveJoints().filter((j) => j.kind !== 'rope');
-      for (const j of nativeJoints) parent[root(j.b)] = root(j.a);
-      const active = new Set(nativeJoints.flatMap((j) => [root(j.a), root(j.b)]));
       constraintsApplied = false;
       try {
         if (planned.size) {
@@ -1400,9 +1451,8 @@ export async function createPhysicsWorld(configuration) {
           for (const i of planned)
             responseWorld.removeImpulseJoint(responseWorld.getImpulseJoint(jointHandles[i]), true);
         }
-        for (const id of active) {
-          const indices = handles.map((_, i) => i).filter((i) => root(i) === id),
-            island = makeTorqueIsland(indices);
+        for (const indices of constraintIndices()) {
+          const island = makeTorqueIsland(indices);
           for (const i of indices) preparedTorqueIslands.set(i, island);
         }
       } finally {
@@ -1416,6 +1466,7 @@ export async function createPhysicsWorld(configuration) {
       preparedSprings = prepareSpringAllocations();
     },
     applyPreparedConstraints() {
+      changedState();
       if (constraintsApplied) throw new Error('constraints already applied');
       let loss = 0;
       for (const island of new Set(preparedTorqueIslands.values())) {
@@ -1431,9 +1482,12 @@ export async function createPhysicsWorld(configuration) {
     },
     springs() {
       alive();
-      return joints.flatMap((j, i) => (j.kind === 'spring' ? [springState(i)] : []));
+      return joints.flatMap((j, i) =>
+        j.kind === 'spring' ? [structuredClone(springState(i))] : [],
+      );
     },
     applySprings() {
+      changedState();
       alive();
       if (!constraintsApplied) throw new Error('passive constraints not applied');
       if (springsApplied) throw new Error('springs already applied');
@@ -1499,7 +1553,7 @@ export async function createPhysicsWorld(configuration) {
       )
         throw TypeError('invalid contact pad');
       if (!contactPadCache) {
-        const completed = readContacts(world, handles),
+        const completed = completedContacts(),
           byBody = new Map();
         for (const row of completed.rows)
           for (const index of [row.a, row.b]) {
@@ -1554,11 +1608,13 @@ export async function createPhysicsWorld(configuration) {
     },
     contacts() {
       alive();
-      return readContacts(world, handles);
+      return structuredClone(completedContacts());
     },
     mechanicalEnergy() {
       alive();
-      return energyOf(world, handles);
+      prepareReads();
+      energyCache ??= energyOf(world, handles);
+      return { ...energyCache };
     },
     getAxisInverseInertia,
     torquePairResponse(a, b, axisWorld, c, d, otherAxisWorld) {
@@ -1593,6 +1649,7 @@ export async function createPhysicsWorld(configuration) {
     /** @param {number} a @param {number} b @param {import('../../model/boundaries.js').Vec3} axisWorld @param {number} torqueNm
      * @returns {import('../../model/boundaries.js').TorqueResult} */
     applyTorquePair(a, b, axisWorld, torqueNm) {
+      changedState();
       if (preparedSprings && !springsApplied)
         throw new Error('prepared spring kick must precede actuator impulses');
       const bodyA = bodyAt(a),
@@ -1699,6 +1756,7 @@ export async function createPhysicsWorld(configuration) {
       };
     },
     applyLinearDrive(index, forceN) {
+      changedState();
       if (!constraintsApplied || !springsApplied)
         throw Error('prepare passive sliding constraints first');
       if (!Number.isFinite(forceN) || !Number.isFinite(forceN * DT))
@@ -1784,7 +1842,7 @@ export async function createPhysicsWorld(configuration) {
       };
     },
     step() {
-      contactPadCache = null;
+      changedState();
       alive();
       if (joints.some((j) => j.kind === 'spring') && !springsApplied)
         throw new Error('spring preparation and damping must precede integration');
@@ -1816,6 +1874,7 @@ export async function createPhysicsWorld(configuration) {
           { reasonCode: 'ROPE_MOTION_LIMIT' },
         );
       completeGearSlip();
+      changedState();
       clearPreparedTorqueIslands();
       preparedSprings = null;
       springsApplied = false;
@@ -1988,6 +2047,7 @@ export async function createPhysicsWorld(configuration) {
             world = candidate;
             handles = decoded.handles;
             opened = nextOpened;
+            islandIndices = null;
             planned = new Set();
             topology = springTopologyDomain(descriptions, liveJoints());
             preparedTorqueIslands = new Map();
@@ -2008,6 +2068,8 @@ export async function createPhysicsWorld(configuration) {
               gearsApplied,
               gearBefore,
             } = saved);
+            islandIndices = null;
+            changedState();
           }
         }
         for (const index of gearIndices) gearGeometry(index, candidate, decoded.handles);
@@ -2023,11 +2085,12 @@ export async function createPhysicsWorld(configuration) {
         throw error;
       }
       const previous = world;
-      contactPadCache = null;
+      changedState();
       world = candidate;
       opened = nextOpened;
       releaseInFlight = false;
       planned.clear();
+      islandIndices = null;
       topology = springTopologyDomain(descriptions, liveJoints());
       ropesApplied = false;
       pendingRopeState = null;
@@ -2046,6 +2109,7 @@ export async function createPhysicsWorld(configuration) {
       previous.free();
     },
     applyImpulse(index, impulse) {
+      changedState();
       alive();
       if (!constraintsApplied || (preparedSprings && !springsApplied))
         throw new Error(

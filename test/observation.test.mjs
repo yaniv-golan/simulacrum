@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createObservationStore, immutableCopy } from '../src/model/observation.mjs';
+import {
+  createObservationStore,
+  immutableCopy,
+  immutableBodySample,
+} from '../src/model/observation.mjs';
 const frame = (tick, x = 0) => ({ tick, bodies: [{ position: { x, y: 0, z: 0 } }] });
 test('observation has no mutable input or output aliases', () => {
   const initial = frame(0),
@@ -150,4 +154,36 @@ test('publication reuses admitted body trees and keeps retained observations imm
     retained.physics[0].position[0] = 99;
   }, TypeError);
   assert.deepEqual(retained.physics[0].position, [1, 2, 3]);
+});
+
+test('numeric body admission owns its arrays and rejects every non-finite or nonnumeric field', () => {
+  const numbers = [1, 2, 3, 0, 0, 0, 1, 4, 5, 6, 7, 8, 9, 10];
+  const body = immutableBodySample(...numbers);
+  assert.deepEqual(body, {
+    position: [1, 2, 3],
+    rotation: [0, 0, 0, 1],
+    velocity: [4, 5, 6],
+    angularVelocity: [7, 8, 9],
+    mass: 10,
+  });
+  assert.equal(immutableCopy(body), body);
+  numbers[0] = 999;
+  assert.equal(body.position[0], 1);
+  for (const vector of [body.position, body.rotation, body.velocity, body.angularVelocity]) {
+    assert.ok(Object.isFrozen(vector));
+    assert.throws(() => {
+      vector[0] = 999;
+    }, TypeError);
+  }
+  assert.throws(() => {
+    body.mass = 999;
+  }, TypeError);
+  for (let index = 0; index < 14; index++) {
+    for (const invalid of [NaN, Infinity, -Infinity, '1', null, undefined, {}, []]) {
+      const bad = [...numbers];
+      bad[index] = invalid;
+      assert.throws(() => immutableBodySample(...bad), TypeError);
+    }
+  }
+  assert.throws(() => immutableBodySample(), TypeError);
 });

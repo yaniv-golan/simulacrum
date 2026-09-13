@@ -15,6 +15,28 @@ export function immutableCopy(value) {
   return result;
 }
 
+/** Construct a completed body sample from finite primitive values. The constructor
+ * owns every output node; callers cannot register an arbitrary tree as trusted.
+ * @param {number} px @param {number} py @param {number} pz
+ * @param {number} qx @param {number} qy @param {number} qz @param {number} qw
+ * @param {number} vx @param {number} vy @param {number} vz
+ * @param {number} wx @param {number} wy @param {number} wz @param {number} mass
+ * @returns {import('./boundaries.js').BodyObservation}
+ */
+export function immutableBodySample(px, py, pz, qx, qy, qz, qw, vx, vy, vz, wx, wy, wz, mass) {
+  if (![px, py, pz, qx, qy, qz, qw, vx, vy, vz, wx, wy, wz, mass].every(Number.isFinite))
+    throw new TypeError('Expected finite body sample');
+  const result = Object.freeze({
+    position: Object.freeze([px, py, pz]),
+    rotation: Object.freeze([qx, qy, qz, qw]),
+    velocity: Object.freeze([vx, vy, vz]),
+    angularVelocity: Object.freeze([wx, wy, wz]),
+    mass,
+  });
+  admittedNodes.add(result);
+  return result;
+}
+
 function copyData(value, ancestors) {
   if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -36,13 +58,13 @@ function copyData(value, ancestors) {
   if (array && keys.length !== value.length + 1) throw new TypeError('Expected dense array');
   const entries = [];
   ancestors.add(value);
-  for (const key of keys) {
+  for (let index = 0; index < keys.length; index++) {
+    const key = keys[index];
     if (array && key === 'length') continue;
     const descriptor = descriptors[key];
     if (!('value' in descriptor) || !descriptor.enumerable)
       throw new TypeError('Expected enumerable data fields');
-    if (array && (!/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length))
-      throw new TypeError('Unexpected array field');
+    if (array && key !== String(index)) throw new TypeError('Unexpected array field');
     const child = copyData(descriptor.value, ancestors);
     entries.push(array ? child : [key, child]);
   }
