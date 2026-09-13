@@ -73,7 +73,7 @@
     "scripts/module-graph.mjs": "db47284e35c471196b3f7cffbb998660ad58b6beb79d19f92eff6b04e7508399",
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
-    "scripts/verify-assemblies-browser.mjs": "45d68c265d7f38603df916e81de2bff9d1b049b51ed9e343b0e30d158b759068",
+    "scripts/verify-assemblies-browser.mjs": "04a3a6c9fc34a6b66492fd78a556d4b44bdfbbb4cc000d9cc2b832f2c5fb9092",
     "scripts/assembly-scenarios.mjs": "b42cdd927d1f748ad70c32bb4b4d269f1d44aebb687026cea2b746f358b771fb",
     "scripts/assembly-ux-cases.mjs": "686d55f3935d99e1cb4f2abcc75c87bf123a83e62d11d2a1c089a513b2c6c4ec",
     "scripts/verify-assembly-ux-browser.mjs": "6139dbb003c2ecc3107274b07c218e6722b41ddf0a34e3c2ce1321328dcd03f2",

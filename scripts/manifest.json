@@ -5998,6 +5998,68 @@
         ]
       },
       "qualificationBars": []
+    },
+    {
+      "id": "dialog-close-consistency",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Every custom dialog and the Teach a controller panel dismiss through one shared, consistently styled top-right close control named for its surface, created by the presentation helper and wired to the owner's existing close semantics. Embedded plain Close/Back buttons are not a second dismissal path; consequential actions (send, keep or discard draft, retry uploads, save or clear photos, stop tab recording) stay explicit text buttons. The header row keeps its inset while long content scrolls beneath it.",
+      "owners": [
+        {
+          "path": "src/presentation/dialog-close.mjs",
+          "anchor": "createDialogClose"
+        },
+        {
+          "path": "src/presentation/workshop.css",
+          "anchor": ".dialog-header"
+        },
+        {
+          "path": "src/application/feedback-client.mjs",
+          "anchor": "createDialogClose('Close feedback'"
+        },
+        {
+          "path": "src/application/remote-playtest.mjs",
+          "anchor": "createDialogClose('Close recording setup'"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-feedback-flow",
+        "verify-motion-diagnostics",
+        "verify-assemblies-browser",
+        "verify-camera-browser",
+        "verify-authorable-scenes",
+        "verify-learning-controller"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/dialog-close.test.mjs",
+            "anchor": "dialog close control is one named × button whose semantics stay with the owner"
+          },
+          {
+            "path": "test/dialog-close.test.mjs",
+            "anchor": "every custom dialog owner uses the shared top-right close control"
+          },
+          {
+            "path": "test/remote-playtest.test.mjs",
+            "anchor": "every playtest dialog dismisses through one named top-right × and no embedded close button"
+          },
+          {
+            "path": "test/camera-controls.test.mjs",
+            "anchor": "first photo selection is visible and later refresh preserves the chosen photo"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/dialog-close.test.mjs",
+            "anchor": "bare close labels and dialog owners without the shared control are rejected"
+          }
+        ]
+      },
+      "qualificationBars": [
+        "F1"
+      ]
     }
   ],
   "browserLocalScopes": [

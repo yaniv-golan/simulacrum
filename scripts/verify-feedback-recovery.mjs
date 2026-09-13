@@ -6,6 +6,7 @@ const files = [
   'src/application/feedback-store.mjs',
   'src/application/feedback-protocol.mjs',
   'src/application/feedback-capture-gate.mjs',
+  'src/presentation/dialog-close.mjs',
 ];
 const evidence = createFixtureEvidence({
   name: 'feedback-recovery',
@@ -100,7 +101,7 @@ try {
         await page.getByRole('textbox', { name: 'Your feedback', exact: true }).inputValue(),
         unsaved,
       ]);
-      await page.getByRole('button', { name: 'Back to building', exact: true }).click();
+      await page.getByRole('button', { name: 'Close feedback', exact: true }).click();
       await page.waitForFunction(() => !document.querySelector('.feedback-dialog').open);
       const saved = await page.evaluate(async () => {
         const { openFeedbackStore } = await import('../src/application/feedback-store.mjs');
@@ -232,9 +233,9 @@ try {
     await second.locator('body').textContent(),
     /Private draft from first tab/,
   ]);
-  await first.getByRole('button', { name: 'Back to building', exact: true }).click();
+  await first.getByRole('button', { name: 'Close feedback', exact: true }).click();
   await first.waitForFunction(() => !document.querySelector('.feedback-dialog').open);
-  await second.getByRole('button', { name: 'Back to building', exact: true }).click();
+  await second.getByRole('button', { name: 'Close feedback notice', exact: true }).click();
   await second.getByRole('button', { name: 'Give feedback', exact: true }).click();
   await second
     .getByRole('textbox', { name: 'Your feedback', exact: true })

@@ -69,7 +69,7 @@ try {
   await browserDialog
     .getByRole('combobox', { name: 'Assembly collection', exact: true })
     .selectOption('all');
-  await browserDialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await browserDialog.getByRole('button', { name: 'Close assemblies', exact: true }).click();
   await placeCatalogPart(page, 'poweredMotor');
   await placeCatalogPart(page, 'gripWheel');
   await page.getByRole('button', { name: '⊙ Wheel axle Available', exact: true }).click();
@@ -164,7 +164,7 @@ try {
     await libraryDialog.getByRole('button', { name: 'Drive module', exact: true }).count(),
     1,
   ]);
-  await libraryDialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await libraryDialog.getByRole('button', { name: 'Close assemblies', exact: true }).click();
   // Load the UI-authored save through its actual file input; the library is not needed to resolve it.
   await uploadWorkshopFile(page, `${out}/machine.json`);
   await page.waitForFunction(

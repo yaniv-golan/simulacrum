@@ -1,5 +1,6 @@
 import { openFeedbackStore } from './feedback-store.mjs';
 import { feedbackLimits } from './feedback-protocol.mjs';
+import { createDialogClose, createDialogHeader } from '../presentation/dialog-close.mjs';
 
 const messageFor = (code) =>
   code === 400
@@ -142,16 +143,29 @@ export async function mountFeedbackClient({
   const dialog = document.createElement('dialog');
   dialog.className = 'playtest-dialog feedback-dialog';
   dialog.innerHTML =
-    '<button class="playtest-close feedback-secondary" data-dismiss aria-label="Close feedback">×</button><h2 id="feedback-title" tabindex="-1">What would you like Yaniv to know?</h2><div class="feedback-scroll"><p class="feedback-intro">Something worked, surprised you, or got in your way.</p><p class="feedback-disclosure">Your message goes to Yaniv for review. Only your message and the attachments you choose are included.</p><p data-mode-note role="status"></p><div data-composer><label for="feedback-text">Your feedback</label><textarea id="feedback-text" aria-label="Your feedback" rows="4" placeholder="A sentence is enough."></textarea><p data-count class="feedback-muted"></p><p data-save role="status" class="feedback-muted"></p><div class="feedback-voice"><button data-voice class="feedback-secondary">Record voice comment</button><span data-voice-time></span><audio data-playback controls hidden aria-label="Preview voice comment"></audio><button data-remove-voice class="feedback-secondary" hidden>Remove voice comment</button><p data-voice-status role="status"></p></div><details data-attachments><summary>Add workshop details (optional)</summary><p>Choose an image or a snapshot of your project and workshop state. The snapshot may include programs. Removing these attachments does not remove an existing recording.</p><label><input type="checkbox" data-image> Include workshop image</label><div data-image-preview hidden><img alt="Selected workshop image"><p></p></div><label><input type="checkbox" data-context> Include workshop context</label><details data-context-preview hidden><summary>Inspect attached context</summary><p data-context-time></p><pre></pre></details><button data-remove-links class="feedback-secondary" hidden>Remove recording links</button><p data-attachment-status role="status"></p></details></div><section data-received hidden><span class="feedback-check" aria-hidden="true">✓</span><h3>Thanks for helping improve the workshop.</h3><p data-receipt-state role="status"></p><p data-submitted-text></p><div data-submitted-media></div><button data-correct class="feedback-secondary" hidden>Create corrected draft</button></section><section data-history tabindex="-1" aria-labelledby="feedback-title" hidden><h3>Your feedback history</h3><p>Submissions saved in this browser. Removing a local copy does not recall feedback already sent.</p><ol class="playtest-comments" aria-label="Your comments"></ol></section><p data-error role="status"></p></div><footer class="feedback-actions"><button data-send>Send feedback</button><button data-back class="feedback-secondary">Back to building</button><button data-keep class="feedback-secondary" hidden>Keep draft</button><button data-discard class="feedback-secondary" hidden>Discard draft</button><button data-another class="feedback-secondary" hidden>Add another</button><button data-history-toggle class="feedback-secondary">Your feedback history</button><button data-retry-config class="feedback-secondary" hidden>Check connection</button><button data-copy class="feedback-secondary" hidden>Download draft</button><button data-stop-recording class="feedback-secondary" hidden>Stop tab recording and open feedback</button></footer>';
+    '<h2 id="feedback-title" tabindex="-1">What would you like Yaniv to know?</h2><div class="feedback-scroll"><p class="feedback-intro">Something worked, surprised you, or got in your way.</p><p class="feedback-disclosure">Your message goes to Yaniv for review. Only your message and the attachments you choose are included.</p><p data-mode-note role="status"></p><div data-composer><label for="feedback-text">Your feedback</label><textarea id="feedback-text" aria-label="Your feedback" rows="4" placeholder="A sentence is enough."></textarea><p data-count class="feedback-muted"></p><p data-save role="status" class="feedback-muted"></p><div class="feedback-voice"><button data-voice class="feedback-secondary">Record voice comment</button><span data-voice-time></span><audio data-playback controls hidden aria-label="Preview voice comment"></audio><button data-remove-voice class="feedback-secondary" hidden>Remove voice comment</button><p data-voice-status role="status"></p></div><details data-attachments><summary>Add workshop details (optional)</summary><p>Choose an image or a snapshot of your project and workshop state. The snapshot may include programs. Removing these attachments does not remove an existing recording.</p><label><input type="checkbox" data-image> Include workshop image</label><div data-image-preview hidden><img alt="Selected workshop image"><p></p></div><label><input type="checkbox" data-context> Include workshop context</label><details data-context-preview hidden><summary>Inspect attached context</summary><p data-context-time></p><pre></pre></details><button data-remove-links class="feedback-secondary" hidden>Remove recording links</button><p data-attachment-status role="status"></p></details></div><section data-received hidden><span class="feedback-check" aria-hidden="true">✓</span><h3>Thanks for helping improve the workshop.</h3><p data-receipt-state role="status"></p><p data-submitted-text></p><div data-submitted-media></div><button data-correct class="feedback-secondary" hidden>Create corrected draft</button></section><section data-history tabindex="-1" aria-labelledby="feedback-title" hidden><h3>Your feedback history</h3><p>Submissions saved in this browser. Removing a local copy does not recall feedback already sent.</p><ol class="playtest-comments" aria-label="Your comments"></ol></section><p data-error role="status"></p></div><footer class="feedback-actions"><button data-send>Send feedback</button><button data-back hidden>Back to building</button><button data-keep class="feedback-secondary" hidden>Keep draft</button><button data-discard class="feedback-secondary" hidden>Discard draft</button><button data-another class="feedback-secondary" hidden>Add another</button><button data-history-toggle class="feedback-secondary">Your feedback history</button><button data-retry-config class="feedback-secondary" hidden>Check connection</button><button data-copy class="feedback-secondary" hidden>Download draft</button><button data-stop-recording class="feedback-secondary" hidden>Stop tab recording and open feedback</button></footer>';
   dialog.setAttribute('aria-labelledby', 'feedback-title');
+  // The × routes through the same guarded close as Escape; it never bypasses draft saving.
+  dialog.prepend(
+    createDialogHeader(
+      dialog.querySelector('#feedback-title'),
+      createDialogClose('Close feedback', () => void close()),
+    ),
+  );
   document.body.append(dialog);
   const privacyNotice = document.createElement('dialog');
   privacyNotice.className = 'playtest-dialog';
   privacyNotice.setAttribute('aria-label', 'Feedback privacy');
   privacyNotice.innerHTML =
-    '<h2>Pause tab recording to give feedback</h2><p role="status"></p><button data-stop>Stop tab recording and open feedback</button><button data-cancel>Back to building</button>';
+    '<h2>Pause tab recording to give feedback</h2><p role="status"></p><button data-stop>Stop tab recording and open feedback</button>';
+  // Closing only dismisses the notice; stopping tab recording stays an explicit action.
+  privacyNotice.prepend(
+    createDialogHeader(
+      privacyNotice.querySelector('h2'),
+      createDialogClose('Close feedback notice', () => privacyNotice.close()),
+    ),
+  );
   document.body.append(privacyNotice);
-  privacyNotice.querySelector('[data-cancel]').onclick = () => privacyNotice.close();
   privacyNotice.querySelector('[data-stop]').onclick = async () => {
     await stopTabRecording();
     privacyNotice.close();
@@ -229,8 +243,7 @@ export async function mountFeedbackClient({
       !!draft?.voiceRecording ||
       (!liveText.trim() && !draft?.voice) ||
       count > feedbackLimits.textCharacters;
-    q('[data-back]').hidden = finishing;
-    q('[data-back]').classList.toggle('feedback-secondary', composing);
+    q('[data-back]').hidden = finishing || composing;
     q('[data-history-toggle]').disabled = busy;
     q('[data-another]').disabled = busy || !editing;
     q('[data-discard]').disabled = busy;
@@ -858,10 +871,7 @@ export async function mountFeedbackClient({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   q('[data-send]').onclick = () => void send();
-  q('[data-back]').onclick =
-    q('[data-dismiss]').onclick =
-    q('[data-keep]').onclick =
-      () => void close();
+  q('[data-back]').onclick = q('[data-keep]').onclick = () => void close();
   q('[data-discard]').onclick = () => void discardDraft();
   dialog.addEventListener('keydown', (event) => {
     if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return;

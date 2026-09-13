@@ -17,6 +17,7 @@ import { openCaptureOutbox } from './capture-outbox.mjs';
 import { mountFeedbackClient } from './feedback-client.mjs';
 import { createFeedbackCaptureGate } from './feedback-capture-gate.mjs';
 import { measureRecordedDuration } from './capture-media-duration.mjs';
+import { createDialogClose, createDialogHeader } from '../presentation/dialog-close.mjs';
 /** Consented remote usability capture; never an authority for simulation state. */
 export async function mountRemotePlaytest({
   context,
@@ -199,12 +200,17 @@ export async function mountRemotePlaytest({
     uploadReceipts = new Map();
   let recoveredIds = null,
     recoveredCount = 0;
-  const projectStatus = `<h2>Build something that moves</h2><p><strong>We are improving the basic builder.</strong> Parts, wiring, movement, undo and save/load work today. The controls still need to feel right.</p><p><strong>Your feedback decides whether this stage is ready.</strong> Try building, and tell us when something feels confusing.</p><details><summary>Where the project goes next</summary><ol><li><strong>Now:</strong> improve building and editing until the designated player's feedback accepts this stage. Automated checks must also pass.</li><li><strong>Next:</strong> safe programmable controllers, then physical experiments for standing, shifting weight, lifting feet, stepping and stopping. Each must work before progressing.</li><li><strong>Then:</strong> terrain, better failure explanations and a rover that completes the ramp course with verified performance.</li><li><strong>Later:</strong> walkers, deeper editing and an in-game agent helper, with movement and real-player checks.</li><li><strong>Final goal:</strong> a walker goes down the ramp, takes five more steps, loops around, climbs back up and settles at its starting position. It must pass fixed variation, replay, safety, performance and human checks.</li></ol></details>`;
+  const projectStatus = `<p><strong>We are improving the basic builder.</strong> Parts, wiring, movement, undo and save/load work today. The controls still need to feel right.</p><p><strong>Your feedback decides whether this stage is ready.</strong> Try building, and tell us when something feels confusing.</p><details><summary>Where the project goes next</summary><ol><li><strong>Now:</strong> improve building and editing until the designated player's feedback accepts this stage. Automated checks must also pass.</li><li><strong>Next:</strong> safe programmable controllers, then physical experiments for standing, shifting weight, lifting feet, stepping and stopping. Each must work before progressing.</li><li><strong>Then:</strong> terrain, better failure explanations and a rover that completes the ramp course with verified performance.</li><li><strong>Later:</strong> walkers, deeper editing and an in-game agent helper, with movement and real-player checks.</li><li><strong>Final goal:</strong> a walker goes down the ramp, takes five more steps, loops around, climbs back up and settles at its starting position. It must pass fixed variation, replay, safety, performance and human checks.</li></ol></details>`;
+  const projectHeading = () => {
+    const heading = document.createElement('h2');
+    heading.textContent = 'Build something that moves';
+    return heading;
+  };
   const dialog = document.createElement('dialog');
   dialog.className = 'playtest-dialog';
   dialog.innerHTML =
     projectStatus +
-    '<button class="playtest-close" data-dismiss-setup aria-label="Close recording setup">×</button><p data-recovery role="status" hidden></p><p>Your project, programs, actions and sampled workshop state will be sent to Yaniv for review.</p><label data-video-option hidden><input type="checkbox" data-video> Include tab video (optional)</label><p data-video-note>Before recording video, close older workshop tabs. This build pauses its tab recordings while you give feedback.</p><p>Use <strong>Give feedback</strong> anytime, even without recording. Attachments are optional. Voice comments stay on this device until you choose Send.</p><button data-start>Start recording</button><p data-error role="status"></p>';
+    '<p data-recovery role="status" hidden></p><p>Your project, programs, actions and sampled workshop state will be sent to Yaniv for review.</p><label data-video-option hidden><input type="checkbox" data-video> Include tab video (optional)</label><p data-video-note>Before recording video, close older workshop tabs. This build pauses its tab recordings while you give feedback.</p><p>Use <strong>Give feedback</strong> anytime, even without recording. Attachments are optional. Voice comments stay on this device until you choose Send.</p><button data-start>Start recording</button><p data-error role="status"></p>';
   dialog.querySelector('[data-video-option]').hidden = !(
     canRecord && config.optionalVideo === true
   );
@@ -213,23 +219,43 @@ export async function mountRemotePlaytest({
   dialog.setAttribute('aria-label', 'Recording setup');
   panel.querySelector('[data-setup]').onclick = () => dialog.showModal();
   panel.querySelector('[data-setup]').hidden = false;
-  dialog.querySelector('[data-dismiss-setup]').onclick = () => dialog.close();
+  dialog.prepend(
+    createDialogHeader(
+      projectHeading(),
+      createDialogClose('Close recording setup', () => dialog.close()),
+    ),
+  );
   dialog.showModal();
   const projectDialog = document.createElement('dialog');
   projectDialog.className = 'playtest-dialog';
-  projectDialog.innerHTML =
-    projectStatus + '<button data-close-project>Back to the workshop</button>';
+  projectDialog.innerHTML = projectStatus;
+  projectDialog.setAttribute('aria-label', 'Project status');
+  projectDialog.prepend(
+    createDialogHeader(
+      projectHeading(),
+      createDialogClose('Close project status', () => projectDialog.close()),
+    ),
+  );
   document.body.append(projectDialog);
   panel.querySelector('[data-project]').onclick = () => projectDialog.showModal();
   panel.querySelector('[data-project]').hidden = false;
-  projectDialog.querySelector('[data-close-project]').onclick = () => projectDialog.close();
   const completion = document.createElement('dialog');
   completion.className = 'playtest-dialog playtest-completion';
   completion.innerHTML =
-    '<h2>Finishing your session</h2><p data-completion-status role="status"></p><button data-retry>Retry uploads</button><button data-close-completion>Close</button>';
+    '<p data-completion-status role="status"></p><button data-retry>Retry uploads</button>';
+  const completionHeading = document.createElement('h2');
+  completionHeading.id = 'playtest-completion-title';
+  completionHeading.textContent = 'Finishing your session';
+  // The heading later reads "Session saved"; the dialog name follows it.
+  completion.setAttribute('aria-labelledby', completionHeading.id);
+  completion.prepend(
+    createDialogHeader(
+      completionHeading,
+      createDialogClose('Close session summary', () => completion.close()),
+    ),
+  );
   document.body.append(completion);
   completion.querySelector('[data-retry]').onclick = () => void pump();
-  completion.querySelector('[data-close-completion]').onclick = () => completion.close();
   function closeDatabaseIfIdle() {
     if (
       disposed &&

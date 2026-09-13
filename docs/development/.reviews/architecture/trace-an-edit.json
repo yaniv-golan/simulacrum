@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "src/application/workshop-app.mjs": "a5e0f216ac0a97b18308cf5e43509c49c29404335e6125de1ac7ecdd92d044d8",
-    "src/presentation/workshop-view.mjs": "0f02a049657c4605eb1f63defbd60881513ab595a051e286faf1c028b6bf7bc5",
+    "src/presentation/workshop-view.mjs": "4991cd6bb50d3e567b0e5333e333b3fadfa21dedbec12dda1695939ef45db361",
     "src/presentation/parts-browser.mjs": "153d01758b040a471eb43074e0be7b35277f7a4fcfed16ab14a17e9320753e42",
     "src/presentation/part-search.mjs": "b95a2a97509036352cb51c4afa602ae2851a8ae8dc21993194c98b5321d13188",
     "src/presentation/part-placement.mjs": "87613e497aa664f702d05cedbef7b19297a115acf497f7b2e70b458be3dc8db5",
@@ -77,7 +77,7 @@
     "src/presentation/camera-renderer.mjs": "14d4594969ca628763797f76cb3f6a3019362d15e71291c9a92c12bcb4c23fb4",
     "src/presentation/workshop-screenshot.mjs": "574788560d3ab7cf1e825e0441f4b03a72799f3ac7d79a23f48bced6d0f1c29a",
     "src/application/scene-library.mjs": "08d8f5e5645b407c5fdcc309cb0c3161857b550bd2600d4f9ed2affac0aa0190",
-    "src/presentation/scene-editor.mjs": "e063e264007da18facbf553eb1190aa5437044bd1d4732cd99f79db0828d680c",
+    "src/presentation/scene-editor.mjs": "2a2448eed8d2261dab19ba03ed4fab48ffb969faa023692e4cb8b62dd4c10e7a",
     "src/presentation/document-proposal.mjs": "f182f9129dad9bc8c875ed524dbd88a8eaf1a3c2a2bd2e8dccfbeebae98cbf2f",
     "src/presentation/primitive-geometry.mjs": "40f8de994a5332cf20f1612740fb63d5a1c9157611c217d0b18382ca40d0e694",
     "src/presentation/direct-drag.mjs": "4d9bdcc96159936e7e12a4301163131e1c815ecc36997ba9003763bbfdee50b4",

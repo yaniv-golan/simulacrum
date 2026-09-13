@@ -315,7 +315,7 @@ try {
   const sceneDownload = page.waitForEvent('download');
   await click('Export scene');
   await (await sceneDownload).saveAs(`${out}/scene-export.json`);
-  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByRole('button', { name: 'Close scene chooser', exact: true }).click();
   await click('Choose scene');
   await page.getByLabel('Import scene', { exact: true }).setInputFiles(`${out}/scene-export.json`);
   await click('Preview replacement');

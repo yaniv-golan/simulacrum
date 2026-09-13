@@ -27,8 +27,42 @@ try {
     0,
     'zero damping is an inspector edit within the spring experiment, not a replacement preset',
   ]);
-  await page.locator('.examples-header h2').click();
+  await page.locator('.examples-browser .dialog-header h2').click();
   evidence.assert('equal', [await page.locator('.examples-browser').isVisible(), true]);
+  // The header × must stay reachable when requested content is taller than the viewport.
+  await page.setViewportSize({ width: 640, height: 360 });
+  const scrolledClose = await page.evaluate(() => {
+    const dialog = document.querySelector('.examples-browser');
+    const inset = () =>
+      dialog.querySelector('.dialog-close').getBoundingClientRect().top -
+      dialog.getBoundingClientRect().top;
+    dialog.scrollTop = 0;
+    const before = inset();
+    dialog.scrollTop = dialog.scrollHeight;
+    const close = dialog.querySelector('.dialog-close').getBoundingClientRect(),
+      box = dialog.getBoundingClientRect();
+    return {
+      scrolled: dialog.scrollTop > 0,
+      inside: close.top >= box.top && close.bottom <= box.bottom,
+      before,
+      after: inset(),
+      size: Math.min(close.width, close.height),
+    };
+  });
+  evidence.assert('equal', [scrolledClose.scrolled, true, 'examples overflow the short viewport']);
+  evidence.assert('equal', [
+    scrolledClose.inside,
+    true,
+    '× stays inside the dialog after scrolling',
+  ]);
+  evidence.assert('equal', [
+    scrolledClose.after,
+    scrolledClose.before,
+    'the header keeps its unscrolled inset while content scrolls beneath it',
+  ]);
+  evidence.assert('ok', [scrolledClose.size >= 36, 'close control keeps a pointer-sized target']);
+  await page.screenshot({ path: `${out}/examples-scrolled-close.png` });
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.mouse.click(10, 100);
   evidence.assert('equal', [await page.locator('.examples-browser').isVisible(), false]);
   await page.getByRole('button', { name: 'Learn & examples', exact: true }).click();

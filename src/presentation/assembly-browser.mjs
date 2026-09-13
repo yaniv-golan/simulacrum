@@ -1,4 +1,5 @@
 import { DEFAULT_CONTROL_BINDING } from '../model/control-bindings.mjs';
+import { createDialogClose, createDialogHeader } from './dialog-close.mjs';
 const el = (tag, text = '') => {
   const n = document.createElement(tag);
   n.textContent = text;
@@ -23,13 +24,10 @@ export function createAssemblyBrowser({
   const dialog = el('dialog');
   dialog.className = 'assembly-browser';
   dialog.setAttribute('aria-label', 'Assemblies');
-  const header = el('header'),
-    title = el('h2', 'Assemblies'),
-    close = button('×', () => dialog.close());
-  close.className = 'assembly-close';
-  close.setAttribute('aria-label', 'Close');
-  close.title = 'Close';
-  header.append(title, close);
+  const header = createDialogHeader(
+    el('h2', 'Assemblies'),
+    createDialogClose('Close assemblies', () => dialog.close()),
+  );
   const search = el('input');
   search.type = 'search';
   search.placeholder = 'Search assemblies';
