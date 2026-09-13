@@ -5,6 +5,9 @@
     "package-lock.json": "bcc829aa98315f5b3ca46abbd8ee3c660c15b5a258f209d9265741c9bc57513c",
     "package.json": "6edb48593a61fb710edc6322958c53fc4bb2c8c2e8039daecb99e13117f7762a",
     "test/graphics-quality.test.mjs": "fc56ad710a0d7a0a738704b61bf44d10da2d35c764172ab0097ab8c773892244",
-    "scripts/verify-adaptive-graphics.mjs": "2f71e24a5cedde3ddddb1df2124af1320c6c90caea6cc251d21f64aff7520b94"
+    "scripts/verify-adaptive-graphics.mjs": "2f71e24a5cedde3ddddb1df2124af1320c6c90caea6cc251d21f64aff7520b94",
+    "src/presentation/lamp-view.mjs": "04c8dbeac7634a6dd5c177877bb05aacfc29c2e15971ff3f2fd265eafa902604",
+    "scripts/verify-lamp-browser.mjs": "72bb76086f722d7ec3066c36a07dadd467b78a6f97110dcf56f7ce8b051fa9c8",
+    "scripts/verify-lamp-performance.mjs": "ad339de29c3024501a967f276d5cc8746ffe4dfaa186f2952e095c29b2250207"
   }
 }

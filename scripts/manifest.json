@@ -365,7 +365,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -993,6 +993,28 @@
       "tier": "browser",
       "smoke": true,
       "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-lamp-browser",
+      "script": "scripts/verify-lamp-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-lamp-performance",
+      "script": "scripts/verify-lamp-performance.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "performance",
+      "smoke": false,
+      "timeoutMs": 90000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     }
@@ -5079,6 +5101,58 @@
           {
             "path": "test/feedback-backend.test.mjs",
             "anchor": "node: root sync failure withholds receipt and retry recovers the same publication"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "powered-lamp-output",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "A configurable lamp uses shared funded electrical output, receiver ownership and ordinary history; completed optical telemetry alone drives all admitted lamp rendering.",
+      "owners": [
+        {
+          "path": "src/simulation/power.mjs",
+          "anchor": "createPowerNetwork"
+        },
+        {
+          "path": "src/model/lamps.mjs",
+          "anchor": "LAMP_LIMIT"
+        },
+        {
+          "path": "src/presentation/lamp-view.mjs",
+          "anchor": "createLampView"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-lamp-browser",
+        "verify-lamp-performance"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/lamp-power.test.mjs",
+            "anchor": "lamp default output is funded and its energy is counted once"
+          },
+          {
+            "path": "test/lamp-authoring.test.mjs",
+            "anchor": "lamp trace matches four fresh processes and both production clocks"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/lamp-authoring.test.mjs",
+            "anchor": "forged lamp checkpoint cannot invent powered output behind an off receiver"
+          },
+          {
+            "path": "test/lamp-power.test.mjs",
+            "anchor": "receiver explicitly replaces default including zero negative disabled and fresh commands"
+          },
+          {
+            "path": "test/lamp-view.test.mjs",
+            "anchor": "lamp emission and fixed-flux cone read completed telemetry including off and weak output"
           }
         ]
       },

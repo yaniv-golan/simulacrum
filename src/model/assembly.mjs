@@ -184,6 +184,9 @@ export function compileAssembly(
           energyJ: p.energyJ,
         });
         break;
+      case 'poweredLamp':
+        (power.lamps ??= []).push({ node, ...p });
+        break;
       case 'powerCell':
         power.cells.push({
           node,

@@ -10,7 +10,7 @@ For an interaction report, use **Record an issue** in the left sidebar, then Sta
 
 ## Remote setup
 
-<!-- doc-review {"version":1,"fingerprint":"a5b553411d9d2f4f7f88afff40edac7d1be5194eedf0d77921400dd3f0f8f861","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"bfb68580f893c77b35428a558bd5d996204b060335c554f30d958e7be39c07b5","disposition":"updated","rationale":"The setup explanation now locates feedback and recording controls in the existing footer supplied by the view. Explicit capture consent, offline recovery, attachment opt-ins, durable delivery receipts and authentication remain unchanged. The cloud runtime test now expects the already-existing unauthenticated disabled feedback capability object; server permissions were not changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"b58c5af60e471f867343490a21ae89e5154213baf57fbe288969d2d6363e7483","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"637a60ec8937c45c7093f5e7f0899c56d309776a31c0655125a0becdb6d17ecd","disposition":"still accurate","rationale":"Catalog admission adds a lamp through ordinary authored blueprint capture. Recording transport, authentication, upload and administrator setup are unchanged."} -->
 
 
 

@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"7e5d4040bfd83ab4458bd82dca6d8b83fd542d4a7665c6f8de90578f0761cc4c","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"803aa3c4ff280b7e658551318d7fa346b53981ab1d2fa4eccfc88b579a1f8831","disposition":"still accurate","rationale":"Feedback remains a utility in the existing footer and open local recording changes only the compact catalog scrolling region. No lesson, fixture, guide steps, replacement behavior or teaching owner is added or removed. Existing no-entry admission and the separation of automation from comprehension remain applicable."} -->
+<!-- doc-review {"version":1,"fingerprint":"da210ab2053f2363f1611691fe6dea25c42456313f94e0e8ea92c08440dccbdc","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"7bccef56cba7c11fdd16c16eb52c54dd9c0b7d4bd7f32fdb50bb14ad96be9252","disposition":"still accurate","rationale":"No learning entry was added. The selected lamp help extends existing power and receiver teaching without a new persistent surface."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"2eb9552217dc9683bdfa9104458fae9156b476d63a53a355813fc5f8027650a1","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"6c5e061d4e64705fb294a2152036b701f8065f75083a90ff4bfc04777b1deb21","disposition":"updated","rationale":"The surface explanation now names the existing footer utility host, inline reserved badge width, compact minimum footer height and preserved feedback/recording access during narrow assembly placement. It also specifies whole-catalog scrolling while local recording is open so search/results/summary cannot cover Stop recording. Fonts and unique controls are retained; fresh rendered evidence remains required."} -->
+<!-- doc-review {"version":1,"fingerprint":"455f6c592314c334de048932f09446155df287cd0fa1989c1bafe05ac918d5db","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"1e08675bd1386752a318d70068d7af565bc9d586d7ccc28dd322bc94831b7af8","disposition":"updated","rationale":"Documented selected lamp settings, Run/Paused delivery readouts, limits and no-entry admission. Controls disappear with selection and preserve existing unique actions."} -->
 
 
 
@@ -368,6 +368,16 @@ They sit beside one another where space allows and stack on narrower workbenches
 with independently scrollable contents and a reachable controls disclosure. The shared
 area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
+
+Powered Lamp uses More parts, ordinary surface mounting and power/signal wiring.
+Its selected inspector owns Light color, Brightness and Beam spread in Build, with
+actual input, requested/delivered watts and modeled light output in Run/Paused.
+Black tint warns that output is visually dark while consuming power. The existing
+requested part help explains receiver replacement of default-on behavior, weak supply,
+restart and the eight-lamp/no-shadow rendering limit. These controls leave with selection,
+displace no unique action and add no permanent panel. Learning admission is **no entry**:
+existing power and receiver explanations teach the same connection concept; contextual
+lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
 <!-- doc-review {"version":1,"fingerprint":"c869ac0bf7ed40a22114c1264690970210bc37e58ff6bb8fdf2dcbf475e5866b","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"faf88dd744bc27d842f751ec11a289448ecfd3ab13b4d4fc9bbfce16dc51ee5a","disposition":"still accurate","rationale":"Remote setup now describes footer ownership; the required targeting, scroll, focus, cancellation and overlap checks are unchanged. Inspector, catalog, local recording and feedback layout must still be exercised on the repaired build, and neither documentation review nor automation supplies satisfaction or target-player acceptance."} -->

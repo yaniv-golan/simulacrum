@@ -24,7 +24,7 @@
     "src/application/remote-playtest.mjs": "1d282a8f95b560e691b5a71533ffc3e83ee30084730285dec6abcc11d33537d0",
     "scripts/export-playtest.mjs": "58bbf06419040037f825369d68000f6df0f48dee59e688cd0293307ff06594ee",
     "src/model/boundaries.d.ts": "e0cc414dd6368bcb6eab166496d0c0ac06d5ef1cb9ac681fbf5e38c3602eb007",
-    "src/model/catalog.mjs": "3ed106f7330e0083c7fe40b9e9155bc1e0a37a174d5d30c5751fbfbf730ae5a4",
+    "src/model/catalog.mjs": "b6f53d67341b868e4aa88d586da34c50bfe6400e8e55bfcf32aff978692705d6",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",
     "src/model/environment.mjs": "2409601431d8919540401bba53335b26f14d058327a4ec16cdfc8edfd3732dbf",
     "src/model/generated/blueprint-types.d.ts": "843d867949b79e3fbc73e80d9b9db9ced292f9b7023cddbad7a0274c07b0aae8",

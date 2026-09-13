@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"5833ddd8d9eda61dafe2fc6e810937ec932943515bda07bf8887082b397405a7","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"200f1628be204f93c379f374f3be6706f670704a4a3aa9753b3e6d3d8026d8be","disposition":"updated","rationale":"The view exposes its existing footer as utilityHost and the application mounts feedback controls there. The explanation now names that ownership and removes the separate-row claim; protected dialogs remain outside the root, and optional feedback context still reads authored save/current UI without replay or native physics state."} -->
+<!-- doc-review {"version":1,"fingerprint":"f52b70bc95ca4385f2e69016ee00907c4e018a34aac22611c7ac20a129599b0c","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"e186078331fa04c1145b7055fb47f526c4cb9d36bf2e8ff3442775aff5872a80","disposition":"still accurate","rationale":"Lamp adds ordinary compiler power descriptors, telemetry, selected controls and a view composed by the canonical part-mesh owner. Existing application ownership, released constraints and Rope pathways remain intact."} -->
 
 
 
@@ -92,7 +92,7 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"71315b247aa59d22b4fd8e43ad8ea0b5e49bce5aee4fcc28e2522037b73a16f6","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"b6034a634195ed75b5b05aa621c885d5c895a35eb751ba87af7f9c61db610a7d","disposition":"updated","rationale":"Added the shared releasedAttachment owner consumed by inspector and generic overlay. Its fixed-kind guard excludes Rope labels, while existing geometry, contact, material, spring, rope and command owners remain the canonical decisions."} -->
+<!-- doc-review {"version":1,"fingerprint":"94da2118680ff5bf9dbaf57caec3beaa3101dbd4446a3d16f7ae0cc591cf7691","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"b7382b6d993f8747b8f322d73e4b1381aa29930eedd86d63a304491802906eab","disposition":"updated","rationale":"Documented the lamp driver and common circuit ledger including coupler heat and linear capped PWM. Exact passive re-solve is explicitly limited to lamp/sensor-only circuits; existing geometry and release owners remain authoritative."} -->
 
 
 
@@ -141,12 +141,23 @@ they do not imply stored spring energy for a powered guide. Off or power loss re
 active drive without a clutch. Native stops remain passive constraints.
 
 A cell can supply multiple rotary and linear drives; multiple cells on one circuit remain unsupported.
-Shared motor torque and powered sensor-load accounting and the completed energy ledger belong to simulation.
+Shared motor torque, powered sensor loads and lamp delivery accounting belong to simulation.
+The [lamp ratings](../../src/model/lamps.mjs#source) bound eight authored lamps at 10 W each.
+[Power](../../src/simulation/power.mjs#symbol=createPowerNetwork) uses a source-rating-adaptive
+resistive driver: conductance is requested watts divided by max(24 V, source nominal
+voltage) squared. Droop and shared current limiting reduce delivery. Completed flux is
+100 modeled lm per delivered watt; the cumulative circuit ledger counts lamp delivery
+once alongside cell heat and other loads. Receiver wiring replaces the default command
+of one; disabled, zero and negative commands request zero. Initial lamps are unstepped
+and dark; restored completed records reconcile sources, tick and circuit accounting.
+Instantaneous lamp readings also obey the common bus voltage, driver-current ceiling
+and source droop/current bounds. Source draw includes coupler current and motor PWM current, including the linear speed cap. Coupler heat enters the cumulative ledger once. Passive
+lamp/sensor-only circuits also match the limited resistive solution reconstructed
+from completed draw and remaining charge; an unbounded driver cannot report false darkness.
 Ground contact and workshop motion are not Course qualification.
 
-
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"64648249b03899cd75055081cd0bc9aeeafcb1511731d1f0de26ac50f4769e6d","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"00ceeaf660ce7e25b40c23547e8666212fd675c5ce438ba9f636a343ba3f6bc6","disposition":"still accurate","rationale":"The power solver adds a resistive coupler load on the existing shared circuit. Sensor descriptors, completed-snapshot sampling, controller injection, previous-tick receiver arbitration and separate teaching/diagnostic ownership remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"15753a6a592d37eb0f26705ebfe30336abc05dff636d4d551343e607bd1c0bb1","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"a069eed5b05dd198c4c35c4c4c8e947cb3fe15c2a5f0e8943ffda9022cc4e4b7","disposition":"still accurate","rationale":"Lamp and coupler consumers use the existing receiver arbiter. Completed sensor sampling, prior-tick controller inputs, teaching history and diagnostic ownership are unchanged."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

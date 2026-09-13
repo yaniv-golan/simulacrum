@@ -1,11 +1,11 @@
 {
   "version": 1,
   "dependencies": {
-    "src/presentation/workshop-view.mjs": "00896550fdbcf9c7e929d094d2f1a43a0718432ba843f95d4888a5f5625f987c",
+    "src/presentation/workshop-view.mjs": "7dafdecfe7c0d424d8602d18364382c5b8816da7a0f96fee201fbb67d08b36a7",
     "src/presentation/workshop.css": "ce9b5564a683cf1e9ade9b590862b317a776728a488cc507678a256b6e9dceb8",
     "src/presentation/parts-browser.mjs": "153d01758b040a471eb43074e0be7b35277f7a4fcfed16ab14a17e9320753e42",
     "src/model/boundaries.d.ts": "e0cc414dd6368bcb6eab166496d0c0ac06d5ef1cb9ac681fbf5e38c3602eb007",
-    "src/model/catalog.mjs": "3ed106f7330e0083c7fe40b9e9155bc1e0a37a174d5d30c5751fbfbf730ae5a4",
+    "src/model/catalog.mjs": "b6f53d67341b868e4aa88d586da34c50bfe6400e8e55bfcf32aff978692705d6",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",
     "src/model/environment.mjs": "2409601431d8919540401bba53335b26f14d058327a4ec16cdfc8edfd3732dbf",
     "src/model/generated/blueprint-types.d.ts": "843d867949b79e3fbc73e80d9b9db9ced292f9b7023cddbad7a0274c07b0aae8",

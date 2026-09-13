@@ -280,6 +280,18 @@ export const CATALOG = freeze({
     milestone: 'M3b',
     mountingFaces: ['top', 'left', 'right', 'front', 'back'],
   },
+  poweredLamp: component(
+    'poweredLamp',
+    'Powered Lamp',
+    [0.06, 0.05, 0.04],
+    'aluminium',
+    [power(), signal('signal', 'input')],
+    {
+      brightness: rating(1, 0, 1, 'ratio'),
+      color: { ...rating(16777215, 0, 16777215, 'RGB'), type: 'integer' },
+      beamSpread: rating(0.52, 0.1, 1.2, 'rad'),
+    },
+  ),
   powerCell: component('powerCell', 'Power Cell', [0.1, 0.05, 0.06], 'steel', [power()], {
     voltage: rating(24, 0.1, 240, 'V'),
     capacityJ: rating(36000, 1, 1e9, 'J'),

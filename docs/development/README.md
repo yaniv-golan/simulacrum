@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"7f8d284bb57b67d01d9a25cdfdc40a4d4921bfc321035a3e27e34c26bec36fd4","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"cb71234217c88bcc1f260d9b09e42eda9b6fd2849d2786ef7a32223e898020c4","disposition":"still accurate","rationale":"The regenerated reference adds Release Coupler owners, controls and its browser check. The documentation algorithm, semantic review procedure and conservative merge-policy requirements are unchanged; generated facts remain distinct from explanation review."} -->
+<!-- doc-review {"version":1,"fingerprint":"3606dbbaec48adb3a9d6ae13878735c71ddf142f18ba7b183b064789623f7615","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"78159519b2c73f231783a9b670d18d0c52a82937c17787ce881715e0fda57958","disposition":"still accurate","rationale":"Generated reference adds the lamp catalog row; the prepare, individual review and structural check sequence remains unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"eba2c7e75185d00c9b2c279a157e4097ebb9832d35e64ffd581fbf868d97a993","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"2c3e1183228288429d92c1b6153bb5c9c48ec097c30806bc718e1a61ea503ef3","disposition":"still accurate","rationale":"Eight consumerSourceHash values now bind the reviewed footer composition, catalog scrolling and verifier corrections. Reader purposes, exclusions, roots, declarations and required checks are unchanged. The explanation still accurately requires audited dependency closure and successful witness-bound application; metadata refresh supplies no completion or human receipt."} -->
+<!-- doc-review {"version":1,"fingerprint":"cd8949f2e118ceb9f85c15437ea14628385dd881a5971ffcef170321ba66ee35","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5fb081944fefadeebad9744742e0cb6ad3257c5a6b02875310392107d1cd597e","disposition":"still accurate","rationale":"Two lamp browser checks extend registered roots. Selection, scope witnesses, parallel admission and failure retention mechanisms are unchanged; registry refresh remains pending and is not asserted to pass."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -506,7 +506,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"cc6185d46aebe6fd154949bc3f177011f39e3a689b45df669fc3a8fa4b892bce","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"cbf8c3209e0b0ba85d0298aa4156953e64af208e7d9677f28c4691e0ac127072","disposition":"still accurate","rationale":"Only eight existing metadata consumer hashes changed after scope witnesses. Candidate source capture, dependency/runtime admission, same-candidate unit resume, source/index drift rejection and fresh browser execution requirements remain unchanged. The existing footer repairs are already documented; this metadata update does not create cross-candidate evidence reuse."} -->
+<!-- doc-review {"version":1,"fingerprint":"3dd35e54f8eebd49f5254e5eb5b7fe9628f11ddd392f09d5b4abd0e423ec960f","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"6f5fff890597297dd0d1a1cb708ebb04cd32e16005361573acabc6204068f2a5","disposition":"still accurate","rationale":"Lamp catalog and schema bytes are captured by the existing candidate mechanism. Isolation, integrity and final-source verification requirements remain unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

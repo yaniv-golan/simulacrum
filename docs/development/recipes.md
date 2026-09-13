@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"be85eaef00704c8f72c624081643eb5d5ca91259ae7be4d7d73300b594a44def","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"6f5a2f5c938d6d52b6d6d4e6a6bf730fbd838fd561424aab4fa162dc9340f81c","disposition":"updated","rationale":"The recipe now identifies catalog releaseFace, one-fixed-attachment surface admission and compiler joint mapping. It preserves ordinary other mounts and wiring and explicitly permits Rope on the latch face without making its spherical anchor releasable."} -->
+<!-- doc-review {"version":1,"fingerprint":"5a1590e71d156ebac231e1f8a10a29c78bc16895c997a5ba3c1baa16152aaa5d","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"bdbf2676e343c8bc900f06ccffb7701dd6fa01014524804fba4752142509b621","disposition":"still accurate","rationale":"Lamp follows the catalog, strict generated schema, canonical geometry and compiler path described here. Existing linear, Rope and coupler instructions remain accurate."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -66,7 +66,7 @@ material choices, conflict rejection and ordinary editing history.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"6c6a23dbfcecdeaa4e99ff5136de85d29ec4443be23270384d9ff46cb1026ac5","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"3ebc593ab16ab64366d0d60daf213b5a127b1b4e88bad1c835a39f11e44efa3f","disposition":"still accurate","rationale":"Release authoring extends model admission behind existing surface-mount and candidate compilation. The core still validates, copies and publishes one accepted history transaction; no second command or new live-pose editing authority is introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"80f20acb1c6b97147d2ee4620460e8817b81e909dc9ff46ec47072059c0d5332","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"3a083126017aac03ae24b73426463fab15681fd704a345ca13ec95d2c0d10422","disposition":"still accurate","rationale":"Lamp settings use existing authoring commands and rejection/history boundaries. No new command handler or alternate authority is introduced."} -->
 
 
 
@@ -83,7 +83,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"b92293b76aa33786e7bbc2212ef624026a9b3edce29ca4da6c93f84d5b94a255","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"b8bbdded0d4b9d944799949e154eb67e3f985433e8fad881b303ec7772abae38","disposition":"still accurate","rationale":"Release discovery and help extend the existing catalog/search/inspector routes. Surface previews, shared help containment, vehicle-control ownership, cancellation and build-bound command admission remain unchanged; the feedback utility row preserves consequential status under the same placement policy."} -->
+<!-- doc-review {"version":1,"fingerprint":"41dd6565cf686f5b56146658368af417e504b62a8cf24ec45412bb4a4ce0d6c2","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"d6e41ec3b75d22a670b32928e5738b499185f5c697bdf22822fc604788799fd6","disposition":"still accurate","rationale":"Selected lamp controls use existing inspector selection and wiring lifecycle. Existing drag cancellation, picking and transaction guidance remains applicable."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -132,7 +132,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"9dfde7edd687aee33524abda209f51a11395d450dfd71672c37a98e4327ece52","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"34aeb71e2f008443ec660ee93bf8a3074161a580ca79d865dca9f929aa343ed5","disposition":"still accurate","rationale":"Release status is completed power telemetry and its display adds no authored repair path. Existing motion diagnostics, historical controller decisions and selected-body sample accumulation keep their declared owners and missing-data requirements."} -->
+<!-- doc-review {"version":1,"fingerprint":"5c505b0400c8e2d9085b13946db98e7024307d7d60857eb0d6270fab77dec6b4","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"6f8294c02f809cd64dbe695bfca9c61ff140d58c09814b363778c72e5be68f49","disposition":"still accurate","rationale":"Lamp readouts consume completed power values. No diagnostic identity dispatch, authored repair or alternative sensor history owner is added."} -->
 
 
 
@@ -162,7 +162,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"fb7f78cc4c75b0c65cb1617381a8df5503c73e9e3a91aa1844681ecaecabdcd5","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"77b6571ae688015c5e44d4f0e91fae2eb456024e0579371678874a84ae04b3d9","disposition":"still accurate","rationale":"The catalogue verifier now treats full-page reload readiness as startup and rechecks the served build before restoring its five-second interaction timeout. Catalogue assertions and the overall process deadline are preserved. This test setup change does not alter the physics owners, phase ordering, energy accounting, topology, checkpoints or physical controls described in this section."} -->
+<!-- doc-review {"version":1,"fingerprint":"48f3edbe676f262682b4f518c1dcff45da9373e84b27f95a73b5d0370845e58e","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"d4a8c15ccd2cdae065e3d618c79e9b983a62e274aa063b86a16011bd2811999d","disposition":"still accurate","rationale":"The narrow physics door and tick phase order are preserved. Lamp integrates as an electrical load; merged accounting includes coupler heat once and reconstructs linear drive duty through the shared cap helper."} -->
 
 
 
@@ -400,7 +400,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"3312ace64e7f7ba365dd240b5419571c6775a295cae2952693f1d35fe2804369","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"fe69d5db15cb99e96adb3f3587ffb791dbf655f4303de1e5f478415c9565a053","disposition":"still accurate","rationale":"The merged compiler admits the new Coupler through existing whole-blueprint validation; copies retain its authored parameters and connections. Mechanical membership, aliases, fresh IDs, independent saved definitions, Rope connectivity and ordinary atomic insertion/history semantics remain as described."} -->
+<!-- doc-review {"version":1,"fingerprint":"eb7ceeae3e6c24b9b223abf512396bb0325cca1e3c5487d1577cde5290eca711","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"44fd6d91f129e2cd0c72e9578d2baac85200c36d6816129a76d4e23434fa5107","disposition":"still accurate","rationale":"Lamp admission enforces eight parts through ordinary blueprint compilation and reusable insertion. Existing atomic transaction, history and overlap requirements are retained."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -493,7 +493,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"8c213464428dddfaeff067162ec09059042dc4a8c155ee55ecac0db2bc70c883","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"809d56efdf7077ac202e82b3eaa25f8b674f645d940c10cdba621c88cb54a8e6","disposition":"updated","rationale":"Added the shared fixed-attachment release classifier used by inspector and generic connection overlay. Its kind check leaves dedicated Rope rendering and latch-face Rope labels intact; rendering still consumes completed data without editing connectivity or physical state."} -->
+<!-- doc-review {"version":1,"fingerprint":"82503fff2130c826e6676ad5deb9797a76d4266e156c443899f5370cee01451a","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"6eb8c25e056c1b7d94f4394aca8978defada617781d3ce605497ae6b13a5a860","disposition":"still accurate","rationale":"Canonical part-mesh now composes lamp lens/light and disposes light resources. Existing Rope, wiring and spring overlay ownership and lifecycle remain unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -621,7 +621,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"24dda9884d284c0b53fe5b8b5b3e9ee9ffcd9a11bf375eb680e18331f8ac8d02","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"d76ae352a92712f18843f955ec81e589bd45ea295708d7edf4b589ece92627b9","disposition":"still accurate","rationale":"Feedback layout and paused video segments do not change graphics quality selection, renderer timing or simulation stepping. The existing graphics policy and evidence boundaries remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"5537cbad2caa63b9e563360e006032d0698bdfe35c9ab3c3c7c2d392d9f4ed1d","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"7ad6a3478a2a629f6a755db3537ff7de85b71adac3de9e190f6fd5c46be0b419","disposition":"updated","rationale":"Added bounded lamp-rendering semantics and registered optical/performance probes. Every admitted lamp remains present at all quality levels; measured automation remains distinct from hardware or player qualification."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses
@@ -651,3 +651,14 @@ blueprints, real-time stepping, visible scene pixels, resized canvas dimensions,
 and the existing 40 ms cadence budget after warmup. Quality reduction cannot promise
 that every machine or competing workload meets that budget; failure remains failure
 at the minimum level. Agent screenshots are not target-player acceptance.
+
+
+The [lamp renderer](../../src/presentation/lamp-view.mjs#symbol=createLampView) receives
+completed optical telemetry. Each admitted lamp retains one unshadowed spotlight and
+lens. A hard cone uses intensity = 0.01 × flux / (2π(1−cos half-angle)), so beam spread changes
+concentration without adding modeled flux. Display exposure and tint are illustrative;
+black tint is dark while electrical demand remains. No lamp shadows are offered, so
+light can pass through occluders. Quality reduction retains every lamp. The
+[lamp browser journey](../../scripts/verify-lamp-browser.mjs#source) and
+[eight-lamp measurement](../../scripts/verify-lamp-performance.mjs#source) are automated
+checks, not target-player or calibrated photometry evidence.
