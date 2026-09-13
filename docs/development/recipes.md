@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"f91a587a37c91e760a188ac9a0414592661a188d50a71b3472a53e264ef538f6","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"79bd9b5729382011191a6a8a66fb747403e348c1c1faa9bd48f3ae20fdf8adac","disposition":"still accurate","rationale":"Integration with main: the merged AGENTS.md carries the stacked-integration rule and the performance work's physics changes were reviewed on their own branch; window intent, destination drift and candidate fixtures do not touch physics ownership, analytical controls, independent accounting or Course qualification requirements in this recipe."} -->
+<!-- doc-review {"version":1,"fingerprint":"52a0b900760ca149d9afc5b07e4c5bc698744a1d7b74cef9aa76c29c6524653b","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"86144b0f334bf5162a071e60996cc45501b0da5199903a69ce7421c87cf0ac79","disposition":"still accurate","rationale":"The mechanical-audio browser check now batches its real completed-frame trial by 60 Hz player frames instead of 1000/30 four-tick chunks so the per-frame audio budget is charged per frame; thresholds, assertions and physics ownership are unchanged, and the recipe's analytical, deterministic and Course-qualification requirements still apply."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
