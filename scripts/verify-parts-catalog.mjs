@@ -243,8 +243,11 @@ try {
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   equal((await read()).blueprint, placed.blueprint);
   // Loading saved favorites must not depend on a machine save.
-  await page.reload();
+  // Reload repeats application startup before the five-second interaction budget.
+  page.setDefaultTimeout(30000);
+  await evidence.reload(page);
   await page.waitForFunction(() => window.render_game_to_text);
+  page.setDefaultTimeout(5000);
   await page.getByRole('button', { name: 'Expand parts', exact: true }).click();
   await page.getByRole('button', { name: 'Favorites', exact: true }).click();
   equal(

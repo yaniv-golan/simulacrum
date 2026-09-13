@@ -170,7 +170,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"3f3b9c32efce8f3940c7ebdb1880a99917920170f8863af0a03e7c1a07d169bf","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"95b1d59eb6fa132dee797871b0e8327617f2018a8bef04c9bd347a664ef8d79e","disposition":"still accurate","rationale":"The cloud-runtime verifier now emits synchronous stage timings, burst settlement counts and separate workload/cleanup outcomes, retaining an original workload error before cleanup. Its assertions, concurrent payloads, dispatches and deadlines are unchanged, as are all production physics, phase, energy and checkpoint owners in this recipe. These are diagnostic observations, not a timeout fix; the cause of the prior thirty-second failure remains unproven."} -->
+<!-- doc-review {"version":1,"fingerprint":"fb7f78cc4c75b0c65cb1617381a8df5503c73e9e3a91aa1844681ecaecabdcd5","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"77b6571ae688015c5e44d4f0e91fae2eb456024e0579371678874a84ae04b3d9","disposition":"still accurate","rationale":"The catalogue verifier now treats full-page reload readiness as startup and rechecks the served build before restoring its five-second interaction timeout. Catalogue assertions and the overall process deadline are preserved. This test setup change does not alter the physics owners, phase ordering, energy accounting, topology, checkpoints or physical controls described in this section."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
