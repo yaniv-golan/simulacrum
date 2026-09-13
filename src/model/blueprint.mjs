@@ -1,3 +1,4 @@
+import { LAMP_LIMIT } from './lamps.mjs';
 import {
   resolveSurfaceEndpoint,
   validateSurfacePair,
@@ -73,6 +74,8 @@ export function validateBlueprint(blueprint) {
       return result('INVALID_ROTATION', path.replace(/(\/rotation)\/\d+$/, '$1'));
     return result('INVALID_BLUEPRINT', path);
   }
+  if (blueprint.parts.filter((p) => p.type === 'poweredLamp').length > LAMP_LIMIT)
+    return result('INVALID_BLUEPRINT', '/parts');
   const parts = new Map();
   for (let index = 0; index < blueprint.parts.length; index++) {
     const part = blueprint.parts[index],

@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"0b68166e876733204e8f7918d619711328a427d46ea150b4a7a7ca06e09b0a35","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"046cbc401335228297f6428d2a276e306db30ca8c40f9c745f60f3b1bf7cef5a","disposition":"still accurate","rationale":"The appearance change introduces no lesson or new connection concept; existing contextual port help suffices under the no-entry admission rule."} -->
+<!-- doc-review {"version":1,"fingerprint":"33a072c6be487789214343da263a72798517572359ec062c76b0abf7ea7b83ad","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"064728b87ff4d86c206fee9559b017d2c9a8ce447e0c284de108c7d7aa668552","disposition":"still accurate","rationale":"No lesson or experiment entry was added. Existing wiring/receiver concepts plus requested lamp help satisfy the documented no-entry admission option without changing content policy."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"35f915d9523ea863c9744129d3523628b3e40ee3a9417221d37dfb58830e5d0e","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"cfd39209098a75a5a0eab919401f20ca50e26669c7eb8dd69a684a414faae26b","disposition":"updated","rationale":"Documented the 52-pixel square catalogue slot in the existing column, shared production previews and unchanged help, focus and learning-content lifecycle."} -->
+<!-- doc-review {"version":1,"fingerprint":"39ea6394ae03bb38f2a9d86000ed0a502b4d60a7f8f16b441e33b3c4dc170e0b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"a4b5713ebdd175d5044d899405d7549473c92bce0e4c09dd4a16c5f91bbaf1fb","disposition":"updated","rationale":"Documented the lamp's More parts entry, selected Build settings, completed Run/Paused input/output readout, black-tint warning, no-shadow limit and no-entry learning decision. No permanent canvas panel or unique action is displaced."} -->
 
 
 
@@ -258,6 +258,16 @@ The lift uses an ordinary extension axle to separate its arm plane from the gear
 A gear motion-limit stop offers Build, shaft-support, motor-current and grounded
 restart guidance through the existing message surface. It does not imply broken teeth.
 Physical witnesses remain separate from player comprehension.
+
+Powered Lamp uses More parts, ordinary surface mounting and power/signal wiring.
+Its selected inspector owns Light color, Brightness and Beam spread in Build, with
+actual input, requested/delivered watts and modeled light output in Run/Paused.
+Black tint warns that output is visually dark while consuming power. The existing
+requested part help explains receiver replacement of default-on behavior, weak supply,
+restart and the eight-lamp/no-shadow rendering limit. These controls leave with selection,
+displace no unique action and add no permanent panel. Learning admission is **no entry**:
+existing power and receiver explanations teach the same connection concept; contextual
+lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 The Ball uses the existing part catalogue and selected inspector: diameter is a
 primary size edit; material and expandable Contact settings live in Engineering

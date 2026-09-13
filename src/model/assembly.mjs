@@ -173,6 +173,9 @@ export function compileAssembly(
   for (const [node, part] of blueprint.parts.entries()) {
     const p = part.parameters;
     switch (part.type) {
+      case 'poweredLamp':
+        (power.lamps ??= []).push({ node, ...p });
+        break;
       case 'powerCell':
         power.cells.push({
           node,

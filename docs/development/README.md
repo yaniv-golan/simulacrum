@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"699cec8dddcf6da2d671fb5c4eba65d5c74f2a5f6d97d057e487aeba4a4823e0","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"101696f911689ee4beabd7cddeebc56513a2ac50eb7f98deea20ce3c3ff9cfcf","disposition":"still accurate","rationale":"The generated reference now includes the socket owner and controls; regeneration, per-section review and source-bound completion workflow are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f996a17983c0b6e5f07723eee98ea2fbb3981c4746f0b3f34564c102c2a2dec5","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"5584a3fc47dac7ec5b9733d05b389d5921167e7c72aed4e0a337d543c864e7c4","disposition":"still accurate","rationale":"Reference generation now discovers lamp ratings, view and tests. The same regenerate-first and per-section review workflow still binds these sources; no documentation tooling changed."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"f993680e9a2f29a63692d4d29c561334160f32308103f9806866fab4d9bb02c2","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c592fa40dab53d56400e08f0716e768c341ac5f679c92ba03a1320412b940d4a","disposition":"still accurate","rationale":"The manifest adds one surface-mount preview regression control to the existing connection-display invariant; scope rules, readers, selection and mandatory witness application remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"b9c7f75a65853c0cce8df588747f43adb91bc27aab20d9811107196d47ee6ae3","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"842756c69020bb8ab8464d5010dcb5061a76373112d1b3a3301122f7d844cf93","disposition":"still accurate","rationale":"Two exclusive lamp checks extend the manifest under the runtime rule. Existing conservative scope selection and browser ownership rules are unchanged; no narrower scope exception is introduced."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -444,7 +444,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"751b2f6e7c3ab829191f42a516777167837d1665e2b6e4250f2c1c4ad0bc1d4d","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"af75a6321ae3b633932ec724c55db56311895214e3eb349d2424ac70551fdb17","disposition":"still accurate","rationale":"Registering the surface-mount preview control does not alter candidate capture, dependency installation, identity admission or verification tiers."} -->
+<!-- doc-review {"version":1,"fingerprint":"40e3622d60e9dc4029e7002a1acb092cc49b17c1b10c507f2a27690ff70f8bbe","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"0e1f95a50767d7206565d1917295f2a28cf65f03c36f0babef5022dacfdb5d0f","disposition":"still accurate","rationale":"The lamp adds ordinary nonignored source files and generated schema types. Candidate capture, source drift rejection, dependency isolation and local tier semantics remain unchanged."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

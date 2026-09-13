@@ -19,6 +19,17 @@ const gearHelp = (teeth, pitchRadius) =>
     ],
   );
 export const PART_HELP = {
+  poweredLamp: help(
+    'Lights nearby objects or shows a powered control input',
+    'One adjustable lamp. Brightness changes demand up to 10 W; weak power dims it progressively. Color is separate from material. Wider beams spread the same modeled light. Display brightness is illustrative, not calibrated photometry.',
+    'Mount the housing and connect Power to a cell. Run lights it without programming.',
+    [
+      'Tune color, brightness and beam spread in Build. Black is dark but still consumes power.',
+      'Wire a Command Receiver to Signal for keys or controller programs through that receiver. Its output replaces the default: zero, negative or Off gives no light. Disconnect Signal in Build to restore the default next Run.',
+      'A lit status lamp shows its own powered input, not proof that another actuator moved or released.',
+      'Up to eight lamps illuminate at every quality level. Lamp shadows are not offered: light can pass through objects.',
+    ],
+  ),
   gear12: gearHelp(12, 60),
   gear24: gearHelp(24, 120),
   ball: help(

@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"dd4da758ca18edf587c6d91d4f6c8eab805b62192155a935ad2d968ecc9c3195","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"21ebc859ec2525be3bfaef517120894e03d1ea5d00c3b48a8ac2c50ad4f4b5cc","disposition":"still accurate","rationale":"The view now composes cosmetic surface textures and assembly connections; command routing, immutable observations and help input ownership remain unchanged. Preview resources still have bounded disposable lifetimes."} -->
+<!-- doc-review {"version":1,"fingerprint":"780f81b6ec8a7f2da4a84a9eea3494e51a17a5b44f525a685d560f20a11ffae4","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"f8b1a78cdd83e6c7c7f85bae818bb3c2f0baa6ee8ec8afa7e0d545eb8263a44b","disposition":"still accurate","rationale":"Restore validation remains in power and publishes through session only after acceptance; no editing, compilation or presentation owner changed."} -->
 
 
 
@@ -66,7 +66,7 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"ccda4e552e7ad5b312013a73df7a272fd772a3ee6af2327abddd92f604307a6b","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"203c8144ca0c4838dd1489fb7991765c0dcd6e9774aad5e804944a29dd21fffc","disposition":"still accurate","rationale":"Normal electrical overlay beads are removed while connection specifications, resource ownership and canonical model geometry remain in the listed owners. Socket decoration does not alter geometry admission."} -->
+<!-- doc-review {"version":1,"fingerprint":"aa4e9cbd6c3ffcd170d3755165b581309d988a5d3768a3c1378fd84f499fb713","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"8b73cc58813054a4abf2d9f105852e8b07af3151193031403b26bf460b2ed414","disposition":"updated","rationale":"Documented instantaneous common bus, source droop/current and driver-current checks using completed motor PWM source draw. Passive circuits also match the actual limited resistive solution; cumulative accounting and upper bounds alone cannot reject false-dark readings."} -->
 
 
 
@@ -102,12 +102,24 @@ replace the collision geometry. Preserve independent physical test calculations 
 sharing production policy: an oracle that calls the implementation proves little.
 
 A cell can supply multiple motors; multiple cells on one circuit remain unsupported.
-Shared motor torque and powered sensor-load accounting and the completed energy ledger belong to simulation.
+Shared motor torque, powered sensor loads and lamp delivery accounting belong to simulation.
+The [lamp ratings](../../src/model/lamps.mjs#source) bound eight authored lamps at 10 W each.
+[Power](../../src/simulation/power.mjs#symbol=createPowerNetwork) uses a source-rating-adaptive
+resistive driver: conductance is requested watts divided by max(24 V, source nominal
+voltage) squared. Droop and shared current limiting reduce delivery. Completed flux is
+100 modeled lm per delivered watt; the cumulative circuit ledger counts lamp delivery
+once alongside cell heat and other loads. Receiver wiring replaces the default command
+of one; disabled, zero and negative commands request zero. Initial lamps are unstepped
+and dark; restored completed records reconcile sources, tick and circuit accounting.
+Instantaneous lamp readings also obey the common bus voltage, driver-current ceiling
+and source droop/current bounds. Source draw includes motor PWM current from the completed control state. Passive
+lamp/sensor-only circuits also match the limited resistive solution reconstructed
+from completed draw and remaining charge; an unbounded driver cannot report false darkness.
 Ground contact and workshop motion are not Course qualification.
 
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"254fcaeca60ae8917ca3161093f37fb6ca688b52d90594f653a120c3c1f3242c","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"529f9aaa466e80496e9e4f6ea6c6ec61cfa242902e4dedbfa88e321603ab6edf","disposition":"still accurate","rationale":"The observation store's new tickTiming.frameMs is wall-clock diagnostics only. Sensor descriptors, prior-completed sampling, funded sensor execution and decision/learning histories retain their existing owners and behavior."} -->
+<!-- doc-review {"version":1,"fingerprint":"bce03326995aca6927736361fd507b93d6d9aef6980e174732919d4697d35f8e","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"41d15f0f918162d06493af644e2754ac59258f0d523b31058ce793d6ac8e139c","disposition":"still accurate","rationale":"Checkpoint validation now includes already recorded sensor current in source draw bounds. Sensor sample timing, channel semantics and receiver/controller ownership are unchanged."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

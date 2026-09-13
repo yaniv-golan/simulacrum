@@ -18,7 +18,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"249edf152e297ec4c1169a854b12dae1aa648cd5137d7a876fa3cbbf164fd8ee","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"99348d03b3f30d77049ee34a2395fc8630cea4daf818c6518eb82384706d7c16","disposition":"still accurate","rationale":"Frame construction timing does not modify catalog geometry, schema, material admission, mounting surfaces, gear support eligibility or Ball controls. The recipe's ordinary authored-part and independent renderer/model checks still apply."} -->
+<!-- doc-review {"version":1,"fingerprint":"e795acc85e46f54b92006a41ee74719962dd4fd95c878f64799f29cfae3d07a2","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"4a9923ca1e5e3ebb541909f9af3864e48af3feb2b489d6989771c5c06667b300","disposition":"still accurate","rationale":"The lamp follows the same part and power owners. Restore tests add a physically impossible source-droop counterexample without changing authoring admission or rendering semantics."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -56,9 +56,19 @@ neither snaps nor provides shaft support; ordinary Connect/Disconnect and histor
 remain the editing owners. Preserve the [authoring controls](../../test/gear-authoring.test.mjs)
 when changing admission.
 
+The [lamp renderer](../../src/presentation/lamp-view.mjs#symbol=createLampView) receives
+completed optical telemetry. Each admitted lamp retains one unshadowed spotlight and
+lens. A hard cone uses intensity = 0.01 × flux / (2π(1−cos half-angle)), so beam spread changes
+concentration without adding modeled flux. Display exposure and tint are illustrative;
+black tint is dark while electrical demand remains. No lamp shadows are offered, so
+light can pass through occluders. Quality reduction retains every lamp. The
+[lamp browser journey](../../scripts/verify-lamp-browser.mjs#source) and
+[eight-lamp measurement](../../scripts/verify-lamp-performance.mjs#source) are automated
+checks, not target-player or calibrated photometry evidence.
+
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"c742457e58eded3890b2e70615181375ce572b6ae6c8d365d2e1354b811a41ef","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"0b2206365b7cb7ad062d7dfb94bf5761f8afdd20c59ce33874548185183c11aa","disposition":"still accurate","rationale":"Session and observation changes add diagnostic timings after completed simulation work; core shape validation, candidate compilation, atomic command history and rejected-edit effects are unchanged, preserving the surface-mount example and controls."} -->
+<!-- doc-review {"version":1,"fingerprint":"3a56e0c8c0efb17ee848a8ff1ce8f7782d657b6bcea7bc2eb5a24633de8f65e8","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"d485f37cc782c8d96962fac88a44519d52aaa47028d4dbc584e5efde7b40ab9a","disposition":"still accurate","rationale":"No command or cursor behavior changed; validation rejects a malformed saved power state before publication using existing restore ownership."} -->
 
 
 
@@ -75,7 +85,7 @@ identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing c
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"2db42b4ea010dc6f341a571ba31fde3c270359d772b3fa3d332aebe32ae1177c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"a6438503af3ded01072ffca72faba88eaddc716257f62752434f0438dda3632c","disposition":"updated","rationale":"The recipe now names both help interaction and catalog inspector checks. All seven scenario bodies and viewports were preserved, with separate artifacts and unchanged watchdogs; ordinary input ownership and user behavior assertions remain."} -->
+<!-- doc-review {"version":1,"fingerprint":"5945f4529d15299c84a5762ab544c275ae4beb73451e77b35db5fb691b8dc759","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"fe1fe86050d39e176c34800c1f6b6dd0ac421a5ccf10b8182ee1a7dc3ee40cdd","disposition":"still accurate","rationale":"No UI interaction or edit lifetime changed; the fix operates entirely on completed power-state admission."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -125,7 +135,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"061d54b22a01c6e3246d8d5c8464abeab0edf3857f4290a38dc25fac9b369e44","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"e694a2241100261b7377c2e245c740cc51e6c3792f379bc78fc78a698d917370","disposition":"still accurate","rationale":"The new frame-construction attribution reads diagnostic timing and does not change motion or controller diagnosis. Completed observation ownership, causal uncertainty, separate history, and measurement sampling remain the prescribed diagnostic path."} -->
+<!-- doc-review {"version":1,"fingerprint":"9c2080d2694dfe1af68391dfeffd59ef6494cd06c16ca15931db7e56d563a7a7","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"5f8e849b2326024fa4ad678f116d6e1387cbf208f4f3daa991bcf6dde880bd82","disposition":"still accurate","rationale":"The existing INVALID_POWER_CHECKPOINT diagnostic covers source-inconsistent lamp readings. Diagnostic publication and presentation injection paths are unchanged."} -->
 
 
 
@@ -155,7 +165,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"27d2a20ee8e8d91d45d7c577a430aa0c3a28401e7aee618f97402fc1058e1564","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"bb77467145a30afa4ae9a37dc84520ceeacec91b75aea8e5c8d7d01cd9053447","disposition":"still accurate","rationale":"Session still constructs and publishes the same completed state after one integration; frameMs only separates a measured cost. Gear measurement adds attribution while retaining loaded apparatus durations, physical assertions and absolute budgets, so all numerical and authority requirements here remain binding."} -->
+<!-- doc-review {"version":1,"fingerprint":"969f563daf48bce95a0749402f13ce62e3b60ccc96ee2cd51da4ec00523b1972","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"b5e4f131630020492aca70e41bd7433086e24596777564f4f1f068193b02e93e","disposition":"still accurate","rationale":"The existing shared numeric electrical solver is reused to validate passive completed state; integration and force generation are unchanged. Source draw includes existing motor duty/current, and validation does not step or mutate physics."} -->
 
 
 
@@ -299,7 +309,7 @@ settings and slop. Re-run existing contact/constraint cases when changing this p
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"eab6cfa85d5242d7ebc5689d8d5f0ddd7d39086e451f1632bd9cf27a4e1ca621","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"14c04cbb58330a8cd2fb2d232edee5ac86623c8254c434dc74e58ce4a158e66d","disposition":"still accurate","rationale":"Observation timing and shared browser lifecycle instrumentation do not change copied graph membership, reference remapping, assembly persistence or atomic commands. The listed assembly journeys and rendered/completed comparisons remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"59e731f4a9b9c72828b28e741a8de6315b94e2aaf812ea963d3da14ea0ab9b34","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"cb7c6d43754942c7d8d181741908d27c785f8248261a46c61f95c936ba9eb9fc","disposition":"still accurate","rationale":"Shared-circuit validation reads existing node connectivity; assembly capture, copy remapping, save/load transaction ownership and graph transforms are unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -392,7 +402,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"3ca425b05015638a9ad5b620385a6cb4768110559e8c897696090c55127b77a2","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"11518e76292e149100a74a1fe95bbe224a693aac876995219af335edab3f5f50","disposition":"updated","rationale":"Assembly previews now resolve surface-bound fixed mounts with the shared model helper, preserving face offsets and authored rotations alongside catalogue ports; the added regression covers both poses and resource disposal."} -->
+<!-- doc-review {"version":1,"fingerprint":"f0be06e43efa9ae144ee483d0a129572afe1798d9c603cd84336beb4d08bae39","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"994f97604478feddfff23d2a6ae3a0015785d93d7e9f0c9d27aad5917a4fb29e","disposition":"still accurate","rationale":"The view still consumes immutable completed telemetry. Invalid lamp readings are rejected in simulation before reaching presentation; no view computation or overlay changed."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

@@ -10,7 +10,7 @@ For an interaction report, use **Record an issue** in the left sidebar, then Sta
 
 ## Remote setup
 
-<!-- doc-review {"version":1,"fingerprint":"fe38f745d61a132ec28bfef7f5f1387a400d4ecf9aaf93e991fc59b170a7d6ef","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"2021f2d143a1c40a4592540fb2ada125c487f57bd036a04c85249b924b2333de","disposition":"updated","rationale":"Documents the single private decoded-context cursor in addition to one expanded packet. Forward reads resume only within one validated chain, backward/base changes reconstruct, and returned snapshots are copied. Existing event bounds, gaps, consent and export guarantees remain; duplicated wording removed."} -->
+<!-- doc-review {"version":1,"fingerprint":"7f5f2a11eb394072c52fbbfc8098b48e0f63afec16e0661b6c06d84a864a0225","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"4a6075c615f330177076ec55947a4d040d159dfa840999e425d4fdd513bbed0c","disposition":"still accurate","rationale":"The added catalog type flows through saved geometry and observations. Capture consent, transport limits and review semantics are unchanged; the section already excludes reproduced pixels/materials, and does not promise replayed lamp lighting."} -->
 
 
 

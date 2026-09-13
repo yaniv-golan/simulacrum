@@ -1,3 +1,4 @@
+import { createLampView } from './lamp-view.mjs';
 import { mountControllerHistory } from './controller-history.mjs';
 import { sensorInspector, updateSensorInspector } from './sensor-controls.mjs';
 import { createSensorView } from './sensor-view.mjs';
@@ -66,6 +67,8 @@ export const WORKSHOP_VIEW_MILESTONE = UI_FEATURES.construction.milestone;
 const parameterLabels = {
   torqueConstant: 'Torque per amp',
   currentLimit: 'Current limit',
+  brightness: 'Brightness',
+  beamSpread: 'Beam spread',
   defaultDuty: 'Drive setting',
   defaultTarget: 'Default target',
   lowerLimit: 'Lower angle limit (rad)',
@@ -2236,6 +2239,39 @@ export function createWorkshopView(
       right.append(label);
     }
 
+    if (part.type === 'poweredLamp') {
+      const colorLabel = element('label', 'setting');
+      colorLabel.append(element('span', '', 'Light color'));
+      const color = element('input');
+      color.type = 'color';
+      color.value = '#' + part.parameters.color.toString(16).padStart(6, '0');
+      color.disabled = !editable;
+      color.setAttribute('aria-label', 'Light color');
+      color.onchange = () =>
+        send({
+          type: 'parameter',
+          id: part.id,
+          key: 'color',
+          value: parseInt(color.value.slice(1), 16),
+        });
+      colorLabel.append(color);
+      right.append(colorLabel, parameterControl('brightness'), parameterControl('beamSpread'));
+      right.append(
+        element(
+          'p',
+          'parameter-help',
+          'Beam spread is the half-angle in radians. Wider spreads the same light. Up to eight lamps; no lamp shadows, so light can pass through objects.',
+        ),
+      );
+      if (part.parameters.color === 0)
+        right.append(
+          element(
+            'p',
+            'parameter-help',
+            'Black tint is visually dark but still uses power. Choose a lighter color to see the output.',
+          ),
+        );
+    }
     if (part.type === 'poweredMotor') {
       const signal = definition.ports.find((p) => p.kind === 'signal'),
         connection = signal && portConnections(part, signal)[0];
@@ -2819,6 +2855,7 @@ export function createWorkshopView(
     settings.append(measurements);
     for (const [key, parameter] of Object.entries(definition.parameterDefinitions)) {
       if (
+        part.type === 'poweredLamp' ||
         key === 'diameter' ||
         key === 'inputPolarity' ||
         (part.type === 'logicController' && key === 'duty') ||
@@ -3004,6 +3041,30 @@ export function createWorkshopView(
       engineering = right.querySelector('[data-live-engineering]');
     target.replaceChildren();
     engineering?.replaceChildren();
+    if (part.type === 'poweredLamp') {
+      const lamp = frame.power?.lamps?.find((l) => l.node === index);
+      const reasons = {
+        OFF: 'Off · receiver or brightness is zero',
+        NO_POWER: 'No power · return to Build and connect a cell',
+        DEPLETED: 'Cell depleted · Build then Run to restart, or increase capacity',
+        LIMITED: 'Powered at available supply',
+        OK: 'Powered',
+      };
+      target.textContent =
+        frame.metadata.mode === 'build'
+          ? 'Connect a cell, then Run to light. Signal wiring replaces the default with receiver control.'
+          : lamp
+            ? `${frame.metadata.mode === 'paused' ? 'Paused · last reading: ' : ''}${reasons[lamp.reasonCode]} · input ${format(lamp.command, 2)} · ${format(lamp.deliveredW, 2)} / ${format(lamp.requestedW, 2)} W · ${format(lamp.luminousFluxLm, 0)} modeled lm`
+            : 'No completed lamp reading';
+      if (lamp)
+        engineering?.append(
+          element(
+            'div',
+            '',
+            `${format(lamp.deliveredEnergyJ, 3)} J delivered · illustrative light output, not calibrated photometry`,
+          ),
+        );
+    }
     if (cell) {
       const capacity = part.parameters.capacityJ,
         percentage = capacity > 0 ? Math.max(0, Math.min(100, (cell.energyJ / capacity) * 100)) : 0;
@@ -3104,7 +3165,11 @@ export function createWorkshopView(
     }
     if (part.type.endsWith('Sensor') && part.type !== 'travelSensor') {
       target.textContent = `Sensor sample tick ${frame.sensors.tick} · readings below`;
-    } else if (!cell && !motor && !['commandReceiver', 'travelSensor'].includes(part.type)) {
+    } else if (
+      !cell &&
+      !motor &&
+      !['commandReceiver', 'travelSensor', 'poweredLamp'].includes(part.type)
+    ) {
       const speed = frame.physics[index]?.angularVelocity;
       target.textContent =
         frame.metadata.mode === 'build'
@@ -3116,6 +3181,7 @@ export function createWorkshopView(
   }
   function disposePart(mesh) {
     mesh.traverse((object) => {
+      if (object.isLight) object.dispose();
       object.geometry?.dispose();
       object.material?.map?.dispose();
       object.material?.dispose();
@@ -3376,6 +3442,11 @@ export function createWorkshopView(
           line.userData.partId = part.id;
           mesh.add(line);
         }
+    }
+    if (part.type === 'poweredLamp') {
+      const lamp = createLampView();
+      mesh.add(lamp.group);
+      mesh.userData.lamp = lamp;
     }
     finishPart(mesh, part, definition);
     return mesh;
@@ -3713,6 +3784,9 @@ export function createWorkshopView(
       if (!pose) continue;
       mesh.position.fromArray(pose.position);
       mesh.quaternion.fromArray(pose.rotation);
+      mesh.userData.lamp?.update(
+        frame.metadata.mode === 'build' ? null : frame.power?.lamps?.find((l) => l.node === index),
+      );
     }
     if (blueprint.parts.length > previousCount) editing.focus();
     else if (
@@ -4138,6 +4212,18 @@ export function createWorkshopView(
     clearMeasurements: () => motionReadout.clear(),
     ingestMeasurements: (observation) => motionReadout.ingest(observation),
     readInteractionState: () => ({
+      lamps: [...meshes]
+        .filter(([, m]) => m.userData.lamp)
+        .map(([id, m]) => ({
+          id,
+          flux: m.userData.lamp.group.userData.lampFlux ?? 0,
+          intensity: m.userData.lamp.light.intensity,
+          angle: m.userData.lamp.light.angle,
+          color: m.userData.lamp.light.color.getHex(),
+          emission: m.userData.lamp.lens.material.emissiveIntensity,
+          position: m.userData.lamp.light.getWorldPosition(new THREE.Vector3()).toArray(),
+          shadows: m.userData.lamp.light.castShadow,
+        })),
       bodyMeasurement: motionReadout.readBody(),
       environment: {
         selected: frame?.metadata.blueprint.environment ?? 'flat',
