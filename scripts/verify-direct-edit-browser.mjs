@@ -18,6 +18,11 @@ try {
     await page.locator('[data-part-type]').count(),
     'every palette part needs a picture',
   ]);
+  // Catalog thumbnails publish asynchronously; wait for actual decoded images.
+  await page.waitForFunction(() => {
+    const images = [...document.querySelectorAll('.parts-panel .part-icon')];
+    return images.length > 0 && images.every((image) => image.complete && image.naturalWidth > 0);
+  });
   browserEvidence.assert('ok', [
     await page
       .locator('.parts-panel .part-icon')
