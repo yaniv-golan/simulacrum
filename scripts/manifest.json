@@ -351,7 +351,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -5415,7 +5415,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
       "externalImports": []
     },
     {
@@ -5433,7 +5433,7 @@
       ],
       "externalImports": ["node:fs", "node:os", "node:path", "playwright", "vite"],
       "consumers": [],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9"
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -5447,7 +5447,7 @@
       "externalImports": ["node:fs"],
       "checks": ["verify-mirror-browser"],
       "consumers": [],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9"
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -5464,7 +5464,7 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9"
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -5476,7 +5476,8 @@
         "src/application/capture-packet.mjs",
         "src/application/capture-stream.mjs",
         "src/application/feedback-capture-gate.mjs",
-        "src/application/feedback-client.mjs"
+        "src/application/feedback-client.mjs",
+        "src/application/recording-admission.mjs"
       ],
       "externalImports": [],
       "checks": [
@@ -5494,7 +5495,7 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9"
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -5509,7 +5510,8 @@
         "verify-workshop",
         "verify-spring-browser",
         "verify-learning-examples",
-        "verify-assembly-library-browser"
+        "verify-assembly-library-browser",
+        "verify-authorable-scenes"
       ],
       "consumers": [
         "index.html",
@@ -5518,15 +5520,17 @@
         "src/presentation/assembly-mirror.mjs",
         "src/presentation/assembly-placement-view.mjs",
         "src/presentation/connection-test.mjs",
+        "src/presentation/scene-editor.mjs",
         "src/presentation/surface-controls.mjs",
         "src/presentation/workshop-view.mjs",
         "test/connection-test.test.mjs",
         "test/failure-messages.test.mjs",
         "test/gear-construction.test.mjs",
         "test/receiver-input-owner.test.mjs",
+        "test/scene-editor.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9"
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28"
     }
   ],
   "experimentInputScopes": [
@@ -5703,7 +5707,7 @@
         }
       ],
       "consumers": [],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -5745,11 +5749,11 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "externalImports": ["node:crypto", "node:fs", "node:http"],
       "consumers": [],
-      "sourceSha256": "52345784d0bd97a39f08eb1a9bca11f9e830251a80451aca6dc8a2787625e860",
+      "sourceSha256": "0c17fcba765e4f27c65be6e76cde1da0173162a1d43270a472845288b9c5b870",
       "entrypoint": "scripts/verify-feedback-receipts.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -5777,7 +5781,7 @@
         }
       ],
       "consumers": [],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -5824,11 +5828,11 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
-      "consumerSourceHash": "cd8325c6fb5451e5502ccea4c761fe7beee9d272203f7e88ddab66ebde29a2d6",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
+      "consumerSourceHash": "22bf616fae773a24ddee63c782b3d3b47e1b82a3a1df5db01e3adc30ffc47be6",
       "externalImports": ["node:fs", "node:os", "node:path"],
       "consumers": ["scripts/verify-cloud-playtest.mjs"],
-      "sourceSha256": "36c86e28e377b3bc0a5e325b9c4c66c65307f85749e65a710a614b397c294ed8",
+      "sourceSha256": "a638bb5902804e31610ad59db3602cf43f7bbc3323e5c9116218c96e263bc9d8",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -5862,16 +5866,19 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
-      "consumerSourceHash": "578ccfc7fecedd9067727d0854718ed20719e9d0f98862ebd230b32e113ce8f8",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
+      "consumerSourceHash": "8e533c8d66c433bac43c1fa5a1996f19923df8525bd002041962a552ee1e88da",
       "externalImports": ["node:assert/strict", "node:crypto", "node:fs"],
       "consumers": [
+        "scripts/assembly-ux-cases.mjs",
+        "scripts/part-help-cases.mjs",
         "scripts/qualify-workshop.mjs",
         "scripts/verify-adaptive-graphics.mjs",
         "scripts/verify-assemblies-browser.mjs",
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser.mjs",
         "scripts/verify-camera-browser.mjs",
@@ -5888,6 +5895,8 @@
         "scripts/verify-feedback-recovery.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-lamp-browser.mjs",
+        "scripts/verify-lamp-performance.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-linear-actuator-browser.mjs",
@@ -5916,10 +5925,12 @@
         "scripts/verify-vehicle-controls.mjs",
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
+        "test/assembly-partitions.test.mjs",
         "test/browser-evidence.test.mjs",
-        "test/f2.test.mjs"
+        "test/f2.test.mjs",
+        "test/part-help-partitions.test.mjs"
       ],
-      "sourceSha256": "7ef87c76a73050eaa045804bcfe34f7d677b3c8247b5216251225091d845f23f",
+      "sourceSha256": "a1b822370e7a65c272ebdd5b08d9b57a1025cf5e334de373299c1be5b55007a0",
       "entrypoint": "scripts/browser-evidence.mjs",
       "dependencies": [
         "scripts/app-fingerprint.mjs",
@@ -5941,10 +5952,11 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
-      "consumerSourceHash": "578ccfc7fecedd9067727d0854718ed20719e9d0f98862ebd230b32e113ce8f8",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
+      "consumerSourceHash": "8e533c8d66c433bac43c1fa5a1996f19923df8525bd002041962a552ee1e88da",
       "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
+        "scripts/assembly-ux-cases.mjs",
         "scripts/assess.mjs",
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
@@ -5955,6 +5967,7 @@
         "scripts/ci.mjs",
         "scripts/gate-structural.mjs",
         "scripts/gate.mjs",
+        "scripts/part-help-cases.mjs",
         "scripts/qualify-m1.mjs",
         "scripts/qualify-workshop.mjs",
         "scripts/replay.mjs",
@@ -5964,6 +5977,7 @@
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
@@ -5984,6 +5998,8 @@
         "scripts/verify-final.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-lamp-browser.mjs",
+        "scripts/verify-lamp-performance.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-linear-actuator-browser.mjs",
@@ -6016,6 +6032,7 @@
         "scripts/verify-vehicle-controls.mjs",
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
+        "test/assembly-partitions.test.mjs",
         "test/browser-evidence.test.mjs",
         "test/browser-report.test.mjs",
         "test/ci-order.test.mjs",
@@ -6025,11 +6042,13 @@
         "test/fixtures/browser-suite-cleanup.mjs",
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
+        "test/lamp-authoring.test.mjs",
         "test/learning-runtime.test.mjs",
         "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
+        "test/part-help-partitions.test.mjs",
         "test/release-determinism.test.mjs",
         "test/rope-session.test.mjs",
         "test/runtime-preflight.test.mjs",
@@ -6062,10 +6081,11 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
-      "consumerSourceHash": "fac7ec0afcec13a4ac7d3b439405053bb4df71a843281696e86f7f176ef23f8e",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
+      "consumerSourceHash": "8c2a99415a765a191040c50c28ee854f3f9b3fc0dd08846cc9472aaaa8c26fa1",
       "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
+        "scripts/assembly-ux-cases.mjs",
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
         "scripts/browser-scope-apply.mjs",
@@ -6086,6 +6106,7 @@
         "scripts/measure-ropes.mjs",
         "scripts/measure-shared-sensing.mjs",
         "scripts/measure-springs.mjs",
+        "scripts/part-help-cases.mjs",
         "scripts/playtest/calibrate.mjs",
         "scripts/playtest/ci-release.mjs",
         "scripts/playtest/experiment-inputs.mjs",
@@ -6100,6 +6121,7 @@
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
@@ -6121,6 +6143,8 @@
         "scripts/verify-final.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-lamp-browser.mjs",
+        "scripts/verify-lamp-performance.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-linear-actuator-browser.mjs",
@@ -6154,6 +6178,7 @@
         "scripts/verify-vehicle-controls.mjs",
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
+        "test/assembly-partitions.test.mjs",
         "test/browser-documentation-selection.test.mjs",
         "test/browser-evidence.test.mjs",
         "test/browser-registry-live.test.mjs",
@@ -6175,6 +6200,7 @@
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
+        "test/part-help-partitions.test.mjs",
         "test/playtest-calibration.test.mjs",
         "test/playtest-release.test.mjs",
         "test/release-pipeline.test.mjs",
@@ -6228,6 +6254,7 @@
         "test/contracts/release-process.mjs",
         "test/determinism.test.mjs",
         "test/free-build-continuity.test.mjs",
+        "test/lamp-authoring.test.mjs",
         "test/learning-runtime.test.mjs",
         "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
@@ -6235,8 +6262,8 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
-      "consumerSourceHash": "b7deed64e3b900cf0d762e4aecdcfa8a6c76d28247a92024aa36b1dd8291a44b"
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
+      "consumerSourceHash": "cc8b2b2143e729977ec4fd3502cb0b800856d6317a2831486380472533da8306"
     },
     {
       "checks": ["invariant-controls"],
@@ -6247,8 +6274,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
-      "consumerSourceHash": "cd8325c6fb5451e5502ccea4c761fe7beee9d272203f7e88ddab66ebde29a2d6",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
+      "consumerSourceHash": "22bf616fae773a24ddee63c782b3d3b47e1b82a3a1df5db01e3adc30ffc47be6",
       "externalImports": [],
       "consumers": ["scripts/verify-cloud-playtest.mjs", "scripts/verify-remote-playtest.mjs"],
       "sourceSha256": "9bf6de50ea7cd6041a718c926daa8b678eec2afcfb4d3cf8aca1641233a73a3b",
@@ -6289,8 +6316,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
-      "consumerSourceHash": "cd8325c6fb5451e5502ccea4c761fe7beee9d272203f7e88ddab66ebde29a2d6",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
+      "consumerSourceHash": "22bf616fae773a24ddee63c782b3d3b47e1b82a3a1df5db01e3adc30ffc47be6",
       "externalImports": ["node:crypto", "node:fs/promises"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
@@ -6337,8 +6364,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
-      "consumerSourceHash": "cd8325c6fb5451e5502ccea4c761fe7beee9d272203f7e88ddab66ebde29a2d6",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
+      "consumerSourceHash": "22bf616fae773a24ddee63c782b3d3b47e1b82a3a1df5db01e3adc30ffc47be6",
       "externalImports": ["esbuild", "miniflare", "node:fs/promises", "node:path", "node:path"],
       "consumers": ["scripts/verify-cloud-playtest.mjs", "scripts/verify-remote-playtest.mjs"],
       "sourceSha256": "66e915cda215738b8a0fcc5d913d7b7e739f7e7f0ba5417f52b37533151afb9e",
@@ -6354,8 +6381,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
-      "consumerSourceHash": "cd8325c6fb5451e5502ccea4c761fe7beee9d272203f7e88ddab66ebde29a2d6",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
+      "consumerSourceHash": "22bf616fae773a24ddee63c782b3d3b47e1b82a3a1df5db01e3adc30ffc47be6",
       "externalImports": ["node:fs/promises", "node:path", "node:url"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
@@ -6451,8 +6478,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
-      "consumerSourceHash": "0450942b89f4c092ad4141425d6037bb56dbd4430c57704a6463a3b8863d7269",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
+      "consumerSourceHash": "927b2eb921687fc6f5c8ed8ef314a13f9ee56fcd5c7c7fbdac3831edf545cf90",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -6520,12 +6547,13 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
-      "consumerSourceHash": "578ccfc7fecedd9067727d0854718ed20719e9d0f98862ebd230b32e113ce8f8",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
+      "consumerSourceHash": "8e533c8d66c433bac43c1fa5a1996f19923df8525bd002041962a552ee1e88da",
       "externalImports": ["acorn", "css-tree", "node:fs", "node:path", "parse5", "typescript"],
       "consumers": [
         "scripts/analysis-snapshot.mjs",
         "scripts/app-fingerprint.mjs",
+        "scripts/assembly-ux-cases.mjs",
         "scripts/assess.mjs",
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
@@ -6548,6 +6576,7 @@
         "scripts/gate.mjs",
         "scripts/inspect-change.mjs",
         "scripts/navigate.mjs",
+        "scripts/part-help-cases.mjs",
         "scripts/playtest/ci-release.mjs",
         "scripts/playtest/experiment-inputs.mjs",
         "scripts/playtest/release.mjs",
@@ -6562,6 +6591,7 @@
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
@@ -6583,6 +6613,8 @@
         "scripts/verify-final.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
+        "scripts/verify-lamp-browser.mjs",
+        "scripts/verify-lamp-performance.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
         "scripts/verify-linear-actuator-browser.mjs",
@@ -6618,6 +6650,7 @@
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
         "test/analysis-snapshot.test.mjs",
+        "test/assembly-partitions.test.mjs",
         "test/browser-documentation-selection.test.mjs",
         "test/browser-evidence.test.mjs",
         "test/browser-registry-live.test.mjs",
@@ -6641,12 +6674,14 @@
         "test/fixtures/candidate-priority.mjs",
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
+        "test/lamp-authoring.test.mjs",
         "test/learning-runtime.test.mjs",
         "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
         "test/module-graph.test.mjs",
+        "test/part-help-partitions.test.mjs",
         "test/physics-boundary.test.mjs",
         "test/playtest-release.test.mjs",
         "test/release-determinism.test.mjs",
@@ -6719,8 +6754,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
-      "consumerSourceHash": "cd8325c6fb5451e5502ccea4c761fe7beee9d272203f7e88ddab66ebde29a2d6",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
+      "consumerSourceHash": "22bf616fae773a24ddee63c782b3d3b47e1b82a3a1df5db01e3adc30ffc47be6",
       "externalImports": ["node:crypto", "node:fs/promises", "node:path"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
@@ -6779,8 +6814,8 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
-      "consumerSourceHash": "6064a8832d3b91ab6fd2331767922d242d20ed75f2f91a566fd81c3c66921c39"
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
+      "consumerSourceHash": "98e91d9455b48f8d3adba5a0abd8bfdbbed8103f08e9ad3e5c0bf126e9dbd2fe"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -6812,13 +6847,13 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
-      "consumerSourceHash": "6064a8832d3b91ab6fd2331767922d242d20ed75f2f91a566fd81c3c66921c39"
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
+      "consumerSourceHash": "98e91d9455b48f8d3adba5a0abd8bfdbbed8103f08e9ad3e5c0bf126e9dbd2fe"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
       "checks": ["invariant-controls"],
-      "sourceSha256": "c364f386baed4d697fc8ec11877a8f1428aa823bc32e27c9a4a343331fb762ee",
+      "sourceSha256": "ce598ccd1803b779a9637764f327a09dd58785fc532c4a3efc97014857447913",
       "dependencies": ["scripts/browser-artifacts.mjs", "scripts/browser-evidence.mjs"],
       "externalImports": ["node:fs"],
       "reads": [
@@ -6829,7 +6864,7 @@
         }
       ],
       "consumers": [],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -6861,7 +6896,7 @@
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
       "reads": [
         {
           "expression": "readFile(file)",
@@ -6870,7 +6905,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "cd8325c6fb5451e5502ccea4c761fe7beee9d272203f7e88ddab66ebde29a2d6"
+      "consumerSourceHash": "22bf616fae773a24ddee63c782b3d3b47e1b82a3a1df5db01e3adc30ffc47be6"
     },
     {
       "entrypoint": "scripts/playtest/feedback-node.mjs",
@@ -6897,7 +6932,7 @@
         "test/playtest-server.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
       "reads": [
         {
           "expression": "readFileSync(join(this.root, id, 'envelope.json'), 'utf8')",
@@ -6921,7 +6956,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "0450942b89f4c092ad4141425d6037bb56dbd4430c57704a6463a3b8863d7269"
+      "consumerSourceHash": "927b2eb921687fc6f5c8ed8ef314a13f9ee56fcd5c7c7fbdac3831edf545cf90"
     },
     {
       "entrypoint": "scripts/verify-feedback-flow.mjs",
@@ -6929,7 +6964,7 @@
       "dependencies": ["scripts/browser-artifacts.mjs", "scripts/browser-evidence.mjs"],
       "externalImports": ["node:crypto", "node:fs", "node:http"],
       "consumers": [],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
       "reads": [
         {
           "expression": "new URL(req.url, 'http://localhost')",
@@ -6966,7 +7001,7 @@
       "dependencies": ["scripts/browser-artifacts.mjs", "scripts/browser-evidence.mjs"],
       "externalImports": ["node:crypto", "node:fs", "node:http"],
       "consumers": [],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
       "reads": [
         {
           "expression": "new URL(req.url, 'http://localhost')",
@@ -7003,7 +7038,7 @@
       ],
       "externalImports": ["node:fs", "node:http"],
       "consumers": [],
-      "roots": "11a4f700dbdb302aee4d4d622cf8db527d931aa603ef3b4b56e3fbc8c6eea3c9",
+      "roots": "70689d740f5bf3a52b0f5245fea2d8e495d50958f790e6a5fe780f98d0f18d28",
       "reads": [
         {
           "expression": "readFileSync(file)",

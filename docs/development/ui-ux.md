@@ -421,7 +421,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"f4d21e65b66904c4fecd3800f8a39ac461ced4d05b916c2456043e91fcd9d483","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"3b9b2a8fe8c6d71b0ab5b0de35ee94c042243d82d4a0c3b6497482316c36c4e6","disposition":"still accurate","rationale":"The scene journey now additionally checks mounted-camera exit and scene tool recovery. Existing camera and scene automation remain behavior evidence, separate from player comprehension and human acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"4071d2ac8b1ae767dd5d67087c34c1a63aa915afc68494bd01bd77fc534ee29a","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"efb57c94a0a28b84a54e8b69482fea00106b0c14d58a31351ac83adee1d6df3c","disposition":"still accurate","rationale":"The learning example verifier now waits for application readiness before applying its six-second interaction deadline. Independent edits, Run, Undo, preserved spring tuning, replacement cancellation and the gear journey retain all existing assertions; automation still does not establish human acceptance."} -->
 
 
 

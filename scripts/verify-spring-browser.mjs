@@ -636,11 +636,43 @@ try {
     window.springSlowFrames = true;
   });
   await page.locator('[data-command=run]').click();
-  await page.waitForFunction(
-    () => window.workshopProbe.readInteractionState().rendering.quality.level === 5,
-    null,
-    { timeout: 45000 },
-  );
+  // Keep real viewport demand active while the two delayed animation loops run.
+  // An idle draw between clock callbacks resets adaptive sampling; elapsed time
+  // alone is not evidence of sustained slow rendering.
+  const slowViewport = await page.locator('canvas[aria-label="Machine view"]').boundingBox();
+  assert.ok(slowViewport);
+  const orbitX = slowViewport.x + slowViewport.width * 0.85;
+  const orbitY = slowViewport.y + slowViewport.height * 0.6;
+  await page.mouse.move(orbitX, orbitY);
+  await page.mouse.down();
+  let keepOrbiting = true,
+    orbitError;
+  const orbit = (async () => {
+    let direction = 1;
+    while (keepOrbiting) {
+      await page.mouse.move(orbitX + 24 * direction, orbitY);
+      direction *= -1;
+      await new Promise((resolve) => setTimeout(resolve, 16));
+    }
+  })().catch((error) => {
+    orbitError = error;
+    keepOrbiting = false;
+  });
+  try {
+    await page.waitForFunction(
+      () => window.workshopProbe.readInteractionState().rendering.quality.level === 5,
+      null,
+      { timeout: 45000 },
+    );
+  } finally {
+    keepOrbiting = false;
+    await orbit;
+    try {
+      await page.mouse.up();
+    } finally {
+      if (orbitError) throw orbitError;
+    }
+  }
   await page.evaluate(() => {
     window.springSlowFrames = false;
   });

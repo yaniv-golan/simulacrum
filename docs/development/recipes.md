@@ -181,7 +181,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"37549ff8215d74922be0bad69412d20160664606d268bc693405aa4879f4cb4c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"2a110998f6948192039c42b2cb2643cd8d1c739339243fc75c545dcb8da012f8","disposition":"still accurate","rationale":"Lamp discovery metadata and query tests have no simulation or power authority. Physical laws, capacity accounting and the existing verification requirements remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f35a68606b580ea230fa25be168c5e440c0452e891f982a89f7d5b25bfdd6920","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"f527fcb8e97eab893896e45f14db970dd96239f1cfcc740253705353f1cdf4b9","disposition":"still accurate","rationale":"Only browser fixture readiness and sustained viewport input changed. Spring physical fixtures, analytical and contact controls, scene capacity and primitive compilation are unchanged; all minimum-quality and rendered-transform assertions remain required."} -->
 
 
 
@@ -525,7 +525,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"c8d8aea8c37a50eccd8c64608078f8a1b696a413d87170c1e490bf9cebc523c5","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"eaac59229bff4d24717e60dad8078b0372afe1d917a9e017a11a53bced5f1575","disposition":"still accurate","rationale":"Main lamp rendering still consumes completed electrical output. Scene preview/recording primitives and mounted-camera exit retain separate rendering/input owners; no scene collider or physical material is changed by lamp illumination."} -->
+<!-- doc-review {"version":1,"fingerprint":"46c18cb23407c72bf67e9d682f03f7612483e281640ae67c66443882f216712a","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"8e488c0b18da2768c9e34deea639d91718055d7d4dcb6cd0e91b530e5fcaae88","disposition":"still accurate","rationale":"The spring pressure verifier now sustains ordinary orbit input and releases the pointer on failure. Overlay ownership, immutable physical geometry, retained rendering resources and minimum-quality pixel and geometry assertions remain unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"02e2c2b969aa30544065588b4d8114f72df63840cc981ae69cb0aa865e9df522","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"9b2b59abe3af748f7a1ea45d8beb3378544a607b6b7436c5dd8370781fbee6f0","disposition":"still accurate","rationale":"The merged manifest retains conservative roots and opaque-source witness review. Added scene and recording dependencies extend selection without changing admission policy."} -->
+<!-- doc-review {"version":1,"fingerprint":"1f1779d020715e60e060b46224f5f30a301b3b39b3d2999cb9c3020f1e3b23b4","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"4d05e0ddce3ff04877d24748af4d923586cb6f1090d0a5dda2363ec0e916ca22","disposition":"still accurate","rationale":"The reviewed scope update retains conservative roots and all required scene, recording and interaction witnesses. Learning startup now waits for published application probes before applying its six-second action deadline; spring pressure uses ordinary pointer input. Neither change alters execution admission, scope exclusions or evidence identity."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -507,7 +507,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"1233239cc7832d51a3192f533e756c8170960821fb0e4787778de12f0caf91f0","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"5b83ad9765a4e32e91caaf5aae7138c50d6384cd82eab5456f62b0029583ab4d","disposition":"still accurate","rationale":"Scene and catalogue fixture changes are captured as ordinary candidate source bytes. The isolated capture, source drift and two-branch integration requirements remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"1cfbad9707489fe076911dd151deb4a347d3129b7fb3fd39c58d90a74f5b1632","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"269aaf567b0b96f965e9438feabe99515eae4114ddcbb59cfeb6e60baff3647f","disposition":"still accurate","rationale":"Scope metadata and the revised learning and spring verifier bytes are ordinary captured source. Candidate isolation, source drift rejection and the requirement to pin both integration tips remain unchanged; focused fixture evidence cannot replace the merge tier."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
