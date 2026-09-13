@@ -1,28 +1,43 @@
 /** Numeric completed joint reactions. Native and prepared impulses act on endpoint a;
  * public copied receipts act on b. Measurement never writes physical state. */
 export function createJointReactions(joints) {
-  const neighbours = new Map();
-  joints.forEach((j, i) => {
-    for (const [a, b] of [
-      [j.a, j.b],
-      [j.b, j.a],
-    ]) {
-      if (!neighbours.has(a)) neighbours.set(a, []);
-      neighbours.get(a).push([b, i]);
-    }
-  });
-  const supported = joints.map((j, index) => {
-    if (j.kind !== 'fixed') return false;
-    const seen = new Set([j.a]),
-      queue = [j.a];
-    for (let k = 0; k < queue.length; k++)
-      for (const [b, edge] of neighbours.get(queue[k]) ?? [])
-        if (edge !== index && !seen.has(b)) {
-          seen.add(b);
-          queue.push(b);
-        }
-    return !seen.has(j.b);
-  });
+  function domain(opened) {
+    if (
+      !Array.isArray(opened) ||
+      opened.some(
+        (i, k) =>
+          !Number.isSafeInteger(i) || joints[i]?.kind !== 'fixed' || (k > 0 && opened[k - 1] >= i),
+      )
+    )
+      throw TypeError('invalid reaction topology');
+    const removed = new Set(opened),
+      neighbours = new Map();
+    joints.forEach((j, i) => {
+      if (removed.has(i)) return;
+      for (const [a, b] of [
+        [j.a, j.b],
+        [j.b, j.a],
+      ]) {
+        if (!neighbours.has(a)) neighbours.set(a, []);
+        neighbours.get(a).push([b, i]);
+      }
+    });
+    return joints.map((j, index) => {
+      if (j.kind !== 'fixed' || removed.has(index)) return false;
+      const seen = new Set([j.a]),
+        queue = [j.a];
+      for (let k = 0; k < queue.length; k++)
+        for (const [b, edge] of neighbours.get(queue[k]) ?? [])
+          if (edge !== index && !seen.has(b)) {
+            seen.add(b);
+            queue.push(b);
+          }
+      return !seen.has(j.b);
+    });
+  }
+  // Topology belongs to the completed interval, not a release being prepared.
+  let opened = [],
+    supported = domain(opened);
   const zeros = () => joints.map(() => [0, 0, 0]);
   let tick = 0,
     dirty = false,
@@ -36,20 +51,25 @@ export function createJointReactions(joints) {
   function validate(state) {
     if (
       !state ||
-      Object.keys(state).sort().join() !== 'impulses,tick' ||
+      Object.keys(state).sort().join() !== 'impulses,opened,tick' ||
       !Number.isSafeInteger(state.tick) ||
       state.tick < 0 ||
       !Array.isArray(state.impulses) ||
-      state.impulses.length !== joints.length ||
-      state.impulses.some((v, i) => v !== null && (!supported[i] || state.tick === 0 || !vector(v)))
+      state.impulses.length !== joints.length
+    )
+      throw TypeError('invalid reaction snapshot');
+    const allowed = domain(state.opened);
+    if (
+      (state.tick === 0 && state.opened.length) ||
+      state.impulses.some((v, i) => v !== null && (!allowed[i] || state.tick === 0 || !vector(v)))
     )
       throw TypeError('invalid reaction snapshot');
     return structuredClone(state);
   }
   return Object.freeze({
-    supported(i) {
+    supported(i, historicalOpened) {
       index(i);
-      return supported[i];
+      return (historicalOpened === undefined ? supported : domain(historicalOpened))[i];
     },
     add(indices, impulses, scale = 1) {
       if (
@@ -67,15 +87,19 @@ export function createJointReactions(joints) {
         for (let a = 0; a < 3; a++) pending[i][a] -= impulses[k * 3 + a] * scale;
       }
     },
-    complete(native) {
+    complete(native, nextOpened = []) {
       if (!Number.isSafeInteger(tick + 1)) throw RangeError('reaction tick overflow');
+      const nextSupported =
+        JSON.stringify(nextOpened) === JSON.stringify(opened) ? supported : domain(nextOpened);
       const next = joints.map((_, i) => {
-        if (!supported[i]) return null;
+        if (!nextSupported[i]) return null;
         const applied = native(i);
         if (!vector(applied)) return null;
         const result = pending[i].map((x, k) => x - applied[k]);
         return result.every(Number.isFinite) ? result.map((x) => (x === 0 ? 0 : x)) : null;
       });
+      opened = [...nextOpened];
+      supported = nextSupported;
       completed = next;
       pending = zeros();
       dirty = false;
@@ -93,11 +117,13 @@ export function createJointReactions(joints) {
     },
     snapshot: () => {
       if (dirty) throw Error('reaction snapshot requires completed step');
-      return { tick, impulses: structuredClone(completed) };
+      return { tick, impulses: structuredClone(completed), opened: [...opened] };
     },
     validate,
     restore(state) {
       const admitted = validate(state);
+      opened = admitted.opened;
+      supported = domain(opened);
       tick = admitted.tick;
       completed = admitted.impulses;
       pending = zeros();

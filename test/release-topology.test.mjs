@@ -179,7 +179,11 @@ function forgeOpen(bytes, index) {
   } finally {
     native.free();
   }
-  Object.assign(meta, { version: 6, opened: [index], gearState: [] });
+  Object.assign(meta, { opened: [index], gearState: [] });
+  // Keep the new receipt topology internally coherent so this counterexample
+  // still reaches the independent frequency-admission guard.
+  meta.reactions.opened = [index];
+  meta.reactions.impulses = meta.reactions.impulses.map(() => null);
   const m = new TextEncoder().encode(JSON.stringify(meta)),
     out = new Uint8Array(12 + m.length + payload.length),
     view = new DataView(out.buffer);
@@ -195,6 +199,11 @@ function forgeOpen(bytes, index) {
 test('released restore rejects frequency-unsafe ballast removal before swapping plant', async () => {
   const w = await createPhysicsWorld(lightSpring());
   try {
+    w.prepareConstraints();
+    w.prepareSprings();
+    w.applyPreparedConstraints();
+    w.applySprings();
+    w.step();
     const cp = w.snapshot();
     assert.deepEqual(w.planReleases([1]), [{ joint: 1, reasonCode: 'RELEASE_SUPPORT_BLOCKED' }]);
     assert.throws(() => w.restore(forgeOpen(cp, 1)), /frequency/);

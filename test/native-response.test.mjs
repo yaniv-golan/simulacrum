@@ -35,7 +35,7 @@ test('f64 runtime identity and old envelopes reject before deserialization', asy
     assert.equal(R.version(), '0.20.0-simulacrum.spring.10.f64');
     const cp = w.snapshot(),
       saved = decode(cp);
-    assert.equal(saved.meta.version, 6);
+    assert.equal(saved.meta.version, 9);
     assert.equal(saved.meta.backend, R.version());
     const original = R.World.restoreSnapshot;
     let calls = 0;

@@ -885,13 +885,15 @@ export async function createPhysicsWorld(configuration) {
           f[offsets.get(j.b) + k] += axis[k];
         }
         const impulse = Array(size).fill(0),
-          response = Array(size).fill(0);
+          response = Array(size).fill(0),
+          jointResponses = [];
         for (const component of components) {
           const input = component.indices.flatMap((i) =>
             f.slice(offsets.get(i), offsets.get(i) + 6),
           );
           if (!input.some((x) => x !== 0)) continue;
           const out = component.projection.response(input);
+          jointResponses.push({ component, out });
           component.indices.forEach((i, slot) => {
             for (let k = 0; k < 6; k++) {
               impulse[offsets.get(i) + k] = out.impulse[slot * 6 + k];
@@ -910,6 +912,7 @@ export async function createPhysicsWorld(configuration) {
           f,
           impulse,
           response,
+          jointResponses,
           offsetA: offsets.get(j.a) + cart,
           offsetB: offsets.get(j.b) + cart,
         };
@@ -977,6 +980,11 @@ export async function createPhysicsWorld(configuration) {
         body.addTorque(xyz(applied.slice(off + 3, off + 6).map((v) => v / DT)), true);
       }
     }
+    // These projected forces are applied for the full upcoming interval. Probes
+    // above do not count; retain only each applied Cartesian row's correction.
+    rows.forEach((r, i) =>
+      r.jointResponses.forEach(({ component, out }) => component.recordReactions(out, -flat[i])),
+    );
     pendingRopeWork = readings.map((r, i) => ({
       before: r.pointB.map((v, k) => v - r.pointA[k]),
       impulse: [...receipt.impulses[i]],
@@ -1798,11 +1806,14 @@ export async function createPhysicsWorld(configuration) {
         throw new Error('gear solve must precede integration');
       if (ropeIndices.length && !ropesApplied) throw Error('rope solve must precede integration');
       world.step(contactEvents, contactHooks);
-      reactions.complete((i) => {
-        const v = world.impulseJoints.raw.jointAppliedLinearImpulse(jointHandles[i]);
-        if (!v) return null;
-        return Array.from(v);
-      });
+      reactions.complete(
+        (i) => {
+          const v = world.impulseJoints.raw.jointAppliedLinearImpulse(jointHandles[i]);
+          if (!v) return null;
+          return Array.from(v);
+        },
+        [...opened].sort((a, b) => a - b),
+      );
       if (ropeIndices.length)
         for (const handle of handles) {
           const body = world.getRigidBody(handle);
@@ -1843,9 +1854,9 @@ export async function createPhysicsWorld(configuration) {
       alive();
       return readWorld(world, handles);
     },
-    jointReactionSupported(index) {
+    jointReactionSupported(index, historicalOpened) {
       alive();
-      return reactions.supported(index);
+      return reactions.supported(index, historicalOpened);
     },
     jointReaction(index) {
       alive();
@@ -1924,6 +1935,8 @@ export async function createPhysicsWorld(configuration) {
           throw TypeError('rope work snapshot mismatch');
       }
       const reactionState = reactions.validate(decoded.reactions);
+      if (JSON.stringify(reactionState.opened) !== JSON.stringify(decoded.opened))
+        throw Error('snapshot reaction topology mismatch');
       if (expectedTick !== undefined && reactionState.tick !== expectedTick)
         throw Error('snapshot reaction tick mismatch');
       let candidate;

@@ -125,10 +125,11 @@ function sampleSensors(tick, bodies, powerConfig, joints, world, supply, gravity
   const reactions = hasReactions
     ? reactionIndices(powerConfig).map((joint) => ({ joint, ...world.jointReaction(joint) }))
     : [];
+  const openedJoints = hasReactions ? world.openedJoints() : [];
   return {
     tick,
     bodies,
-    ...(hasReactions ? { reactions } : {}),
+    ...(hasReactions ? { reactions, openedJoints } : {}),
     readings: powerConfig.sensors.map((sensor) =>
       sampleSensor(sensor, {
         tick,
@@ -139,6 +140,7 @@ function sampleSensors(tick, bodies, powerConfig, joints, world, supply, gravity
         powered: supply.sensors?.find((s) => s.node === sensor.node)?.powered === true,
         previous: previous?.readings.find((r) => r.node === sensor.node),
         reaction: (i) => reactions.find((r) => r.joint === i),
+        openedJoints,
         pointVelocity: (spec) => world.sensorPointVelocity(spec),
         ray: (spec) => world.rangeSample(spec),
         contact: (spec) => world.contactPadSample(spec),
@@ -965,7 +967,9 @@ export async function createSession(
         'tick',
         'bodies',
         'readings',
-        ...(config.power.sensors.some((s) => s.kind === 'loadCell') ? ['reactions'] : []),
+        ...(config.power.sensors.some((s) => s.kind === 'loadCell')
+          ? ['reactions', 'openedJoints']
+          : []),
       ]) ||
       cp.sensors.tick !== Math.max(0, cp.tick - 1) ||
       !Array.isArray(cp.sensors.bodies) ||
@@ -992,6 +996,21 @@ export async function createSession(
       invalid();
     if (config.power.sensors.some((s) => s.kind === 'loadCell')) {
       const indices = reactionIndices(config.power);
+      const currentOpened = new Set(
+        (cp.power.couplers ?? []).filter((c) => c.opened).map((c) => c.joint),
+      );
+      if (
+        !Array.isArray(cp.sensors.openedJoints) ||
+        (cp.sensors.tick === 0 && cp.sensors.openedJoints.length) ||
+        cp.sensors.openedJoints.some(
+          (i, k) =>
+            !Number.isSafeInteger(i) ||
+            config.joints[i]?.kind !== 'fixed' ||
+            !currentOpened.has(i) ||
+            (k > 0 && cp.sensors.openedJoints[k - 1] >= i),
+        )
+      )
+        invalid();
       if (!Array.isArray(cp.sensors.reactions) || cp.sensors.reactions.length !== indices.length)
         invalid();
       for (const [index, r] of cp.sensors.reactions.entries()) {
@@ -1002,7 +1021,8 @@ export async function createSession(
           !['ok', 'initializing', 'unavailable'].includes(r.status) ||
           (r.status === 'ok' && (r.tick === 0 || !vector(r.impulse, 3))) ||
           (r.status === 'initializing' && r.tick !== 0) ||
-          (r.status !== 'unavailable' && !world.jointReactionSupported(r.joint))
+          (r.status !== 'unavailable' &&
+            !world.jointReactionSupported(r.joint, cp.sensors.openedJoints))
         )
           invalid();
       }
@@ -1026,6 +1046,7 @@ export async function createSession(
             bodies: cp.sensors.bodies,
             joints: config.joints,
             reaction: (i) => cp.sensors.reactions?.find((r) => r.joint === i),
+            openedJoints: cp.sensors.openedJoints,
             gravity: config.gravity,
             powered: !Object.values(reading.channels).some((c) => c.status === 'no-power'),
           });

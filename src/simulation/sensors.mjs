@@ -49,7 +49,13 @@ export function sampleSensor(sensor, context) {
     const status = (value) => {
       for (const name of Object.keys(definition)) result.channels[name] = { status: value };
     };
-    if (sensor.joint < 0 || sensor.support < 0) status('disconnected');
+    if (
+      sensor.joint < 0 ||
+      sensor.support < 0 ||
+      context.openedJoints?.includes(sensor.joint) ||
+      context.openedJoints?.includes(sensor.support)
+    )
+      status('disconnected');
     else {
       const receipt = context.reaction?.(sensor.joint);
       if (receipt?.tick === tick && receipt.status === 'initializing' && tick === 0)

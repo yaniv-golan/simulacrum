@@ -86,7 +86,7 @@ test('released rope checkpoints retain both families and continue exactly across
       a.step(at);
       const cp = a.checkpoint(),
         header = metadata(cp.physics);
-      assert.equal(header.version, cp.power.couplers[0].opened ? 8 : 7);
+      assert.equal(header.version, 9);
       if (at === 0) {
         const legacy = structuredClone(cp);
         legacy.physics = rewrite(legacy.physics, (m) => {
@@ -94,7 +94,7 @@ test('released rope checkpoints retain both families and continue exactly across
           delete m.ropeWork;
         });
         const beforeLegacy = b.checkpoint();
-        assert.throws(() => b.restore(legacy), /rope work snapshot/);
+        assert.throws(() => b.restore(legacy), /invalid physics fields/);
         assert.deepEqual(b.checkpoint(), beforeLegacy);
       }
       b.restore(cp);
