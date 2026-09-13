@@ -101,7 +101,11 @@ test('real suite owns cleanup inside failed receipts and preserves simultaneous 
     assert.equal(row.report.runs[0].ok, false);
     assert.equal(row.receipts.find((r) => r.id === 'browser:verify-browser').ok, false);
     assert.match(JSON.stringify(row.report), /injected probe cleanup failure/);
-    if (row.childFail) assert.match(JSON.stringify(row.report), /injected child failure/);
+    if (row.childFail) {
+      assert.match(JSON.stringify(row.report), /injected child failure/);
+      // The runner's snapshot survives the cleanup AggregateError wrapper onto the row.
+      assert.equal(row.report.runs[0].processSnapshot?.at, 'watchdog');
+    } else assert.equal(row.report.runs[0].processSnapshot, null);
   }
 });
 

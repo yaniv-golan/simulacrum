@@ -37,7 +37,7 @@ registerHooks({
     if (url === `file://${repo}/scripts/app-fingerprint.mjs`)
       source = `export function appFingerprint(){return'fixture'}`;
     if (url === `file://${repo}/scripts/run-check.mjs`)
-      source = `export async function runProcess(binary,args,options){const artifact=globalThis.fixtureArtifact(options);globalThis.executionOrder.push(args[0]);globalThis.liveRuns.push(globalThis.fixtureRead().runs);if(args[0]===globalThis.failScript)throw Error('deliberate priority failure');if(globalThis.childMustFail)throw Error('injected child failure');return{elapsedMs:1,output:'child passed '+artifact}};export async function runModuleCheck(){}`;
+      source = `export async function runProcess(binary,args,options){const artifact=globalThis.fixtureArtifact(options);globalThis.executionOrder.push(args[0]);globalThis.liveRuns.push(globalThis.fixtureRead().runs);if(args[0]===globalThis.failScript)throw Error('deliberate priority failure');if(globalThis.childMustFail)throw Object.assign(Error('injected child failure'),{failureKind:'watchdog',processDiagnostics:{snapshot:{at:'watchdog',topCpu:[],topRss:[],watch:[],tree:[]}}});return{elapsedMs:1,output:'child passed '+artifact}};export async function runModuleCheck(){}`;
     if (source) return { format: 'module', source, shortCircuit: true };
     return next(url, context);
   },

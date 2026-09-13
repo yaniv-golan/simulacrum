@@ -345,6 +345,10 @@ async function executeBrowserSuite(
             );
           } catch (error) {
             retainOrigin(error.evidenceOrigin ?? evidenceOrigin);
+            // Cleanup or retention failures wrap the runner error; keep its snapshot.
+            const diagnostics =
+              error.processDiagnostics ??
+              error.errors?.find((cause) => cause?.processDiagnostics)?.processDiagnostics;
             Object.assign(row, {
               status: 'failed',
               ok: false,
@@ -353,6 +357,7 @@ async function executeBrowserSuite(
               errors: errorMessages(error),
               failureKind: error.failureKind ?? 'unknown',
               checkKind: check.tier,
+              processSnapshot: diagnostics?.snapshot ?? null,
             });
             publish();
             console.log(
