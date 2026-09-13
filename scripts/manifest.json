@@ -351,7 +351,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -4938,7 +4938,7 @@
       "id": "attachment-force-sensing",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "A physically mounted load cell samples signed axial and resultant full-tick solved reaction at its B attachment, with explicit invalid states, bridge-domain admission, powered prior-tick Rules inputs and exact checkpoint continuation. Reaction diagnostics do not change physical motion.",
+      "guarantee": "A physically mounted load cell samples signed axial and resultant full-tick solved reaction at its B attachment, including applied Rope corrections, with explicit invalid states, completed released-topology bridge admission, powered prior-tick Rules inputs and exact checkpoint continuation of both topology ages. Reaction diagnostics do not change physical motion.",
       "owners": [
         {
           "path": "src/simulation/physics/joint-reactions.mjs",
@@ -5116,6 +5116,14 @@
           {
             "path": "test/load-cell-physical-matrix.test.mjs",
             "anchor": "physical matrix closes independent moving and stalled accounts"
+          },
+          {
+            "path": "test/load-cell-coupled.test.mjs",
+            "anchor": "rope prepared reactions close the measured bridge momentum account with omitted and doubled controls"
+          },
+          {
+            "path": "test/load-cell-coupled.test.mjs",
+            "anchor": "released ${which} updates load-cell connectivity and preserves both checkpoint topology ages"
           }
         ],
         "negative": [
@@ -5202,6 +5210,14 @@
           {
             "path": "test/load-cell-physical-matrix.test.mjs",
             "anchor": "load-cell ${path} ${mode} drive witness rejects no-op"
+          },
+          {
+            "path": "test/load-cell-coupled.test.mjs",
+            "anchor": "rope prepared reactions close the measured bridge momentum account with omitted and doubled controls"
+          },
+          {
+            "path": "test/load-cell-coupled.test.mjs",
+            "anchor": "released ${which} updates load-cell connectivity and preserves both checkpoint topology ages"
           }
         ]
       },

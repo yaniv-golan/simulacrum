@@ -11,7 +11,6 @@ serve a stable build. The page displays its build identity.
 
 <!-- doc-review {"version":1,"fingerprint":"c493cfb94556d95eacbac7f275368fc79605942c7b078eefc4640e9eb385c470","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"ada749125e632d8ece4fdd979daab565086e6bd09d7c36081a86094b2ad69da3","disposition":"updated","rationale":"The command choice now distinguishes local completion, routine merge readiness and full release or milestone qualification; each completion command owns CI so development probes need not be repeated."} -->
 
-
 Player-facing changes also follow the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 It owns placement, teaching lifecycle and qualitative review; the manifest owns its
 executable guarantees. Use the existing discovery and completion commands below.
@@ -39,7 +38,6 @@ executable guarantees. Use the existing discovery and completion commands below.
 ## Find owners and checks
 
 <!-- doc-review {"version":1,"fingerprint":"37450138a14dd6c4fd1759a77b8849041de56b166f5bba53b6d2e9166561f554","dependencies":"docs/development/.reviews/README/find-owners-and-checks.json","dependencyDigest":"c6275df393eb8b04ad047ae48f7f56667f094d7dce4c67f59f6d2766bed45c13","disposition":"still accurate","rationale":"The integrated module graph still derives current owners, declarations and conservative tests. New capture-packet edges and native qualification commands are discoverable; static summaries remain non-executing and opaque readers retain explicit audits."} -->
-
 
 ```sh
 node scripts/navigate.mjs availablePartName
@@ -176,7 +174,14 @@ that hashing a stylesheet validates its layout; browser review remains required.
    in a temporary JSON file and run `npm run docs:review -- --batch <decisions.json>`:
 
    ```json
-   [{"file":"docs/development/architecture.md","id":"trace-an-edit","disposition":"still accurate","rationale":"The new view toggle does not change command admission or history ownership."}]
+   [
+     {
+       "file": "docs/development/architecture.md",
+       "id": "trace-an-edit",
+       "disposition": "still accurate",
+       "rationale": "The new view toggle does not change command admission or history ownership."
+     }
+   ]
    ```
 
    Every row requires its own file, section ID, disposition and technical rationale.
@@ -266,6 +271,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
+
 <!-- doc-review {"version":1,"fingerprint":"eba2c7e75185d00c9b2c279a157e4097ebb9832d35e64ffd581fbf868d97a993","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"2c3e1183228288429d92c1b6153bb5c9c48ec097c30806bc718e1a61ea503ef3","disposition":"still accurate","rationale":"Eight consumerSourceHash values now bind the reviewed footer composition, catalog scrolling and verifier corrections. Reader purposes, exclusions, roots, declarations and required checks are unchanged. The explanation still accurately requires audited dependency closure and successful witness-bound application; metadata refresh supplies no completion or human receipt."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
@@ -357,8 +363,9 @@ Reports preserve manifest order, all failures, worker configuration and source i
 Every check records its planned schedule index, dispatch time, active browser peers and
 host load averages. These describe admission conditions; they do not establish stable
 warmup, causal contention or comparable performance distributions across reordered runs.
-Shared sensing remains exclusive because its contact-driven reversal is transient and
-was missed under parallel contention. Starter also remains exclusive because it checks
+Shared sensing remains exclusive. Its contact journey stops wall-clock progression
+while arming both receivers, then observes every fixed step within the existing physical horizon.
+Starter also remains exclusive because it checks
 bounded tick gaps in live observations. The actuator journey retains its exclusive focus
 profile after two headless parallel trials failed its repaired-extension assertion.
 It releases drive before pausing a backdrivable load, making the observed state sensitive
@@ -506,6 +513,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
+
 <!-- doc-review {"version":1,"fingerprint":"cc6185d46aebe6fd154949bc3f177011f39e3a689b45df669fc3a8fa4b892bce","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"cbf8c3209e0b0ba85d0298aa4156953e64af208e7d9677f28c4691e0ac127072","disposition":"still accurate","rationale":"Only eight existing metadata consumer hashes changed after scope witnesses. Candidate source capture, dependency/runtime admission, same-candidate unit resume, source/index drift rejection and fresh browser execution requirements remain unchanged. The existing footer repairs are already documented; this metadata update does not create cross-candidate evidence reuse."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with

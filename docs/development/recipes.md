@@ -80,8 +80,6 @@ through the [ordinary construction journey](../../scripts/verify-load-cell-brows
 
 <!-- doc-review {"version":1,"fingerprint":"6c6a23dbfcecdeaa4e99ff5136de85d29ec4443be23270384d9ff46cb1026ac5","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"3ebc593ab16ab64366d0d60daf213b5a127b1b4e88bad1c835a39f11e44efa3f","disposition":"still accurate","rationale":"Release authoring extends model admission behind existing surface-mount and candidate compilation. The core still validates, copies and publishes one accepted history transaction; no second command or new live-pose editing authority is introduced."} -->
 
-
-
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
 and publish only after successful compilation. One accepted edit owns one history
@@ -146,8 +144,6 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 <!-- doc-review {"version":1,"fingerprint":"9dfde7edd687aee33524abda209f51a11395d450dfd71672c37a98e4327ece52","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"34aeb71e2f008443ec660ee93bf8a3074161a580ca79d865dca9f929aa343ed5","disposition":"still accurate","rationale":"Release status is completed power telemetry and its display adds no authored repair path. Existing motion diagnostics, historical controller decisions and selected-body sample accumulation keep their declared owners and missing-data requirements."} -->
 
-
-
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
 owns navigation and wording layout. Do not repair authored state or infer intention
@@ -175,8 +171,6 @@ warnings when requested measurements close.
 ## Change physics
 
 <!-- doc-review {"version":1,"fingerprint":"3f3b9c32efce8f3940c7ebdb1880a99917920170f8863af0a03e7c1a07d169bf","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"95b1d59eb6fa132dee797871b0e8327617f2018a8bef04c9bd347a664ef8d79e","disposition":"still accurate","rationale":"The cloud-runtime verifier now emits synchronous stage timings, burst settlement counts and separate workload/cleanup outcomes, retaining an original workload error before cleanup. Its assertions, concurrent payloads, dispatches and deadlines are unchanged, as are all production physics, phase, energy and checkpoint owners in this recipe. These are diagnostic observations, not a timeout fix; the cause of the prior thirty-second failure remains unproven."} -->
-
-
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -226,7 +220,10 @@ check the first ticks after Retry and repeated unsmoothed threshold crossings wi
 actual drive stopping and resuming. Native receipts
 sum actual applications across the full tick, including warmstarts and temporal
 subdivisions. Prepared response queries count only when their result is applied;
-probing a response must not contribute force. Test deliberate omission of prepared
+probing a response must not contribute force. Rope corrections enter the receipt only
+after the admitted rope solve applies its corresponding projected forces. Release
+updates completed bridge membership, and checkpoint validation uses each reaction
+age's opened-joint topology. Test deliberate omission of prepared
 joint contributions while retaining identical body motion. Native transient diagnostics
 are excluded from native serialization; validated numeric receipts belong to the
 physics envelope. Native qualification compares unchanged physical state separately
@@ -323,7 +320,7 @@ qualify browser cadence or arbitrary larger machines.
 
 Distributed [rope compilation](../../src/model/rope.mjs) appends N+1 massive nodes,
 two ordinary spherical attachments and N tensile elements. It preserves total
-rho*A*L and series compliance L/(E*A) under subdivision. Material values are a
+rho*A*L and series compliance L/(E\*A) under subdivision. Material values are a
 nominal braided-nylon model: the inherited density/packing/strength assumptions
 are not a calibrated product rating. Effective E=100 MPa and viscosity=100 kPa s
 set a one-millisecond Kelvin–Voigt retardation time; native tick error is separate.
@@ -392,7 +389,7 @@ Completed snapshots include opened joint indices and the permitted native plant.
 cross-checks latch state, joint handles, remaining native constraints, body properties,
 gear support and released spring mobility before replacing state. A partially committed
 release cannot be snapshotted before integration. Combined Rope/release checkpoints use
-the runtime contract's version 8 and validate both opened joints and completed rope
+the runtime contract's physics-envelope version 9 and validate both opened joints and completed rope
 work before swapping native state. Numeric Rope links remain outside the native
 response groups; their spherical anchors and ordinary tension remain active after
 release. Preserve the [combined tether and restore controls](../../test/release-rope.test.mjs#source),

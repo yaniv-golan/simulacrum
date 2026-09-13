@@ -43,6 +43,8 @@ native backend, gear memory, opened fixed joints, rope memory and work, and late
 completed joint reactions before deserialization. Older opaque checkpoints are
 rejected explicitly. For configured Load Cells at completed tick k ≥ 1, physics
 holds reaction k and the consumed sensor snapshot holds evidence for reaction k−1.
+Each also retains opened-joint topology at that same age; an opened A or B mount
+is disconnected, while opening a bypass can make B a measurable bridge.
 At tick zero there is no completed force interval: supported joint receipts are
 initializing, while sensor readings retain power, mounting and domain validity
 precedence. Restore validates receipt ages and topology without advancing physics.
@@ -457,19 +459,14 @@ solver velocity stabilization; they do not measure continuous contact time or co
 heat. Support classification and qualification require independent apparatus and
 error bounds beyond this numeric observation contract.
 
-Opaque physics envelopes admit versions 4 through 8 and bind the pinned f64 backend
-identity. Version 4 has no gear-memory or opened-joint fields. Version 5 adds
-`gearState`; version 6 includes `gearState` (possibly empty) and `opened`, a strictly
-increasing list of indices of authored fixed joints. Indices remain relative to the
-original admitted joint configuration after removal. Version 7 includes `ropeState`
-and `ropeWork`, plus `gearState` when gears are present. Version 8 includes all four
-fields: `opened`, `gearState` (possibly empty), `ropeState` and `ropeWork`.
-Legacy version-6 rope envelopes instead contain `ropeState`, optional `gearState`
-and no `opened` or `ropeWork`; restoring an assembly containing ropes rejects that
-missing completed work ledger. The two version-6 field sets are mutually
-exclusive. Extra or missing variant fields reject. Unsupported versions and backend
+Opaque physics envelope version 9 binds the pinned f64 backend identity and requires
+`gearState`, `opened`, `ropeState`, `ropeWork` and `reactions`, including empty
+collections when a feature is absent. The `opened` field is a strictly increasing
+list of authored fixed-joint indices; indices retain their original configuration
+meaning after removal. Extra or missing fields, unsupported versions and backend
 identities reject before native snapshot deserialization. Native motor configuration
-is included in physical-plant restoration validation.
+is included in physical-plant restoration validation. This replaces the earlier
+variant envelopes whose version numbers had different meanings across feature branches.
 
 The power network owns each coupler's completed funding and opened state; the physics
 door owns the corresponding native joint removals. Session restore requires the
@@ -615,7 +612,6 @@ live machine. Delivery evaluation is an explicitly selected, independent measure
 module; generic learning does not infer a task from blueprint or part names. Saved
 outcomes are checked against their stored completed physical measurement; cumulative
 contact evidence remains recorded evidence, not a reconstructed or certified trace.
-
 
 Completed controller decisions are also available independently of teaching. The
 application drains the existing completed observation cursor into bounded recent
