@@ -334,9 +334,36 @@ test('load helper waits for a fresh matching receipt, including repeated rejecte
   writeFileSync(file, JSON.stringify(save));
   const evidence = createBrowserEvidence({ readBuild: () => 'x', readSource: () => ({}) });
   let receipt = { sequence: 4, input: { type: 'load', save }, result: { ok: false } };
+  const calls = [];
+  let blueprint = { parts: [], environment: 'rounded-bump' };
   const fake = {
-    evaluate: async () => structuredClone(receipt),
-    locator: () => ({ setInputFiles: async (path) => assert.equal(path, file) }),
+    evaluate: async (callback) => {
+      globalThis.window = {
+        workshopProbe: { readLastCommandResult: () => receipt },
+        render_game_to_text: () => JSON.stringify({ metadata: { blueprint } }),
+      };
+      try {
+        return structuredClone(callback());
+      } finally {
+        delete globalThis.window;
+      }
+    },
+    locator: (selector) => {
+      assert.equal(selector, 'input[type=file]');
+      return {
+        first: () => ({
+          setInputFiles: async (path) => {
+            assert.equal(path, file);
+            calls.push('upload');
+          },
+        }),
+      };
+    },
+    getByRole: (role, options) => {
+      assert.equal(role, 'button');
+      assert.deepEqual(options, { name: 'Replace without saving', exact: true });
+      return { click: async () => calls.push('confirm') };
+    },
     waitForFunction: async (predicate, args) => {
       globalThis.window = { workshopProbe: { readLastCommandResult: () => receipt } };
       try {
@@ -352,6 +379,11 @@ test('load helper waits for a fresh matching receipt, including repeated rejecte
     },
   };
   assert.equal((await evidence.loadAndWait(fake, file, { ok: false })).sequence, 5);
+  assert.deepEqual(calls, ['upload', 'confirm'], 'scene-only authored work needs confirmation');
+  blueprint = { parts: [], environment: 'flat' };
+  receipt = { ...receipt, sequence: 4 };
+  assert.equal((await evidence.loadAndWait(fake, file, { ok: false })).sequence, 5);
+  assert.deepEqual(calls, ['upload', 'confirm', 'upload'], 'empty flat work needs no confirmation');
 });
 
 test('rejected edit helper catches mutation; real pointer drag scrolls and releases even on failure', async () => {

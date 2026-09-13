@@ -181,7 +181,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"f35a68606b580ea230fa25be168c5e440c0452e891f982a89f7d5b25bfdd6920","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"f527fcb8e97eab893896e45f14db970dd96239f1cfcc740253705353f1cdf4b9","disposition":"still accurate","rationale":"Only browser fixture readiness and sustained viewport input changed. Spring physical fixtures, analytical and contact controls, scene capacity and primitive compilation are unchanged; all minimum-quality and rendered-transform assertions remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"64b7c2f0a703be39735383136fced00cac03a0c61bc132f68404925db3306d6e","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"747e6945c6bc6d322fbb0a00d2e2e6a7eb67ede03920e9dfa7a49626092d77e6","disposition":"still accurate","rationale":"The browser upload unit fixture now executes the helper callbacks and checks scene-only confirmation versus an empty flat document. This repairs the test double without changing physics, scene admission, analytical controls or browser interaction assertions."} -->
 
 
 

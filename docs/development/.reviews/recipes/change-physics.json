@@ -409,7 +409,7 @@
     "test/boundary-generation.test.mjs": "8f294c106ce8ac9e1bba8aebf78d1b3b535b107e77414c145d247a8187a5c5a1",
     "test/breadth.test.mjs": "8f509002935e11cdce5241056ff702fd96086232a6d2f2282e15cf17dda6e141",
     "test/browser-documentation-selection.test.mjs": "cedbb10e164b87c8a5ee70a355af46fe84f1cde4bf1f443c5d4473573d244335",
-    "test/browser-evidence.test.mjs": "2bc434a7e6246aa24b27d572df601a8249491d653538e45ffbe259cae4b8b14f",
+    "test/browser-evidence.test.mjs": "9f845cf763cebd78cbdc3850225a185f618d25fee0991229ad03eb9ea6e94ad5",
     "test/browser-registry-live.test.mjs": "34abf3f5171225dc75ea8e2d3ccafd6afeeb14f4a17095e3c4d01b1f79a67857",
     "test/browser-registry.test.mjs": "4177e86c5ca38d673ae9c25e209ab443c67b49375f516d3cb0a935866de70723",
     "test/browser-report.test.mjs": "b6be1186b6aeab3abc4f52044b316110ae9f519bf0a9214eff7a1e4582ac0262",
