@@ -1,8 +1,8 @@
 {
   "version": 1,
   "dependencies": {
-    "src/presentation/workshop-view.mjs": "0f02a049657c4605eb1f63defbd60881513ab595a051e286faf1c028b6bf7bc5",
-    "src/presentation/workshop.css": "76b5c6335cae02159ee27def88e56fcaee921ada360949e9071c49efb4b55a94",
+    "src/presentation/workshop-view.mjs": "83bc1a2b993fbdc2afe1add5f003970ede67ee75882ece5bacba4c78c589d475",
+    "src/presentation/workshop.css": "f71322a214f656bf7533924461f71a97356511c0e02367d320987dac5a9d704f",
     "src/presentation/parts-browser.mjs": "153d01758b040a471eb43074e0be7b35277f7a4fcfed16ab14a17e9320753e42",
     "src/model/boundaries.d.ts": "901105eee561938d3f477c6ce3857b18b0a894ad19e3761960bd7b97b60a662b",
     "src/model/catalog.mjs": "d3c8a92c8e4489706862e4069b7cc8429c27b4bd5cad2b402eff721628a6dd7b",
@@ -21,7 +21,7 @@
     "src/presentation/scene-editor.mjs": "e063e264007da18facbf553eb1190aa5437044bd1d4732cd99f79db0828d680c",
     "src/presentation/document-proposal.mjs": "f182f9129dad9bc8c875ed524dbd88a8eaf1a3c2a2bd2e8dccfbeebae98cbf2f",
     "src/presentation/workbench-content.mjs": "35e817a6787c38e52bc94437a4ee1606a5d956b4f1036966a84441200ee83474",
-    "src/application/workshop-app.mjs": "a5e0f216ac0a97b18308cf5e43509c49c29404335e6125de1ac7ecdd92d044d8",
+    "src/application/workshop-app.mjs": "1d895e6c20302d1299d0ed51241c1cea32aee075722063221788ebe59257603e",
     "scripts/catalog-browser-actions.mjs": "b7307b5a3f43464b16b2e4f75829ceb1bfd45d146ef09472bb773fe0691a4ce3",
     "scripts/gear-browser-cases.mjs": "a58cbb3dc02a69669ee13e881532924fc9ceada2447f78b7ef2314e3dc043549",
     "package-lock.json": "a50a95826c7fa932c9f9c8803270415fd88de207265bd3305257ad45893fb1d6",
@@ -34,6 +34,7 @@
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
     "scripts/verify-release-coupler.mjs": "21541dcfac3ce1d61bd37196f86ff8b87e7a9ab8e347e2453edf68468f7a6481",
+    "src/presentation/sound-controls.mjs": "5609ce180f09b2629973f1de321f036f3bb8c0a5ba2f1f77a425517abd8ba061",
     "src/presentation/motion-readout.mjs": "c4fdb627ff4f34940f0e98f2c7c84a76e3620e3c9c9e745c66b4410f53b43bc1"
   }
 }

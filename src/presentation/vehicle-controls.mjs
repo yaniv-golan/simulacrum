@@ -161,6 +161,7 @@ export function createVehicleControls({ send, select, container }) {
   function keydown(event) {
     if (
       ownsPartHelpInput(event.target) ||
+      event.target.closest?.('[data-sound-controls]') ||
       frame?.metadata.mode !== 'run' ||
       event.ctrlKey ||
       event.metaKey ||
@@ -186,6 +187,7 @@ export function createVehicleControls({ send, select, container }) {
   function focus(event) {
     if (
       ownsPartHelpInput(event.target) ||
+      event.target.closest?.('[data-sound-controls]') ||
       event.target.closest?.('input,textarea,select,[contenteditable="true"],dialog')
     )
       clear();

@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"b13c7e21979089b0ae40d8ffe4bdd76ec035961493c100820ef4542b431b18a8","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"87a9f188ca22844fdeee0d39c2fd8b31a1a34b2035600a411a44856b60d48e10","disposition":"still accurate","rationale":"Teaching decision is no entry. Thumbnail scheduling changes image readiness and resource lifecycle; the graphics browser fixture changes only how existing quality is exercised. Neither adds a lesson, example, experiment, challenge or contextual invitation. Existing mounting/power/receiver help remains sufficient; admission criteria and separation of automation from player evidence remain accurate. Authorable Scenes retains the admitted extend decision for the existing suspension comparison and no new lesson for scene editing. Load Cell remains no entry. Physical scene presets do not become instructional evidence merely by existing; comparisons still require matched scene, speed and measurement window."} -->
+<!-- doc-review {"version":1,"fingerprint":"843f1a3d2175a4c246f1d083e27c179f786c7ea4b472ef8be446ee97261219c8","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"1ae41f6e0e92dd01766d89bd0259577058507eef7aa5808c2e0b845fba3e1d24","disposition":"still accurate","rationale":"No lesson, experiment, challenge or guided entry was added. Existing motor and Ball activities already cover the machine task; sound adds optional feedback and an explicit compact comfort disclosure. This follows the no-entry admission path and does not establish player comprehension or listening acceptance."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"3257c33ab7de4507c5f0594caac612815a995efacfb5d89e798c94d7e1003f3f","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"dc7f765949a66bd4ad65e0d8f65c5b15f18340a971741005f04a73d365e09cab","disposition":"updated","rationale":"The merged Load Cell paragraph accurately extends the existing selected sensor inspector and requested help: sensor-controls labels signed axial force, attachment-force magnitude and invalid states; simulation/sensors projects the measured averaged vector onto local X and takes its magnitude; sensor-view uses the completed sensor pose for a fixed-length local +X A-to-B arrow, not magnitude. Part-search adds the Sensors category/aliases, while existing Rules/receiver controls own comparisons and explicit rearming. No permanent panel or lesson entry is added. Read the full surrounding lifecycle section and preserved main catalog, camera/layout, Rope, coupler, feedback/footer and draft recovery owners; those surfaces and actions are unchanged. Incoming Camera requested view/gallery, paused labels and placement return coexist with selected Load Cell inspector and incoming Lamp controls. Selection/disclosure lifecycle remains separate; no lesson was added. Revalidated after final thumbnail scheduling and spring witness closure: icons now populate asynchronously in their existing mounted regions; no action, persistent panel or selection lifecycle is removed. The integrated scene editor temporarily replaces palette/inspector content; its draft, apply/cancel, pointer/keyboard tools, camera exit and replacement preview remain within existing document ownership. Existing nondefault scene work is protected during New/open/example replacement, including zero-part scenes. Load Cell still adds selected inspector/help sensing, not another persistent canvas dashboard."} -->
+<!-- doc-review {"version":1,"fingerprint":"7571b5f9df1acf1e13da3494e4112d5dd47ec2a12cb583460e16fe753559d71b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c14a98027664ad5b92c12d00ac360a210bcbe6c371031ca6f7f53556ff717370","disposition":"updated","rationale":"Documented the compact Sound toggle/settings icon, top-layer Volume popup, dismissal/focus behavior, default and zero-volume semantics, mounted-session preference, lifecycle silence and bounded denied-audio retry. Controls fit one compact row without displacing Try again or other machine actions."} -->
 
 
 
@@ -388,9 +388,17 @@ These finite fixtures are construction examples, not general contact qualificati
 Try again and Sound occupy the existing machine-controls area. Try again appears
 in Run/Paused and composes Build then Run, preserving authored edits, history,
 selection and camera while creating a fresh attempt. Duplicate requests are blocked
-until completion. Sound starts off, requires an explicit gesture and can be muted;
-contact-derived timbres symmetrically combine both authored materials and are illustrative. Visual motion remains readable without
-sound. Missing contact history establishes a new silent baseline. File opening and retry
+until completion. [Sound controls](../../src/presentation/sound-controls.mjs#source) keep one compact
+Sound off/on toggle and an adjacent settings icon beside Try again. The icon opens a small
+Volume popup above the controls without expanding the panel; Escape and outside clicks close
+it and restore focus. The range starts at 35%; 0% explicitly reads silent while retaining the
+on preference. Sound starts off on each mount and requires a gesture. Build, retry and file
+replacement retain preference; pause, hidden visibility, gaps and disposal silence existing
+voices. Unavailable audio stays off with a retry message. Volume and button keyboard input
+cannot drive receivers. Measured motor/travel and contact textures are illustrative; material
+impact timbres combine both surfaces symmetrically. Visual motion remains readable without
+sound. Learning admission: **no entry**; the existing motor and Ball experiments already provide
+the activity. Missing contact history establishes a new silent baseline. File opening and retry
 exclude one another before asynchronous reading or reset; rejected actions retain
 recording receipts. Retry does not
 reload a preset or move an individual live body to recover it.
