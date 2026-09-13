@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"e338b5b459331e5da1f2fe89f3fed10154b8ac56f18d235ee8052aec5e26a9b3","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"f39549b1e7cbd946b1d291d37838776b24845658e0e06b8cd552542080d7b2b2","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): the finite body constructor copies after physical construction and door reads are cached per physical state; catalog selection, schema admission, authored material, lamp limits, geometry and part registration are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"fbe87f41591750536712afd1b92339e196bda6a502f874ba593b2ce2e9bc2c4d","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"a03e973eb896febfc658855cd4c9a42feddfa21b95d8cde65a92019e6fa69c11","disposition":"still accurate","rationale":"mechanicalSound is an M3b UI feature, not a part. No catalog row, schema, compiler or physical configuration was changed. The existing part recipe and milestone admission guidance remain accurate."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -114,7 +114,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"9d6da241b151c558ccff434c1fa7b3dcb1751c8e38f67fdf90a8042816f1ab34","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"9057d996453ed856abd7ce6b5b7f34d3c310495a881fdd950ae00ce21cd86572","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): the physics-to-model observation import and typed native response vectors add no input handler or UI action; mirror startup waiting, cursor guards, cancellation, receiver keys and preview ownership keep their boundaries."} -->
+<!-- doc-review {"version":1,"fingerprint":"47aace1d7b22d4a5b7fc26aa9a90c05d48c8b1fef2ad08fa2b756a0a356b5db0","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"0edb8aa28cac5619526044c6cd981895315b08b2dcb1f7d11a40f0d15c6fc54c","disposition":"still accurate","rationale":"The receiver input owner excludes sound controls and releases held keys on their focus. Ordinary commands, admission, history, placement and cancellation behavior remain with their existing owners; no additional authoring state is introduced."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"893905d522c0f3dc76f0af9bb6d49788abbe9f2f6615525f8bcbffb9915d48c3","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"805cdeaff190909a0904961b8021bd4fdb695a83561b6c1c75327644fe4d6336","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): solver settings, step order, checkpoint bytes and state admission are unchanged; cached door reads retire on every physical mutation, completed contacts feed the following sensor sample, and power validates pending shape at step and the settled ledger at completion; the recipe still requires analytical controls, independent accounting and actual Course qualification. The merged native response adapter selects the joint-impulse factor methods when reactions are measured and validates the combined result length once."} -->
+<!-- doc-review {"version":1,"fingerprint":"cae0c57b82cce5d0f7464276c3af09bc9f269d9cee3ea7055941f1f1acbaf7f6","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"529b49b016155f48f9eed179804e501268b6913b77e710c5b8d2ffd58997cb01","disposition":"still accurate","rationale":"All simulation and physics production owners are byte-identical to the integration base. Sound consumes completed numeric motion and contacts through a read-only application adapter; it does not change materials, forces, compilation, clocks, sensors, checkpoints or replay. Existing analytical and physical verification requirements remain accurate; no combined-source qualification is claimed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

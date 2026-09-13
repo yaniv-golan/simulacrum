@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"290cdff65dffcffa4f0955cd6d1030f2a1a6b125532358bc80c1f84013a2a613","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"0280cef530f0c5b27c488f91209bc4eab5e07a0668c28d47a90c2d2fc406cb86","disposition":"updated","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): the combined explanation keeps scene, persistence, editor and core history ownership plus the structural-failure limitation, and adds the submission tracker, CPU-endpoint labelling, preserved draw scheduling on callback errors, withheld submission after failed preparation, content comparison only on blueprint reference replacement, and that an active machine-camera view suppresses scene submission so reflection samples time out instead of reporting a submission that did not occur. Native response vectors stay typed views for body impulse/velocity while joint reaction impulses remain plain arrays for the reaction ledger."} -->
+<!-- doc-review {"version":1,"fingerprint":"3c11faa8c410eb6f23d1b1715026aa887d4c359d89e7dd8a181e495f64b8c839","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"d744ae06085dd45b15f740f90839500243690a5ccfffd5fbf1588e34ec467592","disposition":"updated","rationale":"Replaced the old impact-only pipeline explanation with the mechanical audio adapter, completed-motion math, per-tick contact episodes, per-frame envelopes and bounded audio engine. Existing main scene, thumbnail, load-cell and camera ownership is preserved; audio does not write physics, save or replay state."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. The [parts browser](../../src/presentation/parts-browser.mjs#source) owns discovery, [search vocabulary](../../src/presentation/part-search.mjs#source) ranks available parts, and [part placement](../../src/presentation/part-placement.mjs#source) confirms click, touch and drag proposals through cursor-guarded placement, delegating mounting geometry and controls to the existing surface owner. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. [Rope controls](../../src/presentation/rope-controls.mjs) author a tensile connection between two surface attachments; [rope compilation](../../src/model/rope.mjs) appends distributed massive nodes. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -68,8 +68,20 @@ resolve material defaults and explicit friction/restitution overrides before the
 physics door. Density remains material-owned. The inspector uses the same resolver.
 [Retry](../../src/application/retry.mjs#symbol=createRetry) composes ordinary Build
 and Run admission, releasing held controls and preserving the authored machine and
-view. Completed contacts feed [impact presentation](../../src/presentation/impact-sound.mjs#source);
-it has no simulation write path and resets its baseline on missing observations.
+view. The application [mechanical audio adapter](../../src/application/mechanical-audio-adapter.mjs#source)
+caches canonical compiled body descriptors per workshop epoch, including neutral floor/obstacles
+and excluded noncolliding rope nodes. Completed body witnesses supply slip and primitive-admitted
+rolling; measured rotary and linear drive coordinates retain distinct units. The model's
+[completed-motion helpers](../../src/model/completed-motion.mjs#source) provide anchor velocities
+and the rotating-guide term, caching transforms within one completed sample.
+[Contact episodes](../../src/presentation/mechanical-audio-model.mjs#source) consume every tick;
+continuous envelopes are calculated only for the latest rendered frame. Numeric packets alone
+reach the [bounded audio engine](../../src/presentation/mechanical-audio.mjs#source). It owns one
+lazy browser context, capped voices, spatial mix and mute/disposal. The viewed orbit or mounted
+camera supplies listener position and right direction. No audio preference, resource, descriptor
+or waveform enters simulation, saves, checkpoints or recording capture; no runtime boundary
+was added. Missing contact history establishes a silent baseline while available measured drives
+remain independent of contact availability.
 
 [Camera exposure state](../../src/simulation/camera-state.mjs#symbol=createCameraState)
 belongs to simulation; it publishes completed exposure results without image bytes.
@@ -150,7 +162,7 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"8ec7625f7d90566fcd20448a969e17f821f57ac9e3b8a79a56326a24ed73ff3e","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"6028989e8fc18ce1e37c7427ad11864eda4d06bedc5dffbeeba0fd44739f850a","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): the model-owned finite body constructor centralizes admission without a caller-trust API and indexed FNV keeps the checkpoint owner; Powered Lamp vocabulary and CATALOG ownership from main are unchanged, so the table still names the correct shared owners."} -->
+<!-- doc-review {"version":1,"fingerprint":"abf4e0f2c1588b90c0542b56fbe657104925a3fe5247bcf0575bb9210f4be74a","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"26c8e384886b87b82552ef5e874690feeb1e88fde4833a6068c5ec12870083d7","disposition":"still accurate","rationale":"Sound controls use the existing receiver input owner to release and exclude vehicle keys while the comfort controls have focus. Existing canonical part, material, scene and configuration owners are unchanged."} -->
 
 | Decision                                              | Production owner                                                                                                                                                                                                                                             | Example consumer                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |

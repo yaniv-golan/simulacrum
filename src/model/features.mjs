@@ -3,6 +3,10 @@ export const UI_FEATURES = Object.freeze({
     milestone: 'M3b',
     entrypoint: 'src/presentation/scene-editor.mjs',
   }),
+  mechanicalSound: Object.freeze({
+    milestone: 'M3b',
+    entrypoint: 'src/presentation/mechanical-audio.mjs',
+  }),
   releaseCoupler: Object.freeze({
     milestone: 'M3b',
     entrypoint: 'src/presentation/workshop-view.mjs',

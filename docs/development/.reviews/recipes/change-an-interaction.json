@@ -76,7 +76,7 @@
     "scripts/verify-mirror-browser.mjs": "7d1888b8bf071f7818255e79a6a77369a039c92e77a85fd9f2c80ece83ad8ee3",
     "src/model/connection-test-paths.mjs": "2972779a306573d29175afbda2ad480b5e09d6f456b9bbc0dc0ff7f465c7e75c",
     "src/presentation/part-help-input.mjs": "6380d1c3b9772c3c7522ef5a833a42a81a9c0935253e09ce026cadc0eb0491ec",
-    "src/presentation/vehicle-controls.mjs": "bbc9d4016f15b636e1248e8cbd11fef67a6d93c6e49327c82820ffc3a00f73bf",
+    "src/presentation/vehicle-controls.mjs": "3bfeaac8ab5e2f7360673827a78a44a7619187bd3fd6c0570d0cbd6d423dde72",
     "src/presentation/part-help-content.mjs": "58c71431d49fae649010ed1ded01d8a6c035fdd072fa4ef1745623df06e447bc",
     "src/presentation/part-search.mjs": "547b3b69f2b9994d16446af0525f90818b62b9a2e4693a1d81798b5832a640dc",
     "scripts/part-help-cases.mjs": "ba07a8823f3f5ae3c1ba1cc2cc1994016f274a2c2b8193fb9f493560e91366e6",

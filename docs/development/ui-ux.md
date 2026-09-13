@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"38ca3db1a6e329c45a509d2bd576e7701910ffb8f1ad27fbb593c59470b041f1","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"7528df0510036ca55bb737a82ecbd431176b416f81437618a34adee3db8eea71","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): no entry: lifecycle fixes, measurement endpoint labels and shader warmup add no player task, lesson, example or mechanical capability; existing controls and explanations suffice."} -->
+<!-- doc-review {"version":1,"fingerprint":"843f1a3d2175a4c246f1d083e27c179f786c7ea4b472ef8be446ee97261219c8","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"1ae41f6e0e92dd01766d89bd0259577058507eef7aa5808c2e0b845fba3e1d24","disposition":"still accurate","rationale":"No lesson, experiment, challenge or guided entry was added. Existing motor and Ball activities already cover the machine task; sound adds optional feedback and an explicit compact comfort disclosure. This follows the no-entry admission path and does not establish player comprehension or listening acceptance."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"0519c989876e0327cf974ff96e779c605edad2b7346694036ef495c82dfc4687","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"9ef5d56de3e84bc5d22298cfc46c8159bf999dbbcd53113fe5decc1b09102162","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): no surface is added or displaced: before-draw errors use the existing status message and pause the clock while draw scheduling survives for recovery controls, the machine-camera overlay keeps its existing lifecycle, and startup warmup meshes are removed before the authored scene renders."} -->
+<!-- doc-review {"version":1,"fingerprint":"7571b5f9df1acf1e13da3494e4112d5dd47ec2a12cb583460e16fe753559d71b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c14a98027664ad5b92c12d00ac360a210bcbe6c371031ca6f7f53556ff717370","disposition":"updated","rationale":"Documented the compact Sound toggle/settings icon, top-layer Volume popup, dismissal/focus behavior, default and zero-volume semantics, mounted-session preference, lifecycle silence and bounded denied-audio retry. Controls fit one compact row without displacing Try again or other machine actions."} -->
 
 
 
@@ -388,9 +388,17 @@ These finite fixtures are construction examples, not general contact qualificati
 Try again and Sound occupy the existing machine-controls area. Try again appears
 in Run/Paused and composes Build then Run, preserving authored edits, history,
 selection and camera while creating a fresh attempt. Duplicate requests are blocked
-until completion. Sound starts off, requires an explicit gesture and can be muted;
-contact-derived timbres symmetrically combine both authored materials and are illustrative. Visual motion remains readable without
-sound. Missing contact history establishes a new silent baseline. File opening and retry
+until completion. [Sound controls](../../src/presentation/sound-controls.mjs#source) keep one compact
+Sound off/on toggle and an adjacent settings icon beside Try again. The icon opens a small
+Volume popup above the controls without expanding the panel; Escape and outside clicks close
+it and restore focus. The range starts at 35%; 0% explicitly reads silent while retaining the
+on preference. Sound starts off on each mount and requires a gesture. Build, retry and file
+replacement retain preference; pause, hidden visibility, gaps and disposal silence existing
+voices. Unavailable audio stays off with a retry message. Volume and button keyboard input
+cannot drive receivers. Measured motor/travel and contact textures are illustrative; material
+impact timbres combine both surfaces symmetrically. Visual motion remains readable without
+sound. Learning admission: **no entry**; the existing motor and Ball experiments already provide
+the activity. Missing contact history establishes a new silent baseline. File opening and retry
 exclude one another before asynchronous reading or reset; rejected actions retain
 recording receipts. Retry does not
 reload a preset or move an individual live body to recover it.

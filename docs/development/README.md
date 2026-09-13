@@ -142,7 +142,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"200eb3846f615ce28cc13c3dd6e4557f148a7df1fa5c223f3ed5d7c9f98d0d07","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"f26473ee1be8c914a0e8a52b5bc3e8709d89894681386f78ddfa2bc0a40a5749","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): the regenerated reference now lists the render lifecycle probe and submission tracker controls alongside the scene owners; the regenerate, section-specific review and exact-source closure workflow is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"3e4490cc596b8113c795c5bfbe1dc425f23efb8e3e96d4d6f16a1c57a1428d46","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"cd5997a905addd9846b08f9a31053365047228d850f74c3d8a773d4d860381e3","disposition":"still accurate","rationale":"The regenerated reference adds mechanicalSound and its registered invariant/browser check. Source-writing preparation, section review and structural validation commands are unchanged; this reference update supplies no test or human acceptance receipt."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -282,7 +282,8 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"523cbab94b11e7baf05c4ecc8507e4d583034d9906afc07d711b79b28f3ecf19","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d0c5a9715ef5913921119e553be4f0ee758da9b1f4bcf0d9d8d1e555087c2359","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): the new verify-render-lifecycle check is exclusive on the probe environment and its addition to the root set is the only cause of the regenerated roots and consumer hashes (reviewed and applied through browser:scopes with passing witnesses); immutable body admission and the submission tracker do not alter selection, scheduling or concurrency policy."} -->
+
+<!-- doc-review {"version":1,"fingerprint":"0556068694e98bb03441d0105c6c996c29b9e645f0a4ac8e1d23264a82ad92d0","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"c5b0a50e3b0a727cb2c2784ab7183d7b863bfd543bc10af160f7200a33812fe0","disposition":"still accurate","rationale":"Current main already documents command-reader readiness. Sound adds a registered exclusive browser verifier and read-only audio timing to the probe. Fresh-receipt semantics, input classifications, coverage declarations and the documented default scope-witness workflow remain unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -525,7 +526,8 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"e1271845fcba26f896b7ed7ceab5e59bca2694e30518cca3b0e73e9d4e10efcb","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"9dab5bf03d5442f0a56d91959159d384c2b047ee54cc51630ab279f435ced6f6","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): the merged manifest, observation admission and application measurement lifecycle change candidate bytes and require fresh completion on the integrated source; capture ownership, frozen receipts and merge-base selection are unchanged, and the F2 probe remains a development probe."} -->
+
+<!-- doc-review {"version":1,"fingerprint":"ada640086afe0b47fda1772a668fdf92a24de4ee9cde50d73c0cfbbeda870132","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"398b338ac1d73d839d97d38967c9954c889df03dc72e4ec2bdba98a5ea6f67a0","disposition":"still accurate","rationale":"Mechanical audio adds a registered browser check and invariant controls. Candidate capture, fresh installation, source identity, resumption and local/merge/final tier ownership are unchanged; source-bound audio evidence must still come from the selected candidate."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

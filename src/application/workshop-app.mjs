@@ -11,7 +11,13 @@ import { createAssemblyLibrary } from './assembly-library.mjs';
 import { palettePlacement } from '../model/palette-placement.mjs';
 import { createSpringPlayground, createSpringStrut } from '../model/fixtures/spring-playground.mjs';
 import { createRetry } from './retry.mjs';
-import { createImpactEvents, createImpactSound } from '../presentation/impact-sound.mjs';
+import {
+  createMechanicalEvents,
+  driveVoice,
+  contactVoice,
+} from '../presentation/mechanical-audio-model.mjs';
+import { createMechanicalAudio } from '../presentation/mechanical-audio.mjs';
+import { createMechanicalAudioAdapter } from './mechanical-audio-adapter.mjs';
 import { CATALOG } from '../model/catalog.mjs';
 import { createBallDrop } from '../model/fixtures/ball-drop.mjs';
 import { createGearLift } from '../model/fixtures/gear-lift.mjs';
@@ -222,10 +228,16 @@ export async function mountWorkshopApp(root) {
       explainFailure(normalizeFailure(error, 'SESSION_FAILED'), frame()?.metadata.blueprint),
     );
   }
-  const impactEvents = createImpactEvents(),
-    impactSound = createImpactSound();
+  const audioEvents = createMechanicalEvents(),
+    audioAdapter = createMechanicalAudioAdapter(),
+    mechanicalAudio = createMechanicalAudio({ changed: (state) => view?.updateSound(state) });
+  const silenceAudio = () => {
+    audioEvents.reset();
+    mechanicalAudio.stop();
+  };
   const retry = createRetry({
     prepare: async () => {
+      silenceAudio();
       clock.pause();
       cancelRun('replaced');
       view.beginRetry();
@@ -237,40 +249,37 @@ export async function mountWorkshopApp(root) {
       render();
     },
   });
+  let audioTiming = { frameCpuMs: 0, audioCpuMs: 0 };
   function render() {
     if (disposed) return;
+    const frameStart = performance.now();
     const measurements = workshop.observe('scene', 'full', measurementCursor);
     cameraSession.ingest(measurements);
     controllerHistory.ingest(measurements);
     view.ingestMeasurements(measurements);
+    const audioStart = performance.now();
     const sounds = [];
-    if (!measurements.ok || document.hidden) {
-      impactEvents.reset();
-      impactSound.stop();
-    }
+    let audioSample = null,
+      audioPacket = null;
+    if (!measurements.ok || document.hidden) silenceAudio();
     for (const completed of measurements.frames ?? []) {
-      if (!impactSound.enabled() || document.hidden || completed.metadata.mode !== 'run') {
-        impactEvents.reset();
-        impactSound.stop();
+      if (!mechanicalAudio.enabled() || document.hidden || completed.metadata.mode !== 'run') {
+        silenceAudio();
+        sounds.length = 0;
+        audioSample = null;
         continue;
       }
-      const events = impactEvents.read({
-        epoch: measurements.cursor.epoch,
-        tick: completed.tick,
-        available: completed.contacts.available,
-        rows: completed.contacts.rows,
-      });
-      for (const event of events) {
-        const materials = [event.a, event.b].flatMap((index) => {
-          const part = completed.metadata.blueprint.parts[index];
-          return part
-            ? [part.authoredMaterial.body ?? CATALOG[part.type].primitives[0].materialKey]
-            : [];
-        });
-        sounds.push({ ...event, materials });
+      audioPacket = audioAdapter.read(completed, measurements.cursor.epoch);
+      const sample = audioEvents.read(audioPacket);
+      if (sample.duplicate) continue;
+      if (sample.reset) {
+        mechanicalAudio.stop();
+        sounds.length = 0;
       }
+      sounds.push(...sample.impacts);
+      audioSample = sample;
     }
-    impactSound.play(sounds.slice(-4));
+    const adapterCpuMs = performance.now() - audioStart;
     learning.ingest(measurements);
     measurementCursor = measurements.cursor;
     const observation = workshop.observe();
@@ -278,6 +287,28 @@ export async function mountWorkshopApp(root) {
     view.render(observation.frames[0], observation.cursor);
     viewRenderMs.push(performance.now() - viewStart);
     if (viewRenderMs.length > 240) viewRenderMs.shift();
+    const schedulerStart = performance.now();
+    if (document.hidden || observation.frames[0].metadata.mode !== 'run') silenceAudio();
+    else if (audioSample)
+      mechanicalAudio.play(
+        {
+          ...audioSample,
+          drives: audioSample.drives.map(driveVoice).filter(Boolean),
+          contacts: audioSample.contacts.map(contactVoice).filter(Boolean),
+          impacts: sounds,
+          tick: audioPacket.tick,
+          interval: audioPacket.interval,
+        },
+        view.audioListener(),
+      );
+    audioTiming = {
+      frameCpuMs: performance.now() - frameStart,
+      audioCpuMs: adapterCpuMs + performance.now() - schedulerStart,
+      adapterCpuMs,
+      schedulerCpuMs: performance.now() - schedulerStart,
+      samples: measurements.frames?.length ?? 0,
+      contactPairs: audioPacket?.contacts.length ?? 0,
+    };
     lastRenderedCursor = observation.cursor;
     if (runMeasurement && observation.cursor.tick > runMeasurement.startTick) {
       record({
@@ -611,6 +642,7 @@ export async function mountWorkshopApp(root) {
     logInteraction('visibility', { hidden: document.hidden });
     if (disposed) return;
     if (document.hidden) {
+      silenceAudio();
       if (clock.running() || frame().metadata.mode === 'run') {
         pausedForVisibility = true;
         clock.pause();
@@ -708,7 +740,11 @@ export async function mountWorkshopApp(root) {
     },
     cameraSession,
     onCommand,
-    onSound: (enabled) => impactSound.enable(enabled),
+    onSound: (enabled) => {
+      audioEvents.reset();
+      return mechanicalAudio.enable(enabled);
+    },
+    onVolume: (value) => mechanicalAudio.setVolume(value),
     onSave,
     onLoad,
     onFailure,
@@ -765,6 +801,7 @@ export async function mountWorkshopApp(root) {
   };
   window.workshopProbe = Object.freeze({
     observe: () => workshop.observe(),
+    readAudio: () => ({ ...mechanicalAudio.read(), ...audioTiming }),
     readLastCommandResult: () => structuredClone(lastCommandResult),
     readRenderedTransforms: () => view.readRenderedTransforms(),
     readRenderedShapes: () => view.readRenderedShapes(),
@@ -781,7 +818,7 @@ export async function mountWorkshopApp(root) {
   return Object.freeze({
     dispose() {
       cameraSession.dispose();
-      impactSound.dispose();
+      mechanicalAudio.dispose();
       learning.dispose();
       remote?.dispose();
       disposed = true;

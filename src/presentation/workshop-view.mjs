@@ -1,6 +1,8 @@
 import { createThumbnailQueue } from './thumbnail-queue.mjs';
 import { createSceneEditor, sceneMesh } from './scene-editor.mjs';
 import { hasWorkshopContent } from '../model/environment.mjs';
+import { createSoundControls } from './sound-controls.mjs';
+import { opticalFrame } from '../model/camera.mjs';
 import { createRopeView } from './rope-view.mjs';
 import { ropeInspector } from './rope-controls.mjs';
 import { createPartMesh, disposePart } from './part-mesh.mjs';
@@ -121,6 +123,7 @@ export function createWorkshopView(
   {
     onCommand,
     onSound,
+    onVolume,
     onSave,
     onLoad,
     onFailure,
@@ -1416,14 +1419,9 @@ export function createWorkshopView(
   const retryButton = button('Try again', () => send({ type: 'retry' }));
   retryButton.dataset.command = 'retry';
   retryButton.title = 'Restart from your latest setup, keeping your edits and camera.';
-  const soundButton = button('Sound off', async () => {
-    const enabled = await onSound?.(soundButton.getAttribute('aria-pressed') !== 'true');
-    soundButton.setAttribute('aria-pressed', String(!!enabled));
-    soundButton.textContent = enabled ? 'Sound on' : 'Sound off';
-  });
-  soundButton.setAttribute('aria-pressed', 'false');
+  const soundControls = createSoundControls({ onSound, onVolume });
   const attemptControls = element('div', 'attempt-controls');
-  attemptControls.append(retryButton, soundButton);
+  attemptControls.append(retryButton, soundControls.root);
   machineControlRegion.append(attemptControls);
   const connectionTest = createConnectionTest({
     holdReceiver: (id, duty) => vehicleControls.hold(id, duty),
@@ -4430,6 +4428,21 @@ export function createWorkshopView(
   return {
     utilityHost: footer,
     readCompletedDraw: () => structuredClone(completedDraw),
+    updateSound: (state) => soundControls.update(state),
+    audioListener: () => {
+      if (cameraControls?.active()) {
+        const current = cameraSession.read(),
+          index = current.frame?.metadata.blueprint.parts.findIndex((p) => p.id === current.active);
+        const body = current.frame?.physics[index];
+        if (!body) return null;
+        const pose = opticalFrame(body);
+        const [x, y, z] = pose.forward,
+          [X, Y, Z] = pose.up;
+        return { position: pose.position, right: [y * Z - z * Y, z * X - x * Z, x * Y - y * X] };
+      }
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+      return { position: camera.position.toArray(), right: right.toArray() };
+    },
     refreshCameras: () => cameraControls?.refresh(),
     refreshLearning: () => learningControls?.refresh(),
     render,
@@ -4581,6 +4594,7 @@ export function createWorkshopView(
       surface.dispose();
       editing.dispose();
       learningControls?.dispose();
+      soundControls.dispose();
       cameraControls?.dispose();
       controls.dispose();
       sensorView.dispose();

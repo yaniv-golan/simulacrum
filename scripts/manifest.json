@@ -1094,6 +1094,17 @@
       "timeoutMs": 60000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
+    },
+    {
+      "id": "verify-mechanical-audio",
+      "script": "scripts/verify-mechanical-audio.mjs",
+      "execution": "exclusive",
+      "environment": "self",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 180000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
     }
   ],
   "invariants": [
@@ -6167,6 +6178,157 @@
         ]
       },
       "qualificationBars": []
+    },
+    {
+      "id": "mechanical-audio-truth",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Mechanical audio consumes completed numeric motion and canonical compiled contact descriptors without simulation writes. Rotational and linear coordinates retain their units; missing data, unclassified rolling and zero or unknown friction cannot invent motion textures. Voice allocation, release, user-gesture generation and output amplitude are bounded. Human listening remains separate.",
+      "owners": [
+        {
+          "path": "src/application/mechanical-audio-adapter.mjs",
+          "anchor": "createMechanicalAudioAdapter"
+        },
+        {
+          "path": "src/presentation/mechanical-audio-model.mjs",
+          "anchor": "createMechanicalEvents"
+        },
+        {
+          "path": "src/presentation/mechanical-audio.mjs",
+          "anchor": "createMechanicalAudio"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-mechanical-audio"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio contact kinematics distinguish rolling, sliding, common motion and normal spin"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "linear coordinate reads anchor motion and rotating guide with distinct missing measurement"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio adapter resolves compiled body provenance and sums physical pairs once"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "mechanical episodes reject gaps, chatter, stale ticks but retain strong rapid reimpacts"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "drive and friction envelopes follow measured coordinates, never requested movement"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "spatial mix and voice selection are bounded and keep audible incumbents"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "mechanical audio stale enable cannot override mute, later enable or disposal"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "adapter keeps linear force units and excludes every noncolliding rope node"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio reads and batching leave real simulation projections and saves unchanged"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "renaming and body reordering preserve acoustic descriptors and symmetric material pairs"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "a new supported witness strikes within an existing pair while smooth rolling stays quiet"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio device graph failure disables sound without escaping into the workshop clock"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "cached completed transforms retain rotated witness velocity and reject invalid bodies"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "a browser activation promise that never settles returns to Sound off for retry"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "measured separation preserves a rapid bounce of the same impulse inside chatter grace"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio contact kinematics distinguish rolling, sliding, common motion and normal spin"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "linear coordinate reads anchor motion and rotating guide with distinct missing measurement"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio adapter resolves compiled body provenance and sums physical pairs once"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "mechanical episodes reject gaps, chatter, stale ticks but retain strong rapid reimpacts"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "drive and friction envelopes follow measured coordinates, never requested movement"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "spatial mix and voice selection are bounded and keep audible incumbents"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "mechanical audio stale enable cannot override mute, later enable or disposal"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "adapter keeps linear force units and excludes every noncolliding rope node"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio reads and batching leave real simulation projections and saves unchanged"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "renaming and body reordering preserve acoustic descriptors and symmetric material pairs"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "a new supported witness strikes within an existing pair while smooth rolling stays quiet"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio device graph failure disables sound without escaping into the workshop clock"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "cached completed transforms retain rotated witness velocity and reject invalid bodies"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "a browser activation promise that never settles returns to Sound off for retry"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "measured separation preserves a rapid bounce of the same impulse inside chatter grace"
+          }
+        ]
+      },
+      "qualificationBars": []
     }
   ],
   "browserLocalScopes": [
@@ -6191,7 +6353,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
       "externalImports": []
     },
     {
@@ -6215,7 +6377,7 @@
         "vite"
       ],
       "consumers": [],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871"
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -6233,7 +6395,7 @@
         "verify-mirror-browser"
       ],
       "consumers": [],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871"
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -6253,7 +6415,7 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871"
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -6284,7 +6446,7 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871"
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -6322,7 +6484,7 @@
         "test/scene-editor.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871"
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263"
     }
   ],
   "experimentInputScopes": [
@@ -6597,7 +6759,7 @@
         }
       ],
       "consumers": [],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -6662,7 +6824,7 @@
           ]
         }
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "externalImports": [
         "node:crypto",
@@ -6711,7 +6873,7 @@
         }
       ],
       "consumers": [],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -6784,8 +6946,8 @@
           ]
         }
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
-      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -6836,8 +6998,8 @@
           ]
         }
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
-      "consumerSourceHash": "504c9ab286ff3f457967755fb25a10a0b6eef7b86972a5cfba7ae6df37e2178c",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "consumerSourceHash": "8ab078e39ed69ec1bd53f8f9d3d25b06f3046a384a8a8ee6a07e503259cd56d0",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -6878,6 +7040,7 @@
         "scripts/verify-load-cell-copy-browser.mjs",
         "scripts/verify-load-cell-force-browser.mjs",
         "scripts/verify-manipulation-browser.mjs",
+        "scripts/verify-mechanical-audio.mjs",
         "scripts/verify-mirror-browser.mjs",
         "scripts/verify-motion-diagnostics.mjs",
         "scripts/verify-part-help-browser.mjs",
@@ -6938,8 +7101,8 @@
           ]
         }
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
-      "consumerSourceHash": "504c9ab286ff3f457967755fb25a10a0b6eef7b86972a5cfba7ae6df37e2178c",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "consumerSourceHash": "8ab078e39ed69ec1bd53f8f9d3d25b06f3046a384a8a8ee6a07e503259cd56d0",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7000,6 +7163,7 @@
         "scripts/verify-m1.mjs",
         "scripts/verify-m3.mjs",
         "scripts/verify-manipulation-browser.mjs",
+        "scripts/verify-mechanical-audio.mjs",
         "scripts/verify-merge.mjs",
         "scripts/verify-mirror-browser.mjs",
         "scripts/verify-motion-diagnostics.mjs",
@@ -7088,8 +7252,8 @@
           ]
         }
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
-      "consumerSourceHash": "2499eaf64c8fa9b78d07b9ffd2a5c6c7c3a49d211c9500b126d5d990cbce4bda",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "consumerSourceHash": "f031da9b8d51816504cf47ff910478abeefc0418813b93962709c777653dc64d",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7165,6 +7329,7 @@
         "scripts/verify-local.mjs",
         "scripts/verify-m3.mjs",
         "scripts/verify-manipulation-browser.mjs",
+        "scripts/verify-mechanical-audio.mjs",
         "scripts/verify-merge-shadow.mjs",
         "scripts/verify-merge.mjs",
         "scripts/verify-mirror-browser.mjs",
@@ -7290,8 +7455,8 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
-      "consumerSourceHash": "92122e54717fdea18931da2c871567662054a41cb7e8b6d4566819ed2c501614"
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "consumerSourceHash": "205f05cc9d0d11c8df517e2763aaacb5d4ecd7c0c54909be9ea7eb2e87e79706"
     },
     {
       "checks": [
@@ -7307,8 +7472,8 @@
           ]
         }
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
-      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -7372,8 +7537,8 @@
           ]
         }
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
-      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -7431,8 +7596,8 @@
           ]
         }
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
-      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -7462,8 +7627,8 @@
           ]
         }
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
-      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -7603,8 +7768,8 @@
           ]
         }
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
-      "consumerSourceHash": "6db15ec01a271a6546e1321fd0433fca4eb8afc01e7c8ec1f20b1fe6644aca5c",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "consumerSourceHash": "ca8e1ac60acdbd77825baa5ce33bea98182b03fc31bf406479400d74aaa34fd5",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -7692,8 +7857,8 @@
           ]
         }
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
-      "consumerSourceHash": "504c9ab286ff3f457967755fb25a10a0b6eef7b86972a5cfba7ae6df37e2178c",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "consumerSourceHash": "8ab078e39ed69ec1bd53f8f9d3d25b06f3046a384a8a8ee6a07e503259cd56d0",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -7777,6 +7942,7 @@
         "scripts/verify-m1.mjs",
         "scripts/verify-m3.mjs",
         "scripts/verify-manipulation-browser.mjs",
+        "scripts/verify-mechanical-audio.mjs",
         "scripts/verify-merge-shadow.mjs",
         "scripts/verify-merge.mjs",
         "scripts/verify-mirror-browser.mjs",
@@ -7942,8 +8108,8 @@
           ]
         }
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
-      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -8014,8 +8180,8 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
-      "consumerSourceHash": "b2ad48225c585785e2417bd24270b97c25c4d7b79c890cd59a76fb90cc5030e2"
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "consumerSourceHash": "55aeaf707649dfc931fc7ea141fbf2e3c07786cb42b1f013e394c85e43f9f2ed"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -8052,8 +8218,8 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
-      "consumerSourceHash": "b2ad48225c585785e2417bd24270b97c25c4d7b79c890cd59a76fb90cc5030e2"
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "consumerSourceHash": "55aeaf707649dfc931fc7ea141fbf2e3c07786cb42b1f013e394c85e43f9f2ed"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -8079,7 +8245,7 @@
         }
       ],
       "consumers": [],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -8118,7 +8284,7 @@
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
       "reads": [
         {
           "expression": "readFile(file)",
@@ -8164,7 +8330,7 @@
         "test/playtest-server.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
       "reads": [
         {
           "expression": "readFileSync(join(this.root, id, 'envelope.json'), 'utf8')",
@@ -8200,7 +8366,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "6db15ec01a271a6546e1321fd0433fca4eb8afc01e7c8ec1f20b1fe6644aca5c"
+      "consumerSourceHash": "ca8e1ac60acdbd77825baa5ce33bea98182b03fc31bf406479400d74aaa34fd5"
     },
     {
       "entrypoint": "scripts/verify-feedback-flow.mjs",
@@ -8217,7 +8383,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
       "reads": [
         {
           "expression": "new URL(req.url, 'http://localhost')",
@@ -8278,7 +8444,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
       "reads": [
         {
           "expression": "new URL(req.url, 'http://localhost')",
@@ -8332,7 +8498,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "60d60de487baf9bb181af7fefd35cbf310db06458ab060a2891c3d7f792b0871",
+      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
       "reads": [
         {
           "expression": "readFileSync(file)",

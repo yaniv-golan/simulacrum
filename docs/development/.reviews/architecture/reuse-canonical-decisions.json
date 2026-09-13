@@ -66,7 +66,7 @@
     "src/presentation/direct-drag.mjs": "5706865667c15be2b5d711c9e8655b21902a52c156247b30b078a95f856a222a",
     "src/model/connection-test-paths.mjs": "9095c591fd42dad128181677e1a5c33b1ba8a2baacd26bcc43fb7e7e3d6cdbf6",
     "src/presentation/part-help-input.mjs": "6f25719495c85a83be51360725ad52bf499c654c224f99dc61997b36f66d03ef",
-    "src/presentation/vehicle-controls.mjs": "0d1c8c5a42f83f335f3347c26d43da7810e029956ec972f835fdcfebbbb462c2",
+    "src/presentation/vehicle-controls.mjs": "53a9330e22432e4a91792d6b4a5db8901360655b7786fa460c9ce43788430bc4",
     "src/presentation/connection-test.mjs": "e7fd59d6e161650a014681589c2116e778dfe1bd4185e1c14e5d4547eff41574",
     "src/presentation/part-help-content.mjs": "58c71431d49fae649010ed1ded01d8a6c035fdd072fa4ef1745623df06e447bc",
     "src/presentation/part-search.mjs": "547b3b69f2b9994d16446af0525f90818b62b9a2e4693a1d81798b5832a640dc",
