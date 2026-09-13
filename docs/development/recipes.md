@@ -181,7 +181,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"ed2eb2f6d57d779f649b4871536e89471e396978e6bf5c4e4321d390a07ec9ab","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"725a17181636aea19f38a2b6a592d79faef15ec8c30e4de20c2323cbb344278b","disposition":"still accurate","rationale":"The reviewed consumer metadata accounts for renderer shader warmup without changing runtime read boundaries or physical state. Physics ownership and required analytical, deterministic and browser checks remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"fb93590c852e85886ee1d97ae9060c9b25a5e666fddd23011c6b6e452b2f42e4","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ea571e915b4a4bc06c851fb47043cbc6f90c7992e66f8de2379b8808dfcb5af3","disposition":"still accurate","rationale":"The merged runtime and architecture clarify that finite-state and mass checks do not qualify general overload breakage. This recipe already requires analytical controls, independent accounting and actual Course qualification; scene geometry and combined capacity ownership remain unchanged."} -->
 
 
 

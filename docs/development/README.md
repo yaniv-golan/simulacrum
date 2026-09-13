@@ -92,7 +92,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"8ebaab107125e7ee28ae25c20cda61a37c91835e86f2f54b9cd19f8ef21882fd","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"a6fcb391d7070d17ec5e3e47747da0eb00a4ff5fab357a3c0c78ca944995460e","disposition":"still accurate","rationale":"The remote capture budget and added scene browser dependencies do not change discovery commands, completion tiers or the requirement to distinguish automation from human qualification."} -->
+<!-- doc-review {"version":1,"fingerprint":"a8667fb6f7e19401553fb9ddffcbb31276cee07a54a6286a541ec802d3724236","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"616f212aa5daaaf83a1dc74d19855989fef6e27dfc60eda954e5b0358dff24e5","disposition":"updated","rationale":"The retained progress guidance distinguishes implemented capability, source-bound automation, human acceptance and qualification. The release operations policy still limits experimental deferrals and does not convert merge readiness into milestone qualification."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -108,6 +108,17 @@ because the changed feature appears unrelated.
 - `npm run format` applies the pinned formatter; generated validators are excluded.
 - `node scripts/generate-schema.mjs` refreshes generated validation after schema edits.
 - `npm run replay -- <bundle.json>` checks a failure bundle against the current implementation and runtime.
+
+When reporting progress, separate four outcomes: implemented capability, automation
+on identified source bytes, human acceptance under the versioned protocol, and milestone
+qualification. Local and merge readiness do not evaluate the latter two. An explicitly
+authorized experimental publication may defer only the checks allowed by the
+[release exception policy](playtesting.md#release-operations); it never advances a milestone.
+Inspect the report's detailed automation, humanAcceptance and qualification outcomes,
+not a top-level status alone. A historical report or an originStillMatches value describes
+the source checked at that invocation, not later edits or today's checkout. Compare its
+source/build identity with the candidate being claimed. Registration of a check is not
+an executed pass, and a feature assigned to the current milestone is not qualification.
 
 Install browser dependencies once with `npx playwright install chromium chrome`.
 Linux tab capture needs Xvfb. Follow [playtesting](playtesting.md#remote-setup) for recordings and

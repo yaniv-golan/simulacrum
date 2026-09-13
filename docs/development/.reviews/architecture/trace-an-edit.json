@@ -64,6 +64,7 @@
     "src/simulation/receiver-arbiter.mjs": "716d8f354d1205c644e40098f20e4f5384dbc818a36f2b5bc4160cb445f3d917",
     "src/simulation/sensors.mjs": "78f2053bc3a0400a5bce80d88e8cac9820419c83402c77b3c7a66d28f3f85725",
     "src/simulation/session.mjs": "d01ee4c93b43514c0662c3a3930f95d1c8c50161d2dc1c3c019cbfd553caeff2",
+    "docs/contracts/runtime-v1.md#structural-failure-scope": "c1ee3fb10a13dc8ed50cd9177dfb86d7eea66c580d128f6a4d0d4dca75089560",
     "src/application/feedback-context.mjs": "3597c60d3624670858128ec45bb385282e5ccbf96c3c2a8d43b49ed2ba2344db",
     "src/application/assembly-library.mjs": "d43ad2fb2382faa78119ff9e66676d9ea2e8b59106314e6576891460c54ab24f",
     "src/presentation/assembly-library.mjs": "7e575049f79fb8f73c5629f8d8d7f863504e8dff87556a34cca3da2fc458e60e",

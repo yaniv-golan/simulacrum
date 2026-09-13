@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"31603595b3f867cfb80d5b3a4e7430ae7bceb6a857f8ab83e7092e13b1546e7c","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"a343c4882bd31a24c8122e583ab9e72d4c78511deabd4f21cd3fd46463e92009","disposition":"still accurate","rationale":"Runtime v1 still owns clocks, state and replay after scene environment schema additions; the manifest remains milestone and check authority."} -->
+<!-- doc-review {"version":1,"fingerprint":"e381a2442823bf51f9bb0a61444ddc2c5ef9dfcef58ba113610141aa687ffe44","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"e07c91b8f179e27acfdd0394a6c0cccc4bb8012d64a91fb7cda8def2939792ba","disposition":"still accurate","rationale":"The runtime contract adds an explicit limit on structural failure coverage; the architecture overview still assigns state ownership to the runtime contract and layer edges to AGENTS without claiming overload breakage."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"6748ac10809d36c9d4db90f6a0daefba26d42ba71a27669ecb3d3a372f0c6484","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"ffcbebee00fbbcf028ab72a17ed549354e7469d8e37561f35697bbc153d6aad4","disposition":"still accurate","rationale":"The view retains additional shader variants in its existing renderer lifetime. Temporary warmup meshes remain outside authored state, completed telemetry and command admission; the documented input and snapshot owners are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f7b4daf2b53e62c7dd6d80e0208408de0bf5d39edb241c4f929615fd892d77b7","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"90a86bde098a6a4c570efee1037d8a0443e9684bfb5c3013348de23dab0aaaf3","disposition":"updated","rationale":"The combined explanation retains scene model, persistence, editor and core history ownership and adds the runtime structural-failure limitation. Session finite-state and mass checks do not establish automatic joint overload failure; commanded coupler release remains separate."} -->
 
 
 
@@ -20,6 +20,12 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 4. [validateBlueprint](../../src/model/blueprint.mjs#symbol=validateBlueprint), [placement admission](../../src/model/surfaces.mjs) and [compileAssembly](../../src/model/assembly.mjs#symbol=compileAssembly) validate stored values, physical intersections and connection geometry before simulation receives configuration.
 5. [Session](../../src/simulation/session.mjs) owns stepping, checkpoint and completed publication. [Controllers](../../src/simulation/controllers.mjs) produce program commands; the [receiver arbiter](../../src/simulation/receiver-arbiter.mjs) owns Manual/Automatic/Learned/Off, explicit takeover and prior-tick travel regulation; [power](../../src/simulation/power.mjs) resolves circuits; the [physics door](../../src/simulation/physics/world.mjs) alone imports the physics library. Completed contact collection uses the numeric [contact reader](../../src/simulation/physics/read-contacts.mjs); session assigns the completed interval and includes collection in integration timing.
 6. [Observation store](../../src/model/observation.mjs) publishes immutable completed snapshots. Presentation consumes these observations, never a live physics object. The application drains a separate observation cursor into selected-body Measurements so its 120 Hz samples do not depend on rendering cadence.
+
+The session's structure/failure phase currently checks finite state and conserved
+body count/mass; general rated-capacity overload breakage remains outstanding.
+Commanded coupler release does not supply that qualification. See the
+[runtime limitation](../contracts/runtime-v1.md#structural-failure-scope) before
+interpreting an active phase or a no-damage result as physical failure coverage.
 
 The view exposes the existing workshop footer as `utilityHost`; the application mounts
 feedback and recording controls there and keeps protected feedback dialogs outside
