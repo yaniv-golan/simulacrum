@@ -64,6 +64,18 @@ latch opens; it does not become a second releasable joint.
 [Release authoring controls](../../test/release-authoring.test.mjs#source) exercise
 material choices, conflict rejection and ordinary editing history.
 
+The Load Cell has one ordinary rigid body and full-face A/B mounting regions.
+Its [search vocabulary](../../src/presentation/part-search.mjs) places it in Sensors
+and supports force/tension queries. Preserve the existing all-catalog coverage
+check when adding a part so discovery cannot omit a newly admitted type.
+[Blueprint admission](../../src/model/blueprint.mjs) counts each face across both
+connection endpoint positions; a second mount on the same face rejects. Partial
+assemblies remain legal and report disconnected when powered. The compiler derives
+sensor bindings from the actual copied or restored edges rather than storing a second
+attachment map. Preserve [authoring controls](../../test/load-cell-authoring.test.mjs)
+for endpoint order, alternate offsets, copy/mirror and save/load; exercise history
+through the [ordinary construction journey](../../scripts/verify-load-cell-browser.mjs#source).
+
 ## Add a command
 
 <!-- doc-review {"version":1,"fingerprint":"6c6a23dbfcecdeaa4e99ff5136de85d29ec4443be23270384d9ff46cb1026ac5","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"3ebc593ab16ab64366d0d60daf213b5a127b1b4e88bad1c835a39f11e44efa3f","disposition":"still accurate","rationale":"Release authoring extends model admission behind existing surface-mount and candidate compilation. The core still validates, copies and publishes one accepted history transaction; no second command or new live-pose editing authority is introduced."} -->
@@ -204,6 +216,22 @@ minimum-subnormal rounding allowance in addition to the existing relative bound.
 Preserve ordinary-scale inaccurate-residual and nonfinite rejection, plus actual
 native stepping and restore controls at gradual underflow. This numerical error
 bound does not clamp velocities or replace the original equations.
+For attachment force, preserve [independent force and momentum controls](../../test/load-cell-physics.test.mjs)
+and [receipt continuation](../../test/load-cell-runtime.test.mjs). The
+[dynamic matrix](../../test/load-cell-physical-matrix.test.mjs) repeats moving,
+supported-rest and free-assembly cases at production and diagnostic subdivisions;
+its angular account includes spin and orbital momentum for the entire free assembly,
+not a torque output from the sensor. [Lifecycle controls](../../test/load-cell-lifecycle.test.mjs)
+check the first ticks after Retry and repeated unsmoothed threshold crossings with
+actual drive stopping and resuming. Native receipts
+sum actual applications across the full tick, including warmstarts and temporal
+subdivisions. Prepared response queries count only when their result is applied;
+probing a response must not contribute force. Test deliberate omission of prepared
+joint contributions while retaining identical body motion. Native transient diagnostics
+are excluded from native serialization; validated numeric receipts belong to the
+physics envelope. Native qualification compares unchanged physical state separately
+from diagnostic correctness; its historical adapter cannot qualify force accuracy.
+
 The session reuses copied post-integration body and energy samples only while
 subsequent phases leave native physical state unchanged. If structure or thermal
 work starts mutating bodies, resample after that mutation before publishing or

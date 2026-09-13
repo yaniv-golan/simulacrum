@@ -154,6 +154,31 @@ Ground contact and workshop motion are not Course qualification.
 [sensor inspector](../../src/presentation/sensor-controls.mjs) and
 [measurement overlay](../../src/presentation/sensor-view.mjs) consume completed data.
 
+The Load Cell uses ordinary A/B surface mounts. The compiler binds A as support and
+B as the measured fixed joint. The [joint reaction owner](../../src/simulation/physics/joint-reactions.mjs)
+adds full-tick native impulses and only the prepared corrections actually applied
+by the physics door. Its copied impulse acts on the configured joint's second body;
+sampling converts it to force on the cell. `load` is the magnitude of the tick-average
+world-space force vector, including shear; opposing impulses within a tick can
+cancel. `axialForce` projects that vector onto the completed local +X axis from A
+to B. Both use newtons; neither reports torque, peak force or capacity ratio. The
+channel scale is a normalizer, not a part rating.
+
+In a settled hanging fixture with no other support or applied force, A supports the
+cell while B measures the payload side, excluding the cell's own weight. If B instead
+supports the cell and a payload attached to A, its reaction includes both weights. This changes which attachment carries the
+load; rotating the same support arrangement alone does not move weight across B.
+These are measurement checks, not runtime mass-based estimates.
+
+Power loss takes precedence over mechanical status. When powered, a missing mount
+is disconnected; with both mounts present, a measured joint with another authored
+mechanical path between its endpoints is unavailable, including paths through gears.
+With power and both mounts present in the supported domain, the reading is
+initializing before the first completed integration.
+Invalid readings contain no numeric value. Reaction k is sampled and consumed during
+tick k+1. Checkpoints preserve both the world's latest reaction and the previous
+sensor evidence. Existing receiver faults leave Automatic Off until explicitly rearmed.
+
 [Rules and draft admission](../../src/model/controller-authoring.mjs) own source
 identity. The [bounded compiler](../../src/scripting/controller-program.mjs) admits
 TypeScript and emits WASM; [executor construction](../../src/scripting/controller-executors.mjs)

@@ -21,6 +21,8 @@ test('everyday words and roles find the intended part before incidental referenc
     ['latch', 'releaseCoupler'],
     ['release cargo', 'releaseCoupler'],
     ['detect rotation', 'rotationSensor'],
+    ['load cell', 'loadCellSensor'],
+    ['measure tension', 'loadCellSensor'],
   ])
     assert.equal(searchParts(query)[0]?.type, type, query);
   assert.deepEqual(

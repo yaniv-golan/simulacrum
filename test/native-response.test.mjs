@@ -32,10 +32,10 @@ const encode = ({ meta, payload }) => {
 test('f64 runtime identity and old envelopes reject before deserialization', async () => {
   const w = await createPhysicsWorld(fixture({ grounded: false }));
   try {
-    assert.equal(R.version(), '0.20.0-simulacrum.spring.9.f64');
+    assert.equal(R.version(), '0.20.0-simulacrum.spring.10.f64');
     const cp = w.snapshot(),
       saved = decode(cp);
-    assert.equal(saved.meta.version, 4);
+    assert.equal(saved.meta.version, 6);
     assert.equal(saved.meta.backend, R.version());
     const original = R.World.restoreSnapshot;
     let calls = 0;

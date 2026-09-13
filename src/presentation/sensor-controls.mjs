@@ -89,6 +89,8 @@ export function sensorInspector({ part, blueprint, right, editable, send }) {
     element(
       'p',
       {
+        loadCell:
+          'Mount A — support on the left and B — measured on the right. The arrow points A → B: positive axial force means pull, negative means push. Attachment force includes sideways load; neither channel measures torque or peak force.',
         range:
           'The ray stops at the first surface. Closing speed is not the machine’s driving speed. Rotate or move this part to aim it.',
         contact:
@@ -103,6 +105,17 @@ export function sensorInspector({ part, blueprint, right, editable, send }) {
       }[kind],
     ),
   );
+  if (kind === 'loadCell')
+    box.append(
+      element(
+        'p',
+        'Start with the receiver Off or Manual. Run until a valid reading appears, then select Automatic. After an invalid reading switches it Off, repair the cause and select Automatic again.',
+      ),
+      element(
+        'p',
+        'If another connection bypasses B, the measurement is unavailable. Check both mounts and power first; an unavailable reading can also mean the force could not be measured.',
+      ),
+    );
   right.append(box);
 }
 export function updateSensorInspector(frame, right) {
@@ -123,10 +136,17 @@ export function updateSensorInspector(frame, right) {
   }
   box.querySelector('.sensor-live').textContent = reading
     ? Object.entries(reading.channels)
-        .map(
-          ([name, s]) =>
-            `${name}: ${s.status === 'ok' ? s.value.toFixed(3) + ' ' + SENSOR_DEFINITIONS[kind][name].unit : label[s.status]}`,
-        )
+        .map(([name, s]) => {
+          const channel =
+              kind === 'loadCell'
+                ? { axialForce: 'Axial force (+ pull / − push)', load: 'Attachment force' }[name]
+                : name,
+            status =
+              kind === 'loadCell' && s.status === 'initializing'
+                ? 'Waiting for the first completed force reading'
+                : label[s.status];
+          return `${channel}: ${s.status === 'ok' ? s.value.toFixed(3) + ' ' + SENSOR_DEFINITIONS[kind][name].unit : status}`;
+        })
         .join(' · ')
     : 'No completed reading yet.';
 }

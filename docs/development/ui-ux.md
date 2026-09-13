@@ -185,7 +185,16 @@ operation in the selected sensor inspector. These controls leave with their sele
 
 The selected sensor inspector owns power/status readouts and explicit spring/joint
 bindings. Requested range/contact/axis overlays leave with selection; the joint
-angle diagram distinguishes an unavailable reading from zero. The selected Logic
+angle diagram distinguishes an unavailable reading from zero. The Load Cell uses
+this same selected inspector for signed axial force, the magnitude of the tick-average
+force vector and unavailable-state explanations. Its selected +X arrow shows A-to-B
+orientation from the completed pose; part help explains mounting, shear and explicit Automatic
+rearming. These leave with selection or requested help, occupy existing regions and
+displace no unique action. Learning-content disposition is **no entry**: extend the
+existing part reference and sensor/Rules explanations for force units and invalid
+readings; no new lesson or experiment entry is admitted.
+
+The selected Logic
 Controller inspector owns rules, generated code, draft preservation and Build-only
 Apply. Rules may compare values or healthy missing-reading statuses. Editing code
 disables rules; persisted Undo and cancelable Restore preserve the prior source.

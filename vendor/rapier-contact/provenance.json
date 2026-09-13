@@ -1,11 +1,11 @@
 {
   "upstreamCommit": "3e12c2679cb1940a876bde93af9cec0cf2f57944",
   "sourceArchiveSha256": "9c3da08780410f7e519e95772185c21e4c76216855019fd69eef3f1cb69644e4",
-  "patchSha256": "c687b000ff57ec1f84c513b6eea934186a6735eaec5eff7671107ffc4a4f9a23",
-  "version": "0.20.0-simulacrum.spring.9.f64",
+  "patchSha256": "3bdf413f4193ed779407d228b216aed95a56e4dd3727a58007f4ddaa9f1c40de",
+  "version": "0.20.0-simulacrum.spring.10.f64",
   "precision": "f64",
-  "packageSha256": "85635a3650b5dd5bfb10480fe3371e8abd828016f20babf3992ec2b6569978dc",
-  "wasmSha256": "bc0aec1c1a593faa852293c21bd69b717b5edeaee81d984ffc1837759dc50398",
+  "packageSha256": "2881d6d61f545c0cdbbd4535af6a8ce42669b218c0401354d038cec39706b88b",
+  "wasmSha256": "bcf1f1a120ab6206d6e036b28ec4bf51e0f5496244676694c02b3aca68b95246",
   "toolchain": {
     "node": "24.18.0",
     "rust": "1.94.0",
@@ -13,14 +13,14 @@
     "wasmOpt": "111",
     "typescript": "5.9.3"
   },
-  "reproducibility": {
-    "cleanBuilds": 2,
-    "samePackageSha256": true,
-    "sameWasmSha256": true
-  },
   "parry": {
     "version": "0.30.2",
     "sourceArchiveSha256": "8c5f71cd1d7f0c475116a52c61baa8d0de69fc258bc4debf86cb4c4ca8f35f3f",
     "patchSha256": "c72cfb28e54bd8a3c036fe1369484051ac5acfae35c4419fe477daadf10c2e25"
+  },
+  "reproducibility": {
+    "cleanBuilds": 2,
+    "samePackageSha256": true,
+    "sameWasmSha256": true
   }
 }

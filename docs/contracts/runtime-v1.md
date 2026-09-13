@@ -36,17 +36,17 @@ A completed-tick checkpoint contains all state affecting future execution: libra
 snapshot, networks, controller state, previous sensor snapshot, input queue, clock
 accumulator, random generator, evaluator state and recorder anchor. Admission and
 restore validate before replacing state. Session checkpoint version 3 includes receiver
-arbitration state, optional bounded numeric program state, typed prior sensor readings
-and range continuity history, and the signed constraint-work ledger. Physics envelopes
-admit versions 4 through 8, each binding the pinned double-precision native backend
-before deserialization. Writers select version 4 without gear memory, ropes or opened
-joints; version 5 with gear memory alone; version 6 with opened joints and no ropes;
-version 7 with ropes and no opened joints; and version 8 with ropes and opened joints.
-Legacy version-6 rope snapshots are distinguished by their exact rope field set;
-they cannot also declare opened joints and cannot restore a rope assembly without
-the required completed work ledger.
-Unsupported versions are rejected explicitly. Session checkpoint and blueprint save
-versions remain 3; these physics-envelope variants do not migrate blueprint saves.
+arbitration state, optional bounded numeric program state, typed prior sensor readings,
+range continuity history, prior Load Cell reaction evidence when configured, and the
+signed constraint-work ledger. Physics envelope version 9 binds the pinned
+native backend, gear memory, opened fixed joints, rope memory and work, and latest
+completed joint reactions before deserialization. Older opaque checkpoints are
+rejected explicitly. For configured Load Cells at completed tick k ≥ 1, physics
+holds reaction k and the consumed sensor snapshot holds evidence for reaction k−1.
+At tick zero there is no completed force interval: supported joint receipts are
+initializing, while sensor readings retain power, mounting and domain validity
+precedence. Restore validates receipt ages and topology without advancing physics.
+Session checkpoint and blueprint save versions remain 3.
 
 Version 3 also admits an optional `environment` preset: `flat` or `rounded-bump`.
 Omission means the flat floor. `choose-environment` is an atomic Build edit with
