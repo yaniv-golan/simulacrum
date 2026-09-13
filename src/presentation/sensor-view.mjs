@@ -43,6 +43,7 @@ export function createSensorView(scene) {
             'tiltSensor',
             'rotationSensor',
             'contactSensor',
+            'loadCellSensor',
           ].includes(part.type),
       );
       if (!group.visible) return;
@@ -54,7 +55,15 @@ export function createSensorView(scene) {
         pad.material.color.setHex(reading?.channels.touching?.value === 1 ? 0xffd36b : 0x8de9ed);
         return;
       }
-      if (part.type === 'rangeSensor') {
+      if (part.type === 'loadCellSensor') {
+        // Fixed-length authored +X direction, not a force magnitude or moving target.
+        const a = arrows[0];
+        a.visible = true;
+        a.position.set(-0.06, 0, 0);
+        a.setDirection(new THREE.Vector3(1, 0, 0));
+        a.setLength(0.18, 0.04, 0.02);
+        a.setColor(0x8de9ed);
+      } else if (part.type === 'rangeSensor') {
         const a = arrows[0];
         a.visible = true;
         a.position.set(0, 0, 0.025);

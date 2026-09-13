@@ -16,6 +16,8 @@ const measurementNames = {
   angle: 'Joint angle',
   touching: 'Touch',
   normalLoad: 'Normal load',
+  axialForce: 'Axial force (+ pull / − push)',
+  load: 'Attachment force',
 };
 const sensorKind = (part) => (part.type.endsWith('Sensor') ? part.type.slice(0, -6) : null);
 export function portLabel(part, port) {

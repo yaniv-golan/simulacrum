@@ -1,3 +1,4 @@
+import { createThumbnailQueue } from './thumbnail-queue.mjs';
 import { createSceneEditor, sceneMesh } from './scene-editor.mjs';
 import { hasWorkshopContent } from '../model/environment.mjs';
 import { createRopeView } from './rope-view.mjs';
@@ -2174,9 +2175,7 @@ export function createWorkshopView(
       editable = mode === 'build' && !exploded;
     const selectedHeader = element('div', 'selected-part-header'),
       identity = element('div', 'part-identity'),
-      icon = partIcon(part.type),
-      existingIcon = left.querySelector(`[data-icon-type="${part.type}"]`);
-    if (existingIcon) icon.src = existingIcon.src;
+      icon = partIcon(part.type);
     const aboutPart = partHelp.about(part.type, 'About this part');
     aboutPart.classList.add('inspector-part-about');
     aboutPart.setAttribute('aria-label', 'About this part');
@@ -3574,14 +3573,18 @@ export function createWorkshopView(
     refreshPartList();
   }
   function renderPaletteIcons() {
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setSize(160, 160);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    const previewEnvironment = createFinishEnvironment(renderer);
-    renderer.setClearColor(0, 0);
+    let renderer, previewEnvironment;
     const meshes = [];
-    try {
-      for (const type of Object.keys(CATALOG)) {
+    return createThumbnailQueue({
+      types: Object.keys(CATALOG),
+      render(type) {
+        if (!renderer) {
+          renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+          renderer.setSize(160, 160);
+          renderer.outputColorSpace = THREE.SRGBColorSpace;
+          previewEnvironment = createFinishEnvironment(renderer);
+          renderer.setClearColor(0, 0);
+        }
         const part = createPart(type, 'thumbnail', [0, 0, 0]),
           mesh = createPartMesh(part),
           scene = new THREE.Scene();
@@ -3599,18 +3602,29 @@ export function createWorkshopView(
         camera.position.copy(center).add(new THREE.Vector3(1.4, 0.9, 1.8));
         camera.lookAt(center);
         renderer.render(scene, camera);
-        partThumbnails.set(type, renderer.domElement.toDataURL());
-      }
-      for (const img of left.querySelectorAll('[data-icon-type]'))
-        img.src = partThumbnails.get(img.dataset.iconType);
-    } finally {
-      // Keep shared shader programs alive across the batch instead of recompiling
-      // them after every thumbnail. All temporary resources leave with this batch.
-      for (const mesh of meshes) disposePart(mesh);
-      previewEnvironment.dispose();
-      renderer.dispose();
-      renderer.forceContextLoss();
-    }
+        return renderer.domElement.toDataURL();
+      },
+      publish(type, image) {
+        partThumbnails.set(type, image);
+        // Help and loaded-part inspectors can open before this type is ready.
+        for (const img of root.querySelectorAll(`[data-icon-type="${type}"]`)) img.src = image;
+      },
+      dispose() {
+        // Keep shared shader programs alive across tasks; release every resource
+        // on completion, failure or workshop disposal, including a partial batch.
+        for (const mesh of meshes) disposePart(mesh);
+        meshes.length = 0;
+        previewEnvironment?.dispose();
+        renderer?.dispose();
+        renderer?.forceContextLoss();
+        previewEnvironment = null;
+        renderer = null;
+      },
+      onError(error) {
+        console.error('Part preview rendering failed', error);
+        setMessage('Part previews could not be loaded. Reload to try again.');
+      },
+    });
   }
 
   function updatePortCues() {
@@ -4260,7 +4274,7 @@ export function createWorkshopView(
   };
   window.addEventListener('blur', blur);
 
-  renderPaletteIcons();
+  const paletteThumbnails = renderPaletteIcons();
   // Keep a bounded set of graphics resources for this renderer lifetime. Warm
   // real material/shadow variants before the first authored placement; these
   // meshes never enter the authored mesh map or completed snapshot readback.
@@ -4540,6 +4554,7 @@ export function createWorkshopView(
     camera,
     dispose() {
       disposed = true;
+      paletteThumbnails.dispose();
       showGuideConnection(null);
       cancelAnimationFrame(animation);
       for (const type of ['click', 'change']) root.removeEventListener(type, captureInput, true);

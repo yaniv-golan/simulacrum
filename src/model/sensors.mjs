@@ -21,6 +21,10 @@ export const SENSOR_DEFINITIONS = immutableCopy({
     angle: channel('rad', 'joint-zero', Math.PI),
     angularSpeed: channel('rad/s', 'joint-axis', 20),
   },
+  loadCell: {
+    axialForce: channel('N', 'sensor-local-X', 100),
+    load: channel('N', 'attachment-resultant', 100),
+  },
   contact: {
     touching: channel('boolean', 'pad-face', 1),
     normalLoad: channel('N', 'pad-face', 100),

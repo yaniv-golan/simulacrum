@@ -45,6 +45,36 @@ export function sampleSensor(sensor, context) {
   if (!body) return admitSensorReading(result, kind);
   const q = body.rotation,
     local = (v) => rotateSensor(inverse(q), v);
+  if (kind === 'loadCell') {
+    const status = (value) => {
+      for (const name of Object.keys(definition)) result.channels[name] = { status: value };
+    };
+    if (
+      sensor.joint < 0 ||
+      sensor.support < 0 ||
+      context.openedJoints?.includes(sensor.joint) ||
+      context.openedJoints?.includes(sensor.support)
+    )
+      status('disconnected');
+    else {
+      const receipt = context.reaction?.(sensor.joint);
+      if (receipt?.tick === tick && receipt.status === 'initializing' && tick === 0)
+        status('initializing');
+      else if (
+        receipt?.tick === tick &&
+        receipt.status === 'ok' &&
+        Array.isArray(receipt.impulse) &&
+        receipt.impulse.length === 3 &&
+        receipt.impulse.every(Number.isFinite)
+      ) {
+        const force = receipt.impulse.map((x) => (x * sensor.sign) / dt);
+        if (force.every(Number.isFinite)) {
+          set('axialForce', local(force)[0]);
+          set('load', Math.hypot(...force));
+        }
+      }
+    }
+  }
   if (kind === 'rotation') set('angularSpeed', dot(local(body.angularVelocity), sensor.axis));
   if (kind === 'linearMotion') {
     const velocity = local(

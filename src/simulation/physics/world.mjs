@@ -1,4 +1,5 @@
 import { ropeVectorImpulses, ropeWorkLedger } from './law/rope.mjs';
+import { createJointReactions } from './joint-reactions.mjs';
 import { admitGearTopology } from './gear-topology.mjs';
 import { coupledGearImpulses } from './law/gear.mjs';
 import { springTopologyDomain } from './spring-topology.mjs';
@@ -12,7 +13,7 @@ const MAX_BODIES = 4097; // 4096 authored primitives plus the workshop ground.
 // values; no Rapier world, body, collider, vector or query object crosses it.
 import RAPIER from '@dimforge/rapier3d-deterministic-compat';
 import { DT } from '../../model/tick.mjs';
-const PHYSICS_BACKEND = '0.20.0-simulacrum.spring.9.f64';
+const PHYSICS_BACKEND = '0.20.0-simulacrum.spring.10.f64';
 let initialization;
 function record(value, keys) {
   if (
@@ -75,21 +76,24 @@ function hash(bytes) {
   for (let index = 0; index < bytes.length; index++) h = Math.imul(h ^ bytes[index], 16777619);
   return h >>> 0;
 }
-function encode(payload, handles, configuration, gearState, opened, ropeState, ropeWork) {
+function encode(
+  payload,
+  handles,
+  configuration,
+  gearState,
+  opened,
+  ropeState,
+  ropeWork,
+  reactions,
+) {
   const metadata = new TextEncoder().encode(
     JSON.stringify({
-      version: ropeState.length
-        ? opened.length
-          ? 8
-          : 7
-        : opened.length
-          ? 6
-          : gearState.length
-            ? 5
-            : 4,
-      ...(ropeState.length ? { ropeState, ropeWork } : {}),
-      ...(opened.length ? { opened } : {}),
-      ...(gearState.length || opened.length ? { gearState } : {}),
+      version: 9,
+      reactions,
+      gearState,
+      opened,
+      ropeState,
+      ropeWork,
       backend: PHYSICS_BACKEND,
       handles,
       configuration,
@@ -125,23 +129,14 @@ function decode(input) {
     'backend',
     'handles',
     'configuration',
-    ...(metadata.version === 5 ||
-    metadata.version === 8 ||
-    (metadata.version === 6 && Object.hasOwn(metadata, 'opened')) ||
-    ([6, 7].includes(metadata.version) && Object.hasOwn(metadata, 'gearState'))
-      ? ['gearState']
-      : []),
-    ...((metadata.version === 6 && Object.hasOwn(metadata, 'opened')) || metadata.version === 8
-      ? ['opened']
-      : []),
-    ...((metadata.version === 6 && !Object.hasOwn(metadata, 'opened')) ||
-    [7, 8].includes(metadata.version)
-      ? ['ropeState']
-      : []),
-    ...([7, 8].includes(metadata.version) ? ['ropeWork'] : []),
+    'reactions',
+    'gearState',
+    'opened',
+    'ropeState',
+    'ropeWork',
   ]);
   if (
-    ![4, 5, 6, 7, 8].includes(metadata.version) ||
+    metadata.version !== 9 ||
     metadata.backend !== PHYSICS_BACKEND ||
     !Array.isArray(metadata.handles) ||
     metadata.handles.length > MAX_BODIES ||
@@ -151,9 +146,10 @@ function decode(input) {
     throw new TypeError('invalid physics snapshot handles');
   return {
     handles: metadata.handles,
-    opened: metadata.opened ?? [],
-    gearState: metadata.gearState ?? [],
-    ropeState: metadata.ropeState ?? [],
+    opened: metadata.opened,
+    reactions: metadata.reactions,
+    gearState: metadata.gearState,
+    ropeState: metadata.ropeState,
     ropeWork: metadata.ropeWork,
     configuration: metadata.configuration,
     payload: bytes.slice(12 + size),
@@ -470,6 +466,7 @@ export async function createPhysicsWorld(configuration) {
     },
   };
   const jointHandles = [];
+  const reactions = createJointReactions(joints);
   try {
     world.timestep = DT;
     world.integrationParameters.numSolverIterations = 4; // Frozen temporal solver subdivision.
@@ -771,24 +768,23 @@ export async function createPhysicsWorld(configuration) {
     const offsets = new Map(indices.map((body, i) => [body, i * 6]));
     const n = indices.length * 6;
     const centres = indices.map((i) => array(bodyAt(i).translation()));
+    const reactionIndices = joints.flatMap((j, i) =>
+      j.kind !== 'gear' &&
+      j.kind !== 'rope' &&
+      !opened.has(i) &&
+      !planned.has(i) &&
+      offsets.has(j.a) &&
+      offsets.has(j.b)
+        ? [i]
+        : [],
+    );
     const factor = (responseWorld ?? world).impulseJoints.raw.prepareBilateralResponse(
       (responseWorld ?? world).bodies.raw,
       new Float64Array(indices.map((i) => handles[i])),
-      new Float64Array(
-        joints.flatMap((j, i) =>
-          j.kind !== 'gear' &&
-          j.kind !== 'rope' &&
-          !opened.has(i) &&
-          !planned.has(i) &&
-          offsets.has(j.a) &&
-          offsets.has(j.b)
-            ? [jointHandles[i]]
-            : [],
-        ),
-      ),
+      new Float64Array(reactionIndices.map((i) => jointHandles[i])),
       world.integrationParameters.raw,
     );
-    const projection = readNativeResponse(factor, indices.length);
+    const projection = readNativeResponse(factor, indices.length, reactionIndices.length);
     try {
       const vector = () => {
         const out = new Float64Array(n);
@@ -824,12 +820,18 @@ export async function createPhysicsWorld(configuration) {
         indices,
         offsets,
         projection,
+        reactionIndices,
+        recordReactions: (receipt, scale = 1) =>
+          reactions.add(reactionIndices, receipt.jointImpulses, scale),
         vector,
         apply,
         force,
         projectedVector,
         dispose: projection.dispose,
-        applyPassive: () => apply(passive.impulse),
+        applyPassive: () => {
+          apply(passive.impulse);
+          reactions.add(reactionIndices, passive.jointImpulses);
+        },
         kinetic: () => indices.reduce((sum, i) => sum + kinetic(bodyAt(i)), 0),
         axialForce(a, b, axis, pointA, pointB) {
           const out = new Float64Array(n);
@@ -927,13 +929,15 @@ export async function createPhysicsWorld(configuration) {
           f[offsets.get(j.b) + k] += axis[k];
         }
         const impulse = Array(size).fill(0),
-          response = Array(size).fill(0);
+          response = Array(size).fill(0),
+          jointResponses = [];
         for (const component of components) {
           const input = component.indices.flatMap((i) =>
             f.slice(offsets.get(i), offsets.get(i) + 6),
           );
           if (!input.some((x) => x !== 0)) continue;
           const out = component.projection.response(input);
+          jointResponses.push({ component, out });
           component.indices.forEach((i, slot) => {
             for (let k = 0; k < 6; k++) {
               impulse[offsets.get(i) + k] = out.impulse[slot * 6 + k];
@@ -952,6 +956,7 @@ export async function createPhysicsWorld(configuration) {
           f,
           impulse,
           response,
+          jointResponses,
           offsetA: offsets.get(j.a) + cart,
           offsetB: offsets.get(j.b) + cart,
         };
@@ -1019,6 +1024,11 @@ export async function createPhysicsWorld(configuration) {
         body.addTorque(xyz(applied.slice(off + 3, off + 6).map((v) => v / DT)), true);
       }
     }
+    // These projected forces are applied for the full upcoming interval. Probes
+    // above do not count; retain only each applied Cartesian row's correction.
+    rows.forEach((r, i) =>
+      r.jointResponses.forEach(({ component, out }) => component.recordReactions(out, -flat[i])),
+    );
     pendingRopeWork = readings.map((r, i) => ({
       before: r.pointB.map((v, k) => v - r.pointA[k]),
       impulse: [...receipt.impulses[i]],
@@ -1133,7 +1143,7 @@ export async function createPhysicsWorld(configuration) {
       rows.forEach((row, i) =>
         row.response.velocity.forEach((x, k) => (velocity[k] += x * receipt.impulses[i])),
       );
-      allocations.push({ island, impulse, velocity, receipt });
+      allocations.push({ island, impulse, velocity, receipt, rows });
     }
     return allocations;
   }
@@ -1317,6 +1327,7 @@ export async function createPhysicsWorld(configuration) {
     for (const { island, rows, prior, receipt, impulse, raw } of allocations) {
       const before = island.kinetic();
       island.apply(impulse);
+      rows.forEach((row, i) => island.recordReactions(row.response, receipt.impulses[i]));
       const current = island.vector(),
         average = current.map((v, i) => (v + prior[i]) / 2);
       result.kineticDeltaJ += island.kinetic() - before;
@@ -1494,9 +1505,10 @@ export async function createPhysicsWorld(configuration) {
       const allocations = preparedSprings ?? prepareSpringAllocations();
       let dampingWorkJ = 0,
         kineticDeltaJ = 0;
-      for (const { island, impulse, receipt } of allocations) {
+      for (const { island, impulse, receipt, rows } of allocations) {
         const before = island.kinetic();
         island.apply(impulse);
+        rows.forEach((row, i) => island.recordReactions(row.response, receipt.impulses[i]));
         kineticDeltaJ += island.kinetic() - before;
         dampingWorkJ += receipt.dampingWorkJ;
       }
@@ -1682,10 +1694,12 @@ export async function createPhysicsWorld(configuration) {
       let constraintWorkJ = 0;
       if (island) {
         const raw = island.force(a, b, axis),
-          projected = island.projection.response(raw).impulse,
+          response = island.projection.response(raw),
+          projected = response.impulse,
           prior = island.vector(),
           scaled = projected.map((x) => x * torqueNm * DT);
         island.apply(scaled);
+        island.recordReactions(response, torqueNm * DT);
         const current = island.vector();
         // Independent impulse work of the regularized constraint reactions.
         // It may have either sign; it is neither funded motor work nor heat.
@@ -1770,10 +1784,10 @@ export async function createPhysicsWorld(configuration) {
       const raw = island.axialForce(j.a, j.b, s.axis, s.pointA, s.pointB);
       const locked = topology.isRigidPair(j.a, j.b);
       const speedBefore = locked ? 0 : dot(raw, prior);
-      const impulse = locked
-        ? raw.map(() => 0)
-        : island.projection.response(raw).impulse.map((v) => v * forceN * DT);
+      const response = locked ? null : island.projection.response(raw);
+      const impulse = response ? response.impulse.map((v) => v * forceN * DT) : raw.map(() => 0);
       island.apply(impulse);
+      if (response) island.recordReactions(response, forceN * DT);
       const current = island.vector(),
         speedAfter = locked ? 0 : dot(raw, current),
         after = island.kinetic();
@@ -1850,6 +1864,14 @@ export async function createPhysicsWorld(configuration) {
         throw new Error('gear solve must precede integration');
       if (ropeIndices.length && !ropesApplied) throw Error('rope solve must precede integration');
       world.step(contactEvents, contactHooks);
+      reactions.complete(
+        (i) => {
+          const v = world.impulseJoints.raw.jointAppliedLinearImpulse(jointHandles[i]);
+          if (!v) return null;
+          return Array.from(v);
+        },
+        [...opened].sort((a, b) => a - b),
+      );
       if (ropeIndices.length)
         for (const handle of handles) {
           const body = world.getRigidBody(handle);
@@ -1891,6 +1913,14 @@ export async function createPhysicsWorld(configuration) {
       alive();
       return readWorld(world, handles);
     },
+    jointReactionSupported(index, historicalOpened) {
+      alive();
+      return reactions.supported(index, historicalOpened);
+    },
+    jointReaction(index) {
+      alive();
+      return reactions.read(index);
+    },
     snapshot() {
       alive();
       if (ropesApplied || (gearIndices.length && gearsApplied))
@@ -1905,6 +1935,7 @@ export async function createPhysicsWorld(configuration) {
         [...opened].sort((a, b) => a - b),
         ropeState,
         ropeWork,
+        reactions.snapshot(),
       );
     },
     restore(
@@ -1914,6 +1945,7 @@ export async function createPhysicsWorld(configuration) {
       previousSpringLengths,
       expectedOpened,
       expectedRopeWork,
+      expectedTick,
     ) {
       alive();
       const decoded = decode(bytes);
@@ -1931,7 +1963,7 @@ export async function createPhysicsWorld(configuration) {
         )
       )
         throw TypeError('invalid rope snapshot readings');
-      const work = decoded.ropeWork ?? ropeWorkLedger([], DT);
+      const work = decoded.ropeWork;
       record(work, Object.keys(ropeWorkLedger([], DT)));
       if (
         (ropeIndices.length && !decoded.ropeWork) ||
@@ -1961,6 +1993,11 @@ export async function createPhysicsWorld(configuration) {
         if (Object.keys(work).some((k) => expectedRopeWork[k] !== work[k]))
           throw TypeError('rope work snapshot mismatch');
       }
+      const reactionState = reactions.validate(decoded.reactions);
+      if (JSON.stringify(reactionState.opened) !== JSON.stringify(decoded.opened))
+        throw Error('snapshot reaction topology mismatch');
+      if (expectedTick !== undefined && reactionState.tick !== expectedTick)
+        throw Error('snapshot reaction tick mismatch');
       let candidate;
       try {
         candidate = RAPIER.World.restoreSnapshot(decoded.payload);
@@ -2098,6 +2135,7 @@ export async function createPhysicsWorld(configuration) {
       ropeWork = { ...work };
       pendingRopeWork = null;
       gearMemory = memory;
+      reactions.restore(reactionState);
       clearPreparedTorqueIslands();
       preparedSprings = null;
       springsApplied = false;

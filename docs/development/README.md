@@ -9,8 +9,7 @@ serve a stable build. The page displays its build identity.
 
 ## Working loop
 
-<!-- doc-review {"version":1,"fingerprint":"c493cfb94556d95eacbac7f275368fc79605942c7b078eefc4640e9eb385c470","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"ada749125e632d8ece4fdd979daab565086e6bd09d7c36081a86094b2ad69da3","disposition":"updated","rationale":"The command choice now distinguishes local completion, routine merge readiness and full release or milestone qualification; each completion command owns CI so development probes need not be repeated."} -->
-
+<!-- doc-review {"version":1,"fingerprint":"364e2ae29312e97672580ca12471edcd7dce06abbbeb940e42265f8c4cb50a64","dependencies":"docs/development/.reviews/README/working-loop.json","dependencyDigest":"ada749125e632d8ece4fdd979daab565086e6bd09d7c36081a86094b2ad69da3","disposition":"still accurate","rationale":"The complete loop still matches current navigation, inspection, red-before-green and candidate owners. This integration adds a registered coupled physical regression and preserves the same completion tiers; source preparation and semantic review precede capture, and merged source requires its own merge candidate. No workflow command or human-evidence boundary changed. Revalidated after final thumbnail scheduling and spring witness closure: the new timer/DOM/cache owner and browser-only induction do not alter this section’s previously reviewed ownership, verification or evidence requirements."} -->
 
 Player-facing changes also follow the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 It owns placement, teaching lifecycle and qualitative review; the manifest owns its
@@ -38,8 +37,7 @@ executable guarantees. Use the existing discovery and completion commands below.
 
 ## Find owners and checks
 
-<!-- doc-review {"version":1,"fingerprint":"37450138a14dd6c4fd1759a77b8849041de56b166f5bba53b6d2e9166561f554","dependencies":"docs/development/.reviews/README/find-owners-and-checks.json","dependencyDigest":"c6275df393eb8b04ad047ae48f7f56667f094d7dce4c67f59f6d2766bed45c13","disposition":"still accurate","rationale":"The integrated module graph still derives current owners, declarations and conservative tests. New capture-packet edges and native qualification commands are discoverable; static summaries remain non-executing and opaque readers retain explicit audits."} -->
-
+<!-- doc-review {"version":1,"fingerprint":"dc550ea544f8b4dc30290e6c32a67337e1582e8e534f805abc7d0690d4f5634b","dependencies":"docs/development/.reviews/README/find-owners-and-checks.json","dependencyDigest":"c6275df393eb8b04ad047ae48f7f56667f094d7dce4c67f59f6d2766bed45c13","disposition":"still accurate","rationale":"Current navigate and inspect-change owners are unchanged from the current main source. The new joint-reactions owner and coupled regression enter the existing parsed import graph and manifest invariant pointers; path queries and conservative selection still execute no checks. Registration remains separate from observed red/green and candidate reports; no second inventory or special-case selection was added. Revalidated after final thumbnail scheduling and spring witness closure: the new timer/DOM/cache owner and browser-only induction do not alter this section’s previously reviewed ownership, verification or evidence requirements."} -->
 
 ```sh
 node scripts/navigate.mjs availablePartName
@@ -92,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"a8667fb6f7e19401553fb9ddffcbb31276cee07a54a6286a541ec802d3724236","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"616f212aa5daaaf83a1dc74d19855989fef6e27dfc60eda954e5b0358dff24e5","disposition":"updated","rationale":"The retained progress guidance distinguishes implemented capability, source-bound automation, human acceptance and qualification. The release operations policy still limits experimental deferrals and does not convert merge readiness into milestone qualification."} -->
+<!-- doc-review {"version":1,"fingerprint":"ac1f09ddabc483e1c37aaba17d3a8a4653837264c06be657540d00d6f0928bdf","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"0c33b7c3f85b808fc1621b760325c8f67b2148d32c6233ad65627880e0f7455d","disposition":"updated","rationale":"The merge adds three manifest browser journeys and Load Cell unit/physical checks, and pins spring.10 in package/lock; it changes no npm command or Node engine range. Current local/merge/final tier owners still execute CI before required browser coverage, distinguish automation from human qualification, and reject changed source/runtime inputs. The new journeys use the same served-build evidence helper and ordinary UI operations; native reaction proofs are separate development/qualification evidence, not permission to omit a completion tier. Package identity changes require fresh verification under the documented same-source rule. Revalidated after final thumbnail scheduling and spring witness closure: the same registered spring browser journey and existing invariant owners retain all required checks; no completion tier is relaxed. The newly merged progress-reporting guidance accurately separates implemented behavior, source-bound automation, protocol-based human acceptance and milestone qualification. Detailed candidate outcomes and current source identity are required; historical originStillMatches cannot certify later source. Existing local/merge/final command semantics are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -144,7 +142,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"b07edc2823c2b9c8c777503710116dd81ce9be0dcee895e21e62e8181c0b3579","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"feaf9cc2bee36fddbcb2d46e1cc8009383feddb00f1ccbcd80d2ed5f8a755b4e","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): the regenerated reference now lists the render lifecycle probe and submission tracker controls alongside the scene owners; the regenerate, section-specific review and exact-source closure workflow is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"200eb3846f615ce28cc13c3dd6e4557f148a7df1fa5c223f3ed5d7c9f98d0d07","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"f26473ee1be8c914a0e8a52b5bc3e8709d89894681386f78ddfa2bc0a40a5749","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): the regenerated reference now lists the render lifecycle probe and submission tracker controls alongside the scene owners; the regenerate, section-specific review and exact-source closure workflow is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -187,7 +185,14 @@ that hashing a stylesheet validates its layout; browser review remains required.
    in a temporary JSON file and run `npm run docs:review -- --batch <decisions.json>`:
 
    ```json
-   [{"file":"docs/development/architecture.md","id":"trace-an-edit","disposition":"still accurate","rationale":"The new view toggle does not change command admission or history ownership."}]
+   [
+     {
+       "file": "docs/development/architecture.md",
+       "id": "trace-an-edit",
+       "disposition": "still accurate",
+       "rationale": "The new view toggle does not change command admission or history ownership."
+     }
+   ]
    ```
 
    Every row requires its own file, section ID, disposition and technical rationale.
@@ -277,7 +282,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"3a709cc2734a564eefaefb755800c58ca6918ae4710d8dab7aa49dc1e65280c7","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"3f6bcff97ed6ecba8303e6698d21c592d23b80f081e8595429aa7938f6d69161","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): the new verify-render-lifecycle check is exclusive on the probe environment and its addition to the root set is the only cause of the regenerated roots and consumer hashes (reviewed and applied through browser:scopes with passing witnesses); immutable body admission and the submission tracker do not alter selection, scheduling or concurrency policy."} -->
+<!-- doc-review {"version":1,"fingerprint":"523cbab94b11e7baf05c4ecc8507e4d583034d9906afc07d711b79b28f3ecf19","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"d0c5a9715ef5913921119e553be4f0ee758da9b1f4bcf0d9d8d1e555087c2359","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): the new verify-render-lifecycle check is exclusive on the probe environment and its addition to the root set is the only cause of the regenerated roots and consumer hashes (reviewed and applied through browser:scopes with passing witnesses); immutable body admission and the submission tracker do not alter selection, scheduling or concurrency policy."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -368,8 +373,9 @@ Reports preserve manifest order, all failures, worker configuration and source i
 Every check records its planned schedule index, dispatch time, active browser peers and
 host load averages. These describe admission conditions; they do not establish stable
 warmup, causal contention or comparable performance distributions across reordered runs.
-Shared sensing remains exclusive because its contact-driven reversal is transient and
-was missed under parallel contention. Starter also remains exclusive because it checks
+Shared sensing remains exclusive. Its contact journey stops wall-clock progression
+while arming both receivers, then observes every fixed step within the existing physical horizon.
+Starter also remains exclusive because it checks
 bounded tick gaps in live observations. The actuator journey retains its exclusive focus
 profile after two headless parallel trials failed its repaired-extension assertion.
 It releases drive before pausing a backdrivable load, making the observed state sensitive
@@ -457,9 +463,10 @@ Summary-only discovery does not replace execution evidence. [Local completion](.
 [final verification](../../scripts/verify-final.mjs#implementation) also record
 a fresh failed outcome when runtime, arguments or base-revision admission fails.
 Use the [browser evidence helpers](../../scripts/browser-evidence.mjs#source) for repeated interactions:
-`loadAndWait(page, file, { ok })` uploads through the file input, explicitly accepts
-the full-workshop replacement prompt when needed, and returns a fresh matching
-command receipt, including rejected loads. The [application-owned receipt sequence](../../src/application/workshop-app.mjs#source) advances
+`loadAndWait(page, file, { ok })` waits for a callable workshop command probe within
+the page’s existing wait bound before reading state or uploading through the file input.
+It explicitly accepts the full-workshop replacement prompt when needed, then returns a fresh matching command receipt, including rejected loads. Served build
+metadata alone does not establish workshop initialization or image readiness. The [application-owned receipt sequence](../../src/application/workshop-app.mjs#source) advances
 on completed attempts even when the simulation cursor does not change.
 `assertRejectedEdit({ snapshot, action })` compares the caller's consequential state projection
 before and after a rejected receipt; include history and cursor where those are part of the claim.
@@ -475,7 +482,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"06d39cb49e36ce9c9a0265bd421b394ceccd72366b20a714f7e112e5073d4810","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"1f51d57120e486c30d8dfcbcdadf1a8538f1dece47d10ae0c66f2ec8aad52dad","disposition":"updated","rationale":"Retained one precise description of temporary owner metadata and same-directory atomic rename. The implementation waits for incomplete publication and rejects malformed published authority; queue limits, strict recovery and cooperative scheduling boundaries remain intact."} -->
+<!-- doc-review {"version":1,"fingerprint":"a9320f97cbd8fb1646e9641ee0697c3e3d6264594a4e5cb273a5c7b5ee0a890c","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"29e67b15f7e515f4d320d6a92655ce1d1e73a6946ce1bced76fc90f54f65a113","disposition":"still accurate","rationale":"verification-window still uses private temporary metadata plus same-directory rename, inherited owner tokens, strict non-age-based recovery and distinct 30-minute completion/native-qualification versus five-minute focused waits. The Load Cell native qualification uses that existing completion classification; three new exclusive browser journeys use ordinary focused/browser admission. The package pin and reaction implementation do not change queue policy, owner identity, process cleanup, measured execution budgets or the distinction between coordination and atomic source installation. Current main's wait/status and recovery behavior are preserved. Revalidated after final thumbnail scheduling and spring witness closure: the new timer/DOM/cache owner and browser-only induction do not alter this section’s previously reviewed ownership, verification or evidence requirements."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -518,7 +525,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"c4f27aa9379a53717dc6c934b14dc492d06a13f7b4614918a7d372efc9a6ea6c","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"db9f7774734e81dcf4cfcd89ac8023ade86b1015ed16dc2c6a588010695f4b38","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): the merged manifest, observation admission and application measurement lifecycle change candidate bytes and require fresh completion on the integrated source; capture ownership, frozen receipts and merge-base selection are unchanged, and the F2 probe remains a development probe."} -->
+<!-- doc-review {"version":1,"fingerprint":"e1271845fcba26f896b7ed7ceab5e59bca2694e30518cca3b0e73e9d4e10efcb","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"9dab5bf03d5442f0a56d91959159d384c2b047ee54cc51630ab279f435ced6f6","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): the merged manifest, observation admission and application measurement lifecycle change candidate bytes and require fresh completion on the integrated source; capture ownership, frozen receipts and merge-base selection are unchanged, and the F2 probe remains a development probe."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

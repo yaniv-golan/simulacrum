@@ -33,7 +33,14 @@ export function surfaceRegions(partOrType) {
   const allowed = faces.filter((f) => definition.mountingFaces?.includes(f[0]));
   return allowed.map(([id, position, rotation, halfSize]) => ({
     id,
-    label: definition.releaseFace === id ? 'Latch · Right' : id[0].toUpperCase() + id.slice(1),
+    label:
+      type === 'loadCellSensor'
+        ? id === 'left'
+          ? 'A — support'
+          : 'B — measured'
+        : definition.releaseFace === id
+          ? 'Latch · Right'
+          : id[0].toUpperCase() + id.slice(1),
     position,
     rotation,
     halfSize,

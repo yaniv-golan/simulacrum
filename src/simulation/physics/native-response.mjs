@@ -1,9 +1,10 @@
 // @ts-check
 /** Own a copied numerical native factor for one preparation lifetime.
  * No world, body, collider or joint is retained by the factor.
- * @param {{project(v:Float64Array):Float64Array,response(v:Float64Array):Float64Array,free():void}} factor
- * @param {number} bodyCount */
-export function readNativeResponse(factor, bodyCount) {
+ * @param {{project(v:Float64Array):Float64Array,response(v:Float64Array):Float64Array,projectWithJointImpulses(v:Float64Array):Float64Array,responseWithJointImpulses(v:Float64Array):Float64Array,free():void}} factor
+ * @param {number} bodyCount
+ * @param {number} jointCount */
+export function readNativeResponse(factor, bodyCount, jointCount = 0) {
   const n = bodyCount * 6;
   let disposed = false;
   /** @param {'project'|'response'} method @param {number[]|Float64Array} value */
@@ -15,14 +16,22 @@ export function readNativeResponse(factor, bodyCount) {
       !value.every(Number.isFinite)
     )
       throw new TypeError('invalid response vector');
-    const data = factor[method](value instanceof Float64Array ? value : new Float64Array(value));
-    if (!(data instanceof Float64Array) || data.length !== n * 2)
+    const data = factor[
+      jointCount
+        ? method === 'project'
+          ? 'projectWithJointImpulses'
+          : 'responseWithJointImpulses'
+        : method
+    ](value instanceof Float64Array ? value : new Float64Array(value));
+    if (!(data instanceof Float64Array) || data.length !== n * 2 + jointCount * 3)
       throw new Error('invalid native response result');
     for (let i = 0; i < data.length; i++)
       if (!Number.isFinite(data[i])) throw new Error('invalid native response result');
     return {
       impulse: data.subarray(0, n),
-      velocity: data.subarray(n),
+      velocity: data.subarray(n, n * 2),
+      // Joint reactions accumulate through plain arrays owned by the reaction ledger.
+      jointImpulses: Array.from(data.subarray(n * 2)),
     };
   }
   return Object.freeze({

@@ -5,9 +5,9 @@ patch and rebuild recipe. The package uses uniform f64 physical arithmetic and
 Float64Array physical bindings. Debug colors remain Float32Array; index and handle
 encodings retain their original integer/opaque semantics.
 
-The application checks runtime version `0.20.0-simulacrum.spring.9.f64`. Physics
-snapshot envelope version 4 records that backend identity and rejects previous
-precision/layout envelopes before native deserialization. Authored configurations
+The application checks runtime version `0.20.0-simulacrum.spring.10.f64`. The physics
+snapshot envelope records that backend identity and rejects incompatible
+backend envelopes before native deserialization. Authored configurations
 are unchanged; opaque checkpoints from earlier backend versions are incompatible.
 
 The patch preserves contact impulse diagnostics, symplectic spring integration,
@@ -48,6 +48,32 @@ Coulomb friction minimizes the coupled
 positive-semidefinite quadratic over its impulse disk, including accumulated
 impulses and generalized endpoints; it checks feasibility and KKT residuals.
 
+## Joint reaction diagnostics
+
+`RawImpulseJointSet.jointAppliedLinearImpulse(handle)` returns a copied f64 XYZ
+impulse on the joint's native body1, in world coordinates and N s. Native body2
+receives the opposite linear impulse. An absent handle or a joint without a completed
+active solve returns no receipt. A solved zero is distinct from absence. The receipt
+resets once per external pipeline step, sums all CCD subdivisions and internal
+substeps, and records the actual scalar, SIMD and coupled row applications. It
+includes applied warm starts exactly once, preserves vectors through row rebuilds,
+and deduplicates padded SIMD writeback lanes. It is a force diagnostic, not a torque
+or capacity measurement. The transient native receipt is excluded from serialization;
+the application owns completed receipt checkpoint history.
+
+`RawBilateralResponse.projectWithJointImpulses` and
+`responseWithJointImpulses` preserve the existing body impulse/velocity prefix and
+append one XYZ correction impulse on body1 for each input joint, in input order.
+The factor retains each row's joint identity before accumulation into bodies.
+Queries remain read-only. Only a response actually applied by the physics door,
+with the same physical scale, contributes to a completed reaction receipt.
+
+The recipe runs `test-joint-reactions.mjs` on its built package: suspended-force and
+per-tick momentum checks over multiple masses, gravity values and subdivisions,
+free fall, copied receipts, restore continuation and prepared attribution. These
+bounded native checks complement the application's force-sensor witnesses and the
+heavy native qualification below; they do not establish arbitrary-assembly accuracy.
+
 ## Rebuild
 
 Run `build.sh` with Node 24.18.0, Rust 1.94.0 and its wasm32-unknown-unknown target,
@@ -77,7 +103,7 @@ Provenance records the exact source, patch, toolchain, WASM and package hashes.
 clean rebuilds. This heavy native-change qualification is separate from CI. It
 does not qualify arbitrary assemblies or other platforms. Input roles are `baseline`,
 `candidate`, `staleFactor`, `staleRhs`; each supplies absolute `package`, `patch`,
-`packageSha256`, `patchSha256`, and `version` (spring.6, spring.7, spring.8 or spring.9 f64). Preserve
+`packageSha256`, `patchSha256`, and `version` (spring.6, spring.7, spring.8, spring.9 or spring.10 f64). Preserve
 the controlled source patches and build evidence with those artifacts. Each non-candidate role also requires `reviewedDifferenceSha256` (SHA256 of candidate
 patch bytes, a NUL byte, then control patch bytes) and `reviewRationale` describing the
 reviewed change. The runner freezes all inputs, rebuilds each role from its patch,
@@ -90,3 +116,14 @@ package/WASM outputs. Existing RAPIER_OFFLINE and source archive inputs apply.
 `RAPIER_BUILD_DIR` chooses a new, nonexistent retained output directory outside the
 compilation root; otherwise mktemp reserves one. Builds are serialized across
 checkouts while their retained outputs remain separate. No installed package changes.
+
+Physical equivalence uses the same test-only adapter in every frozen role: it keeps
+physical response queries/applications and all native snapshot payload bytes, while
+suppressing the new diagnostic reads. Envelope comparison normalizes the backend
+version and its length/checksum only. Exact replacement guards and source hashes
+record the adapter. This comparison proves bounded physical equivalence; the native
+reaction probes and independent application force tests separately check diagnostics.
+Historical packages lack the new diagnostic API, so their reviewed build recipes omit
+only its probe. The retained spring.8 controls also omit the spring.9 residual-bound
+unit probe whose source is absent. Candidate builds retain every current probe, and
+the report records historical omissions and each reviewed compound difference.

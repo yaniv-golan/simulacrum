@@ -86,6 +86,18 @@ export const PART_HELP = {
       'Its material and solid size determine its mass. It is not a hollow clamp or an invisible hinge.',
     ],
   ),
+  loadCellSensor: help(
+    'Measures force through its B attachment',
+    'A — support is the left face; B — measured is the right face. Axial force is positive for pull and negative for push along A → B. Attachment force includes sideways load. Both use the force averaged over one completed step; neither measures torque, peak force or a safe capacity.',
+    'Mount one part to A and one to B. Connect Power to a cell, then wire Axial force or Attachment force to a Logic Controller input.',
+    [
+      'Select the cell to see its readings and A → B arrow. A missing mount or power gives an invalid reading, never a false zero.',
+      'In Rules, compare Attachment force with a threshold to include both push and sideways load. Axial force supports signed pull/push comparisons.',
+      'Start the receiver Off or Manual. Run until the sensor has a valid reading, then select Automatic. If an invalid reading switches it Off, repair the cause and select Automatic again.',
+      'If another mechanical connection bypasses B, sensing is unavailable. A supported load can reduce the real force through B; the sensor does not estimate the whole payload weight.',
+      'Rules use the previous completed reading. Cutting drive can still allow overshoot, gravity-driven motion or stored energy to move the machine.',
+    ],
+  ),
   rangeSensor: help(
     'Measures first-hit distance and closing speed',
     'Its local +Z ray stops at the first physical surface within range. No return and the first derivative sample are explicit states.',

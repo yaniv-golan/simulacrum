@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { CATALOG } from '../src/model/catalog.mjs';
+import { createPortHardware } from '../src/presentation/part-finish.mjs';
 import { createSensorDetails } from '../src/presentation/part-visuals/sensors.mjs';
 
 function withCanvas(run) {
@@ -43,7 +44,7 @@ const options = (type) => ({
 
 test('all authored sensors receive three bounded, unpickable face coatings, other parts decline', () =>
   withCanvas(() => {
-    assert.equal(sensors.length, 8);
+    assert.equal(sensors.length, 9);
     assert.equal(createSensorDetails(options('beam')), null);
     for (const type of sensors) {
       const spec = options(type),
@@ -91,6 +92,7 @@ test('instrument graphics distinguish measurement identity without optical or li
       jointAngleSensor: 'BOUND JOINT',
       rotationSensor: 'LOCAL X RATE',
       travelSensor: 'BOUND SPRING',
+      loadCellSensor: 'ATTACHMENT FORCE',
     };
     const signatures = [];
     for (const type of sensors) {
@@ -219,15 +221,81 @@ test('top identity emblems distinguish every sensor without color and clear the 
       const group = createSensorDetails(options(type));
       const top = group.children[2];
       assert.ok(top);
-      assert.ok(Math.abs(top.position.y - 0.015 - 0.0005) < 1e-12);
+      assert.ok(Math.abs(top.position.y - options(type).halfExtents[1] - 0.0005) < 1e-12);
       assert.equal(top.rotation.x, -Math.PI / 2);
       const calls = drawings[start + 2];
       // Emblems flank the central 0.014 m diameter socket: no painted top lens/pad.
       assert.ok(
-        calls.some((c) => JSON.stringify(c) === JSON.stringify(['clearRect', 170, 170, 172, 172])),
+        calls.some(
+          (c) =>
+            c[0] === 'clearRect' &&
+            c[3] >= 172 &&
+            c[4] >= 172 &&
+            c[1] + c[3] / 2 === 256 &&
+            c[2] + c[4] / 2 === 256,
+        ),
       );
       signatures.push(JSON.stringify(calls.filter((c) => c[0] !== 'fillText')));
     }
     assert.equal(new Set(signatures).size, sensors.length);
     assert.throws(() => assert.equal(new Set([signatures[0], signatures[0]]).size, 2));
+  }));
+
+test('load-cell force markings follow local +X on front and top without an optical aperture', () =>
+  withCanvas((drawings) => {
+    const group = createSensorDetails(options('loadCellSensor'));
+    assert.ok(group, 'Load Cell needs its own coating');
+    const [front, side, top] = drawings;
+    const hasSegment = (calls, x1, y1, x2, y2) =>
+      calls.some(
+        (c, i) =>
+          JSON.stringify(c) === JSON.stringify(['moveTo', x1, y1]) &&
+          JSON.stringify(calls[i + 1]) === JSON.stringify(['lineTo', x2, y2]),
+      );
+    assert.ok(hasSegment(front, 180, 63, 332, 63));
+    assert.ok(hasSegment(top, 60, 256, 132, 256));
+    assert.ok(hasSegment(top, 380, 256, 452, 256));
+    assert.ok(front.some((c) => c[0] === 'fillText' && c[1] === 'A → B / +X'));
+    assert.ok(side.some((c) => c[0] === 'fillText' && c[1] === 'B / +X OUTWARD'));
+    assert.ok(!drawings.flat().some((c) => c[0] === 'arc'));
+    // Wrong control: a reversed arrow labels compression as positive tension.
+    assert.throws(() => assert.ok(hasSegment(front, 332, 63, 180, 63)));
+    assert.throws(() => assert.ok(hasSegment(top, 132, 256, 60, 256)));
+    // The +X end face must not imply a transverse +X direction.
+    assert.equal(hasSegment(side, 180, 63, 332, 63), false);
+  }));
+
+test('top paint clears actual power hardware in world units on narrow sensor housings', () =>
+  withCanvas((drawings) => {
+    for (const spec of [
+      { ...options('rangeSensor'), halfExtents: [0.06, 0.02, 0.015] },
+      options('rangeSensor'),
+      options('loadCellSensor'),
+    ]) {
+      const start = drawings.length;
+      const group = createSensorDetails(spec);
+      assert.ok(group);
+      const top = group.children[2];
+      const clear = drawings[start + 2].find((c) => c[0] === 'clearRect');
+      const ports = CATALOG[spec.type].ports.filter((p) => ['power', 'signal'].includes(p.kind));
+      const port = ports.find((p) => p.kind === 'power');
+      const hardware = createPortHardware(port, ports, spec.halfExtents);
+      const diameter = 2 * hardware.children[0].geometry.parameters.radiusTop;
+      const physicalClearance = [
+        (clear[3] / 512) * top.geometry.parameters.width,
+        (clear[4] / 512) * top.geometry.parameters.height,
+      ];
+      assert.ok(
+        physicalClearance.every((v) => v >= diameter),
+        'top paint overlaps power hardware',
+      );
+      if (spec.halfExtents[0] === 0.06) {
+        // Wrong control: the old square texture hole shrinks below the actual socket on a narrow top.
+        assert.throws(() => assert.ok((172 / 512) * top.geometry.parameters.height >= diameter));
+      }
+      hardware.traverse((object) => {
+        object.geometry?.dispose();
+        object.material?.dispose();
+      });
+    }
   }));

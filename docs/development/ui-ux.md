@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"ef842f5c3f976f266fda787080aa4585e1ad8f014cb90346cde757ff50e98354","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"f60c9a0855167d4170909eb344b3619c682741abdccbfa110faa4bf7786fe860","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): no entry: lifecycle fixes, measurement endpoint labels and shader warmup add no player task, lesson, example or mechanical capability; existing controls and explanations suffice."} -->
+<!-- doc-review {"version":1,"fingerprint":"38ca3db1a6e329c45a509d2bd576e7701910ffb8f1ad27fbb593c59470b041f1","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"7528df0510036ca55bb737a82ecbd431176b416f81437618a34adee3db8eea71","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): no entry: lifecycle fixes, measurement endpoint labels and shader warmup add no player task, lesson, example or mechanical capability; existing controls and explanations suffice."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"2ffcff6281433fe4cba18553a109ebc40232d8d61ac7c1ddcd7c3a04fb74be21","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"b90978a9f4c8cb93b3cddf85a5d574057b88a8c04753b183dae5e1037dab398f","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main (lamps, cameras, authorable scenes): no surface is added or displaced: before-draw errors use the existing status message and pause the clock while draw scheduling survives for recovery controls, the machine-camera overlay keeps its existing lifecycle, and startup warmup meshes are removed before the authored scene renders."} -->
+<!-- doc-review {"version":1,"fingerprint":"0519c989876e0327cf974ff96e779c605edad2b7346694036ef495c82dfc4687","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"9ef5d56de3e84bc5d22298cfc46c8159bf999dbbcd53113fe5decc1b09102162","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): no surface is added or displaced: before-draw errors use the existing status message and pause the clock while draw scheduling survives for recovery controls, the machine-camera overlay keeps its existing lifecycle, and startup warmup meshes are removed before the authored scene renders."} -->
 
 
 
@@ -203,7 +203,16 @@ operation in the selected sensor inspector. These controls leave with their sele
 
 The selected sensor inspector owns power/status readouts and explicit spring/joint
 bindings. Requested range/contact/axis overlays leave with selection; the joint
-angle diagram distinguishes an unavailable reading from zero. The selected Logic
+angle diagram distinguishes an unavailable reading from zero. The Load Cell uses
+this same selected inspector for signed axial force, the magnitude of the tick-average
+force vector and unavailable-state explanations. Its selected +X arrow shows A-to-B
+orientation from the completed pose; part help explains mounting, shear and explicit Automatic
+rearming. These leave with selection or requested help, occupy existing regions and
+displace no unique action. Learning-content disposition is **no entry**: extend the
+existing part reference and sensor/Rules explanations for force units and invalid
+readings; no new lesson or experiment entry is admitted.
+
+The selected Logic
 Controller inspector owns rules, generated code, draft preservation and Build-only
 Apply. Rules may compare values or healthy missing-reading statuses. Editing code
 disables rules; persisted Undo and cancelable Restore preserve the prior source.
@@ -428,7 +437,7 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"e48aab39b75868772cfc400a51cf535afc99e2cc80cd28986428b95308738bd7","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"90132dfce169763d0ea4449ae369a8efe43762aa8700b0c90993e996736410c8","disposition":"still accurate","rationale":"Workbench content startup now completes before the six-second interaction deadline. The same content lifecycle, preservation, independent attempts and nonmutating help assertions remain required; automation still does not supply human acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"0e4c62dce06366e897d10199fcc0f3c7eb08a7c2e114462dfdcc07e0ef0b7cde","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"bea97bc2851ad645bccd331feaac3968bc66f3cc2e3eec973dd34f080660059d","disposition":"updated","rationale":"The complete section still points to the manifest lifecycle invariant and existing workbench/learning journeys, unchanged from the current main source. Load Cell extends inspector/help through three additional registered journeys and coupled physical controls; these do not replace targeting, cancellation, layout, completion tiers or real participant evidence. Remote setup wording changes do not weaken the unassisted-review requirement or turn automation into F1. Revalidated after final thumbnail scheduling and spring witness closure: the new timer/DOM/cache owner and browser-only induction do not alter this section’s previously reviewed ownership, verification or evidence requirements. The preserved authored-scene browser journey covers editor gestures, history, driven ramp retry, library/import/export, protected replacement and layouts; it is added alongside all three Load Cell checks. New helper readiness tests and retained scene replacement controls do not substitute for the required combined merge candidate or real player evidence."} -->
 
 
 

@@ -246,7 +246,10 @@ export function validateBlueprint(blueprint) {
         endpoint.part,
         endpoint.surface ? `surface:${endpoint.surface.region}` : endpoint.port,
       ]);
-      if (port.multiplicity === 'one' || (endpoint.surface && side === 'b')) {
+      if (
+        port.multiplicity === 'one' ||
+        (endpoint.surface && (side === 'b' || part.type === 'loadCellSensor'))
+      ) {
         if (occupied.has(key)) return result('PORT_OCCUPIED', `${path}/${side}/port`);
         occupied.add(key);
       }
