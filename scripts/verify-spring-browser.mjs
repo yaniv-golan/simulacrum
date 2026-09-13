@@ -31,6 +31,53 @@ assert.throws(() =>
   assertMinimumPixels({ ...pixelControl, pixelRatio: 1, width: 800, height: 600 }),
 );
 assert.throws(() => assertMinimumPixels({ ...pixelControl, width: 800, height: 600 }));
+function assertPresentationOnlyOrbit(before, after) {
+  assert.deepEqual(
+    after.frame.metadata.blueprint,
+    before.frame.metadata.blueprint,
+    'slow orbit preserves the authored blueprint',
+  );
+  assert.deepEqual(
+    after.frame.physics,
+    before.frame.physics,
+    'slow orbit preserves completed physical poses',
+  );
+  assert.deepEqual(
+    after.cursor,
+    before.cursor,
+    'slow orbit does not advance the simulation cursor',
+  );
+  assert.notDeepEqual(
+    after.camera.position,
+    before.camera.position,
+    'ordinary pointer orbit must actually move the camera',
+  );
+}
+// Plausible wrong traces: a no-op pointer path or an accidental part drag cannot
+// stand in for presentation-only work, even if the quality indicator changes.
+const orbitControl = {
+  frame: { metadata: { blueprint: { parts: [] } }, physics: [] },
+  cursor: { tick: 0 },
+  camera: { position: [1, 1, 1] },
+};
+const orbitMoved = { ...orbitControl, camera: { position: [2, 1, 1] } };
+assertPresentationOnlyOrbit(orbitControl, orbitMoved);
+assert.throws(() => assertPresentationOnlyOrbit(orbitControl, orbitControl));
+assert.throws(() =>
+  assertPresentationOnlyOrbit(orbitControl, {
+    ...orbitMoved,
+    frame: { ...orbitMoved.frame, physics: [{ position: [1, 0, 0] }] },
+  }),
+);
+assert.throws(() =>
+  assertPresentationOnlyOrbit(orbitControl, { ...orbitMoved, cursor: { tick: 1 } }),
+);
+assert.throws(() =>
+  assertPresentationOnlyOrbit(orbitControl, {
+    ...orbitMoved,
+    frame: { ...orbitMoved.frame, metadata: { blueprint: { parts: ['moved'] } } },
+  }),
+);
 const evidence = createBrowserEvidence(),
   out = browserArtifactPath('artifacts/spring-browser');
 mkdirSync(out, { recursive: true });
@@ -39,8 +86,9 @@ const context = await browser.newContext({ viewport: { width: 1440, height: 1000
 const page = await context.newPage();
 try {
   await page.addInitScript(() => {
-    // Deliberate presentation cadence injection exercises the real adaptive controller.
-    // It neither alters the clock driver nor writes simulation/quality state.
+    // Deliberate global rAF delay exercises the real adaptive controller.
+    // Enable it only in Build, while the simulation clock is stopped; disable it
+    // before the measured launcher journey. No quality or physical state is written.
     window.springSlowFrames = false;
     const requestFrame = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = (callback) =>
@@ -621,19 +669,70 @@ try {
   await page.waitForFunction(
     () => JSON.parse(window.render_game_to_text()).metadata.blueprint.id === 'spring-launcher',
   );
+  const orbitSnapshot = () =>
+    page.evaluate(() => {
+      const interaction = window.workshopProbe.readInteractionState();
+      return {
+        frame: JSON.parse(window.render_game_to_text()),
+        cursor: window.workshopProbe.observe().cursor,
+        camera: interaction.camera,
+      };
+    });
+  const beforeSlowOrbit = await orbitSnapshot();
+  evidence.assert('equal', [beforeSlowOrbit.frame.metadata.mode, 'build']);
+  const viewport = await page.locator('canvas[aria-label="Machine view"]').boundingBox();
+  evidence.assert('ok', [viewport, 'orbit requires the visible workshop canvas']);
+  const orbitTrace = [];
   await page.evaluate(() => {
     window.springSlowFrames = true;
   });
-  await page.locator('[data-command=run]').click();
-  await page.waitForFunction(
-    () => window.workshopProbe.readInteractionState().rendering.quality.level === 5,
-    null,
-    { timeout: 45000 },
-  );
-  await page.evaluate(() => {
-    window.springSlowFrames = false;
-  });
-  await page.locator('[data-command=build]').click();
+  const orbitStarted = performance.now();
+  await page.mouse.move(viewport.x + viewport.width * 0.5, viewport.y + viewport.height * 0.6);
+  // Shift + right drag is the existing OrbitControls rotate gesture and cannot
+  // enter the primary-button part-drag authoring path.
+  await page.keyboard.down('Shift');
+  await page.mouse.down({ button: 'right' });
+  try {
+    // Prior journeys may already have reached Minimum; still exercise a real orbit.
+    await page.mouse.move(
+      viewport.x + viewport.width * 0.5 + 35,
+      viewport.y + viewport.height * 0.6 + 12,
+    );
+    while (performance.now() - orbitStarted < 45000) {
+      const rendering = await page.evaluate(
+        () => window.workshopProbe.readInteractionState().rendering,
+      );
+      orbitTrace.push({
+        elapsedMs: performance.now() - orbitStarted,
+        level: rendering.quality.level,
+        frames: rendering.frames,
+      });
+      if (rendering.quality.level === 5) break;
+      const angle = orbitTrace.length * 0.3;
+      await page.mouse.move(
+        viewport.x + viewport.width * 0.5 + 35 * Math.sin(angle),
+        viewport.y + viewport.height * 0.6 + 12 * Math.cos(angle),
+      );
+      await page.waitForTimeout(50);
+    }
+    evidence.assert('ok', [
+      orbitTrace.at(-1).elapsedMs <= 45000,
+      'minimum-quality observation stays within the original 45000 ms deadline',
+    ]);
+    evidence.assert('equal', [
+      orbitTrace.at(-1).level,
+      5,
+      'active slow orbit reaches minimum quality within the original 45000 ms deadline',
+    ]);
+  } finally {
+    await page.mouse.up({ button: 'right' });
+    await page.keyboard.up('Shift');
+    await page.evaluate(() => {
+      window.springSlowFrames = false;
+    });
+  }
+  const afterSlowOrbit = await orbitSnapshot();
+  assertPresentationOnlyOrbit(beforeSlowOrbit, afterSlowOrbit);
   const minimumRendering = await page.evaluate(
     () => window.workshopProbe.readInteractionState().rendering,
   );
@@ -713,6 +812,7 @@ try {
         modules,
         minimumRendering,
         minimumPixels,
+        slowOrbit: { before: beforeSlowOrbit, after: afterSlowOrbit, trace: orbitTrace },
         cadenceInjection: {
           delayMs: 45,
           disabledBeforeMeasuredJourney: true,
