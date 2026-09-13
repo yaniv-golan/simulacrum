@@ -1,6 +1,9 @@
 import { createRopeView } from './rope-view.mjs';
 import { ropeInspector } from './rope-controls.mjs';
 import { createPartMesh, disposePart } from './part-mesh.mjs';
+import { captureWorkshopScreenshot } from './workshop-screenshot.mjs';
+import { createCameraFrustum } from './camera-frustum.mjs';
+import { createCameraControls } from './camera-controls.mjs';
 import { mountControllerHistory } from './controller-history.mjs';
 import { sensorInspector, updateSensorInspector } from './sensor-controls.mjs';
 import { createSensorView } from './sensor-view.mjs';
@@ -125,6 +128,7 @@ export function createWorkshopView(
     assemblyLibrary,
     learning,
     controllerHistory,
+    cameraSession,
     builtInAssemblies = [],
     guideSteps = [],
   },
@@ -970,6 +974,7 @@ export function createWorkshopView(
   scene.environment = finishEnvironment.texture;
   scene.environmentIntensity = 0.4;
   const sensorView = createSensorView(scene);
+  const cameraFrustum = createCameraFrustum(scene);
   const springView = createSpringView(scene);
   const ropeView = createRopeView(scene);
   scene.fog = new THREE.Fog(0x18252d, 8, 30);
@@ -1891,7 +1896,10 @@ export function createWorkshopView(
     },
     surface: { read: () => surface.read(), commit: () => surface.commitProposal() },
     send,
-    before: () => cancelInteraction({ restoreBrowser: false }),
+    before: () => {
+      cameraSession?.watch(null);
+      cancelInteraction({ restoreBrowser: false });
+    },
     cancelled: (type) => partsBrowser.cancelled(type),
     finished: () => renderer.domElement.focus(),
     placed: (type) => partsBrowser.placed(type),
@@ -2007,10 +2015,33 @@ export function createWorkshopView(
   function occupied(part, port) {
     return port.multiplicity === 'one' && portConnections(part, port).length > 0;
   }
+  let photoOrbit = null;
+  const cameraControls = cameraSession
+    ? createCameraControls({
+        root,
+        stage,
+        service: cameraSession,
+        clearControls: () => vehicleControls.clear(),
+        onFrustumChange: () => invalidateScene(),
+        onViewing: (active) => {
+          if (active && !photoOrbit)
+            photoOrbit = { position: camera.position.clone(), target: controls.target.clone() };
+          if (!active && photoOrbit) {
+            camera.position.copy(photoOrbit.position);
+            controls.target.copy(photoOrbit.target);
+            photoOrbit = null;
+            followCenter = null;
+            invalidateScene();
+          }
+          controls.enabled = !active;
+        },
+      })
+    : null;
   function refreshInspector() {
     if (!frame) return;
     right.hidden = !!assemblies?.contextual() || !!assemblyPlacement?.active();
     sensorView.update(frame, right.hidden ? null : selected);
+    cameraControls?.selection(right.hidden ? null : selected);
     if (right.hidden) return;
     const parts = frame.metadata.blueprint.parts,
       part = parts.find((item) => item.id === selected),
@@ -2608,6 +2639,7 @@ export function createWorkshopView(
       send,
       inspectPart: select,
     });
+    cameraControls?.inspector(part, right);
     sensorInspector({ part, blueprint: frame.metadata.blueprint, right, editable, send });
     updateSensorInspector(frame, right);
     updateControllerEditor(frame, right);
@@ -3886,6 +3918,16 @@ export function createWorkshopView(
       }
       return;
     }
+    if (
+      cameraControls?.active() &&
+      event.key === 'Escape' &&
+      !document.querySelector('dialog[open]')
+    ) {
+      cameraSession.watch(null);
+      event.preventDefault();
+      return;
+    }
+    if (cameraControls?.active() && frame.metadata.mode === 'build' && event.key !== ' ') return;
     if (ownsPartHelpInput(event.target)) return;
     if (event.key === 'Escape' && partHelp.dismissTooltip()) {
       event.preventDefault();
@@ -4107,7 +4149,12 @@ export function createWorkshopView(
           invalidateScene();
         }
       }
-    if (follow.checked && frame?.metadata.mode === 'run' && meshes.size) {
+    if (
+      !cameraControls?.active() &&
+      follow.checked &&
+      frame?.metadata.mode === 'run' &&
+      meshes.size
+    ) {
       const center = new THREE.Vector3();
       for (const mesh of meshes.values()) center.add(mesh.position);
       center.multiplyScalar(1 / meshes.size);
@@ -4167,9 +4214,10 @@ export function createWorkshopView(
       refreshSelectionVisuals();
       refreshInspector();
       surface.renderOverlay();
+      cameraFrustum.update(frame, selected, cameraControls?.frustum(), cameraControls?.active());
       sceneDirty = false;
       const renderStart = performance.now();
-      graphicsRenderer.render(scene, camera, quality);
+      if (!cameraControls?.active()) graphicsRenderer.render(scene, camera, quality);
       renderCosts.push(performance.now() - renderStart);
       if (renderCosts.length > 240) renderCosts.shift();
       renderedFrames++;
@@ -4180,6 +4228,7 @@ export function createWorkshopView(
   draw();
   return {
     utilityHost: footer,
+    refreshCameras: () => cameraControls?.refresh(),
     refreshLearning: () => learningControls?.refresh(),
     render,
     clearControls: () => vehicleControls.clear(),
@@ -4198,16 +4247,12 @@ export function createWorkshopView(
     },
     setMessage,
     setRecordingState,
-    captureScreenshot: () => {
-      graphicsRenderer.render(scene, camera, graphicsQuality.read());
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.min(renderer.domElement.width, 1280);
-      canvas.height = Math.round(
-        (renderer.domElement.height * canvas.width) / renderer.domElement.width,
-      );
-      canvas.getContext('2d').drawImage(renderer.domElement, 0, 0, canvas.width, canvas.height);
-      return canvas.toDataURL('image/jpeg', 0.65);
-    },
+    captureScreenshot: () =>
+      captureWorkshopScreenshot({
+        cameraSession,
+        workshopCanvas: renderer.domElement,
+        renderWorkshop: () => graphicsRenderer.render(scene, camera, graphicsQuality.read()),
+      }),
     clearMeasurements: () => motionReadout.clear(),
     ingestMeasurements: (observation) => motionReadout.ingest(observation),
     readInteractionState: () => ({
@@ -4223,6 +4268,15 @@ export function createWorkshopView(
           position: m.userData.lamp.light.getWorldPosition(new THREE.Vector3()).toArray(),
           shadows: m.userData.lamp.light.castShadow,
         })),
+      cameraFrustum: cameraFrustum.read(),
+      cameraPhoto: cameraSession
+        ? {
+            active: cameraSession.read().active,
+            status: cameraSession.read().status,
+            gallery: cameraSession.read().gallery,
+            render: cameraSession.read().render,
+          }
+        : null,
       bodyMeasurement: motionReadout.readBody(),
       environment: {
         selected: frame?.metadata.blueprint.environment ?? 'flat',
@@ -4321,8 +4375,10 @@ export function createWorkshopView(
       surface.dispose();
       editing.dispose();
       learningControls?.dispose();
+      cameraControls?.dispose();
       controls.dispose();
       sensorView.dispose();
+      cameraFrustum.dispose();
       springView.dispose();
       ropeView.dispose();
       partResources.dispose();

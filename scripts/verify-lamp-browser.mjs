@@ -1,3 +1,4 @@
+import { placeCatalogPartByName } from './catalog-browser-actions.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
@@ -21,9 +22,7 @@ try {
     await page.locator(`.part-list-item[data-part-id="${part.id}"]`).click();
   };
   const place = async (name) => {
-    const b = page.getByRole('button', { name, exact: true });
-    if (!(await b.isVisible())) await page.getByText('More parts', { exact: true }).click();
-    await b.click();
+    await placeCatalogPartByName(page, name);
     return (await read()).metadata.blueprint.parts.at(-1);
   };
   const mount = async (part, target, face = 'top') => {

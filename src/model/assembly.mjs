@@ -230,6 +230,9 @@ export function compileAssembly(
             : {}),
         });
         break;
+      case 'camera':
+        power.sensors.push({ node, body: node, kind: 'camera' });
+        break;
       case 'commandReceiver':
         power.receivers.push({ node, duty: p.duty });
         break;

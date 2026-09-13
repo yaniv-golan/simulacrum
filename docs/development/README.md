@@ -92,7 +92,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"32cf7a9e3bcc5b9e9f4dbbc1a0e459bcb8c8b09958557aa0727985a6231b5d3a","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"be06e1d56f35b6762ff121541d3f557c7789192b08013354188dac231c807021","disposition":"still accurate","rationale":"The linked remote setup now places feedback in the existing footer instead of a second row. Verification commands, same-source execution, runtime admission and the distinction between automation and human acceptance are unchanged; current rendered checks remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"e23b5af028a460f07710f0f6c822981d75d8e848c0862a4324b9fe7919656640","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"eee32b26349c0bb267438ae5a172c3fc990ae97b71fa9cde1d67da4143ca9522","disposition":"still accurate","rationale":"Camera integration preserves current standalone feedback and recording protocols. The linked playtest description adds visible-camera screenshot routing; merge automation and eligible human evidence remain separate."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"3606dbbaec48adb3a9d6ae13878735c71ddf142f18ba7b183b064789623f7615","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"78159519b2c73f231783a9b670d18d0c52a82937c17787ce881715e0fda57958","disposition":"still accurate","rationale":"Generated reference adds the lamp catalog row; the prepare, individual review and structural check sequence remains unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"333b17ce4805e72697e6bd4656ab06b1b95540b2454f08a018e95d77c1f603db","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"9d9adf07c20cb2865e0c06f09ef015b1d7bb949ac01a7c1e2fc3f22b290a870b","disposition":"still accurate","rationale":"Generated reference adds the lamp catalog row; the prepare, individual review and structural check sequence remains unchanged. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"cd8949f2e118ceb9f85c15437ea14628385dd881a5971ffcef170321ba66ee35","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"5fb081944fefadeebad9744742e0cb6ad3257c5a6b02875310392107d1cd597e","disposition":"still accurate","rationale":"Two lamp browser checks extend registered roots. Selection, scope witnesses, parallel admission and failure retention mechanisms are unchanged; registry refresh remains pending and is not asserted to pass."} -->
+<!-- doc-review {"version":1,"fingerprint":"b2f3ba35e66a73aa513fbba3b36dbda30c861367c393bbe4e5edfd901ab37d9c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"1a0fe8d19d2bd7936d2f34af37a2d8a31d1e144ef0f02148524228fc8ff00419","disposition":"still accurate","rationale":"Two lamp browser checks extend registered roots. Selection, scope witnesses, parallel admission and failure retention mechanisms are unchanged; registry refresh remains pending and is not asserted to pass. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -506,7 +506,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"3dd35e54f8eebd49f5254e5eb5b7fe9628f11ddd392f09d5b4abd0e423ec960f","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"6f5fff890597297dd0d1a1cb708ebb04cd32e16005361573acabc6204068f2a5","disposition":"still accurate","rationale":"Lamp catalog and schema bytes are captured by the existing candidate mechanism. Isolation, integrity and final-source verification requirements remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4ec79849c4718143a054033a12abbf8ecd57d19b749b6805899a8a32b9d7686c","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"aabd898b0cfba11464fb56b2e56115329f798a87ccd1e8dc85ddff331e0a15a2","disposition":"still accurate","rationale":"Lamp catalog and schema bytes are captured by the existing candidate mechanism. Isolation, integrity and final-source verification requirements remain unchanged. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

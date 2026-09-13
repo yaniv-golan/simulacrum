@@ -1,9 +1,9 @@
 {
   "version": 1,
   "dependencies": {
-    "src/presentation/workshop-view.mjs": "7dafdecfe7c0d424d8602d18364382c5b8816da7a0f96fee201fbb67d08b36a7",
+    "src/presentation/workshop-view.mjs": "aa116d7846a5dda7e5f3e67fa189cd039dbc74499ee876f1775130fdf48962b2",
     "src/application/starter-guide.mjs": "419ced867a8ae10c623b35fe8c0f2ee5ec2dba6495e2c4026d24909353e46e60",
-    "src/application/workshop-app.mjs": "2f1a4062beb888034cbcdbd2af1bf8be63224b515521b3935cf100c11bde3d35",
+    "src/application/workshop-app.mjs": "953d0eb55dcb322b857ec38b4a45071fc3a0ba5cd9b9c07f1aebac75aa16882f",
     "src/presentation/spring-controls.mjs": "6f94120667df07fed20ef4d928ac4d7d66aa9d3f1e89fb739ca50d812e1e8bbd"
   }
 }

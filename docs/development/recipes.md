@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"5a1590e71d156ebac231e1f8a10a29c78bc16895c997a5ba3c1baa16152aaa5d","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"bdbf2676e343c8bc900f06ccffb7701dd6fa01014524804fba4752142509b621","disposition":"still accurate","rationale":"Lamp follows the catalog, strict generated schema, canonical geometry and compiler path described here. Existing linear, Rope and coupler instructions remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"4f38c78838c31ec4ab7742d9e0509091fc03243032712c6161f3ad96a11adda3","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"d2d0de242ef8051dfe467dc16124495d7e439a03978b94e76eb6aa82eda848b0","disposition":"still accurate","rationale":"Lamp follows the catalog, strict generated schema, canonical geometry and compiler path described here. Existing linear, Rope and coupler instructions remain accurate. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -64,9 +64,14 @@ latch opens; it does not become a second releasable joint.
 [Release authoring controls](../../test/release-authoring.test.mjs#source) exercise
 material choices, conflict rejection and ordinary editing history.
 
+Camera additions must preserve the [optical profile](../../src/model/camera.mjs#source),
+[completed exposure owner](../../src/simulation/camera-state.mjs#source), ordinary
+power admission and [copy/mirror controls](../../test/camera-integration.test.mjs#source).
+The catalog declares local reflection symmetry; it must not be inferred from a part ID.
+
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"80f20acb1c6b97147d2ee4620460e8817b81e909dc9ff46ec47072059c0d5332","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"3a083126017aac03ae24b73426463fab15681fd704a345ca13ec95d2c0d10422","disposition":"still accurate","rationale":"Lamp settings use existing authoring commands and rejection/history boundaries. No new command handler or alternate authority is introduced."} -->
+<!-- doc-review {"version":1,"fingerprint":"0b6af81a80e7fdbb812ffe97821422bfabf56a337ffb70e131222914365e935a","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"aba8bdb8636dd4362e713aa61936a1b99b92cb122f041fc3f89b0d38125b626b","disposition":"still accurate","rationale":"Lamp settings use existing authoring commands and rejection/history boundaries. No new command handler or alternate authority is introduced. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 
 
@@ -81,9 +86,13 @@ mounting, adjustment and Undo. Add malformed input, accepted effect, rejected-st
 identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing contract assertions](../../test/contracts/editing.mjs) as shown by [mixed editing examples](../../test/editing-contracts.test.mjs); inspect
 `node scripts/explain-invariant.mjs rejected-edit-atomicity`.
 
+The Run-only `camera-photo` request is an input event, not an authoring transaction.
+Validate epoch and request ID; accepted IDs deduplicate and a reserved exposure rejects
+busy without changing the completed cursor. Bytes and downloads belong to application.
+
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"41dd6565cf686f5b56146658368af417e504b62a8cf24ec45412bb4a4ce0d6c2","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"d6e41ec3b75d22a670b32928e5738b499185f5c697bdf22822fc604788799fd6","disposition":"still accurate","rationale":"Selected lamp controls use existing inspector selection and wiring lifecycle. Existing drag cancellation, picking and transaction guidance remains applicable."} -->
+<!-- doc-review {"version":1,"fingerprint":"cbb9bef19ca8c862c230357bea016e879b6699a96fb031992018095f730e1f96","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"118e1759efaeeeb9c0b0476909a952317203e2ab7c3ae8c02be59d0b308d247d","disposition":"still accurate","rationale":"Selected lamp controls use existing inspector selection and wiring lifecycle. Existing drag cancellation, picking and transaction guidance remains applicable. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -132,7 +141,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"5c505b0400c8e2d9085b13946db98e7024307d7d60857eb0d6270fab77dec6b4","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"6f8294c02f809cd64dbe695bfca9c61ff140d58c09814b363778c72e5be68f49","disposition":"still accurate","rationale":"Lamp readouts consume completed power values. No diagnostic identity dispatch, authored repair or alternative sensor history owner is added."} -->
+<!-- doc-review {"version":1,"fingerprint":"314bbb1125d0ffe374a1f5b347247a732a94b78b91a71be4b8a959b733d1deba","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"e49495bcf7abd3783290f7141a73e576af8de7a4696414b282d0c1bb7f8a2ed5","disposition":"still accurate","rationale":"Lamp readouts consume completed power values. No diagnostic identity dispatch, authored repair or alternative sensor history owner is added. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 
 
@@ -162,7 +171,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"48f3edbe676f262682b4f518c1dcff45da9373e84b27f95a73b5d0370845e58e","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"d4a8c15ccd2cdae065e3d618c79e9b983a62e274aa063b86a16011bd2811999d","disposition":"still accurate","rationale":"The narrow physics door and tick phase order are preserved. Lamp integrates as an electrical load; merged accounting includes coupler heat once and reconstructs linear drive duty through the shared cap helper."} -->
+<!-- doc-review {"version":1,"fingerprint":"89dd3b0770df07f2acd16be3a910f584da95e82d46c89b5e9ae6a27e2c8d9299","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"0e712d7e50d1783f37b8205d1e1f138ede766595aa20ca687d58910d4ffe5051","disposition":"still accurate","rationale":"The narrow physics door and tick phase order are preserved. Lamp integrates as an electrical load; merged accounting includes coupler heat once and reconstructs linear drive duty through the shared cap helper. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 
 
@@ -400,7 +409,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"eb7ceeae3e6c24b9b223abf512396bb0325cca1e3c5487d1577cde5290eca711","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"44fd6d91f129e2cd0c72e9578d2baac85200c36d6816129a76d4e23434fa5107","disposition":"still accurate","rationale":"Lamp admission enforces eight parts through ordinary blueprint compilation and reusable insertion. Existing atomic transaction, history and overlap requirements are retained."} -->
+<!-- doc-review {"version":1,"fingerprint":"3ee386a72447eb223f1a6b547de098fc9db872b4f4c497d581fa17994c4c5344","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"1461a464e9df419abd333721d128fd0ff2b97d90c49d314738c8e9a25599862c","disposition":"still accurate","rationale":"Lamp admission enforces eight parts through ordinary blueprint compilation and reusable insertion. Existing atomic transaction, history and overlap requirements are retained. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -491,9 +500,13 @@ together cover insertion selection and member shortcuts, Build-only repeat place
 rename focus, narrow-screen sorting, offset mounting with an intact shaft, in-place interface edits, decimal
 receiver tuning, saved settings, named targets, bounded navigation and diagnostic layout.
 
+Camera mirror admission uses the catalog local reflection axis to preserve the +Z
+lens frame. The generic copied-graph contract still owns authored material and wiring
+preservation; test optical orientation independently of the production frame helper.
+
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"82503fff2130c826e6676ad5deb9797a76d4266e156c443899f5370cee01451a","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"6eb8c25e056c1b7d94f4394aca8978defada617781d3ce605497ae6b13a5a860","disposition":"still accurate","rationale":"Canonical part-mesh now composes lamp lens/light and disposes light resources. Existing Rope, wiring and spring overlay ownership and lifecycle remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"49180794d73c2b458285bb44be71605e8b5b3ad72ca249ebdccbd805b7c46407","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"a1db2f6b2c0aaf0b5c35424793eb0ab7f1f326de5eb6ceee13ab7569c90d8f14","disposition":"still accurate","rationale":"Canonical part-mesh now composes lamp lens/light and disposes light resources. Existing Rope, wiring and spring overlay ownership and lifecycle remain unchanged. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -621,7 +634,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"5537cbad2caa63b9e563360e006032d0698bdfe35c9ab3c3c7c2d392d9f4ed1d","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"7ad6a3478a2a629f6a755db3537ff7de85b71adac3de9e190f6fd5c46be0b419","disposition":"updated","rationale":"Added bounded lamp-rendering semantics and registered optical/performance probes. Every admitted lamp remains present at all quality levels; measured automation remains distinct from hardware or player qualification."} -->
+<!-- doc-review {"version":1,"fingerprint":"4f919eb695d21a8550c273bb2f3d0abd42161b9e6d336bc03dbd798e958ba30a","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"ef190d3e93f5c51d5f7472d868651fd6ddd825d1365b816c4a4ad106bed3948d","disposition":"updated","rationale":"Added bounded lamp-rendering semantics and registered optical/performance probes. Every admitted lamp remains present at all quality levels; measured automation remains distinct from hardware or player qualification. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses

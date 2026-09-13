@@ -3853,3 +3853,76 @@ h3 {
 .catalog-connection {
   grid-column: 1 / -1;
 }
+.machine-camera {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: #10202b;
+}
+.machine-camera[hidden] {
+  display: none;
+}
+.machine-camera-image {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.stage .machine-camera-image canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.machine-camera-bar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  background: #172a33ee;
+}
+.machine-camera-bar output {
+  flex-basis: 100%;
+  font-size: 13px;
+}
+.camera-photos-reopen {
+  position: absolute;
+  top: 100px;
+  left: 16px;
+  z-index: 4;
+}
+.camera-gallery {
+  max-width: min(640px, 90vw);
+  max-height: 85vh;
+  overflow: auto;
+  background: #172a33;
+  color: #eef4f6;
+}
+.camera-gallery img {
+  display: block;
+  width: 320px;
+  max-width: 100%;
+  height: auto;
+  margin: 12px auto;
+}
+.camera-gallery select {
+  display: block;
+  width: 100%;
+}
+.camera-inspector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.camera-inspector output,
+.camera-inspector p {
+  flex-basis: 100%;
+}
+.machine-camera-active .edit-toolbar {
+  visibility: hidden;
+}

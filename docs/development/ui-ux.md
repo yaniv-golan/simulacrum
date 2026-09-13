@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"da210ab2053f2363f1611691fe6dea25c42456313f94e0e8ea92c08440dccbdc","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"7bccef56cba7c11fdd16c16eb52c54dd9c0b7d4bd7f32fdb50bb14ad96be9252","disposition":"still accurate","rationale":"No learning entry was added. The selected lamp help extends existing power and receiver teaching without a new persistent surface."} -->
+<!-- doc-review {"version":1,"fingerprint":"35a10d2f91701fb89acddca851f1e6c8952e0a0ca1a047355c74d2c71be6c5c2","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"558e0bb91329887fcb2122cd390332e890c067b2c0062384bd17a57250314c65","disposition":"still accurate","rationale":"No learning entry was added. The selected lamp help extends existing power and receiver teaching without a new persistent surface. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"455f6c592314c334de048932f09446155df287cd0fa1989c1bafe05ac918d5db","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"1e08675bd1386752a318d70068d7af565bc9d586d7ccc28dd322bc94831b7af8","disposition":"updated","rationale":"Documented selected lamp settings, Run/Paused delivery readouts, limits and no-entry admission. Controls disappear with selection and preserve existing unique actions."} -->
+<!-- doc-review {"version":1,"fingerprint":"20e82f8128477638c7d74c649803dea2fe6d7b763e5872d1c4c4099af07ceb06","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"6c60ed886d0c60cd282ff32f3610899e463be7475c049f97d25b832c76f9e202","disposition":"updated","rationale":"Lamp is discovered through the current searchable catalog; its selected light controls and receiver help coexist with the requested camera view and temporary gallery. Neither addition creates a permanent lesson surface."} -->
 
 
 
@@ -175,6 +175,24 @@ and non-breaking overload stop. No lesson or permanent canvas panel is added.
 Rope geometry follows physical nodes in Machine view and is hidden in exploded view.
 Its contextual engineering explanation identifies stretch, damping and load limits
 as uncalibrated assumptions of the simplified nylon model.
+
+Paused camera images retain an explicit paused label even when view entry lands on
+an exposure boundary. Feedback screenshots follow the visible canvas without changing
+the optical sample.
+
+Cameras are discoverable through catalog search and the Sensors category. Beginning
+catalog placement returns to workshop view so the placement preview remains visible.
+The selected camera inspector owns entry into the requested machine view and its
+photo shortcut. The optional one-metre viewing cone is a temporary workshop-only
+inspection guide, removed on selection change and hidden in machine view; it is not
+a depth sensor or part of photographs. [Camera controls](../../src/presentation/camera-controls.mjs#source)
+replace orbit/edit tools while viewing, keep vehicle controls and recovery reachable,
+and restore the orbit on exit. Build is an explicitly unpowered placement preview;
+Run shows power/live/stale/failure status; Paused may retain the identified old image.
+The requested Photos dialog owns inspection, PNG/details export and explicit clearing.
+Opening it releases held drive keys. Retained photos remain retrievable after camera
+deletion and retries until this page closes. Camera help teaches mounting repair in
+context; no additional learning entry is admitted for this delivery.
 
 The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic
 regulation shows measured and target total spring length, rather than extension from
@@ -369,7 +387,7 @@ with independently scrollable contents and a reachable controls disclosure. The 
 area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
-Powered Lamp uses More parts, ordinary surface mounting and power/signal wiring.
+Powered Lamp uses the searchable parts catalog, ordinary surface mounting and power/signal wiring.
 Its selected inspector owns Light color, Brightness and Beam spread in Build, with
 actual input, requested/delivered watts and modeled light output in Run/Paused.
 Black tint warns that output is visually dark while consuming power. The existing
@@ -380,7 +398,8 @@ existing power and receiver explanations teach the same connection concept; cont
 lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"c869ac0bf7ed40a22114c1264690970210bc37e58ff6bb8fdf2dcbf475e5866b","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"faf88dd744bc27d842f751ec11a289448ecfd3ab13b4d4fc9bbfce16dc51ee5a","disposition":"still accurate","rationale":"Remote setup now describes footer ownership; the required targeting, scroll, focus, cancellation and overlap checks are unchanged. Inspector, catalog, local recording and feedback layout must still be exercised on the repaired build, and neither documentation review nor automation supplies satisfaction or target-player acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"8cd809f7df50a2756584adb373b1446ee5f0773393e031d58eabd495940824a7","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"ccf3dc2d1c0902149632a9ecb634fb90df1930aa84026d268b5757897a7c4f6c","disposition":"still accurate","rationale":"Retained one source-bound section receipt after conflict resolution. Camera placement, optics and feedback need rendered verification within the full merge tier; this provides no target-player acceptance or milestone qualification."} -->
+
 
 
 Use the manifest's `workbench-content-lifecycle` invariant and

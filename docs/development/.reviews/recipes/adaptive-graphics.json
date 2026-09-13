@@ -7,7 +7,7 @@
     "test/graphics-quality.test.mjs": "fc56ad710a0d7a0a738704b61bf44d10da2d35c764172ab0097ab8c773892244",
     "scripts/verify-adaptive-graphics.mjs": "2f71e24a5cedde3ddddb1df2124af1320c6c90caea6cc251d21f64aff7520b94",
     "src/presentation/lamp-view.mjs": "04c8dbeac7634a6dd5c177877bb05aacfc29c2e15971ff3f2fd265eafa902604",
-    "scripts/verify-lamp-browser.mjs": "72bb76086f722d7ec3066c36a07dadd467b78a6f97110dcf56f7ce8b051fa9c8",
+    "scripts/verify-lamp-browser.mjs": "ea842920ba797aab4a0ebd10582ef0c0f2b63d97a855a0bc29d680e93e44c829",
     "scripts/verify-lamp-performance.mjs": "ad339de29c3024501a967f276d5cc8746ffe4dfaa186f2952e095c29b2250207"
   }
 }
