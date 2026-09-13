@@ -260,7 +260,7 @@
     "scripts/verify-part-help-browser.mjs": "7ba98fdea3555811bd86c22aae4f541192f9b5e241c6b1065d30b5c3637c2b53",
     "scripts/verify-part-help-inspectors.mjs": "6da10ccff8aadf19498e30d8e4d89da037fe9335a182100f0167c6b844af90e7",
     "scripts/verify-part-help-window.mjs": "ae8a2e1fcbab43013f26f0ba1de3e0c012f02787914f666863ba3d4e894d515d",
-    "scripts/verify-parts-catalog.mjs": "fb2a81af0f3cf1df5084c82697d0e7f38b47fb7b53350145541dca9cea9ca0b6",
+    "scripts/verify-parts-catalog.mjs": "8ba5994b95589c50bbe2b45a3e219eb35ce97b63e0c14a6fa7dce6a527bcabb2",
     "scripts/verify-port-explanations.mjs": "e94164159ea75aef6f66b5ae894479a2f9d70234535031813121884afb12029a",
     "scripts/verify-prepare.mjs": "f4da1998afb8dff094fa2f64b77511b60b429be3ca01a79e33fb0edf8df5b74c",
     "scripts/verify-property-focus.mjs": "1c3c67e6fe2487d8a1eba58086de1eefe9c496ea6e9e64501acfa66996f664e1",
