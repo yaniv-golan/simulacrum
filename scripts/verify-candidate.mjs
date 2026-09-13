@@ -10,7 +10,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { captureCandidate, candidateMatchesOrigin } from './candidate.mjs';
+import { captureCandidate, candidateMatchesOrigin, destinationStillMatches } from './candidate.mjs';
 import { assertRuntime } from './runtime-preflight.mjs';
 import { assertVerificationReady } from './verification-preparation.mjs';
 import {
@@ -83,6 +83,7 @@ try {
       if (options.incoming) {
         options.incoming = scope.refs.incoming;
         options.destination = scope.refs.destination;
+        options.destinationName = scope.refs.destinationName;
       }
     }
     await timing.measure('preflight', () => assertVerificationReady(origin));
@@ -233,6 +234,14 @@ try {
   if (dependencyDigest(candidate.destination) !== installed)
     throw Error('Installed dependencies changed during verification');
   report.originStillMatches = await candidateMatchesOrigin(origin, candidate);
+  // A named destination that moved makes this evidence stale for that integration.
+  report.destinationStillMatches =
+    tier === 'merge' && options.incoming
+      ? destinationStillMatches(origin, {
+          destination: options.destination,
+          destinationName: options.destinationName,
+        })
+      : 'NOT_EVALUATED';
   report.status = report.verification.status;
   report.qualification = report.verification.outcome?.qualification ?? 'NOT_EVALUATED';
   process.exitCode = [0, 2].includes(result.code) ? result.code : 1;
@@ -259,6 +268,7 @@ try {
       directory: report.directory,
       attemptReport: report.attemptReport,
       originStillMatches: report.originStillMatches,
+      destinationStillMatches: report.destinationStillMatches,
       elapsedMs: report.elapsedMs,
     }),
   );

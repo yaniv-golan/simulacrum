@@ -74,6 +74,21 @@ export async function candidateMatchesOrigin(root, candidate) {
     return false;
   }
 }
+/** Whether a named integration destination still resolves to the commit a candidate
+ * pinned. A supplied commit (full or abbreviated) cannot drift and is not evaluated;
+ * an unresolvable name counts as drift. */
+export function destinationStillMatches(root, { destination, destinationName } = {}) {
+  if (!destination || !destinationName) return 'NOT_EVALUATED';
+  if (destination.startsWith(destinationName.toLowerCase())) return 'NOT_EVALUATED';
+  try {
+    return (
+      text(root, ['rev-parse', '--verify', '--end-of-options', `${destinationName}^{commit}`]) ===
+      destination
+    );
+  } catch {
+    return false;
+  }
+}
 /** Observed before/after stability, not an atomic filesystem snapshot. */
 export async function captureCandidate(
   root,

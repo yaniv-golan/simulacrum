@@ -78,3 +78,34 @@ test('invalid candidate invocation replaces previous green report before admissi
     'failed',
   );
 });
+
+test('destination drift is detected for named refs and not evaluated for bare commits', async (t) => {
+  const { destinationStillMatches } = await import('../scripts/candidate.mjs');
+  const { root, g } = fixture(t);
+  const head = g('rev-parse', 'HEAD').trim();
+  assert.equal(destinationStillMatches(root, { destination: head, destinationName: 'HEAD' }), true);
+  g('commit', '--allow-empty', '-qm', 'move');
+  assert.equal(
+    destinationStillMatches(root, { destination: head, destinationName: 'HEAD' }),
+    false,
+  );
+  assert.equal(
+    destinationStillMatches(root, { destination: head, destinationName: head }),
+    'NOT_EVALUATED',
+  );
+  assert.equal(
+    destinationStillMatches(root, { destination: head, destinationName: head.slice(0, 12) }),
+    'NOT_EVALUATED',
+  );
+  g('branch', 'deadbeef', 'HEAD');
+  assert.equal(
+    destinationStillMatches(root, { destination: head, destinationName: 'deadbeef' }),
+    false,
+    'hex-looking branch names are refs, not commits',
+  );
+  assert.equal(
+    destinationStillMatches(root, { destination: head, destinationName: 'no-such-ref' }),
+    false,
+  );
+  assert.equal(destinationStillMatches(root, {}), 'NOT_EVALUATED');
+});

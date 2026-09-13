@@ -127,6 +127,15 @@ test('real Git unions both branches and actual candidate including deletions, re
     assert.deepEqual(mergeSelection({ checks, selection, files: result.files }).checks, checks);
     assert.deepEqual(mergeChanges({ base }, git).files, result.files);
     assert.equal(mergeChanges({ base }, git).scopeKind, 'explicit-base');
+    // The destination is retained as supplied beside its pinned commit; a ref name
+    // (pinned to the pre-merge destination commit) stays a name so drift can be checked.
+    assert.equal(result.refs.destinationName, destination);
+    git(['branch', 'target', destination]);
+    const named = mergeChanges({ base, incoming, destination: 'target' }, git);
+    assert.equal(named.refs.destination, destination);
+    assert.equal(named.refs.destinationName, 'target');
+    assert.deepEqual(named.files, result.files);
+    assert.equal(mergeChanges({ base }, git).refs.destinationName, undefined);
     assert.throws(() => mergeChanges({ base: old, incoming, destination }, git), /merge-base/);
     assert.throws(() => mergeChanges({ base, incoming }, git), /together/);
     git(['checkout', '-qf', 'destination']);
