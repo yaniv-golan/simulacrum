@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"9e01d89dbbd1f466567dc547e386741b94016d4e93fd37d8ac5ec7d6000d2878","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"19b32488fb7586f27a5692c9fde85ae5290ebd835a0bb9331a782fce68da3b3d","disposition":"still accurate","rationale":"The manifest remains the single check metadata owner, now validating mergeSmoke coverage. AGENTS changes verification tiers only; runtime contracts and architectural layer authority remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"8b27561c674eb3c5896495133beae141a35c7a6095cbf49c1166d73aaa405225","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"45e0c9f8780d66e4e6a71212ac11fc03cd97a7d4224aa1692342267ba62e4688","disposition":"still accurate","rationale":"The runtime contract now explicitly rejects internally inconsistent camera pending requests and labels paused exposure entry. Simulation remains DOM-free, snapshots remain completed, and application/presentation retain all image bytes."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,9 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"994d76c5df93f9aaa947fe5bbaf76c466f2307f77ba3cddcdd6d8e4b00b150e7","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"e0978abef2058b3affc6f5ced707501f1805ef553094c2dd32f73f28708f1176","disposition":"still accurate","rationale":"Session measures construction of the same completed frame and observation adds a diagnostic frameMs field. Command admission, phase ordering, immutable publication, camera/input owners and the separate measurement cursor remain as described."} -->
-
-
+<!-- doc-review {"version":1,"fingerprint":"9e428ded1907367f79d565705cb8906eabf504303ba90610523e60bc36602732","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"e109ea280a55da29a73e0232a8a0df7796d759afc7a5959acb9ad59d74cb26af","disposition":"updated","rationale":"Added the extracted feedback screenshot owner and its active-camera versus orbit routing. It copies visible pixels without requesting exposures; completed optical input and asynchronous gallery ownership remain unchanged."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -36,6 +34,20 @@ physics door. Density remains material-owned. The inspector uses the same resolv
 and Run admission, releasing held controls and preserving the authored machine and
 view. Completed contacts feed [impact presentation](../../src/presentation/impact-sound.mjs#source);
 it has no simulation write path and resets its baseline on missing observations.
+
+[Camera exposure state](../../src/simulation/camera-state.mjs#symbol=createCameraState)
+belongs to simulation; it publishes completed exposure results without image bytes.
+[Camera destinations](../../src/application/camera-session.mjs#source) drain completed
+observations into a [bounded gallery](../../src/application/camera-gallery.mjs#source).
+The temporary [camera viewing cone](../../src/presentation/camera-frustum.mjs#source)
+is owned by workshop inspection and never enters the optical scene.
+The dedicated [optical renderer](../../src/presentation/camera-renderer.mjs#source)
+receives only authored geometry settings and completed poses, without part identities,
+controller programs or editor scene input.
+It pins pixels before asynchronous encoding; no image result feeds back into the plant.
+[Feedback screenshot capture](../../src/presentation/workshop-screenshot.mjs#symbol=captureWorkshopScreenshot)
+copies the active camera canvas or renders the orbit canvas when camera view is closed.
+It never requests an exposure or substitutes orbit pixels for an unavailable active camera.
 
 The application/view links cover their own composition and input routing code. The core, model and simulation links separately bind the admitted behavior; remote payload contents are outside these claims.
 
@@ -66,14 +78,12 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"1ff977d850e368bfd5781db620e2236e1ec6d29e23f6990ab22f65b7226cc034","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"126844a8be4f418c264e6544e1f2b88d03eb06252f334b1bca4ad18a4e93994a","disposition":"still accurate","rationale":"The session/observation delta separates measured frame construction from publication without moving any geometry, graph, spring, contact, input or diagnostic policy owner in this table; no second policy implementation was introduced."} -->
-
-
+<!-- doc-review {"version":1,"fingerprint":"8f339280d2b47b68083fd71b9f29c8c0806b157e57d94b17ea13cce363405f46","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"e1102d1938db1b46c4f5d80e6021106b35456cb30a1bc885b597da8c626634d3","disposition":"still accurate","rationale":"Camera latch and request continuation remain owned by createCameraState. Its restore validation now rejects duplicate and superseded pending manual IDs before publication; no second state owner or new physics authority is introduced."} -->
 
 | Decision                                              | Production owner                                                                                                                                                                                                                                             | Example consumer                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
 | Authored geometry and decoration boundary             | [partPrimitives](../../src/model/geometry.mjs#symbol=partPrimitives) / [shaftSegments](../../src/model/geometry.mjs#symbol=shaftSegments), [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG) / [MATERIALS](../../src/model/catalog.mjs#symbol=MATERIALS) | assembly compiler and workshop renderer                                                 |
-| Material defaults and explicit contact overrides | [contactProperties](../../src/model/contact-properties.mjs#symbol=contactProperties) | compiler and selected inspector |
+| Material defaults and explicit contact overrides      | [contactProperties](../../src/model/contact-properties.mjs#symbol=contactProperties)                                                                                                                                                                         | compiler and selected inspector                                                         |
 | Quaternion math and world directions                  | [transforms](../../src/model/transforms.mjs)                                                                                                                                                                                                                 | surfaces, assembly, mirror                                                              |
 | Unique player-visible names                           | [availablePartName](../../src/model/blueprint.mjs#symbol=availablePartName)                                                                                                                                                                                  | core insertion/copy/rename                                                              |
 | Surface frames and collision admission                | [resolveSurfaceEndpoint](../../src/model/surfaces.mjs#symbol=resolveSurfaceEndpoint) / [validatePlacementGeometry](../../src/model/surfaces.mjs#symbol=validatePlacementGeometry)                                                                            | compiler and surface proposal                                                           |
@@ -91,8 +101,8 @@ scrolling, while buttons and tab navigation retain their activation behavior.
 | Palette eligibility and grouping                      | [part palette](../../src/presentation/part-palette.mjs)                                                                                                                                                                                                      | workshop palette; help coverage instead follows the catalog                             |
 | Part teaching copy and port labels                    | [help content](../../src/presentation/part-help-content.mjs), [port wording](../../src/presentation/port-wording.mjs)                                                                                                                                        | palette, inspector and static example diagrams                                          |
 | Completed contact impulses                            | [contact reader](../../src/simulation/physics/read-contacts.mjs), [session](../../src/simulation/session.mjs)                                                                                                                                                | immutable completed observations; qualification supplies independent support predicates |
-| Saved environment preset | [environment descriptors](../../src/model/environment.mjs), [assembly compiler](../../src/model/assembly.mjs) | workshop geometry, placement admission and recording review |
-| Selected-body measurement windows | [numeric accumulator](../../src/model/motion-readout.mjs), [measurement presentation](../../src/presentation/motion-readout.mjs) | completed observation deltas supplied by the application |
+| Saved environment preset                              | [environment descriptors](../../src/model/environment.mjs), [assembly compiler](../../src/model/assembly.mjs)                                                                                                                                                | workshop geometry, placement admission and recording review                             |
+| Selected-body measurement windows                     | [numeric accumulator](../../src/model/motion-readout.mjs), [measurement presentation](../../src/presentation/motion-readout.mjs)                                                                                                                             | completed observation deltas supplied by the application                                |
 | Diagnostics from completed data                       | [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion), [connection paths](../../src/model/connection-test-paths.mjs)                                                                                                                | inspector and Check machine                                                             |
 
 Use `node scripts/navigate.mjs <owner-symbol>` to discover current consumers and tests.
@@ -105,15 +115,20 @@ A cell can supply multiple motors; multiple cells on one circuit remain unsuppor
 Shared motor torque and powered sensor-load accounting and the completed energy ledger belong to simulation.
 Ground contact and workshop motion are not Course qualification.
 
-
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"254fcaeca60ae8917ca3161093f37fb6ca688b52d90594f653a120c3c1f3242c","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"529f9aaa466e80496e9e4f6ea6c6ec61cfa242902e4dedbfa88e321603ab6edf","disposition":"still accurate","rationale":"The observation store's new tickTiming.frameMs is wall-clock diagnostics only. Sensor descriptors, prior-completed sampling, funded sensor execution and decision/learning histories retain their existing owners and behavior."} -->
+
+<!-- doc-review {"version":1,"fingerprint":"82c08b4bf48679c51fee20878c3978a3ae6cb4fb548c719ae73cc417f0d3f0c3","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"9815af6bf603def5804dfd2af3a29d58348f6d5ef8c8f67fa88ce7d909264b40","disposition":"updated","rationale":"Clarified that camera supply uses power accounting but provides no numeric channels. Its exposure latch and optical profile are distinct from prior-completed numeric sampling and learned feature admission."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;
 [power](../../src/simulation/power.mjs) funds each sensor. The selected
 [sensor inspector](../../src/presentation/sensor-controls.mjs) and
 [measurement overlay](../../src/presentation/sensor-view.mjs) consume completed data.
+
+Cameras use the same funded sensor supply path but expose no numeric channels.
+Their [optical profile](../../src/model/camera.mjs#source) and checkpointed exposure
+latch are distinct from prior-completed numeric sensor readings. Receiver trigger
+wiring requests photographs through ordinary commands; it grants no scene access.
 
 [Rules and draft admission](../../src/model/controller-authoring.mjs) own source
 identity. The [bounded compiler](../../src/scripting/controller-program.mjs) admits

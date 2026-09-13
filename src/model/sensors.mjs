@@ -2,6 +2,7 @@ import { immutableCopy } from './observation.mjs';
 const channel = (unit, frame, scale) => ({ unit, frame, scale });
 /** Versioned measurement contracts shared by authoring, training and execution. */
 export const SENSOR_DEFINITIONS = immutableCopy({
+  camera: {}, // Image bytes and asynchronous readiness are not numeric controller inputs.
   rotation: { angularSpeed: channel('rad/s', 'authored-axis', 20) },
   travel: { length: channel('m', 'joint-axis', 1), speed: channel('m/s', 'joint-axis', 2) },
   range: { distance: channel('m', 'sensor-ray', 4), closingSpeed: channel('m/s', 'sensor-ray', 2) },

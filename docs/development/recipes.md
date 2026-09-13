@@ -2,9 +2,7 @@
 
 ## Choose a recipe
 
-<!-- doc-review {"version":1,"fingerprint":"d6e8aebba04a00908fc8d6f1758b3cb37a1049e362356a36084f72105261474d","dependencies":"docs/development/.reviews/recipes/choose-a-recipe.json","dependencyDigest":"300fa1026f83833cf2ff65e01df621a50584f1cfb52150f3469c8f0d8118668f","disposition":"still accurate","rationale":"Architecture overview still identifies the same runtime and manifest owners. Recording transport changes add no alternative authoring policy or implementation owner."} -->
-
-
+<!-- doc-review {"version":1,"fingerprint":"652044e26de8559440eec34aedee0e64e8fbdcb95c35d81c62d1ee3f2c783958","dependencies":"docs/development/.reviews/recipes/choose-a-recipe.json","dependencyDigest":"e2bcbaa159fb30e0cf1c47abd066ce216e27ef975e6e3ea317f548163f7b3238","disposition":"still accurate","rationale":"Camera recipes now identify exposure and optical owners. The entrypoint still requires current navigation, ordinary command admission and learning content review, with no parallel plan inventory."} -->
 
 Use the [map](architecture.md#overview) to locate the owner, inspect its reverse consumers with
 `node scripts/navigate.mjs <symbol-or-path>`, then use focused tests. Admit changes
@@ -18,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"249edf152e297ec4c1169a854b12dae1aa648cd5137d7a876fa3cbbf164fd8ee","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"99348d03b3f30d77049ee34a2395fc8630cea4daf818c6518eb82384706d7c16","disposition":"still accurate","rationale":"Frame construction timing does not modify catalog geometry, schema, material admission, mounting surfaces, gear support eligibility or Ball controls. The recipe's ordinary authored-part and independent renderer/model checks still apply."} -->
+<!-- doc-review {"version":1,"fingerprint":"ac84ed8707cc8431a29fd4d63d153dfe2bbf035737e70fe611ef6bf4f5039187","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"b838ce3ddca91b559b8b94c363d601b62832511808cd040c47f2462bd056b2e1","disposition":"still accurate","rationale":"The camera remains an ordinary powered part using the same optical profile and copy/mirror contracts. The new restore consistency guard does not change geometry, material, mass, ports or power admission."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -56,11 +54,14 @@ neither snaps nor provides shaft support; ordinary Connect/Disconnect and histor
 remain the editing owners. Preserve the [authoring controls](../../test/gear-authoring.test.mjs)
 when changing admission.
 
+Camera additions must preserve the [optical profile](../../src/model/camera.mjs#source),
+[completed exposure owner](../../src/simulation/camera-state.mjs#source), ordinary
+power admission and [copy/mirror controls](../../test/camera-integration.test.mjs#source).
+The catalog declares local reflection symmetry; it must not be inferred from a part ID.
+
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"c742457e58eded3890b2e70615181375ce572b6ae6c8d365d2e1354b811a41ef","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"0b2206365b7cb7ad062d7dfb94bf5761f8afdd20c59ce33874548185183c11aa","disposition":"still accurate","rationale":"Session and observation changes add diagnostic timings after completed simulation work; core shape validation, candidate compilation, atomic command history and rejected-edit effects are unchanged, preserving the surface-mount example and controls."} -->
-
-
+<!-- doc-review {"version":1,"fingerprint":"307ad9a8b9806ffa505d7e1ddbb3041589d610013c213662e350d88b33cc5337","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"faaed4ada925b1d16b303ee2830e913b251eb6aebf1ceabf43a2f5980f3bbede","disposition":"still accurate","rationale":"The existing Run-only epoch-bound camera-photo command and monotonic request deduplication are unchanged. Restore now rejects contradictory pending manual IDs before publishing state, consistent with the recipe atomicity contract."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -73,15 +74,18 @@ mounting, adjustment and Undo. Add malformed input, accepted effect, rejected-st
 identity, Undo/Redo and save/load cases through `core.act`. Reuse the [editing contract assertions](../../test/contracts/editing.mjs) as shown by [mixed editing examples](../../test/editing-contracts.test.mjs); inspect
 `node scripts/explain-invariant.mjs rejected-edit-atomicity`.
 
+The Run-only `camera-photo` request is an input event, not an authoring transaction.
+Validate epoch and request ID; accepted IDs deduplicate and a reserved exposure rejects
+busy without changing the completed cursor. Bytes and downloads belong to application.
+
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"2db42b4ea010dc6f341a571ba31fde3c270359d772b3fa3d332aebe32ae1177c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"a6438503af3ded01072ffca72faba88eaddc716257f62752434f0438dda3632c","disposition":"updated","rationale":"The recipe now names both help interaction and catalog inspector checks. All seven scenario bodies and viewports were preserved, with separate artifacts and unchanged watchdogs; ordinary input ownership and user behavior assertions remain."} -->
+<!-- doc-review {"version":1,"fingerprint":"06ed2f8e9c3b2eedf3c45f4ef3c83df032957159e4f844dc345bc146e5717de8","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"a19759eddc8907e45899f6fb49aa229d0c7a8b30bc540a028f5cf60f1a0af432","disposition":"still accurate","rationale":"Paused status and feedback canvas selection were corrected within existing owners. Keyboard input, command routing, focus cancellation and contextual action lifecycles are unchanged; no new action is introduced."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
 surface. Keep consequential state visible and verify unique actions remain reachable
 after removing or moving controls.
-
 
 Start with [surface controls](../../src/presentation/surface-controls.mjs) or
 [editing controls](../../src/presentation/editing-controls.mjs), composed by the view.
@@ -125,9 +129,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"061d54b22a01c6e3246d8d5c8464abeab0edf3857f4290a38dc25fac9b369e44","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"e694a2241100261b7377c2e245c740cc51e6c3792f379bc78fc78a698d917370","disposition":"still accurate","rationale":"The new frame-construction attribution reads diagnostic timing and does not change motion or controller diagnosis. Completed observation ownership, causal uncertainty, separate history, and measurement sampling remain the prescribed diagnostic path."} -->
-
-
+<!-- doc-review {"version":1,"fingerprint":"d808aa7ea02391668de0949e2f1377fb62d441fe980b5a4abf7ec7ab1cfeb90d","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"6e4c999cbcc2745f6663c69440197ba49cc5662aeec59b422cb5e05b0ec56e99","disposition":"still accurate","rationale":"Paused entry now describes the actual retained image state. No new inferred cause or plant read is introduced; the diagnostic recipe still requires completed observations, wrong controls and missing-data behavior."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -155,9 +157,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"27d2a20ee8e8d91d45d7c577a430aa0c3a28401e7aee618f97402fc1058e1564","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"bb77467145a30afa4ae9a37dc84520ceeacec91b75aea8e5c8d7d01cd9053447","disposition":"still accurate","rationale":"Session still constructs and publishes the same completed state after one integration; frameMs only separates a measured cost. Gear measurement adds attribution while retaining loaded apparatus durations, physical assertions and absolute budgets, so all numerical and authority requirements here remain binding."} -->
-
-
+<!-- doc-review {"version":1,"fingerprint":"8a4890e4677b3c190d03c89f5973f63a0e53832b792653161da2af78c4d6659c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"e4bd686109e6ac4dc832979944bafc0a45f0b484a53b6526e76438f544fe7f87","disposition":"still accurate","rationale":"The camera-state edit only validates checkpoint admission. The integration path, force laws, phase order and performance budgets remain unchanged and still require the documented physical controls."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -299,7 +299,7 @@ settings and slop. Re-run existing contact/constraint cases when changing this p
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"eab6cfa85d5242d7ebc5689d8d5f0ddd7d39086e451f1632bd9cf27a4e1ca621","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"14c04cbb58330a8cd2fb2d232edee5ac86623c8254c434dc74e58ce4a158e66d","disposition":"still accurate","rationale":"Observation timing and shared browser lifecycle instrumentation do not change copied graph membership, reference remapping, assembly persistence or atomic commands. The listed assembly journeys and rendered/completed comparisons remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"365e2487d9fc7d13f7da315eb7f9a29545454bc2aaa684143d63f6e77338c209","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"fefd70cbe66eed1c1d2802050c622315dc91d4afaa30cbc73a30ead19db86060","disposition":"still accurate","rationale":"Pending exposure validation is runtime continuation state, not blueprint authoring. Existing copy, mirror, material, topology and Undo ownership remain unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring connectivity, not an editor selection, electrical network, or stored
@@ -390,9 +390,13 @@ together cover insertion selection and member shortcuts, Build-only repeat place
 rename focus, narrow-screen sorting, offset mounting with an intact shaft, in-place interface edits, decimal
 receiver tuning, saved settings, named targets, bounded navigation and diagnostic layout.
 
+Camera mirror admission uses the catalog local reflection axis to preserve the +Z
+lens frame. The generic copied-graph contract still owns authored material and wiring
+preservation; test optical orientation independently of the production frame helper.
+
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"6817b0de76a1a59ba9e4d7640751336fd603541ad559a28c3af35de2915f3e66","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"ee114a3c6cfc2b4ba471f7ff72381c779999e2b4341e4975413bf7563da8036f","disposition":"still accurate","rationale":"The changes affect diagnostic frame timing and verifier resource cleanup, not overlay geometry, wiring visibility, picking, coil buffers or completed transforms. All spring physical/render budgets and environment qualifications remain unchanged; timing attribution does not relax them."} -->
+<!-- doc-review {"version":1,"fingerprint":"2e9762bd5d9544b8efd88e2824af289f454e90623e2ebe2689bd0645c983a56f","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"9a9cb46fd0fbcfc3ea8e87571095e4cbbbf235298c4606e82961e48246b9d430","disposition":"still accurate","rationale":"Feedback copies the existing camera display canvas; it does not create an overlay or alter cone visibility, picking, resource ownership, authored transforms or scene invalidation."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

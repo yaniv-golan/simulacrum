@@ -41,6 +41,7 @@ export function deterministicProjection(frame) {
     power: frame.power,
     sensors: frame.sensors,
     receiverControl: frame.receiverControl,
+    ...(frame.cameras ? { cameras: frame.cameras } : {}),
     status: frame.status,
   };
 }

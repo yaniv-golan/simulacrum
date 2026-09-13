@@ -3,7 +3,7 @@
   "dependencies": {
     "AGENTS.md": "b8454b1ce217d187fa9b71c99d2419738a7b82f2cf3dd0fc06b46d96f919b065",
     "docs/development/architecture.md#overview": "b8d3ea7673ca3a8fa7ace24823befb713f774ba6e20d7c57730de85b82392ee6",
-    "docs/development/recipes.md#choose-a-recipe": "9d827be3c104e6564438313d26dd375b6d670c7696206f283115b1f50482766d",
+    "docs/development/recipes.md#choose-a-recipe": "f4269a580989aa400e85f0eb0a7bd1936ebe35d9bb47deebbdab2b40efd8739f",
     "package.json#script=dev": "db1288b08c007548a58bed6fc2cb27f6962a578ebac206a5a389aec0f78bf84b",
     "package.json#script=build": "952bdd0ae6b61c346c4fd9450107496b32dd57090752cad260808d6331fd0485",
     "package.json#script=preview": "734491675c009f724e200a102cac97cd540c2e284972825fa04649d9ca611b23"

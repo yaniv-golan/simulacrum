@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"893ddae3f2da5422daf5664ecbe19f20307a8b8db4a9b53481262543961e3288","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"6330970091f0498a52ccfc25e79cc35cd9cc22904a60c2421fae5c241d6a98f4","disposition":"still accurate","rationale":"AGENTS adds an explicit nonqualifying merge tier; this entrypoint still directs owner discovery, runtime setup and the canonical contracts without changing layer ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"529c6637e813fa2def4d75d272efd444b07df41cf299ce7a522e177344bb0160","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"3a2dd0f827e6a9db678906d55907946e81d653abe3a0d3cb8bb23de73a4a4e59","disposition":"still accurate","rationale":"The runtime contract now specifies powered photographs; the guide still routes changes through that contract, architecture and recipes, using the same pinned Node runtime."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -92,7 +92,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"83e70567647aea12a5ed7d1373e8ed6a0882f988bc046d5d31b9e1ac2b6c60a0","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"7c51d01a3e8f3372c870d934ace9bd64c4970de29c7d4e7220c05e97aa76c9c3","disposition":"still accurate","rationale":"Recording seek reconstruction is faster but capture consent, release admission and qualification policies are unchanged. Local, merge and final commands described here retain the same distinct outcomes."} -->
+<!-- doc-review {"version":1,"fingerprint":"9abffc3011c5f3fa90dd3b9d69ccc0f629bfb9b0a2380f9c965f4d4d1a1cca21","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"3ea91b389c3447c128f218c7e192f9599c5187dfb545079f646fbbf18357861d","disposition":"still accurate","rationale":"Canvas-only feedback now copies the active optical image; verification tiers and the distinction between automation and eligible human evidence in the linked playtesting policy remain unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"f219212b6167ddd67f4c04af87df4e622d2b28de9e237e8bd20134364ee84fc7","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"bd6302f211f4237345716bc8b5808ec713b7f56fa40e56b95aedebe0990a03f1","disposition":"still accurate","rationale":"The checker now reuses successful dependency closures within one inspection. Each requested root retains its own transitive dependencies and opaque inventory; fresh invocations and before/after source drift checks remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"7789c598af5c91344b324581a5fd8f6674555772bfdcfc78fd341c6ab2d8bf8a","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"759166f3966946dd59bd1b2056261b42d902f317087ff9c33441b346a8b4ceb7","disposition":"still accurate","rationale":"The generated reference now registers paused-entry, visible-feedback and checkpoint admission controls. Regeneration, separate section dispositions and source-bound review evidence remain the required workflow."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"f9eedbe49e9ecac383fe93e3afb8e71b0bc41e41eb62a2b9f16fa756fed67ac8","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"166ebe4f007b5d1713c98efde2dfc06284bdb2875bb70a51d792ef138e53afdd","disposition":"updated","rationale":"Describe bounded processDiagnostics retained on success and failure receipts, distinguish callback observations from OS state, and preserve timeout and cleanup error semantics."} -->
+<!-- doc-review {"version":1,"fingerprint":"84e1687ebf118bc962e1ccfe8d995d35179bd0383328813cf677c7f37a3c4638","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"f7633c062ed6b518774391e8ab28e4ae22765edcbba0082cdd1d53dd3bd1e97c","disposition":"still accurate","rationale":"The manifest adds adversarial camera controls and a screenshot owner. Existing browser selection, opaque-read classifications, scope witnesses and deadlines are unchanged; consumer hash refreshes require the documented review flow."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -444,7 +444,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"3475c022fc2408267825c2d114432c05dfc6d6d84aa3577c043aed63d4820b51","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"b2cea7138e4a0290a4a52510b94c7eab5f1410e62b867cb23aaa2a405698356a","disposition":"still accurate","rationale":"The subprocess runner adds bounded diagnostics only; candidate capture, drift rejection and completion tier selection are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"be0f364fb3e38a4648653f1295eab2b864f6b1c3a2a65f116601dd0aafda1878","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"b4ce7523134edb694392502effa29071dfff777d199d1caf97e9fcf163bf3405","disposition":"still accurate","rationale":"New camera fixes and registered controls invalidate the previous candidate source identity. The existing isolated local completion command and source-stability checks still apply without reusing the prior passing result."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

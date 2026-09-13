@@ -17,7 +17,6 @@ export async function runPartHelpCases(partition, evidence, browser) {
     if (partHelpPartition(name) !== partition) return;
     const context = await browser.newContext({ viewport, hasTouch: true });
     const page = await context.newPage();
-    page.setDefaultTimeout(2500);
     await context.tracing.start({ screenshots: true, snapshots: true });
     const observed = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
     const load = async (bp) => {
@@ -37,6 +36,8 @@ export async function runPartHelpCases(partition, evidence, browser) {
     try {
       await evidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
       await page.waitForFunction(() => window.render_game_to_text);
+      // Startup is bounded by the browser check watchdog; 2.5 s is the interaction deadline.
+      page.setDefaultTimeout(2500);
       await run(page, observed, load);
       results.push({ name, ok: true });
     } catch (error) {

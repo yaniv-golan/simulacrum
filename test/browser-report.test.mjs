@@ -271,3 +271,44 @@ test('server cleanup survives timing publication failure and retains both causes
   assert.match(JSON.stringify(rows[1].report), /injected timing publication failure/);
   assert.match(JSON.stringify(rows[1].report), /injected server cleanup failure/);
 });
+
+test('cleanup attempts every resource despite phase publication and close failures', async () => {
+  const { withCleanup } = await import('../scripts/verification-cleanup.mjs');
+  const calls = [];
+  const primary = Error('execution failed');
+  const reporting = Error('phase publication failed');
+  const closing = Error('browser close failed');
+  await assert.rejects(
+    withCleanup(
+      async () => {
+        throw primary;
+      },
+      () => {
+        calls.push('phase');
+        throw reporting;
+      },
+      () => {
+        calls.push('browser');
+        throw closing;
+      },
+      () => {
+        calls.push('server');
+      },
+      () => {
+        calls.push('cloud');
+      },
+    ),
+    (error) => {
+      assert.deepEqual(calls, ['phase', 'browser', 'server', 'cloud']);
+      assert.deepEqual(error.errors, [primary, reporting, closing]);
+      return true;
+    },
+  );
+  assert.equal(
+    await withCleanup(
+      () => 42,
+      () => calls.push('success'),
+    ),
+    42,
+  );
+});

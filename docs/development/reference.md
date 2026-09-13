@@ -120,7 +120,7 @@ These are registered commands and checks, not evidence that they passed.
 | native-qualification-controls | [qualifyNative](../../scripts/native-qualification.mjs) | verification-scope-configuration |
 | build-reset-precision | [command.type === 'build'](../../src/core/workshop.mjs) | verification-scope-configuration |
 | ball-workshop-experience | [createRetry](../../src/application/retry.mjs), [contactProperties](../../src/model/contact-properties.mjs), [createImpactEvents](../../src/presentation/impact-sound.mjs) | invariant-controls, verify-ball-browser, verify-remote-playtest |
-| verification-live-evidence | [withBrowserReport](../../scripts/verify-browser-suite.mjs) | verification-workflow |
+| verification-live-evidence | [withBrowserReport](../../scripts/verify-browser-suite.mjs), [withCleanup](../../scripts/verification-cleanup.mjs) | verification-workflow |
 | verification-priority-coverage | [prioritizeBrowserChecks](../../scripts/browser-selection.mjs) | verification-workflow |
 | documentation-batch-review | [reviewSections](../../scripts/documentation.mjs) | developer-documentation |
 | browser-scope-reviewed-application | [deriveScopeProposal](../../scripts/browser-scope-proposal.mjs), [applyScopeProposal](../../scripts/browser-scope-apply.mjs), [validateScopeWitnessResult](../../scripts/browser-scope-witness-contract.mjs) | verification-scope-configuration |
@@ -135,3 +135,6 @@ These are registered commands and checks, not evidence that they passed.
 | merge-shadow-no-qualification | [mergeShadowReport](../../scripts/merge-shadow.mjs) | verification-scope-configuration |
 | tick-cost-attribution | [summarizeTickAttribution](../../scripts/tick-attribution.mjs) | verification-scope-configuration |
 | merge-tier-coverage | [mergeSelection](../../scripts/merge-selection.mjs), [compareMergeCoverage](../../scripts/merge-comparison.mjs) | verification-scope-configuration |
+| camera-completed-exposure | [createCameraState](../../src/simulation/camera-state.mjs), [createWorkshop](../../src/core/workshop.mjs) | invariant-controls, verify-camera-browser, measure-cameras |
+| camera-photo-ownership | [createCameraGallery](../../src/application/camera-gallery.mjs), [createCameraSession](../../src/application/camera-session.mjs), [createCameraControls](../../src/presentation/camera-controls.mjs), [captureWorkshopScreenshot](../../src/presentation/workshop-screenshot.mjs) | invariant-controls, verify-camera-browser |
+| camera-authored-optics | [opticalFrame](../../src/model/camera.mjs), [proposeMirroredAssembly](../../src/model/mirror-assembly.mjs), [createCameraRenderer](../../src/presentation/camera-renderer.mjs), [createCameraFrustum](../../src/presentation/camera-frustum.mjs) | invariant-controls, verify-camera-browser |

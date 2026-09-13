@@ -918,6 +918,28 @@
       "timeoutMs": 120000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
+    },
+    {
+      "id": "verify-camera-browser",
+      "script": "scripts/verify-camera-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 120000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "measure-cameras",
+      "script": "scripts/measure-cameras.mjs",
+      "execution": "exclusive",
+      "environment": "self",
+      "tier": "performance",
+      "smoke": false,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
     }
   ],
   "invariants": [
@@ -3407,6 +3429,10 @@
         {
           "path": "scripts/verify-browser-suite.mjs",
           "anchor": "withBrowserReport"
+        },
+        {
+          "path": "scripts/verification-cleanup.mjs",
+          "anchor": "withCleanup"
         }
       ],
       "checks": [
@@ -3427,6 +3453,10 @@
           {
             "path": "test/browser-report.test.mjs",
             "anchor": "final alias publication failure cannot leave authoritative success"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "cleanup attempts every resource despite phase publication and close failures"
           }
         ]
       },
@@ -4144,6 +4174,226 @@
         ]
       },
       "qualificationBars": []
+    },
+    {
+      "id": "camera-completed-exposure",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Powered ordinary cameras expose only completed scheduled ticks, preserve trigger continuation and reject duplicate or busy requests without hidden sensing. Checkpoint pending manual IDs must be the newest accepted request and cannot repeat the completed manual result.",
+      "owners": [
+        {
+          "path": "src/simulation/camera-state.mjs",
+          "anchor": "createCameraState"
+        },
+        {
+          "path": "src/core/workshop.mjs",
+          "anchor": "createWorkshop"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-camera-browser",
+        "measure-cameras"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/camera-integration.test.mjs",
+            "anchor": "manual camera requests are atomic, deduplicated, powered, scheduled and checkpoint-continuable"
+          },
+          {
+            "path": "test/camera-state.test.mjs",
+            "anchor": "checkpoint rejects completed or superseded manual requests as pending without changing live state"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/camera-state.test.mjs",
+            "anchor": "controller edges during a reserved exposure report busy without replacing the manual request"
+          },
+          {
+            "path": "test/camera-integration.test.mjs",
+            "anchor": "unpowered camera cannot make a valid photo; authored controller rising edge takes exactly one"
+          },
+          {
+            "path": "test/camera-integration.test.mjs",
+            "anchor": "camera brownout and exhausted cells stop powered exposures with accounted energy"
+          },
+          {
+            "path": "test/camera-state.test.mjs",
+            "anchor": "checkpoint rejects completed or superseded manual requests as pending without changing live state"
+          }
+        ]
+      },
+      "qualificationBars": [
+        "F1"
+      ]
+    },
+    {
+      "id": "camera-photo-ownership",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Photo bytes remain bounded application-owned session data with immutable source provenance and visible gallery selection; late or replayed captures cannot publish photos or downloads. Paused camera entry stays explicitly paused, and canvas-only feedback captures the visible camera view without rerendering the hidden orbit view.",
+      "owners": [
+        {
+          "path": "src/application/camera-gallery.mjs",
+          "anchor": "createCameraGallery"
+        },
+        {
+          "path": "src/application/camera-session.mjs",
+          "anchor": "createCameraSession"
+        },
+        {
+          "path": "src/presentation/camera-controls.mjs",
+          "anchor": "createCameraControls"
+        },
+        {
+          "path": "src/presentation/workshop-screenshot.mjs",
+          "anchor": "captureWorkshopScreenshot"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-camera-browser"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/camera-gallery.test.mjs",
+            "anchor": "gallery retains existing photographs at both bounds, owns URLs, and clears explicitly"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "camera destination pins completed frames, suppresses replay and retains paused frame identity"
+          },
+          {
+            "path": "test/camera-renderer.test.mjs",
+            "anchor": "camera reports bounded resources and separate raster copy and PNG completion cost"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "photo metadata retains immutable source provenance alongside the build"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "entering paused camera view labels a completed exposure paused and resumes live only in Run"
+          },
+          {
+            "path": "test/workshop-screenshot.test.mjs",
+            "anchor": "feedback copies the visible camera canvas and returns to orbit only after camera view closes"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/camera-gallery.test.mjs",
+            "anchor": "epoch and deadline cancellation retain the one encoder reservation until it settles"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "deleting the last camera releases its renderer and notifies view recovery without any photographs"
+          },
+          {
+            "path": "test/camera-controls.test.mjs",
+            "anchor": "camera refresh releases orbit only on view transitions and preserves a subsequent drag owner"
+          },
+          {
+            "path": "test/camera-gallery.test.mjs",
+            "anchor": "a successful encoder does not erase concurrent busy rejections"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "successful exposure retains visible competing trigger rejection until explicit clear"
+          },
+          {
+            "path": "test/camera-renderer.test.mjs",
+            "anchor": "camera context loss rejects stale rasterization and recovers only with a fresh render"
+          },
+          {
+            "path": "test/camera-controls.test.mjs",
+            "anchor": "first photo selection is visible and later refresh preserves the chosen photo"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "power loss and missing samples retain the old image with explicit non-live status"
+          },
+          {
+            "path": "test/camera-session.test.mjs",
+            "anchor": "entering paused camera view labels a completed exposure paused and resumes live only in Run"
+          },
+          {
+            "path": "test/workshop-screenshot.test.mjs",
+            "anchor": "feedback copies the visible camera canvas and returns to orbit only after camera view closes"
+          },
+          {
+            "path": "test/workshop-screenshot.test.mjs",
+            "anchor": "feedback copies the visible view only when its camera image is available"
+          }
+        ]
+      },
+      "qualificationBars": [
+        "F1"
+      ]
+    },
+    {
+      "id": "camera-authored-optics",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Ordinary camera optics follow completed physical transforms and authored materials. Lost rendering contexts cannot publish fresh images; requested viewing cones belong only to workshop inspection and leave with selection. Camera inspection diagnostics remain finite plain JSON before first use so recording stays available.",
+      "owners": [
+        {
+          "path": "src/model/camera.mjs",
+          "anchor": "opticalFrame"
+        },
+        {
+          "path": "src/model/mirror-assembly.mjs",
+          "anchor": "proposeMirroredAssembly"
+        },
+        {
+          "path": "src/presentation/camera-renderer.mjs",
+          "anchor": "createCameraRenderer"
+        },
+        {
+          "path": "src/presentation/camera-frustum.mjs",
+          "anchor": "createCameraFrustum"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-camera-browser"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/camera-integration.test.mjs",
+            "anchor": "camera copy and mirror preserve authored choices and reflect the optical frame"
+          },
+          {
+            "path": "test/camera-integration.test.mjs",
+            "anchor": "camera authored optical pose and material survive Undo Redo and reload"
+          },
+          {
+            "path": "test/camera-frustum.test.mjs",
+            "anchor": "unshown camera cone diagnostics remain recordable JSON"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/camera-integration.test.mjs",
+            "anchor": "ordinary camera has authored mass, valid optics, independent supply and no image controller channels"
+          },
+          {
+            "path": "test/camera-frustum.test.mjs",
+            "anchor": "requested camera cone follows completed lens pose and leaves with selection or view"
+          },
+          {
+            "path": "test/camera-frustum.test.mjs",
+            "anchor": "unshown camera cone diagnostics remain recordable JSON"
+          }
+        ]
+      },
+      "qualificationBars": [
+        "F1"
+      ]
     }
   ],
   "browserLocalScopes": [
@@ -4167,7 +4417,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
       "externalImports": []
     },
     {
@@ -4191,7 +4441,7 @@
         "vite"
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -4208,7 +4458,7 @@
         "verify-mirror-browser"
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -4227,7 +4477,7 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -4251,7 +4501,7 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -4285,7 +4535,7 @@
         "test/receiver-input-owner.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9"
     }
   ],
   "experimentInputScopes": [
@@ -4559,7 +4809,7 @@
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -4640,7 +4890,7 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "externalImports": [
         "node:crypto",
@@ -4689,7 +4939,7 @@
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -4738,8 +4988,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
+      "consumerSourceHash": "0f82665e5d8e318ab5c328b524f5375418df1fdf1a6739e93729b1d988aea8a5",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -4748,7 +4998,7 @@
       "consumers": [
         "scripts/verify-cloud-playtest.mjs"
       ],
-      "sourceSha256": "287d2fc89266f565239c15722930a98e5e56409f7c23659dd2df2e55124875e7",
+      "sourceSha256": "2e1aebbe80295f6a537cfec950191a4a0d338aa36f7e080e87993c562e9371a2",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -4760,6 +5010,7 @@
         "scripts/playtest/load.mjs",
         "scripts/playtest/local-cloud.mjs",
         "scripts/playtest/release-policy.mjs",
+        "scripts/verification-cleanup.mjs",
         "src/application/capture-stream.mjs",
         "src/model/blueprint.mjs"
       ]
@@ -4786,8 +5037,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
+      "consumerSourceHash": "f0d8e6f86a2008c43b14712a587145760323f7d8d081e57724c97874b5c9363d",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -4802,6 +5053,7 @@
         "scripts/verify-attachment-status.mjs",
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser.mjs",
+        "scripts/verify-camera-browser.mjs",
         "scripts/verify-camera-recovery.mjs",
         "scripts/verify-cloud-playtest.mjs",
         "scripts/verify-connection-test-browser.mjs",
@@ -4869,8 +5121,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
+      "consumerSourceHash": "f0d8e6f86a2008c43b14712a587145760323f7d8d081e57724c97874b5c9363d",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -4899,6 +5151,7 @@
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
+        "scripts/verify-camera-browser.mjs",
         "scripts/verify-camera-recovery.mjs",
         "scripts/verify-ci-browser.mjs",
         "scripts/verify-cloud-playtest.mjs",
@@ -4995,8 +5248,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "f52237ee08e673df093ae6b220948212e94e472bc1a8f483beec2e23a2dd679f",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
+      "consumerSourceHash": "f5d12d1a153966ece85ef7e170a46d8c5273bffa9797ce71b232980e9c1bca41",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -5018,6 +5271,7 @@
         "scripts/gate-structural.mjs",
         "scripts/gate.mjs",
         "scripts/inspect-change.mjs",
+        "scripts/measure-cameras.mjs",
         "scripts/measure-gears.mjs",
         "scripts/measure-shared-sensing.mjs",
         "scripts/measure-springs.mjs",
@@ -5038,6 +5292,7 @@
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
+        "scripts/verify-camera-browser.mjs",
         "scripts/verify-camera-recovery.mjs",
         "scripts/verify-candidate.mjs",
         "scripts/verify-ci-browser.mjs",
@@ -5112,7 +5367,8 @@
         "test/verification-preparation.test.mjs",
         "test/verification-resume-controls.test.mjs",
         "test/verification-resume.test.mjs",
-        "test/verification-run.test.mjs"
+        "test/verification-run.test.mjs",
+        "vite.config.mjs"
       ],
       "sourceSha256": "e6d17d47613f5a704e08cf7a0324ee12d52a4852bc3168b50ae75579a59458f2",
       "entrypoint": "scripts/source-identity.mjs",
@@ -5170,8 +5426,8 @@
         "test/m3-determinism.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "2f5f06c3af5dcfd0b0d32258a10753614b1133f27846e8d33e82e0adbbc9253b"
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
+      "consumerSourceHash": "be48e9b21f77e2fcb5933ce195ef60ad681361b70c05a3f001f559d30ccb4311"
     },
     {
       "checks": [
@@ -5187,8 +5443,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
+      "consumerSourceHash": "0f82665e5d8e318ab5c328b524f5375418df1fdf1a6739e93729b1d988aea8a5",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -5252,8 +5508,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
+      "consumerSourceHash": "0f82665e5d8e318ab5c328b524f5375418df1fdf1a6739e93729b1d988aea8a5",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -5308,8 +5564,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
+      "consumerSourceHash": "0f82665e5d8e318ab5c328b524f5375418df1fdf1a6739e93729b1d988aea8a5",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -5339,8 +5595,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
+      "consumerSourceHash": "0f82665e5d8e318ab5c328b524f5375418df1fdf1a6739e93729b1d988aea8a5",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -5478,8 +5734,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1589441063e58f3ee61e1f3327d2f2dace34a102695b5c33de3056bb42e16f23",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
+      "consumerSourceHash": "4b29be1dc65643c458b98a051c9e53876dd35ce6e87842b8cbd2ea1c5df8790a",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -5560,8 +5816,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
+      "consumerSourceHash": "f0d8e6f86a2008c43b14712a587145760323f7d8d081e57724c97874b5c9363d",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -5612,6 +5868,7 @@
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
+        "scripts/verify-camera-browser.mjs",
         "scripts/verify-camera-recovery.mjs",
         "scripts/verify-candidate.mjs",
         "scripts/verify-ci-browser.mjs",
@@ -5786,8 +6043,8 @@
           ]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
+      "consumerSourceHash": "0f82665e5d8e318ab5c328b524f5375418df1fdf1a6739e93729b1d988aea8a5",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -5852,8 +6109,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "90cf3eadef91203d7d72f4064cee9300beb14c647dfe98dd35e822a54815cb54"
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
+      "consumerSourceHash": "f44b260c8560af8d5d8653d43ca0875e88e3fcb5991f80e50c7bdd82ffecfe40"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -5883,8 +6140,8 @@
         "test/cloud-playtest.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "90cf3eadef91203d7d72f4064cee9300beb14c647dfe98dd35e822a54815cb54"
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
+      "consumerSourceHash": "f44b260c8560af8d5d8653d43ca0875e88e3fcb5991f80e50c7bdd82ffecfe40"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -5910,7 +6167,7 @@
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "203a3cd4d33ad15e5f5040b6418515ddffedd6a5b7ec999090669a214fdb47b9",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ],

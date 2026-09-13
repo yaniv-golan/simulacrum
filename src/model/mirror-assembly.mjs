@@ -29,26 +29,33 @@ function normalFor(axis) {
 // H_world R H_localZ is proper: two reflections have determinant +1. Choosing
 // local Z preserves ordinary local-X and local-Y shaft geometry, not handedness
 // of motor torque. Authored controls remain unchanged and preview reports this.
-export function reflectPose(pose, reference, axis) {
+export function reflectPose(pose, reference, axis, localAxis = 'z') {
   const normal = rotateVector(reference.rotation, normalFor(axis));
   const offset = pose.position.map((value, i) => value - reference.position[i]);
   return {
     position: reflected(offset, normal).map((value, i) => clean(value + reference.position[i])),
     rotation: normalizeQuaternion(
-      multiplyQuaternion(multiplyQuaternion([...normal, 0], pose.rotation), [0, 0, 1, 0]),
+      multiplyQuaternion(multiplyQuaternion([...normal, 0], pose.rotation), [
+        ...normalFor(localAxis),
+        0,
+      ]),
     ).map(clean),
   };
 }
-function reflectLocalRotation(rotation, axis) {
+function reflectLocalRotation(rotation, axis, localAxis = 'z') {
   return normalizeQuaternion(
-    multiplyQuaternion(multiplyQuaternion([...normalFor(axis), 0], rotation), [0, 0, 1, 0]),
+    multiplyQuaternion(multiplyQuaternion([...normalFor(axis), 0], rotation), [
+      ...normalFor(localAxis),
+      0,
+    ]),
   );
 }
 function admitShape(part) {
-  const primitives = partPrimitives(part);
+  const primitives = partPrimitives(part),
+    localAxis = CATALOG[part.type].mirrorAxis ?? 'z';
   for (const shape of primitives) {
-    const position = reflected(shape.position, axes.z),
-      rotation = reflectLocalRotation(shape.rotation, 'z');
+    const position = reflected(shape.position, normalFor(localAxis)),
+      rotation = reflectLocalRotation(shape.rotation, localAxis, localAxis);
     const material = part.authoredMaterial[shape.id] ?? shape.materialKey;
     if (
       !primitives.some(
@@ -146,7 +153,10 @@ export function proposeMirroredAssembly(blueprint, options) {
     omittedExternalConnectionIds = [];
   for (const part of blueprint.parts.filter((part) => selected.has(part.id))) {
     admitShape(part);
-    const copy = { ...structuredClone(part), ...reflectPose(part, reference, axis) };
+    const copy = {
+      ...structuredClone(part),
+      ...reflectPose(part, reference, axis, CATALOG[part.type].mirrorAxis ?? 'z'),
+    };
     copy.id = freshId(part.id, partIds);
     idMap[part.id] = copy.id;
     copy.name = availablePartName(next.parts, part.name);
@@ -182,7 +192,7 @@ export function proposeMirroredAssembly(blueprint, options) {
       copy[side] = endpoint(
         byId.get(binding.part),
         binding,
-        isCopy ? 'z' : axis,
+        isCopy ? (CATALOG[byId.get(binding.part).type].mirrorAxis ?? 'z') : axis,
         isCopy ? idMap[binding.part] : referenceId,
       );
     }

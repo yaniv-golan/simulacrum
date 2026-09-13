@@ -24,8 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"3056eb1eed56600c7f48344c278b107980d42d9d06c999e989be6ef8fe334e6f","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"8d109567c31048706ee568289fbffe6c93f80a4630a83682a9f372574cc6fac5","disposition":"still accurate","rationale":"Existing optional gear and sensor content are both retained. Merge adds no lesson or permanent canvas surface; rendered automation remains separate from player understanding."} -->
-
+<!-- doc-review {"version":1,"fingerprint":"56743b0898c98f63c18724452cc91f6d1b649438c11b1c849210492617a78e2c","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"2f461b346f89aa7b823df16b6b30a1fefc35af100bfea8bbfc1bf405bd9472c5","disposition":"still accurate","rationale":"These repairs remove misleading status and evidence rather than adding teaching content. No entry remains appropriate because current camera and mounting help already serves the player task."} -->
 
 Learn & examples is a curated collection of things players can learn to do.
 Adding a feature requires a teaching decision, not automatically a catalogue entry.
@@ -56,11 +55,11 @@ reviewable judgments, not a numeric score that proves educational value.
 
 **Choose the teaching format**
 
-| Format | Required player experience |
-| --- | --- |
-| Guided build | Use ordinary authoring actions, explain consequential connections, then offer a concrete independent edit or repair. |
+| Format                         | Required player experience                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Guided build                   | Use ordinary authoring actions, explain consequential connections, then offer a concrete independent edit or repair.                  |
 | Editable example or experiment | Show an inspectable behavior and offer a meaningful change or prediction. For comparisons, name what changes and what stays constant. |
-| Challenge | State the goal, constraints and observable success; offer optional hints and allow alternative solutions that satisfy the goal. |
+| Challenge                      | State the goal, constraints and observable success; offer optional hints and allow alternative solutions that satisfy the goal.       |
 
 These are content contracts, not required tabs or exclusive categories. One fixture
 may support several formats. Reuse canonical explanations and fixtures where practical;
@@ -125,15 +124,29 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"cd4d17b4e7d4f8c45b22f09678440462906379ecdfe4b66d0152995b61a90b42","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"668d59f273cb585b687e3a36582256eaafbc19d23208faf82632994d85593816","disposition":"still accurate","rationale":"Combined workshop composition retains gear examples and controller/sensor inspectors in their existing regions. Historical versus live labels and Build repair routing remain intact."} -->
-
-
+<!-- doc-review {"version":1,"fingerprint":"a644ec99d062a7e1243e2d5939e3e2a5f136b8c10c1cf1fd79a6cfe05265bff7","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"1cf8a884bd1caff95be5df5f7bc4eb07838ac978e73742e9415365b8edccdf13","disposition":"updated","rationale":"Documented paused exposure labels and visible-canvas feedback. Camera controls, gallery, inspector, return action and narrow layout retain their existing space and dismissal/retrieval lifecycles."} -->
 
 The [workshop view](../../src/presentation/workshop-view.mjs#source) owns the shell:
 document and run actions in the header; parts in the left catalogue; separate edit
 and view groups at the workbench edge; selected properties and operations in the
 inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
+
+Paused camera images retain an explicit paused label even when view entry lands on
+an exposure boundary. Feedback screenshots follow the visible canvas without changing
+the optical sample.
+
+The selected camera inspector owns entry into the requested machine view and its
+photo shortcut. The optional one-metre viewing cone is a temporary workshop-only
+inspection guide, removed on selection change and hidden in machine view; it is not
+a depth sensor or part of photographs. [Camera controls](../../src/presentation/camera-controls.mjs#source)
+replace orbit/edit tools while viewing, keep vehicle controls and recovery reachable,
+and restore the orbit on exit. Build is an explicitly unpowered placement preview;
+Run shows power/live/stale/failure status; Paused may retain the identified old image.
+The requested Photos dialog owns inspection, PNG/details export and explicit clearing.
+Opening it releases held drive keys. Retained photos remain retrievable after camera
+deletion and retries until this page closes. Camera help teaches mounting repair in
+context; no additional learning entry is admitted for this delivery.
 
 The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic
 regulation shows measured and target total spring length, rather than extension from
@@ -232,7 +245,6 @@ and all parts remain editable; check clearance after changing mounting geometry.
 These examples extend construction possibilities, not evidence of player comprehension
 or qualification outside their tested finite operating envelopes.
 
-
 Spur gears use More parts, selected Connections and the existing part-help window.
 Gear mesh explicitly leaves parts in place and requires independently supported
 aligned shafts. The requested Learn & examples browser adds one editable gear-lift
@@ -296,8 +308,8 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"3fd9f2b7d3b00d645b6dc4e119f0b4cf431047011f81c1ef180f9ffbac810dfe","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"e8a720001b326d0bd2e16194684674a60cf1a1771165d1c24cc0f97c6a2f9bbb","disposition":"updated","rationale":"Routine merge guidance now uses candidate merge with explicit base; release/milestone retain final. Recording remains real-player feedback rather than human qualification, and the cursor optimization does not change that distinction."} -->
 
+<!-- doc-review {"version":1,"fingerprint":"672869dc53c586dea9cd5a24682cb7b8a927511b99a12968d1a31dd0c382eb26","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"deb8cee825f08a2dc3cd8b1c37107267b7d7c8b9f73ae9931daf91e91c8a11fd","disposition":"still accurate","rationale":"The playtesting description now identifies the visible optical canvas as feedback context. Rendered checks and actual eligible player observations remain distinct; automation still cannot supply acceptance."} -->
 
 Use the manifest's `workbench-content-lifecycle` invariant and
 [registered browser check](../../scripts/manifest.json#check=verify-workbench-content)

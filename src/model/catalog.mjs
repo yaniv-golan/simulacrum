@@ -108,6 +108,20 @@ const hubTilt = Math.atan2(0.07, 0.1),
 const aboutZ = (angle) => [0, 0, Math.sin(angle / 2), Math.cos(angle / 2)];
 /** @type {Readonly<Record<import('./generated/blueprint-types.js').PartType, CatalogDefinition>>} */
 export const CATALOG = freeze({
+  camera: {
+    ...component(
+      'camera',
+      'Camera',
+      [0.03, 0.02, 0.02],
+      'aluminium',
+      [power(), signal('trigger', 'input')],
+      {},
+    ),
+    milestone: 'M3b',
+    sensorSupply: { resistance: 100, minVoltage: 1 },
+    mirrorAxis: 'x',
+    mountingFaces: ['bottom', 'left', 'right', 'top', 'front', 'back'],
+  },
   gear12: {
     ...component(
       'gear12',

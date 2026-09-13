@@ -59,6 +59,7 @@ export type WorkshopCommand =
   | { type: 'undo' | 'redo' }
   | { type: 'control'; id: string; duty: number }
   | { type: 'control-release'; id: string; duty: number }
+  | { type: 'camera-photo'; id: string; requestId: number; epoch: number }
   | { type: 'suspend-controls' }
   | { type: 'control-mode'; id: string; mode: 'manual' | 'automatic' | 'learned' | 'off' }
   | { type: 'regulator-target'; id: string; target: number }

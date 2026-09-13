@@ -1,6 +1,7 @@
 {
   "version": 1,
   "dependencies": {
+    "src/presentation/workshop-screenshot.mjs": "574788560d3ab7cf1e825e0441f4b03a72799f3ac7d79a23f48bced6d0f1c29a",
     "scripts/playtest-server.mjs": "eb4e7bd9839025e23d26ca708ab4baf4b4de537ba1de292e016063a1a74789ad",
     "scripts/playtest/protocol.mjs": "30279b9083f6c0f27a85fea472a1ed6edaaa525f331f316916a8d78585296a10",
     "package-lock.json": "bcc829aa98315f5b3ca46abbd8ee3c660c15b5a258f209d9265741c9bc57513c",
@@ -12,14 +13,14 @@
     "src/application/capture-stream.mjs": "db4c9322b9b8264b97f7680a0ca4f4aaad907beae3bcb2c9d3ebea01b7dc5d84",
     "src/application/remote-playtest.mjs": "0880cb576991aacfea1dbe95e3d67b4f9134de039eb89bfa1fea47d5fe2f3023",
     "scripts/export-playtest.mjs": "f74b33d6d8bb831cd4730b98457214576c23fe72123437a37474c5747eb69977",
-    "src/model/boundaries.d.ts": "6c2581fe4dd59ac826f07c1b3fca6cb77572ec8c255c55ce41248f4fc2fbf299",
-    "src/model/catalog.mjs": "05a016e8a44bd40565978d183ef5b6d864b4ecf67caf4bdf26fea07303134500",
+    "src/model/boundaries.d.ts": "066770a31a1703524a5005cc865b900d36cebfcd036e8e94ca4f1d306b122d37",
+    "src/model/catalog.mjs": "0b2500d2b562c370f7d76d31016377665393d383d0c9e6e77bf58a921edcf58f",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",
     "src/model/environment.mjs": "2409601431d8919540401bba53335b26f14d058327a4ec16cdfc8edfd3732dbf",
-    "src/model/generated/blueprint-types.d.ts": "4ab1af630c52fc3bfd60ae0d9fbd64906a9936754b29943b70415feaf8028182",
+    "src/model/generated/blueprint-types.d.ts": "775f3f8814407e22a2650dca842c2ed81ba0cd2f85543f0cdabe25e15fdb8c0a",
     "src/model/geometry.mjs": "6628f76885c40cd8788ac50cf4fdde44cee827472aaea673b16343512e6e2283",
     "src/model/observation.mjs": "a7f5f8d48b331921bbef3ec1b321bf078ba800cf4b4020a76f9b0a235899239c",
-    "src/model/sensors.mjs": "e1cc067189f8f6c5e7b0bec99373647f5bbae8500fc9eabb6ca92518e56a0ce2",
+    "src/model/sensors.mjs": "58bbd6a8b5c82ca2232abf4cf75fe45be5f9ccda8afa15e7193c466bef4ccf27",
     "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
     "src/presentation/capture-review-model.mjs": "b60de6be75b5358b237dfa9e89ad13de67b2a72b8315ee8131a3f4a1c6c41d4c",
     "src/presentation/capture-review.mjs": "44cbcca6712dfc2af91f8d174750c7d462cb0dd6700b6529b39a0feed90ef3b7"
