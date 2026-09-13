@@ -149,7 +149,7 @@ test('script local scopes cannot hide an added reverse consumer or changed brows
     externalImports: [],
     checks: ['a'],
     consumers: browserScopeConsumers(graph, 'scripts/a.mjs'),
-    roots: browserScopeRoots(checks),
+    reachingChecks: browserScopeRoots(checks, graph, 'scripts/a.mjs'),
   };
   const select = () =>
     selectAffectedBrowserChecks({ checks, graph, files: ['scripts/a.mjs'], scopes: [scope] });

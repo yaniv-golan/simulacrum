@@ -29,7 +29,7 @@ test('unit-only documentation readers do not expand browsers, but browser and op
       dependencies: [],
       checks: ['help'],
       consumers: browserScopeConsumers(graph, 'copy'),
-      roots: browserScopeRoots(checks),
+      reachingChecks: browserScopeRoots(checks, graph, 'copy'),
     },
   ];
   const select = (files) => selectAffectedBrowserChecks({ checks, graph, files, scopes });
