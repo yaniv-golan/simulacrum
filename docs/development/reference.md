@@ -112,9 +112,9 @@ These are registered commands and checks, not evidence that they passed.
 | capture-observation-stream | [decodeCaptureEvents](../../src/application/capture-stream.mjs) | invariant-controls |
 | capture-observation-review | [sceneParts](../../src/presentation/capture-review-model.mjs) | invariant-controls |
 | local-browser-scope-safety | [selectAffectedBrowserChecks](../../scripts/browser-selection.mjs) | verification-scope-configuration |
-| verification-resource-window | [withVerificationWindow](../../scripts/verification-window.mjs) | verification-scope-configuration |
+| verification-resource-window | [withVerificationWindow](../../scripts/verification-window.mjs), [validateIntent](../../scripts/verification-window.mjs) | verification-scope-configuration |
 | observable-test-completion | [waitUntil](../../scripts/wait-until.mjs) | verification-scope-configuration |
-| candidate-source-isolation | [captureCandidate](../../scripts/candidate.mjs) | verification-scope-configuration |
+| candidate-source-isolation | [captureCandidate](../../scripts/candidate.mjs), [destinationStillMatches](../../scripts/candidate.mjs) | verification-scope-configuration |
 | private-evidence-boundary | [private dependency forbidden](../../scripts/module-graph.mjs) | verification-scope-configuration |
 | assembly-scenario-partition | [assemblyPartition](../../scripts/assembly-scenarios.mjs) | verification-scope-configuration |
 | native-qualification-controls | [qualifyNative](../../scripts/native-qualification.mjs) | verification-scope-configuration |

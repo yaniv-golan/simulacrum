@@ -365,7 +365,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -3718,11 +3718,15 @@
       "id": "verification-resource-window",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Supported build and verification commands serialize across worktrees on this host, record waiting separately and never infer abandoned process quiescence from age.",
+      "guarantee": "Supported build and verification commands serialize across worktrees on this host, record waiting separately and never infer abandoned process quiescence from age. Owners publish their script, tier, origin and integration destination; contenders observe it in the wait notice and in their window reports.",
       "owners": [
         {
           "path": "scripts/verification-window.mjs",
           "anchor": "withVerificationWindow"
+        },
+        {
+          "path": "scripts/verification-window.mjs",
+          "anchor": "validateIntent"
         }
       ],
       "checks": [
@@ -3737,6 +3741,10 @@
           {
             "path": "test/verification-window.test.mjs",
             "anchor": "contenders wait through partial owner publication and reject malformed published metadata"
+          },
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "window owners publish verification intent and contenders observe it"
           }
         ],
         "negative": [
@@ -3747,6 +3755,10 @@
           {
             "path": "test/verification-window.test.mjs",
             "anchor": "contenders wait through partial owner publication and reject malformed published metadata"
+          },
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "malformed intent is rejected before any owner file is written, including inherited mode"
           }
         ]
       },
@@ -3786,11 +3798,15 @@
       "id": "candidate-source-isolation",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Candidate capture preserves the source index, bytes, deletions and local selection; detected capture drift rejects. Origin edits after capture do not qualify the origin or invalidate the isolated candidate.",
+      "guarantee": "Candidate capture preserves the source index, bytes, deletions and local selection; detected capture drift rejects. Origin edits after capture do not qualify the origin or invalidate the isolated candidate. A branch-pair merge candidate reports at completion whether its named destination still resolves to the pinned commit.",
       "owners": [
         {
           "path": "scripts/candidate.mjs",
           "anchor": "captureCandidate"
+        },
+        {
+          "path": "scripts/candidate.mjs",
+          "anchor": "destinationStillMatches"
         }
       ],
       "checks": [
@@ -3807,6 +3823,10 @@
           {
             "path": "test/candidate.test.mjs",
             "anchor": "candidate preserves exact dirty index"
+          },
+          {
+            "path": "test/candidate.test.mjs",
+            "anchor": "destination drift is detected for named refs and not evaluated for bare commits"
           }
         ]
       },
@@ -4838,6 +4858,10 @@
           {
             "path": "test/merge-ci.test.mjs",
             "anchor": "PR uses event incoming"
+          },
+          {
+            "path": "test/merge-selection.test.mjs",
+            "anchor": "real Git unions both branches and actual candidate including deletions, renames and untracked files"
           }
         ],
         "negative": [
