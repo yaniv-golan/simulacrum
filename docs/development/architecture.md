@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"7aaca91aa5a2aff9bfdbb59c52fbc46c12edb9457e5159daae6af1086c28f154","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"0b1ffb6e74a1ec0a5d8f6d9b5a7071c038997727cd3f09dfeda7bb141d6d0a26","disposition":"still accurate","rationale":"Preserved camera-session ingestion and photo ownership alongside scene persistence/proposals. Added the explicit scene-entry exit from mounted camera viewing, which restores ordinary orbit and keyboard ownership without changing authored parts or physical state."} -->
+<!-- doc-review {"version":1,"fingerprint":"0fbef9b545b591c92cb50fc6bd22e5a4f658bad64c91829a8f9c75408f0844ea","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"cda42e7e178a5a909c27f5d9772be609ad0218bf9b12164cd0e045f15d01026a","disposition":"still accurate","rationale":"The parts browser and part-search module remain the catalogue discovery owners. Added the missing Powered Lamp vocabulary after coverage failed; scene and camera command ownership is unchanged."} -->
 
 
 
@@ -119,7 +119,7 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"ee661498bd881ab297d811dad75c17a3dd7c456c27b8fae8c767e798ff22dd6e","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"932b8ee9d8fcefb294ffd2515289c8cba5bbfd6defaae311670bb01cf6bfc36a","disposition":"still accurate","rationale":"Scene descriptors reuse canonical transforms and contact properties; replacement uses existing core cursor and history ownership. The table continues to identify the actual reusable owners."} -->
+<!-- doc-review {"version":1,"fingerprint":"159da703e316a162c2ee86bef32bad99f0e1ef9cf0aee7c1d6ebbe1e5f985887","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"4338f8b22b495fa85b5a7735c7fc7b8f722b33f118be1772d100723f6b77fd61","disposition":"still accurate","rationale":"The canonical search vocabulary now includes Powered Lamp while catalogue availability and physical properties remain in CATALOG. The table still identifies the correct shared discovery owner."} -->
 
 
 

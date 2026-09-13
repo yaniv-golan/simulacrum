@@ -102,7 +102,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"16ab0edbe3c0dc001e24e013c53417667f9d6f6a3641f10e7a7bb2f778dfa0f2","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"d1f26fcf14af22e5cddfa06137127f34c9da559a98c3f971483b7328be74aa3d","disposition":"still accurate","rationale":"Scene tools retain presentation-only proposals and ordinary core commitment. Fixture uploads now confirm replacement, preserving the existing cancellation and native input requirements."} -->
+<!-- doc-review {"version":1,"fingerprint":"a7ead31834bc48748f0d141f40ec4408ad0cf0a9c5353c550d2d1fe010ea6dc8","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"99d707b7195e25179c74010b4df26e27fb8f7dadad00ed7bec3ac98f9bbe4923","disposition":"still accurate","rationale":"Powered Lamp now follows the documented rule requiring search coverage for every catalogue type. Headlamp and illuminate query controls pass without changing placement, help containment or confirmation lifetimes."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -181,7 +181,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"877239c9602fd5486385f36baabd8c1f7498fdf1c934db4252b4c3fe59ef3145","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"aaf90bcf161377b9739e9e980063f1bde4e8af77ac335412aaf1e8a203a87916","disposition":"still accurate","rationale":"Lamp admission is preserved alongside aggregate scene capacity. Existing lamp power accounting, physical laws and timing requirements are unchanged; scene and camera composition remains outside stepping."} -->
+<!-- doc-review {"version":1,"fingerprint":"37549ff8215d74922be0bad69412d20160664606d268bc693405aa4879f4cb4c","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"2a110998f6948192039c42b2cb2643cd8d1c739339243fc75c545dcb8da012f8","disposition":"still accurate","rationale":"Lamp discovery metadata and query tests have no simulation or power authority. Physical laws, capacity accounting and the existing verification requirements remain unchanged."} -->
 
 
 

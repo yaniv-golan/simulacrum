@@ -4,7 +4,7 @@
     "src/application/workshop-app.mjs": "a5e0f216ac0a97b18308cf5e43509c49c29404335e6125de1ac7ecdd92d044d8",
     "src/presentation/workshop-view.mjs": "56edcae7e5fdc76aa96193e0482883b1c67c484235f9b249a7f41c2f4a9015a4",
     "src/presentation/parts-browser.mjs": "153d01758b040a471eb43074e0be7b35277f7a4fcfed16ab14a17e9320753e42",
-    "src/presentation/part-search.mjs": "7c77626c58a657f97426468e22696e2c8f4ec6e3a1be4bb9c461898bb8df8960",
+    "src/presentation/part-search.mjs": "b4c5568560fa942e6b60149b1e51a18e6d84b3397aa8eb02030bf44380fb4975",
     "src/presentation/part-placement.mjs": "87613e497aa664f702d05cedbef7b19297a115acf497f7b2e70b458be3dc8db5",
     "src/presentation/surface-controls.mjs": "e7c0187ce8f58d3d6da476923fc5a79a22fc09829f46ba6703069f4f16bfbc70",
     "src/presentation/placement-lifecycle.mjs": "02d5fc17f5ada7fe5c60d43c2bd8cc7963dc2ea8e7d0fb7238270fcc7a7f8015",
