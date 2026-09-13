@@ -146,10 +146,10 @@ function decode(input) {
     throw new TypeError('invalid physics snapshot handles');
   return {
     handles: metadata.handles,
-    opened: metadata.opened ?? [],
+    opened: metadata.opened,
     reactions: metadata.reactions,
-    gearState: metadata.gearState ?? [],
-    ropeState: metadata.ropeState ?? [],
+    gearState: metadata.gearState,
+    ropeState: metadata.ropeState,
     ropeWork: metadata.ropeWork,
     configuration: metadata.configuration,
     payload: bytes.slice(12 + size),
@@ -1904,7 +1904,7 @@ export async function createPhysicsWorld(configuration) {
         )
       )
         throw TypeError('invalid rope snapshot readings');
-      const work = decoded.ropeWork ?? ropeWorkLedger([], DT);
+      const work = decoded.ropeWork;
       record(work, Object.keys(ropeWorkLedger([], DT)));
       if (
         (ropeIndices.length && !decoded.ropeWork) ||

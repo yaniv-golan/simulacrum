@@ -210,3 +210,26 @@ for (const which of ['A', 'B', 'bypass'])
       s.dispose();
     }
   });
+
+for (const field of ['opened', 'gearState', 'ropeState', 'ropeWork'])
+  test(`physics envelope rejects null mandatory ${field} without normalizing absent feature state`, async () => {
+    const s = await createSession(configuration('A'));
+    try {
+      s.step(4);
+      const checkpoint = s.checkpoint();
+      s.step(2);
+      s.restore(checkpoint);
+      assert.deepEqual(s.checkpoint(), checkpoint, 'ordinary empty feature state restores exactly');
+      const before = s.checkpoint(),
+        cursor = s.observe().cursor;
+      const bad = structuredClone(checkpoint);
+      editPhysics(bad, (meta) => {
+        meta[field] = null;
+      });
+      assert.throws(() => s.restore(bad), `null ${field} must not become valid empty state`);
+      assert.deepEqual(s.checkpoint(), before);
+      assert.deepEqual(s.observe().cursor, cursor);
+    } finally {
+      s.dispose();
+    }
+  });
