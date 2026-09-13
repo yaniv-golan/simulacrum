@@ -460,9 +460,11 @@ try {
       const samples = await page.evaluate(() => {
         window.advanceTime(2000);
         const values = [];
-        for (let i = 0; i < 180; i++) {
-          window.advanceTime(1000 / 30);
-          if (i >= 60) {
+        // Player frames are 60 Hz (two ticks each); the per-frame budget below is
+        // charged per frame, so batch by frame, not by 1000/30 four-tick chunks.
+        for (let i = 0; i < 360; i++) {
+          window.advanceTime(1000 / 60);
+          if (i >= 120) {
             values.push(window.workshopProbe.readAudio());
           }
         }

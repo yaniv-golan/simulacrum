@@ -51,4 +51,65 @@ for (const [tier, codes] of [
         report.qualification.status,
         tier !== 'final' ? 'NOT_EVALUATED' : code ? 'BLOCKED' : 'PASS',
       );
+      // The tier's window owner declares the candidate's purpose and origin worktree.
+      assert.deepEqual(processes[1].intent, {
+        script: `verify-${tier}.mjs`,
+        tier,
+        origin: captured.origin,
+        head: 'fixture-branch',
+        base: captured.base,
+      });
+      assert.equal(report.destinationStillMatches, 'NOT_EVALUATED');
+      assert.equal(
+        calls.some((row) => row.kind === 'drift'),
+        false,
+      );
     });
+
+test('candidate merge branch pair names its destination, publishes it and routes drift', () => {
+  const child = spawnSync(process.execPath, [fixture, 'merge', '0', 'pair'], { encoding: 'utf8' });
+  assert.equal(child.status, 0, child.stderr || child.stdout);
+  const output = child.stdout.split('\n').find((line) => line.startsWith('TRANSPORT '));
+  assert.ok(output, child.stdout + child.stderr);
+  const { calls, captured, report } = JSON.parse(output.slice(10));
+  assert.deepEqual(report.priority, {
+    base: 'HEAD~1',
+    incoming: 'resolved-feature',
+    destination: 'resolved-target',
+    destinationName: 'target',
+    priorityFiles,
+    priorityProvenance: 'explicit integration paths',
+  });
+  const tierProcess = calls.filter((row) => row.kind === 'process')[1];
+  assert.deepEqual(tierProcess.args.slice(0, 8), [
+    'scripts/verification-window.mjs',
+    'scripts/verify-merge.mjs',
+    '--base',
+    captured.base,
+    '--incoming',
+    'resolved-feature',
+    '--destination',
+    'resolved-target',
+  ]);
+  assert.deepEqual(tierProcess.intent, {
+    script: 'verify-merge.mjs',
+    tier: 'merge',
+    origin: captured.origin,
+    head: 'fixture-branch',
+    base: captured.base,
+    incoming: 'resolved-feature',
+    destination: 'resolved-target',
+    destinationName: 'target',
+  });
+  assert.deepEqual(
+    calls.filter((row) => row.kind === 'drift'),
+    [
+      {
+        kind: 'drift',
+        root: captured.origin,
+        refs: { destination: 'resolved-target', destinationName: 'target' },
+      },
+    ],
+  );
+  assert.equal(report.destinationStillMatches, 'fixture-drift');
+});

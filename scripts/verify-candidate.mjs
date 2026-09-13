@@ -10,7 +10,12 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { captureCandidate, candidateMatchesOrigin } from './candidate.mjs';
+import {
+  captureCandidate,
+  candidateMatchesOrigin,
+  destinationStillMatches,
+  currentBranch,
+} from './candidate.mjs';
 import { assertRuntime } from './runtime-preflight.mjs';
 import { assertVerificationReady } from './verification-preparation.mjs';
 import {
@@ -26,6 +31,7 @@ import {
 import { createTiming } from './verification-timing.mjs';
 import { runProcess } from './run-check.mjs';
 const origin = process.cwd(),
+  originBranch = currentBranch(origin),
   started = performance.now();
 const report = {
   status: 'running',
@@ -83,6 +89,7 @@ try {
       if (options.incoming) {
         options.incoming = scope.refs.incoming;
         options.destination = scope.refs.destination;
+        options.destinationName = scope.refs.destinationName;
       }
     }
     await timing.measure('preflight', () => assertVerificationReady(origin));
@@ -179,6 +186,22 @@ try {
             ...process.env,
             SIMULACRUM_LEAF_LEDGER: ledger,
             SIMULACRUM_VERIFICATION_ATTEMPT: attempt,
+            // Published to window contenders so a competing integration can stack
+            // instead of racing; origin is the integrating worktree, not the candidate.
+            SIMULACRUM_VERIFICATION_INTENT: JSON.stringify({
+              script: `verify-${tier}.mjs`,
+              tier,
+              origin,
+              ...(originBranch ? { head: originBranch } : {}),
+              ...(candidate.base ? { base: candidate.base } : {}),
+              ...(tier === 'merge' && options.incoming
+                ? {
+                    incoming: options.incoming,
+                    destination: options.destination,
+                    destinationName: options.destinationName ?? options.destination,
+                  }
+                : {}),
+            }),
             SIMULACRUM_VITE_CACHE_DIR: join(directory, 'cache', 'vite'),
             MINIFLARE_CACHE_DIR: join(directory, 'cache', 'miniflare'),
           },
@@ -218,6 +241,14 @@ try {
   if (dependencyDigest(candidate.destination) !== installed)
     throw Error('Installed dependencies changed during verification');
   report.originStillMatches = await candidateMatchesOrigin(origin, candidate);
+  // A named destination that moved makes this evidence stale for that integration.
+  report.destinationStillMatches =
+    tier === 'merge' && options.incoming
+      ? destinationStillMatches(origin, {
+          destination: options.destination,
+          destinationName: options.destinationName,
+        })
+      : 'NOT_EVALUATED';
   report.status = report.verification.status;
   report.qualification = report.verification.outcome?.qualification ?? 'NOT_EVALUATED';
   process.exitCode = [0, 2].includes(result.code) ? result.code : 1;
@@ -244,6 +275,7 @@ try {
       directory: report.directory,
       attemptReport: report.attemptReport,
       originStillMatches: report.originStillMatches,
+      destinationStillMatches: report.destinationStillMatches,
       elapsedMs: report.elapsedMs,
     }),
   );

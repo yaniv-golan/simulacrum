@@ -96,7 +96,14 @@ export function mergeChanges(
     git(['merge-base', '--is-ancestor', refs.incoming, refs.head]);
     const changes = integrationChanges(refs, git);
     if (changes.refs.head !== refs.head) throw Error('HEAD changed during merge scope capture');
-    return { ...changes, scopeKind: 'branch-pair', reviewOnlyFiles: [], metadataOnlyFiles: [] };
+    // Keep the destination as supplied: a ref name lets completion detect drift.
+    return {
+      ...changes,
+      refs: { ...changes.refs, destinationName: destination },
+      scopeKind: 'branch-pair',
+      reviewOnlyFiles: [],
+      metadataOnlyFiles: [],
+    };
   }
   const lists = [
     git(['diff', '--no-renames', '--name-only', '-z', refs.base, '--']),

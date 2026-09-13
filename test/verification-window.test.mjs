@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -242,4 +242,83 @@ await assert.rejects(withVerificationWindow(() => assert.fail('must not enter'),
 `,
   );
   await promisify(execFile)(process.execPath, [script, root], { timeout: 5000 });
+});
+
+test('window owners publish verification intent and contenders observe it', async (t) => {
+  const { withVerificationWindow } = await import('../scripts/verification-window.mjs');
+  const directory = join(mkdtempSync(join(tmpdir(), 'window-intent-')), 'window');
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const intent = {
+    script: 'verify-merge.mjs',
+    tier: 'merge',
+    base: 'b',
+    incoming: 'i',
+    destination: 'd',
+    destinationName: 'int1',
+    origin: '/worktrees/perf',
+  };
+  const seen = [];
+  const owner = withVerificationWindow(
+    async () => {
+      await new Promise((r) => setTimeout(r, 300));
+      return 'owner';
+    },
+    { directory, inherit: false, intent },
+  );
+  await new Promise((r) => setTimeout(r, 50));
+  const contender = withVerificationWindow(async () => 'contender', {
+    directory,
+    inherit: false,
+    pollMs: 20,
+    onWait: ({ owner }) => seen.push(owner),
+  });
+  assert.equal((await owner).value, 'owner');
+  const result = await contender;
+  assert.equal(result.value, 'contender');
+  assert.deepEqual(result.contenders[0].intent, intent);
+  assert.ok(seen.some((o) => o?.intent?.destinationName === 'int1'));
+});
+
+test('malformed intent is rejected before any owner file is written, including inherited mode', async (t) => {
+  const module = await import('../scripts/verification-window.mjs');
+  assert.equal(typeof module.validateIntent, 'function');
+  const directory = join(mkdtempSync(join(tmpdir(), 'window-intent-')), 'window');
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  await assert.rejects(
+    () =>
+      module.withVerificationWindow(async () => 1, {
+        directory,
+        inherit: false,
+        intent: { tier: 42 },
+      }),
+    /intent/,
+  );
+  assert.equal(existsSync(directory), false);
+  assert.throws(() => module.validateIntent({ nope: 'x' }), /intent/);
+  assert.throws(() => module.validateIntent({ tier: '' }), /intent/);
+  assert.throws(() => module.validateIntent({ origin: '/a\nfake notice line' }), /intent/);
+  assert.throws(() => module.validateIntent({ origin: 'x'.repeat(1025) }), /intent/);
+  assert.deepEqual(module.validateIntent({ head: 'codex/x', origin: '/w/tree' }), {
+    head: 'codex/x',
+    origin: '/w/tree',
+  });
+  assert.throws(() => module.validateIntent(['tier']), /intent/);
+  assert.equal(module.validateIntent(undefined), undefined);
+  assert.deepEqual(module.validateIntent({ tier: 'local' }), { tier: 'local' });
+  // Inherited mode takes the early-return path; it must validate too.
+  const previous = process.env.SIMULACRUM_VERIFICATION_WINDOW;
+  process.env.SIMULACRUM_VERIFICATION_WINDOW = JSON.stringify({
+    directory,
+    token: 't',
+    pid: process.pid,
+  });
+  t.after(() => {
+    if (previous === undefined) delete process.env.SIMULACRUM_VERIFICATION_WINDOW;
+    else process.env.SIMULACRUM_VERIFICATION_WINDOW = previous;
+  });
+  await assert.rejects(
+    () => module.withVerificationWindow(async () => 1, { directory, intent: { tier: 42 } }),
+    /intent/,
+  );
+  assert.equal(existsSync(directory), false);
 });

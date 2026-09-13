@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"529c6637e813fa2def4d75d272efd444b07df41cf299ce7a522e177344bb0160","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"3a2dd0f827e6a9db678906d55907946e81d653abe3a0d3cb8bb23de73a4a4e59","disposition":"still accurate","rationale":"The entrypoint still requires canonical owner discovery and public commands. Expanded release tests introduce no new production owner, layer or reset policy; Node setup and recipe selection remain unchanged. Gap closure changes tests only: restored traces and recorded replay, explicit articulated/external contacts, density-volume material response, and Try again through the existing Build/Run orchestration. Production source is byte-identical to the preceding candidate."} -->
+<!-- doc-review {"version":1,"fingerprint":"9d7754e0f253e1ae76264d93cfb871fce38e8626f05932345c12f61311f47097","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"71522f5937aecb605518b1bd7867cfc7063f306cd62cd5c7be2d92c4e2751298","disposition":"still accurate","rationale":"AGENTS.md now qualifies that the wait notice names tier, branch, destination and origin only when the owner is a candidate; the guide's entry points and the developer-guidance/policy split are unchanged."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"7f7e7fdde1e6dba38aaf26f71b44c90911c8bdf3a420909565021cbdcd0b5282","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"57c2563bf33a1318e6bb8782d59a6033d4518c05ef29966487dca85be5a014d4","disposition":"still accurate","rationale":"Only the linked playtesting remote-setup explanation changed, to describe the shared dialog close control. Verification tiers, commands, window policy and evidence requirements described here are untouched by a presentation-only dialog header change."} -->
+<!-- doc-review {"version":1,"fingerprint":"6371835a3688f76cc7182aaffa271d881a837a1f910537bddadf0f075afe8967","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"0c33b7c3f85b808fc1621b760325c8f67b2148d32c6233ad65627880e0f7455d","disposition":"updated","rationale":"destinationStillMatches now distinguishes UNRESOLVED (the name no longer resolves, normal after a stacked branch is deleted once it fast-forwarded; confirm main against priority.destination instead) from false (the destination moved); the retained owner intent also carries the integrating branch. Completion tiers and evidence rules are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -118,6 +118,19 @@ the source checked at that invocation, not later edits or today's checkout. Comp
 source/build identity with the candidate being claimed. Registration of a check is not
 an executed pass, and a feature assigned to the current milestone is not qualification.
 
+Stacked integrations: when another candidate is already verifying against the same
+destination, merge that integration branch instead of `main` and pass its branch name as
+`--destination` with the same `--base`; the later candidate then lands unchanged once the
+earlier one fast-forwards. A branch-pair merge candidate records the supplied name as
+`priority.destinationName` and, at completion, `destinationStillMatches`: true, false (the
+destination moved, so the evidence no longer applies to that integration), UNRESOLVED (the
+name no longer resolves — normal after a stacked branch is deleted once it fast-forwarded;
+confirm `git rev-parse main` equals `priority.destination` instead) or NOT_EVALUATED (a
+bare commit was supplied). If the earlier integration is revised after being stacked on,
+re-merge its head and re-verify. A candidate that waited on another window owner retains
+that owner's declared intent (tier, branch, destination, origin worktree) under
+`windowReports[].value.contenders[].intent`.
+
 Install browser dependencies once with `npx playwright install chromium chrome`.
 Linux tab capture needs Xvfb. Follow [playtesting](playtesting.md#remote-setup) for recordings and
 human evidence. Run the required tier on the same final source; do not reuse an old green
@@ -142,7 +155,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"7be5b9c6b0e6a1740fd366f9fe2cccfbf97684d61c0cb61747d6b4721ec0defe","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"5d0746cab7378029903c46ef20cd268155ef15b097cf4653cbbb3a58f93fae0a","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch (e964001) with main at ab3d799: the regenerated reference now lists the completed-state-reuse and completed-draw-order invariants, the render lifecycle probe and submission tracker owners next to main's mechanicalSound entries; the regenerate, section-specific review, batch submission and exact-source closure workflow described here is unchanged and no review was accepted automatically."} -->
+<!-- doc-review {"version":1,"fingerprint":"7d99099ddbcf6b5b094106144c976a761491f953e84a8085bdc101935da1fe08","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"82b9f75cb6cfa4e55d8b71a2dd313465c87e1b39e90c527dbc3041d124a1c194","disposition":"still accurate","rationale":"Integration of the window-intent/destination-drift branch with main: the regenerated reference now lists both the performance work's render-lifecycle and completed-state owners and this branch's validateIntent and destinationStillMatches owners; the regenerate, section-specific review and exact-source closure workflow is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -283,7 +296,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"af34eccb7c3e968daefb485593eb13b3c13c18ad78563f3d4b48244561a3a0d1","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"abdd241a91a7701f09feabb06cd4c8e0b82d67dc8a143540ee55c57f982f446e","disposition":"still accurate","rationale":"Only the four consumer-closure digests for browser-evidence, app-fingerprint, source-identity and module-graph changed, because scripts/verify-ball-browser.mjs (a reachable workshop root) now drives its sound phases in frame-sized advanceTime batches; the proposal was reviewed and applied with 188 passing witnesses. Root inventory, opaque reads, check classifications, selection and shared-window policy are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"bed5b7a07ce306e7b58f7c302737f7326b0dc70b38bfd9cc08e6888bf53a648c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"4ea05d5de6efdcc03c97986c67fb50dde5e320e5a845a7d13f5df1ba7a10be3e","disposition":"still accurate","rationale":"Thirteen metadata scope rows refreshed hashes after verify-remote-playtest changed its feedback-phase motor placement (snap off, explicit coordinates, part-count assertion); the verifier's own reads, dependencies, external imports, consumers, roots and checks were verified unchanged in the proposal and the review was applied with passing invariant-control witnesses. Selection, scheduling, exclusivity and coverage rules are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -483,7 +496,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"a9320f97cbd8fb1646e9641ee0697c3e3d6264594a4e5cb273a5c7b5ee0a890c","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"29e67b15f7e515f4d320d6a92655ce1d1e73a6946ce1bced76fc90f54f65a113","disposition":"still accurate","rationale":"verification-window still uses private temporary metadata plus same-directory rename, inherited owner tokens, strict non-age-based recovery and distinct 30-minute completion/native-qualification versus five-minute focused waits. The Load Cell native qualification uses that existing completion classification; three new exclusive browser journeys use ordinary focused/browser admission. The package pin and reaction implementation do not change queue policy, owner identity, process cleanup, measured execution budgets or the distinction between coordination and atomic source installation. Current main's wait/status and recovery behavior are preserved. Revalidated after final thumbnail scheduling and spring witness closure: the new timer/DOM/cache owner and browser-only induction do not alter this section’s previously reviewed ownership, verification or evidence requirements."} -->
+<!-- doc-review {"version":1,"fingerprint":"2793d8a4b6ef075cc754a62875d7d3a702b7682af29ddf525f488807113c7993","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"e9aa05c5267cb320210f311c7e97c756290dfa13145c8e03b9152595720f3ca9","disposition":"updated","rationale":"The wait notice now also names the owner's integrating branch and the stacking hint names it; intent values are validated as single-line printable strings. Serialization, inheritance, wait limits, admission marking and recovery are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -492,7 +505,12 @@ canonical report non-green before runtime checks or lock waiting; failed admissi
 replaces an older pass even when no child starts. Local, merge, final and native-qualification completion
 CLI runs wait up to thirty minutes. Focused unit/browser probes, builds and standalone
 CI wait up to five minutes; they retain the same serialization. The CLI prints the
-owner PID and elapsed/maximum wait on contention and every thirty seconds thereafter.
+owner PID, its declared intent (script or completion tier, integration destination and
+origin worktree when a candidate declared them) and elapsed/maximum wait on contention
+and every thirty seconds thereafter. A candidate that waited on an owner retains that
+owner's intent in its report under `windowReports[].value.contenders[].intent`. When
+the owner is a merge candidate for the same destination, stack on that integration
+branch instead of racing it (see [stacked integrations](#verify-a-change)).
 Queue time is separate from each check's execution budget. The completion wait covers the
 measured completion duration; it is not a FIFO queue and does not guarantee admission
 under an unbounded stream of contenders. Queued work records
@@ -527,7 +545,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"ab900a38a29bf38972695b4ad9cd61a8562ada6d66463b04db91b38fb702d1ab","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"1cc05824eb3563e451a31b267868fc491f7b8dfd7a0ff0b28ca2f3c4f457b356","disposition":"still accurate","rationale":"The manifest change is limited to regenerated consumer-closure digests after the ball check edit; candidate capture, dependency validation, source identity, resume rules and the two-branch merge comparison (--base 51f7498 --incoming e964001 --destination ab3d799) that this integration must pass are unchanged. The prior attempt's verify-ball-browser failure was a main-side check defect, not a candidate-capture issue."} -->
+<!-- doc-review {"version":1,"fingerprint":"a353301317683638f824cfcd3d26502aae820e1c098c2a59ca8b321827780fa6","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"fcde52deeafb3685545e50b006f0ead969f8d6ce853faf6f7adeebb687f241b5","disposition":"still accurate","rationale":"The manifest change is a source/consumer hash refresh applied through browser:scopes with witnesses; capture, isolation, attempt ownership, origin matching and the registry preflight that gates capture behave as documented."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

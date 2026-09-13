@@ -53,6 +53,33 @@ export function verificationWaitOptions(script) {
       : 300000,
   };
 }
+const INTENT_FIELDS = [
+  'script',
+  'tier',
+  'base',
+  'incoming',
+  'destination',
+  'destinationName',
+  'origin',
+  'head',
+];
+/** Owner-declared purpose published to contenders: printable single-line strings
+ * (paths and ref names), never environment values. */
+export function validateIntent(intent) {
+  if (intent === undefined) return undefined;
+  if (!intent || typeof intent !== 'object' || Array.isArray(intent))
+    throw Error('window intent must be an object');
+  for (const [key, value] of Object.entries(intent))
+    if (
+      !INTENT_FIELDS.includes(key) ||
+      typeof value !== 'string' ||
+      !value ||
+      value.length > 1024 ||
+      /\p{Cc}/u.test(value)
+    )
+      throw Error(`window intent field ${key} must be a short printable string`);
+  return { ...intent };
+}
 /** Cooperative host-wide window; never treats elapsed time as proof an owner stopped. */
 export async function withVerificationWindow(
   execute,
@@ -62,10 +89,12 @@ export async function withVerificationWindow(
     pollMs = 100,
     inherit = true,
     onWait = () => {},
+    intent,
   } = {},
 ) {
   if (!Number.isFinite(waitMs) || waitMs <= 0 || !Number.isFinite(pollMs) || pollMs <= 0)
     throw Error('positive window deadlines required');
+  const publishedIntent = validateIntent(intent);
   const started = performance.now(),
     contenders = new Map();
   const inherited = inherit && process.env.SIMULACRUM_VERIFICATION_WINDOW;
@@ -90,6 +119,7 @@ export async function withVerificationWindow(
     startedAt: new Date().toISOString(),
     directory,
     cwd: process.cwd(),
+    ...(publishedIntent ? { intent: publishedIntent } : {}),
   };
   let nextNoticeMs = 0;
   while (true) {
@@ -105,6 +135,7 @@ export async function withVerificationWindow(
         pid: current.pid,
         startedAt: current.startedAt,
         cwd: current.cwd,
+        ...(current.intent ? { intent: current.intent } : {}),
       });
       if (!alive(current.pid))
         throw Error(
@@ -230,6 +261,18 @@ if (
     try {
       admission('running');
       assertRuntime();
+      const intent = process.env.SIMULACRUM_VERIFICATION_INTENT
+        ? validateIntent(JSON.parse(process.env.SIMULACRUM_VERIFICATION_INTENT))
+        : { script: basename(script) };
+      const describe = (owner) => {
+        if (!owner) return 'unpublished';
+        const declared = owner.intent ?? {};
+        const what = declared.tier ?? declared.script ?? 'no declared intent';
+        const where = declared.origin ?? owner.cwd ?? 'unknown cwd';
+        const target = declared.destinationName ?? declared.destination;
+        const branch = declared.head ? ` on ${declared.head}` : '';
+        return `PID ${owner.pid}, ${what}${branch}${target ? ` → destination ${target}` : ''}, ${where}`;
+      };
       const run = () => {
         childStarted = true;
         return runProcess(process.execPath, [script, ...args], {
@@ -241,9 +284,10 @@ if (
         ? { value: await run(), queueMs: 0, runMs: 0, contenders: [], inherited: false }
         : await withVerificationWindow(run, {
             ...verificationWaitOptions(script),
+            intent,
             onWait: ({ elapsedMs, waitMs, owner }) =>
               console.error(
-                `Waiting for verification window (${Math.round(elapsedMs / 1000)}s of ${waitMs / 1000}s limit; owner PID ${owner?.pid ?? 'unpublished'}). Cancel to return to editing.`,
+                `Waiting for verification window (${Math.round(elapsedMs / 1000)}s of ${waitMs / 1000}s limit; owner ${describe(owner)}). ${owner?.intent?.destination ? `If you are integrating into the same destination, stack on ${owner.intent.head ?? 'that integration branch'} instead of racing it. ` : ''}Cancel to return to editing.`,
               ),
           });
       Object.assign(report, {

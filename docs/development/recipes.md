@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"a27e40de4a04e731ab921758d1a484666dc29a61f004d91a35474cfaa0ba71b3","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"37c3d7abe41e4217be22c4407bc02073f19d7ae02b6801d6487eb3bf14c3c55d","disposition":"still accurate","rationale":"scripts/verify-ball-browser.mjs changes only how its sound phases advance the clock (30/60/90 batches of 1000/60 ms, identical tick totals through session.advanceTime's millisecond accumulator); no solver setting, step order, checkpoint byte, contact reader or physics-door behavior changes, and the rolling body/mesh agreement assertions read the same completed state. The manifest delta is regenerated scope digests only."} -->
+<!-- doc-review {"version":1,"fingerprint":"f4ca9b868b9608bd69119c98428d0c92c94d5a83a84fc9e374e08a7770f26df4","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"0590bb543ad110b2e1cea6f30e34e197d276908c49d43e9682d512860e3e56e3","disposition":"still accurate","rationale":"The remote-playtest verifier now authors its feedback-phase motor at an explicit free point instead of a snap-dependent catalog placement, and the manifest carries the resulting hash refresh; no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

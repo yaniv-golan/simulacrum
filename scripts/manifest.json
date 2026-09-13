@@ -3744,11 +3744,15 @@
       "id": "verification-resource-window",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Supported build and verification commands serialize across worktrees on this host, record waiting separately and never infer abandoned process quiescence from age.",
+      "guarantee": "Supported build and verification commands serialize across worktrees on this host, record waiting separately and never infer abandoned process quiescence from age. Owners publish their script, tier, origin and integration destination; contenders observe it in the wait notice and in their window reports.",
       "owners": [
         {
           "path": "scripts/verification-window.mjs",
           "anchor": "withVerificationWindow"
+        },
+        {
+          "path": "scripts/verification-window.mjs",
+          "anchor": "validateIntent"
         }
       ],
       "checks": [
@@ -3763,6 +3767,10 @@
           {
             "path": "test/verification-window.test.mjs",
             "anchor": "contenders wait through partial owner publication and reject malformed published metadata"
+          },
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "window owners publish verification intent and contenders observe it"
           }
         ],
         "negative": [
@@ -3773,6 +3781,10 @@
           {
             "path": "test/verification-window.test.mjs",
             "anchor": "contenders wait through partial owner publication and reject malformed published metadata"
+          },
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "malformed intent is rejected before any owner file is written, including inherited mode"
           }
         ]
       },
@@ -3812,11 +3824,15 @@
       "id": "candidate-source-isolation",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Candidate capture preserves the source index, bytes, deletions and local selection; detected capture drift rejects. Origin edits after capture do not qualify the origin or invalidate the isolated candidate.",
+      "guarantee": "Candidate capture preserves the source index, bytes, deletions and local selection; detected capture drift rejects. Origin edits after capture do not qualify the origin or invalidate the isolated candidate. A branch-pair merge candidate reports at completion whether its named destination still resolves to the pinned commit.",
       "owners": [
         {
           "path": "scripts/candidate.mjs",
           "anchor": "captureCandidate"
+        },
+        {
+          "path": "scripts/candidate.mjs",
+          "anchor": "destinationStillMatches"
         }
       ],
       "checks": [
@@ -3833,6 +3849,10 @@
           {
             "path": "test/candidate.test.mjs",
             "anchor": "candidate preserves exact dirty index"
+          },
+          {
+            "path": "test/candidate.test.mjs",
+            "anchor": "destination drift is detected for named refs and not evaluated for bare commits"
           }
         ]
       },
@@ -4864,6 +4884,10 @@
           {
             "path": "test/merge-ci.test.mjs",
             "anchor": "PR uses event incoming"
+          },
+          {
+            "path": "test/merge-selection.test.mjs",
+            "anchor": "real Git unions both branches and actual candidate including deletions, renames and untracked files"
           }
         ],
         "negative": [
@@ -7009,7 +7033,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
+      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -7018,7 +7042,7 @@
       "consumers": [
         "scripts/verify-cloud-playtest.mjs"
       ],
-      "sourceSha256": "a638bb5902804e31610ad59db3602cf43f7bbc3323e5c9116218c96e263bc9d8",
+      "sourceSha256": "fe429990f4e7aae2eaaa35e4b965cc3b6b2f9479bcd87fe582b65a2343a203d5",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -7061,7 +7085,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "ca4f63e65e42fbd85d61cc558c240f3e319b4c64bd8a5371738b906920cfe14c",
+      "consumerSourceHash": "196c4bb19b75bf1a0a5b7df34d5b6441a3420c167eeea2d8dda8e98dd9652fbe",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -7164,7 +7188,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "ca4f63e65e42fbd85d61cc558c240f3e319b4c64bd8a5371738b906920cfe14c",
+      "consumerSourceHash": "196c4bb19b75bf1a0a5b7df34d5b6441a3420c167eeea2d8dda8e98dd9652fbe",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7315,7 +7339,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "d001f882f33372194934ba3d295c86a3323048e9e95655a8e93f1f2e5d36ed59",
+      "consumerSourceHash": "3e9fbea99f3d7eab017bef248e76d0a84e2cb8edec2467f7fe0abe657a93ef03",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7535,7 +7559,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
+      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -7600,7 +7624,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
+      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -7659,7 +7683,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
+      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -7690,7 +7714,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
+      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -7831,7 +7855,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "5e382c3a91be0f38314a836a9ffbc5edb2f5f67ea06b4aee8a20da610749ae10",
+      "consumerSourceHash": "926771a7016cd74ef6d5523f940d8859a67b5a4a7a5c518343f9bd32c6eeb15a",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -7920,7 +7944,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "ca4f63e65e42fbd85d61cc558c240f3e319b4c64bd8a5371738b906920cfe14c",
+      "consumerSourceHash": "196c4bb19b75bf1a0a5b7df34d5b6441a3420c167eeea2d8dda8e98dd9652fbe",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -8171,7 +8195,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
+      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -8358,7 +8382,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d"
+      "consumerSourceHash": "e300204b2cc563b9b464e0c727a1117ce253cb3a75c41a475eda805c1e9ec4d7"
     },
     {
       "entrypoint": "scripts/playtest/feedback-node.mjs",
@@ -8428,7 +8452,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "5e382c3a91be0f38314a836a9ffbc5edb2f5f67ea06b4aee8a20da610749ae10"
+      "consumerSourceHash": "926771a7016cd74ef6d5523f940d8859a67b5a4a7a5c518343f9bd32c6eeb15a"
     },
     {
       "entrypoint": "scripts/verify-feedback-flow.mjs",
