@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"2a324fb38be86e3e4e476b536f6e5b17a9f594b7eb8cdc9d528c1d17330199ab","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"e86bae064329300193625e3c364343a8e69c763769b81eff833e42cb825a6b0e","disposition":"updated","rationale":"Integrated camera exposure, bounded gallery, optical renderer and feedback screenshot ownership into the current catalog and shared mesh architecture. Added completed rope geometry with selection disabled; catalog placement exits camera view before showing its ordinary preview."} -->
+<!-- doc-review {"version":1,"fingerprint":"0eda4f29305dc3b125e40025f476e60a2844192251be7444600c68e665b99679","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"f0dbbee121aa05a03862fae3967bdd44b483baf0c505dd3a52a2c0b2a4347371","disposition":"still accurate","rationale":"Lamp adds ordinary compiler power descriptors, telemetry, selected controls and a view composed by the canonical part-mesh owner. Existing application ownership, released constraints and Rope pathways remain intact. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. The [parts browser](../../src/presentation/parts-browser.mjs#source) owns discovery, [search vocabulary](../../src/presentation/part-search.mjs#source) ranks available parts, and [part placement](../../src/presentation/part-placement.mjs#source) confirms click, touch and drag proposals through cursor-guarded placement, delegating mounting geometry and controls to the existing surface owner. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. [Rope controls](../../src/presentation/rope-controls.mjs) author a tensile connection between two surface attachments; [rope compilation](../../src/model/rope.mjs) appends distributed massive nodes. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -105,7 +105,7 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"ba23f3b006f6be2fb75d2b440a756e316f80e83c47d6acb0ee1245b0aad86958","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"b605a72f76c406db57a0630b90bc229d6f1d8384b91b97bc914ba6579712a717","disposition":"still accurate","rationale":"The shared part-mesh owner retains main appearance and now draws the camera lens. Optical ropes reuse createRopeView with completed endpoints and two-sided material; exposure state remains solely createCameraState. Existing model placement, material and power resolvers remain authoritative."} -->
+<!-- doc-review {"version":1,"fingerprint":"31015de4b9ce90fcb1d49faad3a65603eddcb368b14747917035225339361d89","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"80399fa1fed104d94a4fa94b69365bb874bd24d915c729adf3c1f8e65c1c89e9","disposition":"updated","rationale":"Documented the lamp driver and common circuit ledger including coupler heat and linear capped PWM. Exact passive re-solve is explicitly limited to lamp/sensor-only circuits; existing geometry and release owners remain authoritative. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 | Decision                                              | Production owner                                                                                                                                                                                                                                             | Example consumer                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
@@ -152,12 +152,24 @@ they do not imply stored spring energy for a powered guide. Off or power loss re
 active drive without a clutch. Native stops remain passive constraints.
 
 A cell can supply multiple rotary and linear drives; multiple cells on one circuit remain unsupported.
-Shared motor torque and powered sensor-load accounting and the completed energy ledger belong to simulation.
+Shared motor torque, powered sensor loads and lamp delivery accounting belong to simulation.
+The [lamp ratings](../../src/model/lamps.mjs#source) bound eight authored lamps at 10 W each.
+[Power](../../src/simulation/power.mjs#symbol=createPowerNetwork) uses a source-rating-adaptive
+resistive driver: conductance is requested watts divided by max(24 V, source nominal
+voltage) squared. Droop and shared current limiting reduce delivery. Completed flux is
+100 modeled lm per delivered watt; the cumulative circuit ledger counts lamp delivery
+once alongside cell heat and other loads. Receiver wiring replaces the default command
+of one; disabled, zero and negative commands request zero. Initial lamps are unstepped
+and dark; restored completed records reconcile sources, tick and circuit accounting.
+Instantaneous lamp readings also obey the common bus voltage, driver-current ceiling
+and source droop/current bounds. Source draw includes coupler current and motor PWM current, including the linear speed cap. Coupler heat enters the cumulative ledger once. Passive
+lamp/sensor-only circuits also match the limited resistive solution reconstructed
+from completed draw and remaining charge; an unbounded driver cannot report false darkness.
 Ground contact and workshop motion are not Course qualification.
 
 ## Shared sensing and behavior authoring
 
-<!-- doc-review {"version":1,"fingerprint":"46642b0c2c8801ecd4672192ab357a20d0c6a82365f40cc8af1eac75209ca251","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"4107582e85aa65ccafb1a09dabd97688d3d7a237ad653e3c3b65eba4548b3f47","disposition":"updated","rationale":"Camera uses funded sensor supply but has no numeric image channel. Preserved current main controller read scoping, prior-completed sampling and ordinary receiver wiring; camera images remain application destinations outside program inputs."} -->
+<!-- doc-review {"version":1,"fingerprint":"5f61a74caca75f7078006a739273cc3def8d0f5602dd700d7b795d597ad7a175","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"b3bb4e085eed7be3a7eb3c8191688d0ff7c7124678093e334c4c12c542a94f3c","disposition":"still accurate","rationale":"Lamp and coupler consumers use the existing receiver arbiter. Completed sensor sampling, prior-tick controller inputs, teaching history and diagnostic ownership are unchanged. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

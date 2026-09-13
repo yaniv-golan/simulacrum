@@ -131,7 +131,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"052264e2902d4c4d3350dc878cd2ff555ccf76bb78ca5f618e56e559bd84c178","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"4b20eb13be23e2903635dc91250b8b5cbf9bc301ddff542e2dd4d99e639937b7","disposition":"still accurate","rationale":"Generated discovery now includes camera exposure, image ownership and completed rope optical controls. Regeneration and separate section reviews still precede exact candidate capture."} -->
+<!-- doc-review {"version":1,"fingerprint":"333b17ce4805e72697e6bd4656ab06b1b95540b2454f08a018e95d77c1f603db","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"9d9adf07c20cb2865e0c06f09ef015b1d7bb949ac01a7c1e2fc3f22b290a870b","disposition":"still accurate","rationale":"Generated reference adds the lamp catalog row; the prepare, individual review and structural check sequence remains unchanged. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -272,7 +272,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"4bcaf4f709f958d8737a962ef18101dfd7efb0845a4f67a384b1b5925f9f8670","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"defe68985fc16862506d7daf25956f8264bc2d27c1cb34f6d672ea232aba3098","disposition":"still accurate","rationale":"The combined manifest retains current main scope policy and adds camera checks. Root hashes and consumer ordering are refreshed through reviewed proposals and mandatory witnesses, without changing opaque-read exclusions or deadlines."} -->
+<!-- doc-review {"version":1,"fingerprint":"b2f3ba35e66a73aa513fbba3b36dbda30c861367c393bbe4e5edfd901ab37d9c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"1a0fe8d19d2bd7936d2f34af37a2d8a31d1e144ef0f02148524228fc8ff00419","disposition":"still accurate","rationale":"Two lamp browser checks extend registered roots. Selection, scope witnesses, parallel admission and failure retention mechanisms are unchanged; registry refresh remains pending and is not asserted to pass. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -514,7 +514,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"a2694ca3f635f3fcc8c2559e54825ca03f8ef7f8563eb45c79f524484d384a26","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"f77eec7011c8f8ba0f8f01781d42aae3e3574dbff75dddbaebe1dcaa8d20f0e6","disposition":"still accurate","rationale":"The camera and main deltas require a combined candidate with their common ancestor and both incoming and destination references. Current candidate isolation, source stability, dependency identity and full merge admission remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"4ec79849c4718143a054033a12abbf8ecd57d19b749b6805899a8a32b9d7686c","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"aabd898b0cfba11464fb56b2e56115329f798a87ccd1e8dc85ddff331e0a15a2","disposition":"still accurate","rationale":"Lamp catalog and schema bytes are captured by the existing candidate mechanism. Isolation, integrity and final-source verification requirements remain unchanged. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

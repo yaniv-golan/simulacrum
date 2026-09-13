@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"97fc0d725c88b8d65b0c18f8ce2e6116b18a6fd1fced9393f1d7c3daf3c3a6bc","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"55b173210d933a12385fea7900188b8777c7649ec2e80890afe60dbc8705d43a","disposition":"still accurate","rationale":"Camera integration adds no lesson or permanent catalog panel. Existing mounting help suffices; discoverability and hidden placement are repaired directly, preserving the no-entry admission decision and main requested-content lifecycle."} -->
+<!-- doc-review {"version":1,"fingerprint":"35a10d2f91701fb89acddca851f1e6c8952e0a0ca1a047355c74d2c71be6c5c2","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"558e0bb91329887fcb2122cd390332e890c067b2c0062384bd17a57250314c65","disposition":"still accurate","rationale":"No learning entry was added. The selected lamp help extends existing power and receiver teaching without a new persistent surface. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"b70f3a75543675412002d123452b183ef4afe520e75925f347e8e36af3f7485e","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"0088037bdd63f352a0c39094aecf773836d7ad76f9500b24153f3ca65ece905b","disposition":"updated","rationale":"Preserved main search/category, placement-preview, footer feedback and content lifecycles. Added camera controls/gallery, Sensors discovery, paused status and explicit return to workshop view when catalog placement starts."} -->
+<!-- doc-review {"version":1,"fingerprint":"20e82f8128477638c7d74c649803dea2fe6d7b763e5872d1c4c4099af07ceb06","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"6c60ed886d0c60cd282ff32f3610899e463be7475c049f97d25b832c76f9e202","disposition":"updated","rationale":"Lamp is discovered through the current searchable catalog; its selected light controls and receiver help coexist with the requested camera view and temporary gallery. Neither addition creates a permanent lesson surface."} -->
 
 
 
@@ -395,6 +395,16 @@ They sit beside one another where space allows and stack on narrower workbenches
 with independently scrollable contents and a reachable controls disclosure. The shared
 area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
+
+Powered Lamp uses the searchable parts catalog, ordinary surface mounting and power/signal wiring.
+Its selected inspector owns Light color, Brightness and Beam spread in Build, with
+actual input, requested/delivered watts and modeled light output in Run/Paused.
+Black tint warns that output is visually dark while consuming power. The existing
+requested part help explains receiver replacement of default-on behavior, weak supply,
+restart and the eight-lamp/no-shadow rendering limit. These controls leave with selection,
+displace no unique action and add no permanent panel. Learning admission is **no entry**:
+existing power and receiver explanations teach the same connection concept; contextual
+lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
 <!-- doc-review {"version":1,"fingerprint":"8cd809f7df50a2756584adb373b1446ee5f0773393e031d58eabd495940824a7","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"ccf3dc2d1c0902149632a9ecb634fb90df1930aa84026d268b5757897a7c4f6c","disposition":"still accurate","rationale":"Retained one source-bound section receipt after conflict resolution. Camera placement, optics and feedback need rendered verification within the full merge tier; this provides no target-player acceptance or milestone qualification."} -->

@@ -1,14 +1,14 @@
 {
   "version": 1,
   "dependencies": {
-    "src/presentation/workshop-view.mjs": "b6f19c5ec25ed1076c2e1f7a7b02cddf7bf8b120dd966f194db998775ee61053",
+    "src/presentation/workshop-view.mjs": "aa116d7846a5dda7e5f3e67fa189cd039dbc74499ee876f1775130fdf48962b2",
     "src/presentation/workshop.css": "b4d7ff1d3be1bbe16c0b49d8b4c707a11d7083275165d1d985c3632f8c4adc56",
     "src/presentation/parts-browser.mjs": "153d01758b040a471eb43074e0be7b35277f7a4fcfed16ab14a17e9320753e42",
     "src/model/boundaries.d.ts": "901105eee561938d3f477c6ce3857b18b0a894ad19e3761960bd7b97b60a662b",
-    "src/model/catalog.mjs": "8b5e5b348022ccdd2de7ce135b2ea5f8150322638158463285e95743b26416b3",
+    "src/model/catalog.mjs": "c6646b0d01f327e652af74e460fd3e2dc4829250ee8e86b82d3812d8e4e688fd",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",
     "src/model/environment.mjs": "2409601431d8919540401bba53335b26f14d058327a4ec16cdfc8edfd3732dbf",
-    "src/model/generated/blueprint-types.d.ts": "4e124508760b083d9fa24fdfbde11afc952a0c6554ced6c341ffda4bdc3ea6fc",
+    "src/model/generated/blueprint-types.d.ts": "a189f2c7a59069247ef34f39b52bd8366d247848a565590cd963ff19cc79a339",
     "src/model/geometry.mjs": "6628f76885c40cd8788ac50cf4fdde44cee827472aaea673b16343512e6e2283",
     "src/model/observation.mjs": "a7f5f8d48b331921bbef3ec1b321bf078ba800cf4b4020a76f9b0a235899239c",
     "src/model/rope.mjs": "1d67607e3649112959167a0559e32f302be2e8b043903f7eca78b98065dd7e84",
