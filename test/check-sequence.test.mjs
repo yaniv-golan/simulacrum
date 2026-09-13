@@ -78,7 +78,7 @@ test('bounded browser workers overlap only admitted checks and drain before excl
       [],
       () => {},
       () => {},
-      { workers: 3 },
+      { workers: 5 },
     ),
     /workers/,
   );
@@ -153,7 +153,7 @@ test('packing preserves coverage, priority prefix and exclusive order with bound
     packed.slice(2, 7).map((c) => c.id),
     ['p1', 'p2', 'p3', 'p4', 'e1'],
   );
-  assert.throws(() => packParallelChecks(checks, { workers: 3 }), /workers/);
+  assert.throws(() => packParallelChecks(checks, { workers: 5 }), /workers/);
   assert.throws(() => packParallelChecks(checks, { priorityCount: checks.length + 1 }), /priority/);
 });
 
@@ -238,4 +238,64 @@ test('packing never splits an existing long parallel batch', async () => {
   assert.equal(fakeDuration(checks), 107);
   assert.equal(fakeDuration(packed), 107);
   assert.deepEqual(packed, checks);
+});
+
+test('probe fail-fast drains started peers and reports every unstarted obligation', async () => {
+  const seen = [];
+  const rows = await runCheckSequence(
+    ['bad', 'peer', 'later', 'exclusive'].map((id) => ({
+      id,
+      execution: id === 'exclusive' ? 'exclusive' : 'parallel',
+    })),
+    async ({ id }) => {
+      seen.push(id);
+      if (id === 'bad') throw Error('wrong trace');
+      await new Promise(setImmediate);
+    },
+    () => {},
+    { workers: 2, failFast: true },
+  );
+  assert.deepEqual(seen, ['bad', 'peer']);
+  assert.equal(rows[0].ok, false);
+  assert.equal(rows[1].ok, true);
+  assert.deepEqual(
+    rows.slice(2).map((row) => row.status),
+    ['not evaluated', 'not evaluated'],
+  );
+});
+
+test('duration hints balance each parallel run without crossing priority or exclusive barriers', async () => {
+  const { balanceParallelChecks } = await import('../scripts/check-sequence.mjs');
+  const checks = ['priority', 'short', 'long', 'exclusive', 'tail'].map((id) => ({
+    id,
+    execution: id === 'exclusive' ? 'exclusive' : 'parallel',
+  }));
+  assert.deepEqual(
+    balanceParallelChecks(checks, { short: 1, long: 100, priority: 0, tail: 200 }, 1).map(
+      (c) => c.id,
+    ),
+    ['priority', 'long', 'short', 'exclusive', 'tail'],
+  );
+  assert.deepEqual(balanceParallelChecks(checks, {}), checks);
+});
+
+test('four workers drain before exclusive work', async () => {
+  let active = 0,
+    peak = 0;
+  await runCheckSequence(
+    [
+      ...Array.from({ length: 5 }, (_, i) => ({ id: String(i), execution: 'parallel' })),
+      { id: 'barrier' },
+    ],
+    async (c) => {
+      active++;
+      peak = Math.max(peak, active);
+      if (c.id === 'barrier') assert.equal(active, 1);
+      await new Promise(setImmediate);
+      active--;
+    },
+    () => {},
+    { workers: 4 },
+  );
+  assert.equal(peak, 4);
 });

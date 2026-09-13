@@ -15,7 +15,7 @@ const el = (tag, text = '', className = '') => {
 const endpointText = (example, endpoint) => {
   return `${examplePartName(example, endpoint.node)} · ${examplePortLabel(example.nodes[endpoint.node], endpoint.port)}`;
 };
-export function createPartHelp({ container, fallback, icon, busy }) {
+export function createPartHelp({ container, fallback, icon, busy, reveal }) {
   let current = null,
     opener = null,
     timer,
@@ -60,9 +60,11 @@ export function createPartHelp({ container, fallback, icon, busy }) {
     return visible;
   }
   function close() {
+    if (panel.hidden) return;
     drag = null;
     panel.hidden = true;
     if (opener?.isConnected) {
+      opener.catalogRestore?.();
       for (
         let ancestor = opener.parentElement;
         ancestor && ancestor !== container;
@@ -121,7 +123,17 @@ export function createPartHelp({ container, fallback, icon, busy }) {
       el('h4', example.title),
       el('figcaption', 'Example connections — schematic, not to scale.'),
     );
-    const diagram = createPartHelpDiagram(id, example, thumbnail);
+    const diagram = createPartHelpDiagram(
+      id,
+      example,
+      thumbnail,
+      reveal
+        ? (type) => {
+            close();
+            reveal(type);
+          }
+        : null,
+    );
     diagrams.push(diagram);
     const legend = el('div', '', 'help-diagram-legend');
     for (const kind of new Set(example.edges.map((edge) => edge.kind))) {
@@ -238,7 +250,13 @@ export function createPartHelp({ container, fallback, icon, busy }) {
           'muted small',
         ),
       );
-      for (const id of content.examples) connections.append(exampleView(id));
+      for (const id of content.examples) {
+        if (type === 'powerCell' && id === 'power') {
+          const extra = el('details');
+          extra.append(el('summary', 'Power several parts'), exampleView(id));
+          connections.append(extra);
+        } else connections.append(exampleView(id));
+      }
       connections.append(el('h4', 'How to connect'));
       const steps = el('ol');
       for (const step of content.steps) steps.append(el('li', step));
@@ -278,7 +296,7 @@ export function createPartHelp({ container, fallback, icon, busy }) {
     }
     panel.hidden = false;
     if (!panel.style.left) {
-      panel.style.left = `${Math.max(8, (window.innerWidth - Math.min(700, window.innerWidth - 16)) / 2)}px`;
+      panel.style.left = `${Math.max(8, Math.min(window.innerWidth - Math.min(700, window.innerWidth - 16) - 8, Math.max(container.getBoundingClientRect().right + 24, (window.innerWidth - 700) / 2)))}px`;
       panel.style.top = '72px';
     }
     clampWindow();
@@ -352,6 +370,7 @@ export function createPartHelp({ container, fallback, icon, busy }) {
   document.addEventListener('dragstart', suppress, true);
   return {
     panel,
+    close,
     about,
     entry,
     dismissTooltip,

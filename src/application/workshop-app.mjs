@@ -34,6 +34,7 @@ import { explainFailure, normalizeFailure } from '../model/messages.mjs';
 import { starterSteps } from './starter-guide.mjs';
 import { createInteractionRecorder } from './interaction-recorder.mjs';
 import { mountRemotePlaytest } from './remote-playtest.mjs';
+import { captureFeedbackContext } from './feedback-context.mjs';
 import { createClock } from './clock.mjs';
 import { createWorkshopView } from '../presentation/workshop-view.mjs';
 
@@ -726,6 +727,9 @@ export async function mountWorkshopApp(root) {
   document.addEventListener('visibilitychange', visibilityChanged);
   render();
   remote = await mountRemotePlaytest({
+    toolbarHost: view.utilityHost,
+    feedbackSnapshot: () =>
+      captureFeedbackContext(workshop, () => ({ build: buildId, ...recordingContext() })),
     screenshot: () => view.captureScreenshot(),
     context: () => ({ build: buildId, ...recordingContext(), observation: frame() }),
     checkpoint: () => workshop.checkpoint(),
@@ -743,6 +747,7 @@ export async function mountWorkshopApp(root) {
     readRenderedTransforms: () => view.readRenderedTransforms(),
     readRenderedShapes: () => view.readRenderedShapes(),
     readRenderedSpringEndpoints: () => view.readRenderedSpringEndpoints(),
+    readRenderedRopeEndpoints: () => view.readRenderedRopeEndpoints(),
     readRenderedCenters: () => view.readRenderedCenters(),
     readInteractionState: () => view.readInteractionState(),
     metrics: () => structuredClone(metrics),

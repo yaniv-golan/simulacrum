@@ -1,3 +1,4 @@
+import { compileRopes } from './rope.mjs';
 import { compileGearMeshes } from './gear-mesh.mjs';
 import { channelDefinition } from './sensors.mjs';
 import { mechanicalGroup } from './connection-graph.mjs';
@@ -94,8 +95,9 @@ function snapFrames(blueprint, A, B) {
   const springOffset =
     A.port.kind === 'spring'
       ? rotate(target.rotation, [
-          (A.part.type === 'springGuide' ? 1 : -1) *
-            (A.part.type === 'springGuide' ? A.part : B.part).parameters.restLength,
+          (['springGuide', 'linearActuator'].includes(A.part.type) ? 1 : -1) *
+            (['springGuide', 'linearActuator'].includes(A.part.type) ? A.part : B.part).parameters
+              .restLength,
           0,
           0,
         ])
@@ -179,6 +181,15 @@ export function compileAssembly(
   for (const [node, part] of blueprint.parts.entries()) {
     const p = part.parameters;
     switch (part.type) {
+      case 'releaseCoupler':
+        (power.couplers ??= []).push({
+          node,
+          joint: -1,
+          resistance: p.resistance,
+          minVoltage: p.minVoltage,
+          energyJ: p.energyJ,
+        });
+        break;
       case 'powerCell':
         power.cells.push({
           node,
@@ -189,6 +200,7 @@ export function compileAssembly(
           currentLimit: p.currentLimit,
         });
         break;
+      case 'linearActuator':
       case 'poweredHinge':
       case 'poweredMotor':
         power.motors.push({
@@ -197,10 +209,16 @@ export function compileAssembly(
           rotor: -1,
           joint: -1,
           axis: [1, 0, 0],
-          torqueConstant: p.torqueConstant,
+          torqueConstant: part.type === 'linearActuator' ? p.forceConstant : p.torqueConstant,
+          ...(part.type === 'linearActuator' ? { coordinate: 'linear', maxSpeed: p.maxSpeed } : {}),
           resistance: p.resistance,
           currentLimit: p.currentLimit,
-          defaultDuty: part.type === 'poweredHinge' ? p.defaultTarget : p.defaultDuty,
+          defaultDuty:
+            part.type === 'linearActuator'
+              ? 0
+              : part.type === 'poweredHinge'
+                ? p.defaultTarget
+                : p.defaultDuty,
           ...(p.inputPolarity !== undefined ? { inputPolarity: p.inputPolarity } : {}),
           ...(part.type === 'poweredHinge'
             ? {
@@ -293,12 +311,12 @@ export function compileAssembly(
       connections.push({ id: connection.id, reasonCode: 'OK' });
       continue;
     }
-    if (connection.kind === 'gear') {
+    if (connection.kind === 'gear' || connection.kind === 'rope') {
       connections.push({ id: connection.id, reasonCode: 'OK' });
       continue;
     }
     if (connection.kind === 'spring') {
-      const G = A.part.type === 'springGuide' ? A : B,
+      const G = ['springGuide', 'linearActuator'].includes(A.part.type) ? A : B,
         C = G === A ? B : A;
       const g = worldPort(G),
         c = worldPort(C),
@@ -315,6 +333,12 @@ export function compileAssembly(
         length > p.maxLength + 1e-6
       )
         reject('MISALIGNED', path);
+      const drive = power.motors.find((m) => m.node === G.index);
+      if (drive) {
+        drive.rotor = C.index;
+        drive.joint = joints.length;
+        drive.axis = rotate(G.port.rotation, [1, 0, 0]);
+      }
       joints.push({
         kind: 'spring',
         a: G.index,
@@ -323,8 +347,8 @@ export function compileAssembly(
         anchorB: [...C.port.position],
         axisA: rotate(G.port.rotation, [1, 0, 0]),
         axisB: rotate(C.port.rotation, [1, 0, 0]),
-        stiffness: p.stiffness,
-        damping: p.damping,
+        stiffness: G.part.type === 'linearActuator' ? 0 : p.stiffness,
+        damping: G.part.type === 'linearActuator' ? 0 : p.damping,
         restLength: p.restLength,
         limits: [p.minLength, p.maxLength],
       });
@@ -379,6 +403,11 @@ export function compileAssembly(
         axisB: rotate(B.port.rotation, [1, 0, 0]),
       });
     } else {
+      for (const endpoint of [A, B])
+        if (CATALOG[endpoint.part.type].releaseFace === endpoint.port.id) {
+          const latch = power.couplers.find((c) => c.node === endpoint.index);
+          latch.joint = joints.length;
+        }
       joints.push({
         kind: 'fixed',
         a: A.index,
@@ -516,6 +545,7 @@ export function compileAssembly(
     });
   // Explicit ground:null overrides the floor only; saved obstacles remain authored.
   bodies.push(...structuredClone(environmentObstacles(blueprint.environment)));
+  compileRopes(blueprint, bodies, joints, connections);
   return { configuration: { gravity: [...gravity], bodies, joints, power }, mapping, connections };
 }
 

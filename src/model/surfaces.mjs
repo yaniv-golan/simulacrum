@@ -33,7 +33,7 @@ export function surfaceRegions(partOrType) {
   const allowed = faces.filter((f) => definition.mountingFaces?.includes(f[0]));
   return allowed.map(([id, position, rotation, halfSize]) => ({
     id,
-    label: id[0].toUpperCase() + id.slice(1),
+    label: definition.releaseFace === id ? 'Latch · Right' : id[0].toUpperCase() + id.slice(1),
     position,
     rotation,
     halfSize,
@@ -57,7 +57,7 @@ export function resolveSurfaceEndpoint(part, binding) {
     kind: 'fixed',
     position: region.position.map((x, i) => x + offset[i]),
     rotation: multiplyQuaternion(region.rotation, [Math.sin(twist / 2), 0, 0, Math.cos(twist / 2)]),
-    multiplicity: 'many',
+    multiplicity: CATALOG[part.type].releaseFace === region.id ? 'one' : 'many',
   };
 }
 /** Shared mounting footprint geometry. Callers own admission versus display tolerances. */

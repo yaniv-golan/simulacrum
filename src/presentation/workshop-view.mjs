@@ -1,5 +1,8 @@
 import { createSceneEditor, sceneMesh } from './scene-editor.mjs';
 import { hasWorkshopContent } from '../model/environment.mjs';
+import { createRopeView } from './rope-view.mjs';
+import { ropeInspector } from './rope-controls.mjs';
+import { createPartMesh, disposePart } from './part-mesh.mjs';
 import { mountControllerHistory } from './controller-history.mjs';
 import { sensorInspector, updateSensorInspector } from './sensor-controls.mjs';
 import { createSensorView } from './sensor-view.mjs';
@@ -11,18 +14,14 @@ import {
 } from './graphics-quality.mjs';
 import { movementScope } from './workbench-content.mjs';
 import { portLabel, portPurpose } from './port-wording.mjs';
-import { PRIMARY_PARTS, MORE_PARTS } from './part-palette.mjs';
+import { createPartsBrowser } from './parts-browser.mjs';
+import { createPartPlacement } from './part-placement.mjs';
 import { createPartHelp } from './part-help.mjs';
 import { ownsPartHelpInput } from './part-help-input.mjs';
 import { createAssemblyLibraryPanel } from './assembly-library.mjs';
 import { createAssemblyBrowser } from './assembly-browser.mjs';
 import { createAssemblyPlacementView } from './assembly-placement-view.mjs';
-import {
-  createSurfaceMaterial,
-  createPortHardware,
-  createFinishEnvironment,
-  portCueRadius,
-} from './part-finish.mjs';
+import { createFinishEnvironment, portCueRadius } from './part-finish.mjs';
 import { createAssemblyThumbnails } from './assembly-thumbnails.mjs';
 import { createDirectDrag } from './direct-drag.mjs';
 import { createConnectionTest } from './connection-test.mjs';
@@ -35,10 +34,11 @@ import { springInspector } from './spring-controls.mjs';
 import { createSpringView } from './spring-view.mjs';
 import { contactProperties } from '../model/contact-properties.mjs';
 import { createLearningControls, targetSensorInspector } from './learning-controls.mjs';
-import { partPrimitives, shaftSegments } from '../model/geometry.mjs';
+import { partPrimitives } from '../model/geometry.mjs';
 import * as THREE from 'three';
 import { createResourceCache, partAppearanceKey } from './resource-cache.mjs';
 import { connectionRenderSpecs, createWiringPreferences } from './connection-render.mjs';
+import { releasedAttachment as isReleasedAttachment } from './release-state.mjs';
 import { createConnectionView } from './connection-view.mjs';
 import { createSurfaceControls } from './surface-controls.mjs';
 import {
@@ -66,6 +66,11 @@ import {
 import './workshop.css';
 export const WORKSHOP_VIEW_MILESTONE = UI_FEATURES.construction.milestone;
 const parameterLabels = {
+  forceConstant: 'Force per amp (N/A)',
+  maxSpeed: 'Maximum driven speed (m/s)',
+  restLength: 'Zero-force length (m)',
+  minLength: 'Minimum length (m)',
+  maxLength: 'Maximum length (m)',
   torqueConstant: 'Torque per amp',
   currentLimit: 'Current limit',
   defaultDuty: 'Drive setting',
@@ -150,6 +155,7 @@ export function createWorkshopView(
     mirror,
     frame = null,
     selected = null,
+    ropeRequestedPart = null,
     sourcePort = null,
     blueprintKey = '',
     inspectorKey = '',
@@ -204,6 +210,8 @@ export function createWorkshopView(
       directDrag.end(false);
       if (exploded || explodeAmount) setExploded(false, true);
       const result = await onCommand(command, { inputTime });
+      if (result?.ok && command.type === 'surface-mount' && command.insertPart)
+        partsBrowser.placed(command.insertPart.type);
       if (result?.ok === false) setMessage(explainFailure(result, frame?.metadata.blueprint));
       return result;
     } catch (error) {
@@ -231,15 +239,16 @@ export function createWorkshopView(
     card.draggable = true;
     card.dataset.placement = '';
     card.addEventListener('dragstart', (event) => {
-      if (frame?.metadata.mode !== 'build') {
+      if (frame?.metadata.mode !== 'build' || assemblies?.busy() || assemblyPlacement?.active()) {
         event.preventDefault();
         return;
       }
       partHelp.dismissTooltip();
-      cancelInteraction();
+      partPlacement.start(type, { focus: false });
       draggingType = type;
       event.dataTransfer.setData('text/plain', type);
       event.dataTransfer.effectAllowed = 'copy';
+      partsBrowser.dragStarted(type);
     });
     card.addEventListener('dragend', () => {
       if (draggingType !== null) cancelInteraction();
@@ -314,7 +323,9 @@ export function createWorkshopView(
   const partsHeading = element('h2', '', 'Parts');
   partsHeading.tabIndex = -1;
   left.append(partsHeading);
+  let partPlacement = null;
   const partHelp = createPartHelp({
+    reveal: (type) => partsBrowser.reveal(type),
     container: left,
     fallback: partsHeading,
     icon: partIcon,
@@ -327,14 +338,38 @@ export function createWorkshopView(
           editing?.isDragging(),
       ),
   });
-  const palette = element('div', 'palette');
-  for (const type of PRIMARY_PARTS) {
-    const card = button('', () => send({ type: 'place', partType: type }), 'part-card');
-    card.dataset.partType = type;
-    card.append(partIcon(type), element('span', '', CATALOG[type].name));
-    enablePaletteDrag(card, type);
-    palette.append(partHelp.entry(card, type));
-  }
+  const partsBrowser = createPartsBrowser({
+    icon: partIcon,
+    help: partHelp,
+    pick: (type) => partPlacement.start(type),
+    placementActive: () => partPlacement?.active() ?? false,
+    drag: enablePaletteDrag,
+    openAssemblies: () => savedLauncher.click(),
+    attachRope: () => {
+      if (frame.metadata.mode !== 'build') return;
+      const part =
+        frame.metadata.blueprint.parts.find((p) => p.id === selected) ??
+        frame.metadata.blueprint.parts[0];
+      if (!part) {
+        setMessage('Place two parts, then select Rope to attach their surfaces.');
+        return;
+      }
+      select(part.id);
+      ropeRequestedPart = part.id;
+      inspectorKey = '';
+      refreshInspector();
+      const panel = right.querySelector('.rope-controls');
+      if (panel) {
+        panel.open = true;
+        panel.scrollIntoView({ block: 'nearest' });
+      }
+    },
+    storage: {
+      getItem: (key) => window.localStorage.getItem(key),
+      setItem: (key, value) => window.localStorage.setItem(key, value),
+    },
+  });
+  const palette = partsBrowser.panel;
   let guideReceipt = null,
     guideVisual = null,
     guidePulseStarted = 0;
@@ -718,18 +753,12 @@ export function createWorkshopView(
   }
   left.append(palette);
   refreshGuide();
-  const more = element('details', 'more-parts');
-  more.append(element('summary', '', 'More parts'));
-  for (const type of MORE_PARTS) {
-    const item = button('', () => send({ type: 'place', partType: type }), 'more-part');
-    item.dataset.partType = type;
-    item.append(partIcon(type), element('span', '', CATALOG[type].name));
-    enablePaletteDrag(item, type);
-    more.append(partHelp.entry(item, type));
-  }
   left.append(
-    more,
-    element('p', 'palette-hint', 'Drag a part into the workbench, or click to add it.'),
+    element(
+      'p',
+      'palette-hint',
+      'Choose a part, then click a location to place it. Escape cancels.',
+    ),
   );
   const recordingPanel = element('details', 'recording-panel');
   recordingPanel.append(
@@ -775,7 +804,7 @@ export function createWorkshopView(
   empty.append(
     element('div', 'empty-glyph', '+'),
     element('h2', '', 'Your first machine starts here'),
-    element('p', '', 'Choose a part from the left.'),
+    element('p', '', 'Open Parts and choose a part.'),
   );
   const stage = element('div', 'stage'),
     buildId = element(
@@ -897,8 +926,7 @@ export function createWorkshopView(
     redo.disabled = busy || frame.metadata.mode !== 'build' || !frame.metadata.editing?.redoCount;
     for (const b of tools.querySelectorAll('[data-edit-tool]'))
       b.disabled = busy || !!assemblies.selected();
-    for (const b of left.querySelectorAll('[data-placement]'))
-      b.disabled = busy || frame.metadata.mode !== 'build';
+    partsBrowser.update(frame.metadata.mode, busy);
     refreshPartList();
     refreshSelectionVisuals();
     editing?.select(busy || assemblies.selected() ? null : selected);
@@ -950,6 +978,7 @@ export function createWorkshopView(
   scene.environmentIntensity = 0.4;
   const sensorView = createSensorView(scene);
   const springView = createSpringView(scene);
+  const ropeView = createRopeView(scene);
   scene.fog = new THREE.Fog(0x18252d, 8, 30);
   const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 100);
   camera.position.set(1.45, 1.15, 1.65);
@@ -1077,7 +1106,7 @@ export function createWorkshopView(
     orbit: controls,
     getPart: (id) => frame?.metadata.blueprint.parts.find((p) => p.id === id),
     getBlueprint: () => frame.metadata.blueprint,
-    getMode: () => (exploded ? 'inspection' : frame?.metadata.mode),
+    getMode: () => (exploded || partPlacement?.active() ? 'inspection' : frame?.metadata.mode),
     getMeshes: () => meshes,
     getViewportInsets: () => {
       const rect = stage.getBoundingClientRect();
@@ -1134,7 +1163,13 @@ export function createWorkshopView(
   renderer.domElement.addEventListener(
     'pointerdown',
     (event) => {
-      if (!surface.active() || surfacePointer !== null || event.button !== 0) return;
+      if (
+        partPlacement?.active() ||
+        !surface.active() ||
+        surfacePointer !== null ||
+        event.button !== 0
+      )
+        return;
       if (!surface.beginPointer(event)) return;
       surfacePointer = event.pointerId;
       controls.enabled = false;
@@ -1570,7 +1605,8 @@ export function createWorkshopView(
   const raycaster = new THREE.Raycaster(),
     pointer = new THREE.Vector2();
   raycaster.params.Line.threshold = 0.012;
-  let pointerStart = null;
+  let pointerStart = null,
+    catalogPointer = null;
   function refreshSelectionVisuals() {
     motionReadout.selectBody(selected, getAssemblyFrame?.() ?? frame);
     const edge = frame?.metadata.blueprint.connections.find((c) => c.id === tracedConnection);
@@ -1631,13 +1667,34 @@ export function createWorkshopView(
       meshes.get(b.id).updateMatrixWorld(true);
       springRows.push({
         id: edge.id,
-        a: a.type === 'springGuide' ? end(a, edge.a) : end(b, edge.b),
-        b: a.type === 'springGuide' ? end(b, edge.b) : end(a, edge.a),
-        settings: (a.type === 'springGuide' ? a : b).parameters,
+        linear: a.type === 'linearActuator' || b.type === 'linearActuator',
+        a: ['springGuide', 'linearActuator'].includes(a.type) ? end(a, edge.a) : end(b, edge.b),
+        b: ['springGuide', 'linearActuator'].includes(a.type) ? end(b, edge.b) : end(a, edge.a),
+        settings: (['springGuide', 'linearActuator'].includes(a.type) ? a : b).parameters,
         selected: [a.id, b.id].includes(selected),
       });
     }
     springView.update(springRows, selected);
+    ropeView.update(
+      (exploded || explodeAmount ? [] : blueprint.connections.filter((c) => c.kind === 'rope')).map(
+        (edge) => {
+          const data = frame.metadata.connections.find((c) => c.id === edge.id)?.rope;
+          return {
+            id: edge.id,
+            diameter: edge.rope.diameter,
+            selected: [edge.a.part, edge.b.part].includes(selected),
+            points: (data?.nodes ?? []).map((i) => frame.physics[i].position),
+          };
+        },
+      ),
+    );
+    for (const el of right.querySelectorAll('.rope-readout')) {
+      const data = frame.metadata.connections.find((c) => c.id === el.dataset.ropeId)?.rope;
+      const readings = (frame.ropes ?? []).filter((r) => data?.joints.includes(r.index));
+      el.textContent = readings.length
+        ? `Length ${readings.reduce((sum, r) => sum + r.length, 0).toFixed(3)} m · Peak applied tension ${Math.max(...readings.map((r) => r.appliedTension)).toFixed(2)} N`
+        : 'Rope readings unavailable';
+    }
     const readout = right.querySelector('.spring-readout');
     if (readout) {
       const edge = blueprint.connections.find(
@@ -1646,15 +1703,19 @@ export function createWorkshopView(
       const guidePart =
         edge &&
         blueprint.parts.find(
-          (p) => [edge.a.part, edge.b.part].includes(p.id) && p.type === 'springGuide',
+          (p) =>
+            [edge.a.part, edge.b.part].includes(p.id) &&
+            ['springGuide', 'linearActuator'].includes(p.type),
         );
       const state =
         guidePart && frame.springs?.find((x) => x.bodyA === blueprint.parts.indexOf(guidePart));
       readout.textContent = !edge
         ? 'Unattached · no spring force'
-        : state
-          ? `${state.length <= state.minLength + 0.001 ? 'Fully compressed' : state.length >= state.maxLength - 0.001 ? 'Fully extended' : 'Attached · slides; does not swivel'} · ${format(state.length, 3)} m length · ${format(-state.extension, 3)} m compression · ${format(state.speed, 3)} m/s · ${format(state.length - state.minLength, 3)} m to compression stop · ${format(state.maxLength - state.length, 3)} m to extension stop · ${format(state.potentialJ, 3)} J spring energy`
-          : 'Attached · slides; does not swivel';
+        : state && guidePart?.type === 'linearActuator'
+          ? `${format(state.length, 3)} m length · ${format(state.speed, 3)} m/s · powered slide; no passive spring or holding clutch`
+          : state
+            ? `${state.length <= state.minLength + 0.001 ? 'Fully compressed' : state.length >= state.maxLength - 0.001 ? 'Fully extended' : 'Attached · slides; does not swivel'} · ${format(state.length, 3)} m length · ${format(-state.extension, 3)} m compression · ${format(state.speed, 3)} m/s · ${format(state.length - state.minLength, 3)} m to compression stop · ${format(state.maxLength - state.length, 3)} m to extension stop · ${format(state.potentialJ, 3)} J spring energy`
+            : 'Attached · slides; does not swivel';
     }
   }
   function select(id) {
@@ -1672,7 +1733,10 @@ export function createWorkshopView(
     showGuideConnection(null);
     onInteraction?.('selection', { from: selected, to: id });
     editing?.select(id);
-    if (id !== selected) rightPanel.scrollTop = 0;
+    if (id !== selected) {
+      rightPanel.scrollTop = 0;
+      ropeRequestedPart = null;
+    }
     selected = id;
     tracedConnection = null;
     sourcePort = null;
@@ -1692,7 +1756,13 @@ export function createWorkshopView(
     refreshAssemblyState();
   }
   const down = (event) => {
-    pointerStart = [event.clientX, event.clientY];
+    pointerStart = event.button === 0 ? [event.clientX, event.clientY] : null;
+    if (partPlacement?.active() && event.button === 0) {
+      catalogPointer = event.pointerId;
+      controls.enabled = false;
+      renderer.domElement.setPointerCapture(event.pointerId);
+      event.stopImmediatePropagation();
+    }
   };
   const up = (event) => {
     if (sceneEditor?.active()) {
@@ -1701,6 +1771,27 @@ export function createWorkshopView(
         Math.hypot(event.clientX - pointerStart[0], event.clientY - pointerStart[1]) <= 5
       )
         sceneEditor.point(event);
+      return;
+    }
+    if (partPlacement?.active()) {
+      if (event.button !== 0) return;
+      event.stopImmediatePropagation();
+      catalogPointer = null;
+      controls.enabled = true;
+      if (renderer.domElement.hasPointerCapture(event.pointerId))
+        renderer.domElement.releasePointerCapture(event.pointerId);
+      if (!droppedPosition(event, partPlacement.type())) {
+        partPlacement.cancel();
+        return;
+      }
+      if (
+        event.button === 0 &&
+        pointerStart &&
+        Math.hypot(event.clientX - pointerStart[0], event.clientY - pointerStart[1]) <= 5
+      ) {
+        pointCatalogPart(event);
+        partPlacement.commit();
+      }
       return;
     }
     if (assemblyPlacement?.active()) {
@@ -1752,8 +1843,8 @@ export function createWorkshopView(
     const hit = raycaster.intersectObjects([...meshes.values()]).find((hit) => hit.object.isMesh);
     select(hit?.object.userData.partId ?? null);
   };
-  renderer.domElement.addEventListener('pointerdown', down);
-  renderer.domElement.addEventListener('pointerup', up);
+  renderer.domElement.addEventListener('pointerdown', down, true);
+  renderer.domElement.addEventListener('pointerup', up, true);
   const directDrag = createDirectDrag({
     renderer,
     camera,
@@ -1764,6 +1855,7 @@ export function createWorkshopView(
     getMeshes: () => meshes,
     canStart: (event) =>
       !sceneEditor?.active() &&
+      !partPlacement?.active() &&
       !assemblies?.busy() &&
       !assemblies?.selected() &&
       !assemblyPlacement?.active() &&
@@ -1793,7 +1885,13 @@ export function createWorkshopView(
       renderer.domElement.releasePointerCapture(id);
     controls.enabled = true;
   }
-  function cancelInteraction() {
+  function cancelInteraction({ restoreBrowser = true } = {}) {
+    const pointerId = catalogPointer;
+    catalogPointer = null;
+    if (pointerId !== null && renderer.domElement.hasPointerCapture(pointerId))
+      renderer.domElement.releasePointerCapture(pointerId);
+    partPlacement?.cancel({ restoreBrowser });
+    if (draggingType && restoreBrowser) partsBrowser.cancelled(draggingType);
     invalidateScene();
     directDrag.end(false);
     releaseSurfacePointer();
@@ -1813,10 +1911,11 @@ export function createWorkshopView(
   }
   renderer.domElement.addEventListener('pointercancel', cancelInteraction);
   renderer.domElement.addEventListener('lostpointercapture', () => {
-    if (surfacePointer !== null || directDrag.active()) cancelInteraction();
+    if (surfacePointer !== null || directDrag.active() || catalogPointer !== null)
+      cancelInteraction();
   });
 
-  function droppedPosition(event) {
+  function droppedPosition(event, type = draggingType) {
     const rect = renderer.domElement.getBoundingClientRect();
     if (
       event.clientX < rect.left ||
@@ -1825,7 +1924,7 @@ export function createWorkshopView(
       event.clientY > rect.bottom
     )
       return null;
-    const h = CATALOG[draggingType]?.primitives[0].halfExtents;
+    const h = CATALOG[type]?.primitives[0].halfExtents;
     if (!h) return null;
     pointer.set(
       ((event.clientX - rect.left) / rect.width) * 2 - 1,
@@ -1839,63 +1938,74 @@ export function createWorkshopView(
     if (!point) return null;
     return [Math.round(point.x / 0.025) * 0.025, h[1], Math.round(point.z / 0.025) * 0.025];
   }
+  partPlacement = createPartPlacement({
+    getFrame: () => frame,
+    getCursor,
+    preview: (part, valid) => {
+      editing.showPreview([part], { color: valid ? 0x8cf5cf : 0xff836f });
+      invalidateScene();
+    },
+    clear: () => {
+      editing.clearPreview();
+      surface.cancel(false);
+      invalidateScene();
+    },
+    surface: { read: () => surface.read(), commit: () => surface.commitProposal() },
+    send,
+    before: () => cancelInteraction({ restoreBrowser: false }),
+    cancelled: (type) => partsBrowser.cancelled(type),
+    finished: () => renderer.domElement.focus(),
+    placed: (type) => partsBrowser.placed(type),
+  });
+  renderer.domElement.tabIndex = 0;
+  stage.append(partPlacement.panel);
   let surfaceDropSequence = 0;
-  renderer.domElement.addEventListener('dragover', (event) => {
-    if (!draggingType || frame?.metadata.mode !== 'build') return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
+  function pointCatalogPart(event) {
+    if (!partPlacement.active() || partPlacement.pending()) return;
     if (surface.enabled()) {
       if (!surface.active()) {
         let id;
         do {
           id = `dropped-${++surfaceDropSequence}`;
         } while (frame.metadata.blueprint.parts.some((p) => p.id === id));
-        surface.start(id, { insertPart: createPart(draggingType, id, [0, 0, 0]), drag: true });
+        surface.start(id, {
+          insertPart: createPart(partPlacement.type(), id, [0, 0, 0]),
+          onCommit: () => partPlacement.commit(),
+          onCancel: () => partPlacement.cancel(),
+        });
         right.append(surface.panel);
       }
       if (surface.point(event, { lock: false })) {
-        showPlacementCue(
-          event,
-          surface.read().valid
-            ? surface.read().attach
-              ? 'Release to attach to surface'
-              : 'Release to position · no attachment'
-            : 'Placement blocked · check the mounting panel',
-        );
+        editing.clearPreview();
+        partPlacement.mounting();
         return;
       }
     }
-    showPlacementCue(event, 'Release to place · 2.5 cm grid');
-    const position = droppedPosition(event);
-    if (position) {
-      const part = createPart(draggingType, 'placement-preview', position);
-      const overlap = findPlacementOverlap([...frame.metadata.blueprint.parts, part]);
-      editing.showPreview([part], { color: overlap ? 0xff836f : 0x8cf5cf });
-      if (overlap) showPlacementCue(event, 'Placement overlaps a part · Move clear');
-    }
+    surface.cancel(false);
+    const position = droppedPosition(event, partPlacement.type());
+    if (position) partPlacement.move(position);
+  }
+  renderer.domElement.addEventListener('pointermove', pointCatalogPart);
+  renderer.domElement.addEventListener('dragover', (event) => {
+    if (!draggingType || frame?.metadata.mode !== 'build') return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    pointCatalogPart(event);
+    showPlacementCue(
+      event,
+      surface.read()?.target ? 'Release to place on surface' : 'Release to place · 2.5 cm grid',
+    );
   });
   renderer.domElement.addEventListener('dragleave', () => {
     placementCue.hidden = true;
-    editing.clearPreview();
   });
   renderer.domElement.addEventListener('drop', async (event) => {
     if (!draggingType || frame?.metadata.mode !== 'build') return;
     event.preventDefault();
-    const position = droppedPosition(event),
-      partType = draggingType;
     draggingType = null;
     placementCue.hidden = true;
-    editing.clearPreview();
-    if (surface.active()) surface.point(event, { lock: false });
-    if (surface.read()?.target) {
-      await surface.commit();
-      return;
-    }
-    surface.cancel(false);
-    if (position) {
-      await send({ type: 'place', partType, position });
-      setMessage('Part placed. Use Snap to surface to mount it, or connect its sockets.');
-    }
+    pointCatalogPart(event);
+    await partPlacement.commit();
   });
   function setMessage(text) {
     message.textContent = String(text);
@@ -2166,7 +2276,15 @@ export function createWorkshopView(
       const parameter = definition.parameterDefinitions[key],
         label = element('div', 'setting primary-setting'),
         input = element('input');
-      label.append(element('span', '', parameterLabels[key] ?? key));
+      label.append(
+        element(
+          'span',
+          '',
+          part.type === 'linearActuator' && key === 'restLength'
+            ? 'Connection snap length (m)'
+            : (parameterLabels[key] ?? key),
+        ),
+      );
       input.type = 'number';
       input.value = part.parameters[key];
       input.min = parameter.minimum;
@@ -2217,7 +2335,16 @@ export function createWorkshopView(
         }
         label.append(directions);
       }
-      if (parameterHelp[key]) label.append(element('span', 'parameter-help', parameterHelp[key]));
+      if (parameterHelp[key])
+        label.append(
+          element(
+            'span',
+            'parameter-help',
+            part.type === 'linearActuator' && key === 'currentLimit'
+              ? 'Caps current and therefore available pushing force.'
+              : parameterHelp[key],
+          ),
+        );
       return label;
     }
     if (surfaceRegions(part).length) {
@@ -2251,7 +2378,10 @@ export function createWorkshopView(
           other = edge.a.part === part.id ? edge.b : edge.a,
           peer = parts.find((p) => p.id === other.part),
           row = element('div', 'mount-relationship');
-        row.append(element('span', '', `Bolted to ${peer.name} · ${endpointName(peer, other)}`));
+        const relationship = element('span');
+        relationship.dataset.attachmentState = edge.id;
+        relationship.dataset.peerLabel = `${peer.name} · ${endpointName(peer, other)}`;
+        row.append(relationship);
         if (editable && edge.b.part === part.id && own.surface && other.surface)
           row.append(
             button('Adjust mount', () => beginSurface(part.id, { replaceConnection: edge.id })),
@@ -2449,6 +2579,17 @@ export function createWorkshopView(
         right.append(ownership);
       }
     }
+    if (part.type === 'linearActuator') {
+      right.append(
+        element(
+          'p',
+          'parameter-help',
+          'Wire Power to a cell and Signal to a Command Receiver. Run: W/up extends, S/down retracts. Release is off; an unpowered load can fall.',
+        ),
+      );
+      for (const key of ['restLength', 'minLength', 'maxLength', 'maxSpeed', 'currentLimit'])
+        right.append(parameterControl(key));
+    }
     springInspector({ part, right, editable, element, send });
     targetSensorInspector({ part, blueprint: frame.metadata.blueprint, right, editable, send });
     if (part.type === 'learningController' && learningControls) {
@@ -2568,6 +2709,15 @@ export function createWorkshopView(
       right.append(driving);
     }
     if (!editable) returnToBuild(right);
+    ropeInspector({
+      part,
+      blueprint: frame.metadata.blueprint,
+      right,
+      editable,
+      element,
+      send,
+      requested: ropeRequestedPart === part.id,
+    });
     right.append(element('h3', 'connections-heading', 'Connections'));
     if (tracedConnection)
       right.append(
@@ -2882,6 +3032,8 @@ export function createWorkshopView(
     settings.append(measurements);
     for (const [key, parameter] of Object.entries(definition.parameterDefinitions)) {
       if (
+        (part.type === 'linearActuator' &&
+          ['restLength', 'minLength', 'maxLength', 'maxSpeed', 'currentLimit'].includes(key)) ||
         key === 'diameter' ||
         key === 'inputPolarity' ||
         (part.type === 'logicController' && key === 'duty') ||
@@ -2904,7 +3056,16 @@ export function createWorkshopView(
       input.setAttribute('aria-label', key === 'defaultDuty' ? 'Drive setting' : key);
       bindParameterInput(input, key);
       label.append(input, element('span', 'unit', parameter.unit));
-      if (parameterHelp[key]) label.append(element('span', 'parameter-help', parameterHelp[key]));
+      if (parameterHelp[key])
+        label.append(
+          element(
+            'span',
+            'parameter-help',
+            part.type === 'linearActuator' && key === 'currentLimit'
+              ? 'Caps current and therefore available pushing force.'
+              : parameterHelp[key],
+          ),
+        );
       settings.append(label);
     }
     const materialLabel = element('label', 'setting material-setting');
@@ -3055,7 +3216,16 @@ export function createWorkshopView(
       health.hidden = false;
     }
   }
+  function releasedAttachment(connection) {
+    return isReleasedAttachment(connection, frame.metadata.blueprint.parts, frame.power?.couplers);
+  }
   function refreshLive() {
+    for (const label of right.querySelectorAll('[data-attachment-state]')) {
+      const edge = frame.metadata.blueprint.connections.find(
+        (c) => c.id === label.dataset.attachmentState,
+      );
+      label.textContent = `${edge && releasedAttachment(edge) ? 'Latch open ·' : 'Bolted to'} ${label.dataset.peerLabel}`;
+    }
     updateSensorInspector(frame, right);
     updateControllerEditor(frame, right);
     const part = frame.metadata.blueprint.parts.find((part) => part.id === selected),
@@ -3076,7 +3246,45 @@ export function createWorkshopView(
         element('div', '', `${format(cell.heatJ)} J cell heat`),
       );
     }
-    if (motor && !motor.position) {
+    if (motor && part.type === 'linearActuator') {
+      const slide = frame.springs?.find((s) => s.bodyA === index);
+      const state = !slide
+        ? 'Attach a Spring carriage to Slide.'
+        : motor.reasonCode === 'NO_POWER' || motor.reasonCode === 'DEPLETED'
+          ? 'No power · load can backdrive. Check the cell and wiring.'
+          : motor.reasonCode === 'OFF'
+            ? 'Off · load can backdrive. Use receiver keys to drive.'
+            : slide.length >= slide.maxLength - 0.001
+              ? 'At extension stop · retract to move away.'
+              : slide.length <= slide.minLength + 0.001
+                ? 'At retraction stop · extend to move away.'
+                : Math.abs(slide.speed) < 0.001 && Math.abs(motor.current) > 0.01
+                  ? 'Powered, barely moving · check clearance and load.'
+                  : 'Powered';
+      target.append(
+        element(
+          'div',
+          'diagnosis',
+          frame.metadata.mode === 'build' ? 'Run to use receiver keys.' : state,
+        ),
+      );
+      if (slide)
+        target.append(
+          element(
+            'strong',
+            'linear-travel',
+            `${format(slide.length, 3)} m length · ${format(slide.speed, 3)} m/s`,
+          ),
+        );
+      engineering?.append(
+        element(
+          'div',
+          '',
+          `${format(motor.torque, 3)} N force · ${format(motor.current, 2)} A · ${format(motor.heatJ, 3)} J winding heat`,
+        ),
+      );
+    }
+    if (motor && !motor.position && part.type !== 'linearActuator') {
       const speed = shaftSpeed(motor);
       let diagnosis = explainReason(motor.reasonCode);
       if (frame.metadata.mode === 'build') diagnosis = 'Build mode · choose Run to test';
@@ -3158,6 +3366,31 @@ export function createWorkshopView(
         );
       }
     }
+    if (part.type === 'releaseCoupler') {
+      const latch = frame.power?.couplers?.find((c) => c.node === index);
+      const wording = {
+        NO_LATCH: 'No latch attachment · snap cargo onto Latch · Right',
+        OFF: 'Latched · hold the receiver key to release',
+        NO_POWER: 'No cell connected · repair power wiring in Build',
+        LOW_VOLTAGE: 'Not enough voltage · check the cell and coil settings',
+        ACTUATING: 'Releasing · keep holding the key',
+        READY: 'Ready · opens on the next tick',
+        OPEN: 'Latch open · return to Build to reattach',
+        RELEASE_SUPPORT_BLOCKED:
+          'Stays latched · opening would invalidate gear or spring support. Repair the connections in Build.',
+      };
+      target.textContent =
+        frame.metadata.mode === 'build'
+          ? 'Attach cargo to Latch · Right; mount the coupler by another face. Wire a cell and Command Receiver; hold W or Up in Run.'
+          : (wording[latch?.reasonCode] ?? 'Latch state unavailable');
+      engineering?.append(
+        element(
+          'div',
+          '',
+          `${format(latch?.progressJ ?? 0, 3)} / ${format(part.parameters.energyJ, 3)} J actuation · ${format(latch?.voltage ?? 0, 2)} V · ${format(latch?.heatJ ?? 0, 3)} J heat`,
+        ),
+      );
+    }
     if (part.type === 'travelSensor') {
       const reading = frame.sensors?.readings.find((r) => r.node === index);
       target.textContent =
@@ -3167,7 +3400,11 @@ export function createWorkshopView(
     }
     if (part.type.endsWith('Sensor') && part.type !== 'travelSensor') {
       target.textContent = `Sensor sample tick ${frame.sensors.tick} · readings below`;
-    } else if (!cell && !motor && !['commandReceiver', 'travelSensor'].includes(part.type)) {
+    } else if (
+      !cell &&
+      !motor &&
+      !['commandReceiver', 'travelSensor', 'releaseCoupler'].includes(part.type)
+    ) {
       const speed = frame.physics[index]?.angularVelocity;
       target.textContent =
         frame.metadata.mode === 'build'
@@ -3176,272 +3413,6 @@ export function createWorkshopView(
             ? `Rotation speed ${format(Math.hypot(...speed), 2)} rad/s`
             : 'No live measurement';
     }
-  }
-  function disposePart(mesh) {
-    mesh.traverse((object) => {
-      object.geometry?.dispose();
-      object.material?.map?.dispose();
-      object.material?.dispose();
-    });
-  }
-  function finishPart(mesh, part, definition) {
-    const [hx, hy, hz] = definition.halfExtents;
-    function detail(geometry, color, position, exposedMaterial) {
-      const item = new THREE.Mesh(
-        geometry,
-        createSurfaceMaterial(exposedMaterial, exposedMaterial ? {} : { paint: color }),
-      );
-      item.position.fromArray(position);
-      mesh.add(item);
-      return item;
-    }
-    function faceLabel(text, width, height, position, background = '#203844', color = '#ffdb9a') {
-      const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 256;
-      const context = canvas.getContext('2d');
-      context.fillStyle = background;
-      context.fillRect(0, 0, 512, 256);
-      context.fillStyle = color;
-      context.font = 'bold 74px sans-serif';
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.fillText(text, 256, 128);
-      const texture = new THREE.CanvasTexture(canvas),
-        label = new THREE.Mesh(
-          new THREE.PlaneGeometry(width, height),
-          new THREE.MeshBasicMaterial({ map: texture }),
-        );
-      label.position.fromArray(position);
-      mesh.add(label);
-      return label;
-    }
-    if (part.type === 'powerCell') {
-      // Paint the lid with one offset face; a second box shares the housing's
-      // top and side planes and flickers as depth precision changes with the view.
-      const lid = detail(new THREE.PlaneGeometry(2 * hx, 2 * hz).rotateX(-Math.PI / 2), 0xd3a450, [
-        0,
-        hy + 0.0005,
-        0,
-      ]);
-      lid.material.polygonOffset = true;
-      lid.material.polygonOffsetFactor = -1;
-      lid.material.polygonOffsetUnits = -1;
-      for (const sign of [-1, 1])
-        detail(
-          new THREE.CylinderGeometry(0.009, 0.009, 0.012, 16),
-          sign > 0 ? 0xd38a55 : 0xa4b1bb,
-          [sign * hx * 0.6, hy + 0.006, 0],
-        );
-      const socket = CATALOG[part.type].ports.find((port) => port.kind === 'power').position;
-      for (const sign of [-1, 1]) {
-        const start = new THREE.Vector3(...socket),
-          end = new THREE.Vector3(sign * hx * 0.6, hy + 0.012, 0),
-          middle = start.clone().lerp(end, 0.5);
-        middle.y += 0.018;
-        detail(
-          new THREE.TubeGeometry(
-            new THREE.QuadraticBezierCurve3(start, middle, end),
-            12,
-            0.003,
-            8,
-            false,
-          ),
-          sign > 0 ? 0xcb7250 : 0x253641,
-          [0, 0, 0],
-        );
-      }
-      faceLabel('−  CELL  +', hx * 1.6, hy * 1.2, [0, 0, hz + 0.0005]);
-    }
-    if (part.type === 'poweredMotor') {
-      for (let i = 0; i < 5; i++)
-        detail(new THREE.BoxGeometry(0.007, hy * 1.2, 0.001), 0x24333c, [
-          -hx * 0.7 + i * 0.013,
-          0,
-          hz + 0.0005,
-        ]);
-      for (const y of [-1, 1])
-        for (const z of [-1, 1])
-          detail(
-            new THREE.CylinderGeometry(0.004, 0.004, 0.002, 8).rotateZ(-Math.PI / 2),
-            0x283d48,
-            [hx + 0.001, y * hy * 0.76, z * hz * 0.76],
-          );
-      const label = faceLabel(
-        'MOTOR',
-        hx * 1.5,
-        hy * 0.58,
-        [0, hy + 0.0005, 0],
-        '#364f5e',
-        '#dce9ee',
-      );
-      label.rotation.x = -Math.PI / 2;
-    }
-    if (part.type === 'poweredHinge') {
-      const label = faceLabel('SERVO', hx * 1.7, hy * 0.65, [0, 0, hz + 0.0006]);
-      for (const sign of [-1, 1])
-        detail(new THREE.BoxGeometry(0.006, hy * 1.5, 0.001), 0xe9b565, [
-          sign * hx * 0.7,
-          0,
-          hz + 0.001,
-        ]);
-      const dial = detail(
-        new THREE.RingGeometry(0.015, Math.min(hx, hz) * 0.85, 32).rotateX(-Math.PI / 2),
-        0xe9b565,
-        [0, hy + 0.0006, 0],
-      );
-      dial.material.side = THREE.DoubleSide;
-    }
-    if (part.type === 'wheelHub') {
-      detail(new THREE.BoxGeometry(hx * 1.5, 0.001, 0.006), 0xf3bc68, [0, hy + 0.0006, 0]);
-      faceLabel('HUB', hx * 1.7, hy * 0.65, [0, 0, hz + 0.0006]);
-    }
-    if (part.type === 'gripWheel') {
-      // Surface markings identify the hub without changing collision geometry.
-      for (const side of [-1, 1]) {
-        const hub = detail(
-          new THREE.RingGeometry(0.013, Math.min(hy * 0.3, 0.035), 32).rotateY(
-            (side * Math.PI) / 2,
-          ),
-          0xaabac2,
-          [side * (hx + 0.0005), 0, 0],
-        );
-        hub.material.side = THREE.DoubleSide;
-        const rim = detail(
-          new THREE.RingGeometry(hy * 0.78, hy * 0.82, 48).rotateY((side * Math.PI) / 2),
-          0x657d8b,
-          [side * (hx + 0.0005), 0, 0],
-        );
-        rim.material.side = THREE.DoubleSide;
-        // An asymmetric sidewall mark makes actual wheel rotation readable.
-        const mark = detail(
-          new THREE.CircleGeometry(Math.min(hy * 0.06, 0.009), 12).rotateY((side * Math.PI) / 2),
-          0xeeb866,
-          [side * (hx + 0.0007), hy * 0.62, 0],
-        );
-        mark.material.side = THREE.DoubleSide;
-      }
-    }
-    for (const region of surfaceRegions(part).filter((r) => r.padHalfSize)) {
-      const [hu, hv] = region.padHalfSize,
-        rotation = new THREE.Quaternion(...region.rotation),
-        origin = new THREE.Vector3(...region.position),
-        normal = new THREE.Vector3(1, 0, 0).applyQuaternion(rotation);
-      for (const [u, v] of [
-        [-0.75, -0.75],
-        [0.75, -0.75],
-        [0.75, 0.75],
-        [-0.75, 0.75],
-      ]) {
-        const position = new THREE.Vector3(0, u * hu, v * hv)
-          .applyQuaternion(rotation)
-          .add(origin)
-          .addScaledVector(normal, 0.0006);
-        const head = detail(new THREE.CircleGeometry(0.003, 8), 0xb9cbd2, position.toArray());
-        head.quaternion
-          .copy(rotation)
-          .multiply(
-            new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2),
-          );
-      }
-    }
-    // Rendering and placement admission share the exact authored shaft segment.
-    for (const shaft of shaftSegments(part)) {
-      const shaftMesh = detail(
-        new THREE.CylinderGeometry(0.012, 0.012, shaft.length, 20).rotateZ(-Math.PI / 2),
-        0xc5d3d8,
-        shaft.position,
-        'steel',
-      );
-      shaftMesh.quaternion.fromArray(shaft.rotation);
-    }
-    const electricalPorts = CATALOG[part.type].ports.filter((port) =>
-      ['power', 'signal'].includes(port.kind),
-    );
-    for (const port of electricalPorts)
-      mesh.add(createPortHardware(port, electricalPorts, definition.halfExtents));
-    const outline =
-      partPrimitives(part)[0].kind === 'sphere'
-        ? new THREE.Mesh(
-            mesh.geometry.clone().scale(1.025, 1.025, 1.025),
-            new THREE.MeshBasicMaterial({ color: 0xffc778, side: THREE.BackSide }),
-          )
-        : new THREE.LineSegments(
-            new THREE.EdgesGeometry(mesh.geometry, 25),
-            new THREE.LineBasicMaterial({
-              color: 0xffc778,
-              depthTest: false,
-              transparent: true,
-              opacity: 0.95,
-            }),
-          );
-    outline.renderOrder = 10;
-    outline.visible = false;
-    mesh.add(outline);
-    mesh.userData.selectionOutline = outline;
-    mesh.traverse((object) => {
-      object.userData.partId = part.id;
-    });
-  }
-  function createPartMesh(part) {
-    const definition = partPrimitives(part)[0],
-      material = part.authoredMaterial[definition.id] ?? definition.materialKey;
-    const [halfLength, radius] = definition.halfExtents;
-    // CylinderGeometry starts on Y. Rotate the geometry, leaving the mesh frame
-    // equal to the actual body frame with its cylinder along local X.
-    const geometry =
-      definition.kind === 'sphere'
-        ? new THREE.SphereGeometry(radius, 32, 24)
-        : definition.kind === 'cylinder'
-          ? new THREE.CylinderGeometry(radius, radius, 2 * halfLength, CYLINDER_SEGMENTS).rotateZ(
-              -Math.PI / 2,
-            )
-          : new THREE.BoxGeometry(...definition.halfExtents.map((value) => value * 2));
-    const mesh = new THREE.Mesh(
-      geometry,
-      createSurfaceMaterial(material, part.type === 'powerCell' ? { paint: 0x294c60 } : {}),
-    );
-    mesh.userData.partId = part.id;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    if (definition.kind === 'sphere') {
-      const mark = new THREE.Mesh(
-        new THREE.SphereGeometry(radius * 1.01, 32, 16, 0, Math.PI / 5, 0.2, Math.PI - 0.4),
-        new THREE.MeshStandardMaterial({ color: 0xffbf69, roughness: 0.7 }),
-      );
-      const band = new THREE.Mesh(
-        new THREE.SphereGeometry(radius * 1.01, 32, 4, 0, 2 * Math.PI, 1.2, 0.16),
-        new THREE.MeshStandardMaterial({ color: 0xffbf69, roughness: 0.7 }),
-      );
-      band.rotation.z = 0.55;
-      mesh.add(mark, band);
-      mesh.userData.rotationMark = mark;
-    }
-    if (definition.kind === 'cylinder') {
-      // Painted radial marks reveal real rotation. They inherit the body's full
-      // transform; there is no separate animation or simulated wheel angle.
-      for (const side of [-1, 1])
-        for (let spoke = 0; spoke < (CATALOG[part.type].gear?.teeth ?? 3); spoke++) {
-          const angle = (spoke * 2 * Math.PI) / (CATALOG[part.type].gear?.teeth ?? 3),
-            x = side * (halfLength + 0.0002);
-          const points = [
-            new THREE.Vector3(
-              x,
-              Math.cos(angle) * radius * (CATALOG[part.type].gear ? 0.55 : 0),
-              Math.sin(angle) * radius * (CATALOG[part.type].gear ? 0.55 : 0),
-            ),
-            new THREE.Vector3(x, Math.cos(angle) * radius * 0.82, Math.sin(angle) * radius * 0.82),
-          ];
-          const line = new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints(points),
-            new THREE.LineBasicMaterial({ color: spoke === 0 ? 0xffbf69 : 0xaabac2 }),
-          );
-          line.userData.partId = part.id;
-          mesh.add(line);
-        }
-    }
-    finishPart(mesh, part, definition);
-    return mesh;
   }
   function rebuildMeshes(blueprint) {
     partResources.reconcile(blueprint.parts);
@@ -3453,31 +3424,38 @@ export function createWorkshopView(
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     const previewEnvironment = createFinishEnvironment(renderer);
     renderer.setClearColor(0, 0);
-    for (const type of Object.keys(CATALOG)) {
-      const part = createPart(type, 'thumbnail', [0, 0, 0]),
-        mesh = createPartMesh(part),
-        scene = new THREE.Scene();
-      scene.environment = previewEnvironment.texture;
-      scene.environmentIntensity = 0.4;
-      scene.add(mesh, new THREE.HemisphereLight(0xe5f5ff, 0x475565, 2));
-      const light = new THREE.DirectionalLight(0xffffff, 3);
-      light.position.set(2, 4, 3);
-      scene.add(light);
-      const bounds = new THREE.Box3().setFromObject(mesh),
-        size = bounds.getSize(new THREE.Vector3()).length() * 0.49,
-        center = bounds.getCenter(new THREE.Vector3()),
-        camera = new THREE.OrthographicCamera(-size, size, size, -size, 0.01, 10);
-      camera.position.copy(center).add(new THREE.Vector3(1.4, 0.9, 1.8));
-      camera.lookAt(center);
-      renderer.render(scene, camera);
-      partThumbnails.set(type, renderer.domElement.toDataURL());
-      disposePart(mesh);
+    const meshes = [];
+    try {
+      for (const type of Object.keys(CATALOG)) {
+        const part = createPart(type, 'thumbnail', [0, 0, 0]),
+          mesh = createPartMesh(part),
+          scene = new THREE.Scene();
+        meshes.push(mesh);
+        scene.environment = previewEnvironment.texture;
+        scene.environmentIntensity = 0.4;
+        scene.add(mesh, new THREE.HemisphereLight(0xe5f5ff, 0x475565, 2));
+        const light = new THREE.DirectionalLight(0xffffff, 3);
+        light.position.set(2, 4, 3);
+        scene.add(light);
+        const bounds = new THREE.Box3().setFromObject(mesh),
+          size = bounds.getSize(new THREE.Vector3()).length() * 0.49,
+          center = bounds.getCenter(new THREE.Vector3()),
+          camera = new THREE.OrthographicCamera(-size, size, size, -size, 0.01, 10);
+        camera.position.copy(center).add(new THREE.Vector3(1.4, 0.9, 1.8));
+        camera.lookAt(center);
+        renderer.render(scene, camera);
+        partThumbnails.set(type, renderer.domElement.toDataURL());
+      }
+      for (const img of left.querySelectorAll('[data-icon-type]'))
+        img.src = partThumbnails.get(img.dataset.iconType);
+    } finally {
+      // Keep shared shader programs alive across the batch instead of recompiling
+      // them after every thumbnail. All temporary resources leave with this batch.
+      for (const mesh of meshes) disposePart(mesh);
+      previewEnvironment.dispose();
+      renderer.dispose();
+      renderer.forceContextLoss();
     }
-    for (const img of left.querySelectorAll('[data-icon-type]'))
-      img.src = partThumbnails.get(img.dataset.iconType);
-    previewEnvironment.dispose();
-    renderer.dispose();
-    renderer.forceContextLoss();
   }
 
   function updatePortCues() {
@@ -3556,6 +3534,8 @@ export function createWorkshopView(
     const kind =
       edge.kind ??
       (edge.a.surface ? 'fixed' : CATALOG[a.type].ports.find((p) => p.id === edge.a.port).kind);
+    if (completed && releasedAttachment(edge))
+      return `${a.name} ↔ ${b.name} · Latch open: this attachment no longer holds the parts together.`;
     if (!completed)
       return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Will bolt these parts together.' : kind === 'spring' ? 'Will attach the sliding carriage at the zero-force length.' : kind === 'shaft' ? 'Will join the axle, allowing rotation.' : kind === 'gear' ? 'Will mesh the supported gears without moving them.' : kind === 'power' ? 'Will add a power cable.' : 'Will connect the control signal.'}`;
     return `${a.name} ↔ ${b.name} · ${kind === 'fixed' ? 'Bolted together: they move as one.' : kind === 'spring' ? 'Spring attached: slides along its axis; does not swivel.' : kind === 'shaft' ? 'Axle connected: the wheel can turn.' : kind === 'gear' ? 'Gear mesh connected: supported shafts exchange rotation.' : kind === 'power' ? 'Power wired: energy can reach the motor.' : 'Signal connected: commands can pass.'}`;
@@ -3607,7 +3587,9 @@ export function createWorkshopView(
       wiringVisible: wiring.checked,
       revealedConnectionIds,
       sourceEndpoint: sourcePort,
-      connections: frame.metadata.blueprint.connections,
+      connections: frame.metadata.blueprint.connections.filter(
+        (connection) => connection.kind !== 'rope' && !releasedAttachment(connection),
+      ),
       diagnostics: frame.metadata.connections,
       exploded: exploded || explodeAmount > 0,
       selectedPartId: selected ?? null,
@@ -3646,6 +3628,7 @@ export function createWorkshopView(
         .copy(explodeTarget.get(id) ?? new THREE.Vector3())
         .multiplyScalar(explodeAmount);
     scene.updateMatrixWorld(true);
+    refreshSprings();
     updateConnections();
   }
   function setExploded(on, immediate = false) {
@@ -3828,10 +3811,8 @@ export function createWorkshopView(
     else if (previousMode !== 'build')
       hint.textContent =
         'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear';
-    for (const b of palette.querySelectorAll('[data-placement]'))
-      b.disabled = frame.metadata.mode !== 'build';
-    for (const b of more.querySelectorAll('[data-placement]'))
-      b.disabled = frame.metadata.mode !== 'build';
+    partsBrowser.update(frame.metadata.mode, assemblies?.busy() || assemblyPlacement?.active());
+    partPlacement?.refresh();
     refreshAssemblyState();
   }
   function readRenderedCenters() {
@@ -3896,6 +3877,22 @@ export function createWorkshopView(
     }
   }
   const keydown = (event) => {
+    if (partPlacement?.active() && event.key === 'Escape') {
+      event.preventDefault();
+      partPlacement.cancel();
+      return;
+    }
+    if (partPlacement?.active() && !ownsPartHelpInput(event.target)) {
+      if (surface.active() && surface.key(event)) {
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        partPlacement.commit();
+      }
+      return;
+    }
     if (ownsPartHelpInput(event.target)) return;
     if (event.key === 'Escape' && partHelp.dismissTooltip()) {
       event.preventDefault();
@@ -4078,6 +4075,18 @@ export function createWorkshopView(
   window.addEventListener('blur', blur);
 
   renderPaletteIcons();
+  // Keep a bounded set of graphics resources for this renderer lifetime. Warm
+  // real material/shadow variants before the first authored placement; these
+  // meshes never enter the authored mesh map or completed snapshot readback.
+  const warmMeshes = Object.keys(CATALOG).map((type) =>
+    createPartMesh(createPart(type, 'graphics-warmup', [0, 0, 0])),
+  );
+  try {
+    scene.add(...warmMeshes);
+    renderer.render(scene, camera);
+  } finally {
+    scene.remove(...warmMeshes);
+  }
   let animation,
     previousFrameTime,
     previousFrameRendered = false;
@@ -4187,6 +4196,7 @@ export function createWorkshopView(
   }
   draw();
   return {
+    utilityHost: footer,
     refreshLearning: () => learningControls?.refresh(),
     render,
     clearControls: () => vehicleControls.clear(),
@@ -4287,6 +4297,7 @@ export function createWorkshopView(
         };
       }),
     readRenderedSpringEndpoints: () => springView.readRenderedEndpoints(),
+    readRenderedRopeEndpoints: () => ropeView.readRenderedEndpoints(),
     readRenderedCenters,
     camera,
     dispose() {
@@ -4309,6 +4320,8 @@ export function createWorkshopView(
       connectionTest.dispose();
       directDrag.dispose();
       vehicleControls.dispose();
+      partPlacement.dispose();
+      partsBrowser.dispose();
       partHelp.dispose();
       motionReadout.dispose();
       window.removeEventListener('blur', blur);
@@ -4318,7 +4331,9 @@ export function createWorkshopView(
       controls.dispose();
       sensorView.dispose();
       springView.dispose();
+      ropeView.dispose();
       partResources.dispose();
+      for (const mesh of warmMeshes) disposePart(mesh);
       connectionView.dispose();
       for (const object of [portCues, ground, environmentGroup]) disposePart(object);
       keyLight.shadow.dispose();

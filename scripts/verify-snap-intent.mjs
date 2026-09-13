@@ -1,3 +1,4 @@
+import { placeCatalogPart, browseAllParts } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -19,10 +20,10 @@ async function select(id) {
 }
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
-  await page.locator('.more-parts > summary').click();
-  await page.locator('[data-part-type=chassis]').click();
-  await page.locator('[data-part-type=commandReceiver]').click();
-  await page.locator('[data-part-type=powerCell]').click();
+  await browseAllParts(page);
+  await placeCatalogPart(page, 'chassis');
+  await placeCatalogPart(page, 'commandReceiver');
+  await placeCatalogPart(page, 'powerCell');
   const before = await read(),
     receiver = before.parts.find((p) => p.type === 'commandReceiver'),
     chassis = before.parts.find((p) => p.type === 'chassis');

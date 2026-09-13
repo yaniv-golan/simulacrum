@@ -1,6 +1,12 @@
 // Real capture supplies the sample distribution. Every scheduled event/chunk must be acknowledged.
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import {
+  readFeedbackSamples,
+  feedbackLoadRequest,
+  feedbackWorkloadIdentity,
+} from './feedback-load.mjs';
+import { validateFeedbackReceipt } from '../../src/application/feedback-protocol.mjs';
 import { captureAdmin, cleanupSynthetic } from './verify-deployment.mjs';
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const hash = (bytes, mime = '') => createHash('sha256').update(mime).update(bytes).digest('hex');
@@ -39,6 +45,18 @@ export async function retryUpload({
     await wait(Math.max(1000, Number(response.headers.get('retry-after') || 0) * 1000));
   }
   throw Error('Load delivery deadline: queued data remains unacknowledged');
+}
+export async function uploadFeedbackSample({ sample, sessionId, ...delivery }) {
+  const request = feedbackLoadRequest(sample, { sessionId });
+  const receipt = await retryUpload({ ...delivery, ...request });
+  if (
+    !validateFeedbackReceipt(receipt, {
+      id: request.expected.submissionId,
+      uploadHash: request.expected.uploadHash,
+    })
+  )
+    throw Error('Feedback load receipt identity mismatch');
+  return { receipt, bytes: request.bytes.length };
 }
 // Five consecutive one-minute medians must not rise by >1 MiB overall,
 // with each adjacent minute rising by >128 KiB. Brief bursts may drain normally.
@@ -148,10 +166,33 @@ export function assertCaptureWorkload(capture, bounds) {
     throw Error('Capture workload exceeds calibrated bounds; new calibration required');
   return rates;
 }
+// Keep fractional observations; cumulative slots distribute sparse submissions across clients.
+export function feedbackLoadRate(capture, sampleCount) {
+  if (!sampleCount) return 0;
+  const rates = (capture.feedback?.cases ?? [{ samples: sampleCount }]).map((c, i) => {
+    const seconds = capture.cases?.[i]?.captureSeconds ?? capture.captureSeconds;
+    if (
+      !Number.isFinite(seconds) ||
+      seconds <= 0 ||
+      !Number.isSafeInteger(c.samples) ||
+      c.samples < 0
+    )
+      throw Error('Invalid observed feedback rate');
+    return (c.samples * 3) / seconds;
+  });
+  if (!rates.length) throw Error('Missing observed feedback rate');
+  return Math.max(...rates);
+}
+export function feedbackScheduled(rate, slots) {
+  return Math.floor(rate * slots);
+}
 export async function measureCaptureLoad({ origin, capture, seconds = 120, reservation }) {
   assertCaptureWorkload(capture);
   if (!capture?.eventSamples?.length)
     throw Error('Measured media distribution and event traffic required');
+  const feedbackSamples =
+    capture.feedbackFiles === undefined ? [] : await readFeedbackSamples(capture.feedbackFiles);
+  const feedbackPerTick = feedbackLoadRate(capture, feedbackSamples.length);
   const clients = 20,
     ticks = Math.ceil(seconds / 3),
     mediaPerTick = !capture.mediaFiles.length
@@ -168,7 +209,11 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
             Math.max(1, capture.captureSeconds / 3),
         ),
       );
-  const rows = clients * (ticks * (mediaPerTick + eventsPerTick) + 1) + 2;
+  const rows =
+    clients * (ticks * (mediaPerTick + eventsPerTick) + 1) +
+    feedbackScheduled(feedbackPerTick, clients * ticks) +
+    2 +
+    (feedbackSamples.length ? 2 : 0);
   const run =
     reservation ||
     (await captureAdmin(origin, 'synthetic', {
@@ -178,7 +223,10 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
     }));
   const stats = { requests: 0, retries: 0, timeouts: 0 },
     latencies = [],
-    backlog = [];
+    backlog = [],
+    feedbackLatencies = [];
+  let feedbackCompleted = 0,
+    feedbackBytes = 0;
   const cpu = process.cpuUsage(),
     memory = { scope: 'load generator process', peakRss: process.memoryUsage().rss };
   let completed = 0,
@@ -260,15 +308,15 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
         completed++;
       }
     };
+    const scheduledThrough = (count) =>
+      count * clients * (eventsPerTick + mediaPerTick) +
+      feedbackScheduled(feedbackPerTick, count * clients);
     const producer = setInterval(() => {
-      scheduled =
-        Math.min(ticks, Math.floor((Date.now() - start) / 3000) + 1) *
-        clients *
-        (eventsPerTick + mediaPerTick);
+      scheduled = scheduledThrough(Math.min(ticks, Math.floor((Date.now() - start) / 3000) + 1));
     }, 50);
     let outcomes;
     try {
-      scheduled = clients * (eventsPerTick + mediaPerTick);
+      scheduled = scheduledThrough(1);
       outcomes = await Promise.allSettled(
         sessions.map(async (session, index) => {
           for (let seq = 0; seq < ticks; seq++) {
@@ -291,6 +339,26 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
                 due,
               );
             }
+            const feedbackSlot = seq * clients + index;
+            const feedbackBefore = feedbackScheduled(feedbackPerTick, feedbackSlot);
+            const feedbackCount =
+              feedbackScheduled(feedbackPerTick, feedbackSlot + 1) - feedbackBefore;
+            for (let f = 0; f < feedbackCount; f++) {
+              const uploaded = await uploadFeedbackSample({
+                sample: feedbackSamples[(feedbackBefore + f) % feedbackSamples.length].bytes,
+                sessionId: session,
+                deadline: start + seconds * 1000 + 45000,
+                send,
+                stats,
+              });
+              byteCount += uploaded.bytes;
+              feedbackBytes += uploaded.bytes;
+              completed++;
+              feedbackCompleted++;
+              const latency = Date.now() - due;
+              latencies.push(latency);
+              feedbackLatencies.push(latency);
+            }
             for (let e = 0; e < eventsPerTick; e++) {
               const id = `load-${seq}-${e}`,
                 template =
@@ -312,7 +380,7 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
       );
     } finally {
       clearInterval(producer);
-      scheduled = clients * ticks * (eventsPerTick + mediaPerTick);
+      scheduled = scheduledThrough(ticks);
     }
     const failures = outcomes.filter((r) => r.status === 'rejected');
     if (failures.length)
@@ -353,6 +421,35 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
     );
     if (maximumResults.some((r) => r.status === 'rejected'))
       throw Error('Concurrent 10 MiB upload failed');
+    let feedbackMaximum;
+    if (feedbackSamples.length) {
+      const largest = feedbackSamples.reduce((a, b) => (a.bytes.length >= b.bytes.length ? a : b));
+      const began = Date.now();
+      const maximumResults = await Promise.allSettled(
+        sessions.slice(0, 2).map((sessionId) =>
+          uploadFeedbackSample({
+            sample: largest.bytes,
+            sessionId,
+            deadline: Date.now() + 90000,
+            send,
+            stats,
+          }),
+        ),
+      );
+      if (maximumResults.some((r) => r.status === 'rejected'))
+        throw new AggregateError(
+          maximumResults.filter((r) => r.status === 'rejected').map((r) => r.reason),
+          'Concurrent observed feedback envelope upload failed',
+        );
+      byteCount += maximumResults.reduce((n, r) => n + r.value.bytes, 0);
+      feedbackMaximum = {
+        concurrent: 2,
+        scope: 'largest observed sample; not protocol maximum',
+        bytes: maximumResults.map((r) => r.value.bytes),
+        elapsedMs: Date.now() - began,
+      };
+    }
+    feedbackLatencies.sort((a, b) => a - b);
     latencies.sort((a, b) => a - b);
     const p95 =
       latencies[Math.min(latencies.length - 1, Math.floor(latencies.length * 0.95))] ?? Infinity;
@@ -367,6 +464,27 @@ export async function measureCaptureLoad({ origin, capture, seconds = 120, reser
       eventsPerTick,
       mediaPerTick,
       mediaSamples: capture.mediaFiles.length,
+      ...(feedbackSamples.length
+        ? {
+            feedback: {
+              ...feedbackWorkloadIdentity,
+              qualification: 'UNQUALIFIED',
+              samples: feedbackSamples.length,
+              perTick: feedbackPerTick,
+              scheduled: feedbackScheduled(feedbackPerTick, clients * ticks),
+              completed: feedbackCompleted,
+              bytes: feedbackBytes,
+              p95Ms:
+                feedbackLatencies[
+                  Math.min(
+                    feedbackLatencies.length - 1,
+                    Math.floor(feedbackLatencies.length * 0.95),
+                  )
+                ] ?? Infinity,
+              maximumObservedEnvelope: feedbackMaximum,
+            },
+          }
+        : {}),
       ...(capture.corpusId ? { corpusId: capture.corpusId } : {}),
       bytes: byteCount + maximum.length * 2,
       ...stats,

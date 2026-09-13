@@ -36,9 +36,17 @@ A completed-tick checkpoint contains all state affecting future execution: libra
 snapshot, networks, controller state, previous sensor snapshot, input queue, clock
 accumulator, random generator, evaluator state and recorder anchor. Admission and
 restore validate before replacing state. Session checkpoint version 3 includes receiver
-arbitration state, optional bounded numeric program state, typed prior sensor readings and range continuity history, and the signed constraint-work ledger. Physics envelope version 4
-binds the double-precision native backend before deserialization; older opaque
-checkpoints are rejected explicitly. Blueprint save version 3 is unchanged.
+arbitration state, optional bounded numeric program state, typed prior sensor readings
+and range continuity history, and the signed constraint-work ledger. Physics envelopes
+admit versions 4 through 8, each binding the pinned double-precision native backend
+before deserialization. Writers select version 4 without gear memory, ropes or opened
+joints; version 5 with gear memory alone; version 6 with opened joints and no ropes;
+version 7 with ropes and no opened joints; and version 8 with ropes and opened joints.
+Legacy version-6 rope snapshots are distinguished by their exact rope field set;
+they cannot also declare opened joints and cannot restore a rope assembly without
+the required completed work ledger.
+Unsupported versions are rejected explicitly. Session checkpoint and blueprint save
+versions remain 3; these physics-envelope variants do not migrate blueprint saves.
 
 Version 3 admits an optional `environment`: the unchanged legacy `flat` or
 `rounded-bump` string, or authored `{objects,ground}` scene data. Omission means
@@ -471,8 +479,39 @@ solver velocity stabilization; they do not measure continuous contact time or co
 heat. Support classification and qualification require independent apparatus and
 error bounds beyond this numeric observation contract.
 
-Opaque physics envelopes use version 4 and bind the pinned f64 backend identity. Native motor configuration is included in physical-plant restoration validation. Older envelopes reject before native
-snapshot deserialization. Native contact observations serialize with the solver;
+Opaque physics envelopes admit versions 4 through 8 and bind the pinned f64 backend
+identity. Version 4 has no gear-memory or opened-joint fields. Version 5 adds
+`gearState`; version 6 includes `gearState` (possibly empty) and `opened`, a strictly
+increasing list of indices of authored fixed joints. Indices remain relative to the
+original admitted joint configuration after removal. Version 7 includes `ropeState`
+and `ropeWork`, plus `gearState` when gears are present. Version 8 includes all four
+fields: `opened`, `gearState` (possibly empty), `ropeState` and `ropeWork`.
+Legacy version-6 rope envelopes instead contain `ropeState`, optional `gearState`
+and no `opened` or `ropeWork`; restoring an assembly containing ropes rejects that
+missing completed work ledger. The two version-6 field sets are mutually
+exclusive. Extra or missing variant fields reject. Unsupported versions and backend
+identities reject before native snapshot deserialization. Native motor configuration
+is included in physical-plant restoration validation.
+
+The power network owns each coupler's completed funding and opened state; the physics
+door owns the corresponding native joint removals. Session restore requires the
+physics `opened` list to equal the sorted joints of opened couplers in the separately
+validated power checkpoint. Physics restore admits the remaining gear support and
+unchanged spring-activation classification, checks the resulting spring frequency
+bound where applicable, and requires the native plant to match the original admitted
+plant with only the declared fixed joints removed. Body/collider identity and retained
+joint properties remain validated. Rejected admission leaves the live completed state
+unchanged. Restoring an admitted released snapshot refreshes contact-filter membership
+and response topology; it does not recreate a closed latch or reset body motion.
+Rope work and force readings are validated independently of opened-joint state, and
+both families are admitted before the native state is swapped. Numeric rope links
+remain outside bilateral native constraint groups; their spherical anchors remain
+native joints after a fixed latch opens. Release commits before the rope force solve,
+which uses the prepared post-release response. One ordinary integration follows.
+Snapshots are available only at completed boundaries, after a planned release has
+committed and the tick's single integration has finished.
+
+Native contact observations serialize with the solver;
 restore validates their structure, interval semantics and canonical references before
 swapping owners. Solver iteration and CCD settings and exposed joint limits must
 match the admitted plant. Immediate and subsequent

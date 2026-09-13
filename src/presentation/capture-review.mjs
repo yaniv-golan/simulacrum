@@ -1,11 +1,40 @@
 import { createPrimitiveGeometry } from './primitive-geometry.mjs';
 import * as THREE from 'three';
-import { reviewTimeline, seekReview, sceneParts, safeMedia } from './capture-review-model.mjs';
+import {
+  reviewTimeline,
+  seekReview,
+  sceneParts,
+  safeMedia,
+  reviewVideo,
+  seekVideo,
+} from './capture-review-model.mjs';
+import { mountFeedbackReview } from './feedback-review.mjs';
 export function mountCaptureReview(data, index) {
   const timeline = reviewTimeline(index),
     $ = (id) => document.getElementById(id);
-  $('status').textContent =
-    `Stream: ${timeline.status}. ${timeline.gaps.length} recorded gap(s). ${index.error ?? ''} ${data.legacyProvenance ? 'Legacy export: raw-event provenance unavailable.' : ''}`;
+  const video = reviewVideo(timeline.events, data.media);
+  let videoFile;
+  function showVideo(time) {
+    const target = seekVideo(video, time),
+      screen = $('screen');
+    screen.pause();
+    screen.hidden = !target;
+    $('video-note').textContent = target
+      ? video.legacy
+        ? 'Legacy video: original direct time mapping.'
+        : 'Tab-video segment; suppressed intervals are unavailable.'
+      : (video.error ??
+        'No tab video available at this moment (suppressed, incomplete, or not recorded).');
+    if (!target) return;
+    if (videoFile !== target.file) {
+      screen.src = target.file;
+      videoFile = target.file;
+    }
+    screen.currentTime = target.timeSeconds;
+  }
+  $('status').textContent = data.standalone
+    ? `${data.feedback.length} independent feedback submission(s). Server receipts verified during export. No recording included.`
+    : `Stream: ${timeline.status}. ${timeline.gaps.length} recorded gap(s). ${index.error ?? ''} ${data.legacyProvenance ? 'Legacy export: raw-event provenance unavailable.' : ''}`;
   $('timeline').textContent = JSON.stringify(
     { gaps: timeline.gaps, events: timeline.events },
     null,
@@ -15,23 +44,25 @@ export function mountCaptureReview(data, index) {
     scene,
     camera,
     group;
-  try {
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(900, 500);
-    $('scene').append(renderer.domElement);
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color('#192c35');
-    camera = new THREE.PerspectiveCamera(45, 1.8, 0.01, 1e5);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x34424b, 3));
-    scene.add(new THREE.GridHelper(20, 40));
-    group = new THREE.Group();
-    scene.add(group);
-  } catch {
-    $('unsupported').textContent =
-      '3D preview unavailable in this browser. Recorded state remains available below.';
-  }
+  if (!data.standalone)
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(900, 500);
+      $('scene').append(renderer.domElement);
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color('#192c35');
+      camera = new THREE.PerspectiveCamera(45, 1.8, 0.01, 1e5);
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x34424b, 3));
+      scene.add(new THREE.GridHelper(20, 40));
+      group = new THREE.Group();
+      scene.add(group);
+    } catch {
+      $('unsupported').textContent =
+        '3D preview unavailable in this browser. Recorded state remains available below.';
+    }
   let renderedEvent, selectedPrevious, selectedDecoded;
   function show(time) {
+    showVideo(time);
     const selected = seekReview(timeline, time);
     if (selected !== selectedPrevious) {
       selectedDecoded = selected ? index.readEvent(timeline.events.indexOf(selected)) : null;
@@ -112,11 +143,6 @@ export function mountCaptureReview(data, index) {
     requestAnimationFrame(animate);
   }
   requestAnimationFrame(animate);
-  const screen = data.media.find((m) => m.kind === 'screen' && safeMedia(m.file));
-  if (screen) {
-    $('screen').src = screen.file;
-    $('screen').hidden = false;
-  } else $('video-note').textContent = 'No tab video recorded.';
   for (const event of timeline.events.filter((e) =>
     ['feedback-text', 'voice-start'].includes(e.kind),
   )) {
@@ -129,7 +155,6 @@ export function mountCaptureReview(data, index) {
     button.textContent = `${(time / 1000).toFixed(1)} s — ${event.kind === 'feedback-text' ? (event.data?.text ?? 'Unavailable feedback text') : 'Voice comment'}`;
     button.onclick = () => {
       show(time);
-      if (screen) $('screen').currentTime = time / 1000;
     };
     row.append(button);
     const clip = data.media.find(
@@ -159,6 +184,10 @@ export function mountCaptureReview(data, index) {
     }
     $('comments').append(row);
   }
+  mountFeedbackReview($('comments'), data.feedback ?? [], {
+    sessionId: data.sessionId,
+    onSeek: show,
+  });
   for (const media of data.media.filter((m) => m.gaps)) {
     const p = document.createElement('p');
     p.textContent = 'Incomplete media: ' + media.file;

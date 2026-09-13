@@ -1,3 +1,11 @@
+import { NodeFeedbackStore } from './playtest/feedback-node.mjs';
+import {
+  feedbackEndpoint,
+  feedbackId,
+  feedbackRate,
+  feedbackPage,
+} from './playtest/feedback-common.mjs';
+import { feedbackLimits } from '../src/application/feedback-protocol.mjs';
 // M3b: private, bounded remote playtest capture. Receipts order completed uploads at the server.
 import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
@@ -89,6 +97,9 @@ export function createPlaytestServer({
   dataDir = process.env.PLAYTEST_DATA_DIR,
   token = process.env.PLAYTEST_TOKEN,
   optionalVideo = process.env.PLAYTEST_OPTIONAL_VIDEO === 'true',
+  adminToken = process.env.PLAYTEST_ADMIN_TOKEN,
+  feedbackEnabled = process.env.PLAYTEST_FEEDBACK_ENABLED !== 'false',
+  feedbackStorageBytes = Number(process.env.PLAYTEST_FEEDBACK_STORAGE_BYTES || 128 * 1024 ** 2),
   maxRequestBytes = 10 * 1024 * 1024,
   maxSessionBytes = 1024 ** 3,
   maxSessions = 20,
@@ -117,8 +128,8 @@ export function createPlaytestServer({
   for (const name of readdirSync(privateRoot))
     if (/^\.[a-f0-9]{32}\.creating$/.test(name))
       rmSync(join(privateRoot, name), { recursive: true, force: true });
-  let sessionCount = readdirSync(privateRoot, { withFileTypes: true }).filter((x) =>
-    x.isDirectory(),
+  let sessionCount = readdirSync(privateRoot, { withFileTypes: true }).filter(
+    (x) => x.isDirectory() && /^[a-f0-9]{32}$/.test(x.name),
   ).length;
   const cookieValue = randomBytes(32).toString('hex');
   const sessions = new Map();
@@ -202,6 +213,14 @@ export function createPlaytestServer({
     queue = result.catch(() => {});
     return result;
   };
+  const feedback = new NodeFeedbackStore(privateRoot, {
+    budget: feedbackStorageBytes,
+    generation: digest(token),
+    reference: ({ sessionId }) => {
+      if (!sessions.has(sessionId)) throw fail(404, 'Unknown referenced session');
+    },
+  });
+  const feedbackAdmission = feedbackRate();
   const server = createServer(async (req, res) => {
     res.setHeader('cache-control', 'no-store');
     res.setHeader('x-content-type-options', 'nosniff');
@@ -250,7 +269,20 @@ export function createPlaytestServer({
         res.end();
         return;
       }
+      const isFeedbackAdmin = url.pathname.startsWith('/admin/playtest/feedback');
+      if (isFeedbackAdmin) {
+        const supplied = Buffer.from(req.headers.authorization || '');
+        const expected = Buffer.from(`Bearer ${adminToken || ''}`);
+        if (
+          !adminToken ||
+          adminToken.length < 32 ||
+          supplied.length !== expected.length ||
+          !timingSafeEqual(supplied, expected)
+        )
+          throw fail(403, 'Admin required');
+      }
       if (
+        !isFeedbackAdmin &&
         !String(req.headers.cookie || '')
           .split(';')
           .some((x) => x.trim() === `playtest=${cookieValue}`)
@@ -273,6 +305,7 @@ export function createPlaytestServer({
           protocolVersion: 2,
           supportedProtocols: [1, 2],
           optionalVideo,
+          feedback: { enabled: feedbackEnabled, protocolVersion: 1 },
           accountingVersion: 'node-filesystem-v1',
           storageUnavailable: stalledWrites.size > 0,
           limits: {
@@ -282,6 +315,39 @@ export function createPlaytestServer({
             sessions: maxSessions,
           },
         });
+        return;
+      }
+      if (isFeedbackAdmin) {
+        if (url.pathname === '/admin/playtest/feedback' && req.method === 'GET') {
+          send(res, 200, feedback.list(feedbackPage(url)));
+          return;
+        }
+        const match = /^\/admin\/playtest\/feedback\/([^/]+)\/(export|delete)$/.exec(url.pathname);
+        if (!match || !feedbackId.test(match[1])) throw fail(404, 'Not found');
+        if (match[2] === 'export' && req.method === 'GET') {
+          send(res, 200, await serialized(() => feedback.export(match[1])));
+          return;
+        }
+        if (match[2] === 'delete' && req.method === 'POST') {
+          release = acquireWrite(0);
+          await serialized(() => feedback.delete(match[1]));
+          send(res, 202, { deleted: true });
+          return;
+        }
+        throw fail(404, 'Not found');
+      }
+      if (url.pathname === feedbackEndpoint && req.method === 'POST') {
+        if (!feedbackEnabled) throw fail(503, 'Feedback disabled');
+        if (String(req.headers['content-type'] || '').split(';')[0] !== 'application/json')
+          throw fail(415, 'Expected JSON');
+        feedbackAdmission();
+        release = acquireWrite(feedbackLimits.submissionBytes);
+        const bytes = await body(req, feedbackLimits.submissionBytes);
+        const result = await serialized(async () => {
+          await feedback.cleanup();
+          return feedback.submit(bytes);
+        });
+        send(res, result.status, result.receipt);
         return;
       }
       const v2 = url.pathname.startsWith('/api/playtest/v2/');
@@ -505,6 +571,11 @@ export function createPlaytestServer({
       release?.();
     }
   });
+  const feedbackCleanup = setInterval(() => {
+    void serialized(() => feedback.cleanup()).catch(() => {});
+  }, 60000);
+  feedbackCleanup.unref();
+  server.on('close', () => clearInterval(feedbackCleanup));
   server.requestTimeout = 30_000;
   server.headersTimeout = 15_000;
   server.maxHeadersCount = 40;

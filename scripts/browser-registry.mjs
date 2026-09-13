@@ -77,8 +77,9 @@ export function parseBrowserArgs(args) {
         }
       } else if (arg === '--workers') {
         result.workers = Number(args[++i]);
-        if (![1, 2].includes(result.workers)) throw Error('workers must be 1 or 2');
+        if (![1, 2, 3, 4].includes(result.workers)) throw Error('workers must be 1 to 4');
       } else if (arg === '--reuse-build') result.reuseBuild = true;
+      else if (arg === '--fail-fast') result.failFast = true;
       else if (arg === '--summary') result.summary = true;
       else throw Error(`unknown browser option: ${arg}`);
     } else {
@@ -88,6 +89,10 @@ export function parseBrowserArgs(args) {
   }
   if (result.files && result.mode)
     throw Error('conflicting browser selectors: --files and explicit checks');
+  if (result.failFast && !Array.isArray(result.mode))
+    throw Error('--fail-fast requires explicit --checks development probes');
+  if (result.workers > 2 && !Array.isArray(result.mode))
+    throw Error('more than two workers requires explicit development probes');
   result.mode ??= 'all';
   return result;
 }

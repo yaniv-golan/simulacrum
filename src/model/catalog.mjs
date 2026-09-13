@@ -108,6 +108,23 @@ const hubTilt = Math.atan2(0.07, 0.1),
 const aboutZ = (angle) => [0, 0, Math.sin(angle / 2), Math.cos(angle / 2)];
 /** @type {Readonly<Record<import('./generated/blueprint-types.js').PartType, CatalogDefinition>>} */
 export const CATALOG = freeze({
+  releaseCoupler: {
+    ...component(
+      'releaseCoupler',
+      'Release Coupler',
+      [0.03, 0.03, 0.03],
+      'steel',
+      [power(), signal('signal', 'input')],
+      {
+        resistance: rating(24, 1, 1000, 'ohm'),
+        minVoltage: rating(12, 1, 100, 'V'),
+        energyJ: rating(1, 0.01, 100, 'J'),
+      },
+    ),
+    milestone: 'M3b',
+    mountingFaces: ['right', 'left', 'bottom', 'top', 'front', 'back'],
+    releaseFace: 'right',
+  },
   gear12: {
     ...component(
       'gear12',
@@ -222,6 +239,30 @@ export const CATALOG = freeze({
         restLength: rating(0.3, 0.08, 0.4, 'm'),
         minLength: rating(0.08, 0.08, 0.39, 'm'),
         maxLength: rating(0.4, 0.09, 0.4, 'm'),
+      },
+    ),
+    milestone: 'M3b',
+    mountingFaces: ['bottom', 'left', 'right', 'front', 'back'],
+  },
+  linearActuator: {
+    ...component(
+      'linearActuator',
+      'Powered linear actuator',
+      [0.08, 0.01, 0.08],
+      'steel',
+      [
+        { ...port('slide', 'spring', [0, 0.01, 0]), rotation: aboutZ(Math.PI / 2) },
+        power(),
+        signal('signal', 'input'),
+      ],
+      {
+        restLength: rating(0.2, 0.08, 0.4, 'm'),
+        minLength: rating(0.08, 0.08, 0.39, 'm'),
+        maxLength: rating(0.4, 0.09, 0.4, 'm'),
+        forceConstant: rating(40, 10, 100, 'N/A'),
+        resistance: rating(4, 1, 20, 'ohm'),
+        currentLimit: rating(2, 0.1, 5, 'A'),
+        maxSpeed: rating(0.3, 0.01, 0.5, 'm/s'),
       },
     ),
     milestone: 'M3b',

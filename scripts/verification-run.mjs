@@ -144,6 +144,20 @@ export function createVerificationContext(options) {
       });
     return value;
   };
+  async function boundedProcess(limit, execute) {
+    const timeoutMs = remaining(limit);
+    try {
+      return await execute(timeoutMs);
+    } catch (error) {
+      if (timeoutMs < limit && error.failureKind === 'watchdog') {
+        error.message = `iteration-budget: shared deadline expired; ${error.message}`;
+        error.summary = `iteration-budget: shared deadline expired; ${error.summary ?? ''}`;
+        error.code = 'ITERATION_BUDGET_EXHAUSTED';
+        error.failureKind = 'iteration-budget';
+      }
+      throw error;
+    }
+  }
   const run = createVerificationRun({
     ...ledgerOptions,
     ...options,
@@ -161,12 +175,16 @@ export function createVerificationContext(options) {
     },
     node(id, args, timeoutMs = 30000) {
       return run.check(id, { args, timeoutMs }, () =>
-        runProcess(process.execPath, args, { timeoutMs: remaining(timeoutMs) }),
+        boundedProcess(timeoutMs, (limit) =>
+          runProcess(process.execPath, args, { timeoutMs: limit }),
+        ),
       );
     },
     module(id, path, exportName, args, timeoutMs = 5000) {
       return run.check(id, { path, exportName, args, timeoutMs }, () =>
-        runModuleCheck(resolve(path), exportName, args, { timeoutMs: remaining(timeoutMs) }),
+        boundedProcess(timeoutMs, (limit) =>
+          runModuleCheck(resolve(path), exportName, args, { timeoutMs: limit }),
+        ),
       );
     },
     async unit(files) {
@@ -187,7 +205,8 @@ export function createVerificationContext(options) {
             try {
               await this.node(`unit:${file}`, ['--test', file], 30000);
             } catch (error) {
-              if (error.code === 'ITERATION_BUDGET_EXHAUSTED') unexecuted.push(file);
+              if (error.code === 'ITERATION_BUDGET_EXHAUSTED' && !error.processDiagnostics)
+                unexecuted.push(file);
               else failures.push({ file, error });
             }
           }
@@ -197,7 +216,7 @@ export function createVerificationContext(options) {
         throw Object.assign(
           new AggregateError(
             failures.map((x) => x.error),
-            `unit tests failed: ${failures.map((x) => x.file).join(', ')}\n${failures.map((x) => x.error.output ?? x.error.message).join('\n')}\n${unexecuted.length ? `iteration-budget: ${unexecuted.length} unit tests not executed` : ''}`,
+            `unit tests failed: ${failures.map((x) => x.file).join(', ')}\n${failures.map((x) => x.error.message).join('\n')}\n${unexecuted.length ? `iteration-budget: ${unexecuted.length} unit tests not executed` : ''}`,
           ),
           { unexecuted: unexecuted.sort() },
         );

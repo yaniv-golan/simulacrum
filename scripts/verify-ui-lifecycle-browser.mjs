@@ -1,3 +1,4 @@
+import { placeCatalogPart, browseAllParts } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 const browserEvidence = createBrowserEvidence();
@@ -30,8 +31,27 @@ try {
     expectedBuild,
     'served build must equal the current app fingerprint',
   ]);
-  await page.locator('.more-parts > summary').click();
-  await page.locator('[data-part-type=chassis]').click();
+  browserEvidence.assert('deepEqual', [
+    await page.evaluate(() => {
+      const toolbar = document.querySelector('.playtest-panel').getBoundingClientRect();
+      const intersects = (element) => {
+        const rect = element.getBoundingClientRect();
+        return (
+          rect.width > 0 &&
+          rect.height > 0 &&
+          Math.min(rect.right, toolbar.right) > Math.max(rect.left, toolbar.left) &&
+          Math.min(rect.bottom, toolbar.bottom) > Math.max(rect.top, toolbar.top)
+        );
+      };
+      return [...document.querySelectorAll('.viewport canvas, .inspector-panel')]
+        .filter(intersects)
+        .map((element) => element.className || element.tagName);
+    }),
+    [],
+    'feedback toolbar leaves canvas and inspector pointer regions unobstructed',
+  ]);
+  await browseAllParts(page);
+  await placeCatalogPart(page, 'chassis');
   const canvas = page.locator('canvas').first(),
     box = await canvas.boundingBox();
   const center = await page.evaluate(() => window.workshopProbe.readRenderedCenters()[0]);
@@ -71,7 +91,7 @@ try {
   browserEvidence.assert('equal', [(await read()).ui.surfacePlacement, null]);
   browserEvidence.assert('equal', [(await read()).blueprint.parts.length, 2]);
   // Explicit surface placement uses a different pointer path than direct body dragging.
-  await page.locator('[data-part-type=poweredMotor]').click();
+  await placeCatalogPart(page, 'poweredMotor');
   await page.getByRole('button', { name: 'Snap to surface', exact: true }).click();
   const frameBefore = await read();
   const base = frameBefore.blueprint.parts.find((p) => p.type === 'chassis');

@@ -21,6 +21,7 @@ export const BLUEPRINT_REASON_CODES = Object.freeze([
   'UNKNOWN_PORT',
   'SELF_CONNECTION',
   'PORT_OCCUPIED',
+  'RELEASE_LATCH_CONFLICT',
   'UNKNOWN_MATERIAL',
   'INVALID_ROTATION',
   'INCOMPATIBLE_PORT_DIRECTION',
@@ -80,7 +81,12 @@ export function validateBlueprint(blueprint) {
   }
   try {
     const obstacles = environmentObstacles(blueprint.environment);
-    if (blueprint.parts.length + obstacles.length + 1 > 4097)
+    const ropeNodes = blueprint.connections.reduce(
+      (count, connection) =>
+        count + (connection.kind === 'rope' ? connection.rope.segments + 1 : 0),
+      0,
+    );
+    if (blueprint.parts.length + ropeNodes + obstacles.length + 1 > 4097)
       return result('SCENE_BODY_LIMIT', '/environment/objects');
   } catch {
     return result('INVALID_BLUEPRINT', '/environment');
@@ -164,7 +170,7 @@ export function validateBlueprint(blueprint) {
       const p = part.parameters;
       if (p.minTarget >= p.maxTarget || p.target < p.minTarget || p.target > p.maxTarget)
         return result('INVALID_BLUEPRINT', `/parts/${index}/parameters`);
-    } else if (part.type === 'springGuide') {
+    } else if (['springGuide', 'linearActuator'].includes(part.type)) {
       const p = part.parameters;
       if (p.minLength >= p.maxLength || p.restLength < p.minLength || p.restLength > p.maxLength)
         return result('INVALID_BLUEPRINT', `/parts/${index}/parameters`);
@@ -177,10 +183,30 @@ export function validateBlueprint(blueprint) {
     if (connections.has(connection.id)) return result('DUPLICATE_ID', `${path}/id`);
     connections.add(connection.id);
     if (connection.a.part === connection.b.part) return result('SELF_CONNECTION', `${path}/b/part`);
+    if (connection.kind === 'rope') {
+      for (const side of ['a', 'b']) {
+        const endpoint = connection[side],
+          part = parts.get(endpoint.part);
+        if (!part) return result('UNKNOWN_PART', `${path}/${side}/part`);
+        try {
+          resolveSurfaceEndpoint(part, endpoint);
+        } catch (error) {
+          return result(error.reasonCode ?? 'INVALID_ENDPOINT', path);
+        }
+      }
+      continue;
+    }
     if (connection.a.surface || connection.b.surface) {
       if (!connection.a.surface || !connection.b.surface) return result('INVALID_BLUEPRINT', path);
       const a = parts.get(connection.a.part),
         b = parts.get(connection.b.part);
+      if (
+        a &&
+        b &&
+        CATALOG[a.type].releaseFace === connection.a.surface.region &&
+        CATALOG[b.type].releaseFace === connection.b.surface.region
+      )
+        return result('RELEASE_LATCH_CONFLICT', path);
       if (a && b)
         try {
           validateSurfacePair(a, connection.a, b, connection.b);
@@ -190,8 +216,9 @@ export function validateBlueprint(blueprint) {
     }
     if (
       connection.kind === 'spring' &&
-      [parts.get(connection.a.part)?.type, parts.get(connection.b.part)?.type].sort().join(',') !==
-        'springCarriage,springGuide'
+      !['springCarriage,springGuide', 'linearActuator,springCarriage'].includes(
+        [parts.get(connection.a.part)?.type, parts.get(connection.b.part)?.type].sort().join(','),
+      )
     )
       return result('INVALID_BLUEPRINT', path);
     for (const side of ['a', 'b']) {

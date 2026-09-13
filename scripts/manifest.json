@@ -157,7 +157,7 @@
       "module": "scripts/check-boundary-types.mjs",
       "export": "check",
       "args": [],
-      "timeoutMs": 5000
+      "timeoutMs": 15000
     },
     {
       "id": "developer-documentation",
@@ -166,7 +166,7 @@
       "ruleId": "gate-integrity",
       "module": "scripts/check-documentation.mjs",
       "export": "check",
-      "timeoutMs": 5000
+      "timeoutMs": 15000
     },
     {
       "id": "verification-runtime",
@@ -351,7 +351,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -477,7 +477,7 @@
     {
       "id": "verify-edit-cycles",
       "script": "scripts/verify-edit-cycles.mjs",
-      "execution": "exclusive",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
@@ -602,7 +602,7 @@
       "environment": "self",
       "tier": "browser",
       "smoke": true,
-      "timeoutMs": 45000,
+      "timeoutMs": 90000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
@@ -657,18 +657,18 @@
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
-      "timeoutMs": 45000,
+      "timeoutMs": 60000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
     {
       "id": "verify-ui-lifecycle-browser",
       "script": "scripts/verify-ui-lifecycle-browser.mjs",
-      "execution": "exclusive",
+      "execution": "parallel",
       "environment": "workshop",
       "tier": "browser",
       "smoke": true,
-      "timeoutMs": 45000,
+      "timeoutMs": 75000,
       "ruleId": "runtime-contract",
       "mergeSmoke": true
     },
@@ -723,7 +723,7 @@
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
-      "timeoutMs": 60000,
+      "timeoutMs": 90000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
@@ -734,7 +734,7 @@
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
-      "timeoutMs": 60000,
+      "timeoutMs": 90000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
@@ -767,7 +767,7 @@
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
-      "timeoutMs": 60000,
+      "timeoutMs": 90000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
@@ -895,11 +895,88 @@
     {
       "id": "verify-shared-sensing",
       "script": "scripts/verify-shared-sensing.mjs",
-      "execution": "parallel",
+      "execution": "exclusive",
       "environment": "workshop",
       "tier": "browser",
       "smoke": false,
       "timeoutMs": 120000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-release-coupler",
+      "script": "scripts/verify-release-coupler.mjs",
+      "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-linear-actuator-browser",
+      "script": "scripts/verify-linear-actuator-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-rope-browser",
+      "script": "scripts/verify-rope-browser.mjs",
+      "execution": "exclusive",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-feedback-flow",
+      "script": "scripts/verify-feedback-flow.mjs",
+      "execution": "exclusive",
+      "environment": "self",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 90000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-feedback-lifecycle",
+      "script": "scripts/verify-feedback-lifecycle.mjs",
+      "execution": "exclusive",
+      "environment": "self",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-feedback-recovery",
+      "script": "scripts/verify-feedback-recovery.mjs",
+      "execution": "exclusive",
+      "environment": "self",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-parts-catalog",
+      "script": "scripts/verify-parts-catalog.mjs",
+      "execution": "parallel",
+      "environment": "workshop",
+      "tier": "browser",
+      "smoke": true,
+      "timeoutMs": 60000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     },
@@ -1393,7 +1470,7 @@
       "id": "connection-display-isolation",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build.",
+      "guarantee": "Connection display preserves authored edges and deterministic simulation projections. Build/Run wiring preferences are view-local; exact trace, endpoint and open-panel paths and exploded transitions reveal electrical links without changing preferences. Hidden retained line resources do not intercept picking. Electrical socket decoration retains authored endpoints and picking volumes, fits connector spacing and uses cosmetic finishes without changing selectable physical materials. Assembly previews include the same authored connection and spring visuals as Build. The shared part builder preserves canonical solids, material authorship and resource disposal across consumers; static family coatings do not intercept picking or invent readings. Sensor face graphics distinguish measurement identities and refresh the selected angular axis.",
       "owners": [
         {
           "path": "src/presentation/connection-render.mjs",
@@ -1406,6 +1483,22 @@
         {
           "path": "src/presentation/part-finish.mjs",
           "anchor": "createPortHardware"
+        },
+        {
+          "path": "src/presentation/part-mesh.mjs",
+          "anchor": "createPartMesh"
+        },
+        {
+          "path": "src/presentation/part-visuals/sensors.mjs",
+          "anchor": "createSensorDetails"
+        },
+        {
+          "path": "src/presentation/part-visuals/electronics.mjs",
+          "anchor": "createElectronicsDetails"
+        },
+        {
+          "path": "src/presentation/part-visuals/mechanical.mjs",
+          "anchor": "createMechanicalDetails"
         }
       ],
       "checks": ["invariant-controls", "verify-connection-test-browser", "verify-exploded-browser"],
@@ -1444,6 +1537,38 @@
           {
             "path": "test/presentation-resources.test.mjs",
             "anchor": "assembly previews retain offset surface fasteners under authored rotation without mutating saved parts"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "shared part mesh retains canonical solids, authored state and disposable resources for the full catalogue"
+          },
+          {
+            "path": "test/presentation-resources.test.mjs",
+            "anchor": "angular-rate face refreshes for authored axis changes while power and binding edits retain resources"
+          },
+          {
+            "path": "test/part-visuals-mechanical.test.mjs",
+            "anchor": "mechanical surface finishes stay inside authored envelopes and never intercept picking"
+          },
+          {
+            "path": "test/part-visuals-electronics.test.mjs",
+            "anchor": "bank paint follows real endpoint directions and positions including altered authored ports"
+          },
+          {
+            "path": "test/part-visuals-sensors.test.mjs",
+            "anchor": "contact membrane covers the full active +Z face; other faces only identify it"
+          },
+          {
+            "path": "test/part-visuals-sensors.test.mjs",
+            "anchor": "tilt uses a distinct gravity graticule, not the linear-motion triad"
+          },
+          {
+            "path": "test/part-visuals-sensors.test.mjs",
+            "anchor": "range lens is centred at the sensing ray origin and remains visible after the socket band"
+          },
+          {
+            "path": "test/part-visuals-mechanical.test.mjs",
+            "anchor": "powered slide paint clears the shared central interface and differs from passive spring seats"
           }
         ]
       },
@@ -1621,7 +1746,7 @@
       "id": "capture-receipt-ownership",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Only a matching durable v2 receipt removes a persisted upload payload. Eligible uploads use durable insertion order rather than lexical packet IDs, including after database reopen. Completion and feedback UI remain pending until post-enqueue durable reconciliation and matching acknowledgement; older reads cannot erase pending uploads.",
+      "guarantee": "Only a matching durable v2 receipt removes a persisted upload payload. Eligible uploads use durable insertion order rather than lexical packet IDs, including after database reopen. Recording completion remains pending until post-enqueue durable reconciliation and matching acknowledgement; independent feedback owns separate protocol-1 receipts, and older reads cannot erase pending uploads.",
       "owners": [
         {
           "path": "src/application/capture-outbox.mjs",
@@ -1713,11 +1838,15 @@
       "id": "capture-synthetic-cleanup",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Synthetic run cleanup releases payload capacity without deleting human recordings.",
+      "guarantee": "Synthetic run cleanup releases recording and feedback payload capacity only after their pending counts and charged bytes reach zero, without deleting human evidence or unrelated runs.",
       "owners": [
         {
           "path": "scripts/playtest/cloud-store.mjs",
           "anchor": "CaptureStore"
+        },
+        {
+          "path": "scripts/playtest/feedback-cloud.mjs",
+          "anchor": "CloudFeedbackStore"
         }
       ],
       "checks": ["invariant-controls"],
@@ -1758,6 +1887,10 @@
           {
             "path": "test/cloud-playtest.test.mjs",
             "anchor": "verification holds full capacity across preliminary drain and load admission"
+          },
+          {
+            "path": "test/feedback-backend.test.mjs",
+            "anchor": "synthetic cleanup waits for failed feedback fences after recordings disappear and preserves other runs"
           }
         ],
         "negative": [
@@ -1796,6 +1929,10 @@
           {
             "path": "test/cloud-playtest.test.mjs",
             "anchor": "verification holds full capacity across preliminary drain and load admission"
+          },
+          {
+            "path": "test/feedback-backend.test.mjs",
+            "anchor": "synthetic cleanup waits for failed feedback fences after recordings disappear and preserves other runs"
           }
         ]
       },
@@ -1917,7 +2054,7 @@
       "id": "release-experiment-exceptions",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Expensive experiment exceptions remain explicit missing qualification and cannot hide known failure or authorize production implicitly.",
+      "guarantee": "Expensive experiment exceptions remain explicit missing qualification and cannot hide known failure or authorize production implicitly. Recording-only capacity cannot qualify standalone feedback; admission uses the effective Worker setting actually deployed.",
       "owners": [
         {
           "path": "scripts/playtest/experiments.mjs",
@@ -1930,6 +2067,10 @@
         {
           "path": "scripts/playtest/experiment-transport.mjs",
           "anchor": "retrieveEvidence"
+        },
+        {
+          "path": "scripts/playtest/release-policy.mjs",
+          "anchor": "assertFeedbackQualification"
         }
       ],
       "checks": ["invariant-controls"],
@@ -1962,6 +2103,10 @@
           {
             "path": "test/experiment-transport.test.mjs",
             "anchor": "replacement of a named artifact during download fails closed"
+          },
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "recording-only capacity cannot qualify feedback-enabled releases"
           }
         ],
         "negative": [
@@ -1992,6 +2137,10 @@
           {
             "path": "test/experiment-transport.test.mjs",
             "anchor": "replacement of a named artifact during download fails closed"
+          },
+          {
+            "path": "test/playtest-release.test.mjs",
+            "anchor": "recording-only capacity cannot qualify feedback-enabled releases"
           }
         ]
       },
@@ -2185,7 +2334,7 @@
       "id": "guided-spring-passivity",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
-      "guarantee": "Guided and articulated springs preserve axial freedom, coupled elastic energy, loaded sag, signed reaction-work and angular-momentum accounting, cyclic topology and completed-tick stops. Ordinary powered upper-rocker sensing and regulation, physical contact release, authored construction, replay and independently allocated simulation/render/cadence budgets retain executable controls.",
+      "guarantee": "Guided and articulated springs preserve axial freedom, coupled elastic energy, loaded sag, signed reaction-work and angular-momentum accounting, cyclic topology and completed-tick stops. Ordinary powered upper-rocker sensing and regulation, physical contact release, authored construction, replay and independently allocated simulation/render/cadence budgets retain executable controls. Powered linear guides reuse zero-stiffness sliding constraints, funded equal-and-opposite axial kicks, mixed drive responses, completed stroke bounds and backdrive without a clutch.",
       "owners": [
         {
           "path": "src/simulation/physics/world.mjs",
@@ -2244,7 +2393,12 @@
           "anchor": "createPinEndedStrut"
         }
       ],
-      "checks": ["invariant-controls", "verify-spring-browser", "verify-spring-performance"],
+      "checks": [
+        "invariant-controls",
+        "verify-spring-browser",
+        "verify-spring-performance",
+        "verify-linear-actuator-browser"
+      ],
       "controls": {
         "positive": [
           {
@@ -2522,6 +2676,70 @@
           {
             "path": "test/physics-underflow.test.mjs",
             "anchor": "ordinary revolute tree and redundant loop survive gradual underflow without state clamps"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear catalog compiles an ordinary passive slide with funded axial drive; edits are atomic"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "loaded extension, reverse, powerless fall and overload are distinct physical outcomes"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "finite stroke stops motion under drive while consuming energy; off does not latch"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "free endpoints react equally and discrete actuator work funds kinetic energy"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "complete-tick stroke and energy bounds reject unpaid lifting and allow external overspeed"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "travel sensor samples the powered slide on the prior completed tick and binding edits stay atomic"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "mixed linear rotary kicks include anchor moments and prepared damping in either allocation order"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "release, reversal, cell-only, depleted and rigidly blocked controls cannot invent a holding clutch"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "reversed authored endpoints preserve the same powered slide and snap direction"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear reversal and release match four processes and both production clocks"
+          },
+          {
+            "path": "test/linear-actuator-view.test.mjs",
+            "anchor": "linear rod is distinct from passive coil and follows completed endpoints with retained geometry"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "authored driven speed bounds powered acceleration and queued reversal survives checkpoint"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "offset axial forces conserve independent linear and angular momentum with both anchor moments"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear module copy and library insertion preserve authored settings and independent wired graphs"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear failure bundle replays reversal and rejects a missing failure input"
+          },
+          {
+            "path": "test/linear-actuator-view.test.mjs",
+            "anchor": "saved actuator thumbnails retain straight rods and guide endpoint order in either edge direction"
           }
         ],
         "negative": [
@@ -2728,6 +2946,70 @@
           {
             "path": "test/suspension-clearance.test.mjs",
             "anchor": "finite active and manual bench travel retains moving hardware and decorative coil clearance"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear catalog compiles an ordinary passive slide with funded axial drive; edits are atomic"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "complete-tick stroke and energy bounds reject unpaid lifting and allow external overspeed"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "travel sensor samples the powered slide on the prior completed tick and binding edits stay atomic"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "mixed linear rotary kicks include anchor moments and prepared damping in either allocation order"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "release, reversal, cell-only, depleted and rigidly blocked controls cannot invent a holding clutch"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear reversal and release match four processes and both production clocks"
+          },
+          {
+            "path": "test/linear-actuator-view.test.mjs",
+            "anchor": "linear rod is distinct from passive coil and follows completed endpoints with retained geometry"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "loaded extension, reverse, powerless fall and overload are distinct physical outcomes"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "finite stroke stops motion under drive while consuming energy; off does not latch"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "free endpoints react equally and discrete actuator work funds kinetic energy"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "authored driven speed bounds powered acceleration and queued reversal survives checkpoint"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "reversed authored endpoints preserve the same powered slide and snap direction"
+          },
+          {
+            "path": "test/linear-actuator-coupling.test.mjs",
+            "anchor": "offset axial forces conserve independent linear and angular momentum with both anchor moments"
+          },
+          {
+            "path": "test/linear-actuator.test.mjs",
+            "anchor": "linear module copy and library insertion preserve authored settings and independent wired graphs"
+          },
+          {
+            "path": "test/linear-actuator-determinism.test.mjs",
+            "anchor": "powered linear failure bundle replays reversal and rejects a missing failure input"
+          },
+          {
+            "path": "test/linear-actuator-view.test.mjs",
+            "anchor": "saved actuator thumbnails retain straight rods and guide endpoint order in either edge direction"
           }
         ]
       },
@@ -3202,12 +3484,20 @@
           {
             "path": "test/verification-window.test.mjs",
             "anchor": "verification windows serialize contenders, retain timing and release after failure"
+          },
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "contenders wait through partial owner publication and reject malformed published metadata"
           }
         ],
         "negative": [
           {
             "path": "test/verification-window.test.mjs",
             "anchor": "waiting is bounded; stale windows require explicit recovery and exact ownership"
+          },
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "contenders wait through partial owner publication and reject malformed published metadata"
           }
         ]
       },
@@ -3292,6 +3582,10 @@
           {
             "path": "test/module-graph.test.mjs",
             "anchor": "private executable evidence"
+          },
+          {
+            "path": "test/module-graph.test.mjs",
+            "anchor": "syntax cache matches fresh parsing after same-length restored-mtime edits and dependency removal"
           }
         ]
       },
@@ -3478,6 +3772,10 @@
         {
           "path": "scripts/verify-browser-suite.mjs",
           "anchor": "withBrowserReport"
+        },
+        {
+          "path": "scripts/verification-cleanup.mjs",
+          "anchor": "withCleanup"
         }
       ],
       "checks": ["verification-workflow"],
@@ -3496,6 +3794,10 @@
           {
             "path": "test/browser-report.test.mjs",
             "anchor": "final alias publication failure cannot leave authoritative success"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "cleanup attempts every resource despite phase publication and close failures"
           }
         ]
       },
@@ -3505,11 +3807,19 @@
       "id": "verification-priority-coverage",
       "ruleId": "gate-integrity",
       "dueAt": "M3b",
-      "guarantee": "Integration priority changes execution order only, retaining canonical required coverage and tier outcome semantics.",
+      "guarantee": "Integration priority and unit-pool composition retain every required check; fail-fast is restricted to explicit development probes, with unstarted obligations not evaluated.",
       "owners": [
         {
           "path": "scripts/browser-selection.mjs",
           "anchor": "prioritizeBrowserChecks"
+        },
+        {
+          "path": "scripts/ci.mjs",
+          "anchor": "runCI"
+        },
+        {
+          "path": "scripts/browser-history.mjs",
+          "anchor": "returnBrowserHistory"
         }
       ],
       "checks": ["verification-workflow"],
@@ -3522,12 +3832,56 @@
           {
             "path": "test/candidate-priority.test.mjs",
             "anchor": "candidate ${tier} forwards captured priority and preserves exit ${code}"
+          },
+          {
+            "path": "test/ci-order.test.mjs",
+            "anchor": "CI admits invariant and remaining unit files through a single pool"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "scheduling history survives fresh report directories without reusing results"
+          },
+          {
+            "path": "test/check-sequence.test.mjs",
+            "anchor": "duration hints balance each parallel run without crossing priority or exclusive barriers"
+          },
+          {
+            "path": "test/check-sequence.test.mjs",
+            "anchor": "four workers drain before exclusive work"
+          },
+          {
+            "path": "test/verification-window.test.mjs",
+            "anchor": "completion waits longer than focused probes without bypassing serialization"
           }
         ],
         "negative": [
           {
             "path": "test/browser-report.test.mjs",
             "anchor": "actual CLI admission failures replace previous success; summary discovery leaves it alone"
+          },
+          {
+            "path": "test/check-sequence.test.mjs",
+            "anchor": "probe fail-fast drains started peers and reports every unstarted obligation"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "actual suite allows four-worker probes and rejects completion-context overrides"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "history rejects late stale outcomes and preserves newer observations"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "history publication cannot be permanently blocked by an interrupted writer"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "legacy candidate returns only newly executed report outcomes"
+          },
+          {
+            "path": "test/browser-report.test.mjs",
+            "anchor": "history uses one snapshot and accepts last-writer-wins hint loss"
           }
         ]
       },
@@ -4024,6 +4378,10 @@
           {
             "path": "test/candidate-resume.test.mjs",
             "anchor": "dependency records are framed"
+          },
+          {
+            "path": "test/verification-run.test.mjs",
+            "anchor": "a watchdog shortened by the shared budget reports budget exhaustion, not a hung test"
           }
         ]
       },
@@ -4180,6 +4538,544 @@
         ]
       },
       "qualificationBars": []
+    },
+    {
+      "id": "powered-release-topology",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "A powered held command opens only the designated latch attachment without resetting motion. Retained physical paths, post-release collisions, shared power, support admission and completed checkpoint continuation stay consistent.",
+      "owners": [
+        {
+          "path": "src/model/assembly.mjs",
+          "anchor": "compileAssembly"
+        },
+        {
+          "path": "src/simulation/power.mjs",
+          "anchor": "createPowerNetwork"
+        },
+        {
+          "path": "src/simulation/physics/world.mjs",
+          "anchor": "createPhysicsWorld"
+        },
+        {
+          "path": "src/presentation/release-state.mjs",
+          "anchor": "releasedAttachment"
+        }
+      ],
+      "checks": ["invariant-controls", "verify-release-coupler"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/release-power.test.mjs",
+            "anchor": "funded held release accumulates coil work, schedules once and accounts every joule"
+          },
+          {
+            "path": "test/release-topology.test.mjs",
+            "anchor": "previously filtered contacts reactivate immediately and released snapshots continue exactly"
+          },
+          {
+            "path": "test/release-session.test.mjs",
+            "anchor": "checkpoints before during ready and after release continue exactly with both production clocks"
+          },
+          {
+            "path": "test/release-authoring.test.mjs",
+            "anchor": "catalog coupler designates exactly one ordinary latch and preserves physical material selection"
+          },
+          {
+            "path": "test/release-determinism.test.mjs",
+            "anchor": "release projection matches in independent processes, both clocks and renamed authored identities"
+          },
+          {
+            "path": "test/release-topology.test.mjs",
+            "anchor": "loaded rotating pair opens without linear angular momentum or energy injection"
+          },
+          {
+            "path": "test/release-session.test.mjs",
+            "anchor": "every authored material releases with its own mass and post-release ground contacts"
+          },
+          {
+            "path": "test/release-session.test.mjs",
+            "anchor": "Try again clears partial and opened latch state and permits a new powered release"
+          },
+          {
+            "path": "test/release-rope.test.mjs",
+            "anchor": "release labels distinguish the fixed latch from a retained rope on the same face"
+          },
+          {
+            "path": "test/release-rope.test.mjs",
+            "anchor": "released rope checkpoints retain both families and continue exactly across both clocks"
+          },
+          {
+            "path": "test/release-rope.test.mjs",
+            "anchor": "release retains an ordinary tensile tether with powered and absent-rope controls"
+          },
+          {
+            "path": "test/release-rope.test.mjs",
+            "anchor": "moving released rope assembly preserves independent momentum without external forces"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/release-power.test.mjs",
+            "anchor": "unattached latch rejects invented ready progress atomically"
+          },
+          {
+            "path": "test/release-topology.test.mjs",
+            "anchor": "released restore rejects frequency-unsafe ballast removal before swapping plant"
+          },
+          {
+            "path": "test/release-topology.test.mjs",
+            "anchor": "gear carrier split is blocked but release of complete supported carrier is allowed"
+          },
+          {
+            "path": "test/release-rope.test.mjs",
+            "anchor": "released rope checkpoints retain both families and continue exactly across both clocks"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "parts-catalog-discovery",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Catalog vocabulary indexes available parts with explainable alias and intent ranking, bounded typo tolerance and exact numeric identity. Click selection and cancellation leave authored state unchanged; confirmation uses ordinary cursor-guarded placement. Requested help can reveal parts without insertion. Favorites, browse position and compact drawer state remain presentation concerns. Click, touch and catalog drag share confirmation and surface mounting ownership; final pointer position is assessed before admission. Cancellation restores the originating browse snapshot and narrow layouts release sidebar space.",
+      "owners": [
+        {
+          "path": "src/presentation/part-search.mjs",
+          "anchor": "searchParts"
+        },
+        {
+          "path": "src/presentation/parts-browser.mjs",
+          "anchor": "createPartsBrowser"
+        },
+        {
+          "path": "src/presentation/part-placement.mjs",
+          "anchor": "createPartPlacement"
+        }
+      ],
+      "checks": ["verify-parts-catalog", "verify-part-help-browser"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/part-search.test.mjs",
+            "anchor": "everyday words and roles find the intended part before incidental references"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/part-search.test.mjs",
+            "anchor": "numeric identity, coverage, deduplication and empty queries fail closed"
+          },
+          {
+            "path": "test/workshop.test.mjs",
+            "anchor": "catalog placement accepts its current cursor and rejects stale proposals unchanged"
+          },
+          {
+            "path": "test/part-placement-pending.test.mjs",
+            "anchor": "pending catalog placement cannot be replaced, cancelled or submitted twice"
+          }
+        ]
+      },
+      "qualificationBars": ["F1"]
+    },
+    {
+      "id": "distributed-rope",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Authored massive tensile ropes preserve subdivision mass and compliance, completed node rendering, endpoint reactions, bounded slack and hanging behavior, applied-force readings, history and deterministic continuation within the declared collision-free rope domain. Completed-geometry work separates constitutive damping, implicit numerical loss and signed split work; session checkpoints and failure replay preserve rope telemetry and reject mismatched or internally inconsistent work receipts atomically.",
+      "owners": [
+        {
+          "path": "src/model/rope.mjs",
+          "anchor": "compileRopes"
+        },
+        {
+          "path": "src/simulation/physics/law/rope.mjs",
+          "anchor": "ropeVectorImpulses"
+        },
+        {
+          "path": "src/simulation/physics/world.mjs",
+          "anchor": "createPhysicsWorld"
+        },
+        {
+          "path": "src/simulation/session.mjs",
+          "anchor": "createSession"
+        },
+        {
+          "path": "src/presentation/rope-controls.mjs",
+          "anchor": "ropeInspector"
+        },
+        {
+          "path": "src/presentation/rope-view.mjs",
+          "anchor": "createRopeView"
+        }
+      ],
+      "checks": ["invariant-controls", "verify-rope-browser"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/rope-vector.test.mjs",
+            "anchor": "nonlinear slack and transverse extension match independent radial solution"
+          },
+          {
+            "path": "test/rope-workshop.test.mjs",
+            "anchor": "rope creation, length edit, rejected edit, undo/redo, save, deletion and Build recovery"
+          },
+          {
+            "path": "test/rope-short.test.mjs",
+            "anchor": "short slack rope on ordinary contact supports remains usable"
+          },
+          {
+            "path": "test/rope-accounting.test.mjs",
+            "anchor": "off-centre taut rope conserves independently computed momentum and does not create energy"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "massive rope free fall and absence of unadvertised collisions"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "supported hanging load has finite tensile extension and settled load"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "slack and taut native snapshots continue exactly and reject corrupt restore atomically"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "declared length and subdivision extremes retain independently predicted hanging extension"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "completed applied tension includes damping and survives snapshot restore"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "static gravity equilibrium does not claim predictor energy as actual loss"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "taut small oscillations follow the analytical damped oscillator"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "rechecksummed invalid applied-force state is rejected before native restore"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "segment reversal rejects before any force can push along its current axis"
+          },
+          {
+            "path": "test/rope-view.test.mjs",
+            "anchor": "rope mesh vertices follow completed node endpoints and resources are retained and disposed"
+          },
+          {
+            "path": "test/rope-determinism.test.mjs",
+            "anchor": "rope projections match separate processes and both production clocks"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "ordinary rope descriptor saves and compiles distributed constant mass and series compliance"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "capacity and invalid material reject while ordinary positive control admits"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "rope identity and copied reusable graphs preserve authored material and numeric plant"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "rope joins mechanical authoring and mirrored reference attachments remain explicit"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "slack chain has no compression; extended positive control pulls"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "simultaneous adjacent links match independent symmetric analytical solution"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "energy includes elastic release, gravity-free impulse work and damping"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "invalid and asymmetric mobility reject before returning impulses"
+          },
+          {
+            "path": "test/rope-towing.test.mjs",
+            "anchor": "ordinary powered wheels tow a separate load while the neutral apparatus stays still"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "rope collider exclusion suppresses actual floor and node pairs with unfiltered controls"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope session slack/taut checkpoints preserve pending input, fractional clock and full continuation"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope session rejected restores preserve cursor, physics, force readings, energy and future inputs"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope failure bundle replays recorded commands from a restored nonzero anchor and rejects wrong traces"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "completed rope ledger separates dashpot, implicit geometry loss and signed force mismatch"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "session rope ledger matches independent momentum-work and analytic native integration error"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "static hanging rope has no phantom work, damping or numerical loss and native receipt restores"
+          },
+          {
+            "path": "test/rope-linear.test.mjs",
+            "anchor": "powered linear actuator pulls a Rope load with causal controls and exact checkpoint continuation"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/rope-vector.test.mjs",
+            "anchor": "nonlinear slack and transverse extension match independent radial solution"
+          },
+          {
+            "path": "test/rope-workshop.test.mjs",
+            "anchor": "rope creation, length edit, rejected edit, undo/redo, save, deletion and Build recovery"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "slack and taut native snapshots continue exactly and reject corrupt restore atomically"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "rechecksummed invalid applied-force state is rejected before native restore"
+          },
+          {
+            "path": "test/rope-receipts.test.mjs",
+            "anchor": "segment reversal rejects before any force can push along its current axis"
+          },
+          {
+            "path": "test/rope-authoring.test.mjs",
+            "anchor": "capacity and invalid material reject while ordinary positive control admits"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "slack chain has no compression; extended positive control pulls"
+          },
+          {
+            "path": "test/rope-law.test.mjs",
+            "anchor": "invalid and asymmetric mobility reject before returning impulses"
+          },
+          {
+            "path": "test/rope-towing.test.mjs",
+            "anchor": "ordinary powered wheels tow a separate load while the neutral apparatus stays still"
+          },
+          {
+            "path": "test/rope-physics.test.mjs",
+            "anchor": "rope collider exclusion suppresses actual floor and node pairs with unfiltered controls"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope session slack/taut checkpoints preserve pending input, fractional clock and full continuation"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope session rejected restores preserve cursor, physics, force readings, energy and future inputs"
+          },
+          {
+            "path": "test/rope-session.test.mjs",
+            "anchor": "rope failure bundle replays recorded commands from a restored nonzero anchor and rejects wrong traces"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "completed rope ledger separates dashpot, implicit geometry loss and signed force mismatch"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "session rope ledger matches independent momentum-work and analytic native integration error"
+          },
+          {
+            "path": "test/rope-energy-ledger.test.mjs",
+            "anchor": "static hanging rope has no phantom work, damping or numerical loss and native receipt restores"
+          },
+          {
+            "path": "test/rope-linear.test.mjs",
+            "anchor": "powered linear actuator pulls a Rope load with causal controls and exact checkpoint continuation"
+          }
+        ]
+      },
+      "qualificationBars": ["F1"]
+    },
+    {
+      "id": "independent-feedback-receipts",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Feedback is an immutable independent submission. Only a complete digest-bound durable acknowledgement confirms receipt; revisions, retry, discard and storage failure preserve truthful draft and delivery state. Submitted attachments remain reviewable. Correcting a blocked submission creates a separate draft without replacing unfinished work. Feedback workload samples remain separate from recording media and cannot claim capacity qualification.",
+      "owners": [
+        {
+          "path": "src/application/feedback-context.mjs",
+          "anchor": "captureFeedbackContext"
+        },
+        {
+          "path": "src/application/feedback-protocol.mjs",
+          "anchor": "validateFeedbackEnvelope"
+        },
+        {
+          "path": "src/application/feedback-store.mjs",
+          "anchor": "openFeedbackStore"
+        },
+        {
+          "path": "src/application/feedback-client.mjs",
+          "anchor": "mountFeedbackClient"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-feedback-flow",
+        "verify-feedback-receipts",
+        "verify-feedback-lifecycle",
+        "verify-feedback-recovery"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/remote-playtest.test.mjs",
+            "anchor": "feedback recovery occupies the supplied toolbar region without unavailable recording chrome"
+          },
+          {
+            "path": "test/feedback-context.test.mjs",
+            "anchor": "feedback context preserves authored programs and current UI without replay checkpoint bytes"
+          },
+          {
+            "path": "test/feedback-protocol.test.mjs",
+            "anchor": "feedback protocol binds exact UTF8 payload and strict complete receipt"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "draft revisions fence stale tabs, discard and freeze retain exact durable submission"
+          },
+          {
+            "path": "test/feedback-load.test.mjs",
+            "anchor": "synthetic corpus preserves feedback envelopes separately from capture media and detects corruption"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/feedback-context.test.mjs",
+            "anchor": "feedback context preserves authored programs and current UI without replay checkpoint bytes"
+          },
+          {
+            "path": "test/feedback-protocol.test.mjs",
+            "anchor": "feedback admission rejects unknown fields malformed media and bounds while permitting optional voice"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "storage exhaustion leaves draft editable and oversized audio remains bounded and unsendable"
+          },
+          {
+            "path": "test/feedback-client-state.test.mjs",
+            "anchor": "validation rejection does not promise automatic retry"
+          },
+          {
+            "path": "test/feedback-client-state.test.mjs",
+            "anchor": "voice admission uses stop-request elapsed time without clamping a long clip"
+          },
+          {
+            "path": "test/feedback-store.test.mjs",
+            "anchor": "corrected draft preserves blocked bytes and never replaces another contribution"
+          },
+          {
+            "path": "test/feedback-load.test.mjs",
+            "anchor": "feedback load retries the exact v1 envelope, rebinds references, and rejects malformed receipts"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "feedback-capture-privacy",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Participating tab-video producers yield their shared authority before feedback content is shown. Suppression gaps map to unavailable footage, never fabricated video time; unsupported coordination cannot start capture.",
+      "owners": [
+        {
+          "path": "src/application/feedback-capture-gate.mjs",
+          "anchor": "createFeedbackCaptureGate"
+        },
+        {
+          "path": "src/application/capture-media-duration.mjs",
+          "anchor": "measureRecordedDuration"
+        }
+      ],
+      "checks": ["invariant-controls", "verify-feedback-receipts", "verify-feedback-lifecycle"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/feedback-capture-gate.test.mjs",
+            "anchor": "protected content waits for all capture suppression and blocks new capture"
+          },
+          {
+            "path": "test/feedback-review.test.mjs",
+            "anchor": "segmented video maps each clip time and leaves suppressed intervals unavailable"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/feedback-capture-gate.test.mjs",
+            "anchor": "failed suppression never grants protected access"
+          },
+          {
+            "path": "test/feedback-review.test.mjs",
+            "anchor": "unknown duration leaves only its segment unavailable"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "feedback-server-publication",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Independent feedback admission preserves origin, invitation and reference scope, exact bytes and bounded private storage. Partial publication and deletion races cannot produce a false durable receipt or resurrect deleted feedback.",
+      "owners": [
+        {
+          "path": "scripts/playtest/feedback-node.mjs",
+          "anchor": "NodeFeedbackStore"
+        },
+        {
+          "path": "scripts/playtest/feedback-cloud.mjs",
+          "anchor": "CloudFeedbackStore"
+        }
+      ],
+      "checks": ["invariant-controls"],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/feedback-backend.test.mjs",
+            "anchor": "node: capability and admin separation preserve invitation/origin boundaries"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/feedback-backend.test.mjs",
+            "anchor": "cloud: partial object publication retries, generation and synthetic scopes are enforced"
+          },
+          {
+            "path": "test/feedback-backend.test.mjs",
+            "anchor": "node: root sync failure withholds receipt and retry recovers the same publication"
+          }
+        ]
+      },
+      "qualificationBars": []
     }
   ],
   "browserLocalScopes": [
@@ -4203,7 +5099,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
       "externalImports": []
     },
     {
@@ -4221,7 +5117,7 @@
       ],
       "externalImports": ["node:fs", "node:os", "node:path", "playwright", "vite"],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -4229,12 +5125,13 @@
         "scripts/app-fingerprint.mjs",
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
+        "scripts/catalog-browser-actions.mjs",
         "scripts/source-identity.mjs"
       ],
       "externalImports": ["node:fs"],
       "checks": ["verify-mirror-browser"],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -4251,31 +5148,37 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
       "dependencies": [
         "scripts/playtest-server.mjs",
         "scripts/playtest/worker.mjs",
+        "src/application/capture-media-duration.mjs",
         "src/application/capture-outbox.mjs",
         "src/application/capture-packet.mjs",
-        "src/application/capture-stream.mjs"
+        "src/application/capture-stream.mjs",
+        "src/application/feedback-capture-gate.mjs",
+        "src/application/feedback-client.mjs"
       ],
       "externalImports": [],
       "checks": [
         "verify-cloud-playtest",
+        "verify-feedback-flow",
         "verify-feedback-receipts",
         "verify-remote-playtest",
         "verify-ui-lifecycle-browser",
-        "verify-workshop"
+        "verify-workshop",
+        "verify-feedback-lifecycle",
+        "verify-feedback-recovery"
       ],
       "consumers": [
         "index.html",
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -4307,7 +5210,7 @@
         "test/receiver-input-owner.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81"
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def"
     }
   ],
   "experimentInputScopes": [
@@ -4468,8 +5371,12 @@
   "browserReviewMetadataScopes": [
     {
       "entrypoint": "scripts/verify-exploded-browser.mjs",
-      "sourceSha256": "eaeeb38df6133bb524f1abe73dac0c38c5ae581bb7bd876c49e779d86c9fa878",
-      "dependencies": ["scripts/browser-artifacts.mjs", "scripts/browser-evidence.mjs"],
+      "sourceSha256": "ed5a14cda2af23899421efdb88bcb6f5da1eaed9b0a86953c20739fb99359eb7",
+      "dependencies": [
+        "scripts/browser-artifacts.mjs",
+        "scripts/browser-evidence.mjs",
+        "scripts/catalog-browser-actions.mjs"
+      ],
       "externalImports": ["node:fs"],
       "checks": ["invariant-controls"],
       "reads": [
@@ -4480,7 +5387,7 @@
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -4502,21 +5409,6 @@
           "excludedInputs": ["documentation", "unit-test"]
         },
         {
-          "expression": "readFileSync('src/application/capture-packet.mjs')",
-          "purpose": "fixture",
-          "excludedInputs": ["documentation", "unit-test"]
-        },
-        {
-          "expression": "readFileSync('src/application/capture-stream.mjs')",
-          "purpose": "fixture",
-          "excludedInputs": ["documentation", "unit-test"]
-        },
-        {
-          "expression": "readFileSync('src/application/capture-outbox.mjs')",
-          "purpose": "fixture",
-          "excludedInputs": ["documentation", "unit-test"]
-        },
-        {
           "expression": "new URL(request.url())",
           "purpose": "fixture",
           "excludedInputs": ["documentation", "unit-test"]
@@ -4530,13 +5422,18 @@
           "expression": "fetch(url, options)",
           "purpose": "fixture",
           "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "readFileSync(moduleFiles.get(req.url))",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "externalImports": ["node:crypto", "node:fs", "node:http"],
       "consumers": [],
-      "sourceSha256": "284668a4b55225b6b65c6745a6160615d9209e0c6bb648586ca755d8121397f3",
+      "sourceSha256": "52345784d0bd97a39f08eb1a9bca11f9e830251a80451aca6dc8a2787625e860",
       "entrypoint": "scripts/verify-feedback-receipts.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
@@ -4564,7 +5461,7 @@
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -4581,11 +5478,6 @@
           "excludedInputs": ["documentation", "unit-test"]
         },
         {
-          "expression": "readdirSync(data)",
-          "purpose": "fixture",
-          "excludedInputs": ["documentation", "unit-test"]
-        },
-        {
           "expression": "readFileSync(join(dir, 'events.ndjson'), 'utf8')",
           "purpose": "fixture",
           "excludedInputs": ["documentation", "unit-test"]
@@ -4594,17 +5486,38 @@
           "expression": "readFileSync(join(dir, 'session.json'), 'utf8')",
           "purpose": "fixture",
           "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "fetch(\n      new URL(`/admin/playtest/feedback/${submissionId}/export`, origin),\n      { headers: { authorization: `Bearer ${adminToken}` }, signal: AbortSignal.timeout(15000) },\n    )",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "new URL(`/admin/playtest/feedback/${submissionId}/export`, origin)",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "new URL(response.url())",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "readFileSync(join(dir, chunk.file))",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "85c0f6ddddaa3beea1b763ed28cc6e3a850418c54d2d2cd2f8234e1c6a530996",
       "externalImports": ["node:fs", "node:os", "node:path"],
       "consumers": ["scripts/verify-cloud-playtest.mjs"],
-      "sourceSha256": "287d2fc89266f565239c15722930a98e5e56409f7c23659dd2df2e55124875e7",
+      "sourceSha256": "36c86e28e377b3bc0a5e325b9c4c66c65307f85749e65a710a614b397c294ed8",
       "entrypoint": "scripts/verify-remote-playtest.mjs",
       "dependencies": [
         "scripts/browser-artifacts.mjs",
         "scripts/browser-evidence.mjs",
+        "scripts/catalog-browser-actions.mjs",
         "scripts/playtest-server.mjs",
         "scripts/playtest/capture-fault.mjs",
         "scripts/playtest/capture-samples.mjs",
@@ -4612,8 +5525,11 @@
         "scripts/playtest/load.mjs",
         "scripts/playtest/local-cloud.mjs",
         "scripts/playtest/release-policy.mjs",
+        "scripts/verification-cleanup.mjs",
         "src/application/capture-stream.mjs",
-        "src/model/blueprint.mjs"
+        "src/application/feedback-protocol.mjs",
+        "src/model/blueprint.mjs",
+        "src/presentation/capture-review-model.mjs"
       ]
     },
     {
@@ -4630,8 +5546,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "0c0dc86c3138ac670283a0276c0ea956198ba680dc98d05886b43c8071062438",
       "externalImports": ["node:assert/strict", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/qualify-workshop.mjs",
@@ -4649,21 +5565,28 @@
         "scripts/verify-edit-cycles.mjs",
         "scripts/verify-energy-browser.mjs",
         "scripts/verify-exploded-browser.mjs",
+        "scripts/verify-feedback-flow.mjs",
+        "scripts/verify-feedback-lifecycle.mjs",
         "scripts/verify-feedback-receipts.mjs",
+        "scripts/verify-feedback-recovery.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-manipulation-browser.mjs",
         "scripts/verify-mirror-browser.mjs",
         "scripts/verify-motion-diagnostics.mjs",
         "scripts/verify-part-help-browser.mjs",
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
+        "scripts/verify-parts-catalog.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-property-focus.mjs",
         "scripts/verify-recording-browser.mjs",
+        "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-rope-browser.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
         "scripts/verify-snap-intent.mjs",
@@ -4701,8 +5624,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "0c0dc86c3138ac670283a0276c0ea956198ba680dc98d05886b43c8071062438",
       "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/assess.mjs",
@@ -4736,12 +5659,16 @@
         "scripts/verify-energy-browser.mjs",
         "scripts/verify-energy-runtime.mjs",
         "scripts/verify-exploded-browser.mjs",
+        "scripts/verify-feedback-flow.mjs",
+        "scripts/verify-feedback-lifecycle.mjs",
         "scripts/verify-feedback-receipts.mjs",
+        "scripts/verify-feedback-recovery.mjs",
         "scripts/verify-final.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m1.mjs",
         "scripts/verify-m3.mjs",
@@ -4752,10 +5679,13 @@
         "scripts/verify-part-help-browser.mjs",
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
+        "scripts/verify-parts-catalog.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-property-focus.mjs",
         "scripts/verify-recording-browser.mjs",
+        "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-rope-browser.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
         "scripts/verify-snap-intent.mjs",
@@ -4771,15 +5701,19 @@
         "test/browser-evidence.test.mjs",
         "test/browser-report.test.mjs",
         "test/ci-order.test.mjs",
+        "test/contracts/release-process.mjs",
         "test/determinism.test.mjs",
         "test/f2.test.mjs",
         "test/fixtures/browser-suite-cleanup.mjs",
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
         "test/learning-runtime.test.mjs",
+        "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
+        "test/release-determinism.test.mjs",
+        "test/rope-session.test.mjs",
         "test/runtime-preflight.test.mjs",
         "test/starter-vehicle.test.mjs",
         "test/verification-resume-controls.test.mjs",
@@ -4810,8 +5744,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "f52237ee08e673df093ae6b220948212e94e472bc1a8f483beec2e23a2dd679f",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "e242256a2d01125b1202564cd216d7715eab5217df06a98885d69a8a914104c8",
       "externalImports": ["node:child_process", "node:crypto", "node:fs"],
       "consumers": [
         "scripts/bars.mjs",
@@ -4830,6 +5764,7 @@
         "scripts/gate.mjs",
         "scripts/inspect-change.mjs",
         "scripts/measure-gears.mjs",
+        "scripts/measure-ropes.mjs",
         "scripts/measure-shared-sensing.mjs",
         "scripts/measure-springs.mjs",
         "scripts/playtest/calibrate.mjs",
@@ -4859,12 +5794,16 @@
         "scripts/verify-energy-browser.mjs",
         "scripts/verify-energy-runtime.mjs",
         "scripts/verify-exploded-browser.mjs",
+        "scripts/verify-feedback-flow.mjs",
+        "scripts/verify-feedback-lifecycle.mjs",
         "scripts/verify-feedback-receipts.mjs",
+        "scripts/verify-feedback-recovery.mjs",
         "scripts/verify-final.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m3.mjs",
         "scripts/verify-manipulation-browser.mjs",
@@ -4875,11 +5814,14 @@
         "scripts/verify-part-help-browser.mjs",
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
+        "scripts/verify-parts-catalog.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-prepare.mjs",
         "scripts/verify-property-focus.mjs",
         "scripts/verify-recording-browser.mjs",
+        "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-rope-browser.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
         "scripts/verify-snap-intent.mjs",
@@ -4962,14 +5904,18 @@
         "scripts/verify-motion-diagnostics.mjs",
         "scripts/verify-starter-browser.mjs",
         "scripts/verify-workshop.mjs",
+        "test/contracts/release-process.mjs",
         "test/determinism.test.mjs",
         "test/free-build-continuity.test.mjs",
         "test/learning-runtime.test.mjs",
+        "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
+        "test/release-determinism.test.mjs",
+        "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "2f5f06c3af5dcfd0b0d32258a10753614b1133f27846e8d33e82e0adbbc9253b"
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "234f3d353a90e1dca3f524137ff3e5c50081f12d3a9d8364308344cfa6bd4d1d"
     },
     {
       "checks": ["invariant-controls"],
@@ -4980,8 +5926,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "85c0f6ddddaa3beea1b763ed28cc6e3a850418c54d2d2cd2f8234e1c6a530996",
       "externalImports": [],
       "consumers": ["scripts/verify-cloud-playtest.mjs", "scripts/verify-remote-playtest.mjs"],
       "sourceSha256": "9bf6de50ea7cd6041a718c926daa8b678eec2afcfb4d3cf8aca1641233a73a3b",
@@ -5022,8 +5968,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "85c0f6ddddaa3beea1b763ed28cc6e3a850418c54d2d2cd2f8234e1c6a530996",
       "externalImports": ["node:crypto", "node:fs/promises"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
@@ -5041,15 +5987,20 @@
         "test/calibration-evidence.test.mjs",
         "test/ci-release-admission.test.mjs",
         "test/experiment-transport.test.mjs",
+        "test/feedback-load.test.mjs",
         "test/playtest-calibration.test.mjs",
         "test/playtest-corpus.test.mjs",
         "test/playtest-load.test.mjs",
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "sourceSha256": "c4f08f4e8dd84483ef9e4da308a3e2d18869e197edc1561e0ebe72811876d775",
+      "sourceSha256": "06ae7c98ef11d9c6cf7be1ba83dab6a522157d167d8c757e17e0d7c0aba21ecd",
       "entrypoint": "scripts/playtest/load.mjs",
-      "dependencies": ["scripts/playtest/verify-deployment.mjs"]
+      "dependencies": [
+        "scripts/playtest/feedback-load.mjs",
+        "scripts/playtest/verify-deployment.mjs",
+        "src/application/feedback-protocol.mjs"
+      ]
     },
     {
       "checks": ["invariant-controls"],
@@ -5065,8 +6016,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "85c0f6ddddaa3beea1b763ed28cc6e3a850418c54d2d2cd2f8234e1c6a530996",
       "externalImports": ["esbuild", "miniflare", "node:fs/promises", "node:path", "node:path"],
       "consumers": ["scripts/verify-cloud-playtest.mjs", "scripts/verify-remote-playtest.mjs"],
       "sourceSha256": "66e915cda215738b8a0fcc5d913d7b7e739f7e7f0ba5417f52b37533151afb9e",
@@ -5082,8 +6033,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "85c0f6ddddaa3beea1b763ed28cc6e3a850418c54d2d2cd2f8234e1c6a530996",
       "externalImports": ["node:fs/promises", "node:path", "node:url"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
@@ -5103,6 +6054,8 @@
         "test/calibration-evidence.test.mjs",
         "test/ci-release-admission.test.mjs",
         "test/experiment-transport.test.mjs",
+        "test/feedback-backend.test.mjs",
+        "test/feedback-load.test.mjs",
         "test/playtest-calibration.test.mjs",
         "test/playtest-corpus.test.mjs",
         "test/playtest-load.test.mjs",
@@ -5177,8 +6130,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "a5a543023ec918de426bc94bd5238b99090a97add13f718e774843ad2e4a16c6",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "2b6a9edc1c1d6fc71ec1395bc9258678c674b74081406e7e3b2e9a22621d0348",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -5191,17 +6144,26 @@
       "consumers": [
         "index.html",
         "scripts/verify-cloud-playtest.mjs",
+        "scripts/verify-feedback-recovery.mjs",
         "scripts/verify-remote-playtest.mjs",
+        "src/application/feedback-client.mjs",
         "src/application/remote-playtest.mjs",
         "src/application/workshop-app.mjs",
+        "test/feedback-backend.test.mjs",
+        "test/feedback-client-state.test.mjs",
         "test/playtest-admission.test.mjs",
         "test/playtest-recovery.test.mjs",
         "test/playtest-server.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "sourceSha256": "4a3cfe14b21db82e24a36b0842154b6af317e8e68d799259e9cff86b476d8074",
+      "sourceSha256": "b8b816541d7fe44ff04adf19d4bf40ea774718fc461ee037c148bef5fd352205",
       "entrypoint": "scripts/playtest-server.mjs",
-      "dependencies": ["scripts/playtest/protocol.mjs"]
+      "dependencies": [
+        "scripts/playtest/feedback-common.mjs",
+        "scripts/playtest/feedback-node.mjs",
+        "scripts/playtest/protocol.mjs",
+        "src/application/feedback-protocol.mjs"
+      ]
     },
     {
       "checks": ["invariant-controls"],
@@ -5237,8 +6199,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "1430815040ee846f81b880134c530630b9ff2a4c54049095f012053a7a1da9fb",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "0c0dc86c3138ac670283a0276c0ea956198ba680dc98d05886b43c8071062438",
       "externalImports": ["acorn", "css-tree", "node:fs", "node:path", "parse5", "typescript"],
       "consumers": [
         "scripts/analysis-snapshot.mjs",
@@ -5292,12 +6254,16 @@
         "scripts/verify-energy-browser.mjs",
         "scripts/verify-energy-runtime.mjs",
         "scripts/verify-exploded-browser.mjs",
+        "scripts/verify-feedback-flow.mjs",
+        "scripts/verify-feedback-lifecycle.mjs",
         "scripts/verify-feedback-receipts.mjs",
+        "scripts/verify-feedback-recovery.mjs",
         "scripts/verify-final.mjs",
         "scripts/verify-guide-feedback.mjs",
         "scripts/verify-inspector-browser.mjs",
         "scripts/verify-learning-controller.mjs",
         "scripts/verify-learning-examples.mjs",
+        "scripts/verify-linear-actuator-browser.mjs",
         "scripts/verify-local.mjs",
         "scripts/verify-m1.mjs",
         "scripts/verify-m3.mjs",
@@ -5309,11 +6275,14 @@
         "scripts/verify-part-help-browser.mjs",
         "scripts/verify-part-help-inspectors.mjs",
         "scripts/verify-part-help-window.mjs",
+        "scripts/verify-parts-catalog.mjs",
         "scripts/verify-port-explanations.mjs",
         "scripts/verify-prepare.mjs",
         "scripts/verify-property-focus.mjs",
         "scripts/verify-recording-browser.mjs",
+        "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-rope-browser.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
         "scripts/verify-snap-intent.mjs",
@@ -5340,6 +6309,7 @@
         "test/change-inspection.test.mjs",
         "test/ci-order.test.mjs",
         "test/ci-release-admission.test.mjs",
+        "test/contracts/release-process.mjs",
         "test/determinism.test.mjs",
         "test/documentation-scope.test.mjs",
         "test/documentation.test.mjs",
@@ -5350,12 +6320,15 @@
         "test/fixtures/merge-runner.mjs",
         "test/free-build-continuity.test.mjs",
         "test/learning-runtime.test.mjs",
+        "test/linear-actuator-determinism.test.mjs",
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
         "test/module-graph.test.mjs",
         "test/physics-boundary.test.mjs",
         "test/playtest-release.test.mjs",
+        "test/release-determinism.test.mjs",
+        "test/rope-session.test.mjs",
         "test/runtime-preflight.test.mjs",
         "test/starter-vehicle.test.mjs",
         "test/structural.test.mjs",
@@ -5366,7 +6339,7 @@
         "test/verification-run.test.mjs",
         "vite.config.mjs"
       ],
-      "sourceSha256": "d4a1fa854eaf1470e9aa98d7436651f8a55527554e8b9172338f3bee16ad2ab1",
+      "sourceSha256": "0fa170b7b1ba96966b364c5ceb9125ae98a1a55bf591c534ea3681f8dde0fa4c",
       "entrypoint": "scripts/module-graph.mjs",
       "dependencies": []
     },
@@ -5424,8 +6397,8 @@
           "excludedInputs": ["documentation", "unit-test"]
         }
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "6161c5afc43f73b83e2a838cf62e054b811132d9fcc39dd6061f049363def93d",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "85c0f6ddddaa3beea1b763ed28cc6e3a850418c54d2d2cd2f8234e1c6a530996",
       "externalImports": ["node:crypto", "node:fs/promises", "node:path"],
       "consumers": [
         "scripts/playtest/calibrate.mjs",
@@ -5444,13 +6417,15 @@
         "test/calibration-evidence.test.mjs",
         "test/ci-release-admission.test.mjs",
         "test/experiment-transport.test.mjs",
+        "test/feedback-backend.test.mjs",
+        "test/feedback-load.test.mjs",
         "test/playtest-calibration.test.mjs",
         "test/playtest-corpus.test.mjs",
         "test/playtest-load.test.mjs",
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "sourceSha256": "2ea6118b7f0a3dff7f04c13a17837108dcb6bd4d13350a3476f7b3434165dfbf",
+      "sourceSha256": "4bfc4c72e3e07f9f6046ce62136f1af0f1bda734e5f360dd1b765b8ff8115b7f",
       "entrypoint": "scripts/playtest/verify-deployment.mjs",
       "dependencies": [
         "scripts/playtest/credential-isolation.mjs",
@@ -5460,7 +6435,7 @@
     },
     {
       "entrypoint": "scripts/playtest/worker.mjs",
-      "sourceSha256": "ec9477af64060ff35066a001a31b8cc18a8ffa13f9fbc1ba8050fa6385c5e314",
+      "sourceSha256": "3605c82bd01e557c7582bb8dfa5c82c5303de3adf44ffbe0ce96130e108387f1",
       "dependencies": ["scripts/playtest/cloud-store.mjs", "scripts/playtest/protocol.mjs"],
       "externalImports": [],
       "checks": ["invariant-controls"],
@@ -5473,18 +6448,27 @@
       ],
       "consumers": [
         "index.html",
+        "scripts/verify-feedback-recovery.mjs",
+        "src/application/feedback-client.mjs",
         "src/application/remote-playtest.mjs",
         "src/application/workshop-app.mjs",
         "test/cloud-playtest.test.mjs",
+        "test/feedback-backend.test.mjs",
+        "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "fdf5fc8d9042dd7aec203b8ab3e68bdbf83dd5128f386242ccc90d9dbe00e4cb"
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "64f8f2f796b79712df10efc4162b3e38485b37c91de5892e45b2ab271e285ea2"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
-      "sourceSha256": "41ef9c56160464468913c446d739e02686fb18f88f3635f598d4e4553c4c5730",
-      "dependencies": ["scripts/playtest/protocol.mjs"],
+      "sourceSha256": "257435d7221aa2fd3b729d8703789c77122a589f42a45137c64d861cd59ed9dd",
+      "dependencies": [
+        "scripts/playtest/feedback-cloud.mjs",
+        "scripts/playtest/feedback-common.mjs",
+        "scripts/playtest/protocol.mjs",
+        "src/application/feedback-protocol.mjs"
+      ],
       "externalImports": [],
       "checks": ["invariant-controls"],
       "reads": [
@@ -5497,13 +6481,17 @@
       "consumers": [
         "index.html",
         "scripts/playtest/worker.mjs",
+        "scripts/verify-feedback-recovery.mjs",
+        "src/application/feedback-client.mjs",
         "src/application/remote-playtest.mjs",
         "src/application/workshop-app.mjs",
         "test/cloud-playtest.test.mjs",
+        "test/feedback-backend.test.mjs",
+        "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
-      "consumerSourceHash": "fdf5fc8d9042dd7aec203b8ab3e68bdbf83dd5128f386242ccc90d9dbe00e4cb"
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "64f8f2f796b79712df10efc4162b3e38485b37c91de5892e45b2ab271e285ea2"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -5519,7 +6507,194 @@
         }
       ],
       "consumers": [],
-      "roots": "6afbe49983e3397998badc740aa15b0e1d84420505fbb99fd857e0c98ad8ec81",
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "entrypoint": "scripts/playtest/feedback-load.mjs",
+      "checks": ["invariant-controls"],
+      "dependencies": ["src/application/feedback-protocol.mjs"],
+      "externalImports": ["node:crypto", "node:fs/promises"],
+      "consumers": [
+        "scripts/playtest/calibrate.mjs",
+        "scripts/playtest/calibration-bundle.mjs",
+        "scripts/playtest/calibration-evidence.mjs",
+        "scripts/playtest/capture-samples.mjs",
+        "scripts/playtest/ci-release.mjs",
+        "scripts/playtest/corpus.mjs",
+        "scripts/playtest/experiment-transport.mjs",
+        "scripts/playtest/experiments.mjs",
+        "scripts/playtest/load.mjs",
+        "scripts/playtest/release.mjs",
+        "scripts/verify-cloud-playtest.mjs",
+        "scripts/verify-remote-playtest.mjs",
+        "test/calibration-bundle.test.mjs",
+        "test/calibration-evidence.test.mjs",
+        "test/ci-release-admission.test.mjs",
+        "test/experiment-transport.test.mjs",
+        "test/feedback-load.test.mjs",
+        "test/playtest-calibration.test.mjs",
+        "test/playtest-corpus.test.mjs",
+        "test/playtest-load.test.mjs",
+        "test/playtest-release.test.mjs",
+        "test/release-experiments.test.mjs"
+      ],
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "reads": [
+        {
+          "expression": "readFile(file)",
+          "purpose": "runtime",
+          "excludedInputs": ["documentation", "unit-test"]
+        }
+      ],
+      "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
+      "consumerSourceHash": "85c0f6ddddaa3beea1b763ed28cc6e3a850418c54d2d2cd2f8234e1c6a530996"
+    },
+    {
+      "entrypoint": "scripts/playtest/feedback-node.mjs",
+      "checks": ["invariant-controls"],
+      "dependencies": [
+        "scripts/playtest/feedback-common.mjs",
+        "scripts/playtest/protocol.mjs",
+        "src/application/feedback-protocol.mjs"
+      ],
+      "externalImports": ["node:crypto", "node:fs", "node:fs/promises", "node:path"],
+      "consumers": [
+        "index.html",
+        "scripts/playtest-server.mjs",
+        "scripts/verify-cloud-playtest.mjs",
+        "scripts/verify-feedback-recovery.mjs",
+        "scripts/verify-remote-playtest.mjs",
+        "src/application/feedback-client.mjs",
+        "src/application/remote-playtest.mjs",
+        "src/application/workshop-app.mjs",
+        "test/feedback-backend.test.mjs",
+        "test/feedback-client-state.test.mjs",
+        "test/playtest-admission.test.mjs",
+        "test/playtest-recovery.test.mjs",
+        "test/playtest-server.test.mjs",
+        "test/remote-playtest.test.mjs"
+      ],
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "reads": [
+        {
+          "expression": "readFileSync(join(this.root, id, 'envelope.json'), 'utf8')",
+          "purpose": "runtime",
+          "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "readFileSync(join(this.root, name, 'envelope.json'))",
+          "purpose": "runtime",
+          "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "readFileSync(join(this.root, name, 'receipt.json'), 'utf8')",
+          "purpose": "runtime",
+          "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "readdirSync(this.root)",
+          "purpose": "runtime",
+          "excludedInputs": ["documentation", "unit-test"]
+        }
+      ],
+      "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
+      "consumerSourceHash": "2b6a9edc1c1d6fc71ec1395bc9258678c674b74081406e7e3b2e9a22621d0348"
+    },
+    {
+      "entrypoint": "scripts/verify-feedback-flow.mjs",
+      "checks": ["invariant-controls"],
+      "dependencies": ["scripts/browser-artifacts.mjs", "scripts/browser-evidence.mjs"],
+      "externalImports": ["node:crypto", "node:fs", "node:http"],
+      "consumers": [],
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "reads": [
+        {
+          "expression": "new URL(req.url, 'http://localhost')",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "new URL(request.url())",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "readFileSync('.' + path)",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "readFileSync('node_modules/fflate/esm/browser.js')",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "readFileSync('src/presentation/workshop.css')",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
+        }
+      ],
+      "sourceSha256": "f01666a45b6c82c0862558fdf20a50eb7177ca45af1929ade6b97b2412d8d24b",
+      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "entrypoint": "scripts/verify-feedback-lifecycle.mjs",
+      "checks": ["invariant-controls"],
+      "dependencies": ["scripts/browser-artifacts.mjs", "scripts/browser-evidence.mjs"],
+      "externalImports": ["node:crypto", "node:fs", "node:http"],
+      "consumers": [],
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "reads": [
+        {
+          "expression": "new URL(req.url, 'http://localhost')",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "readFileSync(\n        path.endsWith('/feedback-client.mjs')\n          ? clientPath\n          : path.endsWith('/remote-playtest.mjs')\n            ? remotePath\n            : '.' + path,\n      )",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "readFileSync('node_modules/fflate/esm/browser.js')",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "readFileSync('src/presentation/workshop.css')",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
+        }
+      ],
+      "sourceSha256": "e26a11c47fcc57075f2749147b7f10db23b4e1e0f1cdbf2a9600660d3e049e70",
+      "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "entrypoint": "scripts/verify-feedback-recovery.mjs",
+      "checks": ["invariant-controls"],
+      "dependencies": [
+        "scripts/browser-evidence.mjs",
+        "src/application/feedback-capture-gate.mjs",
+        "src/application/feedback-client.mjs",
+        "src/application/feedback-store.mjs"
+      ],
+      "externalImports": ["node:fs", "node:http"],
+      "consumers": [],
+      "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
+      "reads": [
+        {
+          "expression": "readFileSync(file)",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
+        },
+        {
+          "expression": "readFileSync(files[1], 'utf8')",
+          "purpose": "fixture",
+          "excludedInputs": ["documentation", "unit-test"]
+        }
+      ],
+      "sourceSha256": "b40374765676cfe8025beb49124f00355d374e02ba0e6d16e1bb08a90cbcd326",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ],

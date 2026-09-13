@@ -275,8 +275,16 @@ export async function createWorkshop(
           });
           break;
         case 'place':
-          if (keys !== 'id,partType,position,type')
+          if (
+            keys !== 'id,partType,position,type' &&
+            keys !== 'expectedCursor,id,partType,position,type'
+          )
             return result(false, 'INVALID_COMMAND', 'command');
+          if (
+            command.expectedCursor !== undefined &&
+            !sameData(command.expectedCursor, session.observe().cursor)
+          )
+            return result(false, 'STALE_PROPOSAL', 'expectedCursor');
           {
             const part = createPart(command.partType, command.id, command.position);
             part.name = availablePartName(next.parts, part.name);
@@ -470,6 +478,16 @@ export async function createWorkshop(
                 }
               : command,
           ).blueprint;
+          break;
+        }
+        case 'rope': {
+          if (keys !== 'connection,type' || command.connection?.kind !== 'rope')
+            return result(false, 'INVALID_COMMAND', 'connection');
+          const previous = next.connections.find((c) => c.id === command.connection.id);
+          if (previous && previous.kind !== 'rope')
+            return result(false, 'INVALID_COMMAND', 'connection.id');
+          if (previous) next.connections[next.connections.indexOf(previous)] = command.connection;
+          else next.connections.push(command.connection);
           break;
         }
         case 'connect': {

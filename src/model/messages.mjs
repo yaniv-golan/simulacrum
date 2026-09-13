@@ -6,6 +6,8 @@ const messages = {
   MIRROR_UNREPRESENTABLE:
     'These parts cannot be mirrored with their current shapes or connections.',
   UNKNOWN_SURFACE: 'Choose a highlighted mounting surface.',
+  RELEASE_LATCH_CONFLICT:
+    'Two latch faces cannot own one attachment. Mount one coupler by a different face.',
   SURFACE_OUT_OF_BOUNDS:
     'The mounting base extends beyond this surface. Slide it inward or choose a larger surface.',
   SURFACE_OVERLAP: 'This placement overlaps another part. Slide or rotate it until clear.',
@@ -59,6 +61,10 @@ const messages = {
   INPUT_LIMIT: 'Too many commands arrived at once. Release the controls and try again.',
   INVARIANT_VIOLATION:
     'A simulation consistency check failed. Return to Build; the failure record is available.',
+  ROPE_DOMAIN_LIMIT:
+    'Choose a rope length of 0.25–4 m near or above the attachment distance. Use at most four ropes. Previous settings are preserved.',
+  ROPE_MOTION_LIMIT:
+    'Rope load or stretch limit reached. Return to Build, increase rope length or diameter, reduce the load or speed, then try again. The rope has not broken.',
   GEAR_MOTION_LIMIT:
     'Gear motion exceeded this model’s limits. Return to Build; check shaft supports, reduce motor current, or start with the machine resting on the floor.',
   PHYSICS_FAILURE: 'The physics step failed. Return to Build; the failure record is available.',

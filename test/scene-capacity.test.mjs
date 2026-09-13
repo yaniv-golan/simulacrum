@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createEmptyBlueprint, createPart, loadSave } from '../src/model/blueprint.mjs';
+import {
+  createEmptyBlueprint,
+  createPart,
+  loadSave,
+  validateBlueprint,
+} from '../src/model/blueprint.mjs';
+import { compileAssembly } from '../src/model/assembly.mjs';
 import { createWorkshop } from '../src/core/workshop.mjs';
 import { createSceneObject, sceneLayout } from '../src/model/environment.mjs';
 import { createSceneLibrary } from '../src/application/scene-library.mjs';
@@ -54,4 +60,28 @@ test('valid nearly full workshop rejects scene replacement, duplication, import 
   } finally {
     workshop.dispose();
   }
+});
+
+test('scene capacity includes every distributed rope node', () => {
+  const bp = createEmptyBlueprint('rope-capacity', 'Rope capacity');
+  bp.parts = [createPart('beam', 'a', [0, 3, 0]), createPart('plate', 'b', [0, 1, 0])];
+  bp.connections = [
+    {
+      id: 'r',
+      kind: 'rope',
+      a: { part: 'a', surface: { region: 'bottom', u: 0, v: 0, twist: 0 } },
+      b: { part: 'b', surface: { region: 'top', u: 0, v: 0, twist: 0 } },
+      rope: { restLength: 1.97, diameter: 0.02, segments: 8, material: 'nylon' },
+    },
+  ];
+  for (let i = 0; i < 4084; i++)
+    bp.parts.push(
+      createPart('beam', `f-${i}`, [(i % 64) * 0.5 - 16, 5, Math.floor(i / 64) * 0.1 - 3.2]),
+    );
+  bp.environment = sceneLayout('flat');
+  bp.environment.objects.push({ ...createSceneObject('block', 'first'), position: [9, 0.025, 9] });
+  assert.equal(validateBlueprint(bp).ok, true);
+  assert.equal(compileAssembly(bp).configuration.bodies.length, 4097);
+  bp.environment.objects.push({ ...createSceneObject('block', 'second'), position: [8, 0.025, 9] });
+  assert.equal(validateBlueprint(bp).reasonCode, 'SCENE_BODY_LIMIT');
 });

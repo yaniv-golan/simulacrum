@@ -4,6 +4,7 @@ import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import { createCaptureReviewIndex } from '../src/application/capture-stream.mjs';
+import { readFeedbackExports } from './playtest/feedback-export.mjs';
 const dir = resolve(process.argv[2] ?? '');
 function safeWrite(file, bytes) {
   const target = join(dir, file);
@@ -21,9 +22,14 @@ try {
 } catch (error) {
   if (error.code !== 'ENOENT') throw error;
 }
-if (statSync(join(dir, 'events.ndjson')).size > 128 * 1024 * 1024)
+const feedback = await readFeedbackExports(dir);
+const eventsFile = join(dir, 'events.ndjson');
+const standalone = !existsSync(eventsFile);
+if (!existsSync(eventsFile) && !feedback.length)
+  throw Error('No recording or feedback export found');
+if (existsSync(eventsFile) && statSync(eventsFile).size > 128 * 1024 * 1024)
   throw Error('Review input exceeds 128 MiB limit');
-const records = readFileSync(join(dir, 'events.ndjson'), 'utf8')
+const records = (existsSync(eventsFile) ? readFileSync(eventsFile, 'utf8') : '')
     .trim()
     .split('\n')
     .filter(Boolean)
@@ -33,6 +39,7 @@ const records = readFileSync(join(dir, 'events.ndjson'), 'utf8')
     }),
   clips = new Map();
 let legacyProvenance = false;
+let sessionId;
 let rawEvidenceRequired = records.some((row) => row.rawEvent);
 const sessionFile = join(dir, 'session.json');
 if (existsSync(sessionFile)) {
@@ -45,6 +52,7 @@ if (existsSync(sessionFile)) {
     }),
   );
   rawEvidenceRequired ||= manifest.rawEventEvidence === 1;
+  sessionId = manifest.sessionId;
 }
 for (const row of records) {
   if (!row.event) continue;
@@ -126,6 +134,9 @@ const payload = JSON.stringify({
   wireEvents: records.filter((r) => r.event).map((r) => r.event),
   media,
   legacyProvenance,
+  feedback,
+  sessionId,
+  standalone,
 }).replaceAll('<', '\\u003c');
 const bundle = await build({
   stdin: {
@@ -141,6 +152,6 @@ const bundle = await build({
 const javascript = bundle.outputFiles[0].text.replaceAll('</script', '<\\/script');
 safeWrite(
   'review.html',
-  `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; media-src 'self' file:; connect-src 'none'"><title>Workshop session review</title><style>body{background:#162730;color:#eef;font:16px system-ui;margin:24px}button{padding:8px;margin:4px}pre{white-space:pre-wrap;overflow-wrap:anywhere}canvas,video,img{max-width:100%;height:auto}section{margin:16px 0}input{width:70%}</style><h1>Workshop session review</h1><p>Sampled reconstruction of observed state, not original pixels or a simulation replay. Seeking holds the last available sample; gaps and uncaptured transients cannot be reconstructed. Raw server receipt order remains in events.ndjson. This export does not prove human acceptance or continuous capture.</p><p id="status" role="status"></p><button id="play">Play</button><input aria-label="Session time" id="seek" type="range" min="0" value="0" step="1"><p id="time"></p><div id="scene"></div><p id="unsupported"></p><details><summary>Observed UI, camera and state</summary><pre id="context"></pre></details><h2>Feedback</h2><div id="comments"></div><h2>Optional tab video</h2><p id="video-note"></p><video controls hidden id="screen"></video><details><summary>Event timeline and gaps (state is decoded on seek)</summary><pre id="timeline"></pre></details><script type="application/json" id="recording">${payload}</script><script>${javascript}</script></html>`,
+  `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; media-src 'self' file: data:; connect-src 'none'"><title>Workshop ${standalone ? 'feedback' : 'session'} review</title><style>body{background:#162730;color:#eef;font:16px system-ui;margin:24px}button{padding:8px;margin:4px}pre{white-space:pre-wrap;overflow-wrap:anywhere}p{overflow-wrap:anywhere}canvas,video,img{max-width:100%;height:auto}section{margin:16px 0}input{width:70%}</style><h1>Workshop ${standalone ? 'feedback' : 'session'} review</h1><p ${standalone ? 'hidden' : ''}>Sampled reconstruction of observed state, not original pixels or a simulation replay. Seeking holds the last available sample; gaps and uncaptured transients cannot be reconstructed. Raw server receipt order remains in events.ndjson. This export does not prove human acceptance or continuous capture.</p><p id="status" role="status"></p><div id="recording-view" ${standalone ? 'hidden' : ''}><button id="play">Play</button><input aria-label="Session time" id="seek" type="range" min="0" value="0" step="1"><p id="time"></p><div id="scene"></div><p id="unsupported"></p><details><summary>Observed UI, camera and state</summary><pre id="context"></pre></details></div><h2>Feedback</h2><div id="comments"></div><div id="recording-media" ${standalone ? 'hidden' : ''}><h2>Optional tab video</h2><p id="video-note"></p><video controls hidden id="screen"></video><details><summary>Event timeline and gaps (state is decoded on seek)</summary><pre id="timeline"></pre></details></div><script type="application/json" id="recording">${payload}</script><script>${javascript}</script></html>`,
 );
 console.log(join(dir, 'review.html'));

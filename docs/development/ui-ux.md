@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"51ee962855239f314906ce4be65c2dbef5a532712460dcc534f1482995c77398","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"6b15b20438dd37cb822c068c7c37e6c6bd1fe90d318cda8d79d07549327b34ff","disposition":"still accurate","rationale":"No entry: these are correctness fixes to existing scene geometry and shared keyboard controls. The existing ordinary editor workflow suffices; no lesson or preset is added."} -->
+<!-- doc-review {"version":1,"fingerprint":"141b86ce94771f6d90bbec69d9cc7225b156268d3591b964301094ba6a91c6c5","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"89c9d9ad0472525c21990b036032beb17631e4d70046a3eae5bc9bc97379f488","disposition":"still accurate","rationale":"Scene authoring adds no lesson entry; the Environment context and requested scene library support construction while existing examples remain the learning surface."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -56,11 +56,11 @@ reviewable judgments, not a numeric score that proves educational value.
 
 **Choose the teaching format**
 
-| Format | Required player experience |
-| --- | --- |
-| Guided build | Use ordinary authoring actions, explain consequential connections, then offer a concrete independent edit or repair. |
+| Format                         | Required player experience                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Guided build                   | Use ordinary authoring actions, explain consequential connections, then offer a concrete independent edit or repair.                  |
 | Editable example or experiment | Show an inspectable behavior and offer a meaningful change or prediction. For comparisons, name what changes and what stays constant. |
-| Challenge | State the goal, constraints and observable success; offer optional hints and allow alternative solutions that satisfy the goal. |
+| Challenge                      | State the goal, constraints and observable success; offer optional hints and allow alternative solutions that satisfy the goal.       |
 
 These are content contracts, not required tabs or exclusive categories. One fixture
 may support several formats. Reuse canonical explanations and fixtures where practical;
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"ed2886cf428138498cca7e93e285f41e7a0c98795c91b253d8816eb6242606cf","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"084824d929679d5783703f30f2dd9a92456025fd181e953a470a42e381756fe7","disposition":"updated","rationale":"Documented retained Space Run/Pause and period step behavior while scene editing is open, including Run/Paused context and unchanged prohibition on Run with an unapplied draft. No UI region is added or displaced."} -->
+<!-- doc-review {"version":1,"fingerprint":"07f2fc54bf35a617c5ec6406711ffeeb1a2018836e17960a6c013ff6a132171a","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"a5b244414ac6b975e5f7c49fbb60bd4f9bdaf489b5ead373ddfd45b44e783a36","disposition":"still accurate","rationale":"The retained Environment paragraph describes scene tools and pending Apply/Cancel, and replacement protection includes floor-only work. Main catalogue and footer feedback lifecycles coexist with scene context cancellation."} -->
 
 
 
@@ -135,14 +135,46 @@ and view groups at the workbench edge; selected properties and operations in the
 inspector. The [layout](../../src/presentation/workshop.css#source) owns their sizing/reflow.
 These are presentation responsibilities, not additional model or simulation authority.
 
-Catalogue images occupy a 52-pixel square within the existing parts column. Square
-production renders improve silhouette size without widening the region or reducing
-label text. The column retains scrolling, help buttons and keyboard focus. Catalogue,
-part-help and assembly previews use the workshop's part meshes and cosmetic finishes;
-preview lighting shares the same reflection field. These changes serve recognition
-and connection authoring, add no persistent panel, and displace no unique action.
-Learning-content disposition is **no entry**: existing connection rows and part help
-explain the same endpoints; a surface treatment introduces no new construction concept.
+The [part catalog](../../src/presentation/parts-browser.mjs#source) uses real mesh thumbnails, Essentials and functional categories,
+Recent and locally saved Favorites. Search covers the whole available catalog and
+ranks names, aliases, actions and related roles in that order, preferring complete
+query coverage across identity and function fields. Complete conservative typo corrections
+precede partial direct matches; numeric identities are exact.
+Clearing search restores browsing position. Searching and filtering retain the placement lock during an active assembly operation. Related assembly results open the existing
+Assemblies browser. Vocabulary lives in presentation, never in physical admission.
+Clicking or dragging a part opens the same nonmutating placement controller. Pointer
+release assesses its final location, including touch taps. The existing surface owner
+provides mounting faces, precision and attachment; empty-space placement uses the grid
+with optional coordinates under Precise position. Confirmation sends one ordinary
+cursor-guarded `place` or `surface-mount` command. Invalid and stale previews cannot
+commit, and pending placement disables duplicate submission and cancellation.
+Escape first cancels an active pickup, including when search has focus, and restores
+the originating query, category, focus and scroll even after browsing changes. Normally only results scroll inside the tray; scaled text reduces the column count. When local Record an issue is open on desktop, the compact catalog scrolls as a whole so its search, categories, results and summary stay within their allocated region and cannot cover Stop recording. The compact
+header and summary preserve complete visible tiles at the supported 1280 by 720 viewport.
+At narrow widths a requested Parts browser replaces the sidebar, leaving the canvas
+full width while Assemblies and recording remain retrievable.
+Recent records accepted catalog placements. Expanded and compact catalogs are requested
+surfaces; picking closes them and cancellation restores the origin. The existing About
+window retains Overview and How to connect, with diagram links that reveal catalog
+parts without placing them. Feedback and recording controls share the existing workshop footer.
+The canvas, catalog and inspector retain their own pointer regions without per-control
+offsets for a floating recording strip. The cell-to-motor example precedes optional power branching.
+Learning admission: extend existing part help; no new lesson or example-browser entry.
+
+Catalogue, part-help and assembly previews use the workshop’s part meshes and cosmetic finishes; preview lighting shares the same reflection field. These shared finishes improve recognition and connection authoring without adding a persistent panel or a learning-content entry.
+
+The catalog offers Rope in Structure, All parts and rope/cable/towing searches.
+This connection tool opens the selected part's requested
+[rope inspector](../../src/presentation/rope-controls.mjs), shown only after requesting
+Rope or selecting a part with a rope attachment. It does not displace controls on
+unrelated parts. Build owns two explicit
+surface attachments, length, diameter and material edits. Run shows completed length
+and applied tension; authoring forms leave until Build returns. The same requested
+help states the floor/body/self-collision exclusions, nominal material assumptions
+and non-breaking overload stop. No lesson or permanent canvas panel is added.
+Rope geometry follows physical nodes in Machine view and is hidden in exploded view.
+Its contextual engineering explanation identifies stretch, damping and load limits
+as uncalibrated assumptions of the simplified nylon model.
 
 The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic
 regulation shows measured and target total spring length, rather than extension from
@@ -265,7 +297,7 @@ These examples extend construction possibilities, not evidence of player compreh
 or qualification outside their tested finite operating envelopes.
 
 
-Spur gears use More parts, selected Connections and the existing part-help window.
+Spur gears use the Motion catalog category and search, selected Connections and the existing part-help window.
 Gear mesh explicitly leaves parts in place and requires independently supported
 aligned shafts. The requested Learn & examples browser adds one editable gear-lift
 experiment: predict the slower rotor, run the loaded arm, then disconnect the mesh
@@ -281,6 +313,37 @@ The lift uses an ordinary extension axle to separate its arm plane from the gear
 A gear motion-limit stop offers Build, shaft-support, motor-current and grounded
 restart guidance through the existing message surface. It does not imply broken teeth.
 Physical witnesses remain separate from player comprehension.
+
+Release Coupler uses the Motion catalog category and search, the existing surface-snap operation, selected inspector
+and requested part-help window. “Latch · Right” identifies its single opening attachment;
+other faces remain ordinary mounts. Wire a cell and Command Receiver, hold W/Up in Run,
+and inspect actuation or blocked-support status. Open attachments are identified as open
+in the inspector and removed from the connection overlay. Cargo moves under existing
+motion and forces. Build and Try again restore the authored start; saved machines retain
+their Build connections. Crossing wires do not support cargo or disconnect automatically.
+Ropes keep their authored attachments and tension after a fixed latch opens, including
+when a rope shares the latch face. Only the released fixed attachment receives the open label.
+
+Learning admission is **no entry**: the existing keyboard-driving activity covers cell
+and receiver wiring, while contextual coupler help explains latch versus mount, interrupted
+actuation and alternate paths. This adds no permanent lesson panel. The
+[release browser journey](../../scripts/verify-release-coupler.mjs#implementation) constructs
+from an empty workshop through visible controls, saves/reloads, releases cargo, exercises Try again after opening and interrupted actuation, and recovers
+at ordinary and narrow layouts. Browser automation supplies no target-player acceptance.
+
+The powered linear actuator uses the Motion catalog category and search, selected settings, existing receiver
+controls and requested part help. Connect the existing Spring carriage, a cell and a
+Command Receiver; W/up extends and S/down retracts. Releasing the keys opens active drive,
+so an unpowered suspended load can fall. The inspector distinguishes completed travel,
+stop proximity, low motion under power and electrical faults. Connection snap length
+sets the next attachment; it does not reposition a connected carriage. The decorative
+rod follows completed endpoints and adds no collider or physical support. Current
+limit, maximum driven speed and travel settings stay in the selected inspector, while
+material and winding details remain expandable. No permanent panel is added.
+Learning admission is **no entry**: contextual power/receiver and part help cover the
+bounded construction task; the passive spring lessons remain unchanged. This is a
+teaching hypothesis, not observed comprehension. The ordinary browser construction
+check includes a low-current failure, repair, key reversal, history and save/load.
 
 The Ball uses the existing part catalogue and selected inspector: diameter is a
 primary size edit; material and expandable Contact settings live in Engineering
@@ -305,6 +368,8 @@ exclude one another before asynchronous reading or reset; rejected actions retai
 recording receipts. Retry does not
 reload a preset or move an individual live body to recover it.
 
+Give feedback shares the existing workshop footer before, during and after recording. The view supplies this utility host to the application, so ordinary offline feedback adds no second workbench row and does not float over the canvas or inspector. The feedback button places its badge inline with reserved width and line height even when empty, keeping ordinary delivery updates from shifting controls. The footer retains its compact minimum height, wraps on narrow screens and permits longer recording errors to remain readable. During narrow-screen assembly placement, feedback and recording controls remain available while ordinary footer labels and shortcuts leave with the surrounding authoring chrome. When recording is unavailable, the row retains Give feedback and its draft/upload status while hiding unavailable recording controls. Active recording, delivery problems and received status remain visible when relevant; the compatible invitation opens dismissible recording setup, which Start recording can reopen. Capture requires its explicit Start action. Its task is to let the player explain an experience and know whether that contribution arrived. The dialog contains one optional voice clip and separately chosen image/context attachments; no attachment is selected by default. The scrollable body and visible actions fit narrow viewports. Back to building, Escape and Keep draft preserve recoverable work; Finish stops capture before resolving the unsent draft. Delivery confirmation uses a durable receipt and says “Sent to Yaniv for review,” without promising a response or fix. Draft and upload problems remain visible in the toolbar, with detailed history behind an explicit disclosure. Submitted voice, image and context remain inspectable in the receipt and local history. Context and images identify their actual capture time. The optional context contains the saved authored project and current workshop UI state, not a replay checkpoint or native physics snapshot. Reduced-motion preference removes feedback-button transitions. A rejected submission can become a corrected draft with a new identity; the original stays immutable, and another unfinished draft is preserved. View changes move keyboard focus to the new content without moving it during background delivery updates. The composer displaces the old recording-only feedback form and adds no permanent canvas panel. Learning-content disposition: **no entry**; the existing Help and examples remain sufficient because submitting feedback is a utility journey, not a new mechanical concept. Automated flow and layout checks do not establish delight, satisfaction or human acceptance.
+
 Help is an explicit, keyboard-accessible dialog. It contains control and wiring
 explanations instead of keeping paragraphs over the canvas. Build information is
 readable and copyable here; the served marker remains for assessment evidence. No automatic hint/tour
@@ -328,7 +393,7 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"5284216bd452eb78cab82e454058b66ec7851fb9975f8d284163a00b42194329","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"13a9d6f8c1b65d8fde52167cb8491fde00a013a7f2f4ae57c47ec80733ce4108","disposition":"still accurate","rationale":"The registered scene browser now exercises scene-active Run/Pause and step with neutral focus before its existing edit/run/repair journey. The complete journey passes; this remains automated evidence separate from target-player acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"1438fb9efe0aa11827b7abaf66481c7a4cbe24f394b415e6483c726c9cadfb45","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"90227813a895ad2c440e80f2b628d6c19ba7dead0b9a0d4fe8ffb77410fb314f","disposition":"still accurate","rationale":"The section now names the scene browser journey and editor controls, including driven repair, history, protection and zoomed layout; automation remains separate from target-player evidence."} -->
 
 
 Use the manifest's `workbench-content-lifecycle` invariant and

@@ -120,8 +120,21 @@ export async function cleanupSynthetic(origin, runId, { preserveReservation = fa
   );
   const deadline = Date.now() + 15 * 60000;
   while (Date.now() < deadline) {
-    const sessions = await captureAdmin(origin, 'sessions', undefined, 'GET');
-    if (!sessions.some((s) => s.synthetic === runId)) return;
+    const status = await captureAdmin(origin, `synthetic/${runId}/status`, undefined, 'GET');
+    const scopes = [status.recordings, status.feedback];
+    if (
+      status.runId !== runId ||
+      scopes.some(
+        (scope) =>
+          !scope ||
+          !Number.isSafeInteger(scope.pending) ||
+          scope.pending < 0 ||
+          !Number.isSafeInteger(scope.chargedBytes) ||
+          scope.chargedBytes < 0,
+      )
+    )
+      throw Error('Synthetic cleanup status is incomplete or has the wrong run identity');
+    if (scopes.every((scope) => scope.pending === 0 && scope.chargedBytes === 0)) return;
     await captureAdmin(origin, 'reconcile');
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }

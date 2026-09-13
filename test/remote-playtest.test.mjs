@@ -46,6 +46,15 @@ async function fixture(t, options = {}) {
     constructor(tag) {
       this.tag = tag;
       this.children = new Map();
+      const classes = new Set();
+      this.classList = {
+        toggle(name, force) {
+          const present = force ?? !classes.has(name);
+          if (present) classes.add(name);
+          else classes.delete(name);
+          return present;
+        },
+      };
       this.open = false;
       this.removed = false;
       nodes.push(this);
@@ -54,7 +63,9 @@ async function fixture(t, options = {}) {
       if (!this.children.has(key)) this.children.set(key, new Element(key));
       return this.children.get(key);
     }
-    append() {}
+    append(...items) {
+      (this.appended ??= []).push(...items);
+    }
     replaceChildren(...children) {
       this.options = children;
       this.value = children[0]?.value || '';
@@ -67,6 +78,16 @@ async function fixture(t, options = {}) {
     }
     remove() {
       this.removed = true;
+    }
+    setAttribute(key, value) {
+      this[key] = value;
+    }
+    removeAttribute(key) {
+      delete this[key];
+    }
+    focus() {}
+    click() {
+      return this.onclick?.();
     }
     addEventListener() {}
     removeEventListener() {}
@@ -100,7 +121,7 @@ async function fixture(t, options = {}) {
         close = db.close.bind(db),
         transaction = db.transaction.bind(db);
       db.close = () => {
-        dbClosed = true;
+        if (args[0] === 'simulacrum-playtest-outbox-v2') dbClosed = true;
         close();
       };
       db.transaction = (...args) => {
@@ -148,6 +169,11 @@ async function fixture(t, options = {}) {
     location: { origin: 'http://localhost' },
     navigator: {
       userAgent: 'fixture-browser',
+      locks: {
+        async request(name, options, callback) {
+          return callback({ name });
+        },
+      },
       mediaDevices: {
         async getDisplayMedia() {
           const result = stream();
@@ -200,12 +226,14 @@ async function fixture(t, options = {}) {
   for (const [key, value] of Object.entries(values))
     Object.defineProperty(globalThis, key, { value, configurable: true, writable: true });
   t.mock.method(globalThis, 'fetch', async (url, init) => {
-    if (url.endsWith('/config'))
+    if (url.endsWith('/config')) {
+      if (mode.configUnavailable) throw TypeError('offline');
       return {
         ok: true,
         headers: { get: () => 'application/json' },
         json: async () => ({ enabled: true, protocolVersion: 2, optionalVideo: true }),
       };
+    }
     if (url.endsWith('/session')) {
       if (mode.failure === 'network') throw new TypeError('Failed to fetch');
       if (mode.waitForSession) await mode.waitForSession;
@@ -238,16 +266,21 @@ async function fixture(t, options = {}) {
       else delete globalThis[key];
     }
   });
+  const toolbarHost = options.toolbarHost ? new Element('workshop') : undefined;
   mount = await (options.mount || mountRemotePlaytest)({
+    ...(toolbarHost ? { toolbarHost } : {}),
+    feedbackSnapshot: () => ({ project: {}, workshop: {} }),
     context: () => {
       if (++contextCalls > 30) throw Error('recursive finalization guard');
       return {};
     },
     checkpoint: () => ({}),
+    measureVideoDuration: async () => null,
   });
   await settle();
   return {
     mount,
+    toolbarHost,
     mode,
     rows,
     tracks,
@@ -291,7 +324,7 @@ test('outbox limit stops once even when the final event cannot fit', async (t) =
   await f.start();
   await settle();
   assert.equal(f.mount.active(), true);
-  assert.equal(f.calls(), 2, 'admission preflight and initial event each read context');
+  assert.equal(f.calls(), 3, 'admission, session and initial screen segment sample context');
   const initialCalls = f.calls();
   f.huge(true);
   f.mount.emit('over-limit', {});
@@ -299,7 +332,10 @@ test('outbox limit stops once even when the final event cannot fit', async (t) =
   await waitUntil(() => !f.mount.active(), 'recording stop after outbox limit');
   f.huge(false);
   assert.equal(f.mount.active(), false);
-  assert.ok(f.calls() - initialCalls <= 2, 'one rejected event and at most one terminal event');
+  assert.ok(
+    f.calls() <= initialCalls + 2,
+    'one rejected event and at most one segment-finalization sample',
+  );
   assert.equal(
     f.tracks.every((track) => track.readyState === 'ended'),
     true,
@@ -360,7 +396,7 @@ test('finish keeps durable uploads available for retry while disposal releases t
     'finish and final media persistence',
   );
   assert.equal(f.mount.active(), false);
-  assert.equal(f.intervals.size, 1, 'upload retry remains after Finish');
+  assert.equal(f.intervals.size, 2, 'recording and feedback retries remain after Finish');
   assert.equal(f.closed(), false);
   assert.ok(f.rows.some((row) => row.url.includes('/media?')));
   assert.ok(
@@ -405,4 +441,26 @@ test('frozen legacy client cannot upload or acknowledge the live v2 outbox', asy
   f.mount.dispose();
   await settle();
   assert.equal((await v2.items()).length, 1);
+});
+
+test('feedback recovery occupies the supplied toolbar region without unavailable recording chrome', async (t) => {
+  const f = await fixture(t, { toolbarHost: true, configUnavailable: true });
+  const panel = f.nodes.find((n) => n.className === 'playtest-panel');
+  assert.ok(
+    f.toolbarHost.appended?.includes(panel),
+    'feedback belongs to the application toolbar host',
+  );
+  assert.ok(!document.body.appended?.includes(panel), 'toolbar must not overlay the document body');
+  assert.equal(panel.querySelector('[data-setup]').hidden, true);
+  assert.equal(panel.querySelector('[data-project]').hidden, true);
+  assert.equal(panel.querySelector('[data-status]').hidden, true);
+  assert.equal(panel.querySelector('[data-feedback]').hidden, undefined);
+  await panel.querySelector('[data-feedback]').click();
+  await settle();
+  assert.equal(
+    f.nodes.find((n) => n.className === 'playtest-dialog feedback-dialog').open,
+    true,
+    'offline feedback draft remains reachable',
+  );
+  assert.equal(f.mount.active(), false);
 });

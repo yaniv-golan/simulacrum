@@ -1,3 +1,4 @@
+import { ropeVectorImpulses, ropeWorkLedger } from './law/rope.mjs';
 import { admitGearTopology } from './gear-topology.mjs';
 import { coupledGearImpulses } from './law/gear.mjs';
 import { springTopologyDomain } from './spring-topology.mjs';
@@ -74,11 +75,21 @@ function hash(bytes) {
   for (const byte of bytes) h = Math.imul(h ^ byte, 16777619);
   return h >>> 0;
 }
-function encode(payload, handles, configuration, gearState) {
+function encode(payload, handles, configuration, gearState, opened, ropeState, ropeWork) {
   const metadata = new TextEncoder().encode(
     JSON.stringify({
-      version: gearState.length ? 5 : 4,
-      ...(gearState.length ? { gearState } : {}),
+      version: ropeState.length
+        ? opened.length
+          ? 8
+          : 7
+        : opened.length
+          ? 6
+          : gearState.length
+            ? 5
+            : 4,
+      ...(ropeState.length ? { ropeState, ropeWork } : {}),
+      ...(opened.length ? { opened } : {}),
+      ...(gearState.length || opened.length ? { gearState } : {}),
       backend: PHYSICS_BACKEND,
       handles,
       configuration,
@@ -114,10 +125,23 @@ function decode(input) {
     'backend',
     'handles',
     'configuration',
-    ...(metadata.version === 5 ? ['gearState'] : []),
+    ...(metadata.version === 5 ||
+    metadata.version === 8 ||
+    (metadata.version === 6 && Object.hasOwn(metadata, 'opened')) ||
+    ([6, 7].includes(metadata.version) && Object.hasOwn(metadata, 'gearState'))
+      ? ['gearState']
+      : []),
+    ...((metadata.version === 6 && Object.hasOwn(metadata, 'opened')) || metadata.version === 8
+      ? ['opened']
+      : []),
+    ...((metadata.version === 6 && !Object.hasOwn(metadata, 'opened')) ||
+    [7, 8].includes(metadata.version)
+      ? ['ropeState']
+      : []),
+    ...([7, 8].includes(metadata.version) ? ['ropeWork'] : []),
   ]);
   if (
-    ![4, 5].includes(metadata.version) ||
+    ![4, 5, 6, 7, 8].includes(metadata.version) ||
     metadata.backend !== PHYSICS_BACKEND ||
     !Array.isArray(metadata.handles) ||
     metadata.handles.length > MAX_BODIES ||
@@ -127,7 +151,10 @@ function decode(input) {
     throw new TypeError('invalid physics snapshot handles');
   return {
     handles: metadata.handles,
+    opened: metadata.opened ?? [],
     gearState: metadata.gearState ?? [],
+    ropeState: metadata.ropeState ?? [],
+    ropeWork: metadata.ropeWork,
     configuration: metadata.configuration,
     payload: bytes.slice(12 + size),
   };
@@ -149,7 +176,10 @@ export async function createPhysicsWorld(configuration) {
       'fixed',
       'friction',
       'restitution',
+      ...(Object.hasOwn(body, 'collision') ? ['collision'] : []),
     ]);
+    if (Object.hasOwn(body, 'collision') && body.collision !== false)
+      throw TypeError('invalid collision exclusion');
     const rotation = quaternion(body.rotation),
       position = vector(body.position),
       velocity = vector(body.velocity),
@@ -173,6 +203,7 @@ export async function createPhysicsWorld(configuration) {
     )
       throw new TypeError('invalid physical shape');
     return {
+      ...(body.collision === false ? { collision: false } : {}),
       shape: body.shape,
       position,
       rotation,
@@ -187,24 +218,35 @@ export async function createPhysicsWorld(configuration) {
   if (!Array.isArray(configuration.joints) || configuration.joints.length > 8192)
     throw new TypeError('invalid joints');
   const joints = configuration.joints.map((joint) => {
-    if (!['fixed', 'revolute', 'spring', 'gear'].includes(joint?.kind))
+    if (!['fixed', 'revolute', 'spring', 'gear', 'rope', 'spherical'].includes(joint?.kind))
       throw new TypeError('invalid joint kind');
     record(
       joint,
-      joint.kind === 'fixed'
-        ? ['kind', 'a', 'b', 'anchorA', 'anchorB', 'rotationA', 'rotationB']
-        : [
+      ['rope', 'spherical'].includes(joint.kind)
+        ? [
             'kind',
             'a',
             'b',
             'anchorA',
             'anchorB',
-            'axisA',
-            'axisB',
-            ...(Object.hasOwn(joint, 'limits') ? ['limits'] : []),
-            ...(joint.kind === 'spring' ? ['stiffness', 'damping', 'restLength'] : []),
-            ...(joint.kind === 'gear' ? ['stiffness', 'damping', 'radiusA', 'radiusB'] : []),
-          ],
+            ...(joint.kind === 'rope'
+              ? ['restLength', 'stiffness', 'damping', 'strength', 'maxStrain']
+              : []),
+          ]
+        : joint.kind === 'fixed'
+          ? ['kind', 'a', 'b', 'anchorA', 'anchorB', 'rotationA', 'rotationB']
+          : [
+              'kind',
+              'a',
+              'b',
+              'anchorA',
+              'anchorB',
+              'axisA',
+              'axisB',
+              ...(Object.hasOwn(joint, 'limits') ? ['limits'] : []),
+              ...(joint.kind === 'spring' ? ['stiffness', 'damping', 'restLength'] : []),
+              ...(joint.kind === 'gear' ? ['stiffness', 'damping', 'radiusA', 'radiusB'] : []),
+            ],
     );
     if (
       !Number.isInteger(joint.a) ||
@@ -260,6 +302,33 @@ export async function createPhysicsWorld(configuration) {
         joint.damping > 100)
     )
       throw new TypeError('invalid gear settings');
+    if (joint.kind === 'rope' || joint.kind === 'spherical') {
+      const anchorA = vector(joint.anchorA),
+        anchorB = vector(joint.anchorB);
+      if (joint.kind === 'rope') {
+        if (
+          ![
+            joint.restLength,
+            joint.stiffness,
+            joint.damping,
+            joint.strength,
+            joint.maxStrain,
+          ].every(Number.isFinite) ||
+          joint.restLength <= 0 ||
+          joint.restLength > 1 ||
+          joint.stiffness <= 0 ||
+          joint.stiffness > 1e8 ||
+          joint.damping < 0 ||
+          joint.damping > 1e6 ||
+          joint.strength <= 0 ||
+          joint.maxStrain <= 0 ||
+          joint.maxStrain > 0.1 ||
+          [...anchorA, ...anchorB].some((x) => x !== 0)
+        )
+          throw TypeError('invalid rope settings');
+      }
+      return { ...joint, anchorA, anchorB };
+    }
     const common = {
       ...(joint.limits ? { limits: [...joint.limits] } : {}),
       kind: joint.kind,
@@ -294,6 +363,13 @@ export async function createPhysicsWorld(configuration) {
   if (joints.filter((j) => j.kind === 'spring').length > 8)
     throw new RangeError('at most 8 guided springs');
   admitGearTopology(descriptions, joints);
+  const ropeIndices = joints.flatMap((j, i) => (j.kind === 'rope' ? [i] : []));
+  if (ropeIndices.length > 64) throw RangeError('rope capacity limit');
+  let ropesApplied = false,
+    ropeState = ropeIndices.map(() => 0),
+    pendingRopeState = null,
+    pendingRopeWork = null,
+    ropeWork = ropeWorkLedger([], DT);
   const gearIndices = joints.flatMap((j, i) => (j.kind === 'gear' ? [i] : []));
   let gearMemory = gearIndices.map((index) => ({
     index,
@@ -304,8 +380,12 @@ export async function createPhysicsWorld(configuration) {
     splitStepM: 0,
     splitElasticDeltaJ: 0,
   }));
-  const topology = springTopologyDomain(descriptions, joints),
-    activeElastic = new Set(topology.activeElastic);
+  let opened = new Set(),
+    planned = new Set(),
+    releaseInFlight = false;
+  const liveJoints = () => joints.filter((_, i) => !opened.has(i) && !planned.has(i));
+  let topology = springTopologyDomain(descriptions, joints);
+  const activeElastic = new Set(topology.activeElastic);
   await (initialization ??= RAPIER.init().then(() => {
     if (RAPIER.version() !== PHYSICS_BACKEND) throw new Error('physics backend mismatch');
   }));
@@ -321,11 +401,16 @@ export async function createPhysicsWorld(configuration) {
   };
   for (const joint of joints)
     if (joint.kind === 'fixed') fixedParents[fixedRoot(joint.b)] = fixedRoot(joint.a);
-  const fixedRoots = descriptions.map((_, i) => fixedRoot(i));
+  let fixedRoots = descriptions.map((_, i) => fixedRoot(i));
   const fixedSizes = new Map();
   for (const root of fixedRoots) fixedSizes.set(root, (fixedSizes.get(root) ?? 0) + 1);
   let fixedByHandle = new Map();
   const rebuildFixedHandles = () => {
+    fixedParents.forEach((_, i) => (fixedParents[i] = i));
+    for (const [i, joint] of joints.entries())
+      if (joint.kind === 'fixed' && !opened.has(i))
+        fixedParents[fixedRoot(joint.b)] = fixedRoot(joint.a);
+    fixedRoots = descriptions.map((_, i) => fixedRoot(i));
     fixedByHandle = new Map(handles.map((handle, i) => [handle, fixedRoots[i]]));
   };
   // This Rapier binding only dispatches hooks through stepWithEvents. No collider
@@ -405,6 +490,7 @@ export async function createPhysicsWorld(configuration) {
       }
       world.createCollider(
         collider
+          .setCollisionGroups(body.collision === false ? 0 : 0xffffffff)
           .setFriction(body.friction)
           .setRestitution(body.restitution)
           .setActiveHooks(
@@ -418,26 +504,28 @@ export async function createPhysicsWorld(configuration) {
     }
     rebuildFixedHandles();
     for (const joint of joints) {
-      if (joint.kind === 'gear') {
+      if (joint.kind === 'gear' || joint.kind === 'rope') {
         jointHandles.push(null);
         continue;
       }
       const data =
-        joint.kind === 'fixed'
-          ? RAPIER.JointData.fixed(
-              xyz(joint.anchorA),
-              xyzw(joint.rotationA),
-              xyz(joint.anchorB),
-              xyzw(joint.rotationB),
-            )
-          : joint.kind === 'spring'
-            ? RAPIER.JointData.prismatic(xyz(joint.anchorA), xyz(joint.anchorB), xyz(joint.axisA))
-            : RAPIER.JointData.revoluteWithAxes(
+        joint.kind === 'spherical'
+          ? RAPIER.JointData.spherical(xyz(joint.anchorA), xyz(joint.anchorB))
+          : joint.kind === 'fixed'
+            ? RAPIER.JointData.fixed(
                 xyz(joint.anchorA),
+                xyzw(joint.rotationA),
                 xyz(joint.anchorB),
-                xyz(joint.axisA),
-                xyz(joint.axisB),
-              );
+                xyzw(joint.rotationB),
+              )
+            : joint.kind === 'spring'
+              ? RAPIER.JointData.prismatic(xyz(joint.anchorA), xyz(joint.anchorB), xyz(joint.axisA))
+              : RAPIER.JointData.revoluteWithAxes(
+                  xyz(joint.anchorA),
+                  xyz(joint.anchorB),
+                  xyz(joint.axisA),
+                  xyz(joint.axisB),
+                );
       const connection = world.createImpulseJoint(
         data,
         world.getRigidBody(handles[joint.a]),
@@ -523,6 +611,8 @@ export async function createPhysicsWorld(configuration) {
           principalInertia: array(body.principalInertia()),
           inertiaFrame: rotationArray(body.principalInertiaLocalFrame()),
           gravityScale: body.gravityScale(),
+          userForce: array(body.userForce()),
+          userTorque: array(body.userTorque()),
           linearDamping: body.linearDamping(),
           angularDamping: body.angularDamping(),
           shape: collider.shapeType(),
@@ -531,6 +621,7 @@ export async function createPhysicsWorld(configuration) {
           friction: collider.friction(),
           restitution: collider.restitution(),
           activeHooks: collider.activeHooks(),
+          collisionGroups: collider.collisionGroups(),
           offset: array(collider.translationWrtParent()),
           rotation: [rotation.x, rotation.y, rotation.z, rotation.w],
         };
@@ -598,6 +689,14 @@ export async function createPhysicsWorld(configuration) {
     return {
       kineticJ,
       potentialJ,
+      ...(ropeIndices.length
+        ? {
+            ropePotentialJ: ropeReadings(candidate, mapping).reduce(
+              (sum, r) => sum + r.potentialJ,
+              0,
+            ),
+          }
+        : {}),
       ...(gearIndices.length
         ? {
             gearPotentialJ: memory.reduce(
@@ -628,16 +727,24 @@ export async function createPhysicsWorld(configuration) {
     a[2] * b[0] - a[0] * b[2],
     a[0] * b[1] - a[1] * b[0],
   ];
+  let responseWorld = null;
   function makeTorqueIsland(indices) {
     const offsets = new Map(indices.map((body, i) => [body, i * 6]));
     const n = indices.length * 6;
     const centres = indices.map((i) => array(bodyAt(i).translation()));
-    const factor = world.impulseJoints.raw.prepareBilateralResponse(
-      world.bodies.raw,
+    const factor = (responseWorld ?? world).impulseJoints.raw.prepareBilateralResponse(
+      (responseWorld ?? world).bodies.raw,
       new Float64Array(indices.map((i) => handles[i])),
       new Float64Array(
         joints.flatMap((j, i) =>
-          j.kind !== 'gear' && offsets.has(j.a) && offsets.has(j.b) ? [jointHandles[i]] : [],
+          j.kind !== 'gear' &&
+          j.kind !== 'rope' &&
+          !opened.has(i) &&
+          !planned.has(i) &&
+          offsets.has(j.a) &&
+          offsets.has(j.b)
+            ? [jointHandles[i]]
+            : [],
         ),
       ),
       world.integrationParameters.raw,
@@ -705,6 +812,181 @@ export async function createPhysicsWorld(configuration) {
       throw error;
     }
   }
+
+  /** @returns {import('../../model/boundaries.js').RopeObservation[]} */
+  function ropeReadings(physics = world, mapping = handles) {
+    return ropeIndices.map((index, slot) => {
+      const j = joints[index],
+        a = physics.getRigidBody(mapping[j.a]),
+        b = physics.getRigidBody(mapping[j.b]);
+      const pointA = array(a.translation()),
+        pointB = array(b.translation());
+      const length = Math.hypot(...pointB.map((x, i) => x - pointA[i])),
+        extension = Math.max(0, length - j.restLength);
+      return {
+        index,
+        pointA,
+        pointB,
+        length,
+        restLength: j.restLength,
+        strain: extension / j.restLength,
+        elasticTension: j.stiffness * extension,
+        appliedTension: ropeState[slot],
+        potentialJ: 0.5 * j.stiffness * extension ** 2,
+      };
+    });
+  }
+  function applyRopes() {
+    alive();
+    if (ropesApplied || !constraintsApplied) throw Error('invalid rope solve phase');
+    const readings = ropeReadings();
+    if (!readings.length) {
+      ropesApplied = true;
+      pendingRopeState = [];
+      return { iterations: 0, residual: 0 };
+    }
+    // Native components remain separate: numeric links are not native graph edges.
+    const components = [
+      ...new Set(
+        ropeIndices
+          .flatMap((i) => [
+            preparedTorqueIslands.get(joints[i].a),
+            preparedTorqueIslands.get(joints[i].b),
+          ])
+          .filter(Boolean),
+      ),
+    ];
+    const free = [
+      ...new Set(
+        ropeIndices
+          .flatMap((i) => [joints[i].a, joints[i].b])
+          .filter((i) => !preparedTorqueIslands.has(i)),
+      ),
+    ];
+    const indices = [...new Set([...components.flatMap((c) => c.indices), ...free])].sort(
+      (a, b) => a - b,
+    );
+    const offsets = new Map(indices.map((i, k) => [i, k * 6])),
+      size = indices.length * 6;
+    const velocity = indices.flatMap((i) => [
+      ...array(bodyAt(i).linvel()),
+      ...array(bodyAt(i).angvel()),
+    ]);
+    const rows = readings.flatMap((r) =>
+      [0, 1, 2].map((cart) => {
+        const j = joints[r.index],
+          f = Array(size).fill(0),
+          d = r.pointB.map((v, k) => v - r.pointA[k]);
+        const axis = [0, 1, 2].map((k) => (k === cart ? 1 : 0));
+        for (let k = 0; k < 3; k++) {
+          f[offsets.get(j.a) + k] -= axis[k];
+          f[offsets.get(j.b) + k] += axis[k];
+        }
+        const impulse = Array(size).fill(0),
+          response = Array(size).fill(0);
+        for (const component of components) {
+          const input = component.indices.flatMap((i) =>
+            f.slice(offsets.get(i), offsets.get(i) + 6),
+          );
+          if (!input.some((x) => x !== 0)) continue;
+          const out = component.projection.response(input);
+          component.indices.forEach((i, slot) => {
+            for (let k = 0; k < 6; k++) {
+              impulse[offsets.get(i) + k] = out.impulse[slot * 6 + k];
+              response[offsets.get(i) + k] = out.velocity[slot * 6 + k];
+            }
+          });
+        }
+        for (const i of free)
+          for (let k = 0; k < 3; k++) {
+            const off = offsets.get(i) + k;
+            impulse[off] = f[off];
+            response[off] = bodyAt(i).isFixed() ? 0 : f[off] / bodyAt(i).mass();
+          }
+        return {
+          j,
+          f,
+          impulse,
+          response,
+          offsetA: offsets.get(j.a) + cart,
+          offsetB: offsets.get(j.b) + cart,
+        };
+      }),
+    );
+    const gravityImpulse = indices.flatMap((i) => [
+      ...gravity.map((g) => (bodyAt(i).isFixed() ? 0 : bodyAt(i).mass() * g * DT)),
+      0,
+      0,
+      0,
+    ]);
+    const predictor = rows.map(
+      (r) => DT * (dot(r.f, velocity) + (5 / 8) * dot(r.response, gravityImpulse)),
+    );
+    let receipt;
+    try {
+      receipt = ropeVectorImpulses({
+        vectors: readings.map((r, i) =>
+          r.pointB.map((v, k) => v - r.pointA[k] + predictor[i * 3 + k]),
+        ),
+        extensions: readings.map((r) => r.length - r.restLength),
+        restLengths: readings.map((r) => r.restLength),
+        stiffnesses: readings.map((r) => joints[r.index].stiffness),
+        dampings: readings.map((r) => joints[r.index].damping),
+        mobility: rows.map((a) => rows.map((b) => b.response[a.offsetB] - b.response[a.offsetA])),
+        dt: DT,
+      });
+    } catch (error) {
+      if (error.message === 'rope nonlinear convergence limit')
+        error.reasonCode = 'ROPE_MOTION_LIMIT';
+      throw error;
+    }
+    if (receipt.impulses.some((p, i) => Math.hypot(...p) / DT > joints[readings[i].index].strength))
+      throw Object.assign(
+        Error(
+          'Rope load limit: return to Build, lengthen the rope or reduce the load, then retry.',
+        ),
+        { reasonCode: 'ROPE_MOTION_LIMIT' },
+      );
+    if (
+      receipt.impulses.some(
+        (p, i) =>
+          p.reduce((sum, v, k) => sum + v * (readings[i].pointB[k] - readings[i].pointA[k]), 0) <
+          -1e-14,
+      )
+    )
+      throw Object.assign(
+        Error(
+          'Rope segment turns too far in one tick: return to Build and reduce speed or increase length.',
+        ),
+        { reasonCode: 'ROPE_MOTION_LIMIT' },
+      );
+    const applied = Array(size).fill(0),
+      flat = receipt.impulses.flat();
+    rows.forEach((r, i) =>
+      r.impulse.forEach((v, k) => {
+        applied[k] -= v * flat[i];
+      }),
+    );
+    for (const i of indices) {
+      const body = bodyAt(i),
+        off = offsets.get(i);
+      if (!body.isFixed()) {
+        body.addForce(xyz(applied.slice(off, off + 3).map((v) => v / DT)), true);
+        body.addTorque(xyz(applied.slice(off + 3, off + 6).map((v) => v / DT)), true);
+      }
+    }
+    pendingRopeWork = readings.map((r, i) => ({
+      before: r.pointB.map((v, k) => v - r.pointA[k]),
+      impulse: [...receipt.impulses[i]],
+      restLength: r.restLength,
+      stiffness: joints[r.index].stiffness,
+      damping: joints[r.index].damping,
+    }));
+    pendingRopeState = receipt.impulses.map((p) => Math.hypot(...p) / DT);
+    ropesApplied = true;
+    return { iterations: receipt.iterations, residual: receipt.residual };
+  }
+
   function clearPreparedTorqueIslands() {
     for (const island of new Set(preparedTorqueIslands.values())) island.dispose();
     preparedTorqueIslands = new Map();
@@ -1017,10 +1299,86 @@ export async function createPhysicsWorld(configuration) {
     contactEvents?.free();
     throw error;
   }
+  function validateOpened(input) {
+    if (
+      !Array.isArray(input) ||
+      input.some(
+        (i, k) => !Number.isInteger(i) || joints[i]?.kind !== 'fixed' || (k && input[k - 1] >= i),
+      )
+    )
+      throw new TypeError('invalid opened joints');
+    const remaining = joints.filter((_, i) => !input.includes(i));
+    admitGearTopology(descriptions, remaining);
+    const elastic = springTopologyDomain(descriptions, remaining).activeElastic.map(
+      (i) => remaining[i],
+    );
+    if (
+      elastic.length !== activeElastic.size ||
+      [...activeElastic].some((i) => !elastic.includes(joints[i]))
+    )
+      throw new RangeError('release changes spring activation');
+    return new Set(input);
+  }
   return Object.freeze({
+    openedJoints: () => [...opened].sort((a, b) => a - b),
+    planReleases(indices) {
+      alive();
+      if (!constraintsApplied || planned.size)
+        throw new Error('release preparation already pending');
+      if (
+        !Array.isArray(indices) ||
+        new Set(indices).size !== indices.length ||
+        indices.some((i) => !Number.isInteger(i) || joints[i]?.kind !== 'fixed')
+      )
+        throw new TypeError('invalid release request');
+      const results = [];
+      for (const joint of [...indices].sort((a, b) => a - b)) {
+        if (opened.has(joint)) {
+          results.push({ joint, reasonCode: 'ALREADY_OPEN' });
+          continue;
+        }
+        try {
+          validateOpened([...opened, ...planned, joint].sort((a, b) => a - b));
+          planned.add(joint);
+          // Preview the actual post-release response without removing a native row.
+          this.prepareConstraints();
+          if (joints.some((j) => j.kind === 'spring')) prepareSpringAllocations();
+          results.push({ joint, reasonCode: 'OK' });
+        } catch (error) {
+          planned.delete(joint);
+          results.push({ joint, reasonCode: 'RELEASE_SUPPORT_BLOCKED' });
+        } finally {
+          clearPreparedTorqueIslands();
+          preparedSprings = null;
+          constraintsApplied = true;
+          topology = springTopologyDomain(
+            descriptions,
+            joints.filter((_, i) => !opened.has(i)),
+          );
+        }
+      }
+      return results;
+    },
+    commitReleases() {
+      alive();
+      if (!planned.size) return;
+      if (planned.size) releaseInFlight = true;
+      for (const i of planned) {
+        world.removeImpulseJoint(world.getImpulseJoint(jointHandles[i]), true);
+        opened.add(i);
+      }
+      planned.clear();
+      contactPadCache = null;
+      rebuildFixedHandles();
+      topology = springTopologyDomain(descriptions, liveJoints());
+    },
+    applyRopes,
+    ropeEnergy: () => ({ ...ropeWork }),
+    ropes: ropeReadings,
     applyGears,
     gears: gearReadings,
     prepareConstraints() {
+      if (planned.size) topology = springTopologyDomain(descriptions, liveJoints());
       clearPreparedTorqueIslands();
       preparedSprings = null;
       springsApplied = false;
@@ -1032,13 +1390,24 @@ export async function createPhysicsWorld(configuration) {
           while (parent[i] !== i) i = parent[i];
           return i;
         };
-      for (const j of joints) parent[root(j.b)] = root(j.a);
-      const active = new Set(joints.flatMap((j) => [root(j.a), root(j.b)]));
+      const nativeJoints = liveJoints().filter((j) => j.kind !== 'rope');
+      for (const j of nativeJoints) parent[root(j.b)] = root(j.a);
+      const active = new Set(nativeJoints.flatMap((j) => [root(j.a), root(j.b)]));
       constraintsApplied = false;
-      for (const id of active) {
-        const indices = handles.map((_, i) => i).filter((i) => root(i) === id),
-          island = makeTorqueIsland(indices);
-        for (const i of indices) preparedTorqueIslands.set(i, island);
+      try {
+        if (planned.size) {
+          responseWorld = RAPIER.World.restoreSnapshot(world.takeSnapshot());
+          for (const i of planned)
+            responseWorld.removeImpulseJoint(responseWorld.getImpulseJoint(jointHandles[i]), true);
+        }
+        for (const id of active) {
+          const indices = handles.map((_, i) => i).filter((i) => root(i) === id),
+            island = makeTorqueIsland(indices);
+          for (const i of indices) preparedTorqueIslands.set(i, island);
+        }
+      } finally {
+        responseWorld?.free();
+        responseWorld = null;
       }
     },
     prepareSprings() {
@@ -1283,6 +1652,89 @@ export async function createPhysicsWorld(configuration) {
         kineticDeltaJ: after - before,
       };
     },
+    /** Generalized coupling of two authored drive coordinates, including anchor moments. */
+    driveResponse(target, source) {
+      const row = (index) => {
+        const j = joints[index];
+        if (!j || !['spring', 'revolute'].includes(j.kind)) throw TypeError('invalid drive joint');
+        const island = preparedTorqueIslands.get(j.a);
+        if (!island) throw Error('prepare drive constraints first');
+        const axis = rotate(rotationArray(bodyAt(j.a).rotation()), j.axisA);
+        const s = j.kind === 'spring' ? springState(index) : null;
+        return {
+          j,
+          island,
+          force: s
+            ? island.axialForce(j.a, j.b, axis, s.pointA, s.pointB)
+            : island.force(j.a, j.b, axis),
+        };
+      };
+      const a = row(target),
+        b = row(source);
+      if (
+        a.island !== b.island ||
+        topology.isRigidPair(a.j.a, a.j.b) ||
+        topology.isRigidPair(b.j.a, b.j.b)
+      )
+        return 0;
+      return dot(a.force, b.island.projection.response(b.force).velocity);
+    },
+    linearDriveState(index) {
+      const j = joints[index],
+        s = springState(index),
+        island = preparedTorqueIslands.get(j.a);
+      if (!island) throw Error('prepare drive constraints first');
+      const f = island.axialForce(j.a, j.b, s.axis, s.pointA, s.pointB);
+      const locked = topology.isRigidPair(j.a, j.b);
+      const velocity = constraintsApplied
+        ? island.vector()
+        : island.projectedVector.map(
+            (v, i) => v + (preparedSprings?.find((a) => a.island === island)?.velocity[i] ?? 0),
+          );
+      return {
+        speed: locked ? 0 : dot(f, velocity),
+        effectiveInverseInertia: locked
+          ? 0
+          : Math.max(0, dot(f, island.projection.response(f).velocity)),
+      };
+    },
+    applyLinearDrive(index, forceN) {
+      if (!constraintsApplied || !springsApplied)
+        throw Error('prepare passive sliding constraints first');
+      if (!Number.isFinite(forceN) || !Number.isFinite(forceN * DT))
+        throw TypeError('invalid axial force');
+      const j = joints[index],
+        s = springState(index),
+        island = preparedTorqueIslands.get(j.a);
+      if (!island) throw Error('prepare drive constraints first');
+      const before = island.kinetic(),
+        prior = island.vector();
+      const raw = island.axialForce(j.a, j.b, s.axis, s.pointA, s.pointB);
+      const locked = topology.isRigidPair(j.a, j.b);
+      const speedBefore = locked ? 0 : dot(raw, prior);
+      const impulse = locked
+        ? raw.map(() => 0)
+        : island.projection.response(raw).impulse.map((v) => v * forceN * DT);
+      island.apply(impulse);
+      const current = island.vector(),
+        speedAfter = locked ? 0 : dot(raw, current),
+        after = island.kinetic();
+      const constraintWorkJ = locked
+        ? 0
+        : impulse.reduce(
+            (sum, v, i) => sum + ((v - raw[i] * forceN * DT) * (prior[i] + current[i])) / 2,
+            0,
+          );
+      return {
+        speedBefore,
+        speedAfter,
+        workJ: (forceN * DT * (speedBefore + speedAfter)) / 2,
+        constraintWorkJ,
+        kineticBeforeJ: before,
+        kineticAfterJ: after,
+        kineticDeltaJ: after - before,
+      };
+    },
     jointState(index) {
       alive();
       if (
@@ -1338,7 +1790,31 @@ export async function createPhysicsWorld(configuration) {
         throw new Error('spring preparation and damping must precede integration');
       if (gearIndices.length && !gearsApplied)
         throw new Error('gear solve must precede integration');
+      if (ropeIndices.length && !ropesApplied) throw Error('rope solve must precede integration');
       world.step(contactEvents, contactHooks);
+      if (ropeIndices.length)
+        for (const handle of handles) {
+          const body = world.getRigidBody(handle);
+          body.resetForces(false);
+          body.resetTorques(false);
+        }
+      ropesApplied = false;
+      ropeState = pendingRopeState ?? ropeState;
+      const completedRopes = ropeReadings();
+      ropeWork = ropeWorkLedger(
+        (pendingRopeWork ?? []).map((r, i) => ({
+          ...r,
+          after: completedRopes[i].pointB.map((v, k) => v - completedRopes[i].pointA[k]),
+        })),
+        DT,
+      );
+      pendingRopeWork = null;
+      pendingRopeState = null;
+      if (ropeReadings().some((r) => r.strain > joints[r.index].maxStrain))
+        throw Object.assign(
+          Error('Rope overstretch: return to Build, increase length or reduce load, and retry.'),
+          { reasonCode: 'ROPE_MOTION_LIMIT' },
+        );
       completeGearSlip();
       clearPreparedTorqueIslands();
       preparedSprings = null;
@@ -1348,6 +1824,7 @@ export async function createPhysicsWorld(configuration) {
       constraintsApplied = true;
       const states = readWorld(world, handles);
       assertFinite(states);
+      releaseInFlight = false;
       // A copied, validated post-integration sample; no live native object escapes.
       return states;
     },
@@ -1357,16 +1834,74 @@ export async function createPhysicsWorld(configuration) {
     },
     snapshot() {
       alive();
-      if (gearIndices.length && gearsApplied)
+      if (ropesApplied || (gearIndices.length && gearsApplied))
         throw new Error('snapshot requires completed gear step');
-      return encode(world.takeSnapshot(), handles, JSON.parse(configurationIdentity), gearMemory);
+      if (planned.size || releaseInFlight)
+        throw new Error('snapshot requires completed release step');
+      return encode(
+        world.takeSnapshot(),
+        handles,
+        JSON.parse(configurationIdentity),
+        gearMemory,
+        [...opened].sort((a, b) => a - b),
+        ropeState,
+        ropeWork,
+      );
     },
-    restore(bytes, expectedEnergy, expectedJointAngles = [], previousSpringLengths) {
+    restore(
+      bytes,
+      expectedEnergy,
+      expectedJointAngles = [],
+      previousSpringLengths,
+      expectedOpened,
+      expectedRopeWork,
+    ) {
       alive();
       const decoded = decode(bytes);
       if (JSON.stringify(decoded.configuration) !== configurationIdentity)
         throw new Error('snapshot configuration mismatch');
       const memory = validateGearMemory(decoded.gearState);
+      const nextOpened = validateOpened(decoded.opened);
+      if (expectedOpened && JSON.stringify(decoded.opened) !== JSON.stringify(expectedOpened))
+        throw new Error('snapshot release state mismatch');
+      if (
+        !Array.isArray(decoded.ropeState) ||
+        decoded.ropeState.length !== ropeIndices.length ||
+        decoded.ropeState.some(
+          (v, i) => !Number.isFinite(v) || v < 0 || v > joints[ropeIndices[i]].strength,
+        )
+      )
+        throw TypeError('invalid rope snapshot readings');
+      const work = decoded.ropeWork ?? ropeWorkLedger([], DT);
+      record(work, Object.keys(ropeWorkLedger([], DT)));
+      if (
+        (ropeIndices.length && !decoded.ropeWork) ||
+        !Object.values(work).every(Number.isFinite) ||
+        work.ropeDampingWorkJ < 0 ||
+        work.ropeNumericalLossJ < 0
+      )
+        throw TypeError('invalid rope work snapshot');
+      const workTerms = [
+          work.ropeWorkJ,
+          work.ropeElasticDeltaJ,
+          work.ropeDampingWorkJ,
+          work.ropeNumericalLossJ,
+          -work.ropeSplitWorkJ,
+        ],
+        workScale = Math.max(...workTerms.map(Math.abs));
+      // Each segment and the aggregate use a bounded number of rounded additions.
+      // Normalize first to avoid overflow; this is relative roundoff, not a joule floor.
+      if (
+        workScale > 0 &&
+        Math.abs(workTerms.reduce((sum, value) => sum + value / workScale, 0)) >
+          8 * (ropeIndices.length + 5) * Number.EPSILON
+      )
+        throw TypeError('inconsistent rope work snapshot');
+      if (expectedRopeWork !== undefined) {
+        record(expectedRopeWork, Object.keys(work));
+        if (Object.keys(work).some((k) => expectedRopeWork[k] !== work[k]))
+          throw TypeError('rope work snapshot mismatch');
+      }
       let candidate;
       try {
         candidate = RAPIER.World.restoreSnapshot(decoded.payload);
@@ -1374,7 +1909,8 @@ export async function createPhysicsWorld(configuration) {
         if (
           candidate.bodies.len() !== decoded.handles.length ||
           candidate.colliders.len() !== decoded.handles.length ||
-          candidate.impulseJoints.len() !== joints.length - gearIndices.length ||
+          candidate.impulseJoints.len() !==
+            joints.length - gearIndices.length - ropeIndices.length - nextOpened.size ||
           candidate.multibodyJoints.len() !== 0 ||
           candidate.timestep !== world.timestep
         )
@@ -1386,13 +1922,15 @@ export async function createPhysicsWorld(configuration) {
             'potentialJ',
             ...(joints.some((j) => j.kind === 'spring') ? ['springPotentialJ'] : []),
             ...(gearIndices.length ? ['gearPotentialJ'] : []),
+            ...(ropeIndices.length ? ['ropePotentialJ'] : []),
           ]);
           const measured = energyOf(candidate, decoded.handles, memory);
           if (
             expectedEnergy.kineticJ !== measured.kineticJ ||
             expectedEnergy.potentialJ !== measured.potentialJ ||
             expectedEnergy.springPotentialJ !== measured.springPotentialJ ||
-            expectedEnergy.gearPotentialJ !== measured.gearPotentialJ
+            expectedEnergy.gearPotentialJ !== measured.gearPotentialJ ||
+            expectedEnergy.ropePotentialJ !== measured.ropePotentialJ
           )
             throw new Error('snapshot energy mismatch');
         }
@@ -1431,9 +1969,54 @@ export async function createPhysicsWorld(configuration) {
             seen.add(previous.joint);
           }
         }
+        if (nextOpened.size && joints.some((j) => j.kind === 'spring')) {
+          // Admit candidate mobility before swapping any persistent live state.
+          const saved = {
+            world,
+            handles,
+            opened,
+            planned,
+            topology,
+            preparedTorqueIslands,
+            preparedSprings,
+            constraintsApplied,
+            springsApplied,
+            gearsApplied,
+            gearBefore,
+          };
+          try {
+            world = candidate;
+            handles = decoded.handles;
+            opened = nextOpened;
+            planned = new Set();
+            topology = springTopologyDomain(descriptions, liveJoints());
+            preparedTorqueIslands = new Map();
+            this.prepareConstraints();
+            prepareSpringAllocations();
+          } finally {
+            clearPreparedTorqueIslands();
+            ({
+              world,
+              handles,
+              opened,
+              planned,
+              topology,
+              preparedTorqueIslands,
+              preparedSprings,
+              constraintsApplied,
+              springsApplied,
+              gearsApplied,
+              gearBefore,
+            } = saved);
+          }
+        }
         for (const index of gearIndices) gearGeometry(index, candidate, decoded.handles);
         readContacts(candidate, decoded.handles);
-        if (JSON.stringify(plant(candidate, decoded.handles)) !== originalPlant)
+        const expectedPlant = JSON.parse(originalPlant);
+        expectedPlant.joints = expectedPlant.joints.filter(
+          (j) => ![...nextOpened].some((i) => jointHandles[i] === j.handle),
+        );
+        if (JSON.stringify(plant(candidate, decoded.handles)) !== JSON.stringify(expectedPlant))
           throw new Error('snapshot physical plant mismatch');
       } catch (error) {
         candidate?.free();
@@ -1442,6 +2025,15 @@ export async function createPhysicsWorld(configuration) {
       const previous = world;
       contactPadCache = null;
       world = candidate;
+      opened = nextOpened;
+      releaseInFlight = false;
+      planned.clear();
+      topology = springTopologyDomain(descriptions, liveJoints());
+      ropesApplied = false;
+      pendingRopeState = null;
+      ropeState = [...decoded.ropeState];
+      ropeWork = { ...work };
+      pendingRopeWork = null;
       gearMemory = memory;
       clearPreparedTorqueIslands();
       preparedSprings = null;

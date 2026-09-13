@@ -1,4 +1,5 @@
 import { uploadWorkshopFile } from './browser-evidence.mjs';
+import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -111,7 +112,7 @@ try {
   ]);
   await page.locator('[data-command=undo]').click();
   browserEvidence.assert('deepEqual', [await read(), before]);
-  await page.locator('[data-part-type=poweredMotor]').click();
+  await placeCatalogPart(page, 'poweredMotor');
   await page.locator('.port-button[data-port-id=power]').click();
   await page
     .getByRole('button', { name: 'Wire Cell · power (parts stay put)', exact: true })
@@ -122,7 +123,7 @@ try {
     'a second motor shares the cell through another visible wire',
   ]);
   const shared = await read();
-  await page.locator('[data-part-type=powerCell]').click();
+  await placeCatalogPart(page, 'powerCell');
   await page.locator('.port-button[data-port-id=power]').click();
   await page
     .getByRole('button', { name: 'Wire Cell · power (parts stay put)', exact: true })

@@ -161,7 +161,7 @@ test('active driving evidence rejects gravity-only motion and changed body inven
 async function capacityModeWitness(
   t,
   recordingMode,
-  { cleanupFailure = false, latencyFailure = false } = {},
+  { cleanupFailure = false, latencyFailure = false, feedback = false } = {},
 ) {
   const { mkdtemp, writeFile, rm } = await import('node:fs/promises');
   const { tmpdir } = await import('node:os');
@@ -171,6 +171,17 @@ async function capacityModeWitness(
   const root = await mkdtemp(join(tmpdir(), 'load-envelope-'));
   const file = join(root, 'sample');
   await writeFile(file, '12345');
+  const feedbackFile = join(root, 'feedback.json');
+  await writeFile(
+    feedbackFile,
+    JSON.stringify({
+      protocolVersion: 1,
+      id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      createdAt: '2026-09-12T00:00:00.000Z',
+      text: 'Synthetic capacity feedback',
+      reference: { sessionId: 'a'.repeat(32), timeMs: 100 },
+    }),
+  );
   const previous = globalThis.fetch;
   const token = process.env.PLAYTEST_ADMIN_TOKEN;
   process.env.PLAYTEST_ADMIN_TOKEN = 't'.repeat(64);
@@ -180,12 +191,34 @@ async function capacityModeWitness(
     const u = new URL(url);
     if (cleanupFailure && options.method === 'DELETE')
       return Response.json({ error: 'cleanup outage' }, { status: 503 });
-    if (u.pathname === '/admin/playtest/sessions') return Response.json([]);
+    if (u.pathname === '/admin/playtest/synthetic/r/status')
+      return Response.json({
+        runId: 'r',
+        recordings: { pending: 0, chargedBytes: 0 },
+        feedback: { pending: 0, chargedBytes: 0 },
+      });
     if (u.pathname.includes('/admin/')) return Response.json({ ok: true, token: 'synthetic' });
     if (u.pathname === '/join')
       return new Response('', { status: 303, headers: { 'set-cookie': 'auth=synthetic' } });
-    if (u.pathname.endsWith('/session')) return Response.json({ sessionId: `s${sessions++}` });
+    if (u.pathname.endsWith('/session'))
+      return Response.json({ sessionId: String(sessions++).padStart(32, '0') });
     const bytes = Buffer.from(await new Response(options.body).arrayBuffer());
+    if (u.pathname === '/api/playtest/feedback/v1/submission') {
+      const envelope = JSON.parse(bytes);
+      assert.notEqual(envelope.reference.sessionId, 'a'.repeat(32));
+      deliveries.push({
+        key: `feedback:${envelope.id}`,
+        sessionId: envelope.reference.sessionId,
+        bytes: bytes.length,
+      });
+      return Response.json({
+        protocolVersion: 1,
+        submissionId: envelope.id,
+        uploadHash: createHash('sha256').update(bytes).digest('hex'),
+        status: 'received',
+        receivedAt: new Date().toISOString(),
+      });
+    }
     const sessionId = u.pathname.split('/')[4];
     const media = u.pathname.endsWith('/media');
     const key = media
@@ -216,6 +249,7 @@ async function capacityModeWitness(
         captureSchema: 1,
         captureSeconds: 60,
         mediaFiles: recordingMode === 'video' ? [file] : [],
+        ...(feedback ? { feedbackFiles: [feedbackFile] } : {}),
         maximumMediaFile: file,
         eventSamples: [{ kind: 'input' }],
         maximumEvent: { kind: 'input', data: 'x'.repeat(1000) },
@@ -250,7 +284,16 @@ async function capacityModeWitness(
       } else assert(result.p95Ms < 5000);
     } else result = await pending;
     assert.equal(deliveries.filter((d) => d.key.startsWith('event:') && d.bytes > 1000).length, 20);
-    assert.equal(result.scheduled, recordingMode === 'video' ? 100 : 40);
+    assert.equal(result.scheduled, (recordingMode === 'video' ? 100 : 40) + (feedback ? 1 : 0));
+    if (feedback) {
+      assert.equal(deliveries.filter((d) => d.key.startsWith('feedback:')).length, 3);
+      assert.equal(result.feedback.qualification, 'UNQUALIFIED');
+      assert.equal(result.feedback.protocolVersion, 1);
+      assert.equal(result.feedback.scheduled, 1);
+      assert.equal(result.feedback.completed, 1);
+      assert.equal(result.feedback.maximumObservedEnvelope.concurrent, 2);
+      assert(result.feedback.bytes > 0);
+    } else assert.equal(result.feedback, undefined);
     assert.equal(result.completed, result.scheduled);
     assert.equal(result.mediaPerTick, recordingMode === 'video' ? 3 : 0);
     assert.equal(
@@ -279,3 +322,6 @@ test('successful capacity measurement survives failed cleanup without reporting 
   capacityModeWitness(t, 'data', { cleanupFailure: true }));
 test('capacity target failure and cleanup failure retain both causes and measurements', (t) =>
   capacityModeWitness(t, 'data', { cleanupFailure: true, latencyFailure: true }));
+
+test('capacity runs standalone feedback envelopes alongside recording traffic without claiming qualification', (t) =>
+  capacityModeWitness(t, 'data', { feedback: true }));

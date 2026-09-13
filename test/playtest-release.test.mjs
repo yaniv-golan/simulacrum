@@ -354,6 +354,20 @@ test('first staging recovery reuses ownership and cleans synthetic resources on 
     },
   };
   await writeFile(join(root, 'config.json'), JSON.stringify(config));
+  // The real deployment entry point must refuse before admission or any remote mutation.
+  globalThis.fetch = async () => {
+    throw Error('Unexpected network before qualification guard');
+  };
+  for (const mode of ['auto', 'full']) {
+    await writeFile(
+      join(root, 'qualified.json'),
+      JSON.stringify({ ...config, verification: { mode } }),
+    );
+    await assert.rejects(
+      deployRelease(root, join(root, 'qualified.json')),
+      /Feedback protocol v1 capacity is unqualified/,
+    );
+  }
   for (const stage of ['before', 'after', 'recovery', 'capacity']) {
     let inspections = 0,
       cleanups = 0;
@@ -411,7 +425,12 @@ test('first staging recovery reuses ownership and cleans synthetic resources on 
         cleanups++;
         return Response.json({ pending: true });
       }
-      if (path === '/admin/playtest/sessions') return Response.json([]);
+      if (/^\/admin\/playtest\/synthetic\/[^/]+\/status$/.test(path))
+        return Response.json({
+          runId: path.split('/')[4],
+          recordings: { pending: 0, chargedBytes: 0 },
+          feedback: { pending: 0, chargedBytes: 0 },
+        });
       if (path.includes('/accounts/' + config.otherAccountId))
         return new Response('', { status: 403 });
       const ok = (result) => Response.json({ success: true, result });
@@ -750,5 +769,41 @@ test('private export bounds parallel reads and preserves journal order on comple
     }
     assert.equal(peak, 2, 'exactly two bounded object reads overlap');
     assert.equal(active, 0, 'all started reads settle before returning');
+  }
+});
+
+test('recording-only capacity cannot qualify feedback-enabled releases', async () => {
+  const { assertFeedbackQualification } = await import('../scripts/playtest/release-policy.mjs');
+  const legacyCapacity = {
+    recordingMode: 'data',
+    captureSchema: 1,
+    status: 'PASS',
+    feedbackEnabled: false,
+    feedback: { enabled: false },
+  };
+  for (const vars of [{}, { FEEDBACK_ENABLED: 'true' }, { FEEDBACK_ENABLED: false }]) {
+    for (const mode of [undefined, 'auto', 'full']) {
+      assert.throws(
+        () => assertFeedbackQualification({ vars }, { mode, profile: legacyCapacity }),
+        /Feedback protocol v1 capacity is unqualified/,
+      );
+    }
+    assert.deepEqual(assertFeedbackQualification({ vars }, { mode: 'bypass-expensive' }), {
+      enabled: true,
+      protocolVersion: 1,
+      transport: 'standalone-envelope-v1',
+      capacityQualification: 'UNQUALIFIED',
+    });
+  }
+  for (const mode of [undefined, 'auto', 'full', 'bypass-expensive']) {
+    assert.deepEqual(
+      assertFeedbackQualification({ vars: { FEEDBACK_ENABLED: 'false' } }, { mode }),
+      {
+        enabled: false,
+        protocolVersion: 1,
+        transport: 'standalone-envelope-v1',
+        capacityQualification: 'NOT_OFFERED',
+      },
+    );
   }
 });

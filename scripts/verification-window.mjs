@@ -46,10 +46,23 @@ export function recoverVerificationWindow({
   if (alive(owner.pid)) throw Error('owner PID is live (possibly reused); recovery refused');
   removeOwned(directory, token);
 }
+export function verificationWaitOptions(script) {
+  return {
+    waitMs: /^(verify-(local|merge|final)|native-qualification)\.mjs$/.test(basename(script))
+      ? 1800000
+      : 300000,
+  };
+}
 /** Cooperative host-wide window; never treats elapsed time as proof an owner stopped. */
 export async function withVerificationWindow(
   execute,
-  { directory = defaultDirectory(), waitMs = 300000, pollMs = 100, inherit = true } = {},
+  {
+    directory = defaultDirectory(),
+    waitMs = 1800000,
+    pollMs = 100,
+    inherit = true,
+    onWait = () => {},
+  } = {},
 ) {
   if (!Number.isFinite(waitMs) || waitMs <= 0 || !Number.isFinite(pollMs) || pollMs <= 0)
     throw Error('positive window deadlines required');
@@ -78,6 +91,7 @@ export async function withVerificationWindow(
     directory,
     cwd: process.cwd(),
   };
+  let nextNoticeMs = 0;
   while (true) {
     try {
       mkdirSync(directory, { mode: 0o700 });
@@ -101,9 +115,16 @@ export async function withVerificationWindow(
       throw Error(
         `verification window wait exceeded ${waitMs}ms; owner ${current?.token ?? 'unpublished (inspect before recovery)'}`,
       );
+    const elapsedMs = performance.now() - started;
+    if (elapsedMs >= nextNoticeMs) {
+      onWait({ waitMs, elapsedMs, owner: current });
+      nextNoticeMs = elapsedMs + 30000;
+    }
     await new Promise((r) => setTimeout(r, pollMs));
   }
-  writeFileSync(ownerFile(directory), JSON.stringify(owner), { mode: 0o600 });
+  const pendingOwner = join(directory, `owner-${owner.token}.tmp`);
+  writeFileSync(pendingOwner, JSON.stringify(owner), { mode: 0o600, flag: 'wx' });
+  renameSync(pendingOwner, ownerFile(directory));
   const queueMs = performance.now() - started,
     runStart = performance.now();
   const previous = process.env.SIMULACRUM_VERIFICATION_WINDOW;
@@ -218,7 +239,13 @@ if (
       };
       const result = args.some((a) => ['--summary', '--explain'].includes(a))
         ? { value: await run(), queueMs: 0, runMs: 0, contenders: [], inherited: false }
-        : await withVerificationWindow(run);
+        : await withVerificationWindow(run, {
+            ...verificationWaitOptions(script),
+            onWait: ({ elapsedMs, waitMs, owner }) =>
+              console.error(
+                `Waiting for verification window (${Math.round(elapsedMs / 1000)}s of ${waitMs / 1000}s limit; owner PID ${owner?.pid ?? 'unpublished'}). Cancel to return to editing.`,
+              ),
+          });
       Object.assign(report, {
         status: 'passed',
         queueMs: result.queueMs,

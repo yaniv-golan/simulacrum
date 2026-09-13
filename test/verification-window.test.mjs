@@ -21,14 +21,23 @@ test('verification windows serialize contenders, retain timing and release after
     inherit: false,
   });
   while (!release) await new Promise((r) => setTimeout(r, 1));
+  const notices = [];
   const second = withVerificationWindow(
     async () => {
       entered = true;
     },
-    { directory, waitMs: 1000, pollMs: 5, inherit: false },
+    {
+      directory,
+      waitMs: 1000,
+      pollMs: 5,
+      inherit: false,
+      onWait: (notice) => notices.push(notice),
+    },
   );
   await new Promise((r) => setTimeout(r, 20));
   assert.equal(entered, false);
+  assert.equal(notices.length, 1);
+  assert.equal(notices[0].waitMs, 1000);
   release();
   await first;
   const result = await second;
@@ -151,4 +160,86 @@ test('unsupported runtime invalidates canonical completion evidence before child
     assert.notEqual(result.outcome?.automation?.status, 'PASS');
     assert.match(result.failure, /Unsupported Node/);
   }
+});
+
+test('completion waits longer than focused probes without bypassing serialization', async () => {
+  const { verificationWaitOptions } = await import('../scripts/verification-window.mjs');
+  for (const script of [
+    'verify-local.mjs',
+    'verify-merge.mjs',
+    'verify-final.mjs',
+    'native-qualification.mjs',
+  ])
+    assert.equal(verificationWaitOptions('scripts/' + script).waitMs, 1800000);
+  for (const script of ['test-affected.mjs', 'build-app.mjs', 'verify-browser-suite.mjs', 'ci.mjs'])
+    assert.equal(verificationWaitOptions('scripts/' + script).waitMs, 300000);
+});
+
+test('contenders wait through partial owner publication and reject malformed published metadata', async (t) => {
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const root = mkdtempSync(join(tmpdir(), 'window-publication-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const script = join(root, 'probe.mjs');
+  writeFileSync(
+    script,
+    `
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
+import { join } from 'node:path';
+const { withVerificationWindow } = await import(${JSON.stringify(new URL('../scripts/verification-window.mjs', import.meta.url).href)});
+const directory = join(process.argv[2], 'lock');
+const originalWrite = fs.writeFileSync;
+let intercepted = false, first, second, outcome, release, observedWait = false;
+const events = [];
+fs.writeFileSync = (file, data, options) => {
+  let metadata;
+  try { metadata = JSON.parse(data); } catch {}
+  if (!intercepted && metadata?.directory === directory && metadata.pid === process.pid && typeof metadata.token === 'string') {
+    intercepted = true;
+    originalWrite(file, '', options);
+    // A real contender observes publication after the destination exists but
+    // before any metadata bytes are written. No filename or rename hook is used.
+    second = withVerificationWindow(() => { events.push('second'); }, {
+      directory, inherit: false, waitMs: 1000, pollMs: 5,
+      onWait: () => { observedWait = true; },
+    }).then(value => (outcome = { value }), error => (outcome = { error }));
+    originalWrite(file, data, { ...options, flag: 'w' });
+    return;
+  }
+  return originalWrite(file, data, options);
+};
+syncBuiltinESMExports();
+try {
+  first = withVerificationWindow(async () => {
+    events.push('first:start');
+    await new Promise(resolve => { release = resolve; });
+    events.push('first:end');
+  }, { directory, inherit: false });
+  assert.equal(intercepted, true, 'metadata write must be interrupted');
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(outcome?.error, undefined, 'a contender must not parse partial owner metadata');
+  assert.equal(observedWait, true, 'contender must observe the unpublished owner and wait');
+  assert.deepEqual(events, ['first:start']);
+  release();
+  await first;
+  await second;
+  assert.equal(outcome.error, undefined);
+  assert.deepEqual(events, ['first:start', 'first:end', 'second']);
+} finally {
+  fs.writeFileSync = originalWrite;
+  syncBuiltinESMExports();
+  release?.();
+  await Promise.allSettled([first, second].filter(Boolean));
+}
+// Invalid published authority remains an error, never an implicitly free lock.
+fs.mkdirSync(directory);
+fs.writeFileSync(join(directory, 'owner.json'), '{');
+await assert.rejects(withVerificationWindow(() => assert.fail('must not enter'), {
+  directory, inherit: false, waitMs: 30, pollMs: 5,
+}), SyntaxError);
+`,
+  );
+  await promisify(execFile)(process.execPath, [script, root], { timeout: 5000 });
 });

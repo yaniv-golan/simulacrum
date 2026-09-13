@@ -2,6 +2,7 @@ import { CATALOG } from '../model/catalog.mjs';
 import { portLabel } from './port-wording.mjs';
 // Only schematic placement: no physical pose, mounting or admission policy.
 const layouts = {
+  powerOne: { cell: [0, 0], motor: [1, 0] },
   spring: { guide: [0, 0], carriage: [1, 0] },
   power: { cell: [0, 0], bus: [1, 0], first: [2, 0], second: [2, 1] },
   drive: { cell: [0, 0], motor: [1, 0], wheel: [2, 0], support: [1, 1] },
@@ -34,10 +35,10 @@ const svgEl = (tag, attrs) => {
   for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
   return node;
 };
-export function createPartHelpDiagram(id, example, thumbnail) {
+export function createPartHelpDiagram(id, example, thumbnail, reveal) {
   const graph = el('div', '', 'help-diagram'),
     nodes = new Map();
-  graph.setAttribute('aria-hidden', 'true');
+  if (!reveal) graph.setAttribute('aria-hidden', 'true');
   const lines = svgEl('svg', { class: 'help-diagram-lines' });
   graph.append(lines);
   for (const [key, type] of Object.entries(example.nodes)) {
@@ -71,6 +72,13 @@ export function createPartHelpDiagram(id, example, thumbnail) {
       );
       motion.append(svg, el('span', example.motions[key]));
       card.append(motion);
+    }
+    if (reveal) {
+      const find = el('button', 'Find in parts', 'help-find-part');
+      find.type = 'button';
+      find.setAttribute('aria-label', `Find ${CATALOG[type].name} in parts`);
+      find.onclick = () => reveal(type);
+      card.append(find);
     }
     graph.append(card);
     nodes.set(key, card);

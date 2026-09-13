@@ -1,4 +1,5 @@
 import { uploadWorkshopFile } from './browser-evidence.mjs';
+import { placeCatalogPart, browseAllParts } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -24,7 +25,7 @@ try {
     'the controller is available with its Rules and Code authoring surface',
   ]);
   for (const type of ['powerCell', 'poweredMotor', 'gripWheel']) {
-    await page.locator(`[data-part-type="${type}"]`).click();
+    await placeCatalogPart(page, type);
     await page.waitForFunction(
       (n) => window.workshopProbe.observe().frames[0].metadata.blueprint.parts.length === n,
       ['powerCell', 'poweredMotor', 'gripWheel'].indexOf(type) + 1,
@@ -122,8 +123,8 @@ try {
   browserEvidence.assert('deepEqual', [errors, []]);
   // Keyboard control must travel through a placed receiver and its signal wire.
   await page.locator('[data-command=build]').click();
-  await page.locator('.more-parts summary').click();
-  await page.locator('[data-part-type=commandReceiver]').click();
+  await browseAllParts(page);
+  await placeCatalogPart(page, 'commandReceiver');
   await page.waitForFunction(
     () => window.workshopProbe.observe().frames[0].metadata.blueprint.parts.length === 4,
   );

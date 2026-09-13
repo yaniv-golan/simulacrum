@@ -1,3 +1,9 @@
+import {
+  readBrowserHistory,
+  writeBrowserHistory,
+  returnBrowserHistory,
+  browserHistoryRunId,
+} from './browser-history.mjs';
 import { mergeChanges } from './merge-selection.mjs';
 import { parseCompletionArgs } from './verification-tiers.mjs';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
@@ -131,6 +137,26 @@ try {
     installedDependencies: installed,
   });
   write();
+  // Copy scheduling hints as artifacts only; no prior report or receipt is admitted.
+  const historyPath = 'artifacts/browser-suite/scheduling-history.json';
+  const originHistory = join(origin, historyPath),
+    candidateHistory = join(candidate.destination, historyPath);
+  try {
+    writeBrowserHistory(
+      candidateHistory,
+      [...readBrowserHistory(originHistory).values()].map((row) => ({
+        ...row,
+        observedAt: row.observedAt ?? 1,
+      })),
+    );
+  } catch (error) {
+    report.historyWarning = error.message;
+  }
+  const candidateBrowserReport = join(
+    candidate.destination,
+    'artifacts/browser-suite/last-run.json',
+  );
+  const previousBrowserRun = browserHistoryRunId(candidateBrowserReport);
   let result;
   try {
     result = await timing.measure('tier-including-window', () =>
@@ -161,6 +187,11 @@ try {
     );
   } catch (error) {
     result = error;
+  }
+  try {
+    returnBrowserHistory(originHistory, candidateBrowserReport, previousBrowserRun);
+  } catch (error) {
+    report.historyWarning = error.message;
   }
   report.verification = JSON.parse(
     readFileSync(join(candidate.destination, `artifacts/verification-${tier}.json`), 'utf8'),

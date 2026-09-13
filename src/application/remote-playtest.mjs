@@ -14,25 +14,95 @@ function uploadFailureMessage(code) {
 import { packCapturePacket } from './capture-packet.mjs';
 import { createCaptureEncoder, captureStreamLimits } from './capture-stream.mjs';
 import { openCaptureOutbox } from './capture-outbox.mjs';
+import { mountFeedbackClient } from './feedback-client.mjs';
+import { createFeedbackCaptureGate } from './feedback-capture-gate.mjs';
+import { measureRecordedDuration } from './capture-media-duration.mjs';
 /** Consented remote usability capture; never an authority for simulation state. */
-export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
+export async function mountRemotePlaytest({
+  context,
+  checkpoint,
+  feedbackSnapshot,
+  screenshot,
+  toolbarHost = document.body,
+  measureVideoDuration = measureRecordedDuration,
+}) {
   const uploadTimeoutMs = 45000;
-  const config = await fetch('/api/playtest/config')
+  const panel = document.createElement('section');
+  panel.className = 'playtest-panel';
+  panel.innerHTML =
+    '<button data-project hidden>Project status</button><span data-status hidden><span data-status-main></span><span data-status-detail></span></span><button data-setup hidden>Start recording</button><button data-feedback aria-label="Give feedback">Give feedback<small data-feedback-state></small></button><button data-end hidden>Finish session</button>';
+  panel.setAttribute('aria-label', 'Feedback and recording');
+  toolbarHost.append(panel);
+  let captureHooks = {},
+    recordingReference = () => undefined;
+  const captureGate = createFeedbackCaptureGate({
+    onSuppress: () => captureHooks.suppress?.(),
+    onResume: () => captureHooks.resume?.(),
+  });
+  // A browser without coordination cannot start tab video in this build.
+  const feedbackGate = captureGate.isSupported
+    ? captureGate
+    : { enter: async () => {}, leave: () => {} };
+  let client;
+  client = await mountFeedbackClient({
+    trigger: panel.querySelector('[data-feedback]'),
+    gate: feedbackGate,
+    snapshot: feedbackSnapshot,
+    screenshot,
+    reference: () => recordingReference(),
+    stopTabRecording: () => captureHooks.stop?.(),
+    onChange: (message) => {
+      if (typeof message === 'string') {
+        panel.querySelector('[data-status-detail]').textContent = message;
+        panel.querySelector('[data-status]').hidden = !message;
+      } else if (message)
+        panel.querySelector('[data-feedback-state]').textContent = message.dirty
+          ? 'Draft not saved'
+          : message.blocked
+            ? 'Needs attention'
+            : message.pending
+              ? 'Waiting to send'
+              : '';
+    },
+  });
+  const config = await fetch('/api/playtest/config', { signal: AbortSignal.timeout(10000) })
     .then((r) =>
       r.ok && r.headers.get('content-type')?.includes('application/json') ? r.json() : null,
     )
     .catch(() => null);
-  if (!config?.enabled) return null;
+  client.configure(config);
+  if (!config?.enabled) {
+    panel.querySelector('[data-setup]').hidden = true;
+    panel.querySelector('[data-project]').hidden = true;
+    panel.querySelector('[data-status]').hidden = true;
+    return {
+      active: () => false,
+      emit: () => {},
+      dispose: () => {
+        client.dispose();
+        void captureGate.close();
+        panel.remove();
+      },
+    };
+  }
   if (config.protocolVersion !== 2) {
-    const notice = document.createElement('p');
-    notice.textContent =
+    panel.querySelector('[data-status]').hidden = false;
+    panel.querySelector('[data-status-detail]').textContent =
       'Recording needs a compatible server. Saved recordings have not been changed.';
-    document.body.append(notice);
-    return { active: () => false, emit: () => {}, dispose: () => notice.remove() };
+    return {
+      active: () => false,
+      emit: () => {},
+      dispose: () => {
+        client.dispose();
+        void captureGate.close();
+        panel.remove();
+      },
+    };
   }
   const canRecord =
     typeof navigator.mediaDevices?.getDisplayMedia === 'function' &&
-    typeof MediaRecorder === 'function';
+    typeof MediaRecorder === 'function' &&
+    captureGate.isSupported;
   const outbox = await openCaptureOutbox();
   let durableRows = [],
     durableGroups = [];
@@ -104,15 +174,19 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
     active = false,
     busy = false,
     queued = 0,
-    voice = null,
     video = null,
     timer = null,
-    anchor = null,
     failed = '',
     pendingWrites = 0,
     captureError = '',
-    voiceRequest = 0,
-    voiceReceipt = null;
+    screenRecorder = null,
+    screenStream = null,
+    segment = null,
+    segmentDone = Promise.resolve(),
+    finalizeRecording = Promise.resolve(),
+    segmentMeasurements = 0,
+    segmentTimer = null,
+    videoWanted = false;
   let disposed = false,
     finishing = false,
     starting = false,
@@ -126,20 +200,20 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
   let recoveredIds = null,
     recoveredCount = 0;
   const projectStatus = `<h2>Build something that moves</h2><p><strong>We are improving the basic builder.</strong> Parts, wiring, movement, undo and save/load work today. The controls still need to feel right.</p><p><strong>Your feedback decides whether this stage is ready.</strong> Try building, and tell us when something feels confusing.</p><details><summary>Where the project goes next</summary><ol><li><strong>Now:</strong> improve building and editing until the designated player's feedback accepts this stage. Automated checks must also pass.</li><li><strong>Next:</strong> safe programmable controllers, then physical experiments for standing, shifting weight, lifting feet, stepping and stopping. Each must work before progressing.</li><li><strong>Then:</strong> terrain, better failure explanations and a rover that completes the ramp course with verified performance.</li><li><strong>Later:</strong> walkers, deeper editing and an in-game agent helper, with movement and real-player checks.</li><li><strong>Final goal:</strong> a walker goes down the ramp, takes five more steps, loops around, climbs back up and settles at its starting position. It must pass fixed variation, replay, safety, performance and human checks.</li></ol></details>`;
-  const panel = document.createElement('section');
-  panel.className = 'playtest-panel';
-  panel.innerHTML =
-    '<strong>Remote playtest</strong><button data-project>Project status</button><span data-status><span data-status-main>Ready</span><span data-status-detail></span></span><button data-feedback>Give feedback</button><button data-end>Finish session</button>';
-  document.body.append(panel);
   const dialog = document.createElement('dialog');
   dialog.className = 'playtest-dialog';
   dialog.innerHTML =
     projectStatus +
-    '<p data-recovery role="status" hidden></p><p>Your project, programs, actions and sampled workshop state will be sent to Yaniv for review.</p><label data-video-option hidden><input type="checkbox" data-video> Include tab video (optional)</label><p>Use <strong>Give feedback</strong> anytime. Write a sentence or record a voice note; a workshop canvas image is attached when available. The microphone runs only when you choose voice recording.</p><button data-start>Start recording</button><p data-error role="status"></p>';
+    '<button class="playtest-close" data-dismiss-setup aria-label="Close recording setup">×</button><p data-recovery role="status" hidden></p><p>Your project, programs, actions and sampled workshop state will be sent to Yaniv for review.</p><label data-video-option hidden><input type="checkbox" data-video> Include tab video (optional)</label><p data-video-note>Before recording video, close older workshop tabs. This build pauses its tab recordings while you give feedback.</p><p>Use <strong>Give feedback</strong> anytime, even without recording. Attachments are optional. Voice comments stay on this device until you choose Send.</p><button data-start>Start recording</button><p data-error role="status"></p>';
   dialog.querySelector('[data-video-option]').hidden = !(
     canRecord && config.optionalVideo === true
   );
+  dialog.querySelector('[data-video-note]').hidden = !(canRecord && config.optionalVideo === true);
   document.body.append(dialog);
+  dialog.setAttribute('aria-label', 'Recording setup');
+  panel.querySelector('[data-setup]').onclick = () => dialog.showModal();
+  panel.querySelector('[data-setup]').hidden = false;
+  dialog.querySelector('[data-dismiss-setup]').onclick = () => dialog.close();
   dialog.showModal();
   const projectDialog = document.createElement('dialog');
   projectDialog.className = 'playtest-dialog';
@@ -147,6 +221,7 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
     projectStatus + '<button data-close-project>Back to the workshop</button>';
   document.body.append(projectDialog);
   panel.querySelector('[data-project]').onclick = () => projectDialog.showModal();
+  panel.querySelector('[data-project]').hidden = false;
   projectDialog.querySelector('[data-close-project]').onclick = () => projectDialog.close();
   const completion = document.createElement('dialog');
   completion.className = 'playtest-dialog playtest-completion';
@@ -156,11 +231,21 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
   completion.querySelector('[data-retry]').onclick = () => void pump();
   completion.querySelector('[data-close-completion]').onclick = () => completion.close();
   function closeDatabaseIfIdle() {
-    if (disposed && !dbClosed && !busy && !pendingWrites && !recorders.size) {
+    if (
+      disposed &&
+      !dbClosed &&
+      !busy &&
+      !pendingWrites &&
+      !recorders.size &&
+      !finishing &&
+      !segmentMeasurements
+    ) {
       dbClosed = true;
       outbox.close();
     }
   }
+  recordingReference = () =>
+    session ? { sessionId: session, timeMs: Math.max(0, performance.now() - origin) } : undefined;
   const status = () => {
     if (disposed) return;
     const pending = queued + pendingWrites + packet.length,
@@ -177,6 +262,14 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
           : ' Recording has not resumed. Choose Start recording to begin a new session.');
     const saved =
       !!session && !active && !pending && !flushing && !busy && !captureError && !failed;
+    panel.querySelector('[data-status]').hidden = !(
+      active ||
+      saved ||
+      pending ||
+      flushing ||
+      captureError ||
+      failed
+    );
     panel.querySelector('[data-status-main]').textContent = captureError
       ? 'Recording stopped'
       : failed
@@ -202,7 +295,9 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
           : pending || flushing
             ? 'Sending recording. Keep this tab open.'
             : 'Start recording to begin.');
-    panel.querySelector('[data-feedback]').disabled = !active;
+    panel.querySelector('[data-feedback]').disabled = false;
+    panel.querySelector('[data-setup]').hidden = active;
+    panel.querySelector('[data-end]').hidden = !active;
     panel.querySelector('[data-end]').disabled = !active;
     for (const receipt of receipts)
       receipt.status.textContent = receipt.error
@@ -216,7 +311,7 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
             : 'Received by Yaniv’s playtest server.';
     completion.querySelector('h2').textContent = saved ? 'Session saved' : 'Finishing your session';
     completion.querySelector('[data-completion-status]').textContent = saved
-      ? `${completionReason}Feedback received — session saved. You can close this tab.`
+      ? `${completionReason}Recording received — session saved. Your feedback has its own delivery status.`
       : captureError || failed
         ? 'Session not fully saved. ' + (captureError || failed) + '. Keep this tab open.'
         : 'Sending your session and final recording to Yaniv. Keep this tab open.';
@@ -446,48 +541,132 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
     }
     return recorder;
   }
-  function stopVoice(capture = active) {
-    voiceRequest++;
-    if (voice?.state === 'recording') {
-      voice.stop();
-      voice.stream.getTracks().forEach((track) => track.stop());
-      if (capture) writeEvent('voice-end', { anchorId: anchor.id }, voiceReceipt);
-    }
-    feedback.querySelector('[data-voice]').textContent = 'Record voice comment';
-  }
   function releaseVideo() {
     video?.pause();
     if (video) video.srcObject = null;
     video = null;
   }
+  function startVideoSegment() {
+    if (!active || !screenStream || !videoWanted) return;
+    const startTimeMs = performance.now() - origin,
+      clip = `tab-${crypto.randomUUID()}`;
+    const current = { clip, startTimeMs, chunks: [], bytes: 0, overLimit: false };
+    segment = current;
+    writeEvent('screen-segment-start', { clip, startTimeMs });
+    let resolveSegment;
+    segmentDone = new Promise((resolve) => {
+      resolveSegment = resolve;
+    });
+    segmentMeasurements++;
+    const roll = () => {
+      if (current !== segment || !videoWanted || !active) return;
+      const wait = segmentDone;
+      current.endTimeMs = performance.now() - origin;
+      if (screenRecorder?.state !== 'inactive') screenRecorder.stop();
+      void wait.then(() => {
+        if (videoWanted && active && current === segment) startVideoSegment();
+      });
+    };
+    try {
+      screenRecorder = media(screenStream, 'screen', clip);
+      const recorder = screenRecorder,
+        receive = recorder.ondataavailable,
+        finalize = recorder.onstop;
+      recorder.ondataavailable = (event) => {
+        receive(event);
+        if (event.data.size && !current.overLimit) {
+          if (current.bytes + event.data.size <= 4 * 1024 ** 2) {
+            current.chunks.push(event.data);
+            current.bytes += event.data.size;
+          } else {
+            current.overLimit = true;
+            current.chunks = [];
+            queueMicrotask(roll);
+          }
+        }
+      };
+      recorder.onstop = () => {
+        clearTimeout(segmentTimer);
+        finalize();
+        const endTimeMs = current.endTimeMs ?? performance.now() - origin;
+        void (async () => {
+          const durationMs =
+            current.overLimit || !current.chunks.length
+              ? null
+              : await measureVideoDuration(
+                  new Blob(current.chunks, { type: current.chunks[0].type }),
+                );
+          current.chunks = [];
+          if (endTimeMs > startTimeMs)
+            writeEvent('screen-segment', { clip, startTimeMs, endTimeMs, durationMs });
+        })()
+          .catch(() => {
+            captureError = 'Could not finalize tab video timing';
+          })
+          .finally(() => {
+            segmentMeasurements--;
+            resolveSegment();
+            closeDatabaseIfIdle();
+          });
+      };
+      segmentTimer = setTimeout(roll, 10000);
+    } catch (error) {
+      segmentMeasurements--;
+      resolveSegment();
+      throw error;
+    }
+  }
+  captureHooks = {
+    stop: () => stop(),
+    async resume() {
+      videoWanted = true;
+      startVideoSegment();
+    },
+    async suppress() {
+      videoWanted = false;
+      clearTimeout(segmentTimer);
+      const current = screenRecorder;
+      if (current && current.state !== 'inactive') {
+        if (segment) segment.endTimeMs = performance.now() - origin;
+        current.stop();
+      }
+      await segmentDone;
+      screenRecorder = null;
+    },
+  };
   function stop() {
-    if (finishing) return;
+    void client.stopVoice();
+    if (finishing) return finalizeRecording;
     finishing = true;
     const wasActive = active;
     active = false;
     clearInterval(timer);
-    try {
-      stopVoice(wasActive);
-      if (wasActive && !captureError) writeEvent('session-end', { checkpoint: checkpoint() });
-      flushEvents();
-    } catch (error) {
-      captureError = `Capture stopped: ${error.message}`;
-    } finally {
-      for (const recorder of recorders) {
-        if (recorder.state !== 'inactive') recorder.stop();
-        for (const track of recorder.stream.getTracks()) {
-          track.onended = null;
-          track.stop();
+    videoWanted = false;
+    clearTimeout(segmentTimer);
+    screenStream?.getTracks().forEach((track) => {
+      track.onended = null;
+      track.stop();
+    });
+    // Capture stops synchronously; terminal metadata is written after segment flush.
+    finalizeRecording = (async () => {
+      try {
+        await captureGate.stopCapture();
+        if (wasActive && !captureError) writeEvent('session-end', { checkpoint: checkpoint() });
+        flushEvents();
+      } catch (error) {
+        captureError = `Capture stopped: ${error.message}`;
+      } finally {
+        screenStream = null;
+        releaseVideo();
+        finishing = false;
+        status();
+        if (wasActive && !disposed) {
+          if (!(await client.finish()) && !completion.open) completion.showModal();
         }
+        closeDatabaseIfIdle();
       }
-      releaseVideo();
-      finishing = false;
-      status();
-      if (wasActive && !disposed) {
-        feedback.close();
-        if (!completion.open) completion.showModal();
-      }
-    }
+    })();
+    return finalizeRecording;
   }
   dialog.querySelector('[data-start]').onclick = async () => {
     if (disposed || active || starting) return;
@@ -556,9 +735,8 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
         if (disposed) return;
       }
       const initialCheckpoint = checkpoint();
-      if (stream) media(stream, 'screen', 'tab');
+      screenStream = stream || null;
       active = true;
-      ready = true;
       captureError = '';
       emit('session-start', {
         timeOrigin: performance.timeOrigin,
@@ -569,6 +747,9 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
         sampleIntervalMs: 100,
       });
       if (!active) return;
+      if (stream) await captureGate.startCapture();
+      if (!active || disposed) return;
+      ready = true;
       if (stream)
         stream.getVideoTracks()[0].onended = () => {
           emit('screen-share-ended', {});
@@ -605,129 +786,16 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
       closeDatabaseIfIdle();
     }
   };
-  const feedback = document.createElement('dialog');
-  feedback.className = 'playtest-dialog';
-  feedback.innerHTML =
-    '<button class="playtest-close" data-dismiss aria-label="Close feedback">×</button><h2>What felt wrong?</h2><p>A workshop canvas image is attached when available. Comments go to Yaniv for review.</p><textarea aria-label="Your feedback" placeholder="What did you expect? What happened?" rows="4"></textarea><button data-write>Send written feedback</button><button data-voice>Record voice comment</button><button data-close>Back to building</button><p role="status"></p><ol class="playtest-comments" aria-label="Your comments" aria-live="polite"></ol>';
-  document.body.append(feedback);
-  function comment(text) {
-    const row = document.createElement('li');
-    row.className = 'playtest-comment';
-    const content = document.createElement('p'),
-      state = document.createElement('p');
-    content.textContent = text;
-    row.append(content, state);
-    feedback.querySelector('.playtest-comments').append(row);
-    const receipt = {
-      id: crypto.randomUUID(),
-      pending: 0,
-      sealed: true,
-      error: false,
-      status: state,
-    };
-    pendingWrites++;
-    void outbox
-      .group({ id: receipt.id, sessionId: session, sealed: true })
-      .catch(() => {
-        receipt.error = true;
-      })
-      .finally(() => {
-        pendingWrites--;
-        status();
-        closeDatabaseIfIdle();
-      });
-    receipts.push(receipt);
-    return receipt;
-  }
-  panel.querySelector('[data-feedback]').onclick = () => {
-    let image = null,
-      imageScope = 'unavailable',
-      imageError = '';
-    try {
-      if (video?.videoWidth) {
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.min(video.videoWidth, 1280);
-        canvas.height = Math.round((video.videoHeight * canvas.width) / video.videoWidth);
-        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-        image = canvas.toDataURL('image/jpeg', 0.65);
-        imageScope = 'tab';
-      } else {
-        image = screenshot?.() ?? null;
-        if (image) imageScope = 'canvas';
-      }
-      if (!image || image.length > 512 * 1024) throw Error('Canvas image unavailable or too large');
-    } catch (error) {
-      image = null;
-      imageScope = 'unavailable';
-      imageError = error.message;
-    }
-    anchor = {
-      id: crypto.randomUUID(),
-      timeMs: performance.now() - origin,
-      context: context(),
-      checkpoint: checkpoint(),
-      image,
-      imageScope,
-      imageError,
-    };
-    emit('feedback-anchor', anchor);
-    feedback.showModal();
+  panel.querySelector('[data-end]').onclick = () => {
+    void stop();
   };
-  feedback.querySelector('[data-write]').onclick = () => {
-    const text = feedback.querySelector('textarea').value.trim();
-    if (!text || !active) return;
-    emit('feedback-text', { anchorId: anchor.id, text }, comment(text));
-    feedback.querySelector('textarea').value = '';
-    const list = feedback.querySelector('.playtest-comments');
-    list.scrollTop = list.scrollHeight;
-  };
-  feedback.querySelector('[data-voice]').onclick = async () => {
-    const button = feedback.querySelector('[data-voice]');
-    if (voice?.state === 'recording') {
-      stopVoice();
-      return;
-    }
-    const request = ++voiceRequest;
-    button.disabled = true;
-    let stream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      if (request !== voiceRequest || !active || !feedback.open) {
-        stream.getTracks().forEach((t) => t.stop());
-        return;
-      }
-      voiceReceipt = comment('Voice comment');
-      voiceReceipt.sealed = false;
-      await outbox.group({ id: voiceReceipt.id, sessionId: session, sealed: false });
-      emit('voice-start', { anchorId: anchor.id, clip: `${anchor.id}-${seq + 1}` }, voiceReceipt);
-      voice = media(stream, 'voice', `${anchor.id}-${seq}`, voiceReceipt);
-      button.textContent = '● Stop voice recording';
-      status();
-    } catch (e) {
-      stream?.getTracks().forEach((t) => t.stop());
-      if (voiceReceipt && !voiceReceipt.sealed) {
-        voiceReceipt.error = true;
-        voiceReceipt.sealed = true;
-      }
-      feedback.querySelector('[role=status]').textContent =
-        `Microphone unavailable: ${e.message}. You can write instead.`;
-      status();
-    } finally {
-      button.disabled = false;
-    }
-  };
-  const closeFeedback = () => {
-    stopVoice();
-    feedback.close();
-  };
-  feedback.querySelector('[data-close]').onclick = closeFeedback;
-  feedback.querySelector('[data-dismiss]').onclick = closeFeedback;
-  feedback.addEventListener('cancel', () => stopVoice());
-  panel.querySelector('[data-end]').onclick = () => stop();
   const recoveryActions = document.createElement('div');
   recoveryActions.innerHTML =
     '<label>Saved recording <select data-session></select></label><button data-export>Download saved uploads</button><button data-discard>Discard a saved session</button><button data-delete>Delete a local session</button><button data-legacy>Download recordings from an older version</button>';
-  completion.append(recoveryActions);
+  const recoveryDetails = document.createElement('details');
+  recoveryDetails.innerHTML = '<summary>Manage saved recordings</summary>';
+  recoveryDetails.append(recoveryActions);
+  completion.append(recoveryDetails);
   recoveryActions.querySelector('[data-export]').onclick = async () => {
     const rows = await outbox.items();
     const parts = ['{"protocolVersion":2,"items":['];
@@ -897,17 +965,18 @@ export async function mountRemotePlaytest({ context, checkpoint, screenshot }) {
     // An already dispatched upload owns its bounded timeout and receipt. Let it
     // settle; disposed prevents another dispatch and storage closes after busy clears.
     startingStream?.getTracks().forEach((track) => track.stop());
-    stop();
+    void stop().finally(() => captureGate.close());
+    client.dispose();
     window.removeEventListener('focus', onFocus);
     window.removeEventListener('visibilitychange', onFocus);
     window.removeEventListener('error', onError);
     window.removeEventListener('unhandledrejection', onError);
     window.removeEventListener('beforeunload', beforeUnload);
     if (console.error === consoleError) console.error = originalConsoleError;
-    for (const element of [panel, dialog, projectDialog, completion, feedback]) element.remove();
+    for (const element of [panel, dialog, projectDialog, completion]) element.remove();
     // Final MediaRecorder callbacks may still enqueue chunks. Keep storage alive
     // until those writes settle; a future mount resumes the durable outbox.
     closeDatabaseIfIdle();
   }
-  return { active: () => active, emit, dispose };
+  return { active: () => active, emit, dispose, feedback: client };
 }

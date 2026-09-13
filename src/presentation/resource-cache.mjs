@@ -3,7 +3,12 @@ import { partPrimitives } from '../model/geometry.mjs';
 /** Resources are keyed by authored identity; only appearance changes replace them. */
 /** @param {import("../model/generated/blueprint-types.js").Part} part */
 export const partAppearanceKey = (part) =>
-  JSON.stringify([part.type, part.authoredMaterial, partPrimitives(part)]);
+  JSON.stringify([
+    part.type,
+    part.authoredMaterial,
+    partPrimitives(part),
+    part.type === 'rotationSensor' ? (part.parameters.axis ?? 0) : null,
+  ]);
 /** @template {{id: string}} Item @template Resource
  * @param {{create: (item: Item) => Resource, dispose: (resource: Resource) => void, key: (item: Item) => string}} options */
 export function createResourceCache({ create, dispose, key }) {

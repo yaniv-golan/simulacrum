@@ -136,3 +136,21 @@ test('receipt elapsed includes admission identity work and preserves process fai
   assert.equal(receipt.processElapsedMs, 12);
   assert.equal(receipt.processDiagnostics.events[0].errno, 'EPERM');
 });
+
+test('a watchdog shortened by the shared budget reports budget exhaustion, not a hung test', async () => {
+  const { createVerificationContext } = await import('../scripts/verification-run.mjs');
+  const run = createVerificationContext({ readIdentity: () => ({ source: 'a' }) });
+  await assert.rejects(
+    run.withDeadline(80, () => run.node('budget-child', ['-e', 'while(true){}'], 30000)),
+    (error) => {
+      assert.equal(error.code, 'ITERATION_BUDGET_EXHAUSTED');
+      assert.equal(error.failureKind, 'iteration-budget');
+      assert.match(error.message, /iteration-budget/);
+      return true;
+    },
+  );
+  await assert.rejects(run.node('hung-child', ['-e', 'while(true){}'], 80), (error) => {
+    assert.notEqual(error.code, 'ITERATION_BUDGET_EXHAUSTED');
+    return true;
+  });
+});

@@ -3,18 +3,20 @@ export async function runCheckSequence(
   checks,
   execute,
   afterEach = () => {},
-  { workers = 1 } = {},
+  { workers = 1, failFast = false } = {},
 ) {
-  if (![1, 2].includes(workers)) throw Error('browser workers must be 1 or 2');
+  if (![1, 2, 3, 4].includes(workers)) throw Error('browser workers must be 1 to 4');
   const results = new Array(checks.length);
   let next = 0,
-    fatal;
+    fatal,
+    stopped = false;
   async function run(index) {
     const check = checks[index];
     try {
       results[index] = { id: check.id, ok: true, value: await execute(check) };
     } catch (error) {
       results[index] = { id: check.id, ok: false, error };
+      if (failFast) stopped = true;
     }
     try {
       await afterEach(check);
@@ -22,19 +24,21 @@ export async function runCheckSequence(
       fatal ??= error;
     }
   }
-  while (next < checks.length && !fatal) {
+  while (next < checks.length && !fatal && !stopped) {
     if (checks[next].execution !== 'parallel') await run(next++);
     else {
       let end = next;
       while (checks[end]?.execution === 'parallel') end++;
       await Promise.all(
         Array.from({ length: Math.min(workers, end - next) }, async () => {
-          while (next < end && !fatal) await run(next++);
+          while (next < end && !fatal && !stopped) await run(next++);
         }),
       );
     }
   }
   if (fatal) throw fatal;
+  for (let index = next; index < checks.length; index++)
+    results[index] = { id: checks[index].id, status: 'not evaluated', reason: 'probe fail-fast' };
   return results;
 }
 
@@ -43,7 +47,7 @@ export async function runCheckSequence(
  * checks. The priority prefix and relative exclusive order are unchanged.
  */
 export function packParallelChecks(checks, { workers = 1, priorityCount = 0 } = {}) {
-  if (![1, 2].includes(workers)) throw Error('browser workers must be 1 or 2');
+  if (![1, 2, 3, 4].includes(workers)) throw Error('browser workers must be 1 to 4');
   if (!Number.isInteger(priorityCount) || priorityCount < 0 || priorityCount > checks.length)
     throw Error('invalid priority prefix');
   if (workers === 1) return [...checks];
@@ -79,5 +83,22 @@ export function packParallelChecks(checks, { workers = 1, priorityCount = 0 } = 
     } else smallRuns.push(run);
   }
   flush();
+  return ordered;
+}
+
+/** Longest known work first inside each admitted run; never move a priority or exclusive check. */
+export function balanceParallelChecks(checks, durations = {}, priorityCount = 0) {
+  const ordered = checks.slice(0, priorityCount);
+  for (let i = priorityCount; i < checks.length; ) {
+    if (checks[i].execution !== 'parallel') {
+      ordered.push(checks[i++]);
+      continue;
+    }
+    const start = i;
+    while (checks[i]?.execution === 'parallel') i++;
+    const duration = (c) =>
+      Number.isFinite(durations[c.id]) && durations[c.id] > 0 ? durations[c.id] : 0;
+    ordered.push(...checks.slice(start, i).sort((a, b) => duration(b) - duration(a)));
+  }
   return ordered;
 }

@@ -1,4 +1,5 @@
 import { uploadWorkshopFile } from './browser-evidence.mjs';
+import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
 
@@ -24,7 +25,7 @@ const browser = await browserEvidence.launch({ profile: 'ui', ...{} }),
 
 try {
   await browserEvidence.goto(page, process.argv[2] ?? 'http://127.0.0.1:4173/');
-  await page.locator('[data-part-type=poweredMotor]').click();
+  await placeCatalogPart(page, 'poweredMotor');
   browserEvidence.assert('equal', [
     await page.getByRole('button', { name: 'Snap to surface', exact: true }).count(),
     1,

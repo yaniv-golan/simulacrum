@@ -189,3 +189,28 @@ test('private executable evidence is not a root but incoming edges reject', (t) 
   );
   assert.deepEqual(affectedTests(buildModuleGraph(root), ['docs/internal/new.mjs']), []);
 });
+
+test('syntax cache matches fresh parsing after same-length restored-mtime edits and dependency removal', async (t) => {
+  const { statSync, utimesSync, unlinkSync } = await import('node:fs');
+  const root = mkdtempSync(join(tmpdir(), 'syntax-cache-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const source = join(root, 'main.mjs');
+  writeFileSync(source, "import './a.mjs'; // import('./a.mjs')\n");
+  writeFileSync(join(root, 'a.mjs'), 'export const a=1;');
+  writeFileSync(join(root, 'b.mjs'), 'export const b=2;');
+  const graph = (cacheParsedSources) =>
+    buildModuleGraph(root, { entrypoints: ['main.mjs'], cacheParsedSources });
+  assert.deepEqual(graph(true), graph(false));
+  const original = statSync(source);
+  writeFileSync(source, "import './b.mjs'; // import('./b.mjs')\n");
+  utimesSync(source, original.atime, original.mtime);
+  assert.deepEqual(graph(true), graph(false));
+  assert.ok(graph(true).nodes.has('b.mjs'));
+  assert.equal(graph(true).nodes.has('a.mjs'), false);
+  unlinkSync(join(root, 'b.mjs'));
+  assert.deepEqual(graph(true), graph(false));
+  assert.ok(graph(true).errors.length);
+  writeFileSync(source, 'export const = ;');
+  assert.deepEqual(graph(true), graph(false));
+  assert.ok(graph(true).errors.length);
+});
