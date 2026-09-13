@@ -29,6 +29,16 @@ export const PART_HELP = {
       'If opening would leave gears without their shared shaft support, or change a locked spring into an active one, it stays latched. Inspect the selected status, return to Build and repair those connections.',
     ],
   ),
+  camera: help(
+    'Photographs the view from your machine',
+    'An idealized 60 × 40 × 40 mm solid camera. Its lens faces local +Z. Material determines mass. It draws power through a 100 ohm load (about 1.4 W at 12 V), including view and capture; this is not a real hardware profile.',
+    'Mount to a chassis or mast and connect Power to a cell. Select View through camera.',
+    [
+      'If the chassis blocks the lens, return to Build, raise or turn the camera, then retry.',
+      'Drive with your normal keys and choose Take photo. Photos are temporary until you save them.',
+      'Wire a receiver output to Trigger. A controller can command that receiver; powered low then high takes one photo. Hold high does not repeat. Re-arm low after power or ownership changes.',
+    ],
+  ),
   gear12: gearHelp(12, 60),
   gear24: gearHelp(24, 120),
   ball: help(

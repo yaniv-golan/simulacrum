@@ -73,6 +73,7 @@ const messages = {
   NOTHING_TO_REDO: 'There are no undone edits to redo.',
   BUSY: 'The previous action is still finishing. Try again in a moment.',
   EDIT_REQUIRES_BUILD: 'Return to Build before changing parts.',
+  CAMERA_LIMIT: 'This machine already has eight cameras. Remove one before adding another.',
   INVALID_POWER_CONFIGURATION:
     'The electrical configuration is invalid. Check the power connections.',
   UNSUPPORTED_POWER_TOPOLOGY:

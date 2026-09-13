@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"7e5d4040bfd83ab4458bd82dca6d8b83fd542d4a7665c6f8de90578f0761cc4c","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"803aa3c4ff280b7e658551318d7fa346b53981ab1d2fa4eccfc88b579a1f8831","disposition":"still accurate","rationale":"Feedback remains a utility in the existing footer and open local recording changes only the compact catalog scrolling region. No lesson, fixture, guide steps, replacement behavior or teaching owner is added or removed. Existing no-entry admission and the separation of automation from comprehension remain applicable."} -->
+<!-- doc-review {"version":1,"fingerprint":"97fc0d725c88b8d65b0c18f8ce2e6116b18a6fd1fced9393f1d7c3daf3c3a6bc","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"55b173210d933a12385fea7900188b8777c7649ec2e80890afe60dbc8705d43a","disposition":"still accurate","rationale":"Camera integration adds no lesson or permanent catalog panel. Existing mounting help suffices; discoverability and hidden placement are repaired directly, preserving the no-entry admission decision and main requested-content lifecycle."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"2eb9552217dc9683bdfa9104458fae9156b476d63a53a355813fc5f8027650a1","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"6c5e061d4e64705fb294a2152036b701f8065f75083a90ff4bfc04777b1deb21","disposition":"updated","rationale":"The surface explanation now names the existing footer utility host, inline reserved badge width, compact minimum footer height and preserved feedback/recording access during narrow assembly placement. It also specifies whole-catalog scrolling while local recording is open so search/results/summary cannot cover Stop recording. Fonts and unique controls are retained; fresh rendered evidence remains required."} -->
+<!-- doc-review {"version":1,"fingerprint":"b70f3a75543675412002d123452b183ef4afe520e75925f347e8e36af3f7485e","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"0088037bdd63f352a0c39094aecf773836d7ad76f9500b24153f3ca65ece905b","disposition":"updated","rationale":"Preserved main search/category, placement-preview, footer feedback and content lifecycles. Added camera controls/gallery, Sensors discovery, paused status and explicit return to workshop view when catalog placement starts."} -->
 
 
 
@@ -175,6 +175,24 @@ and non-breaking overload stop. No lesson or permanent canvas panel is added.
 Rope geometry follows physical nodes in Machine view and is hidden in exploded view.
 Its contextual engineering explanation identifies stretch, damping and load limits
 as uncalibrated assumptions of the simplified nylon model.
+
+Paused camera images retain an explicit paused label even when view entry lands on
+an exposure boundary. Feedback screenshots follow the visible canvas without changing
+the optical sample.
+
+Cameras are discoverable through catalog search and the Sensors category. Beginning
+catalog placement returns to workshop view so the placement preview remains visible.
+The selected camera inspector owns entry into the requested machine view and its
+photo shortcut. The optional one-metre viewing cone is a temporary workshop-only
+inspection guide, removed on selection change and hidden in machine view; it is not
+a depth sensor or part of photographs. [Camera controls](../../src/presentation/camera-controls.mjs#source)
+replace orbit/edit tools while viewing, keep vehicle controls and recovery reachable,
+and restore the orbit on exit. Build is an explicitly unpowered placement preview;
+Run shows power/live/stale/failure status; Paused may retain the identified old image.
+The requested Photos dialog owns inspection, PNG/details export and explicit clearing.
+Opening it releases held drive keys. Retained photos remain retrievable after camera
+deletion and retries until this page closes. Camera help teaches mounting repair in
+context; no additional learning entry is admitted for this delivery.
 
 The selected receiver inspector owns Manual, Automatic, Learned and Off controls. Automatic
 regulation shows measured and target total spring length, rather than extension from
@@ -370,7 +388,8 @@ area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
 
 ## Verification and review
-<!-- doc-review {"version":1,"fingerprint":"c869ac0bf7ed40a22114c1264690970210bc37e58ff6bb8fdf2dcbf475e5866b","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"faf88dd744bc27d842f751ec11a289448ecfd3ab13b4d4fc9bbfce16dc51ee5a","disposition":"still accurate","rationale":"Remote setup now describes footer ownership; the required targeting, scroll, focus, cancellation and overlap checks are unchanged. Inspector, catalog, local recording and feedback layout must still be exercised on the repaired build, and neither documentation review nor automation supplies satisfaction or target-player acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"8cd809f7df50a2756584adb373b1446ee5f0773393e031d58eabd495940824a7","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"ccf3dc2d1c0902149632a9ecb634fb90df1930aa84026d268b5757897a7c4f6c","disposition":"still accurate","rationale":"Retained one source-bound section receipt after conflict resolution. Camera placement, optics and feedback need rendered verification within the full merge tier; this provides no target-player acceptance or milestone qualification."} -->
+
 
 
 Use the manifest's `workbench-content-lifecycle` invariant and

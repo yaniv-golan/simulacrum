@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"e11461d04db3d1be7c7cde5dbd22caee28457be3c2ee5531301c608609e24d7c","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"50f9df7344cdd38a4153e17e67b42e0a70f880811ec88fc70eb79f3d96394daf","disposition":"still accurate","rationale":"The runtime contract now owns distinct envelopes 4 through 8, including independent opened-joint and Rope work validation. The overview correctly delegates checkpoint/state ownership to that contract without duplicating format details."} -->
+<!-- doc-review {"version":1,"fingerprint":"12966ff12df48db3b24abb1a1e6740307e0d232ccde239ee4cd7fc535a8f109f","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"7ac827d2d1927aa09065c1c47151153743b94cda668fa02cd4c6153f39c57048","disposition":"still accurate","rationale":"Camera is allocated to existing M3b and extends ordinary power and completed observations. Rope spans enter optics as plain geometry; no DOM enters simulation and no pixel output enters controllers or physics."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"5833ddd8d9eda61dafe2fc6e810937ec932943515bda07bf8887082b397405a7","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"200f1628be204f93c379f374f3be6706f670704a4a3aa9753b3e6d3d8026d8be","disposition":"updated","rationale":"The view exposes its existing footer as utilityHost and the application mounts feedback controls there. The explanation now names that ownership and removes the separate-row claim; protected dialogs remain outside the root, and optional feedback context still reads authored save/current UI without replay or native physics state."} -->
+<!-- doc-review {"version":1,"fingerprint":"2a324fb38be86e3e4e476b536f6e5b17a9f594b7eb8cdc9d528c1d17330199ab","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"e86bae064329300193625e3c364343a8e69c763769b81eff833e42cb825a6b0e","disposition":"updated","rationale":"Integrated camera exposure, bounded gallery, optical renderer and feedback screenshot ownership into the current catalog and shared mesh architecture. Added completed rope geometry with selection disabled; catalog placement exits camera view before showing its ordinary preview."} -->
 
 
 
@@ -43,6 +43,21 @@ physics door. Density remains material-owned. The inspector uses the same resolv
 and Run admission, releasing held controls and preserving the authored machine and
 view. Completed contacts feed [impact presentation](../../src/presentation/impact-sound.mjs#source);
 it has no simulation write path and resets its baseline on missing observations.
+
+[Camera exposure state](../../src/simulation/camera-state.mjs#symbol=createCameraState)
+belongs to simulation; it publishes completed exposure results without image bytes.
+[Camera destinations](../../src/application/camera-session.mjs#source) drain completed
+observations into a [bounded gallery](../../src/application/camera-gallery.mjs#source).
+The temporary [camera viewing cone](../../src/presentation/camera-frustum.mjs#source)
+is owned by workshop inspection and never enters the optical scene.
+The dedicated [optical renderer](../../src/presentation/camera-renderer.mjs#source)
+receives only authored geometry settings and completed poses, without part identities,
+controller programs or editor scene input. Completed rope node positions and authored
+diameter pass as plain geometry to the shared rope renderer, with selection disabled.
+It pins pixels before asynchronous encoding; no image result feeds back into the plant.
+[Feedback screenshot capture](../../src/presentation/workshop-screenshot.mjs#symbol=captureWorkshopScreenshot)
+copies the active camera canvas or renders the orbit canvas when camera view is closed.
+It never requests an exposure or substitutes orbit pixels for an unavailable active camera.
 
 The application/view links cover their own composition and input routing code. The core, model and simulation links separately bind the admitted behavior; remote payload contents are outside these claims.
 
@@ -92,14 +107,14 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"71315b247aa59d22b4fd8e43ad8ea0b5e49bce5aee4fcc28e2522037b73a16f6","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"b6034a634195ed75b5b05aa621c885d5c895a35eb751ba87af7f9c61db610a7d","disposition":"updated","rationale":"Added the shared releasedAttachment owner consumed by inspector and generic overlay. Its fixed-kind guard excludes Rope labels, while existing geometry, contact, material, spring, rope and command owners remain the canonical decisions."} -->
+<!-- doc-review {"version":1,"fingerprint":"ba23f3b006f6be2fb75d2b440a756e316f80e83c47d6acb0ee1245b0aad86958","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"b605a72f76c406db57a0630b90bc229d6f1d8384b91b97bc914ba6579712a717","disposition":"still accurate","rationale":"The shared part-mesh owner retains main appearance and now draws the camera lens. Optical ropes reuse createRopeView with completed endpoints and two-sided material; exposure state remains solely createCameraState. Existing model placement, material and power resolvers remain authoritative."} -->
 
 
 
 | Decision                                              | Production owner                                                                                                                                                                                                                                             | Example consumer                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
 | Authored geometry and decoration boundary             | [partPrimitives](../../src/model/geometry.mjs#symbol=partPrimitives) / [shaftSegments](../../src/model/geometry.mjs#symbol=shaftSegments), [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG) / [MATERIALS](../../src/model/catalog.mjs#symbol=MATERIALS) | assembly compiler and workshop renderer                                                 |
-| Material defaults and explicit contact overrides | [contactProperties](../../src/model/contact-properties.mjs#symbol=contactProperties) | compiler and selected inspector |
+| Material defaults and explicit contact overrides      | [contactProperties](../../src/model/contact-properties.mjs#symbol=contactProperties)                                                                                                                                                                         | compiler and selected inspector                                                         |
 | Quaternion math and world directions                  | [transforms](../../src/model/transforms.mjs)                                                                                                                                                                                                                 | surfaces, assembly, mirror                                                              |
 | Unique player-visible names                           | [availablePartName](../../src/model/blueprint.mjs#symbol=availablePartName)                                                                                                                                                                                  | core insertion/copy/rename                                                              |
 | Surface frames and collision admission                | [resolveSurfaceEndpoint](../../src/model/surfaces.mjs#symbol=resolveSurfaceEndpoint) / [validatePlacementGeometry](../../src/model/surfaces.mjs#symbol=validatePlacementGeometry)                                                                            | compiler and surface proposal                                                           |
@@ -119,8 +134,8 @@ of opened joints and completed rope work.
 | Catalog vocabulary and grouping                      | [search vocabulary](../../src/presentation/part-search.mjs)                                                                                                                                                                                                      | catalog grouping; eligibility and help coverage follow CATALOG                             |
 | Part teaching copy and port labels                    | [help content](../../src/presentation/part-help-content.mjs), [port wording](../../src/presentation/port-wording.mjs)                                                                                                                                        | palette, inspector and static example diagrams                                          |
 | Completed contact impulses                            | [contact reader](../../src/simulation/physics/read-contacts.mjs), [session](../../src/simulation/session.mjs)                                                                                                                                                | immutable completed observations; qualification supplies independent support predicates |
-| Saved environment preset | [environment descriptors](../../src/model/environment.mjs), [assembly compiler](../../src/model/assembly.mjs) | workshop geometry, placement admission and recording review |
-| Selected-body measurement windows | [numeric accumulator](../../src/model/motion-readout.mjs), [measurement presentation](../../src/presentation/motion-readout.mjs) | completed observation deltas supplied by the application |
+| Saved environment preset                              | [environment descriptors](../../src/model/environment.mjs), [assembly compiler](../../src/model/assembly.mjs)                                                                                                                                                | workshop geometry, placement admission and recording review                             |
+| Selected-body measurement windows                     | [numeric accumulator](../../src/model/motion-readout.mjs), [measurement presentation](../../src/presentation/motion-readout.mjs)                                                                                                                             | completed observation deltas supplied by the application                                |
 | Diagnostics from completed data                       | [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion), [connection paths](../../src/model/connection-test-paths.mjs)                                                                                                                | inspector and Check machine                                                             |
 
 Use `node scripts/navigate.mjs <owner-symbol>` to discover current consumers and tests.
@@ -144,15 +159,19 @@ A cell can supply multiple rotary and linear drives; multiple cells on one circu
 Shared motor torque and powered sensor-load accounting and the completed energy ledger belong to simulation.
 Ground contact and workshop motion are not Course qualification.
 
-
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"64648249b03899cd75055081cd0bc9aeeafcb1511731d1f0de26ac50f4769e6d","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"00ceeaf660ce7e25b40c23547e8666212fd675c5ce438ba9f636a343ba3f6bc6","disposition":"still accurate","rationale":"The power solver adds a resistive coupler load on the existing shared circuit. Sensor descriptors, completed-snapshot sampling, controller injection, previous-tick receiver arbitration and separate teaching/diagnostic ownership remain unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"46642b0c2c8801ecd4672192ab357a20d0c6a82365f40cc8af1eac75209ca251","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"4107582e85aa65ccafb1a09dabd97688d3d7a237ad653e3c3b65eba4548b3f47","disposition":"updated","rationale":"Camera uses funded sensor supply but has no numeric image channel. Preserved current main controller read scoping, prior-completed sampling and ordinary receiver wiring; camera images remain application destinations outside program inputs."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;
 [power](../../src/simulation/power.mjs) funds each sensor. The selected
 [sensor inspector](../../src/presentation/sensor-controls.mjs) and
 [measurement overlay](../../src/presentation/sensor-view.mjs) consume completed data.
+
+Cameras use the same funded sensor supply path but expose no numeric channels.
+Their [optical profile](../../src/model/camera.mjs#source) and checkpointed exposure
+latch are distinct from prior-completed numeric sensor readings. Receiver trigger
+wiring requests photographs through ordinary commands; it grants no scene access.
 
 [Rules and draft admission](../../src/model/controller-authoring.mjs) own source
 identity. The [bounded compiler](../../src/scripting/controller-program.mjs) admits
