@@ -133,7 +133,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"2e9120462f6a042fe8dd13558ee407241cba52b8f4820dbac465dd25a5cac752","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"a13d5e102f24632508b53d1ce0bfbac455d8fa4c35d3dfe2162802438ac85f1c","disposition":"still accurate","rationale":"Regenerated reference includes scene owners; section dependency review and source closure commands remain the same."} -->
+<!-- doc-review {"version":1,"fingerprint":"e65e7170122eb817c60f6bbf535e8791fe7f1fed1c9743456d282bfb43e1b297","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"f62b53f99b6bfb760d1f562ea3b62fb3c52b5bc4aad68b63dd1dc419f4fcf060","disposition":"still accurate","rationale":"Regenerated reference includes scene owners; section dependency review and source closure commands remain the same."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"66821390df16ec6b116dacce5625c5d68cd04d049712166c9a477ca1594146fb","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"76a656bb2b1ebc5f8f3fe7e0eb1ba1d1fa5b8a8755ab1382416f7ba78761e002","disposition":"still accurate","rationale":"The merged manifest retains conservative roots and opaque-source witness review. Added scene and recording dependencies extend selection without changing admission policy."} -->
+<!-- doc-review {"version":1,"fingerprint":"02e2c2b969aa30544065588b4d8114f72df63840cc981ae69cb0aa865e9df522","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"9b2b59abe3af748f7a1ea45d8beb3378544a607b6b7436c5dd8370781fbee6f0","disposition":"still accurate","rationale":"The merged manifest retains conservative roots and opaque-source witness review. Added scene and recording dependencies extend selection without changing admission policy."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -507,7 +507,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"ec6ad2ebbacc573a95297a9888a813f2163ce7b87fe137638a7a8508c1cb66cd","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"31a83b09c0ab098cef037ffa2d9d019a71a328eb035724513a0caaaf46a9b8fd","disposition":"still accurate","rationale":"Scene and catalogue fixture changes are captured as ordinary candidate source bytes. The isolated capture, source drift and two-branch integration requirements remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"1233239cc7832d51a3192f533e756c8170960821fb0e4787778de12f0caf91f0","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"5b83ad9765a4e32e91caaf5aae7138c50d6384cd82eab5456f62b0029583ab4d","disposition":"still accurate","rationale":"Scene and catalogue fixture changes are captured as ordinary candidate source bytes. The isolated capture, source drift and two-branch integration requirements remain accurate."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

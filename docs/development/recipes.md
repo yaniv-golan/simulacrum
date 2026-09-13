@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"9a9cbe4dacf1eb7a2ab37d1bd864c6322791b37524731ac86f3c7ab730ec6d53","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"78dcbad7ceccfc83008d58f09b07cae0004a01490d9b467319e70b239e36cbc0","disposition":"still accurate","rationale":"Scene solids are environment data, not catalogue parts; existing part schema, materials, geometry and compiler recipe remains valid with the merged rope and latch additions."} -->
+<!-- doc-review {"version":1,"fingerprint":"42cc70db226e97d7f6891ebf6aef9a04e3f27b78b43740acce806c6ad4e09588","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"b0646f06bb67367fabffede814899154958757e8ebc6c1b1050584affb56ee85","disposition":"still accurate","rationale":"Lamp catalogue and authored limit remain on their existing model path. Blueprint admission now preserves that limit alongside scene and distributed-rope body capacity; neither derives physical properties from feature identity."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -71,7 +71,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"7add6a7e96261d4244b82659a8499c7a5391c318be0ef5013746616a9070358a","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"8c1e1d679d69e505456a4ba6ec9d93df556e2310b3ea83648273814b5dd2f10c","disposition":"still accurate","rationale":"The merged section retains replace-scene as an atomic expectedCursor edit and camera-photo as a Run-only input with separate image bytes. Shared capacity now includes distributed rope nodes; photo requests do not consume authoring history."} -->
+<!-- doc-review {"version":1,"fingerprint":"8ddaa7fbe6707fcb15600844225c95ae929085c1f06c2e51b689cdbb01156047","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"fac40f13c004c072bcef65abe0ecde53ca373e33a38e34c9feab36f136cc5c89","disposition":"still accurate","rationale":"The merged section retains replace-scene as an atomic expectedCursor edit and camera-photo as a Run-only input with separate image bytes. Shared capacity now includes distributed rope nodes; photo requests do not consume authoring history."} -->
 
 
 
@@ -102,7 +102,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"81df344f6caf17aa7d1425fc66e14a8f28b1a3bbea6b86ad717920e792ab5053","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"1c4eb16064236bc2d9cb3022b64e289b9b88353d4f4d9ef617cc52945f18ce80","disposition":"still accurate","rationale":"Scene tools retain presentation-only proposals and ordinary core commitment. Fixture uploads now confirm replacement, preserving the existing cancellation and native input requirements."} -->
+<!-- doc-review {"version":1,"fingerprint":"16ab0edbe3c0dc001e24e013c53417667f9d6f6a3641f10e7a7bb2f778dfa0f2","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"d1f26fcf14af22e5cddfa06137127f34c9da559a98c3f971483b7328be74aa3d","disposition":"still accurate","rationale":"Scene tools retain presentation-only proposals and ordinary core commitment. Fixture uploads now confirm replacement, preserving the existing cancellation and native input requirements."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -151,7 +151,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"cea69e9f4d46e71e3fdeb7e5892dcb8a8cd54377513de5931e876603f1f92d46","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"d99dfb5b7deb3eb2924fe544c869c9d558c6e96a326540bc3ad32091ddacc5c6","disposition":"still accurate","rationale":"Scene environment and command additions do not grant diagnostics simulation authority; completed observations and model-owned explanations remain the correct boundary."} -->
+<!-- doc-review {"version":1,"fingerprint":"fdd9bb46d39d376eabdd52cadcc9767799c18c1bc151d078c24e674efd7af774","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"c796b93e4ebdfb54d4f7640810462edd4ecb20f1933957672b3a9c3a99de0ea9","disposition":"still accurate","rationale":"Scene environment and command additions do not grant diagnostics simulation authority; completed observations and model-owned explanations remain the correct boundary."} -->
 
 
 
@@ -181,7 +181,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"e441a1f8dc3c5571cde63798bf848bbc0e79d6f3d3a8faccf6ca6850226ff06f","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"4b29e7d32188ba66a97ab8cb06ee6a7844eca9fb8881789091b9b1371913f6f7","disposition":"still accurate","rationale":"Scene colliders retain compiler/physics-door ownership and include rope nodes in shared capacity. Camera integration retains optical rendering outside physics; the view handoff and layout fixes do not alter laws, stepping or qualification budgets."} -->
+<!-- doc-review {"version":1,"fingerprint":"877239c9602fd5486385f36baabd8c1f7498fdf1c934db4252b4c3fe59ef3145","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"aaf90bcf161377b9739e9e980063f1bde4e8af77ac335412aaf1e8a203a87916","disposition":"still accurate","rationale":"Lamp admission is preserved alongside aggregate scene capacity. Existing lamp power accounting, physical laws and timing requirements are unchanged; scene and camera composition remains outside stepping."} -->
 
 
 
@@ -428,7 +428,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"374e527e8d8bca740565cded305a184a722511ab6eabe8fb8c4ed18e21347d2f","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"629125c97c233a03027d798640e7040958f384490897db9be83bb85c9d8eac3a","disposition":"still accurate","rationale":"Assembly insertion now shares document-proposal lifecycle with scenes; independent snapshots, exact result reconciliation and atomic core commands described here remain implemented."} -->
+<!-- doc-review {"version":1,"fingerprint":"610ed34d79fd807cf41005ca333525a830f08c7a9205a90de2fb6ba14fa9592e","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"cceae89a7762f6785dd9519f94fdccc2047a78d98366bde1c4754ef7c3ed7d78","disposition":"still accurate","rationale":"Assembly insertion now shares document-proposal lifecycle with scenes; independent snapshots, exact result reconciliation and atomic core commands described here remain implemented."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -525,7 +525,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"a1d6b615a85f69447249500ab8c97cf8b7a86316874282ea980560919485d416","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"3648a05db22d8c63fcaeba20c906629c4e0abbe6a608d8420c58e48ea8e6ee7d","disposition":"still accurate","rationale":"Shared primitive reconstruction adds canonical scene and recording geometry while main part finishes and rope overlays retain their existing rendering-only ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"c8d8aea8c37a50eccd8c64608078f8a1b696a413d87170c1e490bf9cebc523c5","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"eaac59229bff4d24717e60dad8078b0372afe1d917a9e017a11a53bced5f1575","disposition":"still accurate","rationale":"Main lamp rendering still consumes completed electrical output. Scene preview/recording primitives and mounted-camera exit retain separate rendering/input owners; no scene collider or physical material is changed by lamp illumination."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -653,7 +653,7 @@ geometry, textures and heap.
 
 ### Adaptive graphics
 
-<!-- doc-review {"version":1,"fingerprint":"24dda9884d284c0b53fe5b8b5b3e9ee9ffcd9a11bf375eb680e18331f8ac8d02","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"d76ae352a92712f18843f955ec81e589bd45ea295708d7edf4b589ece92627b9","disposition":"still accurate","rationale":"Feedback layout and paused video segments do not change graphics quality selection, renderer timing or simulation stepping. The existing graphics policy and evidence boundaries remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"4f919eb695d21a8550c273bb2f3d0abd42161b9e6d336bc03dbd798e958ba30a","dependencies":"docs/development/.reviews/recipes/adaptive-graphics.json","dependencyDigest":"ef190d3e93f5c51d5f7472d868651fd6ddd825d1365b816c4a4ad106bed3948d","disposition":"updated","rationale":"Added bounded lamp-rendering semantics and registered optical/performance probes. Every admitted lamp remains present at all quality levels; measured automation remains distinct from hardware or player qualification. Camera exposure/gallery, optical geometry and catalog placement recovery are retained from the concurrent integration."} -->
 
 The [graphics quality owner](../../src/presentation/graphics-quality.mjs#source)
 receives visible rendered-frame timings only. It starts at full fidelity and uses
@@ -683,3 +683,14 @@ blueprints, real-time stepping, visible scene pixels, resized canvas dimensions,
 and the existing 40 ms cadence budget after warmup. Quality reduction cannot promise
 that every machine or competing workload meets that budget; failure remains failure
 at the minimum level. Agent screenshots are not target-player acceptance.
+
+
+The [lamp renderer](../../src/presentation/lamp-view.mjs#symbol=createLampView) receives
+completed optical telemetry. Each admitted lamp retains one unshadowed spotlight and
+lens. A hard cone uses intensity = 0.01 × flux / (2π(1−cos half-angle)), so beam spread changes
+concentration without adding modeled flux. Display exposure and tint are illustrative;
+black tint is dark while electrical demand remains. No lamp shadows are offered, so
+light can pass through occluders. Quality reduction retains every lamp. The
+[lamp browser journey](../../scripts/verify-lamp-browser.mjs#source) and
+[eight-lamp measurement](../../scripts/verify-lamp-performance.mjs#source) are automated
+checks, not target-player or calibrated photometry evidence.

@@ -30,6 +30,7 @@ function admitConfiguration(input) {
   )
     throw Error('INVALID_CONFIGURATION');
   const nodes = [
+    ...(c.power.lamps ?? []),
     ...c.power.cells,
     ...c.power.motors,
     ...c.power.receivers,
@@ -1078,6 +1079,7 @@ export async function createSession(
     }
     const candidatePower = createPowerNetwork(config.power);
     candidatePower.restore(cp.power);
+    if (cp.power.lamps?.some((l) => l.steps !== cp.tick)) throw Error('INVALID_POWER_CHECKPOINT');
     const candidateControl = createReceiverArbiter(receiverControlConfiguration(config.power));
     candidateControl.restore(cp.receiverControl);
     if (cp.receiverControl.tick !== cp.tick) invalid();

@@ -1,4 +1,5 @@
 import { environmentObstacles } from './environment.mjs';
+import { LAMP_LIMIT } from './lamps.mjs';
 import {
   resolveSurfaceEndpoint,
   validateSurfacePair,
@@ -91,6 +92,8 @@ export function validateBlueprint(blueprint) {
   } catch {
     return result('INVALID_BLUEPRINT', '/environment');
   }
+  if (blueprint.parts.filter((p) => p.type === 'poweredLamp').length > LAMP_LIMIT)
+    return result('INVALID_BLUEPRINT', '/parts');
   const parts = new Map();
   for (let index = 0; index < blueprint.parts.length; index++) {
     const part = blueprint.parts[index],

@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"3ef1bbbf8b862513689a8935e9dc8fa2692fd9ef059c963c2ddf3a7a418e9279","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"dfdc60d12f5d74d4b6438c7615c6bbbcd735efc20f86982d40e21b9632a8c5b2","disposition":"still accurate","rationale":"Scene authoring adds no lesson entry; the Environment context and requested scene library support construction while existing examples remain the learning surface."} -->
+<!-- doc-review {"version":1,"fingerprint":"62e3958ec2b30bca83e1815be367dae5de27144e4652aadecc1fca8278389ae0","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"289027e59f7a6ad01599c482a4e31e0ae6b8e026bfb8f995be65ca35d0da5f9c","disposition":"still accurate","rationale":"Scene authoring adds no lesson entry; the Environment context and requested scene library support construction while existing examples remain the learning surface."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"c8dac7e3cc86ac9f6fd251a6b5b3db3469fb4a032bde6713b773c65300747f62","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c013dc42c48e26cb7af698feccb844e9e4bb03ed0c3315d0af5e03c3bd95fca2","disposition":"still accurate","rationale":"Scene context displaces the catalogue and owns its scrollable object list. Entering it exits mounted camera view through its existing session; requested camera and photo surfaces remain available after leaving scene editing. Replacement protection and paused New retain their documented lifetime."} -->
+<!-- doc-review {"version":1,"fingerprint":"32c7a0382e11db98292e8187d784825d321e506a9f77a2acfa06d604a5a2396f","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"a12069cd3bdbd85f2a376ca4dad70a118b0573ba4832e0f63145c2300b2d8b50","disposition":"still accurate","rationale":"Scene context displaces the catalogue and owns its scrollable object list. Entering it exits mounted camera view through its existing session; requested camera and photo surfaces remain available after leaving scene editing. Replacement protection and paused New retain their documented lifetime."} -->
 
 
 
@@ -409,6 +409,16 @@ They sit beside one another where space allows and stack on narrower workbenches
 with independently scrollable contents and a reachable controls disclosure. The shared
 area leaves empty space transparent to canvas input; each panel retains its own
 visibility lifecycle.
+
+Powered Lamp uses the searchable parts catalog, ordinary surface mounting and power/signal wiring.
+Its selected inspector owns Light color, Brightness and Beam spread in Build, with
+actual input, requested/delivered watts and modeled light output in Run/Paused.
+Black tint warns that output is visually dark while consuming power. The existing
+requested part help explains receiver replacement of default-on behavior, weak supply,
+restart and the eight-lamp/no-shadow rendering limit. These controls leave with selection,
+displace no unique action and add no permanent panel. Learning admission is **no entry**:
+existing power and receiver explanations teach the same connection concept; contextual
+lamp help suffices. A powered status lamp does not establish another actuator's success.
 
 ## Verification and review
 <!-- doc-review {"version":1,"fingerprint":"f4d21e65b66904c4fecd3800f8a39ac461ced4d05b916c2456043e91fcd9d483","dependencies":"docs/development/.reviews/ui-ux/verification-and-review.json","dependencyDigest":"3b9b2a8fe8c6d71b0ab5b0de35ee94c042243d82d4a0c3b6497482316c36c4e6","disposition":"still accurate","rationale":"The scene journey now additionally checks mounted-camera exit and scene tool recovery. Existing camera and scene automation remain behavior evidence, separate from player comprehension and human acceptance."} -->

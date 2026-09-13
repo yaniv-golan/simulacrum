@@ -10,7 +10,7 @@ For an interaction report, use **Record an issue** in the left sidebar, then Sta
 
 ## Remote setup
 
-<!-- doc-review {"version":1,"fingerprint":"f6fd9e32edb31465bd0fb29a86586726ccdaeb2156aa740eefa874fd56be19d1","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"eb9cda355cc10314084ca16c8364513ba9ccfd5bf1432fa00900370aaf4617dd","disposition":"still accurate","rationale":"The paragraph now includes the 512 machine-part recording subset alongside independent event limits. Shared primitive reconstruction does not change approximate review semantics, feedback opt-in or durable receipts."} -->
+<!-- doc-review {"version":1,"fingerprint":"63da8915d029a0c9c53f02788c8e97e6b4e49f276bc5f39d93443a0b9d6320de","dependencies":"docs/development/.reviews/playtesting/remote-setup.json","dependencyDigest":"5c48ab90650fbbe4d55a0770f5bffb76559bd6b24a8f2a3d8d88b76d0e2b6a7c","disposition":"still accurate","rationale":"The paragraph now includes the 512 machine-part recording subset alongside independent event limits. Shared primitive reconstruction does not change approximate review semantics, feedback opt-in or durable receipts."} -->
 
 
 

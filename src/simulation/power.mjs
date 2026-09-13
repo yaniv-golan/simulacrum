@@ -1,3 +1,4 @@
+import { LAMP_LIMIT, LAMP_WATTS, LAMP_EFFICACY, LAMP_NOMINAL_VOLTAGE } from '../model/lamps.mjs';
 import { CAMERA } from '../model/camera.mjs';
 import { CONTROLLER_LIMITS } from '../model/controller-authoring.mjs';
 import { SENSOR_SUPPLY, SENSOR_LIMITS } from '../model/sensors.mjs';
@@ -26,10 +27,12 @@ export function createPowerNetwork(configuration) {
       config,
       'cells,motors,wires,signalWires,receivers,controllers,sensors' +
         (Object.hasOwn(config, 'regulators') ? ',regulators' : '') +
-        (Object.hasOwn(config, 'couplers') ? ',couplers' : ''),
+        (Object.hasOwn(config, 'couplers') ? ',couplers' : '') +
+        (Object.hasOwn(config, 'lamps') ? ',lamps' : ''),
     ) ||
     (Object.hasOwn(config, 'regulators') && !array('regulators')) ||
     (Object.hasOwn(config, 'couplers') && !array('couplers')) ||
+    (Object.hasOwn(config, 'lamps') && (!array('lamps') || config.lamps.length > LAMP_LIMIT)) ||
     !['cells', 'motors', 'wires', 'signalWires', 'receivers', 'controllers', 'sensors'].every(
       array,
     ) ||
@@ -55,6 +58,21 @@ export function createPowerNetwork(configuration) {
     couplers.filter((c) => c.joint >= 0).length
   )
     fail('INVALID_POWER_CONFIGURATION');
+  const lamps = config.lamps ?? [];
+  for (const lamp of lamps)
+    if (
+      !exact(lamp, 'node,brightness,color,beamSpread') ||
+      !node(lamp.node) ||
+      !finite(lamp.brightness, lamp.color, lamp.beamSpread) ||
+      lamp.brightness < 0 ||
+      lamp.brightness > 1 ||
+      !Number.isInteger(lamp.color) ||
+      lamp.color < 0 ||
+      lamp.color > 0xffffff ||
+      lamp.beamSpread < 0.1 ||
+      lamp.beamSpread > 1.2
+    )
+      fail('INVALID_POWER_CONFIGURATION');
   for (const cell of config.cells)
     if (
       !exact(cell, 'node,voltage,capacityJ,initialJ,resistance,currentLimit') ||
@@ -143,6 +161,7 @@ export function createPowerNetwork(configuration) {
       if (!Array.isArray(edge) || edge.length !== 2 || !edge.every(node) || edge[0] === edge[1])
         fail('INVALID_POWER_CONFIGURATION');
   for (const entries of [
+    lamps,
     config.cells,
     config.motors,
     config.receivers,
@@ -264,7 +283,7 @@ export function createPowerNetwork(configuration) {
     config.signalWires
       .filter((edge) => edge[1] === m.node)
       .map((edge) => sources.find((source) => source.node === edge[0]));
-  for (const motor of [...config.motors, ...couplers]) {
+  for (const motor of [...config.motors, ...couplers, ...lamps]) {
     const signals = signalFor(motor);
     if (signals.length > 1 || signals.some((s) => !s)) fail('UNSUPPORTED_SIGNAL_TOPOLOGY');
   }
@@ -275,6 +294,11 @@ export function createPowerNetwork(configuration) {
     if (signals.length > 1 || signals.some((s) => !s)) fail('UNSUPPORTED_SIGNAL_TOPOLOGY');
   }
   const sensorSupply = (sensor) => sensor.supply ?? SENSOR_SUPPLY;
+  const lampCommand = (lamp, sources) => {
+    const source = signalFor(lamp)[0];
+    const live = source && sources.find((s) => s.node === source.node);
+    return { command: live ? live.duty : 1, enabled: live?.enabled !== false };
+  };
   let state = {
     ...(couplers.length
       ? {
@@ -288,6 +312,25 @@ export function createPowerNetwork(configuration) {
             ready: false,
             opened: false,
             reasonCode: c.joint < 0 ? 'NO_LATCH' : 'OFF',
+          })),
+        }
+      : {}),
+    ...(lamps.length
+      ? {
+          lamps: lamps.map((l) => ({
+            node: l.node,
+            steps: 0,
+            command: 0,
+            enabled: true,
+            requestedW: 0,
+            deliveredW: 0,
+            current: 0,
+            voltage: 0,
+            luminousFluxLm: 0,
+            deliveredEnergyJ: 0,
+            color: l.color,
+            beamSpread: l.beamSpread,
+            reasonCode: 'OFF',
           })),
         }
       : {}),
@@ -332,7 +375,16 @@ export function createPowerNetwork(configuration) {
         : {}),
     })),
   };
-  function validateState(candidate) {
+  function driveDuty(motor, command) {
+    return motor.coordinate === 'linear'
+      ? Math.sign(command) *
+          Math.min(
+            Math.abs(command),
+            (motor.torqueConstant * motor.maxSpeed) / (cellsFor(motor)[0]?.voltage ?? 1),
+          )
+      : command;
+  }
+  function validateState(candidate, settled = true) {
     if (
       !candidate ||
       Object.keys(candidate).sort().join(',') !==
@@ -342,6 +394,7 @@ export function createPowerNetwork(configuration) {
           'sources',
           ...(config.sensors.length ? ['sensors'] : []),
           ...(couplers.length ? ['couplers'] : []),
+          ...(lamps.length ? ['lamps'] : []),
         ]
           .sort()
           .join(',') ||
@@ -389,6 +442,107 @@ export function createPowerNetwork(configuration) {
             'OPEN',
             'RELEASE_SUPPORT_BLOCKED',
           ].includes(c.reasonCode)
+        )
+          fail('INVALID_POWER_CHECKPOINT');
+      }
+    }
+    if (lamps.length) {
+      if (!Array.isArray(candidate.lamps) || candidate.lamps.length !== lamps.length)
+        fail('INVALID_POWER_CHECKPOINT');
+      candidate.lamps.forEach((l, i) => {
+        const c = lamps[i],
+          cell = cellsFor(c)[0],
+          source = lampCommand(c, candidate.sources);
+        const initial = l.steps === 0;
+        const reason =
+          l.requestedW === 0
+            ? 'OFF'
+            : !cell
+              ? 'NO_POWER'
+              : l.deliveredW === 0 &&
+                  candidate.cells.find((e) => e.node === cell.node)?.energyJ === 0
+                ? 'DEPLETED'
+                : l.deliveredW < l.requestedW * (1 - 1e-9)
+                  ? 'LIMITED'
+                  : 'OK';
+        if (
+          !exact(
+            l,
+            'node,steps,command,enabled,requestedW,deliveredW,current,voltage,luminousFluxLm,deliveredEnergyJ,color,beamSpread,reasonCode',
+          ) ||
+          !Number.isSafeInteger(l.steps) ||
+          l.steps < 0 ||
+          (initial
+            ? l.command !== 0 ||
+              l.requestedW !== 0 ||
+              l.deliveredEnergyJ !== 0 ||
+              l.deliveredW !== 0 ||
+              l.voltage !== 0 ||
+              l.enabled !== true
+            : l.command !== source.command || l.enabled !== source.enabled) ||
+          l.voltage > (cell?.voltage ?? 0) ||
+          l.current > (cell?.currentLimit ?? 0) + 1e-10 ||
+          l.deliveredEnergyJ > (cell?.initialJ ?? 0) + 1e-9 ||
+          l.deliveredEnergyJ > (l.steps * LAMP_WATTS) / 120 + 1e-8 ||
+          l.reasonCode !== reason ||
+          l.node !== c.node ||
+          l.color !== c.color ||
+          l.beamSpread !== c.beamSpread ||
+          typeof l.enabled !== 'boolean' ||
+          !finite(
+            l.command,
+            l.requestedW,
+            l.deliveredW,
+            l.current,
+            l.voltage,
+            l.luminousFluxLm,
+            l.deliveredEnergyJ,
+          ) ||
+          Math.abs(l.command) > 1 ||
+          Math.min(
+            l.requestedW,
+            l.deliveredW,
+            l.current,
+            l.voltage,
+            l.luminousFluxLm,
+            l.deliveredEnergyJ,
+          ) < 0 ||
+          l.requestedW !==
+            LAMP_WATTS * c.brightness * Math.max(0, l.command) * (l.enabled ? 1 : 0) ||
+          l.deliveredW > l.requestedW + 1e-10 ||
+          l.luminousFluxLm !== l.deliveredW * LAMP_EFFICACY ||
+          Math.abs(l.deliveredW - l.current * l.voltage) > 1e-10 ||
+          !['OFF', 'OK', 'NO_POWER', 'DEPLETED', 'LIMITED'].includes(l.reasonCode) ||
+          (['OFF', 'NO_POWER', 'DEPLETED'].includes(l.reasonCode) && l.deliveredW !== 0) ||
+          (l.reasonCode === 'OFF' && l.requestedW !== 0)
+        )
+          fail('INVALID_POWER_CHECKPOINT');
+      });
+      // Reconcile the complete circuit ledger, including peers: a lamp restore
+      // cannot invent energy while leaving its cell and other loads untouched.
+      for (const cell of settled ? config.cells : []) {
+        const own = candidate.cells.find((e) => e.node === cell.node);
+        const same = (entry) => root(entry.node) === root(cell.node);
+        const lampEnergy = candidate.lamps.filter(same).reduce((n, l) => n + l.deliveredEnergyJ, 0);
+        const sensorEnergy = (candidate.sensors ?? [])
+          .filter(same)
+          .reduce((n, l) => n + l.heatJ, 0);
+        const motorEnergy = candidate.motors
+          .filter(same)
+          .reduce((n, m) => n + m.heatJ + m.driverHeatJ + m.shaftWorkJ + m.energyResidualJ, 0);
+        const used = cell.initialJ - own.energyJ,
+          accounted =
+            own.heatJ +
+            lampEnergy +
+            sensorEnergy +
+            motorEnergy +
+            (candidate.couplers ?? []).filter(same).reduce((n, c) => n + c.heatJ, 0);
+        if (
+          Math.abs(used - accounted) >
+          ENERGY_ABSOLUTE_TOLERANCE +
+            ENERGY_RELATIVE_TOLERANCE * Math.max(Math.abs(used), Math.abs(accounted)) +
+            // Repeated subtraction from a large f64 charge loses low bits.
+            4 * Number.EPSILON * cell.initialJ * Math.max(1, ...candidate.lamps.map((l) => l.steps))
         )
           fail('INVALID_POWER_CHECKPOINT');
       }
@@ -482,6 +636,111 @@ export function createPowerNetwork(configuration) {
       )
         fail('INVALID_POWER_CHECKPOINT');
     });
+    // Completed lamps share a source bus. Cumulative energy alone cannot validate
+    // their instantaneous readings: source droop and driver bounds must also hold.
+    for (const cell of lamps.length ? config.cells : []) {
+      const sameCircuit = (entry) => root(entry.node) === root(cell.node);
+      const connected = candidate.lamps.filter(sameCircuit).filter((l) => l.steps > 0);
+      if (!connected.length) continue;
+      const knownCurrent =
+        connected.reduce((sum, l) => sum + l.current, 0) +
+        (candidate.couplers ?? []).filter(sameCircuit).reduce((sum, c) => sum + c.current, 0) +
+        (candidate.sensors ?? [])
+          .filter(sameCircuit)
+          .reduce((sum, sensor) => sum + sensor.current, 0);
+      const voltageTolerance = 1e-9 * Math.max(1, cell.voltage);
+      const currentTolerance = 1e-10 * Math.max(1, cell.currentLimit);
+      const motors = config.motors.filter(sameCircuit);
+      const hasMotor = motors.length > 0;
+      const motorCurrent = motors.reduce((sum, motor) => {
+        const record = candidate.motors.find((m) => m.node === motor.node);
+        const signal = signalFor(motor)[0];
+        const source = signal && candidate.sources.find((s) => s.node === signal.node);
+        const duty =
+          source?.enabled === false
+            ? 0
+            : motor.positionControl
+              ? record.position.controlDuty
+              : driveDuty(
+                  motor,
+                  (source ? source.duty : motor.defaultDuty) * (motor.inputPolarity ?? 1),
+                );
+        return sum + duty * record.current;
+      }, 0);
+      const totalCurrent = knownCurrent + motorCurrent;
+      const busUpperBound = cell.voltage - cell.resistance * totalCurrent;
+      const remaining = candidate.cells.find((c) => c.node === cell.node).energyJ;
+      const unbounded =
+        remaining > 4 * Number.EPSILON * Math.max(1, cell.initialJ) &&
+        totalCurrent < cell.currentLimit - currentTolerance;
+      if (motorCurrent < -currentTolerance || totalCurrent > cell.currentLimit + currentTolerance)
+        fail('INVALID_POWER_CHECKPOINT');
+      if (settled && !hasMotor && !couplers.some(sameCircuit)) {
+        // Stateless passive circuits have no unknown pre-step latch transition or
+        // mechanical response. Reconstruct their
+        // pre-step charge from completed source draw and validate its actual
+        // limited solution, not merely readings below an upper bound.
+        const sensors = (candidate.sensors ?? []).filter(sameCircuit);
+        const records = [...sensors, ...connected];
+        const charge =
+          candidate.cells.find((c) => c.node === cell.node).energyJ +
+          (cell.voltage * knownCurrent) / 120;
+        const loads = records.map((record, index) => {
+          const resistance =
+            index < sensors.length
+              ? sensorSupply(config.sensors.find((sensor) => sensor.node === record.node))
+                  .resistance
+              : record.requestedW > 0
+                ? Math.max(LAMP_NOMINAL_VOLTAGE, cell.voltage) ** 2 / record.requestedW
+                : 1;
+          return {
+            cell: 0,
+            duty: 1,
+            speed: 0,
+            inertia: Infinity,
+            k: 0,
+            active: charge > 0 && (index < sensors.length || record.requestedW > 0),
+            resistance,
+            limit: cell.voltage / resistance,
+            load: true,
+          };
+        });
+        const expected = sharedPowerStep(
+          [
+            {
+              voltage: cell.voltage,
+              resistance: cell.resistance,
+              limit: cell.currentLimit,
+              energy: charge,
+            },
+          ],
+          loads,
+          [],
+          1 / 120,
+        );
+        if (
+          !expected ||
+          records.some(
+            (record, index) =>
+              Math.abs(record.current - expected.currents[index]) > currentTolerance,
+          ) ||
+          connected.some((l) => Math.abs(l.voltage - expected.voltages[0]) > voltageTolerance)
+        )
+          fail('INVALID_POWER_CHECKPOINT');
+      }
+      for (const l of connected) {
+        const driverCurrent =
+          (l.voltage * l.requestedW) / Math.max(LAMP_NOMINAL_VOLTAGE, cell.voltage) ** 2;
+        if (
+          l.voltage > busUpperBound + voltageTolerance ||
+          Math.abs(l.voltage - busUpperBound) > voltageTolerance ||
+          Math.abs(l.voltage - connected[0].voltage) > voltageTolerance ||
+          l.current > driverCurrent + currentTolerance ||
+          (unbounded && Math.abs(l.current - driverCurrent) > currentTolerance)
+        )
+          fail('INVALID_POWER_CHECKPOINT');
+      }
+    }
   }
   validateState(state);
   let pending = null;
@@ -567,15 +826,7 @@ export function createPowerNetwork(configuration) {
         const command =
           (source ? next.sources.find((s) => s.node === source.node).duty : motor.defaultDuty) *
           (motor.inputPolarity ?? 1);
-        if (motor.coordinate === 'linear') {
-          const voltage = cellsFor(motor)[0]?.voltage ?? 1;
-          return {
-            duty:
-              Math.sign(command) *
-              Math.min(Math.abs(command), (motor.torqueConstant * motor.maxSpeed) / voltage),
-          };
-        }
-        if (!motor.positionControl) return { duty: command };
+        if (!motor.positionControl) return { duty: driveDuty(motor, command) };
         const p = motor.positionControl,
           sample = speeds.find((s) => s.node === motor.node);
         if (!sample || !finite(sample.angle, sample.speed) || Math.abs(sample.angle) > Math.PI)
@@ -646,7 +897,23 @@ export function createPowerNetwork(configuration) {
           !r.opened && !r.ready && c.joint >= 0 && command?.enabled !== false && command?.duty > 0
         );
       });
+      const lampControls = lamps.map((l) => {
+        const { command, enabled } = lampCommand(l, next.sources);
+        const requestedW = LAMP_WATTS * l.brightness * Math.max(0, command) * (enabled ? 1 : 0);
+        const cell = cellsFor(l)[0];
+        return {
+          command,
+          enabled,
+          requestedW,
+          resistance:
+            requestedW > 0
+              ? Math.max(LAMP_NOMINAL_VOLTAGE, cell?.voltage ?? LAMP_NOMINAL_VOLTAGE) ** 2 /
+                requestedW
+              : 1,
+        };
+      });
       const shared =
+        lamps.length > 0 ||
         couplers.length > 0 ||
         config.sensors.length > 0 ||
         config.cells.some(
@@ -711,6 +978,23 @@ export function createPowerNetwork(configuration) {
             load: true,
           });
         }
+        for (const [i, lamp] of lamps.entries()) {
+          const cell = cellsFor(lamp)[0],
+            control = lampControls[i];
+          entries.push({
+            cell: config.cells.indexOf(cell),
+            duty: 1,
+            speed: 0,
+            inertia: Infinity,
+            active: Boolean(
+              cell && state.cells[config.cells.indexOf(cell)].energyJ > 0 && control.requestedW > 0,
+            ),
+            k: 0,
+            resistance: control.resistance,
+            limit: cell ? cell.voltage / control.resistance : 0,
+            load: true,
+          });
+        }
         sharedResult = sharedPowerStep(
           config.cells.map((c, i) => ({
             voltage: c.voltage,
@@ -768,6 +1052,36 @@ export function createPowerNetwork(configuration) {
                   : r.ready
                     ? 'READY'
                     : 'ACTUATING';
+      }
+      for (const [i, lamp] of lamps.entries()) {
+        const record = next.lamps[i],
+          cell = cellsFor(lamp)[0],
+          control = lampControls[i];
+        const current =
+          sharedResult.currents[config.motors.length + config.sensors.length + couplers.length + i];
+        const voltage = cell ? sharedResult.voltages[config.cells.indexOf(cell)] : 0;
+        const deliveredW = voltage * current;
+        Object.assign(record, {
+          steps: record.steps + 1,
+          command: control.command,
+          enabled: control.enabled,
+          requestedW: control.requestedW,
+          current,
+          voltage,
+          deliveredW,
+          luminousFluxLm: deliveredW * LAMP_EFFICACY,
+          deliveredEnergyJ: record.deliveredEnergyJ + deliveredW * dt,
+          reasonCode:
+            control.requestedW === 0
+              ? 'OFF'
+              : !cell
+                ? 'NO_POWER'
+                : state.cells[config.cells.indexOf(cell)].energyJ === 0
+                  ? 'DEPLETED'
+                  : deliveredW < control.requestedW * (1 - 1e-9)
+                    ? 'LIMITED'
+                    : 'OK',
+        });
       }
       const torques = [],
         allocations = [];
@@ -857,7 +1171,7 @@ export function createPowerNetwork(configuration) {
           value: result.torque,
         });
       }
-      validateState(next);
+      validateState(next, false);
       pending = { dt, next, allocations };
       return { torques };
     },

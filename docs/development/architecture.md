@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"3aeca33e706f65aa6dcb525196ed5eb548b7cacad8d33fc2b78a471895f56485","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"88fc2e6f896d40df073ad049afa7918fecb4482f20bc28d45334d8e37e62ad1f","disposition":"updated","rationale":"Preserved camera-session ingestion and photo ownership alongside scene persistence/proposals. Added the explicit scene-entry exit from mounted camera viewing, which restores ordinary orbit and keyboard ownership without changing authored parts or physical state."} -->
+<!-- doc-review {"version":1,"fingerprint":"7aaca91aa5a2aff9bfdbb59c52fbc46c12edb9457e5159daae6af1086c28f154","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"0b1ffb6e74a1ec0a5d8f6d9b5a7071c038997727cd3f09dfeda7bb141d6d0a26","disposition":"still accurate","rationale":"Preserved camera-session ingestion and photo ownership alongside scene persistence/proposals. Added the explicit scene-entry exit from mounted camera viewing, which restores ordinary orbit and keyboard ownership without changing authored parts or physical state."} -->
 
 
 
@@ -119,7 +119,7 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"b14ef8da3573d5c62a0103ced92dda1f443a92561c0988814cfae0499226645e","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"26f3a06fe2adc33813199657b5b6a12096cb090113178a157d62267a60e42f57","disposition":"still accurate","rationale":"Scene descriptors reuse canonical transforms and contact properties; replacement uses existing core cursor and history ownership. The table continues to identify the actual reusable owners."} -->
+<!-- doc-review {"version":1,"fingerprint":"ee661498bd881ab297d811dad75c17a3dd7c456c27b8fae8c767e798ff22dd6e","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"932b8ee9d8fcefb294ffd2515289c8cba5bbfd6defaae311670bb01cf6bfc36a","disposition":"still accurate","rationale":"Scene descriptors reuse canonical transforms and contact properties; replacement uses existing core cursor and history ownership. The table continues to identify the actual reusable owners."} -->
 
 
 
@@ -168,11 +168,23 @@ they do not imply stored spring energy for a powered guide. Off or power loss re
 active drive without a clutch. Native stops remain passive constraints.
 
 A cell can supply multiple rotary and linear drives; multiple cells on one circuit remain unsupported.
-Shared motor torque and powered sensor-load accounting and the completed energy ledger belong to simulation.
+Shared motor torque, powered sensor loads and lamp delivery accounting belong to simulation.
+The [lamp ratings](../../src/model/lamps.mjs#source) bound eight authored lamps at 10 W each.
+[Power](../../src/simulation/power.mjs#symbol=createPowerNetwork) uses a source-rating-adaptive
+resistive driver: conductance is requested watts divided by max(24 V, source nominal
+voltage) squared. Droop and shared current limiting reduce delivery. Completed flux is
+100 modeled lm per delivered watt; the cumulative circuit ledger counts lamp delivery
+once alongside cell heat and other loads. Receiver wiring replaces the default command
+of one; disabled, zero and negative commands request zero. Initial lamps are unstepped
+and dark; restored completed records reconcile sources, tick and circuit accounting.
+Instantaneous lamp readings also obey the common bus voltage, driver-current ceiling
+and source droop/current bounds. Source draw includes coupler current and motor PWM current, including the linear speed cap. Coupler heat enters the cumulative ledger once. Passive
+lamp/sensor-only circuits also match the limited resistive solution reconstructed
+from completed draw and remaining charge; an unbounded driver cannot report false darkness.
 Ground contact and workshop motion are not Course qualification.
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"711a6b84c6fb1afb36ec4a18471b4dcb2d9c6cca00978f307b67569a5f00435a","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"7482e2e3d8d4e56ae3fe4a5bb1b51dea5b8d116f030be5efaa5ebec9517cd81e","disposition":"still accurate","rationale":"Scene colliders append outside machine mappings; scene preservation tests confirm machine sensor scope and metrics remain machine-owned. No controller or observation sampling owner changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"9202facd45b245a4f56368eb5e54a71d3b1b041492aa0c7b9ff571ee06e61f6e","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"5df5490badf6cecfec809b37a57213d5d388b7401d2f49ce8f3344cf5ec40362","disposition":"still accurate","rationale":"Scene colliders append outside machine mappings; scene preservation tests confirm machine sensor scope and metrics remain machine-owned. No controller or observation sampling owner changed."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;
