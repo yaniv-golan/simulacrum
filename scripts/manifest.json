@@ -5746,7 +5746,7 @@
         }
       ],
       "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
-      "consumerSourceHash": "110159f54346c86622c64145b342b3634362ddd4264708d870475b25e443680c",
+      "consumerSourceHash": "0c0dc86c3138ac670283a0276c0ea956198ba680dc98d05886b43c8071062438",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -5836,7 +5836,7 @@
         }
       ],
       "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
-      "consumerSourceHash": "110159f54346c86622c64145b342b3634362ddd4264708d870475b25e443680c",
+      "consumerSourceHash": "0c0dc86c3138ac670283a0276c0ea956198ba680dc98d05886b43c8071062438",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -5973,7 +5973,7 @@
         }
       ],
       "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
-      "consumerSourceHash": "6e380a6d93db40f85f1bf7d9641f0112e5e313afd23e0496be21ef44831aa0da",
+      "consumerSourceHash": "e242256a2d01125b1202564cd216d7715eab5217df06a98885d69a8a914104c8",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -6473,7 +6473,7 @@
         }
       ],
       "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
-      "consumerSourceHash": "d61e7c8ee12bdde14a3b13fc2891e8b37865014a1dd5bfabe247016609e9aec8",
+      "consumerSourceHash": "2b6a9edc1c1d6fc71ec1395bc9258678c674b74081406e7e3b2e9a22621d0348",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -6562,7 +6562,7 @@
         }
       ],
       "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
-      "consumerSourceHash": "110159f54346c86622c64145b342b3634362ddd4264708d870475b25e443680c",
+      "consumerSourceHash": "0c0dc86c3138ac670283a0276c0ea956198ba680dc98d05886b43c8071062438",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -6871,7 +6871,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
-      "consumerSourceHash": "03998e2d0fbf84803c220c1741ef00b529c283e47a38f6b768ea0dd99a607db9"
+      "consumerSourceHash": "64f8f2f796b79712df10efc4162b3e38485b37c91de5892e45b2ab271e285ea2"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -6909,7 +6909,7 @@
         "test/remote-playtest.test.mjs"
       ],
       "roots": "47cc4d183dee066b27c6899858f1d0e9945e7e48447eb26345ac50b409319def",
-      "consumerSourceHash": "03998e2d0fbf84803c220c1741ef00b529c283e47a38f6b768ea0dd99a607db9"
+      "consumerSourceHash": "64f8f2f796b79712df10efc4162b3e38485b37c91de5892e45b2ab271e285ea2"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -7056,7 +7056,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "d61e7c8ee12bdde14a3b13fc2891e8b37865014a1dd5bfabe247016609e9aec8"
+      "consumerSourceHash": "2b6a9edc1c1d6fc71ec1395bc9258678c674b74081406e7e3b2e9a22621d0348"
     },
     {
       "entrypoint": "scripts/verify-feedback-flow.mjs",

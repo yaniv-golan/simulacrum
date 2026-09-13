@@ -266,7 +266,7 @@ available; incomplete or mismatched comparisons are `NOT_EVALUATED`. This does n
 establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
-<!-- doc-review {"version":1,"fingerprint":"68830ddfc26264987be97d17798f8072503a6bd7523c25087a3c4bdfae017384","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"629d9990372ca885d9bb1dab1032efb2f7fac3a6eeedff4024acd91ba78ea7ea","disposition":"still accurate","rationale":"The application now supplies view.utilityHost to the existing remote client. This DOM placement change does not alter source-bound receipts, scope admission, scheduling or the application-owned completed-command sequence described here. Changed application bytes still require fresh affected browser evidence."} -->
+<!-- doc-review {"version":1,"fingerprint":"eba2c7e75185d00c9b2c279a157e4097ebb9832d35e64ffd581fbf868d97a993","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"2c3e1183228288429d92c1b6153bb5c9c48ec097c30806bc718e1a61ea503ef3","disposition":"still accurate","rationale":"Eight consumerSourceHash values now bind the reviewed footer composition, catalog scrolling and verifier corrections. Reader purposes, exclusions, roots, declarations and required checks are unchanged. The explanation still accurately requires audited dependency closure and successful witness-bound application; metadata refresh supplies no completion or human receipt."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -506,7 +506,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"3d37236d999afa9b16525f7f925801c798b70e38f2c3587c3bb36ebb34485f05","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"48bdbb11cf7bdbc69cc88af8205214c54b3f60ab1b9e0fc27f6d451e807a3f83","disposition":"still accurate","rationale":"The proposal changes only browserLocalScopes and browserReviewMetadataScopes. Candidate capture, source/index drift rejection, runtime/dependency admission, retained failures and same-candidate pure-unit resume rules are unchanged. Scope application still precedes fresh completion and cannot supply cross-candidate browser receipts."} -->
+<!-- doc-review {"version":1,"fingerprint":"cc6185d46aebe6fd154949bc3f177011f39e3a689b45df669fc3a8fa4b892bce","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"cbf8c3209e0b0ba85d0298aa4156953e64af208e7d9677f28c4691e0ac127072","disposition":"still accurate","rationale":"Only eight existing metadata consumer hashes changed after scope witnesses. Candidate source capture, dependency/runtime admission, same-candidate unit resume, source/index drift rejection and fresh browser execution requirements remain unchanged. The existing footer repairs are already documented; this metadata update does not create cross-candidate evidence reuse."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

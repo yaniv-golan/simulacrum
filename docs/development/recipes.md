@@ -162,7 +162,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"fb4046a3069a197dc5eb5b13de72b3b097afc310c36ff5e8e94b41569502ac90","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"1bbe461448abfe3aae1757b78ad13499ef166a2778d100c23bfc4e1262141d3e","disposition":"still accurate","rationale":"The verifier comments now accurately distinguish pausing the browser clock before arming from advancing a normal tick, and the retained twenty-second wall-time budget from the additional 2400-tick simulated-time cap. Executable verifier behavior and all physics, sampling, receiver and restore owners are unchanged; the recipe makes no claim that prior timing failures have a proven cause."} -->
+<!-- doc-review {"version":1,"fingerprint":"ca2835b92bde356ca639bb7820694a13cde194769eac743e9923b73e025574d2","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"718e8fe7c9942c93f5075eacaeaeca317b00b0819c09c2e2400eaf4c4e2fcbaf","disposition":"still accurate","rationale":"The diff changes only eight browser metadata consumer hashes; no numerical law, native physics, Coupler/Rope state, phase ordering, checkpoint or physical control changed. Existing identity-reader dependencies make this section stale, while its physical ownership and independent-oracle guidance remain accurate. Scope witness success does not qualify additional physical behavior."} -->
 
 
 
