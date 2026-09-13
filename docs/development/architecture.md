@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"fdc66fc3e70e559b867a09be927e531813e1ec3afd0df777a2721755e4739d59","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"194d5570d79cbb8b073face21a2e17dbe9901558c061560fbb4ca47385affc3b","disposition":"still accurate","rationale":"The AGENTS.md wording change limits the notice claim to candidate owners; runtime, layer-edge and manifest ownership described by the overview are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"84ce5ca5aac3da3adb53318187d193cc356fa1b9d49d134610c9977676363c60","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"56b35e20c2696b1a40188a2adf92fe77fe76fe29bfd41dbe14af363b6c8c71f7","disposition":"still accurate","rationale":"validate-manifest.mjs still loads and structurally validates the canonical manifest for milestone allocation and check metadata; the change adds admission of the per-row reachingChecks arrays (sorted, unique, registered ids; legacy roots digest rejected) and exports validateScopeRows for witness-free scope applications. Layer ownership, milestone gating and the registry reader's role described in the overview are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

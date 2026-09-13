@@ -304,8 +304,12 @@ opaque file/subprocess inputs conservatively expand selection. In the current ap
 shared runtime and identity dependencies often select the full browser suite.
 `browserLocalScopes` in the manifest is an explicit local-only behavioral contract: a named
 entrypoint, its frozen direct dependency shape, and required feature/integration checks.
-All local scopes also bind the transitive reverse-consumer set and browser-root inventory.
-New consumers and roots restore broad coverage; outgoing imports alone are insufficient.
+All local scopes also bind the transitive reverse-consumer set and the reaching checks: the
+browser checks whose script or served page reaches the entrypoint through the import graph.
+New consumers and new reaching checks restore broad coverage until reviewed; outgoing imports
+alone are insufficient, and a check that does not reach the entrypoint never affects its row.
+Self-environment checks serve their own pages and may load any application module, so every
+self check counts as reaching every entrypoint.
 Part-help presentation edits select the registered help and lifecycle checks; its standalone verifier retains its audited scope.
 Mirror presentation edits select mirror, assembly UX and manipulation checks; its standalone verifier selects the mirror check. The remote recording client selects both backend adapters, durable feedback receipts, workshop lifecycle and construction checks; new service/import edges or opaque inputs restore conservative coverage.
 Known documentation and unit-test files can be excluded from browser execution only
@@ -346,7 +350,13 @@ Write a review JSON with `proposalDigest` and separate `decisions` containing ea
 changed `key`, `accept: true` and a specific `rationale`. Then run
 `npm run browser:scopes -- apply artifacts/scope-proposal.json --review artifacts/scope-review.json`.
 Apply captures an isolated candidate, installs dependencies and runs the union of old
-and proposed witnesses under the shared verification window. Metadata invariant controls
+and proposed witnesses under the shared verification window. A row that gains reaching checks not
+in its declared checks lists them as `reachingNotDeclared`; its review row must carry
+`undeclared: "acknowledged"` or, for local rows, `declare: [ids]`, and declared ids join the
+row's checks and its witnesses before anything is trusted. Rows whose only change is added
+reaching checks or the membership format apply on that review alone and record witnesses
+`NOT_REQUIRED`; removals, a legacy digest recorded against a different inventory, and every
+other field change execute witnesses as before. Metadata invariant controls
 execute their actual tests; imported pass reports cannot authorize application. Exact
 request, successful receipts and candidate identity must agree. Only then is the manifest
 replaced; source/index drift rejects. Run one writer on this worktree: observed drift

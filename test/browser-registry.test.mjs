@@ -334,15 +334,19 @@ test('shared scopes expand for new reverse consumers and new browser roots', asy
   nodes.get(checks[2].script).dependencies.push('src/shared.mjs');
   assert.equal(select().checks.length, 3);
   nodes.get(checks[2].script).dependencies = [];
-  // A new check that does not reach the entrypoint leaves the local contract intact.
-  checks.push({ id: 'd', script: 'scripts/d.mjs', environment: 'self' });
+  // A new workshop check that does not reach the entrypoint leaves the local contract intact.
+  checks.push({ id: 'd', script: 'scripts/d.mjs', environment: 'workshop' });
   nodes.set('scripts/d.mjs', { dependencies: [] });
   assert.equal(select().checks.length, 2);
-  // A new workshop check reaches every application module through index.html.
+  // Once the served page reaches the module, every workshop check reaches it.
   nodes.get('index.html').dependencies.push('src/shared.mjs');
-  checks.push({ id: 'e', script: 'scripts/e.mjs', environment: 'workshop' });
+  assert.equal(select().checks.length, 4);
+  // A self-hosted check may load any module at runtime and always invalidates the contract.
+  nodes.get('index.html').dependencies = [];
+  checks.pop();
+  checks.push({ id: 'e', script: 'scripts/e.mjs', environment: 'self' });
   nodes.set('scripts/e.mjs', { dependencies: [] });
-  assert.equal(select().checks.length, 5);
+  assert.equal(select().checks.length, 4);
 });
 
 test('read audits distinguish metadata from fixtures and reject new reads, consumers and runtime documents', async () => {

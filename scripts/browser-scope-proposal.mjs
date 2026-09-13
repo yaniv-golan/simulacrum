@@ -7,6 +7,8 @@ import {
   browserGraphEntrypoints,
   browserScopeConsumers,
   browserScopeRoots,
+  browserCheckClosures,
+  legacyBrowserScopeRoots,
   browserConsumerSourceHash,
 } from './browser-selection.mjs';
 
@@ -69,6 +71,42 @@ export function inspectScopeInputs(root) {
     throw Error('Source changed during scope preparation');
   return { source, manifestText, graph, read: (p) => readFileSync(resolve(root, p)) };
 }
+const witnessUnion = (before, proposed) =>
+  [...new Set([...(before?.checks ?? []), ...proposed.checks])].sort();
+/** Membership changes decide witnesses. A legacy digest recorded against the current inventory
+ * was never narrower than reachability, so the recomputed set is its membership and only the
+ * representation changes. Additions are reviewed explicitly; removals, unknown legacy membership,
+ * new rows and every other field keep the witness union. */
+function classifyScopeChange(row, legacyInventory) {
+  const { before, proposed } = row;
+  let changedFields = [...new Set([...Object.keys(before ?? {}), ...Object.keys(proposed)])]
+    .sort()
+    .filter((f) => !same(before?.[f], proposed[f]));
+  const membership = { reachingChecks: 0, roots: 0 };
+  const other = changedFields.filter((f) => !(f in membership));
+  const legacy = typeof before?.roots === 'string';
+  let additive = false,
+    reachingNotDeclared;
+  if (before && legacy && before.roots === legacyInventory) {
+    changedFields = [...other, 'roots-format'].sort();
+    additive = true;
+  } else if (before && !legacy && Array.isArray(before.reachingChecks)) {
+    const previous = new Set(before.reachingChecks);
+    const added = proposed.reachingChecks.filter((id) => !previous.has(id));
+    additive = before.reachingChecks.every((id) => proposed.reachingChecks.includes(id));
+    if (additive && added.length) {
+      const undeclared = added.filter((id) => !proposed.checks.includes(id));
+      if (undeclared.length) reachingNotDeclared = undeclared;
+    }
+  }
+  const witnesses = additive && !other.length ? [] : witnessUnion(before, proposed);
+  return {
+    ...row,
+    changedFields,
+    witnesses,
+    ...(reachingNotDeclared !== undefined ? { reachingNotDeclared } : {}),
+  };
+}
 /** Pure proposal derivation; audit declarations are authored, graph facts and hashes are computed. */
 export function deriveScopeProposal({ source, manifestText, graph, read }, declarations = []) {
   if (!Array.isArray(declarations)) throw Error('Declarations must be an array');
@@ -84,6 +122,8 @@ export function deriveScopeProposal({ source, manifestText, graph, read }, decla
     blocked = [...graph.errors];
   const checks = before.browserChecks;
   const roots = checks.map((c) => `${c.id}:${c.environment}:${c.script}`).sort();
+  const closures = browserCheckClosures(checks, graph),
+    legacyInventory = legacyBrowserScopeRoots(checks);
   const reachable = new Set(
     checks.flatMap((c) => [
       c.script,
@@ -143,7 +183,8 @@ export function deriveScopeProposal({ source, manifestText, graph, read }, decla
         .map((i) => i.specifier)
         .sort();
       proposed.consumers = browserScopeConsumers(graph, path);
-      proposed.roots = browserScopeRoots(checks);
+      proposed.reachingChecks = browserScopeRoots(checks, graph, path, closures);
+      delete proposed.roots;
       if (kind === 'local') {
         if (node.opaqueInputs)
           blocked.push(`${key}: opaque local owner cannot admit narrow coverage`);
@@ -186,13 +227,7 @@ export function deriveScopeProposal({ source, manifestText, graph, read }, decla
     );
   const changes = rows
     .filter((r) => !same(r.before, r.proposed))
-    .map((r) => ({
-      ...r,
-      changedFields: [...new Set([...Object.keys(r.before ?? {}), ...Object.keys(r.proposed)])]
-        .sort()
-        .filter((f) => !same(r.before?.[f], r.proposed[f])),
-      witnesses: [...new Set([...(r.before?.checks ?? []), ...r.proposed.checks])].sort(),
-    }));
+    .map((r) => classifyScopeChange(r, legacyInventory));
   const proposedManifest = changes.length ? JSON.stringify(after, null, 2) + '\n' : manifestText;
   const expected = structuredClone(source);
   expected.files['scripts/manifest.json'] = {
@@ -230,7 +265,7 @@ export function validateScopeReview(proposal, review) {
   const decisions = new Map();
   for (const d of review.decisions) {
     if (
-      !only(d, ['key', 'accept', 'rationale']) ||
+      !only(d, ['key', 'accept', 'rationale', 'undeclared', 'declare']) ||
       d.accept !== true ||
       typeof d.rationale !== 'string' ||
       !d.rationale.trim() ||
@@ -241,14 +276,102 @@ export function validateScopeReview(proposal, review) {
   }
   if (!same([...decisions.keys()].sort(), proposal.changes.map((c) => c.key).sort()))
     throw Error('Missing or extra scope review decisions');
+  for (const change of proposal.changes) {
+    const d = decisions.get(change.key),
+      pending = change.reachingNotDeclared ?? null;
+    const fields = ['undeclared', 'declare'].filter((f) => f in d);
+    if (!pending) {
+      if (fields.length)
+        throw Error(`${change.key}: undeclared/declare apply only to added reaching checks`);
+      continue;
+    }
+    if (fields.length !== 1)
+      throw Error(
+        `${change.key}: reaching checks not declared (${pending.join(', ')}); the review must carry exactly one of undeclared: "acknowledged" or declare: [ids]`,
+      );
+    if (fields[0] === 'undeclared' && d.undeclared !== 'acknowledged')
+      throw Error(`${change.key}: undeclared must be the literal "acknowledged"`);
+    if (fields[0] === 'declare' && change.kind !== 'local')
+      throw Error(
+        `${change.key}: metadata rows witness registered controls, not browser checks; acknowledge instead`,
+      );
+    if (
+      fields[0] === 'declare' &&
+      (!strings(d.declare) || !d.declare.length || d.declare.some((id) => !pending.includes(id)))
+    )
+      throw Error(`${change.key}: declare must list a non-empty subset of ${pending.join(', ')}`);
+  }
   return proposal.changes;
+}
+/** Apply review declarations to the proposal: declared checks join the row, its witnesses and the
+ * proposed manifest. The result is proposal-shaped so witness requests and application read it;
+ * the original proposal digest is retained for identity. */
+export function resolveScopeReview(proposal, review, inputs = null) {
+  validateScopeReview(proposal, review);
+  const manifest = JSON.parse(proposal.proposedManifest);
+  const declared = new Map(
+    review.decisions.filter((d) => Array.isArray(d.declare)).map((d) => [d.key, d.declare]),
+  );
+  const changes = proposal.changes.map((change) => {
+    const ids = declared.get(change.key);
+    if (!ids) return { ...change };
+    const rows = manifest[scopeFields[change.kind]],
+      row = rows.find((r) => r.entrypoint === change.entrypoint);
+    row.checks = [...row.checks, ...ids.filter((id) => !row.checks.includes(id))];
+    const proposed = { ...change.proposed, checks: [...row.checks] };
+    const { reachingNotDeclared, ...rest } = change;
+    const remaining = reachingNotDeclared.filter((id) => !ids.includes(id));
+    return {
+      ...rest,
+      proposed,
+      changedFields: [...new Set([...change.changedFields, 'checks'])].sort(),
+      witnesses: witnessUnion(change.before, proposed),
+      declared: ids,
+      ...(remaining.length ? { reachingNotDeclared: remaining } : {}),
+    };
+  });
+  if (declared.size && inputs) {
+    // Declared checks are hashed manifest content; refresh the consumer closures that read it.
+    const checks = manifest.browserChecks,
+      overlay = (p) => (p === 'scripts/manifest.json' ? JSON.stringify(manifest) : inputs.read(p));
+    for (const row of manifest.browserReviewMetadataScopes ?? [])
+      row.consumerSourceHash = browserConsumerSourceHash(
+        inputs.graph,
+        row.entrypoint,
+        overlay,
+        checks,
+      );
+    for (const change of changes)
+      if (change.kind === 'metadata') {
+        const row = manifest.browserReviewMetadataScopes.find(
+          (r) => r.entrypoint === change.entrypoint,
+        );
+        change.proposed = { ...change.proposed, consumerSourceHash: row.consumerSourceHash };
+        if (!same(change.before?.consumerSourceHash, row.consumerSourceHash))
+          change.changedFields = [
+            ...new Set([...change.changedFields, 'consumerSourceHash']),
+          ].sort();
+      }
+  }
+  const proposedManifest = declared.size
+    ? JSON.stringify(manifest, null, 2) + '\n'
+    : proposal.proposedManifest;
+  const expected = structuredClone(proposal.expected);
+  expected.files['scripts/manifest.json'] = {
+    ...expected.files['scripts/manifest.json'],
+    sha256: digest(proposedManifest),
+  };
+  return { ...proposal, changes, proposedManifest, expected };
 }
 export function summarizeScopeProposal(p) {
   return [
     `Proposal ${p.digest}: ${p.changes.length} scope(s), ${p.blocked.length} blocker(s).`,
     ...p.changes.map(
       (c) =>
-        `${c.key}\n  changed: ${c.changedFields.join(', ')}\n  witnesses: ${c.witnesses.join(', ')}`,
+        `${c.key}\n  changed: ${c.changedFields.join(', ')}\n  witnesses: ${c.witnesses.length ? c.witnesses.join(', ') : 'none required'}` +
+        (c.reachingNotDeclared?.length
+          ? `\n  reaching, not declared: ${c.reachingNotDeclared.join(', ')} (review with undeclared: "acknowledged" or declare: [ids])`
+          : ''),
     ),
     ...p.blocked.map((b) => `BLOCKED ${b}`),
     'Full old/proposed rows are in the proposal. Hash drift requires semantic review; old source cannot be reconstructed from a digest.',

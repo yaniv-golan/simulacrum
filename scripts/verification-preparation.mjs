@@ -16,10 +16,27 @@ const defaults = {
   review: reviewSections,
 };
 function requireFreshRegistry(proposal) {
-  if (proposal.blocked.length || proposal.changes.length)
-    throw Error(
-      `Browser registry is stale: ${[...proposal.blocked, ...proposal.changes.map((r) => `${r.kind}:${r.entrypoint}`)].join('; ')}. Run npm run verify:prepare and review its scope proposal before capture.`,
-    );
+  if (!proposal.blocked.length && !proposal.changes.length) return;
+  // Rows without a witness list are treated as stale; only an explicit empty list is review-only.
+  const reviewOnly = proposal.changes.filter(
+      (r) => Array.isArray(r.witnesses) && !r.witnesses.length,
+    ),
+    stale = proposal.changes.filter((r) => !reviewOnly.includes(r));
+  const parts = [
+    ...(proposal.blocked.length || stale.length
+      ? [
+          `Browser registry is stale: ${[...proposal.blocked, ...stale.map((r) => `${r.kind}:${r.entrypoint}`)].join('; ')}`,
+        ]
+      : []),
+    ...(reviewOnly.length
+      ? [
+          `Browser scope review required (no witnesses): ${reviewOnly.map((r) => `${r.kind}:${r.entrypoint}`).join('; ')}`,
+        ]
+      : []),
+  ];
+  throw Error(
+    `${parts.join('. ')}. Run npm run verify:prepare and review its scope proposal before capture.`,
+  );
 }
 /** Read-only, uncached origin preflight. Does not install, regenerate, or execute witnesses. */
 export async function assertVerificationReady(root = process.cwd(), overrides = {}) {

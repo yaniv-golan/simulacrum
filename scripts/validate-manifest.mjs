@@ -1,5 +1,23 @@
 import { readFileSync } from 'node:fs';
 import { validateInvariantCoverage } from './invariant-coverage.mjs';
+/** Sorted, unique, registered ids of the checks whose root chain reaches the row's entrypoint.
+ * The former whole-inventory `roots` digest is rejected; migrate through a scope proposal. */
+function reachingChecksOK(scope, browser) {
+  const ids = scope.reachingChecks;
+  return (
+    scope.roots === undefined &&
+    Array.isArray(ids) &&
+    ids.every((id, i) => typeof id === 'string' && (i === 0 || ids[i - 1] < id)) &&
+    ids.every((id) => browser.some((c) => c.id === id))
+  );
+}
+/** Structural admission of the scope rows alone, for applications that execute no witnesses. */
+export function validateScopeRows(m) {
+  const browser = m.browserChecks ?? [];
+  for (const scope of [...(m.browserLocalScopes ?? []), ...(m.browserReviewMetadataScopes ?? [])])
+    if (!reachingChecksOK(scope, browser)) throw Error('invalid browser scope reaching checks');
+  return m;
+}
 export function validateManifest(m) {
   const unique = (values, what) => {
     if (new Set(values).size !== values.length) throw new Error(`duplicate ${what}`);
@@ -111,7 +129,7 @@ export function validateManifest(m) {
       ) ||
       !Array.isArray(scope.consumers) ||
       !scope.consumers.every((p) => typeof p === 'string') ||
-      !/^[a-f0-9]{64}$/.test(scope.roots ?? '') ||
+      !reachingChecksOK(scope, browser) ||
       !Array.isArray(scope.externalImports ?? []) ||
       !(scope.externalImports ?? []).every((p) => typeof p === 'string') ||
       !Array.isArray(scope.dependencies) ||
@@ -185,7 +203,7 @@ export function validateManifest(m) {
             r.excludedInputs.every((k) => ['documentation', 'unit-test'].includes(k)),
         ) ||
         !Array.isArray(scope.consumers) ||
-        !/^[a-f0-9]{64}$/.test(scope.roots ?? '') ||
+        !reachingChecksOK(scope, browser) ||
         !/^[a-f0-9]{64}$/.test(scope.consumerSourceHash ?? ''))
     )
       throw Error('invalid audited browser reads');
