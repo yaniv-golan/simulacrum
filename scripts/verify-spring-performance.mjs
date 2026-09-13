@@ -99,6 +99,8 @@ try {
           endTick,
           visible: visible && !document.hidden,
           renderCostsMs: running ? rendering.costsMs.slice(-frames) : [],
+          viewRenderMs: running ? rendering.viewRenderMs.slice(-frames) : [],
+          completedDraw: rendering.completedDraw,
           renderedFrames: frames,
           quality: rendering.quality,
         };

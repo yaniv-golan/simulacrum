@@ -1,8 +1,8 @@
 {
   "version": 1,
   "dependencies": {
-    "src/presentation/workshop-view.mjs": "4991cd6bb50d3e567b0e5333e333b3fadfa21dedbec12dda1695939ef45db361",
-    "src/presentation/workshop.css": "1e4e20adf58922e310953a4b65473e9d6d91f40ace71b6ccbf3c87c1257aeef2",
+    "src/presentation/workshop-view.mjs": "4aecfd36d62d86fa2ce45d30c59d0a9fad163f73b8e5af371ebcb1568e01166d",
+    "src/presentation/workshop.css": "f71322a214f656bf7533924461f71a97356511c0e02367d320987dac5a9d704f",
     "src/presentation/parts-browser.mjs": "153d01758b040a471eb43074e0be7b35277f7a4fcfed16ab14a17e9320753e42",
     "src/model/boundaries.d.ts": "901105eee561938d3f477c6ce3857b18b0a894ad19e3761960bd7b97b60a662b",
     "src/model/catalog.mjs": "d3c8a92c8e4489706862e4069b7cc8429c27b4bd5cad2b402eff721628a6dd7b",
@@ -11,18 +11,17 @@
     "src/model/generated/blueprint-types.d.ts": "ae90f0afac08e2a8a6b649f220042503844c8554b537e9b22255b8670605f79d",
     "src/model/generated/blueprint-validator.mjs": "526379014f7ec26368ca56d78c5648086b29c703fca43f2409e2237164cda7d5",
     "src/model/geometry.mjs": "6628f76885c40cd8788ac50cf4fdde44cee827472aaea673b16343512e6e2283",
-    "src/model/observation.mjs": "a7f5f8d48b331921bbef3ec1b321bf078ba800cf4b4020a76f9b0a235899239c",
+    "src/model/observation.mjs": "cc4f0cb5d0cb9078809a2b78d9d57cd83fdf16c9ad92045a7a86ac815f1e06ba",
     "src/model/rope.mjs": "1d67607e3649112959167a0559e32f302be2e8b043903f7eca78b98065dd7e84",
     "src/model/sensors.mjs": "e873492e9e9e78d20f0bc6efcf3ab0c734e6eef9b01119b307d2052eed96ab71",
     "src/model/surfaces.mjs": "a815f3ca239c22af8673d1f028bcff78917cc17a9d15b28f05c9153679b18deb",
     "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
     "src/presentation/rope-controls.mjs": "f7161dcd7390ab56fcd1217e5d3882e7c51b385e78f35a5ff3ad995c796ea5a9",
-    "src/presentation/camera-controls.mjs": "a3586639b0bad5008661df9012e20c8066b7463465947a9560e0e4d93b94dce4",
-    "src/presentation/scene-editor.mjs": "2a2448eed8d2261dab19ba03ed4fab48ffb969faa023692e4cb8b62dd4c10e7a",
+    "src/presentation/camera-controls.mjs": "927a28395bbe757a2a7276758977b7a0e45b60ff93249055595ef6dc780a4147",
+    "src/presentation/scene-editor.mjs": "e063e264007da18facbf553eb1190aa5437044bd1d4732cd99f79db0828d680c",
     "src/presentation/document-proposal.mjs": "f182f9129dad9bc8c875ed524dbd88a8eaf1a3c2a2bd2e8dccfbeebae98cbf2f",
     "src/presentation/workbench-content.mjs": "35e817a6787c38e52bc94437a4ee1606a5d956b4f1036966a84441200ee83474",
-    "src/presentation/dialog-close.mjs": "370c90e09f36a08e23e58ec22b382b2d0b1a783c5c47f7eb12e1d14690905c62",
-    "src/application/workshop-app.mjs": "a5e0f216ac0a97b18308cf5e43509c49c29404335e6125de1ac7ecdd92d044d8",
+    "src/application/workshop-app.mjs": "a2fba1eecf82e1dccd4745eefc5c042c56211ebc8b649febd3ef63c31e53d154",
     "scripts/catalog-browser-actions.mjs": "b7307b5a3f43464b16b2e4f75829ceb1bfd45d146ef09472bb773fe0691a4ce3",
     "scripts/gear-browser-cases.mjs": "a58cbb3dc02a69669ee13e881532924fc9ceada2447f78b7ef2314e3dc043549",
     "package-lock.json": "a50a95826c7fa932c9f9c8803270415fd88de207265bd3305257ad45893fb1d6",
@@ -35,6 +34,7 @@
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
     "scripts/verification-timing.mjs": "1dc67121dd1bca4b79446b50e7752b7427dc97a12a81652a81a29062c7c27cdb",
     "scripts/verify-release-coupler.mjs": "21541dcfac3ce1d61bd37196f86ff8b87e7a9ab8e347e2453edf68468f7a6481",
-    "src/presentation/motion-readout.mjs": "c4fdb627ff4f34940f0e98f2c7c84a76e3620e3c9c9e745c66b4410f53b43bc1"
+    "src/presentation/sound-controls.mjs": "5609ce180f09b2629973f1de321f036f3bb8c0a5ba2f1f77a425517abd8ba061",
+    "src/presentation/motion-readout.mjs": "33dc9f01af53c86b50a9ab7ddce19bb89b36949f6b3c830dbe243306e31f31df"
   }
 }

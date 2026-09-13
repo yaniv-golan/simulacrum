@@ -129,7 +129,15 @@ try {
   await sound.click();
   await page.getByRole('button', { name: 'Sound on', exact: true }).waitFor();
   await page.locator('[data-command=run]').click();
-  await page.evaluate(() => window.advanceTime(500));
+  // Drive the sound phases in frame-sized batches, as animation frames do for a player.
+  // The audio engine voices only impacts within 0.1 s of a batch's newest tick and skips
+  // a batch after a >100 ms wall-clock gap, so one 500 ms jump would voice nothing.
+  // 1000/60 ms is exactly two ticks; totals stay 60, 120 and 180 ticks.
+  const advanceFrames = (count) =>
+    page.evaluate((n) => {
+      for (let i = 0; i < n; i++) window.advanceTime(1000 / 60);
+    }, count);
+  await advanceFrames(30);
   const rolling = await page.evaluate(() => {
     const frame = JSON.parse(window.render_game_to_text());
     return {
@@ -153,13 +161,13 @@ try {
   );
   assert.ok(Math.abs(rolling.body.rotation[3]) < 0.999, 'rotation marking follows actual rolling');
   assert.equal(rolling.shape.markVisible, true);
-  await page.evaluate(() => window.advanceTime(1000));
+  await advanceFrames(60);
   await page.locator('[data-command=pause]').click();
   const voices = await page.evaluate(() => window.impactVoiceStarts);
   assert.ok(voices > 0, 'completed impacts must produce sound when enabled');
   await page.getByRole('button', { name: 'Sound on', exact: true }).click();
   await page.locator('[data-command=retry]').click();
-  await page.evaluate(() => window.advanceTime(1500));
+  await advanceFrames(90);
   await page.locator('[data-command=pause]').click();
   assert.equal(
     await page.evaluate(() => window.impactVoiceStarts),

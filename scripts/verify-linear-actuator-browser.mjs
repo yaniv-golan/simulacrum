@@ -104,10 +104,12 @@ try {
   await page.locator('[data-command=run]').click();
   await page.keyboard.down('KeyW');
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tick >= 480);
+  // Read the driven state while the key is still held: release is off and the
+  // load can fall, so a late pause click would measure harness latency instead.
+  assert.ok((await read()).springs[0].length > 0.38, 'repaired load extends');
   await page.keyboard.up('KeyW');
   await page.locator('[data-command=pause]').click();
   const extended = await read();
-  assert.ok(extended.springs[0].length > 0.38, 'repaired load extends');
   await page.screenshot({ path: `${out}/extended.png` });
   const transforms = await page.evaluate(() => window.workshopProbe.readRenderedTransforms());
   for (const [i, part] of repaired.parts.entries()) {

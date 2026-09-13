@@ -1,3 +1,4 @@
+import { immutableCopy } from '../model/observation.mjs';
 import { LAMP_LIMIT, LAMP_WATTS, LAMP_EFFICACY, LAMP_NOMINAL_VOLTAGE } from '../model/lamps.mjs';
 import { CAMERA } from '../model/camera.mjs';
 import { CONTROLLER_LIMITS } from '../model/controller-authoring.mjs';
@@ -394,20 +395,21 @@ export function createPowerNetwork(configuration) {
           )
       : command;
   }
-  function validateState(candidate, settled = true) {
+  function validateState(candidate, { settled = true, trustedShape = false } = {}) {
     if (
       !candidate ||
-      Object.keys(candidate).sort().join(',') !==
-        [
-          'cells',
-          'motors',
-          'sources',
-          ...(config.sensors.length ? ['sensors'] : []),
-          ...(couplers.length ? ['couplers'] : []),
-          ...(lamps.length ? ['lamps'] : []),
-        ]
-          .sort()
-          .join(',') ||
+      (!trustedShape &&
+        Object.keys(candidate).sort().join(',') !==
+          [
+            'cells',
+            'motors',
+            'sources',
+            ...(config.sensors.length ? ['sensors'] : []),
+            ...(couplers.length ? ['couplers'] : []),
+            ...(lamps.length ? ['lamps'] : []),
+          ]
+            .sort()
+            .join(',')) ||
       !Array.isArray(candidate.cells) ||
       !Array.isArray(candidate.sources) ||
       !Array.isArray(candidate.motors) ||
@@ -432,7 +434,8 @@ export function createPowerNetwork(configuration) {
           (c.opened &&
             c.heatJ + ENERGY_ABSOLUTE_TOLERANCE + ENERGY_RELATIVE_TOLERANCE * c.heatJ <
               d.energyJ) ||
-          !exact(c, 'node,joint,progressJ,heatJ,current,voltage,ready,opened,reasonCode') ||
+          (!trustedShape &&
+            !exact(c, 'node,joint,progressJ,heatJ,current,voltage,ready,opened,reasonCode')) ||
           c.node !== d.node ||
           c.joint !== d.joint ||
           !finite(c.progressJ, c.heatJ, c.current, c.voltage) ||
@@ -562,7 +565,7 @@ export function createPowerNetwork(configuration) {
         fail('INVALID_POWER_CHECKPOINT');
       candidate.sensors.forEach((s, i) => {
         if (
-          !exact(s, 'node,current,voltage,heatJ,powered') ||
+          (!trustedShape && !exact(s, 'node,current,voltage,heatJ,powered')) ||
           s.node !== config.sensors[i].node ||
           !finite(s.current, s.voltage, s.heatJ) ||
           Math.min(s.current, s.voltage, s.heatJ) < 0 ||
@@ -574,7 +577,7 @@ export function createPowerNetwork(configuration) {
     }
     candidate.cells.forEach((c, i) => {
       if (
-        Object.keys(c).sort().join(',') !== 'energyJ,heatJ,node' ||
+        (!trustedShape && Object.keys(c).sort().join(',') !== 'energyJ,heatJ,node') ||
         c.node !== config.cells[i].node ||
         !finite(c.energyJ, c.heatJ) ||
         c.heatJ < 0 ||
@@ -585,7 +588,8 @@ export function createPowerNetwork(configuration) {
     });
     candidate.sources.forEach((s, i) => {
       if (
-        !exact(s, 'duty,node' + (Object.hasOwn(s, 'enabled') ? ',enabled' : '')) ||
+        (!trustedShape &&
+          !exact(s, 'duty,node' + (Object.hasOwn(s, 'enabled') ? ',enabled' : ''))) ||
         (Object.hasOwn(s, 'enabled') && s.enabled !== false) ||
         s.node !== sources[i].node ||
         !finite(s.duty) ||
@@ -597,7 +601,7 @@ export function createPowerNetwork(configuration) {
       const control = config.motors[i].positionControl;
       if (
         control &&
-        (!exact(m.position, 'targetAngle,angle,controlDuty,integralDuty') ||
+        ((!trustedShape && !exact(m.position, 'targetAngle,angle,controlDuty,integralDuty')) ||
           !finite(
             m.position.targetAngle,
             m.position.angle,
@@ -612,22 +616,23 @@ export function createPowerNetwork(configuration) {
       )
         fail('INVALID_POWER_CHECKPOINT');
       if (
-        Object.keys(m).sort().join(',') !==
-          [
-            'current',
-            'driverHeatJ',
-            'electricalEnergy',
-            'energyResidualJ',
-            'heatJ',
-            'mechanicalEnergy',
-            'node',
-            'reasonCode',
-            'shaftWorkJ',
-            'torque',
-            ...(config.motors[i].positionControl ? ['position'] : []),
-          ]
-            .sort()
-            .join(',') ||
+        (!trustedShape &&
+          Object.keys(m).sort().join(',') !==
+            [
+              'current',
+              'driverHeatJ',
+              'electricalEnergy',
+              'energyResidualJ',
+              'heatJ',
+              'mechanicalEnergy',
+              'node',
+              'reasonCode',
+              'shaftWorkJ',
+              'torque',
+              ...(config.motors[i].positionControl ? ['position'] : []),
+            ]
+              .sort()
+              .join(',')) ||
         m.node !== config.motors[i].node ||
         !finite(
           m.heatJ,
@@ -1181,7 +1186,10 @@ export function createPowerNetwork(configuration) {
           value: result.torque,
         });
       }
-      validateState(next, false);
+      // Shape and static identity came from construction/restore; validate numerical
+      // updates without sorting every unchanged record schema each tick. Circuit
+      // ledger reconciliation applies to settled (constructed or restored) state.
+      validateState(next, { settled: false, trustedShape: true });
       pending = { dt, next, allocations };
       return { torques };
     },
@@ -1193,7 +1201,9 @@ export function createPowerNetwork(configuration) {
         new Set(receipts.map((s) => s.node)).size !== config.motors.length
       )
         fail('INVALID_MOTOR_SAMPLE');
-      const next = clone(pending.next);
+      // Only motors change in completion. Keep pending records untouched until
+      // every receipt and accumulated value passes, so a late failure can retry.
+      const next = { ...pending.next, motors: [...pending.next.motors] };
       for (const [i, motor] of config.motors.entries()) {
         const sample = receipts.find((s) => s.node === motor.node);
         if (
@@ -1219,7 +1229,8 @@ export function createPowerNetwork(configuration) {
         )
           fail('INVALID_MOTOR_SAMPLE');
         const allocation = pending.allocations[i],
-          record = next.motors[i];
+          record = { ...next.motors[i] };
+        if (motor.positionControl) record.position = { ...record.position };
         // The physics door measures the discrete kick before contacts/gravity.
         // Full-inertia KE agrees with funded motor work plus independently
         // measured signed work of regularized constraint reactions.
@@ -1286,13 +1297,17 @@ export function createPowerNetwork(configuration) {
         record.shaftWorkJ += work;
         if (residual >= 0) record.driverHeatJ += residual;
         else record.energyResidualJ += residual; // Explicit signed numerical remainder.
+        next.motors[i] = record;
       }
-      validateState(next);
+      // The pending shape is already validated. After all receipts, validate the
+      // completed values and close the settled circuit ledger (lamp circuits need the
+      // completed motor work), preserving failure precedence and late-failure retry.
+      validateState(next, { trustedShape: true });
       state = next;
       pending = null;
       return clone(state);
     },
-    read: () => clone(state),
+    read: () => immutableCopy(state),
     snapshot() {
       if (pending) fail('POWER_STEP_PENDING');
       return clone(state);

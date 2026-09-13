@@ -57,6 +57,7 @@ export function createMotionReadout(container) {
     windowReason = reason;
   }
   function displayBody() {
+    if (!requested) return;
     const part = latestFrame?.metadata.blueprint.parts.find((p) => p.id === selectedId),
       measured = bodyRecorder.read();
     bodyHeading.textContent = part ? `Selected body: ${part.name}` : 'Selected body';
@@ -152,6 +153,10 @@ export function createMotionReadout(container) {
     },
     setVisible(value) {
       requested = value;
+      if (requested) {
+        displayBody();
+        if (latestFrame) this.update(latestFrame);
+      }
       refreshVisibility();
     },
     update(frame) {
@@ -179,7 +184,8 @@ export function createMotionReadout(container) {
           distance: Math.hypot(motion.center[0] - origin[0], motion.center[2] - origin[2]),
           seconds: (frame.tick - startTick) / 120,
         };
-        current.textContent = `${motion.speed.toFixed(2)} m/s · ${latest.distance.toFixed(2)} m from start · ${latest.seconds.toFixed(1)} s`;
+        if (requested)
+          current.textContent = `${motion.speed.toFixed(2)} m/s · ${latest.distance.toFixed(2)} m from start · ${latest.seconds.toFixed(1)} s`;
       }
       const boundary = mode === 'build' ? null : machineBoundary(frame);
       warning.textContent = boundary?.message ?? '';
