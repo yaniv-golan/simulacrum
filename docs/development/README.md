@@ -492,7 +492,12 @@ canonical report non-green before runtime checks or lock waiting; failed admissi
 replaces an older pass even when no child starts. Local, merge, final and native-qualification completion
 CLI runs wait up to thirty minutes. Focused unit/browser probes, builds and standalone
 CI wait up to five minutes; they retain the same serialization. The CLI prints the
-owner PID and elapsed/maximum wait on contention and every thirty seconds thereafter.
+owner PID, its declared intent (script or completion tier, integration destination and
+origin worktree when a candidate declared them) and elapsed/maximum wait on contention
+and every thirty seconds thereafter. A candidate that waited on an owner retains that
+owner's intent in its report under `windowReports[].value.contenders[].intent`. When
+the owner is a merge candidate for the same destination, stack on that integration
+branch instead of racing it (see [stacked integrations](#verify-a-change)).
 Queue time is separate from each check's execution budget. The completion wait covers the
 measured completion duration; it is not a FIFO queue and does not guarantee admission
 under an unbounded stream of contenders. Queued work records

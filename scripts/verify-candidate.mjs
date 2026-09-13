@@ -179,6 +179,21 @@ try {
             ...process.env,
             SIMULACRUM_LEAF_LEDGER: ledger,
             SIMULACRUM_VERIFICATION_ATTEMPT: attempt,
+            // Published to window contenders so a competing integration can stack
+            // instead of racing; origin is the integrating worktree, not the candidate.
+            SIMULACRUM_VERIFICATION_INTENT: JSON.stringify({
+              script: `verify-${tier}.mjs`,
+              tier,
+              origin,
+              ...(candidate.base ? { base: candidate.base } : {}),
+              ...(tier === 'merge' && options.incoming
+                ? {
+                    incoming: options.incoming,
+                    destination: options.destination,
+                    destinationName: options.destinationName ?? options.destination,
+                  }
+                : {}),
+            }),
             SIMULACRUM_VITE_CACHE_DIR: join(directory, 'cache', 'vite'),
             MINIFLARE_CACHE_DIR: join(directory, 'cache', 'miniflare'),
           },
