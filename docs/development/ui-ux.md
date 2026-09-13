@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"843f1a3d2175a4c246f1d083e27c179f786c7ea4b472ef8be446ee97261219c8","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"1ae41f6e0e92dd01766d89bd0259577058507eef7aa5808c2e0b845fba3e1d24","disposition":"still accurate","rationale":"No lesson, experiment, challenge or guided entry was added. Existing motor and Ball activities already cover the machine task; sound adds optional feedback and an explicit compact comfort disclosure. This follows the no-entry admission path and does not establish player comprehension or listening acceptance."} -->
+<!-- doc-review {"version":1,"fingerprint":"d47ffe30d4a9e74c8581ac4ae4c986bc7a076821503e3cfb70b945bd9bc4ca15","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"8b9e3fb2d2cb86ee36936664a90ebd8c5066e674570152394eedc5e0d03d9710","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch (e964001) with main at ab3d799: no entry. Lifecycle fixes, measurement endpoint labels and shader warmup add no player task, lesson, example or mechanical capability, and main's sound controls are optional comfort feedback covered by existing activities. Existing controls and explanations suffice; no comprehension or listening acceptance is established."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"7571b5f9df1acf1e13da3494e4112d5dd47ec2a12cb583460e16fe753559d71b","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"c14a98027664ad5b92c12d00ac360a210bcbe6c371031ca6f7f53556ff717370","disposition":"updated","rationale":"Documented the compact Sound toggle/settings icon, top-layer Volume popup, dismissal/focus behavior, default and zero-volume semantics, mounted-session preference, lifecycle silence and bounded denied-audio retry. Controls fit one compact row without displacing Try again or other machine actions."} -->
+<!-- doc-review {"version":1,"fingerprint":"2eb7bd9c8206682b377bbab0316c6496103bd7204b0817a824ca78d5d3973ba6","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"73bbb7367e037451e7fafacf46fa6b4b147b4bda6bbb38477a6047614c501c50","disposition":"updated","rationale":"The merged section keeps main's compact Sound toggle, Volume popup, dismissal, preference and denied-audio retry text and adds the performance branch lifecycle notes: hidden Measurements suppress formatting while accumulation continues, inspector readouts replace DOM only when formatted values change, and the running health hint refreshes in 30-tick bands after tick 120 and drops its cached diagnosis on blueprint, session, epoch or mode change (verified in refreshHealth/refreshLive). No surface is added or displaced; before-draw errors reuse the existing status message and pause the clock while draw scheduling survives for the recovery controls."} -->
 
 
 

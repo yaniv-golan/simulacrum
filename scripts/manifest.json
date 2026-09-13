@@ -6353,7 +6353,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "externalImports": []
     },
     {
@@ -6377,7 +6377,7 @@
         "vite"
       ],
       "consumers": [],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -6395,7 +6395,7 @@
         "verify-mirror-browser"
       ],
       "consumers": [],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -6415,7 +6415,7 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -6446,7 +6446,7 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -6484,7 +6484,7 @@
         "test/scene-editor.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
     }
   ],
   "experimentInputScopes": [
@@ -6759,7 +6759,7 @@
         }
       ],
       "consumers": [],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -6824,7 +6824,7 @@
           ]
         }
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "externalImports": [
         "node:crypto",
@@ -6873,7 +6873,7 @@
         }
       ],
       "consumers": [],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -6946,8 +6946,8 @@
           ]
         }
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
-      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -6998,8 +6998,8 @@
           ]
         }
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
-      "consumerSourceHash": "8ab078e39ed69ec1bd53f8f9d3d25b06f3046a384a8a8ee6a07e503259cd56d0",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "7b961140c9ba6587f1da7e15f1afcc4dcc239109fe3c22577670e062ddb4348a",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -7101,8 +7101,8 @@
           ]
         }
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
-      "consumerSourceHash": "8ab078e39ed69ec1bd53f8f9d3d25b06f3046a384a8a8ee6a07e503259cd56d0",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "7b961140c9ba6587f1da7e15f1afcc4dcc239109fe3c22577670e062ddb4348a",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7252,8 +7252,8 @@
           ]
         }
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
-      "consumerSourceHash": "f031da9b8d51816504cf47ff910478abeefc0418813b93962709c777653dc64d",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "cce10be15d1a647e676a1bb97a3c2d89c3f0b7ba98876dfd225c3b73a5fb5300",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7455,8 +7455,8 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
-      "consumerSourceHash": "205f05cc9d0d11c8df517e2763aaacb5d4ecd7c0c54909be9ea7eb2e87e79706"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "92122e54717fdea18931da2c871567662054a41cb7e8b6d4566819ed2c501614"
     },
     {
       "checks": [
@@ -7472,8 +7472,8 @@
           ]
         }
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
-      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -7537,8 +7537,8 @@
           ]
         }
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
-      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -7596,8 +7596,8 @@
           ]
         }
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
-      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -7627,8 +7627,8 @@
           ]
         }
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
-      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -7768,8 +7768,8 @@
           ]
         }
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
-      "consumerSourceHash": "ca8e1ac60acdbd77825baa5ce33bea98182b03fc31bf406479400d74aaa34fd5",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "5e382c3a91be0f38314a836a9ffbc5edb2f5f67ea06b4aee8a20da610749ae10",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -7857,8 +7857,8 @@
           ]
         }
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
-      "consumerSourceHash": "8ab078e39ed69ec1bd53f8f9d3d25b06f3046a384a8a8ee6a07e503259cd56d0",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "7b961140c9ba6587f1da7e15f1afcc4dcc239109fe3c22577670e062ddb4348a",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -8108,8 +8108,8 @@
           ]
         }
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
-      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -8180,8 +8180,8 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
-      "consumerSourceHash": "55aeaf707649dfc931fc7ea141fbf2e3c07786cb42b1f013e394c85e43f9f2ed"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "d0e99f6f34c4a393c107ef1dd687c90076720cc7c230999fd3d0b067896a1190"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -8218,8 +8218,8 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
-      "consumerSourceHash": "55aeaf707649dfc931fc7ea141fbf2e3c07786cb42b1f013e394c85e43f9f2ed"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "d0e99f6f34c4a393c107ef1dd687c90076720cc7c230999fd3d0b067896a1190"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -8245,7 +8245,7 @@
         }
       ],
       "consumers": [],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -8284,7 +8284,7 @@
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "readFile(file)",
@@ -8330,7 +8330,7 @@
         "test/playtest-server.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "readFileSync(join(this.root, id, 'envelope.json'), 'utf8')",
@@ -8366,7 +8366,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "ca8e1ac60acdbd77825baa5ce33bea98182b03fc31bf406479400d74aaa34fd5"
+      "consumerSourceHash": "5e382c3a91be0f38314a836a9ffbc5edb2f5f67ea06b4aee8a20da610749ae10"
     },
     {
       "entrypoint": "scripts/verify-feedback-flow.mjs",
@@ -8383,7 +8383,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "new URL(req.url, 'http://localhost')",
@@ -8444,7 +8444,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "new URL(req.url, 'http://localhost')",
@@ -8498,7 +8498,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "9bc4a8132e6a838d6a1884496b7a5e89947bf12d81fa49292d3ae454e5714263",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "readFileSync(file)",

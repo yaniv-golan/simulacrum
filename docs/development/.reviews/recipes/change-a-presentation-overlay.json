@@ -31,7 +31,7 @@
     "src/presentation/thumbnail-queue.mjs": "55df521548db6602b874dc4a219ff54f9bf4b4a831b171265bee25d9e80c211a",
     "src/model/connection-test-paths.mjs": "97047f22e52f4ba5cf5dd71095c6824f4ade4750f3e33ed29533b9f5c7ff84c3",
     "src/presentation/connection-test.mjs": "e7fd59d6e161650a014681589c2116e778dfe1bd4185e1c14e5d4547eff41574",
-    "docs/development/architecture.md#trace-an-edit": "a757f03bf746967a642497b2d0c5074c8cb82f27b90713482c97d29e19bfb620",
+    "docs/development/architecture.md#trace-an-edit": "6658ccd5838fdbb935fdec2cc7fb028e6267271bc1092e9637375712d5dc652c",
     "test/connection-render.test.mjs": "34e6f970732a53be157e05558b21aa21d22447c0611b96b974ea9754d712679d",
     "src/model/assembly.mjs": "bc19854627eb237e40baf3b3abfadde6d156cd47b463f54c888f14be61be38ad",
     "src/model/blueprint.mjs": "3628ea60289dfa9861b827738fc6573517d377a248d3ab230b9f98ad87f9a883",
