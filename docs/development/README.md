@@ -296,7 +296,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"1b04bcd0a8bf9894e08c2dba101ddaa8409b7f3e75afc562b1b96f1c20e9180c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"4bb48c281ccf1ebfcd58b2c6cce52022bafb80ced15182d390e3895301a99eb3","disposition":"still accurate","rationale":"Four metadata scope rows (browser-evidence, app-fingerprint, source-identity, module-graph) refreshed only their consumer source hash after the mechanical-audio check changed its frame batching; the review was applied with passing invariant-control witnesses, and read expressions, classifications, exclusions, roots and coverage rules are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"bed5b7a07ce306e7b58f7c302737f7326b0dc70b38bfd9cc08e6888bf53a648c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"4ea05d5de6efdcc03c97986c67fb50dde5e320e5a845a7d13f5df1ba7a10be3e","disposition":"still accurate","rationale":"Thirteen metadata scope rows refreshed hashes after verify-remote-playtest changed its feedback-phase motor placement (snap off, explicit coordinates, part-count assertion); the verifier's own reads, dependencies, external imports, consumers, roots and checks were verified unchanged in the proposal and the review was applied with passing invariant-control witnesses. Selection, scheduling, exclusivity and coverage rules are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -545,7 +545,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"ae0c323a9c33f0dd15545423546059c0599afb1990bd617ef27fc4ab84c2486c","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"f645955a7feb6bd61c7b9ffc77e571e64ca91e9b0f83b341b23d0f007764a917","disposition":"still accurate","rationale":"The manifest change is a consumer-hash refresh applied through browser:scopes with witnesses; candidate capture, isolation, attempt ownership, origin matching and the merge-scope preflight that rejected the stale registry all behave as documented."} -->
+<!-- doc-review {"version":1,"fingerprint":"a353301317683638f824cfcd3d26502aae820e1c098c2a59ca8b321827780fa6","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"fcde52deeafb3685545e50b006f0ead969f8d6ce853faf6f7adeebb687f241b5","disposition":"still accurate","rationale":"The manifest change is a source/consumer hash refresh applied through browser:scopes with witnesses; capture, isolation, attempt ownership, origin matching and the registry preflight that gates capture behave as documented."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

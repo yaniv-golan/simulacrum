@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"d2f980c1da30c06e1f61499abed679c0697d78cd1ebb81340cfd62a2a4e16dad","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"95d938af044e90042c1ec12d524ac8b22153d03ca9533bddda2e3db30040b95e","disposition":"still accurate","rationale":"The manifest delta is the consumer-hash refresh for the mechanical-audio check's frame-batching change; no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"f4ca9b868b9608bd69119c98428d0c92c94d5a83a84fc9e374e08a7770f26df4","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"0590bb543ad110b2e1cea6f30e34e197d276908c49d43e9682d512860e3e56e3","disposition":"still accurate","rationale":"The remote-playtest verifier now authors its feedback-phase motor at an explicit free point instead of a snap-dependent catalog placement, and the manifest carries the resulting hash refresh; no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
