@@ -8,7 +8,7 @@
     "src/model/observation.mjs": "a7f5f8d48b331921bbef3ec1b321bf078ba800cf4b4020a76f9b0a235899239c",
     "src/model/sensors.mjs": "e1cc067189f8f6c5e7b0bec99373647f5bbae8500fc9eabb6ca92518e56a0ce2",
     "src/model/blueprint.schema.json": "5e59665c9ca3c8b944cbd2305bebcb73feb4702b044672cf9da223b1d64a5765",
-    "src/model/blueprint.mjs": "7c12c10515ccce1135828a24347bce90cab0cf04ce63c6db94e4e204eebf9a1b",
+    "src/model/blueprint.mjs": "b0b6b0b4ff08d139067ae1a79a2afa3311dccb6b1d6556ae427bce715eb1695b",
     "src/model/environment.mjs": "974c3e02806475c7c634d798fa3f99ca82925ec9ab0051fd5f05f7dcb3d08d00",
     "src/model/generated/blueprint-validator.mjs": "5e67902e01e8eb5222e48ca223eb42e349268e73af69440e8598640a9a92d188",
     "src/model/geometry.mjs": "6628f76885c40cd8788ac50cf4fdde44cee827472aaea673b16343512e6e2283",

@@ -507,7 +507,7 @@ work must check destination index, tracked and untracked content, not merely HEA
 window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
-<!-- doc-review {"version":1,"fingerprint":"668860bec62a4a556a6d552eb6402a25836ec1403cd1b7998944475c2866b518","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"13fd899915c4bb373fc612d29d1e1aa4f0d5190f058f97dc9f8b8ed9dac108ef","disposition":"still accurate","rationale":"Scene and catalogue fixture changes are captured as ordinary candidate source bytes. The isolated capture, source drift and two-branch integration requirements remain accurate."} -->
+<!-- doc-review {"version":1,"fingerprint":"399b734ec270e63be3ea6d9a24f30a71aea9dce1eae5d6e31278b8e06c3a5878","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"35608bec9e59598f6cac2216b0c9339d54fac6aea791fa811105572761052684","disposition":"still accurate","rationale":"Scene and catalogue fixture changes are captured as ordinary candidate source bytes. The isolated capture, source drift and two-branch integration requirements remain accurate. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

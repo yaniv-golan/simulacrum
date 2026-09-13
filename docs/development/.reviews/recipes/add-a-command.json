@@ -5,7 +5,7 @@
     "package.json": "6edb48593a61fb710edc6322958c53fc4bb2c8c2e8039daecb99e13117f7762a",
     "src/core/workshop.mjs": "a578e4e340eeb4ba2409c18cbdb53693ea49769c03f4b52b078d84ac02982ade",
     "src/model/assembly.mjs": "7ec616bb66c264bd358f664d736928c916ba856eae7b95d9540c6d817e16c280",
-    "src/model/blueprint.mjs": "7c12c10515ccce1135828a24347bce90cab0cf04ce63c6db94e4e204eebf9a1b",
+    "src/model/blueprint.mjs": "b0b6b0b4ff08d139067ae1a79a2afa3311dccb6b1d6556ae427bce715eb1695b",
     "src/model/boundaries.d.ts": "e0cc414dd6368bcb6eab166496d0c0ac06d5ef1cb9ac681fbf5e38c3602eb007",
     "src/model/catalog.mjs": "3ed106f7330e0083c7fe40b9e9155bc1e0a37a174d5d30c5751fbfbf730ae5a4",
     "src/model/compile-body.mjs": "890a315066c545be2f61c270c85d467f1b6c3463b212e716b8ae442174a07967",
@@ -55,7 +55,7 @@
     "test/contracts/editing.mjs": "7a0ceb94b3009b0a3144e30fd5d6ba4d1418d7d706a3b8fc3a8c89ce0b8b2122",
     "test/editing-contracts.test.mjs": "ad3fa6e2a24564c8a928bbabe6135312f16e57be081eb4d3b0eef3570add5604",
     "test/environment.test.mjs": "7e2fb38dcecb9769cab31e6626dd56a87334d7ae7d6cf29b3352b3390380b79c",
-    "test/scene-capacity.test.mjs": "7113cba8f14999ccb95594078e3e69f2803453e78dd0086e211561ad03f85301",
+    "test/scene-capacity.test.mjs": "d38447c182332493a8545c8b05bde0d7c635a8a845b13591783b30958624e3de",
     "test/scene-preservation.test.mjs": "6b2e4ec43022f09212ba7df56f562bfe19e9904daf7b7a5221829a662a5bf4c1"
   }
 }

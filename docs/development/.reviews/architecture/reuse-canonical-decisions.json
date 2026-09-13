@@ -10,7 +10,7 @@
     "src/model/sensors.mjs": "e1cc067189f8f6c5e7b0bec99373647f5bbae8500fc9eabb6ca92518e56a0ce2",
     "src/model/transforms.mjs": "ada01686d473615fbf1571b864972c26a1b58c357529efa95dafc97ab245351e",
     "src/model/contact-properties.mjs": "7d6059e85be6bab1ca5b2cdfd83184de13a6dc90f14ea2d298ba58942b023339",
-    "src/model/blueprint.mjs": "7c12c10515ccce1135828a24347bce90cab0cf04ce63c6db94e4e204eebf9a1b",
+    "src/model/blueprint.mjs": "b0b6b0b4ff08d139067ae1a79a2afa3311dccb6b1d6556ae427bce715eb1695b",
     "src/model/environment.mjs": "974c3e02806475c7c634d798fa3f99ca82925ec9ab0051fd5f05f7dcb3d08d00",
     "src/model/generated/blueprint-validator.mjs": "5e67902e01e8eb5222e48ca223eb42e349268e73af69440e8598640a9a92d188",
     "src/model/learning-model.mjs": "8a236b12e7e2afc838be6e8bd28613c642cafd05a73dcc4c52d491292d2ef084",

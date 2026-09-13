@@ -436,7 +436,7 @@ export function createWorkshopView(
     pendingExample = null;
   });
   async function openExample(entry) {
-    if (frame.metadata.mode !== 'build' && !entry.action) {
+    if (frame.metadata.mode !== 'build' && !entry.action && entry.command?.type !== 'new') {
       exampleMessage.textContent =
         'Return to Build before opening an example. Your current machine is unchanged.';
       return;
@@ -457,7 +457,7 @@ export function createWorkshopView(
     partsHeading.focus();
   }
   function chooseExample(entry, trigger) {
-    if (frame.metadata.mode !== 'build' && !entry.action) {
+    if (frame.metadata.mode !== 'build' && !entry.action && entry.command?.type !== 'new') {
       exampleMessage.textContent =
         'Return to Build before opening an example. Your current machine is unchanged.';
       return;

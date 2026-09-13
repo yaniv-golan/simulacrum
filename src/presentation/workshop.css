@@ -3905,3 +3905,9 @@ h3 {
 .catalog-connection {
   grid-column: 1 / -1;
 }
+
+/* Scene authoring replaces the catalog and owns scrolling of its complete object list. */
+.parts-panel.scene-editing {
+  display: block;
+  overflow: auto;
+}

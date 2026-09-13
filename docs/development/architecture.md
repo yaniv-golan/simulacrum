@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"1106ca499266bb51d9f07b4f696ee11e6b6bb13da332eabe94e01c325771e0a2","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"aa1c5bcb8bb2863462e629aa29c5704423bc4aeedc89e74b339f2e2a8c94aad5","disposition":"still accurate","rationale":"Runtime v1 still owns clocks, state and replay after scene environment schema additions; the manifest remains milestone and check authority."} -->
+<!-- doc-review {"version":1,"fingerprint":"0ed588f9b9fbc2ddeda79f7eb58076c2132452e5f7e532a60ca1200d89ff0492","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"6bcfbef2098af47c76d1eb1f90ce4b5a076f62d4cf2b33056431dce3f1f951d3","disposition":"still accurate","rationale":"Runtime v1 now explicitly counts distributed rope nodes in the shared body limit. Contract, layer and manifest ownership remain unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"298b392d42ac536399fb08e2fe60fb04b8158a31052c07da076c24dce7b9d057","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"b76929e2899e026f61775a3dd2f1131a7b739daa7876c19518c89336d478e691","disposition":"still accurate","rationale":"The retained scene paragraph names model geometry normalization, independent persistence, shared proposal lifecycle and core history. Main catalogue and feedback owners are preserved beside these scene owners."} -->
+<!-- doc-review {"version":1,"fingerprint":"dc4712e6931d27cda0fce93a62ebccbffd5061050997481a0f737309fa90d4a6","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"91d8769deb3a4854f823e27628a8610efd47118f56c8fca6cf2e0337c54dfd54","disposition":"still accurate","rationale":"New retains document-replacement admission while paused; confirming it still uses the core and clears scene proposals only after success. Scene geometry, catalogue placement and feedback retain their stated owners."} -->
 
 
 
@@ -102,7 +102,7 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"6469e1eae0d68a0f95379a1d550bd7afb4c335d74f619225b8545688abb2cce7","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"a02443b208987e0c2cf94f7569854508e8cb95f798998005eb3a27e7d21005c4","disposition":"still accurate","rationale":"Scene descriptors reuse canonical transforms and contact properties; replacement uses existing core cursor and history ownership. The table continues to identify the actual reusable owners."} -->
+<!-- doc-review {"version":1,"fingerprint":"c9dc36ca8edd3b804f9083ec764d72ce47cc1cbd33946630910bbb6fc7751b6a","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"951b7d945ea3714313e9d8bc523b525834e8f1909c18cc9ab76896aa1cbf2cb6","disposition":"still accurate","rationale":"Scene descriptors reuse canonical transforms and contact properties; replacement uses existing core cursor and history ownership. The table continues to identify the actual reusable owners. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
 
 
 
@@ -156,7 +156,7 @@ Ground contact and workshop motion are not Course qualification.
 
 
 ## Shared sensing and behavior authoring
-<!-- doc-review {"version":1,"fingerprint":"f5d253066ed6ca6b981aae8e129be94fec5304e314c1f7edb4f06a33418a56ee","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"85d0e02834efd9cb815c456e4626f56cf58d00d428756e284156f20c7cb18ebf","disposition":"still accurate","rationale":"Scene colliders append outside machine mappings; scene preservation tests confirm machine sensor scope and metrics remain machine-owned. No controller or observation sampling owner changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"64f105b388fb37ad6c9769913b87de6d594ad8a338007dbd3ef06d8300054689","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"4a8715d0352ef2487d5c43a0262c77671e4f6871fcc2fdc425079ec75fd41b4c","disposition":"still accurate","rationale":"Scene colliders append outside machine mappings; scene preservation tests confirm machine sensor scope and metrics remain machine-owned. No controller or observation sampling owner changed. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

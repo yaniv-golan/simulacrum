@@ -267,6 +267,11 @@ try {
         );
         input.files = transfer.files;
         input.dispatchEvent(new Event('change', { bubbles: true }));
+        // Confirm the requested replacement in the same pending-retry turn.
+        // Selecting a file alone only opens the protection dialog.
+        [...document.querySelectorAll('button')]
+          .find((button) => button.textContent === 'Replace without saving')
+          .click();
       });
       await page.waitForFunction(
         (epoch) => window.workshopProbe.observe().cursor.epoch > epoch,

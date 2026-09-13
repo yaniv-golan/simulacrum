@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"706dd7c26ad44740c84192775e837b05b03cf379624ec8a3b836a5ed27a5c3b4","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"4af48bd4d20cefb264d9b32f9e0d3eee7fe173dfb2e319bbc765c3f63980430f","disposition":"still accurate","rationale":"Scene solids are environment data, not catalogue parts; existing part schema, materials, geometry and compiler recipe remains valid with the merged rope and latch additions."} -->
+<!-- doc-review {"version":1,"fingerprint":"5cf4683729547b1ca1442ec3a0303529095f36d16a6a6ebaddbd55b93daae7c4","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"f9df1a37da5629eb3e20ec29806f4b6f0642058f6b8a8d3076b74b98f05ce61f","disposition":"still accurate","rationale":"Scene solids are environment data, not catalogue parts; existing part schema, materials, geometry and compiler recipe remains valid with the merged rope and latch additions. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -66,7 +66,7 @@ material choices, conflict rejection and ordinary editing history.
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"b338e73cc7040a9244dc0b68233bff010dc01699aa6defb30042ab88f5926a37","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"1a6ac09cc7f6f77a829a624b6950622f9ebab0e828cf6b22a0712c1a8588a6fe","disposition":"still accurate","rationale":"The section explicitly documents replace-scene expectedCursor, whole-workshop compilation, chronological history, capacity rejection and continuation witnesses."} -->
+<!-- doc-review {"version":1,"fingerprint":"070eb27255f3deb69129862908f48841d64c7cf3d00e1822c627091bfd9f8db4","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"5e1a4f4a28f0e60fc61992db4b0b26f17622c8410fa58cac2063c2c2db0d5168","disposition":"updated","rationale":"Added the combined capacity definition covering distributed rope nodes as well as machine, scene and ground bodies. The new red-to-green boundary witness verifies exact 4097 admission and overflow rejection."} -->
 
 
 
@@ -87,12 +87,13 @@ and the existing chronological history. The environment controls in
 geometry, authored scene identity, aggregate capacity, rejection and continuation.
 [Capacity transactions](../../test/scene-capacity.test.mjs#source) use a physically clear
 nearly-full workshop and retain Undo through replacement, duplication, import and load rejection.
+Combined capacity includes machine bodies, every distributed rope node, compiled scene solids and ground.
 [Scene preservation](../../test/scene-preservation.test.mjs#source) covers capture round trips,
 legacy visual events, current checkpoint continuation, machine measurements and sensor scope.
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"3ae3701f43cf3b945c27d14534cb58a3d508326e04b0c9a4d2ec0131f648b82c","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"27dedd9f5cc3265000c5bb676a2545145a138e1e4fd7854c122e0dbfb569eaf8","disposition":"still accurate","rationale":"Scene tools retain presentation-only proposals and ordinary core commitment. Fixture uploads now confirm replacement, preserving the existing cancellation and native input requirements."} -->
+<!-- doc-review {"version":1,"fingerprint":"be7a0d74b51a209901c0271db4172fc8e41916044f2b81eee9083f5da1e3f596","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"ea7083040fabba621040fa2611f1bcf907dc421257170e00bfe1a3e77a4ecc32","disposition":"still accurate","rationale":"Scene tools retain presentation-only proposals and ordinary core commitment. Fixture uploads now confirm replacement, preserving the existing cancellation and native input requirements. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -141,7 +142,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"6463cbca89de1234ee9a075ebd3235eeaaf40e5fa2106817eb65077e3e72ec24","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"8515cc8100e987baa1576da751646b9d8aea86653214ca55f412f0c2fad611bd","disposition":"still accurate","rationale":"Scene environment and command additions do not grant diagnostics simulation authority; completed observations and model-owned explanations remain the correct boundary."} -->
+<!-- doc-review {"version":1,"fingerprint":"be7782950a6e319834eda7e39594d73b5e4d2b2e94003a2fda8bb8bf831c5ad9","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"5aec18709517f9db9a925850b88850239e9fbe4617733c5cd445adab886b83f4","disposition":"still accurate","rationale":"Scene environment and command additions do not grant diagnostics simulation authority; completed observations and model-owned explanations remain the correct boundary. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
 
 
 
@@ -171,7 +172,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"5c040d02d4dd065f7b7b160f5bfb08c22d82df526eadc9853f7f2f12b0209974","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"ad87f924231276b209dd738446ca1ecf54add7318b8d15cdf4ff51cf12218dac","disposition":"still accurate","rationale":"Authored scene descriptors and normalized geometry still enter through the compiler and physics door. Existing analytical, conservation and deterministic checks remain required."} -->
+<!-- doc-review {"version":1,"fingerprint":"7adef437e7591b83db73875387c2815fe35b4379eeb3d74c6cb8d99cd2bbad98","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"69a0e7651b8c586eac8a93d716355ea517135105d9719d3e7b4596195eeb9980","disposition":"still accurate","rationale":"Scene catalogue scrolling is a presentation-only layout override; compiled shapes, capacity, physics laws and measurement budgets are unchanged."} -->
 
 
 
@@ -418,7 +419,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"a0eda89fe8cd659376ee238e57e07ea34446dbad0110addc5bfbfeb742fdc09a","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"6bee524a9d3ddd216e40693b415691520170836e77da2b88453a5134d0551a55","disposition":"still accurate","rationale":"Assembly insertion now shares document-proposal lifecycle with scenes; independent snapshots, exact result reconciliation and atomic core commands described here remain implemented."} -->
+<!-- doc-review {"version":1,"fingerprint":"e6530949baa0d9264c5926af6c231b38890fa08c479773c247f6864b2b77677b","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"7079db904fcf3b1b820205c2c11458895e4dbbdfbf98784286b8565cbd047da6","disposition":"still accurate","rationale":"Assembly insertion now shares document-proposal lifecycle with scenes; independent snapshots, exact result reconciliation and atomic core commands described here remain implemented. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -511,7 +512,7 @@ receiver tuning, saved settings, named targets, bounded navigation and diagnosti
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"66b4cafe2dfb713226c1ed3065834aa37706fa970ccf8702eed1e0ebd0445bc6","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"8897ec9e9cca7906de6be9fbe2b6b1fc2a894f801748deaa9e7586468f71715c","disposition":"still accurate","rationale":"Shared primitive reconstruction adds canonical scene and recording geometry while main part finishes and rope overlays retain their existing rendering-only ownership."} -->
+<!-- doc-review {"version":1,"fingerprint":"a247e0116f00bf20f07ebc67850e378f695cd98f056306ca060867f917867172","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"67eea2ffff5cbe213e5271ea8f86550c6ed567e0f5d7dd3a7c192e3e683ca28b","disposition":"still accurate","rationale":"Shared primitive reconstruction adds canonical scene and recording geometry while main part finishes and rope overlays retain their existing rendering-only ownership. Rope-node capacity is now rejected by blueprint admission before compilation; no runtime owner or command pathway changes."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing

@@ -2,7 +2,7 @@
   "version": 1,
   "dependencies": {
     "src/application/workshop-app.mjs": "1f8501e81cb2f43032c895d4c871008a794fc0fb81ff6771ceedc9d5b4eb130c",
-    "src/presentation/workshop-view.mjs": "68f2dfbeec0d0205d55453e10991f124ab9f87c872d729da802f4581836c22ea",
+    "src/presentation/workshop-view.mjs": "9efa3a89d1e81817c6dd3516a303675f62e1ef99797a04d887f8d2c678bf1b6f",
     "src/presentation/parts-browser.mjs": "153d01758b040a471eb43074e0be7b35277f7a4fcfed16ab14a17e9320753e42",
     "src/presentation/part-search.mjs": "1ee1e0c7c9506cf41a5b2e136a7c72ab01be09c663b221ff43ad523483cbf169",
     "src/presentation/part-placement.mjs": "87613e497aa664f702d05cedbef7b19297a115acf497f7b2e70b458be3dc8db5",
@@ -27,7 +27,7 @@
     "package.json": "6edb48593a61fb710edc6322958c53fc4bb2c8c2e8039daecb99e13117f7762a",
     "src/core/workshop.mjs": "81a86962f9c863c247de54a9aeef85809cfd4654ea6c45f1a5bb80318ba30f57",
     "src/model/assembly.mjs": "7ec616bb66c264bd358f664d736928c916ba856eae7b95d9540c6d817e16c280",
-    "src/model/blueprint.mjs": "7c12c10515ccce1135828a24347bce90cab0cf04ce63c6db94e4e204eebf9a1b",
+    "src/model/blueprint.mjs": "b0b6b0b4ff08d139067ae1a79a2afa3311dccb6b1d6556ae427bce715eb1695b",
     "src/model/compile-body.mjs": "890a315066c545be2f61c270c85d467f1b6c3463b212e716b8ae442174a07967",
     "src/model/connection-graph.mjs": "8b8251c79cc1c3aaa86656b06e7dede0a0e962fd846175f4e871883d700c21f7",
     "src/model/contact-properties.mjs": "ff72d2cfda20cd6a600395ba0c736db36fa944e5944064521c7e807bd8c583e3",

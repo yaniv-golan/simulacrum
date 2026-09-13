@@ -11,7 +11,7 @@
     "src/model/sensors.mjs": "e1cc067189f8f6c5e7b0bec99373647f5bbae8500fc9eabb6ca92518e56a0ce2",
     "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
     "src/model/assembly.mjs": "7ec616bb66c264bd358f664d736928c916ba856eae7b95d9540c6d817e16c280",
-    "src/model/blueprint.mjs": "7c12c10515ccce1135828a24347bce90cab0cf04ce63c6db94e4e204eebf9a1b",
+    "src/model/blueprint.mjs": "b0b6b0b4ff08d139067ae1a79a2afa3311dccb6b1d6556ae427bce715eb1695b",
     "src/model/compile-body.mjs": "890a315066c545be2f61c270c85d467f1b6c3463b212e716b8ae442174a07967",
     "src/model/connection-graph.mjs": "a50d7d1c555bf42fa0bfe57a6030ba51c1d44cea7154c58a56453d06e3c291f6",
     "src/model/contact-properties.mjs": "19592491209b074cb7238822a733d81ae1daeb7b0989201c19085e68c7aff8e1",

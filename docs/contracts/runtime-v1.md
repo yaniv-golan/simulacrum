@@ -64,7 +64,7 @@ outside machine membership, metrics and assembly capture. Matching face-adjacent
 boxes with identical cross-section, orientation, density and contact properties
 compile as their exact rectangular union, removing internal collision faces.
 Individual objects remain independently editable and visible in recording review.
-The combined machine, scene solids and floor cannot exceed 4097 physics bodies.
+The combined machine bodies, distributed rope nodes, scene solids and floor cannot exceed 4097 physics bodies.
 Recording remains a separate subset of at most 512 machine parts, subject to its
 unchanged event and session byte limits.
 

@@ -39,7 +39,7 @@
     "scripts/browser-evidence.mjs": "eb8d51cd5bb1d1f29c1696271c55c5353ba548d0b05e2dbaa4c209b17be8568f",
     "scripts/browser-session.mjs": "a890135f24f4e2be920a4f39b7bedfa9464154d55508c29cee717048adc36f05",
     "scripts/catalog-browser-actions.mjs": "b7307b5a3f43464b16b2e4f75829ceb1bfd45d146ef09472bb773fe0691a4ce3",
-    "src/model/blueprint.mjs": "7c12c10515ccce1135828a24347bce90cab0cf04ce63c6db94e4e204eebf9a1b",
+    "src/model/blueprint.mjs": "b0b6b0b4ff08d139067ae1a79a2afa3311dccb6b1d6556ae427bce715eb1695b",
     "src/model/boundaries.d.ts": "e0cc414dd6368bcb6eab166496d0c0ac06d5ef1cb9ac681fbf5e38c3602eb007",
     "src/model/catalog.mjs": "3ed106f7330e0083c7fe40b9e9155bc1e0a37a174d5d30c5751fbfbf730ae5a4",
     "src/model/control-bindings.mjs": "39336999d8130b5ae6cdb0e0074e59b076896f6969da5009fca4a42ba569b1ad",

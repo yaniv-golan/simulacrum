@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"141b86ce94771f6d90bbec69d9cc7225b156268d3591b964301094ba6a91c6c5","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"89c9d9ad0472525c21990b036032beb17631e4d70046a3eae5bc9bc97379f488","disposition":"still accurate","rationale":"Scene authoring adds no lesson entry; the Environment context and requested scene library support construction while existing examples remain the learning surface."} -->
+<!-- doc-review {"version":1,"fingerprint":"1abecf7622e5b220bae0f3922c11c481cbb777ea6bdd319602c9f6c40cd3e5de","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"507e4c912a038df62a588abdf32d560576cbb07a71b1a70754cb025210bef7a8","disposition":"still accurate","rationale":"The New-mode repair and explicit file replacement confirmation introduce no learning entry and preserve the requested examples surface."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"07f2fc54bf35a617c5ec6406711ffeeb1a2018836e17960a6c013ff6a132171a","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"a5b244414ac6b975e5f7c49fbb60bd4f9bdaf489b5ead373ddfd45b44e783a36","disposition":"still accurate","rationale":"The retained Environment paragraph describes scene tools and pending Apply/Cancel, and replacement protection includes floor-only work. Main catalogue and footer feedback lifecycles coexist with scene context cancellation."} -->
+<!-- doc-review {"version":1,"fingerprint":"71471f67387473f07491acbdcd59f6161689473f76f15e87086adc6666573e28","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"2537e07a116bf3647df12ad9478dc4815bf86e5c959998d51ed4197a024b4e21","disposition":"still accurate","rationale":"The scene context now owns complete object-list scrolling independently of the catalogue rail. The narrow and zoomed browser journey confirms real object targeting, retained inspector actions and return visits without viewport interception."} -->
 
 
 
