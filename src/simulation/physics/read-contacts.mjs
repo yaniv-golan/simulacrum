@@ -145,10 +145,18 @@ export function readContacts(candidate, mapping) {
     });
     if (failed) throw failure;
   }
-  const ordered = rows.map((row) => ({ row, key: JSON.stringify(row) }));
-  ordered.sort(
-    (a, b) =>
-      a.row.a - b.row.a || a.row.b - b.row.b || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0),
-  );
-  return { intervalSeconds: DT, available, rows: ordered.map((item) => item.row) };
+  const keys = new Map();
+  /** @param {import('../../model/boundaries.js').ContactObservation} row */
+  const key = (row) => {
+    if (!keys.has(row)) keys.set(row, JSON.stringify(row));
+    return keys.get(row);
+  };
+  rows.sort((a, b) => {
+    const pair = a.a - b.a || a.b - b.b;
+    if (pair) return pair;
+    const ak = key(a),
+      bk = key(b);
+    return ak < bk ? -1 : ak > bk ? 1 : 0;
+  });
+  return { intervalSeconds: DT, available, rows };
 }

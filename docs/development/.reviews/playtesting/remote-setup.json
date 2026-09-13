@@ -32,7 +32,7 @@
     "src/model/generated/blueprint-types.d.ts": "ae90f0afac08e2a8a6b649f220042503844c8554b537e9b22255b8670605f79d",
     "src/model/generated/blueprint-validator.mjs": "526379014f7ec26368ca56d78c5648086b29c703fca43f2409e2237164cda7d5",
     "src/model/geometry.mjs": "6628f76885c40cd8788ac50cf4fdde44cee827472aaea673b16343512e6e2283",
-    "src/model/observation.mjs": "a7f5f8d48b331921bbef3ec1b321bf078ba800cf4b4020a76f9b0a235899239c",
+    "src/model/observation.mjs": "cc4f0cb5d0cb9078809a2b78d9d57cd83fdf16c9ad92045a7a86ac815f1e06ba",
     "src/model/sensors.mjs": "e873492e9e9e78d20f0bc6efcf3ab0c734e6eef9b01119b307d2052eed96ab71",
     "src/model/transforms.mjs": "ef7fda88bf4ab8777ded9839c7cdfb6c4d807174cafa76cedcccd75002eb103d",
     "src/presentation/capture-review-model.mjs": "c1e9a394bfb8b6ceca52d411c249c93ab750185406e540092b911298b50f621a",

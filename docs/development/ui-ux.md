@@ -24,7 +24,7 @@ more explanations fit. Spatial relationships often need a preview or diagram.
 
 ## Learning content policy
 
-<!-- doc-review {"version":1,"fingerprint":"b13c7e21979089b0ae40d8ffe4bdd76ec035961493c100820ef4542b431b18a8","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"87a9f188ca22844fdeee0d39c2fd8b31a1a34b2035600a411a44856b60d48e10","disposition":"still accurate","rationale":"Teaching decision is no entry. Thumbnail scheduling changes image readiness and resource lifecycle; the graphics browser fixture changes only how existing quality is exercised. Neither adds a lesson, example, experiment, challenge or contextual invitation. Existing mounting/power/receiver help remains sufficient; admission criteria and separation of automation from player evidence remain accurate. Authorable Scenes retains the admitted extend decision for the existing suspension comparison and no new lesson for scene editing. Load Cell remains no entry. Physical scene presets do not become instructional evidence merely by existing; comparisons still require matched scene, speed and measurement window."} -->
+<!-- doc-review {"version":1,"fingerprint":"d47ffe30d4a9e74c8581ac4ae4c986bc7a076821503e3cfb70b945bd9bc4ca15","dependencies":"docs/development/.reviews/ui-ux/learning-content-policy.json","dependencyDigest":"8b9e3fb2d2cb86ee36936664a90ebd8c5066e674570152394eedc5e0d03d9710","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch (e964001) with main at ab3d799: no entry. Lifecycle fixes, measurement endpoint labels and shader warmup add no player task, lesson, example or mechanical capability, and main's sound controls are optional comfort feedback covered by existing activities. Existing controls and explanations suffice; no comprehension or listening acceptance is established."} -->
 
 
 Learn & examples is a curated collection of things players can learn to do.
@@ -125,7 +125,7 @@ they do not automatically judge whether a new activity deserves admission.
 
 ## Current surfaces and lifecycle
 
-<!-- doc-review {"version":1,"fingerprint":"3257c33ab7de4507c5f0594caac612815a995efacfb5d89e798c94d7e1003f3f","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"dc7f765949a66bd4ad65e0d8f65c5b15f18340a971741005f04a73d365e09cab","disposition":"updated","rationale":"The merged Load Cell paragraph accurately extends the existing selected sensor inspector and requested help: sensor-controls labels signed axial force, attachment-force magnitude and invalid states; simulation/sensors projects the measured averaged vector onto local X and takes its magnitude; sensor-view uses the completed sensor pose for a fixed-length local +X A-to-B arrow, not magnitude. Part-search adds the Sensors category/aliases, while existing Rules/receiver controls own comparisons and explicit rearming. No permanent panel or lesson entry is added. Read the full surrounding lifecycle section and preserved main catalog, camera/layout, Rope, coupler, feedback/footer and draft recovery owners; those surfaces and actions are unchanged. Incoming Camera requested view/gallery, paused labels and placement return coexist with selected Load Cell inspector and incoming Lamp controls. Selection/disclosure lifecycle remains separate; no lesson was added. Revalidated after final thumbnail scheduling and spring witness closure: icons now populate asynchronously in their existing mounted regions; no action, persistent panel or selection lifecycle is removed. The integrated scene editor temporarily replaces palette/inspector content; its draft, apply/cancel, pointer/keyboard tools, camera exit and replacement preview remain within existing document ownership. Existing nondefault scene work is protected during New/open/example replacement, including zero-part scenes. Load Cell still adds selected inspector/help sensing, not another persistent canvas dashboard."} -->
+<!-- doc-review {"version":1,"fingerprint":"2eb7bd9c8206682b377bbab0316c6496103bd7204b0817a824ca78d5d3973ba6","dependencies":"docs/development/.reviews/ui-ux/current-surfaces-and-lifecycle.json","dependencyDigest":"73bbb7367e037451e7fafacf46fa6b4b147b4bda6bbb38477a6047614c501c50","disposition":"updated","rationale":"The merged section keeps main's compact Sound toggle, Volume popup, dismissal, preference and denied-audio retry text and adds the performance branch lifecycle notes: hidden Measurements suppress formatting while accumulation continues, inspector readouts replace DOM only when formatted values change, and the running health hint refreshes in 30-tick bands after tick 120 and drops its cached diagnosis on blueprint, session, epoch or mode change (verified in refreshHealth/refreshLive). No surface is added or displaced; before-draw errors reuse the existing status message and pause the clock while draw scheduling survives for the recovery controls."} -->
 
 
 
@@ -388,9 +388,17 @@ These finite fixtures are construction examples, not general contact qualificati
 Try again and Sound occupy the existing machine-controls area. Try again appears
 in Run/Paused and composes Build then Run, preserving authored edits, history,
 selection and camera while creating a fresh attempt. Duplicate requests are blocked
-until completion. Sound starts off, requires an explicit gesture and can be muted;
-contact-derived timbres symmetrically combine both authored materials and are illustrative. Visual motion remains readable without
-sound. Missing contact history establishes a new silent baseline. File opening and retry
+until completion. [Sound controls](../../src/presentation/sound-controls.mjs#source) keep one compact
+Sound off/on toggle and an adjacent settings icon beside Try again. The icon opens a small
+Volume popup above the controls without expanding the panel; Escape and outside clicks close
+it and restore focus. The range starts at 35%; 0% explicitly reads silent while retaining the
+on preference. Sound starts off on each mount and requires a gesture. Build, retry and file
+replacement retain preference; pause, hidden visibility, gaps and disposal silence existing
+voices. Unavailable audio stays off with a retry message. Volume and button keyboard input
+cannot drive receivers. Measured motor/travel and contact textures are illustrative; material
+impact timbres combine both surfaces symmetrically. Visual motion remains readable without
+sound. Learning admission: **no entry**; the existing motor and Ball experiments already provide
+the activity. Missing contact history establishes a new silent baseline. File opening and retry
 exclude one another before asynchronous reading or reset; rejected actions retain
 recording receipts. Retry does not
 reload a preset or move an individual live body to recover it.
@@ -413,6 +421,13 @@ not a general success criterion for a spring. The requested panel labels whole-m
 motion and provides a keyboard-accessible measurement explanation. Successful machine loading, including same-ID saved revisions, clears prior results;
 failed loads preserve them. Recovery warnings remain visible with
 measurements closed. No measurement is permission to invent physical causality.
+Closing Measurements suppresses formatting of hidden readings while completed-tick
+measurement accumulation continues. Reopening displays the retained window and
+current readings. Boundary warnings remain independent of this preference.
+Inspector readouts update their DOM only when formatted values change. The running
+health hint refreshes in 30-tick bands after tick 120 and invalidates its cached
+diagnosis when blueprint, session, epoch or operating mode changes.
+
 Machine controls and measurements share a bounded layout at the lower workbench edge.
 They sit beside one another where space allows and stack on narrower workbenches,
 with independently scrollable contents and a reachable controls disclosure. The shared

@@ -1,3 +1,7 @@
+import {
+  RENDER_SUBMISSION_METRIC,
+  FIRST_TICK_METRIC,
+} from '../src/application/render-submission.mjs';
 import { placeCatalogPart } from './catalog-browser-actions.mjs';
 import { browserArtifactPath } from './browser-artifacts.mjs';
 import { createBrowserEvidence } from './browser-evidence.mjs';
@@ -30,6 +34,9 @@ export function evaluateF2(cycles, { build } = {}) {
     for (const metric of cycle.metrics) {
       if (
         !Object.hasOwn(expectedKinds, metric.kind) ||
+        metric.metric !==
+          (metric.kind === 'run-first-tick' ? FIRST_TICK_METRIC : RENDER_SUBMISSION_METRIC) ||
+        metric.outcome !== 'completed' ||
         metric.machine !== cycle.machine ||
         metric.buildId !== build ||
         metric.timestampSource !== 'input-event' ||
@@ -77,6 +84,9 @@ export function evaluateF2(cycles, { build } = {}) {
   if (p95Ms >= 2000) throw Error(`F2 p95 ${p95Ms.toFixed(3)} ms must be below 2000 ms`);
   return {
     passed: true,
+    protocolVersion: 2,
+    reflectionMetric: RENDER_SUBMISSION_METRIC,
+    firstTickMetric: FIRST_TICK_METRIC,
     cycles: 10,
     samples: durations.length,
     p95Ms,
@@ -103,7 +113,11 @@ export async function qualifyWorkshop(
     appFingerprint: build,
     recordedAt: new Date().toISOString(),
     protocol: {
-      version: 1,
+      version: 2,
+      reflectionMetric: RENDER_SUBMISSION_METRIC,
+      firstTickMetric: FIRST_TICK_METRIC,
+      reflectionEndpoint:
+        'CPU renderer submission, not GPU or display completion; distinct from historical two-RAF samples',
       scene: 'default workshop ground',
       environment: BUILD_ENVIRONMENT,
       machine: 'Power Cell + Powered Motor + Grip Wheel, power and shaft connections',

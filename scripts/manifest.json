@@ -997,6 +997,17 @@
       "mergeSmoke": false
     },
     {
+      "id": "verify-render-lifecycle",
+      "script": "scripts/verify-render-lifecycle.mjs",
+      "execution": "exclusive",
+      "environment": "probe",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 45000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
       "id": "verify-camera-browser",
       "script": "scripts/verify-camera-browser.mjs",
       "execution": "exclusive",
@@ -1081,6 +1092,17 @@
       "tier": "browser",
       "smoke": false,
       "timeoutMs": 60000,
+      "ruleId": "runtime-contract",
+      "mergeSmoke": false
+    },
+    {
+      "id": "verify-mechanical-audio",
+      "script": "scripts/verify-mechanical-audio.mjs",
+      "execution": "exclusive",
+      "environment": "self",
+      "tier": "browser",
+      "smoke": false,
+      "timeoutMs": 180000,
       "ruleId": "runtime-contract",
       "mergeSmoke": false
     }
@@ -1511,6 +1533,10 @@
           {
             "path": "test/scene-preservation.test.mjs",
             "anchor": "authored scene capture, continuation, machine metrics and shared sensing retain their boundaries"
+          },
+          {
+            "path": "test/session.test.mjs",
+            "anchor": "periodic replay anchors export independent plain checkpoint bytes after two intervals"
           }
         ],
         "negative": [
@@ -5727,6 +5753,160 @@
       "qualificationBars": []
     },
     {
+      "id": "completed-state-reuse",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Cached physical reads retire when their physical state changes and cannot be mutated through public reads. Completed contacts feed the following sensor sample. Typed native response vectors preserve validated finite values and disjoint result views. Power publication is immutable; power-network receipt rejection preserves completed state and the pending allocation for retry without restore, including position validation. Session failure publication retains the previous completed power projection and records the failure bundle. Numeric body admission constructs and freezes owned arrays from finite primitives without trusting caller-owned trees.",
+      "owners": [
+        {
+          "path": "src/simulation/physics/world.mjs",
+          "anchor": "createPhysicsWorld"
+        },
+        {
+          "path": "src/simulation/physics/native-response.mjs",
+          "anchor": "readNativeResponse"
+        },
+        {
+          "path": "src/simulation/power.mjs",
+          "anchor": "createPowerNetwork"
+        },
+        {
+          "path": "src/model/observation.mjs",
+          "anchor": "immutableCopy"
+        },
+        {
+          "path": "src/model/observation.mjs",
+          "anchor": "immutableBodySample"
+        }
+      ],
+      "checks": [
+        "invariant-controls"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "unchanged door reads reuse native samples while impulse, step and restore invalidate them"
+          },
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "completed contact reads feed the next sensor sample without a second native scan"
+          },
+          {
+            "path": "test/native-response.test.mjs",
+            "anchor": "response adapter preserves typed vectors and owns disjoint result views"
+          },
+          {
+            "path": "test/power.test.mjs",
+            "anchor": "completed power reads are admitted immutable snapshots detached from later work"
+          },
+          {
+            "path": "test/power.test.mjs",
+            "anchor": "measured kick work determines driver loss and conserves the electrical allocation"
+          },
+          {
+            "path": "test/observation.test.mjs",
+            "anchor": "publication reuses admitted body trees and keeps retained observations immutable"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/physics.test.mjs",
+            "anchor": "unchanged door reads reuse native samples while impulse, step and restore invalidate them"
+          },
+          {
+            "path": "test/native-response.test.mjs",
+            "anchor": "response adapter preserves typed vectors and owns disjoint result views"
+          },
+          {
+            "path": "test/power.test.mjs",
+            "anchor": "power-network late receipt rejection preserves completed and pending state for retry without restore"
+          },
+          {
+            "path": "test/power.test.mjs",
+            "anchor": "session late power failure publishes the previous completed power and a failure bundle"
+          },
+          {
+            "path": "test/power.test.mjs",
+            "anchor": "completion rechecks an untrusted position receipt before committing its angle"
+          },
+          {
+            "path": "test/observation.test.mjs",
+            "anchor": "numeric body admission owns its arrays and rejects every non-finite or nonnumeric field"
+          },
+          {
+            "path": "test/observation.test.mjs",
+            "anchor": "immutable copies preserve data keys and reject non-data descriptors"
+          }
+        ]
+      },
+      "qualificationBars": []
+    },
+    {
+      "id": "completed-draw-order",
+      "qualificationBars": [],
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "The workshop draw loop advances the existing clock before GPU submission. Paused display callbacks do not advance simulation; restarting resets the wall-clock origin. Display reflection receipts identify completed draw cursors, and view preparation is measured separately from GPU submission. Equivalent blueprint replacements retain authored resources; content edits refresh them. Submission metrics identify their endpoint, reject historical F2 samples, and record timeout or disposal without a successful latency. A before-draw callback error does not terminate the view frame scheduler. Failed view preparation cannot submit a partial scene or publish a new completed draw cursor; a successful update restores submission.",
+      "owners": [
+        {
+          "path": "src/application/clock.mjs",
+          "anchor": "createClock"
+        },
+        {
+          "path": "src/application/workshop-app.mjs",
+          "anchor": "mountWorkshopApp"
+        },
+        {
+          "path": "src/presentation/workshop-view.mjs",
+          "anchor": "createWorkshopView"
+        },
+        {
+          "path": "src/application/render-submission.mjs",
+          "anchor": "createRenderSubmissionTracker"
+        }
+      ],
+      "checks": [
+        "verify-attachment-status",
+        "verify-spring-performance",
+        "verify-render-lifecycle"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/clock.test.mjs",
+            "anchor": "external display clock advances and reflects before drawing without owning another RAF"
+          },
+          {
+            "path": "test/render-submission.test.mjs",
+            "anchor": "submission metrics identify their endpoint and ignore an older completed draw"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/clock.test.mjs",
+            "anchor": "external display clock advances and reflects before drawing without owning another RAF"
+          },
+          {
+            "path": "test/render-submission.test.mjs",
+            "anchor": "a never-drawing or hidden window records one bounded incomplete sample and cancels its RAF"
+          },
+          {
+            "path": "test/render-submission.test.mjs",
+            "anchor": "dispose records cancellation of every pending measurement and clears timers and frames"
+          },
+          {
+            "path": "test/render-submission.test.mjs",
+            "anchor": "a wrong cursor remains an explicit superseded sample, never successful latency"
+          },
+          {
+            "path": "test/f2.test.mjs",
+            "anchor": "F2 v2 rejects historical, mixed endpoint and incomplete render-submission samples"
+          }
+        ]
+      }
+    },
+    {
       "id": "attachment-force-sensing",
       "ruleId": "runtime-contract",
       "dueAt": "M3b",
@@ -6022,6 +6202,157 @@
         ]
       },
       "qualificationBars": []
+    },
+    {
+      "id": "mechanical-audio-truth",
+      "ruleId": "runtime-contract",
+      "dueAt": "M3b",
+      "guarantee": "Mechanical audio consumes completed numeric motion and canonical compiled contact descriptors without simulation writes. Rotational and linear coordinates retain their units; missing data, unclassified rolling and zero or unknown friction cannot invent motion textures. Voice allocation, release, user-gesture generation and output amplitude are bounded. Human listening remains separate.",
+      "owners": [
+        {
+          "path": "src/application/mechanical-audio-adapter.mjs",
+          "anchor": "createMechanicalAudioAdapter"
+        },
+        {
+          "path": "src/presentation/mechanical-audio-model.mjs",
+          "anchor": "createMechanicalEvents"
+        },
+        {
+          "path": "src/presentation/mechanical-audio.mjs",
+          "anchor": "createMechanicalAudio"
+        }
+      ],
+      "checks": [
+        "invariant-controls",
+        "verify-mechanical-audio"
+      ],
+      "controls": {
+        "positive": [
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio contact kinematics distinguish rolling, sliding, common motion and normal spin"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "linear coordinate reads anchor motion and rotating guide with distinct missing measurement"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio adapter resolves compiled body provenance and sums physical pairs once"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "mechanical episodes reject gaps, chatter, stale ticks but retain strong rapid reimpacts"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "drive and friction envelopes follow measured coordinates, never requested movement"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "spatial mix and voice selection are bounded and keep audible incumbents"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "mechanical audio stale enable cannot override mute, later enable or disposal"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "adapter keeps linear force units and excludes every noncolliding rope node"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio reads and batching leave real simulation projections and saves unchanged"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "renaming and body reordering preserve acoustic descriptors and symmetric material pairs"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "a new supported witness strikes within an existing pair while smooth rolling stays quiet"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio device graph failure disables sound without escaping into the workshop clock"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "cached completed transforms retain rotated witness velocity and reject invalid bodies"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "a browser activation promise that never settles returns to Sound off for retry"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "measured separation preserves a rapid bounce of the same impulse inside chatter grace"
+          }
+        ],
+        "negative": [
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio contact kinematics distinguish rolling, sliding, common motion and normal spin"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "linear coordinate reads anchor motion and rotating guide with distinct missing measurement"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio adapter resolves compiled body provenance and sums physical pairs once"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "mechanical episodes reject gaps, chatter, stale ticks but retain strong rapid reimpacts"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "drive and friction envelopes follow measured coordinates, never requested movement"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "spatial mix and voice selection are bounded and keep audible incumbents"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "mechanical audio stale enable cannot override mute, later enable or disposal"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "adapter keeps linear force units and excludes every noncolliding rope node"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio reads and batching leave real simulation projections and saves unchanged"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "renaming and body reordering preserve acoustic descriptors and symmetric material pairs"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "a new supported witness strikes within an existing pair while smooth rolling stays quiet"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "audio device graph failure disables sound without escaping into the workshop clock"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "cached completed transforms retain rotated witness velocity and reject invalid bodies"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "a browser activation promise that never settles returns to Sound off for retry"
+          },
+          {
+            "path": "test/mechanical-audio.test.mjs",
+            "anchor": "measured separation preserves a rapid bounce of the same impulse inside chatter grace"
+          }
+        ]
+      },
+      "qualificationBars": []
     }
   ],
   "browserLocalScopes": [
@@ -6041,11 +6372,12 @@
       ],
       "consumers": [
         "index.html",
+        "scripts/verify-render-lifecycle.mjs",
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "externalImports": []
     },
     {
@@ -6069,7 +6401,7 @@
         "vite"
       ],
       "consumers": [],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -6087,7 +6419,7 @@
         "verify-mirror-browser"
       ],
       "consumers": [],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -6103,10 +6435,11 @@
       ],
       "consumers": [
         "index.html",
+        "scripts/verify-render-lifecycle.mjs",
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -6137,7 +6470,7 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -6159,6 +6492,7 @@
       ],
       "consumers": [
         "index.html",
+        "scripts/verify-render-lifecycle.mjs",
         "src/application/workshop-app.mjs",
         "src/presentation/assembly-library.mjs",
         "src/presentation/assembly-mirror.mjs",
@@ -6174,7 +6508,7 @@
         "test/scene-editor.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640"
     }
   ],
   "experimentInputScopes": [
@@ -6449,7 +6783,7 @@
         }
       ],
       "consumers": [],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -6514,7 +6848,7 @@
           ]
         }
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "externalImports": [
         "node:crypto",
@@ -6563,7 +6897,7 @@
         }
       ],
       "consumers": [],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -6636,8 +6970,8 @@
           ]
         }
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
-      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -6688,8 +7022,8 @@
           ]
         }
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
-      "consumerSourceHash": "868d924c34ae87a3a725c395aee0c86931fd8c0d4bfdc0ecc8458b802a9c7516",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "ca4f63e65e42fbd85d61cc558c240f3e319b4c64bd8a5371738b906920cfe14c",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -6730,6 +7064,7 @@
         "scripts/verify-load-cell-copy-browser.mjs",
         "scripts/verify-load-cell-force-browser.mjs",
         "scripts/verify-manipulation-browser.mjs",
+        "scripts/verify-mechanical-audio.mjs",
         "scripts/verify-mirror-browser.mjs",
         "scripts/verify-motion-diagnostics.mjs",
         "scripts/verify-part-help-browser.mjs",
@@ -6741,6 +7076,7 @@
         "scripts/verify-recording-browser.mjs",
         "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-render-lifecycle.mjs",
         "scripts/verify-rope-browser.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
@@ -6789,8 +7125,8 @@
           ]
         }
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
-      "consumerSourceHash": "868d924c34ae87a3a725c395aee0c86931fd8c0d4bfdc0ecc8458b802a9c7516",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "ca4f63e65e42fbd85d61cc558c240f3e319b4c64bd8a5371738b906920cfe14c",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -6851,6 +7187,7 @@
         "scripts/verify-m1.mjs",
         "scripts/verify-m3.mjs",
         "scripts/verify-manipulation-browser.mjs",
+        "scripts/verify-mechanical-audio.mjs",
         "scripts/verify-merge.mjs",
         "scripts/verify-mirror-browser.mjs",
         "scripts/verify-motion-diagnostics.mjs",
@@ -6863,6 +7200,7 @@
         "scripts/verify-recording-browser.mjs",
         "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-render-lifecycle.mjs",
         "scripts/verify-rope-browser.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
@@ -6938,8 +7276,8 @@
           ]
         }
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
-      "consumerSourceHash": "08cee1aacc1b001a06804d053279fdb3f51a6d2330129eaf0fcd37dbb6504bc5",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "d001f882f33372194934ba3d295c86a3323048e9e95655a8e93f1f2e5d36ed59",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7015,6 +7353,7 @@
         "scripts/verify-local.mjs",
         "scripts/verify-m3.mjs",
         "scripts/verify-manipulation-browser.mjs",
+        "scripts/verify-mechanical-audio.mjs",
         "scripts/verify-merge-shadow.mjs",
         "scripts/verify-merge.mjs",
         "scripts/verify-mirror-browser.mjs",
@@ -7029,6 +7368,7 @@
         "scripts/verify-recording-browser.mjs",
         "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-render-lifecycle.mjs",
         "scripts/verify-rope-browser.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
@@ -7139,8 +7479,8 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
-      "consumerSourceHash": "205f05cc9d0d11c8df517e2763aaacb5d4ecd7c0c54909be9ea7eb2e87e79706"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "92122e54717fdea18931da2c871567662054a41cb7e8b6d4566819ed2c501614"
     },
     {
       "checks": [
@@ -7156,8 +7496,8 @@
           ]
         }
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
-      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -7221,8 +7561,8 @@
           ]
         }
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
-      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -7280,8 +7620,8 @@
           ]
         }
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
-      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -7311,8 +7651,8 @@
           ]
         }
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
-      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -7452,8 +7792,8 @@
           ]
         }
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
-      "consumerSourceHash": "f1a87734bd70608d58b3a906b0a3f52993a1e327fd1ffb854cf93412e5ec11a5",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "5e382c3a91be0f38314a836a9ffbc5edb2f5f67ea06b4aee8a20da610749ae10",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -7541,8 +7881,8 @@
           ]
         }
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
-      "consumerSourceHash": "868d924c34ae87a3a725c395aee0c86931fd8c0d4bfdc0ecc8458b802a9c7516",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "ca4f63e65e42fbd85d61cc558c240f3e319b4c64bd8a5371738b906920cfe14c",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -7626,6 +7966,7 @@
         "scripts/verify-m1.mjs",
         "scripts/verify-m3.mjs",
         "scripts/verify-manipulation-browser.mjs",
+        "scripts/verify-mechanical-audio.mjs",
         "scripts/verify-merge-shadow.mjs",
         "scripts/verify-merge.mjs",
         "scripts/verify-mirror-browser.mjs",
@@ -7640,6 +7981,7 @@
         "scripts/verify-recording-browser.mjs",
         "scripts/verify-release-coupler.mjs",
         "scripts/verify-remote-playtest.mjs",
+        "scripts/verify-render-lifecycle.mjs",
         "scripts/verify-rope-browser.mjs",
         "scripts/verify-selection-browser.mjs",
         "scripts/verify-shared-sensing.mjs",
@@ -7790,8 +8132,8 @@
           ]
         }
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
-      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -7862,8 +8204,8 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
-      "consumerSourceHash": "da36c8b8d0f01ff1dbca378fdc99dd1f6eeceb14b568ccda097d8fda6b526cf6"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "d0e99f6f34c4a393c107ef1dd687c90076720cc7c230999fd3d0b067896a1190"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -7900,8 +8242,8 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
-      "consumerSourceHash": "da36c8b8d0f01ff1dbca378fdc99dd1f6eeceb14b568ccda097d8fda6b526cf6"
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
+      "consumerSourceHash": "d0e99f6f34c4a393c107ef1dd687c90076720cc7c230999fd3d0b067896a1190"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -7927,7 +8269,7 @@
         }
       ],
       "consumers": [],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -7966,7 +8308,7 @@
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "readFile(file)",
@@ -7978,7 +8320,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3"
+      "consumerSourceHash": "4198b876a8082f15eda451aed2d976dba3813e0eaf6a09a0d8d6f5016021f91d"
     },
     {
       "entrypoint": "scripts/playtest/feedback-node.mjs",
@@ -8012,7 +8354,7 @@
         "test/playtest-server.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "readFileSync(join(this.root, id, 'envelope.json'), 'utf8')",
@@ -8048,7 +8390,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "f1a87734bd70608d58b3a906b0a3f52993a1e327fd1ffb854cf93412e5ec11a5"
+      "consumerSourceHash": "5e382c3a91be0f38314a836a9ffbc5edb2f5f67ea06b4aee8a20da610749ae10"
     },
     {
       "entrypoint": "scripts/verify-feedback-flow.mjs",
@@ -8065,7 +8407,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "new URL(req.url, 'http://localhost')",
@@ -8126,7 +8468,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "new URL(req.url, 'http://localhost')",
@@ -8180,7 +8522,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
       "reads": [
         {
           "expression": "readFileSync(file)",

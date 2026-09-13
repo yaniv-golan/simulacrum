@@ -16,7 +16,7 @@ not automatically earn an entry.
 
 ## Add or extend a part
 
-<!-- doc-review {"version":1,"fingerprint":"926360f5fa9d7c6e6a1f19f42e6ff233a75886dec727256fee2374e7bbee0457","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"c42e84a9959bf2ef6c64e2333f0776508940e42d43fb282d3c264dbbeb61f45a","disposition":"updated","rationale":"The new Load Cell paragraph accurately follows the current catalog, full-face surface regions and strict face occupancy admission across either endpoint order. Search vocabulary supplies Sensors/force aliases; bindings are compiled from ordinary edges, so copies and restored assemblies resolve their own attachments. Partial powered cells remain legal but disconnected. Existing wheel/Ball/gear/coupler examples retain their authored geometry, material and support rules; no part-specific force by identity or extra lesson is introduced. Camera optical-profile/copy-mirror paragraph is retained. Compiler has distinct camera/loadCellSensor/poweredLamp cases; generated schema admits all three through the shared catalog path. Load Cell now participates in shared static sensor coatings: A-to-B/+X front and top markings identify the measuring direction, while the end face labels B and its outward axis. These are identification paint, not force readouts or ratings. Powered Lamp also has ordinary Power-category search metadata with a headlight alias; catalog remains the availability authority. Revalidated after final thumbnail scheduling and spring witness closure: all catalog types still receive shared-mesh thumbnails, including loaded-only parts; discovery and physical catalog authority are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"ddbc90f28a93ac8dafce407f44ce13b0cae27b2825e0e1466a9ba5e8c53bf3c6","dependencies":"docs/development/.reviews/recipes/add-or-extend-a-part.json","dependencyDigest":"ec9c8b5f6da0d199089fef57fe0c4f3ab9bfc20d46da3641e04219efc38dae89","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch (e964001) with main at ab3d799: neither side adds a part. The finite body constructor copies after physical construction and door reads are cached per physical state; mechanicalSound is a UI feature with no catalog row, schema, compiler or physical configuration change. Catalog selection, schema admission, authored material, lamp limits, geometry and milestone declarations are unchanged."} -->
 
 Start with [CATALOG](../../src/model/catalog.mjs#symbol=CATALOG), [schema](../../src/model/blueprint.schema.json)
 and [createPart](../../src/model/blueprint.mjs#symbol=createPart). Declare its current milestone in
@@ -85,7 +85,7 @@ The catalog declares local reflection symmetry; it must not be inferred from a p
 
 ## Add a command
 
-<!-- doc-review {"version":1,"fingerprint":"efa9e3449b4384f0a85de7d9c9e18698cd0c6200fb54e23748e4800ff54be300","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"13d466f52c92268948204d08e1bb4c6a9ff7af43785e2ae2c3caae47b83413fb","disposition":"updated","rationale":"The full recipe's shape validation, copied inputs, whole-candidate compile and atomic publication/history guidance still applies. Load Cell adds no new command: existing surface mounting, wiring, part insertion, controller installation, copy and history drive its browser journeys. Invalid repeated A/B occupancy rejects before publication through the same core/model admission. Existing surface-mount and editing-contract controls remain appropriate; native receipt changes grant no direct UI state-write path. Camera-photo is retained as Run input with epoch/request admission rather than an authoring transaction. Load Cell and Lamp add no competing command ownership. Revalidated after final thumbnail scheduling and spring witness closure: the new timer/DOM/cache owner and browser-only induction do not alter this section’s previously reviewed ownership, verification or evidence requirements. The new replace-scene paragraph matches expectedCursor admission, whole-workshop body capacity (including distributed rope nodes and ground), and chronological history. Existing scene-capacity/preservation controls remain registered. Load Cell still uses existing part/connection commands, and helper replacement confirmation cannot publish a rejected load."} -->
+<!-- doc-review {"version":1,"fingerprint":"b212e87e4d2f01bb242b780740f0a8fe33969454f76147cfcc7dab59685070cb","dependencies":"docs/development/.reviews/recipes/add-a-command.json","dependencyDigest":"54146972baa62deef9d98285a9c2a289a3b3f3989e010441c8767222142b2e8a","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): indexed FNV preserves checkpoint bytes and numeric body admission preserves completed samples; replace-scene remains an atomic expectedCursor edit and camera-photo a Run-only input, and command validation, atomic publication and authored history are unchanged."} -->
 
 Start at [createWorkshop](../../src/core/workshop.mjs#symbol=createWorkshop). Validate shape before reading
 untrusted fields, copy accepted inputs, derive a candidate through model operations,
@@ -114,7 +114,7 @@ busy without changing the completed cursor. Bytes and downloads belong to applic
 
 ## Change an interaction
 
-<!-- doc-review {"version":1,"fingerprint":"44188eb537b911023d159bfb8eb30f4f84fc4cd6ddd89a5734a22cbcb40092ea","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"4bf26fbb16e39e8df9470d57dc217ad5c2f70c260468d2de414ec2481f440852","disposition":"still accurate","rationale":"Read all interaction/help guidance against unchanged main presentation input owners and Load Cell inspector/help/search additions. New force copy remains in selected sensor/help surfaces, uses current catalog vocabulary and creates no second reset/actuator path. Existing pointer preview, cancel/focus, reference-window state, decoded thumbnails and ordinary command requirements still govern the added part. The package pin's transitive fan-out changes physical build identity, not help interaction semantics or browser evidence requirements. Camera catalog placement restores workshop view; Lamp and Load Cell inspector actions remain ordinary authoring receipts. Existing cancellation/atomic placement requirements are unchanged. Revalidated after final thumbnail scheduling and spring witness closure: the new timer/DOM/cache owner and browser-only induction do not alter this section’s previously reviewed ownership, verification or evidence requirements. Scene-only work now participates in the shared full-workshop replacement flow. The combined load helper waits for command initialization then explicitly confirms the current replacement prompt; it keeps fresh matching receipt checks. Scene input scope and machine input protection remain owned by the editor/view."} -->
+<!-- doc-review {"version":1,"fingerprint":"edef04441ade859f6df5b8b743eaa36829c4f2401657f39e54c328ebea2bc3c6","dependencies":"docs/development/.reviews/recipes/change-an-interaction.json","dependencyDigest":"1663fc36a7e77bd5af90ffa3e757813a96071e8131b91dfcd1884c0752008c59","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch (e964001) with main at ab3d799: the physics-to-model observation import, typed native response vectors and the before-draw clock callback add no input handler or UI action; main's receiver input owner still excludes sound controls and releases held keys on their focus. Cursor guards, cancellation, receiver keys, history and preview ownership keep their boundaries."} -->
 
 First apply the [UI and content policy](ui-ux.md#before-changing-player-facing-ui).
 Identify the player task, primary home, visibility/retrieval lifecycle and replaced
@@ -163,7 +163,7 @@ Its empty thumbnails also exercise readable labels without images. Use
 
 ## Add a diagnostic
 
-<!-- doc-review {"version":1,"fingerprint":"d9432718dc7ff089db8f0aa3826fe6509ad16bbe852e36fdff1bb9a3906465d0","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"624917ec7bbb8b713db0a04ad2aa6faed96e7b28ce86f2b7468882170ea9e908","disposition":"still accurate","rationale":"The recipe continues to require completed observations, relevant IDs, no inferred intention and positive/quiet/missing-data controls. Load Cell readouts use completed reaction evidence and explicitly preserve invalid states rather than estimate payload weight or repair the plant. Decision history and Measurements still have their existing source/interval/selection owners and separate cursors; adding force channels does not turn diagnostic rows into teaching examples or alter RMS acceleration definitions. Camera readiness and Lamp optical delivery are completed telemetry, separate from Load Cell physical force. No part identity becomes physical authority or automatic repair. Revalidated after final thumbnail scheduling and spring witness closure: thumbnail readiness and ordinary graphics induction add no physical diagnostic or alternative sensor writer."} -->
+<!-- doc-review {"version":1,"fingerprint":"56d0691353cc95c4b8fc45dea834c07c160aad55ad3979fcac44c8c07af11539","dependencies":"docs/development/.reviews/recipes/add-a-diagnostic.json","dependencyDigest":"c0956b280abcc2246a94dc683ae56524aec4c5678c1f67b4a310013d538f3173","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): body fields and finite rejection are unchanged while admission is specialized; health explanations are refreshed on a bounded tick cadence in Run and immediately on failure, and scene/command additions grant diagnostics no simulation authority."} -->
 
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
@@ -175,6 +175,11 @@ assembly and suggest checking direction. Read [opposed-drive tests](../../test/o
 and [motion diagnostics tests](../../test/motion-diagnostics.test.mjs). Include a real
 symptom, a similar valid configuration that must remain quiet, and missing-data cases.
 A symptom is not proof of the intended mechanism or cause.
+
+The compact running health hint caches its diagnosis in 30-tick buckets after tick
+120. Blueprint, session and epoch changes retire that sample; leaving Run clears
+it. Preserve the completed-data diagnosis owner and independently drained
+measurement/history cursors.
 
 For controller decisions, use [completed decision projection](../../src/model/controller-decision.mjs)
 and [application history](../../src/application/controller-history.mjs). Keep diagnostic
@@ -191,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"2f1890e8564ba71b7158118d8fd83fe660dd4c4a889b092740b1adae81497cd9","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"407fd546c36e2e3e81b8ba674cdfd6474802d2c223403e65b359d5e3741995c4","disposition":"still accurate","rationale":"Window intent, destination drift and candidate priority fixtures concern verification coordination only; physics ownership, analytical controls, independent accounting and Course qualification requirements in this recipe are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"f91a587a37c91e760a188ac9a0414592661a188d50a71b3472a53e264ef538f6","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"79bd9b5729382011191a6a8a66fb747403e348c1c1faa9bd48f3ae20fdf8adac","disposition":"still accurate","rationale":"Integration with main: the merged AGENTS.md carries the stacked-integration rule and the performance work's physics changes were reviewed on their own branch; window intent, destination drift and candidate fixtures do not touch physics ownership, analytical controls, independent accounting or Course qualification requirements in this recipe."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
@@ -240,6 +245,49 @@ minimum-subnormal rounding allowance in addition to the existing relative bound.
 Preserve ordinary-scale inaccurate-residual and nonfinite rejection, plus actual
 native stepping and restore controls at gradual underflow. This numerical error
 bound does not clamp velocities or replace the original equations.
+The physics door caches energy, spring, gear and contact readings only within one
+physical state. Mutations retire cached readings, including impulses applied inside
+a prepared island. Public readers retain independent plain-data copies. Completed
+contacts can supply the following sensor phase, but integration must retire
+pre-integration contacts. If structure or thermal work starts mutating bodies,
+invalidate and resample before publishing or accounting for energy.
+
+Cache authored island membership separately from native response factors. Factors
+remain pose-dependent and are rebuilt for each preparation. Release previews,
+rejected previews, committed opens and temporary or successful restore candidates
+must invalidate cached membership. A rejected restore must not leave candidate
+readings or topology attached to the live world.
+
+The owned native response accepts f64 typed vectors and returns disjoint views of
+its copied numerical result. These views stay inside the physics door. Preserve
+finite-value validation, factor disposal and independent results across evaluations.
+
+Session publication uses the model's numeric body sample constructor, which accepts
+only finite primitives and creates, freezes and admits its own arrays. Physics-door
+reads remain mutable detached copies. This avoids generic
+descriptor scans without exposing a way to mark caller-owned trees as trusted. Other
+external trees still pass ordinary recursive data admission. The snapshot checksum
+uses the same FNV byte order and arithmetic through an indexed loop; preserve encoded
+bytes and corruption rejection when changing its implementation.
+
+Session replay anchors retain physics bytes internally as a Uint8Array. Public
+checkpoints and failure bundles still export independent plain byte arrays in the
+existing checkpoint format. Capture remains synchronous at each 1200-tick boundary
+and remains included in checkpoint timing. Preserve exact exported bytes, restored
+continuation and failure replay when changing internal storage.
+
+Power completion copies only modified motor records and commits after every receipt
+and accumulated value passes validation. A late failure must preserve completed
+state and pending retry state; test corrected receipts without restoring first.
+Restore still performs full state admission. Internal shape reuse does not relax
+numerical checks or validation of external receipts.
+
+A deterministic current-source replay cannot establish that an optimization preserves
+prior behavior. Compare per-tick projections and exported checkpoint bytes against
+a frozen pre-change run, including impulse, restore and failure paths, then run the
+ordinary determinism and physical regression checks.
+
+
 For attachment force, preserve [independent force and momentum controls](../../test/load-cell-physics.test.mjs)
 and [receipt continuation](../../test/load-cell-runtime.test.mjs). The
 [dynamic matrix](../../test/load-cell-physical-matrix.test.mjs) repeats moving,
@@ -455,7 +503,7 @@ qualify arbitrary mechanism loads or human acceptance.
 
 ## Change multi-part authoring
 
-<!-- doc-review {"version":1,"fingerprint":"e874e277c85d0ac4d54d4f28f44081507eb002ff4cfffa803bac91c3b255e9c7","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"01257aee5abb0b3b0f6a11d2b95616f0bd7a872b29c7d91baf8940da0045da0d","disposition":"updated","rationale":"The complete recipe still distinguishes mechanical connectivity from stored assembly membership and requires remapped endpoint/reference IDs, ordinary transforms, whole-candidate admission and isolated copied values. Load Cell introduces no stored binding field to remap: its A/B references are recomputed from each instance's remapped surface edges. Thus the existing spring/joint/target binding examples remain accurate without pretending they enumerate every derived measurement. The added copy browser demonstrates independent B attachment behavior through existing assembly creation/insertion, history and save/load; library/UI ownership remains unchanged. Incoming Camera optical reflection-axis paragraph remains consistent with catalog mirrorAxis and mirror assembly; Load Cell mounting bindings still recompile from copied endpoints and Lamp uses ordinary authored copying. Revalidated after final thumbnail scheduling and spring witness closure: the new timer/DOM/cache owner and browser-only induction do not alter this section’s previously reviewed ownership, verification or evidence requirements. The prose now preserves the receiving authored scene as well as legacy presets during assembly insertion. Environment stays outside assembly capture; scene capacity admission includes all compiled machine/rope/scene bodies and rejected replacement keeps chronological history. Load Cell endpoint/binding remapping remains unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"d432c2f7c90d71fb7d272c630378271099938db2eb630eb7883d82f0040d4e52","dependencies":"docs/development/.reviews/recipes/change-multi-part-authoring.json","dependencyDigest":"1ea42be4d0e7ef9c09f66ce8bfd56e28845a9a46f85d8da9d761f5250fbd0a7c","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): the finite constructor runs on completed physical values after compilation; assembly insertion, material copy, reference remapping, browser startup separation, complete-candidate validation and atomic authoring are unchanged."} -->
 
 Start with [connection graph](../../src/model/connection-graph.mjs): mechanical membership
 means fixed/shaft/spring/rope connectivity, not an editor selection, electrical network, or stored
@@ -552,7 +600,7 @@ preservation; test optical orientation independently of the production frame hel
 
 ## Change a presentation overlay
 
-<!-- doc-review {"version":1,"fingerprint":"0f5496c23dd1471f3745774b4e8b525fb5f2d2bc7d459cbc5d867c9862c5ee2f","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"519b534402ff59f5c34e0022e102e78e8da59524b5f7703536baa96064b4d77c","disposition":"updated","rationale":"Read the complete connection/part-finish/rope/spring/graphics explanation and existing owner boundaries. Load Cell adds a selected fixed-length local-X arrow using the completed sensor body pose; it writes no physics, adds no collider or picking authority and reuses existing retained sensor-overlay resources. Connection visibility, rope released-state classification, cosmetic material surfaces, shared thumbnails, native picking and wiring preferences remain owned as described. No spring capacity, phase/frame budget or adaptive-graphics policy is changed by reaction diagnostics, and their finite-domain/independent-evidence qualifications remain necessary. Camera frustum remains workshop-only and Lamp view consumes completed optical values. Load Cell arrow still consumes completed sensor pose; these additions create no physics import or state writer. Sensor top paint now sizes its transparent center from each physical top-plane dimension, clearing the existing hardware maximum diameter on narrow housings. The independent test measures the actual socket cylinder and rejects the former fixed-pixel hole. Coatings retain ordinary geometry/material/texture disposal and disabled raycasts. Re-read the modified scheduled-batch paragraph against thumbnail-queue and workshop-view. Shared mesh/shader resources survive between tasks; final completion, cancellation and caught render/publish errors call the one-shot finish path, and stale callbacks see stopped before publication. The main renderer warmup remains synchronous and now renders both catalog lighting and no-part-light variants. Temporary light visibility is captured and restored in finally before removing warm meshes. Unpowered Lamp presence changes shader light counts; retaining both variants addresses measured repeated first-placement compilation after New without changing lamp authority, physics, picking or adaptive-quality thresholds. This is a presentation scheduling change, not a material/physics or picking change."} -->
+<!-- doc-review {"version":1,"fingerprint":"9b72cda3521fae83f55474c685af334fadf63ce92621487d0dc2105f64b2329c","dependencies":"docs/development/.reviews/recipes/change-a-presentation-overlay.json","dependencyDigest":"8e209626d5d048b3a31891b235d608c4fdf85e1bb81abe5ecdafb9729b08ee58","disposition":"updated","rationale":"The merged guidance records both main's warmup retention of catalog and no-part-light shader variants (disposed with the view) and the performance branch rule that equal-content blueprint replacements retain the revision, with content comparison only on reference replacement while same-ID authored edits still invalidate dependent views; verified in workshop-view.mjs render(), where blueprintKey increments only when a replaced reference has different serialized content. Load Cell arrow, connection visibility and wiring preference owners are unchanged."} -->
 
 Start with [connectionRenderSpecs](../../src/presentation/connection-render.mjs#symbol=connectionRenderSpecs) and
 [ConnectionRenderSpec](../../src/presentation/connection-render.d.ts) for the existing
@@ -622,6 +670,21 @@ appears only when these overrides reveal otherwise hidden electrical links. Upda
 while paused must use existing scene invalidation. Hidden resources must be excluded
 from picking through `pickableObjects`, retain their geometry, and update their endpoints
 before reappearing. Do not put visibility in the geometry cache key.
+
+The workshop view uses the admitted immutable blueprint reference as a fast path,
+compares content when that reference changes, and supplies a revision token to
+dependent view caches only for authored content changes. Mode-only publications
+can replace the reference with equal content. Do not mutate that blueprint in place.
+Selected live readouts replace DOM children only when formatted
+content changes; rebuilding the inspector retires its spring-readout node.
+Scene preparation performed by render can be reused by the following draw, while
+input, camera and overlay invalidation must still refresh affected visuals.
+Hidden Measurements suppress text formatting while retaining completed-data
+accumulation and refresh when reopened.
+
+Follow the [shared frame scheduling](architecture.md#trace-an-edit) when measuring
+these changes. View-update CPU time, renderer submission time and frame cadence are
+distinct; submission completion does not establish GPU or display latency.
 
 Run [renderer/resource tests](../../test/connection-render.test.mjs#implementation),
 [resource retention tests](../../test/presentation-resources.test.mjs#implementation),

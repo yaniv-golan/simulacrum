@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPhysicsWorld } from '../src/simulation/physics/world.mjs';
 import R from '@dimforge/rapier3d-deterministic-compat';
+import { readNativeResponse } from '../src/simulation/physics/native-response.mjs';
 const advance = (w) => {
   w.prepareConstraints();
   w.prepareSprings();
@@ -357,4 +358,44 @@ test('finite native motor bounds retain their impulse budget beside bilateral ro
       w.free();
     }
   }
+});
+
+test('response adapter preserves typed vectors and owns disjoint result views', () => {
+  const input = new Float64Array([0, -0, 1, -2, 3, 4]);
+  let calls = 0,
+    freed = 0;
+  const factor = {
+    response(value) {
+      assert.equal(value, input, 'typed input crosses the native call without copying');
+      calls++;
+      return new Float64Array([...value, ...value.map((x) => x * 2)]);
+    },
+    project(value) {
+      return this.response(value);
+    },
+    free() {
+      freed++;
+    },
+  };
+  const adapter = readNativeResponse(factor, 1);
+  const first = adapter.response(input);
+  assert.ok(first.impulse instanceof Float64Array);
+  assert.ok(first.velocity instanceof Float64Array);
+  assert.equal(first.impulse.buffer, first.velocity.buffer);
+  assert.deepEqual(Array.from(first.impulse), Array.from(input));
+  first.impulse.fill(99);
+  assert.deepEqual(Array.from(first.velocity), Array.from(input.map((x) => x * 2)));
+  assert.deepEqual(Array.from(adapter.project(input).impulse), Array.from(input));
+  assert.equal(calls, 2);
+  assert.throws(() => adapter.response(new Float64Array([1])), /invalid response vector/);
+  const invalid = new Float64Array(6);
+  invalid[5] = Infinity;
+  assert.throws(() => adapter.response(invalid), /invalid response vector/);
+  adapter.dispose();
+  adapter.dispose();
+  assert.equal(freed, 1);
+  assert.throws(() => adapter.response(input), /disposed native response/);
+  const bad = readNativeResponse({ ...factor, response: () => new Float64Array(12).fill(NaN) }, 1);
+  assert.throws(() => bad.response(input), /invalid native response result/);
+  bad.dispose();
 });

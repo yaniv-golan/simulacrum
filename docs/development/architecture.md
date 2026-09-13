@@ -10,7 +10,7 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 
 ## Trace an edit
 
-<!-- doc-review {"version":1,"fingerprint":"4b43cbcaecb779e63cb87fc22b23b7e7915c343e0c21a9f3c27ed15b1682a957","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"72550e78c4875d2d8ef66bad095d2f7ad47651c3650f6c3d098924896d67f0af","disposition":"updated","rationale":"Read the full edit flow and revised release paragraph against compiler, session and physics door. Load Cell still enters via ordinary model surface compilation and completed publication; reactions do not create UI-to-physics access. The revised coupler explanation correctly distinguishes snapshot-copy response planning from removal of planned joints in the live world, retains body motion and states that numeric rope links remain outside native bilateral groups with active anchors after release. Main's utilityHost feedback placement, authored-only feedback context, camera recovery and input/resource lifetimes are preserved. Re-read the modified thumbnail paragraph and source: createThumbnailQueue schedules before the first type and between types; workshop-view publishes each image into the retained cache and all currently mounted matching icons, and cancels/disposes the batch with the workshop. Existing physical warmup, force/release/camera owners remain intact. The updated environment row now names authored scenes and legacy presets, with matching boxes compiled as geometric union. Compiler body ordering retains machine indices; Load Cell reactions still belong to compiled attachment constraints. Scene previews and recording reconstruction share primitive geometry. The incoming structural-failure ownership clarification does not grant force measurements or phase presence the authority to certify no damage. Load Cell reaction telemetry and scene contact geometry remain separate from unimplemented capacity-based breakage."} -->
+<!-- doc-review {"version":1,"fingerprint":"c6b30795ec79a06f626a3a3fdecd666e09a806d9b01eb2d65d5f39a27b9d5a81","dependencies":"docs/development/.reviews/architecture/trace-an-edit.json","dependencyDigest":"389834449cabc25d0cebab29682c47c1f312c7fa3674c8c42e181b192f9aa21b","disposition":"updated","rationale":"Merged both updated explanations: the view-owned animation frame with the application before-draw callback, submission tracker, CPU-endpoint labelling, preserved draw scheduling on callback errors, withheld submission after failed preparation, content comparison only on blueprint reference replacement, and the machine-camera suppression of scene submission from the performance integration, together with main's mechanical audio adapter, completed-motion helpers, contact episodes and bounded audio engine paragraph. Verified against workshop-app.mjs (beforeDraw pauses the clock via stopped(error); audio plays after view.render inside the clock render) and workshop-view.mjs (draw schedules the next frame before beforeDraw; completedDraw is stamped only when the workshop scene was submitted)."} -->
 
 1. [Workshop application](../../src/application/workshop-app.mjs#source) composes the DOM view, clock and core.
 2. [Workshop view](../../src/presentation/workshop-view.mjs#source) turns player input into ordinary commands. The [parts browser](../../src/presentation/parts-browser.mjs#source) owns discovery, [search vocabulary](../../src/presentation/part-search.mjs#source) ranks available parts, and [part placement](../../src/presentation/part-placement.mjs#source) confirms click, touch and drag proposals through cursor-guarded placement, delegating mounting geometry and controls to the existing surface owner. [Surface controls](../../src/presentation/surface-controls.mjs#source), their [placement lifecycle](../../src/presentation/placement-lifecycle.mjs#source), and [mirror controls](../../src/presentation/assembly-mirror.mjs#source) keep previews outside authored state. [Spring controls](../../src/presentation/spring-controls.mjs) submit bounded parameter edits and explain rejected drafts. [Rope controls](../../src/presentation/rope-controls.mjs) author a tensile connection between two surface attachments; [rope compilation](../../src/model/rope.mjs) appends distributed massive nodes. Assembly capture and placement forms also remain transient; their accepted edits use the same core.
@@ -18,6 +18,29 @@ state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The
 4. [validateBlueprint](../../src/model/blueprint.mjs#symbol=validateBlueprint), [placement admission](../../src/model/surfaces.mjs) and [compileAssembly](../../src/model/assembly.mjs#symbol=compileAssembly) validate stored values, physical intersections and connection geometry before simulation receives configuration.
 5. [Session](../../src/simulation/session.mjs) owns stepping, checkpoint and completed publication. [Controllers](../../src/simulation/controllers.mjs) produce program commands; the [receiver arbiter](../../src/simulation/receiver-arbiter.mjs) owns Manual/Automatic/Learned/Off, explicit takeover and prior-tick travel regulation; [power](../../src/simulation/power.mjs) resolves circuits; the [physics door](../../src/simulation/physics/world.mjs) alone imports the physics library. Completed contact collection uses the numeric [contact reader](../../src/simulation/physics/read-contacts.mjs); session assigns the completed interval and includes collection in integration timing.
 6. [Observation store](../../src/model/observation.mjs) publishes immutable completed snapshots. Presentation consumes these observations, never a live physics object. The application drains a separate observation cursor into selected-body Measurements so its 120 Hz samples do not depend on rendering cadence.
+
+The workshop view owns the browser animation-frame request. The application supplies
+a before-draw callback that advances the [clock](../../src/application/clock.mjs#source),
+publishes completed observations and updates the view before graphics submission.
+The clock retains elapsed-time accumulation, pause and deterministic advancement;
+external scheduling does not add an integration or discard simulation debt.
+View-update CPU time is measured separately from renderer submission time.
+Interaction reflection waits for a matching cursor-keyed submission (or continuation
+of the accepted run). This timestamp is not GPU completion or display presentation.
+The [submission tracker](../../src/application/render-submission.mjs#source) labels
+this endpoint separately from historical two-frame timing and records incomplete
+samples when its five-second timer fires or the application is disposed. The view
+schedules its next frame before invoking the application callback, so a callback
+error remains observable without ending the draw loop; the application pauses the
+clock and exposes its existing recovery message.
+Failed view preparation withholds graphics submission and its cursor until a
+successful update rebuilds the authored caches and completes preparation. An active
+machine-camera view also suppresses workshop scene submission, so no completed draw is
+recorded and a pending reflection sample times out rather than reporting a submission
+that did not occur.
+Unchanged blueprint references skip content comparison. When a publication replaces
+the reference, the view compares content before rebuilding authored resources, so
+Run/Pause/Build transitions retain them and same-ID authored edits still refresh them.
 
 The session's structure/failure phase currently checks finite state and conserved
 body count/mass; general rated-capacity overload breakage remains outstanding.
@@ -45,8 +68,20 @@ resolve material defaults and explicit friction/restitution overrides before the
 physics door. Density remains material-owned. The inspector uses the same resolver.
 [Retry](../../src/application/retry.mjs#symbol=createRetry) composes ordinary Build
 and Run admission, releasing held controls and preserving the authored machine and
-view. Completed contacts feed [impact presentation](../../src/presentation/impact-sound.mjs#source);
-it has no simulation write path and resets its baseline on missing observations.
+view. The application [mechanical audio adapter](../../src/application/mechanical-audio-adapter.mjs#source)
+caches canonical compiled body descriptors per workshop epoch, including neutral floor/obstacles
+and excluded noncolliding rope nodes. Completed body witnesses supply slip and primitive-admitted
+rolling; measured rotary and linear drive coordinates retain distinct units. The model's
+[completed-motion helpers](../../src/model/completed-motion.mjs#source) provide anchor velocities
+and the rotating-guide term, caching transforms within one completed sample.
+[Contact episodes](../../src/presentation/mechanical-audio-model.mjs#source) consume every tick;
+continuous envelopes are calculated only for the latest rendered frame. Numeric packets alone
+reach the [bounded audio engine](../../src/presentation/mechanical-audio.mjs#source). It owns one
+lazy browser context, capped voices, spatial mix and mute/disposal. The viewed orbit or mounted
+camera supplies listener position and right direction. No audio preference, resource, descriptor
+or waveform enters simulation, saves, checkpoints or recording capture; no runtime boundary
+was added. Missing contact history establishes a silent baseline while available measured drives
+remain independent of contact availability.
 
 [Camera exposure state](../../src/simulation/camera-state.mjs#symbol=createCameraState)
 belongs to simulation; it publishes completed exposure results without image bytes.
@@ -127,7 +162,7 @@ of opened joints and completed rope work.
 
 ## Reuse canonical decisions
 
-<!-- doc-review {"version":1,"fingerprint":"d98a1c29c36f95c032039007b4c1e52c79bb1a96dd81f124056ab475c20a47b2","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"1c0e8b300e85276bc00c7e0c8a7bb3f7394be2b7e5844757c18cbd4d4bdb0613","disposition":"still accurate","rationale":"Every row in the canonical-decision table still names the actual owner: catalog/geometry/material/surface rules, model graph proposals, core history, completed contact/spring/rope data, presentation resources and measurement accumulators. Load Cell uses these same geometry, surface, naming, copying, help/port-label and completed-data policies. The explanatory linear-guide/shared-power paragraphs retain their coordinate-aware electrical interpretation and no-hidden-clutch behavior; spring.10 adds read-only reaction diagnostics rather than moving these policies into a fixture or renderer. The existing Lamp driver paragraph correctly assigns shared-circuit voltage/current and cumulative delivery/sensor/coupler heat to the simulation power owner; camera gallery/optical rendering remains application/presentation state. Revalidated after final thumbnail scheduling and spring witness closure: the new timer/DOM/cache owner and browser-only induction do not alter this section’s previously reviewed ownership, verification or evidence requirements. Scene admission reuses environment/model and document-proposal boundaries instead of introducing an identity-selected physics path. Load Cell ports, reactions and controller outputs retain the existing model/runtime ownership; the scene compiler appends fixed solids without replacing sensor bindings."} -->
+<!-- doc-review {"version":1,"fingerprint":"49fd3d1364b870a762c51c3062087b879bf3f2ea21d274c533e24e4544d1cde7","dependencies":"docs/development/.reviews/architecture/reuse-canonical-decisions.json","dependencyDigest":"96301ecaaf65c10f296e8ec97e5a6afd6d7db75e0f584c8972d8d16d5601eb34","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch (e964001) with main at ab3d799: the model-owned finite body constructor centralizes admission without a caller-trust API and the indexed FNV checksum keeps the checkpoint owner; main's sound controls keep using the existing receiver input owner to release and exclude vehicle keys. Catalog, material, scene and configuration owners named in the table are unchanged by either side."} -->
 
 | Decision                                              | Production owner                                                                                                                                                                                                                                             | Example consumer                                                                        |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
@@ -190,8 +225,7 @@ from completed draw and remaining charge; an unbounded driver cannot report fals
 Ground contact and workshop motion are not Course qualification.
 
 ## Shared sensing and behavior authoring
-
-<!-- doc-review {"version":1,"fingerprint":"79b275bce0aec67455e8dd44fce7fd34b46d1a409ca607b8387aaa94b3c74913","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"1aef2e5fbee27871e01b12387055a23daec4d8013db8be9ba7145a24f14c6b97","disposition":"updated","rationale":"The merged Load Cell explanation matches actual code: compiler resolves left support/right measured joint, joint-reactions negates native endpoint-a impulses into copied endpoint-b receipts, sampler applies sign/dt then local-X projection and vector magnitude. Own-weight examples describe which attachment carries gravity without runtime mass estimates. Powered invalidity, disconnected opened/missing mounts, authored bypasses including rope/gear paths, tick-zero initialization and separate historical/current opened topologies are correctly distinguished. Existing injected Rules/learning execution, diagnostic history and explicit receiver rearm boundaries remain unchanged. Incoming Lamp shared circuit delivery and restore ledgers include sensor heat once, so Camera and Load Cell funded supplies remain ordinary peers. Camera exposure state is distinct from numeric sensor history; load-cell force sampling and attachment topology remain unchanged. Revalidated after final thumbnail scheduling and spring witness closure: the new timer/DOM/cache owner and browser-only induction do not alter this section’s previously reviewed ownership, verification or evidence requirements. The authored-scene merge adds ordinary static contact geometry. It neither adds scene IDs to controller observation authority nor changes completed sensor publication, learned-model admission or previous-tick Rules consumption. Load Cell sensor/reaction paths are preserved."} -->
+<!-- doc-review {"version":1,"fingerprint":"cbf824a9d55bb877ef072a44a5cc046bf42b6ef86829b7685f65f9403318d4d4","dependencies":"docs/development/.reviews/architecture/shared-sensing-and-behavior-authoring.json","dependencyDigest":"9d2737ed43a0830530224cb918294e2628471786308974f08c98cc3f296b0fcd","disposition":"still accurate","rationale":"Integration of the physics/rendering performance branch with main at c4862a3 (lamps, cameras, authorable scenes, Load Cell): completed body observations keep identical finite values in frozen owned arrays; power now validates the pending shape at step and closes the settled circuit ledger (including lamp circuits) at completion, so sensor sampling, power funding, controller timing and the learning/history cursors retain their documented behavior."} -->
 
 [Channel descriptors](../../src/model/sensors.mjs) own measurement units and frames.
 [Sampling](../../src/simulation/sensors.mjs) reads completed physics through the door;

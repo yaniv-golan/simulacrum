@@ -1,6 +1,8 @@
 import { createThumbnailQueue } from './thumbnail-queue.mjs';
 import { createSceneEditor, sceneMesh } from './scene-editor.mjs';
 import { hasWorkshopContent } from '../model/environment.mjs';
+import { createSoundControls } from './sound-controls.mjs';
+import { opticalFrame } from '../model/camera.mjs';
 import { createRopeView } from './rope-view.mjs';
 import { ropeInspector } from './rope-controls.mjs';
 import { createPartMesh, disposePart } from './part-mesh.mjs';
@@ -121,12 +123,14 @@ export function createWorkshopView(
   {
     onCommand,
     onSound,
+    onVolume,
     onSave,
     onLoad,
     onFailure,
     onRecording,
     onInteraction,
     getCursor,
+    beforeDraw,
     getAssemblyFrame,
     assemblyLibrary,
     sceneLibrary,
@@ -164,7 +168,15 @@ export function createWorkshopView(
     selected = null,
     ropeRequestedPart = null,
     sourcePort = null,
-    blueprintKey = '',
+    blueprintKey = 0,
+    blueprintReference = null,
+    blueprintContent = '',
+    completedDraw = null,
+    renderedCursor = null,
+    framePreparationFailed = false,
+    springReadout = null,
+    healthSample = null,
+    editToolNodes = null,
     inspectorKey = '',
     disposed = false,
     inputTime = performance.now(),
@@ -174,10 +186,13 @@ export function createWorkshopView(
     sceneEditor = null;
   // RAF still owns control damping and animation; GPU work follows scene invalidation.
   const renderCosts = [];
+  const liveReadoutKeys = new WeakMap();
   let renderedFrames = 0,
-    sceneDirty = true;
+    sceneDirty = true,
+    scenePrepared = false;
   const invalidateScene = () => {
     sceneDirty = true;
+    scenePrepared = false;
   };
   const sceneInputEvents = [
     'click',
@@ -1404,14 +1419,9 @@ export function createWorkshopView(
   const retryButton = button('Try again', () => send({ type: 'retry' }));
   retryButton.dataset.command = 'retry';
   retryButton.title = 'Restart from your latest setup, keeping your edits and camera.';
-  const soundButton = button('Sound off', async () => {
-    const enabled = await onSound?.(soundButton.getAttribute('aria-pressed') !== 'true');
-    soundButton.setAttribute('aria-pressed', String(!!enabled));
-    soundButton.textContent = enabled ? 'Sound on' : 'Sound off';
-  });
-  soundButton.setAttribute('aria-pressed', 'false');
+  const soundControls = createSoundControls({ onSound, onVolume });
   const attemptControls = element('div', 'attempt-controls');
-  attemptControls.append(retryButton, soundButton);
+  attemptControls.append(retryButton, soundControls.root);
   machineControlRegion.append(attemptControls);
   const connectionTest = createConnectionTest({
     holdReceiver: (id, duty) => vehicleControls.hold(id, duty),
@@ -1700,11 +1710,12 @@ export function createWorkshopView(
     for (const el of right.querySelectorAll('.rope-readout')) {
       const data = frame.metadata.connections.find((c) => c.id === el.dataset.ropeId)?.rope;
       const readings = (frame.ropes ?? []).filter((r) => data?.joints.includes(r.index));
-      el.textContent = readings.length
+      const text = readings.length
         ? `Length ${readings.reduce((sum, r) => sum + r.length, 0).toFixed(3)} m · Peak applied tension ${Math.max(...readings.map((r) => r.appliedTension)).toFixed(2)} N`
         : 'Rope readings unavailable';
+      if (el.textContent !== text) el.textContent = text;
     }
-    const readout = right.querySelector('.spring-readout');
+    const readout = (springReadout ??= right.querySelector('.spring-readout'));
     if (readout) {
       const edge = blueprint.connections.find(
         (c) => c.kind === 'spring' && [c.a.part, c.b.part].includes(selected),
@@ -1718,13 +1729,14 @@ export function createWorkshopView(
         );
       const state =
         guidePart && frame.springs?.find((x) => x.bodyA === blueprint.parts.indexOf(guidePart));
-      readout.textContent = !edge
+      const text = !edge
         ? 'Unattached · no spring force'
         : state && guidePart?.type === 'linearActuator'
           ? `${format(state.length, 3)} m length · ${format(state.speed, 3)} m/s · powered slide; no passive spring or holding clutch`
           : state
             ? `${state.length <= state.minLength + 0.001 ? 'Fully compressed' : state.length >= state.maxLength - 0.001 ? 'Fully extended' : 'Attached · slides; does not swivel'} · ${format(state.length, 3)} m length · ${format(-state.extension, 3)} m compression · ${format(state.speed, 3)} m/s · ${format(state.length - state.minLength, 3)} m to compression stop · ${format(state.maxLength - state.length, 3)} m to extension stop · ${format(state.potentialJ, 3)} J spring energy`
             : 'Attached · slides; does not swivel';
+      if (readout.textContent !== text) readout.textContent = text;
     }
   }
   function select(id) {
@@ -2133,6 +2145,7 @@ export function createWorkshopView(
     right.dataset.partId = selected ?? '';
     right.dataset.inspectorType = part?.type ?? '';
     right.replaceChildren();
+    springReadout = null;
     const assembly = (frame.metadata.blueprint.assemblies ?? []).find((g) =>
       g.ids.includes(selected),
     );
@@ -3277,8 +3290,26 @@ export function createWorkshopView(
   }
   function refreshHealth() {
     health.hidden = true;
-    if (frame.metadata.mode !== 'run' || frame.tick < 120) return;
-    const issue = diagnoseMotion(frame).find((issue) => issue.code !== 'COMMAND_OFF');
+    if (frame.metadata.mode !== 'run' || frame.tick < 120) {
+      healthSample = null;
+      return;
+    }
+    const bucket = Math.floor(frame.tick / 30);
+    if (
+      !healthSample ||
+      healthSample.blueprint !== frame.metadata.blueprint ||
+      healthSample.epoch !== renderedCursor?.epoch ||
+      healthSample.session !== renderedCursor?.session ||
+      healthSample.bucket !== bucket
+    )
+      healthSample = {
+        blueprint: frame.metadata.blueprint,
+        epoch: renderedCursor?.epoch,
+        session: renderedCursor?.session,
+        bucket,
+        issue: diagnoseMotion(frame).find((issue) => issue.code !== 'COMMAND_OFF'),
+      };
+    const issue = healthSample.issue;
     if (issue) {
       health.textContent = `${issue.title} · Check machine`;
       health.hidden = false;
@@ -3288,23 +3319,50 @@ export function createWorkshopView(
     return isReleasedAttachment(connection, frame.metadata.blueprint.parts, frame.power?.couplers);
   }
   function refreshLive() {
+    // Format small descriptors first; unchanged values allocate no DOM nodes.
+    const element = (tag, className, text) => ({ tag, className, text });
+    const readout = () => ({
+      children: [],
+      append(...rows) {
+        this.children.push(...rows);
+      },
+      set textContent(text) {
+        this.children = [String(text)];
+      },
+    });
+    const commit = (node, value) => {
+      if (!node) return;
+      const key = JSON.stringify(value.children);
+      if (liveReadoutKeys.get(node) === key) return;
+      node.replaceChildren(
+        ...value.children.map((row) => {
+          if (typeof row === 'string') return document.createTextNode(row);
+          const child = document.createElement(row.tag);
+          if (row.className) child.className = row.className;
+          child.textContent = row.text;
+          return child;
+        }),
+      );
+      liveReadoutKeys.set(node, key);
+    };
     for (const label of right.querySelectorAll('[data-attachment-state]')) {
       const edge = frame.metadata.blueprint.connections.find(
         (c) => c.id === label.dataset.attachmentState,
       );
-      label.textContent = `${edge && releasedAttachment(edge) ? 'Latch open ·' : 'Bolted to'} ${label.dataset.peerLabel}`;
+      const text = `${edge && releasedAttachment(edge) ? 'Latch open ·' : 'Bolted to'} ${label.dataset.peerLabel}`;
+      if (label.textContent !== text) label.textContent = text;
     }
     updateSensorInspector(frame, right);
     updateControllerEditor(frame, right);
     const part = frame.metadata.blueprint.parts.find((part) => part.id === selected),
-      target = right.querySelector('[data-live-part]');
-    if (!part || !target) return;
+      liveTarget = right.querySelector('[data-live-part]');
+    if (!part || !liveTarget) return;
     const index = frame.metadata.blueprint.parts.indexOf(part),
       cell = frame.power?.cells.find((cell) => cell.node === index),
       motor = frame.power?.motors.find((motor) => motor.node === index),
-      engineering = right.querySelector('[data-live-engineering]');
-    target.replaceChildren();
-    engineering?.replaceChildren();
+      liveEngineering = right.querySelector('[data-live-engineering]'),
+      target = readout(),
+      engineering = liveEngineering ? readout() : null;
     if (part.type === 'poweredLamp') {
       const lamp = frame.power?.lamps?.find((l) => l.node === index);
       const reasons = {
@@ -3505,6 +3563,8 @@ export function createWorkshopView(
             ? `Rotation speed ${format(Math.hypot(...speed), 2)} rad/s`
             : 'No live measurement';
     }
+    commit(liveTarget, target);
+    commit(liveEngineering, engineering);
   }
   function rebuildMeshes(blueprint) {
     partResources.reconcile(blueprint.parts);
@@ -3817,7 +3877,12 @@ export function createWorkshopView(
       : 'Drag a part to move · Drag empty space to orbit · Scroll to zoom · Esc to clear';
     onInteraction?.('exploded-view', { active: on, amount: explodeAmount });
   }
-  function render(next) {
+  function render(next, cursor = getCursor?.()) {
+    if (framePreparationFailed) {
+      blueprintReference = null;
+      blueprintContent = '';
+    }
+    framePreparationFailed = true;
     invalidateScene();
     const previousCount = frame?.metadata.blueprint.parts.length ?? 0;
     const previousMode = frame?.metadata.mode;
@@ -3841,8 +3906,18 @@ export function createWorkshopView(
     connectionTest.update(next);
     motionReadout.update(next);
     surface.refresh();
-    const blueprint = frame.metadata.blueprint,
-      key = JSON.stringify(blueprint);
+    const blueprint = frame.metadata.blueprint;
+    let key = blueprintKey;
+    if (blueprint !== blueprintReference) {
+      // Mode transitions can publish equal frozen trees with new identities.
+      // Compare only those replacements; ordinary ticks keep the reference fast path.
+      const content = JSON.stringify(blueprint);
+      blueprintReference = blueprint;
+      if (content !== blueprintContent) {
+        blueprintContent = content;
+        key++;
+      }
+    }
     if ((exploded || explodeAmount) && (key !== blueprintKey || frame.metadata.mode === 'run'))
       setExploded(false, true);
     if (key !== blueprintKey) {
@@ -3912,7 +3987,7 @@ export function createWorkshopView(
     pause.disabled = frame.metadata.mode !== 'run';
     stepButton.disabled = frame.metadata.mode !== 'paused';
     build.classList.toggle('active', frame.metadata.mode === 'build');
-    for (const tool of tools.querySelectorAll('[data-edit-tool], .edit-hint'))
+    for (const tool of (editToolNodes ??= tools.querySelectorAll('[data-edit-tool], .edit-hint')))
       tool.hidden = frame.metadata.mode !== 'build';
     surfaceSnapLabel.hidden = frame.metadata.mode !== 'build';
     if (frame.metadata.mode !== 'build')
@@ -3924,6 +3999,9 @@ export function createWorkshopView(
     partsBrowser.update(frame.metadata.mode, assemblies?.busy() || assemblyPlacement?.active());
     partPlacement?.refresh();
     refreshAssemblyState();
+    scenePrepared = true;
+    renderedCursor = cursor;
+    framePreparationFailed = false;
   }
   function readRenderedCenters() {
     return [...meshes].map(([id, mesh]) => {
@@ -4222,6 +4300,14 @@ export function createWorkshopView(
     previousFrameRendered = false;
   function draw(now = performance.now()) {
     if (disposed) return;
+    // Keep the display owner alive when its injected clock or render update throws.
+    // The application pauses that clock and reports the error; do not swallow it.
+    animation = requestAnimationFrame(draw);
+    beforeDraw?.(now);
+    if (framePreparationFailed) {
+      previousFrameRendered = false;
+      return;
+    }
     const beforeQuality = graphicsQuality.read().level;
     const quality = graphicsQuality.observe({
       now,
@@ -4291,7 +4377,7 @@ export function createWorkshopView(
     }
     controls.update();
     updatePortCues();
-    if (sceneDirty) updateConnections();
+    if (sceneDirty && !scenePrepared) updateConnections();
     const selectedMesh = meshes.get(selected),
       part = frame?.metadata.blueprint.parts.find((p) => p.id === selected);
     selectionLabel.hidden = !selectedMesh;
@@ -4316,23 +4402,47 @@ export function createWorkshopView(
     inspectionFill.target.position.copy(controls.target);
     ground.visible = camera.position.y > groundData.position[1] + groundData.halfExtents[1] + 0.005;
     if (sceneDirty) {
-      refreshSelectionVisuals();
-      refreshInspector();
+      if (!scenePrepared) {
+        refreshSelectionVisuals();
+        refreshInspector();
+      }
       surface.renderOverlay();
       cameraFrustum.update(frame, selected, cameraControls?.frustum(), cameraControls?.active());
       sceneDirty = false;
       const renderStart = performance.now();
-      if (!cameraControls?.active()) graphicsRenderer.render(scene, camera, quality);
+      if (!cameraControls?.active()) {
+        graphicsRenderer.render(scene, camera, quality);
+        // A machine-camera view suppresses scene submission; only a real submission
+        // completes a draw for cursor-keyed reflection.
+        completedDraw = renderedCursor
+          ? { cursor: { ...renderedCursor }, completedAt: performance.now() }
+          : null;
+      }
       renderCosts.push(performance.now() - renderStart);
       if (renderCosts.length > 240) renderCosts.shift();
       renderedFrames++;
       previousFrameRendered = true;
     }
-    animation = requestAnimationFrame(draw);
   }
   draw();
   return {
     utilityHost: footer,
+    readCompletedDraw: () => structuredClone(completedDraw),
+    updateSound: (state) => soundControls.update(state),
+    audioListener: () => {
+      if (cameraControls?.active()) {
+        const current = cameraSession.read(),
+          index = current.frame?.metadata.blueprint.parts.findIndex((p) => p.id === current.active);
+        const body = current.frame?.physics[index];
+        if (!body) return null;
+        const pose = opticalFrame(body);
+        const [x, y, z] = pose.forward,
+          [X, Y, Z] = pose.up;
+        return { position: pose.position, right: [y * Z - z * Y, z * X - x * Z, x * Y - y * X] };
+      }
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+      return { position: camera.position.toArray(), right: right.toArray() };
+    },
     refreshCameras: () => cameraControls?.refresh(),
     refreshLearning: () => learningControls?.refresh(),
     render,
@@ -4393,6 +4503,7 @@ export function createWorkshopView(
         })),
       },
       rendering: {
+        completedDraw: structuredClone(completedDraw),
         frames: renderedFrames,
         quality: graphicsQuality.read(),
         pixelRatio: renderer.getPixelRatio(),
@@ -4483,6 +4594,7 @@ export function createWorkshopView(
       surface.dispose();
       editing.dispose();
       learningControls?.dispose();
+      soundControls.dispose();
       cameraControls?.dispose();
       controls.dispose();
       sensorView.dispose();

@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { immutableCopy } from '../src/model/observation.mjs';
 import { motorStep } from '../src/simulation/physics/law/motor.mjs';
 import { createPowerNetwork } from '../src/simulation/power.mjs';
 const dt = 1 / 120,
@@ -202,4 +204,114 @@ test('multiple sensors share a motor supply, brown out under its load and recove
     recovered.sensors.reduce((sum, s) => sum + s.heatJ, 0) +
     recovered.motors.reduce((sum, m) => sum + m.heatJ + m.driverHeatJ + m.energyResidualJ, 0);
   close(spent, heat + recovered.motors.reduce((sum, m) => sum + m.shaftWorkJ, 0));
+});
+
+test('completed power reads are admitted immutable snapshots detached from later work', () => {
+  const network = createPowerNetwork(config());
+  const initial = network.read();
+  assert.ok(Object.isFrozen(initial));
+  assert.equal(immutableCopy(initial), initial);
+  assert.ok(Object.isFrozen(initial.motors[0]));
+  assert.throws(() => {
+    initial.cells[0].energyJ = 0;
+  }, TypeError);
+  execute(network);
+  assert.equal(initial.cells[0].energyJ, 100);
+  assert.ok(network.read().cells[0].energyJ < 100);
+  const snapshot = network.snapshot();
+  snapshot.cells[0].energyJ = 0;
+  assert.ok(network.read().cells[0].energyJ > 0);
+});
+
+test('power-network late receipt rejection preserves completed and pending state for retry without restore', () => {
+  for (const reason of ['INVALID_MOTOR_SAMPLE', 'ENERGY_INVARIANT']) {
+    const cfg = config();
+    cfg.motors.push({ ...cfg.motors[0], node: 4, body: 4, rotor: 5, joint: 1 });
+    cfg.wires.push([0, 4]);
+    const control = createPowerNetwork(cfg),
+      retry = createPowerNetwork(cfg);
+    const before = JSON.stringify(retry.read());
+    const allocate = (n) =>
+      n.step(
+        dt,
+        cfg.motors.map(({ node }) => ({ node, speed: 0 })),
+        [],
+        cfg.motors.map(({ node }) => ({ node, inertia: 0.01 })),
+      );
+    const expected = allocate(control),
+      allocation = allocate(retry);
+    assert.deepEqual(allocation, expected);
+    const good = cfg.motors.map(({ node }, i) => ({
+      ...receipt(0, (allocation.torques[i].value * dt) / 0.01, allocation.torques[i].value),
+      node,
+    }));
+    assert.ok(good[0].workJ > 0);
+    const bad = structuredClone(good);
+    if (reason === 'INVALID_MOTOR_SAMPLE') bad[1].speedAfter = NaN;
+    else bad[1].workJ += 1;
+    assert.throws(() => retry.completeStep(dt, bad), new RegExp(reason));
+    assert.equal(JSON.stringify(retry.read()), before);
+    assert.throws(() => retry.snapshot(), /POWER_STEP_PENDING/);
+    // No session or restore participates: the rejected completion must leave the
+    // pending allocation intact so the same network can accept corrected receipts.
+    assert.equal(
+      JSON.stringify(retry.completeStep(dt, good)),
+      JSON.stringify(control.completeStep(dt, good)),
+    );
+    assert.equal(JSON.stringify(retry.read()), JSON.stringify(control.read()));
+  }
+});
+
+test('session late power failure publishes the previous completed power and a failure bundle', () => {
+  const run = (mode) =>
+    JSON.parse(
+      execFileSync(
+        process.execPath,
+        [new URL('./fixtures/power-late-failure.mjs', import.meta.url).pathname, mode],
+        { encoding: 'utf8' },
+      ),
+    );
+  const positive = run('success');
+  assert.equal(positive.failureBundle, null);
+  // This separate session-level witness checks completed-frame/failure publication.
+  // It does not inspect or retry the power network's private pending allocation.
+  const failed = run('failure');
+  assert.equal(failed.failureBundle.failedTick, 1);
+  assert.equal(failed.failureBundle.reasonCode, 'ENERGY_INVARIANT');
+  assert.deepEqual(failed.power, failed.failureBundle.completed.power);
+  assert.ok(failed.power.motors.every((m) => m.heatJ === 0));
+});
+
+test('completion rechecks an untrusted position receipt before committing its angle', () => {
+  const cfg = config();
+  cfg.motors[0].positionControl = {
+    lowerLimit: -1,
+    upperLimit: 1,
+    proportionalGain: 1,
+    dampingGain: 0,
+    integralGain: 0,
+  };
+  const network = createPowerNetwork(cfg),
+    before = network.read();
+  const allocation = network.step(
+    dt,
+    [{ node: 1, speed: 0, angle: 0 }],
+    [],
+    [{ node: 1, inertia: 0.01 }],
+  );
+  const good = {
+    ...receipt(0, (allocation.torques[0].value * dt) / 0.01, allocation.torques[0].value),
+    angle: 0,
+  };
+  let reads = 0;
+  const changing = {
+    ...good,
+    get angle() {
+      return ++reads <= 2 ? 0 : NaN;
+    },
+  };
+  assert.throws(() => network.completeStep(dt, [changing]), /INVALID_POWER_CHECKPOINT/);
+  assert.deepEqual(network.read(), before);
+  const completed = network.completeStep(dt, [good]);
+  assert.equal(completed.motors[0].position.angle, 0);
 });

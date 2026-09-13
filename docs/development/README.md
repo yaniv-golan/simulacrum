@@ -155,7 +155,7 @@ rotate the view or use a visible part surface; the projection alone does not pro
 
 ## Keep explanations current
 
-<!-- doc-review {"version":1,"fingerprint":"b7437a851bfc74793fe047e240ede29897c3bbe00a733b0170d2872eb20c592d","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"977b9d6e45bd4919ee7d6ce0a245da7f462b9f855460a50e98638750e18506cf","disposition":"still accurate","rationale":"The regenerated reference lists the new validateIntent and destinationStillMatches owners and the extended window, candidate-isolation and merge-coverage controls; the regenerate, section-specific review and exact-source closure workflow is unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"7d99099ddbcf6b5b094106144c976a761491f953e84a8085bdc101935da1fe08","dependencies":"docs/development/.reviews/README/keep-explanations-current.json","dependencyDigest":"82b9f75cb6cfa4e55d8b71a2dd313465c87e1b39e90c527dbc3041d124a1c194","disposition":"still accurate","rationale":"Integration of the window-intent/destination-drift branch with main: the regenerated reference now lists both the performance work's render-lifecycle and completed-state owners and this branch's validateIntent and destinationStillMatches owners; the regenerate, section-specific review and exact-source closure workflow is unchanged."} -->
 
 Navigation and test-selection explanations are snapshots with a content identity,
 format version, query/options and completeness information. Rerun them after changes
@@ -296,7 +296,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"ea5d8daf80eeb7012adbb0ae0d4896ebd4f8d6f2c238601bb5b5a08d288e02dd","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"e23eb1e42bc7ef4b74bf2bbbc4d05a73b307b48988ca89d96f73de2099e8fc2b","disposition":"still accurate","rationale":"Intent validation now rejects control characters and allows path-length values, and drift resolution prefers refs over commit-prefix lookalikes; neither touches browser selection, scheduling, exclusivity or scope audits."} -->
+<!-- doc-review {"version":1,"fingerprint":"105d23611e4b2bd02baf02ce6b5590c35f130b9f37dde7699d539938cc39a2ca","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"065edaf2689d781b8a5d36854d1c0e87df64a1881410b8c34f150b62fb859242","disposition":"still accurate","rationale":"Integration with main: the merged manifest carries the performance work's verify-render-lifecycle check and regenerated scope digests alongside this branch's invariant-control additions; window intent publication and destination-drift reporting change no selection, scheduling, exclusivity or scope-audit rule."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -545,7 +545,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"cc539a2db43633f3cda54af3ad2d1e27564917d771703567b4d325ca889a8eda","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"18570e5c0952eb67d2f5e3953e454095ceeb82202d426a3f8c1311eb0813bc4a","disposition":"still accurate","rationale":"The candidate additionally publishes its branch in the window intent and reports UNRESOLVED when a named destination no longer resolves; capture, isolation, attempt ownership, origin matching and which checks run are unchanged, and the priority fixture now witnesses the branch-pair wiring."} -->
+<!-- doc-review {"version":1,"fingerprint":"fbc262cee5506bd160f35e5eef0d3bcd14ba7dc9bf35972dee1caf336d731a9b","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"eb371dec4c1ed0fea8e572762b6222fbc33197481b07d331a126405dffbcb33b","disposition":"still accurate","rationale":"Integration with main: candidate capture, isolation, attempt ownership and origin matching are unchanged on the merged source; the merge candidate publishes its pinned refs and branch as window intent and reports destinationStillMatches beside originStillMatches, and the priority fixture witnesses that wiring. No evidence reuse or check selection changed."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
