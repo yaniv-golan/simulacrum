@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"52a0b900760ca149d9afc5b07e4c5bc698744a1d7b74cef9aa76c29c6524653b","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"86144b0f334bf5162a071e60996cc45501b0da5199903a69ce7421c87cf0ac79","disposition":"still accurate","rationale":"The mechanical-audio browser check now batches its real completed-frame trial by 60 Hz player frames instead of 1000/30 four-tick chunks so the per-frame audio budget is charged per frame; thresholds, assertions and physics ownership are unchanged, and the recipe's analytical, deterministic and Course-qualification requirements still apply."} -->
+<!-- doc-review {"version":1,"fingerprint":"d2f980c1da30c06e1f61499abed679c0697d78cd1ebb81340cfd62a2a4e16dad","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"95d938af044e90042c1ec12d524ac8b22153d03ca9533bddda2e3db30040b95e","disposition":"still accurate","rationale":"The manifest delta is the consumer-hash refresh for the mechanical-audio check's frame-batching change; no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

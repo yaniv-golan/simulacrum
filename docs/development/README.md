@@ -296,7 +296,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"105d23611e4b2bd02baf02ce6b5590c35f130b9f37dde7699d539938cc39a2ca","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"065edaf2689d781b8a5d36854d1c0e87df64a1881410b8c34f150b62fb859242","disposition":"still accurate","rationale":"Integration with main: the merged manifest carries the performance work's verify-render-lifecycle check and regenerated scope digests alongside this branch's invariant-control additions; window intent publication and destination-drift reporting change no selection, scheduling, exclusivity or scope-audit rule."} -->
+<!-- doc-review {"version":1,"fingerprint":"1b04bcd0a8bf9894e08c2dba101ddaa8409b7f3e75afc562b1b96f1c20e9180c","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"4bb48c281ccf1ebfcd58b2c6cce52022bafb80ced15182d390e3895301a99eb3","disposition":"still accurate","rationale":"Four metadata scope rows (browser-evidence, app-fingerprint, source-identity, module-graph) refreshed only their consumer source hash after the mechanical-audio check changed its frame batching; the review was applied with passing invariant-control witnesses, and read expressions, classifications, exclusions, roots and coverage rules are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -545,7 +545,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"fbc262cee5506bd160f35e5eef0d3bcd14ba7dc9bf35972dee1caf336d731a9b","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"eb371dec4c1ed0fea8e572762b6222fbc33197481b07d331a126405dffbcb33b","disposition":"still accurate","rationale":"Integration with main: candidate capture, isolation, attempt ownership and origin matching are unchanged on the merged source; the merge candidate publishes its pinned refs and branch as window intent and reports destinationStillMatches beside originStillMatches, and the priority fixture witnesses that wiring. No evidence reuse or check selection changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"ae0c323a9c33f0dd15545423546059c0599afb1990bd617ef27fc4ab84c2486c","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"f645955a7feb6bd61c7b9ffc77e571e64ca91e9b0f83b341b23d0f007764a917","disposition":"still accurate","rationale":"The manifest change is a consumer-hash refresh applied through browser:scopes with witnesses; candidate capture, isolation, attempt ownership, origin matching and the merge-scope preflight that rejected the stale registry all behave as documented."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

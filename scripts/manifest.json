@@ -365,7 +365,7 @@
       },
       {
         "id": "course-mode-independent",
-        "how": "no \u00a73 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
+        "how": "no §3 circuit predicate names a gait; gait-specific predicates live in the legged/wheeled annexes. An evaluator keyed on machine type is the same defect class as a friction law keyed on rigRole.",
         "check": null,
         "ruleId": "course-contract"
       },
@@ -7023,7 +7023,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "ca4f63e65e42fbd85d61cc558c240f3e319b4c64bd8a5371738b906920cfe14c",
+      "consumerSourceHash": "db7fb21a8d17fcf0a463d4098123d6e81d7432b8e59e6d26b19dea221eecffef",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
@@ -7126,7 +7126,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "ca4f63e65e42fbd85d61cc558c240f3e319b4c64bd8a5371738b906920cfe14c",
+      "consumerSourceHash": "db7fb21a8d17fcf0a463d4098123d6e81d7432b8e59e6d26b19dea221eecffef",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7277,7 +7277,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "d001f882f33372194934ba3d295c86a3323048e9e95655a8e93f1f2e5d36ed59",
+      "consumerSourceHash": "2da7a452fb326a76fc67678cb35801de62c4be38966a79183761bc5fcb28f760",
       "externalImports": [
         "node:child_process",
         "node:crypto",
@@ -7882,7 +7882,7 @@
         }
       ],
       "roots": "688f25b07996e9f4a144ac8c1e6d0b8322728815911b0cddc5a3e933a2e33640",
-      "consumerSourceHash": "ca4f63e65e42fbd85d61cc558c240f3e319b4c64bd8a5371738b906920cfe14c",
+      "consumerSourceHash": "db7fb21a8d17fcf0a463d4098123d6e81d7432b8e59e6d26b19dea221eecffef",
       "externalImports": [
         "acorn",
         "css-tree",
