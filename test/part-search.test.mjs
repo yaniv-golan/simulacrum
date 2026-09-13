@@ -19,6 +19,7 @@ test('everyday words and roles find the intended part before incidental referenc
     ['engine', 'poweredMotor'],
     ['spin', 'poweredMotor'],
     ['latch', 'releaseCoupler'],
+    ['headlight', 'poweredLamp'],
     ['camera', 'camera'],
     ['photograph', 'camera'],
     ['release cargo', 'releaseCoupler'],
