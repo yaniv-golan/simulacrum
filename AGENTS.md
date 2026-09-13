@@ -193,9 +193,9 @@ the earlier integration branch and verifies with the same `--base` and
 `--destination <earlier integration branch name>` (a ref, never a commit, so drift is
 reported). If the earlier integration is revised after being stacked on, re-merge its head
 and re-verify. Before landing by fast-forward, confirm `git rev-parse main` equals the
-report's `priority.destination`. The verification window notice names the owner's tier,
-destination and origin worktree; stack on a same-destination owner instead of waiting it
-out. Direct tiers remain available for already frozen release/CI copies and development probes.
+report's `priority.destination`. When the window owner is a candidate, the wait notice
+names its tier, branch, destination and origin worktree; stack on a same-destination
+owner instead of waiting it out. Direct tiers remain available for already frozen release/CI copies and development probes.
 
 Keep changes reviewable. Do not stage, commit, push, merge, rename branches, publish
 or deploy without explicit authorization. Keep internal plans, review history, private

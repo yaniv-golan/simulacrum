@@ -2,7 +2,7 @@
 
 ## Overview
 
-<!-- doc-review {"version":1,"fingerprint":"1d903bf3be2492eac3a12a4e94ecdcc96536617aa221caac4d13b3a6211a9950","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"deaef60bf010712abdf33ee841776560e688099621feec96bb4419a20d9ad3c1","disposition":"still accurate","rationale":"AGENTS.md's stacked-integration rule concerns verification coordination between candidates; the runtime contract still owns clocks, state and replay and AGENTS still owns layer edges as the overview states."} -->
+<!-- doc-review {"version":1,"fingerprint":"fdc66fc3e70e559b867a09be927e531813e1ec3afd0df777a2721755e4739d59","dependencies":"docs/development/.reviews/architecture/overview.json","dependencyDigest":"194d5570d79cbb8b073face21a2e17dbe9901558c061560fbb4ca47385affc3b","disposition":"still accurate","rationale":"The AGENTS.md wording change limits the notice claim to candidate owners; runtime, layer-edge and manifest ownership described by the overview are unchanged."} -->
 
 The [runtime contract](../contracts/runtime-v1.md) owns clocks, cursors, replay and
 state ownership. [AGENTS.md](../../AGENTS.md) defines allowed layer edges. The

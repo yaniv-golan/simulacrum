@@ -191,7 +191,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"a81624bcb2e674ffca39a45e0f2b1351be88794458b1d48b2cf1a1aadd3877a2","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"21309814771a8a2c817abf6214528f57100b558c37fd630bce6c9c658fe25287","disposition":"still accurate","rationale":"Stacked-integration policy, window intent and destination drift reporting do not touch physics ownership, analytical controls, independent accounting or Course qualification requirements; the recipe's required checks are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"2f1890e8564ba71b7158118d8fd83fe660dd4c4a889b092740b1adae81497cd9","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"407fd546c36e2e3e81b8ba674cdfd6474802d2c223403e65b359d5e3741995c4","disposition":"still accurate","rationale":"Window intent, destination drift and candidate priority fixtures concern verification coordination only; physics ownership, analytical controls, independent accounting and Course qualification requirements in this recipe are unchanged."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

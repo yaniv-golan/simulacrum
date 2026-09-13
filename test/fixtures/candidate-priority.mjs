@@ -7,7 +7,7 @@ import { parseCompletionArgs } from '../../scripts/verification-tiers.mjs';
 
 const repo = fileURLToPath(new URL('../../', import.meta.url)).replace(/\/$/, '');
 const root = mkdtempSync('/tmp/candidate-priority-');
-const [tier, codeText] = process.argv.slice(2);
+const [tier, codeText, pair] = process.argv.slice(2);
 const code = Number(codeText);
 const calls = [];
 let captured;
@@ -23,8 +23,20 @@ globalThis.candidateTransport = {
     calls.push({ kind: 'identity', path });
     return true;
   },
+  drift(root, refs) {
+    calls.push({ kind: 'drift', root, refs });
+    return 'fixture-drift';
+  },
   async run(binary, args, options) {
-    calls.push({ kind: 'process', binary, args, cwd: options.cwd });
+    calls.push({
+      kind: 'process',
+      binary,
+      args,
+      cwd: options.cwd,
+      intent: options.env?.SIMULACRUM_VERIFICATION_INTENT
+        ? JSON.parse(options.env.SIMULACRUM_VERIFICATION_INTENT)
+        : null,
+    });
     if (binary === 'npm') return { code: 0 };
     const hint = JSON.parse(
       readFileSync(join(options.cwd, 'artifacts/browser-suite/scheduling-history.json')),
@@ -72,11 +84,12 @@ registerHooks({
     let source;
     if (url === `file://${repo}/scripts/candidate.mjs`)
       source =
-        'export const captureCandidate=(...args)=>globalThis.candidateTransport.capture(...args); export const candidateMatchesOrigin=(...args)=>globalThis.candidateTransport.matches(...args); export const destinationStillMatches=()=>"NOT_EVALUATED";';
+        'export const captureCandidate=(...args)=>globalThis.candidateTransport.capture(...args); export const candidateMatchesOrigin=(...args)=>globalThis.candidateTransport.matches(...args); export const destinationStillMatches=(...args)=>globalThis.candidateTransport.drift(...args); export const currentBranch=()=>"fixture-branch";';
     if (url === `file://${repo}/scripts/verification-preparation.mjs`)
       source = 'export async function assertVerificationReady() {return {status: "READY"}}';
     if (url === `file://${repo}/scripts/merge-selection.mjs`)
-      source = 'export function mergeChanges(options) { return { refs: { base: options.base } }; }';
+      source =
+        'export function mergeChanges(o) { return { refs: { base: o.base, ...(o.incoming ? { incoming: `resolved-${o.incoming}`, destination: `resolved-${o.destination}`, destinationName: o.destination } : {}) } }; }';
     if (url === `file://${repo}/scripts/runtime-preflight.mjs`)
       source = 'export function assertRuntime() {}';
     if (url === `file://${repo}/scripts/run-check.mjs`)
@@ -100,6 +113,7 @@ process.argv = [
   `${repo}/scripts/verify-candidate.mjs`,
   tier,
   ...(tier !== 'final' ? ['--base', 'HEAD~1'] : []),
+  ...(pair ? ['--incoming', 'feature', '--destination', 'target'] : []),
   '--priority-files',
   './scripts/verify-recording-browser.mjs',
   'src/application/workshop-app.mjs',

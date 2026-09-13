@@ -74,20 +74,43 @@ export async function candidateMatchesOrigin(root, candidate) {
     return false;
   }
 }
+/** The checked-out branch name, or null when detached. */
+export function currentBranch(root) {
+  try {
+    return git(root, ['symbolic-ref', '--short', '-q', 'HEAD'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return null;
+  }
+}
 /** Whether a named integration destination still resolves to the commit a candidate
- * pinned. A supplied commit (full or abbreviated) cannot drift and is not evaluated;
- * an unresolvable name counts as drift. */
+ * pinned: true, false (it moved), UNRESOLVED (the name no longer resolves, e.g. a
+ * stacked branch deleted after it fast-forwarded) or NOT_EVALUATED (a commit was
+ * supplied, which cannot drift). A ref wins over a commit-prefix lookalike, as in git. */
 export function destinationStillMatches(root, { destination, destinationName } = {}) {
   if (!destination || !destinationName) return 'NOT_EVALUATED';
-  if (destination.startsWith(destinationName.toLowerCase())) return 'NOT_EVALUATED';
-  try {
-    return (
-      text(root, ['rev-parse', '--verify', '--end-of-options', `${destinationName}^{commit}`]) ===
-      destination
-    );
-  } catch {
-    return false;
-  }
+  const quiet = (args) => {
+    try {
+      return git(root, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    } catch {
+      return null;
+    }
+  };
+  // rev-parse echoes --end-of-options in symbolic mode; names never start with '-'
+  // (mergeChanges rejects them), so the flag is unnecessary here.
+  if (destinationName.startsWith('-')) return 'UNRESOLVED';
+  const symbolic = quiet(['rev-parse', '--symbolic-full-name', destinationName]);
+  if (!symbolic && destination.startsWith(destinationName.toLowerCase())) return 'NOT_EVALUATED';
+  const resolved = quiet([
+    'rev-parse',
+    '--verify',
+    '--end-of-options',
+    `${destinationName}^{commit}`,
+  ]);
+  if (resolved === null) return 'UNRESOLVED';
+  return resolved === destination;
 }
 /** Observed before/after stability, not an atomic filesystem snapshot. */
 export async function captureCandidate(

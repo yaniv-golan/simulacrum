@@ -61,15 +61,23 @@ const INTENT_FIELDS = [
   'destination',
   'destinationName',
   'origin',
+  'head',
 ];
-/** Owner-declared purpose published to contenders; short strings only, never environment values. */
+/** Owner-declared purpose published to contenders: printable single-line strings
+ * (paths and ref names), never environment values. */
 export function validateIntent(intent) {
   if (intent === undefined) return undefined;
   if (!intent || typeof intent !== 'object' || Array.isArray(intent))
     throw Error('window intent must be an object');
   for (const [key, value] of Object.entries(intent))
-    if (!INTENT_FIELDS.includes(key) || typeof value !== 'string' || !value || value.length > 300)
-      throw Error(`window intent field ${key} must be a short string`);
+    if (
+      !INTENT_FIELDS.includes(key) ||
+      typeof value !== 'string' ||
+      !value ||
+      value.length > 1024 ||
+      /\p{Cc}/u.test(value)
+    )
+      throw Error(`window intent field ${key} must be a short printable string`);
   return { ...intent };
 }
 /** Cooperative host-wide window; never treats elapsed time as proof an owner stopped. */
@@ -262,7 +270,8 @@ if (
         const what = declared.tier ?? declared.script ?? 'no declared intent';
         const where = declared.origin ?? owner.cwd ?? 'unknown cwd';
         const target = declared.destinationName ?? declared.destination;
-        return `PID ${owner.pid}, ${what}${target ? ` → destination ${target}` : ''}, ${where}`;
+        const branch = declared.head ? ` on ${declared.head}` : '';
+        return `PID ${owner.pid}, ${what}${branch}${target ? ` → destination ${target}` : ''}, ${where}`;
       };
       const run = () => {
         childStarted = true;
@@ -278,7 +287,7 @@ if (
             intent,
             onWait: ({ elapsedMs, waitMs, owner }) =>
               console.error(
-                `Waiting for verification window (${Math.round(elapsedMs / 1000)}s of ${waitMs / 1000}s limit; owner ${describe(owner)}). ${owner?.intent?.destination ? 'If you are integrating into the same destination, stack on that integration branch instead of racing it. ' : ''}Cancel to return to editing.`,
+                `Waiting for verification window (${Math.round(elapsedMs / 1000)}s of ${waitMs / 1000}s limit; owner ${describe(owner)}). ${owner?.intent?.destination ? `If you are integrating into the same destination, stack on ${owner.intent.head ?? 'that integration branch'} instead of racing it. ` : ''}Cancel to return to editing.`,
               ),
           });
       Object.assign(report, {

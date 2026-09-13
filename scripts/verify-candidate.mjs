@@ -10,7 +10,12 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { captureCandidate, candidateMatchesOrigin, destinationStillMatches } from './candidate.mjs';
+import {
+  captureCandidate,
+  candidateMatchesOrigin,
+  destinationStillMatches,
+  currentBranch,
+} from './candidate.mjs';
 import { assertRuntime } from './runtime-preflight.mjs';
 import { assertVerificationReady } from './verification-preparation.mjs';
 import {
@@ -26,6 +31,7 @@ import {
 import { createTiming } from './verification-timing.mjs';
 import { runProcess } from './run-check.mjs';
 const origin = process.cwd(),
+  originBranch = currentBranch(origin),
   started = performance.now();
 const report = {
   status: 'running',
@@ -186,6 +192,7 @@ try {
               script: `verify-${tier}.mjs`,
               tier,
               origin,
+              ...(originBranch ? { head: originBranch } : {}),
               ...(candidate.base ? { base: candidate.base } : {}),
               ...(tier === 'merge' && options.incoming
                 ? {

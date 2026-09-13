@@ -103,9 +103,27 @@ test('destination drift is detected for named refs and not evaluated for bare co
     false,
     'hex-looking branch names are refs, not commits',
   );
+  // A branch whose name is literally a prefix of the pinned commit is still a ref.
+  const lookalike = head.slice(0, 6);
+  g('branch', lookalike, 'HEAD');
+  assert.equal(
+    destinationStillMatches(root, { destination: head, destinationName: lookalike }),
+    false,
+  );
+  g('branch', 'stacked', head);
+  assert.equal(
+    destinationStillMatches(root, { destination: head, destinationName: 'stacked' }),
+    true,
+  );
+  g('branch', '-D', 'stacked');
+  assert.equal(
+    destinationStillMatches(root, { destination: head, destinationName: 'stacked' }),
+    'UNRESOLVED',
+    'a deleted stacked branch is not the same as a moved destination',
+  );
   assert.equal(
     destinationStillMatches(root, { destination: head, destinationName: 'no-such-ref' }),
-    false,
+    'UNRESOLVED',
   );
   assert.equal(destinationStillMatches(root, {}), 'NOT_EVALUATED');
 });

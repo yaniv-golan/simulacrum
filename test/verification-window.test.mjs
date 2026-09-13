@@ -296,6 +296,12 @@ test('malformed intent is rejected before any owner file is written, including i
   assert.equal(existsSync(directory), false);
   assert.throws(() => module.validateIntent({ nope: 'x' }), /intent/);
   assert.throws(() => module.validateIntent({ tier: '' }), /intent/);
+  assert.throws(() => module.validateIntent({ origin: '/a\nfake notice line' }), /intent/);
+  assert.throws(() => module.validateIntent({ origin: 'x'.repeat(1025) }), /intent/);
+  assert.deepEqual(module.validateIntent({ head: 'codex/x', origin: '/w/tree' }), {
+    head: 'codex/x',
+    origin: '/w/tree',
+  });
   assert.throws(() => module.validateIntent(['tier']), /intent/);
   assert.equal(module.validateIntent(undefined), undefined);
   assert.deepEqual(module.validateIntent({ tier: 'local' }), { tier: 'local' });

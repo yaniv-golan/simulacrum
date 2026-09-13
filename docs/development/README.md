@@ -1,6 +1,6 @@
 # Developer guide
 
-<!-- doc-review {"version":1,"fingerprint":"3d9df3457369bbbec0553b32394a80199b718f1cf425d7a658035194b8df8c1d","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"566daabc0c8096cf304ba67149c2ec3baec82dd408fe26405e582baab6b16a6f","disposition":"still accurate","rationale":"AGENTS.md adds the stacked-integration rule to the collaboration policy; the guide's entry points, navigation commands and the split between developer guidance and repository policy are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"9d7754e0f253e1ae76264d93cfb871fce38e8626f05932345c12f61311f47097","dependencies":"docs/development/.reviews/README/developer-guide.json","dependencyDigest":"71522f5937aecb605518b1bd7867cfc7063f306cd62cd5c7be2d92c4e2751298","disposition":"still accurate","rationale":"AGENTS.md now qualifies that the wait notice names tier, branch, destination and origin only when the owner is a candidate; the guide's entry points and the developer-guidance/policy split are unchanged."} -->
 
 Read [AGENTS.md](../../AGENTS.md), the [architecture map](architecture.md#overview) and the
 [recipe for your change](recipes.md#choose-a-recipe) before choosing an owner. Use Node 24.18.x and
@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"9ce3ce6ed470b0cff113d943aee104ec8006aa00ff87656191a2d4a0f29cfad6","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"0c33b7c3f85b808fc1621b760325c8f67b2148d32c6233ad65627880e0f7455d","disposition":"updated","rationale":"Added stacked-integration guidance: pass the earlier integration branch name as --destination with the same --base, read priority.destinationName and destinationStillMatches in the candidate report, re-merge after the earlier integration is revised, and find a waited-on owner's declared intent under windowReports[].value.contenders[].intent. Completion tiers, same-source execution and the automation/human-acceptance distinction are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"6371835a3688f76cc7182aaffa271d881a837a1f910537bddadf0f075afe8967","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"0c33b7c3f85b808fc1621b760325c8f67b2148d32c6233ad65627880e0f7455d","disposition":"updated","rationale":"destinationStillMatches now distinguishes UNRESOLVED (the name no longer resolves, normal after a stacked branch is deleted once it fast-forwarded; confirm main against priority.destination instead) from false (the destination moved); the retained owner intent also carries the integrating branch. Completion tiers and evidence rules are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -122,11 +122,13 @@ Stacked integrations: when another candidate is already verifying against the sa
 destination, merge that integration branch instead of `main` and pass its branch name as
 `--destination` with the same `--base`; the later candidate then lands unchanged once the
 earlier one fast-forwards. A branch-pair merge candidate records the supplied name as
-`priority.destinationName` and, at completion, `destinationStillMatches` (true, false, or
-NOT_EVALUATED when a bare commit was supplied); false means the destination moved and the
-evidence no longer applies to that integration. If the earlier integration is revised after
-being stacked on, re-merge its head and re-verify. A candidate that waited on another
-window owner retains that owner's declared intent under
+`priority.destinationName` and, at completion, `destinationStillMatches`: true, false (the
+destination moved, so the evidence no longer applies to that integration), UNRESOLVED (the
+name no longer resolves — normal after a stacked branch is deleted once it fast-forwarded;
+confirm `git rev-parse main` equals `priority.destination` instead) or NOT_EVALUATED (a
+bare commit was supplied). If the earlier integration is revised after being stacked on,
+re-merge its head and re-verify. A candidate that waited on another window owner retains
+that owner's declared intent (tier, branch, destination, origin worktree) under
 `windowReports[].value.contenders[].intent`.
 
 Install browser dependencies once with `npx playwright install chromium chrome`.
@@ -294,7 +296,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"d2fcbd0c8c22a3f132d509fe4d73baa96589b9c8cc5fa2252e4bf37b4fb1c858","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"87957574e9f0889a1f00878d32dbe47598d428894c3667327cbbbc102107108b","disposition":"still accurate","rationale":"Window intent publication, destination-name retention and completion drift reporting change no browser selection, scheduling, concurrency, exclusivity or scope-audit rule; the manifest change only extends three invariant control lists and owners."} -->
+<!-- doc-review {"version":1,"fingerprint":"ea5d8daf80eeb7012adbb0ae0d4896ebd4f8d6f2c238601bb5b5a08d288e02dd","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"e23eb1e42bc7ef4b74bf2bbbc4d05a73b307b48988ca89d96f73de2099e8fc2b","disposition":"still accurate","rationale":"Intent validation now rejects control characters and allows path-length values, and drift resolution prefers refs over commit-prefix lookalikes; neither touches browser selection, scheduling, exclusivity or scope audits."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -494,7 +496,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"7c0ea7d76c3bcce88f67f8dc0602347514379618fb4c617c1787388f7f83ee61","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"c1fe01c519d7a186e03c587aafc1719a4f83b7d2c113b5772306b7808c7a31b8","disposition":"updated","rationale":"The wait notice now names the owner's declared intent (script or tier, integration destination and origin worktree) and adds a stacking hint; contenders retain that intent in their window reports. Serialization, inheritance, wait limits, admission marking and recovery are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"2793d8a4b6ef075cc754a62875d7d3a702b7682af29ddf525f488807113c7993","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"e9aa05c5267cb320210f311c7e97c756290dfa13145c8e03b9152595720f3ca9","disposition":"updated","rationale":"The wait notice now also names the owner's integrating branch and the stacking hint names it; intent values are validated as single-line printable strings. Serialization, inheritance, wait limits, admission marking and recovery are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -543,7 +545,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"3efb58f23ede33789cf1e68e66cf2794425a20ba65116c325669a01200897313","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"0917fd038e9cbaa0222a2238150746dca59177fa65b76754e28a03953d933bda","disposition":"still accurate","rationale":"Capture, isolation, attempt ownership and origin matching are unchanged. The merge candidate additionally publishes its pinned refs as window intent and reports destinationStillMatches beside originStillMatches; neither reuses evidence or changes which checks run."} -->
+<!-- doc-review {"version":1,"fingerprint":"cc539a2db43633f3cda54af3ad2d1e27564917d771703567b4d325ca889a8eda","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"18570e5c0952eb67d2f5e3953e454095ceeb82202d426a3f8c1311eb0813bc4a","disposition":"still accurate","rationale":"The candidate additionally publishes its branch in the window intent and reports UNRESOLVED when a named destination no longer resolves; capture, isolation, attempt ownership, origin matching and which checks run are unchanged, and the priority fixture now witnesses the branch-pair wiring."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its
