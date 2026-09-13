@@ -2,10 +2,11 @@
   "version": 1,
   "dependencies": {
     "src/presentation/graphics-quality.mjs": "16316ff41411b1c0168089ace828dc927b62d32af10c91f02aec023d8bdc81f8",
-    "package-lock.json": "bcc829aa98315f5b3ca46abbd8ee3c660c15b5a258f209d9265741c9bc57513c",
-    "package.json": "6edb48593a61fb710edc6322958c53fc4bb2c8c2e8039daecb99e13117f7762a",
+    "package-lock.json": "a50a95826c7fa932c9f9c8803270415fd88de207265bd3305257ad45893fb1d6",
+    "package.json": "4e723c76460ae753b9da7a34719016708efe8e734bd7718b5f79912952e5c4f0",
     "test/graphics-quality.test.mjs": "fc56ad710a0d7a0a738704b61bf44d10da2d35c764172ab0097ab8c773892244",
     "scripts/verify-adaptive-graphics.mjs": "2f71e24a5cedde3ddddb1df2124af1320c6c90caea6cc251d21f64aff7520b94",
+    "scripts/verify-spring-browser.mjs": "12933a7a25bca7816a36e5ad4f3e7caec126d451f9851afc08f37e6171e56b0e",
     "src/presentation/lamp-view.mjs": "04c8dbeac7634a6dd5c177877bb05aacfc29c2e15971ff3f2fd265eafa902604",
     "scripts/verify-lamp-browser.mjs": "ea842920ba797aab4a0ebd10582ef0c0f2b63d97a855a0bc29d680e93e44c829",
     "scripts/verify-lamp-performance.mjs": "ad339de29c3024501a967f276d5cc8746ffe4dfaa186f2952e095c29b2250207"
