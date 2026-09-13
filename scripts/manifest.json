@@ -6021,7 +6021,7 @@
         "src/presentation/workshop-view.mjs",
         "test/browser/part-help-fixture.mjs"
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
       "externalImports": []
     },
     {
@@ -6045,7 +6045,7 @@
         "vite"
       ],
       "consumers": [],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36"
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400"
     },
     {
       "entrypoint": "scripts/verify-mirror-browser.mjs",
@@ -6063,7 +6063,7 @@
         "verify-mirror-browser"
       ],
       "consumers": [],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36"
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400"
     },
     {
       "entrypoint": "src/presentation/assembly-mirror.mjs",
@@ -6082,7 +6082,7 @@
         "src/application/workshop-app.mjs",
         "src/presentation/workshop-view.mjs"
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36"
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400"
     },
     {
       "entrypoint": "src/application/remote-playtest.mjs",
@@ -6113,7 +6113,7 @@
         "src/application/workshop-app.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36"
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400"
     },
     {
       "entrypoint": "src/model/messages.mjs",
@@ -6150,7 +6150,7 @@
         "test/scene-editor.test.mjs",
         "test/surface-pending.test.mjs"
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36"
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400"
     }
   ],
   "experimentInputScopes": [
@@ -6425,7 +6425,7 @@
         }
       ],
       "consumers": [],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -6490,7 +6490,7 @@
           ]
         }
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "externalImports": [
         "node:crypto",
@@ -6539,7 +6539,7 @@
         }
       ],
       "consumers": [],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -6612,8 +6612,8 @@
           ]
         }
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
-      "consumerSourceHash": "b2fd108e2404d2d2eaac2c666600a9625de161eacb5f9f370e8182d7c828fcb4",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
       "externalImports": [
         "node:fs",
         "node:os",
@@ -6664,20 +6664,23 @@
           ]
         }
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
-      "consumerSourceHash": "b1bbfc6b460e32ce65e25243de63072ba6e3a6a22889d9ba4eb4edd4095f24b0",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "consumerSourceHash": "868d924c34ae87a3a725c395aee0c86931fd8c0d4bfdc0ecc8458b802a9c7516",
       "externalImports": [
         "node:assert/strict",
         "node:crypto",
         "node:fs"
       ],
       "consumers": [
+        "scripts/assembly-ux-cases.mjs",
+        "scripts/part-help-cases.mjs",
         "scripts/qualify-workshop.mjs",
         "scripts/verify-adaptive-graphics.mjs",
         "scripts/verify-assemblies-browser.mjs",
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser.mjs",
         "scripts/verify-camera-browser.mjs",
@@ -6727,15 +6730,12 @@
         "scripts/verify-vehicle-controls.mjs",
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
+        "test/assembly-partitions.test.mjs",
         "test/browser-evidence.test.mjs",
         "test/f2.test.mjs",
-        "scripts/assembly-ux-cases.mjs",
-        "scripts/part-help-cases.mjs",
-        "scripts/verify-authorable-scenes.mjs",
-        "test/assembly-partitions.test.mjs",
         "test/part-help-partitions.test.mjs"
       ],
-      "sourceSha256": "a1b822370e7a65c272ebdd5b08d9b57a1025cf5e334de373299c1be5b55007a0",
+      "sourceSha256": "7e0f551e0a30874a2ac39b324d7985f05175dc5d9ba7df05f94ae7e5d538fd85",
       "entrypoint": "scripts/browser-evidence.mjs",
       "dependencies": [
         "scripts/app-fingerprint.mjs",
@@ -6765,14 +6765,15 @@
           ]
         }
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
-      "consumerSourceHash": "b1bbfc6b460e32ce65e25243de63072ba6e3a6a22889d9ba4eb4edd4095f24b0",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "consumerSourceHash": "868d924c34ae87a3a725c395aee0c86931fd8c0d4bfdc0ecc8458b802a9c7516",
       "externalImports": [
         "node:child_process",
         "node:crypto",
         "node:fs"
       ],
       "consumers": [
+        "scripts/assembly-ux-cases.mjs",
         "scripts/assess.mjs",
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
@@ -6783,6 +6784,7 @@
         "scripts/ci.mjs",
         "scripts/gate-structural.mjs",
         "scripts/gate.mjs",
+        "scripts/part-help-cases.mjs",
         "scripts/qualify-m1.mjs",
         "scripts/qualify-workshop.mjs",
         "scripts/replay.mjs",
@@ -6792,6 +6794,7 @@
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
@@ -6849,6 +6852,7 @@
         "scripts/verify-vehicle-controls.mjs",
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
+        "test/assembly-partitions.test.mjs",
         "test/browser-evidence.test.mjs",
         "test/browser-report.test.mjs",
         "test/ci-order.test.mjs",
@@ -6864,6 +6868,7 @@
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
+        "test/part-help-partitions.test.mjs",
         "test/release-determinism.test.mjs",
         "test/rope-session.test.mjs",
         "test/runtime-preflight.test.mjs",
@@ -6871,12 +6876,7 @@
         "test/verification-resume-controls.test.mjs",
         "test/verification-resume.test.mjs",
         "test/verification-run.test.mjs",
-        "vite.config.mjs",
-        "scripts/assembly-ux-cases.mjs",
-        "scripts/part-help-cases.mjs",
-        "scripts/verify-authorable-scenes.mjs",
-        "test/assembly-partitions.test.mjs",
-        "test/part-help-partitions.test.mjs"
+        "vite.config.mjs"
       ],
       "sourceSha256": "1da859aea6e084565ed4458b932e9975c1db1627dc16ea5a457068dc374effea",
       "entrypoint": "scripts/app-fingerprint.mjs",
@@ -6914,14 +6914,15 @@
           ]
         }
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
-      "consumerSourceHash": "1339271ab2d61f2d15d268b855fe30469975cc251ef31eab18ae47a053ca848a",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "consumerSourceHash": "08cee1aacc1b001a06804d053279fdb3f51a6d2330129eaf0fcd37dbb6504bc5",
       "externalImports": [
         "node:child_process",
         "node:crypto",
         "node:fs"
       ],
       "consumers": [
+        "scripts/assembly-ux-cases.mjs",
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
         "scripts/browser-scope-apply.mjs",
@@ -6942,6 +6943,7 @@
         "scripts/measure-ropes.mjs",
         "scripts/measure-shared-sensing.mjs",
         "scripts/measure-springs.mjs",
+        "scripts/part-help-cases.mjs",
         "scripts/playtest/calibrate.mjs",
         "scripts/playtest/ci-release.mjs",
         "scripts/playtest/experiment-inputs.mjs",
@@ -6956,6 +6958,7 @@
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
@@ -7015,6 +7018,7 @@
         "scripts/verify-vehicle-controls.mjs",
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
+        "test/assembly-partitions.test.mjs",
         "test/browser-documentation-selection.test.mjs",
         "test/browser-evidence.test.mjs",
         "test/browser-registry-live.test.mjs",
@@ -7036,6 +7040,7 @@
         "test/m3-determinism.test.mjs",
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
+        "test/part-help-partitions.test.mjs",
         "test/playtest-calibration.test.mjs",
         "test/playtest-release.test.mjs",
         "test/release-pipeline.test.mjs",
@@ -7047,12 +7052,7 @@
         "test/verification-resume-controls.test.mjs",
         "test/verification-resume.test.mjs",
         "test/verification-run.test.mjs",
-        "vite.config.mjs",
-        "scripts/assembly-ux-cases.mjs",
-        "scripts/part-help-cases.mjs",
-        "scripts/verify-authorable-scenes.mjs",
-        "test/assembly-partitions.test.mjs",
-        "test/part-help-partitions.test.mjs"
+        "vite.config.mjs"
       ],
       "sourceSha256": "e6d17d47613f5a704e08cf7a0324ee12d52a4852bc3168b50ae75579a59458f2",
       "entrypoint": "scripts/source-identity.mjs",
@@ -7115,8 +7115,8 @@
         "test/rope-session.test.mjs",
         "test/starter-vehicle.test.mjs"
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
-      "consumerSourceHash": "51c5826bf7627a097987b76c4f73c1111cf42f7d06cecd6a5e5c04c6f7839e5c"
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "consumerSourceHash": "205f05cc9d0d11c8df517e2763aaacb5d4ecd7c0c54909be9ea7eb2e87e79706"
     },
     {
       "checks": [
@@ -7132,8 +7132,8 @@
           ]
         }
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
-      "consumerSourceHash": "b2fd108e2404d2d2eaac2c666600a9625de161eacb5f9f370e8182d7c828fcb4",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
       "externalImports": [],
       "consumers": [
         "scripts/verify-cloud-playtest.mjs",
@@ -7197,8 +7197,8 @@
           ]
         }
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
-      "consumerSourceHash": "b2fd108e2404d2d2eaac2c666600a9625de161eacb5f9f370e8182d7c828fcb4",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
       "externalImports": [
         "node:crypto",
         "node:fs/promises"
@@ -7256,8 +7256,8 @@
           ]
         }
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
-      "consumerSourceHash": "b2fd108e2404d2d2eaac2c666600a9625de161eacb5f9f370e8182d7c828fcb4",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
       "externalImports": [
         "esbuild",
         "miniflare",
@@ -7287,8 +7287,8 @@
           ]
         }
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
-      "consumerSourceHash": "b2fd108e2404d2d2eaac2c666600a9625de161eacb5f9f370e8182d7c828fcb4",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
       "externalImports": [
         "node:fs/promises",
         "node:path",
@@ -7428,8 +7428,8 @@
           ]
         }
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
-      "consumerSourceHash": "146746f949fddd78de5cd764a33cee1214cc54616be7d4adec27ac8b60b0caf8",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "consumerSourceHash": "f1a87734bd70608d58b3a906b0a3f52993a1e327fd1ffb854cf93412e5ec11a5",
       "externalImports": [
         "node:crypto",
         "node:fs",
@@ -7517,8 +7517,8 @@
           ]
         }
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
-      "consumerSourceHash": "b1bbfc6b460e32ce65e25243de63072ba6e3a6a22889d9ba4eb4edd4095f24b0",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "consumerSourceHash": "868d924c34ae87a3a725c395aee0c86931fd8c0d4bfdc0ecc8458b802a9c7516",
       "externalImports": [
         "acorn",
         "css-tree",
@@ -7530,6 +7530,7 @@
       "consumers": [
         "scripts/analysis-snapshot.mjs",
         "scripts/app-fingerprint.mjs",
+        "scripts/assembly-ux-cases.mjs",
         "scripts/assess.mjs",
         "scripts/bars.mjs",
         "scripts/browser-evidence.mjs",
@@ -7552,6 +7553,7 @@
         "scripts/gate.mjs",
         "scripts/inspect-change.mjs",
         "scripts/navigate.mjs",
+        "scripts/part-help-cases.mjs",
         "scripts/playtest/ci-release.mjs",
         "scripts/playtest/experiment-inputs.mjs",
         "scripts/playtest/release.mjs",
@@ -7566,6 +7568,7 @@
         "scripts/verify-assembly-library-browser.mjs",
         "scripts/verify-assembly-ux-browser.mjs",
         "scripts/verify-attachment-status.mjs",
+        "scripts/verify-authorable-scenes.mjs",
         "scripts/verify-ball-browser.mjs",
         "scripts/verify-browser-suite.mjs",
         "scripts/verify-browser.mjs",
@@ -7627,6 +7630,7 @@
         "scripts/verify-workbench-content.mjs",
         "scripts/verify-workshop.mjs",
         "test/analysis-snapshot.test.mjs",
+        "test/assembly-partitions.test.mjs",
         "test/browser-documentation-selection.test.mjs",
         "test/browser-evidence.test.mjs",
         "test/browser-registry-live.test.mjs",
@@ -7657,6 +7661,7 @@
         "test/merge-ci.test.mjs",
         "test/merge-runner.test.mjs",
         "test/module-graph.test.mjs",
+        "test/part-help-partitions.test.mjs",
         "test/physics-boundary.test.mjs",
         "test/playtest-release.test.mjs",
         "test/release-determinism.test.mjs",
@@ -7669,12 +7674,7 @@
         "test/verification-resume-controls.test.mjs",
         "test/verification-resume.test.mjs",
         "test/verification-run.test.mjs",
-        "vite.config.mjs",
-        "scripts/assembly-ux-cases.mjs",
-        "scripts/part-help-cases.mjs",
-        "scripts/verify-authorable-scenes.mjs",
-        "test/assembly-partitions.test.mjs",
-        "test/part-help-partitions.test.mjs"
+        "vite.config.mjs"
       ],
       "sourceSha256": "0fa170b7b1ba96966b364c5ceb9125ae98a1a55bf591c534ea3681f8dde0fa4c",
       "entrypoint": "scripts/module-graph.mjs",
@@ -7766,8 +7766,8 @@
           ]
         }
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
-      "consumerSourceHash": "b2fd108e2404d2d2eaac2c666600a9625de161eacb5f9f370e8182d7c828fcb4",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3",
       "externalImports": [
         "node:crypto",
         "node:fs/promises",
@@ -7838,8 +7838,8 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
-      "consumerSourceHash": "fd3935a4e76a35c28299f67b13d46687a66ece0f80fd88cac81952e82dc20a36"
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "consumerSourceHash": "da36c8b8d0f01ff1dbca378fdc99dd1f6eeceb14b568ccda097d8fda6b526cf6"
     },
     {
       "entrypoint": "scripts/playtest/cloud-store.mjs",
@@ -7876,8 +7876,8 @@
         "test/feedback-client-state.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
-      "consumerSourceHash": "fd3935a4e76a35c28299f67b13d46687a66ece0f80fd88cac81952e82dc20a36"
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
+      "consumerSourceHash": "da36c8b8d0f01ff1dbca378fdc99dd1f6eeceb14b568ccda097d8fda6b526cf6"
     },
     {
       "entrypoint": "scripts/verify-workbench-content.mjs",
@@ -7903,7 +7903,7 @@
         }
       ],
       "consumers": [],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
       "consumerSourceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
@@ -7942,7 +7942,7 @@
         "test/playtest-release.test.mjs",
         "test/release-experiments.test.mjs"
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
       "reads": [
         {
           "expression": "readFile(file)",
@@ -7954,7 +7954,7 @@
         }
       ],
       "sourceSha256": "a703debf46549c152e5f8a7c9e83646195e470f70fadb295444f4cf1c1bfa5a3",
-      "consumerSourceHash": "b2fd108e2404d2d2eaac2c666600a9625de161eacb5f9f370e8182d7c828fcb4"
+      "consumerSourceHash": "4da03956105366cbc72f4b8411a1b568aacf6aeeab2735dba80839f39ae3dbe3"
     },
     {
       "entrypoint": "scripts/playtest/feedback-node.mjs",
@@ -7988,7 +7988,7 @@
         "test/playtest-server.test.mjs",
         "test/remote-playtest.test.mjs"
       ],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
       "reads": [
         {
           "expression": "readFileSync(join(this.root, id, 'envelope.json'), 'utf8')",
@@ -8024,7 +8024,7 @@
         }
       ],
       "sourceSha256": "785fd4275e107734ad4fb9a0b36a5e38eebd3a0f9b0fbfc56365eaaae066e872",
-      "consumerSourceHash": "146746f949fddd78de5cd764a33cee1214cc54616be7d4adec27ac8b60b0caf8"
+      "consumerSourceHash": "f1a87734bd70608d58b3a906b0a3f52993a1e327fd1ffb854cf93412e5ec11a5"
     },
     {
       "entrypoint": "scripts/verify-feedback-flow.mjs",
@@ -8041,7 +8041,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
       "reads": [
         {
           "expression": "new URL(req.url, 'http://localhost')",
@@ -8102,7 +8102,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
       "reads": [
         {
           "expression": "new URL(req.url, 'http://localhost')",
@@ -8156,7 +8156,7 @@
         "node:http"
       ],
       "consumers": [],
-      "roots": "c400573e39aa273cb5b01ac92f3e7ac45920143b9329d8dd4b5ab978edfb6e36",
+      "roots": "cf1ff9c3e811515620376feb5b772942a1b3d20476439b90f222ecc2737c3400",
       "reads": [
         {
           "expression": "readFileSync(file)",

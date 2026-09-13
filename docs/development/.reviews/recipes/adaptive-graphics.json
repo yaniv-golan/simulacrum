@@ -6,7 +6,7 @@
     "package.json": "4e723c76460ae753b9da7a34719016708efe8e734bd7718b5f79912952e5c4f0",
     "test/graphics-quality.test.mjs": "fc56ad710a0d7a0a738704b61bf44d10da2d35c764172ab0097ab8c773892244",
     "scripts/verify-adaptive-graphics.mjs": "2f71e24a5cedde3ddddb1df2124af1320c6c90caea6cc251d21f64aff7520b94",
-    "scripts/verify-spring-browser.mjs": "12933a7a25bca7816a36e5ad4f3e7caec126d451f9851afc08f37e6171e56b0e",
+    "scripts/verify-spring-browser.mjs": "897e2951c7c53319949fbdbbda145f09f3edfe08a4bd271a80961525f0753884",
     "src/presentation/lamp-view.mjs": "04c8dbeac7634a6dd5c177877bb05aacfc29c2e15971ff3f2fd265eafa902604",
     "scripts/verify-lamp-browser.mjs": "ea842920ba797aab4a0ebd10582ef0c0f2b63d97a855a0bc29d680e93e44c829",
     "scripts/verify-lamp-performance.mjs": "ad339de29c3024501a967f276d5cc8746ffe4dfaa186f2952e095c29b2250207"
