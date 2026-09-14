@@ -72,6 +72,70 @@ const copy = (value) =>
     ),
   );
 
+/** Frames to sample after a failed action and the wall budget for them: a live 60 Hz page
+ * answers in ~170 ms, a 2–5 Hz hosted renderer in 2–5 s, a starved one not at all. */
+export const GEOMETRY_SAMPLE = Object.freeze({ frames: 10, budgetMs: 3000 });
+/** In-page: the target's and its ancestors' boxes on each of the next animation frames. Runs
+ * inside `locator.evaluate`, so it must stay self-contained. */
+export function sampleTargetGeometry(element, { frames: maxFrames, budgetMs }) {
+  return new Promise((resolve) => {
+    const rect = (node) => {
+      const r = node.getBoundingClientRect();
+      return { x: r.x, y: r.y, w: r.width, h: r.height };
+    };
+    const selector = (node) =>
+      node.tagName.toLowerCase() +
+      (node.id ? `#${node.id}` : '') +
+      [...node.classList].map((c) => `.${c}`).join('');
+    const ancestorsOf = (node) => {
+      const out = [];
+      for (let up = node.parentElement; up && up !== document.body; up = up.parentElement) {
+        out.push({ selector: selector(up), ...rect(up) });
+        if (up.classList.contains('workshop')) break;
+      }
+      return out;
+    };
+    const frames = [],
+      start = performance.now();
+    let done = false;
+    const finish = () => {
+      if (!done) resolve(frames);
+      done = true;
+    };
+    const step = () => {
+      frames.push({
+        t: performance.now() - start,
+        target: rect(element),
+        ancestors: ancestorsOf(element),
+        scrollWidth: document.documentElement.scrollWidth,
+        innerWidth: window.innerWidth,
+      });
+      if (frames.length >= maxFrames || performance.now() - start > budgetMs) finish();
+      else requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+    setTimeout(finish, budgetMs + 500);
+  });
+}
+/** 'starved' when fewer than two frames arrived; 'moved' on the first frame pair whose target
+ * box differs, naming the first differing ancestor (nearest first); else 'stable'. */
+export function geometryVerdict(frames) {
+  const same = (a, b) => a && b && ['x', 'y', 'w', 'h'].every((k) => a[k] === b[k]);
+  if (!Array.isArray(frames) || frames.length < 2) return { frames: frames ?? [], verdict: 'starved' };
+  for (let i = 1; i < frames.length; i++) {
+    if (same(frames[i - 1].target, frames[i].target)) continue;
+    const before = frames[i - 1].ancestors ?? [],
+      after = frames[i].ancestors ?? [];
+    const differing = before.find((row, index) => !same(row, after[index]));
+    return {
+      frames,
+      verdict: 'moved',
+      movedOn: [i - 1, i],
+      firstDifferingAncestor: differing?.selector ?? null,
+    };
+  }
+  return { frames, verdict: 'stable' };
+}
 /** Own one verifier's browser, contexts, diagnostics and failure artifacts. */
 export function attachBrowserSession(
   evidence,
@@ -277,27 +341,21 @@ export function attachBrowserSession(
       }
       pageRecords.push(row);
     }
-    // Playwright's actionability waits for the target to be *stable* (the same box across two
-    // consecutive animation frames). Under a slow renderer a control whose neighbours re-lay
-    // out every frame is never stable; record the last action target's box across the next
-    // frames so the failure names the moving geometry instead of a bare timeout.
+    // Playwright's actionability waits for the target to be *stable* (the same box on two
+    // consecutive animation frames). Two different things expire that wait: the box moves
+    // between frames (a readout beside the control reflows it — a presentation defect) or the
+    // renderer starves so that two frames never occur. Sample the last action target in-page
+    // over the next frames and say which, in the shape the presentation owner's local probe
+    // records, so a hosted row and a 60 Hz probe compare frame by frame.
     let targetGeometry = null;
-    if (lastTarget && pages.length)
+    if (lastTarget)
       try {
-        const page = pages.find((row) => !row.raw.isClosed?.())?.raw;
-        const boxes = [];
-        for (let frame = 0; frame < 5 && page; frame++) {
-          boxes.push(await lastTarget.boundingBox());
-          await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r())));
-        }
-        const key = (box) => (box ? [box.x, box.y, box.width, box.height].join(',') : 'none');
-        targetGeometry = {
-          action: copy(lastAction),
-          boxes,
-          moved: new Set(boxes.map(key)).size > 1,
-        };
+        const frames = await lastTarget.evaluate(sampleTargetGeometry, GEOMETRY_SAMPLE, {
+          timeout: GEOMETRY_SAMPLE.budgetMs * 2,
+        });
+        targetGeometry = { action: copy(lastAction), ...geometryVerdict(frames) };
       } catch (e) {
-        targetGeometry = { action: copy(lastAction), error: e.message };
+        targetGeometry = { action: copy(lastAction), verdict: 'unsampled', error: e.message };
       }
     try {
       const status = pageRecords.flatMap((record) => record.state?.status ?? []);
