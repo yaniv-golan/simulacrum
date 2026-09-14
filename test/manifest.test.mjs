@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { validateManifest } from '../scripts/validate-manifest.mjs';
+import {
+  validateManifest,
+  validateManifestText,
+  CANONICAL_LAYOUT_MESSAGE,
+} from '../scripts/validate-manifest.mjs';
 const manifest = JSON.parse(readFileSync(new URL('../scripts/manifest.json', import.meta.url)));
 test('manifest owns every check and resolves milestone references', () => {
   assert.doesNotThrow(() => validateManifest(manifest));
@@ -38,4 +42,35 @@ test('experiment reuse scopes require exact bounded sources and registered check
   const m = structuredClone(manifest);
   m.experimentInputScopes[0].sourceSha256 = 'a'.repeat(64);
   assert.doesNotThrow(() => validateManifest(m)); // changed source broadens selection, not structural admission
+});
+test('manifest bytes must keep the canonical two-space layout the scope writer emits', () => {
+  const text = readFileSync(new URL('../scripts/manifest.json', import.meta.url), 'utf8');
+  assert.doesNotThrow(() => validateManifestText(text));
+  assert.equal(text, JSON.stringify(JSON.parse(text), null, 2) + '\n');
+  const m = JSON.parse(text);
+  // Content-preserving key reordering is still canonical: the check is about layout only.
+  const reordered = Object.fromEntries(Object.entries(m).reverse());
+  assert.doesNotThrow(() => validateManifestText(JSON.stringify(reordered, null, 2) + '\n'));
+  // Plausible wrong traces: prettier's collapsed array, other indents, compact, CRLF, BOM, no newline.
+  assert.match(text, /\[\n\s+"[^"\n]*"\n\s+\]/, 'a one-element array exists to collapse');
+  for (const wrong of [
+    text.replace(/\[\n\s+("[^"\n]*")\n\s+\]/, '[$1]'),
+    JSON.stringify(m, null, 4) + '\n',
+    JSON.stringify(m) + '\n',
+    text.replace(/\n/g, '\r\n'),
+    text.trimEnd(),
+  ]) {
+    assert.notEqual(wrong, text);
+    assert.throws(() => validateManifestText(wrong), { message: CANONICAL_LAYOUT_MESSAGE });
+  }
+  assert.throws(() => validateManifestText('\uFEFF' + text), SyntaxError);
+  assert.throws(() => validateManifestText(Buffer.from(text)), TypeError);
+  assert.match(CANONICAL_LAYOUT_MESSAGE, /--canonical-layout/);
+});
+test('the manifest stays out of prettier so hosted format checks see the writer layout', () => {
+  const ignore = readFileSync(new URL('../.prettierignore', import.meta.url), 'utf8');
+  assert.ok(
+    ignore.split('\n').includes('scripts/manifest.json'),
+    '.prettierignore must list scripts/manifest.json; validateManifest owns its layout',
+  );
 });

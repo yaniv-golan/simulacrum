@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { validateInvariantCoverage } from './invariant-coverage.mjs';
 /** Sorted, unique, registered ids of the checks whose root chain reaches the row's entrypoint.
  * The former whole-inventory `roots` digest is rejected; migrate through a scope proposal. */
@@ -210,6 +211,25 @@ export function validateManifest(m) {
   }
   return m;
 }
+export const CANONICAL_LAYOUT_MESSAGE =
+  "manifest layout is not canonical JSON.stringify(manifest, null, 2) plus a trailing newline (the scope writer's layout; prettier is not applied to this file). Repair: node scripts/validate-manifest.mjs --canonical-layout";
+/** The manifest is machine-written (browser:scopes apply) and excluded from prettier; its
+ * bytes must equal the writer's layout so hosted format checks and byte-level exemptions agree. */
+export function validateManifestText(text) {
+  if (typeof text !== 'string') throw new TypeError('manifest text must be a utf8 string');
+  const m = JSON.parse(text);
+  if (text !== JSON.stringify(m, null, 2) + '\n') throw new Error(CANONICAL_LAYOUT_MESSAGE);
+  return validateManifest(m);
+}
 export function readManifest() {
-  return validateManifest(JSON.parse(readFileSync(new URL('./manifest.json', import.meta.url))));
+  return validateManifestText(readFileSync(new URL('./manifest.json', import.meta.url), 'utf8'));
+}
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const path = new URL('./manifest.json', import.meta.url);
+  if (process.argv[2] === '--canonical-layout') {
+    // Rewrite the manifest in the writer's layout without touching its content.
+    const text = readFileSync(path, 'utf8');
+    writeFileSync(path, JSON.stringify(JSON.parse(text), null, 2) + '\n');
+    console.log('scripts/manifest.json rewritten in the canonical layout');
+  } else readManifest();
 }

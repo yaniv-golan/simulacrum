@@ -10,7 +10,7 @@
     "scripts/module-graph.mjs": "db47284e35c471196b3f7cffbb998660ad58b6beb79d19f92eff6b04e7508399",
     "scripts/source-identity.mjs": "c414bf28ce6475df8a4dffc588df1a86b92386e975f8325b87301eb5fca66a43",
     "scripts/test-selection.mjs": "73dac80216ee28b5644f04acd503f8776d1854090417fcc6ec9df4446686000e",
-    "scripts/validate-manifest.mjs": "00d6f94abf86737f46ccde7f3e55ab7676b7bac3ee0e84028154c8807f8ffb05",
+    "scripts/validate-manifest.mjs": "dc8f7f4fa282af2e73640afd234c0ac99eeea979e4961605cb613704039f7230",
     "scripts/browser-scope-proposal.mjs": "045d95bba9fe46376874a26f9b41c4b868093129e7e7fd7295f9c47c8c98558d",
     "scripts/candidate.mjs": "3c22043fcb6863803bfc96d5ac39d3c1ecd0a3bd83170e7a53711cc137e259d3",
     "scripts/browser-scope-apply.mjs": "739d6c3a915bfe37d481327a69c07d439ebfab54f7b9836b762f9df3b2cf1bd1",

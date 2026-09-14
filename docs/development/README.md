@@ -90,7 +90,7 @@ because the changed feature appears unrelated.
 
 ## Verify a change
 
-<!-- doc-review {"version":1,"fingerprint":"b7c6296bfe7ae17efcef8ef3e1766337f025d0abd52c2539957e598058046d33","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"57c2563bf33a1318e6bb8782d59a6033d4518c05ef29966487dca85be5a014d4","disposition":"still accurate","rationale":"The changed dependencies are main's own landings (verification-outcome, package.json, release-operations) already reviewed on main, plus my remote-setup sentence about dialog dismissal. Tiers, commands, window policy and evidence requirements described here are untouched by a presentation-only dialog header change."} -->
+<!-- doc-review {"version":1,"fingerprint":"aa83c8e37aa8ea478cdcf49520b2574742e586c88e57774ff10cddcbaa9cf16c","dependencies":"docs/development/.reviews/README/verify-a-change.json","dependencyDigest":"57c2563bf33a1318e6bb8782d59a6033d4518c05ef29966487dca85be5a014d4","disposition":"updated","rationale":"The formatting sentence now says the machine-written scripts/manifest.json is excluded from prettier, keeps the scope writer's JSON.stringify layout enforced by validateManifest, and names the repair command; tier commands, CI order and the Node engine range are unchanged."} -->
 
 - `npm run test:unit` selects affected tests conservatively; `npm run test:all` runs all unit/property tests.
 - `npm run typecheck` checks production boundaries, generated types and deliberately invalid type fixtures.
@@ -104,7 +104,7 @@ because the changed feature appears unrelated.
 - `npm run test:browser -- --checks verify-part-help-window verify-part-help-browser` runs explicit development probes with one build and combined `artifacts/browser-suite/selected.json` evidence. This does not claim local completion or qualification. Unknown IDs/options fail rather than silently narrowing scope.
 - `npm run test:browser` builds and runs all registered browser checks; `npm run test:browser:smoke` runs construction smoke checks.
 - `npm run test:performance` runs the isolated performance checks.
-- `npm run format` applies the pinned formatter; generated validators are excluded.
+- `npm run format` applies the pinned formatter; generated validators and the machine-written `scripts/manifest.json` are excluded — the manifest keeps the scope writer's `JSON.stringify(…, null, 2)` layout, enforced by `validateManifest` (repair: `node scripts/validate-manifest.mjs --canonical-layout`).
 - `node scripts/generate-schema.mjs` refreshes generated validation after schema edits.
 - `npm run replay -- <bundle.json>` checks a failure bundle against the current implementation and runtime.
 
@@ -297,7 +297,7 @@ establish safety for every omitted check or replace the full run.
 
 ## Browser execution and scope
 
-<!-- doc-review {"version":1,"fingerprint":"060a0d85a97b09fd1673e870d4d598bced422dd7928b995bb21ebb1b1a1f9182","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"beef06df6ca28af841b0eb5b63c5415b318a6872a07cf2bf2e482926a862bfd0","disposition":"still accurate","rationale":"browser:scopes apply regenerated the manifest rows for the remote-playtest local scope (dependency shape now includes src/presentation/dialog-close.mjs) and the reviewed metadata hashes of the four feedback fixture servers, the workbench journey and their consumer closures, after the witnesses passed. The proposal/review/apply flow, exclusion rules and local-contract semantics described here are exactly what was exercised; no text change needed."} -->
+<!-- doc-review {"version":1,"fingerprint":"df5a1b237afa69424a4b483e4c44dc55fdb26ede607fb841955801a4853bf866","dependencies":"docs/development/.reviews/README/browser-execution-and-scope.json","dependencyDigest":"0bae5d7d0cf682aec81a17136dbd0378a955132ddffdbbafdb7e4c4beea957f0","disposition":"still accurate","rationale":"validate-manifest rejects non-canonical manifest bytes and offers --canonical-layout as the repair; registry rows, scope selection, witness policy and execution rules are unchanged."} -->
 
 The [browser selector](../../scripts/browser-selection.mjs#implementation) includes the
 served workshop/probe HTML roots as well as verifier imports. Self-hosted checks and
@@ -514,7 +514,7 @@ ordering and local outcome reporting separate from the qualification gate.
 
 ## Shared verification window
 
-<!-- doc-review {"version":1,"fingerprint":"2793d8a4b6ef075cc754a62875d7d3a702b7682af29ddf525f488807113c7993","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"e9aa05c5267cb320210f311c7e97c756290dfa13145c8e03b9152595720f3ca9","disposition":"updated","rationale":"The wait notice now also names the owner's integrating branch and the stacking hint names it; intent values are validated as single-line printable strings. Serialization, inheritance, wait limits, admission marking and recovery are unchanged."} -->
+<!-- doc-review {"version":1,"fingerprint":"423e644ee55f861e485b945ad80c4663a69ddc39d9f9c4c3e7356827404ebe99","dependencies":"docs/development/.reviews/README/shared-verification-window.json","dependencyDigest":"d1d75888b2609049f3fdb6615fa459afea4b97b146cac68c2acfc336faebd79f","disposition":"still accurate","rationale":"validate-manifest changed only in its layout check and repair command; window ownership, wait limits, intent publication and serialization are unchanged."} -->
 
 The [verification window](../../scripts/verification-window.mjs#implementation) coordinates
 supported npm build, CI, completion, focused unit and browser commands across worktrees
@@ -563,7 +563,7 @@ window does not make source installation atomic or authorize a merge.
 
 ## Isolated candidate completion
 
-<!-- doc-review {"version":1,"fingerprint":"a5dada95c0a04594bafa6ff2a77a38f983dbda7f1026df4997e513d253896603","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"766c82da12af8d92353c56621463b530ac0eb3c42093ab095cbcb200220f1f8a","disposition":"still accurate","rationale":"Only scope digest rows in scripts/manifest.json changed through the reviewed apply; candidate capture, resume, priority destination and stacking rules are unaffected."} -->
+<!-- doc-review {"version":1,"fingerprint":"60f6262db8acd42b5e2417cf724ea6955b4d2a670f25042678ad5962c0eddf12","dependencies":"docs/development/.reviews/README/isolated-candidate-completion.json","dependencyDigest":"577ddf632164bb4c3fc343179e1f622aa05ed6757a7f5dc2fa40b638098167ef","disposition":"still accurate","rationale":"validate-manifest gained a canonical-layout check on the manifest bytes read through readManifest (registry, selection, gate, rules) and a --canonical-layout repair; root-parameterised raw readers are unchanged, as are candidate capture, tier commands, source binding and drift rejection."} -->
 
 Concurrent implementations use separate Git worktrees. Start one with
 `git worktree add -b codex/my-change /tmp/simulacrum-my-change HEAD`, install its

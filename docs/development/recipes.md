@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"176c2a6db2e359409651567c31cfbc8ccd07219121c35d033040eee0b619dcc1","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"9cb8adf7cc4f6cd6e4bdf3b2d85abaa891b8828114ffbd7cbce3e6cc7bb13527","disposition":"still accurate","rationale":"The manifest delta is scope metadata regenerated for dialog-close-related scripts; no physics owner, law, integration step, invariant or evidence rule changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"2199b0a14f1084f1542180c6b514804c2774596d5a8e97675fe93219592860ac","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"5533de954a7995ba4fe2e8c3ba46b29163ef872cc23488666dc87f885ea07815","disposition":"still accurate","rationale":"Only the manifest validator, its test, .prettierignore and README formatting wording changed, reached through this section's evidence scripts; no physics law, fixture, evidence script or reset policy changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or
