@@ -168,7 +168,12 @@ Its empty thumbnails also exercise readable labels without images. Use
 For motion explanations, start at [diagnoseMotion](../../src/model/motion-diagnostics.mjs#symbol=diagnoseMotion). Consume completed
 observation values only. Return an explanation and relevant part IDs; presentation
 owns navigation and wording layout. Do not repair authored state or infer intention
-from a machine name.
+from a machine name. The Build readiness line and the footer's next step derive from the
+same issue list through [readinessLine](../../src/model/motion-diagnostics.mjs#symbol=readinessLine)
+and `readinessNext`: they claim nothing the diagnosis did not check (Ready only when every
+remaining issue is a zero drive setting; an issue outside the three checked classes keeps
+its own title; null for a machine holding a hinge or linear actuator), so a new diagnostic
+class needs a decision about which face carries it.
 
 Worked example: opposing-drive diagnostics identify command-adjusted axes on a shared
 assembly and suggest checking direction. Read [opposed-drive tests](../../test/opposed-drive-diagnostic.test.mjs)

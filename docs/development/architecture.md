@@ -50,7 +50,13 @@ interpreting an active phase or a no-damage result as physical failure coverage.
 
 The view exposes the existing workshop footer as `utilityHost`; the application mounts
 feedback and recording controls there and keeps protected feedback dialogs outside
-the workshop root. Ordinary offline feedback does not add a second workbench row. Optional
+the workshop root. Ordinary offline feedback does not add a second workbench row. That
+footer is otherwise a status line (mode, part count, status message, the pending step)
+composed by [footerModel](../../src/presentation/workbench-content.mjs#symbol=footerModel);
+the header holds one Build | Run switch and a Tools menu (Check machine, Measurements,
+Assemblies, New, Load), so the left column is the parts catalogue alone; and the
+application offers the one-time first-run choice through `view.offerFirstRun()` only after
+the remote playtest's `setupClosed` promise resolves, keeping recording consent first. Optional
 [feedback context](../../src/application/feedback-context.mjs#symbol=captureFeedbackContext)
 combines the ordinary authored save with current UI state. It never requests a replay
 checkpoint or native physics bytes; recording keeps its separate capture path.
