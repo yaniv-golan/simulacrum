@@ -165,3 +165,36 @@ test('receipts record their origin attempt, carry it through resumed saves and e
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('an unrestricted save policy is a predicate: non-process, aggregate and timing-sensitive leaves are never saved', async () => {
+  const { createVerificationRun } = await import('../scripts/verification-run.mjs');
+  const dir = mkdtempSync(join(tmpdir(), 'resume-policy-'));
+  try {
+    const identity = { source: 'fixed' },
+      key = Buffer.alloc(32, 6);
+    const ledger = createLeafLedger({
+      directory: dir,
+      key,
+      identity,
+      eligible: [],
+      saveEligible: (id) => id.startsWith('unit:') || id === 'browser:mirror',
+      origin: { attempt: 'a', report: '/a' },
+    });
+    const run = createVerificationRun({ readIdentity: () => identity, writeLedger: ledger });
+    await run.check('ci:budget', {}, () => ({ elapsedMs: 1 }));
+    await run.check('check:layers', {}, () => undefined);
+    await run.check('browser:perf', {}, () => ({ code: 0 }));
+    await run.check('browser:mirror', {}, () => ({ code: 0 }));
+    await run.check('unit:test/a.test.mjs', {}, () => ({ code: 0 }));
+    assert.ok(run.receipts().every((r) => r.ok === true), 'no leaf failed because of the save policy');
+    const reader = (id) =>
+      createLeafLedger({ directory: dir, key, identity, eligible: [id] }).load(id, {});
+    assert.equal(reader('ci:budget'), null);
+    assert.equal(reader('check:layers'), null);
+    assert.equal(reader('browser:perf'), null);
+    assert.equal(reader('browser:mirror')?.origin.attempt, 'a');
+    assert.equal(reader('unit:test/a.test.mjs')?.origin.attempt, 'a');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

@@ -84,7 +84,15 @@ test('identity binds the declared relevant environment only; the whole environme
     assert.notEqual(environmentForensics().environmentDigest, forensicFirst.environmentDigest);
     assert.equal(JSON.stringify(second).includes('second-private-value'), false);
     assert.ok(RELEVANT_ENVIRONMENT.names.includes('FEEDBACK_SOURCE'));
+    assert.ok(RELEVANT_ENVIRONMENT.names.includes('NODE_OPTIONS'));
     assert.ok(RELEVANT_ENVIRONMENT.prefixes.includes('PLAYWRIGHT_'));
+    assert.ok(RELEVANT_ENVIRONMENT.prefixes.includes('PLAYTEST_'));
+    // The tier defaults NODE_ENV to production; an unset NODE_ENV must digest the same way.
+    const { relevantEnvironmentDigest } = await import('../scripts/verification-environment.mjs');
+    assert.equal(
+      relevantEnvironmentDigest({}),
+      relevantEnvironmentDigest({ NODE_ENV: 'production' }),
+    );
     process.env.FEEDBACK_SOURCE = 'override';
     assert.notEqual(verificationIdentity().environmentDigest, second.environmentDigest);
     delete process.env.FEEDBACK_SOURCE;
