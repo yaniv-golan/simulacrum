@@ -460,10 +460,14 @@ try {
     await mediaPage.getByRole('textbox', { name: 'Your feedback', exact: true }).inputValue(),
     'Keep this existing correction',
   ]);
-  await mediaPage.locator('[data-attachments] > summary').click();
+  await mediaPage.locator('[data-attachments]').evaluate((details) => {
+    details.open = true;
+  });
   await mediaPage.getByRole('button', { name: 'Remove recording links', exact: true }).click();
   await mediaPage.getByLabel('Include workshop image', { exact: true }).uncheck();
-  await mediaPage.getByLabel('Include workshop context', { exact: true }).uncheck();
+  await mediaPage
+    .getByLabel('Include project and workshop state (programs included)', { exact: true })
+    .uncheck();
   await mediaPage.waitForFunction(
     () =>
       !document.querySelector('[data-context]').checked &&

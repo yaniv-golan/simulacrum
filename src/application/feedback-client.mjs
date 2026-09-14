@@ -18,14 +18,11 @@ const messageFor = (code) =>
               : 'Saved on this device—waiting to send. We will retry automatically.';
 const blockedCodes = [400, 401, 403, 404, 409, 410, 413, 415];
 const token = (draft) => ({ id: draft.id, revision: draft.revision });
-const hasContent = (draft) =>
-  !!(
-    draft?.text?.trim() ||
-    draft?.voice ||
-    draft?.voiceRecording ||
-    draft?.image ||
-    draft?.context
-  );
+// Default captures are attached on every fresh draft; only text or voice makes it the player's
+// own report, so attachments alone never count as content to keep, discard or finish.
+const hasAuthoredContent = (draft) =>
+  !!(draft?.text?.trim() || draft?.voice || draft?.voiceRecording);
+const hasContent = hasAuthoredContent;
 
 /** M3b requested feedback UI. Recording is a separate consent and lifetime. */
 export async function mountFeedbackClient({
@@ -51,6 +48,8 @@ export async function mountFeedbackClient({
   // The player's latest choice per attachment while its save is pending. render() shows it
   // instead of the committed draft, so a slower save for the other box cannot undo a click.
   const attachmentIntent = { image: null, context: null };
+  // Capture problems are shown per kind so a later success for the other kind cannot hide them.
+  const attachmentNotes = { image: '', context: '' };
   let draft = null,
     items = [],
     config = null,
@@ -147,7 +146,7 @@ export async function mountFeedbackClient({
   const dialog = document.createElement('dialog');
   dialog.className = 'playtest-dialog feedback-dialog';
   dialog.innerHTML =
-    '<h2 id="feedback-title" tabindex="-1">What would you like Yaniv to know?</h2><div class="feedback-scroll"><p class="feedback-intro">Something worked, surprised you, or got in your way.</p><p class="feedback-disclosure">Your message goes to Yaniv for review. Only your message and the attachments you choose are included.</p><p data-mode-note role="status"></p><div data-composer><label for="feedback-text">Your feedback</label><textarea id="feedback-text" aria-label="Your feedback" rows="4" placeholder="A sentence is enough."></textarea><p data-count class="feedback-muted"></p><p data-save role="status" class="feedback-muted"></p><div class="feedback-voice"><button data-voice class="feedback-secondary">Record voice comment</button><span data-voice-time></span><audio data-playback controls hidden aria-label="Preview voice comment"></audio><button data-remove-voice class="feedback-secondary" hidden>Remove voice comment</button><p data-voice-status role="status"></p></div><details data-attachments><summary>Add workshop details (optional)</summary><p>Choose an image or a snapshot of your project and workshop state. The snapshot may include programs. Removing these attachments does not remove an existing recording.</p><label><input type="checkbox" data-image> Include workshop image</label><div data-image-preview hidden><img alt="Selected workshop image"><p></p></div><label><input type="checkbox" data-context> Include workshop context</label><details data-context-preview hidden><summary>Inspect attached context</summary><p data-context-time></p><pre></pre></details><button data-remove-links class="feedback-secondary" hidden>Remove recording links</button><p data-attachment-status role="status"></p></details></div><section data-received hidden><span class="feedback-check" aria-hidden="true">✓</span><h3>Thanks for helping improve the workshop.</h3><p data-receipt-state role="status"></p><p data-submitted-text></p><div data-submitted-media></div><button data-correct class="feedback-secondary" hidden>Create corrected draft</button></section><section data-history tabindex="-1" aria-labelledby="feedback-title" hidden><h3>Your feedback history</h3><p>Submissions saved in this browser. Removing a local copy does not recall feedback already sent.</p><ol class="playtest-comments" aria-label="Your comments"></ol></section><p data-error role="status"></p></div><footer class="feedback-actions"><button data-send>Send feedback</button><button data-back hidden>Back to building</button><button data-keep class="feedback-secondary" hidden>Keep draft</button><button data-discard class="feedback-secondary" hidden>Discard draft</button><button data-another class="feedback-secondary" hidden>Add another</button><button data-history-toggle class="feedback-secondary">Your feedback history</button><button data-retry-config class="feedback-secondary" hidden>Check connection</button><button data-copy class="feedback-secondary" hidden>Download draft</button><button data-stop-recording class="feedback-secondary" hidden>Stop tab recording and open feedback</button></footer>';
+    '<h2 id="feedback-title" tabindex="-1">What would you like Yaniv to know?</h2><div class="feedback-scroll"><p class="feedback-intro">Something worked, surprised you, or got in your way.</p><p class="feedback-disclosure">Your message goes to Yaniv for review, with a picture of your workshop and a copy of your project (including programs) unless you untick them below.</p><p data-mode-note role="status"></p><div data-composer><label for="feedback-text">Your feedback</label><textarea id="feedback-text" aria-label="Your feedback" rows="4" placeholder="A sentence is enough."></textarea><p data-count class="feedback-muted"></p><p data-save role="status" class="feedback-muted"></p><div class="feedback-voice"><button data-voice class="feedback-secondary">Record voice comment</button><span data-voice-time></span><audio data-playback controls hidden aria-label="Preview voice comment"></audio><button data-remove-voice class="feedback-secondary" hidden>Remove voice comment</button><p data-voice-status role="status"></p></div><details data-attachments><summary data-attachments-summary>Workshop details</summary><p>A picture of your workshop and a snapshot of your project and workshop state are attached unless you untick them. The snapshot may include programs. Removing these attachments does not remove an existing recording.</p><label><input type="checkbox" data-image> Include workshop image</label><div data-image-preview hidden><img alt="Selected workshop image"><p></p></div><label><input type="checkbox" data-context> Include project and workshop state (programs included)</label><details data-context-preview hidden><summary>Inspect attached context</summary><p data-context-time></p><pre></pre></details><button data-remove-links class="feedback-secondary" hidden>Remove recording links</button><p data-attachment-status role="status"></p></details></div><section data-received hidden><span class="feedback-check" aria-hidden="true">✓</span><h3>Thanks for helping improve the workshop.</h3><p data-receipt-state role="status"></p><p data-submitted-text></p><div data-submitted-media></div><button data-correct class="feedback-secondary" hidden>Create corrected draft</button></section><section data-history tabindex="-1" aria-labelledby="feedback-title" hidden><h3>Your feedback history</h3><p>Submissions saved in this browser. Removing a local copy does not recall feedback already sent.</p><ol class="playtest-comments" aria-label="Your comments"></ol></section><p data-error role="status"></p></div><footer class="feedback-actions"><button data-send>Send feedback</button><button data-back hidden>Back to building</button><button data-keep class="feedback-secondary" hidden>Keep draft</button><button data-discard class="feedback-secondary" hidden>Discard draft</button><button data-another class="feedback-secondary" hidden>Add another</button><button data-history-toggle class="feedback-secondary">Your feedback history</button><button data-retry-config class="feedback-secondary" hidden>Check connection</button><button data-copy class="feedback-secondary" hidden>Download draft</button><button data-stop-recording class="feedback-secondary" hidden>Stop tab recording and open feedback</button></footer>';
   dialog.setAttribute('aria-labelledby', 'feedback-title');
   // The × routes through the same guarded close as Escape; it never bypasses draft saving.
   dialog.prepend(
@@ -245,6 +244,7 @@ export async function mountFeedbackClient({
       !supported() ||
       !!voice ||
       !!draft?.voiceRecording ||
+      attachmentPending() ||
       (!liveText.trim() && !draft?.voice) ||
       count > feedbackLimits.textCharacters;
     q('[data-back]').hidden = finishing || composing;
@@ -282,6 +282,25 @@ export async function mountFeedbackClient({
     }
     q('[data-playback]').hidden = !key;
     q('[data-attachments]').hidden = store.mode !== 'durable';
+    q('.feedback-disclosure').textContent =
+      store.mode === 'durable'
+        ? 'Your message goes to Yaniv for review, with a picture of your workshop and a copy of your project (including programs) unless you untick them below.'
+        : 'Your message goes to Yaniv for review. Only your message is included.';
+    const attached = ['image', 'context'].filter(
+      (kind) => attachmentIntent[kind] ?? !!draft?.[kind],
+    );
+    q('[data-attachments-summary]').textContent =
+      'Workshop details: ' +
+      (attached.length === 2
+        ? 'image and project attached'
+        : attached[0] === 'image'
+          ? 'image attached'
+          : attached[0] === 'context'
+            ? 'project attached'
+            : 'nothing attached');
+    q('[data-attachment-status]').textContent = [attachmentNotes.image, attachmentNotes.context]
+      .filter(Boolean)
+      .join(' ');
     for (const kind of ['image', 'context']) {
       q(`[data-${kind}]`).checked = attachmentIntent[kind] ?? !!draft?.[kind];
       q(`[data-${kind}]`).disabled = !editable();
@@ -498,9 +517,18 @@ export async function mountFeedbackClient({
       if (disposed) throw Error('Feedback closed');
       if (acquired) {
         draft = await store.draft();
+        if (draft && defaultsOnly(draft) && !history) {
+          // A draft the player never wrote (left by reload or dispose) must not carry old captures.
+          await store.discardDraft(token(draft));
+          draft = null;
+        }
+        if (draft) {
+          attachmentNotes.image = attachmentNotes.context = '';
+          q('[data-attachments]').open = !!(draft.image || draft.context);
+        }
         if (!draft && !history) {
           try {
-            draft = await store.createDraft();
+            draft = await newDraft();
           } catch (e) {
             error = `A new draft could not be saved: ${e.message}. Review your saved feedback below; deleting a received local copy can free space.`;
             history = true;
@@ -564,6 +592,14 @@ export async function mountFeedbackClient({
       render();
       return;
     }
+    if (defaultsOnly(draft)) {
+      // Never send days-old captures: a draft the player never wrote is dropped on close.
+      const stale = draft;
+      draft = null;
+      const discard = writes.catch(() => {}).then(() => store.discardDraft(token(stale)));
+      writes = discard.catch(() => {});
+      await discard.catch(() => {});
+    }
     revokePreview();
     clearSubmittedPreviews();
     dialog.close();
@@ -582,7 +618,7 @@ export async function mountFeedbackClient({
     if (!draft) return;
     if (
       !window.confirm(
-        'Discard this unsent draft? This removes only its local text and attachments.',
+        'Discard this unsent draft? This removes its local text and starts a new draft with a fresh workshop image and project.',
       )
     )
       return;
@@ -590,7 +626,7 @@ export async function mountFeedbackClient({
     clearTimeout(saveTimer);
     await enqueue(async () => {
       await store.discardDraft(token(draft));
-      draft = await store.createDraft();
+      draft = finishing ? null : await newDraft();
     });
     liveText = '';
     text.value = '';
@@ -603,8 +639,10 @@ export async function mountFeedbackClient({
     if (finishing) await close();
     else render();
   }
+  const attachmentPending = () =>
+    attachmentIntent.image !== null || attachmentIntent.context !== null;
   async function send() {
-    if (!editable() || !supported() || voice) return;
+    if (!editable() || !supported() || voice || attachmentPending()) return;
     busy = true;
     error = '';
     render();
@@ -706,39 +744,70 @@ export async function mountFeedbackClient({
     await store.retry(id);
     await pump();
   }
+  /** Capture one attachment now; throws with a player-readable reason when it cannot. */
+  function capture(kind) {
+    const attachmentReference = reference(),
+      capturedAt = new Date().toISOString();
+    if (kind === 'image') {
+      const shot = screenshot?.();
+      if (!shot) throw Error('Workshop image unavailable. You can send your message without it.');
+      if (new TextEncoder().encode(shot).length > feedbackLimits.imageBytes)
+        throw Error('Workshop image is too large. You can send without it.');
+      return {
+        dataUrl: shot,
+        scope: 'canvas',
+        capturedAt,
+        ...(attachmentReference ? { reference: attachmentReference } : {}),
+      };
+    }
+    const json = JSON.stringify(snapshot());
+    if (new TextEncoder().encode(json).length > feedbackLimits.contextBytes)
+      throw Error('Workshop context is too large. You can send without it.');
+    return {
+      value: JSON.parse(json),
+      capturedAt,
+      ...(attachmentReference ? { reference: attachmentReference } : {}),
+    };
+  }
+  /**
+   * A fresh draft starts with the workshop image and project attached (durable stores only:
+   * text-only browsers hide the attachment controls, so a default there could not be unticked).
+   * Each capture is taken now, so a report always carries what the player saw when opening it.
+   */
+  async function newDraft() {
+    const initial = {};
+    attachmentNotes.image = attachmentNotes.context = '';
+    if (store.mode === 'durable')
+      for (const kind of ['image', 'context'])
+        try {
+          initial[kind] = capture(kind);
+        } catch (e) {
+          attachmentNotes[kind] = e.message;
+        }
+    let created;
+    try {
+      created = await store.createDraft(initial);
+    } catch (e) {
+      // The store validates captures too (image type, sizes); keep the draft, show the reason.
+      if (!Object.keys(initial).length) throw e;
+      created = await store.createDraft({});
+      for (const kind of Object.keys(initial)) attachmentNotes[kind] = e.message;
+    }
+    q('[data-attachments]').open = store.mode === 'durable';
+    return created;
+  }
+  const defaultsOnly = (value) => !!value && !hasAuthoredContent(value);
   async function attach(kind, checked) {
     if (!editable()) return;
     const expectedId = draft?.id,
       epoch = ++attachmentEpoch[kind];
     attachmentIntent[kind] = checked;
+    render();
     try {
       await persistText();
       if (draft?.id !== expectedId || attachmentEpoch[kind] !== epoch || !editing || !dialog.open)
         return;
-      const attachmentReference = reference(),
-        capturedAt = new Date().toISOString();
-      let value;
-      if (checked && kind === 'image') {
-        const shot = screenshot?.();
-        if (!shot) throw Error('Workshop image unavailable. You can send your message without it.');
-        if (new TextEncoder().encode(shot).length > feedbackLimits.imageBytes)
-          throw Error('Workshop image is too large. You can send without it.');
-        value = {
-          dataUrl: shot,
-          scope: 'canvas',
-          capturedAt,
-          ...(attachmentReference ? { reference: attachmentReference } : {}),
-        };
-      } else if (checked) {
-        const json = JSON.stringify(snapshot());
-        if (new TextEncoder().encode(json).length > feedbackLimits.contextBytes)
-          throw Error('Workshop context is too large. You can send without it.');
-        value = {
-          value: JSON.parse(json),
-          capturedAt,
-          ...(attachmentReference ? { reference: attachmentReference } : {}),
-        };
-      }
+      const value = checked ? capture(kind) : undefined;
       await enqueue(async () => {
         if (draft?.id !== expectedId || attachmentEpoch[kind] !== epoch || !editing || !dialog.open)
           return;
@@ -747,9 +816,9 @@ export async function mountFeedbackClient({
         else delete next[kind];
         draft = await store.saveDraft(next);
       });
-      q('[data-attachment-status]').textContent = '';
+      attachmentNotes[kind] = '';
     } catch (e) {
-      q('[data-attachment-status]').textContent = e.message;
+      attachmentNotes[kind] = e.message;
     } finally {
       if (attachmentEpoch[kind] === epoch) attachmentIntent[kind] = null;
     }
@@ -915,7 +984,7 @@ export async function mountFeedbackClient({
     render();
     try {
       if (!draft) {
-        draft = await store.createDraft();
+        draft = await newDraft();
         liveText = draft.text || '';
       }
       text.value = liveText;

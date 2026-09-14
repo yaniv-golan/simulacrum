@@ -5499,6 +5499,18 @@
           {
             "path": "test/feedback-attachments.test.mjs",
             "anchor": "unchecking both attachments never re-checks the second while the first save is pending"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "a fresh draft attaches the workshop image and project by default"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "a draft holding only default captures is discarded on close and recaptured on reopen"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "Send stays disabled while an attachment save is pending"
           }
         ],
         "negative": [
@@ -5533,6 +5545,14 @@
           {
             "path": "test/feedback-attachments.test.mjs",
             "anchor": "a failed attachment reverts its box to the committed draft once the intent clears"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "a failed default image capture stays visible after the project capture succeeds"
+          },
+          {
+            "path": "test/feedback-attachments.test.mjs",
+            "anchor": "text-only stores attach nothing by default and keep the controls hidden"
           }
         ]
       },

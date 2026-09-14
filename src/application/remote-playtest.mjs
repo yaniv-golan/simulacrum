@@ -210,7 +210,7 @@ export async function mountRemotePlaytest({
   dialog.className = 'playtest-dialog';
   dialog.innerHTML =
     projectStatus +
-    '<p data-recovery role="status" hidden></p><p>Your project, programs, actions and sampled workshop state will be sent to Yaniv for review.</p><label data-video-option hidden><input type="checkbox" data-video> Include tab video (optional)</label><p data-video-note>Before recording video, close older workshop tabs. This build pauses its tab recordings while you give feedback.</p><p>Use <strong>Give feedback</strong> anytime, even without recording. Attachments are optional. Voice comments stay on this device until you choose Send.</p><button data-start>Start recording</button><p data-error role="status"></p>';
+    '<p data-recovery role="status" hidden></p><p>Your project, programs, actions and sampled workshop state will be sent to Yaniv for review.</p><label data-video-option hidden><input type="checkbox" data-video> Include tab video (optional)</label><p data-video-note>Before recording video, close older workshop tabs. This build pauses its tab recordings while you give feedback.</p><p>Use <strong>Give feedback</strong> anytime, even without recording. Feedback includes a workshop image and your project (with programs) unless you untick them. Voice comments stay on this device until you choose Send.</p><button data-start>Start recording</button><p data-error role="status"></p>';
   dialog.querySelector('[data-video-option]').hidden = !(
     canRecord && config.optionalVideo === true
   );
