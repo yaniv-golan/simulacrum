@@ -15,6 +15,8 @@ import {
   parseCompletionArgs,
   sleptSummary,
   launchAdmission,
+  selectionReach,
+  assertSelectionReach,
   LAUNCH_ADMISSION_ID,
 } from './verification-tiers.mjs';
 const started = performance.now();
@@ -42,41 +44,49 @@ try {
   ).trim();
   const context = createVerificationContext();
   Object.assign(report, context.identity, { base, retry: context.selection });
+  // One selection computation over the candidate's base diff: called once before the launch
+  // admission to learn what the tier will reach, and again inside the selection phase as the
+  // recorded selection (the phase refuses if the reach moved meanwhile). The tier's own policy
+  // always applies; a diagnosed retry may only widen it (required checks) or skip checks the
+  // parent already passed that its byte delta does not reach.
+  const resolveSelection = () => {
+    const files = [
+      ...new Set(
+        [
+          ...execFileSync('git', ['diff', '--name-only', '-z', base, '--'], {
+            encoding: 'utf8',
+          }).split('\0'),
+          ...execFileSync('git', ['ls-files', '--others', '--exclude-standard', '-z'], {
+            encoding: 'utf8',
+          }).split('\0'),
+        ].filter(Boolean),
+      ),
+    ];
+    const fresh = affectedBrowserChecks(files);
+    const retry = context.selection;
+    return retry?.changedFiles
+      ? resolveRetrySelection({
+          fresh,
+          narrow: affectedBrowserChecks(retry.changedFiles),
+          required: retry.required,
+          covered: retry.covered,
+          checks: browserChecks(),
+        })
+      : withRequiredChecks(fresh, retry?.required ?? [], browserChecks());
+  };
+  const reach = selectionReach(resolveSelection());
+  report.reach = reach;
   let selection;
   const results = await runVerificationPhases(
     [
-      [LAUNCH_ADMISSION_ID, () => launchAdmission()],
+      [LAUNCH_ADMISSION_ID, () => launchAdmission({ reach })],
       ['ci', () => runCI(context)],
       [
         'selection',
         () =>
           context.check('selection:browser', { base, retry: context.selection }, () => {
-            // The tier's own policy over the candidate's base diff always applies; a diagnosed
-            // retry may only widen it (required checks) or skip checks the parent already
-            // passed that its byte delta does not reach.
-            const files = [
-              ...new Set(
-                [
-                  ...execFileSync('git', ['diff', '--name-only', '-z', base, '--'], {
-                    encoding: 'utf8',
-                  }).split('\0'),
-                  ...execFileSync('git', ['ls-files', '--others', '--exclude-standard', '-z'], {
-                    encoding: 'utf8',
-                  }).split('\0'),
-                ].filter(Boolean),
-              ),
-            ];
-            const fresh = affectedBrowserChecks(files);
-            const retry = context.selection;
-            selection = retry?.changedFiles
-              ? resolveRetrySelection({
-                  fresh,
-                  narrow: affectedBrowserChecks(retry.changedFiles),
-                  required: retry.required,
-                  covered: retry.covered,
-                  checks: browserChecks(),
-                })
-              : withRequiredChecks(fresh, retry?.required ?? [], browserChecks());
+            selection = resolveSelection();
+            selection.reach = assertSelectionReach(selection, reach);
             report.selection = selection;
             console.log(
               `Browser selection: ${selection.checks.length} checks; ${selection.fallback ?? 'see recorded dependency reasons'}`,

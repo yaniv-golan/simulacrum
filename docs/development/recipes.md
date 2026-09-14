@@ -201,7 +201,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"8bfe48e9064812d976ef958208afcf3a6b1e281690c84780a705e61500ba8a44","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"dcbaa058416ba9af206cd88318966f2dcc43ce449ec8a2be6cf59edd96873a75","disposition":"still accurate","rationale":"test/process-runner.test.mjs now tolerates the sub-millisecond skew between the timer's loop clock and performance.now() when asserting the watchdog fired at its due time (2 ms), a harness test detail; no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"0cc48149419adbdfb29b9e9816ebe7568a5e43f76146c92737bc54ef9bc3f8bd","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"c3dc2947db180322cac07f236661169bd06c3d26a173d5411aaeadcc591309ee","disposition":"still accurate","rationale":"Launch admission by reach (tooling-launch-admission-by-reach on main 38f6de8): the drift is verification tooling — which pressure bound the launch admission applies, decided from the resolved browser selection — and its tests and documentation; no simulation, physics-door, power, checkpoint or contact behavior changed, and a physics delta still reaches every timing-budget check, so its tiers launch under the full policy."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

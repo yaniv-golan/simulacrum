@@ -145,7 +145,8 @@ release/qualification. Every browser check is executed, or reported NOT_EVALUATE
 registered platform reason, on a registered platform at least once per day (hosted nightly
 under `hostProfiles`), and its outcome is read; critical-module mutation runs weekly.
 Tiers schedule the browser suite in phases (headless pool on one worker per two idle cores, at
-most four; policy-serialized checks; timing-sensitive checks last on an admitted quiet host) and the
+most four; policy-serialized checks; timing-sensitive checks last on an admitted quiet host; the
+launch admission applies the foreign-process bound only to tiers that will reach a timing phase) and the
 `test:browser:serial` and a rotated `SIMULACRUM_BROWSER_SCHEDULE_SEED` are the controls a
 nightly run uses so contention or order can never be the reason a check passes.
 Use `npm run verify:local` for local completion (CI plus conservatively affected browser checks;

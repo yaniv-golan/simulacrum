@@ -20,10 +20,11 @@ const replacements = {
   'verification-run.mjs': `export function initializeVerificationEnvironment(){} export function createVerificationContext(){return {identity:{source:{head:'h',workingTreeDigest:'d'}},check:async(id,c,fn)=>fn(),receipts:()=>[],selection:${JSON.stringify(selections[scenario])}}}`,
   'ci.mjs': `export async function runCI(){return {ok:true}}`,
   'browser-selection.mjs': `export function affectedBrowserChecks(files){const runtime=files.includes('src/foo.mjs');return {source:{head:'h',workingTreeDigest:'d'},files,scope:runtime?'local-contract':'documentation',checks:runtime?[{id:'foo'},{id:'bar'}]:[],reasons:runtime?[{id:'foo',reason:'import'},{id:'bar',reason:'import'}]:[]}}`,
-  'browser-registry.mjs': `export function browserChecks(){return [{id:'foo'},{id:'bar'},{id:'baz'}]}`,
+  // baz is a timing budget: a retry that requires it makes the tier reach a timing phase.
+  'browser-registry.mjs': `export function browserChecks(){return [{id:'foo'},{id:'bar'},{id:'baz',timingSensitive:true}]}`,
   'verify-browser-suite.mjs': `export async function verifyBrowserSuite(ids){console.log('SUITE '+JSON.stringify(ids));return []}`,
   // The launch admission never reads the live host from a unit fixture.
-  'check-sequence.mjs': `export async function admitQuietHost(){return {admitted:true,load1:1,waitedMs:0,samples:[1],trend:null,pressure:null}};export function pressureHolds(){return null};export const PRESSURE_POLICY={mode:'observe',idleBound:80,foreignBound:40}`,
+  'check-sequence.mjs': `export async function admitQuietHost({policy}){return {admitted:true,load1:1,waitedMs:0,samples:[1],trend:null,pressure:null,policy}};export function pressureHolds(){return null};export const PRESSURE_POLICY={mode:'observe',idleBound:80,foreignBound:40}`,
   'host-pressure.mjs': `export async function samplePressure(){return {method:'fixture',idlePercent:99,foreign:[]}}`,
 };
 registerHooks({

@@ -2,7 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-for (const scenario of ['pass', 'ci-fail', 'browser-fail', 'retry-required', 'retry-delta'])
+for (const scenario of [
+  'pass',
+  'ci-fail',
+  'browser-fail',
+  'retry-required',
+  'retry-delta',
+  'reach-drift',
+])
   test(`merge runner source binding and qualification boundary: ${scenario}`, () => {
     const p = spawnSync(
       process.execPath,
@@ -34,6 +41,33 @@ for (const scenario of ['pass', 'ci-fail', 'browser-fail', 'retry-required', 're
       assert.equal(report.selection, undefined, 'failed prerequisites stop before selection');
       return;
     }
+    // The launch admission is admitted under the reach the tier will have: a selection with
+    // no timing row applies load and idle only (no foreign bound), a required timing row the
+    // full policy. The selection phase refuses a selection whose reach moved after launch.
+    const launch = report.results.find((r) => r.id === 'launch-admission');
+    const timing = scenario === 'retry-required';
+    assert.equal(report.reach, timing ? 'timing' : 'structural');
+    assert.deepEqual(launch.result.policy, {
+      reach: timing ? 'timing' : 'structural',
+      mode: 'observe',
+      bounds: { idle: 80, foreign: timing ? 40 : null },
+    });
+    assert.equal(launch.result.admission.policy.foreignBound, timing ? 40 : null);
+    assert.equal(launch.result.admission.policy.idleBound, 80);
+    if (scenario === 'reach-drift') {
+      const selection = report.results.find((r) => r.id === 'selection');
+      assert.equal(selection.status, 'failed');
+      assert.match(
+        selection.error,
+        /selection reach changed after launch admission: admitted as structural, selection reaches timing/,
+      );
+      assert.equal(
+        report.results.some((r) => r.id === 'browser'),
+        false,
+      );
+      return;
+    }
+    assert.equal(report.selection.reach, timing ? 'timing' : 'structural');
     const ids = report.selection.checks.map((c) => c.id);
     if (scenario === 'retry-delta') {
       // The integration scope stays the real one; the delta yields a second, narrower scope.

@@ -12,6 +12,8 @@ import {
   parseCompletionArgs,
   sleptSummary,
   launchAdmission,
+  selectionReach,
+  assertSelectionReach,
   LAUNCH_ADMISSION_ID,
 } from './verification-tiers.mjs';
 const started = performance.now();
@@ -43,10 +45,69 @@ try {
     retry,
     ...(narrowChanges ? { retryIntegration: narrowChanges } : {}),
   });
+  // One selection computation, pure over the scope already in hand: called once before the
+  // launch admission to learn what the tier will reach, and again inside the selection phase
+  // as the recorded selection (the phase refuses if the scope or the reach moved meanwhile).
+  const resolveSelection = () => {
+    const registry = browserChecks();
+    const select = (scope) =>
+      mergeSelection({
+        checks: registry,
+        selection: affectedBrowserChecks(
+          scope.files.filter((path) => !scope.metadataOnlyFiles?.includes(path)),
+        ),
+        files: scope.files,
+        reviewOnlyFiles: scope.reviewOnlyFiles,
+        metadataOnlyFiles: scope.metadataOnlyFiles,
+      });
+    const merged = select(changes);
+    const narrow = narrowChanges ? select(narrowChanges) : null;
+    const resolved = narrow
+      ? resolveRetrySelection({
+          fresh: merged,
+          narrow,
+          required: retry.required,
+          covered: retry.covered,
+          checks: registry,
+        })
+      : withRequiredChecks(merged, retry?.required ?? [], registry);
+    // The merge selection's selected/omitted split follows the resolved checks: rows the
+    // fresh policy chose keep their reason, rows only the delta reached carry the delta's
+    // reason, added rows name the retry, skipped rows say so.
+    const chosen = new Set(resolved.checks.map((c) => c.id));
+    const reasonOf = (id) =>
+      merged.selected?.find((c) => c.id === id)?.reason ??
+      (narrow?.selected?.find((c) => c.id === id)
+        ? `byte delta: ${narrow.selected.find((c) => c.id === id).reason}`
+        : 'diagnosed retry: required re-execution');
+    const skipped = new Set(resolved.skippedByDelta ?? []);
+    return resolved === merged
+      ? { ...merged, source: context.identity.source }
+      : {
+          ...resolved,
+          selected: resolved.checks.map((check) => ({
+            ...check,
+            reason: reasonOf(check.id),
+          })),
+          omitted: registry
+            .filter((check) => !chosen.has(check.id))
+            .map((check) => ({
+              ...check,
+              reason: skipped.has(check.id)
+                ? 'covered by a parent attempt receipt the byte delta does not reach'
+                : (merged.omitted?.find((c) => c.id === check.id)?.reason ??
+                  `outside audited ${merged.scope} selection and registered merge smoke`),
+              coverage: 'NOT_EXECUTED',
+            })),
+          source: context.identity.source,
+        };
+  };
+  const reach = selectionReach(resolveSelection());
+  report.reach = reach;
   let selection;
   const results = await runVerificationPhases(
     [
-      [LAUNCH_ADMISSION_ID, () => launchAdmission()],
+      [LAUNCH_ADMISSION_ID, () => launchAdmission({ reach })],
       ['ci', () => runCI(context)],
       [
         'selection',
@@ -54,59 +115,8 @@ try {
           context.check('selection:merge', { refs: changes.refs, files: changes.files }, () => {
             if (JSON.stringify(mergeChanges(options)) !== JSON.stringify(changes))
               throw Error('Integration scope changed during verification');
-            const registry = browserChecks();
-            const select = (scope) =>
-              mergeSelection({
-                checks: registry,
-                selection: affectedBrowserChecks(
-                  scope.files.filter((path) => !scope.metadataOnlyFiles?.includes(path)),
-                ),
-                files: scope.files,
-                reviewOnlyFiles: scope.reviewOnlyFiles,
-                metadataOnlyFiles: scope.metadataOnlyFiles,
-              });
-            const merged = select(changes);
-            const narrow = narrowChanges ? select(narrowChanges) : null;
-            const resolved = narrow
-              ? resolveRetrySelection({
-                  fresh: merged,
-                  narrow,
-                  required: retry.required,
-                  covered: retry.covered,
-                  checks: registry,
-                })
-              : withRequiredChecks(merged, retry?.required ?? [], registry);
-            // The merge selection's selected/omitted split follows the resolved checks: rows the
-            // fresh policy chose keep their reason, rows only the delta reached carry the delta's
-            // reason, added rows name the retry, skipped rows say so.
-            const chosen = new Set(resolved.checks.map((c) => c.id));
-            const reasonOf = (id) =>
-              merged.selected?.find((c) => c.id === id)?.reason ??
-              (narrow?.selected?.find((c) => c.id === id)
-                ? `byte delta: ${narrow.selected.find((c) => c.id === id).reason}`
-                : 'diagnosed retry: required re-execution');
-            const skipped = new Set(resolved.skippedByDelta ?? []);
-            selection =
-              resolved === merged
-                ? { ...merged, source: context.identity.source }
-                : {
-                    ...resolved,
-                    selected: resolved.checks.map((check) => ({
-                      ...check,
-                      reason: reasonOf(check.id),
-                    })),
-                    omitted: registry
-                      .filter((check) => !chosen.has(check.id))
-                      .map((check) => ({
-                        ...check,
-                        reason: skipped.has(check.id)
-                          ? 'covered by a parent attempt receipt the byte delta does not reach'
-                          : (merged.omitted?.find((c) => c.id === check.id)?.reason ??
-                            `outside audited ${merged.scope} selection and registered merge smoke`),
-                        coverage: 'NOT_EXECUTED',
-                      })),
-                    source: context.identity.source,
-                  };
+            selection = resolveSelection();
+            selection.reach = assertSelectionReach(selection, reach);
             report.selection = selection;
             console.log(
               `Merge browser selection: ${selection.checks.length}; ${selection.fullReason ?? 'audited affected checks plus integration smoke'}`,
