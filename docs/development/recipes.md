@@ -196,7 +196,7 @@ warnings when requested measurements close.
 
 ## Change physics
 
-<!-- doc-review {"version":1,"fingerprint":"280a9acb43cfddb172533f9b88888093210f7d24f3db5ffba4832b0e55db4cae","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"b6941ed11bf9b3bae61d2abe6d7e7722cd6a055bd75aad6ace852cb14705532c","disposition":"still accurate","rationale":"Re-recorded after stacking on the refused-phase candidate f1008a7 (refused phases become unexecuted leaves for --after; local format gate); the reuse text below is unchanged by that stack. Verification-harness changes only (receipt reuse across candidates, never-index marker, manifest control registration); no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
+<!-- doc-review {"version":1,"fingerprint":"8bfe48e9064812d976ef958208afcf3a6b1e281690c84780a705e61500ba8a44","dependencies":"docs/development/.reviews/recipes/change-physics.json","dependencyDigest":"dcbaa058416ba9af206cd88318966f2dcc43ce449ec8a2be6cf59edd96873a75","disposition":"still accurate","rationale":"test/process-runner.test.mjs now tolerates the sub-millisecond skew between the timer's loop clock and performance.now() when asserting the watchdog fired at its due time (2 ms), a harness test detail; no physics owner, analytical control, accounting or Course-qualification requirement in this recipe changed."} -->
 
 Start at the [narrow door](../../src/simulation/physics/world.mjs), with numerical laws
 under [motor law](../../src/simulation/physics/law/motor.mjs) or

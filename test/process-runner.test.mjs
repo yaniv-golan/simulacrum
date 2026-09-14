@@ -145,7 +145,11 @@ test('process diagnostics distinguish exit, close and watchdog signal outcomes',
     (error) => {
       const events = error.processDiagnostics.events;
       const fired = events.find((event) => event.type === 'watchdog-fired');
-      assert.ok(fired.elapsedMs >= fired.dueMs);
+      // dueMs is stamped from performance.now() when the timer is armed, but setTimeout fires
+      // off libuv's millisecond loop clock, so the callback can observe a fraction of a
+      // millisecond less than dueMs (more under load). The sleep signature cares about
+      // seconds, not this skew.
+      assert.ok(fired.elapsedMs >= fired.dueMs - 2, `${fired.elapsedMs} vs due ${fired.dueMs}`);
       assert.equal(error.failureKind, 'watchdog');
       if (process.platform !== 'win32') {
         assert.ok(

@@ -625,7 +625,7 @@
     "test/power.test.mjs": "22e1afeea24f35446a5ffd1b149ef9e67576fcb91b350b5f03c5c3b1f8d8b453",
     "test/powered-hinge.test.mjs": "6aad210ebb9dbeb10eecf0bfddfb13d585896ccc9a9e9779af915604e60f5de2",
     "test/presentation-resources.test.mjs": "9dfc4e9a997a30722a454f9065e843b6bf1517dce6163dad30fed8b2b289462c",
-    "test/process-runner.test.mjs": "2c74a5e22866bae4c2503ad835a23ccdc387336252b8a7b689aa884f19e1b66b",
+    "test/process-runner.test.mjs": "097b0b771ad44daa149189e28f0e2b05a7ce6602cc79c2d98e24620b2272c25d",
     "test/receiver-binding-command.test.mjs": "7c36d3944bde6af887f6180b33692ef771bebe5309a51743c5e6ae6567de073c",
     "test/receiver-input-owner.test.mjs": "b184e9da0f0af5c3886218abf66364d3946b4def2a74c95f2b1a80da6bcfbee1",
     "test/release-authoring.test.mjs": "950d7b7a4889a802c4ac51f576ddc0b729b35cd3e215d7b53818646eabd5706f",
