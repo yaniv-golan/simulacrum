@@ -277,13 +277,22 @@ try {
     dB(waveforms.attenuated.rms) < level(1) - 8,
     'the level band rejects a nominal voice rendered 20 dB down',
   );
-  // Impacts are held at four times the original gain until the rolling episode classifier is
-  // judged. A single impact is a 120 ms decaying blip, so its windowed RMS says little; its
-  // onset PEAK is the level a player hears, and it is held at a quarter of the nominal
-  // (measured on this host: onset peak ≈ −24 dBFS, windowed RMS ≈ −42 dBFS).
+  // Impact gain is a literal held at four times the original (0.032/0.16 per log-impulse)
+  // until the rolling episode classifier is judged. A single impact is a sine at the material
+  // tone under an exponential decay with τ ≈ 13 ms (1e-5 at +120 ms): audible for ~25 ms, and
+  // its 150 ms windowed RMS sits 16–19 dB under its own onset peak. Two floors: the onset
+  // peak must reach the RMS of a quarter-nominal continuous voice (bounds amplitude), and the
+  // windowed RMS must carry the energy that decay implies (bounds duration; a click or a
+  // collapsed envelope passes the first and fails the second). Neither is a loudness match to
+  // a continuous voice. Measured on this host: peak ≈ −24 dBFS (old gains: −36), RMS ≈ −42.4
+  // dBFS (old gains: −54; a one-sample spike: −63).
   assert.ok(
     dB(waveforms.impact.peak) >= level(0.25),
     `impact: onset peak ${dB(waveforms.impact.peak).toFixed(1)} dBFS is under the held level ${level(0.25).toFixed(1)} dBFS`,
+  );
+  assert.ok(
+    dB(waveforms.impact.rms) >= level(0.25) - 14,
+    `impact: windowed RMS ${dB(waveforms.impact.rms).toFixed(1)} dBFS is under ${(level(0.25) - 14).toFixed(1)} dBFS, the energy a 13 ms decay from the held peak carries`,
   );
   assert.ok(dB(waveforms.mixed.rms) <= -6, 'a full mix stays under −6 dBFS RMS');
   // Spectral placement: a slow motor's fundamental and a rolling texture's energy stay above
