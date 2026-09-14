@@ -27,6 +27,10 @@ export const RELEVANT_ENVIRONMENT = Object.freeze({
 export const ENVIRONMENT_EXEMPTIONS = Object.freeze({
   'scheduling admission for timing-sensitive rows, which never reuse a receipt': [
     'SIMULACRUM_TIMING_LOAD_BOUND',
+    'SIMULACRUM_TIMING_IDLE_BOUND',
+    'SIMULACRUM_TIMING_FOREIGN_BOUND',
+    'SIMULACRUM_TIMING_PRESSURE',
+    'SIMULACRUM_TIMING_WAIT_MS',
   ],
   'attempt coordination, set per attempt or per candidate by the candidate command or the window': [
     'SIMULACRUM_VERIFICATION_WINDOW',

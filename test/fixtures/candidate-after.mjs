@@ -243,7 +243,7 @@ registerHooks({
       source = 'export async function assertVerificationReady() {return {status: "READY"}}';
     if (url === `file://${repo}/scripts/runtime-preflight.mjs`)
       source =
-        'export function assertRuntime() {} export async function assertLocalServerAccess() {} export function assertUnnicedLaunch({ priority = 0 } = {}) { return priority; }';
+        'export function assertRuntime() {} export async function assertLocalServerAccess() {} export function assertUnnicedLaunch({ priority = 0 } = {}) { return priority; } export function assertAwake() { return { method: "fixture", pid: process.pid }; }';
     if (url === `file://${repo}/scripts/run-check.mjs`)
       source =
         'export const runProcess=(...a)=>globalThis.candidateTransport.run(...a); export const runModuleCheck=async()=>({code:0});';

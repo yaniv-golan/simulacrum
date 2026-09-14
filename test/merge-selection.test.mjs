@@ -321,6 +321,8 @@ test('an explicit changed-file list replaces the git diff but never the pinned r
     'no diff for explicit files',
   );
   assert.throws(() => mergeChanges({ base: 'c0ffee', changedFiles: 'not-a-list' }, git), /changed/);
+});
+
 test('a timing-budget row runs in a merge tier only when the delta can reach what it measures', () => {
   const timing = [
     { id: 'measure-gears', timingSensitive: true, measures: 'physics', environment: 'self' },
